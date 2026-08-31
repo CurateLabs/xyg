@@ -146,11 +146,23 @@ class Trace:
     def per_item_channel_names(self) -> tuple[str, ...]:
         """Names of channels whose values vary independently per rendered item."""
         names: list[str] = []
-        if self.color_ch is not None and self.color_ch.mode != "constant":
+        if (
+            self.color_ch is not None
+            and not isinstance(self.color_ch, str)
+            and self.color_ch.mode != "constant"
+        ):
             names.append("color")
-        if self.stroke_ch is not None and self.stroke_ch.mode not in ("constant", "match_fill"):
+        if (
+            self.stroke_ch is not None
+            and not isinstance(self.stroke_ch, str)
+            and self.stroke_ch.mode not in ("constant", "match_fill")
+        ):
             names.append("stroke")
-        if self.size_ch is not None and self.size_ch.mode != "constant":
+        if (
+            self.size_ch is not None
+            and not isinstance(self.size_ch, str)
+            and self.size_ch.mode != "constant"
+        ):
             names.append("size")
         names.extend(self.style_channels)
         return tuple(names)

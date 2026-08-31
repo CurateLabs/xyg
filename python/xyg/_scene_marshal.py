@@ -347,6 +347,7 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
         "ribbon_color2_fail": _classify_ribbon_color2(trace) == "fail",
         "color_channel_unsupported": (
             getattr(trace, "color_ch", None) is not None
+            and not isinstance(trace.color_ch, str)
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (kind == "scatter" and trace.use_density())
             and not _hexbin_packs_paint_plane(trace)
@@ -358,7 +359,7 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
 
 
 def _marshal_xyta_color_channel(channel: Any) -> dict[str, Any]:
-    if channel is None:
+    if channel is None or isinstance(channel, str):
         return {
             "present": False,
             "mode": "",

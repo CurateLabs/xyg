@@ -1043,7 +1043,7 @@ def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
     if _classify_ribbon_color2(trace) == "fail":
         raise UnsupportedSceneV3("Scene v12 does not yet encode two-ended ribbon gradients")
-    has_channel = channel is not None
+    has_channel = channel is not None and not isinstance(channel, str)
     constant_ok = (
         has_channel
         and getattr(channel, "mode", None) == "constant"
@@ -2250,11 +2250,11 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
     else:
         radius_seq, r0, r1 = 1, float(radius or 0.0), 0.0
     channel = getattr(trace, "color_ch", None)
-    color_ch_present = 1 if channel is not None else 0
+    color_ch_present = 1 if channel is not None and not isinstance(channel, str) else 0
     color_ch_has_constant = (
-        1 if channel is not None and getattr(channel, "constant", None) is not None else 0
+        1 if color_ch_present and getattr(channel, "constant", None) is not None else 0
     )
-    if channel is None:
+    if channel is None or isinstance(channel, str):
         color_mode = color_const = b""
     else:
         color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")

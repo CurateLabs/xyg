@@ -1580,7 +1580,7 @@ function normalizeFillSpec(fill) {
 export function constantMarkColor(trace) {
   const channel = trace.color_ch;
   if (classifyRibbonColor2(trace) === "fail") return null;
-  const hasChannel = channel != null;
+  const hasChannel = channel != null && typeof channel === "object";
   const constantOk =
     hasChannel
     && channel.mode === "constant"
@@ -2976,6 +2976,7 @@ function marshalTraceSupportObs(trace, polar) {
     ribbon_color2_fail: classifyRibbonColor2(trace) === "fail",
     color_channel_unsupported: (
       trace.color_ch != null
+      && typeof trace.color_ch === "object"
       && (trace.color_ch.mode !== "constant" || trace.color_ch.constant == null)
       && !(kind === "scatter" && scatterUsesDensity(trace))
       && !hexbinPacksPaintPlane(trace)
@@ -3785,8 +3786,8 @@ function marshalXyTcTraceRecord(trace, showLegend) {
     r1 = Number(radius[1]);
   }
   const channel = trace.color_ch;
-  const colorChPresent = channel != null ? 1 : 0;
-  const colorChHasConstant = channel != null && channel.constant != null ? 1 : 0;
+  const colorChPresent = channel != null && typeof channel === "object" ? 1 : 0;
+  const colorChHasConstant = colorChPresent && channel.constant != null ? 1 : 0;
   const packedChannel = packXyTcColorChannel(trace);
   const sizeCh = trace.size_ch;
   const sizeChConstant = sizeCh?.constant;
@@ -4130,7 +4131,7 @@ function xytaHexbinPlaneObservations(trace) {
 }
 
 function marshalXytaColorChannel(channel) {
-  if (channel == null) {
+  if (channel == null || typeof channel === "string") {
     return {
       present: false,
       mode: "",
