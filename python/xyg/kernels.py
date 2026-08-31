@@ -56,6 +56,7 @@ density_uses_channel_colormap = _impl.density_uses_channel_colormap
 density_constant_color_wire_admit = _impl.density_constant_color_wire_admit
 density_categorical_color_wire_admit = _impl.density_categorical_color_wire_admit
 density_mean_color_wire_admit = _impl.density_mean_color_wire_admit
+density_channels_dropped_compat = _impl.density_channels_dropped_compat
 density_wasm_source_admit = _impl.density_wasm_source_admit
 DENSITY_WASM_DENSITY_NONE = _impl.DENSITY_WASM_DENSITY_NONE
 DENSITY_WASM_DENSITY_AUTOMATIC = _impl.DENSITY_WASM_DENSITY_AUTOMATIC
@@ -298,6 +299,7 @@ __all__ = [
     "density_bin_coord_endpoints",
     "density_bin_window",
     "density_categorical_color_wire_admit",
+    "density_channels_dropped_compat",
     "density_color_classify",
     "density_constant_color_wire_admit",
     "density_emit_plan",

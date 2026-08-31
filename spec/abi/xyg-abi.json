@@ -1,9 +1,9 @@
 {
-  "abi_version": 288,
+  "abi_version": 289,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "90aa798bacc25d7e1b90ea876198ce2d3103726c4e87776f7725d7490c713153",
+  "signature_sha256": "43f71d5b5af4988522471a5c4877c2a896124bd95254b199bfa2691ebca54b8c",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -7507,6 +7507,41 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_categorical_color_wire_admit(int32_t categorical, int32_t has_channel)"
+    },
+    {
+      "name": "xyg_density_channels_dropped_compat",
+      "node_name": "xyDensityChannelsDroppedCompat",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "dropped_count",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_channels_dropped_compat(int32_t dropped_count)"
     },
     {
       "name": "xyg_density_color_classify",

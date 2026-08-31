@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 288
-#define XYG_ABI_SIGNATURE_SHA256 "90aa798bacc25d7e1b90ea876198ce2d3103726c4e87776f7725d7490c713153"
+#define XYG_ABI_VERSION 289
+#define XYG_ABI_SIGNATURE_SHA256 "43f71d5b5af4988522471a5c4877c2a896124bd95254b199bfa2691ebca54b8c"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +65,7 @@ size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, in
 int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1);
 size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out);
 int32_t xyg_density_categorical_color_wire_admit(int32_t categorical, int32_t has_channel);
+int32_t xyg_density_channels_dropped_compat(int32_t dropped_count);
 int32_t xyg_density_color_classify(int32_t channel_mode, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts);
 int32_t xyg_density_constant_color_wire_admit(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t has_constant);
 int32_t xyg_density_emit_meta(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t categorical, int32_t compact_categorical, int32_t stratified_counts, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t grid_from_pyramid, int32_t x_memmapped, int32_t y_memmapped, int32_t has_pyramid_resource, int32_t force_bin2d, int32_t force_pyramid, int32_t color_mode, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, uint64_t n_points, void * out);

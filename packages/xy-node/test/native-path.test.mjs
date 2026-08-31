@@ -199,7 +199,7 @@ test("tryResolvePlatformPackageLibrary returns staged binary path", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
- 6f3cfe18 (ABI 272: kernelize density mean-color plane wire admit)
+ 9e06c31f (ABI 273: kernelize density channels_dropped compat boolean)
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),
