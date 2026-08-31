@@ -2066,11 +2066,7 @@ export class Figure {
       id: t.id,
       kind: t.kind ?? "segments",
       name: t.name,
-      // Node payload segments copies t.style. Python `_emit_segments` uses
-      // `_default_styled` to fill palette color when style.color is missing.
-      // Matching Python would add style.color. Recorded
-      // emit-segments-default-styled stay-host.
-      style: { ...t.style },
+      style: this._defaultStyled(t),
       tier,
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,
@@ -2193,11 +2189,7 @@ export class Figure {
     // entry.animation. Recorded emit-mesh-animation stay-host.
 
       name: t.name,
-      // Node payload mesh copies t.style. Python `_emit_triangle_mesh` uses
-      // `_default_styled` to fill palette color when style.color is missing.
-      // Matching Python would add style.color. Recorded
-      // emit-mesh-default-styled stay-host.
-      style: { ...t.style },
+      style: this._defaultStyled(t),
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,
@@ -2357,11 +2349,7 @@ export class Figure {
       id: t.id,
       kind,
       name: t.name,
-      // Node payload rect copies t.style. Python `_emit_rect` uses
-      // `_default_styled` to fill palette color when style.color is missing.
-      // Matching Python would add style.color. Recorded
-      // emit-rect-default-styled stay-host.
-      style: { ...t.style },
+      style: this._defaultStyled(t),
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,
@@ -2680,11 +2668,7 @@ export class Figure {
       id: t.id,
       kind: "ribbon",
       name: t.name,
-      // Node payload ribbon copies t.style. Python `_emit_ribbon` uses
-      // `_default_styled` to fill palette color when style.color is missing.
-      // Matching Python would add style.color. Recorded
-      // emit-ribbon-default-styled stay-host.
-      style: { ...t.style },
+      style: this._defaultStyled(t),
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,

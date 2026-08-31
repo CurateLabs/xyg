@@ -14,11 +14,11 @@ const { DEFAULT_PALETTE, PROTOCOL_VERSION, abiVersion, figure } = await import(
   path.join(root, "packages/xy-node/src/index.js"),
 );
 
-function caseEntry(name, build) {
+function caseEntry(name, build, pickTrace = (spec) => spec.traces[0]) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
   const { spec } = fig.buildPayload();
-  const trace = spec.traces[0];
+  const trace = pickTrace(spec);
   return {
     name,
     trace_id: trace.id,
@@ -44,6 +44,27 @@ const cases = [
     fig.traces[0].id = 18;
     fig.traces[0].style = { opacity: 0.9 };
   }),
+  caseEntry("mesh_default_styled", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = 19;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
+  caseEntry("segments_default_styled", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = 20;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
+  caseEntry("ribbon_default_styled", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1]);
+    fig.traces[0].id = 21;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
+  caseEntry("rect_default_styled", (fig) => {
+    fig.box([1, 2, 3, 4, 5]);
+    const whiskerIdx = fig.traces.findIndex((t) => t.kind === "box_whisker");
+    fig.traces[whiskerIdx].id = 22;
+    fig.traces[whiskerIdx].style = { opacity: 0.9 };
+  }, (spec) => spec.traces.find((t) => t.kind === "box_whisker")),
 ];
 
 const out = {

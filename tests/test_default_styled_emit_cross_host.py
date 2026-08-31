@@ -1,7 +1,8 @@
 """Cross-host default-styled emit parity: Python vs @curatelabs/xyg-node.
 
 Compares trace style dicts where Python ``_default_styled`` fills palette color
-when ``style.color`` is missing (line, area, and histogram emit paths).
+when ``style.color`` is missing (line, area, histogram, mesh, segments, ribbon,
+and rect emit paths).
 
 Run::
 
@@ -35,6 +36,10 @@ CASE_NAMES = (
     "line_default_styled",
     "area_default_styled",
     "hist_default_styled",
+    "mesh_default_styled",
+    "segments_default_styled",
+    "ribbon_default_styled",
+    "rect_default_styled",
 )
 
 
@@ -59,23 +64,43 @@ def _build_case(name: str) -> Figure:
     fig = Figure(width=240, height=160)
     if name == "line_default_styled":
         fig.line([0.0, 1.0], [0.0, 1.0])
+        trace = fig.traces[0]
+        trace.id = 16
     elif name == "area_default_styled":
         fig.area([0.0, 1.0], [0.0, 1.0])
+        trace = fig.traces[0]
+        trace.id = 17
     elif name == "hist_default_styled":
         fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
+        trace = fig.traces[0]
+        trace.id = 18
+    elif name == "mesh_default_styled":
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        trace = fig.traces[0]
+        trace.id = 19
+    elif name == "segments_default_styled":
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 2.0])
+        trace = fig.traces[0]
+        trace.id = 20
+    elif name == "ribbon_default_styled":
+        fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0])
+        trace = fig.traces[0]
+        trace.id = 21
+    elif name == "rect_default_styled":
+        fig.box([1, 2, 3, 4, 5])
+        trace = next(t for t in fig.traces if t.kind == "box_whisker")
+        trace.id = 22
     else:
         raise KeyError(name)
-    fig.traces[0].id = {
-        "line_default_styled": 16,
-        "area_default_styled": 17,
-        "hist_default_styled": 18,
-    }[name]
-    fig.traces[0].style = {"opacity": 0.9}
+    trace.style = {"opacity": 0.9}
     return fig
 
 
-def _emit_style(spec: dict) -> dict:
-    trace = spec["traces"][0]
+def _emit_style(spec: dict, *, kind: str | None = None) -> dict:
+    if kind is None:
+        trace = spec["traces"][0]
+    else:
+        trace = next(t for t in spec["traces"] if t["kind"] == kind)
     return {
         "trace_id": trace["id"],
         "kind": trace["kind"],
@@ -130,7 +155,10 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         spec, _blob = _build_case(case_name).build_payload()
-    meta = _emit_style(spec)
+    meta = _emit_style(
+        spec,
+        kind="box_whisker" if case_name == "rect_default_styled" else None,
+    )
     assert meta["trace_id"] == entry["trace_id"]
     assert meta["kind"] == entry["kind"]
     assert meta["style"] == entry["style"]
@@ -143,6 +171,9 @@ def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         spec, _blob = _build_case(case_name).build_payload()
-    meta = _emit_style(spec)
+    meta = _emit_style(
+        spec,
+        kind="box_whisker" if case_name == "rect_default_styled" else None,
+    )
     assert meta["style"] == node_case["style"]
     assert meta["palette_color"] == node_case["palette_color"]
