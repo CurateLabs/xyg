@@ -75,6 +75,19 @@
       "keys_hi_hex": "020000000400000006000000"
     },
     {
+      "name": "line_log_ship_scale",
+      "width": 240,
+      "height": 160,
+      "trace_id": 40,
+      "kind": "line",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 16,
+      "payload_blob_sha256": "f02cb3b89a60dc9854351ecab679c72b09d9e26023bbadf7ae2bca2bb1b8d3f1",
+      "payload_blob_hex": "0000803f00002041000090c000009040",
+      "trace_keys": null
+    },
+    {
       "name": "histogram_fixed_bins",
       "width": 240,
       "height": 160,
