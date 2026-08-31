@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 260
-#define XYG_ABI_SIGNATURE_SHA256 "c590d062192a3954b03942fa12b03244561d18bccf7b45d86ca04a9fda2f1f38"
+#define XYG_ABI_VERSION 261
+#define XYG_ABI_SIGNATURE_SHA256 "354bbfdb135c659d07c427841cd28e450111fafb5343bd2fb280d28252155ec4"
 
 #ifdef __cplusplus
 extern "C" {
@@ -232,6 +232,7 @@ int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_class(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_marker_blob_pack(int32_t filled, const double * values, size_t n_values, const uint32_t * contour_lens, size_t n_contours, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_marker_glyph_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours);
 int32_t xyg_scene_mesh_paint_plane_admit(const uint8_t * text, size_t text_len, int32_t joined_fill, int32_t has_per_item);

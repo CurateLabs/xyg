@@ -69,6 +69,7 @@ scene_finite_all = _impl.scene_finite_all
 scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_spec_pack = _impl.scene_gradient_spec_pack
+scene_marker_blob_pack = _impl.scene_marker_blob_pack
 scene_gradient_space = _impl.scene_gradient_space
 scene_heatmap_colormap_admit = _impl.scene_heatmap_colormap_admit
 scene_xyta_colormap_pack = _impl.scene_xyta_colormap_pack
@@ -357,6 +358,7 @@ __all__ = [
     "scene_kind_class",
     "scene_linear_gradient_prefix",
     "scene_linecap_admit",
+    "scene_marker_blob_pack",
     "scene_marker_glyph_admit",
     "scene_marker_path_admit",
     "scene_mesh_paint_plane_admit",

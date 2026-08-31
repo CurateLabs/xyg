@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 260;
+pub const ABI_VERSION: u32 = 261;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6603,6 +6603,54 @@ pub unsafe extern "C" fn xyg_scene_gradient_spec_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_gradient_spec_pack(space_text, dir_text, stop_t, css, css_lens, out)
+    })
+}
+
+/// Pack Scene XYTC marker-path blob (ABI 261).
+///
+/// Wire format matches [`scene_trace_compile::admit_marker`]. Returns bytes
+/// written, ``0`` when invalid, ``-1`` when ``out_cap`` is too small.
+///
+/// # Safety
+/// When ``n_values > 0``, ``values`` addresses readable f64s. When
+/// ``n_contours > 0``, ``contour_lens`` addresses readable u32s. When
+/// ``out_cap > 0``, ``out`` addresses writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
+    filled: i32,
+    values: *const f64,
+    n_values: usize,
+    contour_lens: *const u32,
+    n_contours: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if !matches!(filled, 0 | 1) {
+            return 0;
+        }
+        if (n_values > 0 && values.is_null())
+            || (n_contours > 0 && contour_lens.is_null())
+            || (out_cap > 0 && out.is_null())
+        {
+            return 0;
+        }
+        let values = if n_values == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, n_values)
+        };
+        let contour_lens = if n_contours == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(contour_lens, n_contours)
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_cap)
+        };
+        kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
     })
 }
 
