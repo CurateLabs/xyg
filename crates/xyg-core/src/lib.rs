@@ -160,11 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-<<<<<<< HEAD
-pub const ABI_VERSION: u32 = 276;
-=======
-pub const ABI_VERSION: u32 = 261;
->>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
+pub const ABI_VERSION: u32 = 277;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15244,9 +15240,7 @@ pub unsafe extern "C" fn xyg_payload_errorbar_role_keys(
     })
 }
 
-<<<<<<< HEAD
 /// Bar/column compact emit admit (ABI 274).
-=======
 /// Errorbar segment role/source maps (ABI 261).
 ///
 /// When role maps apply, writes ``out_sources[i] = i % n_points`` and
@@ -15294,7 +15288,6 @@ pub unsafe extern "C" fn xyg_payload_errorbar_role_maps(
 }
 
 /// Bar/column compact emit admit (ABI 258).
->>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 ///
 /// ``out_compact`` is ``1`` when uniform finite positive width allows the
 /// nested ``bar`` spec; ``0`` means fall back to per-rect geometry.
