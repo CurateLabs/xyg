@@ -1076,6 +1076,24 @@ test("Node matches Python XYTA bytes for colormap hexbin", () => {
   );
 });
 
+test("Node matches Python XYTA bytes for colormap heatmap", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.heatmap([[0, 1, 2], [3, 4, 5]], {
+    x: [1, 2, 3],
+    y: [1, 3],
+    name: "heat",
+    id: 0,
+  });
+  assert.equal(figure.traces[0].style.colormap, "viridis");
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_heatmap_colormap_xyta_sha256,
+  );
+});
+
 test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and lattice heatmap", () => {
   const tau = 6.283185307179586;
   const cases = [
