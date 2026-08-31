@@ -180,6 +180,14 @@ pub fn density_constant_color_wire_admit(has_channel: i32, mode: &str, has_const
     i32::from(mode == "constant")
 }
 
+/// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
+///
+/// Returns ``1`` when the split payload writer is active and the emit plan
+/// reports WASM aggregate replay eligibility.
+pub fn density_wasm_source_admit(split_payload: i32, wasm_eligible: i32) -> i32 {
+    i32::from(split_payload == 1 && wasm_eligible == 1)
+}
+
 pub const DENSITY_REDUCTION_BIN2D: i32 = 0;
 pub const DENSITY_REDUCTION_PYRAMID_COUNT: i32 = 1;
 
@@ -781,6 +789,14 @@ mod tests {
         assert_eq!(density_constant_color_wire_admit(1, "constant", 1), 1);
         assert_eq!(density_constant_color_wire_admit(1, "continuous", 1), 0);
         assert_eq!(density_constant_color_wire_admit(1, "categorical", 1), 0);
+    }
+
+    #[test]
+    fn density_wasm_source_admit_matches_host_and() {
+        assert_eq!(density_wasm_source_admit(1, 1), 1);
+        assert_eq!(density_wasm_source_admit(0, 1), 0);
+        assert_eq!(density_wasm_source_admit(1, 0), 0);
+        assert_eq!(density_wasm_source_admit(0, 0), 0);
     }
 
     #[test]

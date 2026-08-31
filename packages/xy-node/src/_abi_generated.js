@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 284;
-export const SIGNATURE_SHA256 = "d6658354e74478cfc51fcc717fe0ec2fcb2e73d115b95c9b4ce843a6da4b6ff6";
+export const ABI_VERSION = 285;
+export const SIGNATURE_SHA256 = "f0ca532d13ba95e4231ba688162be1dfd88651c78b187a831bebe13653541ac8";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -75,6 +75,7 @@ export let xyDensityRgbaLinear;
 export let xyDensityTraceColorClassify;
 export let xyDensityUsesChannelColormap;
 export let xyDensityWasmEligible;
+export let xyDensityWasmSourceAdmit;
 export let xyDirectRgbaAdmit;
 export let xyDrillDecision;
 export let xyEncodeF32;
@@ -454,6 +455,7 @@ export function bindGeneratedAbi(lib) {
   xyDensityTraceColorClassify = lib.func("int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)");
   xyDensityUsesChannelColormap = lib.func("int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len)");
   xyDensityWasmEligible = lib.func("int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points)");
+  xyDensityWasmSourceAdmit = lib.func("int32_t xyg_density_wasm_source_admit(int32_t split_payload, int32_t wasm_eligible)");
   xyDirectRgbaAdmit = lib.func("size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity)");
   xyDrillDecision = lib.func("int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact)");
   xyEncodeF32 = lib.func("int32_t xyg_encode_f32(const double * data, size_t len, double offset, double scale, float * out)");

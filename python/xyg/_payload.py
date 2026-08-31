@@ -1488,8 +1488,10 @@ class PayloadMixin(_Host):
         # 32,768-point raw chunk at a time; this source capacity is the
         # generated aggregate ABI's declared point limit.
         wasm_capacity = WASM_AGGREGATE_MAX_POINTS
-        wasm_supported = bool(plan["wasm_eligible"])
-        if pw._split and wasm_supported:
+        if kernels.density_wasm_source_admit(
+            split_payload=bool(pw._split),
+            wasm_eligible=bool(plan["wasm_eligible"]),
+        ):
             density["wasm_source"] = {
                 "kind": "cartesian-count-f64-stream-v1",
                 "x": pw.ship_f64(t.x.values),

@@ -11815,6 +11815,17 @@ def density_constant_color_wire_admit(
     return admit == 1
 
 
+def density_wasm_source_admit(*, split_payload: bool, wasm_eligible: bool) -> bool:
+    """Density wasm_source wire admit via ``xyg_density_wasm_source_admit`` (ABI 269)."""
+    admit = _lib.xyg_density_wasm_source_admit(
+        int(bool(split_payload)),
+        int(bool(wasm_eligible)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_wasm_source_admit arguments")
+    return admit == 1
+
+
 DENSITY_REDUCTION_BIN2D = 0
 DENSITY_REDUCTION_PYRAMID_COUNT = 1
 
