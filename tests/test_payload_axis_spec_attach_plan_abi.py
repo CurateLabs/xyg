@@ -91,6 +91,16 @@ def test_axis_spec_cartesian_tick_values_cross_host_fixture() -> None:
     assert "tick_values" not in spec["y_axis"]
 
 
+def test_axis_spec_cartesian_minor_tick_values_cross_host_fixture() -> None:
+    """Node buildPayload axis minor_tick_values parity when attach_ticks is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", minor_tick_values=[0.25, 0.75])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["minor_tick_values"] == [0.25, 0.75]
+    assert "minor_tick_values" not in spec["y_axis"]
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])
