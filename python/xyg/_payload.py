@@ -481,6 +481,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         if not plan["attempt_keys"]:
             return entry
         keys = t.transition_keys if key_values is None else key_values
+        keys = np.asarray(keys, dtype=np.uint32)
         values = keys[sel] if plan["filter_keys_by_sel"] else keys
         if not plan["ship_keys"]:
             entry["animation_fallback"] = plan["animation_fallback"]

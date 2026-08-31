@@ -296,8 +296,9 @@ def emit_trace_materialized(
     }
     transition_lo = transition_hi = None
     if t.transition_keys is not None:
-        transition_lo = np.ascontiguousarray(t.transition_keys[:, 0], dtype=np.uint32)
-        transition_hi = np.ascontiguousarray(t.transition_keys[:, 1], dtype=np.uint32)
+        tk = np.asarray(t.transition_keys, dtype=np.uint32)
+        transition_lo = np.ascontiguousarray(tk[:, 0], dtype=np.uint32)
+        transition_hi = np.ascontiguousarray(tk[:, 1], dtype=np.uint32)
     bin_x_arr = None
     bin_x0 = bin_x1 = 0.0
     if t.kind in ("line", "area", "error_band"):
