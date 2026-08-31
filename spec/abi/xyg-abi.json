@@ -1,9 +1,9 @@
 {
-  "abi_version": 287,
+  "abi_version": 288,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "2cc14e79fe254fcb22bbf660081b902dcc6f8070f51e096041bc093dfd52f64a",
+  "signature_sha256": "90aa798bacc25d7e1b90ea876198ce2d3103726c4e87776f7725d7490c713153",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8727,6 +8727,72 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)"
+    },
+    {
+      "name": "xyg_density_mean_color_wire_admit",
+      "node_name": "xyDensityMeanColorWireAdmit",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "has_channel",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "mode",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "mode_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_mean_color_wire_admit(int32_t has_channel, const uint8_t * mode, size_t mode_len)"
     },
     {
       "name": "xyg_density_overlay_omitted_wire",

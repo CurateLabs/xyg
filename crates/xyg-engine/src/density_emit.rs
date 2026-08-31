@@ -187,6 +187,18 @@ pub fn density_categorical_color_wire_admit(categorical: i32, has_channel: i32) 
     i32::from(categorical == 1 && has_channel == 1)
 }
 
+/// Whether a color channel aggregates to a mean-color density plane (ABI 272).
+///
+/// Returns ``1`` when ``color_ch`` is present and ``mode`` is ``continuous``,
+/// ``categorical``, or ``direct_rgba`` — the modes that ship ``density["rgba"]``
+/// with ``color_agg: "mean"`` instead of dropping the channel.
+pub fn density_mean_color_wire_admit(has_channel: i32, mode: &str) -> i32 {
+    if has_channel == 0 {
+        return 0;
+    }
+    i32::from(matches!(mode, "continuous" | "categorical" | "direct_rgba"))
+}
+
 /// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
 ///
 /// Returns ``1`` when the split payload writer is active and the emit plan
@@ -829,6 +841,16 @@ mod tests {
         assert_eq!(density_categorical_color_wire_admit(1, 1), 1);
         assert_eq!(density_categorical_color_wire_admit(0, 1), 0);
         assert_eq!(density_categorical_color_wire_admit(1, 0), 0);
+    }
+
+    #[test]
+    fn density_mean_color_wire_admit_matches_bins_mean_color() {
+        assert_eq!(density_mean_color_wire_admit(0, "continuous"), 0);
+        assert_eq!(density_mean_color_wire_admit(1, "constant"), 0);
+        assert_eq!(density_mean_color_wire_admit(1, "continuous"), 1);
+        assert_eq!(density_mean_color_wire_admit(1, "categorical"), 1);
+        assert_eq!(density_mean_color_wire_admit(1, "direct_rgba"), 1);
+        assert_eq!(density_mean_color_wire_admit(1, "other"), 0);
     }
 
     #[test]
