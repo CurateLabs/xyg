@@ -195,10 +195,11 @@ class CustomBuildHook(BuildHookInterface):
         # require Rust or that target merely to build the ordinary client.
         if static_dir is not None:
             force_include = build_data.setdefault("force_include", {})
-            for name in _OPTIONAL_STATIC_ASSETS:
-                asset = static_dir / name
-                if asset.is_file():
-                    force_include[str(asset)] = f"xyg/static/{name}"
+            if self.target_name == "wheel":
+                for name in _OPTIONAL_STATIC_ASSETS:
+                    asset = static_dir / name
+                    if asset.is_file():
+                        force_include[str(asset)] = f"xyg/static/{name}"
 
         # The native core is a wheel-only, per-platform artifact.
         if self.target_name != "wheel":
