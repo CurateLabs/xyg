@@ -1671,6 +1671,9 @@ export class Figure {
     if (attach.attachMinorStyle && opts.minor_style) {
       spec.minor_style = { ...opts.minor_style };
     }
+    if (attach.attachStyle && opts.style) {
+      spec.style = { ...opts.style };
+    }
     if (attach.attachFormat && opts.format != null) {
       spec.format = opts.format;
     }

@@ -335,3 +335,20 @@ test("buildPayload ships polar axis minor_style like Python _axis_spec", () => {
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.minor_style.tick_color, "#111");
 });
+
+test("buildPayload ships cartesian axis style like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { style: { tick_color: "#111" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style.tick_color, "#111");
+  assert.equal(spec.y_axis.style, undefined);
+});
+
+test("buildPayload ships polar axis style like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { style: { tick_color: "#222" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style.tick_color, "#222");
+});
