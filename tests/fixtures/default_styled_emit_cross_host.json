@@ -13,6 +13,26 @@
         "color": "#3987e5"
       },
       "palette_color": "#3987e5"
+    },
+    {
+      "name": "area_default_styled",
+      "trace_id": 17,
+      "kind": "area",
+      "style": {
+        "opacity": 0.9,
+        "color": "#008300"
+      },
+      "palette_color": "#008300"
+    },
+    {
+      "name": "hist_default_styled",
+      "trace_id": 18,
+      "kind": "histogram",
+      "style": {
+        "opacity": 0.9,
+        "color": "#d55181"
+      },
+      "palette_color": "#d55181"
     }
   ]
 }

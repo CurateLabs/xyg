@@ -410,16 +410,17 @@ test("_emitRect copies t.style unlike Python _default_styled", () => {
   assert.equal(boxTrace.style.color, undefined);
 });
 
-test("_emitHistogram copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_histogram` calls `_emit_rect`, which uses `_default_styled`
-  // to fill palette color when style.color is missing. Node histogram encode
-  // copies t.style. Recorded emit-hist-default-styled stay-host.
+test("_emitHistogram uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(
+    spec.traces[0].style.color,
+    DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
 test("_emitHexbin uses _defaultStyled when style.color is missing", () => {
@@ -431,16 +432,17 @@ test("_emitHexbin uses _defaultStyled when style.color is missing", () => {
   assert.equal(spec.traces[0].style.color, DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length]);
 });
 
-test("_emitArea copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_area` uses `_default_styled` to fill palette color when
-  // style.color is missing. Node area encode copies t.style. Recorded
-  // emit-area-default-styled stay-host.
+test("_emitArea uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.area([0, 1], [0, 1]);
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "area");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(
+    spec.traces[0].style.color,
+    DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
 test("_emitLine uses _defaultStyled when style.color is missing", () => {
