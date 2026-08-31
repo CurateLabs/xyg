@@ -1356,15 +1356,21 @@ test("buildPayload ships padding via payload build plan", () => {
 });
 
 
-test("buildPayload omits title_options unlike Python build_payload", () => {
-  // Python `build_payload` ships `title_options` with geometry columns. Node
-  // payload omits that field. Recorded emit-payload-title-options stay-host.
+test("buildPayload ships title_options like Python build_payload", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
-  fig.title_options = [{ text: "T", y: 1.0, pad: 8.0 }];
+  fig.title_options = [{ text: "T", loc: "center", y: 1.0, pad: 8.0 }];
   const { spec } = fig.buildPayload();
   assert.equal(fig.title_options.length, 1);
-  assert.equal(spec.title_options, undefined);
+  assert.deepEqual(spec.title_options, [{ text: "T", loc: "center", geometry: 2 }]);
+});
+
+test("buildPayload title_options geometry defaults like Python build_payload", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.title_options = [{ text: "T" }];
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.title_options, [{ text: "T", geometry: 2 }]);
 });
 
 

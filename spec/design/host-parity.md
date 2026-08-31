@@ -45,7 +45,6 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits colorbar.
   Node `buildPayload` omits annotations.
   Node `buildPayload` omits extra_legends.
-  Node `buildPayload` omits title_options.
   Node `_emitLine` skips M4 bin_x.
   Node `_emitArea` skips M4 bin_x.
   Node density Scene omits scatter `color_ch`.
