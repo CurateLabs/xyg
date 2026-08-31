@@ -58,6 +58,7 @@ function attachEntry(spec) {
     interaction: spec.interaction ?? null,
     animation: spec.animation ?? null,
     graph: spec.graph ?? null,
+    palette: spec.palette ?? null,
     buffer_layout: spec.buffer_layout ?? null,
   };
 }
@@ -121,6 +122,12 @@ const cases = [
   caseEntry("graph_meta", (fig) => {
     fig._graphMeta = [{ layout: "force", node_trace: 0, edge_trace: 1 }];
   }),
+  caseEntry("palette_list", (fig) => {
+    fig.palette = ["#ff0000", "#00ff00", "#0000ff"];
+  }),
+  caseEntry("palette_map", (fig) => {
+    fig.palette = { a: "#ff0000", b: "#00ff00", c: "#0000ff" };
+  }),
 ];
 
 process.stdout.write(
@@ -128,7 +135,7 @@ process.stdout.write(
     {
       schema: "xyg.payload-attach-cross-host/v1",
       authority:
-        "packages/xy-node/src/figure.js buildPayload ABI 303 attach flags (wasm_density, frame_sides, tooltip, mark_style, interaction, export, show_modebar, show_tooltip, animation, graph)",
+        "packages/xy-node/src/figure.js buildPayload ABI 303 attach flags (wasm_density, frame_sides, tooltip, mark_style, interaction, export, show_modebar, show_tooltip, animation, graph, palette)",
       protocol: PROTOCOL_VERSION,
       abi_version: abiVersion(),
       cases,

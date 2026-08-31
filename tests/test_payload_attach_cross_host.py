@@ -2,7 +2,7 @@
 
 Compares optional top-level attach fields governed by ``payload_build_plan``:
 ``wasm_density``, ``frame_sides``, ``show_modebar``, ``export``, ``show_tooltip``,
-``tooltip``, ``mark_style``, ``interaction``, ``animation``, and ``graph``.
+``tooltip``, ``mark_style``, ``interaction``, ``animation``, ``graph``, and ``palette``.
 
 Run::
 
@@ -52,6 +52,8 @@ CASE_NAMES = (
     "interaction_select",
     "animation_duration",
     "graph_meta",
+    "palette_list",
+    "palette_map",
 )
 
 
@@ -118,6 +120,7 @@ def _attach_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "interaction": spec.get("interaction"),
         "animation": spec.get("animation"),
         "graph": spec.get("graph"),
+        "palette": spec.get("palette"),
         "buffer_layout": spec.get("buffer_layout"),
     }
 
@@ -154,6 +157,10 @@ def _build_case(name: str) -> Figure:
         fig.animation_options = {"enabled": True, "duration": 250.0}
     if name == "graph_meta":
         fig._graph_meta = [{"layout": "force", "node_trace": 0, "edge_trace": 1}]  # noqa: SLF001
+    if name == "palette_list":
+        fig.palette = ["#ff0000", "#00ff00", "#0000ff"]
+    if name == "palette_map":
+        fig.palette = {"a": "#ff0000", "b": "#00ff00", "c": "#0000ff"}
     fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[-1].id = 7
     return fig
