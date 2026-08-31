@@ -1590,6 +1590,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_int32,
         ctypes.c_int32,
+        ctypes.c_int32,  # orientation (ABI 313; ignored except bar_compact)
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_size_t),
@@ -5659,6 +5660,7 @@ def main() -> None:
             6,
             1,
             2,
+            0,  # orientation ignored for ribbon
             ctypes.byref(col_gather),
             ctypes.byref(col_gather_color),
             ctypes.byref(col_n),
