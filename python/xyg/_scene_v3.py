@@ -2837,6 +2837,21 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_stroke_perimeter(kind_class: int, style: dict[str, Any]) -> int:
+    band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
+    present = 1 if "stroke_perimeter" in style else 0
+    if present:
+        perimeter = style["stroke_perimeter"]
+        perimeter_is_bool = 1 if isinstance(perimeter, bool) else 0
+        perimeter_true = 1 if perimeter_is_bool and perimeter else 0
+    else:
+        perimeter_is_bool = 0
+        perimeter_true = 0
+    return _native.scene_xytc_stroke_perimeter_pack(
+        band, present, perimeter_is_bool, perimeter_true
+    )
+
+
 def _pack_xytc_numeric_style(
     trace: Any, style: dict[str, Any]
 ) -> tuple[int, float, float, float, float, float]:
@@ -2931,12 +2946,7 @@ def _pack_xytc(figure: Any) -> bytes:
                 hex_dx = float(raw_dx)
             if raw_dy is not None:
                 hex_dy = float(raw_dy)
-        if kind_class & _SCENE_KIND_CLASS_BAND and "stroke_perimeter" in style:
-            perimeter = style["stroke_perimeter"]
-            if not isinstance(perimeter, bool):
-                flags |= _XYTC_PERIMETER_INVALID
-            elif perimeter:
-                flags |= _XYTC_PERIMETER_TRUE
+        flags |= _pack_xytc_stroke_perimeter(kind_class, style)
         dash_b = b""
         dash_pattern: list[float] = []
         dash = style.get("dash")

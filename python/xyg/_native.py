@@ -1687,6 +1687,33 @@ def scene_xytc_numeric_style_pack(
     )
 
 
+def scene_xytc_stroke_perimeter_pack(
+    band: int,
+    present: int,
+    perimeter_is_bool: int,
+    perimeter_true: int,
+) -> int:
+    """XYTC stroke-perimeter flags via ``xyg_scene_xytc_stroke_perimeter_pack`` (ABI 265).
+
+    Hosts still pick BAND eligibility, key presence, and bool coercion.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_stroke_perimeter_pack(
+            ctypes.c_int32(int(band)),
+            ctypes.c_int32(int(present)),
+            ctypes.c_int32(int(perimeter_is_bool)),
+            ctypes.c_int32(int(perimeter_true)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-stroke-perimeter-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-stroke-perimeter-pack request")
+    return int(flags.value)
+
+
 def scene_gradient_spec_pack(
     space: bytes,
     dir: bytes,
