@@ -43,6 +43,7 @@ use xyg_engine::layout_rooms;
 use xyg_engine::legend_fit;
 use xyg_engine::legend_layout;
 use xyg_engine::lod_plan;
+use xyg_engine::payload_emit;
 use xyg_engine::pdf;
 use xyg_engine::png_encode;
 use xyg_engine::polar;
@@ -160,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 291;
+pub const ABI_VERSION: u32 = 292;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15353,6 +15354,101 @@ pub extern "C" fn xyg_payload_transition_keys_admit(
     max_rows: usize,
 ) -> i32 {
     lod_plan::payload_transition_keys_admit(has_keys, tier_direct, n_keys, n_marks, max_rows)
+}
+
+/// Segment emit gather orchestration (ABI 292).
+///
+/// Owns errorbar role-map setup plus stem/errorbar decimation from
+/// ``_emit_segments``. ``out_tier`` is ``0`` direct or ``1`` decimated.
+/// ``out_role_maps`` is ``1`` when ``out_sources``/``out_roles`` are written.
+/// ``out_keep_all`` is ``1`` when every segment ships. Returns the output row
+/// count, the required count when buffers are short, or ``usize::MAX``.
+///
+/// # Safety
+/// ``out_tier``, ``out_role_maps``, and ``out_keep_all`` must be writable.
+/// When ``n_segments > 0``, ``out_indices``, ``out_sources``, and ``out_roles``
+/// must hold at least ``n_segments`` elements. ``kind`` must address readable
+/// UTF-8 bytes when ``kind_len`` is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_segments_emit_gather(
+    kind: *const u8,
+    kind_len: usize,
+    n_segments: usize,
+    n_points: usize,
+    px_width: f64,
+    out_tier: *mut i32,
+    out_role_maps: *mut i32,
+    out_keep_all: *mut i32,
+    out_indices: *mut u32,
+    out_sources: *mut u32,
+    out_roles: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_tier.is_null() || out_role_maps.is_null() || out_keep_all.is_null() {
+            return usize::MAX;
+        }
+        if kind_len > 0 && kind.is_null() {
+            return usize::MAX;
+        }
+        if n_segments > 0 && capacity > 0 && out_indices.is_null() {
+            return usize::MAX;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(kind, kind_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return usize::MAX;
+            };
+            text
+        };
+        let cap = capacity.min(n_segments);
+        let mut indices_buf = vec![0u32; cap];
+        let mut sources_buf = vec![0u32; cap];
+        let mut roles_buf = vec![0u32; cap];
+        let mut tier = 0i32;
+        let mut role_maps = 0i32;
+        let mut keep_all = 1i32;
+        let Some(required) = payload_emit::payload_segments_emit_gather(
+            kind_text,
+            n_segments,
+            n_points,
+            px_width,
+            &mut tier,
+            &mut role_maps,
+            &mut keep_all,
+            &mut indices_buf,
+            &mut sources_buf,
+            &mut roles_buf,
+        ) else {
+            return usize::MAX;
+        };
+        if cap < required {
+            return required;
+        }
+        *out_tier = tier;
+        *out_role_maps = role_maps;
+        *out_keep_all = keep_all;
+        if required == 0 {
+            return 0;
+        }
+        if out_indices.is_null() {
+            return usize::MAX;
+        }
+        let indices = std::slice::from_raw_parts_mut(out_indices, cap);
+        indices[..required].copy_from_slice(&indices_buf[..required]);
+        if role_maps != 0 {
+            if out_sources.is_null() || out_roles.is_null() {
+                return usize::MAX;
+            }
+            let sources = std::slice::from_raw_parts_mut(out_sources, cap);
+            let roles = std::slice::from_raw_parts_mut(out_roles, cap);
+            sources[..required].copy_from_slice(&sources_buf[..required]);
+            roles[..required].copy_from_slice(&roles_buf[..required]);
+        }
+        required
+    })
 }
 
 /// Density-overlay sample of implicit ids `0..n` (ABI 205). Owns

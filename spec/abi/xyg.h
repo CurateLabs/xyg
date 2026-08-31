@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 291
-#define XYG_ABI_SIGNATURE_SHA256 "4e60e54149dff3cf7018a657e5d33ab20e0769693663223bf3f40edb6755f9b5"
+#define XYG_ABI_VERSION 292
+#define XYG_ABI_SIGNATURE_SHA256 "1b6302befbcdea991e6996e271c03b5955047d5c1e8bdcfead49f107ac6f3ed8"
 
 #ifdef __cplusplus
 extern "C" {
@@ -168,6 +168,7 @@ size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, 
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_segment_budget(double px_width);
+size_t xyg_payload_segments_emit_gather(const uint8_t * kind, size_t kind_len, size_t n_segments, size_t n_points, double px_width, int32_t * out_tier, int32_t * out_role_maps, int32_t * out_keep_all, uint32_t * out_indices, uint32_t * out_sources, uint32_t * out_roles, size_t capacity);
 int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item);
 int32_t xyg_payload_transition_keys_admit(int32_t has_keys, int32_t tier_direct, size_t n_keys, size_t n_marks, size_t max_rows);
 size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity);

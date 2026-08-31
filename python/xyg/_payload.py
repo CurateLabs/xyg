@@ -819,36 +819,23 @@ class PayloadMixin(_Host):
         if t.x0 is None or t.x1 is None or t.y0 is None or t.y1 is None:
             raise ValueError(f"{t.kind} trace missing segment columns")
         x0v, x1v, y0v, y1v = t.x0.values, t.x1.values, t.y0.values, t.y1.values
-        tier = "direct"
+        gather = kernels.payload_segments_emit_gather(
+            t.kind,
+            len(x0v),
+            int(t.count or 0),
+            px_width,
+        )
+        tier = "decimated" if gather["tier"] == 1 else "direct"
         source_sel: Optional[np.ndarray] = None
         segment_sources: Optional[np.ndarray] = None
         segment_roles: Optional[np.ndarray] = None
-        max_groups = kernels.payload_segment_budget(px_width)
-        if t.kind == "errorbar" and t.count:
-            # Segments ship grouped by role, count per group: 3 groups with
-            # caps (main + two cap blocks), 1 without. Decimate per point
-            # across every group so caps stay attached to their bars.
-            seg_per, remainder = divmod(len(x0v), t.count)
-            if remainder == 0 and seg_per >= 1:
-                role_maps = kernels.payload_errorbar_role_maps(len(x0v), t.count)
-                if role_maps is not None:
-                    segment_sources, segment_roles = role_maps
-                    segment_sources = segment_sources.astype(np.int64, copy=False)
-            keep_all, chosen = kernels.payload_errorbar_indices(len(x0v), t.count, max_groups)
-            if not keep_all:
-                chosen64 = chosen.astype(np.int64, copy=False)
-                x0v, x1v, y0v, y1v = x0v[chosen64], x1v[chosen64], y0v[chosen64], y1v[chosen64]
-                source_sel = chosen64
-                if segment_sources is not None and segment_roles is not None:
-                    segment_sources = segment_sources[chosen64]
-                    segment_roles = segment_roles[chosen64]
-                tier = "decimated"
-        elif t.kind == "stem" and len(x0v) > max_groups:
-            keep_all, chosen = kernels.payload_even_indices(len(x0v), max_groups)
-            if not keep_all:
-                x0v, x1v, y0v, y1v = x0v[chosen], x1v[chosen], y0v[chosen], y1v[chosen]
-                source_sel = chosen.astype(np.int64, copy=False)
-                tier = "decimated"
+        if not gather["keep_all"]:
+            chosen64 = np.asarray(gather["indices"], dtype=np.int64)
+            x0v, x1v, y0v, y1v = x0v[chosen64], x1v[chosen64], y0v[chosen64], y1v[chosen64]
+            source_sel = chosen64
+        if gather["role_maps"]:
+            segment_sources = np.asarray(gather["sources"], dtype=np.int64)
+            segment_roles = np.asarray(gather["roles"], dtype=np.int64)
         finite_sel = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if finite_sel is not None:
             x0v, x1v, y0v, y1v = (
