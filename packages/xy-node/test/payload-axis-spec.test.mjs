@@ -92,3 +92,13 @@ test("buildPayload ships log axis scale like Python _axis_spec", () => {
   assert.equal(spec.x_axis.scale, "log");
   assert.equal(spec.y_axis.scale, undefined);
 });
+
+test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_values: [0, 0.5, 1], domain: [0, 1], format: ".2f" });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_values, [0, 0.5, 1]);
+  assert.deepEqual(spec.x_axis.domain, undefined);
+  assert.equal(spec.x_axis.format, undefined);
+});
