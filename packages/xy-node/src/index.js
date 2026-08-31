@@ -43,6 +43,7 @@ export {
   sceneAnnotationStyleAdmit,
   sceneArraysEqual,
   sceneConstantColorAdmit,
+  sceneChannelConstantCss,
   sceneHiddenOrPerItemAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,

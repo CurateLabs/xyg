@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, polarWedgePoints, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, polarWedgePoints, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneChannelConstantCss, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -2881,4 +2881,13 @@ test("Node frames literal v23 borders for text, attached, and callout label boxe
   assert.ok(new TextDecoder().decode(painter).includes("XYLB\x04"));
   const invalid = new Figure(); invalid.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "bad", style: { color: "#667085", label_border_color: "#000" } }];
   assert.throws(() => invalid.toScene(), /requires color and width/);
+});
+
+test("sceneChannelConstantCss owns constant mode CSS pack", () => {
+  assert.equal(sceneChannelConstantCss("constant", true, "red"), "red");
+  assert.equal(sceneChannelConstantCss("constant", true, ""), "");
+  assert.equal(sceneChannelConstantCss("constant", false, "red"), null);
+  assert.equal(sceneChannelConstantCss("direct_rgba", true, "red"), null);
+  assert.equal(sceneChannelConstantCss("CONSTANT", true, "red"), null);
+  assert.equal(sceneChannelConstantCss("", true, "red"), null);
 });

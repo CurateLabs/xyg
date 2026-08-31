@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_255() -> None:
+def test_abi_version_is_256() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 255
+    assert manifest["abi_version"] == 256
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -178,6 +178,7 @@ def test_abi_version_is_255() -> None:
     assert "xyg_clip_quantize_u8" in names
     assert "xyg_scene_constant_color_admit" in names
     assert "xyg_scene_hidden_or_per_item_admit" in names
+    assert "xyg_scene_channel_constant_css" in names
     assert "xyg_f32_safe_scale" in names
     assert "xyg_scene_figure_support_reason" in names
     assert "xyg_argsort_stable" in names

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 255
-SIGNATURE_SHA256 = "dfa02de3da9aaabc728cb68a4591bbd307f8bd2d5fdd98e825c3fa2a122f7c10"
+ABI_VERSION = 256
+SIGNATURE_SHA256 = "7b05e816ac8df8565cc7a7557fd5451516bbc8fd61d2e320d50aa2c49013849c"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -774,6 +774,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_browser_painter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_channel_constant_css(const uint8_t * mode, size_t mode_len, int32_t has_constant, const uint8_t * constant, size_t constant_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_channel_constant_css
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_constant_color_admit(int32_t has_channel, int32_t constant_ok, int32_t scatter_density, int32_t packs_paint_plane)
     function = lib.xyg_scene_constant_color_admit
     function.restype = ctypes.c_int32

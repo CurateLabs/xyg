@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneChannelConstantCss, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -184,6 +184,27 @@ export function sceneConstantColorAdmit(hasChannel, constantOk, scatterDensity, 
   );
   if (code === -2) throw new RangeError("invalid scene-constant-color-admit request");
   return code;
+}
+
+/** Scene channel-constant CSS (ABI 256). Hosts still pick `.mode` / `.constant`. */
+export function sceneChannelConstantCss(mode, hasConstant, constant) {
+  const modeBytes = new TextEncoder().encode(String(mode ?? ""));
+  const constBytes = hasConstant ? new TextEncoder().encode(String(constant ?? "")) : new Uint8Array();
+  const out = new Uint8Array(constBytes.length);
+  const code = Number(
+    xySceneChannelConstantCss(
+      modeBytes.length ? u8Ptr(modeBytes) : 0,
+      BigInt(modeBytes.length),
+      hasConstant ? 1 : 0,
+      constBytes.length ? u8Ptr(constBytes) : 0,
+      BigInt(constBytes.length),
+      out.length ? u8Ptr(out) : 0,
+      BigInt(out.length),
+    ),
+  );
+  if (code === -2) throw new RangeError("invalid scene-channel-constant-css request");
+  if (code < 0) return null;
+  return new TextDecoder().decode(out.subarray(0, code));
 }
 
 /** Scene hidden-or-per-item admit (ABI 253). Field picking stays host. */

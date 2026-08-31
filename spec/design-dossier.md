@@ -1665,6 +1665,7 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
+
 ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
 `label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
 Node `packArrowStyle` cannot drift. ChartView still parses those strings
@@ -1672,6 +1673,10 @@ until WASM. Hosts still coerce style keys and elbow truthiness.
 ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
 packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
 drift. Hosts still copy the original kind string.
+ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
+(`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
+and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
+`.constant` vs `.color` and skip null channels.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -1712,7 +1717,7 @@ Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colo
 Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
 Node XYHF heatmap/density colormap uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
 Node `constantMarkColor` uses `color_ch.constant` only (same as Python); string channels, `channel.color`, and `trace.color` are not fallbacks.
-Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
+Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks. Mode/has_constant admit is ABI 254.
 Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
 Node `sourceColorCss` uses `color_ch` only (same as Python); `trace.color` is not a source-channel fallback.
 Node `resolveColorChannel` constant CSS uses `.constant` (same as Python `ColorChannel`); `composeRibbon` writes `color_ch` / `color2_ch`.
@@ -1989,6 +1994,7 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
+
 ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
 `label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
 Node `packArrowStyle` cannot drift. ChartView still parses those strings
@@ -1996,6 +2002,10 @@ until WASM. Hosts still coerce style keys and elbow truthiness.
 ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
 packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
 drift. Hosts still copy the original kind string.
+ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
+(`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
+and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
+`.constant` vs `.color` and skip null channels.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -2036,7 +2046,7 @@ Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colo
 Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
 Node XYHF heatmap/density colormap uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
 Node `constantMarkColor` uses `color_ch.constant` only (same as Python); string channels, `channel.color`, and `trace.color` are not fallbacks.
-Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
+Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks. Mode/has_constant admit is ABI 254.
 Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
 Node `sourceColorCss` uses `color_ch` only (same as Python); `trace.color` is not a source-channel fallback.
 Node `resolveColorChannel` constant CSS uses `.constant` (same as Python `ColorChannel`); `composeRibbon` writes `color_ch` / `color2_ch`.
