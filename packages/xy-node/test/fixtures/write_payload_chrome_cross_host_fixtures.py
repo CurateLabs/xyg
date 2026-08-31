@@ -32,6 +32,9 @@ CASE_NAMES = (
     "title_options_defaults",
     "colorbar_right",
     "colorbar_bottom_minor",
+    "extra_legends_lower_left",
+    "annotation_text",
+    "annotation_rule",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -64,6 +67,20 @@ def _build_case(name: str) -> Figure:
             "side": "bottom",
             "minor_ticks": True,
         }
+    if name == "extra_legends_lower_left":
+        fig.extra_legends = [{"loc": "lower left", "title": "Extra"}]
+    if name == "annotation_text":
+        fig.annotations = [{"kind": "text", "text": "hi", "x": 0, "y": 1}]
+    if name == "annotation_rule":
+        fig.annotations = [
+            {
+                "kind": "rule",
+                "axis": "x",
+                "value": 1.0,
+                "text": "line",
+                "style": {"color": "#ff0000", "width": 2.0},
+            }
+        ]
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -89,12 +106,14 @@ def main() -> None:
                 "legend": spec.get("legend"),
                 "title_options": spec.get("title_options"),
                 "colorbar": spec.get("colorbar"),
+                "extra_legends": spec.get("extra_legends"),
+                "annotations": spec.get("annotations"),
                 "dom": spec.get("dom"),
             }
         )
     payload = {
         "schema": "xyg.payload-chrome-cross-host/v1",
-        "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, and _dom_spec",
+        "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, extra_legends, annotations, and _dom_spec",
         "protocol": PROTOCOL_VERSION,
         "abi_version": int(_native.ABI_VERSION),
         "cases": cases,

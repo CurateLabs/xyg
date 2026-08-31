@@ -1,9 +1,9 @@
 """Cross-host buildPayload chrome parity: Python vs @curatelabs/xyg-node.
 
 Compares top-level ``show_legend``, ``legend`` (from ``legend_options``),
-``title_options``, ``colorbar`` (from ``colorbar_options``), and partial
-``dom`` (``class_name``, ``class_names``, ``style`` only — not
-``chrome_styles`` → ``dom.styles``).
+``title_options``, ``colorbar`` (from ``colorbar_options``), ``extra_legends``,
+``annotations``, and partial ``dom`` (``class_name``, ``class_names``, ``style``
+only — not ``chrome_styles`` → ``dom.styles``).
 
 Run::
 
@@ -49,6 +49,9 @@ CASE_NAMES = (
     "title_options_defaults",
     "colorbar_right",
     "colorbar_bottom_minor",
+    "extra_legends_lower_left",
+    "annotation_text",
+    "annotation_rule",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -98,6 +101,20 @@ def _build_case(name: str) -> Figure:
             "side": "bottom",
             "minor_ticks": True,
         }
+    if name == "extra_legends_lower_left":
+        fig.extra_legends = [{"loc": "lower left", "title": "Extra"}]
+    if name == "annotation_text":
+        fig.annotations = [{"kind": "text", "text": "hi", "x": 0, "y": 1}]
+    if name == "annotation_rule":
+        fig.annotations = [
+            {
+                "kind": "rule",
+                "axis": "x",
+                "value": 1.0,
+                "text": "line",
+                "style": {"color": "#ff0000", "width": 2.0},
+            }
+        ]
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -118,6 +135,8 @@ def _chrome_entry(spec: dict) -> dict:
         "legend": spec.get("legend"),
         "title_options": spec.get("title_options"),
         "colorbar": spec.get("colorbar"),
+        "extra_legends": spec.get("extra_legends"),
+        "annotations": spec.get("annotations"),
         "dom": spec.get("dom"),
     }
 
@@ -170,6 +189,8 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "legend": entry.get("legend"),
         "title_options": entry.get("title_options"),
         "colorbar": entry.get("colorbar"),
+        "extra_legends": entry.get("extra_legends"),
+        "annotations": entry.get("annotations"),
         "dom": entry["dom"],
     }
 
@@ -183,6 +204,8 @@ def test_node_live_matches_python(case_name: str, node_chrome_golden: dict) -> N
         "legend": node_case.get("legend"),
         "title_options": node_case.get("title_options"),
         "colorbar": node_case.get("colorbar"),
+        "extra_legends": node_case.get("extra_legends"),
+        "annotations": node_case.get("annotations"),
         "dom": node_case["dom"],
     }
 
@@ -208,6 +231,8 @@ def test_write_fixtures_and_match_node(node_chrome_golden: dict) -> None:
         assert case.get("legend") == node_case.get("legend")
         assert case.get("title_options") == node_case.get("title_options")
         assert case.get("colorbar") == node_case.get("colorbar")
+        assert case.get("extra_legends") == node_case.get("extra_legends")
+        assert case.get("annotations") == node_case.get("annotations")
         assert case["dom"] == node_case["dom"]
 
 
