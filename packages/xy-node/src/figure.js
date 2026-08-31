@@ -1614,7 +1614,7 @@ export class Figure {
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
     }
-    if (attach.attachTicks && opts.tick_values != null) {
+    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_values != null) {
       spec.tick_values = [...opts.tick_values];
     }
     if (attach.attachThetaUnit) {
