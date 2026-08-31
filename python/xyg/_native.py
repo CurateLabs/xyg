@@ -11867,6 +11867,117 @@ def payload_nonxy_emit_plan(
     }
 
 
+PAYLOAD_BAR_HIST_KIND_HISTOGRAM = 0
+PAYLOAD_BAR_HIST_KIND_BAR_COMPACT = 1
+
+PAYLOAD_BAR_ORIENTATION_VERTICAL = 0
+PAYLOAD_BAR_ORIENTATION_HORIZONTAL = 1
+
+PAYLOAD_VALUE_AXIS_Y = 0
+PAYLOAD_VALUE_AXIS_X = 1
+
+_PAYLOAD_BAR_HIST_KIND_BY_NAME: dict[str, int] = {
+    "histogram": PAYLOAD_BAR_HIST_KIND_HISTOGRAM,
+    "bar_compact": PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+}
+
+_PAYLOAD_BAR_ORIENTATION_BY_NAME: dict[str, int] = {
+    "vertical": PAYLOAD_BAR_ORIENTATION_VERTICAL,
+    "horizontal": PAYLOAD_BAR_ORIENTATION_HORIZONTAL,
+}
+
+_PAYLOAD_VALUE_AXIS_BY_CODE: dict[int, str] = {
+    PAYLOAD_VALUE_AXIS_Y: "y",
+    PAYLOAD_VALUE_AXIS_X: "x",
+}
+
+
+def payload_bar_hist_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    compact: bool = True,
+    orientation: str = "vertical",
+) -> dict[str, bool | int | str]:
+    """Histogram / bar-compact skeleton via ``xyg_payload_bar_hist_emit_plan`` (ABI 297).
+
+    Owns rect-vs-nested-bar selection, gathered ``n_marks``, palette default,
+    axis ship scales, compact-bar pos/value scales, trace-channel attach
+    slot/styles, and transition wrap policy.
+    """
+    kind_i = _PAYLOAD_BAR_HIST_KIND_BY_NAME.get(kind)
+    if kind_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan kind {kind!r}")
+    orientation_i = _PAYLOAD_BAR_ORIENTATION_BY_NAME.get(orientation)
+    if kind_i == PAYLOAD_BAR_HIST_KIND_BAR_COMPACT and orientation_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
+    if kind_i == PAYLOAD_BAR_HIST_KIND_HISTOGRAM:
+        orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
+    emit_bar = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    pos_ship_scale = ctypes.c_int32(-1)
+    value_ship_scale = ctypes.c_int32(-1)
+    value_axis = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_bar_hist_emit_plan(
+        kind_i,
+        1 if compact else 0,
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        int(orientation_i),
+        ctypes.byref(emit_bar),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(pos_ship_scale),
+        ctypes.byref(value_ship_scale),
+        ctypes.byref(value_axis),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_bar_hist_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+        ("pos", int(pos_ship_scale.value)),
+        ("value", int(value_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_bar_hist_emit_plan {name} ship scale")
+    value_axis_code = int(value_axis.value)
+    if value_axis_code not in _PAYLOAD_VALUE_AXIS_BY_CODE:
+        raise ValueError("invalid payload_bar_hist_emit_plan value axis")
+    return {
+        "emit_bar": int(emit_bar.value) == 1,
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "pos_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(pos_ship_scale.value)],
+        "value_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(value_ship_scale.value)],
+        "value_axis": _PAYLOAD_VALUE_AXIS_BY_CODE[value_axis_code],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

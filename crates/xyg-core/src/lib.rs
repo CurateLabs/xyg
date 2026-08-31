@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 296;
+pub const ABI_VERSION: u32 = 297;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15729,6 +15729,105 @@ pub unsafe extern "C" fn xyg_payload_nonxy_emit_plan(
         *out_apply_palette_default = apply_palette_default;
         *out_x_ship_scale = x_ship_scale;
         *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
+        1
+    })
+}
+
+/// Histogram / bar-compact emit skeleton orchestration (ABI 297).
+///
+/// ``kind``: ``0`` histogram (rect geometry), ``1`` bar-compact. For bar-compact,
+/// ``compact`` is the admit flag; ``0`` selects rect fallback. ``orientation``:
+/// ``0`` vertical, ``1`` horizontal (compact bar only). Hosts still run admit,
+/// finite gather, and column shipping.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_bar_hist_emit_plan(
+    kind: i32,
+    compact: i32,
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    orientation: i32,
+    out_emit_bar: *mut i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_pos_ship_scale: *mut i32,
+    out_value_ship_scale: *mut i32,
+    out_value_axis: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_emit_bar.is_null()
+            || out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_pos_ship_scale.is_null()
+            || out_value_ship_scale.is_null()
+            || out_value_axis.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+        {
+            return 0;
+        }
+        let mut emit_bar = 0i32;
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut pos_ship_scale = 0i32;
+        let mut value_ship_scale = 0i32;
+        let mut value_axis = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let ok = payload_emit::payload_bar_hist_emit_plan(
+            kind,
+            compact,
+            n_marks,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            orientation,
+            &mut emit_bar,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut pos_ship_scale,
+            &mut value_ship_scale,
+            &mut value_axis,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_emit_bar = emit_bar;
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_pos_ship_scale = pos_ship_scale;
+        *out_value_ship_scale = value_ship_scale;
+        *out_value_axis = value_axis;
         *out_channel_slot = channel_slot;
         *out_include_trace_styles = include_trace_styles;
         *out_attach_transition = attach_transition;
