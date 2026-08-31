@@ -324,40 +324,25 @@ test("_emitScatter ships animation via payload base-entry plan", () => {
   assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
-test("_emitRibbon skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
-  // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
-  // ribbon encode ships the short list. Recorded emit-ribbon-tooltip-len
-  // stay-host.
+test("_emitRibbon rejects tooltip_rows length mismatch", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1]);
   fig.traces[0].tooltip_rows = [{ id: "a" }, { id: "b" }];
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].tooltip_rows.length, 2);
+  assert.throws(() => fig.buildPayload(), /tooltip rows must match geometry/);
 });
 
-test("_emitSegments skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
-  // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
-  // segments encode ships the short list. Recorded emit-segments-tooltip-len
-  // stay-host.
+test("_emitSegments rejects tooltip_rows length mismatch", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
   fig.traces[0].tooltip_rows = [{ id: "a" }];
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].tooltip_rows.length, 1);
+  assert.throws(() => fig.buildPayload(), /tooltip rows must match geometry/);
 });
 
-test("_emitScatter skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
-  // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
-  // scatter encode ships the short list. Recorded emit-scatter-tooltip-len
-  // stay-host.
+test("_emitScatter rejects tooltip_rows length mismatch", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.traces[0].tooltip_rows = [{ id: "a" }];
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "scatter");
-  assert.equal(spec.traces[0].tooltip_rows.length, 1);
+  assert.throws(() => fig.buildPayload(), /tooltip rows must match geometry/);
 });
 
 test("_emitRibbon uses _defaultStyled when style.color is missing", () => {
