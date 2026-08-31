@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 273;
-export const SIGNATURE_SHA256 = "c8d13068f682fecb0a74050501ab449db54b8fbbb15b8d11ba67d2cede34807a";
+export const ABI_VERSION = 274;
+export const SIGNATURE_SHA256 = "2536a081ea0961a90d68faf3f766784abf86b5cd3d48271ea589d9ebf8f89be5";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -139,6 +139,7 @@ export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
 export let xyPaintEffectiveRgba;
+export let xyPayloadBarCompactAdmit;
 export let xyPayloadErrorbarIndices;
 export let xyPayloadErrorbarRoleKeys;
 export let xyPayloadEvenIndices;
@@ -507,6 +508,7 @@ export function bindGeneratedAbi(lib) {
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
+  xyPayloadBarCompactAdmit = lib.func("int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)");
   xyPayloadErrorbarIndices = lib.func("size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadErrorbarRoleKeys = lib.func("size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const uint32_t * point_keys_lo, const uint32_t * point_keys_hi, const uint32_t * segment_sources, const uint32_t * segment_roles, uint32_t * out_lo, uint32_t * out_hi, int32_t * out_collision)");
   xyPayloadEvenIndices = lib.func("size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)");

@@ -1318,6 +1318,17 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_bar_compact_admit.restype = ctypes.c_int32
+    lib.xyg_payload_bar_compact_admit.argtypes = [
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4737,6 +4748,30 @@ def main() -> None:
         and role_out_lo[2] == (10 ^ 0x9E3779B9)
         and role_out_hi[3] == (40 ^ 0x85EBCA6B),
         "payload_errorbar_role_keys xor mix",
+    )
+    bar_widths = array("d", [0.8, 0.8, 0.8])
+    bar_value0 = array("d", [0.0, 0.0, 0.0])
+    bar_out_width = ctypes.c_double(0.0)
+    bar_out_value0 = ctypes.c_double(0.0)
+    bar_has_value0 = ctypes.c_int32(-1)
+    bar_compact = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_bar_compact_admit(
+            3,
+            _ptr(bar_widths, ctypes.c_double),
+            3,
+            _ptr(bar_value0, ctypes.c_double),
+            ctypes.byref(bar_out_width),
+            ctypes.byref(bar_out_value0),
+            ctypes.byref(bar_has_value0),
+            ctypes.byref(bar_compact),
+        )
+        == 1
+        and bar_compact.value == 1
+        and abs(bar_out_width.value - 0.8) < 1e-12
+        and bar_has_value0.value == 1
+        and bar_out_value0.value == 0.0,
+        "payload_bar_compact_admit uniform width",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

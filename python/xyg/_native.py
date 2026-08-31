@@ -11533,6 +11533,40 @@ def payload_errorbar_role_keys(
     return np.column_stack([out_lo, out_hi])
 
 
+def payload_bar_compact_admit(
+    widths: npt.NDArray[np.float64],
+    value0: npt.NDArray[np.float64],
+) -> tuple[bool, float, bool, float]:
+    """Bar/column compact admit via ``xyg_payload_bar_compact_admit`` (ABI 274).
+
+    Returns ``(compact, width, has_value0_const, value0_const)``.
+    """
+    n_widths = int(widths.shape[0])
+    n_value0 = int(value0.shape[0])
+    out_width = ctypes.c_double(float("nan"))
+    out_value0_const = ctypes.c_double(float("nan"))
+    out_has_value0_const = ctypes.c_int32(-1)
+    out_compact = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_bar_compact_admit(
+        n_widths,
+        widths.ctypes.data if n_widths else 0,
+        n_value0,
+        value0.ctypes.data if n_value0 else 0,
+        ctypes.byref(out_width),
+        ctypes.byref(out_value0_const),
+        ctypes.byref(out_has_value0_const),
+        ctypes.byref(out_compact),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_bar_compact_admit arguments")
+    return (
+        int(out_compact.value) == 1,
+        float(out_width.value),
+        int(out_has_value0_const.value) == 1,
+        float(out_value0_const.value),
+    )
+
+
 def payload_sample_target_indices(
     n: int,
     target: int,

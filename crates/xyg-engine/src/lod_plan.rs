@@ -434,7 +434,7 @@ pub fn payload_errorbar_indices(
 const ERRORBAR_ROLE_XOR_LO: u32 = 0x9E3779B9;
 const ERRORBAR_ROLE_XOR_HI: u32 = 0x85EBCA6B;
 
-/// Errorbar role-qualified transition keys (ABI 273).
+/// Errorbar role-qualified transition keys (ABI 257).
 ///
 /// Hosts pass per-segment point indices and role ids after decimation gather.
 /// Returns ``None`` when layouts are invalid; returns ``Some(Err(true))`` when
@@ -475,6 +475,60 @@ pub fn payload_errorbar_role_keys(
         out_hi[i] = hi;
     }
     Some(Ok(n))
+}
+
+const PAYLOAD_BAR_WIDTH_RTOL: f64 = 1e-5;
+const PAYLOAD_BAR_WIDTH_ATOL: f64 = 1e-8;
+
+fn payload_f64_allclose(a: f64, b: f64) -> bool {
+    (a - b).abs() <= PAYLOAD_BAR_WIDTH_ATOL + PAYLOAD_BAR_WIDTH_RTOL * b.abs()
+}
+
+/// Bar/column compact emit admit (ABI 274).
+///
+/// Hosts pass bar edge widths and baseline ``value0`` columns after finite
+/// filtering. ``out_compact`` is ``1`` when uniform finite positive width allows
+/// the nested ``bar`` spec; ``0`` means fall back to per-rect geometry.
+/// ``out_has_value0_const`` is ``1`` when every baseline is finite and equal.
+pub fn payload_bar_compact_admit(
+    widths: &[f64],
+    value0: &[f64],
+    out_width: &mut f64,
+    out_value0_const: &mut f64,
+    out_has_value0_const: &mut i32,
+    out_compact: &mut i32,
+) -> i32 {
+    *out_has_value0_const = 0;
+    *out_value0_const = f64::NAN;
+    let width = if widths.is_empty() {
+        1.0
+    } else {
+        let first = widths[0];
+        if !first.is_finite() || first <= 0.0 {
+            *out_width = f64::NAN;
+            *out_compact = 0;
+            return 1;
+        }
+        if !widths
+            .iter()
+            .all(|&w| payload_f64_allclose(w, first))
+        {
+            *out_width = f64::NAN;
+            *out_compact = 0;
+            return 1;
+        }
+        first
+    };
+    *out_width = width;
+    *out_compact = 1;
+    if !value0.is_empty() {
+        let first = value0[0];
+        if value0.iter().all(|v| v.is_finite()) && value0.iter().all(|&v| v == first) {
+            *out_has_value0_const = 1;
+            *out_value0_const = first;
+        }
+    }
+    1
 }
 
 /// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
@@ -838,6 +892,51 @@ mod tests {
             ),
             Some(Err(true))
         );
+    }
+
+    #[test]
+    fn payload_bar_compact_admit_uniform_width_and_const_baseline() {
+        let mut width = 0.0;
+        let mut value0_const = 0.0;
+        let mut has_value0_const = 0;
+        let mut compact = 0;
+        assert_eq!(
+            payload_bar_compact_admit(
+                &[0.8, 0.8, 0.8],
+                &[0.0, 0.0, 0.0],
+                &mut width,
+                &mut value0_const,
+                &mut has_value0_const,
+                &mut compact,
+            ),
+            1
+        );
+        assert_eq!(compact, 1);
+        assert_eq!(width, 0.8);
+        assert_eq!(has_value0_const, 1);
+        assert_eq!(value0_const, 0.0);
+    }
+
+    #[test]
+    fn payload_bar_compact_admit_rejects_non_uniform_width() {
+        let mut width = 0.0;
+        let mut value0_const = 0.0;
+        let mut has_value0_const = 0;
+        let mut compact = 0;
+        assert_eq!(
+            payload_bar_compact_admit(
+                &[0.8, 0.9],
+                &[],
+                &mut width,
+                &mut value0_const,
+                &mut has_value0_const,
+                &mut compact,
+            ),
+            1
+        );
+        assert_eq!(compact, 0);
+        assert!(width.is_nan());
+        assert_eq!(has_value0_const, 0);
     }
 
     #[test]
