@@ -1318,6 +1318,14 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_errorbar_role_maps.restype = ctypes.c_int32
+    lib.xyg_payload_errorbar_role_maps.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_bar_compact_admit.restype = ctypes.c_int32
     lib.xyg_payload_bar_compact_admit.argtypes = [
         ctypes.c_size_t,
@@ -4767,6 +4775,23 @@ def main() -> None:
         and role_out_lo[2] == (10 ^ 0x9E3779B9)
         and role_out_hi[3] == (40 ^ 0x85EBCA6B),
         "payload_errorbar_role_keys xor mix",
+    )
+    role_map_sources = (ctypes.c_uint32 * 6)(*([0] * 6))
+    role_map_roles = (ctypes.c_uint32 * 6)(*([0] * 6))
+    role_map_applicable = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_errorbar_role_maps(
+            6,
+            3,
+            role_map_sources,
+            role_map_roles,
+            ctypes.byref(role_map_applicable),
+        )
+        == 1
+        and role_map_applicable.value == 1
+        and list(role_map_sources) == [0, 1, 2, 0, 1, 2]
+        and list(role_map_roles) == [0, 0, 0, 1, 1, 1],
+        "payload_errorbar_role_maps tile repeat",
     )
     bar_widths = array("d", [0.8, 0.8, 0.8])
     bar_value0 = array("d", [0.0, 0.0, 0.0])
