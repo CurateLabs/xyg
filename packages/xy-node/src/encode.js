@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
+import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
 
 
 export const PROTOCOL_VERSION = 12;
@@ -4309,6 +4309,348 @@ export function shipDensityGridBuffers(density, pw, gridPlan, buffers) {
       density[buf.registryKey] = pw.shipU8(values);
     }
   }
+}
+
+/** Pyramid/tile-store resource kind for ABI 316 density grid materialize. */
+export const DENSITY_RESOURCE_NONE = 0;
+export const DENSITY_RESOURCE_PYRAMID = 1;
+export const DENSITY_RESOURCE_TILE_STORE = 2;
+
+const PAYLOAD_DENSITY_GRID_MATERIALIZE_IN_BYTES = 344;
+const PAYLOAD_DENSITY_GRID_MATERIALIZE_OUT_BYTES = 64;
+const DENSITY_BINNING_CAP = 64;
+
+function readPayloadDensityGridMaterializeOut(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let off = 0;
+  const gmax = view.getFloat64(off, true);
+  off += 8;
+  const visible = Number(view.getBigUint64(off, true));
+  off += 8;
+  const gridFromPyramid = view.getUint32(off, true) === 1;
+  off += 4;
+  const hasPyramidRgba = view.getUint32(off, true) === 1;
+  off += 4;
+  const pyramidLevel = view.getInt32(off, true);
+  off += 4;
+  const fromTiles = view.getUint32(off, true) === 1;
+  off += 4;
+  const encodedLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const rgbaLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const sampleSelLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const visibleSelLen = Number(view.getBigUint64(off, true));
+  return {
+    gmax,
+    visible,
+    gridFromPyramid,
+    hasPyramidRgba,
+    pyramidLevel,
+    fromTiles,
+    encodedLen,
+    rgbaLen,
+    sampleSelLen,
+    visibleSelLen,
+  };
+}
+
+function densityBinColorPtrs(source, n) {
+  if (source == null || n <= 0) {
+    return { idxPtr: 0, rgbaPtr: 0, lutPtr: 0, lutLen: 0n };
+  }
+  if (source.rgba != null) {
+    const rgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    if (rgba.length !== n * 4) {
+      throw new RangeError("payloadDensityGridMaterialize rgba length must be 4 * n");
+    }
+    return { idxPtr: 0, rgbaPtr: u8Ptr(rgba), lutPtr: 0, lutLen: 0n };
+  }
+  if (source.idx != null && source.lut != null) {
+    const idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+    const lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    if (idx.length !== n) {
+      throw new RangeError("payloadDensityGridMaterialize idx length must match geometry");
+    }
+    if (lut.length < 4 || lut.length % 4 !== 0 || lut.length / 4 > 256) {
+      throw new RangeError("payloadDensityGridMaterialize lut must be 1..256 RGBA8 entries");
+    }
+    return {
+      idxPtr: u8Ptr(idx),
+      rgbaPtr: 0,
+      lutPtr: u8Ptr(lut),
+      lutLen: BigInt(lut.length / 4),
+    };
+  }
+  return { idxPtr: 0, rgbaPtr: 0, lutPtr: 0, lutLen: 0n };
+}
+
+function packPayloadDensityGridMaterializeIn(fields) {
+  const buf = Buffer.alloc(PAYLOAD_DENSITY_GRID_MATERIALIZE_IN_BYTES);
+  let off = 0;
+  const writeI32 = (value) => {
+    buf.writeInt32LE(Number(value), off);
+    off += 4;
+  };
+  const writeF64 = (value) => {
+    buf.writeDoubleLE(Number(value), off);
+    off += 8;
+  };
+  const writeU64 = (value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+    off += 8;
+  };
+  const writeSize = (value) => {
+    writeU64(value);
+  };
+  writeI32(fields.cartesian);
+  writeI32(fields.xLinear);
+  writeI32(fields.yLinear);
+  writeI32(fields.categorical);
+  writeI32(fields.compactCategorical);
+  writeI32(fields.stratifiedCounts);
+  writeI32(fields.xHasNulls);
+  writeI32(fields.yHasNulls);
+  writeI32(fields.pointOverlay);
+  writeI32(fields.gridFromPyramid);
+  writeI32(fields.xMemmapped);
+  writeI32(fields.yMemmapped);
+  writeI32(fields.hasPyramidResource);
+  writeI32(fields.forceBin2d);
+  writeI32(fields.forcePyramid);
+  writeI32(fields.colorMode);
+  writeF64(fields.xMin);
+  writeF64(fields.xMax);
+  writeF64(fields.yMin);
+  writeF64(fields.yMax);
+  writeF64(fields.xr0);
+  writeF64(fields.xr1);
+  writeF64(fields.yr0);
+  writeF64(fields.yr1);
+  writeF64(fields.bx0);
+  writeF64(fields.bx1);
+  writeF64(fields.by0);
+  writeF64(fields.by1);
+  writeF64(fields.xC0);
+  writeF64(fields.xC1);
+  writeF64(fields.yC0);
+  writeF64(fields.yC1);
+  writeU64(fields.nPoints);
+  writeSize(fields.w);
+  writeSize(fields.h);
+  writeSize(fields.len);
+  writeI32(fields.pyramidAttempt);
+  writeI32(fields.pyramidResource);
+  writeU64(fields.pyramidHandle);
+  writeI32(fields.pyrColored);
+  writeSize(fields.maxUpsample);
+  writeSize(fields.tileUpsample);
+  writeI32(fields.pyramidNoRescan);
+  writeI32(fields.needsPyramidSample);
+  writeI32(fields.pyramidSampleStratified);
+  writeSize(fields.nColorCounts);
+  writeSize(fields.colorLutLen);
+  writeI32(fields.shipMeanColor);
+  writeSize(fields.binningCap);
+  writeSize(fields.encodedCap);
+  writeSize(fields.rgbaCap);
+  writeSize(fields.sampleSelCap);
+  writeSize(fields.visibleSelCap);
+  return buf;
+}
+
+/** Density grid materialize via `xyg_payload_density_grid_materialize` (ABI 316). */
+export function payloadDensityGridMaterialize({
+  emitPlan,
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  xHasNulls = false,
+  yHasNulls = false,
+  pointOverlay = true,
+  xMemmapped = false,
+  yMemmapped = false,
+  hasPyramidResource = false,
+  forceBin2d = false,
+  forcePyramid = false,
+  xMin = 0,
+  xMax = 1,
+  yMin = 0,
+  yMax = 1,
+  xr0 = 0,
+  xr1 = 1,
+  yr0 = 0,
+  yr1 = 1,
+  bx0 = 0,
+  bx1 = 1,
+  by0 = 0,
+  by1 = 1,
+  nPoints = 0,
+  w = DENSITY_GRID[0],
+  h = DENSITY_GRID[1],
+  xRaw,
+  yRaw,
+  bx,
+  by,
+  pyramidAttempt = false,
+  pyramidResource = DENSITY_RESOURCE_NONE,
+  pyramidHandle = 0n,
+  pyrColored = false,
+  maxUpsample = 2,
+  tileUpsample = 2,
+  pyramidNoRescan = false,
+  needsPyramidSample = false,
+  pyramidSampleStratified = false,
+  colorCodes = null,
+  colorCounts = null,
+  binColors = null,
+  shipMeanColor = false,
+} = {}) {
+  const xa = asF64Array(xRaw, "x");
+  const ya = asF64Array(yRaw, "y");
+  const bxa = asF64Array(bx, "bx");
+  const bya = asF64Array(by, "by");
+  const len = xa.length;
+  if (len !== ya.length || len !== bxa.length || len !== bya.length) {
+    throw new RangeError("payloadDensityGridMaterialize geometry length mismatch");
+  }
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const cells = ww * hh;
+  const outBinning = new Uint8Array(DENSITY_BINNING_CAP);
+  const outEncoded = new Uint8Array(cells);
+  const outRgba = new Uint8Array(cells * 4);
+  const outSampleSel = new Uint32Array(len);
+  const outVisibleSel = new Uint32Array(len);
+  const summary = new Uint8Array(PAYLOAD_DENSITY_GRID_MATERIALIZE_OUT_BYTES);
+  const plan = emitPlan ?? {};
+  let codesPtr = 0;
+  if (colorCodes != null) {
+    const codes = colorCodes instanceof Uint8Array ? colorCodes : Uint8Array.from(colorCodes);
+    if (codes.length !== len) {
+      throw new RangeError("payloadDensityGridMaterialize color codes length must match geometry");
+    }
+    codesPtr = len ? u8Ptr(codes) : 0;
+  }
+  let countsPtr = 0;
+  let nColorCounts = 0;
+  if (colorCounts != null) {
+    const counts = colorCounts instanceof BigUint64Array
+      ? colorCounts
+      : BigUint64Array.from(colorCounts, (v) => BigInt(v));
+    if (counts.length === 0) {
+      throw new RangeError("payloadDensityGridMaterialize color counts must be non-empty");
+    }
+    countsPtr = pointer(counts, "uint64_t *");
+    nColorCounts = counts.length;
+  }
+  const colorPtrs = densityBinColorPtrs(binColors, len);
+  const input = packPayloadDensityGridMaterializeIn({
+    cartesian: cartesian ? 1 : 0,
+    xLinear: xLinear ? 1 : 0,
+    yLinear: yLinear ? 1 : 0,
+    categorical: plan.categorical ? 1 : 0,
+    compactCategorical: plan.compactCategorical ? 1 : 0,
+    stratifiedCounts: plan.stratifiedCounts ? 1 : 0,
+    xHasNulls: xHasNulls ? 1 : 0,
+    yHasNulls: yHasNulls ? 1 : 0,
+    pointOverlay: pointOverlay ? 1 : 0,
+    gridFromPyramid: 0,
+    xMemmapped: xMemmapped ? 1 : 0,
+    yMemmapped: yMemmapped ? 1 : 0,
+    hasPyramidResource: hasPyramidResource ? 1 : 0,
+    forceBin2d: forceBin2d ? 1 : 0,
+    forcePyramid: forcePyramid ? 1 : 0,
+    colorMode: plan.colorMode ?? 0,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    xr0,
+    xr1,
+    yr0,
+    yr1,
+    bx0,
+    bx1,
+    by0,
+    by1,
+    xC0: plan.xC0 ?? 0,
+    xC1: plan.xC1 ?? 1,
+    yC0: plan.yC0 ?? 0,
+    yC1: plan.yC1 ?? 1,
+    nPoints,
+    w: ww,
+    h: hh,
+    len,
+    pyramidAttempt: pyramidAttempt ? 1 : 0,
+    pyramidResource,
+    pyramidHandle,
+    pyrColored: pyrColored ? 1 : 0,
+    maxUpsample,
+    tileUpsample,
+    pyramidNoRescan: pyramidNoRescan ? 1 : 0,
+    needsPyramidSample: needsPyramidSample ? 1 : 0,
+    pyramidSampleStratified: pyramidSampleStratified ? 1 : 0,
+    nColorCounts,
+    colorLutLen: Number(colorPtrs.lutLen),
+    shipMeanColor: shipMeanColor ? 1 : 0,
+    binningCap: DENSITY_BINNING_CAP,
+    encodedCap: cells,
+    rgbaCap: outRgba.length,
+    sampleSelCap: len,
+    visibleSelCap: len,
+  });
+  const code = Number(xyPayloadDensityGridMaterialize(
+    input,
+    len ? f64Ptr(xa) : 0,
+    len ? f64Ptr(ya) : 0,
+    len ? f64Ptr(bxa) : 0,
+    len ? f64Ptr(bya) : 0,
+    codesPtr,
+    countsPtr,
+    colorPtrs.idxPtr,
+    colorPtrs.rgbaPtr,
+    colorPtrs.lutPtr,
+    u8Ptr(outBinning),
+    u8Ptr(outEncoded),
+    u8Ptr(outRgba),
+    len ? u32Ptr(outSampleSel) : 0,
+    len ? u32Ptr(outVisibleSel) : 0,
+    u8Ptr(summary),
+  ));
+  if (code === -1) {
+    throw new RangeError("invalid payload-density-grid-materialize request");
+  }
+  if (code === -2) {
+    throw new Error("xyg_payload_density_grid_materialize hit an unexpected grid path");
+  }
+  if (code === -3) {
+    throw new Error("xyg_payload_density_grid_materialize stratified sample failed");
+  }
+  if (code !== 0) {
+    throw new Error(`xyg_payload_density_grid_materialize failed (${code})`);
+  }
+  const parsed = readPayloadDensityGridMaterializeOut(summary);
+  let binning = "";
+  for (let idx = 0; idx < outBinning.length; idx += 1) {
+    if (outBinning[idx] === 0) break;
+    binning += String.fromCharCode(outBinning[idx]);
+  }
+  return {
+    encoded: outEncoded.subarray(0, parsed.encodedLen),
+    max: parsed.gmax,
+    rgba: parsed.rgbaLen > 0 ? outRgba.subarray(0, parsed.rgbaLen) : null,
+    sampleSel: parsed.sampleSelLen > 0 ? outSampleSel.slice(0, parsed.sampleSelLen) : null,
+    visibleSel: parsed.visibleSelLen > 0 ? outVisibleSel.slice(0, parsed.visibleSelLen) : null,
+    visible: parsed.visible,
+    binning,
+    gridFromPyramid: parsed.gridFromPyramid,
+    hasPyramidRgba: parsed.hasPyramidRgba,
+    pyramidLevel: parsed.pyramidLevel,
+    fromTiles: parsed.fromTiles,
+    reduction: parsed.gridFromPyramid ? "pyramid-count" : "bin2d",
+  };
 }
 
 const PAYLOAD_CHANNEL_SHIP_MAX = 5;

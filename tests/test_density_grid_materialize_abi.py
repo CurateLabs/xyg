@@ -9,8 +9,10 @@ import numpy as np
 from xyg import _native, kernels
 
 
-def _identity_grid_emit_plan(*, n_points: int = 2) -> dict:
-    return kernels.density_emit_plan(
+def _identity_materialize(*, n_points: int = 2):
+    x = np.array([0.25, 0.75], dtype=np.float64)
+    y = np.array([0.25, 0.75], dtype=np.float64)
+    emit_plan = kernels.density_emit_plan(
         cartesian=True,
         x_linear=True,
         y_linear=True,
@@ -41,14 +43,9 @@ def _identity_grid_emit_plan(*, n_points: int = 2) -> dict:
         y_c1=1.0,
         n_points=n_points,
     )
-
-
-def test_payload_density_grid_materialize_identity_grid_only() -> None:
-    x = np.array([0.25, 0.75], dtype=np.float64)
-    y = np.array([0.25, 0.75], dtype=np.float64)
-    out = kernels.payload_density_grid_materialize(
-        emit_plan=_identity_grid_emit_plan(),
-        n_points=2,
+    return kernels.payload_density_grid_materialize(
+        emit_plan=emit_plan,
+        n_points=n_points,
         bx0=0.0,
         bx1=1.0,
         by0=0.0,
@@ -64,6 +61,10 @@ def test_payload_density_grid_materialize_identity_grid_only() -> None:
         bx=x,
         by=y,
     )
+
+
+def test_payload_density_grid_materialize_identity_grid_only() -> None:
+    out = _identity_materialize()
     assert out["encoded_grid"].shape == (16,)
     assert out["gmax"] >= 0.0
     assert out["binning"] == "exact"
@@ -73,26 +74,7 @@ def test_payload_density_grid_materialize_identity_grid_only() -> None:
 
 
 def test_payload_density_grid_materialize_encoded_grid_sha256() -> None:
-    x = np.array([0.25, 0.75], dtype=np.float64)
-    y = np.array([0.25, 0.75], dtype=np.float64)
-    out = kernels.payload_density_grid_materialize(
-        emit_plan=_identity_grid_emit_plan(),
-        n_points=2,
-        bx0=0.0,
-        bx1=1.0,
-        by0=0.0,
-        by1=1.0,
-        xr0=0.0,
-        xr1=1.0,
-        yr0=0.0,
-        yr1=1.0,
-        w=4,
-        h=4,
-        x_raw=x,
-        y_raw=y,
-        bx=x,
-        by=y,
-    )
+    out = _identity_materialize()
     digest = hashlib.sha256(out["encoded_grid"].tobytes()).hexdigest()
     assert digest == "869fa620d856999a98545e45e52b9fa13e793d05b168b54bcb12ea6108f3efc4"
 
@@ -102,23 +84,6 @@ def test_payload_density_grid_materialize_matches_host_log_u8_path() -> None:
     y = np.array([0.25, 0.75], dtype=np.float64)
     grid = kernels.bin_2d(x, y, 0.0, 1.0, 0.0, 1.0, 4, 4)
     encoded, gmax = kernels.density_log_u8(grid)
-    out = kernels.payload_density_grid_materialize(
-        emit_plan=_identity_grid_emit_plan(),
-        n_points=2,
-        bx0=0.0,
-        bx1=1.0,
-        by0=0.0,
-        by1=1.0,
-        xr0=0.0,
-        xr1=1.0,
-        yr0=0.0,
-        yr1=1.0,
-        w=4,
-        h=4,
-        x_raw=x,
-        y_raw=y,
-        bx=x,
-        by=y,
-    )
+    out = _identity_materialize()
     np.testing.assert_array_equal(out["encoded_grid"], encoded.reshape(-1))
     assert out["gmax"] == gmax

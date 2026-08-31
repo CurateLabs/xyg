@@ -3,7 +3,7 @@
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "a51d75d18b509693469bd6ef1ea50a1c633c9351b7590b9dcc3dd494d9b6acc5",
+  "signature_sha256": "24ab61ae9a90ddb5285aff14a9580ec20d06f3c98e602a637498f220780a4936",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -22032,12 +22032,12 @@
     {
       "name": "xyg_payload_density_grid_materialize",
       "node_name": "xyPayloadDensityGridMaterialize",
-      "nargs": 69,
+      "nargs": 16,
       "arguments": [
         {
-          "name": "meta_in",
+          "name": "input",
           "type": {
-            "rust": "*const XygDensityEmitMeta",
+            "rust": "*const XygPayloadDensityGridMaterializeIn",
             "c": "const void *",
             "ctypes": "ctypes.c_void_p",
             "koffi": "const void *",
@@ -22048,531 +22048,6 @@
             "direction": "in",
             "nullable": "contract-defined",
             "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
-          }
-        },
-        {
-          "name": "cartesian",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_linear",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_linear",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "categorical",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "compact_categorical",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "stratified_counts",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_has_nulls",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_has_nulls",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "point_overlay",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "grid_from_pyramid",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_memmapped",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_memmapped",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "has_pyramid_resource",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "force_bin2d",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "force_pyramid",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "color_mode",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_min",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_max",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_min",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_max",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "xr0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "xr1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "yr0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "yr1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "bx0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "bx1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "by0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "by1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_c0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "x_c1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_c0",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "y_c1",
-          "type": {
-            "rust": "f64",
-            "c": "double",
-            "ctypes": "ctypes.c_double",
-            "koffi": "double",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "n_points",
-          "type": {
-            "rust": "u64",
-            "c": "uint64_t",
-            "ctypes": "ctypes.c_uint64",
-            "koffi": "uint64_t",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "w",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "h",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
           }
         },
         {
@@ -22640,156 +22115,6 @@
           }
         },
         {
-          "name": "len",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyramid_attempt",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyramid_resource",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyramid_handle",
-          "type": {
-            "rust": "u64",
-            "c": "uint64_t",
-            "ctypes": "ctypes.c_uint64",
-            "koffi": "uint64_t",
-            "kind": "scalar",
-            "bits": 64,
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyr_colored",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "max_upsample",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "tile_upsample",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyramid_no_rescan",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "needs_pyramid_sample",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "pyramid_sample_stratified",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
           "name": "color_codes",
           "type": {
             "rust": "*const u8",
@@ -22819,21 +22144,6 @@
             "direction": "in",
             "nullable": "contract-defined",
             "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
-          }
-        },
-        {
-          "name": "n_color_counts",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
           }
         },
         {
@@ -22885,36 +22195,6 @@
           }
         },
         {
-          "name": "color_lut_len",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
-          "name": "ship_mean_color",
-          "type": {
-            "rust": "i32",
-            "c": "int32_t",
-            "ctypes": "ctypes.c_int32",
-            "koffi": "int32_t",
-            "kind": "scalar",
-            "bits": 32,
-            "signed": true,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
           "name": "out_binning",
           "type": {
             "rust": "*mut u8",
@@ -22928,21 +22208,6 @@
             "direction": "out",
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
-          }
-        },
-        {
-          "name": "binning_cap",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
           }
         },
         {
@@ -22962,21 +22227,6 @@
           }
         },
         {
-          "name": "encoded_cap",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
           "name": "out_rgba",
           "type": {
             "rust": "*mut u8",
@@ -22990,21 +22240,6 @@
             "direction": "out",
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
-          }
-        },
-        {
-          "name": "rgba_cap",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
           }
         },
         {
@@ -23024,21 +22259,6 @@
           }
         },
         {
-          "name": "sample_sel_cap",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
-          }
-        },
-        {
           "name": "out_visible_sel",
           "type": {
             "rust": "*mut u32",
@@ -23052,21 +22272,6 @@
             "direction": "out",
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
-          }
-        },
-        {
-          "name": "visible_sel_cap",
-          "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
-            "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
           }
         },
         {
@@ -23098,7 +22303,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_payload_density_grid_materialize(const void * meta_in, int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t categorical, int32_t compact_categorical, int32_t stratified_counts, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t grid_from_pyramid, int32_t x_memmapped, int32_t y_memmapped, int32_t has_pyramid_resource, int32_t force_bin2d, int32_t force_pyramid, int32_t color_mode, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double x_c0, double x_c1, double y_c0, double y_c1, uint64_t n_points, size_t w, size_t h, const double * x_raw, const double * y_raw, const double * bx, const double * by, size_t len, int32_t pyramid_attempt, int32_t pyramid_resource, uint64_t pyramid_handle, int32_t pyr_colored, size_t max_upsample, size_t tile_upsample, int32_t pyramid_no_rescan, int32_t needs_pyramid_sample, int32_t pyramid_sample_stratified, const uint8_t * color_codes, const uint64_t * color_counts, size_t n_color_counts, const uint8_t * color_idx, const uint8_t * color_rgba, const uint8_t * color_lut, size_t color_lut_len, int32_t ship_mean_color, uint8_t * out_binning, size_t binning_cap, uint8_t * out_encoded, size_t encoded_cap, uint8_t * out_rgba, size_t rgba_cap, uint32_t * out_sample_sel, size_t sample_sel_cap, uint32_t * out_visible_sel, size_t visible_sel_cap, void * out)"
+      "c_signature": "int32_t xyg_payload_density_grid_materialize(const void * input, const double * x_raw, const double * y_raw, const double * bx, const double * by, const uint8_t * color_codes, const uint64_t * color_counts, const uint8_t * color_idx, const uint8_t * color_rgba, const uint8_t * color_lut, uint8_t * out_binning, uint8_t * out_encoded, uint8_t * out_rgba, uint32_t * out_sample_sel, uint32_t * out_visible_sel, void * out)"
     },
     {
       "name": "xyg_payload_density_grid_ship_plan",

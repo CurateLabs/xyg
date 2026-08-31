@@ -131,6 +131,7 @@ _POINTER_C: dict[str, str] = {
     "*mut XygTemporalGraphSnapshotMeta": "void *",
     "*mut XygDensityEmitMeta": "void *",
     "*const XygDensityEmitMeta": "const void *",
+    "*const XygPayloadDensityGridMaterializeIn": "const void *",
     "*mut XygPayloadDensityGridMaterializeOut": "void *",
     "*mut XygPayloadDensityTraceEmitPlan": "void *",
     "*mut XygPayloadBuildPlan": "void *",
