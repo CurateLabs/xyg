@@ -49,7 +49,6 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits title_options.
   Node `buildPayload` omits padding.
   Node `buildPayload` omits dom.
-  Node `buildPayload` omits cartesian axis label_position.
   Node `buildPayload` omits cartesian axis label_offset.
   Node `buildPayload` omits cartesian axis label_angle.
   Node `buildPayload` omits cartesian axis tick_label_angle.
@@ -71,7 +70,6 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_polarAxisSpecs` omits axis minor_tick_values.
   Node `_polarAxisSpecs` omits axis tick_labels.
   Node `_polarAxisSpecs` omits axis tick_count.
-  Node `_polarAxisSpecs` omits axis label_position.
   Node `_polarAxisSpecs` omits axis label_offset.
   Node `_polarAxisSpecs` omits axis label_angle.
   Node `_polarAxisSpecs` omits axis tick_label_angle.
