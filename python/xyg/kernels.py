@@ -70,6 +70,7 @@ scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_spec_pack = _impl.scene_gradient_spec_pack
 scene_marker_blob_pack = _impl.scene_marker_blob_pack
+scene_xytc_dash_pattern_pack = _impl.scene_xytc_dash_pattern_pack
 scene_xytc_opacity_pack = _impl.scene_xytc_opacity_pack
 scene_xytc_hex_pitch_pack = _impl.scene_xytc_hex_pitch_pack
 scene_xytc_stroke_perimeter_pack = _impl.scene_xytc_stroke_perimeter_pack
@@ -377,6 +378,7 @@ __all__ = [
     "scene_xyhf_colormap_pack",
     "scene_xyta_colormap_pack",
     "scene_xytc_color_channel_pack",
+    "scene_xytc_dash_pattern_pack",
     "scene_xytc_hex_pitch_pack",
     "scene_xytc_numeric_style_pack",
     "scene_xytc_opacity_pack",

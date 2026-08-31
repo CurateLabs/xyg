@@ -1753,6 +1753,25 @@ def scene_xytc_opacity_pack(
     return float(fill.value), float(stroke.value), float(line.value)
 
 
+def scene_xytc_dash_pattern_pack(is_array: int) -> int:
+    """XYTC dash-array flag via ``xyg_scene_xytc_dash_pattern_pack`` (ABI 268).
+
+    Hosts still pick dash string vs array and coerce pattern floats.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_dash_pattern_pack(
+            ctypes.c_int32(int(is_array)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-dash-pattern-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-dash-pattern-pack request")
+    return int(flags.value)
+
+
 def scene_xytc_stroke_perimeter_pack(
     band: int,
     present: int,

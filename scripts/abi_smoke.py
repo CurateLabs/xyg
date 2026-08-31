@@ -370,6 +370,11 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_dash_pattern_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_dash_pattern_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
     lib.xyg_scene_xytc_opacity_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_opacity_pack.argtypes = [
         ctypes.c_int32,
@@ -3494,6 +3499,12 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_dash_flags = ctypes.c_uint32(0)
+    ok(
+        lib.xyg_scene_xytc_dash_pattern_pack(1, ctypes.byref(xytc_dash_flags)) == 1
+        and xytc_dash_flags.value == (1 << 17),
+        "scene_xytc_dash_pattern_pack array",
     )
     xytc_fill = ctypes.c_double(0.0)
     xytc_stroke = ctypes.c_double(0.0)

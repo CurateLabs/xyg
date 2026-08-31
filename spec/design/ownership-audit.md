@@ -308,6 +308,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 265 | `xyg_scene_xytc_stroke_perimeter_pack` | `_pack_xytc` stroke_perimeter flags |
 | (this PR) | 266 | `xyg_scene_xytc_hex_pitch_pack` | `_pack_xytc` hexbin pitch trailer |
 | (this PR) | 267 | `xyg_scene_xytc_opacity_pack` | `_pack_xytc` fill/stroke/line opacity |
+| (this PR) | 268 | `xyg_scene_xytc_dash_pattern_pack` | `_pack_xytc` dash-array flag bit |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 
