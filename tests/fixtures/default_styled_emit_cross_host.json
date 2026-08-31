@@ -1,0 +1,18 @@
+{
+  "schema": "xyg.default-styled-emit-cross-host/v1",
+  "authority": "python/xyg/_payload.py _default_styled emit paths",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "line_default_styled",
+      "trace_id": 16,
+      "kind": "line",
+      "style": {
+        "opacity": 0.9,
+        "color": "#3987e5"
+      },
+      "palette_color": "#3987e5"
+    }
+  ]
+}
