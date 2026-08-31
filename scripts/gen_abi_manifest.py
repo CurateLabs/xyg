@@ -473,9 +473,10 @@ def render_c_header(manifest: dict[str, Any]) -> str:
 def generate_manifest(root: Path = ROOT) -> dict[str, Any]:
     core = root / "crates/xyg-core/src"
     text = (core / "lib.rs").read_text(encoding="utf-8")
-    ffi = core / "scene_bulk_pack_ffi.rs"
-    if ffi.is_file():
-        text = text + "\n" + ffi.read_text(encoding="utf-8")
+    ffi_files = [core / "scene_bulk_pack_ffi.rs", core / "payload_trace_emit_ffi.rs"]
+    for ffi in ffi_files:
+        if ffi.is_file():
+            text = text + "\n" + ffi.read_text(encoding="utf-8")
     return parse_rust_abi(text)
 
 

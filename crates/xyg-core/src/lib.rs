@@ -63,6 +63,7 @@ use xyg_engine::scene_figure_support_pack;
 use xyg_engine::payload_column_gather_materialize;
 use xyg_engine::payload_channel_materialize;
 include!("scene_bulk_pack_ffi.rs");
+include!("payload_trace_emit_ffi.rs");
 use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};

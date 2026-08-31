@@ -7,7 +7,7 @@ import ctypes
 # fmt: off
 
 ABI_VERSION = 322
-SIGNATURE_SHA256 = "ed31956286f8345f6480846f627da248f95cdfb5074b0ee5306b056818867492"
+SIGNATURE_SHA256 = "a05b30645db89a3693c3ba5ee2a24859182cbe49142974dd5afe5a56d37af210"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -722,6 +722,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_trace_channels_ship_attach
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_payload_trace_emit_materialize(const void * emit_in, const uint8_t * kind, const uint8_t * x_axis_scale, const uint8_t * y_axis_scale, const uint8_t * orientation, const void * columns, const double *const * column_values, const uint8_t *const * column_kinds, const void * color_ch, const void * stroke_ch, const void * color2_ch, const void * size_ch, const void * style_channels, const double * color_f64, const double * stroke_f64, const double * color2_f64, const double * size_f64, const double * style_f64, const uint8_t * color_u8, const uint8_t * stroke_u8, const uint8_t * color2_u8, const uint8_t * size_u8, const uint8_t * style_u8, const uint32_t * transition_lo, const uint32_t * transition_hi, const double * bin_x, const double * grid_values, void * summary, void * geom_out, size_t geom_cap, void * chan_out, size_t chan_cap, uint8_t * out_bytes, size_t out_bytes_cap, size_t * out_bytes_len)
+    function = lib.xyg_payload_trace_emit_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_payload_transition_entry_attach(int32_t has_trace_animation, int32_t entry_has_animation, int32_t has_trace_keys, int32_t has_key_values, int32_t has_sel, int32_t tier_direct, size_t n_marks, size_t n_trace_key_rows, size_t n_key_value_rows, size_t n_sel_rows, size_t max_rows, int32_t has_tooltip_rows, size_t n_tooltip_rows, size_t n_points, int32_t * out_attach_animation, int32_t * out_attempt_keys, int32_t * out_filter_keys_by_sel, int32_t * out_ship_keys, int32_t * out_animation_fallback, int32_t * out_attach_tooltip, int32_t * out_filter_tooltip_by_sel, int32_t * out_tooltip_length_ok)
     function = lib.xyg_payload_transition_entry_attach
     function.restype = ctypes.c_int32

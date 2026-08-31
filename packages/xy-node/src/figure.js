@@ -15,6 +15,7 @@
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
  */
 
+import { emitTraceMaterialized } from "./payloadTraceMaterialize.js";
 import {
   Column,
   canonicalScatterColumn,
@@ -1285,6 +1286,27 @@ export class PayloadWriter {
     return idx;
   }
 
+  _appendFromMaterialized(enc, meta) {
+    const idx = this.columns.length;
+    if (this.split) {
+      this.columns.push({ buf: this._chunks.length, byte_offset: 0, ...meta });
+      this._chunks.push(enc);
+      this._pos += enc.byteLength;
+      return idx;
+    }
+    this.columns.push({ byte_offset: this._pos, ...meta });
+    this._chunks.push(enc);
+    this._pos += enc.byteLength;
+    if (meta.dtype !== "u8" && meta.dtype !== "u32") {
+      const padding = (-this._pos) % 4;
+      if (padding) {
+        this._chunks.push(new Uint8Array(padding));
+        this._pos += padding;
+      }
+    }
+    return idx;
+  }
+
   blob() {
     return Buffer.concat(this._chunks.map((c) => Buffer.from(c.buffer, c.byteOffset, c.byteLength)));
   }
@@ -2133,6 +2155,10 @@ export class Figure {
       baseHasNulls: baseCol != null ? baseCol.nullCount > 0 : false,
     });
     return keepAll ? null : indices;
+  }
+
+  _emitTrace(t, pw, xr, yr, pxWidth) {
+    return emitTraceMaterialized(this, t, pw, xr, yr, pxWidth);
   }
 
   _emitScatter(t, pw, xr, yr) {
@@ -3515,38 +3541,7 @@ export class Figure {
     const widthPx = pxWidth ?? Math.max(16, Math.floor(this.width));
     const specTraces = [];
     for (const t of this.traces) {
-      if (t.kind === "scatter") {
-        specTraces.push(this._emitScatter(t, pw, xr, yr));
-      } else if (t.kind === "line") {
-        specTraces.push(this._emitLine(t, pw, xr, widthPx));
-      } else if (t.kind === "histogram") {
-        specTraces.push(this._emitHistogram(t, pw));
-      } else if (
-        t.kind === "segments" ||
-        t.kind === "contour" ||
-        t.kind === "errorbar" ||
-        t.kind === "stem" ||
-        t.kind === "box_whisker" ||
-        t.kind === "box_median"
-      ) {
-        specTraces.push(this._emitSegments(t, pw, widthPx));
-      } else if (t.kind === "area" || t.kind === "error_band") {
-        specTraces.push(this._emitArea(t, pw, xr, widthPx));
-      } else if (t.kind === "bar" || t.kind === "column") {
-        specTraces.push(this._emitBarCompact(t, pw, t.kind));
-      } else if (t.kind === "violin" || t.kind === "box") {
-        specTraces.push(this._emitRect(t, pw, t.kind));
-      } else if (t.kind === "heatmap") {
-        specTraces.push(this._emitHeatmap(t, pw));
-      } else if (t.kind === "hexbin") {
-        specTraces.push(this._emitHexbin(t, pw));
-      } else if (t.kind === "ribbon") {
-        specTraces.push(this._emitRibbon(t, pw));
-      } else if (t.kind === "triangle_mesh") {
-        specTraces.push(this._emitTriangleMesh(t, pw));
-      } else {
-        throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
-      }
+      specTraces.push(this._emitTrace(t, pw, xr, yr, widthPx));
     }
     const axisSpecs = {
       x: this._axisSpec("x", xr),

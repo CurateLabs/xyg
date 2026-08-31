@@ -3,7 +3,7 @@
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "ed31956286f8345f6480846f627da248f95cdfb5074b0ee5306b056818867492",
+  "signature_sha256": "a05b30645db89a3693c3ba5ee2a24859182cbe49142974dd5afe5a56d37af210",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -26701,6 +26701,583 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_payload_trace_channels_ship_attach(int32_t slot, int32_t include_trace_styles, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, int32_t * out_ship_color, int32_t * out_ship_size, int32_t * out_ship_stroke, int32_t * out_ship_style_channels)"
+    },
+    {
+      "name": "xyg_payload_trace_emit_materialize",
+      "node_name": "xyPayloadTraceEmitMaterialize",
+      "nargs": 35,
+      "arguments": [
+        {
+          "name": "emit_in",
+          "type": {
+            "rust": "*const XygPayloadTraceEmitIn",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "kind",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "x_axis_scale",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "y_axis_scale",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "columns",
+          "type": {
+            "rust": "*const XygPayloadTraceColumnDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "column_values",
+          "type": {
+            "rust": "*const *const f64",
+            "c": "const double *const *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *const *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 2,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "column_kinds",
+          "type": {
+            "rust": "*const *const u8",
+            "c": "const uint8_t *const *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *const *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 2,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color_ch",
+          "type": {
+            "rust": "*const XygPayloadTraceChannelDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "stroke_ch",
+          "type": {
+            "rust": "*const XygPayloadTraceChannelDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color2_ch",
+          "type": {
+            "rust": "*const XygPayloadTraceChannelDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "size_ch",
+          "type": {
+            "rust": "*const XygPayloadTraceChannelDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "style_channels",
+          "type": {
+            "rust": "*const XygPayloadTraceChannelDesc",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color_f64",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "stroke_f64",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color2_f64",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "size_f64",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "style_f64",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color_u8",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "stroke_u8",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "color2_u8",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "size_u8",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "style_u8",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "transition_lo",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "transition_hi",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "bin_x",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "grid_values",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "summary",
+          "type": {
+            "rust": "*mut XygPayloadTraceEmitOut",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "geom_out",
+          "type": {
+            "rust": "*mut XygPayloadTraceGeomOut",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "geom_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "chan_out",
+          "type": {
+            "rust": "*mut XygPayloadTraceChannelOut",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "chan_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_bytes",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_bytes_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_bytes_len",
+          "type": {
+            "rust": "*mut usize",
+            "c": "size_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "size_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_trace_emit_materialize(const void * emit_in, const uint8_t * kind, const uint8_t * x_axis_scale, const uint8_t * y_axis_scale, const uint8_t * orientation, const void * columns, const double *const * column_values, const uint8_t *const * column_kinds, const void * color_ch, const void * stroke_ch, const void * color2_ch, const void * size_ch, const void * style_channels, const double * color_f64, const double * stroke_f64, const double * color2_f64, const double * size_f64, const double * style_f64, const uint8_t * color_u8, const uint8_t * stroke_u8, const uint8_t * color2_u8, const uint8_t * size_u8, const uint8_t * style_u8, const uint32_t * transition_lo, const uint32_t * transition_hi, const double * bin_x, const double * grid_values, void * summary, void * geom_out, size_t geom_cap, void * chan_out, size_t chan_cap, uint8_t * out_bytes, size_t out_bytes_cap, size_t * out_bytes_len)"
     },
     {
       "name": "xyg_payload_transition_entry_attach",

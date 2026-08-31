@@ -131,6 +131,12 @@ pub mod payload_channel_materialize;
 pub use payload_channel_materialize::{
     payload_channel_materialize, PayloadChannelMaterializeOut, PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES,
 };
+pub mod payload_trace_emit_materialize;
+pub use payload_trace_emit_materialize::{
+    payload_trace_emit_materialize, PayloadTraceChannelIn, PayloadTraceColumnIn,
+    PayloadTraceEmitMaterializeIn, PayloadTraceEmitMaterialized, PAYLOAD_TRACE_EMIT_MAX_BYTES,
+    PAYLOAD_TRACE_EMIT_MAX_CHANNELS, PAYLOAD_TRACE_EMIT_MAX_GEOM,
+};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,
