@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Create or refresh M2 leftover-cluster sub-issues.
 
+Leftover cluster titles #287-#313 and parents #271-#283 are closed. This
+script is historical inventory. M2 close work is tracker #731
+(``spec/process/m2-close.md``); do not create leftover-cluster issues as an
+alternate close path.
+
 Idempotent: matches existing issues by exact title. Uses ``gh`` (needs
 ``issues:write``). Cloud Agent App tokens 403; a ``repo``-scoped token works.
 
@@ -670,16 +675,28 @@ def render_spec(created: dict[str, dict[str, Any]]) -> str:
     table = spec_table(created)
     return f"""# M2 leftover clusters
 
+**Status: closed as leftover titles.** Children
+[#287](https://github.com/CurateLabs/xyg/issues/287)-[#313](https://github.com/CurateLabs/xyg/issues/313)
+and parents [#271](https://github.com/CurateLabs/xyg/issues/271)-[#283](https://github.com/CurateLabs/xyg/issues/283)
+are closed. This file is historical cluster inventory, **not** the M2 close
+path. M2 closes under [#731](https://github.com/CurateLabs/xyg/issues/731);
+canonical contract: [`m2-close.md`](m2-close.md). Stay-host TAP extras are
+inventory, not an alternate close path.
+
 Post-close M2 follow-on parents [#271](https://github.com/CurateLabs/xyg/issues/271)-[#283](https://github.com/CurateLabs/xyg/issues/283)
 were too large to close: each leftover ABI admit left the parent open.
-This file is the closeable cluster inventory.
+This file is the closed cluster inventory.
 
 {INVENTORY}
 
 In-repo pointer: [`issues/m2-leftover-clusters.md`](../design/issues/m2-leftover-clusters.md).
 Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 
-## Landing contract
+## Historical landing contract
+
+Leftover cluster titles are closed. Do not land leftover-cluster PRs or Node
+omit-field extras as M2 complete. Remaining close work is
+[`m2-close.md`](m2-close.md).
 
 - One leftover cluster per pull request.
 - Do not stack further ABI slices onto [PR #286](https://github.com/curatelabs/xyg/pull/286).
@@ -714,9 +731,13 @@ Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 def pointer_spec() -> str:
     return """# Tracked work: M2 leftover clusters
 
+**Status: closed as leftover titles.** M2 close contract:
+[`m2-close.md`](../../process/m2-close.md) (tracker
+[#731](https://github.com/CurateLabs/xyg/issues/731)).
+
 **Parents:** [#271](https://github.com/CurateLabs/xyg/issues/271)-[#283](https://github.com/CurateLabs/xyg/issues/283).
 
-Canonical cluster list and landing contract:
+Canonical cluster list and historical landing contract:
 [`m2-leftover-clusters.md`](../../process/m2-leftover-clusters.md).
 
 This file remains a stable in-repo pointer so specs can cite a path even if

@@ -1,15 +1,27 @@
 # M2 leftover clusters
 
+**Status: closed as leftover titles.** Children
+[#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](https://github.com/CurateLabs/xyg/issues/313)
+and parents [#271](https://github.com/CurateLabs/xyg/issues/271)–[#283](https://github.com/CurateLabs/xyg/issues/283)
+are closed. This file is historical cluster inventory, **not** the M2 close
+path. M2 closes under [#731](https://github.com/CurateLabs/xyg/issues/731);
+canonical contract: [`m2-close.md`](m2-close.md). Stay-host TAP extras are
+inventory, not an alternate close path.
+
 Post-close M2 follow-on parents [#271](https://github.com/CurateLabs/xyg/issues/271)-[#283](https://github.com/CurateLabs/xyg/issues/283)
 were too large to close: each leftover ABI admit left the parent open.
-This file is the closeable cluster inventory.
+This file is the closed cluster inventory.
 
 Inventory after draft PR https://github.com/curatelabs/xyg/pull/286 HEAD ABI 188 (`c722fa4e`). Related: #24, #58, #59, tracker #54.
 
 In-repo pointer: [`issues/m2-leftover-clusters.md`](../design/issues/m2-leftover-clusters.md).
 Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 
-## Landing contract
+## Historical landing contract
+
+Leftover cluster titles are closed. Do not land leftover-cluster PRs or Node
+omit-field extras as M2 complete. Remaining close work is
+[`m2-close.md`](m2-close.md).
 
 - One leftover cluster per pull request.
 - Do not stack further ABI slices onto [PR #286](https://github.com/curatelabs/xyg/pull/286).
