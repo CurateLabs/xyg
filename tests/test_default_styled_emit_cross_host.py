@@ -65,7 +65,11 @@ def _build_case(name: str) -> Figure:
         fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
     else:
         raise KeyError(name)
-    fig.traces[0].id = {"line_default_styled": 16, "area_default_styled": 17, "hist_default_styled": 18}[name]
+    fig.traces[0].id = {
+        "line_default_styled": 16,
+        "area_default_styled": 17,
+        "hist_default_styled": 18,
+    }[name]
     fig.traces[0].style = {"opacity": 0.9}
     return fig
 
