@@ -2061,7 +2061,7 @@ export class Figure {
       }
     }
     if (attach.attachHole) {
-      spec.hole = opts.hole ?? 0.0;
+      spec.hole = opts.hole || 0.0;
       if (attach.attachROrigin && opts.r_origin != null) {
         spec.r_origin = opts.r_origin;
       }

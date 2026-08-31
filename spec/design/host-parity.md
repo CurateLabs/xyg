@@ -1517,12 +1517,6 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `_emitScatter` still passes `forceDirect`.
   Node `_emitScatter` still ORs `forcePyramid` into density.
   Node `buildPayload` cartesian axes stay linear.
-  Node `_emitLine` copies t.style.
-  Node `_emitHexbin` copies t.style.
-  Node `_emitRect` copies t.style.
-  Node `_emitTriangleMesh` copies t.style.
-  Node `_emitSegments` copies t.style.
-  Node `_emitRibbon` copies t.style.
 ---
 
 ## 4. Delivery order
