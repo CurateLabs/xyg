@@ -1406,14 +1406,20 @@ test("buildPayload omits colorbar unlike Python build_payload", () => {
 });
 
 
-test("buildPayload omits legend unlike Python build_payload", () => {
-  // Python `build_payload` ships `legend` from `legend_options`. Node
-  // payload omits that field. Recorded emit-payload-legend stay-host.
+test("buildPayload ships legend from legend_options like Python build_payload", () => {
   const fig = figure({ width: 240, height: 160, legend: { loc: "upper right" } });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
   assert.equal(fig.legend_options.loc, "upper right");
-  assert.equal(spec.legend, undefined);
+  assert.deepEqual(spec.legend, { loc: "upper right" });
+});
+
+test("buildPayload resolves legend loc best like Python build_payload", () => {
+  const fig = figure({ width: 240, height: 160, legend: { loc: "best" } });
+  fig.scatter([0, 1, 2], [0, 1, 0.5]);
+  const { spec } = fig.buildPayload();
+  assert.notEqual(spec.legend.loc, "best");
+  assert.equal(spec.legend.loc, "upper right");
 });
 
 test("buildPayload ships cartesian axis minor_tick_values like Python _axis_spec", () => {

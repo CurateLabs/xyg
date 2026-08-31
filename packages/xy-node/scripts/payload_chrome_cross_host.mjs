@@ -23,6 +23,7 @@ function caseEntry(name, build) {
   return {
     name,
     show_legend: spec.show_legend,
+    legend: spec.legend ?? null,
     dom: spec.dom ?? null,
   };
 }
@@ -31,6 +32,12 @@ const cases = [
   caseEntry("show_legend_default", () => {}),
   caseEntry("show_legend_false", (fig) => {
     fig.show_legend = false;
+  }),
+  caseEntry("legend_loc_upper_right", (fig) => {
+    fig.setLegend({ loc: "upper right", title: "Series" });
+  }),
+  caseEntry("legend_loc_best", (fig) => {
+    fig.setLegend({ loc: "best" });
   }),
   caseEntry("dom_class_name", (fig) => {
     fig.class_name = "root-node";
@@ -53,7 +60,7 @@ process.stdout.write(
   JSON.stringify(
     {
       schema: "xyg.payload-chrome-cross-host/v1",
-      authority: "packages/xy-node/src/figure.js buildPayload show_legend and domSpec",
+      authority: "packages/xy-node/src/figure.js buildPayload show_legend, legend, and domSpec",
       protocol: PROTOCOL_VERSION,
       abi_version: abiVersion(),
       cases,

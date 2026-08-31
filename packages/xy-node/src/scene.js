@@ -5467,7 +5467,7 @@ function legendAxisSpec(figure, axisId) {
   return { domain: [lo, hi], reverse, scale, constant };
 }
 
-function resolveLegendBestLoc(figure) {
+export function resolveLegendBestLoc(figure) {
   const series = [];
   const labelLens = [];
   for (const trace of figure.traces ?? []) {
