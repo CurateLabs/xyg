@@ -16056,7 +16056,7 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
         let mut x_ship_scale = 0i32;
         let mut y_ship_scale = 0i32;
         let ok = payload_emit::payload_column_ship_plan(
-            &kind_str,
+            kind_str,
             x_axis_type,
             y_axis_type,
             orientation,
