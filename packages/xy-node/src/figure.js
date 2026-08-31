@@ -1632,6 +1632,9 @@ export class Figure {
     if (attach.attachDomain && opts.domain != null) {
       spec.domain = [...opts.domain];
     }
+    if (attach.attachFormat && opts.format != null) {
+      spec.format = opts.format;
+    }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
       spec.theta_unit = unit;
