@@ -521,6 +521,17 @@ def _column(blob: bytes, meta: dict[str, Any]) -> np.ndarray:
     return raw.astype(np.float64) / (meta.get("scale") or 1.0) + meta.get("offset", 0.0)
 
 
+def _column_ref(blob: bytes, cols: list[Any], ref: Any) -> np.ndarray:
+    """Resolve a payload column reference (registry index or nested bar descriptor)."""
+    if isinstance(ref, dict):
+        if "byte_offset" in ref:
+            return _column(blob, ref)
+        if "col" in ref:
+            return _column(blob, cols[ref["col"]])
+        raise TypeError(f"invalid column reference: {ref!r}")
+    return _column(blob, cols[ref])
+
+
 def _density_column(blob: bytes, meta: dict[str, Any], density: dict[str, Any]) -> np.ndarray:
     """Decode either legacy f32 counts or the compact log-u8 density wire."""
     if density.get("enc") != "log-u8":
@@ -5269,10 +5280,10 @@ def _bar_marks(
     polar: "Optional[_PolarProjection]" = None,
 ) -> str:
     b = t["bar"]
-    pos = _column(blob, cols[b["pos"]])
-    v1 = _column(blob, cols[b["value1"]])
+    pos = _column_ref(blob, cols, b["pos"])
+    v1 = _column_ref(blob, cols, b["value1"])
     v0 = (
-        _column(blob, cols[b["value0"]])
+        _column_ref(blob, cols, b["value0"])
         if "value0" in b
         else np.full(len(pos), float(b.get("value0_const", 0.0)))
     )

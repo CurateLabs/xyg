@@ -46,6 +46,7 @@ from ._svg import (
     _colorbar_right_axis_room,
     _colormap_stops,
     _column,
+    _column_ref,
     _corner_radii,
     _css,
     _decode_title_geometry,
@@ -2798,10 +2799,10 @@ def _emit_bars(
     polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     b = t["bar"]
-    pos = _column(blob, cols[b["pos"]])
-    v1 = _column(blob, cols[b["value1"]])
+    pos = _column_ref(blob, cols, b["pos"])
+    v1 = _column_ref(blob, cols, b["value1"])
     v0 = (
-        _column(blob, cols[b["value0"]])
+        _column_ref(blob, cols, b["value0"])
         if "value0" in b
         else np.full(len(pos), float(b.get("value0_const", 0.0)))
     )
