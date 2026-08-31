@@ -108,6 +108,11 @@ def main() -> None:
     fig.traces[0].id = 11
     cases.append(_case("heatmap_colormap", fig))
 
+    fig = Figure(width=240, height=160)
+    fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+    fig.traces[0].id = 20
+    cases.append(_case("triangle_mesh_single", fig))
+
     payload = {
         "schema": "xyg.payload-cross-host/v1",
         "authority": "python/xyg/_figure.py build_payload",

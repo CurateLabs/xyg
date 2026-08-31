@@ -2347,12 +2347,6 @@ export class Figure {
         y2v = gatherF64(y2v, sel);
       }
     }
-    const shipX0 = sel == null ? x0 : new Column(x0v);
-    const shipX1 = sel == null ? x1 : new Column(x1v);
-    const shipX2 = sel == null ? x2 : new Column(x2v);
-    const shipY0 = sel == null ? y0 : new Column(y0v);
-    const shipY1 = sel == null ? y1 : new Column(y1v);
-    const shipY2 = sel == null ? y2 : new Column(y2v);
     const plan = payloadMeshEmitPlan({
       nMarks: x0v.length,
       styleColorIsNone: t.style?.color == null,
@@ -2362,15 +2356,11 @@ export class Figure {
       hasContinuousColor,
       continuousColorValuesMissing,
     });
-    // Node payload mesh omits color_ch. Python `_emit_triangle_mesh` ships
-    // color_ch via `_ship_channels`. Matching Python would add entry.color.
-    // Recorded emit-mesh-color stay-host.
-    // Node payload mesh omits stroke_ch. Python `_emit_triangle_mesh` ships
-    // stroke_ch via `_ship_trace_styles`. Matching Python would add
-    // entry.stroke. Recorded emit-mesh-stroke stay-host.
-    // Node payload mesh omits style_channels. Python `_emit_triangle_mesh`
-    // ships them as `channels` via `_ship_trace_styles`. Matching Python
-    // would add entry.channels. Recorded emit-mesh-channels stay-host.
+    const columnPlan = payloadColumnShipPlan({
+      kind: "triangle_mesh",
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     const entry = {
       id: t.id,
       kind: "triangle_mesh",
@@ -2379,18 +2369,16 @@ export class Figure {
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,
-      x0: pw.ship(x0v, shipX0, { scale: plan.xShipScale }),
-      y0: pw.ship(y0v, shipY0, { scale: plan.yShipScale }),
-      x1: pw.ship(x1v, shipX1, { scale: plan.xShipScale }),
-      y1: pw.ship(y1v, shipY1, { scale: plan.yShipScale }),
-      // Node payload mesh ships x/y for the third vertex. Python
-      // `_emit_triangle_mesh` ships x2/y2. Matching Python would rename these
-      // keys. Recorded emit-mesh-xy stay-host.
-      x: pw.ship(x2v, shipX2, { scale: plan.xShipScale }),
-      y: pw.ship(y2v, shipY2, { scale: plan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(
+      entry,
+      t,
+      pw,
+      columnPlan,
+      { x0: x0v, x1: x1v, x: x2v, y0: y0v, y1: y1v, y: y2v },
+    );
     this._shipTraceChannelAttach(
       entry,
       t,
