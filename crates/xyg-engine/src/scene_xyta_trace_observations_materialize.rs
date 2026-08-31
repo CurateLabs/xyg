@@ -292,8 +292,9 @@ fn item_fill_rgba8(
     opacity_ch: &SceneXytaStyleChannelIn<'_>,
     artist_ch: &SceneXytaStyleChannelIn<'_>,
 ) -> Option<Vec<u8>> {
-    let mut packed = channel_end_rgba8(channel, n, fallback)?;
-    if channel.present != 0
+    let mut packed = channel_end_rgba8(channel, n, fallback);
+    if packed.is_none()
+        && channel.present != 0
         && channel.mode == "continuous"
         && !channel.values_f64.is_empty()
     {
@@ -312,8 +313,9 @@ fn item_fill_rgba8(
         if !crate::kernels::colormap_rgba_into(&t, n, 1, &stops, 255, &mut rgba) {
             return None;
         }
-        packed = rgba;
+        packed = Some(rgba);
     }
+    let packed = packed?;
     item_apply_opacity(&packed, n, opacity_ch, artist_ch)
 }
 
@@ -727,6 +729,31 @@ mod tests {
             artist_alpha_ch: SceneXytaStyleChannelIn::default(),
             stroke_width_ch: SceneXytaStyleChannelIn::default(),
         }
+    }
+
+    #[test]
+    fn scatter_paint_branch_resolves_continuous_colors() {
+        let input = minimal_input(
+            XytaTraceDispatchPlan {
+                pack_scatter_paint: 1,
+                ..Default::default()
+            },
+            SceneXytaColorChannelIn {
+                present: 1,
+                mode: "continuous",
+                colormap: Some("viridis"),
+                values_f64: &[0.0, 1.0],
+                ..Default::default()
+            },
+            &[0.0, 1.0],
+            &[0.0, 1.0],
+        );
+        let out = scene_xyta_trace_observations_materialize(&input).unwrap();
+        assert_eq!(out.pack_scatter_paint, 1);
+        assert_eq!(out.has_rgba, 1);
+        assert_eq!(out.rgba.len(), 8);
+        assert_eq!(out.mean_rgba.len(), 8);
+        assert_eq!(out.x.len(), 16);
     }
 
     #[test]
