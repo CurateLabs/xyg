@@ -979,6 +979,30 @@ def _ship_wire_buffer(
     raise ValueError("invalid payload_channel_wire_encode transform")
 
 
+def ship_registry_attach(
+    entry: dict[str, Any],
+    trace: Any,
+    sel: Any,
+    ship_scalar: Any,
+    ship_u8: Any,
+    plan: dict[str, Any],
+) -> None:
+    """Attach channels listed in a Rust-owned ship registry plan (ABI 311).
+
+    Hosts call ``payload_channel_ship_plan`` for policy; this function
+    materializes the listed rows via ``ship_*`` using ABI 312 wire encode."""
+    for ch in plan["channels"]:
+        key = ch["registry_key"]
+        method = ch["ship_method"]
+        if method == "color_size":
+            entry["color"], entry["size"] = ship_channels(trace, sel, ship_scalar, ship_u8)
+        elif method == "color":
+            channel = getattr(trace, ch["trace_slot"])
+            entry[key] = ship_color_channel(channel, sel, ship_scalar, ship_u8)
+        elif method == "style":
+            entry[key] = ship_style_channels(trace.style_channels, sel, ship_scalar, ship_u8)
+
+
 def ship_channels(
     trace: Any,
     sel: Any,

@@ -132,20 +132,24 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
     ("#767", "312", "xyg_payload_channel_wire_encode"),
     ("#768", "313", "xyg_payload_column_ship_plan orientation + thin emit rows"),
     (
-        "#732",
+        "#769",
         "314",
         "xyg_payload_column_ship_plan density_wasm_source f64 + density_sample registry",
+    ),
+    (
+        "#732",
+        "314",
+        "channels.ship_registry_attach + Node density wasm_source/sample registry parity",
     ),
 )
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
         "#732",
-        "density grid ship + residual row materialization in `_payload.py` / `channels.ship_*` "
-        "(density wasm_source + density_sample xy via `_ship_registry_columns` ABI 314; "
-        "channel/style residual rows remain)",
+        "density grid ship in `_payload.py` (bin2d/pyramid compose stays host; "
+        "column/channel registry + row materialization dispatch complete ABI 310-314)",
     ),
-    ("#731", "parent M2 close — blocked on #732 + Node stay-host TAP convergence"),
+    ("#731", "parent M2 close — blocked on #732 density grid + Node stay-host TAP convergence"),
 )
 
 

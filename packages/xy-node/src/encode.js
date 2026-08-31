@@ -15,6 +15,8 @@ export const DENSITY_GRID = Object.freeze([512, 384]);
 export const DENSITY_SAMPLE_TARGET = 8_192;
 /** Default density overlay seed matching Python `DENSITY_SAMPLE_SEED`. */
 export const DENSITY_SAMPLE_SEED = 0;
+/** Split WASM replay source capacity matching Python `WASM_AGGREGATE_MAX_POINTS`. */
+export const WASM_AGGREGATE_MAX_POINTS = 8_000_000;
 export const DENSITY_TARGET_POINTS_PER_CELL = 16;
 export const DRILL_EXIT_FACTOR = 1.15;
 /** Tier-3 pyramid thresholds — lockstep with `python/xyg/config.py`. */
