@@ -83,6 +83,7 @@ def _case_keys(case_name: str, entry: dict) -> list[str]:
 
 CASE_NAMES = (
     "scatter_density_colormap",
+    "scatter_density_continuous_colormap",
     "scatter_density_dropped_channels",
     "scatter_density_mean_color_categorical",
     "scatter_density_wasm_source_split",
@@ -131,6 +132,18 @@ def _build_case(name: str) -> Figure:
         fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], density=True, colormap="plasma")
         fig.traces[0].id = 21
         fig.traces[0].color_ch.colormap = "magma"
+        return fig
+    if name == "scatter_density_continuous_colormap":
+        fig = Figure(width=240, height=160)
+        fig.scatter(
+            [0.0, 1.0, 2.0, 3.0],
+            [0.0, 1.0, 0.5, 0.2],
+            density=True,
+            colormap="plasma",
+            color=[1.0, 2.0, 3.0, 4.0],
+        )
+        fig.traces[0].id = 24
+        fig.traces[0].color_ch.colormap = "inferno"
         return fig
     if name == "scatter_density_dropped_channels":
         fig = Figure(width=240, height=160)

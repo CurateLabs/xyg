@@ -33,6 +33,38 @@
       "animation_fallback": null
     },
     {
+      "name": "scatter_density_continuous_colormap",
+      "trace_id": 24,
+      "tier": "density",
+      "visible": 4,
+      "density_colormap": "inferno",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 4,
+      "sample_visible": 4,
+      "sample_color": {
+        "mode": "continuous",
+        "colormap": "inferno",
+        "domain": [
+          1.0,
+          4.0
+        ]
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1.5,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
       "name": "scatter_density_dropped_channels",
       "trace_id": 22,
       "tier": "density",
