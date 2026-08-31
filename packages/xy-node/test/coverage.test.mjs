@@ -1463,16 +1463,14 @@ test("buildPayload ships cartesian axis domain like Python _axis_spec", () => {
   assert.equal(spec.y_axis.domain, undefined);
 });
 
-test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `format`. Node cartesian payload axes omit that
-  // field even when axis format is set. Recorded emit-payload-axis-format
-  // stay-host.
+test("buildPayload ships cartesian axis format like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { format: ".2f" });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.format, ".2f");
-  assert.equal(spec.x_axis.format, undefined);
+  assert.equal(spec.x_axis.format, ".2f");
+  assert.equal(spec.y_axis.format, undefined);
 });
 
 test("buildPayload omits cartesian axis bounds unlike Python _axis_spec", () => {
@@ -1837,14 +1835,12 @@ test("buildPayload ships polar axis domain like Python _axis_spec", () => {
   assert.deepEqual(spec.x_axis.domain, [0, 1]);
 });
 
-test("buildPayload omits polar axis format unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `format` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-format stay-host.
+test("buildPayload ships polar axis format like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { format: ".2f" });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.format, undefined);
+  assert.equal(spec.x_axis.format, ".2f");
 });
 
 test("buildPayload omits polar axis bounds unlike Python _axis_spec", () => {
