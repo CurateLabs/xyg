@@ -2941,42 +2941,62 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
         use_density=kind_name == "scatter" and trace.use_density(),
         joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
     )
-    name = str(trace.name) if getattr(trace, "name", None) else ""
-    name_b = name.encode("utf-8")
-    _symbol_flags, symbol_b, symbol_int = _pack_xytc_symbol(style)
-    symbol_raw = style.get("symbol", "circle")
-    symbol_is_int = (
-        1 if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool) else 0
-    )
     nan = float("nan")
-    opacity = float(style.get("opacity", 1.0))
-    fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(
-        int(dispatch["kind_class"]) if dispatch["pack_opacity"] else 0, style
+    name = str(trace.name) if getattr(trace, "name", None) else ""
+    symbol_raw = style.get("symbol", "circle")
+    if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool):
+        symbol_is_int, symbol_int, symbol_b = 1, int(symbol_raw), b""
+    else:
+        symbol_is_int, symbol_int = 0, 0
+        symbol_b = str(symbol_raw or "circle").encode("utf-8")
+    kind_class = int(dispatch["kind_class"]) if dispatch["pack_opacity"] else 0
+    fill_opacity, stroke_opacity, line_opacity = _native.scene_xytc_opacity_pack(
+        1 if kind_class & _SCENE_KIND_CLASS_OPACITY else 0,
+        1 if kind_class & _SCENE_KIND_CLASS_BAND else 0,
+        float(style.get("fill_opacity", 1.0)),
+        float(style.get("stroke_opacity", 1.0)),
+        float(style.get("line_opacity", 1.0)),
     )
-    (
-        _num_flags,
-        size,
-        size_ch_value,
-        stroke_width,
-        width,
-        line_width,
-    ) = _pack_xytc_numeric_style(trace, style)
+    size_ch = getattr(trace, "size_ch", None)
+    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
+    has_size = 1 if "size" in style else 0
+    _num_flags, size, size_ch_value, stroke_width, width, line_width = (
+        _native.scene_xytc_numeric_style_pack(
+            has_size,
+            1 if size_ch is not None else 0,
+            1 if size_ch_constant is not None else 0,
+            1 if "stroke_width" in style else 0,
+            1 if "width" in style else 0,
+            1 if "line_width" in style else 0,
+            float(style["size"]) if has_size else nan,
+            float(size_ch_constant) if size_ch_constant is not None else nan,
+            float(style["stroke_width"]) if "stroke_width" in style else 0.0,
+            float(style["width"]) if "width" in style else 0.0,
+            float(style["line_width"]) if "line_width" in style else 0.0,
+        )
+    )
     raw_dx = style.get("hex_dx", style.get("dx"))
     raw_dy = style.get("hex_dy", style.get("dy"))
     has_hex_dx = 1 if raw_dx is not None else 0
     has_hex_dy = 1 if raw_dy is not None else 0
-    dash_flags, dash_b, dash_pattern = _pack_xytc_dash(style)
+    dash = style.get("dash")
+    dash_b, dash_pattern, dash_is_array = b"", [], 0
+    if isinstance(dash, str):
+        dash_b = dash.encode("utf-8")
+    elif isinstance(dash, (list, tuple)):
+        dash_is_array = 1
+        try:
+            dash_pattern = [float(part) for part in dash]
+        except (TypeError, ValueError):
+            dash_pattern = []
     perimeter_present = 1 if "stroke_perimeter" in style else 0
     if perimeter_present:
         perimeter = style["stroke_perimeter"]
         perimeter_is_bool = 1 if isinstance(perimeter, bool) else 0
         perimeter_true = 1 if perimeter_is_bool and perimeter else 0
     else:
-        perimeter_is_bool = 0
-        perimeter_true = 0
-    fill_css = b""
-    fill_space = b""
-    gradient_blob = b""
+        perimeter_is_bool = perimeter_true = 0
+    fill_css = fill_space = gradient_blob = b""
     if "fill" in style:
         fill = style["fill"]
         if isinstance(fill, str):
@@ -2990,7 +3010,14 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
     color2_gradient_blob = b""
     color2_gradient_packed = 0
     if dispatch["pack_color2"]:
-        paint_flags = _pack_xytc_paint_presence(style)
+        has_fill = 1 if "fill" in style else 0
+        fill_kind = _xytc_fill_kind(style) if has_fill else 0
+        paint_flags = _native.scene_xytc_paint_presence_pack(
+            has_fill,
+            fill_kind,
+            1 if "stroke" in style else 0,
+            1 if "line_color" in style else 0,
+        )
         if color2_class == _COLOR2_CLASS_TO_CODE["gradient"] and not (
             paint_flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC)
         ):
@@ -3000,9 +3027,7 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
                 color2_gradient_packed = 1
                 color2_gradient_blob = packed
     marker_blob = b""
-    marker_path_present = 0
-    marker_packed = 0
-    glyph_packed = 0
+    marker_path_present = marker_packed = glyph_packed = 0
     if dispatch["marker_path_branch"]:
         marker_path_present = 1
         packed_marker = _pack_marker_blob(style.get("marker_path"))
@@ -3016,32 +3041,30 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
             marker_blob = packed_glyph
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)) and len(radius) == 2:
-        radius_seq = 2
-        r0 = float(radius[0])
-        r1 = float(radius[1])
+        radius_seq, r0, r1 = 2, float(radius[0]), float(radius[1])
     else:
-        radius_seq = 1
-        r0 = float(radius or 0.0)
-        r1 = 0.0
+        radius_seq, r0, r1 = 1, float(radius or 0.0), 0.0
     channel = getattr(trace, "color_ch", None)
     color_ch_present = 1 if channel is not None else 0
     color_ch_has_constant = (
         1 if channel is not None and getattr(channel, "constant", None) is not None else 0
     )
-    _ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
-    size_ch = getattr(trace, "size_ch", None)
-    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
+    if channel is None:
+        color_mode = color_const = b""
+    else:
+        color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
+        color_const = str(channel.constant).encode("utf-8") if color_ch_has_constant else b""
     style_scalars = {
         "symbol_is_int": symbol_is_int,
         "symbol_int": symbol_int,
-        "opacity": opacity,
+        "opacity": float(style.get("opacity", 1.0)),
         "fill_opacity": fill_opacity,
         "stroke_opacity": stroke_opacity,
         "line_opacity": line_opacity,
         "has_stroke": 1 if "stroke" in style else 0,
         "has_line_color": 1 if "line_color" in style else 0,
-        "has_size": 1 if "size" in style else 0,
-        "size": float(style["size"]) if "size" in style else nan,
+        "has_size": has_size,
+        "size": float(style["size"]) if has_size else nan,
         "has_size_ch": 1 if size_ch is not None else 0,
         "has_size_ch_constant": 1 if size_ch_constant is not None else 0,
         "size_ch_constant": float(size_ch_constant) if size_ch_constant is not None else nan,
@@ -3058,7 +3081,7 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
         "has_stroke_perimeter": perimeter_present,
         "stroke_perimeter_is_bool": perimeter_is_bool,
         "stroke_perimeter_true": perimeter_true,
-        "dash_is_array": 1 if dash_flags else 0,
+        "dash_is_array": dash_is_array,
         "has_fill": 1 if "fill" in style else 0,
         "fill_kind": _xytc_fill_kind(style),
         "color_ch_present": color_ch_present,
@@ -3072,7 +3095,7 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
         show_legend=show_legend,
         kind=kind,
         has_name=bool(name),
-        name=name_b,
+        name=name.encode("utf-8"),
         marker_path_present=bool(marker_path_present),
         use_density=kind_name == "scatter" and trace.use_density(),
         joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
