@@ -47,6 +47,7 @@ import {
   payloadBarHistEmitPlan,
   payloadHeatmapEmitPlan,
   payloadMeshEmitPlan,
+  payloadRibbonEmitPlan,
   payloadTraceChannelsShipAttach,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
@@ -2156,6 +2157,54 @@ export class Figure {
     const y1 = new Column(t.y1);
     const t0 = new Column(t.x);
     const t1 = new Column(t.y);
+    const geometry = [x0, x1, y0, y1, t0, t1];
+    const values = [t.x0, t.x1, t.y0, t.y1, t.x, t.y];
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const anyGeometryNulls = geometry.some((col) => col.nullCount > 0);
+    const prePlan = payloadRibbonEmitPlan({
+      nMarks: t.x0.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      anyGeometryNulls,
+      hasColor2Ch: t.color2_ch != null,
+    });
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    let tx0v = t.x;
+    let tx1v = t.y;
+    let sel = null;
+    if (prePlan.attemptGather) {
+      const candidates = values
+        .map((array, i) => (geometry[i].nullCount > 0 ? asF64(array) : null))
+        .filter((array) => array != null);
+      sel = validIndicesF64(candidates);
+      if (sel != null) {
+        x0v = gatherF64(x0v, sel);
+        x1v = gatherF64(x1v, sel);
+        y0v = gatherF64(y0v, sel);
+        y1v = gatherF64(y1v, sel);
+        tx0v = gatherF64(tx0v, sel);
+        tx1v = gatherF64(tx1v, sel);
+      }
+    }
+    const shipX0 = sel == null ? x0 : new Column(x0v);
+    const shipX1 = sel == null ? x1 : new Column(x1v);
+    const shipY0 = sel == null ? y0 : new Column(y0v);
+    const shipY1 = sel == null ? y1 : new Column(y1v);
+    const shipT0 = sel == null ? t0 : new Column(tx0v);
+    const shipT1 = sel == null ? t1 : new Column(tx1v);
+    const plan = payloadRibbonEmitPlan({
+      nMarks: x0v.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      anyGeometryNulls,
+      hasColor2Ch: t.color2_ch != null,
+    });
     const entry = {
       id: t.id,
       kind: "ribbon",
@@ -2167,20 +2216,25 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
-      n_marks: t.x0.length,
-      // Node payload ribbon omits ship scale. Python `_emit_ribbon` passes
-      // `_axis_scale` into `pw.ship`. Matching Python would pin log-axis
-      // offset to 0. Recorded emit-ribbon-ship-scale stay-host.
-      x0: pw.ship(t.x0, x0),
-      x1: pw.ship(t.x1, x1),
-      y0: pw.ship(t.y0, y0),
-      y1: pw.ship(t.y1, y1),
+      n_marks: plan.nMarks,
+      x0: pw.ship(x0v, shipX0, { scale: plan.xShipScale }),
+      x1: pw.ship(x1v, shipX1, { scale: plan.xShipScale }),
+      y0: pw.ship(y0v, shipY0, { scale: plan.yShipScale }),
+      y1: pw.ship(y1v, shipY1, { scale: plan.yShipScale }),
       // Target span y values on the y scale (Python ribbon contract).
-      target_y0: pw.ship(t.x, t0),
-      target_y1: pw.ship(t.y, t1),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      target_y0: pw.ship(tx0v, shipT0, { scale: plan.yShipScale }),
+      target_y1: pw.ship(tx1v, shipT1, { scale: plan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      sel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
     // Node payload ribbon ships t.color. Python `_emit_ribbon` ships color_ch.
     // Matching Python would ignore t.color. Recorded ribbon-ship-color stay-host.
     const color = this._shipColor(t.color, pw);
@@ -2188,26 +2242,22 @@ export class Figure {
     // Node payload ribbon ships t.color_target. Python `_emit_ribbon` ships
     // color2_ch. Matching Python would ignore t.color_target. Recorded
     // ribbon-color-target stay-host.
-    const colorTarget = this._shipColor(t.color_target, pw);
-    if (colorTarget != null) entry.color_target = colorTarget;
+    if (plan.attachColor2) {
+      const colorTarget = this._shipColor(t.color_target ?? t.color2_ch, pw, sel);
+      if (colorTarget != null) entry.color_target = colorTarget;
+    }
     if (t.tooltip_rows != null) {
       // Node payload ribbon skips tooltip_rows length. Python
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
       // Python would throw. Recorded emit-ribbon-tooltip-len stay-host.
       entry.tooltip_rows = t.tooltip_rows;
     }
-    // Node payload ribbon omits stroke_ch. Python `_emit_ribbon` ships
-    // stroke_ch via `_ship_trace_styles`. Matching Python would add
-    // entry.stroke. Recorded emit-ribbon-stroke stay-host.
     // Node payload ribbon omits style_channels. Python `_emit_ribbon` ships
     // them as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-ribbon-channels stay-host.
-    // Node payload ribbon skips valid_indices_f64 gather. Python `_emit_ribbon`
-    // drops null geometry rows. Matching Python would gather. Recorded
-    // emit-ribbon-gather stay-host.
-    // Node payload ribbon omits transition_keys. Python `_emit_ribbon` ships
-    // them via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-ribbon-transition stay-host.
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, sel);
+    }
     return entry;
   }
 

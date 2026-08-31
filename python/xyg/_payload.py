@@ -974,14 +974,34 @@ class PayloadMixin(_Host):
             raise ValueError("ribbon trace missing geometry columns")
         columns = (t.x0, t.x1, t.y0, t.y1, t.x, t.y)
         arrays = [column.values for column in columns]
-        candidates = [
-            array for column, array in zip(columns, arrays, strict=True) if column.zone.null_count
-        ]
-        sel_arg = kernels.valid_indices_f64(tuple(candidates)) if candidates else None
+        any_geometry_nulls = any(column.zone.null_count for column in columns)
+        pre_plan = kernels.payload_ribbon_emit_plan(
+            n_marks=int(len(arrays[0])),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_color2_ch=t.color2_ch is not None,
+        )
+        sel_arg: Optional[np.ndarray] = None
+        if pre_plan["attempt_gather"]:
+            candidates = [
+                array
+                for column, array in zip(columns, arrays, strict=True)
+                if column.zone.null_count
+            ]
+            sel_arg = kernels.valid_indices_f64(tuple(candidates))
         if sel_arg is not None:
             arrays = [array[sel_arg] for array in arrays]
         x0v, x1v, slo, shi, tlo, thi = arrays
-        xs, ys = self._axis_scale(t.x_axis), self._axis_scale(t.y_axis)
+        plan = kernels.payload_ribbon_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_color2_ch=t.color2_ch is not None,
+        )
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -991,17 +1011,17 @@ class PayloadMixin(_Host):
             # decimation nor a density tier means anything for a band (§28).
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=xs),
-            "x1": pw.ship(x1v, t.x1, scale=xs),
-            "y0": pw.ship(slo, t.y0, scale=ys),
-            "y1": pw.ship(shi, t.y1, scale=ys),
-            "target_y0": pw.ship(tlo, t.x, scale=ys),
-            "target_y1": pw.ship(thi, t.y, scale=ys),
+            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
+            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
+            "y0": pw.ship(slo, t.y0, scale=plan["y_ship_scale"]),
+            "y1": pw.ship(shi, t.y1, scale=plan["y_ship_scale"]),
+            "target_y0": pw.ship(tlo, t.x, scale=plan["y_ship_scale"]),
+            "target_y1": pw.ship(thi, t.y, scale=plan["y_ship_scale"]),
         }
-        if t.color2_ch is not None:
+        if plan["attach_color2"]:
             entry["color_target"] = channels.ship_color_channel(
                 t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
             )
@@ -1011,10 +1031,12 @@ class PayloadMixin(_Host):
             t,
             sel_arg,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
-        return self._transition_entry(entry, t, pw, sel_arg)
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_triangle_mesh(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int

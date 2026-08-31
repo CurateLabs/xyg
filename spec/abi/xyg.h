@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 298
-#define XYG_ABI_SIGNATURE_SHA256 "c22da11c8e09d5766770b3f414cd0b3151d6220f72a56b6d50ee3cb37990dea8"
+#define XYG_ABI_VERSION 299
+#define XYG_ABI_SIGNATURE_SHA256 "bcb007d1cec2f79a05536bd80e2de6779554930d4ae8bc00da0925d20b3e3de9"
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,6 +171,7 @@ int32_t xyg_payload_heatmap_emit_plan(int32_t has_rgba_grid, size_t grid_rows, s
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
 int32_t xyg_payload_mesh_emit_plan(size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t any_geometry_nulls, int32_t has_continuous_color, int32_t continuous_color_values_missing, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition, int32_t * out_attempt_gather, int32_t * out_gather_include_color);
 int32_t xyg_payload_nonxy_emit_plan(int32_t kind, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition);
+int32_t xyg_payload_ribbon_emit_plan(size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t any_geometry_nulls, int32_t has_color2_ch, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition, int32_t * out_attempt_gather, int32_t * out_attach_color2);
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_segment_budget(double px_width);
 size_t xyg_payload_segments_emit_gather(const uint8_t * kind, size_t kind_len, size_t n_segments, size_t n_points, double px_width, int32_t * out_tier, int32_t * out_role_maps, int32_t * out_keep_all, uint32_t * out_indices, uint32_t * out_sources, uint32_t * out_roles, size_t capacity);

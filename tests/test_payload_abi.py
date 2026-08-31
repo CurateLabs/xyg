@@ -536,6 +536,43 @@ def test_payload_mesh_emit_plan_rejects_missing_continuous_color() -> None:
         )
 
 
+def test_payload_ribbon_emit_plan_gather_and_transition() -> None:
+    plan = kernels.payload_ribbon_emit_plan(
+        n_marks=6,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+        any_geometry_nulls=True,
+        has_color2_ch=True,
+    )
+    assert plan == {
+        "tier_direct": True,
+        "n_marks": 6,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+        "attempt_gather": True,
+        "attach_color2": True,
+    }
+
+
+def test_payload_ribbon_emit_plan_no_gather_without_nulls() -> None:
+    plan = kernels.payload_ribbon_emit_plan(
+        n_marks=4,
+        style_color_is_none=False,
+        x_axis_scale="linear",
+        y_axis_scale="linear",
+        any_geometry_nulls=False,
+        has_color2_ch=False,
+    )
+    assert plan["attempt_gather"] is False
+    assert plan["attach_color2"] is False
+    assert plan["apply_palette_default"] is False
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")
