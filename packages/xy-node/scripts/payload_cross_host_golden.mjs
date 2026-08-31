@@ -59,6 +59,11 @@ const cases = [
     fig.traces[0].style_channels = { stroke_width: { values: [2, 3] } };
     fig.traces[0].id = 34;
   }),
+  caseEntry("scatter_color_ch", (fig) => {
+    fig.scatter([0, 1], [0, 1], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 36;
+  }),
   caseEntry("line_transition_keys", (fig) => {
     fig.line([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 8;

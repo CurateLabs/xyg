@@ -25,6 +25,10 @@ function buildCase(name) {
     fig.scatter([0, 1], [0, 1]);
     fig.traces[0].style_channels = { stroke_width: { values: [2, 3] } };
     fig.traces[0].id = 34;
+  } else if (name === "scatter_color_ch") {
+    fig.scatter([0, 1], [0, 1], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 36;
   } else if (name === "line_transition_keys") {
     fig.line([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 8;
@@ -150,7 +154,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 25);
+  assert.equal(fixture.cases.length, 26);
 });
 
 for (const entry of fixture.cases) {
