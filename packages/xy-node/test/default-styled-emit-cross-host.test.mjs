@@ -44,6 +44,10 @@ function buildCase(name) {
     const whiskerIdx = fig.traces.findIndex((t) => t.kind === "box_whisker");
     fig.traces[whiskerIdx].id = entry.trace_id;
     fig.traces[whiskerIdx].style = { opacity: 0.9 };
+  } else if (name === "hexbin_default_styled") {
+    fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].style = { opacity: 0.9 };
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -59,7 +63,7 @@ test("default-styled emit cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.default-styled-emit-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 7);
+  assert.equal(fixture.cases.length, 8);
 });
 
 for (const entry of fixture.cases) {

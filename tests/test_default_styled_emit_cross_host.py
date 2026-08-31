@@ -2,7 +2,7 @@
 
 Compares trace style dicts where Python ``_default_styled`` fills palette color
 when ``style.color`` is missing (line, area, histogram, mesh, segments, ribbon,
-and rect emit paths).
+rect, and hexbin emit paths).
 
 Run::
 
@@ -40,6 +40,7 @@ CASE_NAMES = (
     "segments_default_styled",
     "ribbon_default_styled",
     "rect_default_styled",
+    "hexbin_default_styled",
 )
 
 
@@ -90,6 +91,10 @@ def _build_case(name: str) -> Figure:
         fig.box([1, 2, 3, 4, 5])
         trace = next(t for t in fig.traces if t.kind == "box_whisker")
         trace.id = 22
+    elif name == "hexbin_default_styled":
+        fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], gridsize=4)
+        trace = fig.traces[0]
+        trace.id = 23
     else:
         raise KeyError(name)
     trace.style = {"opacity": 0.9}
