@@ -25,6 +25,7 @@ import xyg
 from xyg._figure import Figure
 from xyg._scene_v3 import (
     UnsupportedSceneV3,
+    _pack_xyta,
     figure_scene,
     public_static_export,
     scene_export_support_reason,
@@ -1349,6 +1350,25 @@ def test_colormap_hexbin_is_scene_supported() -> None:
     assert figure.to_svg() == svg
     png = public_static_export(figure, "png")
     assert png is not None
+
+
+def test_public_hexbin_colormap_xyta_matches_cross_host_fixture() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.hexbin(
+        _PUBLIC_HEXBIN_X,
+        _PUBLIC_HEXBIN_Y,
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        name="hex",
+    )
+    figure.traces[0].id = 0
+    assert figure.traces[0].color_ch.mode == "continuous"
+    packed = _pack_xyta(figure)
+    assert packed.startswith(b"XYTA")
+    assert hashlib.sha256(packed).hexdigest() == fixture["public_hexbin_colormap_xyta_sha256"]
 
 
 def test_hexbin_without_colormap_fails_closed_from_packed_xyta() -> None:
