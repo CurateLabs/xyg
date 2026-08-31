@@ -603,6 +603,75 @@ def test_payload_column_ship_plan_rejects_unknown_kind() -> None:
         )
 
 
+def test_payload_channel_ship_plan_scatter() -> None:
+    plan = kernels.payload_channel_ship_plan(
+        kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        include_trace_styles=True,
+        has_stroke_ch=True,
+        has_style_channels=True,
+    )
+    assert plan == {
+        "n_channels": 3,
+        "channels": [
+            {
+                "registry_key": "color",
+                "trace_slot": "color_ch",
+                "ship_method": "color_size",
+            },
+            {
+                "registry_key": "stroke",
+                "trace_slot": "stroke_ch",
+                "ship_method": "color",
+            },
+            {
+                "registry_key": "channels",
+                "trace_slot": "style_channels",
+                "ship_method": "style",
+            },
+        ],
+    }
+
+
+def test_payload_channel_ship_plan_ribbon_color2_first() -> None:
+    plan = kernels.payload_channel_ship_plan(
+        kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        include_trace_styles=True,
+        has_color2_ch=True,
+        has_color_ch=True,
+    )
+    assert plan["n_channels"] == 2
+    assert plan["channels"][0] == {
+        "registry_key": "color_target",
+        "trace_slot": "color2_ch",
+        "ship_method": "color",
+    }
+    assert plan["channels"][1]["ship_method"] == "color_size"
+
+
+def test_payload_channel_ship_plan_hexbin_color_size_only() -> None:
+    plan = kernels.payload_channel_ship_plan(
+        kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        include_trace_styles=False,
+        has_stroke_ch=True,
+        has_style_channels=True,
+    )
+    assert plan == {
+        "n_channels": 1,
+        "channels": [
+            {
+                "registry_key": "color",
+                "trace_slot": "color_ch",
+                "ship_method": "color_size",
+            },
+        ],
+    }
+
+
+def test_payload_channel_ship_plan_rejects_unknown_slot() -> None:
+    with pytest.raises(ValueError, match="payload_channel_ship_plan"):
+        kernels.payload_channel_ship_plan(9, include_trace_styles=True)
+
+
 def test_payload_ribbon_emit_plan_gather_and_transition() -> None:
     plan = kernels.payload_ribbon_emit_plan(
         n_marks=6,

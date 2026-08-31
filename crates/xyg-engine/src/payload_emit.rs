@@ -1380,6 +1380,142 @@ pub fn payload_column_ship_plan(
     1
 }
 
+/// Maximum paint/style channels returned by ``payload_channel_ship_plan``.
+pub const PAYLOAD_CHANNEL_SHIP_MAX: usize = 5;
+
+/// Spec registry key: ``color``.
+pub const PAYLOAD_CHAN_KEY_COLOR: i32 = 0;
+/// Spec registry key: ``size`` (shipped with ``color`` via ``color_size`` method).
+pub const PAYLOAD_CHAN_KEY_SIZE: i32 = 1;
+/// Spec registry key: ``stroke``.
+pub const PAYLOAD_CHAN_KEY_STROKE: i32 = 2;
+/// Spec registry key: ``channels`` (style channel dict).
+pub const PAYLOAD_CHAN_KEY_CHANNELS: i32 = 3;
+/// Spec registry key: ``color_target`` (ribbon far-band paint).
+pub const PAYLOAD_CHAN_KEY_COLOR_TARGET: i32 = 4;
+
+/// Trace channel slot: ``t.color_ch``.
+pub const PAYLOAD_CHAN_SLOT_COLOR: i32 = 0;
+/// Trace channel slot: ``t.size_ch`` (paired with ``color_ch``).
+pub const PAYLOAD_CHAN_SLOT_SIZE: i32 = 1;
+/// Trace channel slot: ``t.stroke_ch``.
+pub const PAYLOAD_CHAN_SLOT_STROKE: i32 = 2;
+/// Trace channel slot: ``t.style_channels``.
+pub const PAYLOAD_CHAN_SLOT_STYLE: i32 = 3;
+/// Trace channel slot: ``t.color2_ch``.
+pub const PAYLOAD_CHAN_SLOT_COLOR2: i32 = 4;
+
+/// ``channels.ship_channels`` color+size pair.
+pub const PAYLOAD_CHAN_SHIP_COLOR_SIZE: i32 = 0;
+/// ``channels.ship_color_channel`` single paint channel.
+pub const PAYLOAD_CHAN_SHIP_COLOR: i32 = 1;
+/// ``channels.ship_style_channels`` direct style dict.
+pub const PAYLOAD_CHAN_SHIP_STYLE: i32 = 2;
+
+/// One paint/style channel in the payload registry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PayloadChannelShipEntry {
+    pub registry_key: i32,
+    pub trace_slot: i32,
+    pub ship_method: i32,
+}
+
+/// Channel registry / attach-order policy from ``_ship_channels`` /
+/// ``_ship_trace_channel_attach`` and ribbon ``color2_ch``.
+///
+/// Owns which trace channels ship under which spec keys and in what order
+/// (``color_target`` before the color/size pair). Hosts still slice columns and
+/// call ``channels.ship_*`` / ``pw.ship*``. Returns ``1`` on success, ``0`` when
+/// ``slot`` is invalid.
+pub fn payload_channel_ship_plan(
+    slot: i32,
+    include_trace_styles: i32,
+    has_color2_ch: i32,
+    has_color_ch: i32,
+    has_stroke_ch: i32,
+    has_style_channels: i32,
+    out_n_channels: &mut usize,
+    out_channels: &mut [PayloadChannelShipEntry; PAYLOAD_CHANNEL_SHIP_MAX],
+) -> i32 {
+    *out_n_channels = 0;
+    let mut n = 0usize;
+
+    fn push(
+        out: &mut [PayloadChannelShipEntry; PAYLOAD_CHANNEL_SHIP_MAX],
+        n: &mut usize,
+        registry_key: i32,
+        trace_slot: i32,
+        ship_method: i32,
+    ) {
+        out[*n] = PayloadChannelShipEntry {
+            registry_key,
+            trace_slot,
+            ship_method,
+        };
+        *n += 1;
+    }
+
+    if has_color2_ch != 0 {
+        push(
+            out_channels,
+            &mut n,
+            PAYLOAD_CHAN_KEY_COLOR_TARGET,
+            PAYLOAD_CHAN_SLOT_COLOR2,
+            PAYLOAD_CHAN_SHIP_COLOR,
+        );
+    }
+
+    let mut ship_color = 0i32;
+    let mut ship_size = 0i32;
+    let mut ship_stroke = 0i32;
+    let mut ship_style = 0i32;
+    if payload_trace_channels_ship_attach(
+        slot,
+        include_trace_styles,
+        has_color_ch,
+        has_stroke_ch,
+        has_style_channels,
+        &mut ship_color,
+        &mut ship_size,
+        &mut ship_stroke,
+        &mut ship_style,
+    ) == 0
+    {
+        return 0;
+    }
+
+    if ship_color != 0 {
+        push(
+            out_channels,
+            &mut n,
+            PAYLOAD_CHAN_KEY_COLOR,
+            PAYLOAD_CHAN_SLOT_COLOR,
+            PAYLOAD_CHAN_SHIP_COLOR_SIZE,
+        );
+    }
+    if ship_stroke != 0 {
+        push(
+            out_channels,
+            &mut n,
+            PAYLOAD_CHAN_KEY_STROKE,
+            PAYLOAD_CHAN_SLOT_STROKE,
+            PAYLOAD_CHAN_SHIP_COLOR,
+        );
+    }
+    if ship_style != 0 {
+        push(
+            out_channels,
+            &mut n,
+            PAYLOAD_CHAN_KEY_CHANNELS,
+            PAYLOAD_CHAN_SLOT_STYLE,
+            PAYLOAD_CHAN_SHIP_STYLE,
+        );
+    }
+
+    *out_n_channels = n;
+    1
+}
+
 /// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
 ///
 /// ``slot`` is ``PAYLOAD_SHIP_CHANNELS_ALWAYS`` or ``PAYLOAD_SHIP_CHANNELS_IF_COLOR``.
@@ -1688,6 +1824,90 @@ mod tests {
             ),
             0
         );
+    }
+
+    fn run_channel_ship_plan(
+        slot: i32,
+        include_trace_styles: i32,
+        has_color2_ch: i32,
+        has_color_ch: i32,
+        has_stroke_ch: i32,
+        has_style_channels: i32,
+    ) -> (i32, usize, [PayloadChannelShipEntry; PAYLOAD_CHANNEL_SHIP_MAX]) {
+        let mut n = 0usize;
+        let mut cols = [PayloadChannelShipEntry {
+            registry_key: -1,
+            trace_slot: -1,
+            ship_method: -1,
+        }; PAYLOAD_CHANNEL_SHIP_MAX];
+        let ok = payload_channel_ship_plan(
+            slot,
+            include_trace_styles,
+            has_color2_ch,
+            has_color_ch,
+            has_stroke_ch,
+            has_style_channels,
+            &mut n,
+            &mut cols,
+        );
+        (ok, n, cols)
+    }
+
+    #[test]
+    fn payload_channel_ship_plan_scatter_color_size_stroke_style() {
+        let (ok, n, cols) = run_channel_ship_plan(
+            PAYLOAD_SHIP_CHANNELS_ALWAYS,
+            1,
+            0,
+            0,
+            1,
+            1,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(n, 3);
+        assert_eq!(cols[0].registry_key, PAYLOAD_CHAN_KEY_COLOR);
+        assert_eq!(cols[0].ship_method, PAYLOAD_CHAN_SHIP_COLOR_SIZE);
+        assert_eq!(cols[1].registry_key, PAYLOAD_CHAN_KEY_STROKE);
+        assert_eq!(cols[2].registry_key, PAYLOAD_CHAN_KEY_CHANNELS);
+    }
+
+    #[test]
+    fn payload_channel_ship_plan_ribbon_color2_before_color_size() {
+        let (ok, n, cols) = run_channel_ship_plan(
+            PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            1,
+            1,
+            1,
+            0,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(n, 2);
+        assert_eq!(cols[0].registry_key, PAYLOAD_CHAN_KEY_COLOR_TARGET);
+        assert_eq!(cols[0].trace_slot, PAYLOAD_CHAN_SLOT_COLOR2);
+        assert_eq!(cols[1].registry_key, PAYLOAD_CHAN_KEY_COLOR);
+    }
+
+    #[test]
+    fn payload_channel_ship_plan_hexbin_color_size_only() {
+        let (ok, n, cols) = run_channel_ship_plan(
+            PAYLOAD_SHIP_CHANNELS_ALWAYS,
+            0,
+            0,
+            0,
+            1,
+            1,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(n, 1);
+        assert_eq!(cols[0].ship_method, PAYLOAD_CHAN_SHIP_COLOR_SIZE);
+    }
+
+    #[test]
+    fn payload_channel_ship_plan_rejects_unknown_slot() {
+        let (ok, n, _) = run_channel_ship_plan(9, 1, 0, 1, 1, 1);
+        assert_eq!(ok, 0);
+        assert_eq!(n, 0);
     }
 
     #[test]
