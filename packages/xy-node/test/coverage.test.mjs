@@ -1094,15 +1094,14 @@ test("_emitRect ships color_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].color.color, "#112233");
 });
 
-test("_emitRibbon ships t.color unlike Python color_ch", () => {
-  // Python `_emit_ribbon` ships color_ch. Node keeps t.color even when
-  // color_ch differs. Recorded ribbon-ship-color stay-host.
+test("_emitRibbon ships color_ch via payload channel attach", () => {
+  // Node `_emitRibbon` ships color_ch like Python after gather/ship registry parity (#770).
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
   fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].color.color, "#112233");
+  assert.equal(spec.traces[0].color.color, "#445566");
 });
 
 test("_emitRibbon ships t.color_target unlike Python color2_ch", () => {
@@ -1151,9 +1150,9 @@ test("_emitHexbin ships metric and color_ch via payload channel attach", () => {
   assert.ok(fig.traces[0].color_ch != null);
 });
 
-test("_emitScatterDensity colorMode stays style unlike Python color_ch", () => {
-  // Python color_mode follows color_ch. Node uses style.color ? 1 : 0, so
-  // density.color ships from style even when color_ch is continuous.
+test("_emitScatterDensity defers style color when color_ch is continuous without values", () => {
+  // Python `_density_trace_spec` uses color_ch when values/domain are present.
+  // Continuous color_ch without values stays off the density color path on both hosts.
   const n = 10;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 3) % n) / n);
@@ -1162,7 +1161,7 @@ test("_emitScatterDensity colorMode stays style unlike Python color_ch", () => {
   fig.traces[0].color_ch = { mode: "continuous", colormap: "magma" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].density.color, "#112233");
+  assert.equal(spec.traces[0].density.color, undefined);
 });
 
 test("lodPlan returns exact vs density for Rust budgets", () => {
