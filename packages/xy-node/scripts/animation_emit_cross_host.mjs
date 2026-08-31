@@ -63,11 +63,37 @@ const cases = [
     fig.traces[0].id = 55;
     fig.traces[0].animation = { ...ANIM };
   }),
+  caseEntry("area_animation", (fig) => {
+    fig.area([0, 1, 2], [0, 1, 2]);
+    fig.traces[0].id = 56;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("area_no_animation", (fig) => {
+    fig.area([0, 1], [0, 1]);
+    fig.traces[0].id = 57;
+  }),
+  caseEntry("area_decimated_animation", (fig) => {
+    const n = 10001;
+    const xs = Array.from({ length: n }, (_, i) => i);
+    const ys = Array.from({ length: n }, (_, i) => i % 7);
+    fig.area(xs, ys);
+    fig.traces[0].id = 58;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("density_animation", (fig) => {
+    fig.scatter([1, 2, 3], [1, 2, 3], { forceDensity: true });
+    fig.traces[0].id = 59;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("density_no_animation", (fig) => {
+    fig.scatter([1, 2], [1, 2], { forceDensity: true });
+    fig.traces[0].id = 60;
+  }),
 ];
 
 const out = {
   schema: "xyg.animation-emit-cross-host/v1",
-  authority: "packages/xy-node/src/figure.js payloadBaseEntryPlan attachAnimation",
+  authority: "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
   protocol: PROTOCOL_VERSION,
   abi_version: abiVersion(),
   cases,

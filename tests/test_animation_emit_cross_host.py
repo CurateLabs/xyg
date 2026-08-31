@@ -1,7 +1,7 @@
 """Cross-host animation attach parity: Python vs @curatelabs/xyg-node.
 
-Compares scatter and line emit paths where Python ``_base_entry`` attaches
-``t.animation`` via ``payload_base_entry_plan``.
+Compares scatter, line, area, and density emit paths where Python attaches
+``t.animation`` via ``payload_base_entry_plan`` or ``_transition_entry``.
 
 Run::
 
@@ -39,6 +39,11 @@ CASE_NAMES = (
     "line_no_animation",
     "scatter_log_animation",
     "line_decimated_animation",
+    "area_animation",
+    "area_no_animation",
+    "area_decimated_animation",
+    "density_animation",
+    "density_no_animation",
 )
 
 
@@ -91,6 +96,30 @@ def _build_case(name: str) -> Figure:
         trace = fig.traces[-1]
         trace.id = 55
         trace.animation = dict(ANIM)
+    elif name == "area_animation":
+        fig.area([0.0, 1.0, 2.0], [0.0, 1.0, 2.0])
+        trace = fig.traces[-1]
+        trace.id = 56
+        trace.animation = dict(ANIM)
+    elif name == "area_no_animation":
+        fig.area([0.0, 1.0], [0.0, 1.0])
+        fig.traces[-1].id = 57
+    elif name == "area_decimated_animation":
+        n = 10001
+        xs = [float(i) for i in range(n)]
+        ys = [float(i % 7) for i in range(n)]
+        fig.area(xs, ys)
+        trace = fig.traces[-1]
+        trace.id = 58
+        trace.animation = dict(ANIM)
+    elif name == "density_animation":
+        fig.scatter([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], density=True)
+        trace = fig.traces[-1]
+        trace.id = 59
+        trace.animation = dict(ANIM)
+    elif name == "density_no_animation":
+        fig.scatter([1.0, 2.0], [1.0, 2.0], density=True)
+        fig.traces[-1].id = 60
     else:
         raise KeyError(name)
     return fig

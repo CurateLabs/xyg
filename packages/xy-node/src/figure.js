@@ -6,7 +6,6 @@
     // Node payload segments omits animation. Python `_emit_segments` ships
     // t.animation via `_transition_entry`. Matching Python would add
     // entry.animation. Recorded emit-segments-animation stay-host.
-    // emit-area-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
  * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
@@ -1585,7 +1584,17 @@ export class Figure {
       nTooltipRows: t.tooltip_rows?.length ?? 0,
     });
     if (prePlan.emitDensity) {
-      return this._emitScatterDensity(t, pw, xr, yr);
+      if (prePlan.clearShippedSel) {
+        t.shipped_sel = null;
+      }
+      if (prePlan.drillModeFalse) {
+        t.drill_mode = false;
+      }
+      const entry = this._emitScatterDensity(t, pw, xr, yr);
+      if (prePlan.attachTransition) {
+        return attachTransitionEntry(entry, t, pw);
+      }
+      return entry;
     }
     const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
     const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
