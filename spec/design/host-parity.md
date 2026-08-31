@@ -1371,7 +1371,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   (upstream text survives only as clearly-marked provenance).
 - **REQ-HOSTPARITY-6 (MUST, MVP).** Remove Python host-only layout/encode
   shenanigans for MVP: remaining twins are `_payload` emit orchestration and
-  `_scene_v3` pack. Sankey placement already lives in `xyg_sankey_layout`;
+  `_scene_v3` pack. M2 close tracker:
+  [#731](https://github.com/CurateLabs/xyg/issues/731)
+  ([`m2-close.md`](../process/m2-close.md)); children #732 / #733. Stay-host
+  TAP extras are inventory, not an alternate close path. Sankey placement already lives in `xyg_sankey_layout`;
   encode offset/scale is ABI 208; polar wedge flatten is ABI 209; hexbin ring
   offsets are ABI 210; step/stairs expand is ABI 211; authored marker-path
   scale is ABI 212; color CSS/numeric split, domain pad, and direct RGBA admit
