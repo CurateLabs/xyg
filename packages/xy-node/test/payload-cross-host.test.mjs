@@ -94,7 +94,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 12);
+  assert.equal(fixture.cases.length, 15);
 });
 
 for (const entry of fixture.cases) {
