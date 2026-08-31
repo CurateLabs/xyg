@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 312;
+pub const ABI_VERSION: u32 = 313;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16003,10 +16003,11 @@ pub struct XygPayloadColumnShipEntry {
     pub gather: u32,
 }
 
-/// Column registry / gather-and-ship plan from per-kind ``_emit_*`` (ABI 310).
+/// Column registry / gather-and-ship plan from per-kind ``_emit_*`` (ABI 310/313).
 ///
 /// Owns geometry column keys, trace slots, ship method/scale, and gather policy.
-/// Hosts still NumPy-gather and ship buffers.
+/// ``orientation`` is ``PAYLOAD_BAR_ORIENTATION_*`` for ``bar_compact`` only; ignored
+/// otherwise. Hosts still NumPy-gather and ship buffers.
 ///
 /// # Safety
 /// ``kind`` must address ``kind_len`` readable bytes when ``kind_len > 0``.
@@ -16018,6 +16019,7 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
     kind_len: usize,
     x_axis_type: i32,
     y_axis_type: i32,
+    orientation: i32,
     out_gather_policy: *mut i32,
     out_gather_include_color: *mut i32,
     out_n_columns: *mut usize,
@@ -16057,6 +16059,7 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
             &kind_str,
             x_axis_type,
             y_axis_type,
+            orientation,
             &mut gather_policy,
             &mut gather_include_color,
             &mut n_columns,
