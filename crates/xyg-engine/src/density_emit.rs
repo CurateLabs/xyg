@@ -207,6 +207,17 @@ pub fn density_channels_dropped_compat(dropped_count: i32) -> i32 {
     i32::from(dropped_count > 0)
 }
 
+/// Whether a per-item channel name stays in ``dropped_channels`` (ABI 274).
+///
+/// Returns ``0`` when ``mean_color_aggregates`` is set and ``channel`` is
+/// ``color`` (aggregated into the mean-color plane), else ``1``.
+pub fn density_dropped_channel_wire_admit(channel: &str, mean_color_aggregates: i32) -> i32 {
+    if mean_color_aggregates != 0 && channel == "color" {
+        return 0;
+    }
+    1
+}
+
 /// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
 ///
 /// Returns ``1`` when the split payload writer is active and the emit plan
@@ -867,6 +878,14 @@ mod tests {
         assert_eq!(density_channels_dropped_compat(1), 1);
         assert_eq!(density_channels_dropped_compat(3), 1);
         assert_eq!(density_channels_dropped_compat(-1), 0);
+    }
+
+    #[test]
+    fn density_dropped_channel_wire_admit_matches_host_filter() {
+        assert_eq!(density_dropped_channel_wire_admit("color", 1), 0);
+        assert_eq!(density_dropped_channel_wire_admit("color", 0), 1);
+        assert_eq!(density_dropped_channel_wire_admit("size", 1), 1);
+        assert_eq!(density_dropped_channel_wire_admit("stroke", 0), 1);
     }
 
     #[test]

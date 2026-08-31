@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 289;
+pub const ABI_VERSION: u32 = 290;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15976,6 +15976,36 @@ pub unsafe extern "C" fn xyg_density_mean_color_wire_admit(
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_channels_dropped_compat(dropped_count: i32) -> i32 {
     ffi_guard(0, || density_emit::density_channels_dropped_compat(dropped_count))
+}
+
+/// Whether a per-item channel name stays in ``dropped_channels`` (ABI 274).
+///
+/// # Safety
+/// When ``channel_len > 0``, ``channel`` must address readable UTF-8 bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_dropped_channel_wire_admit(
+    channel: *const u8,
+    channel_len: usize,
+    mean_color_aggregates: i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if !matches!(mean_color_aggregates, 0 | 1) {
+            return 0;
+        }
+        if channel_len > 0 && channel.is_null() {
+            return 0;
+        }
+        let channel_text = if channel_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(channel, channel_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return 0;
+            };
+            text
+        };
+        density_emit::density_dropped_channel_wire_admit(channel_text, mean_color_aggregates)
+    })
 }
 
 #[repr(C)]

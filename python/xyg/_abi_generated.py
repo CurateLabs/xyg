@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 289
-SIGNATURE_SHA256 = "43f71d5b5af4988522471a5c4877c2a896124bd95254b199bfa2691ebca54b8c"
+ABI_VERSION = 290
+SIGNATURE_SHA256 = "afe3e2b515a1fb939bcd10b641999003af199edade8fb16180ea5fe20626af01"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -238,6 +238,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_constant_color_wire_admit
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32]
+    # int32_t xyg_density_dropped_channel_wire_admit(const uint8_t * channel, size_t channel_len, int32_t mean_color_aggregates)
+    function = lib.xyg_density_dropped_channel_wire_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32]
     # int32_t xyg_density_emit_meta(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t categorical, int32_t compact_categorical, int32_t stratified_counts, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t grid_from_pyramid, int32_t x_memmapped, int32_t y_memmapped, int32_t has_pyramid_resource, int32_t force_bin2d, int32_t force_pyramid, int32_t color_mode, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, uint64_t n_points, void * out)
     function = lib.xyg_density_emit_meta
     function.restype = ctypes.c_int32

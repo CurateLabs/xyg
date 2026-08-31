@@ -11858,6 +11858,23 @@ def density_channels_dropped_compat(*, dropped_count: int) -> bool:
     return compat == 1
 
 
+def density_dropped_channel_wire_admit(
+    *,
+    channel: str = "",
+    mean_color_aggregates: bool,
+) -> bool:
+    """Dropped-channel list admit via ``xyg_density_dropped_channel_wire_admit`` (ABI 274)."""
+    channel_b = str(channel).encode("utf-8")
+    admit = _lib.xyg_density_dropped_channel_wire_admit(
+        channel_b,
+        len(channel_b),
+        int(bool(mean_color_aggregates)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_dropped_channel_wire_admit arguments")
+    return admit == 1
+
+
 DENSITY_WASM_DENSITY_NONE = 0
 DENSITY_WASM_DENSITY_AUTOMATIC = 1
 DENSITY_WASM_DENSITY_UNSUPPORTED = 2
