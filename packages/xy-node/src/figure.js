@@ -80,6 +80,7 @@ import {
   cssColorRgba8,
   directRgbaAdmit,
   quantizeUnitU8,
+  resolveColorChannel,
 } from "./color.js";
 import {
   xyAutoDomain,
@@ -174,6 +175,10 @@ function asF64(value) {
 
 function categoricalPalette(palette, nCategories) {
   return Array.from({ length: nCategories }, (_, i) => palette[i % palette.length]);
+}
+
+function align4(n) {
+  return (4 - (n % 4)) % 4;
 }
 
 function shipWireBuffer(plan, pw, {
@@ -782,7 +787,7 @@ export class PayloadWriter {
       values instanceof Uint8Array ? values : Uint8Array.from(values, (v) => Number(v) & 0xff);
     const idx = this.columns.length;
     if (this.split) {
-      const padding = (-enc.length) % 4;
+      const padding = align4(enc.length);
       const padded =
         padding === 0 ? enc : (() => {
           const out = new Uint8Array(enc.length + padding);
@@ -802,7 +807,7 @@ export class PayloadWriter {
     this.columns.push({ byte_offset: this._pos, len: enc.length, dtype: "u8" });
     this._chunks.push(enc);
     this._pos += enc.byteLength;
-    const padding = (-this._pos) % 4;
+    const padding = align4(this._pos);
     if (padding) {
       this._chunks.push(new Uint8Array(padding));
       this._pos += padding;
@@ -1002,15 +1007,13 @@ export class Figure {
     if (opts._composed) {
       const rawStyle = { ...(opts.style ?? {}) };
       const xv = asF64(x);
+      const colorInput = opts.color ?? rawStyle.color ?? null;
       const sizeInput = opts.size ?? rawStyle.size ?? null;
+      if (rawStyle.color != null) delete rawStyle.color;
       if (rawStyle.size != null) delete rawStyle.size;
       this.traces.push({
         id: opts.id ?? nextTraceId++,
-        kind: "scatter",    // entry.color. Recorded emit-density-cat-color stay-host.
-    // Node payload density scatter omits animation. Python `_transition_entry`
-    // ships t.animation on the density path. Matching Python would add
-    // entry.animation. Recorded emit-density-animation stay-host.
-
+        kind: "scatter",
         name: opts.name ?? null,
         // Node scatter stores f64, not Column.kind. Python Column infers
         // time_ms. Recorded scatter-f64-kind stay-host.
@@ -1019,7 +1022,7 @@ export class Figure {
         style: normalizeScatterStyle(rawStyle),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
-        ...(opts.color != null ? { color: opts.color } : {}),
+        color_ch: opts.color_ch ?? resolveColorChannel(colorInput, xv.length),
         size_ch: opts.size_ch ?? resolveSizeChannel(
           sizeInput,
           xv.length,
@@ -1401,7 +1404,7 @@ export class Figure {
         this.scatter(t.x, t.y, {
           name: t.name,
           style: t.style,
-          color: t.color,
+          color_ch: t.color_ch,
           size_ch: t.size_ch,
           tooltip_rows: t.tooltip_rows,
           _composed: true,
@@ -1582,24 +1585,20 @@ export class Figure {
     if (basePlan.attachAnimation) {
       entry.animation = { ...t.animation };
     }
-    // Node payload scatter ships t.color. Python `_emit_scatter` ships
-    // color_ch via `_ship_channels`. Matching Python would ignore t.color.
-    // Recorded scatter-ship-color stay-host.
-    const color = this._shipColor(t.color, pw, sel);
-    if (color != null) entry.color = color;
-    shipSizeChannel(entry, t.size_ch, pw, sel);
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      sel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
     if (t.tooltip_rows != null) {
       // Node payload scatter skips tooltip_rows length. Python
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
       // Python would throw. Recorded emit-scatter-tooltip-len stay-host.
       entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
     }
-    // Node payload scatter omits stroke_ch. Python `_emit_scatter` ships
-    // stroke_ch via `_ship_trace_styles`. Matching Python would add
-    // entry.stroke. Recorded emit-scatter-stroke stay-host.
-    // Node payload scatter omits style_channels. Python `_emit_scatter` ships
-    // them as `channels` via `_ship_trace_styles`. Matching Python would add
-    // entry.channels. Recorded emit-scatter-channels stay-host.
     if (plan.attachTransition && t.transition_keys != null) {
       attachTransitionEntry(entry, t, pw, sel);
     }

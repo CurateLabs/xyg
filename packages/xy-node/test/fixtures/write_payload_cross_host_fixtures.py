@@ -65,6 +65,11 @@ def main() -> None:
     cases.append(_case("scatter_direct", fig))
 
     fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color=["a", "b", "a"])
+    fig.traces[0].id = 15
+    cases.append(_case("scatter_categorical_color", fig))
+
+    fig = Figure(width=240, height=160)
     fig.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[0].id = 8
     fig.traces[0].transition_keys = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.uint32)

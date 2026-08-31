@@ -822,7 +822,7 @@ export function composeGraph(nodes, edges, opts = {}) {
         ...(resolvedOpts.style ?? {}),
       },
       ...(edgeColor != null && typeof edgeColor !== "string"
-        ? { color: resolveColorChannel(edgeColor, nEdges, "#888888") }
+        ? { color_ch: resolveColorChannel(edgeColor, nEdges, "#888888") }
         : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
@@ -837,7 +837,7 @@ export function composeGraph(nodes, edges, opts = {}) {
         ...(resolvedOpts.style ?? {}),
       },
       ...(nodeColor != null && typeof nodeColor !== "string"
-        ? { color: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
+        ? { color_ch: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
         : {}),
       size_ch,
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),

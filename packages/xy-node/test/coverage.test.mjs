@@ -969,16 +969,14 @@ test("_emitRibbon omits style_channels unlike Python _ship_trace_styles", () => 
   assert.equal(spec.traces[0].channels, undefined);
 });
 
-test("_emitScatter omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_scatter` ships style_channels as `channels`. Node scatter
-  // payload keeps no channels field even when style_channels is present.
-  // Recorded emit-scatter-channels stay-host.
+test("_emitScatter ships style_channels like Python _ship_trace_styles", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
-  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  fig.traces[0].style_channels = { stroke_width: { values: [2, 3] } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 2);
 });
 
 test("_emitHistogram ships stroke_ch via payload channel attach", () => {
@@ -1026,16 +1024,13 @@ test("_emitRibbon ships stroke_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].stroke.color, "#445566");
 });
 
-test("_emitScatter omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_scatter` ships stroke_ch via `_ship_trace_styles`. Node
-  // scatter payload keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-scatter-stroke stay-host.
+test("_emitScatter ships stroke_ch like Python _ship_trace_styles", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
 test("_emitTriangleMesh ships x/y unlike Python x2/y2", () => {
@@ -1112,9 +1107,7 @@ test("_emitRibbon ships t.color_target unlike Python color2_ch", () => {
   assert.equal(spec.traces[0].color_target.color, "#445566");
 });
 
-test("_emitScatter ships t.color unlike Python color_ch", () => {
-  // Python `_emit_scatter` ships color_ch. Node keeps t.color even when
-  // color_ch is also present. Recorded scatter-ship-color stay-host.
+test("_emitScatter ships color_ch like Python _emit_scatter", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1], {
     _composed: true,
@@ -1123,7 +1116,7 @@ test("_emitScatter ships t.color unlike Python color_ch", () => {
   fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].color.color, "#112233");
+  assert.equal(spec.traces[0].color.color, "#445566");
 });
 
 test("_emitHeatmap ships nested heatmap spec like Python _emit_heatmap", () => {

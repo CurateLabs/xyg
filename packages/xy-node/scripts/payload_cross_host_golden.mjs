@@ -50,6 +50,10 @@ const cases = [
     fig.scatter([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 7;
   }),
+  caseEntry("scatter_categorical_color", (fig) => {
+    fig.scatter([0, 1, 2], [0, 1, 0.5], { color: ["a", "b", "a"] });
+    fig.traces[0].id = 15;
+  }),
   caseEntry("line_transition_keys", (fig) => {
     fig.line([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 8;
