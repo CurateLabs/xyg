@@ -680,9 +680,7 @@ test("_emitScatterDensity dropped_channels stays empty unlike Python per_item_ch
   assert.deepEqual(spec.traces[0].density.dropped_channels, []);
 });
 
-test("_emitHeatmap ships rgba_len unlike Python nested rgba_bufs", () => {
-  // Python `_emit_heatmap` ships nested heatmap.rgba_bufs from rgba_grid.
-  // Node keeps rgba_len from t.rgba. Recorded emit-heatmap-rgba stay-host.
+test("_emitHeatmap ships nested rgba_bufs like Python _emit_heatmap", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.heatmap([[0, 1], [1, 0]], {
     colormapStops: Uint8Array.from([0, 0, 255, 255, 255, 255, 255, 0, 0]),
@@ -690,18 +688,18 @@ test("_emitHeatmap ships rgba_len unlike Python nested rgba_bufs", () => {
   fig.traces[0].rgba_grid = [{ values: [1, 0, 0, 1] }];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "heatmap");
-  assert.notEqual(spec.traces[0].rgba_len, undefined);
-  assert.equal(spec.traces[0].heatmap, undefined);
+  assert.ok(Array.isArray(spec.traces[0].heatmap.rgba_bufs));
+  assert.equal(spec.traces[0].heatmap.rgba_bufs.length, 1);
+  assert.equal(spec.traces[0].rgba_len, undefined);
 });
 
-test("_emitHeatmap omits color unlike Python _emit_heatmap", () => {
-  // Python `_emit_heatmap` ships a continuous color spec. Node keeps no
-  // color field on the grid-column payload. Recorded emit-heatmap-color stay-host.
+test("_emitHeatmap attaches color like Python _emit_heatmap", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "heatmap");
-  assert.equal(spec.traces[0].color, undefined);
+  assert.equal(spec.traces[0].color.mode, "continuous");
+  assert.equal(spec.traces[0].color.colormap, "viridis");
 });
 
 test("_emitScatter ships sizeValues unlike Python size_ch", () => {
@@ -1129,15 +1127,16 @@ test("_emitScatter ships t.color unlike Python color_ch", () => {
   assert.equal(spec.traces[0].color.color, "#112233");
 });
 
-test("_emitHeatmap ships grid columns unlike Python nested heatmap", () => {
-  // Python `_emit_heatmap` ships a nested heatmap object. Node keeps grid
-  // columns. Recorded heatmap-grid stay-host.
+test("_emitHeatmap ships nested heatmap spec like Python _emit_heatmap", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "heatmap");
-  assert.ok(spec.traces[0].grid != null);
-  assert.equal(spec.traces[0].heatmap, undefined);
+  assert.ok(spec.traces[0].heatmap != null);
+  assert.equal(spec.traces[0].heatmap.w, 2);
+  assert.equal(spec.traces[0].heatmap.h, 2);
+  assert.equal(spec.traces[0].grid, undefined);
+  assert.equal(spec.traces[0].x, undefined);
 });
 
 test("_emitHexbin ships color and size via payload channel attach", () => {

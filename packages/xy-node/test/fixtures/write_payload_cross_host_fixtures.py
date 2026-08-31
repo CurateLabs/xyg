@@ -98,15 +98,18 @@ def main() -> None:
     fig.traces[0].id = 9
     cases.append(_case("bar_compact", fig))
 
+    fig = Figure(width=240, height=160)
+    fig.heatmap([[0, 1], [1, 0]], colormap="viridis")
+    fig.traces[0].id = 11
+    cases.append(_case("heatmap_colormap", fig))
+
     payload = {
         "schema": "xyg.payload-cross-host/v1",
         "authority": "python/xyg/_figure.py build_payload",
         "protocol": PROTOCOL_VERSION,
         "abi_version": int(_native.ABI_VERSION),
         "cases": cases,
-        "gaps": {
-            "heatmap_payload_blob": "Node ships x/y grid columns; Python ships heatmap rgba buffer only",
-        },
+        "gaps": {},
     }
     OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {OUT} ({len(cases)} cases)")
