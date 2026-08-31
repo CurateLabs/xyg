@@ -6007,20 +6007,22 @@ export function densityWasmEligible({
 /**
  * Whether a scatter should use the density tier (Python Trace.use_density).
  * Polar / forceDirect always ship direct; threshold is strict `>` (ABI 122).
- * Boolean `forceDensity` false maps to ABI auto (`-1`), not Python
- * `payload_force_density` False → `0`. Recorded density-tristate stay-host.
+ * Tri-state `forceDensity`: undefined auto (`-1`), true forced on (`1`), false forced off (`0`).
  */
 export function shouldUseDensity(nPoints, {
-  forceDensity = false,
+  forceDensity,
   forceDirect = false,
   coords = "cartesian",
   perItemChannels = false,
 } = {}) {
+  let fd = -1;
+  if (forceDensity === true) fd = 1;
+  else if (forceDensity === false) fd = 0;
   return payloadTier({
     kind: 1,
     nPoints,
     polar: coords === "polar",
-    forceDensity: forceDensity ? 1 : -1,
+    forceDensity: fd,
     forceDirect,
     perItem: perItemChannels,
   }) === 2;

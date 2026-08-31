@@ -131,8 +131,6 @@ export { PROTOCOL_VERSION };
 
 const DEFAULT_COLORMAP = "viridis";
 
-let nextTraceId = 1;
-
 function densityColorChannelMeta(trace) {
   const channel = trace.color_ch;
   if (channel == null || typeof channel !== "object") {
@@ -268,7 +266,7 @@ function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations, m
 }
 
 function asF64(value) {
-  if (value instanceof Float64Array) return value;// next-trace-id-base stay-host.
+  if (value instanceof Float64Array) return value;
 
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
@@ -1458,7 +1456,7 @@ export class Figure {
       if (rawStyle.stroke != null) delete rawStyle.stroke;
       const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, xv.length);
       this.traces.push({
-        id: opts.id ?? nextTraceId++,
+        id: opts.id ?? this.traces.length,
         kind: "scatter",
         name: opts.name ?? null,
         // Node scatter stores f64, not Column.kind. Python Column infers
@@ -1495,7 +1493,7 @@ export class Figure {
     const fp = forcePyramid ?? t.force_pyramid;
     const ps = pyramidSpill ?? t.pyramid_spill;
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "scatter",
       name: t.name,
       x: t.x,
@@ -1521,7 +1519,7 @@ export class Figure {
     const composed = composeLine(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1537,7 +1535,7 @@ export class Figure {
     const composed = composeHistogram(values, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "histogram",
       name: t.name,
       x0: t.x0,
@@ -1556,7 +1554,7 @@ export class Figure {
     const composed = composeArea(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "area",
       name: t.name,
       x: t.x,
@@ -1579,7 +1577,7 @@ export class Figure {
 
   _pushRectTrace(kind, t, opts = {}) {
     const trace = {
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind,
       name: t.name ?? opts.name ?? null,
       x0: t.x0,
@@ -1629,7 +1627,7 @@ export class Figure {
     const t = composed.traces[0];
     // Browser paints ecdf as line + style.step (Python parity).
     this.traces.push({
-      id: opts.id ?? t.id ?? nextTraceId++,
+      id: opts.id ?? t.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1662,7 +1660,7 @@ export class Figure {
     const composed = composeErrorBand(x, lower, upper, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "error_band",
       name: t.name,
       x: t.x,
@@ -1691,7 +1689,7 @@ export class Figure {
     const composed = composeStep(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1707,7 +1705,7 @@ export class Figure {
     const composed = composeStairs(edges, values, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1723,7 +1721,7 @@ export class Figure {
     const composed = composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       ...t,
     });
     return this;
@@ -1741,7 +1739,7 @@ export class Figure {
     for (const t of composed.traces) {
       if (t.kind === "area") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           kind: "area",
           name: t.name,
           x: t.x,
@@ -1753,7 +1751,7 @@ export class Figure {
         });
       } else if (t.kind === "line") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           kind: "line",
           name: t.name,
           x: t.x,
@@ -1769,7 +1767,7 @@ export class Figure {
 
   _pushSegmentTrace(t, opts = {}) {
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: t.kind ?? "segments",
       name: t.name ?? null,
       x0: t.x0,
@@ -1793,7 +1791,7 @@ export class Figure {
     const composed = composeHeatmap(z, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "heatmap",
       name: t.name,
       x: t.x,
@@ -1814,7 +1812,7 @@ export class Figure {
     const composed = composeHexbin(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "hexbin",
       name: t.name,
       x: t.x,
@@ -1889,7 +1887,7 @@ export class Figure {
     for (const t of composed.traces) {
       if (t.kind === "ribbon") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           ...t,
         });
       } else if (t.kind === "segments") {
@@ -1908,7 +1906,7 @@ export class Figure {
     const composed = composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       ...t,
     });
     return this;

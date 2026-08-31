@@ -2219,8 +2219,8 @@ test("scatterPacksPaintPlane missing kind matches Python empty not scatter", () 
     true,
   );
   assert.equal(
-    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, forceDirect: true }),
-    true,
+    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, force_density: false }),
+    false,
   );
   assert.equal(
     scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, force_direct: true }),

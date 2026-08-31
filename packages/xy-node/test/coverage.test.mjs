@@ -50,9 +50,8 @@ test("shouldUseDensity mirrors Python threshold / force / polar rules", () => {
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { coords: "polar" }), false);
 });
 
-test("shouldUseDensity Boolean false stays auto unlike Python payload_force_density False", () => {
-  // Python payload_force_density False → 0 (forced off). Node false → -1 (auto).
-  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1, { forceDensity: false }), true);
+test("shouldUseDensity force_density false stays direct like Python payload_force_density False", () => {
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1, { forceDensity: false }), false);
 });
 
 test("payloadTier polar line stays direct over M4 threshold", () => {
@@ -278,6 +277,17 @@ test("scatter force_direct ignored above threshold like Python _emit_scatter", (
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.ok(spec.traces[0].density != null);
+});
+
+test("scatter force_density false stays direct above threshold like Python", () => {
+  const n = SCATTER_DENSITY_THRESHOLD + 1;
+  const x = fill(n, (i) => i / n);
+  const y = fill(n, (i) => ((i * 3) % n) / n);
+  const fig = figure();
+  fig.scatter(x, y, { forceDensity: false });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].n_marks, n);
 });
 
 test("_emitScatter passes forceDirect false like Python _emit_scatter", () => {
@@ -2008,13 +2018,11 @@ test("buildPayload ships polar axis categories like Python _axis_spec", () => {
   assert.equal(spec.y_axis.categories, undefined);
 });
 
-test("nextTraceId starts at 1 unlike Python len(traces)", () => {
-  // Python first trace id is 0 (`id=len(self.traces)`). Node auto-ids start
-  // at 1 and never assign 0. Recorded next-trace-id-base stay-host.
+test("nextTraceId starts at 0 like Python len(traces)", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.notEqual(spec.traces[0].id, 0);
+  assert.equal(spec.traces[0].id, 0);
 });
 
 
