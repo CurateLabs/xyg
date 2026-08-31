@@ -1,9 +1,9 @@
 {
-  "abi_version": 273,
+  "abi_version": 274,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "c8d13068f682fecb0a74050501ab449db54b8fbbb15b8d11ba67d2cede34807a",
+  "signature_sha256": "2536a081ea0961a90d68faf3f766784abf86b5cd3d48271ea589d9ebf8f89be5",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -19170,6 +19170,152 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)"
+    },
+    {
+      "name": "xyg_payload_bar_compact_admit",
+      "node_name": "xyPayloadBarCompactAdmit",
+      "nargs": 8,
+      "arguments": [
+        {
+          "name": "n_widths",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "widths",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "n_value0",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "value0",
+          "type": {
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_width",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_value0_const",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_has_value0_const",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_compact",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)"
     },
     {
       "name": "xyg_payload_errorbar_indices",

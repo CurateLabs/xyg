@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 273;
+pub const ABI_VERSION: u32 = 274;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15237,6 +15237,59 @@ pub unsafe extern "C" fn xyg_payload_errorbar_role_keys(
             }
             Err(false) => usize::MAX,
         }
+    })
+}
+
+/// Bar/column compact emit admit (ABI 274).
+///
+/// ``out_compact`` is ``1`` when uniform finite positive width allows the
+/// nested ``bar`` spec; ``0`` means fall back to per-rect geometry.
+/// ``out_has_value0_const`` is ``1`` when every baseline is finite and equal.
+/// Returns ``1`` on success, ``0`` when required outputs are null.
+///
+/// # Safety
+/// When ``n_widths > 0``, ``widths`` must hold that many readable f64s.
+/// When ``n_value0 > 0``, ``value0`` must hold that many readable f64s.
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_bar_compact_admit(
+    n_widths: usize,
+    widths: *const f64,
+    n_value0: usize,
+    value0: *const f64,
+    out_width: *mut f64,
+    out_value0_const: *mut f64,
+    out_has_value0_const: *mut i32,
+    out_compact: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_width.is_null()
+            || out_value0_const.is_null()
+            || out_has_value0_const.is_null()
+            || out_compact.is_null()
+            || (n_widths > 0 && widths.is_null())
+            || (n_value0 > 0 && value0.is_null())
+        {
+            return 0;
+        }
+        let widths_slice = if n_widths == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(widths, n_widths)
+        };
+        let value0_slice = if n_value0 == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(value0, n_value0)
+        };
+        lod_plan::payload_bar_compact_admit(
+            widths_slice,
+            value0_slice,
+            &mut *out_width,
+            &mut *out_value0_const,
+            &mut *out_has_value0_const,
+            &mut *out_compact,
+        )
     })
 }
 

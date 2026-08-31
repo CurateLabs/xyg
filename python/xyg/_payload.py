@@ -1075,12 +1075,12 @@ class PayloadMixin(_Host):
         else:
             raise ValueError(f"unknown bar orientation {orientation!r}")
 
-        if len(widths) == 0:
-            width = 1.0
-        else:
-            width = float(widths[0])
-            if not np.isfinite(width) or width <= 0 or not np.allclose(widths, width):
-                return self._emit_rect(t, pw, (), (), 0)
+        compact, width, has_value0_const, value0_const = kernels.payload_bar_compact_admit(
+            np.ascontiguousarray(widths, dtype=np.float64),
+            np.ascontiguousarray(value0, dtype=np.float64),
+        )
+        if not compact:
+            return self._emit_rect(t, pw, (), (), 0)
 
         style = self._default_styled(t)
         bar_spec: dict[str, Any] = {
@@ -1090,8 +1090,8 @@ class PayloadMixin(_Host):
             "value1": value1_ref,
             "width": width,
         }
-        if len(value0) and np.isfinite(value0).all() and np.all(value0 == value0[0]):
-            bar_spec["value0_const"] = float(value0[0])
+        if has_value0_const:
+            bar_spec["value0_const"] = value0_const
         else:
             bar_spec["value0"] = pw.ship(
                 value0,
