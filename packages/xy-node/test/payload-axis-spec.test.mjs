@@ -68,8 +68,27 @@ test("buildPayload polar axis meta matches Python _axis_spec core fields", () =>
   assert.equal(spec.x_axis.kind, "linear");
   assert.equal(spec.x_axis.side, "bottom");
   assert.equal(spec.x_axis.label, null);
+  assert.equal(spec.x_axis.scale, undefined);
   assert.equal(spec.y_axis.id, "y");
   assert.equal(spec.y_axis.kind, "linear");
   assert.equal(spec.y_axis.side, "left");
   assert.equal(spec.y_axis.label, null);
+  assert.equal(spec.y_axis.scale, undefined);
+});
+
+test("buildPayload omits linear axis scale like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, 2], [0, 1, 0.5]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, undefined);
+  assert.equal(spec.y_axis.scale, undefined);
+});
+
+test("buildPayload ships log axis scale like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, "log");
+  assert.equal(spec.y_axis.scale, undefined);
 });

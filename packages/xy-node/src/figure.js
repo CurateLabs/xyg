@@ -1610,6 +1610,10 @@ export class Figure {
     if (attach.attachSide) {
       spec.side = opts.side ?? (axis === "x" ? "bottom" : "left");
     }
+    const scale = payloadAxisScale(this, axisId);
+    if (attach.attachScale && scale !== "linear") {
+      spec.scale = scale;
+    }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
       spec.theta_unit = unit;
@@ -3082,8 +3086,8 @@ export class Figure {
       }
     }
     const axisSpecs = {
-      x: { ...this._axisSpec("x", xr), scale: "linear" },
-      y: { ...this._axisSpec("y", yr), scale: "linear" },
+      x: this._axisSpec("x", xr),
+      y: this._axisSpec("y", yr),
     };
     const dom = domSpec(this);
     const wasmSources = specTraces
