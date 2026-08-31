@@ -12648,6 +12648,119 @@ def payload_mesh_emit_plan(
     }
 
 
+class _PayloadColumnShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+        ("ship_scale", ctypes.c_int32),
+        ("gather", ctypes.c_uint32),
+    ]
+
+
+_PAYLOAD_COL_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
+    "x",
+    "y",
+    "x0",
+    "x1",
+    "y0",
+    "y1",
+    "x2",
+    "y2",
+    "base",
+    "target_y0",
+    "target_y1",
+)
+_PAYLOAD_TRACE_SLOT_ATTR: tuple[str, ...] = ("x", "y", "x0", "x1", "y0", "y1", "base")
+_PAYLOAD_COL_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("offset", "values")
+_PAYLOAD_GATHER_POLICY_BY_CODE: tuple[str, ...] = (
+    "none",
+    "visible_sel",
+    "rect_finite",
+    "valid_indices",
+    "segments",
+    "m4",
+)
+PAYLOAD_COLUMN_SHIP_MAX = 8
+
+
+def payload_column_ship_plan(
+    *,
+    kind: str,
+    x_axis_scale: str,
+    y_axis_scale: str,
+) -> dict[str, bool | int | str | list[dict[str, bool | int | str]]]:
+    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310).
+
+    Owns geometry column keys, trace slots, ship method/scale codes, and gather
+    policy. Hosts still NumPy-gather and ship buffers.
+    """
+    kind_bytes = kind.encode("utf-8")
+    gather_policy = ctypes.c_int32(-1)
+    gather_include_color = ctypes.c_int32(-1)
+    n_columns = ctypes.c_size_t(0)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    columns = (_PayloadColumnShipEntry * PAYLOAD_COLUMN_SHIP_MAX)()
+    ok = _lib.xyg_payload_column_ship_plan(
+        kind_bytes,
+        len(kind_bytes),
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        ctypes.byref(gather_policy),
+        ctypes.byref(gather_include_color),
+        ctypes.byref(n_columns),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        columns,
+        PAYLOAD_COLUMN_SHIP_MAX,
+    )
+    if ok != 1:
+        raise ValueError(f"invalid payload_column_ship_plan kind {kind!r}")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_column_ship_plan {name} ship scale")
+    n = int(n_columns.value)
+    gather_code = int(gather_policy.value)
+    if not (0 <= gather_code < len(_PAYLOAD_GATHER_POLICY_BY_CODE)):
+        raise ValueError("invalid payload_column_ship_plan gather policy")
+    out_columns: list[dict[str, bool | int | str]] = []
+    for idx in range(n):
+        entry = columns[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.trace_slot)
+        method_code = int(entry.ship_method)
+        scale_code = int(entry.ship_scale)
+        if not (0 <= key_code < len(_PAYLOAD_COL_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_TRACE_SLOT_ATTR)):
+            raise ValueError("invalid payload_column_ship_plan trace slot")
+        if not (0 <= method_code < len(_PAYLOAD_COL_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan ship method")
+        if not (0 <= scale_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan column ship scale")
+        out_columns.append(
+            {
+                "registry_key": _PAYLOAD_COL_REGISTRY_KEY_BY_CODE[key_code],
+                "trace_slot": _PAYLOAD_TRACE_SLOT_ATTR[slot_code],
+                "ship_method": _PAYLOAD_COL_SHIP_METHOD_BY_CODE[method_code],
+                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[scale_code],
+                "gather": bool(entry.gather),
+            }
+        )
+    return {
+        "gather_policy": _PAYLOAD_GATHER_POLICY_BY_CODE[gather_code],
+        "gather_include_color": int(gather_include_color.value) == 1,
+        "n_columns": n,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "columns": out_columns,
+    }
+
+
 def payload_ribbon_emit_plan(
     *,
     n_marks: int,

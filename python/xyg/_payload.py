@@ -798,14 +798,13 @@ class PayloadMixin(_Host):
         sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
-        x_scale = self._axis_scale(t.x_axis)
-        y_scale = self._axis_scale(t.y_axis)
+        column_plan = self._payload_column_ship_plan(t, kind="hexbin")
         plan = kernels.payload_nonxy_emit_plan(
             kind="hexbin",
             n_marks=int(len(xv)),
             style_color_is_none=t.style.get("color") is None,
-            x_axis_scale=x_scale,
-            y_axis_scale=y_scale,
+            x_axis_scale=column_plan["x_ship_scale"],
+            y_axis_scale=column_plan["y_ship_scale"],
         )
         entry = {
             "id": t.id,
@@ -817,9 +816,14 @@ class PayloadMixin(_Host):
             "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x": pw.ship_values(xv, scale=plan["x_ship_scale"]),
-            "y": pw.ship_values(yv, scale=plan["y_ship_scale"]),
         }
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x": xv, "y": yv},
+        )
         self._ship_trace_channel_attach(
             entry,
             t,
@@ -990,6 +994,7 @@ class PayloadMixin(_Host):
             y_axis_scale=self._axis_scale(t.y_axis),
             has_transition_keys=t.transition_keys is not None,
         )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -1000,11 +1005,14 @@ class PayloadMixin(_Host):
             "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
-            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
-            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
-            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
         }
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": y0v, "y1": y1v},
+        )
         self._ship_trace_channel_attach(
             entry,
             t,
@@ -1078,6 +1086,7 @@ class PayloadMixin(_Host):
             any_geometry_nulls=any_geometry_nulls,
             has_color2_ch=t.color2_ch is not None,
         )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -1090,13 +1099,14 @@ class PayloadMixin(_Host):
             "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
-            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
-            "y0": pw.ship(slo, t.y0, scale=plan["y_ship_scale"]),
-            "y1": pw.ship(shi, t.y1, scale=plan["y_ship_scale"]),
-            "target_y0": pw.ship(tlo, t.x, scale=plan["y_ship_scale"]),
-            "target_y1": pw.ship(thi, t.y, scale=plan["y_ship_scale"]),
         }
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": slo, "y1": shi, "x": tlo, "y": thi},
+        )
         if plan["attach_color2"]:
             entry["color_target"] = channels.ship_color_channel(
                 t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
@@ -1162,6 +1172,7 @@ class PayloadMixin(_Host):
             has_continuous_color=has_continuous_color,
             continuous_color_values_missing=continuous_color_values_missing,
         )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -1172,13 +1183,14 @@ class PayloadMixin(_Host):
             "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
-            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
-            "x2": pw.ship(x2v, t.x, scale=plan["x_ship_scale"]),
-            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
-            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
-            "y2": pw.ship(y2v, t.y, scale=plan["y_ship_scale"]),
         }
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "x": x2v, "y0": y0v, "y1": y1v, "y": y2v},
+        )
         self._ship_trace_channel_attach(
             entry,
             t,
@@ -1228,6 +1240,9 @@ class PayloadMixin(_Host):
             x0v, x1v, y0v, y1v = x0v[sel_arg], x1v[sel_arg], y0v[sel_arg], y1v[sel_arg]
         x_scale = self._axis_scale(t.x_axis)
         y_scale = self._axis_scale(t.y_axis)
+        column_plan = self._payload_column_ship_plan(
+            t, kind=t.kind if t.kind == "histogram" else "rect"
+        )
         if t.kind == "histogram":
             plan = kernels.payload_bar_hist_emit_plan(
                 kind="histogram",
@@ -1255,11 +1270,14 @@ class PayloadMixin(_Host):
             "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
-            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
-            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
-            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
         }
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": y0v, "y1": y1v},
+        )
         self._ship_trace_channel_attach(
             entry,
             t,
@@ -1395,6 +1413,36 @@ class PayloadMixin(_Host):
                 t.style_channels, sel, pw.ship_scalar, pw.ship_u8
             )
 
+    def _payload_column_ship_plan(self, t: Trace, *, kind: Optional[str] = None) -> dict:
+        """Rust-owned geometry column registry and gather policy (ABI 310)."""
+        return kernels.payload_column_ship_plan(
+            kind=kind or t.kind,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+        )
+
+    def _ship_registry_columns(
+        self,
+        entry: dict[str, Any],
+        t: Trace,
+        pw: "_PayloadWriter",
+        column_plan: dict[str, Any],
+        arrays: dict[str, np.ndarray],
+    ) -> None:
+        """Ship gathered geometry arrays into ``entry`` per the column registry."""
+        for col in column_plan["columns"]:
+            key = col["registry_key"]
+            slot = col["trace_slot"]
+            values = arrays[slot]
+            scale = col["ship_scale"]
+            if col["ship_method"] == "offset":
+                column = getattr(t, slot)
+                entry[key] = pw.ship(values, column, scale=scale)
+            else:
+                column = getattr(t, slot, None)
+                kind = column.kind if column is not None else "float"
+                entry[key] = pw.ship_values(values, kind=kind, scale=scale)
+
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False
     ) -> tuple[Any, Any]:  # noqa: ANN001
@@ -1447,8 +1495,17 @@ class PayloadMixin(_Host):
         except (TypeError, ValueError):
             authored = float("nan")
         style["opacity"] = kernels.density_overlay_opacity(authored)
-        x_col = pw.ship_values(t.x.values[sample_sel], kind=t.x.kind, scale=plan["x_ship_scale"])
-        y_col = pw.ship_values(t.y.values[sample_sel], kind=t.y.kind, scale=plan["y_ship_scale"])
+        column_plan = self._payload_column_ship_plan(t, kind="density_sample")
+        x_col = pw.ship_values(
+            t.x.values[sample_sel],
+            kind=t.x.kind,
+            scale=column_plan["columns"][0]["ship_scale"],
+        )
+        y_col = pw.ship_values(
+            t.y.values[sample_sel],
+            kind=t.y.kind,
+            scale=column_plan["columns"][1]["ship_scale"],
+        )
         sample = {
             "mode": "sampled",
             "n": int(len(sample_sel)),
