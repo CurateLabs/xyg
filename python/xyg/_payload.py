@@ -1522,7 +1522,9 @@ class PayloadMixin(_Host):
             density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
             density["color_agg"] = "mean"
             dropped_channels.remove("color")
-        density["channels_dropped"] = bool(dropped_channels)  # compatibility boolean
+        density["channels_dropped"] = kernels.density_channels_dropped_compat(
+            dropped_count=len(dropped_channels),
+        )
         density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
         if t.color_ch is not None and kernels.density_constant_color_wire_admit(
             has_channel=True,

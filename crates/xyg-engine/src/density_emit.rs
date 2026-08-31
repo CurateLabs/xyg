@@ -199,6 +199,14 @@ pub fn density_mean_color_wire_admit(has_channel: i32, mode: &str) -> i32 {
     i32::from(matches!(mode, "continuous" | "categorical" | "direct_rgba"))
 }
 
+/// Compatibility boolean for ``density["channels_dropped"]`` (ABI 273).
+///
+/// Returns ``1`` when the host-reported dropped-channel count is positive,
+/// else ``0``.
+pub fn density_channels_dropped_compat(dropped_count: i32) -> i32 {
+    i32::from(dropped_count > 0)
+}
+
 /// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
 ///
 /// Returns ``1`` when the split payload writer is active and the emit plan
@@ -851,6 +859,14 @@ mod tests {
         assert_eq!(density_mean_color_wire_admit(1, "categorical"), 1);
         assert_eq!(density_mean_color_wire_admit(1, "direct_rgba"), 1);
         assert_eq!(density_mean_color_wire_admit(1, "other"), 0);
+    }
+
+    #[test]
+    fn density_channels_dropped_compat_matches_bool_len() {
+        assert_eq!(density_channels_dropped_compat(0), 0);
+        assert_eq!(density_channels_dropped_compat(1), 1);
+        assert_eq!(density_channels_dropped_compat(3), 1);
+        assert_eq!(density_channels_dropped_compat(-1), 0);
     }
 
     #[test]

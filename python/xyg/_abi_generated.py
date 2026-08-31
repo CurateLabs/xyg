@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 288
-SIGNATURE_SHA256 = "90aa798bacc25d7e1b90ea876198ce2d3103726c4e87776f7725d7490c713153"
+ABI_VERSION = 289
+SIGNATURE_SHA256 = "43f71d5b5af4988522471a5c4877c2a896124bd95254b199bfa2691ebca54b8c"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -226,6 +226,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_categorical_color_wire_admit
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32]
+    # int32_t xyg_density_channels_dropped_compat(int32_t dropped_count)
+    function = lib.xyg_density_channels_dropped_compat
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32]
     # int32_t xyg_density_color_classify(int32_t channel_mode, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)
     function = lib.xyg_density_color_classify
     function.restype = ctypes.c_int32
