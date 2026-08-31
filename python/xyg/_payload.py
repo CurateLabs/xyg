@@ -622,9 +622,19 @@ class PayloadMixin(_Host):
         return style
 
     def _base_entry(
-        self, t: Trace, pw: "_PayloadWriter", xv: np.ndarray, yv: np.ndarray, tier: str, style: dict
+        self,
+        t: Trace,
+        pw: "_PayloadWriter",
+        xv: np.ndarray,
+        yv: np.ndarray,
+        tier: str,
+        style: dict,
+        *,
+        kind: Optional[str] = None,
+        extra_arrays: Optional[dict[str, np.ndarray]] = None,
     ) -> dict[str, Any]:
         """The shared spec skeleton for any xy trace that ships x/y geometry."""
+        emit_kind = kind or t.kind
         x_scale = self._axis_scale(t.x_axis)
         y_scale = self._axis_scale(t.y_axis)
         plan = kernels.payload_base_entry_plan(
@@ -634,6 +644,7 @@ class PayloadMixin(_Host):
             x_axis_scale=x_scale,
             y_axis_scale=y_scale,
         )
+        column_plan = self._payload_column_ship_plan(t, kind=emit_kind)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -642,11 +653,13 @@ class PayloadMixin(_Host):
             "tier": tier,
             "n_points": t.n_points,
             "n_marks": plan["n_marks"],
-            "x": pw.ship(xv, t.x, scale=plan["x_ship_scale"]),
-            "y": pw.ship(yv, t.y, scale=plan["y_ship_scale"]),
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
         }
+        arrays: dict[str, np.ndarray] = {"x": xv, "y": yv}
+        if extra_arrays:
+            arrays.update(extra_arrays)
+        self._ship_registry_columns(entry, t, pw, column_plan, arrays)
         if plan["attach_animation"]:
             entry["animation"] = dict(t.animation)
         return entry
@@ -711,12 +724,20 @@ class PayloadMixin(_Host):
         sel = self._visible_sel(t, xv, yv, base=bv, base_column=t.base)
         if sel is not None:
             xv, yv, bv = xv[sel], yv[sel], bv[sel]
-        entry = self._base_entry(t, pw, xv, yv, tier, self._default_styled(t))
+        entry = self._base_entry(
+            t,
+            pw,
+            xv,
+            yv,
+            tier,
+            self._default_styled(t),
+            kind="area",
+            extra_arrays={"base": bv},
+        )
         if tier == "decimated":
             entry["decimation_px"] = int(px_width)
         if t.transition_keys is not None:
             self._transition_entry(entry, t, pw, sel)
-        entry["base"] = pw.ship(bv, t.base, scale=self._axis_scale(t.y_axis))
         return entry
 
     def _emit_error_band(
@@ -1305,13 +1326,11 @@ class PayloadMixin(_Host):
             pos = t.x.values if sel_arg is None else t.x.values[sel_arg]
             value0 = y0v
             value1 = t.y.values if sel_arg is None else t.y.values[sel_arg]
-            value0_col = t.y0
         elif orientation == "horizontal":
             widths = y1v - y0v
             pos = (y0v + y1v) / 2.0
             value0 = x0v
             value1 = x1v
-            value0_col = t.x0
         else:
             raise ValueError(f"unknown bar orientation {orientation!r}")
 
@@ -1333,29 +1352,24 @@ class PayloadMixin(_Host):
         if not plan["emit_bar"]:
             return self._emit_rect(t, pw, (), (), 0)
 
-        if orientation == "vertical":
-            pos_ref = pw.ship(pos, t.x, scale=plan["pos_ship_scale"])
-            value1_ref = pw.ship(value1, t.y, scale=plan["value_ship_scale"])
-        else:
-            pos_ref = pw.ship_values(pos, scale=plan["pos_ship_scale"])
-            value1_ref = pw.ship(value1, t.x1, scale=plan["value_ship_scale"])
-
+        column_plan = self._payload_column_ship_plan(t, kind="bar_compact", orientation=orientation)
         style = self._default_styled(t)
         bar_spec: dict[str, Any] = {
             "orientation": orientation,
             "value_axis": plan["value_axis"],
-            "pos": pos_ref,
-            "value1": value1_ref,
             "width": width,
         }
+        skip_keys = frozenset({"value0"}) if has_value0_const else None
         if has_value0_const:
             bar_spec["value0_const"] = value0_const
-        else:
-            bar_spec["value0"] = pw.ship(
-                value0,
-                value0_col,
-                scale=plan["value_ship_scale"],
-            )
+        self._ship_registry_columns(
+            bar_spec,
+            t,
+            pw,
+            column_plan,
+            {"pos": pos, "value1": value1, "value0": value0},
+            skip_keys=skip_keys,
+        )
 
         entry = {
             "id": t.id,
@@ -1416,12 +1430,15 @@ class PayloadMixin(_Host):
                     t.style_channels, sel, pw.ship_scalar, pw.ship_u8
                 )
 
-    def _payload_column_ship_plan(self, t: Trace, *, kind: Optional[str] = None) -> dict:
-        """Rust-owned geometry column registry and gather policy (ABI 310)."""
+    def _payload_column_ship_plan(
+        self, t: Trace, *, kind: Optional[str] = None, orientation: Optional[str] = None
+    ) -> dict:
+        """Rust-owned geometry column registry and gather policy (ABI 310/313)."""
         return kernels.payload_column_ship_plan(
             kind=kind or t.kind,
             x_axis_scale=self._axis_scale(t.x_axis),
             y_axis_scale=self._axis_scale(t.y_axis),
+            orientation=orientation,
         )
 
     def _ship_registry_columns(
@@ -1431,12 +1448,16 @@ class PayloadMixin(_Host):
         pw: "_PayloadWriter",
         column_plan: dict[str, Any],
         arrays: dict[str, np.ndarray],
+        *,
+        skip_keys: Optional[frozenset[str]] = None,
     ) -> None:
         """Ship gathered geometry arrays into ``entry`` per the column registry."""
         for col in column_plan["columns"]:
             key = col["registry_key"]
+            if skip_keys is not None and key in skip_keys:
+                continue
             slot = col["trace_slot"]
-            values = arrays[slot]
+            values = arrays[key] if key in arrays else arrays[slot]
             scale = col["ship_scale"]
             if col["ship_method"] == "offset":
                 column = getattr(t, slot)

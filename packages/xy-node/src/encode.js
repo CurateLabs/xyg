@@ -3926,6 +3926,7 @@ export function payloadMeshEmitPlan({
 const PAYLOAD_COLUMN_SHIP_MAX = 8;
 const PAYLOAD_COL_REGISTRY_KEY_BY_CODE = [
   "x", "y", "x0", "x1", "y0", "y1", "x2", "y2", "base", "target_y0", "target_y1",
+  "pos", "value0", "value1",
 ];
 const PAYLOAD_TRACE_SLOT_ATTR = ["x", "y", "x0", "x1", "y0", "y1", "base"];
 const PAYLOAD_COL_SHIP_METHOD_BY_CODE = ["offset", "values"];
@@ -3938,13 +3939,22 @@ const PAYLOAD_GATHER_POLICY_BY_CODE = [
   "m4",
 ];
 
-/** Column registry / gather plan via `xyg_payload_column_ship_plan` (ABI 310). */
+/** Column registry / gather plan via `xyg_payload_column_ship_plan` (ABI 310/313). */
 export function payloadColumnShipPlan({
   kind = "rect",
   xAxisScale = "linear",
   yAxisScale = "linear",
+  orientation = "vertical",
 } = {}) {
   const kindBytes = Buffer.from(String(kind), "utf8");
+  let orientationCode = PAYLOAD_BAR_ORIENTATION_BY_NAME[orientation];
+  if (kind === "bar_compact") {
+    if (orientationCode == null) {
+      throw new RangeError(`invalid payload-column-ship-plan orientation ${orientation}`);
+    }
+  } else {
+    orientationCode = PAYLOAD_BAR_ORIENTATION_VERTICAL;
+  }
   const gatherPolicy = new Int32Array(1);
   const gatherIncludeColor = new Int32Array(1);
   const nColumns = new BigUint64Array(1);
@@ -3956,6 +3966,7 @@ export function payloadColumnShipPlan({
     BigInt(kindBytes.length),
     payloadAxisTypeCode(xAxisScale),
     payloadAxisTypeCode(yAxisScale),
+    orientationCode,
     pointer(gatherPolicy, "int32_t *"),
     pointer(gatherIncludeColor, "int32_t *"),
     pointer(nColumns, "size_t *"),
