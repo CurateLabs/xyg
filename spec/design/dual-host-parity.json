@@ -231,7 +231,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens"
+      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens; tests/fixtures/payload_cross_host.json hexbin_colormap packed blob (continuous color + size channels, no metric column)"
     },
     {
       "kind": "violin",

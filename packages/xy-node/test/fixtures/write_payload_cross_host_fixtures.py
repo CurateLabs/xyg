@@ -80,6 +80,19 @@ def main() -> None:
     fig.traces[0].id = 12
     cases.append(_case("segments_pass_through", fig))
 
+    fig = Figure(width=240, height=160)
+    fig.axis_options["x"]["domain"] = (0.0, 4.0)
+    fig.axis_options["y"]["domain"] = (0.0, 5.0)
+    fig.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        name="hex",
+    )
+    fig.traces[0].id = 14
+    cases.append(_case("hexbin_colormap", fig))
+
     payload = {
         "schema": "xyg.payload-cross-host/v1",
         "authority": "python/xyg/_figure.py build_payload",
@@ -88,7 +101,6 @@ def main() -> None:
         "cases": cases,
         "gaps": {
             "heatmap_payload_blob": "Node ships x/y grid columns; Python ships heatmap rgba buffer only",
-            "hexbin_payload_blob": "Node omits continuous color channel wiring on payload path",
             "bar_payload_blob": "Rect column layout differs (stay-host materialization)",
         },
     }

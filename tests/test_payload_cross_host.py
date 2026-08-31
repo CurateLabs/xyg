@@ -79,6 +79,19 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
         fig.traces[0].id = 12
         return fig, {}
+    if name == "hexbin_colormap":
+        fig = Figure(width=240, height=160)
+        fig.axis_options["x"]["domain"] = (0.0, 4.0)
+        fig.axis_options["y"]["domain"] = (0.0, 5.0)
+        fig.hexbin(
+            [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+            [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+            gridsize=(4, 4),
+            range=((0.0, 4.0), (0.0, 5.0)),
+            name="hex",
+        )
+        fig.traces[0].id = 14
+        return fig, {}
     raise KeyError(name)
 
 
@@ -117,12 +130,13 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 4
+    assert len(fixture["cases"]) == 5
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
+        "hexbin_colormap",
     }
 
 
@@ -133,6 +147,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
+        "hexbin_colormap",
     ],
 )
 def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> None:
@@ -151,6 +166,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
+        "hexbin_colormap",
     ],
 )
 def test_node_live_matches_python(case_name: str, node_payload_golden: dict) -> None:

@@ -67,6 +67,15 @@ const cases = [
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
   }),
+  caseEntry("hexbin_colormap", (fig) => {
+    fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };
+    fig.hexbin(
+      [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+      [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+      { gridsize: [4, 4], range: [[0, 4], [0, 5]], name: "hex" },
+    );
+    fig.traces[0].id = 14;
+  }),
 ];
 
 const out = {

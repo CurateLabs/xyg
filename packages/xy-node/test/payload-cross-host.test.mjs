@@ -32,6 +32,14 @@ function buildCase(name) {
   } else if (name === "segments_pass_through") {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
+  } else if (name === "hexbin_colormap") {
+    fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };
+    fig.hexbin(
+      [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+      [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+      { gridsize: [4, 4], range: [[0, 4], [0, 5]], name: "hex" },
+    );
+    fig.traces[0].id = 14;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -42,7 +50,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 4);
+  assert.equal(fixture.cases.length, 5);
 });
 
 for (const entry of fixture.cases) {
