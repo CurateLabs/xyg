@@ -80,9 +80,19 @@ const cases = [
       count: 4,
     });
   }),
+  caseEntry("histogram_style_channels", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].id = 21;
+  }),
   caseEntry("segments_pass_through", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
+  }),
+  caseEntry("segments_color_ch", (fig) => {
+    fig.segments([0], [0], [1], [1], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 22;
   }),
   caseEntry("hexbin_colormap", (fig) => {
     fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };

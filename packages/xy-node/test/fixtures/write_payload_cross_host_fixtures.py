@@ -21,7 +21,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "python"))
 
-from xyg import _native  # noqa: E402
+from xyg import _native, channels  # noqa: E402
 from xyg._figure import Figure  # noqa: E402
 from xyg.config import PROTOCOL_VERSION  # noqa: E402
 
@@ -97,9 +97,25 @@ def main() -> None:
     cases.append(_case("histogram_finite_sel", fig))
 
     fig = Figure(width=240, height=160)
+    fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+    n = len(fig.traces[0].x0.values)
+
+    fig.traces[0].style_channels = {
+        "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+    }
+    fig.traces[0].id = 21
+    cases.append(_case("histogram_style_channels", fig))
+
+    fig = Figure(width=240, height=160)
     fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
     fig.traces[0].id = 12
     cases.append(_case("segments_pass_through", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.segments([0.0], [0.0], [1.0], [1.0], color="#112233")
+    fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+    fig.traces[0].id = 22
+    cases.append(_case("segments_color_ch", fig))
 
     fig = Figure(width=240, height=160)
     fig.axis_options["x"]["domain"] = (0.0, 4.0)
