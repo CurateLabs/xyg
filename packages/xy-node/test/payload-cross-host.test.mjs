@@ -43,6 +43,9 @@ function buildCase(name) {
   } else if (name === "bar_compact") {
     fig.bar([0, 1], [1, 2]);
     fig.traces[0].id = 9;
+  } else if (name === "heatmap_colormap") {
+    fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
+    fig.traces[0].id = 11;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -53,7 +56,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 6);
+  assert.equal(fixture.cases.length, 7);
 });
 
 for (const entry of fixture.cases) {

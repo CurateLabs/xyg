@@ -80,6 +80,10 @@ const cases = [
     fig.bar([0, 1], [1, 2]);
     fig.traces[0].id = 9;
   }),
+  caseEntry("heatmap_colormap", (fig) => {
+    fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
+    fig.traces[0].id = 11;
+  }),
 ];
 
 const out = {

@@ -86,9 +86,20 @@
       "payload_blob_sha256": "55090b99bb7f1c18c589bf3e72621fc753c3b1d8af4060ce1467a30f75ac6a6b",
       "payload_blob_hex": "000000bf0000003f000000bf0000003f",
       "trace_keys": null
+    },
+    {
+      "name": "heatmap_colormap",
+      "width": 240,
+      "height": 160,
+      "trace_id": 11,
+      "kind": "heatmap",
+      "tier": "direct",
+      "n_marks": 4,
+      "payload_blob_len": 16,
+      "payload_blob_sha256": "d72fb9fe14d3250816558b2800a2205f395174fe86c62efa3dbbea0e998f802c",
+      "payload_blob_hex": "000000000000803f0000803f00000000",
+      "trace_keys": null
     }
   ],
-  "gaps": {
-    "heatmap_payload_blob": "Node ships x/y grid columns; Python ships heatmap rgba buffer only"
-  }
+  "gaps": {}
 }

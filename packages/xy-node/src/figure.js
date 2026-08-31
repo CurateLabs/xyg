@@ -77,6 +77,7 @@ import {
 } from "./encode.js";
 import {
   clipQuantizeU8,
+  cssColorRgba8,
   directRgbaAdmit,
   quantizeUnitU8,
 } from "./color.js";
@@ -715,11 +716,13 @@ function attachTransitionEntry(entry, t, pw, sel = null) {
 }
 
 export class PayloadWriter {
-  constructor({ split = false } = {}) {
+  constructor({ split = false, borrowHeatmaps = false } = {}) {
     this.split = split;
+    this.borrowHeatmaps = borrowHeatmaps;
     this.columns = [];
     this._chunks = [];
     this._pos = 0;
+    this.borrowed = [];
   }
 
   shipValues(values, { kind = "float", scale = null } = {}) {
@@ -810,6 +813,19 @@ export class PayloadWriter {
         ? values
         : Uint32Array.from(values, (v) => Number(v) >>> 0);
     return this._append(enc, { dtype: "u32" });
+  }
+
+  /** Register canonical f64 storage as a synchronous raster-only span. */
+  borrowF64(values) {
+    const arr =
+      values instanceof Float64Array
+        ? values
+        : Float64Array.from(values, (v) => Number(v));
+    const span = this.borrowed.length + 1;
+    this.borrowed.push(arr);
+    const index = this.columns.length;
+    this.columns.push({ span, byte_offset: 0, len: arr.length, dtype: "f64" });
+    return index;
   }
 
   _append(enc, meta) {
@@ -2438,43 +2454,78 @@ export class Figure {
   }
 
   _emitHeatmap(t, pw) {
-    const xCol = new Column(t.x);
-    const yCol = new Column(t.y);
-    const gridCol = new Column(t.grid);
-    const [rows, cols] = t.grid_shape ?? [0, t.grid?.length ?? 0];
+    if (t.grid == null || t.grid_shape == null) {
+      throw new Error("heatmap trace missing grid column");
+    }
+    const [rows, cols] = t.grid_shape;
     const plan = payloadHeatmapEmitPlan({
-      hasRgbaGrid: t.rgba != null,
+      hasRgbaGrid: t.rgba_grid != null,
       gridRows: rows,
       gridCols: cols,
       styleColormapIsNone: t.style?.colormap == null,
       borrowHeatmaps: Boolean(pw.borrowHeatmaps),
     });
+    if (plan.path === "rgba") {
+      return {
+        id: t.id,
+        kind: "heatmap",
+        name: t.name,
+        style: { ...t.style },
+        tier: "direct",
+        n_points: t.count ?? columnValues(t.grid).length,
+        n_marks: plan.nMarks,
+        x_axis: t.x_axis ?? "x",
+        y_axis: t.y_axis ?? "y",
+        heatmap: {
+          rgba_bufs: t.rgba_grid.map((column) => pw.shipScalar(columnValues(column))),
+          w: cols,
+          h: rows,
+          x_range: [...t.style.x_range],
+          y_range: [...t.style.y_range],
+        },
+      };
+    }
+    const domain = t.style.domain;
+    let bufferIndex;
+    let encoding = null;
+    const grid = columnValues(t.grid);
+    if (plan.borrowCanonical) {
+      bufferIndex = pw.borrowF64(grid);
+      encoding = "canonical-f64";
+    } else {
+      bufferIndex = pw.shipScalar(normalizeF32(grid, domain[0], domain[1], { nanMode: "nan" }));
+    }
+    let cmap = t.style?.colormap;
+    if (plan.useConstantColormapFallback) {
+      const [red, green, blue] = cssColorRgba8(String(t.style?.color ?? "#3987e5"), 1.0);
+      cmap = [[red, green, blue], [red, green, blue]];
+    }
+    const heatmapSpec = {
+      buf: bufferIndex,
+      w: cols,
+      h: rows,
+      x_range: [...t.style.x_range],
+      y_range: [...t.style.y_range],
+      colormap: cmap,
+      domain: [...domain],
+    };
+    if (plan.attachEncoding && encoding != null) {
+      heatmapSpec.enc = encoding;
+    }
     const entry = {
       id: t.id,
       kind: "heatmap",
       name: t.name,
       style: { ...t.style },
       tier: "direct",
-      n_points: t.count ?? t.grid.length,
+      n_points: t.count ?? grid.length,
       n_marks: plan.nMarks,
-      // Node payload heatmap ships grid columns. Python `_emit_heatmap` ships
-      // a nested heatmap object. Matching Python would nest buf/w/h/colormap.
-      // Recorded heatmap-grid stay-host.
-      // Node payload heatmap omits color. Python `_emit_heatmap` ships a
-      // continuous color spec from the nested colormap/domain. Matching
-      // Python would add entry.color. Recorded emit-heatmap-color stay-host.
-      x: pw.ship(t.x, xCol),
-      y: pw.ship(t.y, yCol),
-      grid: pw.ship(t.grid, gridCol),
-      grid_shape: t.grid_shape,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
+      heatmap: heatmapSpec,
     };
-    if (t.rgba != null) {
-      // Node payload heatmap ships rgba_len. Python `_emit_heatmap` ships
-      // nested heatmap.rgba_bufs from rgba_grid. Matching Python would nest
-      // buffers. Recorded emit-heatmap-rgba stay-host.
-      entry.rgba_len = t.rgba.length;
+    if (plan.attachColor) {
+      entry.color = { mode: "continuous", colormap: cmap, domain: [...domain] };
     }
     return entry;
   }
