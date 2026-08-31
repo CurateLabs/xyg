@@ -161,6 +161,10 @@ import {
   sceneXytaTraceDispatchPlan,
   sceneFigureSupportFigurePlan,
   sceneFigureSupportTraceDispatchPlan,
+  scenePublicExportFigurePlan,
+  scenePublicExportTraceDispatchPlan,
+  sceneXyafAnnotationDispatchPlan,
+  sceneXycfFigurePlan,
   sceneXyclFigurePlan,
   sceneXynmFigurePlan,
   figureTraceSupport,
@@ -795,6 +799,30 @@ test("sceneFigureSupportTraceDispatchPlan bar and scatter routing", () => {
   assert.equal(sceneFigureSupportFigurePlan({ polar: true }).polar, true);
   assert.equal(sceneXyclFigurePlan({ polar: true }).polar, true);
   assert.equal(sceneXynmFigurePlan({ showLegend: false }).showLegend, false);
+});
+
+test("scene chrome export orchestration routes legend density and wrapped XYAF", () => {
+  const chrome = sceneXycfFigurePlan({ showLegend: true, colorbarOk: true, polar: false });
+  assert.equal(chrome.attachLegend, true);
+  assert.equal(chrome.attachColorbar, true);
+
+  const rule = sceneXyafAnnotationDispatchPlan({ kind: "rule" });
+  assert.equal(rule.packRuleDash, true);
+  assert.equal(rule.wrapped, false);
+
+  const text = sceneXyafAnnotationDispatchPlan({ kind: "text", layoutText: true });
+  assert.equal(text.wrapped, true);
+
+  const exportFigure = scenePublicExportFigurePlan({ polar: true, hasChromeStyles: true });
+  assert.equal(exportFigure.polar, true);
+  assert.equal(
+    scenePublicExportTraceDispatchPlan({
+      kind: "scatter",
+      polar: false,
+      useDensity: true,
+    }).packDensityBlit,
+    true,
+  );
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {

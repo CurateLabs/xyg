@@ -104,6 +104,10 @@ scene_figure_support_figure_plan = _impl.scene_figure_support_figure_plan
 scene_figure_support_trace_dispatch_plan = _impl.scene_figure_support_trace_dispatch_plan
 scene_xycl_figure_plan = _impl.scene_xycl_figure_plan
 scene_xynm_figure_plan = _impl.scene_xynm_figure_plan
+scene_xycf_figure_plan = _impl.scene_xycf_figure_plan
+scene_xyaf_annotation_dispatch_plan = _impl.scene_xyaf_annotation_dispatch_plan
+scene_public_export_figure_plan = _impl.scene_public_export_figure_plan
+scene_public_export_trace_dispatch_plan = _impl.scene_public_export_trace_dispatch_plan
 scene_xytc_paint_presence_pack = _impl.scene_xytc_paint_presence_pack
 scene_xytc_dash_pattern_pack = _impl.scene_xytc_dash_pattern_pack
 scene_xytc_opacity_pack = _impl.scene_xytc_opacity_pack
@@ -476,11 +480,15 @@ __all__ = [
     "scene_marker_path_admit",
     "scene_mesh_paint_plane_admit",
     "scene_parse_linear_gradient",
+    "scene_public_export_figure_plan",
+    "scene_public_export_trace_dispatch_plan",
     "scene_rect_extra_flags",
     "scene_ribbon_color2_classify",
     "scene_scatter_paint_channel_admit",
     "scene_tick_anchor",
     "scene_tick_label_strategy",
+    "scene_xyaf_annotation_dispatch_plan",
+    "scene_xycf_figure_plan",
     "scene_xycl_figure_plan",
     "scene_xyhf_colormap_pack",
     "scene_xynm_figure_plan",

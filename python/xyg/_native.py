@@ -440,6 +440,41 @@ class _SceneXynmFigurePlan(ctypes.Structure):
     ]
 
 
+class _SceneXycfFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+        ("attach_legend", ctypes.c_uint32),
+        ("attach_colorbar", ctypes.c_uint32),
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXyafAnnotationDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("wrapped", ctypes.c_uint32),
+        ("pack_rule_dash", ctypes.c_uint32),
+        ("pack_rule_linecap", ctypes.c_uint32),
+        ("pack_axis", ctypes.c_uint32),
+        ("pack_symbol", ctypes.c_uint32),
+    ]
+
+
+class _ScenePublicExportFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("has_chrome_styles", ctypes.c_uint32),
+        ("has_title_options", ctypes.c_uint32),
+    ]
+
+
+class _ScenePublicExportTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_density_blit", ctypes.c_uint32),
+        ("pack_hexbin_pitch", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -2210,6 +2245,113 @@ def scene_xynm_figure_plan(*, show_legend: bool) -> dict[str, bool]:
     if ok != 1:
         raise ValueError("invalid scene_xynm_figure_plan arguments")
     return {"show_legend": bool(out.show_legend)}
+
+
+def scene_xycf_figure_plan(
+    *,
+    show_legend: bool,
+    colorbar_ok: bool,
+    polar: bool,
+) -> dict[str, bool]:
+    """Figure-level XYCF chrome attach orchestration via ``xyg_scene_xycf_figure_plan`` (ABI 308)."""
+    out = _SceneXycfFigurePlan()
+    ok = int(
+        _lib.xyg_scene_xycf_figure_plan(
+            1 if show_legend else 0,
+            1 if colorbar_ok else 0,
+            1 if polar else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xycf_figure_plan arguments")
+    return {
+        "show_legend": bool(out.show_legend),
+        "attach_legend": bool(out.attach_legend),
+        "attach_colorbar": bool(out.attach_colorbar),
+        "polar": bool(out.polar),
+    }
+
+
+def scene_xyaf_annotation_dispatch_plan(
+    *,
+    kind: str,
+    authored_wrap: bool,
+    layout_text: bool,
+) -> dict[str, bool]:
+    """Per-annotation XYAF attach dispatch via ``xyg_scene_xyaf_annotation_dispatch_plan`` (ABI 308)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXyafAnnotationDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xyaf_annotation_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if authored_wrap else 0,
+            1 if layout_text else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xyaf_annotation_dispatch_plan arguments")
+    return {
+        "wrapped": bool(out.wrapped),
+        "pack_rule_dash": bool(out.pack_rule_dash),
+        "pack_rule_linecap": bool(out.pack_rule_linecap),
+        "pack_axis": bool(out.pack_axis),
+        "pack_symbol": bool(out.pack_symbol),
+    }
+
+
+def scene_public_export_figure_plan(
+    *,
+    polar: bool,
+    has_chrome_styles: bool,
+    has_title_options: bool,
+) -> dict[str, bool]:
+    """Figure-level XYEF export orchestration via ``xyg_scene_public_export_figure_plan`` (ABI 308)."""
+    out = _ScenePublicExportFigurePlan()
+    ok = int(
+        _lib.xyg_scene_public_export_figure_plan(
+            1 if polar else 0,
+            1 if has_chrome_styles else 0,
+            1 if has_title_options else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_public_export_figure_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "has_chrome_styles": bool(out.has_chrome_styles),
+        "has_title_options": bool(out.has_title_options),
+    }
+
+
+def scene_public_export_trace_dispatch_plan(
+    *,
+    kind: str,
+    polar: bool,
+    use_density: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYEF export dispatch via ``xyg_scene_public_export_trace_dispatch_plan`` (ABI 308)."""
+    kind_b = kind.encode("utf-8")
+    out = _ScenePublicExportTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_public_export_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if polar else 0,
+            1 if use_density else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_public_export_trace_dispatch_plan arguments")
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_density_blit": bool(out.pack_density_blit),
+        "pack_hexbin_pitch": bool(out.pack_hexbin_pitch),
+    }
 
 
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:

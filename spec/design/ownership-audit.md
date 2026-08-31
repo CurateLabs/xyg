@@ -352,6 +352,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 305 | `xyg_scene_xytc_figure_plan` / `xyg_scene_xytc_trace_dispatch_plan` | `_pack_xytc` / `packXyTc` figure legend attach and per-trace kind-class dispatch routing |
 | (this PR) | 306 | `xyg_scene_xyta_figure_plan` / `xyg_scene_xyta_trace_dispatch_plan` | `_pack_xyta` / `packXyTa` figure polar attach and per-trace sidecar dispatch routing |
 | (this PR) | 307 | `xyg_scene_figure_support_figure_plan` / `xyg_scene_figure_support_trace_dispatch_plan` / `xyg_scene_xycl_figure_plan` / `xyg_scene_xynm_figure_plan` | `_pack_figure_support` / `figureTraceSupport` XYFS probe orchestration; `_pack_xycl` / `packXyCl` and `_pack_xynm` / `packXyNm` column/name attach routing |
+| (this PR) | 308 | `xyg_scene_xycf_figure_plan` / `xyg_scene_xyaf_annotation_dispatch_plan` / `xyg_scene_public_export_figure_plan` / `xyg_scene_public_export_trace_dispatch_plan` | `_pack_chrome_facts` / `packChromeFacts` legend/colorbar attach; `_pack_xyaf` / `packXyAf` wrapped/rule routing; `_pack_public_export_support` / `packPublicExportSupport` XYEF envelope orchestration |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 
@@ -657,7 +658,7 @@ Forbidden:
 | `crates/xyg-engine/src/scene_heatmap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 149 XYHF paint-fact packing | — |
 | `crates/xyg-engine/src/scene_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
-| `crates/xyg-engine/src/scene_pack_orchestrate.rs` | Rust safe engine | `rust-engine` | `keep-rust`; M2 #733 XYTC/XYTA/XYFS pack orchestration | — |
+| `crates/xyg-engine/src/scene_pack_orchestrate.rs` | Rust safe engine | `rust-engine` | `keep-rust`; M2 #733 XYTC/XYTA/XYFS/XYCF/XYAF/XYEF pack orchestration | — |
 | `crates/xyg-engine/src/scene_static.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 164 public static-export consumers | — |
 | `crates/xyg-engine/src/scene_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_style_sidecars.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 158 XYSS style-sidecar packing | — |

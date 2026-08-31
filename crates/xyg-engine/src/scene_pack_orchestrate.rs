@@ -267,6 +267,154 @@ pub fn scene_xynm_figure_plan(show_legend: i32, out_show_legend: &mut i32) -> i3
     scene_xytc_figure_plan(show_legend, out_show_legend)
 }
 
+/// Resolved XYCF figure chrome attach plan from ``_pack_chrome_facts`` /
+/// ``packChromeFacts``.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct XycfFigurePlan {
+    pub show_legend: i32,
+    pub attach_legend: i32,
+    pub attach_colorbar: i32,
+    pub polar: i32,
+}
+
+fn scene_orchestrate_host_bit(value: i32) -> bool {
+    matches!(value, 0 | 1)
+}
+
+/// Figure-level XYCF chrome attach orchestration.
+///
+/// Hosts coerce ``show_legend`` (default ``true`` when absent). ``colorbar_ok``
+/// is a host observation that colorbar options may attach. Returns ``1`` on
+/// success, ``0`` when any input is not ``0`` or ``1``.
+pub fn scene_xycf_figure_plan(
+    show_legend: i32,
+    colorbar_ok: i32,
+    polar: i32,
+    out: &mut XycfFigurePlan,
+) -> i32 {
+    for bit in [show_legend, colorbar_ok, polar] {
+        if !scene_orchestrate_host_bit(bit) {
+            return 0;
+        }
+    }
+    *out = XycfFigurePlan {
+        show_legend,
+        attach_legend: show_legend,
+        attach_colorbar: colorbar_ok,
+        polar,
+    };
+    1
+}
+
+/// Resolved per-annotation XYAF pack dispatch from kind and host facts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct XyafAnnotationDispatchPlan {
+    pub wrapped: i32,
+    pub pack_rule_dash: i32,
+    pub pack_rule_linecap: i32,
+    pub pack_axis: i32,
+    pub pack_symbol: i32,
+}
+
+/// Per-annotation XYAF attach dispatch from ``_pack_xyaf`` / ``packXyAf``.
+///
+/// ``authored_wrap`` and ``layout_text`` are host observations (``0``/``1``).
+/// Rust resolves the wrapped-text branch and which style subroutines may run
+/// before hosts ship annotation bytes.
+pub fn scene_xyaf_annotation_dispatch_plan(
+    kind: &str,
+    authored_wrap: i32,
+    layout_text: i32,
+    out: &mut XyafAnnotationDispatchPlan,
+) -> i32 {
+    for bit in [authored_wrap, layout_text] {
+        if !scene_orchestrate_host_bit(bit) {
+            return 0;
+        }
+    }
+    let wrapped = if kind == "text" {
+        i32::from(authored_wrap != 0 || layout_text != 0)
+    } else if kind == "callout" {
+        authored_wrap
+    } else {
+        0
+    };
+    *out = XyafAnnotationDispatchPlan {
+        wrapped,
+        pack_rule_dash: i32::from(kind == "rule" && wrapped == 0),
+        pack_rule_linecap: i32::from(kind == "rule" && wrapped == 0),
+        pack_axis: i32::from(matches!(kind, "rule" | "band")),
+        pack_symbol: i32::from(kind == "marker"),
+    };
+    1
+}
+
+/// Resolved XYEF public-export figure attach plan from ``_pack_public_export_support``
+/// / ``packPublicExportSupport``.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PublicExportFigurePlan {
+    pub polar: i32,
+    pub has_chrome_styles: i32,
+    pub has_title_options: i32,
+}
+
+/// Figure-level XYEF export orchestration.
+///
+/// Host observations are ``0``/``1``. Rust resolves polar gating passed into
+/// per-trace export dispatch before hosts ship XYEF observations.
+pub fn scene_public_export_figure_plan(
+    polar: i32,
+    has_chrome_styles: i32,
+    has_title_options: i32,
+    out: &mut PublicExportFigurePlan,
+) -> i32 {
+    for bit in [polar, has_chrome_styles, has_title_options] {
+        if !scene_orchestrate_host_bit(bit) {
+            return 0;
+        }
+    }
+    *out = PublicExportFigurePlan {
+        polar,
+        has_chrome_styles,
+        has_title_options,
+    };
+    1
+}
+
+/// Resolved per-trace XYEF export dispatch from product kind and host facts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PublicExportTraceDispatchPlan {
+    pub kind_class: i32,
+    pub pack_density_blit: i32,
+    pub pack_hexbin_pitch: i32,
+}
+
+/// Per-trace XYEF export dispatch from ``_pack_public_export_support`` /
+/// ``packPublicExportSupport``.
+///
+/// ``polar`` and ``use_density`` are host observations (``0``/``1``). Rust
+/// resolves kind-class gates and density-blit attach routing before hosts ship
+/// trace observation bytes.
+pub fn scene_public_export_trace_dispatch_plan(
+    kind: &str,
+    polar: i32,
+    use_density: i32,
+    out: &mut PublicExportTraceDispatchPlan,
+) -> i32 {
+    for bit in [polar, use_density] {
+        if !scene_orchestrate_host_bit(bit) {
+            return 0;
+        }
+    }
+    let kind_class = scene_kind_class(kind);
+    *out = PublicExportTraceDispatchPlan {
+        kind_class,
+        pack_density_blit: i32::from(kind == "scatter" && polar == 0 && use_density != 0),
+        pack_hexbin_pitch: i32::from(kind_class & SCENE_KIND_CLASS_HEXBIN != 0),
+    };
+    1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -708,5 +856,97 @@ mod tests {
             scene_figure_support_trace_dispatch_plan("line", 2, 0, 0, 0, &mut plan),
             0
         );
+    }
+
+    #[test]
+    fn xycf_figure_plan_attach_routes() {
+        let mut plan = XycfFigurePlan {
+            show_legend: 0,
+            attach_legend: 0,
+            attach_colorbar: 0,
+            polar: 0,
+        };
+        assert_eq!(scene_xycf_figure_plan(1, 1, 0, &mut plan), 1);
+        assert_eq!(plan.show_legend, 1);
+        assert_eq!(plan.attach_legend, 1);
+        assert_eq!(plan.attach_colorbar, 1);
+        assert_eq!(plan.polar, 0);
+        assert_eq!(scene_xycf_figure_plan(0, 0, 1, &mut plan), 1);
+        assert_eq!(plan.attach_legend, 0);
+        assert_eq!(plan.attach_colorbar, 0);
+        assert_eq!(plan.polar, 1);
+        assert_eq!(scene_xycf_figure_plan(2, 0, 0, &mut plan), 0);
+    }
+
+    #[test]
+    fn xyaf_dispatch_wrapped_and_rule_branches() {
+        let mut text = XyafAnnotationDispatchPlan {
+            wrapped: 0,
+            pack_rule_dash: 0,
+            pack_rule_linecap: 0,
+            pack_axis: 0,
+            pack_symbol: 0,
+        };
+        assert_eq!(
+            scene_xyaf_annotation_dispatch_plan("text", 0, 1, &mut text),
+            1
+        );
+        assert_eq!(text.wrapped, 1);
+        assert_eq!(text.pack_rule_dash, 0);
+
+        let mut rule = text;
+        assert_eq!(
+            scene_xyaf_annotation_dispatch_plan("rule", 0, 0, &mut rule),
+            1
+        );
+        assert_eq!(rule.wrapped, 0);
+        assert_eq!(rule.pack_rule_dash, 1);
+        assert_eq!(rule.pack_rule_linecap, 1);
+        assert_eq!(rule.pack_axis, 1);
+
+        let mut marker = rule;
+        assert_eq!(
+            scene_xyaf_annotation_dispatch_plan("marker", 0, 0, &mut marker),
+            1
+        );
+        assert_eq!(marker.pack_symbol, 1);
+        assert_eq!(marker.pack_axis, 0);
+    }
+
+    #[test]
+    fn public_export_figure_and_trace_dispatch() {
+        let mut figure = PublicExportFigurePlan {
+            polar: 0,
+            has_chrome_styles: 0,
+            has_title_options: 0,
+        };
+        assert_eq!(scene_public_export_figure_plan(1, 1, 0, &mut figure), 1);
+        assert_eq!(figure.polar, 1);
+        assert_eq!(figure.has_chrome_styles, 1);
+
+        let mut scatter = PublicExportTraceDispatchPlan {
+            kind_class: 0,
+            pack_density_blit: 0,
+            pack_hexbin_pitch: 0,
+        };
+        assert_eq!(
+            scene_public_export_trace_dispatch_plan("scatter", 0, 1, &mut scatter),
+            1
+        );
+        assert_eq!(scatter.pack_density_blit, 1);
+
+        let mut polar_scatter = scatter;
+        assert_eq!(
+            scene_public_export_trace_dispatch_plan("scatter", 1, 1, &mut polar_scatter),
+            1
+        );
+        assert_eq!(polar_scatter.pack_density_blit, 0);
+
+        let mut hex = polar_scatter;
+        assert_eq!(
+            scene_public_export_trace_dispatch_plan("hexbin", 0, 0, &mut hex),
+            1
+        );
+        assert_eq!(hex.pack_hexbin_pitch, 1);
     }
 }

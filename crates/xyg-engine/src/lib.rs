@@ -97,9 +97,12 @@ pub use scene_pack::{
 pub mod scene_pack_orchestrate;
 pub use scene_pack_orchestrate::{
     scene_figure_support_figure_plan, scene_figure_support_trace_dispatch_plan,
-    scene_xycl_figure_plan, scene_xynm_figure_plan, scene_xyta_figure_plan,
-    scene_xyta_trace_dispatch_plan, scene_xytc_figure_plan, scene_xytc_trace_dispatch_plan,
-    FigureSupportTraceDispatchPlan, XytaTraceDispatchPlan, XytcTraceDispatchPlan,
+    scene_public_export_figure_plan, scene_public_export_trace_dispatch_plan,
+    scene_xycf_figure_plan, scene_xyaf_annotation_dispatch_plan, scene_xycl_figure_plan,
+    scene_xynm_figure_plan, scene_xyta_figure_plan, scene_xyta_trace_dispatch_plan,
+    scene_xytc_figure_plan, scene_xytc_trace_dispatch_plan, FigureSupportTraceDispatchPlan,
+    PublicExportFigurePlan, PublicExportTraceDispatchPlan, XyafAnnotationDispatchPlan,
+    XycfFigurePlan, XytaTraceDispatchPlan, XytcTraceDispatchPlan,
 };
 pub mod scene_legend;
 pub use scene_legend::pack_legend;
