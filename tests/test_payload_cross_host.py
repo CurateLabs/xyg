@@ -147,6 +147,49 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         }
         fig.traces[0].id = 25
         return fig, {}
+    if name == "rect_stroke_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.bar([0.0, 1.0], [1.0, 2.0])
+        rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+        fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+        fig.traces[0].id = 26
+        return fig, {}
+    if name == "mesh_stroke_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        rgba = np.array([[1, 0, 0, 1]], dtype=np.float64)
+        fig.traces[0].stroke_ch = channels.resolve_color(rgba, 1, default_constant="transparent")
+        fig.traces[0].id = 27
+        return fig, {}
+    if name == "ribbon_stroke_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0], color="#112233")
+        fig.traces[0].stroke_ch = channels.ColorChannel(mode="constant", constant="#445566")
+        fig.traces[0].id = 28
+        return fig, {}
+    if name == "segments_stroke_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
+        rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+        fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+        fig.traces[0].id = 29
+        return fig, {}
+    if name == "mesh_color_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0], color="#112233")
+        fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+        fig.traces[0].id = 30
+        return fig, {}
     if name == "hexbin_colormap":
         fig = Figure(width=240, height=160)
         fig.axis_options["x"]["domain"] = (0.0, 4.0)
@@ -213,7 +256,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 15
+    assert len(fixture["cases"]) == 20
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -226,6 +269,11 @@ def test_fixture_contract(fixture: dict) -> None:
         "rect_color_ch",
         "mesh_style_channels",
         "ribbon_style_channels",
+        "rect_stroke_ch",
+        "mesh_stroke_ch",
+        "ribbon_stroke_ch",
+        "segments_stroke_ch",
+        "mesh_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -247,6 +295,11 @@ def test_fixture_contract(fixture: dict) -> None:
         "rect_color_ch",
         "mesh_style_channels",
         "ribbon_style_channels",
+        "rect_stroke_ch",
+        "mesh_stroke_ch",
+        "ribbon_stroke_ch",
+        "segments_stroke_ch",
+        "mesh_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -276,6 +329,11 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "rect_color_ch",
         "mesh_style_channels",
         "ribbon_style_channels",
+        "rect_stroke_ch",
+        "mesh_stroke_ch",
+        "ribbon_stroke_ch",
+        "segments_stroke_ch",
+        "mesh_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",

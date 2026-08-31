@@ -109,6 +109,43 @@ const cases = [
     fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
     fig.traces[0].id = 25;
   }),
+  caseEntry("rect_stroke_ch", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1, 0, 1, 0, 1]),
+      n: 2,
+    };
+    fig.traces[0].id = 26;
+  }),
+  caseEntry("mesh_stroke_ch", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1]),
+      n: 1,
+    };
+    fig.traces[0].id = 27;
+  }),
+  caseEntry("ribbon_stroke_ch", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+    fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 28;
+  }),
+  caseEntry("segments_stroke_ch", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1, 0, 1, 0, 1]),
+      n: 2,
+    };
+    fig.traces[0].id = 29;
+  }),
+  caseEntry("mesh_color_ch", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 30;
+  }),
   caseEntry("hexbin_colormap", (fig) => {
     fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };
     fig.hexbin(

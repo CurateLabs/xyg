@@ -1245,6 +1245,11 @@ export class Figure {
       density: t.density,
       x_axis: t.x_axis ?? opts.xAxis ?? "x",
       y_axis: t.y_axis ?? opts.yAxis ?? "y",
+      ...(opts.color_ch ?? t.color_ch) != null ? { color_ch: opts.color_ch ?? t.color_ch } : {},
+      ...(opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {},
+      ...(opts.style_channels ?? t.style_channels) != null
+        ? { style_channels: opts.style_channels ?? t.style_channels }
+        : {},
     };
     if (kind === "bar" || kind === "column") {
       const n = t.x0.length;
@@ -1428,6 +1433,8 @@ export class Figure {
       count: t.count,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
+      ...(opts.color_ch ?? t.color_ch) != null ? { color_ch: opts.color_ch ?? t.color_ch } : {},
+      ...(opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {},
       ...(opts.color ?? t.color) != null ? { color: opts.color ?? t.color } : {},
       ...(opts.tooltip_rows ?? t.tooltip_rows) != null
         ? { tooltip_rows: opts.tooltip_rows ?? t.tooltip_rows }

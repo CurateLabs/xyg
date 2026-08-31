@@ -3,6 +3,8 @@
  */
 
 import { asF64Array, barStack } from "../encode.js";
+import { resolveColorChannel } from "../color.js";
+import { resolveStrokeChannel } from "./scatter.js";
 
 function categoryPositions(x) {
   const out = new Float64Array(x.length);
@@ -101,6 +103,12 @@ export function composeBar(x, y, opts = {}) {
     ? opts.color
     : Array.from({ length: nSeries }, () => opts.color ?? "#3987e5");
   const kind = opts.kind ?? "bar";
+  const strokeInput = opts.stroke ?? opts.style?.stroke ?? null;
+  const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, nItems);
+  let strokeWidth = opts.strokeWidth ?? opts.style?.stroke_width ?? 0.0;
+  if ((strokeValue != null || strokeCh != null) && !strokeWidth) {
+    strokeWidth = 1.0;
+  }
   const traces = [];
   for (let s = 0; s < nSeries; s += 1) {
     const off = s * nItems;
@@ -117,8 +125,12 @@ export function composeBar(x, y, opts = {}) {
       opacity: opts.opacity ?? 0.85,
       role,
       orientation,
+      ...(strokeValue != null ? { stroke: strokeValue } : {}),
+      ...(strokeWidth ? { stroke_width: Number(strokeWidth) } : {}),
       ...(opts.style ?? {}),
     };
+    const colorInput = Array.isArray(opts.color) ? opts.color[s] : opts.color;
+    const colorCh = resolveColorChannel(colorInput ?? colors[s], nItems);
     traces.push({
       kind,
       name: seriesNames[s] ?? null,
@@ -126,6 +138,8 @@ export function composeBar(x, y, opts = {}) {
       x1: x1.subarray(off, off + nItems),
       y0: y0.subarray(off, off + nItems),
       y1: y1.subarray(off, off + nItems),
+      ...(colorCh.mode !== "constant" ? { color_ch: colorCh } : {}),
+      ...(strokeCh != null && nSeries === 1 ? { stroke_ch: strokeCh } : {}),
       style,
       count: nItems,
       x_axis: opts.xAxis ?? "x",

@@ -4,6 +4,7 @@
 
 import { asF64Array } from "../encode.js";
 import { resolveColorChannel } from "../color.js";
+import { resolveStrokeChannel } from "./scatter.js";
 
 /**
  * @param {ArrayLike|TypedArray} x0
@@ -38,17 +39,30 @@ export function composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
   if (!(opacity >= 0 && opacity <= 1)) {
     throw new RangeError("triangle_mesh opacity must be in [0, 1]");
   }
-  let strokeWidth = opts.strokeWidth ?? 0.0;
-  if (opts.stroke != null && !strokeWidth) {
+  const rawStyle = { ...(opts.style ?? {}) };
+  const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
+  if (rawStyle.stroke != null) delete rawStyle.stroke;
+  let strokeWidth = opts.strokeWidth ?? rawStyle.stroke_width ?? 0.0;
+  const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, n);
+  if ((strokeValue != null || strokeCh != null) && !strokeWidth) {
     strokeWidth = 1.0;
   }
   const color = resolveColorChannel(opts.color, n);
+  let resolvedStrokeCh = strokeCh;
+  if (
+    strokeValue == null
+    && resolvedStrokeCh == null
+    && color.mode !== "constant"
+    && strokeWidth
+  ) {
+    resolvedStrokeCh = { mode: "match_fill" };
+  }
   const style = {
     opacity,
     role: "triangle-mesh",
-    ...(opts.stroke != null ? { stroke: opts.stroke } : {}),
+    ...(strokeValue != null ? { stroke: strokeValue } : {}),
     ...(strokeWidth ? { stroke_width: Number(strokeWidth) } : {}),
-    ...(opts.style ?? {}),
+    ...rawStyle,
   };
   return {
     traces: [
@@ -64,6 +78,7 @@ export function composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
         y1: cols[3],
         color,
         color_ch: color,
+        ...(resolvedStrokeCh != null ? { stroke_ch: resolvedStrokeCh } : {}),
         style,
         count: n,
         x_axis: opts.xAxis ?? "x",
