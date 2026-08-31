@@ -1,9 +1,9 @@
 {
-  "abi_version": 303,
+  "abi_version": 304,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "d99d2f73e66bdacaeecc25eb05cb09afc1c3d6076089e1555a0af790b0c1cd62",
+  "signature_sha256": "5a890f83965e4874a69d6460612f7beeb30118df9149f21dcd83e878e96d2726",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -20419,6 +20419,72 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)"
+    },
+    {
+      "name": "xyg_payload_axis_spec_attach_plan",
+      "node_name": "xyPayloadAxisSpecAttachPlan",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "coords_cartesian",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "axis_is_x",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut XygPayloadAxisSpecAttachPlan",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)"
     },
     {
       "name": "xyg_payload_bar_compact_admit",

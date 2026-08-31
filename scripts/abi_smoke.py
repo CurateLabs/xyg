@@ -1606,6 +1606,12 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_payload_axis_spec_attach_plan.restype = ctypes.c_int32
+    lib.xyg_payload_axis_spec_attach_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5761,6 +5767,28 @@ def main() -> None:
         and int.from_bytes(bp_view[4:8], "little", signed=True) == 2
         and int.from_bytes(bp_view[8:12], "little") == 1,
         "payload_build_plan show_legend and wasm_density attach",
+    )
+    axis_attach = (ctypes.c_uint32 * 32)()
+    ok(
+        lib.xyg_payload_axis_spec_attach_plan(1, 1, ctypes.byref(axis_attach)) == 1
+        and axis_attach[0] == 1
+        and axis_attach[1] == 1
+        and axis_attach[25] == 0
+        and axis_attach[30] == 0,
+        "payload_axis_spec_attach_plan cartesian core no polar",
+    )
+    ok(
+        lib.xyg_payload_axis_spec_attach_plan(0, 1, ctypes.byref(axis_attach)) == 1
+        and axis_attach[25] == 1
+        and axis_attach[30] == 0,
+        "payload_axis_spec_attach_plan polar theta on x",
+    )
+    ok(
+        lib.xyg_payload_axis_spec_attach_plan(0, 0, ctypes.byref(axis_attach)) == 1
+        and axis_attach[25] == 0
+        and axis_attach[30] == 1
+        and axis_attach[31] == 1,
+        "payload_axis_spec_attach_plan polar r on y",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

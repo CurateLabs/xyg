@@ -889,6 +889,188 @@ pub fn payload_build_plan(
     1
 }
 
+fn axis_spec_attach_shared(out: &mut AxisSpecAttachPlanOut) {
+    out.attach_id = 1;
+    out.attach_kind = 1;
+    out.attach_side = 1;
+    out.attach_label = 1;
+    out.attach_range = 1;
+    out.attach_scale = 1;
+    out.attach_ticks = 1;
+    out.attach_tick_sides = 1;
+    out.attach_tick_label_sides = 1;
+    out.attach_label_position = 1;
+    out.attach_label_offset = 1;
+    out.attach_label_angle = 1;
+    out.attach_tick_label_angle = 1;
+    out.attach_tick_label_strategy = 1;
+    out.attach_tick_label_anchor = 1;
+    out.attach_tick_label_min_gap = 1;
+    out.attach_constant = 1;
+    out.attach_nonpositive = 1;
+    out.attach_reverse = 1;
+    out.attach_domain = 1;
+    out.attach_bounds = 1;
+    out.attach_minor_style = 1;
+    out.attach_format = 1;
+    out.attach_style = 1;
+    out.attach_categories = 1;
+}
+
+struct AxisSpecAttachPlanOut {
+    attach_id: i32,
+    attach_kind: i32,
+    attach_side: i32,
+    attach_label: i32,
+    attach_range: i32,
+    attach_scale: i32,
+    attach_ticks: i32,
+    attach_tick_sides: i32,
+    attach_tick_label_sides: i32,
+    attach_label_position: i32,
+    attach_label_offset: i32,
+    attach_label_angle: i32,
+    attach_tick_label_angle: i32,
+    attach_tick_label_strategy: i32,
+    attach_tick_label_anchor: i32,
+    attach_tick_label_min_gap: i32,
+    attach_constant: i32,
+    attach_nonpositive: i32,
+    attach_reverse: i32,
+    attach_domain: i32,
+    attach_bounds: i32,
+    attach_minor_style: i32,
+    attach_format: i32,
+    attach_style: i32,
+    attach_categories: i32,
+    attach_theta_unit: i32,
+    attach_theta_zero: i32,
+    attach_theta_direction: i32,
+    attach_sector: i32,
+    attach_grid_shape: i32,
+    attach_hole: i32,
+    attach_r_origin: i32,
+}
+
+/// ``_axis_spec`` field attach orchestration for cartesian vs polar axes.
+///
+/// Owns which axis-spec slots may ship on the wire (not field admit). Hosts
+/// still resolve labels, compile styles, and gate optional values.
+pub fn payload_axis_spec_attach_plan(
+    coords_cartesian: i32,
+    axis_is_x: i32,
+    out_attach_id: &mut i32,
+    out_attach_kind: &mut i32,
+    out_attach_side: &mut i32,
+    out_attach_label: &mut i32,
+    out_attach_range: &mut i32,
+    out_attach_scale: &mut i32,
+    out_attach_ticks: &mut i32,
+    out_attach_tick_sides: &mut i32,
+    out_attach_tick_label_sides: &mut i32,
+    out_attach_label_position: &mut i32,
+    out_attach_label_offset: &mut i32,
+    out_attach_label_angle: &mut i32,
+    out_attach_tick_label_angle: &mut i32,
+    out_attach_tick_label_strategy: &mut i32,
+    out_attach_tick_label_anchor: &mut i32,
+    out_attach_tick_label_min_gap: &mut i32,
+    out_attach_constant: &mut i32,
+    out_attach_nonpositive: &mut i32,
+    out_attach_reverse: &mut i32,
+    out_attach_domain: &mut i32,
+    out_attach_bounds: &mut i32,
+    out_attach_minor_style: &mut i32,
+    out_attach_format: &mut i32,
+    out_attach_style: &mut i32,
+    out_attach_categories: &mut i32,
+    out_attach_theta_unit: &mut i32,
+    out_attach_theta_zero: &mut i32,
+    out_attach_theta_direction: &mut i32,
+    out_attach_sector: &mut i32,
+    out_attach_grid_shape: &mut i32,
+    out_attach_hole: &mut i32,
+    out_attach_r_origin: &mut i32,
+) -> i32 {
+    let mut out = AxisSpecAttachPlanOut {
+        attach_id: 0,
+        attach_kind: 0,
+        attach_side: 0,
+        attach_label: 0,
+        attach_range: 0,
+        attach_scale: 0,
+        attach_ticks: 0,
+        attach_tick_sides: 0,
+        attach_tick_label_sides: 0,
+        attach_label_position: 0,
+        attach_label_offset: 0,
+        attach_label_angle: 0,
+        attach_tick_label_angle: 0,
+        attach_tick_label_strategy: 0,
+        attach_tick_label_anchor: 0,
+        attach_tick_label_min_gap: 0,
+        attach_constant: 0,
+        attach_nonpositive: 0,
+        attach_reverse: 0,
+        attach_domain: 0,
+        attach_bounds: 0,
+        attach_minor_style: 0,
+        attach_format: 0,
+        attach_style: 0,
+        attach_categories: 0,
+        attach_theta_unit: 0,
+        attach_theta_zero: 0,
+        attach_theta_direction: 0,
+        attach_sector: 0,
+        attach_grid_shape: 0,
+        attach_hole: 0,
+        attach_r_origin: 0,
+    };
+    axis_spec_attach_shared(&mut out);
+    let polar_theta = coords_cartesian == 0 && axis_is_x != 0;
+    let polar_r = coords_cartesian == 0 && axis_is_x == 0;
+    out.attach_theta_unit = i32::from(polar_theta);
+    out.attach_theta_zero = i32::from(polar_theta);
+    out.attach_theta_direction = i32::from(polar_theta);
+    out.attach_sector = i32::from(polar_theta);
+    out.attach_grid_shape = i32::from(polar_theta);
+    out.attach_hole = i32::from(polar_r);
+    out.attach_r_origin = i32::from(polar_r);
+    *out_attach_id = out.attach_id;
+    *out_attach_kind = out.attach_kind;
+    *out_attach_side = out.attach_side;
+    *out_attach_label = out.attach_label;
+    *out_attach_range = out.attach_range;
+    *out_attach_scale = out.attach_scale;
+    *out_attach_ticks = out.attach_ticks;
+    *out_attach_tick_sides = out.attach_tick_sides;
+    *out_attach_tick_label_sides = out.attach_tick_label_sides;
+    *out_attach_label_position = out.attach_label_position;
+    *out_attach_label_offset = out.attach_label_offset;
+    *out_attach_label_angle = out.attach_label_angle;
+    *out_attach_tick_label_angle = out.attach_tick_label_angle;
+    *out_attach_tick_label_strategy = out.attach_tick_label_strategy;
+    *out_attach_tick_label_anchor = out.attach_tick_label_anchor;
+    *out_attach_tick_label_min_gap = out.attach_tick_label_min_gap;
+    *out_attach_constant = out.attach_constant;
+    *out_attach_nonpositive = out.attach_nonpositive;
+    *out_attach_reverse = out.attach_reverse;
+    *out_attach_domain = out.attach_domain;
+    *out_attach_bounds = out.attach_bounds;
+    *out_attach_minor_style = out.attach_minor_style;
+    *out_attach_format = out.attach_format;
+    *out_attach_style = out.attach_style;
+    *out_attach_categories = out.attach_categories;
+    *out_attach_theta_unit = out.attach_theta_unit;
+    *out_attach_theta_zero = out.attach_theta_zero;
+    *out_attach_theta_direction = out.attach_theta_direction;
+    *out_attach_sector = out.attach_sector;
+    *out_attach_grid_shape = out.attach_grid_shape;
+    *out_attach_hole = out.attach_hole;
+    *out_attach_r_origin = out.attach_r_origin;
+    1
+}
+
 /// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
 ///
 /// ``slot`` is ``PAYLOAD_SHIP_CHANNELS_ALWAYS`` or ``PAYLOAD_SHIP_CHANNELS_IF_COLOR``.
@@ -2781,5 +2963,116 @@ mod tests {
 
     fn payload_build_plan_scratch() -> PayloadBuildPlanScratch {
         PayloadBuildPlanScratch::new()
+    }
+
+    fn run_axis_spec_attach_plan(coords_cartesian: i32, axis_is_x: i32) -> AxisSpecAttachPlanOut {
+        let mut out = AxisSpecAttachPlanOut {
+            attach_id: 0,
+            attach_kind: 0,
+            attach_side: 0,
+            attach_label: 0,
+            attach_range: 0,
+            attach_scale: 0,
+            attach_ticks: 0,
+            attach_tick_sides: 0,
+            attach_tick_label_sides: 0,
+            attach_label_position: 0,
+            attach_label_offset: 0,
+            attach_label_angle: 0,
+            attach_tick_label_angle: 0,
+            attach_tick_label_strategy: 0,
+            attach_tick_label_anchor: 0,
+            attach_tick_label_min_gap: 0,
+            attach_constant: 0,
+            attach_nonpositive: 0,
+            attach_reverse: 0,
+            attach_domain: 0,
+            attach_bounds: 0,
+            attach_minor_style: 0,
+            attach_format: 0,
+            attach_style: 0,
+            attach_categories: 0,
+            attach_theta_unit: 0,
+            attach_theta_zero: 0,
+            attach_theta_direction: 0,
+            attach_sector: 0,
+            attach_grid_shape: 0,
+            attach_hole: 0,
+            attach_r_origin: 0,
+        };
+        assert_eq!(
+            payload_axis_spec_attach_plan(
+                coords_cartesian,
+                axis_is_x,
+                &mut out.attach_id,
+                &mut out.attach_kind,
+                &mut out.attach_side,
+                &mut out.attach_label,
+                &mut out.attach_range,
+                &mut out.attach_scale,
+                &mut out.attach_ticks,
+                &mut out.attach_tick_sides,
+                &mut out.attach_tick_label_sides,
+                &mut out.attach_label_position,
+                &mut out.attach_label_offset,
+                &mut out.attach_label_angle,
+                &mut out.attach_tick_label_angle,
+                &mut out.attach_tick_label_strategy,
+                &mut out.attach_tick_label_anchor,
+                &mut out.attach_tick_label_min_gap,
+                &mut out.attach_constant,
+                &mut out.attach_nonpositive,
+                &mut out.attach_reverse,
+                &mut out.attach_domain,
+                &mut out.attach_bounds,
+                &mut out.attach_minor_style,
+                &mut out.attach_format,
+                &mut out.attach_style,
+                &mut out.attach_categories,
+                &mut out.attach_theta_unit,
+                &mut out.attach_theta_zero,
+                &mut out.attach_theta_direction,
+                &mut out.attach_sector,
+                &mut out.attach_grid_shape,
+                &mut out.attach_hole,
+                &mut out.attach_r_origin,
+            ),
+            1
+        );
+        out
+    }
+
+    #[test]
+    fn payload_axis_spec_attach_plan_cartesian_core_and_no_polar() {
+        let plan = run_axis_spec_attach_plan(1, 1);
+        assert_eq!(plan.attach_id, 1);
+        assert_eq!(plan.attach_kind, 1);
+        assert_eq!(plan.attach_side, 1);
+        assert_eq!(plan.attach_label, 1);
+        assert_eq!(plan.attach_range, 1);
+        assert_eq!(plan.attach_scale, 1);
+        assert_eq!(plan.attach_ticks, 1);
+        assert_eq!(plan.attach_domain, 1);
+        assert_eq!(plan.attach_format, 1);
+        assert_eq!(plan.attach_bounds, 1);
+        assert_eq!(plan.attach_theta_unit, 0);
+        assert_eq!(plan.attach_hole, 0);
+        assert_eq!(plan.attach_r_origin, 0);
+    }
+
+    #[test]
+    fn payload_axis_spec_attach_plan_polar_theta_on_x_only() {
+        let x = run_axis_spec_attach_plan(0, 1);
+        assert_eq!(x.attach_theta_unit, 1);
+        assert_eq!(x.attach_theta_zero, 1);
+        assert_eq!(x.attach_theta_direction, 1);
+        assert_eq!(x.attach_sector, 1);
+        assert_eq!(x.attach_grid_shape, 1);
+        assert_eq!(x.attach_hole, 0);
+        assert_eq!(x.attach_r_origin, 0);
+        let y = run_axis_spec_attach_plan(0, 0);
+        assert_eq!(y.attach_theta_unit, 0);
+        assert_eq!(y.attach_hole, 1);
+        assert_eq!(y.attach_r_origin, 1);
     }
 }
