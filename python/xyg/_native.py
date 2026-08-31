@@ -1687,6 +1687,39 @@ def scene_xytc_numeric_style_pack(
     )
 
 
+def scene_xytc_hex_pitch_pack(
+    hexbin: int,
+    has_dx: int,
+    has_dy: int,
+    dx: float,
+    dy: float,
+) -> tuple[int, float, float]:
+    """XYTC hex pitch pack via ``xyg_scene_xytc_hex_pitch_pack`` (ABI 266).
+
+    Hosts still pick HEXBIN eligibility and ``hex_dx``/``dx`` key resolution.
+    """
+    flags = ctypes.c_uint32(0)
+    hex_dx = ctypes.c_double(0.0)
+    hex_dy = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_hex_pitch_pack(
+            ctypes.c_int32(int(hexbin)),
+            ctypes.c_int32(int(has_dx)),
+            ctypes.c_int32(int(has_dy)),
+            ctypes.c_double(float(dx)),
+            ctypes.c_double(float(dy)),
+            ctypes.byref(flags),
+            ctypes.byref(hex_dx),
+            ctypes.byref(hex_dy),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-hex-pitch-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-hex-pitch-pack request")
+    return int(flags.value), float(hex_dx.value), float(hex_dy.value)
+
+
 def scene_xytc_stroke_perimeter_pack(
     band: int,
     present: int,

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 265
-SIGNATURE_SHA256 = "9fc1b52a7a4225949a84b58c9ddf64f78eda1e8fc66f2e0f97d2f8c4ad599ad1"
+ABI_VERSION = 266
+SIGNATURE_SHA256 = "c831ec87b48c274e922683e1cf5e8cc5b369c3257221d89e8fc7d6d641bc38c0"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1082,6 +1082,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_color_channel_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_hex_pitch_pack(int32_t hexbin, int32_t has_dx, int32_t has_dy, double dx, double dy, uint32_t * out_flags, double * out_hex_dx, double * out_hex_dy)
+    function = lib.xyg_scene_xytc_hex_pitch_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_numeric_style_pack(int32_t has_size, int32_t has_size_ch, int32_t has_size_ch_constant, int32_t has_stroke_width, int32_t has_width, int32_t has_line_width, double size, double size_ch_constant, double stroke_width, double width, double line_width, uint32_t * out_flags, double * out_size, double * out_size_ch_value, double * out_stroke_width, double * out_width, double * out_line_width)
     function = lib.xyg_scene_xytc_numeric_style_pack
     function.restype = ctypes.c_int32

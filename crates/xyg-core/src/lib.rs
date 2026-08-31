@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 265;
+pub const ABI_VERSION: u32 = 266;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,39 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC hexbin pitch flag and trailer values (ABI 266).
+///
+/// Returns ``1`` on success, ``0`` when invalid.
+///
+/// # Safety
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_hex_pitch_pack(
+    hexbin: i32,
+    has_dx: i32,
+    has_dy: i32,
+    dx: f64,
+    dy: f64,
+    out_flags: *mut u32,
+    out_hex_dx: *mut f64,
+    out_hex_dy: *mut f64,
+) -> i32 {
+    if out_flags.is_null() || out_hex_dx.is_null() || out_hex_dy.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let Some((flags, hex_dx, hex_dy)) =
+            kernels::scene_xytc_hex_pitch_pack(hexbin, has_dx, has_dy, dx, dy)
+        else {
+            return 0;
+        };
+        *out_flags = flags;
+        *out_hex_dx = hex_dx;
+        *out_hex_dy = hex_dy;
+        1
     })
 }
 
