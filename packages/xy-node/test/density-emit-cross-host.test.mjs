@@ -19,7 +19,32 @@ const CASE_NAMES = [
   "density_sample_log_x_ship",
   "density_sample_transition_fallback",
   "density_sample_nan_oov_filter",
+  "scatter_density_log_y_grid",
 ];
+
+const GRID_META_CASE_KEYS = new Set([
+  "trace_id",
+  "tier",
+  "visible",
+  "density_max",
+  "density_binning",
+  "density_reduction",
+  "density_colormap",
+  "density_dropped_channels",
+  "density_channels_dropped",
+  "density_color_agg",
+  "density_has_rgba",
+  "has_sample",
+  "sample_n",
+  "sample_visible",
+  "sample_color",
+  "sample_size",
+  "sample_stroke",
+  "sample_channels",
+  "sample_x_offset",
+  "sample_y_offset",
+  "animation_fallback",
+]);
 
 const SAMPLE_CASE_KEYS = new Set([
   "trace_id",
@@ -105,10 +130,10 @@ function wasmSourceMeta(spec) {
   };
 }
 
-function densityMeta(spec, { split = false } = {}) {
+function densityMeta(spec, { caseName = "", split = false } = {}) {
   const trace = spec.traces[0];
   const density = trace.density ?? {};
-  return {
+  const meta = {
     trace_id: trace.id,
     tier: trace.tier ?? null,
     visible: trace.visible ?? null,
@@ -120,6 +145,12 @@ function densityMeta(spec, { split = false } = {}) {
     ...sampleMeta(spec),
     ...(split ? wasmSourceMeta(spec) : {}),
   };
+  if (caseName === "scatter_density_log_y_grid") {
+    meta.density_max = density.max ?? null;
+    meta.density_binning = density.binning ?? null;
+    meta.density_reduction = density.reduction ?? null;
+  }
+  return meta;
 }
 
 function caseKeys(caseName, entry) {
@@ -128,6 +159,9 @@ function caseKeys(caseName, entry) {
   }
   if (caseName.startsWith("scatter_density_wasm_source")) {
     return Object.keys(entry).filter((key) => WASM_SOURCE_CASE_KEYS.has(key));
+  }
+  if (caseName === "scatter_density_log_y_grid") {
+    return Object.keys(entry).filter((key) => GRID_META_CASE_KEYS.has(key));
   }
   return Object.keys(entry).filter((key) => key !== "name");
 }
@@ -193,6 +227,17 @@ function buildCase(name) {
     fig.setAxisDomain("y", [0, 2.5]);
     fig.scatter([0, 1, NaN, 5], [1, 2, 3, 4], { forceDensity: true });
     fig.traces[0].id = 36;
+  } else if (name === "scatter_density_log_y_grid") {
+    fig.setAxis("y", { type: "log", domain: [1, 100] });
+    const n = 80;
+    const x = new Float64Array(n);
+    const y = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      x[i] = 1;
+      y[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+    }
+    fig.scatter(x, y, { forceDensity: true });
+    fig.traces[0].id = 37;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -210,7 +255,7 @@ test("density emit cross-host fixture contract", () => {
 for (const entry of fixture.cases) {
   test(`Node density wire metadata matches fixture for ${entry.name}`, () => {
     const { spec, split } = buildCase(entry.name);
-    const meta = densityMeta(spec, { split });
+    const meta = densityMeta(spec, { caseName: entry.name, split });
     for (const key of caseKeys(entry.name, entry)) {
       assert.deepEqual(meta[key], entry[key], key);
     }

@@ -8,6 +8,7 @@
       "name": "scatter_density_colormap",
       "trace_id": 21,
       "tier": "density",
+      "visible": 3,
       "density_colormap": "magma",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
@@ -34,6 +35,7 @@
       "name": "scatter_density_dropped_channels",
       "trace_id": 22,
       "tier": "density",
+      "visible": 3,
       "density_colormap": "viridis",
       "density_dropped_channels": [
         "size"
@@ -69,6 +71,7 @@
       "name": "scatter_density_mean_color_categorical",
       "trace_id": 23,
       "tier": "density",
+      "visible": 5,
       "density_colormap": "viridis",
       "density_dropped_channels": [
         "size"
@@ -114,6 +117,7 @@
       "name": "scatter_density_wasm_source_split",
       "trace_id": 41,
       "tier": "density",
+      "visible": 2,
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
@@ -150,6 +154,7 @@
       "name": "density_sample_color_size",
       "trace_id": 31,
       "tier": "density",
+      "visible": 5,
       "density_colormap": "viridis",
       "density_dropped_channels": [
         "size"
@@ -195,6 +200,7 @@
       "name": "density_sample_stroke",
       "trace_id": 32,
       "tier": "density",
+      "visible": 3,
       "density_colormap": "viridis",
       "density_dropped_channels": [
         "stroke"
@@ -228,6 +234,7 @@
       "name": "density_sample_style_channels",
       "trace_id": 33,
       "tier": "density",
+      "visible": 3,
       "density_colormap": "viridis",
       "density_dropped_channels": [
         "opacity"
@@ -263,6 +270,7 @@
       "name": "density_sample_log_x_ship",
       "trace_id": 34,
       "tier": "density",
+      "visible": 3,
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
@@ -289,6 +297,7 @@
       "name": "density_sample_transition_fallback",
       "trace_id": 35,
       "tier": "density",
+      "visible": 2,
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
@@ -337,6 +346,36 @@
       "sample_x_offset": 0.5,
       "sample_y_offset": 1.5,
       "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_log_y_grid",
+      "trace_id": 37,
+      "tier": "density",
+      "visible": 80,
+      "density_colormap": "viridis",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "has_sample": true,
+      "sample_n": 80,
+      "sample_visible": 80,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0,
+      "animation_fallback": null,
+      "density_max": 2,
+      "density_binning": "exact",
+      "density_reduction": "bin2d"
     }
   ]
 }

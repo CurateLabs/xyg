@@ -66,13 +66,13 @@ function wasmSourceMeta(spec) {
   };
 }
 
-function caseEntry(name, build, { split = false } = {}) {
+function caseEntry(name, build, { split = false, gridMeta = false } = {}) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
   const { spec } = fig.buildPayload(split ? { split: true } : {});
   const trace = spec.traces[0];
   const density = trace.density ?? {};
-  return {
+  const entry = {
     name,
     trace_id: trace.id,
     tier: trace.tier ?? null,
@@ -85,6 +85,12 @@ function caseEntry(name, build, { split = false } = {}) {
     ...sampleMeta(spec),
     ...(split ? wasmSourceMeta(spec) : {}),
   };
+  if (gridMeta) {
+    entry.density_max = density.max ?? null;
+    entry.density_binning = density.binning ?? null;
+    entry.density_reduction = density.reduction ?? null;
+  }
+  return entry;
 }
 
 const cases = [
@@ -159,6 +165,22 @@ const cases = [
     fig.scatter([0, 1, NaN, 5], [1, 2, 3, 4], { forceDensity: true });
     fig.traces[0].id = 36;
   }),
+  caseEntry(
+    "scatter_density_log_y_grid",
+    (fig) => {
+      fig.setAxis("y", { type: "log", domain: [1, 100] });
+      const n = 80;
+      const x = new Float64Array(n);
+      const y = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        x[i] = 1;
+        y[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+      }
+      fig.scatter(x, y, { forceDensity: true });
+      fig.traces[0].id = 37;
+    },
+    { gridMeta: true },
+  ),
 ];
 
 const out = {

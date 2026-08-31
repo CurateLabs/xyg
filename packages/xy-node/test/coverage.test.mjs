@@ -1736,10 +1736,7 @@ test("buildPayload omits polar axis id unlike Python _axis_spec", () => {
 });
 
 
-test("_emitScatterDensity yLinear stays true unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
-  // emit plan keeps yLinear true, so a log y-axis does not change grid max.
-  // Recorded emit-density-ylinear stay-host.
+test("_emitScatterDensity yLinear follows axis scale like Python _density_trace_spec", () => {
   const n = 80;
   const x = new Float64Array(n);
   const y = new Float64Array(n);
@@ -1757,14 +1754,11 @@ test("_emitScatterDensity yLinear stays true unlike Python _density_trace_spec",
   const b = log.buildPayload().spec.traces[0];
   assert.equal(a.tier, "density");
   assert.equal(b.tier, "density");
-  assert.equal(a.density.max, b.density.max);
+  assert.notEqual(a.density.max, b.density.max);
 });
 
 
-test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
-  // emit plan keeps xLinear true, so a log x-axis does not change grid max.
-  // Recorded emit-density-xlinear stay-host.
+test("_emitScatterDensity xLinear follows axis scale like Python _density_trace_spec", () => {
   const n = 80;
   const x = new Float64Array(n);
   const y = new Float64Array(n);
@@ -1782,7 +1776,7 @@ test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec",
   const b = log.buildPayload().spec.traces[0];
   assert.equal(a.tier, "density");
   assert.equal(b.tier, "density");
-  assert.equal(a.density.max, b.density.max);
+  assert.notEqual(a.density.max, b.density.max);
 });
 
 test("buildPayload omits polar axis kind unlike Python _axis_spec", () => {
