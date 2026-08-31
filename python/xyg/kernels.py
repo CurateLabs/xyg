@@ -70,6 +70,7 @@ scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_spec_pack = _impl.scene_gradient_spec_pack
 scene_marker_blob_pack = _impl.scene_marker_blob_pack
+scene_xytc_numeric_style_pack = _impl.scene_xytc_numeric_style_pack
 scene_xytc_color_channel_pack = _impl.scene_xytc_color_channel_pack
 scene_xytc_radius_pack = _impl.scene_xytc_radius_pack
 scene_gradient_space = _impl.scene_gradient_space
@@ -373,6 +374,7 @@ __all__ = [
     "scene_xyhf_colormap_pack",
     "scene_xyta_colormap_pack",
     "scene_xytc_color_channel_pack",
+    "scene_xytc_numeric_style_pack",
     "scene_xytc_radius_pack",
     "sector_triangles",
     "spectrogram",

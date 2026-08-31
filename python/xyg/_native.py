@@ -1629,6 +1629,64 @@ def scene_xytc_color_channel_pack(present: int, has_constant: int) -> int:
     return int(flags.value)
 
 
+def scene_xytc_numeric_style_pack(
+    has_size: int,
+    has_size_ch: int,
+    has_size_ch_constant: int,
+    has_stroke_width: int,
+    has_width: int,
+    has_line_width: int,
+    size: float,
+    size_ch_constant: float,
+    stroke_width: float,
+    width: float,
+    line_width: float,
+) -> tuple[int, float, float, float, float, float]:
+    """XYTC numeric style pack via ``xyg_scene_xytc_numeric_style_pack`` (ABI 264).
+
+    Hosts pass key-presence bits and coerced f64s.
+    """
+    flags = ctypes.c_uint32(0)
+    out_size = ctypes.c_double(0.0)
+    size_ch_value = ctypes.c_double(0.0)
+    out_stroke_width = ctypes.c_double(0.0)
+    out_width = ctypes.c_double(0.0)
+    out_line_width = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_numeric_style_pack(
+            ctypes.c_int32(int(has_size)),
+            ctypes.c_int32(int(has_size_ch)),
+            ctypes.c_int32(int(has_size_ch_constant)),
+            ctypes.c_int32(int(has_stroke_width)),
+            ctypes.c_int32(int(has_width)),
+            ctypes.c_int32(int(has_line_width)),
+            ctypes.c_double(float(size)),
+            ctypes.c_double(float(size_ch_constant)),
+            ctypes.c_double(float(stroke_width)),
+            ctypes.c_double(float(width)),
+            ctypes.c_double(float(line_width)),
+            ctypes.byref(flags),
+            ctypes.byref(out_size),
+            ctypes.byref(size_ch_value),
+            ctypes.byref(out_stroke_width),
+            ctypes.byref(out_width),
+            ctypes.byref(out_line_width),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-numeric-style-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-numeric-style-pack request")
+    return (
+        int(flags.value),
+        float(out_size.value),
+        float(size_ch_value.value),
+        float(out_stroke_width.value),
+        float(out_width.value),
+        float(out_line_width.value),
+    )
+
+
 def scene_gradient_spec_pack(
     space: bytes,
     dir: bytes,

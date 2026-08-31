@@ -2837,6 +2837,32 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_numeric_style(
+    trace: Any, style: dict[str, Any]
+) -> tuple[int, float, float, float, float, float]:
+    nan = float("nan")
+    has_size = 1 if "size" in style else 0
+    size_ch = getattr(trace, "size_ch", None)
+    has_size_ch = 1 if size_ch is not None else 0
+    has_size_ch_constant = (
+        1 if size_ch is not None and getattr(size_ch, "constant", None) is not None else 0
+    )
+    size_ch_constant = float(size_ch.constant) if has_size_ch_constant else nan
+    return _native.scene_xytc_numeric_style_pack(
+        has_size,
+        has_size_ch,
+        has_size_ch_constant,
+        1 if "stroke_width" in style else 0,
+        1 if "width" in style else 0,
+        1 if "line_width" in style else 0,
+        float(style["size"]) if has_size else nan,
+        size_ch_constant,
+        float(style["stroke_width"]) if "stroke_width" in style else 0.0,
+        float(style["width"]) if "width" in style else 0.0,
+        float(style["line_width"]) if "line_width" in style else 0.0,
+    )
+
+
 def _pack_xytc_color_channel(trace: Any) -> tuple[int, bytes, bytes]:
     channel = getattr(trace, "color_ch", None)
     if channel is None:
@@ -2887,26 +2913,15 @@ def _pack_xytc(figure: Any) -> bytes:
             stroke_opacity = float(style.get("stroke_opacity", 1.0))
         if kind_class & _SCENE_KIND_CLASS_BAND:
             line_opacity = float(style.get("line_opacity", 1.0))
-        size = nan
-        if "size" in style:
-            flags |= _XYTC_HAS_SIZE
-            size = float(style["size"])
-        size_ch_value = nan
-        size_ch = getattr(trace, "size_ch", None)
-        if size_ch is not None:
-            flags |= _XYTC_HAS_SIZE_CH
-            if getattr(size_ch, "constant", None) is not None:
-                size_ch_value = float(size_ch.constant)
-        stroke_width = width = line_width = 0.0
-        if "stroke_width" in style:
-            flags |= _XYTC_HAS_STROKE_WIDTH
-            stroke_width = float(style["stroke_width"])
-        if "width" in style:
-            flags |= _XYTC_HAS_WIDTH
-            width = float(style["width"])
-        if "line_width" in style:
-            flags |= _XYTC_HAS_LINE_WIDTH
-            line_width = float(style["line_width"])
+        (
+            num_flags,
+            size,
+            size_ch_value,
+            stroke_width,
+            width,
+            line_width,
+        ) = _pack_xytc_numeric_style(trace, style)
+        flags |= num_flags
         hex_dx = hex_dy = nan
         if kind_class & _SCENE_KIND_CLASS_HEXBIN:
             flags |= _XYTC_HAS_HEX

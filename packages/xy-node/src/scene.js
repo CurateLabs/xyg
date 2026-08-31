@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3363,25 +3363,23 @@ export function packXyTcLineOpacity(style, kindClass) {
 
 /** XYTC line width. Python `_pack_xytc` reads `"line_width" in style` only. */
 export function packXyTcLineWidth(style) {
-  const record = style ?? {};
-  if (!Object.hasOwn(record, "line_width")) return { flags: 0, value: 0 };
-  return { flags: XYTC_HAS_LINE_WIDTH, value: Number(record.line_width) };
+  const packed = sceneXytcNumericStylePack({}, style ?? {});
+  return {
+    flags: packed.flags & XYTC_HAS_LINE_WIDTH,
+    value: packed.lineWidth,
+  };
 }
 
 /** XYTC size. Python `_pack_xytc` reads `"size" in style` only. */
 export function packXyTcSize(style) {
-  const record = style ?? {};
-  if (!Object.hasOwn(record, "size")) return { flags: 0, value: Number.NaN };
-  return { flags: XYTC_HAS_SIZE, value: Number(record.size) };
+  const packed = sceneXytcNumericStylePack({}, style ?? {});
+  return { flags: packed.flags & XYTC_HAS_SIZE, value: packed.size };
 }
 
 /** XYTC size_ch. Python `_pack_xytc` reads `getattr(trace, "size_ch", None)` only. */
 export function packXyTcSizeChannel(trace) {
-  const sizeChannel = (trace ?? {}).size_ch;
-  if (sizeChannel == null) return { flags: 0, value: Number.NaN };// default mark size. Recorded scene-scatter-size-ch stay-host.
-
-  const value = sizeChannel.constant != null ? Number(sizeChannel.constant) : Number.NaN;
-  return { flags: XYTC_HAS_SIZE_CH, value };
+  const packed = sceneXytcNumericStylePack(trace ?? {}, {});
+  return { flags: packed.flags & XYTC_HAS_SIZE_CH, value: packed.sizeCh };
 }
 
 
@@ -3404,9 +3402,11 @@ export function packXyTcStrokePerimeter(style, kindClass) {
 
 /** XYTC stroke width. Python `_pack_xytc` reads `"stroke_width" in style` only. */
 export function packXyTcStrokeWidth(style) {
-  const record = style ?? {};
-  if (!Object.hasOwn(record, "stroke_width")) return { flags: 0, value: 0 };
-  return { flags: XYTC_HAS_STROKE_WIDTH, value: Number(record.stroke_width) };
+  const packed = sceneXytcNumericStylePack({}, style ?? {});
+  return {
+    flags: packed.flags & XYTC_HAS_STROKE_WIDTH,
+    value: packed.strokeWidth,
+  };
 }
 
 function packXyTc(figure) {
@@ -3441,35 +3441,13 @@ function packXyTc(figure) {
     if (kindClass & SCENE_KIND_CLASS_BAND) {
       lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
-    let size = Number.NaN;
-    const packedSize = packXyTcSize(style);
-    if (packedSize.flags) {
-      flags |= packedSize.flags;
-      size = packedSize.value;
-    }
-    let sizeCh = Number.NaN;
-    const packedSizeCh = packXyTcSizeChannel(trace);
-    if (packedSizeCh.flags) {
-      flags |= packedSizeCh.flags;
-      sizeCh = packedSizeCh.value;
-    }
-    let strokeWidth = 0;
-    let width = 0;
-    let lineWidth = 0;
-    const packedStrokeWidth = packXyTcStrokeWidth(style);
-    if (packedStrokeWidth.flags) {
-      flags |= packedStrokeWidth.flags;
-      strokeWidth = packedStrokeWidth.value;
-    }
-    if (Object.hasOwn(style, "width")) {
-      flags |= XYTC_HAS_WIDTH;
-      width = Number(style.width);
-    }
-    const packedLineWidth = packXyTcLineWidth(style);
-    if (packedLineWidth.flags) {
-      flags |= packedLineWidth.flags;
-      lineWidth = packedLineWidth.value;
-    }
+    const packedNumeric = sceneXytcNumericStylePack(trace, style);
+    flags |= packedNumeric.flags;
+    const size = packedNumeric.size;
+    const sizeCh = packedNumeric.sizeCh;
+    let strokeWidth = packedNumeric.strokeWidth;
+    let width = packedNumeric.width;
+    let lineWidth = packedNumeric.lineWidth;
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
     if (kindClass & SCENE_KIND_CLASS_HEXBIN) {

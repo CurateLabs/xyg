@@ -1612,6 +1612,90 @@ const XYTC_HAS_CORNER_RADIUS: u32 = 1 << 22;
 const XYTC_HAS_WEDGE_GAP: u32 = 1 << 23;
 const XYTC_COLOR_CH: u32 = 1 << 11;
 const XYTC_COLOR_CH_CONSTANT: u32 = 1 << 12;
+const XYTC_HAS_STROKE_WIDTH: u32 = 1 << 3;
+const XYTC_HAS_WIDTH: u32 = 1 << 4;
+const XYTC_HAS_LINE_WIDTH: u32 = 1 << 5;
+const XYTC_HAS_SIZE: u32 = 1 << 6;
+const XYTC_HAS_SIZE_CH: u32 = 1 << 7;
+
+/// Packed XYTC numeric style fields (ABI 264).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SceneXytcNumericStylePack {
+    pub flags: u32,
+    pub size: f64,
+    pub size_ch_value: f64,
+    pub stroke_width: f64,
+    pub width: f64,
+    pub line_width: f64,
+}
+
+/// Pack XYTC numeric style flag bits and coerced values (ABI 264).
+///
+/// Hosts pass key-presence bits and coerced f64s. ``size_ch_value`` is written
+/// only when ``has_size_ch_constant``; otherwise NaN. Absent fields keep the
+/// XYTC wire defaults (NaN size/size_ch, zero widths).
+pub fn scene_xytc_numeric_style_pack(
+    has_size: i32,
+    has_size_ch: i32,
+    has_size_ch_constant: i32,
+    has_stroke_width: i32,
+    has_width: i32,
+    has_line_width: i32,
+    size: f64,
+    size_ch_constant: f64,
+    stroke_width: f64,
+    width: f64,
+    line_width: f64,
+) -> Option<SceneXytcNumericStylePack> {
+    for bit in [
+        has_size,
+        has_size_ch,
+        has_size_ch_constant,
+        has_stroke_width,
+        has_width,
+        has_line_width,
+    ] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    let mut out_size = f64::NAN;
+    let mut size_ch_value = f64::NAN;
+    let mut out_stroke_width = 0.0;
+    let mut out_width = 0.0;
+    let mut out_line_width = 0.0;
+    if has_size != 0 {
+        flags |= XYTC_HAS_SIZE;
+        out_size = size;
+    }
+    if has_size_ch != 0 {
+        flags |= XYTC_HAS_SIZE_CH;
+        if has_size_ch_constant != 0 {
+            size_ch_value = size_ch_constant;
+        }
+    }
+    if has_stroke_width != 0 {
+        flags |= XYTC_HAS_STROKE_WIDTH;
+        out_stroke_width = stroke_width;
+    }
+    if has_width != 0 {
+        flags |= XYTC_HAS_WIDTH;
+        out_width = width;
+    }
+    if has_line_width != 0 {
+        flags |= XYTC_HAS_LINE_WIDTH;
+        out_line_width = line_width;
+    }
+    Some(SceneXytcNumericStylePack {
+        flags,
+        size: out_size,
+        size_ch_value,
+        stroke_width: out_stroke_width,
+        width: out_width,
+        line_width: out_line_width,
+    })
+}
 
 /// Pack XYTC ``color_ch`` flag bits (ABI 263).
 ///
@@ -10696,6 +10780,36 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_numeric_style_pack_matches_host_table() {
+        let nan = f64::NAN;
+        let packed = scene_xytc_numeric_style_pack(0, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0)
+            .unwrap();
+        assert_eq!(packed.flags, 0);
+        assert!(packed.size.is_nan());
+        assert!(packed.size_ch_value.is_nan());
+        let packed = scene_xytc_numeric_style_pack(1, 1, 1, 1, 1, 1, 4.0, 2.5, 1.0, 2.0, 3.0)
+            .unwrap();
+        assert_eq!(
+            packed.flags,
+            XYTC_HAS_STROKE_WIDTH
+                | XYTC_HAS_WIDTH
+                | XYTC_HAS_LINE_WIDTH
+                | XYTC_HAS_SIZE
+                | XYTC_HAS_SIZE_CH
+        );
+        assert_eq!(packed.size, 4.0);
+        assert_eq!(packed.size_ch_value, 2.5);
+        assert_eq!(packed.stroke_width, 1.0);
+        assert_eq!(packed.width, 2.0);
+        assert_eq!(packed.line_width, 3.0);
+        let packed = scene_xytc_numeric_style_pack(1, 1, 0, 0, 0, 0, 5.0, nan, 0.0, 0.0, 0.0)
+            .unwrap();
+        assert_eq!(packed.flags, XYTC_HAS_SIZE | XYTC_HAS_SIZE_CH);
+        assert!(packed.size_ch_value.is_nan());
+        assert!(scene_xytc_numeric_style_pack(2, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0).is_none());
     }
 
     #[test]
