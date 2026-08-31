@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   DENSITY_GRID,
+  DEFAULT_PALETTE,
   PROTOCOL_VERSION,
   SCATTER_DENSITY_THRESHOLD,
   contourChart,
@@ -423,16 +424,13 @@ test("_emitHistogram copies t.style unlike Python _default_styled", () => {
   assert.equal(spec.traces[0].style.color, undefined);
 });
 
-test("_emitHexbin copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_hexbin` uses `_default_styled` to fill palette color when
-  // style.color is missing. Node hexbin encode copies t.style. Recorded
-  // emit-hexbin-default-styled stay-host.
+test("_emitHexbin uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "hexbin");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(spec.traces[0].style.color, DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length]);
 });
 
 test("_emitArea copies t.style unlike Python _default_styled", () => {
@@ -748,7 +746,7 @@ test("_emitScatterDensity sample ships size_ch via payload channel attach", () =
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.notEqual(spec.traces[0].density.sample, undefined);
-  assert.equal(spec.traces[0].density.sample.size.constant, 8);
+  assert.equal(spec.traces[0].density.sample.size.size, 8);
 });
 
 test("_emitScatterDensity sample ships color_ch via payload channel attach", () => {
@@ -1140,13 +1138,14 @@ test("_emitHeatmap ships grid columns unlike Python nested heatmap", () => {
   assert.equal(spec.traces[0].heatmap, undefined);
 });
 
-test("_emitHexbin ships metric and color_ch via payload channel attach", () => {
+test("_emitHexbin ships color and size via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.hexbin([0, 1, 0, 1, 0.5], [0, 0, 1, 1, 0.5], { gridsize: 4 });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "hexbin");
-  assert.ok(spec.traces[0].metric != null);
+  assert.equal(spec.traces[0].metric, undefined);
   assert.notEqual(spec.traces[0].color, undefined);
+  assert.deepEqual(spec.traces[0].size, { mode: "constant", size: 8 });
   assert.ok(fig.traces[0].color_ch != null);
 });
 

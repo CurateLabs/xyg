@@ -340,7 +340,7 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
         };
         if (wirePlan.markDtypeU8) entry.size.dtype = "u8";
       } else if (sizeCh?.mode === "constant") {
-        entry.size = { ...sizeCh };
+        entry.size = { mode: "constant", size: sizeCh.constant ?? sizeCh.size ?? 8.0 };
       }
     } else if (ch.shipMethod === "color") {
       const traceSlot = ch.traceSlot === "color2_ch"
@@ -1320,7 +1320,8 @@ export class Figure {
       y: t.y,
       metric: t.metric,
       counts: t.counts,
-      color_ch: t.color_ch,
+      color_ch: opts.color_ch ?? t.color_ch,
+      size_ch: opts.size_ch ?? t.size_ch,
       style: { ...t.style },
       n_points: t.n_points,
       x_axis: t.x_axis,
@@ -2372,51 +2373,55 @@ export class Figure {
     return entry;
   }
 
+  _defaultStyled(t) {
+    const style = { ...t.style };
+    const plan = payloadBaseEntryPlan({
+      hasTraceAnimation: false,
+      nXv: 0,
+      styleColorIsNone: style.color == null,
+      xAxisScale: "linear",
+      yAxisScale: "linear",
+    });
+    if (plan.applyPaletteDefault) {
+      style.color = DEFAULT_PALETTE[t.id % DEFAULT_PALETTE.length];
+    }
+    return style;
+  }
+
   _emitHexbin(t, pw) {
-    const xCol = new Column(t.x);
-    const yCol = new Column(t.y);
     let xv = t.x;
     let yv = t.y;
-    let mv = t.metric;
-    const sel = this._visibleSel(t, xv, yv, { xCol, yCol });
+    const sel = this._visibleSel(t, xv, yv);
     if (sel != null) {
       xv = gatherF64(xv, sel);
       yv = gatherF64(yv, sel);
-      if (mv != null) mv = gatherF64(mv, sel);
     }
-    const shipX = sel == null ? xCol : new Column(xv);
-    const shipY = sel == null ? yCol : new Column(yv);
-    const mCol = new Column(mv);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
+    const columnPlan = payloadColumnShipPlan({
+      kind: "hexbin",
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     const plan = payloadNonxyEmitPlan({
       kind: "hexbin",
       nMarks: xv.length,
       styleColorIsNone: t.style?.color == null,
-      xAxisScale: payloadAxisScale(this, xAxis),
-      yAxisScale: payloadAxisScale(this, yAxis),
+      xAxisScale: columnPlan.xShipScale,
+      yAxisScale: columnPlan.yShipScale,
     });
     const entry = {
       id: t.id,
       kind: "hexbin",
       name: t.name,
-      // Node payload hexbin copies t.style. Python `_emit_hexbin` uses
-      // `_default_styled` to fill palette color when style.color is missing.
-      // Matching Python would add style.color. Recorded
-      // emit-hexbin-default-styled stay-host.
-      style: { ...t.style },
+      style: this._defaultStyled(t),
       tier: "direct",
       n_points: t.n_points ?? t.x.length,
       n_marks: plan.nMarks,
-      x: pw.ship(xv, shipX, { scale: plan.xShipScale }),
-      y: pw.ship(yv, shipY, { scale: plan.yShipScale }),
-      // Node payload hexbin ships metric. Python `_emit_hexbin` ships color
-      // from color_ch. Matching Python would call `_shipColor`. Recorded
-      // hexbin-metric stay-host.
-      metric: pw.ship(mv, mCol),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(entry, t, pw, columnPlan, { x: xv, y: yv });
     this._shipTraceChannelAttach(
       entry,
       t,

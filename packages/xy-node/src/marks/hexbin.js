@@ -78,6 +78,7 @@ export function composeHexbin(x, y, opts = {}) {
         counts: result.counts,
         style,
         ...(color_ch != null ? { color_ch } : {}),
+        size_ch: { mode: "constant", constant: 8.0, range_px: [2, 18] },
         n_points: xa.length,
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
@@ -100,6 +101,8 @@ export function attachHexbin(fig, x, y, opts = {}) {
   fig.hexbin(t.x, t.y, {
     metric: t.metric,
     counts: t.counts,
+    color_ch: t.color_ch,
+    size_ch: t.size_ch,
     name: t.name,
     style: t.style,
     xAxis: t.x_axis,
