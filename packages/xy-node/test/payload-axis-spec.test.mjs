@@ -267,3 +267,54 @@ test("buildPayload ships polar axis tick_label_angle like Python _axis_spec", ()
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.tick_label_angle, 20);
 });
+
+test("buildPayload ships cartesian axis tick_label_strategy like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_strategy: "rotate" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_strategy, "rotate");
+  assert.equal(spec.y_axis.tick_label_strategy, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_anchor like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_anchor: "end" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_anchor, "end");
+  assert.equal(spec.y_axis.tick_label_anchor, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_min_gap like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_min_gap: 9 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, 9);
+  assert.equal(spec.y_axis.tick_label_min_gap, undefined);
+});
+
+test("buildPayload ships polar axis tick_label_strategy like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_strategy: "stagger" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_strategy, "stagger");
+});
+
+test("buildPayload ships polar axis tick_label_anchor like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_anchor: "center" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_anchor, "center");
+});
+
+test("buildPayload ships polar axis tick_label_min_gap like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_min_gap: 12 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, 12);
+});

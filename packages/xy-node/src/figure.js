@@ -1628,6 +1628,15 @@ export class Figure {
     if (attach.attachTickLabelAngle && opts.tick_label_angle != null) {
       spec.tick_label_angle = opts.tick_label_angle;
     }
+    if (attach.attachTickLabelStrategy && opts.tick_label_strategy != null) {
+      spec.tick_label_strategy = opts.tick_label_strategy;
+    }
+    if (attach.attachTickLabelAnchor && opts.tick_label_anchor != null) {
+      spec.tick_label_anchor = opts.tick_label_anchor;
+    }
+    if (attach.attachTickLabelMinGap && opts.tick_label_min_gap != null) {
+      spec.tick_label_min_gap = opts.tick_label_min_gap;
+    }
     const scale = payloadAxisScale(this, axisId);
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
