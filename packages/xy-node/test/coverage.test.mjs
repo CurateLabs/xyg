@@ -306,18 +306,16 @@ test("_emitScatter still ORs forcePyramid into density unlike Python _emit_scatt
   fig.dispose();
 });
 
-test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
-  // Python `_density_trace_spec` reads `color_ch.colormap`. Node scatter traces
-  // keep `style.colormap` because authoring does not copy `color_ch`.
+test("_emitScatterDensity colormap uses color_ch like Python _density_trace_spec", () => {
   const n = 10;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 3) % n) / n);
   const fig = figure({ width: 320, height: 240 });
-  fig.scatter(x, y, { forceDensity: true, style: { colormap: "plasma" } });
-  fig.traces[0].color_ch = { mode: "continuous", colormap: "magma" };
+  fig.scatter(x, y, { forceDensity: true, colormap: "plasma" });
+  fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "magma" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].density.colormap, "plasma");
+  assert.equal(spec.traces[0].density.colormap, "magma");
 });
 
 test("_emitScatter ships animation via payload base-entry plan", () => {
@@ -668,17 +666,13 @@ test("_emitScatterDensity omits mean-color rgba unlike Python trace_bin_colors",
   assert.equal(spec.traces[0].density.color_agg, undefined);
 });
 
-test("_emitScatterDensity dropped_channels stays empty unlike Python per_item_channel_names", () => {
-  // Python `_density_trace_spec` lists per_item_channel_names as dropped_channels.
-  // Node density keeps an empty list even when style_channels is present.
-  // Recorded emit-density-dropped-channels stay-host.
+test("_emitScatterDensity dropped_channels lists per_item extras like Python", () => {
   const fig = figure({ width: 320, height: 240 });
-  fig.scatter([0, 1], [0, 1], { forceDensity: true });
-  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].density.channels_dropped, false);
-  assert.deepEqual(spec.traces[0].density.dropped_channels, []);
+  assert.equal(spec.traces[0].density.channels_dropped, true);
+  assert.deepEqual(spec.traces[0].density.dropped_channels, ["size"]);
 });
 
 test("_emitHeatmap ships nested rgba_bufs like Python _emit_heatmap", () => {

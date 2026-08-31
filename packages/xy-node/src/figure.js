@@ -60,6 +60,8 @@ import {
   payloadChannelWireEncode,
   payloadColumnShipPlan,
   payloadDensityGridShipPlan,
+  densityChannelsDroppedCompat,
+  densityDroppedChannelWireAdmit,
   shipDensityGridBuffers,
   shipRegistryColumns,
   payloadTransitionEntryAttach,
@@ -120,7 +122,32 @@ import { figureSceneV3, scatterPaintChannelNames, sceneRasterCommands, sceneSvg,
 
 export { PROTOCOL_VERSION };
 
+const DEFAULT_COLORMAP = "viridis";
+
 let nextTraceId = 1;
+
+function densityColorChannelMeta(trace) {
+  const channel = trace.color_ch;
+  if (channel == null || typeof channel !== "object") {
+    return {
+      hasChannel: false,
+      mode: "",
+      codesPresent: false,
+      codesU8: false,
+      hasCounts: false,
+      hasConstant: false,
+    };
+  }
+  const codes = channel.codes;
+  return {
+    hasChannel: true,
+    mode: String(channel.mode ?? ""),
+    codesPresent: codes != null,
+    codesU8: codes != null && codes instanceof Uint8Array,
+    hasCounts: channel.counts != null,
+    hasConstant: channel.constant != null,
+  };
+}
 
 function domSpec(fig) {
   const dom = {};
@@ -1655,8 +1682,15 @@ export class Figure {
     }
     const xmm = minMax(t.x) ?? xr;
     const ymm = minMax(t.y) ?? yr;
+    const colorMeta = densityColorChannelMeta(t);
+    let droppedChannels = scatterPaintChannelNames(t);
     const wire = payloadDensityTraceEmitPlan({
-      hasChannel: false,
+      hasChannel: colorMeta.hasChannel,
+      mode: colorMeta.mode,
+      codesPresent: colorMeta.codesPresent,
+      codesU8: colorMeta.codesU8,
+      hasCounts: colorMeta.hasCounts,
+      hasConstant: colorMeta.hasConstant,
       cartesian: this.coords === "cartesian",
       xLinear: true,
       yLinear: true,
@@ -1682,6 +1716,7 @@ export class Figure {
       by0: yr[0],
       by1: yr[1],
       nPoints: t.x.length,
+      droppedCount: droppedChannels.length,
     });
     const { encoded, max } = densityLogU8(grid);
     const gridPlan = payloadDensityGridShipPlan({
@@ -1694,22 +1729,21 @@ export class Figure {
       overlayWireStaticRaster: wire.overlayWireStaticRaster,
       shipCategoricalEntryColor: wire.shipCategoricalEntryColor,
     });
+    const colormap = colorMeta.hasChannel && wire.useChannelColormap
+      ? (t.color_ch.colormap ?? DEFAULT_COLORMAP)
+      : DEFAULT_COLORMAP;
     const density = {
       w,
       h,
       max,
       enc: "log-u8",
-      // Node payload density colormap stays `style.colormap`. Python
-      // `_density_trace_spec` uses `color_ch.colormap`. Node `scatter()`
-      // does not copy `color_ch` onto traces. Recorded density-colormap stay-host.
-      colormap: t.style?.colormap ?? "viridis",
+      colormap,
       x_range: [...xr],
       y_range: [...yr],
       binning,
       reduction,
     };
     shipDensityGridBuffers(density, pw, gridPlan, { count: encoded, rgba: null });
-    const droppedChannels = [];
     const entry = {
       id: t.id,
       kind: "scatter",
@@ -1755,11 +1789,16 @@ export class Figure {
       } else if (kind === "rgba") {
         density.color_agg = "mean";
       } else if (kind === "channels_dropped") {
-        density.channels_dropped = wire.channelsDroppedCompat;
+        droppedChannels = droppedChannels.filter((name) =>
+          densityDroppedChannelWireAdmit({
+            channel: name,
+            meanColorAggregates: wire.meanColorAggregates,
+          }),
+        );
+        density.channels_dropped = densityChannelsDroppedCompat({
+          droppedCount: droppedChannels.length,
+        });
       } else if (kind === "dropped_channels") {
-        // Node payload density dropped_channels stays empty. Python
-        // `_density_trace_spec` uses `per_item_channel_names`. Matching Python
-        // would list per-item extras. Recorded emit-density-dropped-channels stay-host.
         density.dropped_channels = droppedChannels;
       } else if (kind === "constant_color") {
         if (t.style?.color) {
