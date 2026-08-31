@@ -81,7 +81,8 @@ function buildCase(name) {
     });
   } else if (name === "histogram_style_channels") {
     fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
-    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    const n = fig.traces[0].x0.length;
+    fig.traces[0].style_channels = { stroke_width: { values: new Float64Array(n).fill(2) } };
     fig.traces[0].id = 21;
   } else if (name === "histogram_stroke_ch") {
     fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
@@ -104,7 +105,8 @@ function buildCase(name) {
     fig.traces[0].id = 22;
   } else if (name === "segments_style_channels") {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
-    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    const n = fig.traces[0].x0.length;
+    fig.traces[0].style_channels = { stroke_width: { values: new Float64Array(n).fill(2) } };
     fig.traces[0].id = 33;
   } else if (name === "rect_color_ch") {
     fig.bar([0, 1], [1, 2], { color: "#112233" });
@@ -112,15 +114,16 @@ function buildCase(name) {
     fig.traces[0].id = 23;
   } else if (name === "rect_style_channels") {
     fig.bar([0, 1], [1, 2]);
-    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    const n = fig.traces[0].x0.length;
+    fig.traces[0].style_channels = { stroke_width: { values: new Float64Array(n).fill(2) } };
     fig.traces[0].id = 32;
   } else if (name === "mesh_style_channels") {
     fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
-    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].style_channels = { stroke_width: { values: new Float64Array(1).fill(2) } };
     fig.traces[0].id = 24;
   } else if (name === "ribbon_style_channels") {
     fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
-    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].style_channels = { stroke_width: { values: new Float64Array(1).fill(2) } };
     fig.traces[0].id = 25;
   } else if (name === "rect_stroke_ch") {
     fig.bar([0, 1], [1, 2]);
