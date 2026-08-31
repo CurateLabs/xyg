@@ -16236,113 +16236,124 @@ fn density_emit_meta_from_c(c: &XygDensityEmitMeta) -> density_emit::DensityEmit
     }
 }
 
+/// Packed density grid materialize request (ABI 316).
+#[repr(C)]
+pub struct XygPayloadDensityGridMaterializeIn {
+    pub cartesian: i32,
+    pub x_linear: i32,
+    pub y_linear: i32,
+    pub categorical: i32,
+    pub compact_categorical: i32,
+    pub stratified_counts: i32,
+    pub x_has_nulls: i32,
+    pub y_has_nulls: i32,
+    pub point_overlay: i32,
+    pub grid_from_pyramid: i32,
+    pub x_memmapped: i32,
+    pub y_memmapped: i32,
+    pub has_pyramid_resource: i32,
+    pub force_bin2d: i32,
+    pub force_pyramid: i32,
+    pub color_mode: i32,
+    pub x_min: f64,
+    pub x_max: f64,
+    pub y_min: f64,
+    pub y_max: f64,
+    pub xr0: f64,
+    pub xr1: f64,
+    pub yr0: f64,
+    pub yr1: f64,
+    pub bx0: f64,
+    pub bx1: f64,
+    pub by0: f64,
+    pub by1: f64,
+    pub x_c0: f64,
+    pub x_c1: f64,
+    pub y_c0: f64,
+    pub y_c1: f64,
+    pub n_points: u64,
+    pub w: usize,
+    pub h: usize,
+    pub len: usize,
+    pub pyramid_attempt: i32,
+    pub pyramid_resource: i32,
+    pub pyramid_handle: u64,
+    pub pyr_colored: i32,
+    pub max_upsample: usize,
+    pub tile_upsample: usize,
+    pub pyramid_no_rescan: i32,
+    pub needs_pyramid_sample: i32,
+    pub pyramid_sample_stratified: i32,
+    pub n_color_counts: usize,
+    pub color_lut_len: usize,
+    pub ship_mean_color: i32,
+    pub binning_cap: usize,
+    pub encoded_cap: usize,
+    pub rgba_cap: usize,
+    pub sample_sel_cap: usize,
+    pub visible_sel_cap: usize,
+}
+
 /// Materialize a density count grid (bin2d / pyramid / sample / log-u8 encode) (ABI 316).
 ///
 /// Owns pyramid/tile compose, bin2d path dispatch, log-u8 encode, optional mean-color
 /// RGBA, and overlay sample row selection — the execution half of ``_density_trace_spec``
-/// after emit-plan policy is resolved. When ``meta_in`` is non-null it is used directly;
-/// otherwise ``emit_meta`` is built from the boolean/scalar emit-meta inputs.
+/// after emit-plan policy is resolved.
 ///
 /// Returns ``0`` on success, ``-1`` invalid args/capacity, ``-2`` unexpected grid path,
 /// ``-3`` stratified sample failure.
 ///
 /// # Safety
-/// When ``meta_in`` is null, emit-meta boolean inputs must be ``0`` or ``1``. ``x_raw`` /
-/// ``y_raw`` / ``bx`` / ``by`` must point to ``len`` readable f64s (or be null when
-/// ``len == 0``). Optional ``color_codes`` must point to ``len`` bytes; ``color_counts``
-/// must point to ``n_color_counts`` u64s when stratified paths require them. Mean-color
-/// inputs follow ``xyg_bin_2d_mean_color``. Output buffers must be writable for their
-/// capacities; ``out`` receives filled lengths (``<= capacity``).
+/// ``in`` must be readable. Boolean fields must be ``0`` or ``1``. Geometry pointers
+/// must point to ``in.len`` readable f64s (or be null when ``len == 0``). Optional
+/// ``color_codes`` must point to ``len`` bytes; ``color_counts`` must point to
+/// ``n_color_counts`` u64s when stratified paths require them. Mean-color inputs follow
+/// ``xyg_bin_2d_mean_color``. Output buffers must be writable for their capacities;
+/// ``out`` receives filled lengths (``<= capacity``).
 #[no_mangle]
-#[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_payload_density_grid_materialize(
-    meta_in: *const XygDensityEmitMeta,
-    cartesian: i32,
-    x_linear: i32,
-    y_linear: i32,
-    categorical: i32,
-    compact_categorical: i32,
-    stratified_counts: i32,
-    x_has_nulls: i32,
-    y_has_nulls: i32,
-    point_overlay: i32,
-    grid_from_pyramid: i32,
-    x_memmapped: i32,
-    y_memmapped: i32,
-    has_pyramid_resource: i32,
-    force_bin2d: i32,
-    force_pyramid: i32,
-    color_mode: i32,
-    x_min: f64,
-    x_max: f64,
-    y_min: f64,
-    y_max: f64,
-    xr0: f64,
-    xr1: f64,
-    yr0: f64,
-    yr1: f64,
-    bx0: f64,
-    bx1: f64,
-    by0: f64,
-    by1: f64,
-    x_c0: f64,
-    x_c1: f64,
-    y_c0: f64,
-    y_c1: f64,
-    n_points: u64,
-    w: usize,
-    h: usize,
+    input: *const XygPayloadDensityGridMaterializeIn,
     x_raw: *const f64,
     y_raw: *const f64,
     bx: *const f64,
     by: *const f64,
-    len: usize,
-    pyramid_attempt: i32,
-    pyramid_resource: i32,
-    pyramid_handle: u64,
-    pyr_colored: i32,
-    max_upsample: usize,
-    tile_upsample: usize,
-    pyramid_no_rescan: i32,
-    needs_pyramid_sample: i32,
-    pyramid_sample_stratified: i32,
     color_codes: *const u8,
     color_counts: *const u64,
-    n_color_counts: usize,
     color_idx: *const u8,
     color_rgba: *const u8,
     color_lut: *const u8,
-    color_lut_len: usize,
-    ship_mean_color: i32,
     out_binning: *mut u8,
-    binning_cap: usize,
     out_encoded: *mut u8,
-    encoded_cap: usize,
     out_rgba: *mut u8,
-    rgba_cap: usize,
     out_sample_sel: *mut u32,
-    sample_sel_cap: usize,
     out_visible_sel: *mut u32,
-    visible_sel_cap: usize,
     out: *mut XygPayloadDensityGridMaterializeOut,
 ) -> i32 {
-    if out.is_null() {
+    if input.is_null() || out.is_null() {
         return -1;
     }
+    let input = &*input;
+    let w = input.w;
+    let h = input.h;
+    let len = input.len;
     let cells = match w.checked_mul(h) {
         Some(n) if n > 0 => n,
         _ => return -1,
     };
-    if encoded_cap < cells || out_encoded.is_null() || binning_cap == 0 || out_binning.is_null() {
+    if input.encoded_cap < cells
+        || out_encoded.is_null()
+        || input.binning_cap == 0
+        || out_binning.is_null()
+    {
         return -1;
     }
     let flags = [
-        pyramid_attempt,
-        pyr_colored,
-        pyramid_no_rescan,
-        needs_pyramid_sample,
-        pyramid_sample_stratified,
-        ship_mean_color,
+        input.pyramid_attempt,
+        input.pyr_colored,
+        input.pyramid_no_rescan,
+        input.needs_pyramid_sample,
+        input.pyramid_sample_stratified,
+        input.ship_mean_color,
     ];
     if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
         return -1;
@@ -16368,105 +16379,103 @@ pub unsafe extern "C" fn xyg_payload_density_grid_materialize(
     };
     let color_counts_slice = if color_counts.is_null() {
         None
-    } else if n_color_counts == 0 {
+    } else if input.n_color_counts == 0 {
         return -1;
     } else {
-        Some(std::slice::from_raw_parts(color_counts, n_color_counts))
+        Some(std::slice::from_raw_parts(
+            color_counts,
+            input.n_color_counts,
+        ))
     };
     ffi_guard(-1, || {
-        let meta = if !meta_in.is_null() {
-            density_emit_meta_from_c(&*meta_in)
-        } else {
-            let emit_flags = [
-                cartesian,
-                x_linear,
-                y_linear,
-                categorical,
-                compact_categorical,
-                stratified_counts,
-                x_has_nulls,
-                y_has_nulls,
-                point_overlay,
-                grid_from_pyramid,
-                x_memmapped,
-                y_memmapped,
-                has_pyramid_resource,
-                force_bin2d,
-                force_pyramid,
-            ];
-            if emit_flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
-                return -1;
-            }
-            let Some(meta) = density_emit::emit_meta(
-                cartesian != 0,
-                x_linear != 0,
-                y_linear != 0,
-                categorical != 0,
-                compact_categorical != 0,
-                stratified_counts != 0,
-                x_has_nulls != 0,
-                y_has_nulls != 0,
-                point_overlay != 0,
-                grid_from_pyramid != 0,
-                x_memmapped != 0,
-                y_memmapped != 0,
-                has_pyramid_resource != 0,
-                force_bin2d != 0,
-                force_pyramid != 0,
-                color_mode,
-                x_min,
-                x_max,
-                y_min,
-                y_max,
-                xr0,
-                xr1,
-                yr0,
-                yr1,
-                x_c0,
-                x_c1,
-                y_c0,
-                y_c1,
-                n_points,
-            ) else {
-                return -1;
-            };
-            meta
+        let emit_flags = [
+            input.cartesian,
+            input.x_linear,
+            input.y_linear,
+            input.categorical,
+            input.compact_categorical,
+            input.stratified_counts,
+            input.x_has_nulls,
+            input.y_has_nulls,
+            input.point_overlay,
+            input.grid_from_pyramid,
+            input.x_memmapped,
+            input.y_memmapped,
+            input.has_pyramid_resource,
+            input.force_bin2d,
+            input.force_pyramid,
+        ];
+        if emit_flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        let Some(meta) = density_emit::emit_meta(
+            input.cartesian != 0,
+            input.x_linear != 0,
+            input.y_linear != 0,
+            input.categorical != 0,
+            input.compact_categorical != 0,
+            input.stratified_counts != 0,
+            input.x_has_nulls != 0,
+            input.y_has_nulls != 0,
+            input.point_overlay != 0,
+            input.grid_from_pyramid != 0,
+            input.x_memmapped != 0,
+            input.y_memmapped != 0,
+            input.has_pyramid_resource != 0,
+            input.force_bin2d != 0,
+            input.force_pyramid != 0,
+            input.color_mode,
+            input.x_min,
+            input.x_max,
+            input.y_min,
+            input.y_max,
+            input.xr0,
+            input.xr1,
+            input.yr0,
+            input.yr1,
+            input.x_c0,
+            input.x_c1,
+            input.y_c0,
+            input.y_c1,
+            input.n_points,
+        ) else {
+            return -1;
         };
-        let bin_colors = if ship_mean_color != 0 && len > 0 {
-            color_source_from_raw(len, color_idx, color_rgba, color_lut, color_lut_len)
+        let bin_colors = if input.ship_mean_color != 0 && len > 0 {
+            color_source_from_raw(len, color_idx, color_rgba, color_lut, input.color_lut_len)
         } else {
             None
         };
         let materialized = match density_grid_materialize::payload_density_grid_materialize(
             &meta,
-            n_points,
-            bx0,
-            bx1,
-            by0,
-            by1,
-            xr0,
-            xr1,
-            yr0,
-            yr1,
+            input.n_points,
+            input.bx0,
+            input.bx1,
+            input.by0,
+            input.by1,
+            input.xr0,
+            input.xr1,
+            input.yr0,
+            input.yr1,
             w,
             h,
             x_raw_slice,
             y_raw_slice,
             bx_slice,
             by_slice,
-            pyramid_attempt != 0,
-            pyramid_resource,
-            pyramid_handle,
-            pyr_colored != 0,
-            max_upsample,
-            tile_upsample,
-            pyramid_no_rescan != 0,
-            needs_pyramid_sample != 0,
-            pyramid_sample_stratified != 0,
+            input.pyramid_attempt != 0,
+            input.pyramid_resource,
+            input.pyramid_handle,
+            input.pyr_colored != 0,
+            input.max_upsample,
+            input.tile_upsample,
+            input.pyramid_no_rescan != 0,
+            input.needs_pyramid_sample != 0,
+            input.pyramid_sample_stratified != 0,
             color_codes_slice,
             color_counts_slice,
             bin_colors,
-            ship_mean_color != 0,
+            input.ship_mean_color != 0,
         ) {
             Ok(v) => v,
             Err(density_grid_materialize::DensityGridMaterializeError::InvalidArgs) => return -1,
@@ -16475,29 +16484,29 @@ pub unsafe extern "C" fn xyg_payload_density_grid_materialize(
                 return -3;
             }
         };
-        if materialized.encoded_grid.len() > encoded_cap {
+        if materialized.encoded_grid.len() > input.encoded_cap {
             return -1;
         }
         let binning_bytes = materialized.binning.as_bytes();
-        if binning_bytes.len() >= binning_cap {
+        if binning_bytes.len() >= input.binning_cap {
             return -1;
         }
         let rgba_len = materialized
             .rgba_grid
             .as_ref()
             .map_or(0, |rgba| rgba.len());
-        if rgba_len > rgba_cap || (rgba_len > 0 && out_rgba.is_null()) {
+        if rgba_len > input.rgba_cap || (rgba_len > 0 && out_rgba.is_null()) {
             return -1;
         }
         let sample_len = materialized
             .sample_sel
             .as_ref()
             .map_or(0, |sel| sel.len());
-        if sample_len > sample_sel_cap || (sample_len > 0 && out_sample_sel.is_null()) {
+        if sample_len > input.sample_sel_cap || (sample_len > 0 && out_sample_sel.is_null()) {
             return -1;
         }
         let visible_len = materialized.visible_sel.len();
-        if visible_len > visible_sel_cap || (visible_len > 0 && out_visible_sel.is_null()) {
+        if visible_len > input.visible_sel_cap || (visible_len > 0 && out_visible_sel.is_null()) {
             return -1;
         }
         std::ptr::copy_nonoverlapping(
