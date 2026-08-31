@@ -44,3 +44,21 @@ export function pointer(view, cType) {
   const buffer = Buffer.from(view.buffer, view.byteOffset, view.byteLength);
   return koffi.as(buffer, cType);
 }
+
+const PolarAbiInput = koffi.struct("XygPolarAbiInput", {
+  data: "const uint8_t *",
+  len: "size_t",
+});
+
+export function polarAbiInputPointer(polar) {
+  if (polar == null || polar.length === 0) {
+    return { ptr: 0, keep: null };
+  }
+  const data = Buffer.from(polar.buffer, polar.byteOffset, polar.byteLength);
+  const encoded = Buffer.alloc(koffi.sizeof(PolarAbiInput));
+  koffi.encode(encoded, PolarAbiInput, {
+    data: koffi.as(data, "const uint8_t *"),
+    len: BigInt(polar.length),
+  });
+  return { ptr: koffi.as(encoded, "const uint8_t *"), keep: [encoded, data] };
+}

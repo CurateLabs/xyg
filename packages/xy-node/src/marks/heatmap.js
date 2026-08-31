@@ -2,7 +2,7 @@
  * Heatmap mark — 2-D scalar grid + optional `xy_heatmap_rgba` colormap.
  */
 
-import { asF64Array, heatmapRgba, minMax } from "../encode.js";
+import { asF64Array, DEFAULT_PALETTE, heatmapRgba, minMax } from "../encode.js";
 
 function cellEdges(pos, n) {
   if (pos != null) {
@@ -78,18 +78,23 @@ export function composeHeatmap(z, opts = {}) {
   } else {
     [lo, hi] = mm;
   }
+  const constantColor = typeof opts.color === "string" ? opts.color : null;
+  const useConstantColor = constantColor != null;
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: constantColor ?? DEFAULT_PALETTE[0],
     opacity: opts.opacity ?? 0.95,
     role: "heatmap",
     domain: [lo, hi],
     x_range: [xEdges[0], xEdges[xEdges.length - 1]],
     y_range: [yEdges[0], yEdges[yEdges.length - 1]],
+    ...(useConstantColor
+      ? {}
+      : { colormap: opts.colormap ?? "viridis", truecolor: false }),
     ...(opts.style ?? {}),
   };
   let rgba = null;
   if (opts.colormapStops != null) {
-    rgba = heatmapRgba(flat, cols, rows, opts.colormapStops, opts.alpha ?? 255);
+    rgba = heatmapRgba(flat, cols, rows, opts.colormapStops, opts.alpha ?? 255).rgba;
   }
   return {
     traces: [
@@ -101,6 +106,7 @@ export function composeHeatmap(z, opts = {}) {
         grid: flat,
         grid_shape: [rows, cols],
         rgba,
+        colormapStops: opts.colormapStops ?? null,
         style,
         count: flat.length,
         x_axis: opts.xAxis ?? "x",

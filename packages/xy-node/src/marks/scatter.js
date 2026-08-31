@@ -3,7 +3,28 @@
  * Encode stays in Rust (`xyg_encode_f32`); host only coerces and attaches.
  */
 
+import { cssIsFunctional, resolveColorChannel } from "../color.js";
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";
+
+/** Match Python `marks._stroke_channel` for scatter stroke authoring. */
+export function resolveStrokeChannel(stroke, n) {
+  if (stroke == null) {
+    return { strokeValue: null, strokeCh: null };
+  }
+  if (typeof stroke === "string") {
+    if (!cssIsFunctional(stroke)) {
+      throw new RangeError("scatter stroke must be a CSS color");
+    }
+    return { strokeValue: stroke, strokeCh: null };
+  }
+  const resolved = resolveColorChannel(stroke, n, "transparent");
+  if (resolved.mode !== "direct_rgba") {
+    throw new RangeError(
+      `scatter stroke arrays must be numeric RGB/RGBA or CSS colors with length ${n}`,
+    );
+  }
+  return { strokeValue: null, strokeCh: resolved };
+}
 
 export function normalizeScatterStyle(style = {}) {
   const normalized = { ...style };
@@ -21,6 +42,26 @@ function optionalBoolean(value, name) {
   return value;
 }
 
+/** Match Python `channels.resolve_size` for Scene XYTC diameter packing. */
+export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
+  const range_px = rangePx;
+  if (size == null) {
+    return { mode: "constant", constant: 4.0, range_px };
+  }
+  if (typeof size === "number" && Number.isFinite(size)) {
+    if (size < 0) throw new RangeError("size must be non-negative");
+    return { mode: "constant", constant: size, range_px };
+  }
+  const values = asF64Array(size, "size");
+  if (values.length !== n) {
+    throw new RangeError(`size array must be 1-D length ${n}, got length ${values.length}`);
+  }
+  const mm = minMax(values) ?? [0, 1];
+  const lo = mm[0];
+  const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
+  return { mode: "continuous", values, domain: [lo, hi], range_px };
+}
+
 /**
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
@@ -33,13 +74,25 @@ export function composeScatter(x, y, opts = {}) {
   if (xa.length !== ya.length) {
     throw new RangeError("scatter x/y length mismatch");
   }
-  const forceDensity = opts.forceDensity ?? opts.force_density;
+  const forceDensity = opts.forceDensity ?? opts.force_density ?? opts.density;
   const forceDirect = opts.forceDirect ?? opts.force_direct;
   const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
   const pyramidSpill = optionalBoolean(
     opts.pyramidSpill ?? opts.pyramid_spill,
     "scatter pyramidSpill",
   );
+  const n = xa.length;
+  const opacity = opts.opacity ?? opts.style?.opacity ?? 0.8;
+  const color = opts.color ?? opts.style?.color;
+  const color_ch = resolveColorChannel(color, n);
+  const sizeRange = opts.sizeRange ?? opts.size_range ?? [2, 18];
+  const rawStyle = { ...(opts.style ?? {}) };
+  const sizeInput = opts.size ?? rawStyle.size ?? opts.size_ch?.constant ?? null;
+  if (rawStyle.size != null) delete rawStyle.size;
+  const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
+  if (rawStyle.stroke != null) delete rawStyle.stroke;
+  const size_ch = opts.size_ch ?? resolveSizeChannel(sizeInput, n, sizeRange);
+  const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, n);
   return {
     traces: [
       {
@@ -47,10 +100,18 @@ export function composeScatter(x, y, opts = {}) {
         name: opts.name ?? null,
         x: xa,
         y: ya,
-        style: normalizeScatterStyle({ opacity: 0.8, ...(opts.style ?? {}) }),
+        color_ch,
+        size_ch,
+        ...(strokeCh != null ? { stroke_ch: strokeCh } : {}),
+        style: normalizeScatterStyle({
+          opacity,
+          ...rawStyle,
+          ...(strokeValue != null ? { stroke: strokeValue } : {}),
+        }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
+
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
         ...(pyramidSpill != null ? { pyramid_spill: pyramidSpill } : {}),
@@ -76,6 +137,8 @@ export function attachScatter(fig, x, y, opts = {}) {
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,
+    color_ch: t.color_ch,
+    size_ch: t.size_ch,
     forceDensity: t.force_density,
     forceDirect: t.force_direct,
     forcePyramid: t.force_pyramid,

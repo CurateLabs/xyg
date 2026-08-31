@@ -35,17 +35,36 @@ export function composeHexbin(x, y, opts = {}) {
   if (result.centersX.length === 0) {
     throw new RangeError("hexbin range contains no finite points");
   }
+  const constantColor = opts.color;
+  const colormap = opts.colormap ?? "viridis";
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: constantColor ?? "#3987e5",
     opacity: opts.opacity ?? 0.9,
     role: "hexbin",
-    dx: result.dx,
-    dy: result.dy,
     hex_dx: result.dx,
     hex_dy: result.dy,
     reduce,
     ...(opts.style ?? {}),
   };
+  let color_ch;
+  if (constantColor == null) {
+    const metrics = result.metrics;
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const value of metrics) {
+      if (Number.isFinite(value)) {
+        if (value < lo) lo = value;
+        if (value > hi) hi = value;
+      }
+    }
+    color_ch = {
+      mode: "continuous",
+      values: metrics,
+      colormap: style.colormap ?? colormap,
+      domain: Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : undefined,
+    };
+    delete style.colormap;
+  }
   return {
     traces: [
       {
@@ -56,6 +75,8 @@ export function composeHexbin(x, y, opts = {}) {
         metric: result.metrics,
         counts: result.counts,
         style,
+        ...(color_ch != null ? { color_ch } : {}),
+        size_ch: { mode: "constant", constant: 8.0, range_px: [2, 18] },
         n_points: xa.length,
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
@@ -78,6 +99,8 @@ export function attachHexbin(fig, x, y, opts = {}) {
   fig.hexbin(t.x, t.y, {
     metric: t.metric,
     counts: t.counts,
+    color_ch: t.color_ch,
+    size_ch: t.size_ch,
     name: t.name,
     style: t.style,
     xAxis: t.x_axis,

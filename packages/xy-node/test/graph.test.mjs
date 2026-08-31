@@ -31,8 +31,9 @@ import {
   resolveGraphData,
   sankeyLayout,
 } from "../src/index.js";
+import { ABI_VERSION } from "../src/native-path.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 100);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? ABI_VERSION);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -610,7 +611,7 @@ test("composeGraph accepts GraphData with size option object", () => {
   const data = fromGraphForgeTables(AIRPORTS_NODES, AIRPORTS_EDGES);
   const composed = composeGraph(data, { layout: "grid", seed: 1, size: "rank" });
   assert.equal(composed.traces[1].kind, "scatter");
-  assert.ok(composed.traces[1].sizeValues);
+  assert.equal(composed.traces[1].size_ch?.mode, "continuous");
 });
 
 test("resolveGraphData rejects mismatched preset y length", () => {

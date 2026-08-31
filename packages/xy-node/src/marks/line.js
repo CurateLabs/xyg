@@ -1,41 +1,18 @@
 /**
  * Thin line mark builder — TypedArray ingest, optional sort, M4 at emit.
- * Decimation decisions stay in Rust (`xyg_m4_indices` / `xyg_m4_points`).
+ * Decimation decisions stay in Rust (`xyg_payload_m4_indices`).
  */
 
 import {
-  DECIMATION_THRESHOLD,
   asF64Array,
+  argsortStable,
   isSorted,
-  m4Indices,
-  m4Points,
   minMax,
+  payloadM4Indices,
 } from "../encode.js";
 
-/** Same as `np.finfo(np.float64).eps` / Python `_payload._m4_decimate`. */
+/** Same as `np.finfo(np.float64).eps`; ABI 204 owns the closed-window ulp. */
 export const F64_EPS = Number.EPSILON;
-
-/**
- * Stable argsort for f64 (NaNs last), matching NumPy `argsort(..., kind="stable")`
- * for the line ingest path.
- */
-function stableArgsort(arr) {
-  const idx = new Uint32Array(arr.length);
-  for (let i = 0; i < arr.length; i += 1) idx[i] = i;
-  idx.sort((a, b) => {
-    const va = arr[a];
-    const vb = arr[b];
-    const aNan = !(va === va);
-    const bNan = !(vb === vb);
-    if (aNan && bNan) return a - b;
-    if (aNan) return 1;
-    if (bNan) return -1;
-    if (va < vb) return -1;
-    if (va > vb) return 1;
-    return a - b;
-  });
-  return idx;
-}
 
 function gather(arr, idx) {
   const out = new Float64Array(idx.length);
@@ -55,7 +32,7 @@ export function prepareLineSeries(x, y) {
   }
   let sorted = false;
   if (xa.length > 1 && !isSorted(xa)) {
-    const order = stableArgsort(xa);
+    const order = argsortStable(xa);
     xa = gather(xa, order);
     ya = gather(ya, order);
     sorted = true;
@@ -65,26 +42,37 @@ export function prepareLineSeries(x, y) {
 
 /**
  * M4-decimate a monotone (or pre-sorted) series — mirrors Python
- * `_payload._m4_decimate` for the linear-axis common path.
+ * `_payload._m4_decimate`.
  *
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
- * @param {{x0?: number, x1?: number, nBuckets?: number, threshold?: number}} [opts]
+ * @param {{x0?: number, x1?: number, nBuckets?: number, polar?: boolean, coords?: string, binX?: ArrayLike|TypedArray, binX0?: number, binX1?: number}} [opts]
  * @returns {{tier: string, x: Float64Array, y: Float64Array, indices?: Uint32Array, nBuckets: number}}
  */
 export function m4DecimateLine(x, y, opts = {}) {
   const prepared = prepareLineSeries(x, y);
   const xa = prepared.x;
   const ya = prepared.y;
-  const threshold = opts.threshold ?? DECIMATION_THRESHOLD;
   const nBuckets = opts.nBuckets ?? 640;
-  if (xa.length <= threshold) {
-    return { tier: "direct", x: xa, y: ya, nBuckets };
-  }
+  const polar = Boolean(opts.polar) || opts.coords === "polar";
   const mm = minMax(xa) ?? [0, 1];
   const x0 = opts.x0 ?? mm[0];
-  const x1 = (opts.x1 ?? mm[1]) + F64_EPS;
-  const indices = m4Indices(xa, ya, x0, x1, nBuckets);
+  const x1 = opts.x1 ?? mm[1];
+  const { tier, indices } = payloadM4Indices({
+    nPoints: xa.length,
+    x: xa,
+    y: ya,
+    x0,
+    x1,
+    nBuckets,
+    polar,
+    binX: opts.binX ?? null,
+    binX0: opts.binX0 ?? 0,
+    binX1: opts.binX1 ?? 0,
+  });
+  if (tier === 0) {
+    return { tier: "direct", x: xa, y: ya, nBuckets };
+  }
   if (indices.length === 0) {
     return {
       tier: "decimated",
@@ -94,8 +82,13 @@ export function m4DecimateLine(x, y, opts = {}) {
       nBuckets,
     };
   }
-  const [outX, outY] = m4Points(xa, ya, x0, x1, nBuckets);
-  return { tier: "decimated", x: outX, y: outY, indices, nBuckets };
+  return {
+    tier: "decimated",
+    x: gather(xa, indices),
+    y: gather(ya, indices),
+    indices,
+    nBuckets,
+  };
 }
 
 /**

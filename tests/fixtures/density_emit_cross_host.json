@@ -1,0 +1,489 @@
+{
+  "schema": "xyg.density-emit-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js buildPayload density wire metadata",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "scatter_density_colormap",
+      "trace_id": 21,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "magma",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_continuous_colormap",
+      "trace_id": 24,
+      "tier": "density",
+      "visible": 4,
+      "density_colormap": "inferno",
+      "density_color": null,
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 4,
+      "sample_visible": 4,
+      "sample_color": {
+        "mode": "continuous",
+        "colormap": "inferno",
+        "domain": [
+          1,
+          4
+        ]
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1.5,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_constant_color",
+      "trace_id": 25,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#22c55e",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#22c55e"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_dropped_channels",
+      "trace_id": 22,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [
+        "size"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "continuous",
+        "range_px": [
+          2,
+          18
+        ],
+        "domain": [
+          1,
+          3
+        ]
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_mean_color_categorical",
+      "trace_id": 23,
+      "tier": "density",
+      "visible": 5,
+      "density_colormap": "viridis",
+      "density_color": null,
+      "density_dropped_channels": [
+        "size"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
+      "entry_color": {
+        "mode": "categorical",
+        "categories": [
+          "a",
+          "b",
+          "c"
+        ],
+        "palette": [
+          "#3987e5",
+          "#008300",
+          "#d55181"
+        ]
+      },
+      "has_sample": true,
+      "sample_n": 5,
+      "sample_visible": 5,
+      "sample_color": {
+        "mode": "categorical",
+        "categories": [
+          "a",
+          "b",
+          "c"
+        ],
+        "dtype": "u8",
+        "palette": [
+          "#3987e5",
+          "#008300",
+          "#d55181"
+        ]
+      },
+      "sample_size": {
+        "mode": "continuous",
+        "range_px": [
+          2,
+          18
+        ],
+        "domain": [
+          1,
+          5
+        ]
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 2,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_wasm_source_split",
+      "trace_id": 41,
+      "tier": "density",
+      "visible": 2,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 2,
+      "sample_visible": 2,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 5.5,
+      "sample_y_offset": 5.5,
+      "animation_fallback": null,
+      "has_wasm_source": true,
+      "wasm_source_kind": "cartesian-count-f64-stream-v1",
+      "wasm_source_point_count": 2,
+      "wasm_source_trace_id": 41,
+      "wasm_source_capacity": 8000000,
+      "wasm_source_ownership": "retain-host-replay",
+      "wasm_source_x_dtype": "f64",
+      "wasm_source_y_dtype": "f64",
+      "wasm_density_automatic": true,
+      "buffer_layout": "split"
+    },
+    {
+      "name": "density_sample_color_size",
+      "trace_id": 31,
+      "tier": "density",
+      "visible": 5,
+      "density_colormap": "viridis",
+      "density_color": null,
+      "density_dropped_channels": [
+        "size"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
+      "entry_color": {
+        "mode": "categorical",
+        "categories": [
+          "a",
+          "b",
+          "c"
+        ],
+        "palette": [
+          "#3987e5",
+          "#008300",
+          "#d55181"
+        ]
+      },
+      "has_sample": true,
+      "sample_n": 5,
+      "sample_visible": 5,
+      "sample_color": {
+        "mode": "categorical",
+        "categories": [
+          "a",
+          "b",
+          "c"
+        ],
+        "dtype": "u8",
+        "palette": [
+          "#3987e5",
+          "#008300",
+          "#d55181"
+        ]
+      },
+      "sample_size": {
+        "mode": "continuous",
+        "range_px": [
+          2,
+          18
+        ],
+        "domain": [
+          1,
+          5
+        ]
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 2,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "density_sample_stroke",
+      "trace_id": 32,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [
+        "stroke"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": {
+        "mode": "direct_rgba",
+        "components": 4,
+        "dtype": "u8",
+        "n": 3
+      },
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "density_sample_style_channels",
+      "trace_id": 33,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [
+        "opacity"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": {
+        "opacity": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "f32",
+          "n": 3
+        }
+      },
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "density_sample_log_x_ship",
+      "trace_id": 34,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 0,
+      "sample_y_offset": 50.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "density_sample_transition_fallback",
+      "trace_id": 35,
+      "tier": "density",
+      "visible": 2,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 2,
+      "sample_visible": 2,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 0.5,
+      "sample_y_offset": 0.5,
+      "animation_fallback": "snap:aggregate"
+    },
+    {
+      "name": "density_sample_nan_oov_filter",
+      "trace_id": 36,
+      "tier": "density",
+      "visible": 2,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 2,
+      "sample_visible": 2,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 0.5,
+      "sample_y_offset": 1.5,
+      "animation_fallback": null
+    },
+    {
+      "name": "scatter_density_log_y_grid",
+      "trace_id": 37,
+      "tier": "density",
+      "visible": 80,
+      "density_colormap": "viridis",
+      "density_color": "#3987e5",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 80,
+      "sample_visible": 80,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0,
+      "animation_fallback": null,
+      "density_max": 2,
+      "density_binning": "exact",
+      "density_reduction": "bin2d"
+    }
+  ]
+}

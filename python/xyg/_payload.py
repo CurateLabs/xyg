@@ -15,14 +15,11 @@ from ._trace import Trace
 from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .columns import Column
 from .config import (
-    DECIMATION_THRESHOLD,
     DENSITY_GRID,
     DENSITY_SAMPLE_SEED,
     DENSITY_SAMPLE_TARGET,
     MAX_ANIMATION_MATCH_ROWS,
     PROTOCOL_VERSION,
-    PYRAMID_MIN_POINTS,
-    PYRAMID_NO_RESCAN_ROWS,
 )
 
 if TYPE_CHECKING:
@@ -31,12 +28,6 @@ if TYPE_CHECKING:
     from ._hosts import FigureHost as _Host
 else:
     _Host = object
-
-# Per-row index kernels (range_indices, bin_2d_indices, the sample-range
-# family) return u32 row ids. Traces with more rows than this ship the density
-# grid alone (bin_2d counts in size_t and stays exact) and drop the u32-limited
-# point-sample overlay / drill paths — recorded per update, never silent (§28).
-_U32_MAX = (1 << 32) - 1
 
 
 class _PayloadWriter:
@@ -290,6 +281,39 @@ class PayloadMixin(_Host):
             axis_id: self._axis_spec(axis_id, axis_range(axis_id)) for axis_id in self.axis_options
         }
 
+        wasm_sources = [entry.get("density", {}).get("wasm_source") for entry in spec_traces]
+        wasm_sources = [source for source in wasm_sources if source is not None]
+        has_density_tier = any(entry.get("tier") == "density" for entry in spec_traces)
+        dom = self._dom_spec()
+        legend_opts = self.legend_options
+        mark_style = self._mark_style_spec()
+        interaction_spec = self._interaction_spec()
+        annotations = self._annotation_specs()
+        build_plan = kernels.payload_build_plan(
+            split_payload=bool(pw._split),
+            wasm_source_count=len(wasm_sources),
+            has_density_tier=has_density_tier,
+            coords_cartesian=self.coords == "cartesian",
+            has_title_options=bool(self.title_options),
+            has_palette=self.palette is not None,
+            has_legend_options=bool(legend_opts),
+            legend_loc_best=bool(legend_opts and legend_opts.get("loc") == "best"),
+            has_extra_legends=bool(getattr(self, "extra_legends", None)),
+            has_frame_sides=self.frame_sides is not None,
+            has_colorbar_options=bool(self.colorbar_options),
+            show_modebar_is_false=self.show_modebar is False,
+            has_export_options=bool(getattr(self, "export_options", None)),
+            show_tooltip_is_false=self.show_tooltip is False,
+            has_padding=self.padding is not None,
+            has_dom=bool(dom),
+            has_tooltip=self.tooltip is not None,
+            has_mark_style=bool(mark_style),
+            has_interaction=bool(interaction_spec),
+            has_annotations=bool(annotations),
+            has_animation_options=self.animation_options is not None,
+            has_graph_meta=bool(getattr(self, "_graph_meta", None)),
+        )
+
         spec = {
             "protocol": PROTOCOL_VERSION,
             "width": self.width,
@@ -306,25 +330,22 @@ class PayloadMixin(_Host):
                 "ranges": {axis_id: list(axis["range"]) for axis_id, axis in axis_specs.items()}
             },
         }
-        wasm_sources = [entry.get("density", {}).get("wasm_source") for entry in spec_traces]
-        wasm_sources = [source for source in wasm_sources if source is not None]
-        # One Cartesian count-only source is intentionally the first vertical.
-        # Multiple/color/chunked sources remain on the authoritative kernel
-        # route and are marked explicitly by the browser client.
-        if pw._split and len(wasm_sources) == 1:
-            spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
-        elif any(entry.get("tier") == "density" for entry in spec_traces) and pw._split:
-            spec["wasm_density"] = {
-                "automatic": False,
-                "unsupported": {
-                    "code": "XYG_WASM_SOURCE_UNSUPPORTED",
-                    "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
-                    "trace_ids": [
-                        entry["id"] for entry in spec_traces if entry.get("tier") == "density"
-                    ],
-                },
-            }
-        if self.title_options:
+        if build_plan["attach_wasm_density"]:
+            wasm_density_kind = build_plan["wasm_density_kind"]
+            if wasm_density_kind == kernels.DENSITY_WASM_DENSITY_AUTOMATIC:
+                spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
+            elif wasm_density_kind == kernels.DENSITY_WASM_DENSITY_UNSUPPORTED:
+                spec["wasm_density"] = {
+                    "automatic": False,
+                    "unsupported": {
+                        "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+                        "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+                        "trace_ids": [
+                            entry["id"] for entry in spec_traces if entry.get("tier") == "density"
+                        ],
+                    },
+                }
+        if build_plan["attach_title_options"]:
             spec["title_options"] = [
                 {
                     **{key: value for key, value in entry.items() if key not in {"y", "pad"}},
@@ -337,9 +358,9 @@ class PayloadMixin(_Host):
                 }
                 for entry in self.title_options
             ]
-        if self.coords != "cartesian":
+        if build_plan["attach_coords"]:
             spec["coords"] = self.coords
-        if self.palette is not None:
+        if build_plan["attach_palette"]:
             # Chart-level categorical cycle (`xyg.theme(palette=...)`). Every
             # trace already bakes its own color and every categorical channel
             # ships its own resolved `palette`, so this is only the indexed
@@ -350,9 +371,9 @@ class PayloadMixin(_Host):
             # `palette_cycle`, not `list(self.palette)`: a `{category: color}`
             # palette would otherwise ship its category NAMES as colors.
             spec["palette"] = self.palette_cycle
-        if self.legend_options:
-            legend = self.legend_options
-            if legend.get("loc") == "best":
+        if build_plan["attach_legend"]:
+            legend = legend_opts
+            if build_plan["resolve_legend_best"]:
                 # Settle `best` here, once, so the client and the two static
                 # writers all receive a concrete location and cannot disagree
                 # about it (§28: the decision ships, it is not re-made
@@ -361,43 +382,36 @@ class PayloadMixin(_Host):
 
                 legend = {**legend, "loc": resolve_for_figure(self)}
             spec["legend"] = legend
-        extra_legends = getattr(self, "extra_legends", None)
-        if extra_legends:
-            spec["extra_legends"] = extra_legends
-        if self.frame_sides is not None:
+        if build_plan["attach_extra_legends"]:
+            spec["extra_legends"] = getattr(self, "extra_legends", None)
+        if build_plan["attach_frame_sides"]:
             spec["frame_sides"] = list(self.frame_sides)
-        if self.colorbar_options:
+        if build_plan["attach_colorbar"]:
             spec["colorbar"] = self.colorbar_options
-        if self.show_modebar is False:
+        if build_plan["attach_show_modebar"]:
             spec["show_modebar"] = False
-        export_options = getattr(self, "export_options", None)
-        if export_options:
-            spec["export"] = export_options
-        if self.show_tooltip is False:
+        if build_plan["attach_export"]:
+            spec["export"] = getattr(self, "export_options", None)
+        if build_plan["attach_show_tooltip"]:
             spec["show_tooltip"] = False
-        if self.padding is not None:
+        if build_plan["attach_padding"]:
             spec["padding"] = list(self.padding)
-        dom = self._dom_spec()
-        if dom:
+        if build_plan["attach_dom"]:
             spec["dom"] = dom
-        if self.tooltip is not None:
+        if build_plan["attach_tooltip"]:
             spec["tooltip"] = self.tooltip
-        mark_style = self._mark_style_spec()
-        if mark_style:
+        if build_plan["attach_mark_style"]:
             spec["mark_style"] = mark_style
-        interaction = self._interaction_spec()
-        if interaction:
-            spec["interaction"] = interaction
-        annotations = self._annotation_specs()
-        if annotations:
+        if build_plan["attach_interaction"]:
+            spec["interaction"] = interaction_spec
+        if build_plan["attach_annotations"]:
             spec["annotations"] = annotations
-        if self.animation_options is not None:
+        if build_plan["attach_animation"]:
             spec["animation"] = dict(self.animation_options)
-        graph_meta = getattr(self, "_graph_meta", None)
-        if graph_meta:
+        if build_plan["attach_graph"]:
             # JSON-safe graph meta for neighborhood highlight / LOD (§28).
             # CSR offsets/neighbors stay u64 lists; geometry remains segments+scatter.
-            spec["graph"] = list(graph_meta)
+            spec["graph"] = list(getattr(self, "_graph_meta", None))
         return spec
 
     @staticmethod
@@ -409,24 +423,35 @@ class PayloadMixin(_Host):
         key_values: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
         """Attach bounded declarative transition metadata to one trace spec."""
-        if t.animation is not None and "animation" not in entry:
+        plan = kernels.payload_transition_entry_attach(
+            has_trace_animation=t.animation is not None,
+            entry_has_animation="animation" in entry,
+            has_trace_keys=t.transition_keys is not None,
+            has_key_values=key_values is not None,
+            has_sel=sel is not None,
+            tier_direct=entry.get("tier") == "direct",
+            n_marks=int(entry.get("n_marks", 0)),
+            n_trace_key_rows=len(t.transition_keys) if t.transition_keys is not None else 0,
+            n_key_value_rows=len(key_values) if key_values is not None else 0,
+            n_sel_rows=len(sel) if sel is not None else 0,
+            max_rows=MAX_ANIMATION_MATCH_ROWS,
+            has_tooltip_rows=False,
+            n_tooltip_rows=0,
+            n_points=t.n_points,
+        )
+        if plan["attach_animation"]:
             entry["animation"] = dict(t.animation)
-        keys = t.transition_keys if key_values is None else key_values
-        if keys is not None and entry.get("tier") != "direct":
-            entry["animation_fallback"] = "snap:aggregate"
+        if not plan["attempt_keys"]:
             return entry
-        if keys is not None:
-            values = keys if key_values is not None or sel is None else keys[sel]
-            if len(values) == int(entry.get("n_marks", len(values))):
-                if len(values) > MAX_ANIMATION_MATCH_ROWS:
-                    entry["animation_fallback"] = "snap:key-limit"
-                    return entry
-                entry["keys"] = {
-                    "lo": pw.ship_u32(values[:, 0]),
-                    "hi": pw.ship_u32(values[:, 1]),
-                }
-            else:
-                entry["animation_fallback"] = "index:key-count-mismatch"
+        keys = t.transition_keys if key_values is None else key_values
+        values = keys[sel] if plan["filter_keys_by_sel"] else keys
+        if not plan["ship_keys"]:
+            entry["animation_fallback"] = plan["animation_fallback"]
+            return entry
+        entry["keys"] = {
+            "lo": pw.ship_u32(values[:, 0]),
+            "hi": pw.ship_u32(values[:, 1]),
+        }
         return entry
 
     def _emit_trace(
@@ -437,37 +462,37 @@ class PayloadMixin(_Host):
             raise ValueError(f"no payload emitter for trace kind {t.kind!r}")
         return emitter(t, pw, xr, yr, px_width)
 
-    def _base_entry(
-        self, t: Trace, pw: "_PayloadWriter", xv: np.ndarray, yv: np.ndarray, tier: str, style: dict
-    ) -> dict[str, Any]:
-        """The shared spec skeleton for any xy trace that ships x/y geometry."""
-        entry = {
-            "id": t.id,
-            "kind": t.kind,
-            "name": t.name,
-            "style": style,
-            "tier": tier,
-            "n_points": t.n_points,
-            "n_marks": int(len(xv)),
-            "x": pw.ship(xv, t.x, scale=self._axis_scale(t.x_axis)),
-            "y": pw.ship(yv, t.y, scale=self._axis_scale(t.y_axis)),
-            "x_axis": t.x_axis,
-            "y_axis": t.y_axis,
-        }
-        if t.animation is not None:
-            entry["animation"] = dict(t.animation)
-        return entry
-
     @staticmethod
     def _attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
         """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
-        if t.tooltip_rows is None:
+        plan = kernels.payload_transition_entry_attach(
+            has_trace_animation=False,
+            entry_has_animation=False,
+            has_trace_keys=False,
+            has_key_values=False,
+            has_sel=sel is not None,
+            tier_direct=False,
+            n_marks=0,
+            n_trace_key_rows=0,
+            n_key_value_rows=0,
+            n_sel_rows=len(sel) if sel is not None else 0,
+            max_rows=MAX_ANIMATION_MATCH_ROWS,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+            n_points=t.n_points,
+        )
+        if not plan["attach_tooltip"]:
+            if t.tooltip_rows is not None and not plan["tooltip_length_ok"]:
+                raise ValueError(
+                    f"{t.kind} tooltip rows must match geometry "
+                    f"({len(t.tooltip_rows)} != {t.n_points})"
+                )
             return
-        if len(t.tooltip_rows) != t.n_points:
-            raise ValueError(
-                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
-            )
-        indices = range(len(t.tooltip_rows)) if sel is None else (int(i) for i in sel)
+        indices = (
+            range(len(t.tooltip_rows))
+            if not plan["filter_tooltip_by_sel"]
+            else (int(i) for i in sel)
+        )
         entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
 
     @staticmethod
@@ -500,11 +525,15 @@ class PayloadMixin(_Host):
         non-positive values) or a baseline column outside the x/y zone maps can
         actually remove something.
         """
-        if self._axis_scale(t.x_axis) == "log" or self._axis_scale(t.y_axis) == "log":
-            return True
-        if base_column is not None and base_column.zone.null_count:
-            return True
-        return not prefiltered and bool(t.x.zone.null_count or t.y.zone.null_count)
+        return kernels.payload_visible_needed(
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            prefiltered=prefiltered,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            has_base=base_column is not None,
+            base_has_nulls=bool(base_column.zone.null_count) if base_column is not None else False,
+        )
 
     def _log_visible_mask(
         self,
@@ -521,16 +550,42 @@ class PayloadMixin(_Host):
         now reject. (`tests/test_figure.py` pins one case per rule; the
         predicate going stale is otherwise silent.)
         """
-        mask = np.isfinite(xv) & np.isfinite(yv)
-        if self._axis_scale(t.x_axis) == "log":
-            mask &= xv > 0
-        if self._axis_scale(t.y_axis) == "log":
-            mask &= yv > 0
-            if base is not None:
-                mask &= np.isfinite(base) & (base > 0)
-        elif base is not None:
-            mask &= np.isfinite(base)
-        return mask
+        return kernels.payload_visible_mask(
+            xv,
+            yv,
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            base=base,
+        )
+
+    def _visible_sel(
+        self,
+        t: Trace,
+        xv: np.ndarray,
+        yv: np.ndarray,
+        *,
+        base: Optional[np.ndarray] = None,
+        prefiltered: bool = False,
+        base_column: Optional[Column] = None,
+    ) -> np.ndarray | None:
+        """Keep-all (`None`) vs original-row keep indices (ABI 205)."""
+        keep_all, idx = kernels.payload_visible_indices(
+            xv,
+            yv,
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            base=base,
+            prefiltered=prefiltered,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            has_base=base is not None or base_column is not None,
+            base_has_nulls=(
+                bool(base_column.zone.null_count) if base_column is not None else False
+            ),
+        )
+        if keep_all:
+            return None
+        return idx
 
     def _binning_coords(
         self, axis_id: str, values: np.ndarray, bounds: tuple[float, float]
@@ -555,9 +610,59 @@ class PayloadMixin(_Host):
         Cycles the figure's palette (`xyg.theme(palette=...)`), which defaults
         to config.DEFAULT_PALETTE."""
         style = dict(t.style)
-        if style.get("color") is None:
+        plan = kernels.payload_base_entry_plan(
+            has_trace_animation=False,
+            n_xv=0,
+            style_color_is_none=style.get("color") is None,
+            x_axis_scale="linear",
+            y_axis_scale="linear",
+        )
+        if plan["apply_palette_default"]:
             style["color"] = self.palette_color(t.id)
         return style
+
+    def _base_entry(
+        self,
+        t: Trace,
+        pw: "_PayloadWriter",
+        xv: np.ndarray,
+        yv: np.ndarray,
+        tier: str,
+        style: dict,
+        *,
+        kind: Optional[str] = None,
+        extra_arrays: Optional[dict[str, np.ndarray]] = None,
+    ) -> dict[str, Any]:
+        """The shared spec skeleton for any xy trace that ships x/y geometry."""
+        emit_kind = kind or t.kind
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_base_entry_plan(
+            has_trace_animation=t.animation is not None,
+            n_xv=len(xv),
+            style_color_is_none=False,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
+        column_plan = self._payload_column_ship_plan(t, kind=emit_kind)
+        entry = {
+            "id": t.id,
+            "kind": t.kind,
+            "name": t.name,
+            "style": style,
+            "tier": tier,
+            "n_points": t.n_points,
+            "n_marks": plan["n_marks"],
+            "x_axis": t.x_axis,
+            "y_axis": t.y_axis,
+        }
+        arrays: dict[str, np.ndarray] = {"x": xv, "y": yv}
+        if extra_arrays:
+            arrays.update(extra_arrays)
+        self._ship_registry_columns(entry, t, pw, column_plan, arrays)
+        if plan["attach_animation"]:
+            entry["animation"] = dict(t.animation)
+        return entry
 
     def _m4_decimate(
         self, t: Trace, xr: tuple, px_width: int, *arrays: np.ndarray
@@ -570,24 +675,22 @@ class PayloadMixin(_Host):
         each bucket covers a uniform strip of *screen*, not of raw data (§28);
         monotone transforms keep per-bucket min/max rows identical, so y stays
         raw and the gathered rows ship untransformed."""
-        if self.coords == "polar":
-            # M4 buckets on a monotonic screen-x column. Under polar the x
-            # column is an angle: a spiral revisits the same screen columns and
-            # a multi-turn series is not monotonic at all, so the buckets carry
-            # no screen meaning. Ship direct until polar-aware decimation
-            # exists (spec/design/polar-axes.md §7).
-            return "direct", arrays
-        if t.n_points <= DECIMATION_THRESHOLD:
-            return "direct", arrays
-        eps = float(np.finfo(np.float64).eps)
         mx, (m0, m1) = self._binning_coords(t.x_axis, arrays[0], xr)
-        if mx is not arrays[0]:
-            idx = kernels.m4_indices(mx, arrays[1], m0, m1 + eps, px_width)
-            return "decimated", tuple(a[idx] for a in arrays)
-        if len(arrays) == 2:
-            selected = _native.m4_points(arrays[0], arrays[1], xr[0], xr[1] + eps, px_width)
-            return "decimated", selected
-        idx = kernels.m4_indices(arrays[0], arrays[1], xr[0], xr[1] + eps, px_width)
+        use_bin = mx is not arrays[0]
+        tier_code, idx = kernels.payload_m4_indices(
+            t.n_points,
+            arrays[0],
+            arrays[1],
+            float(xr[0]),
+            float(xr[1]),
+            int(px_width),
+            polar=self.coords == "polar",
+            bin_x=mx if use_bin else None,
+            bin_x0=m0 if use_bin else 0.0,
+            bin_x1=m1 if use_bin else 0.0,
+        )
+        if tier_code == 0:
+            return "direct", arrays
         if len(idx):
             return "decimated", tuple(a[idx] for a in arrays)
         return "decimated", tuple(a[:0] for a in arrays)
@@ -596,16 +699,9 @@ class PayloadMixin(_Host):
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
         tier, (xv, yv) = self._m4_decimate(t, xr, px_width, t.x.values, t.y.values)
-        sel = None
-        if tier == "direct":
-            sel = self._finite_sel(t, xv, yv)
-            if sel is not None:
-                xv, yv = xv[sel], yv[sel]
-        if len(xv) and self._visible_mask_needed(t, prefiltered=sel is not None):
-            finite = self._log_visible_mask(t, xv, yv)
-            if not bool(np.all(finite)):
-                sel = np.flatnonzero(finite) if sel is None else sel[finite]
-                xv, yv = xv[finite], yv[finite]
+        sel = self._visible_sel(t, xv, yv, prefiltered=tier != "direct")
+        if sel is not None:
+            xv, yv = xv[sel], yv[sel]
         entry = self._base_entry(t, pw, xv, yv, tier, self._default_styled(t))
         if tier == "decimated":
             # Record the px width this M4 pass was computed for (§28): the
@@ -625,17 +721,23 @@ class PayloadMixin(_Host):
         tier, (xv, yv, bv) = self._m4_decimate(
             t, xr, px_width, t.x.values, t.y.values, t.base.values
         )
-        sel = None
-        if self._visible_mask_needed(t, prefiltered=False, base_column=t.base):
-            sel = np.flatnonzero(self._log_visible_mask(t, xv, yv, bv))
-            if len(sel) != len(xv):
-                xv, yv, bv = xv[sel], yv[sel], bv[sel]
-        entry = self._base_entry(t, pw, xv, yv, tier, self._default_styled(t))
+        sel = self._visible_sel(t, xv, yv, base=bv, base_column=t.base)
+        if sel is not None:
+            xv, yv, bv = xv[sel], yv[sel], bv[sel]
+        entry = self._base_entry(
+            t,
+            pw,
+            xv,
+            yv,
+            tier,
+            self._default_styled(t),
+            kind="area",
+            extra_arrays={"base": bv},
+        )
         if tier == "decimated":
             entry["decimation_px"] = int(px_width)
         if t.transition_keys is not None:
             self._transition_entry(entry, t, pw, sel)
-        entry["base"] = pw.ship(bv, t.base, scale=self._axis_scale(t.y_axis))
         return entry
 
     def _emit_error_band(
@@ -646,32 +748,67 @@ class PayloadMixin(_Host):
     def _emit_scatter(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
-        if t.use_density() and self.coords != "polar":
-            # Polar forces direct: density bins an axis-aligned (x, y) grid,
-            # and equal (theta, r) bins near the origin cover far fewer pixels,
-            # so uniform data would render centre-concentrated. Trace.use_density
-            # has no Figure reference, so the chart-level flag is applied here at
-            # the call site (spec/design/polar-axes.md §7).
-            t.shipped_sel = None  # no per-point marks, no pick mapping
-            t.drill_mode = False  # full view: density until a zoom drills in
+        del px_width
+        pre_plan = kernels.payload_scatter_emit_plan(
+            n_points=t.n_points,
+            polar=self.coords == "polar",
+            force_density=t.payload_force_density(),
+            force_direct=False,
+            per_item=t.has_per_item_channels(),
+            n_marks=int(t.n_points),
+            has_trace_animation=t.animation is not None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+        )
+        if pre_plan["emit_density"]:
+            if pre_plan["clear_shipped_sel"]:
+                t.shipped_sel = None
+            if pre_plan["drill_mode_false"]:
+                t.drill_mode = False
             entry = self._density_trace_spec(t, xr, yr, *DENSITY_GRID, pw)
-            return self._transition_entry(entry, t, pw)
+            if pre_plan["attach_transition"]:
+                return self._transition_entry(entry, t, pw)
+            return entry
         xv, yv = t.x.values, t.y.values
-        sel = self._finite_sel(t, xv, yv)
+        sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
-        if len(xv) and self._visible_mask_needed(t, prefiltered=sel is not None):
-            visible = self._log_visible_mask(t, xv, yv)
-            if not bool(np.all(visible)):
-                sel = np.flatnonzero(visible) if sel is None else sel[visible]
-                xv, yv = xv[visible], yv[visible]
+        plan = kernels.payload_scatter_emit_plan(
+            n_points=t.n_points,
+            polar=self.coords == "polar",
+            force_density=t.payload_force_density(),
+            force_direct=False,
+            per_item=t.has_per_item_channels(),
+            n_marks=int(len(xv)),
+            has_trace_animation=t.animation is not None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+        )
         entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style))
-        if t.transition_keys is not None:
+        if plan["attach_transition"]:
             self._transition_entry(entry, t, pw, sel)
-        entry["color"], entry["size"] = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel, pw)
-        self._attach_tooltip_rows(entry, t, sel)
-        t.shipped_sel = sel  # pick/selection translation (§17)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
+        if plan["attach_tooltip"]:
+            self._attach_tooltip_rows(entry, t, sel)
+        elif t.tooltip_rows is not None and not plan["tooltip_length_ok"]:
+            raise ValueError(
+                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
+            )
+        if plan["set_shipped_sel"]:
+            t.shipped_sel = sel
         return entry
 
     def _emit_hexbin(
@@ -679,13 +816,17 @@ class PayloadMixin(_Host):
     ) -> dict[str, Any]:
         del xr, yr, px_width
         xv, yv = t.x.values, t.y.values
-        sel = self._finite_sel(t, xv, yv)
+        sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
-        # Cells ship as centers plus one scalar color value. Every hexagon
-        # shares the same geometry (style hex_dx/hex_dy), so each renderer
-        # expands the six-triangle fan locally and the wire cost stays
-        # O(cells), not O(cells x vertices x channels) (§29).
+        column_plan = self._payload_column_ship_plan(t, kind="hexbin")
+        plan = kernels.payload_nonxy_emit_plan(
+            kind="hexbin",
+            n_marks=int(len(xv)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=column_plan["x_ship_scale"],
+            y_axis_scale=column_plan["y_ship_scale"],
+        )
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -693,13 +834,25 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(xv)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x": pw.ship_values(xv, scale=self._axis_scale(t.x_axis)),
-            "y": pw.ship_values(yv, scale=self._axis_scale(t.y_axis)),
         }
-        entry["color"], _size = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x": xv, "y": yv},
+        )
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
         return entry
 
     def _emit_histogram(
@@ -724,7 +877,14 @@ class PayloadMixin(_Host):
         if t.grid is None or t.grid_shape is None:
             raise ValueError("heatmap trace missing grid column")
         rows, cols = t.grid_shape
-        if t.rgba_grid is not None:
+        plan = kernels.payload_heatmap_emit_plan(
+            has_rgba_grid=t.rgba_grid is not None,
+            grid_rows=int(rows),
+            grid_cols=int(cols),
+            style_colormap_is_none=t.style.get("colormap") is None,
+            borrow_heatmaps=pw.borrow_heatmaps,
+        )
+        if plan["path"] == "rgba":
             return {
                 "id": t.id,
                 "kind": "heatmap",
@@ -732,7 +892,7 @@ class PayloadMixin(_Host):
                 "style": dict(t.style),
                 "tier": "direct",
                 "n_points": t.n_points,
-                "n_marks": int(rows * cols),
+                "n_marks": plan["n_marks"],
                 "x_axis": t.x_axis,
                 "y_axis": t.y_axis,
                 "heatmap": {
@@ -744,7 +904,7 @@ class PayloadMixin(_Host):
                 },
             }
         domain = tuple(t.style["domain"])
-        if pw.borrow_heatmaps:
+        if plan["borrow_canonical"]:
             buffer_index = pw.borrow_f64(t.grid.values)
             encoding = "canonical-f64"
         else:
@@ -752,21 +912,21 @@ class PayloadMixin(_Host):
             buffer_index = pw.ship_scalar(norm)
             encoding = None
         cmap = t.style.get("colormap")
-        if cmap is None:
+        if plan["use_constant_colormap_fallback"]:
             # Constant-style Scene path: every renderer must paint the literal
             # color, not a default viridis ramp, so exports stay aligned.
             from ._raster import _parse_color
 
             red, green, blue, _alpha = _parse_color(str(t.style.get("color", "#3987e5")), 1.0)
             cmap = [[red, green, blue], [red, green, blue]]
-        return {
+        entry: dict[str, Any] = {
             "id": t.id,
             "kind": "heatmap",
             "name": t.name,
             "style": dict(t.style),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(rows * cols),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "heatmap": {
@@ -777,10 +937,12 @@ class PayloadMixin(_Host):
                 "y_range": list(t.style["y_range"]),
                 "colormap": cmap,
                 "domain": list(domain),
-                **({"enc": encoding} if encoding is not None else {}),
+                **({"enc": encoding} if plan["attach_encoding"] and encoding is not None else {}),
             },
-            "color": {"mode": "continuous", "colormap": cmap, "domain": list(domain)},
         }
+        if plan["attach_color"]:
+            entry["color"] = {"mode": "continuous", "colormap": cmap, "domain": list(domain)}
+        return entry
 
     def _emit_box(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -799,33 +961,40 @@ class PayloadMixin(_Host):
         if t.x0 is None or t.x1 is None or t.y0 is None or t.y1 is None:
             raise ValueError(f"{t.kind} trace missing segment columns")
         x0v, x1v, y0v, y1v = t.x0.values, t.x1.values, t.y0.values, t.y1.values
+        pre_plan = kernels.payload_segments_emit_plan(
+            kind=t.kind,
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+        )
+        gather: Optional[dict[str, object]] = None
+        if pre_plan["attempt_gather"]:
+            gather = kernels.payload_segments_emit_gather(
+                t.kind,
+                len(x0v),
+                int(t.count or 0),
+                px_width,
+            )
         tier = "direct"
         source_sel: Optional[np.ndarray] = None
         segment_sources: Optional[np.ndarray] = None
         segment_roles: Optional[np.ndarray] = None
-        if t.kind == "errorbar" and t.count:
-            # Segments ship grouped by role, count per group: 3 groups with
-            # caps (main + two cap blocks), 1 without. Decimate per point
-            # across every group so caps stay attached to their bars.
-            seg_per, remainder = divmod(len(x0v), t.count)
-            if remainder == 0 and seg_per >= 1:
-                segment_sources = np.tile(np.arange(t.count, dtype=np.int64), seg_per)
-                segment_roles = np.repeat(np.arange(seg_per, dtype=np.uint32), t.count)
-            max_groups = max(1024, int(px_width) * 4)
-            if remainder == 0 and seg_per >= 1 and t.count > max_groups:
-                chosen = np.linspace(0, t.count - 1, max_groups, dtype=np.int64)
-                indices = np.concatenate([chosen + k * t.count for k in range(seg_per)])
-                x0v, x1v, y0v, y1v = x0v[indices], x1v[indices], y0v[indices], y1v[indices]
-                source_sel = indices
-                if segment_sources is not None and segment_roles is not None:
-                    segment_sources = segment_sources[indices]
-                    segment_roles = segment_roles[indices]
-                tier = "decimated"
-        elif t.kind == "stem" and len(x0v) > max(1024, int(px_width) * 4):
-            chosen = np.linspace(0, len(x0v) - 1, max(1024, int(px_width) * 4), dtype=np.int64)
-            x0v, x1v, y0v, y1v = x0v[chosen], x1v[chosen], y0v[chosen], y1v[chosen]
-            source_sel = chosen
-            tier = "decimated"
+        if gather is not None:
+            tier = "decimated" if gather["tier"] == 1 else "direct"
+            if not gather["keep_all"]:
+                chosen64 = np.asarray(gather["indices"], dtype=np.int64)
+                x0v, x1v, y0v, y1v = (
+                    x0v[chosen64],
+                    x1v[chosen64],
+                    y0v[chosen64],
+                    y1v[chosen64],
+                )
+                source_sel = chosen64
+            if gather["role_maps"]:
+                segment_sources = np.asarray(gather["sources"], dtype=np.int64)
+                segment_roles = np.asarray(gather["roles"], dtype=np.int64)
         finite_sel = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if finite_sel is not None:
             x0v, x1v, y0v, y1v = (
@@ -838,6 +1007,15 @@ class PayloadMixin(_Host):
             if segment_sources is not None and segment_roles is not None:
                 segment_sources = segment_sources[finite_sel]
                 segment_roles = segment_roles[finite_sel]
+        plan = kernels.payload_segments_emit_plan(
+            kind=t.kind,
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+        )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -845,21 +1023,30 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": tier,
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, source_sel, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, source_sel, pw)
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": y0v, "y1": y1v},
+        )
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            source_sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
         self._attach_tooltip_rows(entry, t, source_sel)
         key_values = None
         if (
-            tier == "direct"
+            plan["attempt_role_keys"]
+            and tier == "direct"
             and t.transition_keys is not None
             and segment_sources is not None
             and segment_roles is not None
@@ -867,12 +1054,15 @@ class PayloadMixin(_Host):
             # An errorbar point expands into independently rendered main/cap
             # segments. Derive a stable role-qualified key so the browser can
             # key-match those segments without duplicate identities.
-            key_values = np.array(t.transition_keys[segment_sources], copy=True)
-            key_values[:, 0] ^= segment_roles * np.uint32(0x9E3779B9)
-            key_values[:, 1] ^= segment_roles * np.uint32(0x85EBCA6B)
-            if len(np.unique(key_values, axis=0)) != len(key_values):
-                raise ValueError("errorbar role-qualified animation key collision")
-        return self._transition_entry(entry, t, pw, source_sel, key_values)
+            key_values = kernels.payload_errorbar_role_keys(
+                t.transition_keys[:, 0],
+                t.transition_keys[:, 1],
+                segment_sources.astype(np.uint32, copy=False),
+                segment_roles.astype(np.uint32, copy=False),
+            )
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, source_sel, key_values)
+        return entry
 
     def _emit_ribbon(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -889,14 +1079,35 @@ class PayloadMixin(_Host):
             raise ValueError("ribbon trace missing geometry columns")
         columns = (t.x0, t.x1, t.y0, t.y1, t.x, t.y)
         arrays = [column.values for column in columns]
-        candidates = [
-            array for column, array in zip(columns, arrays, strict=True) if column.zone.null_count
-        ]
-        sel_arg = kernels.valid_indices_f64(tuple(candidates)) if candidates else None
+        any_geometry_nulls = any(column.zone.null_count for column in columns)
+        pre_plan = kernels.payload_ribbon_emit_plan(
+            n_marks=int(len(arrays[0])),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_color2_ch=t.color2_ch is not None,
+        )
+        sel_arg: Optional[np.ndarray] = None
+        if pre_plan["attempt_gather"]:
+            candidates = [
+                array
+                for column, array in zip(columns, arrays, strict=True)
+                if column.zone.null_count
+            ]
+            sel_arg = kernels.valid_indices_f64(tuple(candidates))
         if sel_arg is not None:
             arrays = [array[sel_arg] for array in arrays]
         x0v, x1v, slo, shi, tlo, thi = arrays
-        xs, ys = self._axis_scale(t.x_axis), self._axis_scale(t.y_axis)
+        plan = kernels.payload_ribbon_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_color2_ch=t.color2_ch is not None,
+        )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -906,25 +1117,30 @@ class PayloadMixin(_Host):
             # decimation nor a density tier means anything for a band (§28).
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=xs),
-            "x1": pw.ship(x1v, t.x1, scale=xs),
-            "y0": pw.ship(slo, t.y0, scale=ys),
-            "y1": pw.ship(shi, t.y1, scale=ys),
-            "target_y0": pw.ship(tlo, t.x, scale=ys),
-            "target_y1": pw.ship(thi, t.y, scale=ys),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        if t.color2_ch is not None:
-            entry["color_target"] = channels.ship_color_channel(
-                t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
-            )
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": slo, "y1": shi, "x": tlo, "y": thi},
+        )
         self._attach_tooltip_rows(entry, t, sel_arg)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
-        return self._transition_entry(entry, t, pw, sel_arg)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+            has_color2_ch=plan["attach_color2"],
+        )
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_triangle_mesh(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -936,17 +1152,45 @@ class PayloadMixin(_Host):
         y0v, y1v, y2v = t.y0.values, t.y1.values, t.y.values
         geometry = (t.x0, t.x1, t.x, t.y0, t.y1, t.y)
         values = (x0v, x1v, x2v, y0v, y1v, y2v)
-        candidates = [
-            array for column, array in zip(geometry, values, strict=True) if column.zone.null_count
-        ]
-        if t.color_ch is not None and t.color_ch.mode == "continuous":
-            if t.color_ch.values is None:
-                raise ValueError("triangle_mesh continuous color channel missing values")
-            candidates.append(t.color_ch.values)
-        sel_arg = kernels.valid_indices_f64(tuple(candidates)) if candidates else None
+        any_geometry_nulls = any(column.zone.null_count for column in geometry)
+        has_continuous_color = t.color_ch is not None and t.color_ch.mode == "continuous"
+        continuous_color_values_missing = (
+            has_continuous_color and t.color_ch is not None and t.color_ch.values is None
+        )
+        pre_plan = kernels.payload_mesh_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_continuous_color=has_continuous_color,
+            continuous_color_values_missing=continuous_color_values_missing,
+        )
+        sel_arg: Optional[np.ndarray] = None
+        if pre_plan["attempt_gather"]:
+            candidates = [
+                array
+                for column, array in zip(geometry, values, strict=True)
+                if column.zone.null_count
+            ]
+            if pre_plan["gather_include_color"]:
+                if t.color_ch is None or t.color_ch.values is None:
+                    raise ValueError("triangle_mesh continuous color channel missing values")
+                candidates.append(t.color_ch.values)
+            sel_arg = kernels.valid_indices_f64(tuple(candidates))
         if sel_arg is not None:
             x0v, x1v, x2v = x0v[sel_arg], x1v[sel_arg], x2v[sel_arg]
             y0v, y1v, y2v = y0v[sel_arg], y1v[sel_arg], y2v[sel_arg]
+        plan = kernels.payload_mesh_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_continuous_color=has_continuous_color,
+            continuous_color_values_missing=continuous_color_values_missing,
+        )
+        column_plan = self._payload_column_ship_plan(t)
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -954,20 +1198,28 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "x2": pw.ship(x2v, t.x, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
-            "y2": pw.ship(y2v, t.y, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
-        return self._transition_entry(entry, t, pw, sel_arg)
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "x": x2v, "y0": y0v, "y1": y1v, "y": y2v},
+        )
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_errorbar(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -1004,6 +1256,27 @@ class PayloadMixin(_Host):
         sel_arg = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if sel_arg is not None:
             x0v, x1v, y0v, y1v = x0v[sel_arg], x1v[sel_arg], y0v[sel_arg], y1v[sel_arg]
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        column_plan = self._payload_column_ship_plan(
+            t, kind=t.kind if t.kind == "histogram" else "rect"
+        )
+        if t.kind == "histogram":
+            plan = kernels.payload_bar_hist_emit_plan(
+                kind="histogram",
+                n_marks=int(len(x0v)),
+                style_color_is_none=t.style.get("color") is None,
+                x_axis_scale=x_scale,
+                y_axis_scale=y_scale,
+            )
+        else:
+            plan = kernels.payload_nonxy_emit_plan(
+                kind="rect",
+                n_marks=int(len(x0v)),
+                style_color_is_none=t.style.get("color") is None,
+                x_axis_scale=x_scale,
+                y_axis_scale=y_scale,
+            )
         style = self._default_styled(t)
         entry = {
             "id": t.id,
@@ -1012,18 +1285,28 @@ class PayloadMixin(_Host):
             "style": style,
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
-        return self._transition_entry(entry, t, pw, sel_arg)
+        self._ship_registry_columns(
+            entry,
+            t,
+            pw,
+            column_plan,
+            {"x0": x0v, "x1": x1v, "y0": y0v, "y1": y1v},
+        )
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_bar_compact(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -1043,45 +1326,50 @@ class PayloadMixin(_Host):
             pos = t.x.values if sel_arg is None else t.x.values[sel_arg]
             value0 = y0v
             value1 = t.y.values if sel_arg is None else t.y.values[sel_arg]
-            pos_ref = pw.ship(pos, t.x, scale=self._axis_scale(t.x_axis))
-            value1_ref = pw.ship(value1, t.y, scale=self._axis_scale(t.y_axis))
-            value0_col = t.y0
-            value_axis = "y"
         elif orientation == "horizontal":
             widths = y1v - y0v
             pos = (y0v + y1v) / 2.0
             value0 = x0v
             value1 = x1v
-            pos_ref = pw.ship_values(pos, scale=self._axis_scale(t.y_axis))
-            value1_ref = pw.ship(value1, t.x1, scale=self._axis_scale(t.x_axis))
-            value0_col = t.x0
-            value_axis = "x"
         else:
             raise ValueError(f"unknown bar orientation {orientation!r}")
 
-        if len(widths) == 0:
-            width = 1.0
-        else:
-            width = float(widths[0])
-            if not np.isfinite(width) or width <= 0 or not np.allclose(widths, width):
-                return self._emit_rect(t, pw, (), (), 0)
+        compact, width, has_value0_const, value0_const = kernels.payload_bar_compact_admit(
+            np.ascontiguousarray(widths, dtype=np.float64),
+            np.ascontiguousarray(value0, dtype=np.float64),
+        )
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_bar_hist_emit_plan(
+            kind="bar_compact",
+            compact=compact,
+            n_marks=int(len(pos)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+            orientation=orientation,
+        )
+        if not plan["emit_bar"]:
+            return self._emit_rect(t, pw, (), (), 0)
 
+        column_plan = self._payload_column_ship_plan(t, kind="bar_compact", orientation=orientation)
         style = self._default_styled(t)
         bar_spec: dict[str, Any] = {
             "orientation": orientation,
-            "value_axis": value_axis,
-            "pos": pos_ref,
-            "value1": value1_ref,
+            "value_axis": plan["value_axis"],
             "width": width,
         }
-        if len(value0) and np.isfinite(value0).all() and np.all(value0 == value0[0]):
-            bar_spec["value0_const"] = float(value0[0])
-        else:
-            bar_spec["value0"] = pw.ship(
-                value0,
-                value0_col,
-                scale=self._axis_scale(t.y_axis if value_axis == "y" else t.x_axis),
-            )
+        skip_keys = frozenset({"value0"}) if has_value0_const else None
+        if has_value0_const:
+            bar_spec["value0_const"] = value0_const
+        self._ship_registry_columns(
+            bar_spec,
+            t,
+            pw,
+            column_plan,
+            {"pos": pos, "value1": value1, "value0": value0},
+            skip_keys=skip_keys,
+        )
 
         entry = {
             "id": t.id,
@@ -1090,15 +1378,187 @@ class PayloadMixin(_Host):
             "style": style,
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(pos)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "bar": bar_spec,
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
-        return self._transition_entry(entry, t, pw, sel_arg)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
+
+    def _ship_trace_channel_attach(
+        self,
+        entry: dict[str, Any],
+        t: Trace,
+        sel,
+        pw: "_PayloadWriter",
+        slot: int,
+        *,
+        include_trace_styles: bool,
+        has_color2_ch: bool = False,
+    ) -> None:  # noqa: ANN001
+        """Attach paint/style channels per Rust-owned channel ship registry (ABI 311)."""
+        plan = kernels.payload_channel_ship_plan(
+            slot,
+            include_trace_styles=include_trace_styles,
+            has_color2_ch=has_color2_ch,
+            has_color_ch=t.color_ch is not None,
+            has_stroke_ch=t.stroke_ch is not None,
+            has_style_channels=bool(t.style_channels),
+        )
+        channels.ship_registry_attach(entry, t, sel, pw.ship_scalar, pw.ship_u8, plan)
+
+    def _payload_column_ship_plan(
+        self, t: Trace, *, kind: Optional[str] = None, orientation: Optional[str] = None
+    ) -> dict:
+        """Rust-owned geometry column registry and gather policy (ABI 310/314)."""
+        return kernels.payload_column_ship_plan(
+            kind=kind or t.kind,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            orientation=orientation,
+        )
+
+    def _ship_registry_columns(
+        self,
+        entry: dict[str, Any],
+        t: Trace,
+        pw: "_PayloadWriter",
+        column_plan: dict[str, Any],
+        arrays: dict[str, np.ndarray],
+        *,
+        skip_keys: Optional[frozenset[str]] = None,
+        nested_keys: Optional[frozenset[str]] = None,
+    ) -> None:
+        """Ship gathered geometry arrays into ``entry`` per the column registry."""
+        for col in column_plan["columns"]:
+            key = col["registry_key"]
+            if skip_keys is not None and key in skip_keys:
+                continue
+            slot = col["trace_slot"]
+            values = arrays[key] if key in arrays else arrays[slot]
+            scale = col["ship_scale"]
+            method = col["ship_method"]
+            if method == "offset":
+                column = getattr(t, slot)
+                col_idx = pw.ship(values, column, scale=scale)
+            elif method == "f64":
+                col_idx = pw.ship_f64(values)
+            else:
+                column = getattr(t, slot, None)
+                kind = column.kind if column is not None else "float"
+                col_idx = pw.ship_values(values, kind=kind, scale=scale)
+            if nested_keys is not None and key in nested_keys:
+                entry[key] = {"col": col_idx, **pw.columns[col_idx]}
+            else:
+                entry[key] = col_idx
+
+    def _ship_density_grid_buffers(
+        self,
+        density: dict[str, Any],
+        pw: "_PayloadWriter",
+        grid_plan: dict[str, Any],
+        *,
+        encoded_grid: np.ndarray,
+        rgba_grid: Optional[np.ndarray] = None,
+    ) -> None:
+        """Ship u8 density grid planes per the ABI 315 buffer registry."""
+        buffers = {"count": encoded_grid, "rgba": rgba_grid}
+        for buf in grid_plan["buffers"]:
+            key = buf["registry_key"]
+            slot = buf["buffer_slot"]
+            values = buffers[slot]
+            if values is None:
+                continue
+            if buf["ship_method"] == "u8":
+                density[key] = pw.ship_u8(values)
+
+    def _attach_density_grid_steps(
+        self,
+        density: dict[str, Any],
+        entry: dict[str, Any],
+        t: Trace,
+        pw: "_PayloadWriter",
+        grid_plan: dict[str, Any],
+        wire: dict[str, Any],
+        *,
+        sel: np.ndarray,
+        visible: int,
+        xr: tuple[float, float],
+        yr: tuple[float, float],
+        sample_sel: Optional[np.ndarray],
+        dropped_channels: list[str],
+        tiles_meta: Optional[dict[str, Any]],
+    ) -> None:
+        """Run ordered density nested attach steps from ABI 315."""
+        for step in grid_plan["attach"]:
+            kind = step["attach_kind"]
+            if kind == "wasm_source":
+                wasm_source: dict[str, Any] = {
+                    "kind": "cartesian-count-f64-stream-v1",
+                    "point_count": int(t.n_points),
+                    "trace_id": int(t.id),
+                    "capacity": WASM_AGGREGATE_MAX_POINTS,
+                    "ownership": "retain-host-replay",
+                }
+                column_plan = self._payload_column_ship_plan(t, kind="density_wasm_source")
+                self._ship_registry_columns(
+                    wasm_source,
+                    t,
+                    pw,
+                    column_plan,
+                    {"x": t.x.values, "y": t.y.values},
+                )
+                density["wasm_source"] = wasm_source
+            elif kind == "tiles":
+                if tiles_meta is not None:
+                    density["tiles"] = tiles_meta
+            elif kind == "rgba":
+                density["color_agg"] = "mean"
+            elif kind == "channels_dropped":
+                filtered = [
+                    name
+                    for name in dropped_channels
+                    if kernels.density_dropped_channel_wire_admit(
+                        channel=name,
+                        mean_color_aggregates=int(wire["mean_color_aggregates"]),
+                    )
+                ]
+                dropped_channels[:] = filtered
+                density["channels_dropped"] = kernels.density_channels_dropped_compat(
+                    dropped_count=len(filtered),
+                )
+            elif kind == "dropped_channels":
+                density["dropped_channels"] = dropped_channels
+            elif kind == "constant_color":
+                assert t.color_ch is not None
+                density["color"] = t.color_ch.constant
+            elif kind == "overlay_rows_exceed":
+                density["overlay_omitted"] = "rows_exceed_u32"
+            elif kind == "sample":
+                sample = self._density_sample_spec(
+                    t, sel, visible, xr, yr, pw, sample_sel=sample_sel
+                )
+                if sample is not None:
+                    density["sample"] = sample
+            elif kind == "overlay_static_raster":
+                density["overlay_omitted"] = "static_raster"
+            elif kind == "entry_color":
+                assert t.color_ch is not None
+                color_spec = t.color_ch.spec()
+                color_spec["palette"] = channels.categorical_palette(
+                    t.color_ch.colors, len(t.color_ch.categories or ())
+                )
+                entry["color"] = color_spec
 
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False
@@ -1111,18 +1571,6 @@ class PayloadMixin(_Host):
         return channels.ship_channels(
             t, sel, ship_scalar, ship_u8, quantize_continuous=quantize_continuous
         )
-
-    @staticmethod
-    def _ship_trace_styles(entry: dict[str, Any], t: Trace, sel, pw: "_PayloadWriter") -> None:  # noqa: ANN001
-        """Attach outline paint and direct instance attributes to a trace spec."""
-        if t.stroke_ch is not None:
-            entry["stroke"] = channels.ship_color_channel(
-                t.stroke_ch, sel, pw.ship_scalar, pw.ship_u8
-            )
-        if t.style_channels:
-            entry["channels"] = channels.ship_style_channels(
-                t.style_channels, sel, pw.ship_scalar, pw.ship_u8
-            )
 
     def _density_sample_spec(
         self,
@@ -1149,18 +1597,22 @@ class PayloadMixin(_Host):
             )
         if len(sample_sel) == 0:
             return None
-        color_spec, size_spec = self._ship_channels(t, sample_sel, pw.ship_scalar, pw.ship_u8)
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_nonxy_emit_plan(
+            kind="density_sample",
+            n_marks=int(len(sample_sel)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
         style = dict(t.style)
         try:
-            style["opacity"] = min(float(style.get("opacity", 0.8)), 0.55)
+            authored = float(style.get("opacity", 0.8))
         except (TypeError, ValueError):
-            style["opacity"] = 0.55
-        x_col = pw.ship_values(
-            t.x.values[sample_sel], kind=t.x.kind, scale=self._axis_scale(t.x_axis)
-        )
-        y_col = pw.ship_values(
-            t.y.values[sample_sel], kind=t.y.kind, scale=self._axis_scale(t.y_axis)
-        )
+            authored = float("nan")
+        style["opacity"] = kernels.density_overlay_opacity(authored)
+        column_plan = self._payload_column_ship_plan(t, kind="density_sample")
         sample = {
             "mode": "sampled",
             "n": int(len(sample_sel)),
@@ -1168,35 +1620,108 @@ class PayloadMixin(_Host):
             "target": DENSITY_SAMPLE_TARGET,
             "level": 0,
             "seed": DENSITY_SAMPLE_SEED,
-            "x": {"col": x_col, **pw.columns[x_col]},
-            "y": {"col": y_col, **pw.columns[y_col]},
             "x_range": list(xr),
             "y_range": list(yr),
-            "color": color_spec,
-            "size": size_spec,
             "style": style,
         }
-        self._ship_trace_styles(sample, t, sample_sel, pw)
+        self._ship_registry_columns(
+            sample,
+            t,
+            pw,
+            column_plan,
+            {"x": t.x.values[sample_sel], "y": t.y.values[sample_sel]},
+            nested_keys=frozenset({"x", "y"}),
+        )
+        self._ship_trace_channel_attach(
+            sample,
+            t,
+            sample_sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
+        )
         return sample
+
+    def _density_trace_emit_plan(
+        self,
+        t: Trace,
+        xr,
+        yr,
+        w: int,
+        h: int,
+        pw: "_PayloadWriter",
+        bx0: float,
+        bx1: float,
+        by0: float,
+        by1: float,
+        x_linear: bool,
+        y_linear: bool,
+        x_memmapped: bool,
+        y_memmapped: bool,
+        *,
+        grid_from_pyramid: bool,
+        has_pyramid_resource: bool,
+        grid_present: bool,
+        has_pyramid_rgba: bool = False,
+        has_bin_colors: bool = False,
+        dropped_count: int = 0,
+    ) -> dict[str, int | bool | float]:
+        mode = ""
+        codes_present = False
+        codes_u8 = False
+        has_counts = False
+        has_constant = False
+        if t.color_ch is not None:
+            mode = t.color_ch.mode
+            codes = t.color_ch.codes
+            codes_present = codes is not None
+            codes_u8 = codes is not None and codes.dtype == np.uint8
+            has_counts = t.color_ch.counts is not None
+            has_constant = t.color_ch.constant is not None
+        return kernels.payload_density_trace_emit_plan(
+            has_channel=t.color_ch is not None,
+            mode=mode,
+            codes_present=codes_present,
+            codes_u8=codes_u8,
+            has_counts=has_counts,
+            has_constant=has_constant,
+            cartesian=self.coords == "cartesian",
+            x_linear=x_linear,
+            y_linear=y_linear,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            point_overlay=bool(pw.point_overlay),
+            split_payload=bool(pw._split),
+            grid_w=int(w),
+            grid_h=int(h),
+            grid_from_pyramid=grid_from_pyramid,
+            has_pyramid_resource=has_pyramid_resource,
+            grid_present=grid_present,
+            x_memmapped=x_memmapped,
+            y_memmapped=y_memmapped,
+            x_min=float(t.x.min),
+            x_max=float(t.x.max),
+            y_min=float(t.y.min),
+            y_max=float(t.y.max),
+            xr0=float(xr[0]),
+            xr1=float(xr[1]),
+            yr0=float(yr[0]),
+            yr1=float(yr[1]),
+            bx0=float(bx0),
+            bx1=float(bx1),
+            by0=float(by0),
+            by1=float(by1),
+            n_points=int(t.n_points),
+            has_pyramid_rgba=has_pyramid_rgba,
+            has_bin_colors=has_bin_colors,
+            dropped_count=int(dropped_count),
+        )
 
     def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "_PayloadWriter") -> dict[str, Any]:  # noqa: ANN001
         """Bin a scatter into a density grid and build its spec entry (§5 Tier 2).
         The grid ships in the client's one-byte log texture precision; exact
         visible counts remain metadata, and the client recomputes the
         normalization domain per view so brightness is stable (§F6)."""
-        # A clean full-domain trace has identity visible rows. Avoid allocating
-        # and then hashing an N-entry u32 index vector merely to retain the
-        # small sampled overlay; the implicit-range samplers apply the same
-        # SplitMix predicates with scratch proportional to the returned rows.
-        # Compact categorical codes can be scanned directly in Rust; wider
-        # codes retain the general visible-index path.
-        categorical = bool(t.color_ch and t.color_ch.mode == "categorical")
-        compact_categorical = bool(
-            categorical
-            and t.color_ch is not None
-            and t.color_ch.codes is not None
-            and t.color_ch.codes.dtype == np.uint8
-        )
         # Density grids are uniform in axis-scale coordinates (§28): on a
         # nonlinear axis the columns and window are transformed before binning
         # so every cell covers the same strip of *screen*. The wire keeps raw
@@ -1204,54 +1729,73 @@ class PayloadMixin(_Host):
         # scale coordinates.
         bx, (bx0, bx1) = self._binning_coords(t.x_axis, t.x.values, xr)
         by, (by0, by1) = self._binning_coords(t.y_axis, t.y.values, yr)
-        full_identity = (
-            (not categorical or compact_categorical)
-            and not (t.x.zone.null_count or t.y.zone.null_count)
-            and t.x.min >= xr[0]
-            and t.x.max <= xr[1]
-            and t.y.min >= yr[0]
-            and t.y.max <= yr[1]
-        )
+        x_linear = self._axis_scale(t.x_axis) == "linear"
+        y_linear = self._axis_scale(t.y_axis) == "linear"
+        from . import _ooc as ooc
+
+        x_memmapped = ooc.is_memmapped(t.x.values)
+        y_memmapped = ooc.is_memmapped(t.y.values)
+
+        def _emit_plan(
+            *, grid_from_pyramid: bool, has_pyramid_resource: bool, grid_present: bool = False
+        ) -> dict[str, int | bool | float]:
+            return self._density_trace_emit_plan(
+                t,
+                xr,
+                yr,
+                w,
+                h,
+                pw,
+                bx0,
+                bx1,
+                by0,
+                by1,
+                x_linear,
+                y_linear,
+                x_memmapped,
+                y_memmapped,
+                grid_from_pyramid=grid_from_pyramid,
+                has_pyramid_resource=has_pyramid_resource,
+                grid_present=grid_present,
+            )
+
+        plan = _emit_plan(grid_from_pyramid=False, has_pyramid_resource=False)
         sample_sel = None
-        # Per-row index/sample kernels return u32 row ids, so the point-sample
-        # overlay and range-index paths top out at 2³²-1 rows. Past that the
-        # density grid itself is still exact (bin_2d counts in size_t), so we
-        # ship grid-only and record the overlay omission (§28: no silent caps).
-        oversized = int(t.n_points) > _U32_MAX
         grid = None
         visible = int(t.n_points)
         sel = np.empty(0, dtype=np.uint32)
-        binning = "exact"
+        binning = _native.density_format_binning(exact=True)
         rgba_from_pyramid = None
+        tiles_meta = None
+        has_pyramid_resource = False
         # Tier-3 first paint: when the interactive path would already build a
         # pyramid, compose the opening density surface from it instead of an
         # O(N) `bin_2d` that the next pan throws away (§28 `pyramid-L*`).
-        linear_axes = (
-            self._axis_scale(t.x_axis) == "linear" and self._axis_scale(t.y_axis) == "linear"
-        )
-        if grid is None and linear_axes and int(t.n_points) >= PYRAMID_MIN_POINTS:
+        if plan["pyramid_eligible"]:
             pyr = interaction._ensure_pyramid(t)
             store = interaction._tile_store_of(t)
-            if store is not None or pyr is not None:
-                from . import _ooc as ooc
-
-                no_rescan = (
-                    ooc.is_memmapped(t.x.values)
-                    or ooc.is_memmapped(t.y.values)
-                    or int(t.n_points) > PYRAMID_NO_RESCAN_ROWS
-                )
-                max_upsample = 1_000_000 if no_rescan else 2
-                tiles_meta = None
+            has_pyramid_resource = store is not None or pyr is not None
+            plan = _emit_plan(
+                grid_from_pyramid=False,
+                has_pyramid_resource=has_pyramid_resource,
+            )
+            if plan["pyramid_attempt"]:
+                no_rescan = bool(plan["pyramid_no_rescan"])
+                max_upsample = int(plan["pyramid_max_upsample"])
+                tile_upsample = int(plan["pyramid_tile_upsample"])
                 if store is not None:
-                    tile_upsample = 1_000_000 if (no_rescan or store) else max_upsample
                     if getattr(t, "_pyr_colored", False):
                         res_color = kernels.tile_store_compose_color(
                             store, bx0, bx1, by0, by1, w, h, tile_upsample
                         )
                         if res_color is not None:
                             grid, rgba_from_pyramid, level = res_color
-                            upsampled = no_rescan and level == 0
-                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            binning = _native.density_format_binning(
+                                exact=False,
+                                level=int(level),
+                                tiles=True,
+                                upsampled=no_rescan and level == 0,
+                            )
                             tiles_meta = interaction._tiles_stats_dict(store)
                     else:
                         res = kernels.tile_store_compose(
@@ -1259,8 +1803,12 @@ class PayloadMixin(_Host):
                         )
                         if res is not None:
                             grid, level = res
-                            upsampled = no_rescan and level == 0
-                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            binning = _native.density_format_binning(
+                                exact=False,
+                                level=int(level),
+                                tiles=True,
+                                upsampled=no_rescan and level == 0,
+                            )
                             tiles_meta = interaction._tiles_stats_dict(store)
                 elif pyr is not None and getattr(t, "_pyr_colored", False):
                     res_color = kernels.pyramid_compose_color(
@@ -1268,25 +1816,29 @@ class PayloadMixin(_Host):
                     )
                     if res_color is not None:
                         grid, rgba_from_pyramid, level = res_color
-                        binning = (
-                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        binning = _native.density_format_binning(
+                            exact=False,
+                            level=int(level),
+                            upsampled=no_rescan and level == 0,
                         )
                 elif pyr is not None:
                     res = kernels.pyramid_compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample)
                     if res is not None:
                         grid, level = res
-                        binning = (
-                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        binning = _native.density_format_binning(
+                            exact=False,
+                            level=int(level),
+                            upsampled=no_rescan and level == 0,
                         )
-            else:
-                tiles_meta = None
-        else:
-            tiles_meta = None
+        plan = _emit_plan(
+            grid_from_pyramid=grid is not None,
+            has_pyramid_resource=has_pyramid_resource,
+        )
         # Pyramid compose yields the grid without a fused overlay sample.
         # Fill the public sample without re-binning so first paint still
         # ships `density["sample"]` (raster `point_overlay=False` stays empty).
-        if grid is not None and pw.point_overlay and not oversized and sample_sel is None:
-            if compact_categorical:
+        if plan["needs_pyramid_sample"] and sample_sel is None:
+            if plan["pyramid_sample_stratified"]:
                 assert t.color_ch is not None and t.color_ch.codes is not None
                 sample_sel = lod.stratified_sample_row_range_for_target(
                     t.color_ch.codes,
@@ -1301,53 +1853,47 @@ class PayloadMixin(_Host):
                     DENSITY_SAMPLE_TARGET,
                     seed=DENSITY_SAMPLE_SEED,
                 )
-        if oversized and grid is None:
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            sample_sel = None
-            grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
-            binning = "exact"
-        elif grid is None and full_identity and not pw.point_overlay:
-            # Raster export: no overlay is drawn, so take the plain grid kernel
-            # instead of the fused grid+sample variants below. `bin_2d` is the
-            # grid half of every one of them, so the counts are identical.
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-            binning = "exact"
-        elif grid is None and full_identity:
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            if compact_categorical:
+        if grid is None:
+            path = int(plan["grid_path"])
+            if plan["visible_init_n_points"]:
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
+            if plan["use_raw_range_bin2d"]:
+                sample_sel = None
+                grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_GRID_ONLY:
+                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED:
                 assert t.color_ch is not None and t.color_ch.codes is not None
-                if t.color_ch.counts is not None:
-                    grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
-                        bx,
-                        by,
-                        t.color_ch.codes,
-                        len(t.color_ch.categories or ()),
-                        bx0,
-                        bx1,
-                        by0,
-                        by1,
-                        w,
-                        h,
-                        DENSITY_SAMPLE_TARGET,
-                        counts=t.color_ch.counts,
-                        seed=DENSITY_SAMPLE_SEED,
-                    )
-                else:
-                    # Defensive compatibility for traces assembled outside the
-                    # normal resolver; production factorization always emits
-                    # counts and takes the fused path.
-                    grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-                    sample_sel = lod.stratified_sample_row_range_for_target(
-                        t.color_ch.codes,
-                        len(t.color_ch.categories or ()),
-                        DENSITY_SAMPLE_TARGET,
-                        seed=DENSITY_SAMPLE_SEED,
-                    )
-            else:
+                grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
+                    bx,
+                    by,
+                    t.color_ch.codes,
+                    len(t.color_ch.categories or ()),
+                    bx0,
+                    bx1,
+                    by0,
+                    by1,
+                    w,
+                    h,
+                    DENSITY_SAMPLE_TARGET,
+                    counts=t.color_ch.counts,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT:
+                assert t.color_ch is not None and t.color_ch.codes is not None
+                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
+                sample_sel = lod.stratified_sample_row_range_for_target(
+                    t.color_ch.codes,
+                    len(t.color_ch.categories or ()),
+                    DENSITY_SAMPLE_TARGET,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED:
                 grid, sample_sel = lod.bin_2d_sample_row_range_for_target(
                     bx,
                     by,
@@ -1360,14 +1906,57 @@ class PayloadMixin(_Host):
                     DENSITY_SAMPLE_TARGET,
                     seed=DENSITY_SAMPLE_SEED,
                 )
-            binning = "exact"
-        elif grid is None:
-            # Fused single pass: grid (bin_2d semantics) + visible rows
-            # (range_indices semantics) without re-reading full columns twice.
-            grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
-            visible = int(len(sel))
-            binning = "exact"
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_RANGE_INDICES:
+                grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
+                visible = int(len(sel))
+                binning = _native.density_format_binning(exact=True)
+            else:
+                raise RuntimeError(f"unexpected density grid path {path}")
+        elif plan["visible_is_n_points"]:
+            visible = int(t.n_points)
+            sel = np.empty(0, dtype=np.uint32)
         encoded_grid, gmax = kernels.density_log_u8(grid)
+        bin_colors = interaction.trace_bin_colors(t)
+        wire = self._density_trace_emit_plan(
+            t,
+            xr,
+            yr,
+            w,
+            h,
+            pw,
+            bx0,
+            bx1,
+            by0,
+            by1,
+            x_linear,
+            y_linear,
+            x_memmapped,
+            y_memmapped,
+            grid_from_pyramid=grid is not None,
+            has_pyramid_resource=has_pyramid_resource,
+            grid_present=True,
+            has_pyramid_rgba=rgba_from_pyramid is not None,
+            has_bin_colors=bin_colors is not None,
+        )
+        rgba_grid: Optional[np.ndarray] = None
+        if wire["ship_mean_color_rgba"]:
+            if rgba_from_pyramid is not None:
+                rgba_grid = rgba_from_pyramid.reshape(-1)
+            elif bin_colors is not None:
+                rgba_grid = kernels.bin_2d_mean_color(
+                    bx, by, bx0, bx1, by0, by1, w, h, **bin_colors
+                ).reshape(-1)
+        grid_plan = kernels.payload_density_grid_ship_plan(
+            ship_mean_color_rgba=bool(wire["ship_mean_color_rgba"]),
+            ship_wasm_source=bool(wire["ship_wasm_source"]),
+            attach_sample=bool(wire["attach_sample"]),
+            has_tiles=tiles_meta is not None,
+            ship_constant_color=bool(wire["ship_constant_color"]),
+            overlay_wire_rows_exceed=bool(wire["overlay_wire_rows_exceed"]),
+            overlay_wire_static_raster=bool(wire["overlay_wire_static_raster"]),
+            ship_categorical_entry_color=bool(wire["ship_categorical_entry_color"]),
+        )
         # The density surface wears the data's own colors (LOD doc §2): count
         # is the alpha channel, and per-point color channels aggregate to a
         # per-cell mean shipped as an RGBA plane below. `colormap` stays on
@@ -1375,15 +1964,10 @@ class PayloadMixin(_Host):
         # specs); no shipped path colormaps counts.
         cmap = (
             t.color_ch.colormap
-            if (t.color_ch and t.color_ch.mode in ("constant", "continuous"))
+            if t.color_ch is not None and wire["use_channel_colormap"]
             else channels.DEFAULT_COLORMAP
         )
-        dropped_channels = list(t.per_item_channel_names())
-        # Cached full-column resolution (LOD doc §2): the O(N) quantize pass
-        # is shared with the pyramid build and every later grid reply.
-        bin_colors = interaction.trace_bin_colors(t)
-        density = {
-            "buf": pw.ship_u8(encoded_grid),
+        density: dict[str, Any] = {
             "w": w,
             "h": h,
             "max": gmax,
@@ -1392,67 +1976,21 @@ class PayloadMixin(_Host):
             "x_range": list(xr),
             "y_range": list(yr),
             "binning": binning,
-            "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
+            "reduction": (
+                "pyramid-count"
+                if kernels.density_reduction_kind(binning=binning)
+                == kernels.DENSITY_REDUCTION_PYRAMID_COUNT
+                else "bin2d"
+            ),
         }
-        # `XYAS` v1 retains the canonical split f64 columns in the host for
-        # replay on every pan.  The worker only receives one ABI-generated
-        # 32,768-point raw chunk at a time; this source capacity is the
-        # generated aggregate ABI's declared point limit.
-        wasm_capacity = WASM_AGGREGATE_MAX_POINTS
-        wasm_supported = (
-            self.coords == "cartesian"
-            and self._axis_scale(t.x_axis) == "linear"
-            and self._axis_scale(t.y_axis) == "linear"
-            # A resolved constant fill remains count-only: it changes only
-            # texture tint, not the per-point aggregation algebra.
-            and (t.color_ch is None or t.color_ch.mode == "constant")
-            and not t.x.zone.null_count
-            and not t.y.zone.null_count
-            and 0 < int(t.n_points) <= wasm_capacity
+        self._ship_density_grid_buffers(
+            density,
+            pw,
+            grid_plan,
+            encoded_grid=encoded_grid,
+            rgba_grid=rgba_grid,
         )
-        if pw._split and wasm_supported:
-            density["wasm_source"] = {
-                "kind": "cartesian-count-f64-stream-v1",
-                "x": pw.ship_f64(t.x.values),
-                "y": pw.ship_f64(t.y.values),
-                "point_count": int(t.n_points),
-                "trace_id": int(t.id),
-                "capacity": wasm_capacity,
-                "ownership": "retain-host-replay",
-            }
-        if tiles_meta is not None:
-            density["tiles"] = tiles_meta
-        if rgba_from_pyramid is not None:
-            density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
-            density["color_agg"] = "mean"
-            if "color" in dropped_channels:
-                dropped_channels.remove("color")
-        elif bin_colors is not None:
-            # Mean point color per cell, straight-alpha RGBA8: the color the
-            # points themselves would downsample to (averaged in linear
-            # light). The channel is aggregated, recorded via `color_agg`,
-            # and therefore leaves the dropped list.
-            rgba_grid = kernels.bin_2d_mean_color(bx, by, bx0, bx1, by0, by1, w, h, **bin_colors)
-            density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
-            density["color_agg"] = "mean"
-            dropped_channels.remove("color")
-        density["channels_dropped"] = bool(dropped_channels)  # compatibility boolean
-        density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
-        if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:
-            density["color"] = t.color_ch.constant
-        if oversized:
-            # §28: exact grid, but the deterministic point overlay is dropped
-            # because row ids exceed u32. Recorded so the client/legend can say so.
-            density["overlay_omitted"] = "rows_exceed_u32"
-        if pw.point_overlay:
-            sample = self._density_sample_spec(t, sel, visible, xr, yr, pw, sample_sel=sample_sel)
-            if sample is not None:
-                density["sample"] = sample
-        elif "overlay_omitted" not in density:
-            # §28: no representation is dropped silently. `oversized` above may
-            # have already recorded the more fundamental u32 reason; that one
-            # wins, so only claim the field when nothing else has.
-            density["overlay_omitted"] = "static_raster"
+        dropped_channels = list(t.per_item_channel_names())
         entry = {
             "id": t.id,
             "kind": "scatter",
@@ -1460,24 +1998,25 @@ class PayloadMixin(_Host):
             "style": dict(t.style),
             "tier": "density",
             "n_points": t.n_points,
-            "n_marks": int(w * h),
+            "n_marks": int(wire["n_marks"]),
             "visible": visible,
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "density": density,
         }
-        if categorical and t.color_ch is not None:
-            # Legend chrome needs the encoding even though the per-point codes
-            # aggregate into the mean-color plane: ship the channel spec slim
-            # (categories + palette, no per-point `buf`) so category rows
-            # exist for density-tier traces — the §10 category-toggle path is
-            # unreachable without them, and every client consumer of a color
-            # buffer already guards on `buf`. Continuous channels stay
-            # deliberately unshipped here: a gradient row would claim
-            # color == density.
-            color_spec = t.color_ch.spec()
-            color_spec["palette"] = channels.categorical_palette(
-                t.color_ch.colors, len(t.color_ch.categories or ())
-            )
-            entry["color"] = color_spec
+        self._attach_density_grid_steps(
+            density,
+            entry,
+            t,
+            pw,
+            grid_plan,
+            wire,
+            sel=sel,
+            visible=visible,
+            xr=xr,
+            yr=yr,
+            sample_sel=sample_sel,
+            dropped_channels=dropped_channels,
+            tiles_meta=tiles_meta,
+        )
         return entry

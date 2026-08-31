@@ -29,8 +29,8 @@ from the export module. Reach the free functions as `xyg.export.to_image(fig,
 adds one behavior the `Figure` methods do not have: omitted
 `width`/`height`/`scale`/`background`/`quality` fall back to the chart's
 `export_config` via `_export_defaults` (`components.py:2981`). `FacetChart`
-(`components.py:3740`, `components.py:3767`) and `FacetGrid` (`facets.py:354`,
-`facets.py:430`) mirror the same format matrix but expose no `width`/`height`
+(`components.py:3740`, `components.py:3767`) and `FacetGrid` (`facets.py:328`,
+`facets.py:379`) mirror the same format matrix but expose no `width`/`height`
 and no `export_config` defaulting — grid geometry is fixed by its panels.
 
 Legacy per-format surfaces remain: `to_html` (interactive standalone document;
@@ -64,15 +64,16 @@ raster-only option that was passed non-default.
 
 | Format | Native backend | Chromium backend |
 |---|---|---|
-| PNG | Supported public literal Cartesian scatter/line/ordinary-rect/disconnected-segment/triangle-mesh/Band exports use the Rust Scene raster display list: all 19 constant built-in scatter symbols either without authored stroke or with an authored constant CSS stroke and optional finite non-negative scalar width (default 1px), constant-style polylines (including literal steps), `bar`/`column`/`histogram`, literal `segments`/error-bar/stem endpoint pairs with bounded built-in stem markers, ordinary area/error-band Bands, finite solid ribbons, and at most 1,024 total fill-only unjoined constant-color triangle faces. Their bounded primary annotation family is unoffset plain text, Rust-positioned labelled rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded wrapped text/callouts; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. | `Page.captureScreenshot` |
-| JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
-| WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
+| PNG | Supported public literal Cartesian scatter/line/ordinary-rect/disconnected-segment/triangle-mesh/Band exports use the Rust Scene raster display list: all 19 constant built-in scatter symbols either without authored stroke or with an authored constant CSS stroke and optional finite non-negative scalar width (default 1px), or interned per-item fill/stroke/width/opacity (ABI 196), constant-style polylines (including literal steps), `bar`/`column`/`histogram`, literal `segments`/error-bar/stem endpoint pairs with bounded built-in stem markers, ordinary area/error-band Bands, finite solid ribbons, and at most 1,024 total fill-only unjoined triangle faces (constant or interned per-face fill/stroke/width, ABI 195). Their bounded primary annotation family is unoffset plain text, Rust-positioned labelled rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded wrapped text/callouts; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode` → `xyg_encode_png`. `FacetGrid` applies that same Scene raster route independently to each supported, no-background-override panel and composes the RGBA frames into one canvas; `_raster._export_payload` remains the compatibility backend for every other panel. | `Page.captureScreenshot` |
+| JPEG | Supported public subset uses the same Scene raster RGBA as PNG before `_native.encode_jpeg` (Rust baseline JFIF, 4:4:4); compatibility and export-background overrides use `_raster.to_rgba`. `FacetGrid` composes those panel frames. | `Page.captureScreenshot` |
+| WebP | Supported public subset uses the same Scene raster RGBA as PNG before `_native.encode_webp` (Rust VP8L, **lossless only**); compatibility and export-background overrides use `_raster.to_rgba`. `FacetGrid` composes those panel frames. | `Page.captureScreenshot` (lossy) |
 | SVG | Supported public literal Cartesian scatter/line/ordinary-rect/disconnected-segment/triangle-mesh/Band exports use Rust Scene SVG, including the bounded mesh, area/error-band, solid-ribbon, and annotation families listed for PNG. `FacetGrid` applies that same route independently to each supported, no-background-override panel and namespaces the closed Scene clip-id vocabulary before nested composition. `_svg.to_svg` remains the compatibility backend for every other panel. | none — SVG is native-only |
 | PDF | Supported public literal Cartesian scatter/line/ordinary-rect/disconnected-segment/triangle-mesh/Band exports consume Rust Scene SVG through `_pdf.svg_to_pdf`, including the bounded mesh, area/error-band, solid-ribbon, and annotation families; this includes independently supported `FacetGrid` panels. The compatibility path is `_svg.to_svg` → `_pdf.svg_to_pdf`. | `Page.printToPDF` |
 
 `_png.encode` auto-selects an indexed-palette PNG (color type 3 + `tRNS`) when
 the image has ≤256 distinct RGBA colors. `optimize=True` selects this
-size-oriented path; `optimize=False` (default) takes the fused Rust encode.
+size-oriented path through `xyg_encode_png`; `optimize=False` (default) takes
+the fused Rust encode.
 
 The raster exporters build their payload through the private
 `Figure._build_raster_payload`, which sets `point_overlay=False`: a density
@@ -275,6 +276,13 @@ native export of a chart that carries Tailwind classes for its live view, which
 is the normal way to use both surfaces together. A class name is also the one
 surface a file genuinely cannot honor: it selects a rule out of a stylesheet,
 and an exported file has no stylesheet to select from.
+
+Literal mark `fill="linear-gradient(...)"` with resolvable CSS colors is Scene
+XYGR (ABI 146). Unresolved `var()` / theme CSS stops are the bounded fail-closed
+contract `XYG_SCENE_UNSUPPORTED_GRADIENT` (#289): native Scene cannot resolve
+browser tokens, so those figures do not take the Scene consumers. Compatibility
+writers may substitute the mark color; live browser and Chromium capture still
+resolve `var()`. Per-item two-ended ribbon `color2_ch` stays #290.
 
 ### Which per-slot styles reach a file, and why only those
 

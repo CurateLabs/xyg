@@ -54,7 +54,7 @@ Precisely:
 | static display-list raster, row-banded polyline/point/segment paint, batched fill+stroke triangle meshes, affine scatter projection plus typed color/size resolution, density/heatmap colormap and sampling | Rust (ABI v36) | correct — commands borrow f32/u8 payload or canonical spans synchronously; compact stratified sampling reuses factorization counts; batched/banded output is byte-identical |
 | signal processing: `xyg_rfft`, `xyg_welch_spectra`, `xyg_spectrogram` | Rust (ABI v36) | correct — O(N) transforms over sample columns; Hann windowing and segment traversal are native, with Matplotlib-compatible `detrend_none` defaults; explicit pyplot detrending modes fail loudly until the kernel can select them deliberately |
 | geometry/triangulation: `xyg_delaunay_triangles`, `xyg_polygon_triangles`, `xyg_marching_squares`, `xyg_marching_triangles`, `xyg_streamlines`, `xyg_vector_segments`, `xyg_quad_mesh_triangles`, `xyg_sector_triangles`, `xyg_indexed_triangles`, `xyg_triangle_edges` | Rust (ABI v36) | correct — output is screen-bounded index/vertex buffers; level choice and styling stay in Python |
-| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_binned_ecdf`, `xyg_histogram_bins`, `xyg_hexbin`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v102) | correct — row-scan reductions; 1D automatic histogram edge policy, uniform/irregular counting, density, and cumulative assembly are Rust-owned while labels remain host presentation. ABI 100 binned ECDF owns finite filtering, automatic/constant domain, bounded uniform counting, all-finite-mass normalization, empty-bin compaction, right edges, and the zero anchor. ABI 101 `xyg_histogram_bins` owns authored-edge validation, closed-last-bin assignment, density, and cumulative heights with a 10,000-bin ceiling. ABI 102 `xyg_hexbin` owns finite-pair filtering, automatic/constant domain, matplotlib default grid aspect, and count/mean/sum lattice assignment. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
+| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_binned_ecdf`, `xyg_histogram_bins`, `xyg_hexbin`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v121) | correct — row-scan reductions; 1D automatic histogram edge policy, uniform/irregular counting, density, and cumulative assembly are Rust-owned while labels remain host presentation. ABI 100 binned ECDF owns finite filtering, automatic/constant domain, bounded uniform counting, all-finite-mass normalization, empty-bin compaction, right edges, and the zero anchor. ABI 101 `xyg_histogram_bins` owns authored-edge validation, closed-last-bin assignment, density, and cumulative heights with a 10,000-bin ceiling. ABI 102 `xyg_hexbin` owns finite-pair filtering, automatic/constant domain, matplotlib default grid aspect, and count/mean/sum lattice assignment. ABI 119 `xyg_argsort_stable` / `xyg_histogram_mark_edges` / `xyg_contour_levels` / `xyg_hexbin_groups` own composition sort, integer/empty-auto histogram edges, contour isolines, and custom-hex membership. ABI 120 `xyg_legend_normalize` / `xyg_legend_best_loc` own composition `loc="best"` occupancy sampling and candidate scoring. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
 | style/text helpers: `xyg_css_check` (`css.rs`), `xyg_svg_poly_path` (`svg.rs`) | Rust (ABI v36) | correct by a different rule — not O(rows) but O(points)/per-value on the export and validation paths, where per-item Python object churn dominates; error *messages* still assembled in Python |
 | ohlc_decimate (when finance returns) | was NumPy-in-kernels.py | acceptable stopgap **only** because candles decimate to ≤px buckets; promote to Rust with the pyramid work |
 | tier decisions, hysteresis, drill_seq that change shipped buffers | Rust (dual-host) / thin host assembly | **promote** — hosts must not diverge; see host-parity.md |
@@ -84,10 +84,14 @@ authored-edge counting plus density/cumulative assembly with the same
 10,000-bin ceiling) · hexbin
 reducer (`xyg_hexbin` ✅ ABI 102 finite-filtered automatic domain and
 `int(width / √3)` default height, count/mean/sum; constant-style Cartesian
-lattices expand onto existing Scene PolyFill records) · histogram edges (`xyg_histogram_edges`
+lattices expand onto existing Scene PolyFill records; ABI 119
+`xyg_hexbin_groups` owns custom-reducer lattice membership) · histogram edges (`xyg_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges, used by both composition hosts for omitted
 bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
-over-cap results fail without a partial write) · wind-rose bins (`xyg_wind_rose_bins` ✅
+over-cap results fail without a partial write; ABI 119 `xyg_histogram_mark_edges`
+owns integer bins, empty-finite ten-bin compatibility, and `auto_domain`) ·
+contour levels (`xyg_contour_levels` ✅ ABI 119 interior auto-domain spacing
+and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · legend `loc="best"` (`xyg_legend_normalize` / `xyg_legend_best_loc` ✅ ABI 120) · ribbon/curve/rounded-rect tessellation (`xyg_ribbon_edge` / `xyg_ribbon_polygon` / `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅ ABI 121) · compile-time payload LOD (`xyg_payload_tier` / `xyg_payload_visible_needed` / `xyg_payload_visible_mask` ✅ ABI 122) · line M4 emit (`xyg_payload_m4_indices` ✅ ABI 204) · emit visible/even/sample indices (`xyg_payload_visible_indices` / `xyg_payload_even_indices` / `xyg_payload_sample_target_indices` ✅ ABI 205) · remaining LUT / linear density / effective rgba (`xyg_colormap_lut` / `xyg_density_rgba_linear` / `xyg_paint_effective_rgba` ✅ ABI 206) · polar heatmap gather-after-inverse map (`xyg_polar_heatmap_inverse_map` ✅ ABI 207) · encode offset/scale (`xyg_geometry_offset` / `xyg_f32_safe_scale` ✅ ABI 208) · compatibility polar wedge flatten (`xyg_polar_wedge_points` ✅ ABI 209) · hexbin ring offsets (`xyg_hexbin_ring` ✅ ABI 210) · compatibility step/stairs expand (`xyg_step_arrays` ✅ ABI 211) · authored marker-path scale (`xyg_marker_path_scale` ✅ ABI 212) · color CSS/numeric split / domain pad / direct RGBA admit (`xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` ✅ ABI 213) · stem/errorbar segment budget (`xyg_payload_segment_budget` ✅ ABI 214) · errorbar role-block expand (`xyg_payload_errorbar_indices` ✅ ABI 215) · log-family pin_zero (`xyg_scale_pins_offset` ✅ ABI 216) · EncodedColumn metadata (`xyg_encoded_column_meta` ✅ ABI 255) · annotation-arrow geometry (`xyg_arrow_geometry` / `xyg_arrow_shaft_points` / `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` / `xyg_arrow_trim_polyline_end` ✅ ABI 217) · annotation-arrow style CSV pack (`xyg_arrow_style_pack` ✅ ABI 254) · Scene dash admit (`xyg_scene_dash_admit` ✅ ABI 218) · Scene linecap admit (`xyg_scene_linecap_admit` ✅ ABI 219) · density overlay opacity (`xyg_density_overlay_opacity` ✅ ABI 220) · Scene marker-path admit (`xyg_scene_marker_path_admit` ✅ ABI 221) · Scene annotation style admit (`xyg_scene_annotation_style_admit` ✅ ABI 222) · Scene ribbon color2 classify (`xyg_scene_ribbon_color2_classify` ✅ ABI 223) · Scene tick-label strategy admit (`xyg_scene_tick_label_strategy` ✅ ABI 224) · Scene tick-label anchor admit (`xyg_scene_tick_anchor` ✅ ABI 225) · Scene fill-gradient admit (`xyg_scene_fill_gradient_admit` ✅ ABI 226) · Scene linear-gradient CSS parse (`xyg_scene_parse_linear_gradient` ✅ ABI 227) · Scene rect extra-flag pack (`xyg_scene_rect_extra_flags` ✅ ABI 228) · Scene gradient-dir pack (`xyg_scene_gradient_dir` ✅ ABI 229) · Scene linear-gradient CSS prefix (`xyg_scene_linear_gradient_prefix` ✅ ABI 230) · Scene gradient-space pack (`xyg_scene_gradient_space` ✅ ABI 231) · Scene hexbin reduce admit (`xyg_scene_hexbin_reduce_admit` ✅ ABI 232) · Scene curve-name classify (`xyg_scene_curve_classify` ✅ ABI 233) · Scene marker-glyph admit (`xyg_scene_marker_glyph_admit` ✅ ABI 234) · Scene product-kind admit (`xyg_scene_kind_admit` ✅ ABI 235) · Scene packing-family classify (`xyg_scene_kind_class` ✅ ABI 236) · Scene hexbin pitch admit (`xyg_scene_hexbin_pitch_admit` ✅ ABI 237) · Scene heatmap extent admit (`xyg_scene_heatmap_extent_admit` ✅ ABI 238) · Scene heatmap colormap admit (`xyg_scene_heatmap_colormap_admit` ✅ ABI 239) · Scene heatmap shape admit (`xyg_scene_heatmap_shape_admit` ✅ ABI 240) · Scene scatter paint-channel admit (`xyg_scene_scatter_paint_channel_admit` ✅ ABI 241) · Scene hexbin colormap-plane admit (`xyg_scene_hexbin_colormap_plane_admit` ✅ ABI 242) · Scene hexbin RGBA-plane admit (`xyg_scene_hexbin_rgba_plane_admit` ✅ ABI 243) · Scene mesh paint-plane admit (`xyg_scene_mesh_paint_plane_admit` ✅ ABI 244) · Scene per-item RGBA8 artist-alpha/opacity (`xyg_scene_item_apply_opacity` ✅ ABI 245) · Scene per-item stroke-width admit (`xyg_scene_item_widths_admit` ✅ ABI 246) · Scene continuous per-item fill unit-t (`xyg_scene_item_fill_t` ✅ ABI 247) · Scene finite-all admit (`xyg_scene_finite_all` ✅ ABI 248) · Scene gradient-solid CSS (`xyg_scene_gradient_solid_css` ✅ ABI 249) · Scene f64 arrays-equal (`xyg_scene_arrays_equal` ✅ ABI 250) · unit-f64 clip-quantize u8 (`xyg_clip_quantize_u8` ✅ ABI 251) · Scene constant-color admit (`xyg_scene_constant_color_admit` ✅ ABI 252) · tick-label collision (`xyg_scene_tick_label_layout` ✅ ABI 123) · static legend box packing (`xyg_legend_box_layout` ✅ ABI 124) · text-block measure and cartesian axis rooms (`xyg_text_block_measure` / `xyg_text_block_rotated_extent` / `xyg_y_tick_label_extent` / `xyg_y_axis_left_room` / `xyg_x_axis_title_room` / `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅ ABI 125) · static-export padding, title-band, colorbar extra, right-y, and polar recut (`xyg_compat_is_compact` / `xyg_compat_default_padding` / `xyg_compat_title_wrap_width` / `xyg_compat_title_room` / `xyg_compat_x_axis_side_room` / `xyg_compat_colorbar_extra` / `xyg_compat_right_y_room` / `xyg_polar_legend_room` / `xyg_polar_legend_reserve` / `xyg_polar_label_room` / `xyg_recut_polar_plot` ✅ ABI 126) · pyplot tight-layout grid solve (`xyg_tight_layout_solve` ✅ ABI 127) · static-export plot combination and tight-layout figure extras (`xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅ ABI 198) · authored tick-window resolve/filter (`xyg_tick_window` / `xyg_tick_window_filter` ✅ ABI 128) · Scene product-path authored filter/pairing (`pack_figure_chrome` ✅ ABI 199) · Scene product-path authored minor filter (`pack_figure_chrome` ✅ ABI 200) · Cartesian compatibility tick-label formatting (`xyg_tick_format` ✅ ABI 130) · polar (theta, r) → screen-pixel projection (`xyg_polar_layout` / `xyg_polar_project` / `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` / `xyg_polar_position_mask` ✅ ABI 131) · Cartesian static-export grid colormap (`xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅ ABI 129) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
 densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` ✅
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅
@@ -128,10 +132,12 @@ crates/
                         #   crates.io API).
     kernels.rs          # pure safe Rust row-scan kernels (factorization, zone
                         #   maps, encode, sampling, bin_2d, histograms,
-                        #   density, selection, M4, geometry, signal). One
-                        #   file at this landing; a later domain split must
-                        #   not change ABI or chart semantics. No unsafe, no
-                        #   I/O.
+                        #   density, selection, M4, geometry, signal,
+                        #   Cartesian static-export grid colormap
+                        #   `colormap_rgba_into` / `colormap_rgba_canonical_into`
+                        #   ABI 129). One file at this landing; a later domain
+                        #   split must not change ABI or chart semantics. No
+                        #   unsafe, no I/O.
     raster.rs           # the entire native rasterizer — the whole static PNG
                         #   export path below Python's geometry/scale/colormap
                         #   computation. Consumes a tagged display-list command
@@ -163,6 +169,137 @@ crates/
                         #   built-in scatter validation, stroke-inclusive marker
                         #   geometry/symbols, visibility, and SVG construction;
                         #   consumed identically by Python and Node (#58).
+                        #   ABI 138 / Scene v28 stores constant dash on encoded
+                        #   styles and appends an XYDS sidecar after XYIM.
+                        #   ABI 139 / Scene v29 stores constant non-round
+                        #   linecap on encoded styles and appends an XYLC
+                        #   sidecar after XYDS.
+                        #   ABI 140 / Scene v30 expands `curve="smooth"`
+                        #   polylines through `CurveFlatten=11`.
+                        #   ABI 141 / Scene v31 expands `area(curve="smooth")`
+                        #   through `BandFlatten=12`.
+                        #   ABI 142 composites cartesian mean-color density
+                        #   (XYHP kind 4) onto the existing DensityBlit Image.
+                        #   ABI 143 polar DensityBlit intern occupied cells as
+                        #   Rects that with_polar tessellates to PolyFill.
+                        #   ABI 144 cartesian error_band(curve="smooth") uses
+                        #   BandFlatten=12; polar curve="smooth" is identity
+                        #   chords (polar-axes.md §5).
+                        #   ABI 145 tessellates constant marker_path (XYMP
+                        #   extras) to PolyFill/Polyline after pixel mapping.
+                        #   ABI 146 keeps XYGR linear-gradient fills on
+                        #   encoded Scene for SVG/raster paint.
+    scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
+                        #   kinds, stable-id splitting, expansion modes,
+                        #   ribbon/triangle doubling, heatmap lattice framing,
+                        #   finite-coordinate rejection, ABI 116
+                        #   rule/band/marker domain expansion, and ABI 136
+                        #   product-kind → pack-kind mapping plus ABI 137
+                        #   DensityBlit heatmap-extent packing plus ABI 140
+                        #   line `step_mode=4` → `CurveFlatten=11` plus ABI 141
+                        #   band `step_mode=4` → `BandFlatten=12` plus ABI 142
+                        #   mean-color density XYHP kind 4 plus ABI 143 polar
+                        #   DensityBlit occupied-cell Rect tessellation plus
+                        #   ABI 144 cartesian error_band BandFlatten and polar
+                        #   identity-chord smooth plus ABI 145 constant
+                        #   marker_path XYMP tessellation plus ABI 146
+                        #   constant linear-gradient XYGR fills plus ABI 147
+                        #   XYPK product packing facts plus ABI 148 XYAF
+                        #   annotation packing facts plus ABI 149 XYHF
+                        #   heatmap/density paint-fact packing plus ABI 150
+                        #   XYSS extras packing plus ABI 151 Scene density
+                        #   grid packing plus ABI 152 XYEP packing from XYEF
+                        #   plus ABI 153 XYCF figure-chrome packing plus ABI 154
+                        #   XYTC per-trace compile packing plus ABI 155 XYTA
+                        #   heatmap/density attach packing plus ABI 156 XYCL
+                        #   product-row packing plus ABI 157 XYSD
+                        #   trace-sidecar packing plus ABI 158 XYSS
+                        #   style-sidecar packing plus ABI 159 XYAS
+                        #   annotation splice packing plus ABI 160 XYAS/XYCC
+                        #   assembled encode plus ABI 161 XYSD chrome/extras
+                        #   sidecar packing plus ABI 162 XYAS/XYCF assembled
+                        #   encode from sidecars plus ABI 163 product encode
+                        #   from packed facts plus ABI 164 public static-export
+                        #   consumers plus ABI 165 product-path XYFS support
+                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill plus ABI 172 cartesian line step+smooth plus ABI 173 heatmap corner_radius plus ABI 174 violin/box corner_radius plus ABI 175 violin/box fill/stroke opacity plus ABI 176 bar/column/histogram fill/stroke opacity plus ABI 177 heatmap fill_opacity plus ABI 178 scatter fill/stroke opacity plus ABI 179 hexbin fill_opacity plus ABI 180 triangle_mesh fill/stroke opacity plus ABI 181 cartesian area/error_band step+smooth plus ABI 182 triangle_mesh joined_fill plus ABI 183 constant ribbon color2_ch XYGR plus ABI 184 cartesian unwrapped text dx/dy/anchor XYAW plus ABI 185 labelled cartesian marker dx/dy/anchor XYAW plus ABI 186 cartesian colormap hexbin XYHP plus ABI 187 cartesian unwrapped text rotation XYAW plus ABI 188 labelled cartesian marker rotation XYAW plus ABI 189 heatmap/hexbin cell-fill tessellation eligibility plus ABI 190 cartesian per-item two-ended ribbon color2_ch intern plus ABI 192 polar painted heatmap inverse-raster Image blit plus ABI 193 heatmap/hexbin stroke_opacity plus ABI 194 polar hexbin custom reducers categorical direct_rgba plus ABI 195 triangle-mesh custom role / per-item face intern plus ABI 196 scatter per-item fill/stroke/width/opacity intern.
+    scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
+                        #   entry table, text offsets, and bounded-text
+                        #   rejection.
+    scene_colorbar.rs   # primary XYCB v2 colorbar framing (ABI 111): header,
+                        #   stop/tick tables, domain-span checks, and
+                        #   bounded-text rejection.
+    scene_annotations.rs # primary XYAD annotation framing (ABI 112) plus ABI
+                        #   148 XYAF annotation-fact packing: wrap/text/arrow/
+                        #   callout/rule routing, stable-id tags, and XYAO
+                        #   plus ABI 184 unwrapped text dx/dy/anchor via XYAW
+                        #   wrap=0 plus ABI 185 labelled marker dx/dy/anchor
+                        #   via XYAW wrap=0 plus ABI 187 unwrapped text
+                        #   rotation via XYAW v2 / XYLB v6 plus ABI 188
+                        #   labelled marker rotation via XYAW v2.
+    scene_heatmap.rs    # ABI 149 XYHF heatmap/density paint-fact packing:
+                        #   tessellation eligibility, XYHP kind routing, and
+                        #   density opacity composition.
+    scene_extras.rs     # ABI 150 XYSS extras packing: XYDS/XYLC/XYMP/XYGR/XYMG
+                        #   table layout, concat order, omit-empty, and XYEX
+                        #   wrapping from framed XYPL/XYHP plus sidecar facts
+                        #   plus ABI 161 XYHP wrapping from packed XYSD planes.
+    scene_density.rs    # ABI 151 Scene density grid packing: 512×384 blit
+                        #   lattice, bin_2d, density_log_u8, optional
+                        #   mean-color, and XYDE wrapping.
+    scene_export.rs     # ABI 105 public-export predicate plus ABI 152 XYEP
+                        #   packing from XYEF v1: kind/step/annotation codes
+                        #   and flag derivation.
+    scene_chrome.rs     # ABI 153 XYCF figure-chrome packing: plot layout,
+                        #   chrome-style resolve, legend loc default/allowlists
+                        #   (empty authored loc is fail-closed), colorbar
+                        #   flags/framing, XYTL tick-label framing, and the
+                        #   200-tick axis bound plus ABI 161 XYSD legend-paint
+                        #   splice.
+    scene_trace_compile.rs # ABI 154 XYTC per-trace compile packing: opacity,
+                        #   symbol, color, dash, linecap, marker path,
+                        #   diameter, legend kind, step, curve-smooth,
+                        #   stroke-perimeter, hex pitch, fill-gradient
+                        #   admission, and XYMS resolve.
+    scene_trace_attach.rs  # ABI 155 XYTA heatmap/density attach packing:
+                        #   shape/finite fail-closed checks, XYHF remainder
+                        #   order, density skip, density XYHF flags, fact
+                        #   bits, density zeroing, and domain rewrite.
+    scene_trace_rows.rs    # ABI 156 XYCL product-row packing: XYPK
+                        #   construction, scatter-only symbol/diameter,
+                        #   density domain-endpoint column rewrite, and
+                        #   pack_product_facts.
+    scene_trace_sidecars.rs # ABI 157 XYSD trace-sidecar packing: legend-name
+                        #   gating, heatmap-vs-density plane selection, and
+                        #   per-trace style/dash/marker/gradient/plane
+                        #   extraction.
+    scene_style_sidecars.rs # ABI 158 XYSS style-sidecar packing: dash/linecap/
+                        #   marker/gradient XYSS records from XYSD plus XYAO.
+    scene_annotation_splice.rs # ABI 159 XYAS annotation splice packing:
+                        #   append XYAO styles and 56-byte mark rows onto
+                        #   product rows plus XYSD, and extract XYAD.
+    scene_encode_assembled.rs # ABI 160 XYAS/XYCC assembled encode plus ABI 162
+                             #   XYAS/XYCF encode from sidecars plus ABI 163
+                             #   product encode from packed facts plus ABI 165
+                             #   product-path XYFS figure-compile support plus
+                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill / ABI 172 cartesian line step+smooth / ABI 173 heatmap corner_radius / ABI 174 violin/box corner_radius / ABI 175 violin/box fill/stroke opacity / ABI 176 bar/column/histogram fill/stroke opacity / ABI 177 heatmap fill_opacity / ABI 178 scatter fill/stroke opacity / ABI 179 hexbin fill_opacity / ABI 180 triangle_mesh fill/stroke opacity / ABI 181 cartesian area/error_band step+smooth / ABI 182 triangle_mesh joined_fill / ABI 183 constant ribbon color2_ch XYGR / ABI 184 cartesian unwrapped text dx/dy/anchor XYAW / ABI 185 labelled cartesian marker dx/dy/anchor XYAW / ABI 186 cartesian colormap hexbin XYHP / ABI 187 cartesian unwrapped text rotation XYAW / ABI 188 labelled cartesian marker rotation XYAW / ABI 189 heatmap/hexbin cell-fill tessellation eligibility / ABI 190 cartesian per-item two-ended ribbon color2_ch intern / ABI 192 polar painted heatmap inverse-raster Image blit / ABI 193 heatmap/hexbin stroke_opacity / ABI 194 polar hexbin custom reducers categorical direct_rgba / ABI 195 triangle-mesh custom role / per-item face intern / ABI 196 scatter per-item fill/stroke/width/opacity intern:
+                             #   compile, attach, sidecars, rows, annotation,
+                             #   style, splice, support probe, then sidecar
+                             #   assembled encode.
+    scene_static.rs     # ABI 164 public static-export consumers from one
+                             #   encoded Scene: SVG, PNG, PDF, JPEG, WebP.
+    jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
+                        #   tables, libjpeg quality curve, Huffman packing.
+                        #   Native hosts only (`raster` feature).
+    pdf.rs              # closed-subset SVG→PDF (ABI 113): path lowering,
+                        #   Helvetica metrics, ExtGState/shading/image
+                        #   embedding, deterministic xref. Native hosts only
+                        #   (`raster` feature); WASM keeps default-features off.
+    png_encode.rs       # filter-0 PNG encode (ABI 115): indexed palette
+                        #   (≤256 unique RGBA + tRNS) or RGBA8 truecolor,
+                        #   zlib IDAT. Native hosts only (`raster` feature).
+    webp.rs             # lossless VP8L encode (ABI 114): simple lossless,
+                        #   length-limited prefix codes, distance-1 runs.
+                        #   Native hosts only (`raster` feature).
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
@@ -194,9 +331,40 @@ crates/
     sankey.rs           # sankey layout (`xyg_sankey_layout`), dual-host.
     transition.rs       # stable animation-key encoding (`xyg_transition_keys_fixed`).
     stats.rs            # quantiles + Tukey box/grouped geometry + violin_density +
-                        #   histogram_edges (NumPy auto) + wind_rose_bins ✅
-    hexbin.rs           # matplotlib hex lattice + ABI 102 ingress (`xyg_hexbin`) ✅
-    lod_plan.rs         # view LOD drill/grid decision math ✅ (`xyg_lod_plan`).
+                        #   histogram_edges (NumPy auto) + histogram_mark_edges +
+                        #   contour_levels + wind_rose_bins ✅
+    hexbin.rs           # matplotlib hex lattice + ABI 102 ingress (`xyg_hexbin`)
+                        #   + ABI 119 groups (`xyg_hexbin_groups`) ✅
+    legend_fit.rs       # composition loc="best" occupancy (ABI 120) ✅
+    legend_layout.rs    # static legend box packing (ABI 124) ✅
+    layout_rooms.rs     # measured cartesian gutters (ABI 125) ✅
+    compat_layout.rs    # static-export padding/colorbar/polar recut (ABI 126)
+                        #   + plot combination + tight-layout extras (ABI 198) ✅
+    density_emit.rs     # first-paint density scatter emit policy (ABI 132) ✅
+    polar.rs            # (theta, r) -> screen-pixel projection (ABI 131)
+                        #   + XYPL v1 polar Scene compile (ABI 133 / Scene v26)
+                        #     line/scatter/area/bar/column/errorbar/heatmap/contour
+                        #   + HeatmapPainted XYHP intern (ABI 134)
+    colormap.rs         # named colormap tables (ABI 135) ✅
+                        #   + pyplot tight-layout solve (ABI 127) ✅
+    textblock.rs        # newline-delimited chrome measure (ABI 125) ✅
+    geom.rs             # ribbon/curve/rounded-rect tessellation (ABI 121) ✅
+    lod_plan.rs         # view LOD drill/grid + compile-time payload tier (ABI 122) ✅
+                        #   + line M4 emit indices (ABI 204) ✅
+                        #   + emit visible/even/sample indices (ABI 205) ✅
+    tick_layout.rs      # tick-label collision thinning (ABI 123) ✅
+                        #   + authored tick-window resolve/filter (ABI 128) ✅
+                        #   + Scene product-path authored filter/pairing (ABI 199) ✅
+                        #   + Scene product-path authored minor filter (ABI 200) ✅
+                        #   + Scene polar modular theta window / angular labels (ABI 201) ✅
+                        #   + Scene product-path ABI 130 time/angular formats (ABI 202) ✅
+                        #   + Scene cartesian ABI 123 collision emit (ABI 203) ✅
+                        #   + annotation html fail-closed #305 (`scene_export.rs`) ✅
+                        #   + annotation class_name BROWSER_CSS pin #306 ✅
+                        #   + annotation collision fail-closed #307 (`scene_export.rs`) ✅
+                        #   + annotation markup fail-closed #308 (`scene_export.rs`) ✅
+                        #   + annotation custom typography CUSTOM_FONT pin #309 ✅
+                        #   + compatibility PNG ABI 121 kernels not `_scene.py` (#310) ✅
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
                         # (ZONE_CHUNK splice, bitwise-identical to
@@ -552,7 +720,66 @@ without rejecting an otherwise valid detail chunk.
 ABI v84 adds the versioned `xyg_scene_support_reason` authored-feature
 predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or
-deferred chrome support policy.
+deferred chrome support policy. ABI v105 adds `xyg_scene_public_export_reason`
+over packed `XYEP` v1 figure metadata so the public static-export allowlists
+and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v152 adds
+`xyg_scene_pack_public_export` so that envelope's layout, kind/step/annotation
+codes, and flag derivation resolve from packed `XYEF` v1. ABI v106 adds
+`xyg_figure_autorange` / `xyg_auto_domain` over packed `XYAR` v1 extents so
+Python and Node share one domain, padding, polar, and zero-baseline policy.
+Direct-browser WASM compile calls the same `auto_domain` for degenerate
+column spans.
+ABI v107 adds `xyg_scene_resolve_mark_styles` / `xyg_css_color_rgba` over packed
+`XYMS` v1 mark styles so Python and Node share one CSS→RGBA8 conversion and
+per-kind fill/stroke/width defaults. ABI v108 adds
+`xyg_scene_resolve_chrome_style` over packed `XYCH` v1 chrome so both hosts
+share one 200-byte Scene chrome style, including default RGBA/widths and
+`grid_opacity` scaling of the default grid color.
+ABI v109 adds `xyg_scene_pack_trace` so Python and Node share one
+Figure→Scene row packer: record kinds, stable-id splitting, expansion
+modes, ribbon/triangle doubling, heatmap lattice framing, and
+finite-coordinate rejection.
+ABI v136 adds `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so
+Python and Node share one product-kind packer: kind → pack-kind mapping,
+heatmap painted-vs-lattice flags, and canonical column remapping.
+ABI v147 adds `xyg_scene_pack_product_facts` so Python and Node share one
+XYPK v1 facts packer: flags, `step_mode` (cartesian-only smooth), and
+extra0/extra1 cannot drift.
+ABI v148 adds `xyg_scene_pack_annotation_facts` so Python and Node share one
+XYAF v1 facts packer: wrap vs text vs arrow vs callout vs rule/band/marker
+routing, stable-id tags, mark-style defaults, and XYAD framing cannot drift.
+ABI v149 adds `xyg_scene_pack_heatmap_facts` so Python and Node share one
+XYHF v1 facts packer: heatmap tessellation eligibility, XYHP kind routing,
+and density opacity composition cannot drift.
+ABI v150 adds `xyg_scene_pack_scene_extras` so Python and Node share one
+XYSS v1 extras packer: XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order, omit-empty,
+and XYEX wrapping cannot drift.
+ABI v151 adds `xyg_scene_pack_density_grid` so Python and Node share one
+Scene density grid packer: 512×384 blit lattice, `bin_2d`, `density_log_u8`,
+and optional mean-color cannot drift.
+ABI v152 adds `xyg_scene_pack_public_export` so Python and Node share one
+XYEF v1 facts packer: XYEP layout, kind/step/annotation codes, and flag
+derivation cannot drift.
+ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
+one rule/band/marker expander: stable-id tags, opposite-axis domain
+spanning, and finite rejection.
+ABI v117 adds `xyg_scene_figure_support_reason` so Python and Node share
+one figure-compile support probe: observation→feature mapping, the
+primary x/y axis set, and the Scene axis-key allowlist.
+ABI v118 extends that probe to `XYFS` v2 per-trace allowlist flags so
+kind, hidden/per-item, density, dash/curve/markers, rect extras, joined
+fills, custom hex reducers, heatmap colormaps, and non-CSS fills share
+the same diagnostic wording and check order.
+
+ABI v110 adds `xyg_scene_pack_legend` so Python and Node share one
+primary XYLG legend framer: header layout, text offsets, and
+bounded-text rejection.
+ABI v111 adds `xyg_scene_pack_colorbar` so Python and Node share one
+primary XYCB v2 colorbar framer: header layout, stop/tick tables,
+domain-span checks, and bounded-text rejection.
+ABI v112 adds `xyg_scene_pack_annotations` so Python and Node share one
+primary XYAD annotation framer: XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, envelope concatenation, and bounded-text rejection.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,
@@ -570,5 +797,109 @@ landed; the remainder, in order:
 4. `stats.rs`: `xyg_quantiles` + `xyg_box_stats` + `xyg_violin_density` ✅;
    `hexbin.rs`: `xyg_hexbin` (ABI 102 ingress + count/mean/sum) ✅; `xyg_histogram_edges`
    (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
-   `sqrt/2`) ✅.
+   `sqrt/2`) ✅; ABI 119 `xyg_argsort_stable` / `xyg_histogram_mark_edges` /
+   `xyg_contour_levels` / `xyg_hexbin_groups` ✅; ABI 120 `xyg_legend_normalize` /
+   `xyg_legend_best_loc` ✅; ABI 121 `xyg_ribbon_edge` / `xyg_ribbon_polygon` /
+   `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅;
+   ABI 122 `xyg_payload_tier` / `xyg_payload_visible_needed` /
+
+   `xyg_payload_visible_mask` ✅; ABI 204 `xyg_payload_m4_indices` ✅; ABI 205 `xyg_payload_visible_indices` / `xyg_payload_even_indices` / `xyg_payload_sample_target_indices` ✅; ABI 206 `xyg_colormap_lut` / `xyg_density_rgba_linear` / `xyg_paint_effective_rgba` ✅; ABI 207 `xyg_polar_heatmap_inverse_map` ✅; ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` ✅; ABI 209 `xyg_polar_wedge_points` ✅; ABI 210 `xyg_hexbin_ring` ✅; ABI 211 `xyg_step_arrays` ✅; ABI 212 `xyg_marker_path_scale` ✅; ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` ✅; ABI 214 `xyg_payload_segment_budget` ✅; ABI 215 `xyg_payload_errorbar_indices` ✅; ABI 216 `xyg_scale_pins_offset` ✅; ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` / `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` / `xyg_arrow_trim_polyline_end` ✅; ABI 218 `xyg_scene_dash_admit` ✅; ABI 219 `xyg_scene_linecap_admit` ✅; ABI 220 `xyg_density_overlay_opacity` ✅; ABI 221 `xyg_scene_marker_path_admit` ✅; ABI 222 `xyg_scene_annotation_style_admit` ✅; ABI 223 `xyg_scene_ribbon_color2_classify` ✅; ABI 224 `xyg_scene_tick_label_strategy` ✅; ABI 225 `xyg_scene_tick_anchor` ✅; ABI 226 `xyg_scene_fill_gradient_admit` ✅; ABI 227 `xyg_scene_parse_linear_gradient` ✅; ABI 228 `xyg_scene_rect_extra_flags` ✅; ABI 229 `xyg_scene_gradient_dir` ✅; ABI 230 `xyg_scene_linear_gradient_prefix` ✅; ABI 231 `xyg_scene_gradient_space` ✅; ABI 232 `xyg_scene_hexbin_reduce_admit` ✅; ABI 233 `xyg_scene_curve_classify` ✅; ABI 234 `xyg_scene_marker_glyph_admit` ✅; ABI 235 `xyg_scene_kind_admit` ✅; ABI 236 `xyg_scene_kind_class` ✅; ABI 237 `xyg_scene_hexbin_pitch_admit` ✅; ABI 238 `xyg_scene_heatmap_extent_admit` ✅; ABI 239 `xyg_scene_heatmap_colormap_admit` ✅; ABI 240 `xyg_scene_heatmap_shape_admit` ✅; ABI 241 `xyg_scene_scatter_paint_channel_admit` ✅; ABI 242 `xyg_scene_hexbin_colormap_plane_admit` ✅; ABI 243 `xyg_scene_hexbin_rgba_plane_admit` ✅; ABI 244 `xyg_scene_mesh_paint_plane_admit` ✅; ABI 245 `xyg_scene_item_apply_opacity` ✅; ABI 246 `xyg_scene_item_widths_admit` ✅; ABI 247 `xyg_scene_item_fill_t` ✅; ABI 248 `xyg_scene_finite_all` ✅; ABI 249 `xyg_scene_gradient_solid_css` ✅; ABI 250 `xyg_scene_arrays_equal` ✅; ABI 251 `xyg_clip_quantize_u8` ✅; ABI 252 `xyg_scene_constant_color_admit` ✅;    ABI 253 `xyg_scene_hidden_or_per_item_admit` ✅; ABI 254 `xyg_arrow_style_pack` ✅; ABI 255 `xyg_encoded_column_meta` ✅; ABI 123 `xyg_scene_tick_label_layout` ✅;
+`xyg_payload_visible_mask` ✅; ABI 204 `xyg_payload_m4_indices` ✅; ABI 205 `xyg_payload_visible_indices` / `xyg_payload_even_indices` / `xyg_payload_sample_target_indices` ✅; ABI 206 `xyg_colormap_lut` / `xyg_density_rgba_linear` / `xyg_paint_effective_rgba` ✅; ABI 207 `xyg_polar_heatmap_inverse_map` ✅; ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` ✅; ABI 209 `xyg_polar_wedge_points` ✅; ABI 210 `xyg_hexbin_ring` ✅; ABI 211 `xyg_step_arrays` ✅; ABI 212 `xyg_marker_path_scale` ✅; ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` ✅; ABI 214 `xyg_payload_segment_budget` ✅; ABI 215 `xyg_payload_errorbar_indices` ✅; ABI 216 `xyg_scale_pins_offset` ✅; ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` / `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` / `xyg_arrow_trim_polyline_end` ✅; ABI 218 `xyg_scene_dash_admit` ✅; ABI 219 `xyg_scene_linecap_admit` ✅; ABI 220 `xyg_density_overlay_opacity` ✅; ABI 221 `xyg_scene_marker_path_admit` ✅; ABI 222 `xyg_scene_annotation_style_admit` ✅; ABI 223 `xyg_scene_ribbon_color2_classify` ✅; ABI 224 `xyg_scene_tick_label_strategy` ✅; ABI 225 `xyg_scene_tick_anchor` ✅; ABI 226 `xyg_scene_fill_gradient_admit` ✅; ABI 227 `xyg_scene_parse_linear_gradient` ✅; ABI 228 `xyg_scene_rect_extra_flags` ✅; ABI 229 `xyg_scene_gradient_dir` ✅; ABI 230 `xyg_scene_linear_gradient_prefix` ✅; ABI 231 `xyg_scene_gradient_space` ✅; ABI 232 `xyg_scene_hexbin_reduce_admit` ✅; ABI 233 `xyg_scene_curve_classify` ✅; ABI 234 `xyg_scene_marker_glyph_admit` ✅; ABI 235 `xyg_scene_kind_admit` ✅; ABI 236 `xyg_scene_kind_class` ✅; ABI 237 `xyg_scene_hexbin_pitch_admit` ✅; ABI 238 `xyg_scene_heatmap_extent_admit` ✅; ABI 239 `xyg_scene_heatmap_colormap_admit` ✅; ABI 240 `xyg_scene_heatmap_shape_admit` ✅; ABI 241 `xyg_scene_scatter_paint_channel_admit` ✅; ABI 242 `xyg_scene_hexbin_colormap_plane_admit` ✅; ABI 243 `xyg_scene_hexbin_rgba_plane_admit` ✅; ABI 244 `xyg_scene_mesh_paint_plane_admit` ✅; ABI 245 `xyg_scene_item_apply_opacity` ✅; ABI 246 `xyg_scene_item_widths_admit` ✅; ABI 247 `xyg_scene_item_fill_t` ✅; ABI 248 `xyg_scene_finite_all` ✅; ABI 249 `xyg_scene_gradient_solid_css` ✅; ABI 250 `xyg_scene_arrays_equal` ✅; ABI 251 `xyg_clip_quantize_u8` ✅; ABI 252 `xyg_scene_constant_color_admit` ✅; ABI 253 `xyg_scene_hidden_or_per_item_admit` ✅; ABI 256 `xyg_scene_channel_constant_css` ✅; ABI 123 `xyg_scene_tick_label_layout` ✅;
+   ABI 124 `xyg_legend_box_layout` ✅; ABI 125 `xyg_text_block_measure` /
+   `xyg_text_block_rotated_extent` / `xyg_y_tick_label_extent` /
+   `xyg_y_axis_left_room` / `xyg_x_axis_title_room` /
+   `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅
+   (#297 default-font Scene-shaped Python chrome uses `xyg_scene_plot_layout`); ABI 126
+   `xyg_compat_is_compact` / `xyg_compat_default_padding` /
+   `xyg_compat_title_wrap_width` / `xyg_compat_title_room` /
+   `xyg_compat_x_axis_side_room` / `xyg_compat_colorbar_extra` /
+   `xyg_compat_right_y_room` / `xyg_polar_legend_room` /
+   `xyg_polar_legend_reserve` / `xyg_polar_label_room` /
+   `xyg_recut_polar_plot` ✅; ABI 127 `xyg_tight_layout_solve` ✅;
+   ABI 198 `xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅;
+   ABI 128 `xyg_tick_window` / `xyg_tick_window_filter` ✅;
+   ABI 199 Scene product encode filters authored cartesian majors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
+   ABI 200 Scene product encode filters authored cartesian minors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
+   ABI 201 Scene polar modular theta window / angular labels (`scene_chrome.rs` / `scene.rs` / `tick_layout.rs`) ✅;
+
+   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅; annotation markup fail-closed #308 (`scene_export.rs`) ✅; annotation custom typography CUSTOM_FONT pin #309 ✅; compatibility PNG ABI 121 kernels not `_scene.py` #310 ✅; ABI 204 `xyg_payload_m4_indices` ✅; ABI 205 `xyg_payload_visible_indices` / `xyg_payload_even_indices` / `xyg_payload_sample_target_indices` ✅; ABI 206 `xyg_colormap_lut` / `xyg_density_rgba_linear` / `xyg_paint_effective_rgba` ✅; ABI 207 `xyg_polar_heatmap_inverse_map` ✅; ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` ✅; ABI 209 `xyg_polar_wedge_points` ✅; ABI 210 `xyg_hexbin_ring` ✅; ABI 211 `xyg_step_arrays` ✅; ABI 212 `xyg_marker_path_scale` ✅; ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` ✅; ABI 214 `xyg_payload_segment_budget` ✅; ABI 215 `xyg_payload_errorbar_indices` ✅; ABI 216 `xyg_scale_pins_offset` ✅; ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` / `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` / `xyg_arrow_trim_polyline_end` ✅; ABI 218 `xyg_scene_dash_admit` ✅; ABI 219 `xyg_scene_linecap_admit` ✅; ABI 220 `xyg_density_overlay_opacity` ✅; ABI 221 `xyg_scene_marker_path_admit` ✅; ABI 222 `xyg_scene_annotation_style_admit` ✅; ABI 223 `xyg_scene_ribbon_color2_classify` ✅; ABI 224 `xyg_scene_tick_label_strategy` ✅; ABI 225 `xyg_scene_tick_anchor` ✅; ABI 226 `xyg_scene_fill_gradient_admit` ✅; ABI 227 `xyg_scene_parse_linear_gradient` ✅; ABI 228 `xyg_scene_rect_extra_flags` ✅; ABI 229 `xyg_scene_gradient_dir` ✅; ABI 230 `xyg_scene_linear_gradient_prefix` ✅; ABI 231 `xyg_scene_gradient_space` ✅; ABI 232 `xyg_scene_hexbin_reduce_admit` ✅; ABI 233 `xyg_scene_curve_classify` ✅; ABI 234 `xyg_scene_marker_glyph_admit` ✅; ABI 235 `xyg_scene_kind_admit` ✅; ABI 236 `xyg_scene_kind_class` ✅; ABI 237 `xyg_scene_hexbin_pitch_admit` ✅; ABI 238 `xyg_scene_heatmap_extent_admit` ✅; ABI 239 `xyg_scene_heatmap_colormap_admit` ✅; ABI 240 `xyg_scene_heatmap_shape_admit` ✅; ABI 241 `xyg_scene_scatter_paint_channel_admit` ✅; ABI 242 `xyg_scene_hexbin_colormap_plane_admit` ✅; ABI 243 `xyg_scene_hexbin_rgba_plane_admit` ✅; ABI 244 `xyg_scene_mesh_paint_plane_admit` ✅; ABI 245 `xyg_scene_item_apply_opacity` ✅; ABI 246 `xyg_scene_item_widths_admit` ✅; ABI 247 `xyg_scene_item_fill_t` ✅; ABI 248 `xyg_scene_finite_all` ✅; ABI 249 `xyg_scene_gradient_solid_css` ✅; ABI 250 `xyg_scene_arrays_equal` ✅; ABI 251 `xyg_clip_quantize_u8` ✅; ABI 252 `xyg_scene_constant_color_admit` ✅; ABI 253 `xyg_scene_hidden_or_per_item_admit` ✅; ABI 254 `xyg_arrow_style_pack` ✅; ABI 255 `xyg_encoded_column_meta` ✅; ABI 130
+ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅; annotation markup fail-closed #308 (`scene_export.rs`) ✅; annotation custom typography CUSTOM_FONT pin #309 ✅; compatibility PNG ABI 121 kernels not `_scene.py` #310 ✅; ABI 204 `xyg_payload_m4_indices` ✅; ABI 205 `xyg_payload_visible_indices` / `xyg_payload_even_indices` / `xyg_payload_sample_target_indices` ✅; ABI 206 `xyg_colormap_lut` / `xyg_density_rgba_linear` / `xyg_paint_effective_rgba` ✅; ABI 207 `xyg_polar_heatmap_inverse_map` ✅; ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` ✅; ABI 209 `xyg_polar_wedge_points` ✅; ABI 210 `xyg_hexbin_ring` ✅; ABI 211 `xyg_step_arrays` ✅; ABI 212 `xyg_marker_path_scale` ✅; ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` ✅; ABI 214 `xyg_payload_segment_budget` ✅; ABI 215 `xyg_payload_errorbar_indices` ✅; ABI 216 `xyg_scale_pins_offset` ✅; ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` / `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` / `xyg_arrow_trim_polyline_end` ✅; ABI 218 `xyg_scene_dash_admit` ✅; ABI 219 `xyg_scene_linecap_admit` ✅; ABI 220 `xyg_density_overlay_opacity` ✅; ABI 221 `xyg_scene_marker_path_admit` ✅; ABI 222 `xyg_scene_annotation_style_admit` ✅; ABI 223 `xyg_scene_ribbon_color2_classify` ✅; ABI 224 `xyg_scene_tick_label_strategy` ✅; ABI 225 `xyg_scene_tick_anchor` ✅; ABI 226 `xyg_scene_fill_gradient_admit` ✅; ABI 227 `xyg_scene_parse_linear_gradient` ✅; ABI 228 `xyg_scene_rect_extra_flags` ✅; ABI 229 `xyg_scene_gradient_dir` ✅; ABI 230 `xyg_scene_linear_gradient_prefix` ✅; ABI 231 `xyg_scene_gradient_space` ✅; ABI 232 `xyg_scene_hexbin_reduce_admit` ✅; ABI 233 `xyg_scene_curve_classify` ✅; ABI 234 `xyg_scene_marker_glyph_admit` ✅; ABI 235 `xyg_scene_kind_admit` ✅; ABI 236 `xyg_scene_kind_class` ✅; ABI 237 `xyg_scene_hexbin_pitch_admit` ✅; ABI 238 `xyg_scene_heatmap_extent_admit` ✅; ABI 239 `xyg_scene_heatmap_colormap_admit` ✅; ABI 240 `xyg_scene_heatmap_shape_admit` ✅; ABI 241 `xyg_scene_scatter_paint_channel_admit` ✅; ABI 242 `xyg_scene_hexbin_colormap_plane_admit` ✅; ABI 243 `xyg_scene_hexbin_rgba_plane_admit` ✅; ABI 244 `xyg_scene_mesh_paint_plane_admit` ✅; ABI 245 `xyg_scene_item_apply_opacity` ✅; ABI 246 `xyg_scene_item_widths_admit` ✅; ABI 247 `xyg_scene_item_fill_t` ✅; ABI 248 `xyg_scene_finite_all` ✅; ABI 249 `xyg_scene_gradient_solid_css` ✅; ABI 250 `xyg_scene_arrays_equal` ✅; ABI 251 `xyg_clip_quantize_u8` ✅; ABI 252 `xyg_scene_constant_color_admit` ✅; ABI 253 `xyg_scene_hidden_or_per_item_admit` ✅; ABI 256 `xyg_scene_channel_constant_css` ✅; ABI 130
+   `xyg_tick_format` ✅; ABI 131 `xyg_polar_layout` / `xyg_polar_project` /
+   `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` /
+   `xyg_polar_position_mask` ✅; ABI 132 `xyg_density_bin_window` /
+   `xyg_density_full_identity` / `xyg_density_pyramid_preflight` /
+   `xyg_density_grid_path` / `xyg_density_format_binning` /
+   `xyg_density_emit_meta` / `xyg_density_wasm_eligible` ✅; ABI 129
+   `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅; ABI 133
+   polar Scene v26 compile via XYPL on `xyg_scene_batch_encode` (`polar.rs` +
+   `scene.rs`) ✅; ABI 134 `HeatmapPainted=9` + XYHP paint intern (`scene.rs`) ✅;
+   ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) ✅;
+   ABI 136 product-kind packing (`xyg_scene_resolve_pack_kind` /
+   `xyg_scene_pack_product`) ✅; ABI 137 / Scene v27 `DensityBlit=10` Image
+   blit + XYIM sidecar (`scene.rs`) ✅; ABI 138 / Scene v28 XYDS constant dash
+   (`scene.rs`) ✅; ABI 139 / Scene v29 XYLC constant linecap (`scene.rs`) ✅;
+   ABI 140 / Scene v30 `CurveFlatten=11` smooth polylines (`scene.rs`) ✅;
+   ABI 141 / Scene v31 `BandFlatten=12` smooth areas (`scene.rs`) ✅;
+   ABI 142 cartesian mean-color density XYHP kind 4 (`scene.rs`) ✅;
+   ABI 143 polar density PolyFill tessellation (`scene.rs`) ✅;
+   ABI 144 cartesian `error_band(curve="smooth")` `BandFlatten=12` plus polar
+   identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅;
+   ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅;
+   ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅;
+   ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅;
+   ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅;
+   ABI 149 XYHF heatmap/density paint-fact packing (`xyg_scene_pack_heatmap_facts`) ✅;
+   ABI 150 XYSS extras packing (`xyg_scene_pack_scene_extras`) ✅;
+   ABI 151 Scene density grid packing (`xyg_scene_pack_density_grid`) ✅;
+   ABI 152 XYEP packing from XYEF (`xyg_scene_pack_public_export`) ✅.
+   ABI 153 XYCF figure-chrome packing (`xyg_scene_pack_figure_chrome`) ✅.
+   ABI 154 XYTC per-trace compile packing (`xyg_scene_pack_trace_compile`) ✅.
+   ABI 155 XYTA heatmap/density attach packing (`xyg_scene_pack_trace_attach`) ✅.
+   ABI 156 XYCL product-row packing (`xyg_scene_pack_trace_rows`) ✅.
+   ABI 157 XYSD trace-sidecar packing (`xyg_scene_pack_trace_sidecars`) ✅.
+   ABI 158 XYSS style-sidecar packing (`xyg_scene_pack_style_sidecars`) ✅.
+   ABI 159 XYAS annotation splice packing (`xyg_scene_splice_annotations`) ✅.
+   ABI 160 XYAS/XYCC assembled encode (`xyg_scene_encode_assembled`) ✅.
+   ABI 161 XYSD chrome/extras packing (`xyg_scene_pack_figure_chrome_from_sidecars`,
+   `xyg_scene_pack_scene_extras_from_sidecars`) ✅.
+   ABI 162 XYAS/XYCF assembled encode from sidecars (`xyg_scene_encode_assembled_from_sidecars`) ✅.
+   ABI 163 product encode from packed facts (`xyg_scene_encode_product`) ✅.
+   ABI 164 public static-export consumers (`xyg_scene_static_export`) ✅.
+   ABI 165 product-path XYFS figure-compile support (`xyg_scene_encode_product`) ✅.
+   ABI 166 cartesian bar/column/histogram `corner_radius` tessellation (`scene.rs` / XYSD radius blob) ✅.
+   ABI 167 polar bar/column/histogram `wedge_gap` tessellation (`polar_wedge_points` / XYSD radius blob) ✅.
+   ABI 168 polar bar/column/histogram `corner_radius` tessellation (`polar_wedge_points` rounded wedges / XYSD radius blob) ✅.
+   ABI 169 polar `curve="smooth"` plus `step` as polar step expansion (identity chords) ✅.
+   ABI 170 constant scatter `marker_glyph` XYMG text markers (`scene.rs` / extras dash slot) ✅.
+   ABI 171 width-only scatter `stroke_width` as match-fill (`scene_style.rs` / `scene_export.rs`) ✅.
+   ABI 172 cartesian line `curve="smooth"` plus `step` as authored step expansion (`scene_pack.rs`) ✅.
+   ABI 173 heatmap `corner_radius` tessellation (`scene.rs` / XYSD radius blob) ✅.
+   ABI 174 violin/box `corner_radius` tessellation (`scene.rs` / XYSD radius blob) ✅.
+   ABI 175 violin/box `fill_opacity` / `stroke_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 176 bar/column/histogram `fill_opacity` / `stroke_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 177 heatmap `fill_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 178 scatter `fill_opacity` / `stroke_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 179 hexbin `fill_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 180 triangle_mesh `fill_opacity` / constant stroke (`scene_style.rs` / XYMS) ✅.
+   ABI 181 cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion (`scene.rs` / `scene_pack.rs`) ✅.
+   ABI 182 triangle_mesh `joined_fill` as one identity PolyFill ring (`geom::triangle_mesh_boundary` / `scene_pack.rs`) ✅.
+   ABI 183 constant ribbon `color2_ch` as XYGR mark-space `dir=right` (`scene_trace_compile.rs` / XYGR) ✅.
+   ABI 184 cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
+   ABI 185 labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
+   ABI 186 cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills (`scene.rs` / `scene_heatmap.rs` / `scene_pack.rs`) ✅.
+   ABI 187 cartesian unwrapped text `rotation` as XYAW `wrap=0` (`scene_annotations.rs` / `scene.rs` / `scene_export.rs`) ✅.
+   ABI 188 labelled cartesian marker `rotation` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
+   ABI 189 heatmap/hexbin cell-fill tessellation eligibility from packed XYTA (`scene_trace_attach.rs` / `scene_export.rs`) ✅.
+   ABI 190 cartesian per-item two-ended ribbon `color2_ch` intern from packed XYHP kind 5 (`scene.rs` / XYGR) ✅.
+   ABI 191 constant multi-character scatter `marker_glyph` via XYMG v2 (`scene.rs` / extras dash slot) ✅.
+   ABI 192 polar painted heatmap inverse-raster as one Scene Image blit (`polar.rs` / `scene.rs` / XYEF `FLAG_POLAR`) ✅.
+   ABI 193 heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` (`scene_style.rs` / XYMS; polar painted tessellates when stroke is visible) ✅.
+   ABI 194 polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin as interned HexCell PolyFills (`scene_export.rs` / `scene_trace_attach.rs`) ✅.
+   ABI 195 triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
+   ABI 196 scatter per-item fill/stroke/width/opacity interned from packed XYHP kind 7 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
+   ABI 197 Scene product encode settles `loc="best"` from packed XYCL/XYNM (`legend_fit.rs` / `scene_chrome.rs`) ✅.
+   ABI 199 Scene product encode filters authored cartesian majors and pairs `tick_labels` (`tick_layout.rs` / `scene_chrome.rs`) ✅.
+   ABI 200 Scene product encode filters authored cartesian minors (`tick_layout.rs` / `scene_chrome.rs`) ✅.
+   ABI 201 Scene polar modular theta window / angular labels (`tick_layout.rs` / `scene_chrome.rs` / `scene.rs`) ✅.
+   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅; annotation markup fail-closed #308 (`scene_export.rs`) ✅; annotation custom typography CUSTOM_FONT pin #309 ✅; compatibility PNG ABI 121 kernels not `_scene.py` #310 ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

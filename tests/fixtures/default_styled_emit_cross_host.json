@@ -1,0 +1,88 @@
+{
+  "schema": "xyg.default-styled-emit-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js _defaultStyled emit paths",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "line_default_styled",
+      "trace_id": 16,
+      "kind": "line",
+      "style": {
+        "opacity": 0.9,
+        "color": "#3987e5"
+      },
+      "palette_color": "#3987e5"
+    },
+    {
+      "name": "area_default_styled",
+      "trace_id": 17,
+      "kind": "area",
+      "style": {
+        "opacity": 0.9,
+        "color": "#008300"
+      },
+      "palette_color": "#008300"
+    },
+    {
+      "name": "hist_default_styled",
+      "trace_id": 18,
+      "kind": "histogram",
+      "style": {
+        "opacity": 0.9,
+        "color": "#d55181"
+      },
+      "palette_color": "#d55181"
+    },
+    {
+      "name": "mesh_default_styled",
+      "trace_id": 19,
+      "kind": "triangle_mesh",
+      "style": {
+        "opacity": 0.9,
+        "color": "#c48300"
+      },
+      "palette_color": "#c48300"
+    },
+    {
+      "name": "segments_default_styled",
+      "trace_id": 20,
+      "kind": "segments",
+      "style": {
+        "opacity": 0.9,
+        "color": "#199e70"
+      },
+      "palette_color": "#199e70"
+    },
+    {
+      "name": "ribbon_default_styled",
+      "trace_id": 21,
+      "kind": "ribbon",
+      "style": {
+        "opacity": 0.9,
+        "color": "#d95926"
+      },
+      "palette_color": "#d95926"
+    },
+    {
+      "name": "rect_default_styled",
+      "trace_id": 22,
+      "kind": "box_whisker",
+      "style": {
+        "opacity": 0.9,
+        "color": "#9085e9"
+      },
+      "palette_color": "#9085e9"
+    },
+    {
+      "name": "hexbin_default_styled",
+      "trace_id": 23,
+      "kind": "hexbin",
+      "style": {
+        "opacity": 0.9,
+        "color": "#e66767"
+      },
+      "palette_color": "#e66767"
+    }
+  ]
+}

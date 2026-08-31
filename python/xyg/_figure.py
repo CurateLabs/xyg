@@ -9,6 +9,7 @@ work is forbidden on the client).
 from __future__ import annotations
 
 import math
+import struct
 import warnings
 from collections.abc import Mapping, Sequence
 from os import PathLike
@@ -16,7 +17,17 @@ from typing import Any, Optional, TypeAlias, Union
 
 import numpy as np
 
-from . import _annotations, _validate, channels, columns, export, interaction, kernels, styles
+from . import (
+    _annotations,
+    _native,
+    _validate,
+    channels,
+    columns,
+    export,
+    interaction,
+    kernels,
+    styles,
+)
 from . import marks as _marks
 from ._annotations import AnnotationsMixin
 from ._payload import PayloadMixin
@@ -47,6 +58,35 @@ _FigureCheckpoint: TypeAlias = tuple[ColumnStoreCheckpoint, int, dict[str, list[
 
 # "selection not passed" sentinel for state_patch_message: None is meaningful
 # there (clear the selection), so absence needs its own marker.
+_AUTORANGE_KIND = {
+    "scatter": 0,
+    "line": 1,
+    "bar": 2,
+    "column": 3,
+    "histogram": 4,
+    "violin": 5,
+    "box": 6,
+    "box_whisker": 7,
+    "box_median": 8,
+    "segments": 9,
+    "errorbar": 10,
+    "stem": 11,
+    "area": 12,
+    "error_band": 13,
+    "ribbon": 14,
+    "triangle_mesh": 15,
+    "hexbin": 16,
+    "heatmap": 17,
+}
+_AUTORANGE_ROLES = (
+    ("x", 0),
+    ("y", 1),
+    ("x0", 2),
+    ("x1", 3),
+    ("y0", 4),
+    ("y1", 5),
+    ("base", 6),
+)
 _STATE_UNSET: Any = object()
 
 
@@ -1079,15 +1119,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
         Kernels require `hi > lo`; user data does not owe us variance. Expand a
         degenerate domain the same way autorange does so constant histograms and
-        heatmaps render instead of tripping an internal precondition.
+        heatmaps render instead of tripping an internal precondition. Rust owns
+        the pad; this method only forwards the optional bounds.
         """
-        if bounds is None:
-            return (0.0, 1.0)
-        lo, hi = bounds
-        if lo == hi:
-            pad = abs(lo) * 0.05 or 0.5
-            return (lo - pad, hi + pad)
-        return (lo, hi)
+        return _native.auto_domain(bounds)
 
     @staticmethod
     def _as_float_array(values: Any, label: str) -> np.ndarray:
@@ -1397,142 +1432,114 @@ class Figure(AnnotationsMixin, PayloadMixin):
         return self._range("y")
 
     def _range(self, axis_id: str, *, use_domain: bool = True) -> tuple[float, float]:
-        opts = self.axis_options.get(axis_id, {})
-        fixed = opts.get("domain")
-        if use_domain and fixed is not None:
-            lo, hi = fixed
-            return (hi, lo) if opts.get("reverse") else (lo, hi)
+        try:
+            return _native.figure_autorange(self._pack_autorange(axis_id, use_domain=use_domain))
+        except ValueError as error:
+            if "log axis requires" in str(error):
+                raise ValueError(
+                    f"{axis_id} log axis requires at least one positive value"
+                ) from error
+            raise
 
-        # Autorange is O(chunks) via zone maps (§22), not an O(n) rescan.
-        lo = np.inf
-        hi = -np.inf
-        for t in self.traces:
-            for col in self._range_columns(t, axis_id):
-                lo = min(lo, col.min)
-                hi = max(hi, col.max)
-        if not np.isfinite(lo) or not np.isfinite(hi):
-            lo, hi = 0.0, 1.0
-        scale = self._axis_scale(axis_id)
-        if scale == "log":
-            positive_los: list[float] = []
-            positive_his: list[float] = []
-            for t in self.traces:
-                for col in self._range_columns(t, axis_id):
-                    if np.isfinite(col.zone.positive_min):
-                        positive_los.append(col.zone.positive_min)
-                        positive_his.append(col.zone.positive_max)
-            if not positive_los:
-                raise ValueError(f"{axis_id} log axis requires at least one positive value")
-            lo, hi = min(positive_los), max(positive_his)
-        if self.coords == "polar" and self._axis_dim(axis_id) == "x":
-            categories = self._axis_categories.get(axis_id)
-            if categories:
-                # Categorical theta keeps data in category-index coordinates;
-                # the renderer maps those indices evenly across the authored
-                # sector (or the default full turn). Returning angular units
-                # here made category 2 mean two radians and broke bar bands.
-                return (0.0, float(len(categories) - 1))
-            # Numeric theta is used directly as an angle, never rescaled into
-            # the axis range. The independent `sector` field governs partial
-            # layout/clipping; this range remains the full-turn tick domain.
-            unit = self.axis_options.get(axis_id, {}).get("theta_unit") or "radians"
-            return (0.0, 360.0) if unit == "degrees" else (0.0, 2.0 * math.pi)
+    def _pack_autorange(self, axis_id: str, *, use_domain: bool = True) -> bytes:
+        """Pack literal axis/trace extents for Rust's XYAR autorange ABI."""
+        opts = self.axis_options.get(axis_id, {})
+        flags = 0
+        if use_domain:
+            flags |= 1 << 0
+        if opts.get("reverse"):
+            flags |= 1 << 1
+        domain = opts.get("domain")
+        if domain is not None:
+            flags |= 1 << 2
         configured_margin = opts.get("margin")
-        if lo == hi and configured_margin is None:
-            if (
-                self.coords == "polar"
-                and self._axis_dim(axis_id) == "y"
-                and scale != "log"
-                # Zero is the Unix epoch on a time axis, not a centre, so
-                # pinning there spanned the disc from 1970 to the datum and
-                # parked its ring on the rim. Time takes the ordinary pad.
-                and self._axis_kind(axis_id) != "time"
+        if configured_margin is not None:
+            flags |= 1 << 3
+        if self.coords == "polar":
+            flags |= 1 << 4
+        axis_dim = self._axis_dim(axis_id)
+        if axis_dim == "x":
+            flags |= 1 << 5
+        scale = self._axis_scale(axis_id)
+        scale_code = 1 if scale == "log" else 2 if scale == "symlog" else 0
+        kind = self._axis_kind(axis_id)
+        kind_code = 1 if kind == "time" else 2 if kind == "category" else 0
+        theta_unit = 1 if (opts.get("theta_unit") or "radians") == "degrees" else 0
+        categories = self._axis_categories.get(axis_id) if self.coords == "polar" else None
+        n_categories = len(categories) if categories else 0
+        domain_lo, domain_hi = (
+            (float(domain[0]), float(domain[1])) if domain is not None else (0.0, 0.0)
+        )
+        margin = 0.0 if configured_margin is None else float(configured_margin)
+        payload = bytearray(
+            struct.pack(
+                "<4sIIBBBBHHI3d",
+                b"XYAR",
+                1,
+                flags,
+                scale_code,
+                kind_code,
+                theta_unit,
+                0,
+                len(self.traces),
+                n_categories,
+                0,
+                domain_lo,
+                domain_hi,
+                margin,
+            )
+        )
+        for t in self.traces:
+            if t.kind == "ribbon" and (
+                t.x0 is None or t.x1 is None or t.y0 is None or t.y1 is None
             ):
-                # Constant-radius data must not bypass the centre-origin
-                # default below: padding a singleton r=5 to [4.75, 5.25] draws
-                # a unit circle as a ring floating mid-disc, exactly the
-                # picture the polar branch exists to forbid. Same rule as the
-                # non-singleton branch: centre origin, no outer pad.
-                lo_out = min(0.0, lo)
-                hi_out = hi if hi > lo_out else lo_out + 1.0
-                return (hi_out, lo_out) if opts.get("reverse") else (lo_out, hi_out)
-            pad = abs(lo) * 0.05 or 0.5
-            lo, hi = lo - pad, hi + pad
-            if scale == "log" and lo <= 0:
-                lo = hi / 10.0
-            return (hi, lo) if opts.get("reverse") else (lo, hi)
-        if lo == hi:
-            # Match pyplot's singleton extent: an explicit margin is applied
-            # to a stable unit interval instead of being silently replaced by
-            # the core's legacy 5% nonsingular fallback.
-            hi = lo + 1.0
-        margin = 0.03 if configured_margin is None else configured_margin
-        if scale == "log" and configured_margin is not None:
-            transformed_lo, transformed_hi = np.log10((lo, hi))
-            pad = (transformed_hi - transformed_lo) * margin
-            # A wide domain can drive the padded exponent past the smallest
-            # representable double, leaving a log axis with a non-positive
-            # lower bound. Floor it the same way the default-margin branch
-            # does, without the ``lo / 10.0`` clamp that would override an
-            # authored margin.
-            out_lo = max(10.0 ** (transformed_lo - pad), np.nextafter(0.0, 1.0))
-            out_hi = 10.0 ** (transformed_hi + pad)
-        else:
-            pad = (hi - lo) * margin
-            out_lo = lo - pad
-            out_hi = hi + pad
-        if self.coords == "polar" and self._axis_dim(axis_id) == "y":
-            # The radial axis starts at the centre unless asked otherwise
-            # (matplotlib's default rmin=0). A radial axis padded away from
-            # zero is actively misleading: it puts the smallest datum at the
-            # centre, so a 5%-variation series reads as radiating from nothing.
-            # An explicit domain/bounds still wins — it short-circuits above.
-            # Log radius has no zero and already resolved its positive extent
-            # above. Linear/symlog keep the established centre-origin default.
-            # `min(0.0, lo)` collapsed to `lo` once the data went negative,
-            # which threw the pad away and produced the very picture this
-            # branch forbids: four readings within 0.7% of each other resolved
-            # to [-100.8, -100.1] and drew as a full-disc star. Centre origin
-            # is only meaningful when zero is an end of the range — below zero
-            # it is vacuous, so keep the ordinary padded extent there.
-            # A TIME radius is the exception: its zero is 1 January 1970, so a
-            # centre origin puts every modern instant in a hairline ring at the
-            # rim (twelve consecutive days out of ~1.7e12 ms resolved to a band
-            # 0.0006% of the radius wide) and the axis reads as a solid disc
-            # edge. Zero is not a meaningful radial origin for an instant, so a
-            # time radius keeps the ordinary padded extent — the same reasoning
-            # that already exempts a negative floor below.
-            if self._axis_kind(axis_id) == "time":
-                return (out_hi, out_lo) if opts.get("reverse") else (out_lo, out_hi)
-            if self._axis_kind(axis_id) == "time":
-                # Zero is the Unix epoch, not a centre. Pinning a time radius
-                # there spanned the disc from 1970 to the data and parked every
-                # ring at the rim; a singleton instant was the worst case. Time
-                # keeps the ordinary padded window, like the cartesian axis.
-                return (out_hi, out_lo) if opts.get("reverse") else (out_lo, out_hi)
-            if scale == "log":
-                out_lo = lo
-            elif lo >= 0.0:
-                out_lo = 0.0
-            # else: keep the padded out_lo computed above.
-            # No outer pad when the centre is the origin: the outermost ring
-            # should be the data max, matching how matplotlib and Plotly frame
-            # a polar plot. A negative floor keeps its pad on both sides so the
-            # range stays symmetric about the data. An explicit `margin` is an
-            # authored request for that pad, and dropping it was the third way
-            # the polar radial axis accepted a keyword and ignored it: keep the
-            # padded outer ring whenever one was asked for.
-            if (lo >= 0.0 or scale == "log") and configured_margin is None:
-                out_hi = hi
-            return (out_hi, out_lo) if opts.get("reverse") else (out_lo, out_hi)
-        anchor = self._zero_baseline_anchor(axis_id)
-        if anchor == "lo" and lo == 0.0 and hi > 0.0:
-            out_lo = 0.0
-        elif anchor == "hi" and hi == 0.0 and lo < 0.0:
-            out_hi = 0.0
-        if scale == "log" and configured_margin is None:
-            out_lo = max(out_lo, lo / 10.0, np.nextafter(0.0, 1.0))
-        return (out_hi, out_lo) if opts.get("reverse") else (out_lo, out_hi)
+                raise ValueError("ribbon trace missing geometry columns")
+            trace_flags = 0
+            if t.x_axis == axis_id:
+                trace_flags |= 1 << 0
+            if t.y_axis == axis_id:
+                trace_flags |= 1 << 1
+            has_endpoints = (
+                t.x0 is not None and t.x1 is not None and t.y0 is not None and t.y1 is not None
+            )
+            if has_endpoints:
+                trace_flags |= 1 << 2
+            if t.base is not None:
+                trace_flags |= 1 << 3
+            columns: list[bytes] = []
+            for name, role in _AUTORANGE_ROLES:
+                col = getattr(t, name, None)
+                if col is None:
+                    continue
+                zone = col.zone
+                pos_min = float(zone.positive_min)
+                pos_max = float(zone.positive_max)
+                if not np.isfinite(pos_min):
+                    pos_min = float("nan")
+                if not np.isfinite(pos_max):
+                    pos_max = float("nan")
+                columns.append(
+                    struct.pack(
+                        "<B7xdddd",
+                        role,
+                        float(col.min),
+                        float(col.max),
+                        pos_min,
+                        pos_max,
+                    )
+                )
+            zb = 0xFF
+            if t.kind in {"bar", "column", "histogram"} and has_endpoints:
+                base = t.x0.values if axis_dim == "x" else t.y0.values
+                value = t.x1.values if axis_dim == "x" else t.y1.values
+                zb = _native.rect_zero_baseline_flags(base, value)
+            payload.append(_AUTORANGE_KIND.get(t.kind, 255))
+            payload.append(trace_flags)
+            payload.append(len(columns))
+            payload.append(zb)
+            for packed in columns:
+                payload.extend(packed)
+        return bytes(payload)
 
     def _zero_baseline_anchor(self, axis_id: str) -> Optional[str]:
         """Pin zero to the plot edge for positive/negative rectangle charts.
@@ -1563,11 +1570,14 @@ class Figure(AnnotationsMixin, PayloadMixin):
             finite = np.isfinite(base) & np.isfinite(value)
             if not finite.any():
                 continue
-            if (finite & (base != 0.0)).any():
+            flags = _native.rect_zero_baseline_flags(base, value)
+            if flags == 0xFF or flags & 1 == 0:
                 continue
-            if not (finite & (value < 0.0)).any():
+            if flags & 2:
+                continue
+            if flags & 4 == 0:
                 return "lo"
-            if not (finite & (value > 0.0)).any():
+            if flags & 8 == 0:
                 return "hi"
         return None
 
@@ -1607,6 +1617,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
     def _axis_spec(self, axis_id: str, range_: tuple[float, float]) -> dict[str, Any]:
         axis = self._axis_dim(axis_id)
         opts = self.axis_options.get(axis_id, {})
+        attach = kernels.payload_axis_spec_attach_plan(
+            coords_cartesian=self.coords == "cartesian",
+            axis_is_x=axis == "x",
+        )
         if axis_id == "x":
             label = self.x_label
         elif axis_id == "y":
@@ -1643,83 +1657,91 @@ class Figure(AnnotationsMixin, PayloadMixin):
             )
         )
         kind = self._axis_kind(axis_id)
-        spec: dict[str, Any] = {
-            "id": axis_id,
-            "kind": kind,
-            "label": label,
-            "range": list(range_),
-            "side": opts.get("side", "bottom" if axis == "x" else "left"),
-        }
-        if opts.get("tick_sides") is not None:
+        spec: dict[str, Any] = {}
+        if attach["attach_id"]:
+            spec["id"] = axis_id
+        if attach["attach_kind"]:
+            spec["kind"] = kind
+        if attach["attach_label"]:
+            spec["label"] = label
+        if attach["attach_range"]:
+            spec["range"] = list(range_)
+        if attach["attach_side"]:
+            spec["side"] = opts.get("side", "bottom" if axis == "x" else "left")
+        if attach["attach_tick_sides"] and opts.get("tick_sides") is not None:
             spec["tick_sides"] = list(opts["tick_sides"])
-        if opts.get("tick_label_sides") is not None:
+        if attach["attach_tick_label_sides"] and opts.get("tick_label_sides") is not None:
             spec["tick_label_sides"] = list(opts["tick_label_sides"])
-        if label_position is not None:
+        if attach["attach_label_position"] and label_position is not None:
             spec["label_position"] = label_position
-        if label_offset is not None:
+        if attach["attach_label_offset"] and label_offset is not None:
             spec["label_offset"] = label_offset
-        if label_angle is not None:
+        if attach["attach_label_angle"] and label_angle is not None:
             spec["label_angle"] = label_angle
-        if tick_count is not None:
+        if attach["attach_ticks"] and tick_count is not None:
             spec["tick_count"] = tick_count
-        if opts.get("tick_values") is not None:
+        if attach["attach_ticks"] and opts.get("tick_values") is not None:
             spec["tick_values"] = list(opts["tick_values"])
-        if opts.get("minor_tick_values") is not None:
+        if attach["attach_ticks"] and opts.get("minor_tick_values") is not None:
             spec["minor_tick_values"] = list(opts["minor_tick_values"])
-        if opts.get("tick_labels") is not None:
+        if attach["attach_ticks"] and opts.get("tick_labels") is not None:
             spec["tick_labels"] = list(opts["tick_labels"])
-        if tick_label_angle is not None:
+        if attach["attach_tick_label_angle"] and tick_label_angle is not None:
             spec["tick_label_angle"] = tick_label_angle
-        if tick_label_strategy is not None:
+        if attach["attach_tick_label_strategy"] and tick_label_strategy is not None:
             spec["tick_label_strategy"] = tick_label_strategy
-        if tick_label_anchor is not None:
+        if attach["attach_tick_label_anchor"] and tick_label_anchor is not None:
             spec["tick_label_anchor"] = tick_label_anchor
-        if tick_label_min_gap is not None:
+        if attach["attach_tick_label_min_gap"] and tick_label_min_gap is not None:
             spec["tick_label_min_gap"] = tick_label_min_gap
         scale = self._axis_scale(axis_id)
-        if scale != "linear":
+        if attach["attach_scale"] and scale != "linear":
             spec["scale"] = scale
-        if scale == "symlog":
+        if attach["attach_constant"] and scale == "symlog":
             spec["constant"] = opts.get("constant") or 1.0
-        if scale == "log" and opts.get("nonpositive") is not None:
+        if attach["attach_nonpositive"] and scale == "log" and opts.get("nonpositive") is not None:
             spec["nonpositive"] = opts["nonpositive"]
-        if opts.get("reverse"):
+        if attach["attach_reverse"] and opts.get("reverse"):
             spec["reverse"] = True
-        if opts.get("domain") is not None:
+        if attach["attach_domain"] and opts.get("domain") is not None:
             spec["domain"] = list(opts["domain"])
         bounds = opts.get("bounds")
         if bounds == "data":
             # Resolve once on the Python side so the client receives concrete
             # limits even when an independent explicit domain sets view0.
             bounds = self._range(axis_id, use_domain=False)
-        if bounds is not None:
+        if attach["attach_bounds"] and bounds is not None:
             spec["bounds"] = sorted(bounds)
-        if opts.get("minor_style"):
+        if attach["attach_minor_style"] and opts.get("minor_style"):
             spec["minor_style"] = dict(opts["minor_style"])
-        if opts.get("format") is not None:
+        if attach["attach_format"] and opts.get("format") is not None:
             spec["format"] = opts["format"]
         style = styles.compile_axis_style(opts.get("style"), f"{axis_id} axis style")
-        if style:
+        if attach["attach_style"] and style:
             spec["style"] = style
-        if kind == "category":
+        if attach["attach_categories"] and kind == "category":
             spec["categories"] = list(self._axis_categories.get(axis_id, []))
-        if self.coords == "polar" and self._axis_dim(axis_id) == "x":
+        if attach["attach_theta_unit"]:
             # Angular configuration rides the x (theta) axis. Defaults are
             # spelled out rather than omitted so the client and both exporters
             # read one resolved value instead of each re-deriving a fallback.
             unit = opts.get("theta_unit") or "radians"
             spec["theta_unit"] = unit
-            spec["theta_zero"] = "E" if opts.get("theta_zero") is None else opts["theta_zero"]
-            spec["theta_direction"] = opts.get("theta_direction") or "counterclockwise"
-            turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-            spec["sector"] = list(opts.get("sector") or (0.0, turn))
-            spec["grid_shape"] = opts.get("grid_shape") or "circular"
-        if self.coords == "polar" and self._axis_dim(axis_id) == "y":
+            if attach["attach_theta_zero"]:
+                spec["theta_zero"] = "E" if opts.get("theta_zero") is None else opts["theta_zero"]
+            if attach["attach_theta_direction"]:
+                spec["theta_direction"] = opts.get("theta_direction") or "counterclockwise"
+            if attach["attach_sector"]:
+                turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+                spec["sector"] = list(opts.get("sector") or (0.0, turn))
+            if attach["attach_grid_shape"]:
+                spec["grid_shape"] = opts.get("grid_shape") or "circular"
+        if attach["attach_hole"]:
             # `hole` is always resolved on the wire. `r_origin` stays optional:
             # when absent, renderers use the current visible r_lo, so radial
             # zoom keeps the ordinary centre origin without a spec rewrite.
             spec["hole"] = opts.get("hole") or 0.0
-            if opts.get("r_origin") is not None:
+            if attach["attach_r_origin"] and opts.get("r_origin") is not None:
                 spec["r_origin"] = opts["r_origin"]
         return spec
 

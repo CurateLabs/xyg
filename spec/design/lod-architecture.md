@@ -18,8 +18,14 @@ Interactive means: pan/zoom stays inside the §17 frame budget at any N.
 A **tier is a property of a (trace, viewport) pair**, never of a dataset:
 what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
 `drill_decision` / `plan_view_lod` in `python/xyg/lod.py` call Rust
-(`xy_drill_decision` / `xy_lod_plan` in `lod_plan.rs`); hosts only validate and
-map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
+(`xyg_drill_decision` / `xyg_lod_plan` in `lod_plan.rs`); compile-time
+payload M4/density/direct is `xyg_payload_tier` (ABI 122). Line M4 emit
+indices are `xyg_payload_m4_indices` (ABI 204). Remaining emit sampling
+is `xyg_payload_visible_indices` / `xyg_payload_even_indices` /
+`xyg_payload_sample_target_indices` (ABI 205). The stem/errorbar count
+budget is `xyg_payload_segment_budget` (ABI 214). Errorbar role-block
+expand is `xyg_payload_errorbar_indices` (ABI 215). Hosts only
+validate and map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no
@@ -73,7 +79,11 @@ Tiered chart kinds must enter through the common LOD primitives in
   data-space values become finite f32 buffers plus `{offset, scale, len}`
   metadata in exactly one place. `geometry_offset` is the one offset policy:
   window/domain midpoint on linear axes, pinned 0.0 on log-family axes
-  (dossier §16).
+  (dossier §16). ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns
+  the numeric policy. ABI 216 `xyg_scale_pins_offset` owns log-family
+  `pin_zero` admission (`log`/`symlog`). ABI 255 `xyg_encoded_column_meta`
+  owns `EncodedColumn` offset/scale/kind-presence packing; hosts still copy
+  the original kind string.
 - `sample_rows_for_target(...)` is the shared target-bounded subset primitive:
   density overlays and future sampled tiers ask for "about N stable rows from
   this viewport" in one place instead of copying target-fraction math.

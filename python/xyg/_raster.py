@@ -3,10 +3,11 @@ paint it with the Rust rasterizer (`kernels.rasterize`, `crates/xyg-engine/src/r
 encode PNG. Browser-free and screen-bounded — the same decimated payload the SVG
 exporter consumes.
 
-Reuses `_svg`'s layout/scale/tick/colormap math and `_scene`'s tessellated
-geometry so the raster matches the SVG (and the live chart). The one thing the
-SVG path never needed — a CSS-color → RGBA8 parser — lives here, since the
-browser did that resolution for the SVG/widget.
+Reuses `_svg`'s layout/scale/tick/colormap math and ABI 121 tessellation
+kernels so the raster matches the SVG (and the live chart). Compatibility
+`_scene.py` wrappers stay for tests; this emitter calls `kernels` directly
+(#310). The one thing the SVG path never needed — a CSS-color → RGBA8 parser
+— lives here, since the browser did that resolution for the SVG/widget.
 """
 
 from __future__ import annotations
@@ -20,18 +21,18 @@ from typing import Any, Optional, cast
 
 import numpy as np
 
-from . import _paint, _png, _scene, _textblock
+from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._svg import (
     _AXIS,
     _AXIS_GRID_DASHES,
     _GRID,
-    _STATIC_COLOR_FALLBACK,
     _TEXT,
     COLORBAR_FONT_SIZE,
     DEFAULT_PALETTE,
     _annotation_connector_unclipped,
     _annotation_first_baseline,
+    _authored_marker_points,
     _axis_label_geometry,
     _axis_scales,
     _axis_tick_font_size,
@@ -58,6 +59,7 @@ from ._svg import (
     _preserve_scene_chrome_for_axis_visibility,
     _px_size,
     _resolve_static_css_vars,
+    _rgba8,
     _Scale,
     _solid_paint,
     _step_arrays,
@@ -83,7 +85,83 @@ from ._svg import (
     warp_grid_rgba,
 )
 
-# Opcodes — must match crates/xyg-engine/src/raster.rs.
+# Samples per smooth Bézier span when flattening to a polyline (#310 / ABI 121).
+_BEZIER_STEPS = 16
+
+
+def _curve_points(xv: np.ndarray, yv: np.ndarray, sx: Any, sy: Any, smooth: bool) -> np.ndarray:
+    """Pixel-space polyline; smooth uses Rust monotone-cubic flatten (ABI 121)."""
+    px = np.asarray(sx(xv), dtype=np.float64)
+    py = np.asarray(sy(yv), dtype=np.float64)
+    if not smooth or len(xv) < 3 or not (sx.affine and sy.affine):
+        return np.column_stack([px, py])
+    data_x, data_y = kernels.curve_flatten(
+        np.asarray(xv, dtype=np.float64),
+        np.asarray(yv, dtype=np.float64),
+        _BEZIER_STEPS,
+    )
+    return np.column_stack(
+        [np.asarray(sx(data_x), dtype=np.float64), np.asarray(sy(data_y), dtype=np.float64)]
+    )
+
+
+def _rounded_rect_vertices(
+    x: float, y: float, w: float, h: float, r_tip: float, r_base: float, tip_top: bool
+) -> list[tuple[float, float]]:
+    xs, ys = kernels.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
+    return list(zip(xs.tolist(), ys.tolist(), strict=True))
+
+
+def _grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
+    """Pixel destination rect (x, y, w, h) for a grid image, matching `_svg._grid_image`."""
+    px0, px1 = float(sx(x_range[0])), float(sx(x_range[1]))
+    py0, py1 = float(sy(y_range[1])), float(sy(y_range[0]))
+    return min(px0, px1), min(py0, py1), abs(px1 - px0), abs(py1 - py0)
+
+
+def _compat_grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple:
+    """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first)."""
+    w, h = int(g["w"]), int(g["h"])
+    stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
+    if kind == "density":
+        if g.get("enc") == "log-u8":
+            meta = cols[g["buf"]]
+            encoded = np.frombuffer(
+                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
+            )
+            gmax = float(g.get("max") or 1.0) or 1.0
+            rgba = kernels.density_rgba(
+                encoded,
+                w,
+                h,
+                gmax,
+                stops,
+                float(style.get("opacity", 0.85)),
+            )
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+        grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
+        gmax = float(g.get("max") or 1.0) or 1.0
+        rgba = kernels.density_rgba_linear(
+            grid,
+            w,
+            h,
+            gmax,
+            stops,
+            float(style.get("opacity", 0.85)),
+        )
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    meta = cols[g["buf"]]
+    alpha = int(255 * float(style.get("opacity", 0.95)))
+    if g.get("enc") == "canonical-f64":
+        values = _column(blob, meta).reshape(h, w)
+        d0, d1 = (float(value) for value in g["domain"])
+        rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    raw = _column(blob, meta).reshape(h, w)
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+    return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+
+
 (
     _CLIP,
     _FILL,
@@ -140,28 +218,13 @@ _SYMBOLS = {
 
 
 def _parse_color(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
-    """Resolve a CSS color string to RGBA8 via the native grammar
-    (crates/xyg-engine/src/css.rs) — the same parser that validates figure input, so raster
-    colors can never drift from the API contract. `none` renders transparent
-    (the SVG idiom); browser-only forms that survive `_css`'s fallback (an
-    `oklch()` a DOM would resolve) and — defensively — anything unparseable
-    use the same blue-gray fallback as the browser renderer so a static export
-    never renders an invisible or target-dependent mark."""
-    from . import kernels
+    """Resolve a CSS color string to RGBA8 via `xyg_css_color_rgba`
+    (`crates/xyg-engine/src/css.rs`). Scene packing, native raster, and Node
+    hosts share this conversion so named colors, `none`, and the never-invisible
+    fallback cannot drift."""
+    from . import _native
 
-    s = str(css).strip()
-    if s.lower() == "none":
-        return (0, 0, 0, 0)
-    _status, rgba = kernels.css_check(kernels.CSS_COLOR, s)
-    if rgba is None:
-        rgba = _STATIC_COLOR_FALLBACK
-    r, g, b, a = rgba
-    return (
-        int(round(r * 255)),
-        int(round(g * 255)),
-        int(round(b * 255)),
-        max(0, min(255, int(round(a * 255 * opacity)))),
-    )
+    return _native.css_color_rgba(css, opacity)
 
 
 def _rgba(css: Any, fallback: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
@@ -1649,7 +1712,7 @@ def _emit_line(
     elif style.get("curve") == "smooth" and len(xv) >= 3 and affine_fast_path(sx, sy, polar):
         cmd.smooth_stroke(xv, yv, sx, sy, width, c, dash=style.get("dash"), cap=cap)
     else:
-        pts = _scene.curve_points(xv, yv, sx, sy, False)
+        pts = _curve_points(xv, yv, sx, sy, False)
         cmd.stroke(pts, width, c, dash=style.get("dash"), cap=cap)
 
 
@@ -1979,8 +2042,8 @@ def _emit_area(
             run_base = np.column_stack(polar(xv[run][::-1], base_r[run][::-1]))
             pieces.append((run_top, run_base))
     else:
-        top = _scene.curve_points(xv, yv, sx, sy, smooth)
-        base = _scene.curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
+        top = _curve_points(xv, yv, sx, sy, smooth)
+        base = _curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
         pieces = [(top, base)]
     op = _fill_opacity(style, 0.35)
     fill_spec = style.get("fill")
@@ -2063,9 +2126,7 @@ def _emit_authored_scatter(
         return _column(blob, cols[index])
 
     face = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
-        _paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8) * 255.0
-    ).astype(np.uint8)
+    fills = _rgba8(_paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8))
     if (t.get("stroke") or {}).get("mode") == "match_fill":
         stroke_intrinsic = face
     elif t.get("stroke") is not None:
@@ -2081,7 +2142,7 @@ def _emit_authored_scatter(
         )
     else:
         stroke_intrinsic = face
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(
             stroke_intrinsic,
             t,
@@ -2089,8 +2150,7 @@ def _emit_authored_scatter(
             component="stroke",
             default_opacity=0.8,
         )
-        * 255.0
-    ).astype(np.uint8)
+    )
     size_ch = t.get("size") or {}
     if size_ch.get("mode") == "continuous":
         values = _column(blob, cols[size_ch["buf"]])
@@ -2124,15 +2184,16 @@ def _emit_authored_scatter(
         contours = []
         for contour in marker_path.get("contours") or ():
             values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
-            contours.append(
-                [
-                    (
-                        float(px[index]) + diameter * float(x),
-                        float(py[index]) - diameter * float(y),
-                    )
-                    for x, y in values
-                ]
+            if not len(values):
+                continue
+            xs, ys = _authored_marker_points(
+                values[:, 0],
+                values[:, 1],
+                float(px[index]),
+                float(py[index]),
+                diameter,
             )
+            contours.append(list(zip(xs.tolist(), ys.tolist(), strict=True)))
         if filled:
             for points in contours:
                 cmd.fill(points, fill)
@@ -2235,10 +2296,9 @@ def _emit_scatter(
     if n == 0:
         return
     face_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
+    fills = _rgba8(
         _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=0.8)
-        * 255.0
-    ).astype(np.uint8)
+    )
 
     if size_ch.get("mode") == "continuous":
         sv = _column(blob, cols[size_ch["buf"]])
@@ -2265,10 +2325,9 @@ def _emit_scatter(
         )
     else:
         stroke_intrinsic = face_intrinsic
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=0.8)
-        * 255.0
-    ).astype(np.uint8)
+    )
     if polar is not None:
         # Cull out-of-range radii the way the client shader does: below r_lo a
         # sprite mirrors through the centre. The shaped clip contains glyph
@@ -2329,9 +2388,9 @@ def _emit_segments(
 
     n = len(x0)
     intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    colors = np.rint(
-        _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    colors = _rgba8(
+        _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0)
+    )
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
     if polar is None:
         px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
@@ -2412,9 +2471,7 @@ def _mesh_fill_rgba(
         return _column(blob, cols[index])
 
     intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    return np.rint(
-        _paint.effective_rgba(intrinsic, t, read, component="fill", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    return _rgba8(_paint.effective_rgba(intrinsic, t, read, component="fill", default_opacity=1.0))
 
 
 def _emit_hexbin(
@@ -2456,7 +2513,7 @@ def _emit_ribbon(
 ) -> None:
     """Flow bands, flattened, with the gradient running along the flow.
 
-    Geometry comes from `_scene.ribbon_polygon` — the same reference the SVG
+    Geometry comes from `kernels.ribbon_polygon` (ABI 121) — the same Rust
     exporter's cubics and the golden test consume — so the two static outputs
     cannot drift. The polygon is built from the **axis-mapped** endpoints, not
     mapped after flattening: the ribbon cubic is normative in transformed space
@@ -2479,15 +2536,14 @@ def _emit_ribbon(
         return _column(blob, cols[index])
 
     source_rgba = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
-        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    fills = _rgba8(
+        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0)
+    )
     if t.get("color_target"):
         target_rgba = _trace_paint_rgba(t, "color_target", n, color, read)
-        fills2 = np.rint(
+        fills2 = _rgba8(
             _paint.effective_rgba(target_rgba, t, read, component="fill", default_opacity=1.0)
-            * 255.0
-        ).astype(np.uint8)
+        )
     else:
         fills2 = fills
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
@@ -2501,13 +2557,10 @@ def _emit_ribbon(
         if stroke_width > 0 and style.get("stroke") is not None
         else None
     )
-    edges = (
-        np.rint(
-            np.column_stack([source_rgba[:, :3] * 255.0, source_rgba[:, 3] * stroke_op * 255.0])
-        ).astype(np.uint8)
-        if stroke_width > 0 and style.get("stroke") is None
-        else None
-    )
+    edges = None
+    if stroke_width > 0 and style.get("stroke") is None:
+        folded = np.column_stack([source_rgba[:, :3], source_rgba[:, 3] * stroke_op])
+        edges = _rgba8(folded)
 
     for i in range(n):
         px0, px1 = float(sx(x0v[i])), float(sx(x1v[i]))
@@ -2515,8 +2568,8 @@ def _emit_ribbon(
         py_tlo, py_thi = float(sy(tlo[i])), float(sy(thi[i]))
         if not all(math.isfinite(v) for v in (px0, px1, py_slo, py_shi, py_tlo, py_thi)):
             continue
-        poly_data = _scene.ribbon_polygon(px0, px1, py_slo, py_shi, py_tlo, py_thi)
-        poly = list(zip(poly_data[:, 0].tolist(), poly_data[:, 1].tolist(), strict=True))
+        xs, ys = kernels.ribbon_polygon(px0, px1, py_slo, py_shi, py_tlo, py_thi)
+        poly = list(zip(xs.tolist(), ys.tolist(), strict=True))
         # effective_rgba already folded the trace opacity into the alpha.
         a = tuple(int(v) for v in fills[i])
         b = tuple(int(v) for v in fills2[i])
@@ -2527,7 +2580,7 @@ def _emit_ribbon(
         else:
             # Gradient vector spans the two faces horizontally; the y term is
             # irrelevant because the ramp is purely along the flow.
-            gy = float(poly_data[0, 1])
+            gy = float(ys[0])
             cmd.grad(poly, (px0, gy), (px1, gy), [(0.0, a), (1.0, b)])
         edge_c = (
             stroke_c
@@ -2569,10 +2622,9 @@ def _emit_triangle_mesh(
         )
     else:
         stroke_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=1.0)
-        * 255.0
-    ).astype(np.uint8)
+    )
     projected = (sx(x0[:n]), sy(y0[:n]), sx(x1[:n]), sy(y1[:n]), sx(x2[:n]), sy(y2[:n]))
     if n == 0:
         return
@@ -2620,7 +2672,7 @@ def _bar_geom(
 ) -> None:
     r_tip, r_base = _corner_radii(style)
     if r_tip or r_base:
-        poly = _scene.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
+        poly = _rounded_rect_vertices(x, y, w, h, r_tip, r_base, tip_top)
         fill_cmd(poly)
         if sw > 0:
             cmd.stroke(poly, sw, stroke_c, closed=True)
@@ -2703,10 +2755,9 @@ def _rect_style_arrays(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Resolve batched rectangle paint, stroke width, and radii."""
     face = _trace_paint_rgba(trace, "color", n, fallback, read)
-    fills = np.rint(
+    fills = _rgba8(
         _paint.effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
-        * 255.0
-    ).astype(np.uint8)
+    )
     style = trace.get("style") or {}
     if (trace.get("stroke") or {}).get("mode") == "match_fill":
         stroke_face = face
@@ -2719,12 +2770,11 @@ def _rect_style_arrays(
         )
     else:
         stroke_face = face
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(
             stroke_face, trace, read, component="stroke", default_opacity=default_opacity
         )
-        * 255.0
-    ).astype(np.uint8)
+    )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
     )
@@ -2986,7 +3036,7 @@ def _emit_grid(
                 _heatmap_rgba_grid(g, blob, cols, style, borrowed), xr, yr, sx, sy
             )
             oh, ow = rgba.shape[:2]
-            dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+            dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
             cmd.image(
                 dx, dy, dw, dh, ow, oh, np.ascontiguousarray(rgba[::-1]).tobytes(), nearest=True
             )
@@ -2997,14 +3047,14 @@ def _emit_grid(
             rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
             rgba = rgba.reshape(h, w, 4)[::-1]
             xr, yr = g["x_range"], g["y_range"]
-            dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+            dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
             cmd.image(dx, dy, dw, dh, w, h, rgba.tobytes(), nearest=True)
             return
         meta = cols[g["buf"]]
         stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
         alpha = int(255 * _fill_opacity(style, 0.95))
         xr, yr = g["x_range"], g["y_range"]
-        dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+        dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
         canonical = g.get("enc") == "canonical-f64"
         cmd.heatmap_image(
             dx,
@@ -3025,7 +3075,7 @@ def _emit_grid(
         w, h = int(g["w"]), int(g["h"])
         meta = cols[g["buf"]]
         xr, yr = g["x_range"], g["y_range"]
-        dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+        dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
         if g.get("rgba") is not None:
             # Mean point color per cell (LOD doc §2): rgb from the shipped
             # plane; displayed alpha is the PHYSICAL compositing of the
@@ -3064,9 +3114,9 @@ def _emit_grid(
         )
         return
     else:
-        rgba, xr, yr = _scene.grid_rgba(kind, g, blob, cols, style)
+        rgba, xr, yr = _compat_grid_rgba(kind, g, blob, cols, style)
         h, w = rgba.shape[0], rgba.shape[1]
-    dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+    dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
     cmd.image(dx, dy, dw, dh, w, h, rgba.tobytes(), nearest=kind == "heatmap")
 
 
@@ -3224,7 +3274,10 @@ def _emit_legend_marker(
     elif marker_path:
         for contour in marker_path.get("contours") or ():
             values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
-            points = [(x + 2 * radius * float(px), y - 2 * radius * float(py)) for px, py in values]
+            if not len(values):
+                continue
+            xs, ys = _authored_marker_points(values[:, 0], values[:, 1], x, y, 2 * radius)
+            points = list(zip(xs.tolist(), ys.tolist(), strict=True))
             if bool(marker_path.get("filled", True)):
                 cmd.fill(points, color)
                 if sw > 0:
@@ -3300,7 +3353,7 @@ def _emit_colorbar(
     title_paint = _parse_color(slot_text_color(title_slot, text_color))
     tick_size = slot_font_size(tick_slot, COLORBAR_FONT_SIZE)
     tick_paint = _parse_color(slot_text_color(tick_slot, text_color))
-    from ._svg import _colorbar_tick_target, _fmt_log, _linear_ticks, _log_ticks, _lut
+    from ._svg import _colorbar_tick_target, _fmt_log
 
     orientation = options.get("orientation", "vertical")
     shrink = float(options.get("shrink", 1.0))
@@ -3380,9 +3433,16 @@ def _emit_colorbar(
 
     def automatic_ticks(length: float) -> list[float]:
         target = _colorbar_tick_target(length)
-        return (
-            _log_ticks(lo, hi, target)[1] if log_scale else _linear_ticks(lo, hi, target)[0]
-        ) or [lo, hi]
+        automatic = axis_ticks(
+            {
+                "kind": "log" if log_scale else "linear",
+                "range": [lo, hi],
+                "tick_count": target,
+            },
+            length,
+            orientation == "horizontal",
+        )
+        return (automatic[1] if log_scale else automatic[0]) or [lo, hi]
 
     format_tick = _fmt_log if log_scale else lambda value: f"{value:g}"
     ticks = options.get("ticks")

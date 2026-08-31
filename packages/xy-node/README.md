@@ -96,7 +96,7 @@ files). From a source checkout: `npm ci && node js/build.mjs` at the repo root.
 | `src/graph.js` | `normalizeGraphInputs` → dense u64; `runLayout` (ABI layout + `build_render`) → `nodePositions`, `edgeSegments`, meta (`lod_tier`, `member_of`, optional CSR, `source_n_*`) |
 | `src/marks/*.js` | Thin TypedArray builders for every chart family (scatter→radar); Rust kernels only |
 | `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
-| `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`); `toHtml()` inlines `@curatelabs/xyg` standalone. Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
+| `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`); `toHtml()` inlines `@curatelabs/xyg` standalone. Scatter **density tier** when `n > SCATTER_DENSITY_THRESHOLD` (or `forceDensity`; ABI 122 `payloadTier`). Line M4 when over `DECIMATION_THRESHOLD` (polar stays direct). Contour/errorbar/stem/mesh/ribbon/radar covered. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — defaults to `worker_threads`; explicit `mode: "immediate"` is batch/test-only. Node-host only (never browser main thread). |
 | `src/sankey.js` | Thin `composeSankey` over `xyg_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview notes (`@curatelabs/xyg`, not the Python tree) |
@@ -213,7 +213,7 @@ const graph = graphChart(nodes, edges, {
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |
 | `composeScatter` … `composeRadar` / `composeSankey` | mark builders |
 | `scatterChart` … `radarChart` / `sankeyChart` / `graphChart` | convenience figures |
-| `bin2d` / `densityLogU8` / `lodPlan` / `shouldUseDensity` | Tier-2 LOD helpers |
+| `bin2d` / `densityLogU8` / `lodPlan` / `payloadTier` / `shouldUseDensity` | Tier-2 LOD helpers |
 | `figure` / `Figure` / `buildPayload` | minimal figure + §29 payload |
 | `runForceAnimation` | progressive tick scheduler |
 

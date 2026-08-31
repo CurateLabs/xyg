@@ -440,6 +440,16 @@ def test_is_sorted_accepts_convertible_input(impl):
     assert impl.is_sorted([2, 1]) is False
 
 
+def test_argsort_stable_matches_numpy(impl):
+    data = np.array([3.0, 1.0, np.nan, 1.0, 2.0, -0.0, 0.0], dtype=np.float64)
+    expected = np.argsort(data, kind="stable")
+    got = impl.argsort_stable(data)
+    np.testing.assert_array_equal(got, expected.astype(np.uint32))
+    empty = impl.argsort_stable(np.array([], dtype=np.float64))
+    assert empty.dtype == np.uint32
+    assert len(empty) == 0
+
+
 # -- 2D density binning (§5 Tier 2) ------------------------------------------
 
 

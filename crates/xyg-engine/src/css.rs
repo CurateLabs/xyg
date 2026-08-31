@@ -448,6 +448,26 @@ fn hsl_args(args: &str) -> Result<[f32; 4], CssErr> {
     Ok([f(0.0), f(8.0), f(4.0), a])
 }
 
+/// Unambiguous authored CSS paint syntax: `#…`, `rgb()`/`rgba()`, `hsl()`/`hsla()`.
+///
+/// Matches Python `channels.resolve_color`. A bare `red` is a category
+/// label, not paint — only `#` / functional color forms are unambiguous.
+pub fn is_functional_color(value: &str) -> bool {
+    let s = value.trim_start();
+    if s.starts_with('#') {
+        return true;
+    }
+    fn starts_fn(s: &str, name: &str) -> bool {
+        let bytes = s.as_bytes();
+        let name_b = name.as_bytes();
+        if bytes.len() < name_b.len() || !bytes[..name_b.len()].eq_ignore_ascii_case(name_b) {
+            return false;
+        }
+        s[name.len()..].trim_start().starts_with('(')
+    }
+    starts_fn(s, "rgba") || starts_fn(s, "rgb") || starts_fn(s, "hsla") || starts_fn(s, "hsl")
+}
+
 /// Parse a CSS `<color>`. `Ok(Checked::Parsed(Some(rgba)))` for statically
 /// resolvable colors; `Parsed(None)` for `currentColor` (valid, resolves to
 /// the mark/text color at paint); `Passthrough` for browser-resolved
@@ -496,6 +516,66 @@ pub fn parse_color(raw: &str) -> Result<Checked, CssErr> {
         }
         Err(_) => Err(CssErr::UnknownColorName),
     }
+}
+
+/// Blue-gray used when a CSS color cannot be resolved statically (`oklch()`,
+/// `var()`, `currentColor`, unknown names). Former host 0..1 fallback
+/// `(0.3, 0.47, 0.66, 1.0)` bankers-rounds (`0.3 * 255` → 76).
+pub const STATIC_COLOR_FALLBACK_RGBA8: [u8; 4] = [76, 120, 168, 255];
+
+fn bankers_round_to_u8(value: f32) -> u8 {
+    let clamped = value.clamp(0.0, 255.0);
+    let floor = clamped.floor();
+    let frac = clamped - floor;
+    let base = floor as u32;
+    let rounded = if frac > 0.5 {
+        base + 1
+    } else if frac < 0.5 {
+        base
+    } else if base % 2 == 0 {
+        base
+    } else {
+        base + 1
+    };
+    rounded.min(255) as u8
+}
+
+/// Resolve a CSS color to RGBA8 the way Scene and native raster paint do.
+///
+/// `none` (any ASCII case) is transparent. Unparseable values, browser-only
+/// passthrough, and `currentColor` use [`STATIC_COLOR_FALLBACK_RGBA8`] so a
+/// mark is never invisible. `opacity` multiplies the alpha channel; non-finite
+/// opacity is treated as `1.0`.
+pub fn color_rgba8(css: &str, opacity: f32) -> [u8; 4] {
+    let trimmed = css.trim();
+    if trimmed.eq_ignore_ascii_case("none") {
+        return [0, 0, 0, 0];
+    }
+    let opacity = if opacity.is_finite() { opacity } else { 1.0 };
+    match parse_color(trimmed) {
+        Ok(Checked::Parsed(Some(rgba))) => [
+            bankers_round_to_u8(rgba[0] * 255.0),
+            bankers_round_to_u8(rgba[1] * 255.0),
+            bankers_round_to_u8(rgba[2] * 255.0),
+            bankers_round_to_u8(rgba[3] * 255.0 * opacity),
+        ],
+        _ => {
+            let [r, g, b, a] = STATIC_COLOR_FALLBACK_RGBA8;
+            [r, g, b, bankers_round_to_u8(a as f32 * opacity)]
+        }
+    }
+}
+
+/// Multiply a literal RGBA8 by an authored opacity using the same bankers
+/// rounding as [`color_rgba8`].
+pub fn apply_opacity_rgba8(rgba: [u8; 4], opacity: f32) -> [u8; 4] {
+    let opacity = if opacity.is_finite() { opacity } else { 1.0 };
+    [
+        rgba[0],
+        rgba[1],
+        rgba[2],
+        bankers_round_to_u8(rgba[3] as f32 * opacity),
+    ]
 }
 
 /// Split on whitespace outside parentheses, so `clamp(1px, 2vw, 3px) 4px`
@@ -687,6 +767,19 @@ mod tests {
     }
 
     #[test]
+    fn functional_color_gate_matches_host_regex() {
+        assert!(is_functional_color("#ff0000"));
+        assert!(is_functional_color("  RGB(1, 2, 3)"));
+        assert!(is_functional_color("rgba (0,0,0,1)"));
+        assert!(is_functional_color("HSL(0,100%,50%)"));
+        assert!(is_functional_color("hsla(0,0%,0%,0.5)"));
+        assert!(!is_functional_color("red"));
+        assert!(!is_functional_color("var(--x)"));
+        assert!(!is_functional_color("rgb"));
+        assert!(!is_functional_color(""));
+    }
+
+    #[test]
     fn rgb_hsl_forms() {
         assert_eq!(rgba("rgb(255, 0, 0)"), [1.0, 0.0, 0.0, 1.0]);
         assert_eq!(rgba("rgb(255 0 0 / 0.5)")[3], 0.5);
@@ -784,5 +877,24 @@ mod tests {
         assert_eq!(check_declaration("", "x"), Err(CssErr::BadProperty));
         assert_eq!(check_declaration("1bad", "x"), Err(CssErr::BadProperty));
         assert_eq!(check_declaration("--", "x"), Err(CssErr::BadProperty));
+    }
+
+    #[test]
+    fn color_rgba8_matches_python_parse_color() {
+        assert_eq!(color_rgba8("#3b82f6", 1.0), [0x3B, 0x82, 0xF6, 255]);
+        assert_eq!(color_rgba8("steelblue", 1.0), [70, 130, 180, 255]);
+        assert_eq!(color_rgba8("hsl(0, 100%, 50%)", 1.0), [255, 0, 0, 255]);
+        assert_eq!(color_rgba8("none", 1.0), [0, 0, 0, 0]);
+        assert_eq!(color_rgba8("NONE", 1.0), [0, 0, 0, 0]);
+        assert_eq!(color_rgba8("transparent", 1.0)[3], 0);
+        assert_eq!(color_rgba8("#ff0000", 0.5), [255, 0, 0, 128]);
+        assert_eq!(
+            color_rgba8("oklch(0.7 0.1 250)", 1.0),
+            STATIC_COLOR_FALLBACK_RGBA8
+        );
+        assert_eq!(
+            color_rgba8("currentColor", 1.0),
+            STATIC_COLOR_FALLBACK_RGBA8
+        );
     }
 }

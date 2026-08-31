@@ -22,7 +22,6 @@ import numpy as np
 from . import channels, columns, kernels, lod
 from ._ooc import is_memmapped
 from .config import (
-    DECIMATION_THRESHOLD,
     DENSITY_TARGET_POINTS_PER_CELL,  # noqa: F401  (historic import path)
     DRILL_EXIT_FACTOR,
     DRILL_PAD_SPAN_CAP,
@@ -465,7 +464,7 @@ def decimate_view(
     updates: list[dict[str, Any]] = []
     writer = lod.BufferWriter()
     for t in fig.traces:
-        if t.kind not in {"line", "area"} or t.n_points <= DECIMATION_THRESHOLD:
+        if t.kind not in {"line", "area"}:
             continue
         # A legend-hidden trace is not drawn; re-decimating it per pan/zoom
         # would ship dead buffers (§34 — hidden means out of every pipeline).
@@ -477,7 +476,21 @@ def decimate_view(
         y_scale = fig._axis_scale(t.y_axis)
         # Bucket in scale coordinates so every bucket covers one screen strip.
         mx, (m_lo, m_hi) = fig._binning_coords(t.x_axis, t.x.values, (lo_x, hi_x))
-        idx = kernels.m4_indices(mx, t.y.values, m_lo, m_hi, max(16, px_width))
+        use_bin = mx is not t.x.values
+        tier_code, idx = kernels.payload_m4_indices(
+            t.n_points,
+            t.x.values,
+            t.y.values,
+            lo_x,
+            hi_x,
+            max(16, px_width),
+            polar=fig.coords == "polar",
+            bin_x=mx if use_bin else None,
+            bin_x0=m_lo if use_bin else 0.0,
+            bin_x1=m_hi if use_bin else 0.0,
+        )
+        if tier_code == 0:
+            continue
         if len(idx):
             xv, yv = t.x.values[idx], t.y.values[idx]
             bv = t.base.values[idx] if t.kind == "area" and t.base is not None else None
@@ -1272,7 +1285,10 @@ def density_view(
         "x_range": [lo_x, hi_x],
         "y_range": [lo_y, hi_y],
     }
-    if rgba_grid is not None:
+    if rgba_grid is not None and kernels.density_mean_color_rgba_wire_admit(
+        has_pyramid_rgba=True,
+        has_bin_colors=False,
+    ):
         density["rgba"] = writer.add_u8(np.ascontiguousarray(rgba_grid).reshape(-1))
         density["color_agg"] = "mean"
     if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:

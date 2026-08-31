@@ -20,7 +20,7 @@ import operator
 import os
 import struct
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Optional, cast
 
@@ -35,6 +35,23 @@ _MAX_SCENE_STYLES = 65_536
 _MAX_SCENE_TEXT_BYTES = 4_096
 MAX_SCENE_LEGEND_INPUT_BYTES = 48 + 128 * 24 + 16_384
 MAX_SCENE_COLORBAR_INPUT_BYTES = 56 + 16 * 12 + 32 * 8 + 4_096
+MAX_SCENE_ANNOTATION_INPUT_BYTES = (
+    28
+    + 12
+    + 128 * 40
+    + 4_096
+    + 12
+    + 128 * 32
+    + 4_096
+    + 12
+    + 128 * 60
+    + 12
+    + 128 * 76
+    + 8_192
+    + 12
+    + 128 * 68
+    + 8_192
+)
 
 
 class _GraphProjectionDescriptor(ctypes.Structure):
@@ -225,6 +242,262 @@ class _TemporalGraphSnapshotBuffers(ctypes.Structure):
         ("pinned_node_ids", ctypes.c_void_p),
         ("pinned_node_capacity", ctypes.c_uint64),
     ]
+
+
+class _DensityEmitMeta(ctypes.Structure):
+    _fields_ = [
+        ("grid_path", ctypes.c_int32),
+        ("bin_window_x0", ctypes.c_double),
+        ("bin_window_x1", ctypes.c_double),
+        ("bin_window_y0", ctypes.c_double),
+        ("bin_window_y1", ctypes.c_double),
+        ("full_identity", ctypes.c_uint32),
+        ("oversized", ctypes.c_uint32),
+        ("pyramid_eligible", ctypes.c_uint32),
+        ("pyramid_attempt", ctypes.c_uint32),
+        ("pyramid_no_rescan", ctypes.c_uint32),
+        ("pyramid_max_upsample", ctypes.c_uint32),
+        ("pyramid_tile_upsample", ctypes.c_uint32),
+        ("wasm_eligible", ctypes.c_uint32),
+        ("needs_pyramid_sample", ctypes.c_uint32),
+        ("overlay_omitted", ctypes.c_uint32),
+        ("visible_is_n_points", ctypes.c_uint32),
+        ("use_raw_range_bin2d", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
+class _PayloadDensityTraceEmitPlan(ctypes.Structure):
+    _fields_ = [
+        ("color_mode", ctypes.c_int32),
+        ("categorical", ctypes.c_uint32),
+        ("compact_categorical", ctypes.c_uint32),
+        ("stratified_counts", ctypes.c_uint32),
+        ("x_c0", ctypes.c_double),
+        ("x_c1", ctypes.c_double),
+        ("y_c0", ctypes.c_double),
+        ("y_c1", ctypes.c_double),
+        ("grid_path", ctypes.c_int32),
+        ("pyramid_eligible", ctypes.c_uint32),
+        ("pyramid_attempt", ctypes.c_uint32),
+        ("pyramid_no_rescan", ctypes.c_uint32),
+        ("pyramid_max_upsample", ctypes.c_uint32),
+        ("pyramid_tile_upsample", ctypes.c_uint32),
+        ("wasm_eligible", ctypes.c_uint32),
+        ("needs_pyramid_sample", ctypes.c_uint32),
+        ("overlay_omitted", ctypes.c_uint32),
+        ("visible_is_n_points", ctypes.c_uint32),
+        ("use_raw_range_bin2d", ctypes.c_uint32),
+        ("attach_transition", ctypes.c_uint32),
+        ("n_marks", ctypes.c_size_t),
+        ("visible_init_n_points", ctypes.c_uint32),
+        ("attach_sample", ctypes.c_uint32),
+        ("pyramid_sample_stratified", ctypes.c_uint32),
+        ("use_channel_colormap", ctypes.c_uint32),
+        ("ship_wasm_source", ctypes.c_uint32),
+        ("ship_mean_color_rgba", ctypes.c_uint32),
+        ("ship_constant_color", ctypes.c_uint32),
+        ("ship_categorical_entry_color", ctypes.c_uint32),
+        ("mean_color_aggregates", ctypes.c_uint32),
+        ("overlay_wire_static_raster", ctypes.c_uint32),
+        ("overlay_wire_rows_exceed", ctypes.c_uint32),
+        ("channels_dropped_compat", ctypes.c_uint32),
+    ]
+
+
+class _PayloadBuildPlan(ctypes.Structure):
+    _fields_ = [
+        ("attach_show_legend", ctypes.c_uint32),
+        ("wasm_density_kind", ctypes.c_int32),
+        ("attach_wasm_density", ctypes.c_uint32),
+        ("attach_title_options", ctypes.c_uint32),
+        ("attach_coords", ctypes.c_uint32),
+        ("attach_palette", ctypes.c_uint32),
+        ("attach_legend", ctypes.c_uint32),
+        ("resolve_legend_best", ctypes.c_uint32),
+        ("attach_extra_legends", ctypes.c_uint32),
+        ("attach_frame_sides", ctypes.c_uint32),
+        ("attach_colorbar", ctypes.c_uint32),
+        ("attach_show_modebar", ctypes.c_uint32),
+        ("attach_export", ctypes.c_uint32),
+        ("attach_show_tooltip", ctypes.c_uint32),
+        ("attach_padding", ctypes.c_uint32),
+        ("attach_dom", ctypes.c_uint32),
+        ("attach_tooltip", ctypes.c_uint32),
+        ("attach_mark_style", ctypes.c_uint32),
+        ("attach_interaction", ctypes.c_uint32),
+        ("attach_annotations", ctypes.c_uint32),
+        ("attach_animation", ctypes.c_uint32),
+        ("attach_graph", ctypes.c_uint32),
+    ]
+
+
+class _PayloadAxisSpecAttachPlan(ctypes.Structure):
+    _fields_ = [
+        ("attach_id", ctypes.c_uint32),
+        ("attach_kind", ctypes.c_uint32),
+        ("attach_side", ctypes.c_uint32),
+        ("attach_label", ctypes.c_uint32),
+        ("attach_range", ctypes.c_uint32),
+        ("attach_scale", ctypes.c_uint32),
+        ("attach_ticks", ctypes.c_uint32),
+        ("attach_tick_sides", ctypes.c_uint32),
+        ("attach_tick_label_sides", ctypes.c_uint32),
+        ("attach_label_position", ctypes.c_uint32),
+        ("attach_label_offset", ctypes.c_uint32),
+        ("attach_label_angle", ctypes.c_uint32),
+        ("attach_tick_label_angle", ctypes.c_uint32),
+        ("attach_tick_label_strategy", ctypes.c_uint32),
+        ("attach_tick_label_anchor", ctypes.c_uint32),
+        ("attach_tick_label_min_gap", ctypes.c_uint32),
+        ("attach_constant", ctypes.c_uint32),
+        ("attach_nonpositive", ctypes.c_uint32),
+        ("attach_reverse", ctypes.c_uint32),
+        ("attach_domain", ctypes.c_uint32),
+        ("attach_bounds", ctypes.c_uint32),
+        ("attach_minor_style", ctypes.c_uint32),
+        ("attach_format", ctypes.c_uint32),
+        ("attach_style", ctypes.c_uint32),
+        ("attach_categories", ctypes.c_uint32),
+        ("attach_theta_unit", ctypes.c_uint32),
+        ("attach_theta_zero", ctypes.c_uint32),
+        ("attach_theta_direction", ctypes.c_uint32),
+        ("attach_sector", ctypes.c_uint32),
+        ("attach_grid_shape", ctypes.c_uint32),
+        ("attach_hole", ctypes.c_uint32),
+        ("attach_r_origin", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytcFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytcTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_opacity", ctypes.c_uint32),
+        ("pack_hex_pitch", ctypes.c_uint32),
+        ("pack_stroke_perimeter", ctypes.c_uint32),
+        ("pack_color2", ctypes.c_uint32),
+        ("pack_radius", ctypes.c_uint32),
+        ("marker_path_branch", ctypes.c_uint32),
+        ("marker_glyph_branch", ctypes.c_uint32),
+        ("meta_use_density", ctypes.c_uint32),
+        ("meta_joined_fill", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytaFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytaTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_uint32),
+        ("pack_hexbin_colormap", ctypes.c_uint32),
+        ("pack_hexbin_rgba", ctypes.c_uint32),
+        ("pack_ribbon_ends", ctypes.c_uint32),
+        ("pack_mesh_faces", ctypes.c_uint32),
+        ("pack_scatter_paint", ctypes.c_uint32),
+        ("pack_density", ctypes.c_uint32),
+    ]
+
+
+class _SceneFigureSupportFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneFigureSupportTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("probe_marker_glyph", ctypes.c_uint32),
+        ("probe_marker_path", ctypes.c_uint32),
+        ("probe_curve_smooth", ctypes.c_uint32),
+        ("probe_rect_extra", ctypes.c_uint32),
+        ("probe_hexbin_reduce", ctypes.c_uint32),
+        ("probe_heatmap_colormap", ctypes.c_uint32),
+        ("probe_non_css_fill", ctypes.c_uint32),
+    ]
+
+
+class _SceneXyclFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXynmFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+    ]
+
+
+class _SceneXycfFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+        ("attach_legend", ctypes.c_uint32),
+        ("attach_colorbar", ctypes.c_uint32),
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXyafAnnotationDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("wrapped", ctypes.c_uint32),
+        ("pack_rule_dash", ctypes.c_uint32),
+        ("pack_rule_linecap", ctypes.c_uint32),
+        ("pack_axis", ctypes.c_uint32),
+        ("pack_symbol", ctypes.c_uint32),
+    ]
+
+
+class _ScenePublicExportFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("has_chrome_styles", ctypes.c_uint32),
+        ("has_title_options", ctypes.c_uint32),
+    ]
+
+
+class _ScenePolarFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("attach_xypl", ctypes.c_uint32),
+    ]
+
+
+class _SceneEncodeProductAttachPlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("attach_xypl", ctypes.c_uint32),
+        ("step_xytc", ctypes.c_uint32),
+        ("step_xyta", ctypes.c_uint32),
+        ("step_xynm", ctypes.c_uint32),
+        ("step_xycl", ctypes.c_uint32),
+        ("step_xyaf", ctypes.c_uint32),
+        ("step_xycf", ctypes.c_uint32),
+        ("step_xypl", ctypes.c_uint32),
+        ("step_xyfs", ctypes.c_uint32),
+    ]
+
+
+class _ScenePublicExportTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_density_blit", ctypes.c_uint32),
+        ("pack_hexbin_pitch", ctypes.c_uint32),
+    ]
+
+
+PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
 class TemporalNativeError(ValueError):
@@ -425,6 +698,20 @@ def _ptr_f64(arr: npt.NDArray[np.float64]) -> int:
 
 def _ptr_u8(arr: npt.NDArray[np.uint8]) -> int:
     return arr.ctypes.data
+
+
+def _ptr_u32(arr: npt.NDArray[np.uint32]) -> int:
+    return arr.ctypes.data
+
+
+def _ptr_i32(arr: npt.NDArray[np.int32]) -> int:
+    return arr.ctypes.data
+
+
+class _PolarAbiInput(ctypes.Structure):
+    """Packed extras pointer/len view so Scene encode stays at Koffi's 64-arg ceiling."""
+
+    _fields_ = (("data", ctypes.c_void_p), ("len", ctypes.c_size_t))
 
 
 def _fixed_records(values: np.ndarray) -> tuple[np.ndarray, int]:
@@ -889,6 +1176,1702 @@ def encode_f32(
     if ok != 1:
         raise RuntimeError("xyg native encode_f32 failed (output undefined)")
     return out
+
+
+def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
+    """Precision center for offset-encoded geometry (ABI 208, §4/§16)."""
+    out = ctypes.c_double()
+    ok = _lib.xyg_geometry_offset(
+        int(bool(pin_zero)),
+        float(lo),
+        float(hi),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native geometry_offset failed (output undefined)")
+    return float(out.value)
+
+
+def encoded_column_meta(
+    offset: float, lo: float, hi: float, kind: str | None = None
+) -> tuple[float, float, bool]:
+    """Pack EncodedColumn offset/scale/kind-presence via ``xyg_encoded_column_meta`` (ABI 255).
+
+    Empty native pointers are ``0``. A present empty kind keeps a non-null
+    pointer with ``kind_len == 0``. Hosts copy the original kind value.
+    """
+    out = (ctypes.c_double * 2)()
+    if kind is None:
+        kind_ptr: int | ctypes.Array[ctypes.c_uint8] = 0
+        kind_len = 0
+    else:
+        encoded = str(kind).encode("utf-8")
+        kind_len = len(encoded)
+        kind_ptr = (ctypes.c_uint8 * max(kind_len, 1))(*encoded)
+    code = int(
+        _lib.xyg_encoded_column_meta(
+            float(offset),
+            float(lo),
+            float(hi),
+            kind_ptr,
+            kind_len,
+            out,
+            2,
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid encoded-column-meta request")
+    return float(out[0]), float(out[1]), code == 1
+
+
+def scale_pins_offset(scale: str) -> bool:
+    """Whether an axis scale name pins geometry offset to 0 (ABI 216, §16)."""
+    encoded = str(scale).encode("utf-8")
+    code = int(_lib.xyg_scale_pins_offset(encoded if encoded else 0, len(encoded)))
+    if code < 0:
+        raise ValueError("invalid scale-pins-offset request")
+    return code == 1
+
+
+def scene_dash_admit(
+    text: str | None = None,
+    lengths: npt.ArrayLike | None = None,
+    *,
+    use_lengths: bool = False,
+) -> list[float] | None | bool:
+    """Scene dash admit via ``xyg_scene_dash_admit`` (ABI 218).
+
+    Returns ``None`` for solid/omitted, ``False`` when unusable, or a 2–8
+    length pattern. Empty native pointers are ``0``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    if use_lengths:
+        packed = _as_f64(
+            np.asarray([] if lengths is None else lengths, dtype=np.float64).reshape(-1),
+            "lengths",
+        )
+    else:
+        packed = np.empty(0, dtype=np.float64)
+    out = np.empty(8, dtype=np.float64)
+    out_n = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_dash_admit(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_f64(packed) if len(packed) else 0,
+            len(packed),
+            int(bool(use_lengths)),
+            _ptr_f64(out),
+            8,
+            ctypes.byref(out_n),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-dash-admit request")
+    if code < 0:
+        return False
+    if code == 0:
+        return None
+    count = int(out_n.value)
+    return [float(value) for value in out[:count]]
+
+
+def scene_linecap_admit(text: str | None = None) -> int | None | bool:
+    """Scene linecap admit via ``xyg_scene_linecap_admit`` (ABI 219).
+
+    Returns ``None`` for round/omitted, ``False`` when unusable, ``0`` for
+    butt, or ``2`` for square. Empty native pointers are ``0``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_linecap_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-linecap-admit request")
+    if code < 0:
+        return False
+    if code == 255:
+        return None
+    return int(code)
+
+
+def density_overlay_opacity(authored: float = 0.8) -> float:
+    """Density overlay sample opacity via ``xyg_density_overlay_opacity`` (ABI 220).
+
+    Finite values are capped at ``0.55``. Non-finite authored opacity becomes
+    ``0.55``.
+    """
+    out = ctypes.c_double()
+    ok = _lib.xyg_density_overlay_opacity(float(authored), ctypes.byref(out))
+    if ok != 1:
+        raise ValueError("invalid density-overlay-opacity request")
+    return float(out.value)
+
+
+def scene_marker_path_admit(
+    values: npt.ArrayLike,
+    lengths: npt.ArrayLike,
+) -> bool:
+    """Scene marker-path admit via ``xyg_scene_marker_path_admit`` (ABI 221).
+
+    ``values`` is concatenated x/y pairs; ``lengths`` is the per-contour value
+    count. Empty native pointers are ``0``.
+    """
+    packed = _as_f64(
+        np.asarray(values, dtype=np.float64).reshape(-1),
+        "values",
+    )
+    lens = np.ascontiguousarray(
+        np.asarray(lengths, dtype=np.uint32).reshape(-1),
+        dtype=np.uint32,
+    )
+    code = int(
+        _lib.xyg_scene_marker_path_admit(
+            _ptr_f64(packed) if len(packed) else 0,
+            len(packed),
+            _ptr_u32(lens) if len(lens) else 0,
+            len(lens),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-marker-path-admit request")
+    return code == 1
+
+
+def scene_annotation_style_admit(
+    kind: str,
+    wrapped: bool = False,
+    labelled: bool = False,
+    key: str = "",
+) -> bool:
+    """Scene annotation style-key admit via ``xyg_scene_annotation_style_admit`` (ABI 222).
+
+    Empty native pointers are ``0``. Hosts still skip markup/typography/rotation
+    and raise error text.
+    """
+    kind_b = str(kind).encode("utf-8")
+    key_b = str(key).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_annotation_style_admit(
+            kind_b if kind_b else 0,
+            len(kind_b),
+            1 if wrapped else 0,
+            1 if labelled else 0,
+            key_b if key_b else 0,
+            len(key_b),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-annotation-style-admit request")
+    return code == 1
+
+
+def scene_arrays_equal(left: npt.ArrayLike, right: npt.ArrayLike) -> bool:
+    """Scene f64 arrays-equal via ``xyg_scene_arrays_equal`` (ABI 250).
+
+    Empty native pointers are ``0``. Field picking and null checks stay host.
+    """
+    left_arr = _as_f64(np.asarray(left, dtype=np.float64).reshape(-1), "arrays_equal_left")
+    right_arr = _as_f64(np.asarray(right, dtype=np.float64).reshape(-1), "arrays_equal_right")
+    code = int(
+        _lib.xyg_scene_arrays_equal(
+            _ptr_f64(left_arr) if left_arr.size else 0,
+            int(left_arr.size),
+            _ptr_f64(right_arr) if right_arr.size else 0,
+            int(right_arr.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-arrays-equal request")
+    return code == 1
+
+
+def scene_constant_color_admit(
+    has_channel: bool,
+    constant_ok: bool,
+    scatter_density: bool,
+    packs_paint_plane: bool,
+) -> int:
+    """Scene constant-color admit via ``xyg_scene_constant_color_admit`` (ABI 252).
+
+    Returns ``0`` fail, ``1`` style fallback, or ``2`` channel constant.
+    Ribbon-fail and field picking stay host.
+    """
+    code = int(
+        _lib.xyg_scene_constant_color_admit(
+            1 if has_channel else 0,
+            1 if constant_ok else 0,
+            1 if scatter_density else 0,
+            1 if packs_paint_plane else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-constant-color-admit request")
+    return int(code)
+
+
+def scene_hidden_or_per_item_admit(
+    hidden: bool,
+    has_per_item: bool,
+    density_aggregates: bool,
+) -> bool:
+    """Scene hidden-or-per-item admit via ``xyg_scene_hidden_or_per_item_admit`` (ABI 253).
+
+    Field picking stays host.
+    """
+    code = int(
+        _lib.xyg_scene_hidden_or_per_item_admit(
+            1 if hidden else 0,
+            1 if has_per_item else 0,
+            1 if density_aggregates else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-hidden-or-per-item-admit request")
+    return code == 1
+
+
+def scene_channel_constant_css(
+    mode: str | None = None,
+    has_constant: bool = False,
+    constant: str | None = None,
+) -> str | None:
+    """Scene channel-constant CSS via ``xyg_scene_channel_constant_css`` (ABI 256).
+
+    Returns the constant CSS when ``mode`` is exactly ``constant`` and
+    ``has_constant`` is true. Empty native pointers are ``0``. Hosts still
+    pick ``.mode`` / ``.constant``.
+    """
+    mode_b = b"" if mode is None else str(mode).encode("utf-8")
+    const_b = b"" if constant is None else str(constant).encode("utf-8")
+    out = (ctypes.c_uint8 * len(const_b))()
+    code = int(
+        _lib.xyg_scene_channel_constant_css(
+            mode_b if mode_b else 0,
+            len(mode_b),
+            1 if has_constant else 0,
+            const_b if const_b else 0,
+            len(const_b),
+            out if const_b else 0,
+            len(const_b),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-channel-constant-css request")
+    if code < 0:
+        return None
+    return bytes(out[:code]).decode("utf-8")
+
+
+_SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
+
+
+def scene_ribbon_color2_classify(
+    has_color2: bool,
+    kind_is_ribbon: bool,
+    source_css: str | None,
+    target_css: str | None,
+    source_paint: str,
+    has_fill: bool = False,
+    has_end_pair: bool = False,
+) -> str:
+    """Scene ribbon ``color2`` classify via ``xyg_scene_ribbon_color2_classify`` (ABI 223).
+
+    Empty native pointers are ``0``. Hosts still coerce channels and pack end
+    RGBA8.
+    """
+    source_b = b"" if source_css is None else str(source_css).encode("utf-8")
+    target_b = b"" if target_css is None else str(target_css).encode("utf-8")
+    paint_b = str(source_paint).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_ribbon_color2_classify(
+            1 if has_color2 else 0,
+            1 if kind_is_ribbon else 0,
+            0 if source_css is None else 1,
+            source_b if source_b else 0,
+            len(source_b),
+            0 if target_css is None else 1,
+            target_b if target_b else 0,
+            len(target_b),
+            paint_b if paint_b else 0,
+            len(paint_b),
+            1 if has_fill else 0,
+            1 if has_end_pair else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-ribbon-color2-classify request")
+    if 0 <= code < len(_SCENE_RIBBON_COLOR2_NAMES):
+        return _SCENE_RIBBON_COLOR2_NAMES[code]
+    return "fail"
+
+
+def scene_scatter_paint_channel_admit(text: str | None = None) -> bool:
+    """Scene scatter paint-plane channel admit via ``xyg_scene_scatter_paint_channel_admit`` (ABI 241).
+
+    Empty native pointers are ``0``. Kind, density, and name gathering stay
+    host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_scatter_paint_channel_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-scatter-paint-channel-admit request")
+    return code == 1
+
+
+def scene_tick_label_strategy(text: str | None = None) -> int:
+    """Scene tick-label strategy admit via ``xyg_scene_tick_label_strategy`` (ABI 224).
+
+    Returns ``0`` auto through ``6`` off. Unknown names, including empty text,
+    map to ``0``. Empty native pointers are ``0``. Hosts still pick
+    ``tick_label_strategy`` vs ``collision`` vs camelCase keys.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_tick_label_strategy(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-tick-label-strategy request")
+    return int(code)
+
+
+def scene_tick_anchor(text: str | None = None) -> int | None:
+    """Scene tick-label anchor admit via ``xyg_scene_tick_anchor`` (ABI 225).
+
+    Returns ``0`` start, ``1`` center/middle, ``2`` end, or ``None`` when
+    unknown. Empty native pointers are ``0``. Hosts still pick
+    ``tick_label_anchor`` vs camelCase keys.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_tick_anchor(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-tick-anchor request")
+    if code < 0:
+        return None
+    return int(code)
+
+
+def scene_fill_gradient_admit(
+    space: str,
+    direction: str,
+    t: npt.ArrayLike,
+    css: Sequence[str],
+    mark_color: str,
+) -> list[tuple[int, int, int, int]] | None:
+    """Scene fill-gradient admit via ``xyg_scene_fill_gradient_admit`` (ABI 226).
+
+    Returns per-stop RGBA8 or ``None`` when unusable. Empty native pointers are
+    ``0``. Hosts still coerce fill mappings; CSS parse is ABI 227.
+    """
+    space_b = str(space).encode("utf-8")
+    dir_b = str(direction).encode("utf-8")
+    mark_b = str(mark_color).encode("utf-8")
+    packed_t = _as_f64(np.asarray(t, dtype=np.float64).reshape(-1), "t")
+    encoded = [str(item).encode("utf-8") for item in css]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    css_blob = b"".join(encoded)
+    css_arr = (
+        np.frombuffer(css_blob, dtype=np.uint8).copy() if css_blob else np.empty(0, dtype=np.uint8)
+    )
+    n = len(packed_t)
+    out = np.empty(n * 4, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_fill_gradient_admit(
+            space_b if space_b else 0,
+            len(space_b),
+            dir_b if dir_b else 0,
+            len(dir_b),
+            _ptr_f64(packed_t) if n else 0,
+            n,
+            _ptr_u8(css_arr) if len(css_arr) else 0,
+            len(css_arr),
+            _ptr_u32(lens) if len(lens) else 0,
+            len(lens),
+            mark_b if mark_b else 0,
+            len(mark_b),
+            _ptr_u8(out) if len(out) else 0,
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-fill-gradient-admit request")
+    if code != 1:
+        return None
+    return [
+        (int(out[i * 4]), int(out[i * 4 + 1]), int(out[i * 4 + 2]), int(out[i * 4 + 3]))
+        for i in range(n)
+    ]
+
+
+def scene_finite_all(values: npt.ArrayLike) -> bool:
+    """Scene finite-all admit via ``xyg_scene_finite_all`` (ABI 248).
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "scene_finite_all")
+    code = int(
+        _lib.xyg_scene_finite_all(
+            _ptr_f64(values_arr) if values_arr.size else 0,
+            int(values_arr.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-finite-all request")
+    return code == 1
+
+
+_SCENE_PARSE_LINEAR_GRADIENT_DIRS = ("down", "up", "right", "left")
+
+
+def scene_parse_linear_gradient(css: str, space: str = "mark") -> tuple[int, dict[str, Any] | None]:
+    """Scene ``linear-gradient(`` CSS parse via ``xyg_scene_parse_linear_gradient`` (ABI 227).
+
+    Returns ``(1, spec)`` or ``(code, None)``. Empty native pointers are ``0``.
+    Hosts still coerce fill mappings and raise authoring error text.
+    """
+    css_b = str(css).encode("utf-8")
+    space_b = str(space).encode("utf-8")
+    out_dir = ctypes.c_uint8(0)
+    out_t = np.empty(8, dtype=np.float64)
+    out_css = np.empty(65536, dtype=np.uint8)
+    out_lens = np.empty(8, dtype=np.uint32)
+    out_n = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_parse_linear_gradient(
+            css_b if css_b else 0,
+            len(css_b),
+            space_b if space_b else 0,
+            len(space_b),
+            ctypes.byref(out_dir),
+            _ptr_f64(out_t),
+            len(out_t),
+            _ptr_u8(out_css),
+            len(out_css),
+            _ptr_u32(out_lens),
+            len(out_lens),
+            ctypes.byref(out_n),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-parse-linear-gradient request")
+    if code != 1:
+        return int(code), None
+    n = int(out_n.value)
+    dir_code = int(out_dir.value)
+    if not 0 <= dir_code < len(_SCENE_PARSE_LINEAR_GRADIENT_DIRS) or not 2 <= n <= 8:
+        return 0, None
+    stops: list[list[Any]] = []
+    at = 0
+    for i in range(n):
+        length = int(out_lens[i])
+        color = out_css[at : at + length].tobytes().decode("utf-8")
+        at += length
+        stops.append([float(out_t[i]), color])
+    return 1, {
+        "space": str(space),
+        "dir": _SCENE_PARSE_LINEAR_GRADIENT_DIRS[dir_code],
+        "stops": stops,
+    }
+
+
+def scene_rect_extra_flags(
+    kind: str,
+    polar: bool,
+    gradient_fail: bool,
+    radius: npt.ArrayLike,
+    radius_seq: bool,
+    wedge_gap: float,
+) -> int:
+    """Scene rect extra-flag pack via ``xyg_scene_rect_extra_flags`` (ABI 228).
+
+    Returns XYFS v2 bits. Empty native pointers are ``0``. Hosts still coerce
+    fill mappings, radius lists, and ``wedge_gap``.
+    """
+    kind_b = str(kind).encode("utf-8")
+    packed = _as_f64(np.asarray(radius, dtype=np.float64).reshape(-1), "radius")
+    n = len(packed)
+    code = int(
+        _lib.xyg_scene_rect_extra_flags(
+            kind_b if kind_b else 0,
+            len(kind_b),
+            1 if polar else 0,
+            1 if gradient_fail else 0,
+            _ptr_f64(packed) if n else 0,
+            n,
+            1 if radius_seq else 0,
+            float(wedge_gap),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-rect-extra-flags request")
+    return int(code)
+
+
+def scene_gradient_dir(text: str | None = None) -> int:
+    """Scene fill-gradient direction pack via ``xyg_scene_gradient_dir`` (ABI 229).
+
+    Returns ``0`` down, ``1`` up, ``2`` right, ``3`` left, or ``255`` when
+    unknown. Empty native pointers are ``0``. Hosts still pick ``dir`` vs
+    missing keys. Space ``mark``/``plot`` packing stays host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_gradient_dir(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-gradient-dir request")
+    return int(code)
+
+
+def scene_linear_gradient_prefix(text: str | None = None) -> bool:
+    """Scene CSS ``linear-gradient(`` prefix via ``xyg_scene_linear_gradient_prefix`` (ABI 230).
+
+    Empty native pointers are ``0``. Hosts still treat dict/object fills as
+    authoring. Compile-path flag bits stay extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_linear_gradient_prefix(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-linear-gradient-prefix request")
+    return code == 1
+
+
+def scene_gradient_space(text: str | None = None) -> int:
+    """Scene fill-gradient space pack via ``xyg_scene_gradient_space`` (ABI 231).
+
+    Returns ``0`` mark, ``1`` plot, or ``255`` when unknown. Empty native
+    pointers are ``0``. Hosts still pick ``space`` vs missing keys. XYSS
+    plot-space is ``code == 1``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_gradient_space(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-gradient-space request")
+    return int(code)
+
+
+_SCENE_GRADIENT_SOLID_CSS_CAP = 16
+
+
+def scene_gradient_solid_css(rgba: npt.ArrayLike) -> str | None:
+    """Scene gradient solid CSS via ``xyg_scene_gradient_solid_css`` (ABI 249).
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    packed = np.ascontiguousarray(np.asarray(rgba, dtype=np.uint8).reshape(-1), dtype=np.uint8)
+    out = np.empty(_SCENE_GRADIENT_SOLID_CSS_CAP, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_gradient_solid_css(
+            _ptr_u8(packed) if packed.size else 0,
+            int(packed.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-gradient-solid-css request")
+    if code <= 0:
+        return None
+    return bytes(out[:code]).decode("ascii")
+
+
+def scene_marker_blob_pack(
+    filled: int,
+    values: npt.ArrayLike,
+    contour_lens: npt.ArrayLike,
+) -> bytes | None:
+    """Scene XYTC marker-path blob via ``xyg_scene_marker_blob_pack`` (ABI 261).
+
+    Hosts pass ``filled`` (0/1), flattened contour f64 values, and per-contour
+    lengths. Invalid layout returns ``None``.
+    """
+    if filled not in (0, 1):
+        return None
+    val_arr = np.ascontiguousarray(np.asarray(values, dtype=np.float64))
+    lens = np.ascontiguousarray(np.asarray(contour_lens, dtype=np.uint32))
+    cap = max(8, 8 + int(lens.size) * 4 + int(val_arr.size) * 8)
+    out = np.empty(cap, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_marker_blob_pack(
+            int(filled),
+            _ptr_f64(val_arr) if val_arr.size else 0,
+            int(val_arr.size),
+            _ptr_u32(lens) if lens.size else 0,
+            int(lens.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-marker-blob-pack request")
+    if code <= 0:
+        return None
+    return bytes(out[:code])
+
+
+def scene_xytc_radius_pack(
+    kind: str,
+    radius_seq: int,
+    r0: float,
+    r1: float,
+    wedge_gap_raw: float,
+) -> tuple[int, float, float, float]:
+    """XYTC corner-radius/wedge-gap pack via ``xyg_scene_xytc_radius_pack`` (ABI 262).
+
+    ``radius_seq``: ``0`` or ``1`` scalar ``r0``, ``2`` tip/base pair. Hosts still
+    pick style keys and coerce list vs scalar.
+    """
+    flags = ctypes.c_uint32(0)
+    r_tip = ctypes.c_double(0.0)
+    r_base = ctypes.c_double(0.0)
+    wedge_gap = ctypes.c_double(0.0)
+    encoded = str(kind).encode("utf-8")
+    ok = int(
+        _lib.xyg_scene_xytc_radius_pack(
+            _ptr_u8(np.frombuffer(encoded, dtype=np.uint8)) if encoded else 0,
+            len(encoded),
+            ctypes.c_int32(int(radius_seq)),
+            ctypes.c_double(float(r0)),
+            ctypes.c_double(float(r1)),
+            ctypes.c_double(float(wedge_gap_raw)),
+            ctypes.byref(flags),
+            ctypes.byref(r_tip),
+            ctypes.byref(r_base),
+            ctypes.byref(wedge_gap),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-radius-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-radius-pack request")
+    return int(flags.value), float(r_tip.value), float(r_base.value), float(wedge_gap.value)
+
+
+def scene_xytc_color_channel_pack(present: int, has_constant: int) -> int:
+    """XYTC color_ch flag bits via ``xyg_scene_xytc_color_channel_pack`` (ABI 263).
+
+    Hosts still pick ``color_ch`` object presence and ``constant`` field.
+    Mode/constant UTF-8 stays host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_color_channel_pack(
+            ctypes.c_int32(int(present)),
+            ctypes.c_int32(int(has_constant)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-color-channel-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-color-channel-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_numeric_style_pack(
+    has_size: int,
+    has_size_ch: int,
+    has_size_ch_constant: int,
+    has_stroke_width: int,
+    has_width: int,
+    has_line_width: int,
+    size: float,
+    size_ch_constant: float,
+    stroke_width: float,
+    width: float,
+    line_width: float,
+) -> tuple[int, float, float, float, float, float]:
+    """XYTC numeric style pack via ``xyg_scene_xytc_numeric_style_pack`` (ABI 264).
+
+    Hosts pass key-presence bits and coerced f64s.
+    """
+    flags = ctypes.c_uint32(0)
+    out_size = ctypes.c_double(0.0)
+    size_ch_value = ctypes.c_double(0.0)
+    out_stroke_width = ctypes.c_double(0.0)
+    out_width = ctypes.c_double(0.0)
+    out_line_width = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_numeric_style_pack(
+            ctypes.c_int32(int(has_size)),
+            ctypes.c_int32(int(has_size_ch)),
+            ctypes.c_int32(int(has_size_ch_constant)),
+            ctypes.c_int32(int(has_stroke_width)),
+            ctypes.c_int32(int(has_width)),
+            ctypes.c_int32(int(has_line_width)),
+            ctypes.c_double(float(size)),
+            ctypes.c_double(float(size_ch_constant)),
+            ctypes.c_double(float(stroke_width)),
+            ctypes.c_double(float(width)),
+            ctypes.c_double(float(line_width)),
+            ctypes.byref(flags),
+            ctypes.byref(out_size),
+            ctypes.byref(size_ch_value),
+            ctypes.byref(out_stroke_width),
+            ctypes.byref(out_width),
+            ctypes.byref(out_line_width),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-numeric-style-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-numeric-style-pack request")
+    return (
+        int(flags.value),
+        float(out_size.value),
+        float(size_ch_value.value),
+        float(out_stroke_width.value),
+        float(out_width.value),
+        float(out_line_width.value),
+    )
+
+
+def scene_xytc_hex_pitch_pack(
+    hexbin: int,
+    has_dx: int,
+    has_dy: int,
+    dx: float,
+    dy: float,
+) -> tuple[int, float, float]:
+    """XYTC hex pitch pack via ``xyg_scene_xytc_hex_pitch_pack`` (ABI 266).
+
+    Hosts still pick HEXBIN eligibility and ``hex_dx``/``dx`` key resolution.
+    """
+    flags = ctypes.c_uint32(0)
+    hex_dx = ctypes.c_double(0.0)
+    hex_dy = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_hex_pitch_pack(
+            ctypes.c_int32(int(hexbin)),
+            ctypes.c_int32(int(has_dx)),
+            ctypes.c_int32(int(has_dy)),
+            ctypes.c_double(float(dx)),
+            ctypes.c_double(float(dy)),
+            ctypes.byref(flags),
+            ctypes.byref(hex_dx),
+            ctypes.byref(hex_dy),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-hex-pitch-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-hex-pitch-pack request")
+    return int(flags.value), float(hex_dx.value), float(hex_dy.value)
+
+
+def scene_xytc_opacity_pack(
+    has_opacity_class: int,
+    has_band_class: int,
+    authored_fill: float,
+    authored_stroke: float,
+    authored_line: float,
+) -> tuple[float, float, float]:
+    """XYTC opacity trailer via ``xyg_scene_xytc_opacity_pack`` (ABI 267).
+
+    Hosts still pick kind_class gates and style opacity keys.
+    """
+    fill = ctypes.c_double(0.0)
+    stroke = ctypes.c_double(0.0)
+    line = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_opacity_pack(
+            ctypes.c_int32(int(has_opacity_class)),
+            ctypes.c_int32(int(has_band_class)),
+            ctypes.c_double(float(authored_fill)),
+            ctypes.c_double(float(authored_stroke)),
+            ctypes.c_double(float(authored_line)),
+            ctypes.byref(fill),
+            ctypes.byref(stroke),
+            ctypes.byref(line),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-opacity-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-opacity-pack request")
+    return float(fill.value), float(stroke.value), float(line.value)
+
+
+def scene_xytc_paint_presence_pack(
+    has_fill: int,
+    fill_kind: int,
+    has_stroke: int,
+    has_line_color: int,
+) -> int:
+    """XYTC paint presence flags via ``xyg_scene_xytc_paint_presence_pack`` (ABI 269).
+
+    ``fill_kind``: 0 absent, 1 string CSS, 2 gradient-spec dict, 3 legacy dict.
+    CSS/gradient bytes stay host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_paint_presence_pack(
+            ctypes.c_int32(int(has_fill)),
+            ctypes.c_int32(int(fill_kind)),
+            ctypes.c_int32(int(has_stroke)),
+            ctypes.c_int32(int(has_line_color)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-paint-presence-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-paint-presence-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_symbol_int_pack(symbol_is_int: int) -> int:
+    """XYTC numeric symbol flag via ``xyg_scene_xytc_symbol_int_pack`` (ABI 272).
+
+    String symbol names and ``symbol_int`` wire value stay host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_symbol_int_pack(
+            ctypes.c_int32(int(symbol_is_int)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-symbol-int-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-symbol-int-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_color2_flags_pack(
+    color2_class: int,
+    paint_flags: int,
+    gradient_packed: int,
+) -> int:
+    """XYTC ribbon color2 flags via ``xyg_scene_xytc_color2_flags_pack`` (ABI 271).
+
+    ``color2_class`` uses scene_ribbon_color2_classify codes (0–4). Gradient spec
+    construction stays host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_color2_flags_pack(
+            ctypes.c_int32(int(color2_class)),
+            ctypes.c_uint32(int(paint_flags)),
+            ctypes.c_int32(int(gradient_packed)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-color2-flags-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-color2-flags-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_meta_flags_pack(
+    has_name: int,
+    show_legend: int,
+    kind: str,
+    use_density: int,
+    joined_fill: int,
+    marker_path_present: int,
+    marker_packed: int,
+    glyph_packed: int,
+) -> int:
+    """XYTC trace meta flags via ``xyg_scene_xytc_meta_flags_pack`` (ABI 270).
+
+    Marker/glyph blob packing stays host; this kernel only sets flag bits.
+    """
+    kind_b = kind.encode("utf-8")
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_meta_flags_pack(
+            ctypes.c_int32(int(has_name)),
+            ctypes.c_int32(int(show_legend)),
+            kind_b,
+            len(kind_b),
+            ctypes.c_int32(int(use_density)),
+            ctypes.c_int32(int(joined_fill)),
+            ctypes.c_int32(int(marker_path_present)),
+            ctypes.c_int32(int(marker_packed)),
+            ctypes.c_int32(int(glyph_packed)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-meta-flags-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-meta-flags-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_figure_plan(*, show_legend: bool) -> dict[str, bool]:
+    """Figure-level XYTC pack orchestration via ``xyg_scene_xytc_figure_plan`` (ABI 305)."""
+    out = _SceneXytcFigurePlan()
+    ok = int(_lib.xyg_scene_xytc_figure_plan(1 if show_legend else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xytc_figure_plan arguments")
+    return {"show_legend": bool(out.show_legend)}
+
+
+def _scene_xytc_trace_dispatch_plan_dict(out: _SceneXytcTraceDispatchPlan) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_opacity": bool(out.pack_opacity),
+        "pack_hex_pitch": bool(out.pack_hex_pitch),
+        "pack_stroke_perimeter": bool(out.pack_stroke_perimeter),
+        "pack_color2": bool(out.pack_color2),
+        "pack_radius": bool(out.pack_radius),
+        "marker_path_branch": bool(out.marker_path_branch),
+        "marker_glyph_branch": bool(out.marker_glyph_branch),
+        "meta_use_density": bool(out.meta_use_density),
+        "meta_joined_fill": bool(out.meta_joined_fill),
+    }
+
+
+def scene_xytc_trace_dispatch_plan(
+    *,
+    kind: str,
+    marker_path_present: bool,
+    use_density: bool,
+    joined_fill: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYTC pack dispatch via ``xyg_scene_xytc_trace_dispatch_plan`` (ABI 305)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXytcTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xytc_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if marker_path_present else 0,
+            1 if use_density else 0,
+            1 if joined_fill else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xytc_trace_dispatch_plan arguments")
+    return _scene_xytc_trace_dispatch_plan_dict(out)
+
+
+def scene_xyta_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYTA attach orchestration via ``xyg_scene_xyta_figure_plan`` (ABI 306)."""
+    out = _SceneXytaFigurePlan()
+    ok = int(_lib.xyg_scene_xyta_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xyta_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def _scene_xyta_trace_dispatch_plan_dict(out: _SceneXytaTraceDispatchPlan) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_heatmap": bool(out.pack_heatmap),
+        "pack_hexbin_colormap": bool(out.pack_hexbin_colormap),
+        "pack_hexbin_rgba": bool(out.pack_hexbin_rgba),
+        "pack_ribbon_ends": bool(out.pack_ribbon_ends),
+        "pack_mesh_faces": bool(out.pack_mesh_faces),
+        "pack_scatter_paint": bool(out.pack_scatter_paint),
+        "pack_density": bool(out.pack_density),
+    }
+
+
+def scene_xyta_trace_dispatch_plan(
+    *,
+    kind: str,
+    polar: bool,
+    use_density: bool,
+    hexbin_colormap_plane: bool,
+    hexbin_rgba_plane_ready: bool,
+    ribbon_color2_class: int,
+    mesh_paint_plane: bool,
+    scatter_paint_plane: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYTA attach dispatch via ``xyg_scene_xyta_trace_dispatch_plan`` (ABI 306)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXytaTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xyta_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if polar else 0,
+            1 if use_density else 0,
+            1 if hexbin_colormap_plane else 0,
+            1 if hexbin_rgba_plane_ready else 0,
+            int(ribbon_color2_class),
+            1 if mesh_paint_plane else 0,
+            1 if scatter_paint_plane else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xyta_trace_dispatch_plan arguments")
+    return _scene_xyta_trace_dispatch_plan_dict(out)
+
+
+def scene_figure_support_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYFS support orchestration via ``xyg_scene_figure_support_figure_plan`` (ABI 307)."""
+    out = _SceneFigureSupportFigurePlan()
+    ok = int(_lib.xyg_scene_figure_support_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_figure_support_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def _scene_figure_support_trace_dispatch_plan_dict(
+    out: _SceneFigureSupportTraceDispatchPlan,
+) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "probe_marker_glyph": bool(out.probe_marker_glyph),
+        "probe_marker_path": bool(out.probe_marker_path),
+        "probe_curve_smooth": bool(out.probe_curve_smooth),
+        "probe_rect_extra": bool(out.probe_rect_extra),
+        "probe_hexbin_reduce": bool(out.probe_hexbin_reduce),
+        "probe_heatmap_colormap": bool(out.probe_heatmap_colormap),
+        "probe_non_css_fill": bool(out.probe_non_css_fill),
+    }
+
+
+def scene_figure_support_trace_dispatch_plan(
+    *,
+    kind: str,
+    marker_glyph_present: bool,
+    marker_path_present: bool,
+    curve_present: bool,
+    fill_present: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYFS support dispatch via ``xyg_scene_figure_support_trace_dispatch_plan`` (ABI 307)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneFigureSupportTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_figure_support_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if marker_glyph_present else 0,
+            1 if marker_path_present else 0,
+            1 if curve_present else 0,
+            1 if fill_present else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_figure_support_trace_dispatch_plan arguments")
+    return _scene_figure_support_trace_dispatch_plan_dict(out)
+
+
+def scene_xycl_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYCL attach orchestration via ``xyg_scene_xycl_figure_plan`` (ABI 307)."""
+    out = _SceneXyclFigurePlan()
+    ok = int(_lib.xyg_scene_xycl_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xycl_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def scene_xynm_figure_plan(*, show_legend: bool) -> dict[str, bool]:
+    """Figure-level XYNM attach orchestration via ``xyg_scene_xynm_figure_plan`` (ABI 307)."""
+    out = _SceneXynmFigurePlan()
+    ok = int(_lib.xyg_scene_xynm_figure_plan(1 if show_legend else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xynm_figure_plan arguments")
+    return {"show_legend": bool(out.show_legend)}
+
+
+def scene_xycf_figure_plan(
+    *,
+    show_legend: bool,
+    colorbar_ok: bool,
+    polar: bool,
+) -> dict[str, bool]:
+    """Figure-level XYCF chrome attach orchestration via ``xyg_scene_xycf_figure_plan`` (ABI 308)."""
+    out = _SceneXycfFigurePlan()
+    ok = int(
+        _lib.xyg_scene_xycf_figure_plan(
+            1 if show_legend else 0,
+            1 if colorbar_ok else 0,
+            1 if polar else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xycf_figure_plan arguments")
+    return {
+        "show_legend": bool(out.show_legend),
+        "attach_legend": bool(out.attach_legend),
+        "attach_colorbar": bool(out.attach_colorbar),
+        "polar": bool(out.polar),
+    }
+
+
+def scene_xyaf_annotation_dispatch_plan(
+    *,
+    kind: str,
+    authored_wrap: bool,
+    layout_text: bool,
+) -> dict[str, bool]:
+    """Per-annotation XYAF attach dispatch via ``xyg_scene_xyaf_annotation_dispatch_plan`` (ABI 308)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXyafAnnotationDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xyaf_annotation_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if authored_wrap else 0,
+            1 if layout_text else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xyaf_annotation_dispatch_plan arguments")
+    return {
+        "wrapped": bool(out.wrapped),
+        "pack_rule_dash": bool(out.pack_rule_dash),
+        "pack_rule_linecap": bool(out.pack_rule_linecap),
+        "pack_axis": bool(out.pack_axis),
+        "pack_symbol": bool(out.pack_symbol),
+    }
+
+
+def scene_public_export_figure_plan(
+    *,
+    polar: bool,
+    has_chrome_styles: bool,
+    has_title_options: bool,
+) -> dict[str, bool]:
+    """Figure-level XYEF export orchestration via ``xyg_scene_public_export_figure_plan`` (ABI 308)."""
+    out = _ScenePublicExportFigurePlan()
+    ok = int(
+        _lib.xyg_scene_public_export_figure_plan(
+            1 if polar else 0,
+            1 if has_chrome_styles else 0,
+            1 if has_title_options else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_public_export_figure_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "has_chrome_styles": bool(out.has_chrome_styles),
+        "has_title_options": bool(out.has_title_options),
+    }
+
+
+def scene_public_export_trace_dispatch_plan(
+    *,
+    kind: str,
+    polar: bool,
+    use_density: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYEF export dispatch via ``xyg_scene_public_export_trace_dispatch_plan`` (ABI 308)."""
+    kind_b = kind.encode("utf-8")
+    out = _ScenePublicExportTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_public_export_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if polar else 0,
+            1 if use_density else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_public_export_trace_dispatch_plan arguments")
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_density_blit": bool(out.pack_density_blit),
+        "pack_hexbin_pitch": bool(out.pack_hexbin_pitch),
+    }
+
+
+def scene_polar_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYPL polar attach orchestration via ``xyg_scene_polar_figure_plan`` (ABI 309)."""
+    out = _ScenePolarFigurePlan()
+    ok = int(_lib.xyg_scene_polar_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_polar_figure_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "attach_xypl": bool(out.attach_xypl),
+    }
+
+
+def scene_encode_product_attach_plan(*, polar: bool) -> dict[str, bool | int]:
+    """Encode-product attach orchestration via ``xyg_scene_encode_product_attach_plan`` (ABI 309)."""
+    out = _SceneEncodeProductAttachPlan()
+    ok = int(_lib.xyg_scene_encode_product_attach_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_encode_product_attach_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "attach_xypl": bool(out.attach_xypl),
+        "step_xytc": int(out.step_xytc),
+        "step_xyta": int(out.step_xyta),
+        "step_xynm": int(out.step_xynm),
+        "step_xycl": int(out.step_xycl),
+        "step_xyaf": int(out.step_xyaf),
+        "step_xycf": int(out.step_xycf),
+        "step_xypl": int(out.step_xypl),
+        "step_xyfs": int(out.step_xyfs),
+    }
+
+
+def scene_xytc_dash_pattern_pack(is_array: int) -> int:
+    """XYTC dash-array flag via ``xyg_scene_xytc_dash_pattern_pack`` (ABI 268).
+
+    Hosts still pick dash string vs array and coerce pattern floats.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_dash_pattern_pack(
+            ctypes.c_int32(int(is_array)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-dash-pattern-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-dash-pattern-pack request")
+    return int(flags.value)
+
+
+def scene_xytc_stroke_perimeter_pack(
+    band: int,
+    present: int,
+    perimeter_is_bool: int,
+    perimeter_true: int,
+) -> int:
+    """XYTC stroke-perimeter flags via ``xyg_scene_xytc_stroke_perimeter_pack`` (ABI 265).
+
+    Hosts still pick BAND eligibility, key presence, and bool coercion.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_stroke_perimeter_pack(
+            ctypes.c_int32(int(band)),
+            ctypes.c_int32(int(present)),
+            ctypes.c_int32(int(perimeter_is_bool)),
+            ctypes.c_int32(int(perimeter_true)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-stroke-perimeter-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-stroke-perimeter-pack request")
+    return int(flags.value)
+
+
+def scene_gradient_spec_pack(
+    space: bytes,
+    dir: bytes,
+    stop_t: npt.ArrayLike,
+    css: bytes,
+    css_lens: npt.ArrayLike,
+) -> bytes | None:
+    """Scene fill-gradient spec blob via ``xyg_scene_gradient_spec_pack`` (ABI 260).
+
+    Hosts pass UTF-8 space/dir field bytes, parallel stop positions, and CSS
+    strings. Invalid layout returns ``None``.
+    """
+    t_arr = np.ascontiguousarray(np.asarray(stop_t, dtype=np.float64))
+    lens = np.ascontiguousarray(np.asarray(css_lens, dtype=np.uint32))
+    css_arr = np.frombuffer(css, dtype=np.uint8) if css else np.empty(0, dtype=np.uint8)
+    if t_arr.size != lens.size:
+        return None
+    cap = max(4, 4 + int(t_arr.size) * 10 + int(css_arr.size))
+    out = np.empty(cap, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_gradient_spec_pack(
+            _ptr_u8(np.frombuffer(space, dtype=np.uint8)) if space else 0,
+            len(space),
+            _ptr_u8(np.frombuffer(dir, dtype=np.uint8)) if dir else 0,
+            len(dir),
+            _ptr_f64(t_arr) if t_arr.size else 0,
+            int(t_arr.size),
+            _ptr_u8(css_arr) if css_arr.size else 0,
+            int(css_arr.size),
+            _ptr_u32(lens) if lens.size else 0,
+            int(lens.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-gradient-spec-pack request")
+    if code <= 0:
+        return None
+    return bytes(out[:code])
+
+
+def scene_hexbin_reduce_admit(text: str | None = None) -> bool:
+    """Scene hexbin reduce admit via ``xyg_scene_hexbin_reduce_admit`` (ABI 232).
+
+    Empty native pointers are ``0``. Hosts still check hexbin kind.
+    Compile-path ``HEXBIN_REDUCES`` in ``scene_export.rs`` stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_hexbin_reduce_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-reduce-admit request")
+    return code == 1
+
+
+def scene_curve_classify(text: str | None = None) -> int:
+    """Scene curve-name classify via ``xyg_scene_curve_classify`` (ABI 233).
+
+    Returns ``0`` linear, ``1`` smooth, or ``255`` when unknown. Empty native
+    pointers are ``0``. Hosts still check kind for ``smooth``. Compile-path
+    ``curve_smooth`` in ``scene_trace_compile.rs`` stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_curve_classify(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-curve-classify request")
+    return int(code)
+
+
+def scene_marker_glyph_admit(text: str | None = None) -> bool:
+    """Scene marker-glyph admit via ``xyg_scene_marker_glyph_admit`` (ABI 234).
+
+    Empty native pointers are ``0``. Hosts still coerce non-strings and check
+    scatter kind / combined ``marker_path``. Compile-path ``admit_glyph``
+    stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_marker_glyph_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-marker-glyph-admit request")
+    return code == 1
+
+
+def scene_kind_admit(text: str | None = None) -> bool:
+    """Scene product-kind admit via ``xyg_scene_kind_admit`` (ABI 235).
+
+    Empty native pointers are ``0``. Packing-family bits are ABI 236.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_kind_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-kind-admit request")
+    return code == 1
+
+
+def scene_kind_class(text: str | None = None) -> int:
+    """Scene packing-family bits via ``xyg_scene_kind_class`` (ABI 236).
+
+    Empty native pointers are ``0``. Hosts still pick channels and pack rows.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_kind_class(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-kind-class request")
+    return code
+
+
+def scene_heatmap_colormap_admit(
+    truecolor: int,
+    has_colormap: int,
+    has_rgba_grid: int,
+    has_rgba: int,
+) -> bool:
+    """Scene heatmap colormap eligibility via ``xyg_scene_heatmap_colormap_admit`` (ABI 239).
+
+    Field picking and truthy coercion stay host. Kind checks stay host.
+    """
+    code = int(
+        _lib.xyg_scene_heatmap_colormap_admit(
+            int(truecolor),
+            int(has_colormap),
+            int(has_rgba_grid),
+            int(has_rgba),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-colormap-admit request")
+    return code == 1
+
+
+def _scene_colormap_pack(
+    entrypoint: Any,
+    label: str,
+    mode: int,
+    named: bytes,
+    stop_rgb: bytes,
+    named_bit: int,
+    stops_bit: int,
+) -> tuple[int, bytes, bytes]:
+    flags = ctypes.c_uint32(0)
+    cmap_in = np.frombuffer(named, dtype=np.uint8) if named else np.empty(0, dtype=np.uint8)
+    stops_in = np.frombuffer(stop_rgb, dtype=np.uint8) if stop_rgb else np.empty(0, dtype=np.uint8)
+    cmap_out = np.empty(cmap_in.size, dtype=np.uint8)
+    stops_out = np.empty(stops_in.size, dtype=np.uint8)
+    ok = int(
+        entrypoint(
+            int(mode),
+            _ptr_u8(cmap_in) if cmap_in.size else 0,
+            int(cmap_in.size),
+            _ptr_u8(stops_in) if stops_in.size else 0,
+            int(stops_in.size),
+            ctypes.byref(flags),
+            _ptr_u8(cmap_out) if cmap_out.size else 0,
+            int(cmap_out.size),
+            _ptr_u8(stops_out) if stops_out.size else 0,
+            int(stops_out.size),
+        )
+    )
+    if ok == 0:
+        raise ValueError(f"invalid {label} request")
+    if ok < 0:
+        raise MemoryError(f"{label} output buffer too small")
+    flag_bits = int(flags.value)
+    if flag_bits & named_bit:
+        return flag_bits, bytes(cmap_out), b""
+    if flag_bits & stops_bit:
+        if stops_in.size >= 3 and stops_in.size % 3 == 0:
+            return flag_bits, b"", bytes(stops_out)
+        return flag_bits, b"", b""
+    return flag_bits, b"", b""
+
+
+def scene_xyta_colormap_pack(
+    mode: int,
+    named: bytes,
+    stop_rgb: bytes,
+) -> tuple[int, bytes, bytes]:
+    """Scene XYTA colormap pack via ``xyg_scene_xyta_colormap_pack`` (ABI 258).
+
+    ``mode``: ``0`` absent, ``1`` named UTF-8, ``2`` flat u8 RGB triples.
+    """
+    return _scene_colormap_pack(
+        _lib.xyg_scene_xyta_colormap_pack,
+        "scene-xyta-colormap-pack",
+        mode,
+        named,
+        stop_rgb,
+        1 << 6,
+        1 << 7,
+    )
+
+
+def scene_xyhf_colormap_pack(
+    mode: int,
+    named: bytes,
+    stop_rgb: bytes,
+) -> tuple[int, bytes, bytes]:
+    """Scene XYHF colormap pack via ``xyg_scene_xyhf_colormap_pack`` (ABI 259).
+
+    ``mode``: ``0`` absent, ``1`` named UTF-8, ``2`` flat u8 RGB triples.
+    """
+    return _scene_colormap_pack(
+        _lib.xyg_scene_xyhf_colormap_pack,
+        "scene-xyhf-colormap-pack",
+        mode,
+        named,
+        stop_rgb,
+        1 << 5,
+        1 << 6,
+    )
+
+
+def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bool:
+    """Scene heatmap cell-extent admit via ``xyg_scene_heatmap_extent_admit`` (ABI 238).
+
+    Length==2 and field picking stay host. Compile-path
+    ``heatmap_extent_columns`` stays extra.
+    """
+    code = int(_lib.xyg_scene_heatmap_extent_admit(float(x0), float(x1), float(y0), float(y1)))
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-extent-admit request")
+    return code == 1
+
+
+def scene_heatmap_shape_admit(rows: float, cols: float) -> bool:
+    """Scene heatmap lattice-shape admit via ``xyg_scene_heatmap_shape_admit`` (ABI 240).
+
+    Length==2 stays host. XYTA integer coerce uses the same kernel.
+    """
+    code = int(_lib.xyg_scene_heatmap_shape_admit(float(rows), float(cols)))
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-shape-admit request")
+    return code == 1
+
+
+def scene_hexbin_colormap_plane_admit(text: str | None = None, has_values: int = 0) -> bool:
+    """Scene hexbin colormap-plane admit via ``xyg_scene_hexbin_colormap_plane_admit`` (ABI 242).
+
+    Empty native pointers are ``0``. Kind checks and field picking stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_hexbin_colormap_plane_admit(
+            encoded if encoded else 0, len(encoded), int(has_values)
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-colormap-plane-admit request")
+    return code == 1
+
+
+def scene_hexbin_rgba_plane_admit(text: str | None = None) -> bool:
+    """Scene hexbin RGBA-plane admit via ``xyg_scene_hexbin_rgba_plane_admit`` (ABI 243).
+
+    Empty native pointers are ``0``. Kind checks, field picking, and RGBA8
+    packing stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_hexbin_rgba_plane_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-rgba-plane-admit request")
+    return code == 1
+
+
+def scene_mesh_paint_plane_admit(
+    text: str | None = None, joined_fill: int = 0, has_per_item: int = 0
+) -> bool:
+    """Scene mesh paint-plane admit via ``xyg_scene_mesh_paint_plane_admit`` (ABI 244).
+
+    Empty native pointers are ``0``. ``joined_fill`` field picking and
+    ``has_per_item`` gathering stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_mesh_paint_plane_admit(
+            encoded if encoded else 0,
+            len(encoded),
+            int(joined_fill),
+            int(has_per_item),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-mesh-paint-plane-admit request")
+    return code == 1
+
+
+def scene_item_apply_opacity(
+    packed: bytes,
+    n: int,
+    artist: npt.ArrayLike | None = None,
+    opacity: npt.ArrayLike | None = None,
+) -> bytes | None:
+    """Scene per-item RGBA8 artist-alpha then opacity via ABI 245.
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return None
+    src = np.frombuffer(packed, dtype=np.uint8)
+    need = n_i * 4
+    out = np.empty(need, dtype=np.uint8)
+    artist_arr: npt.NDArray[np.float64] | None = None
+    if artist is not None:
+        artist_arr = _as_f64(np.asarray(artist, dtype=np.float64).reshape(-1), "artist")
+    opacity_arr: npt.NDArray[np.float64] | None = None
+    if opacity is not None:
+        opacity_arr = _as_f64(np.asarray(opacity, dtype=np.float64).reshape(-1), "opacity")
+    code = int(
+        _lib.xyg_scene_item_apply_opacity(
+            _ptr_u8(src) if src.size else 0,
+            int(src.size),
+            n_i,
+            _ptr_f64(artist_arr) if artist_arr is not None and artist_arr.size else 0,
+            0 if artist_arr is None else int(artist_arr.size),
+            0 if artist_arr is None else 1,
+            _ptr_f64(opacity_arr) if opacity_arr is not None and opacity_arr.size else 0,
+            0 if opacity_arr is None else int(opacity_arr.size),
+            0 if opacity_arr is None else 1,
+            _ptr_u8(out) if need else 0,
+            need,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-apply-opacity request")
+    if code != 1:
+        return None
+    return bytes(out)
+
+
+def scene_item_widths_admit(values: npt.ArrayLike | None, n: int, scalar: float) -> bool:
+    """Scene per-item stroke-width admit via ``xyg_scene_item_widths_admit`` (ABI 246).
+
+    Empty native pointers are ``0``. Field picking and f64 packing stay host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return False
+    values_arr: npt.NDArray[np.float64] | None = None
+    has_values = 0
+    if values is not None:
+        values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "item_widths")
+        has_values = 1
+    code = int(
+        _lib.xyg_scene_item_widths_admit(
+            _ptr_f64(values_arr) if values_arr is not None and values_arr.size else 0,
+            0 if values_arr is None else int(values_arr.size),
+            has_values,
+            n_i,
+            float(scalar),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-widths-admit request")
+    return code == 1
+
+
+def scene_item_fill_t(
+    values: npt.ArrayLike, n: int, domain: tuple[float, float] | None = None
+) -> npt.NDArray[np.float64] | None:
+    """Scene continuous per-item fill unit-t via ABI 247.
+
+    Empty native pointers are ``0``. Field picking and colormap lookup stay host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return None
+    values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "item_fill_t")
+    out = np.empty(n_i, dtype=np.float64)
+    has_domain = 0
+    lo = 0.0
+    hi = 0.0
+    if domain is not None:
+        has_domain = 1
+        lo = float(domain[0])
+        hi = float(domain[1])
+    code = int(
+        _lib.xyg_scene_item_fill_t(
+            _ptr_f64(values_arr) if values_arr.size else 0,
+            int(values_arr.size),
+            n_i,
+            lo,
+            hi,
+            has_domain,
+            _ptr_f64(out) if n_i else 0,
+            n_i,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-fill-t request")
+    if code != 1:
+        return None
+    return out
+
+
+def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
+    """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
+
+    Field picking stays host. Compile-path ``hex_pitch`` stays extra.
+    """
+    code = int(_lib.xyg_scene_hexbin_pitch_admit(float(dx), float(dy)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-pitch-admit request")
+    return code == 1
+
+
+def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
+    """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
+    out = ctypes.c_double()
+    ok = _lib.xyg_f32_safe_scale(
+        float(offset),
+        float(lo),
+        float(hi),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native f32_safe_scale failed (output undefined)")
+    return float(out.value)
 
 
 def stacked_bounds(
@@ -1769,6 +3752,1816 @@ def scene_support_reason(features: int, *, request_version: int = 1) -> str:
     return output.raw.decode("utf-8")
 
 
+def scene_public_export_reason(payload: bytes) -> str:
+    """Return Rust's public-export diagnostic for a packed XYEP envelope."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("scene public export envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    required = int(_lib.xyg_scene_public_export_reason(pointer, len(array), None, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("invalid scene public export support envelope")
+    if required == 0:
+        return ""
+    output = ctypes.create_string_buffer(required)
+    written = int(_lib.xyg_scene_public_export_reason(pointer, len(array), output, required))
+    if written != required:
+        raise RuntimeError("native Scene public export predicate returned an inconsistent length")
+    return output.raw.decode("utf-8")
+
+
+def scene_pack_public_export(facts: bytes) -> bytes:
+    """Pack XYEF v1 public-export facts into the XYEP v1 envelope (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(256, len(payload) + 64), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_public_export(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene public export facts version")
+    if code < 0:
+        raise ValueError("invalid scene public export packing")
+    return bytes(out[:code])
+
+
+def scene_pack_figure_chrome(facts: bytes) -> bytes:
+    """Pack XYCF v1 chrome facts into the XYCC v1 encode-ready bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(65536, len(payload) + 4096), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_figure_chrome(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene chrome facts version")
+    if code == -5:
+        raise ValueError("invalid canonical scene plot layout")
+    if code == -7:
+        raise ValueError(
+            "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+        )
+    if code == -8:
+        raise ValueError("Scene v12 primary legends are static; toggle and highlight must be false")
+    if code == -9:
+        raise ValueError("Scene v12 does not support legend location")
+    if code == -10:
+        raise ValueError("legend font sizes must be finite and in [1, 1000]")
+    if code == -11:
+        raise ValueError(
+            "Scene v12 legends support only background, color, font_size, and title_font_size"
+        )
+    if code == -12:
+        raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+    if code == -13:
+        raise ValueError("Scene v19 colorbars require a two-value domain and 2-16 literal stops")
+    if code == -14:
+        raise ValueError("Scene v19 colorbars support only right or bottom placement")
+    if code == -15:
+        raise ValueError("scene axis tick lists are limited to 200 values")
+    if code < 0:
+        raise ValueError("invalid scene chrome packing")
+    return bytes(out[:code])
+
+
+def scene_pack_figure_chrome_from_sidecars(facts: bytes, xysd: bytes) -> bytes:
+    """Pack XYCF v1 plus XYSD v1 into the XYCC v1 encode-ready bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    sidecar_payload = xysd if isinstance(xysd, (bytes, bytearray, memoryview)) else bytes(xysd)
+    capacity = max(65536, len(payload) + len(sidecar_payload) + 4096)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    source_xysd = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_figure_chrome_from_sidecars(
+                _ptr_u8(source) if source.size else 0,
+                int(source.size),
+                _ptr_u8(source_xysd) if source_xysd.size else 0,
+                int(source_xysd.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise ValueError("invalid scene chrome packing")
+
+
+class SceneTraceCompileError(ValueError):
+    """Native XYTC compile failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene trace compile facts version",
+            -5: "trace opacity must be finite and in [0, 1]",
+            -12: "trace opacity channels must be finite and in [0, 1]",
+        }
+        super().__init__(messages.get(self.code, "invalid scene trace compile packing"))
+
+
+def scene_pack_trace_compile(facts: bytes) -> bytes:
+    """Pack XYTC v1 trace-compile facts into the XYTO v1 bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(65536, len(payload) + 4096), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_trace_compile(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code < 0:
+        index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+        raise SceneTraceCompileError(code, index)
+    return bytes(out[:code])
+
+
+class SceneTraceAttachError(ValueError):
+    """Native XYTA attach failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene trace attach facts version",
+            -7: "heatmap Scene v12 compilation requires a scalar grid",
+            -13: "Scene density columns must have equal length",
+            -14: "Scene density mean-color source is invalid",
+        }
+        super().__init__(messages.get(self.code, "invalid scene trace attach packing"))
+
+
+def scene_pack_trace_attach(compiled: bytes, attach: bytes) -> bytes:
+    """Pack XYTO compile output plus XYTA v1 attach facts into XYTT (M2 #271)."""
+    compiled_payload = (
+        compiled if isinstance(compiled, (bytes, bytearray, memoryview)) else bytes(compiled)
+    )
+    attach_payload = attach if isinstance(attach, (bytes, bytearray, memoryview)) else bytes(attach)
+    density_plane = 32 + 512 * 384 * 5
+    capacity = max(
+        65536,
+        len(compiled_payload) + len(attach_payload) + density_plane + 4096,
+    )
+    source_compiled = (
+        np.frombuffer(compiled_payload, dtype=np.uint8)
+        if compiled_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_attach = (
+        np.frombuffer(attach_payload, dtype=np.uint8)
+        if attach_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_trace_attach(
+                _ptr_u8(source_compiled) if source_compiled.size else 0,
+                int(source_compiled.size),
+                _ptr_u8(source_attach) if source_attach.size else 0,
+                int(source_attach.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneTraceAttachError(code, index)
+        return bytes(out[:code])
+    raise SceneTraceAttachError(-4, 0)
+
+
+class SceneTraceRowsError(ValueError):
+    """Native XYCL row-pack failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene trace column facts version",
+            -5: "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
+            -6: "Scene v12 does not support product kind",
+            -7: "invalid scene trace column packing",
+        }
+        super().__init__(messages.get(self.code, "invalid scene trace column packing"))
+
+
+def scene_pack_trace_row_bytes(attached: bytes, columns: bytes) -> bytes:
+    """Pack XYTT attach output plus XYCL v1 columns into 56-byte Scene rows."""
+    attached_payload = (
+        attached if isinstance(attached, (bytes, bytearray, memoryview)) else bytes(attached)
+    )
+    columns_payload = (
+        columns if isinstance(columns, (bytes, bytearray, memoryview)) else bytes(columns)
+    )
+    capacity = max(65536, (len(columns_payload) // 8) * 2 * 56 + 4096)
+    source_attached = (
+        np.frombuffer(attached_payload, dtype=np.uint8)
+        if attached_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_columns = (
+        np.frombuffer(columns_payload, dtype=np.uint8)
+        if columns_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_trace_rows(
+                _ptr_u8(source_attached) if source_attached.size else 0,
+                int(source_attached.size),
+                _ptr_u8(source_columns) if source_columns.size else 0,
+                int(source_columns.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneTraceRowsError(code, index)
+        return bytes(out[: code * 56])
+    raise SceneTraceRowsError(-4, 0)
+
+
+def scene_pack_trace_rows(
+    attached: bytes,
+    columns: bytes,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack XYTT attach output plus XYCL v1 columns into Scene rows (M2 #271)."""
+    payload = scene_pack_trace_row_bytes(attached, columns)
+    n_rows = len(payload) // 56
+    array = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    return _decode_packed_scene_rows(array, n_rows)
+
+
+class SceneTraceSidecarsError(ValueError):
+    """Native XYSD sidecar-pack failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene sidecar facts version",
+            -5: "invalid scene sidecar packing",
+            -6: "invalid scene sidecar packing",
+        }
+        super().__init__(messages.get(self.code, "invalid scene sidecar packing"))
+
+
+def scene_pack_trace_sidecars(attached: bytes, names: bytes) -> bytes:
+    """Pack XYTT attach output plus XYNM v1 names into XYSD sidecars (M2 #271)."""
+    attached_payload = (
+        attached if isinstance(attached, (bytes, bytearray, memoryview)) else bytes(attached)
+    )
+    names_payload = names if isinstance(names, (bytes, bytearray, memoryview)) else bytes(names)
+    capacity = max(65536, len(attached_payload) + len(names_payload) + 4096)
+    source_attached = (
+        np.frombuffer(attached_payload, dtype=np.uint8)
+        if attached_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_names = (
+        np.frombuffer(names_payload, dtype=np.uint8)
+        if names_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_trace_sidecars(
+                _ptr_u8(source_attached) if source_attached.size else 0,
+                int(source_attached.size),
+                _ptr_u8(source_names) if source_names.size else 0,
+                int(source_names.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneTraceSidecarsError(code, index)
+        return bytes(out[:code])
+    raise SceneTraceSidecarsError(-4, 0)
+
+
+class SceneStyleSidecarsError(ValueError):
+    """Native XYSS style-sidecar pack failure carrying the ABI error code and index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene style sidecar facts version",
+        }
+        super().__init__(messages.get(self.code, "invalid scene style sidecar packing"))
+
+
+def scene_pack_style_sidecars(sidecars: bytes, annotations: bytes) -> bytes:
+    """Pack XYSD plus optional XYAO into XYSS v1 (M2 #271)."""
+    sidecar_payload = (
+        sidecars if isinstance(sidecars, (bytes, bytearray, memoryview)) else bytes(sidecars)
+    )
+    annotation_payload = (
+        annotations
+        if isinstance(annotations, (bytes, bytearray, memoryview))
+        else bytes(annotations)
+    )
+    capacity = max(65536, len(sidecar_payload) + len(annotation_payload) + 4096)
+    source_sidecars = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_annotations = (
+        np.frombuffer(annotation_payload, dtype=np.uint8)
+        if annotation_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_style_sidecars(
+                _ptr_u8(source_sidecars) if source_sidecars.size else 0,
+                int(source_sidecars.size),
+                _ptr_u8(source_annotations) if source_annotations.size else 0,
+                int(source_annotations.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneStyleSidecarsError(code, index)
+        return bytes(out[:code])
+    raise SceneStyleSidecarsError(-4, 0)
+
+
+class SceneAnnotationSpliceError(ValueError):
+    """Native XYAS annotation-splice failure carrying the ABI error code and index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene annotation splice version",
+        }
+        super().__init__(messages.get(self.code, "invalid scene annotation splice packing"))
+
+
+def scene_splice_annotations(rows: bytes, sidecars: bytes, annotations: bytes) -> bytes:
+    """Pack product rows plus XYSD plus optional XYAO into XYAS v1 (M2 #271)."""
+    row_payload = rows if isinstance(rows, (bytes, bytearray, memoryview)) else bytes(rows)
+    sidecar_payload = (
+        sidecars if isinstance(sidecars, (bytes, bytearray, memoryview)) else bytes(sidecars)
+    )
+    annotation_payload = (
+        annotations
+        if isinstance(annotations, (bytes, bytearray, memoryview))
+        else bytes(annotations)
+    )
+    capacity = max(65536, len(row_payload) + len(sidecar_payload) + len(annotation_payload) + 4096)
+    source_rows = (
+        np.frombuffer(row_payload, dtype=np.uint8) if row_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_sidecars = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_annotations = (
+        np.frombuffer(annotation_payload, dtype=np.uint8)
+        if annotation_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_splice_annotations(
+                _ptr_u8(source_rows) if source_rows.size else 0,
+                int(source_rows.size),
+                _ptr_u8(source_sidecars) if source_sidecars.size else 0,
+                int(source_sidecars.size),
+                _ptr_u8(source_annotations) if source_annotations.size else 0,
+                int(source_annotations.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneAnnotationSpliceError(code, index)
+        return bytes(out[:code])
+    raise SceneAnnotationSpliceError(-4, 0)
+
+
+class SceneEncodeAssembledError(ValueError):
+    """Native assembled-encode failure carrying the ABI error code and index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene encode assembled version",
+        }
+        super().__init__(messages.get(self.code, "invalid canonical scene batch"))
+
+
+def scene_encode_assembled(
+    xyas: bytes,
+    chrome: bytes,
+    extras: bytes,
+    *,
+    viewport: tuple[float, float],
+    x_axis: tuple[int, int, float, float, float, bool],
+    y_axis: tuple[int, int, float, float, float, bool],
+) -> bytes:
+    """Encode packed XYAS plus XYCC plus extras into a Scene v31 batch (M2 #271)."""
+    xyas_payload = xyas if isinstance(xyas, (bytes, bytearray, memoryview)) else bytes(xyas)
+    chrome_payload = chrome if isinstance(chrome, (bytes, bytearray, memoryview)) else bytes(chrome)
+    extras_payload = extras if isinstance(extras, (bytes, bytearray, memoryview)) else bytes(extras)
+    if len(viewport) != 2:
+        raise ValueError("viewport must contain two values")
+
+    def axis_args(
+        axis: tuple[int, int, float, float, float, bool], name: str
+    ) -> tuple[int, int, float, float, float, int]:
+        if len(axis) != 6:
+            raise ValueError(f"{name} must contain six values")
+        axis_id, kind, lo, hi, constant, mask = axis
+        if isinstance(axis_id, (bool, np.bool_)) or not isinstance(axis_id, (int, np.integer)):
+            raise ValueError(f"{name} id must be an unsigned 64-bit integer")
+        converted = int(axis_id)
+        if converted < 0:
+            raise ValueError(f"{name} id must be an unsigned 64-bit integer")
+        return (
+            converted,
+            int(kind),
+            float(lo),
+            float(hi),
+            float(constant),
+            1 if mask else 0,
+        )
+
+    x_args = axis_args(x_axis, "scene x_axis")
+    y_args = axis_args(y_axis, "scene y_axis")
+    capacity = max(65536, len(xyas_payload) + len(chrome_payload) + len(extras_payload) + 4096)
+    source_xyas = (
+        np.frombuffer(xyas_payload, dtype=np.uint8) if xyas_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_extras = (
+        np.frombuffer(extras_payload, dtype=np.uint8)
+        if extras_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_assembled(
+                _ptr_u8(source_xyas) if source_xyas.size else 0,
+                int(source_xyas.size),
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_extras) if source_extras.size else 0,
+                int(source_extras.size),
+                float(viewport[0]),
+                float(viewport[1]),
+                *x_args,
+                *y_args,
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneEncodeAssembledError(code, index)
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
+def scene_encode_assembled_from_sidecars(
+    *,
+    xyas: bytes,
+    chrome_facts: bytes,
+    sidecars: bytes | None = None,
+    polar: bytes | None = None,
+    extras_facts: bytes | None = None,
+) -> bytes:
+    """Encode XYAS from XYCF plus XYSD plus polar plus XYSS (M2 #271)."""
+    xyas_payload = xyas if isinstance(xyas, (bytes, bytearray, memoryview)) else bytes(xyas)
+    chrome_payload = (
+        chrome_facts
+        if isinstance(chrome_facts, (bytes, bytearray, memoryview))
+        else bytes(chrome_facts)
+    )
+    sidecar_payload = (
+        b""
+        if sidecars is None
+        else (sidecars if isinstance(sidecars, (bytes, bytearray, memoryview)) else bytes(sidecars))
+    )
+    polar_payload = (
+        b""
+        if polar is None
+        else (polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar))
+    )
+    extras_payload = (
+        b""
+        if extras_facts is None
+        else (
+            extras_facts
+            if isinstance(extras_facts, (bytes, bytearray, memoryview))
+            else bytes(extras_facts)
+        )
+    )
+    capacity = max(
+        65536,
+        len(xyas_payload)
+        + len(chrome_payload)
+        + len(sidecar_payload)
+        + len(polar_payload)
+        + len(extras_payload)
+        + 4096,
+    )
+    source_xyas = (
+        np.frombuffer(xyas_payload, dtype=np.uint8) if xyas_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_xysd = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_polar = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_extras = (
+        np.frombuffer(extras_payload, dtype=np.uint8)
+        if extras_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_assembled_from_sidecars(
+                _ptr_u8(source_xyas) if source_xyas.size else 0,
+                int(source_xyas.size),
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_xysd) if source_xysd.size else 0,
+                int(source_xysd.size),
+                _ptr_u8(source_polar) if source_polar.size else 0,
+                int(source_polar.size),
+                _ptr_u8(source_extras) if source_extras.size else 0,
+                int(source_extras.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code == -16:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneEncodeAssembledError(code, index)
+        if code == -20:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -21:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code in {-17, -18, -19}:
+            raise ValueError("invalid scene extras packing")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
+class SceneAnnotationFactsError(ValueError):
+    """Native XYAF annotation-fact failure from product encode."""
+
+
+class SceneFigureSupportError(ValueError):
+    """Figure-compile support rejection from product encode (ABI 165)."""
+
+
+_PRODUCT_STAGE_COMPILE = 100
+_PRODUCT_STAGE_ATTACH = 200
+_PRODUCT_STAGE_SIDECARS = 300
+_PRODUCT_STAGE_ROWS = 400
+_PRODUCT_STAGE_ANNOTATION = 500
+_PRODUCT_STAGE_STYLE = 600
+_PRODUCT_STAGE_SPLICE = 700
+
+
+def _product_stage(code: int) -> tuple[int, int] | None:
+    if int(code) >= 0:
+        return None
+    magnitude = abs(int(code))
+    if magnitude < 100:
+        return None
+    return magnitude // 100, -(magnitude % 100)
+
+
+def scene_encode_product(
+    *,
+    compile_facts: bytes,
+    attach_facts: bytes,
+    names: bytes,
+    columns: bytes,
+    annotation_facts: bytes | None = None,
+    style_ref_base: int,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+    chrome_facts: bytes,
+    polar: bytes | None = None,
+    figure_support: bytes | None = None,
+) -> bytes:
+    """Encode a product Scene from packed authored blobs (M2 #271)."""
+    compile_payload = (
+        compile_facts
+        if isinstance(compile_facts, (bytes, bytearray, memoryview))
+        else bytes(compile_facts)
+    )
+    attach_payload = (
+        attach_facts
+        if isinstance(attach_facts, (bytes, bytearray, memoryview))
+        else bytes(attach_facts)
+    )
+    names_payload = names if isinstance(names, (bytes, bytearray, memoryview)) else bytes(names)
+    columns_payload = (
+        columns if isinstance(columns, (bytes, bytearray, memoryview)) else bytes(columns)
+    )
+    annotation_payload = (
+        b""
+        if annotation_facts is None
+        else (
+            annotation_facts
+            if isinstance(annotation_facts, (bytes, bytearray, memoryview))
+            else bytes(annotation_facts)
+        )
+    )
+    chrome_payload = (
+        chrome_facts
+        if isinstance(chrome_facts, (bytes, bytearray, memoryview))
+        else bytes(chrome_facts)
+    )
+    polar_payload = (
+        b""
+        if polar is None
+        else (polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar))
+    )
+    support_payload = (
+        b""
+        if figure_support is None
+        else (
+            figure_support
+            if isinstance(figure_support, (bytes, bytearray, memoryview))
+            else bytes(figure_support)
+        )
+    )
+    x0, x1 = (float(value) for value in x_domain)
+    y0, y1 = (float(value) for value in y_domain)
+    capacity = max(
+        65536,
+        len(compile_payload)
+        + len(attach_payload)
+        + len(names_payload)
+        + len(columns_payload)
+        + len(annotation_payload)
+        + len(chrome_payload)
+        + len(polar_payload)
+        + len(support_payload)
+        + 32
+        + 512 * 384 * 5
+        + 4096,
+    )
+    source_compile = (
+        np.frombuffer(compile_payload, dtype=np.uint8)
+        if compile_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_attach = (
+        np.frombuffer(attach_payload, dtype=np.uint8)
+        if attach_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_names = (
+        np.frombuffer(names_payload, dtype=np.uint8)
+        if names_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_columns = (
+        np.frombuffer(columns_payload, dtype=np.uint8)
+        if columns_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_annotations = (
+        np.frombuffer(annotation_payload, dtype=np.uint8)
+        if annotation_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_polar = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_support = (
+        np.frombuffer(support_payload, dtype=np.uint8)
+        if support_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_product(
+                _ptr_u8(source_compile) if source_compile.size else 0,
+                int(source_compile.size),
+                _ptr_u8(source_attach) if source_attach.size else 0,
+                int(source_attach.size),
+                _ptr_u8(source_names) if source_names.size else 0,
+                int(source_names.size),
+                _ptr_u8(source_columns) if source_columns.size else 0,
+                int(source_columns.size),
+                _ptr_u8(source_annotations) if source_annotations.size else 0,
+                int(source_annotations.size),
+                int(style_ref_base),
+                x0,
+                x1,
+                y0,
+                y1,
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_polar) if source_polar.size else 0,
+                int(source_polar.size),
+                _ptr_u8(source_support) if source_support.size else 0,
+                int(source_support.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -801:
+            n = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            reason = bytes(out[4 : 4 + n]).decode("utf-8")
+            raise SceneFigureSupportError(reason)
+        if code == -802:
+            raise ValueError("invalid scene figure support envelope")
+        index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+        staged = _product_stage(code)
+        if staged is not None:
+            stage, original = staged
+            if stage == _PRODUCT_STAGE_COMPILE // 100:
+                raise SceneTraceCompileError(original, index)
+            if stage == _PRODUCT_STAGE_ATTACH // 100:
+                raise SceneTraceAttachError(original, index)
+            if stage == _PRODUCT_STAGE_SIDECARS // 100:
+                raise SceneTraceSidecarsError(original, index)
+            if stage == _PRODUCT_STAGE_ROWS // 100:
+                raise SceneTraceRowsError(original, index)
+            if stage == _PRODUCT_STAGE_ANNOTATION // 100:
+                messages = {
+                    -5: "Scene annotation geometry must be finite",
+                    -6: "Scene annotations require nonempty NUL-free text",
+                    -7: "Scene v23 label border requires label_background",
+                    -3: "Scene annotations are limited to 128 entries",
+                }
+                raise SceneAnnotationFactsError(
+                    messages.get(original, "invalid scene annotation packing")
+                )
+            if stage == _PRODUCT_STAGE_STYLE // 100:
+                raise SceneStyleSidecarsError(original, index)
+            if stage == _PRODUCT_STAGE_SPLICE // 100:
+                raise SceneAnnotationSpliceError(original, index)
+            raise SceneEncodeAssembledError(code, index)
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code == -16:
+            raise SceneEncodeAssembledError(code, index)
+        if code == -20:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -21:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code in {-17, -18, -19}:
+            raise ValueError("invalid scene extras packing")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
+def scene_figure_support_reason(payload: bytes) -> str:
+    """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
+
+    Hosts pack observations, axis ids/keys, and v2 per-trace allowlist flags;
+    Rust owns the diagnostic wording and check order.
+    """
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("scene figure support envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    required = int(_lib.xyg_scene_figure_support_reason(pointer, len(array), None, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("invalid scene figure support envelope")
+    if required == 0:
+        return ""
+    output = ctypes.create_string_buffer(required)
+    written = int(_lib.xyg_scene_figure_support_reason(pointer, len(array), output, required))
+    if written != required:
+        raise RuntimeError("native Scene figure support predicate returned an inconsistent length")
+    return output.raw.decode("utf-8")
+
+
+def figure_autorange(payload: bytes) -> tuple[float, float]:
+    """Return Rust's product axis range for a packed XYAR envelope."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("figure autorange envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_figure_autorange(pointer, len(array), ctypes.byref(out_lo), ctypes.byref(out_hi))
+    )
+    if code == 0:
+        return (float(out_lo.value), float(out_hi.value))
+    if code == -4:
+        raise ValueError("log axis requires at least one positive value")
+    raise ValueError("invalid figure autorange envelope")
+
+
+def auto_domain(bounds: tuple[float, float] | None) -> tuple[float, float]:
+    """Expand a possibly-degenerate scalar domain in Rust."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    if bounds is None:
+        code = int(_lib.xyg_auto_domain(0, 0.0, 0.0, ctypes.byref(out_lo), ctypes.byref(out_hi)))
+    else:
+        lo, hi = bounds
+        code = int(
+            _lib.xyg_auto_domain(
+                1, float(lo), float(hi), ctypes.byref(out_lo), ctypes.byref(out_hi)
+            )
+        )
+    if code != 0:
+        raise ValueError("native auto_domain rejected the bounds")
+    return (float(out_lo.value), float(out_hi.value))
+
+
+def css_color_rgba(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
+    """Resolve a CSS color to RGBA8 the way Scene and native raster paint do."""
+    encoded = str(css).encode("utf-8")
+    out = (ctypes.c_uint8 * 4)()
+    pointer = encoded if encoded else None
+    code = int(_lib.xyg_css_color_rgba(pointer, len(encoded), ctypes.c_float(opacity), out))
+    if code != 0:
+        raise ValueError("native css_color_rgba rejected the color")
+    return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
+
+
+def css_is_functional(css: str) -> bool:
+    """Unambiguous `#` / `rgb()` / `hsl()` paint syntax (ABI 213)."""
+    encoded = str(css).encode("utf-8")
+    code = int(_lib.xyg_css_is_functional(encoded if encoded else 0, len(encoded)))
+    if code < 0:
+        raise ValueError("invalid css-is-functional request")
+    return code == 1
+
+
+def scene_resolve_mark_styles(
+    payload: bytes,
+) -> list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]]:
+    """Resolve packed XYMS mark styles to fill/stroke RGBA8 and stroke width."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("mark style envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    if len(array) < 16:
+        raise ValueError("invalid mark style envelope")
+    n_marks = int(np.frombuffer(bytes(array[8:12]), dtype="<u4")[0])
+    out = np.zeros(n_marks * 16, dtype=np.uint8)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_ptr = _ptr_u8(out) if len(out) else 0
+    code = int(_lib.xyg_scene_resolve_mark_styles(pointer, len(array), out_ptr, len(out)))
+    if code < 0:
+        raise ValueError("invalid mark style envelope")
+    if code != n_marks:
+        raise RuntimeError("native mark style resolver returned an inconsistent count")
+    resolved: list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]] = []
+    view = memoryview(out)
+    for index in range(n_marks):
+        base = index * 16
+        fill = (int(view[base]), int(view[base + 1]), int(view[base + 2]), int(view[base + 3]))
+        stroke = (
+            int(view[base + 4]),
+            int(view[base + 5]),
+            int(view[base + 6]),
+            int(view[base + 7]),
+        )
+        width = float(np.frombuffer(bytes(view[base + 8 : base + 16]), dtype="<f8")[0])
+        resolved.append((fill, stroke, width))
+    return resolved
+
+
+def scene_resolve_chrome_style(payload: bytes) -> bytes:
+    """Resolve packed XYCH chrome onto the 200-byte Scene style input."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("chrome style envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    out = np.zeros(200, dtype=np.uint8)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_ptr = _ptr_u8(out)
+    code = int(_lib.xyg_scene_resolve_chrome_style(pointer, len(array), out_ptr, len(out)))
+    if code < 0:
+        raise ValueError("invalid chrome style envelope")
+    if code != 200:
+        raise RuntimeError("native chrome style resolver returned an inconsistent length")
+    return bytes(out)
+
+
+def scene_pack_trace(
+    pack_kind: int,
+    columns: list[npt.NDArray[np.float64] | None],
+    *,
+    flags: int = 0,
+    step_mode: int = 0,
+    symbol: int = 0,
+    style_ref: int = 0,
+    trace_id: int = 0,
+    diameter: float = 0.0,
+    extra0: float = 0.0,
+    extra1: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack one trace's columns into Scene rows (kind/id/coords/expansion)."""
+    keep_alive: list[np.ndarray] = []
+    lengths: list[int] = []
+    pointers: list[int] = []
+    padded = list(columns) + [None] * 6
+    for column in padded[:6]:
+        if column is None:
+            keep_alive.append(np.empty(0, dtype=np.float64))
+            lengths.append(0)
+            pointers.append(0)
+            continue
+        arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+        keep_alive.append(arr)
+        lengths.append(int(arr.size))
+        pointers.append(_ptr_f64(arr) if arr.size else 0)
+    n0 = lengths[0]
+    if pack_kind in {4, 5}:
+        n_rows = n0 * 2
+    elif pack_kind in {7, 9}:
+        n_rows = 2
+    else:
+        n_rows = n0
+    out = np.zeros(max(n_rows, 1) * 56, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_trace(
+            int(pack_kind),
+            int(flags),
+            int(step_mode),
+            int(symbol),
+            int(style_ref),
+            int(trace_id),
+            float(diameter),
+            float(extra0),
+            float(extra1),
+            pointers[0],
+            lengths[0],
+            pointers[1],
+            lengths[1],
+            pointers[2],
+            lengths[2],
+            pointers[3],
+            lengths[3],
+            pointers[4],
+            lengths[4],
+            pointers[5],
+            lengths[5],
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if len(keep_alive) != 6:
+        raise RuntimeError("scene pack columns must be six native buffers")
+    if code == -5:
+        raise ValueError(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        )
+    if code < 0:
+        raise ValueError("invalid scene trace packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def scene_resolve_pack_kind(kind: str, flags: int = 0) -> int:
+    """Map an authored product kind plus flags to a compact pack kind."""
+    encoded = str(kind).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_resolve_pack_kind(
+            encoded if encoded else 0,
+            len(encoded),
+            int(flags),
+        )
+    )
+    if code == -6:
+        raise ValueError(f"Scene v12 does not support product kind {kind!r}")
+    if code < 0:
+        raise ValueError("invalid scene product kind")
+    return code
+
+
+def scene_pack_product(
+    kind: str,
+    columns: list[npt.NDArray[np.float64] | None],
+    *,
+    flags: int = 0,
+    step_mode: int = 0,
+    symbol: int = 0,
+    style_ref: int = 0,
+    trace_id: int = 0,
+    diameter: float = 0.0,
+    extra0: float = 0.0,
+    extra1: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack one product-kind trace from the canonical x/y/x0/y0/x1/y1/base envelope."""
+    keep_alive: list[np.ndarray] = []
+    lengths: list[int] = []
+    pointers: list[int] = []
+    padded = list(columns) + [None] * 7
+    for column in padded[:7]:
+        if column is None:
+            keep_alive.append(np.empty(0, dtype=np.float64))
+            lengths.append(0)
+            pointers.append(0)
+            continue
+        arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+        keep_alive.append(arr)
+        lengths.append(int(arr.size))
+        pointers.append(_ptr_f64(arr) if arr.size else 0)
+    n_rows = max(max(lengths), 1) * 2
+    out = np.zeros(max(n_rows, 2) * 56, dtype=np.uint8)
+    encoded = str(kind).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_pack_product(
+            encoded if encoded else 0,
+            len(encoded),
+            int(flags),
+            int(step_mode),
+            int(symbol),
+            int(style_ref),
+            int(trace_id),
+            float(diameter),
+            float(extra0),
+            float(extra1),
+            pointers[0],
+            lengths[0],
+            pointers[1],
+            lengths[1],
+            pointers[2],
+            lengths[2],
+            pointers[3],
+            lengths[3],
+            pointers[4],
+            lengths[4],
+            pointers[5],
+            lengths[5],
+            pointers[6],
+            lengths[6],
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if len(keep_alive) != 7:
+        raise RuntimeError("scene product columns must be seven native buffers")
+    if code == -5:
+        raise ValueError(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        )
+    if code == -6:
+        raise ValueError(f"Scene v12 does not support product kind {kind!r}")
+    if code < 0:
+        raise ValueError("invalid scene trace packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def scene_pack_product_facts(
+    facts: bytes,
+    columns: list[npt.NDArray[np.float64] | None],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack one product-kind trace from XYPK v1 facts plus canonical columns."""
+    keep_alive: list[np.ndarray] = []
+    lengths: list[int] = []
+    pointers: list[int] = []
+    padded = list(columns) + [None] * 7
+    for column in padded[:7]:
+        if column is None:
+            keep_alive.append(np.empty(0, dtype=np.float64))
+            lengths.append(0)
+            pointers.append(0)
+            continue
+        arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+        keep_alive.append(arr)
+        lengths.append(int(arr.size))
+        pointers.append(_ptr_f64(arr) if arr.size else 0)
+    n_rows = max(max(lengths), 1) * 2
+    out = np.zeros(max(n_rows, 2) * 56, dtype=np.uint8)
+    payload = bytes(facts)
+    code = int(
+        _lib.xyg_scene_pack_product_facts(
+            payload if payload else 0,
+            len(payload),
+            pointers[0],
+            lengths[0],
+            pointers[1],
+            lengths[1],
+            pointers[2],
+            lengths[2],
+            pointers[3],
+            lengths[3],
+            pointers[4],
+            lengths[4],
+            pointers[5],
+            lengths[5],
+            pointers[6],
+            lengths[6],
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if len(keep_alive) != 7:
+        raise RuntimeError("scene product columns must be seven native buffers")
+    if code == -5:
+        raise ValueError(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        )
+    if code == -6:
+        raise ValueError("Scene v12 does not support product kind")
+    if code < 0:
+        raise ValueError("invalid scene trace packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def scene_pack_annotation_marks(
+    rows: bytes,
+    *,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Expand packed rule/band/marker scalars into Scene rows.
+
+    Rust owns stable-id tags, domain spanning, and finite rejection (M2 #271).
+    """
+    payload = rows if isinstance(rows, (bytes, bytearray, memoryview)) else bytes(rows)
+    n_in = len(payload) // 40
+    out = np.zeros(max(n_in * 2, 1) * 56, dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    x0, x1 = (float(v) for v in x_domain)
+    y0, y1 = (float(v) for v in y_domain)
+    code = int(
+        _lib.xyg_scene_pack_annotation_marks(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            x0,
+            x1,
+            y0,
+            y1,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene v12 annotation geometry must be finite")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def _decode_packed_scene_rows(
+    out: np.ndarray, code: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    empty_u8 = np.empty(0, dtype=np.uint8)
+    empty_u64 = np.empty(0, dtype=np.uint64)
+    empty_u32 = np.empty(0, dtype=np.uint32)
+    empty_f64 = np.empty(0, dtype=np.float64)
+    if code == 0:
+        return (
+            empty_u8,
+            empty_u64,
+            empty_u32,
+            empty_f64,
+            empty_u8,
+            empty_u8,
+            empty_f64.reshape(4, 0),
+        )
+    raw = np.frombuffer(out[: code * 56].tobytes(), dtype=np.uint8).reshape(code, 56)
+    kinds = np.ascontiguousarray(raw[:, 0])
+    symbols = np.ascontiguousarray(raw[:, 1])
+    expansion = np.ascontiguousarray(raw[:, 2])
+    style_refs = np.ascontiguousarray(np.frombuffer(raw[:, 4:8].tobytes(), dtype="<u4"))
+    stable_ids = np.ascontiguousarray(np.frombuffer(raw[:, 8:16].tobytes(), dtype="<u8"))
+    nums = np.frombuffer(raw[:, 16:56].tobytes(), dtype="<f8").reshape(-1, 5)
+    diameters = np.ascontiguousarray(nums[:, 0])
+    coords = np.ascontiguousarray(nums[:, 1:5].T)
+    return kinds, stable_ids, style_refs, diameters, symbols, expansion, coords
+
+
+def scene_pack_annotation_facts(
+    facts: bytes,
+    *,
+    style_ref_base: int,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> bytes:
+    """Pack XYAF v1 annotation facts into an XYAO envelope (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    extra = 32 + 512 * 56
+    out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES + extra, dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    x0, x1 = (float(value) for value in x_domain)
+    y0, y1 = (float(value) for value in y_domain)
+    code = int(
+        _lib.xyg_scene_pack_annotation_facts(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            int(style_ref_base),
+            x0,
+            x1,
+            y0,
+            y1,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene annotation geometry must be finite")
+    if code == -6:
+        raise ValueError("Scene annotations require nonempty NUL-free text")
+    if code == -7:
+        raise ValueError("Scene v23 label border requires label_background")
+    if code == -3:
+        raise ValueError("Scene annotations are limited to 128 entries")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
+    return bytes(out[:code])
+
+
+def scene_pack_heatmap_facts(facts: bytes) -> bytes:
+    """Pack XYHF v1 heatmap/density facts into one XYHP plane (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(256, len(payload) + 64), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_heatmap_facts(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene heatmap or density plane shape is invalid")
+    if code == -6:
+        raise ValueError("Scene heatmap colormap requires RGB stops")
+    if code < 0:
+        raise ValueError("invalid scene heatmap packing")
+    return bytes(out[:code])
+
+
+def scene_pack_scene_extras(polar: bytes, paint: bytes, facts: bytes) -> bytes:
+    """Pack XYPL/XYHP plus XYSS sidecar facts into extras (M2 #271)."""
+    polar_payload = polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar)
+    paint_payload = paint if isinstance(paint, (bytes, bytearray, memoryview)) else bytes(paint)
+    facts_payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    if not polar_payload and not paint_payload and not facts_payload:
+        return b""
+    out = np.zeros(
+        max(256, len(polar_payload) + len(paint_payload) + len(facts_payload) + 64),
+        dtype=np.uint8,
+    )
+    polar_arr = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    paint_arr = (
+        np.frombuffer(paint_payload, dtype=np.uint8)
+        if paint_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    facts_arr = (
+        np.frombuffer(facts_payload, dtype=np.uint8)
+        if facts_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    code = int(
+        _lib.xyg_scene_pack_scene_extras(
+            _ptr_u8(polar_arr) if polar_arr.size else 0,
+            int(polar_arr.size),
+            _ptr_u8(paint_arr) if paint_arr.size else 0,
+            int(paint_arr.size),
+            _ptr_u8(facts_arr) if facts_arr.size else 0,
+            int(facts_arr.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene extras polar or paint envelope is invalid")
+    if code == -6:
+        raise ValueError("Scene style sidecar facts are invalid")
+    if code < 0:
+        raise ValueError("invalid scene extras packing")
+    return bytes(out[:code])
+
+
+def scene_pack_scene_extras_from_sidecars(polar: bytes, xysd: bytes, facts: bytes) -> bytes:
+    """Pack XYPL plus XYSD planes plus XYSS sidecar facts into extras (M2 #271)."""
+    polar_payload = polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar)
+    sidecar_payload = xysd if isinstance(xysd, (bytes, bytearray, memoryview)) else bytes(xysd)
+    facts_payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    if not polar_payload and not sidecar_payload and not facts_payload:
+        return b""
+    capacity = max(256, len(polar_payload) + len(sidecar_payload) + len(facts_payload) + 64)
+    polar_arr = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    xysd_arr = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    facts_arr = (
+        np.frombuffer(facts_payload, dtype=np.uint8)
+        if facts_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_scene_extras_from_sidecars(
+                _ptr_u8(polar_arr) if polar_arr.size else 0,
+                int(polar_arr.size),
+                _ptr_u8(xysd_arr) if xysd_arr.size else 0,
+                int(xysd_arr.size),
+                _ptr_u8(facts_arr) if facts_arr.size else 0,
+                int(facts_arr.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -5:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -6:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code < 0:
+            raise ValueError("invalid scene extras packing")
+        return bytes(out[:code])
+    raise ValueError("invalid scene extras packing")
+
+
+def scene_pack_density_grid(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    *,
+    idx: "npt.NDArray[np.uint8] | None" = None,
+    rgba: "npt.NDArray[np.uint8] | None" = None,
+    lut: "npt.NDArray[np.uint8] | None" = None,
+) -> tuple[np.ndarray, float, np.ndarray | None, int, int] | None:
+    """Pack Scene density log-u8 (and optional mean RGBA) as XYDE (M2 #271)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("x and y must have equal length")
+    idx_ptr = rgba_ptr = lut_ptr = 0
+    lut_len = 0
+    keepalive: tuple = ()
+    if idx is not None or rgba is not None:
+        idx_ptr, rgba_ptr, lut_ptr, lut_len, keepalive = _color_source_args(len(x), idx, rgba, lut)
+        idx_ptr = int(idx_ptr or 0)
+        rgba_ptr = int(rgba_ptr or 0)
+        lut_ptr = int(lut_ptr or 0)
+    out = np.zeros(32 + 512 * 384 * 5, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_density_grid(
+            _ptr_f64(x) if len(x) else 0,
+            _ptr_f64(y) if len(y) else 0,
+            len(x),
+            float(x0),
+            float(x1),
+            float(y0),
+            float(y1),
+            idx_ptr,
+            rgba_ptr,
+            lut_ptr,
+            int(lut_len),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    _ = keepalive
+    if code == -5:
+        raise ValueError("Scene density columns must have equal length")
+    if code == -6:
+        raise ValueError("Scene density mean-color source is invalid")
+    if code < 0:
+        raise ValueError("invalid scene density packing")
+    if code == 0:
+        return None
+    blob = bytes(out[:code])
+    if blob[:4] != b"XYDE" or len(blob) < 32:
+        raise ValueError("invalid scene density packing")
+    cols = int.from_bytes(blob[8:12], "little")
+    rows = int.from_bytes(blob[12:16], "little")
+    flags = int.from_bytes(blob[16:20], "little")
+    gmax = struct.unpack_from("<d", blob, 24)[0]
+    cells = rows * cols
+    encoded = np.frombuffer(blob, dtype=np.uint8, offset=32, count=cells).copy()
+    mean: np.ndarray | None = None
+    if flags & 1:
+        mean = np.frombuffer(blob, dtype=np.uint8, offset=32 + cells, count=cells * 4).copy()
+    return encoded, float(gmax), mean, int(rows), int(cols)
+
+
+def scene_pack_legend(
+    *,
+    loc: int,
+    flags: int,
+    font_size: float,
+    title_font_size: float,
+    text_rgba: bytes,
+    frame_fill_rgba: bytes,
+    title: bytes,
+    entry_meta: bytes,
+    label_lens: list[int],
+    labels: bytes,
+) -> bytes:
+    """Frame a primary Scene legend as XYLG bytes."""
+    title_arr = np.frombuffer(title, dtype=np.uint8) if title else np.empty(0, dtype=np.uint8)
+    meta_arr = (
+        np.frombuffer(entry_meta, dtype=np.uint8) if entry_meta else np.empty(0, dtype=np.uint8)
+    )
+    label_arr = np.frombuffer(labels, dtype=np.uint8) if labels else np.empty(0, dtype=np.uint8)
+    lens_arr = np.ascontiguousarray(np.asarray(label_lens, dtype="<u4"))
+    color_arr = np.frombuffer(bytes(text_rgba), dtype=np.uint8)
+    fill_arr = np.frombuffer(bytes(frame_fill_rgba), dtype=np.uint8)
+    if len(color_arr) != 4 or len(fill_arr) != 4:
+        raise ValueError("legend paints must be RGBA8")
+    n_entries = int(len(label_lens))
+    out = np.zeros(MAX_SCENE_LEGEND_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_legend(
+            int(loc),
+            int(flags),
+            float(font_size),
+            float(title_font_size),
+            _ptr_u8(color_arr),
+            _ptr_u8(fill_arr),
+            _ptr_u8(title_arr) if len(title_arr) else 0,
+            len(title_arr),
+            n_entries,
+            _ptr_u8(meta_arr) if len(meta_arr) else 0,
+            len(meta_arr),
+            lens_arr.ctypes.data if n_entries else 0,
+            _ptr_u8(label_arr) if len(label_arr) else 0,
+            len(label_arr),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("legend font sizes must be finite and in [1, 1000]")
+    if code == -6:
+        raise ValueError("Scene v12 does not support legend location")
+    if code == -3:
+        raise ValueError("Scene v12 legend text is limited to 16,384 UTF-8 bytes")
+    if code < 0:
+        raise ValueError("invalid scene legend packing")
+    return bytes(out[:code])
+
+
+def scene_pack_colorbar(
+    *,
+    flags: int,
+    lo: float,
+    hi: float,
+    text_rgba: bytes,
+    title: bytes,
+    stop_values: npt.NDArray[np.float64] | list[float],
+    stop_rgba: bytes,
+    ticks: npt.NDArray[np.float64] | list[float],
+) -> bytes:
+    """Frame a primary Scene colorbar as XYCB v2 bytes."""
+    title_arr = np.frombuffer(title, dtype=np.uint8) if title else np.empty(0, dtype=np.uint8)
+    color_arr = np.frombuffer(bytes(text_rgba), dtype=np.uint8)
+    values = np.ascontiguousarray(np.asarray(stop_values, dtype=np.float64).reshape(-1))
+    rgba_arr = np.frombuffer(bytes(stop_rgba), dtype=np.uint8)
+    tick_arr = np.ascontiguousarray(np.asarray(ticks, dtype=np.float64).reshape(-1))
+    if len(color_arr) != 4:
+        raise ValueError("colorbar text_rgba must be RGBA8")
+    out = np.zeros(MAX_SCENE_COLORBAR_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_colorbar(
+            int(flags),
+            float(lo),
+            float(hi),
+            _ptr_u8(color_arr),
+            _ptr_u8(title_arr) if len(title_arr) else 0,
+            len(title_arr),
+            int(values.size),
+            _ptr_f64(values) if values.size else 0,
+            _ptr_u8(rgba_arr) if len(rgba_arr) else 0,
+            len(rgba_arr),
+            int(tick_arr.size),
+            _ptr_f64(tick_arr) if tick_arr.size else 0,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError(
+            "Scene v19 colorbar values must be finite and RGBA literals exactly four bytes"
+        )
+    if code == -6:
+        raise ValueError(
+            "Scene v19 colorbar stops must be strictly increasing and match the domain endpoints"
+        )
+    if code == -7:
+        raise ValueError("Scene v19 colorbar ticks are limited to 32 finite ordered values")
+    if code == -3:
+        raise ValueError("Scene v19 colorbar ticks are limited to 32 finite ordered values")
+    if code < 0:
+        raise ValueError("invalid scene colorbar packing")
+    return bytes(out[:code])
+
+
+def scene_pack_annotations(
+    *,
+    text_meta: bytes,
+    text_lens: list[int],
+    texts: bytes,
+    attached_meta: bytes,
+    attached_lens: list[int],
+    attached_texts: bytes,
+    arrow_meta: bytes,
+    callout_meta: bytes,
+    callout_lens: list[int],
+    callout_texts: bytes,
+    wrapped_meta: bytes,
+    wrapped_lens: list[int],
+    wrapped_texts: bytes,
+) -> bytes:
+    """Frame primary Scene annotations as XYAD bytes."""
+
+    def as_u8(payload: bytes) -> npt.NDArray[np.uint8]:
+        return np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+
+    def as_u32(values: list[int]) -> npt.NDArray[np.uint32]:
+        return np.ascontiguousarray(np.asarray(values, dtype="<u4"))
+
+    text_meta_arr = as_u8(text_meta)
+    texts_arr = as_u8(texts)
+    text_lens_arr = as_u32(text_lens)
+    attached_meta_arr = as_u8(attached_meta)
+    attached_texts_arr = as_u8(attached_texts)
+    attached_lens_arr = as_u32(attached_lens)
+    arrow_meta_arr = as_u8(arrow_meta)
+    callout_meta_arr = as_u8(callout_meta)
+    callout_texts_arr = as_u8(callout_texts)
+    callout_lens_arr = as_u32(callout_lens)
+    wrapped_meta_arr = as_u8(wrapped_meta)
+    wrapped_texts_arr = as_u8(wrapped_texts)
+    wrapped_lens_arr = as_u32(wrapped_lens)
+    out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_annotations(
+            len(text_lens),
+            _ptr_u8(text_meta_arr) if len(text_meta_arr) else 0,
+            len(text_meta_arr),
+            text_lens_arr.ctypes.data if len(text_lens) else 0,
+            _ptr_u8(texts_arr) if len(texts_arr) else 0,
+            len(texts_arr),
+            len(attached_lens),
+            _ptr_u8(attached_meta_arr) if len(attached_meta_arr) else 0,
+            len(attached_meta_arr),
+            attached_lens_arr.ctypes.data if len(attached_lens) else 0,
+            _ptr_u8(attached_texts_arr) if len(attached_texts_arr) else 0,
+            len(attached_texts_arr),
+            len(arrow_meta) // 60,
+            _ptr_u8(arrow_meta_arr) if len(arrow_meta_arr) else 0,
+            len(arrow_meta_arr),
+            len(callout_lens),
+            _ptr_u8(callout_meta_arr) if len(callout_meta_arr) else 0,
+            len(callout_meta_arr),
+            callout_lens_arr.ctypes.data if len(callout_lens) else 0,
+            _ptr_u8(callout_texts_arr) if len(callout_texts_arr) else 0,
+            len(callout_texts_arr),
+            len(wrapped_lens),
+            _ptr_u8(wrapped_meta_arr) if len(wrapped_meta_arr) else 0,
+            len(wrapped_meta_arr),
+            wrapped_lens_arr.ctypes.data if len(wrapped_lens) else 0,
+            _ptr_u8(wrapped_texts_arr) if len(wrapped_texts_arr) else 0,
+            len(wrapped_texts_arr),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene annotation geometry must be finite")
+    if code == -6:
+        raise ValueError("Scene annotations require nonempty NUL-free text")
+    if code == -7:
+        raise ValueError("Scene v23 label border requires label_background")
+    if code == -3:
+        raise ValueError("Scene annotations are limited to 128 entries")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
+    return bytes(out[:code])
+
+
+def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
+    """Pack rectangle zero-baseline predicates for an XYAR trace row."""
+    base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))
+    value_arr = np.ascontiguousarray(np.asarray(value, dtype=np.float64))
+    if len(base_arr) != len(value_arr):
+        return 0xFF
+    n = len(base_arr)
+    return int(
+        _lib.xyg_rect_zero_baseline_flags(
+            _ptr_f64(base_arr) if n else 0,
+            _ptr_f64(value_arr) if n else 0,
+            n,
+        )
+    )
+
+
 def scene_axis_ticks(
     kind: int,
     lo: float,
@@ -1804,6 +5597,1333 @@ def scene_axis_ticks(
     if written == _USIZE_MAX or written > capacity or labeled_len.value > written:
         raise ValueError("invalid canonical axis tick request")
     return ticks[:written].tolist(), labeled[: labeled_len.value].tolist(), step.value
+
+
+_TICK_LAYOUT_KIND = {
+    "auto": 0,
+    "hide": 1,
+    "rotate": 2,
+    "stagger": 3,
+    "preserve": 4,
+    "none": 5,
+    "off": 6,
+}
+_TICK_LAYOUT_SIDE = {"bottom": 0, "top": 1, "left": 2, "right": 3}
+_TICK_LAYOUT_ANCHOR = {"start": 0, "center": 1, "end": 2}
+
+
+def _tick_layout_enum(value: str | int, mapping: dict[str, int], name: str) -> int:
+    if isinstance(value, str):
+        key = value.strip().lower().replace("-", "_")
+        if key not in mapping:
+            raise ValueError(f"{name} must be one of {sorted(mapping)}")
+        return mapping[key]
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Integral):
+        raise ValueError(f"{name} must be a string or integer code")
+    return int(value)
+
+
+def scene_tick_label_layout(
+    positions: npt.ArrayLike,
+    labels: Sequence[str],
+    *,
+    kind: str | int = "auto",
+    side: str | int = "bottom",
+    anchor: str | int = "center",
+    is_x: bool = True,
+    category: bool = False,
+    font_size: float = 11.0,
+    min_gap: float = 8.0,
+    explicit_angle: float | None = None,
+) -> list[dict[str, Any]]:
+    """Tick-label collision layout via ``xyg_scene_tick_label_layout`` (ABI 123).
+
+    Hosts format label strings and map tick values to pixels. Rust owns auto /
+    hide / rotate / stagger thinning. ``explicit_angle`` is ``None`` or NaN when
+    unset.
+    """
+    pos = _as_f64(np.asarray(positions, dtype=np.float64).reshape(-1), "positions")
+    texts = [str(label) for label in labels]
+    if len(pos) != len(texts):
+        raise ValueError("positions and labels must have the same length")
+    encoded = [text.encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    n = len(pos)
+    out_index = np.empty(n, dtype=np.uint32)
+    out_angle = np.empty(n, dtype=np.float64)
+    out_row = np.empty(n, dtype=np.uint32)
+    angle = float("nan") if explicit_angle is None else float(explicit_angle)
+    flags = (1 if is_x else 0) | (2 if category else 0)
+    written = _lib.xyg_scene_tick_label_layout(
+        _ptr_f64(pos) if n else 0,
+        n,
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if len(packed) else 0,
+        len(packed),
+        _tick_layout_enum(kind, _TICK_LAYOUT_KIND, "kind"),
+        _tick_layout_enum(side, _TICK_LAYOUT_SIDE, "side"),
+        _tick_layout_enum(anchor, _TICK_LAYOUT_ANCHOR, "anchor"),
+        flags,
+        float(font_size),
+        float(min_gap),
+        angle,
+        out_index.ctypes.data if n else 0,
+        _ptr_f64(out_angle) if n else 0,
+        out_row.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid tick-label layout request")
+    return [
+        {
+            "index": int(out_index[i]),
+            "angle": float(out_angle[i]),
+            "row": int(out_row[i]),
+        }
+        for i in range(written)
+    ]
+
+
+def _tick_window_theta_unit(theta_unit: object) -> int:
+    if theta_unit is None:
+        return 0
+    return 1 if theta_unit == "degrees" else 2
+
+
+def tick_window(
+    range_lo: float,
+    range_hi: float,
+    *,
+    theta_unit: str | None = None,
+    kind: str = "linear",
+    n_categories: int = 0,
+    sector_lo: float = float("nan"),
+    sector_hi: float = float("nan"),
+) -> tuple[float, float]:
+    """Authored tick-window resolve via ``xyg_tick_window`` (ABI 128)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    written = _lib.xyg_tick_window(
+        float(range_lo),
+        float(range_hi),
+        _tick_window_theta_unit(theta_unit),
+        1 if kind == "category" else 0,
+        int(n_categories),
+        float(sector_lo),
+        float(sector_hi),
+        ctypes.byref(out_lo),
+        ctypes.byref(out_hi),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tick-window request")
+    return float(out_lo.value), float(out_hi.value)
+
+
+def tick_window_filter(
+    values: npt.ArrayLike,
+    lo: float,
+    hi: float,
+    *,
+    theta_unit: str | None = None,
+    kind: str = "linear",
+    require_finite: bool = False,
+) -> list[float]:
+    """Authored tick-window filter via ``xyg_tick_window_filter`` (ABI 128)."""
+    arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "values")
+    n = len(arr)
+    out = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_tick_window_filter(
+        _ptr_f64(arr) if n else 0,
+        n,
+        float(lo),
+        float(hi),
+        _tick_window_theta_unit(theta_unit),
+        1 if kind == "category" else 0,
+        1 if require_finite else 0,
+        _ptr_f64(out) if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid tick-window filter request")
+    return out[:written].tolist()
+
+
+def _tick_format_kind(axis_kind: str | None) -> int:
+    if axis_kind == "category":
+        return 2
+    if axis_kind == "time":
+        return 1
+    return 0
+
+
+def tick_format(
+    value: float,
+    step: float,
+    *,
+    kind: str | None = "linear",
+    scale: str | None = None,
+    theta_unit: str | None = None,
+    format: str | None = None,
+    categories: Sequence[str] | None = None,
+) -> str:
+    """Cartesian compatibility tick-label formatting via ``xyg_tick_format`` (ABI 130)."""
+    cats = [str(item) for item in categories or ()]
+    lens = (ctypes.c_uint32 * len(cats))(*[len(item.encode("utf-8")) for item in cats])
+    packed = b"".join(item.encode("utf-8") for item in cats)
+    format_bytes = format.encode("utf-8") if isinstance(format, str) else b""
+    out = bytearray(256)
+    written = _lib.xyg_tick_format(
+        float(value),
+        float(step),
+        _tick_format_kind(kind),
+        1 if scale == "log" else 0,
+        _tick_window_theta_unit(theta_unit),
+        format_bytes,
+        len(format_bytes),
+        len(cats),
+        ctypes.cast(lens, ctypes.POINTER(ctypes.c_uint32)) if cats else 0,
+        packed,
+        len(packed),
+        (ctypes.c_char * len(out)).from_buffer(out),
+        len(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tick-format request")
+    if written > len(out):
+        out = bytearray(written)
+        written = _lib.xyg_tick_format(
+            float(value),
+            float(step),
+            _tick_format_kind(kind),
+            1 if scale == "log" else 0,
+            _tick_window_theta_unit(theta_unit),
+            format_bytes,
+            len(format_bytes),
+            len(cats),
+            ctypes.cast(lens, ctypes.POINTER(ctypes.c_uint32)) if cats else 0,
+            packed,
+            len(packed),
+            (ctypes.c_char * len(out)).from_buffer(out),
+            len(out),
+        )
+        if written == _USIZE_MAX or written > len(out):
+            raise ValueError("invalid tick-format request")
+    return bytes(out[:written]).decode("utf-8")
+
+
+def scene_legend_box_layout(
+    *,
+    plot: Mapping[str, float],
+    names: Sequence[str],
+    title: str | None = None,
+    loc: str = "upper right",
+    font_size: float = 11.0,
+    handlelength: float | None = None,
+    handletextpad: float | None = None,
+    handleheight: float | None = None,
+    ncols: int = 1,
+    padding_em: float = 0.4,
+    row_gap_em: float = 0.5,
+    anchor: Sequence[float] | None = None,
+    border_axes_pad: float = 0.0,
+) -> dict[str, Any]:
+    """Static legend box packing via ``xyg_legend_box_layout`` (ABI 124)."""
+    texts = [str(name) for name in names]
+    encoded = [text.encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    n = len(texts)
+    title_b = np.frombuffer((title or "").encode("utf-8"), dtype=np.uint8).copy()
+    loc_b = np.frombuffer((loc or "upper right").encode("utf-8"), dtype=np.uint8).copy()
+    metrics = np.empty(17, dtype=np.float64)
+    col_cap = max(n, 1)
+    widths = np.empty(col_cap, dtype=np.float64)
+    offsets = np.empty(col_cap, dtype=np.float64)
+    name_lens = np.empty(col_cap, dtype=np.uint32)
+    names_cap = len(packed) + 3 * n
+    names_out = np.empty(max(names_cap, 1), dtype=np.uint8)
+    title_cap = max(int(title_b.size) + 8, 1)
+    title_out = np.empty(title_cap, dtype=np.uint8)
+    title_len = ctypes.c_size_t()
+    anchor_arr = None
+    anchor_len = 0
+    if anchor is not None:
+        vals = [float(v) for v in anchor]
+        if len(vals) not in (2, 4):
+            raise ValueError("legend anchor must have length 2 or 4")
+        anchor_arr = np.asarray(vals, dtype=np.float64)
+        anchor_len = len(vals)
+    written = _lib.xyg_legend_box_layout(
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if len(packed) else 0,
+        len(packed),
+        n,
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        _ptr_u8(loc_b) if loc_b.size else 0,
+        int(loc_b.size),
+        float(font_size),
+        float("nan") if handlelength is None else float(handlelength),
+        float("nan") if handletextpad is None else float(handletextpad),
+        float("nan") if handleheight is None else float(handleheight),
+        max(1, int(ncols)),
+        float(padding_em),
+        float(row_gap_em),
+        _ptr_f64(anchor_arr) if anchor_arr is not None else 0,
+        anchor_len,
+        float(border_axes_pad),
+        _ptr_f64(metrics),
+        _ptr_f64(widths),
+        _ptr_f64(offsets),
+        col_cap,
+        name_lens.ctypes.data,
+        _ptr_u8(names_out),
+        len(names_out),
+        _ptr_u8(title_out),
+        len(title_out),
+        ctypes.byref(title_len),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid legend box layout request")
+    vis = int(written)
+    ncols_out = int(metrics[9])
+    at = 0
+    out_names: list[str] = []
+    for i in range(vis):
+        length = int(name_lens[i])
+        out_names.append(bytes(names_out[at : at + length]).decode("utf-8"))
+        at += length
+    title_s = bytes(title_out[: int(title_len.value)]).decode("utf-8")
+    return {
+        "pad": float(metrics[0]),
+        "handle": float(metrics[1]),
+        "gap": float(metrics[2]),
+        "column_gap": float(metrics[3]),
+        "row_gap": float(metrics[4]),
+        "font_size": float(metrics[5]),
+        "text_h": float(metrics[6]),
+        "line_h": float(metrics[7]),
+        "swatch_h": float(metrics[8]),
+        "ncols": ncols_out,
+        "title": title_s or None,
+        "title_h": float(metrics[10]),
+        "cell_w": float(metrics[11]),
+        "column_widths": widths[:ncols_out].tolist(),
+        "column_offsets": offsets[:ncols_out].tolist(),
+        "box_w": float(metrics[12]),
+        "box_h": float(metrics[13]),
+        "x": float(metrics[14]),
+        "y": float(metrics[15]),
+        "visible_count": vis,
+        "names": out_names,
+    }
+
+
+_ANCHOR_CODES = {"start": 0, "center": 1, "end": 2}
+
+
+def _pack_utf8_strings(texts: Sequence[str]) -> tuple[np.ndarray, np.ndarray]:
+    encoded = [str(text).encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    return lens, packed
+
+
+def _unpack_utf8_strings(lens: np.ndarray, packed: np.ndarray, count: int) -> list[str]:
+    out: list[str] = []
+    at = 0
+    for i in range(count):
+        length = int(lens[i])
+        out.append(bytes(packed[at : at + length]).decode("utf-8"))
+        at += length
+    return out
+
+
+def text_block_measure(
+    text: object,
+    font_size: float,
+    line_height: float = 1.2,
+    max_width: float | None = None,
+) -> dict[str, Any]:
+    """Newline-delimited chrome measure via ``xyg_text_block_measure`` (ABI 125)."""
+    text_b = np.frombuffer(str(text).encode("utf-8"), dtype=np.uint8).copy()
+    line_cap = max(int(text_b.size) + 8, 8)
+    packed_cap = max(int(text_b.size) + 8, 8)
+    metrics = np.empty(6, dtype=np.float64)
+    written = _USIZE_MAX
+    line_lens = np.empty(0, dtype=np.uint32)
+    packed = np.empty(0, dtype=np.uint8)
+    for _ in range(4):
+        line_lens = np.empty(line_cap, dtype=np.uint32)
+        packed = np.empty(packed_cap, dtype=np.uint8)
+        written = _lib.xyg_text_block_measure(
+            _ptr_u8(text_b) if text_b.size else 0,
+            int(text_b.size),
+            float(font_size),
+            float(line_height),
+            float("nan") if max_width is None else float(max_width),
+            _ptr_f64(metrics),
+            line_lens.ctypes.data,
+            line_cap,
+            _ptr_u8(packed),
+            packed_cap,
+        )
+        if written != _USIZE_MAX:
+            break
+        line_cap *= 4
+        packed_cap *= 4
+    if written == _USIZE_MAX:
+        raise ValueError("invalid text-block measure request")
+    n = int(written)
+    return {
+        "lines": _unpack_utf8_strings(line_lens, packed, n),
+        "width": float(metrics[0]),
+        "height": float(metrics[1]),
+        "line_step": float(metrics[2]),
+        "ascent": float(metrics[3]),
+        "descent": float(metrics[4]),
+        "line_count": n,
+    }
+
+
+def text_block_rotated_extent(
+    width: float,
+    height: float,
+    angle_degrees: float,
+) -> tuple[float, float]:
+    """Axis-aligned extent after rotation via ``xyg_text_block_rotated_extent``."""
+    out_x = ctypes.c_double()
+    out_y = ctypes.c_double()
+    written = _lib.xyg_text_block_rotated_extent(
+        float(width),
+        float(height),
+        float(angle_degrees),
+        ctypes.byref(out_x),
+        ctypes.byref(out_y),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid text-block rotation request")
+    return float(out_x.value), float(out_y.value)
+
+
+def y_tick_label_extent(
+    labels: Sequence[str],
+    font_size: float,
+    angle: float,
+) -> float:
+    """Widest rotated x-extent of y tick labels (ABI 125)."""
+    lens, packed = _pack_utf8_strings([str(label) for label in labels])
+    n = len(labels)
+    out = ctypes.c_double()
+    written = _lib.xyg_y_tick_label_extent(
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        n,
+        float(font_size),
+        float(angle),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid y tick-label extent request")
+    return float(out.value)
+
+
+def y_axis_left_room(
+    tick_offset: float,
+    tick_room: float,
+    title: str | None,
+    title_font_size: float,
+    title_gap: float,
+) -> float:
+    """Left gutter for one y axis after the host resolved tick ink (ABI 125)."""
+    title_b = np.frombuffer(str(title or "").encode("utf-8"), dtype=np.uint8).copy()
+    out = ctypes.c_double()
+    written = _lib.xyg_y_axis_left_room(
+        float(tick_offset),
+        float(tick_room),
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        float(title_font_size),
+        float(title_gap),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid y-axis left-room request")
+    return float(out.value)
+
+
+def x_axis_title_room(
+    title: str | None,
+    font_size: float,
+    offset: float,
+    top: bool,
+) -> float:
+    """Outside x-axis title room via ``xyg_x_axis_title_room`` (ABI 125)."""
+    title_b = np.frombuffer(str(title or "").encode("utf-8"), dtype=np.uint8).copy()
+    out = ctypes.c_double()
+    written = _lib.xyg_x_axis_title_room(
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        float(font_size),
+        float(offset),
+        1 if top else 0,
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x-axis title-room request")
+    return float(out.value)
+
+
+def x_tick_label_room(
+    labels: Sequence[str],
+    angles: Sequence[float],
+    rows: Sequence[int],
+    font_size: float,
+    label_offset: float,
+    title_room: float,
+) -> float:
+    """Measured x tick-label band after collision layout (ABI 125)."""
+    texts = [str(label) for label in labels]
+    n = len(texts)
+    if n != len(angles) or n != len(rows):
+        raise ValueError("x tick-label room arrays must have equal length")
+    lens, packed = _pack_utf8_strings(texts)
+    angle_arr = (
+        np.asarray([float(angle) for angle in angles], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    row_arr = (
+        np.asarray([int(row) for row in rows], dtype=np.uint32)
+        if n
+        else np.empty(0, dtype=np.uint32)
+    )
+    out = ctypes.c_double()
+    written = _lib.xyg_x_tick_label_room(
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        n,
+        _ptr_f64(angle_arr) if n else 0,
+        row_arr.ctypes.data if n else 0,
+        float(font_size),
+        float(label_offset),
+        float(title_room),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x tick-label room request")
+    return float(out.value)
+
+
+def x_tick_label_edge_rooms(
+    plot_w: float,
+    positions: Sequence[float],
+    labels: Sequence[str],
+    angles: Sequence[float],
+    anchors: Sequence[str],
+    font_size: float,
+) -> tuple[float, float]:
+    """Canvas-edge overhang from laid-out x tick labels (ABI 125)."""
+    texts = [str(label) for label in labels]
+    n = len(texts)
+    if n != len(positions) or n != len(angles) or n != len(anchors):
+        raise ValueError("x tick-label edge-room arrays must have equal length")
+    lens, packed = _pack_utf8_strings(texts)
+    pos_arr = (
+        np.asarray([float(pos) for pos in positions], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    angle_arr = (
+        np.asarray([float(angle) for angle in angles], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    try:
+        anchor_arr = (
+            np.asarray([_ANCHOR_CODES[str(anchor)] for anchor in anchors], dtype=np.uint32)
+            if n
+            else np.empty(0, dtype=np.uint32)
+        )
+    except KeyError as exc:
+        raise ValueError("anchor must be start, center, or end") from exc
+    out_left = ctypes.c_double()
+    out_right = ctypes.c_double()
+    written = _lib.xyg_x_tick_label_edge_rooms(
+        float(plot_w),
+        _ptr_f64(pos_arr) if n else 0,
+        n,
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        _ptr_f64(angle_arr) if n else 0,
+        anchor_arr.ctypes.data if n else 0,
+        float(font_size),
+        ctypes.byref(out_left),
+        ctypes.byref(out_right),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x tick-label edge-room request")
+    return float(out_left.value), float(out_right.value)
+
+
+_COLORBAR_KINDS = {
+    "none": 0,
+    "axes_horizontal": 1,
+    "axes_vertical": 2,
+    "figure_horizontal": 3,
+    "figure_vertical": 4,
+}
+_POLAR_LEGEND_SIDES = {0: "", 1: "left", 2: "right", 3: "bottom"}
+
+
+def compat_is_compact(width: float) -> bool:
+    """Whether a canvas width uses compact static gutters (ABI 126)."""
+    status = int(_lib.xyg_compat_is_compact(float(width)))
+    if status == 1:
+        return True
+    if status == 0:
+        return False
+    raise ValueError("invalid compact-width request")
+
+
+def compat_default_padding(compact: bool) -> tuple[float, float, float, float]:
+    """Default static-export padding via ``xyg_compat_default_padding`` (ABI 126)."""
+    out = np.empty(4, dtype=np.float64)
+    written = _lib.xyg_compat_default_padding(1 if compact else 0, _ptr_f64(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid default-padding request")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
+def compat_title_wrap_width(width: float, left: float, right: float) -> float:
+    """Title wrap width via ``xyg_compat_title_wrap_width`` (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_title_wrap_width(
+        float(width), float(left), float(right), ctypes.byref(out)
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid title-wrap-width request")
+    return float(out.value)
+
+
+def compat_title_room(
+    compact: bool,
+    block_height: float,
+    pad: float,
+    automatic_y: bool,
+    y: float,
+) -> float:
+    """Title-band room via ``xyg_compat_title_room`` (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_title_room(
+        1 if compact else 0,
+        float(block_height),
+        float(pad),
+        1 if automatic_y else 0,
+        float(y),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid title-room request")
+    return float(out.value)
+
+
+def compat_x_axis_side_room(compact: bool, top: bool, measured: float) -> tuple[float, float]:
+    """Compact floor plus measured x-axis room (ABI 126)."""
+    out_room = ctypes.c_double()
+    out_measured = ctypes.c_double()
+    written = _lib.xyg_compat_x_axis_side_room(
+        1 if compact else 0,
+        1 if top else 0,
+        float(measured),
+        ctypes.byref(out_room),
+        ctypes.byref(out_measured),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x-axis side-room request")
+    return float(out_room.value), float(out_measured.value)
+
+
+def compat_colorbar_extra(kind: str, has_label: bool, pad_zero: bool) -> tuple[float, float]:
+    """Extra right/bottom claimed by a colorbar (ABI 126)."""
+    try:
+        code = _COLORBAR_KINDS[kind]
+    except KeyError as exc:
+        raise ValueError("unknown colorbar layout kind") from exc
+    out_right = ctypes.c_double()
+    out_bottom = ctypes.c_double()
+    written = _lib.xyg_compat_colorbar_extra(
+        code,
+        1 if has_label else 0,
+        1 if pad_zero else 0,
+        ctypes.byref(out_right),
+        ctypes.byref(out_bottom),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid colorbar-extra request")
+    return float(out_right.value), float(out_bottom.value)
+
+
+def compat_right_y_room(compact: bool) -> float:
+    """Shared right-side y-axis gutter (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_right_y_room(1 if compact else 0, ctypes.byref(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid right-y-room request")
+    return float(out.value)
+
+
+def polar_legend_room(width: float) -> float:
+    """Polar legend side-gutter width (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_polar_legend_room(float(width), ctypes.byref(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-legend-room request")
+    return float(out.value)
+
+
+def polar_legend_reserve(compact: bool, loc_has_left: bool, width: float) -> tuple[str, float]:
+    """Compact vs loc polar legend reserve (ABI 126)."""
+    side = ctypes.c_uint32()
+    room = ctypes.c_double()
+    written = _lib.xyg_polar_legend_reserve(
+        1 if compact else 0,
+        1 if loc_has_left else 0,
+        float(width),
+        ctypes.byref(side),
+        ctypes.byref(room),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-legend-reserve request")
+    return _POLAR_LEGEND_SIDES[int(side.value)], float(room.value)
+
+
+def polar_label_room(widest: float | None) -> float:
+    """Uniform polar angular-label inset (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_polar_label_room(
+        float("nan") if widest is None else float(widest),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-label-room request")
+    return float(out.value)
+
+
+POLAR_METRICS_LEN = 23
+
+
+def _polar_theta_unit(unit: str | None) -> int:
+    return 1 if unit == "degrees" else 0
+
+
+def _polar_theta_direction(direction: str | None) -> int:
+    return 1 if direction == "clockwise" else 0
+
+
+def _polar_as_float(value: object, default: float) -> float:
+    if value is None:
+        return default
+    if isinstance(value, (int, float, np.integer, np.floating, str)):
+        return float(value)
+    return float(cast(Any, value))
+
+
+def _polar_pair(value: object, default: tuple[float, float]) -> tuple[float, float]:
+    if isinstance(value, (tuple, list)) and len(value) >= 2:
+        return _polar_as_float(value[0], default[0]), _polar_as_float(value[1], default[1])
+    return default
+
+
+def _polar_theta_zero(zero: object) -> float:
+    if isinstance(zero, str):
+        named = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
+        if zero in named:
+            return named[zero]
+        return float(zero)
+    return _polar_as_float(zero, 0.0)
+
+
+def _polar_r_scale(axis: Mapping[str, object]) -> tuple[int, float, bool]:
+    scale = axis.get("scale")
+    kind = axis.get("kind", "linear")
+    if scale == "log" or kind == "log":
+        code = 1
+    elif scale == "symlog":
+        code = 2
+    else:
+        code = 0
+    constant = _polar_as_float(axis.get("constant", 1.0), 1.0)
+    mask = axis.get("nonpositive", "clip") == "mask"
+    return code, constant, mask
+
+
+def polar_layout(
+    theta_axis: Mapping[str, object],
+    r_axis: Mapping[str, object],
+    plot: Mapping[str, float],
+) -> npt.NDArray[np.float64]:
+    """Polar disc layout via ``xyg_polar_layout`` (ABI 131)."""
+    unit = str(theta_axis.get("theta_unit", "radians"))
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    sector_start, sector_end = _polar_pair(theta_axis.get("sector"), (0.0, turn))
+    categories = theta_axis.get("categories")
+    n_categories = len(categories) if isinstance(categories, (list, tuple)) else 0
+    raw_range = r_axis.get("range")
+    if not isinstance(raw_range, (tuple, list)) or len(raw_range) < 2:
+        raise (
+            KeyError("range")
+            if raw_range is None
+            else TypeError("polar r-axis range must be a pair")
+        )
+    r_lo, r_hi = _polar_as_float(raw_range[0], 0.0), _polar_as_float(raw_range[1], 1.0)
+    origin = r_axis.get("r_origin")
+    r_origin = float("nan") if origin is None else _polar_as_float(origin, float("nan"))
+    hole = _polar_as_float(r_axis.get("hole"), 0.0)
+    scale_kind, constant, mask_nonpositive = _polar_r_scale(r_axis)
+    metrics = np.empty(POLAR_METRICS_LEN, dtype=np.float64)
+    raw_direction = theta_axis.get("theta_direction")
+    written = _lib.xyg_polar_layout(
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        _polar_theta_unit(unit),
+        _polar_theta_zero(theta_axis.get("theta_zero", "E")),
+        _polar_theta_direction(raw_direction if isinstance(raw_direction, str) else None),
+        sector_start,
+        sector_end,
+        n_categories,
+        float(r_lo),
+        float(r_hi),
+        r_origin,
+        hole,
+        scale_kind,
+        constant,
+        1 if mask_nonpositive else 0,
+        _ptr_f64(metrics),
+        POLAR_METRICS_LEN,
+    )
+    if written != POLAR_METRICS_LEN:
+        raise ValueError("invalid polar-layout request")
+    return metrics
+
+
+def polar_project(
+    metrics: npt.ArrayLike,
+    theta: npt.ArrayLike,
+    r: npt.ArrayLike,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Project polar (theta, r) via ``xyg_polar_project`` (ABI 131)."""
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    th = _as_f64(np.asarray(theta, dtype=np.float64).reshape(-1), "theta")
+    rv = _as_f64(np.asarray(r, dtype=np.float64).reshape(-1), "r")
+    if th.shape != rv.shape:
+        raise ValueError("theta and r must have the same shape")
+    n = len(th)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_polar_project(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        _ptr_f64(th) if n else 0,
+        _ptr_f64(rv) if n else 0,
+        n,
+        _ptr_f64(out_x) if n else 0,
+        _ptr_f64(out_y) if n else 0,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-project request")
+    if np.ndim(theta) == 0:
+        return out_x.reshape(()), out_y.reshape(())
+    return out_x.reshape(np.shape(theta)), out_y.reshape(np.shape(r))
+
+
+def polar_wedge_points(
+    metrics: npt.ArrayLike,
+    theta0: float,
+    theta1: float,
+    r0: float,
+    r1: float,
+    wedge_gap: float = 0.0,
+    corner_radius: float = 0.0,
+    steps: int = 0,
+    normalized: tuple[float, float] | list[float] | None = None,
+) -> list[tuple[float, float]]:
+    """Flatten a polar annular sector to screen pixels (ABI 209).
+
+    ``steps == 0`` uses ``polar_bar_segments``. Finite ``normalized``
+    fractions skip radial-range normalization. Empty native pointers are
+    ``0``.
+    """
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    step_count = int(steps)
+    if step_count < 0:
+        raise ValueError("polar wedge steps must be non-negative")
+    if normalized is None:
+        norm_lo = float("nan")
+        norm_hi = float("nan")
+    else:
+        norm_lo = float(normalized[0])
+        norm_hi = float(normalized[1])
+    probed = _lib.xyg_polar_wedge_points(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        float(wedge_gap),
+        float(corner_radius),
+        step_count,
+        norm_lo,
+        norm_hi,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid polar-wedge request")
+    n = int(probed)
+    if n == 0:
+        return []
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_polar_wedge_points(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        float(wedge_gap),
+        float(corner_radius),
+        step_count,
+        norm_lo,
+        norm_hi,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-wedge request")
+    return [(float(x), float(y)) for x, y in zip(out_x, out_y, strict=True)]
+
+
+def polar_heatmap_inverse_map(
+    metrics: npt.ArrayLike,
+    plot: Mapping[str, float],
+    grid_w: int,
+    grid_h: int,
+    x_range: tuple[float, float] | list[float],
+    y_range: tuple[float, float] | list[float],
+    output_scale: float = 1.0,
+) -> tuple[int, int, npt.NDArray[np.uint32], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]:
+    """Map visible polar-heatmap pixels onto source cells (ABI 207).
+
+    Returns ``(out_w, out_h, rows, cols, source_indices)``. ``source_indices``
+    are row-major with source row 0 at the radial-range bottom so hosts can
+    color only those cells. Empty native pointers are ``0``.
+    """
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    grid_w = int(grid_w)
+    grid_h = int(grid_h)
+    if grid_w <= 0 or grid_h <= 0:
+        raise ValueError("polar heatmap dimensions must be positive")
+    scale = float(output_scale)
+    if not math.isfinite(scale) or scale <= 0.0:
+        raise ValueError("polar heatmap output_scale must be positive and finite")
+    xr = (float(x_range[0]), float(x_range[1]))
+    yr = (float(y_range[0]), float(y_range[1]))
+    out_w = ctypes.c_uint32()
+    out_h = ctypes.c_uint32()
+    probed = _lib.xyg_polar_heatmap_inverse_map(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        grid_w,
+        grid_h,
+        xr[0],
+        yr[0],
+        xr[1],
+        yr[1],
+        scale,
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+        0,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid polar-heatmap inverse-map request")
+    width = int(out_w.value)
+    height = int(out_h.value)
+    capacity = width * height
+    rows = np.empty(capacity, dtype=np.uint32)
+    cols = np.empty(capacity, dtype=np.uint32)
+    source = np.empty(capacity, dtype=np.uint32)
+    written = _lib.xyg_polar_heatmap_inverse_map(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        grid_w,
+        grid_h,
+        xr[0],
+        yr[0],
+        xr[1],
+        yr[1],
+        scale,
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+        _ptr_u32(rows) if capacity else 0,
+        _ptr_u32(cols) if capacity else 0,
+        _ptr_u32(source) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-heatmap inverse-map request")
+    n = int(written)
+    return width, height, rows[:n], cols[:n], source[:n]
+
+
+def _polar_mask(
+    fn: Callable[..., int],
+    metrics: npt.ArrayLike,
+    *arrays: npt.ArrayLike,
+) -> npt.NDArray[np.bool_]:
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    inputs = [
+        _as_f64(np.asarray(value, dtype=np.float64).reshape(-1), "values") for value in arrays
+    ]
+    n = len(inputs[0])
+    if any(len(arr) != n for arr in inputs[1:]):
+        raise ValueError("polar mask inputs must have the same length")
+    out = np.empty(n, dtype=np.uint8)
+    args: list[object] = [_ptr_f64(packed) if len(packed) else 0, len(packed)]
+    for arr in inputs:
+        args.extend([_ptr_f64(arr) if n else 0])
+    args.append(n)
+    args.extend([out.ctypes.data if n else 0, n])
+    written = fn(*args)
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-mask request")
+    return out.astype(np.bool_)
+
+
+def polar_theta_visible_mask(metrics: npt.ArrayLike, theta: npt.ArrayLike) -> npt.NDArray[np.bool_]:
+    """Angular-sector visibility via ``xyg_polar_theta_visible_mask`` (ABI 131)."""
+    return _polar_mask(_lib.xyg_polar_theta_visible_mask, metrics, theta)
+
+
+def polar_visible_mask(metrics: npt.ArrayLike, r: npt.ArrayLike) -> npt.NDArray[np.bool_]:
+    """Radial-range visibility via ``xyg_polar_visible_mask`` (ABI 131)."""
+    return _polar_mask(_lib.xyg_polar_visible_mask, metrics, r)
+
+
+def polar_position_mask(
+    metrics: npt.ArrayLike,
+    theta: npt.ArrayLike,
+    r: npt.ArrayLike,
+) -> npt.NDArray[np.bool_]:
+    """Combined polar visibility via ``xyg_polar_position_mask`` (ABI 131)."""
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    th = _as_f64(np.asarray(theta, dtype=np.float64).reshape(-1), "theta")
+    rv = _as_f64(np.asarray(r, dtype=np.float64).reshape(-1), "r")
+    n = len(th)
+    if len(rv) != n:
+        raise ValueError("theta and r must have the same length")
+    out = np.empty(n, dtype=np.uint8)
+    written = _lib.xyg_polar_position_mask(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        _ptr_f64(th) if n else 0,
+        _ptr_f64(rv) if n else 0,
+        n,
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-position-mask request")
+    return out.astype(np.bool_)
+
+
+def recut_polar_plot(
+    plot: Mapping[str, float],
+    width: float,
+    height: float,
+    *,
+    legend_side: str = "",
+    legend_room: float = 0.0,
+    polar_label_room: float = 0.0,
+    authored_padding: bool = False,
+    y_titled: bool = False,
+    keeps_bottom: bool = False,
+) -> dict[str, float]:
+    """Re-cut a cartesian plot rect into a polar disc (ABI 126)."""
+    side_codes = {"": 0, "left": 1, "right": 2, "bottom": 3}
+    try:
+        side = side_codes[legend_side]
+    except KeyError as exc:
+        raise ValueError("legend_side must be '', left, right, or bottom") from exc
+    incoming = np.asarray(
+        [
+            float(plot["x"]),
+            float(plot["y"]),
+            float(plot["w"]),
+            float(plot["h"]),
+            float(plot.get("top_axis_room", 0.0)),
+        ],
+        dtype=np.float64,
+    )
+    out = np.empty(9, dtype=np.float64)
+    written = _lib.xyg_recut_polar_plot(
+        _ptr_f64(incoming),
+        float(width),
+        float(height),
+        side,
+        float(legend_room),
+        float(polar_label_room),
+        1 if authored_padding else 0,
+        1 if y_titled else 0,
+        1 if keeps_bottom else 0,
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-recut request")
+    result = {
+        "x": float(out[0]),
+        "y": float(out[1]),
+        "w": float(out[2]),
+        "h": float(out[3]),
+        "top_axis_room": float(out[4]),
+    }
+    if np.isfinite(out[5]):
+        result["legend_box_x"] = float(out[5])
+        result["legend_box_y"] = float(out[6])
+        result["legend_box_w"] = float(out[7])
+        result["legend_box_h"] = float(out[8])
+    return result
+
+
+def compat_combine_plot(
+    width: float,
+    height: float,
+    *,
+    authored_padding: Sequence[float] | None = None,
+    title_room: float = 0.0,
+    x_top_room: float = 0.0,
+    x_bottom_room: float = 0.0,
+    x_measured_bottom: float = 0.0,
+    colorbar_kind: str = "none",
+    colorbar_has_label: bool = False,
+    colorbar_pad_zero: bool = False,
+    has_right_y: bool = False,
+    y_left_room: float | None = None,
+    edge_left: float | None = None,
+    edge_right: float | None = None,
+    x_rooms_final: Sequence[float] | None = None,
+    polar: Mapping[str, Any] | None = None,
+) -> dict[str, float]:
+    """Combine static-export padding/title/rooms/colorbar/polar recut (ABI 198)."""
+    try:
+        cb_code = _COLORBAR_KINDS[colorbar_kind]
+    except KeyError as exc:
+        raise ValueError("unknown colorbar layout kind") from exc
+    pad_arr = None
+    if authored_padding is not None:
+        if len(authored_padding) != 4:
+            raise ValueError("authored_padding must be top, right, bottom, left")
+        pad_arr = np.asarray(authored_padding, dtype=np.float64)
+    x_final_arr = None
+    if x_rooms_final is not None:
+        if len(x_rooms_final) != 3:
+            raise ValueError("x_rooms_final must be top, bottom, measured_bottom")
+        x_final_arr = np.asarray(x_rooms_final, dtype=np.float64)
+    side_codes = {"": 0, "left": 1, "right": 2, "bottom": 3}
+    polar_on = polar is not None
+    legend_side = ""
+    legend_room = 0.0
+    polar_label_room = 0.0
+    authored_padding_flag = False
+    y_titled = False
+    keeps_bottom = False
+    if polar_on:
+        legend_side = str(polar.get("legend_side") or "")
+        try:
+            side = side_codes[legend_side]
+        except KeyError as exc:
+            raise ValueError("legend_side must be '', left, right, or bottom") from exc
+        legend_room = float(polar.get("legend_room") or 0.0)
+        polar_label_room = float(polar.get("polar_label_room") or 0.0)
+        authored_padding_flag = bool(polar.get("authored_padding"))
+        y_titled = bool(polar.get("y_titled"))
+        keeps_bottom = bool(polar.get("keeps_bottom"))
+    else:
+        side = 0
+    out = np.empty(12, dtype=np.float64)
+    written = _lib.xyg_compat_combine_plot(
+        float(width),
+        float(height),
+        _ptr_f64(pad_arr) if pad_arr is not None else 0,
+        float(title_room),
+        float(x_top_room),
+        float(x_bottom_room),
+        float(x_measured_bottom),
+        cb_code,
+        1 if colorbar_has_label else 0,
+        1 if colorbar_pad_zero else 0,
+        1 if has_right_y else 0,
+        float("nan") if y_left_room is None else float(y_left_room),
+        float("nan") if edge_left is None else float(edge_left),
+        float("nan") if edge_right is None else float(edge_right),
+        _ptr_f64(x_final_arr) if x_final_arr is not None else 0,
+        1 if polar_on else 0,
+        side,
+        legend_room,
+        polar_label_room,
+        1 if authored_padding_flag else 0,
+        1 if y_titled else 0,
+        1 if keeps_bottom else 0,
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid static-export layout combination")
+    result = {
+        "x": float(out[0]),
+        "y": float(out[1]),
+        "w": float(out[2]),
+        "h": float(out[3]),
+        "title_room": float(out[4]),
+        "title_wrap_width": float(out[5]),
+        "top_axis_room": float(out[6]),
+        "bottom_axis_room": float(out[7]),
+    }
+    if np.isfinite(out[8]):
+        result["legend_box_x"] = float(out[8])
+        result["legend_box_y"] = float(out[9])
+        result["legend_box_w"] = float(out[10])
+        result["legend_box_h"] = float(out[11])
+    return result
+
+
+def tight_layout_solve(
+    canvas_w: float,
+    canvas_h: float,
+    nrows: int,
+    ncols: int,
+    compact: bool,
+    panels: Sequence[Mapping[str, float]],
+    extra: Sequence[float] = (0.0, 0.0, 0.0, 0.0),
+    pad: float | None = None,
+    w_pad: float | None = None,
+    h_pad: float | None = None,
+    point_px: float = 1.0,
+    rect: Sequence[float] = (0.0, 0.0, 1.0, 1.0),
+) -> tuple[float, float, float, float, float, float]:
+    """Pyplot tight-layout grid solve via ``xyg_tight_layout_solve`` (ABI 127)."""
+    if len(extra) != 4:
+        raise ValueError("extra must be left, right, bottom, top")
+    if len(rect) != 4:
+        raise ValueError("rect must be left, bottom, right, top")
+    packed = np.empty((len(panels), 8), dtype=np.float64)
+    for index, panel in enumerate(panels):
+        packed[index] = (
+            float(panel["row0"]),
+            float(panel["row1"]),
+            float(panel["col0"]),
+            float(panel["col1"]),
+            float(panel["left"]),
+            float(panel["top"]),
+            float(panel["right"]),
+            float(panel["bottom"]),
+        )
+    extra_arr = np.asarray(extra, dtype=np.float64)
+    rect_arr = np.asarray(rect, dtype=np.float64)
+    out = np.empty(6, dtype=np.float64)
+    written = _lib.xyg_tight_layout_solve(
+        float(canvas_w),
+        float(canvas_h),
+        int(nrows),
+        int(ncols),
+        1 if compact else 0,
+        _ptr_f64(packed) if len(panels) else 0,
+        len(panels),
+        _ptr_f64(extra_arr),
+        float("nan") if pad is None else float(pad),
+        float("nan") if w_pad is None else float(w_pad),
+        float("nan") if h_pad is None else float(h_pad),
+        float(point_px),
+        _ptr_f64(rect_arr),
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tight-layout request")
+    return (
+        float(out[0]),
+        float(out[1]),
+        float(out[2]),
+        float(out[3]),
+        float(out[4]),
+        float(out[5]),
+    )
+
+
+def tight_layout_figure_extra(
+    canvas_w: float,
+    canvas_h: float,
+    *,
+    suptitle_height: float | None = None,
+    suptitle_y: float = 0.98,
+    xlabel_size: float | None = None,
+    ylabel_size: float | None = None,
+    legend_box_w: float | None = None,
+) -> tuple[float, float, float, float]:
+    """Figure-edge extras for ``xyg_tight_layout_solve`` (ABI 198).
+
+    Returns ``(left, right, bottom, top)``. Hosts still measure suptitle height,
+    figure-label sizes, and outside-legend box width.
+    """
+    extra = np.empty(4, dtype=np.float64)
+    written = _lib.xyg_tight_layout_figure_extra(
+        float(canvas_w),
+        float(canvas_h),
+        float("nan") if suptitle_height is None else float(suptitle_height),
+        float(suptitle_y),
+        float("nan") if xlabel_size is None else float(xlabel_size),
+        float("nan") if ylabel_size is None else float(ylabel_size),
+        float("nan") if legend_box_w is None else float(legend_box_w),
+        _ptr_f64(extra),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tight-layout figure-extra request")
+    return float(extra[0]), float(extra[1]), float(extra[2]), float(extra[3])
 
 
 def scene_scale_map(
@@ -1967,6 +7087,7 @@ def scene_batch_encode(
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
     authored_text_annotations: bytes = b"",
+    polar_input: bytes = b"",
 ) -> bytes:
     """Encode the bounded backend-neutral Scene v16 typed batch."""
 
@@ -2011,7 +7132,7 @@ def scene_batch_encode(
     expansion_mode_codes = scene_uint(
         np.zeros(len(kind_array), dtype=np.uint8) if expansion_modes is None else expansion_modes,
         np.uint8,
-        4,
+        12,
         "scene expansion_modes",
     )
     coordinates = [
@@ -2068,6 +7189,20 @@ def scene_batch_encode(
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
     legend_array = np.frombuffer(legend_input, dtype=np.uint8)
     colorbar_array = np.frombuffer(colorbar_input, dtype=np.uint8)
+    if not isinstance(polar_input, (bytes, bytearray)):
+        raise TypeError("polar_input must be bytes")
+    if polar_input:
+        magic = bytes(polar_input[:4])
+        if magic not in {b"XYPL", b"XYHP", b"XYEX", b"XYDS", b"XYLC", b"XYMP", b"XYGR"}:
+            raise ValueError(
+                "polar_input must be empty, XYPL, XYHP, XYEX, XYDS, XYLC, XYMP, or XYGR"
+            )
+        if magic == b"XYPL" and len(polar_input) != 92:
+            raise ValueError("polar_input must be empty or a 92-byte XYPL v1 envelope")
+    polar_array = np.frombuffer(bytes(polar_input), dtype=np.uint8)
+    polar_view = (
+        None if not len(polar_array) else _PolarAbiInput(_ptr_u8(polar_array), len(polar_array))
+    )
 
     def tick_label_input(labels: list[str] | tuple[str, ...] | None, name: str) -> np.ndarray:
         if labels is None:
@@ -2186,6 +7321,7 @@ def scene_batch_encode(
             len(legend_array),
             _ptr_u8(colorbar_array) if len(colorbar_array) else 0,
             len(colorbar_array),
+            ctypes.addressof(polar_view) if polar_view is not None else 0,
             out,
             capacity,
         )
@@ -2216,12 +7352,156 @@ def scene_svg(encoded: bytes) -> str:
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
+def svg_to_pdf(svg: str) -> bytes:
+    """Convert an xy-generated closed-subset SVG into a single-page vector PDF.
+
+    Rust owns the converter (M2 #274). Unsupported elements, attributes, and
+    path commands raise ``ValueError("unsupported SVG feature: ...")``.
+    """
+    if not isinstance(svg, str):
+        raise TypeError("svg must be a str")
+    encoded = svg.encode("utf-8")
+    source = np.frombuffer(encoded, dtype=np.uint8)
+    n = len(source)
+    capacity = max(256, n * 2)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = _lib.xyg_svg_to_pdf(_ptr_u8(source) if n else 0, n, out, capacity)
+        if written == _USIZE_MAX:
+            message = out.value.decode("utf-8", "replace") or "unsupported SVG feature"
+            raise ValueError(message)
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
+def _encode_pixels(
+    function: Any,
+    pixels: np.ndarray,
+    extra: tuple[Any, ...] = (),
+    *,
+    label: str,
+) -> bytes:
+    if not isinstance(pixels, np.ndarray):
+        raise ValueError(f"{label} image must be a numpy array, got {type(pixels).__name__}")
+    if pixels.dtype != np.uint8:
+        raise ValueError(f"{label} image must be uint8, got {pixels.dtype}")
+    if pixels.ndim != 3 or pixels.shape[2] not in (3, 4):
+        raise ValueError(
+            f"{label} image must be (h, w, 4) RGBA or (h, w, 3) RGB, got {pixels.shape}"
+        )
+    arr = np.ascontiguousarray(pixels)
+    height, width, channels = (int(v) for v in arr.shape)
+    n = int(arr.size)
+    capacity = max(256, n)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = function(
+            _ptr_u8(arr) if n else 0,
+            n,
+            width,
+            height,
+            channels,
+            *extra,
+            out,
+            capacity,
+        )
+        if written == _USIZE_MAX:
+            message = out.value.decode("utf-8", "replace") or f"invalid {label} input"
+            raise ValueError(message)
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
+def encode_jpeg(pixels: np.ndarray, *, quality: int = 90) -> bytes:
+    """Encode RGB/RGBA8 pixels as a baseline sequential JFIF JPEG.
+
+    Rust owns YCbCr 4:4:4, Annex K tables, the libjpeg quality curve, and
+    Huffman packing (M2 #274). Alpha is ignored.
+    """
+    if isinstance(quality, bool) or not isinstance(quality, int):
+        raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    return _encode_pixels(_lib.xyg_encode_jpeg, pixels, (int(quality),), label="JPEG")
+
+
+def encode_webp(pixels: np.ndarray) -> bytes:
+    """Encode RGB/RGBA8 pixels as a lossless VP8L WebP.
+
+    Rust owns the simple-lossless subset, length-limited prefix codes, and
+    distance-1 run packing (M2 #274). Alpha survives bit-exact.
+    """
+    return _encode_pixels(_lib.xyg_encode_webp, pixels, label="WebP")
+
+
+def encode_png(pixels: np.ndarray, *, mode: int = 0, compression: int = 6) -> bytes:
+    """Encode RGB/RGBA8 pixels as a PNG.
+
+    Rust owns filter-0 scanlines, zlib IDAT, and indexed-vs-truecolor
+    selection (M2 #274). `mode` 0 auto-selects an indexed palette when the
+    image has ≤256 unique RGBA colors; `mode` 1 forces truecolor.
+    `compression` is the zlib level in ``0..9``.
+    """
+    if isinstance(mode, bool) or not isinstance(mode, int) or mode not in (0, 1):
+        raise ValueError(f"PNG mode must be 0 (auto) or 1 (truecolor), got {mode!r}")
+    if isinstance(compression, bool) or not isinstance(compression, int):
+        raise ValueError(f"PNG compression must be an int in 0..9, got {compression!r}")
+    if not (0 <= compression <= 9):
+        raise ValueError(f"PNG compression must be an int in 0..9, got {compression!r}")
+    return _encode_pixels(
+        _lib.xyg_encode_png,
+        pixels,
+        (int(mode), int(compression)),
+        label="PNG",
+    )
+
+
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     """Compile Scene v12 into the existing native raster display list."""
     factor = float(scale)
     if not math.isfinite(factor) or factor <= 0.0:
         raise ValueError("scene raster scale must be positive and finite")
     return _scene_bytes_output(encoded, _lib.xyg_scene_raster_commands, "raster commands", factor)
+
+
+_SCENE_STATIC_FORMATS = {"svg": 0, "png": 1, "pdf": 2, "jpeg": 3, "webp": 4}
+
+
+def scene_static_export(
+    encoded: bytes,
+    format: str,
+    *,
+    scale: float = 1.0,
+    width: int = 1,
+    height: int = 1,
+    quality: int = 90,
+) -> bytes:
+    """Render one encoded Scene to a public static format (ABI 164)."""
+    code = _SCENE_STATIC_FORMATS.get(format)
+    if code is None:
+        raise ValueError(
+            f"Scene public static format must be svg, png, pdf, jpeg, or webp, got {format!r}"
+        )
+    if format in {"png", "jpeg", "webp"}:
+        factor = float(scale)
+        if not math.isfinite(factor) or factor <= 0.0:
+            raise ValueError("scene raster scale must be positive and finite")
+    else:
+        factor = float(scale) if math.isfinite(float(scale)) else 1.0
+    width_px = _positive_int(width, "scene static width")
+    height_px = _positive_int(height, "scene static height")
+    if isinstance(quality, bool) or not isinstance(quality, int):
+        raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    return _scene_bytes_output(
+        encoded,
+        _lib.xyg_scene_static_export,
+        "static export",
+        int(code),
+        factor,
+        width_px,
+        height_px,
+        int(quality),
+    )
 
 
 def scene_browser_painter(encoded: bytes, max_bytes: int = 64 * 1024 * 1024) -> bytes:
@@ -2752,6 +8032,19 @@ def is_sorted(data: npt.NDArray[np.float64]) -> bool:
     return bool(_lib.xyg_is_sorted(_ptr_f64(data), len(data)))
 
 
+def argsort_stable(data: npt.NDArray[np.float64]) -> npt.NDArray[np.uint32]:
+    """Stable argsort (NaNs last) matching ``np.argsort(..., kind="stable")``."""
+    data = _as_f64(data, "data")
+    n = len(data)
+    if n == 0:
+        return np.empty(0, dtype=np.uint32)
+    out = np.empty(n, dtype=np.uint32)
+    written = _lib.xyg_argsort_stable(_ptr_f64(data), n, out.ctypes.data, n)
+    if written != n:
+        raise ValueError("invalid argsort_stable arguments")
+    return out
+
+
 def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
     """NaN-skipping min/max; None for empty/all-NaN input."""
     data = _as_f64(data, "data")
@@ -2761,6 +8054,85 @@ def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
     hi = ctypes.c_double()
     ok = _lib.xyg_min_max(_ptr_f64(data), len(data), ctypes.byref(lo), ctypes.byref(hi))
     return (lo.value, hi.value) if ok else None
+
+
+def continuous_domain(data: npt.NDArray[np.float64]) -> tuple[float, float]:
+    """Continuous color/size domain via ``xyg_continuous_domain`` (ABI 213)."""
+    data = _as_f64(data, "data")
+    n = len(data)
+    lo = ctypes.c_double()
+    hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_continuous_domain(
+            _ptr_f64(data) if n else 0,
+            n,
+            ctypes.byref(lo),
+            ctypes.byref(hi),
+        )
+    )
+    if code != 0:
+        raise ValueError("invalid continuous-domain request")
+    return (float(lo.value), float(hi.value))
+
+
+def direct_rgba_admit(
+    values: npt.NDArray[np.float64],
+    components: int,
+) -> npt.NDArray[np.float64]:
+    """Admit per-point RGB/RGBA in ``[0, 1]`` as contiguous Nx4 (ABI 213)."""
+    values = _as_f64(values, "direct rgba")
+    components = int(components)
+    if components not in (3, 4):
+        raise ValueError("direct RGB/RGBA colors must be 3 or 4 components")
+    if values.size % components != 0:
+        raise ValueError("direct RGB/RGBA colors must be a multiple of the component count")
+    n = int(values.size // components)
+    probed = _lib.xyg_direct_rgba_admit(
+        _ptr_f64(values) if n else 0,
+        n,
+        components,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64)
+    out = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_direct_rgba_admit(
+        _ptr_f64(values) if n else 0,
+        n,
+        components,
+        _ptr_f64(out),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
+    return out
+
+
+def clip_quantize_u8(values: npt.ArrayLike) -> npt.NDArray[np.uint8]:
+    """Clip unit f64 to ``[0, 1]``, scale by 255, and quantize to u8 (ABI 251).
+
+    Ties round to even. Non-finite results write ``0``. Empty native pointers
+    are ``0``. Field picking stays host.
+    """
+    arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "clip_quantize_u8")
+    out = np.empty(arr.size, dtype=np.uint8)
+    code = int(
+        _lib.xyg_clip_quantize_u8(
+            _ptr_f64(arr) if arr.size else 0,
+            int(arr.size),
+            _ptr_u8(out) if out.size else 0,
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid clip-quantize-u8 request")
+    if code != 1:
+        raise ValueError("invalid clip-quantize-u8 request")
+    return out
 
 
 def histogram_uniform(
@@ -5983,6 +11355,96 @@ def rasterize_png_spans(cmds: Any, spans, w: int, h: int) -> bytes:  # noqa: ANN
     return out[:written].tobytes()
 
 
+def colormap_rgba(
+    raw: npt.ArrayLike,
+    w: int,
+    h: int,
+    stops: npt.ArrayLike,
+    alpha: int,
+) -> npt.NDArray[np.uint8]:
+    """Map normalized scalars ``t ∈ [0, 1]`` to a vertically flipped ``(h, w, 4)`` RGBA image."""
+    w = _positive_int(w, "colormap width")
+    h = _positive_int(h, "colormap height")
+    values = np.ascontiguousarray(raw, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if values.size != w * h:
+        raise ValueError("colormap scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    alpha = operator.index(alpha)
+    if not 0 <= alpha <= 255:
+        raise ValueError("colormap alpha must be in [0, 255]")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_colormap_rgba(
+        _ptr_f64(values),
+        w,
+        h,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        alpha,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native colormap rejected the inputs")
+    return out
+
+
+def colormap_rgba_canonical(
+    raw: npt.ArrayLike,
+    w: int,
+    h: int,
+    domain: tuple[float, float],
+    stops: npt.ArrayLike,
+    alpha: int,
+) -> npt.NDArray[np.uint8]:
+    """Map canonical f64 scalars through domain normalization to RGBA8."""
+    w = _positive_int(w, "colormap width")
+    h = _positive_int(h, "colormap height")
+    values = np.ascontiguousarray(raw, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if values.size != w * h:
+        raise ValueError("colormap scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    d0 = _finite_float(domain[0], "colormap domain lo")
+    d1 = _finite_float(domain[1], "colormap domain hi")
+    alpha = operator.index(alpha)
+    if not 0 <= alpha <= 255:
+        raise ValueError("colormap alpha must be in [0, 255]")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_colormap_rgba_canonical(
+        _ptr_f64(values),
+        w,
+        h,
+        d0,
+        d1,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        alpha,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native canonical colormap rejected the inputs")
+    return out
+
+
+def colormap_stops(name: str) -> npt.NDArray[np.uint8]:
+    """Resolve a named colormap to ``(n, 3)`` uint8 RGB stops (ABI 135)."""
+    encoded = str(name).encode("utf-8")
+    out = np.empty((256, 3), dtype=np.uint8)
+    count = int(
+        _lib.xyg_colormap_stops(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if count <= 0:
+        raise ValueError("native colormap stops rejected the inputs")
+    return out[:count].copy()
+
+
 def heatmap_rgba(
     raw: npt.ArrayLike,
     w: int,
@@ -6053,6 +11515,95 @@ def density_rgba(
     )
     if not ok:
         raise ValueError("native density colormap rejected the inputs")
+    return out
+
+
+def colormap_lut(t: npt.ArrayLike, stops: npt.ArrayLike) -> npt.NDArray[np.uint8]:
+    """Map normalized scalars ``t ∈ [0, 1]`` to packed ``(n, 3)`` RGB (ABI 206)."""
+    values = np.ascontiguousarray(t, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    n = int(values.size)
+    out = np.empty((n, 3), dtype=np.uint8)
+    ok = _lib.xyg_colormap_lut(
+        _ptr_f64(values) if n else 0,
+        n,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        _ptr_u8(out) if n else 0,
+    )
+    if not ok:
+        raise ValueError("native colormap lut rejected the inputs")
+    return out
+
+
+def density_rgba_linear(
+    counts: npt.ArrayLike,
+    w: int,
+    h: int,
+    maximum: float,
+    stops: npt.ArrayLike,
+    opacity: float,
+) -> npt.NDArray[np.uint8]:
+    """Map an f64 count grid to a vertically flipped RGBA8 image (ABI 206)."""
+    w = _positive_int(w, "density width")
+    h = _positive_int(h, "density height")
+    values = np.ascontiguousarray(counts, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    maximum = _finite_float(maximum, "density maximum")
+    opacity = _finite_float(opacity, "density opacity")
+    if maximum < 0.0:
+        raise ValueError("density maximum must be >= 0")
+    if not 0.0 <= opacity <= 1.0:
+        raise ValueError("density opacity must be in [0, 1]")
+    if values.size != w * h:
+        raise ValueError("density scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("density stops must be a non-empty (n, 3) array")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_density_rgba_linear(
+        _ptr_f64(values),
+        w,
+        h,
+        maximum,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        opacity,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native linear density colormap rejected the inputs")
+    return out
+
+
+def paint_effective_rgba(
+    intrinsic: npt.ArrayLike,
+    artist_alpha: npt.ArrayLike,
+    opacity: npt.ArrayLike,
+    component_opacity: float,
+) -> npt.NDArray[np.float64]:
+    """Artist-alpha replace then xy opacity multiply (ABI 206)."""
+    rgba = np.ascontiguousarray(intrinsic, dtype=np.float64)
+    if rgba.ndim != 2 or rgba.shape[1] != 4:
+        raise ValueError(f"intrinsic paint must have shape (N, 4), got {rgba.shape}")
+    n = int(rgba.shape[0])
+    artist = np.ascontiguousarray(artist_alpha, dtype=np.float64).reshape(-1)
+    opac = np.ascontiguousarray(opacity, dtype=np.float64).reshape(-1)
+    if artist.size != n or opac.size != n:
+        raise ValueError("artist_alpha and opacity must match intrinsic row count")
+    component_opacity = _finite_float(component_opacity, "component_opacity")
+    out = np.empty((n, 4), dtype=np.float64)
+    ok = _lib.xyg_paint_effective_rgba(
+        _ptr_f64(rgba) if n else 0,
+        n,
+        _ptr_f64(artist) if n else 0,
+        _ptr_f64(opac) if n else 0,
+        component_opacity,
+        _ptr_f64(out) if n else 0,
+    )
+    if not ok:
+        raise ValueError("native paint_effective_rgba rejected the inputs")
     return out
 
 
@@ -6166,6 +11717,2553 @@ def lod_plan(
     if ok != 1:
         raise ValueError("invalid lod_plan arguments")
     return bool(out_exact.value), int(out_mode.value), int(out_gw.value), int(out_gh.value)
+
+
+def payload_tier(
+    kind: int,
+    n_points: int,
+    *,
+    polar: bool = False,
+    force_density: int = -1,
+    force_direct: bool = False,
+    per_item: bool = False,
+) -> int:
+    """Compile-time payload tier via ``xyg_payload_tier`` (ABI 122).
+
+    ``kind`` is 0=line/area, 1=scatter. ``force_density`` is -1 auto, 0 false,
+    1 true. Returns 0=direct, 1=decimated, 2=density.
+    """
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    code = int(
+        _lib.xyg_payload_tier(
+            int(kind),
+            n,
+            int(bool(polar)),
+            int(force_density),
+            int(bool(force_direct)),
+            int(bool(per_item)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid payload_tier arguments")
+    return code
+
+
+def payload_visible_needed(
+    *,
+    x_log: bool,
+    y_log: bool,
+    prefiltered: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    has_base: bool = False,
+    base_has_nulls: bool = False,
+) -> bool:
+    """Whether the payload visible-row mask can drop rows (ABI 122)."""
+    code = int(
+        _lib.xyg_payload_visible_needed(
+            int(bool(x_log)),
+            int(bool(y_log)),
+            int(bool(prefiltered)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(has_base)),
+            int(bool(base_has_nulls)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid payload_visible_needed arguments")
+    return bool(code)
+
+
+def payload_visible_mask(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    x_log: bool = False,
+    y_log: bool = False,
+    base: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.bool_]:
+    """Finite + log-positive keep mask via ``xyg_payload_visible_mask``."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_visible_mask x and y must have equal length")
+    n = len(x)
+    out = np.empty(n, dtype=np.uint8)
+    has_base = base is not None
+    base_arr = _as_f64(base, "base") if has_base else None
+    if has_base and base_arr is not None and len(base_arr) != n:
+        raise ValueError("payload_visible_mask base must match x/y length")
+    written = _lib.xyg_payload_visible_mask(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        int(bool(x_log)),
+        int(bool(y_log)),
+        _ptr_f64(base_arr) if has_base and base_arr is not None else 0,
+        int(has_base),
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_visible_mask arguments")
+    return out.astype(bool, copy=False)
+
+
+def payload_m4_indices(
+    n_points: int,
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x0: float,
+    x1: float,
+    n_buckets: int,
+    *,
+    polar: bool = False,
+    bin_x: npt.NDArray[np.float64] | None = None,
+    bin_x0: float = 0.0,
+    bin_x1: float = 0.0,
+) -> tuple[int, npt.NDArray[np.uint32]]:
+    """Line M4 indices via ``xyg_payload_m4_indices`` (ABI 204).
+
+    Returns ``(tier, indices)``. ``tier`` is 0=direct (empty indices) or
+    1=decimated. Rust owns the threshold, polar skip, and closed-window ulp.
+    """
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n_pts = int(n_points)
+    if n_pts < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    if isinstance(n_buckets, (bool, np.bool_)) or not isinstance(n_buckets, numbers.Integral):
+        raise ValueError("n_buckets must be an integer >= 0")
+    n_buckets_i = int(n_buckets)
+    if n_buckets_i < 0:
+        raise ValueError("n_buckets must be an integer >= 0")
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_m4_indices x and y must have equal length")
+    n = len(x)
+    bin_arr = _as_f64(bin_x, "bin_x") if bin_x is not None else None
+    if bin_arr is not None and len(bin_arr) != n:
+        raise ValueError("payload_m4_indices bin_x must match x/y length")
+    out_tier = ctypes.c_int32(-1)
+    cap = n_buckets_i * 4 if n_buckets_i else 0
+    out = np.empty(cap, dtype=np.uint32) if cap else np.empty(0, dtype=np.uint32)
+    written = _lib.xyg_payload_m4_indices(
+        n_pts,
+        int(bool(polar)),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(x0),
+        float(x1),
+        n_buckets_i,
+        _ptr_f64(bin_arr) if bin_arr is not None and n else 0,
+        float(bin_x0),
+        float(bin_x1),
+        ctypes.byref(out_tier),
+        out.ctypes.data if cap else 0,
+        cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_m4_indices arguments")
+    return int(out_tier.value), out[:written].copy()
+
+
+def payload_visible_indices(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    x_log: bool = False,
+    y_log: bool = False,
+    base: npt.NDArray[np.float64] | None = None,
+    prefiltered: bool = False,
+    x_has_nulls: bool = False,
+    y_has_nulls: bool = False,
+    has_base: bool = False,
+    base_has_nulls: bool = False,
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Fused keep-all vs keep-indices via ``xyg_payload_visible_indices`` (ABI 205).
+
+    Returns ``(keep_all, indices)``. ``keep_all`` means ship every row without
+    an N-index allocation. Indices are positions in the passed ``x``/``y``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_visible_indices x and y must have equal length")
+    n = len(x)
+    has_base_flag = bool(has_base) or base is not None
+    base_arr = _as_f64(base, "base") if base is not None else None
+    if has_base_flag and base_arr is None:
+        raise ValueError("payload_visible_indices base is required when has_base is set")
+    if base_arr is not None and len(base_arr) != n:
+        raise ValueError("payload_visible_indices base must match x/y length")
+    if not payload_visible_needed(
+        x_log=x_log,
+        y_log=y_log,
+        prefiltered=prefiltered,
+        x_has_nulls=x_has_nulls,
+        y_has_nulls=y_has_nulls,
+        has_base=has_base_flag,
+        base_has_nulls=base_has_nulls,
+    ):
+        return True, np.empty(0, dtype=np.uint32)
+    out = np.empty(n, dtype=np.uint32) if n else np.empty(0, dtype=np.uint32)
+    keep_all = ctypes.c_int32(-1)
+    written = _lib.xyg_payload_visible_indices(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        int(bool(x_log)),
+        int(bool(y_log)),
+        _ptr_f64(base_arr) if base_arr is not None and n else 0,
+        int(has_base_flag),
+        int(bool(prefiltered)),
+        int(bool(x_has_nulls)),
+        int(bool(y_has_nulls)),
+        int(bool(base_has_nulls)),
+        ctypes.byref(keep_all),
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_visible_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > n:
+        out = np.empty(written, dtype=np.uint32)
+        keep_all = ctypes.c_int32(-1)
+        repeated = _lib.xyg_payload_visible_indices(
+            _ptr_f64(x) if n else 0,
+            _ptr_f64(y) if n else 0,
+            n,
+            int(bool(x_log)),
+            int(bool(y_log)),
+            _ptr_f64(base_arr) if base_arr is not None and n else 0,
+            int(has_base_flag),
+            int(bool(prefiltered)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(base_has_nulls)),
+            ctypes.byref(keep_all),
+            out.ctypes.data,
+            written,
+        )
+        if repeated != written or int(keep_all.value) == 1:
+            raise RuntimeError("native payload_visible_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
+def payload_even_indices(n: int, count: int) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Even keep indices via ``xyg_payload_even_indices`` (ABI 205).
+
+    Matches NumPy ``linspace(0, n-1, count, dtype=np.int64)``. Returns
+    ``(keep_all, indices)``; ``keep_all`` when ``n <= count``.
+    """
+    n_i = _bounded_nonnegative_int(n, "n", max_value=np.iinfo(np.uint32).max)
+    count_i = _bounded_nonnegative_int(count, "count", max_value=np.iinfo(np.uint32).max)
+    if count_i == 0:
+        raise ValueError("count must be a positive integer")
+    keep_all = ctypes.c_int32(-1)
+    out = np.empty(count_i, dtype=np.uint32)
+    written = _lib.xyg_payload_even_indices(
+        n_i,
+        count_i,
+        ctypes.byref(keep_all),
+        out.ctypes.data,
+        count_i,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_even_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > count_i:
+        raise RuntimeError("native payload_even_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
+def payload_segment_budget(px_width: float) -> int:
+    """Stem/errorbar emit count budget via ``xyg_payload_segment_budget`` (ABI 214).
+
+    ``max(1024, floor(px_width) * 4)``.
+    """
+    if isinstance(px_width, (bool, np.bool_)) or not isinstance(
+        px_width, (int, float, np.integer, np.floating, numbers.Real)
+    ):
+        raise ValueError("px_width must be a finite number")
+    written = int(_lib.xyg_payload_segment_budget(float(px_width)))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_segment_budget arguments")
+    return written
+
+
+def payload_errorbar_indices(
+    n_segments: int, n_points: int, budget: int
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Errorbar role-block keep indices via ``xyg_payload_errorbar_indices`` (ABI 215).
+
+    Even-samples ``n_points`` at ``budget`` then expands
+    ``chosen[i] + k * n_points`` across concatenated role groups. Returns
+    ``(keep_all, indices)``; ``keep_all`` when every segment ships.
+    """
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    budget_i = _bounded_nonnegative_int(budget, "budget", max_value=np.iinfo(np.uint32).max)
+    if n_pts == 0 or budget_i == 0:
+        raise ValueError("n_points and budget must be positive integers")
+    keep_all = ctypes.c_int32(-1)
+    out = np.empty(n_seg, dtype=np.uint32)
+    written = _lib.xyg_payload_errorbar_indices(
+        n_seg,
+        n_pts,
+        budget_i,
+        ctypes.byref(keep_all),
+        out.ctypes.data if n_seg else 0,
+        n_seg,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_errorbar_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > n_seg:
+        raise RuntimeError("native payload_errorbar_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
+def payload_errorbar_role_keys(
+    point_keys_lo: npt.NDArray[np.uint32],
+    point_keys_hi: npt.NDArray[np.uint32],
+    segment_sources: npt.NDArray[np.uint32],
+    segment_roles: npt.NDArray[np.uint32],
+) -> npt.NDArray[np.uint32]:
+    """Errorbar role-qualified keys via ``xyg_payload_errorbar_role_keys`` (ABI 273).
+
+    XOR-mixes point transition keys with per-segment role ids. Raises
+    ``ValueError`` on collision or invalid layout.
+    """
+    n_points = int(point_keys_lo.shape[0])
+    n_output = int(segment_sources.shape[0])
+    if point_keys_hi.shape[0] != n_points or segment_roles.shape[0] != n_output:
+        raise ValueError("invalid payload_errorbar_role_keys arguments")
+    point_keys_lo = np.ascontiguousarray(point_keys_lo, dtype=np.uint32)
+    point_keys_hi = np.ascontiguousarray(point_keys_hi, dtype=np.uint32)
+    segment_sources = np.ascontiguousarray(segment_sources, dtype=np.uint32)
+    segment_roles = np.ascontiguousarray(segment_roles, dtype=np.uint32)
+    out_lo = np.empty(n_output, dtype=np.uint32)
+    out_hi = np.empty(n_output, dtype=np.uint32)
+    collision = ctypes.c_int32(-1)
+    written = _lib.xyg_payload_errorbar_role_keys(
+        n_points,
+        n_output,
+        point_keys_lo.ctypes.data if n_points else 0,
+        point_keys_hi.ctypes.data if n_points else 0,
+        segment_sources.ctypes.data if n_output else 0,
+        segment_roles.ctypes.data if n_output else 0,
+        out_lo.ctypes.data if n_output else 0,
+        out_hi.ctypes.data if n_output else 0,
+        ctypes.byref(collision),
+    )
+    if written == _USIZE_MAX:
+        if int(collision.value) == 1:
+            raise ValueError("errorbar role-qualified animation key collision")
+        raise ValueError("invalid payload_errorbar_role_keys arguments")
+    if written != n_output:
+        raise RuntimeError("native payload_errorbar_role_keys returned an inconsistent count")
+    return np.column_stack([out_lo, out_hi])
+
+
+def payload_errorbar_role_maps(
+    n_segments: int, n_points: int
+) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.uint32]] | None:
+    """Errorbar segment role/source maps via ``xyg_payload_errorbar_role_maps`` (ABI 261).
+
+    Returns ``(segment_sources, segment_roles)`` when ``n_segments % n_points == 0``
+    and ``seg_per >= 1``; otherwise ``None``.
+    """
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    if n_pts == 0:
+        raise ValueError("n_points must be a positive integer")
+    out_sources = np.empty(n_seg, dtype=np.uint32)
+    out_roles = np.empty(n_seg, dtype=np.uint32)
+    applicable = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_errorbar_role_maps(
+        n_seg,
+        n_pts,
+        out_sources.ctypes.data if n_seg else 0,
+        out_roles.ctypes.data if n_seg else 0,
+        ctypes.byref(applicable),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_errorbar_role_maps arguments")
+    if int(applicable.value) != 1:
+        return None
+    return out_sources, out_roles
+
+
+def payload_segments_emit_gather(
+    kind: str,
+    n_segments: int,
+    n_points: int,
+    px_width: float,
+) -> dict[str, object]:
+    """Segment emit gather via ``xyg_payload_segments_emit_gather`` (ABI 292).
+
+    Owns errorbar role-map setup plus stem/errorbar decimation orchestration
+    from ``_emit_segments``. Returns tier, keep_all, optional indices, and
+    optional role maps for hosts to apply to geometry arrays.
+    """
+    if not isinstance(kind, str):
+        raise ValueError("kind must be a string")
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    if isinstance(px_width, (bool, np.bool_)) or not isinstance(
+        px_width, (int, float, np.integer, np.floating, numbers.Real)
+    ):
+        raise ValueError("px_width must be a finite number")
+    kind_b = kind.encode("utf-8")
+    tier = ctypes.c_int32(-1)
+    role_maps = ctypes.c_int32(-1)
+    keep_all = ctypes.c_int32(-1)
+    indices = np.empty(n_seg, dtype=np.uint32)
+    sources = np.empty(n_seg, dtype=np.uint32)
+    roles = np.empty(n_seg, dtype=np.uint32)
+    written = _lib.xyg_payload_segments_emit_gather(
+        kind_b,
+        len(kind_b),
+        n_seg,
+        n_pts,
+        float(px_width),
+        ctypes.byref(tier),
+        ctypes.byref(role_maps),
+        ctypes.byref(keep_all),
+        indices.ctypes.data if n_seg else 0,
+        sources.ctypes.data if n_seg else 0,
+        roles.ctypes.data if n_seg else 0,
+        n_seg,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_segments_emit_gather arguments")
+    if written > n_seg:
+        raise RuntimeError("native payload_segments_emit_gather returned an inconsistent count")
+    result: dict[str, object] = {
+        "tier": int(tier.value),
+        "role_maps": int(role_maps.value) == 1,
+        "keep_all": int(keep_all.value) == 1,
+        "n_out": int(written),
+    }
+    if not result["keep_all"]:
+        result["indices"] = indices[: int(written)].copy()
+    if result["role_maps"]:
+        result["sources"] = sources[: int(written)].copy()
+        result["roles"] = roles[: int(written)].copy()
+    return result
+
+
+def payload_trace_channels_ship_attach(
+    slot: int,
+    *,
+    include_trace_styles: bool,
+    has_color_ch: bool,
+    has_stroke_ch: bool,
+    has_style_channels: bool,
+) -> dict[str, bool]:
+    """Trace channel attach via ``xyg_payload_trace_channels_ship_attach`` (ABI 293).
+
+    Owns ``_ship_channels`` / ``_ship_trace_styles`` attach policy. Returns
+    booleans for color, size, stroke, and style-channel wire slots.
+    """
+    slot_i = int(slot)
+    ship_color = ctypes.c_int32(-1)
+    ship_size = ctypes.c_int32(-1)
+    ship_stroke = ctypes.c_int32(-1)
+    ship_style = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_trace_channels_ship_attach(
+        slot_i,
+        1 if include_trace_styles else 0,
+        1 if has_color_ch else 0,
+        1 if has_stroke_ch else 0,
+        1 if has_style_channels else 0,
+        ctypes.byref(ship_color),
+        ctypes.byref(ship_size),
+        ctypes.byref(ship_stroke),
+        ctypes.byref(ship_style),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_trace_channels_ship_attach arguments")
+    return {
+        "ship_color": int(ship_color.value) == 1,
+        "ship_size": int(ship_size.value) == 1,
+        "ship_stroke": int(ship_stroke.value) == 1,
+        "ship_style_channels": int(ship_style.value) == 1,
+    }
+
+
+_TRANSITION_FALLBACK_BY_CODE: tuple[str | None, ...] = (
+    None,
+    "snap:aggregate",
+    "snap:key-limit",
+    "index:key-count-mismatch",
+)
+
+
+def payload_transition_entry_attach(
+    *,
+    has_trace_animation: bool,
+    entry_has_animation: bool,
+    has_trace_keys: bool,
+    has_key_values: bool,
+    has_sel: bool,
+    tier_direct: bool,
+    n_marks: int,
+    n_trace_key_rows: int,
+    n_key_value_rows: int,
+    n_sel_rows: int,
+    max_rows: int,
+    has_tooltip_rows: bool,
+    n_tooltip_rows: int,
+    n_points: int,
+) -> dict[str, bool | str | None]:
+    """Transition/tooltip attach via ``xyg_payload_transition_entry_attach`` (ABI 294).
+
+    Owns ``_transition_entry`` / ``_attach_tooltip_rows`` when-to-ship policy.
+    """
+    attach_animation = ctypes.c_int32(-1)
+    attempt_keys = ctypes.c_int32(-1)
+    filter_keys_by_sel = ctypes.c_int32(-1)
+    ship_keys = ctypes.c_int32(-1)
+    animation_fallback = ctypes.c_int32(-1)
+    attach_tooltip = ctypes.c_int32(-1)
+    filter_tooltip_by_sel = ctypes.c_int32(-1)
+    tooltip_length_ok = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_transition_entry_attach(
+        1 if has_trace_animation else 0,
+        1 if entry_has_animation else 0,
+        1 if has_trace_keys else 0,
+        1 if has_key_values else 0,
+        1 if has_sel else 0,
+        1 if tier_direct else 0,
+        int(n_marks),
+        int(n_trace_key_rows),
+        int(n_key_value_rows),
+        int(n_sel_rows),
+        int(max_rows),
+        1 if has_tooltip_rows else 0,
+        int(n_tooltip_rows),
+        int(n_points),
+        ctypes.byref(attach_animation),
+        ctypes.byref(attempt_keys),
+        ctypes.byref(filter_keys_by_sel),
+        ctypes.byref(ship_keys),
+        ctypes.byref(animation_fallback),
+        ctypes.byref(attach_tooltip),
+        ctypes.byref(filter_tooltip_by_sel),
+        ctypes.byref(tooltip_length_ok),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_transition_entry_attach arguments")
+    fallback_code = int(animation_fallback.value)
+    if fallback_code < 0 or fallback_code >= len(_TRANSITION_FALLBACK_BY_CODE):
+        raise ValueError("invalid payload_transition_entry_attach fallback code")
+    return {
+        "attach_animation": int(attach_animation.value) == 1,
+        "attempt_keys": int(attempt_keys.value) == 1,
+        "filter_keys_by_sel": int(filter_keys_by_sel.value) == 1,
+        "ship_keys": int(ship_keys.value) == 1,
+        "animation_fallback": _TRANSITION_FALLBACK_BY_CODE[fallback_code],
+        "attach_tooltip": int(attach_tooltip.value) == 1,
+        "filter_tooltip_by_sel": int(filter_tooltip_by_sel.value) == 1,
+        "tooltip_length_ok": int(tooltip_length_ok.value) == 1,
+    }
+
+
+_PAYLOAD_AXIS_TYPE_BY_SCALE: dict[str, int] = {
+    "log": 1,
+    "symlog": 2,
+}
+
+_PAYLOAD_SHIP_SCALE_BY_CODE: tuple[str, ...] = ("linear", "log", "symlog")
+
+
+def _payload_axis_type_code(scale: str) -> int:
+    return _PAYLOAD_AXIS_TYPE_BY_SCALE.get(scale, 0)
+
+
+def payload_base_entry_plan(
+    *,
+    has_trace_animation: bool,
+    n_xv: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+) -> dict[str, bool | int | str]:
+    """Base-entry skeleton via ``xyg_payload_base_entry_plan`` (ABI 295).
+
+    Owns ``_base_entry`` / ``_default_styled`` animation, ``n_marks``, palette
+    default, and axis ship-scale selection.
+    """
+    attach_animation = ctypes.c_int32(-1)
+    n_marks = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_base_entry_plan(
+        1 if has_trace_animation else 0,
+        int(n_xv),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        ctypes.byref(attach_animation),
+        ctypes.byref(n_marks),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_base_entry_plan arguments")
+    x_code = int(x_ship_scale.value)
+    y_code = int(y_ship_scale.value)
+    if not (0 <= x_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_base_entry_plan x ship scale")
+    if not (0 <= y_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_base_entry_plan y ship scale")
+    return {
+        "attach_animation": int(attach_animation.value) == 1,
+        "n_marks": int(n_marks.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[x_code],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[y_code],
+    }
+
+
+PAYLOAD_NONXY_KIND_RECT = 0
+PAYLOAD_NONXY_KIND_HEXBIN = 1
+PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = 2
+
+_PAYLOAD_NONXY_KIND_BY_NAME: dict[str, int] = {
+    "rect": PAYLOAD_NONXY_KIND_RECT,
+    "hexbin": PAYLOAD_NONXY_KIND_HEXBIN,
+    "density_sample": PAYLOAD_NONXY_KIND_DENSITY_SAMPLE,
+}
+
+
+def payload_nonxy_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+) -> dict[str, bool | int | str]:
+    """Non-xy trace skeleton via ``xyg_payload_nonxy_emit_plan`` (ABI 296).
+
+    Owns rect/hexbin/density-sample tier, ``n_marks``, palette default, ship
+    scales, trace-channel attach slot/styles, and transition wrap policy.
+    """
+    kind_i = _PAYLOAD_NONXY_KIND_BY_NAME.get(kind)
+    if kind_i is None:
+        raise ValueError(f"invalid payload_nonxy_emit_plan kind {kind!r}")
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_nonxy_emit_plan(
+        kind_i,
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_nonxy_emit_plan arguments")
+    x_code = int(x_ship_scale.value)
+    y_code = int(y_ship_scale.value)
+    if not (0 <= x_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_nonxy_emit_plan x ship scale")
+    if not (0 <= y_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_nonxy_emit_plan y ship scale")
+    return {
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[x_code],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[y_code],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+    }
+
+
+PAYLOAD_BAR_HIST_KIND_HISTOGRAM = 0
+PAYLOAD_BAR_HIST_KIND_BAR_COMPACT = 1
+
+PAYLOAD_BAR_ORIENTATION_VERTICAL = 0
+PAYLOAD_BAR_ORIENTATION_HORIZONTAL = 1
+
+PAYLOAD_VALUE_AXIS_Y = 0
+PAYLOAD_VALUE_AXIS_X = 1
+
+_PAYLOAD_BAR_HIST_KIND_BY_NAME: dict[str, int] = {
+    "histogram": PAYLOAD_BAR_HIST_KIND_HISTOGRAM,
+    "bar_compact": PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+}
+
+_PAYLOAD_BAR_ORIENTATION_BY_NAME: dict[str, int] = {
+    "vertical": PAYLOAD_BAR_ORIENTATION_VERTICAL,
+    "horizontal": PAYLOAD_BAR_ORIENTATION_HORIZONTAL,
+}
+
+_PAYLOAD_VALUE_AXIS_BY_CODE: dict[int, str] = {
+    PAYLOAD_VALUE_AXIS_Y: "y",
+    PAYLOAD_VALUE_AXIS_X: "x",
+}
+
+
+def payload_bar_hist_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    compact: bool = True,
+    orientation: str = "vertical",
+) -> dict[str, bool | int | str]:
+    """Histogram / bar-compact skeleton via ``xyg_payload_bar_hist_emit_plan`` (ABI 297).
+
+    Owns rect-vs-nested-bar selection, gathered ``n_marks``, palette default,
+    axis ship scales, compact-bar pos/value scales, trace-channel attach
+    slot/styles, and transition wrap policy.
+    """
+    kind_i = _PAYLOAD_BAR_HIST_KIND_BY_NAME.get(kind)
+    if kind_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan kind {kind!r}")
+    orientation_i = _PAYLOAD_BAR_ORIENTATION_BY_NAME.get(orientation)
+    if kind_i == PAYLOAD_BAR_HIST_KIND_BAR_COMPACT and orientation_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
+    if kind_i == PAYLOAD_BAR_HIST_KIND_HISTOGRAM:
+        orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
+    emit_bar = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    pos_ship_scale = ctypes.c_int32(-1)
+    value_ship_scale = ctypes.c_int32(-1)
+    value_axis = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_bar_hist_emit_plan(
+        kind_i,
+        1 if compact else 0,
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        int(orientation_i),
+        ctypes.byref(emit_bar),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(pos_ship_scale),
+        ctypes.byref(value_ship_scale),
+        ctypes.byref(value_axis),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_bar_hist_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+        ("pos", int(pos_ship_scale.value)),
+        ("value", int(value_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_bar_hist_emit_plan {name} ship scale")
+    value_axis_code = int(value_axis.value)
+    if value_axis_code not in _PAYLOAD_VALUE_AXIS_BY_CODE:
+        raise ValueError("invalid payload_bar_hist_emit_plan value axis")
+    return {
+        "emit_bar": int(emit_bar.value) == 1,
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "pos_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(pos_ship_scale.value)],
+        "value_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(value_ship_scale.value)],
+        "value_axis": _PAYLOAD_VALUE_AXIS_BY_CODE[value_axis_code],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+    }
+
+
+PAYLOAD_HEATMAP_PATH_RGBA = 0
+PAYLOAD_HEATMAP_PATH_GRID = 1
+
+_PAYLOAD_HEATMAP_PATH_BY_CODE: dict[int, str] = {
+    PAYLOAD_HEATMAP_PATH_RGBA: "rgba",
+    PAYLOAD_HEATMAP_PATH_GRID: "grid",
+}
+
+
+def payload_heatmap_emit_plan(
+    *,
+    has_rgba_grid: bool,
+    grid_rows: int,
+    grid_cols: int,
+    style_colormap_is_none: bool,
+    borrow_heatmaps: bool,
+) -> dict[str, bool | int | str]:
+    """Heatmap emit skeleton via ``xyg_payload_heatmap_emit_plan`` (ABI 298).
+
+    Owns rgba-vs-grid path, lattice ``n_marks``, top-level color attach on the
+    grid path, canonical-f64 borrow encoding, and constant-colormap fallback.
+    """
+    path = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    attach_color = ctypes.c_int32(-1)
+    borrow_canonical = ctypes.c_int32(-1)
+    attach_encoding = ctypes.c_int32(-1)
+    use_constant_colormap_fallback = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_heatmap_emit_plan(
+        1 if has_rgba_grid else 0,
+        int(grid_rows),
+        int(grid_cols),
+        1 if style_colormap_is_none else 0,
+        1 if borrow_heatmaps else 0,
+        ctypes.byref(path),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(attach_color),
+        ctypes.byref(borrow_canonical),
+        ctypes.byref(attach_encoding),
+        ctypes.byref(use_constant_colormap_fallback),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_heatmap_emit_plan arguments")
+    path_code = int(path.value)
+    if path_code not in _PAYLOAD_HEATMAP_PATH_BY_CODE:
+        raise ValueError("invalid payload_heatmap_emit_plan path")
+    return {
+        "path": _PAYLOAD_HEATMAP_PATH_BY_CODE[path_code],
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "attach_color": int(attach_color.value) == 1,
+        "borrow_canonical": int(borrow_canonical.value) == 1,
+        "attach_encoding": int(attach_encoding.value) == 1,
+        "use_constant_colormap_fallback": int(use_constant_colormap_fallback.value) == 1,
+    }
+
+
+def payload_mesh_emit_plan(
+    *,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    any_geometry_nulls: bool,
+    has_continuous_color: bool,
+    continuous_color_values_missing: bool,
+) -> dict[str, bool | int | str]:
+    """Triangle-mesh emit skeleton via ``xyg_payload_mesh_emit_plan`` (ABI 298).
+
+    Owns gather policy, palette default, axis ship scales, trace-channel attach,
+    and transition wrap.
+    """
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attempt_gather = ctypes.c_int32(-1)
+    gather_include_color = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_mesh_emit_plan(
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if any_geometry_nulls else 0,
+        1 if has_continuous_color else 0,
+        1 if continuous_color_values_missing else 0,
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attempt_gather),
+        ctypes.byref(gather_include_color),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_mesh_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_mesh_emit_plan {name} ship scale")
+    return {
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attempt_gather": int(attempt_gather.value) == 1,
+        "gather_include_color": int(gather_include_color.value) == 1,
+    }
+
+
+class _PayloadColumnShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+        ("ship_scale", ctypes.c_int32),
+        ("gather", ctypes.c_uint32),
+    ]
+
+
+_PAYLOAD_COL_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
+    "x",
+    "y",
+    "x0",
+    "x1",
+    "y0",
+    "y1",
+    "x2",
+    "y2",
+    "base",
+    "target_y0",
+    "target_y1",
+    "pos",
+    "value0",
+    "value1",
+)
+_PAYLOAD_TRACE_SLOT_ATTR: tuple[str, ...] = ("x", "y", "x0", "x1", "y0", "y1", "base")
+_PAYLOAD_COL_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("offset", "values", "f64")
+_PAYLOAD_GATHER_POLICY_BY_CODE: tuple[str, ...] = (
+    "none",
+    "visible_sel",
+    "rect_finite",
+    "valid_indices",
+    "segments",
+    "m4",
+)
+PAYLOAD_COLUMN_SHIP_MAX = 8
+
+
+def payload_column_ship_plan(
+    *,
+    kind: str,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    orientation: str | None = None,
+) -> dict[str, bool | int | str | list[dict[str, bool | int | str]]]:
+    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310/314).
+
+    Owns geometry column keys, trace slots, ship method/scale codes, and gather
+    policy. ``orientation`` is required for ``bar_compact``. Hosts still
+    NumPy-gather and ship buffers.
+    """
+    kind_bytes = kind.encode("utf-8")
+    if kind == "bar_compact":
+        if orientation is None:
+            raise ValueError("payload_column_ship_plan bar_compact requires orientation")
+        orientation_i = _PAYLOAD_BAR_ORIENTATION_BY_NAME.get(orientation)
+        if orientation_i is None:
+            raise ValueError(f"invalid payload_column_ship_plan orientation {orientation!r}")
+    else:
+        orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
+    gather_policy = ctypes.c_int32(-1)
+    gather_include_color = ctypes.c_int32(-1)
+    n_columns = ctypes.c_size_t(0)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    columns = (_PayloadColumnShipEntry * PAYLOAD_COLUMN_SHIP_MAX)()
+    ok = _lib.xyg_payload_column_ship_plan(
+        kind_bytes,
+        len(kind_bytes),
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        orientation_i,
+        ctypes.byref(gather_policy),
+        ctypes.byref(gather_include_color),
+        ctypes.byref(n_columns),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        columns,
+        PAYLOAD_COLUMN_SHIP_MAX,
+    )
+    if ok != 1:
+        raise ValueError(f"invalid payload_column_ship_plan kind {kind!r}")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_column_ship_plan {name} ship scale")
+    n = int(n_columns.value)
+    gather_code = int(gather_policy.value)
+    if not (0 <= gather_code < len(_PAYLOAD_GATHER_POLICY_BY_CODE)):
+        raise ValueError("invalid payload_column_ship_plan gather policy")
+    out_columns: list[dict[str, bool | int | str]] = []
+    for idx in range(n):
+        entry = columns[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.trace_slot)
+        method_code = int(entry.ship_method)
+        scale_code = int(entry.ship_scale)
+        if not (0 <= key_code < len(_PAYLOAD_COL_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_TRACE_SLOT_ATTR)):
+            raise ValueError("invalid payload_column_ship_plan trace slot")
+        if not (0 <= method_code < len(_PAYLOAD_COL_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan ship method")
+        if not (0 <= scale_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError("invalid payload_column_ship_plan column ship scale")
+        out_columns.append(
+            {
+                "registry_key": _PAYLOAD_COL_REGISTRY_KEY_BY_CODE[key_code],
+                "trace_slot": _PAYLOAD_TRACE_SLOT_ATTR[slot_code],
+                "ship_method": _PAYLOAD_COL_SHIP_METHOD_BY_CODE[method_code],
+                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[scale_code],
+                "gather": bool(entry.gather),
+            }
+        )
+    return {
+        "gather_policy": _PAYLOAD_GATHER_POLICY_BY_CODE[gather_code],
+        "gather_include_color": int(gather_include_color.value) == 1,
+        "n_columns": n,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "columns": out_columns,
+    }
+
+
+class _PayloadDensityGridBufferEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("buffer_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
+class _PayloadDensityGridAttachEntry(ctypes.Structure):
+    _fields_ = [("attach_kind", ctypes.c_int32)]
+
+
+_PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE: tuple[str, ...] = ("buf", "rgba")
+_PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE: tuple[str, ...] = ("count", "rgba")
+_PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("u8",)
+_PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE: tuple[str, ...] = (
+    "wasm_source",
+    "tiles",
+    "rgba",
+    "channels_dropped",
+    "dropped_channels",
+    "constant_color",
+    "overlay_rows_exceed",
+    "sample",
+    "overlay_static_raster",
+    "entry_color",
+)
+PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS = 2
+PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH = 10
+
+
+def payload_density_grid_ship_plan(
+    *,
+    ship_mean_color_rgba: bool,
+    ship_wasm_source: bool,
+    attach_sample: bool,
+    has_tiles: bool,
+    ship_constant_color: bool,
+    overlay_wire_rows_exceed: bool,
+    overlay_wire_static_raster: bool,
+    ship_categorical_entry_color: bool,
+) -> dict[str, int | list[dict[str, str]]]:
+    """Density grid buffer registry and attach-order plan (ABI 315).
+
+    Owns which u8 planes ship under ``density["buf"]`` / ``density["rgba"]`` and
+    the ordered nested attach steps after bin2d/pyramid compose. Hosts still
+    materialize grids and call ``pw.ship_u8``.
+    """
+    n_buffers = ctypes.c_size_t(0)
+    n_attach = ctypes.c_size_t(0)
+    buffers = (_PayloadDensityGridBufferEntry * PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS)()
+    attach = (_PayloadDensityGridAttachEntry * PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH)()
+    ok = _lib.xyg_payload_density_grid_ship_plan(
+        1 if ship_mean_color_rgba else 0,
+        1 if ship_wasm_source else 0,
+        1 if attach_sample else 0,
+        1 if has_tiles else 0,
+        1 if ship_constant_color else 0,
+        1 if overlay_wire_rows_exceed else 0,
+        1 if overlay_wire_static_raster else 0,
+        1 if ship_categorical_entry_color else 0,
+        ctypes.byref(n_buffers),
+        buffers,
+        PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS,
+        ctypes.byref(n_attach),
+        attach,
+        PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH,
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_density_grid_ship_plan arguments")
+    out_buffers: list[dict[str, str]] = []
+    for idx in range(int(n_buffers.value)):
+        entry = buffers[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.buffer_slot)
+        method_code = int(entry.ship_method)
+        if not (0 <= key_code < len(_PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan buffer slot")
+        if not (0 <= method_code < len(_PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan ship method")
+        out_buffers.append(
+            {
+                "registry_key": _PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE[key_code],
+                "buffer_slot": _PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE[slot_code],
+                "ship_method": _PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE[method_code],
+            }
+        )
+    out_attach: list[dict[str, str]] = []
+    for idx in range(int(n_attach.value)):
+        kind_code = int(attach[idx].attach_kind)
+        if not (0 <= kind_code < len(_PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan attach kind")
+        out_attach.append({"attach_kind": _PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE[kind_code]})
+    return {
+        "n_buffers": int(n_buffers.value),
+        "buffers": out_buffers,
+        "n_attach": int(n_attach.value),
+        "attach": out_attach,
+    }
+
+
+class _PayloadChannelShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
+_PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
+    "color",
+    "size",
+    "stroke",
+    "channels",
+    "color_target",
+)
+_PAYLOAD_CHAN_TRACE_SLOT_BY_CODE: tuple[str, ...] = (
+    "color_ch",
+    "size_ch",
+    "stroke_ch",
+    "style_channels",
+    "color2_ch",
+)
+_PAYLOAD_CHAN_SHIP_METHOD_BY_CODE: tuple[str, ...] = (
+    "color_size",
+    "color",
+    "style",
+)
+PAYLOAD_CHANNEL_SHIP_MAX = 5
+
+
+def payload_channel_ship_plan(
+    slot: int,
+    *,
+    include_trace_styles: bool,
+    has_color2_ch: bool = False,
+    has_color_ch: bool = False,
+    has_stroke_ch: bool = False,
+    has_style_channels: bool = False,
+) -> dict[str, int | list[dict[str, str]]]:
+    """Channel registry / attach-order plan via ``xyg_payload_channel_ship_plan`` (ABI 311).
+
+    Owns which trace channels ship under which spec keys and in what order.
+    Hosts still slice columns and ship buffers via ``channels.ship_*``.
+    """
+    n_channels = ctypes.c_size_t(0)
+    channels = (_PayloadChannelShipEntry * PAYLOAD_CHANNEL_SHIP_MAX)()
+    ok = _lib.xyg_payload_channel_ship_plan(
+        int(slot),
+        1 if include_trace_styles else 0,
+        1 if has_color2_ch else 0,
+        1 if has_color_ch else 0,
+        1 if has_stroke_ch else 0,
+        1 if has_style_channels else 0,
+        ctypes.byref(n_channels),
+        channels,
+        PAYLOAD_CHANNEL_SHIP_MAX,
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_channel_ship_plan arguments")
+    n = int(n_channels.value)
+    out_channels: list[dict[str, str]] = []
+    for idx in range(n):
+        entry = channels[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.trace_slot)
+        method_code = int(entry.ship_method)
+        if not (0 <= key_code < len(_PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_CHAN_TRACE_SLOT_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan trace slot")
+        if not (0 <= method_code < len(_PAYLOAD_CHAN_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan ship method")
+        out_channels.append(
+            {
+                "registry_key": _PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE[key_code],
+                "trace_slot": _PAYLOAD_CHAN_TRACE_SLOT_BY_CODE[slot_code],
+                "ship_method": _PAYLOAD_CHAN_SHIP_METHOD_BY_CODE[method_code],
+            }
+        )
+    return {
+        "n_channels": n,
+        "channels": out_channels,
+    }
+
+
+_PAYLOAD_CHAN_WIRE_ROLE_BY_NAME: dict[str, int] = {
+    "color": 0,
+    "size": 1,
+    "style": 2,
+}
+_PAYLOAD_CHAN_MODE_BY_NAME: dict[str, int] = {
+    "constant": 0,
+    "continuous": 1,
+    "categorical": 2,
+    "direct_rgba": 3,
+    "match_fill": 4,
+    "direct": 5,
+}
+_PAYLOAD_CHAN_BUF_KIND_BY_CODE: tuple[str, ...] = ("none", "u8", "f32")
+_PAYLOAD_CHAN_XFORM_BY_CODE: tuple[str, ...] = (
+    "none",
+    "normalize",
+    "quantize_u8",
+    "rgba_pack",
+    "raw",
+)
+
+
+def payload_channel_wire_encode(
+    role: str,
+    mode: str,
+    *,
+    n_categories: int = 0,
+    style_dtype_u8: bool = False,
+    quantize_continuous: bool = False,
+) -> dict[str, bool | str]:
+    """Channel wire encoding policy via ``xyg_payload_channel_wire_encode`` (ABI 312).
+
+    Owns buffer kind, pre-ship transform, and spec flags. Hosts still slice,
+    transform, and ship buffers via ``channels.ship_*`` / ``pw.ship*``.
+    """
+    role_code = _PAYLOAD_CHAN_WIRE_ROLE_BY_NAME.get(role)
+    mode_code = _PAYLOAD_CHAN_MODE_BY_NAME.get(mode)
+    if role_code is None or mode_code is None:
+        raise ValueError("invalid payload_channel_wire_encode role or mode")
+    buf_kind = ctypes.c_int32(-1)
+    transform = ctypes.c_int32(-1)
+    mark_dtype_u8 = ctypes.c_int32(-1)
+    ship_palette = ctypes.c_int32(-1)
+    set_n = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_channel_wire_encode(
+        role_code,
+        mode_code,
+        int(n_categories),
+        1 if style_dtype_u8 else 0,
+        1 if quantize_continuous else 0,
+        ctypes.byref(buf_kind),
+        ctypes.byref(transform),
+        ctypes.byref(mark_dtype_u8),
+        ctypes.byref(ship_palette),
+        ctypes.byref(set_n),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_channel_wire_encode arguments")
+    buf_code = int(buf_kind.value)
+    xform_code = int(transform.value)
+    if not (0 <= buf_code < len(_PAYLOAD_CHAN_BUF_KIND_BY_CODE)):
+        raise ValueError("invalid payload_channel_wire_encode buf kind")
+    if not (0 <= xform_code < len(_PAYLOAD_CHAN_XFORM_BY_CODE)):
+        raise ValueError("invalid payload_channel_wire_encode transform")
+    return {
+        "buf_kind": _PAYLOAD_CHAN_BUF_KIND_BY_CODE[buf_code],
+        "transform": _PAYLOAD_CHAN_XFORM_BY_CODE[xform_code],
+        "mark_dtype_u8": int(mark_dtype_u8.value) == 1,
+        "ship_palette": int(ship_palette.value) == 1,
+        "set_n": int(set_n.value) == 1,
+    }
+
+
+def payload_ribbon_emit_plan(
+    *,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    any_geometry_nulls: bool,
+    has_color2_ch: bool,
+) -> dict[str, bool | int | str]:
+    """Ribbon emit skeleton via ``xyg_payload_ribbon_emit_plan`` (ABI 299).
+
+    Owns geometry-null gather policy, palette default, axis ship scales,
+    trace-channel attach, ``color2_ch`` attach, and transition wrap.
+    """
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attempt_gather = ctypes.c_int32(-1)
+    attach_color2 = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_ribbon_emit_plan(
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if any_geometry_nulls else 0,
+        1 if has_color2_ch else 0,
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attempt_gather),
+        ctypes.byref(attach_color2),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_ribbon_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_ribbon_emit_plan {name} ship scale")
+    return {
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attempt_gather": int(attempt_gather.value) == 1,
+        "attach_color2": int(attach_color2.value) == 1,
+    }
+
+
+def payload_scatter_emit_plan(
+    *,
+    n_points: int,
+    polar: bool,
+    force_density: int,
+    force_direct: bool,
+    per_item: bool,
+    n_marks: int,
+    has_trace_animation: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    has_transition_keys: bool,
+    has_tooltip_rows: bool,
+    n_tooltip_rows: int,
+) -> dict[str, bool | int | str]:
+    """Scatter emit skeleton via ``xyg_payload_scatter_emit_plan`` (ABI 301).
+
+    Owns density-vs-direct tier routing, direct-tier channel attach,
+    transition wrap, and tooltip attach flags.
+    """
+    if force_density not in (-1, 0, 1):
+        raise ValueError("force_density must be -1, 0, or 1")
+    emit_density = ctypes.c_int32(-1)
+    clear_shipped_sel = ctypes.c_int32(-1)
+    drill_mode_false = ctypes.c_int32(-1)
+    set_shipped_sel = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    attach_animation = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attach_tooltip = ctypes.c_int32(-1)
+    filter_tooltip_by_sel = ctypes.c_int32(-1)
+    tooltip_length_ok = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_scatter_emit_plan(
+        int(n_points),
+        1 if polar else 0,
+        int(force_density),
+        1 if force_direct else 0,
+        1 if per_item else 0,
+        int(n_marks),
+        1 if has_trace_animation else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if has_transition_keys else 0,
+        1 if has_tooltip_rows else 0,
+        int(n_tooltip_rows),
+        ctypes.byref(emit_density),
+        ctypes.byref(clear_shipped_sel),
+        ctypes.byref(drill_mode_false),
+        ctypes.byref(set_shipped_sel),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(attach_animation),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attach_tooltip),
+        ctypes.byref(filter_tooltip_by_sel),
+        ctypes.byref(tooltip_length_ok),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_scatter_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if emit_density.value == 0 and not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_scatter_emit_plan {name} ship scale")
+    result: dict[str, bool | int | str] = {
+        "emit_density": int(emit_density.value) == 1,
+        "clear_shipped_sel": int(clear_shipped_sel.value) == 1,
+        "drill_mode_false": int(drill_mode_false.value) == 1,
+        "set_shipped_sel": int(set_shipped_sel.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attach_tooltip": int(attach_tooltip.value) == 1,
+        "filter_tooltip_by_sel": int(filter_tooltip_by_sel.value) == 1,
+        "tooltip_length_ok": int(tooltip_length_ok.value) == 1,
+    }
+    if emit_density.value == 0:
+        result.update(
+            {
+                "tier_direct": int(tier_direct.value) == 1,
+                "n_marks": int(n_marks_out.value),
+                "apply_palette_default": int(apply_palette_default.value) == 1,
+                "attach_animation": int(attach_animation.value) == 1,
+                "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+                "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+                "channel_slot": int(channel_slot.value),
+                "include_trace_styles": int(include_trace_styles.value) == 1,
+            }
+        )
+    return result
+
+
+def payload_density_trace_emit_plan(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    codes_present: bool = False,
+    codes_u8: bool = False,
+    has_counts: bool = False,
+    has_constant: bool = False,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    point_overlay: bool,
+    split_payload: bool,
+    grid_w: int,
+    grid_h: int,
+    grid_from_pyramid: bool,
+    has_pyramid_resource: bool,
+    grid_present: bool,
+    force_bin2d: bool = False,
+    force_pyramid: bool = False,
+    x_memmapped: bool = False,
+    y_memmapped: bool = False,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+    n_points: int,
+    has_pyramid_rgba: bool = False,
+    has_bin_colors: bool = False,
+    dropped_count: int = 0,
+) -> dict[str, int | bool | float]:
+    """Density trace emit orchestration via ``xyg_payload_density_trace_emit_plan`` (ABI 302)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    mode_b = mode.encode("utf-8")
+    out = _PayloadDensityTraceEmitPlan()
+    ok = _lib.xyg_payload_density_trace_emit_plan(
+        1 if has_channel else 0,
+        mode_b,
+        len(mode_b),
+        1 if codes_present else 0,
+        1 if codes_u8 else 0,
+        1 if has_counts else 0,
+        1 if has_constant else 0,
+        1 if cartesian else 0,
+        1 if x_linear else 0,
+        1 if y_linear else 0,
+        1 if x_has_nulls else 0,
+        1 if y_has_nulls else 0,
+        1 if point_overlay else 0,
+        1 if split_payload else 0,
+        int(grid_w),
+        int(grid_h),
+        1 if grid_from_pyramid else 0,
+        1 if has_pyramid_resource else 0,
+        1 if grid_present else 0,
+        1 if force_bin2d else 0,
+        1 if force_pyramid else 0,
+        1 if x_memmapped else 0,
+        1 if y_memmapped else 0,
+        float(x_min),
+        float(x_max),
+        float(y_min),
+        float(y_max),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(bx0),
+        float(bx1),
+        float(by0),
+        float(by1),
+        n,
+        1 if has_pyramid_rgba else 0,
+        1 if has_bin_colors else 0,
+        int(dropped_count),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_density_trace_emit_plan arguments")
+    return {
+        "color_mode": int(out.color_mode),
+        "categorical": bool(out.categorical),
+        "compact_categorical": bool(out.compact_categorical),
+        "stratified_counts": bool(out.stratified_counts),
+        "x_c0": float(out.x_c0),
+        "x_c1": float(out.x_c1),
+        "y_c0": float(out.y_c0),
+        "y_c1": float(out.y_c1),
+        "grid_path": int(out.grid_path),
+        "pyramid_eligible": bool(out.pyramid_eligible),
+        "pyramid_attempt": bool(out.pyramid_attempt),
+        "pyramid_no_rescan": bool(out.pyramid_no_rescan),
+        "pyramid_max_upsample": int(out.pyramid_max_upsample),
+        "pyramid_tile_upsample": int(out.pyramid_tile_upsample),
+        "wasm_eligible": bool(out.wasm_eligible),
+        "needs_pyramid_sample": bool(out.needs_pyramid_sample),
+        "overlay_omitted": int(out.overlay_omitted),
+        "visible_is_n_points": bool(out.visible_is_n_points),
+        "use_raw_range_bin2d": bool(out.use_raw_range_bin2d),
+        "attach_transition": bool(out.attach_transition),
+        "n_marks": int(out.n_marks),
+        "visible_init_n_points": bool(out.visible_init_n_points),
+        "attach_sample": bool(out.attach_sample),
+        "pyramid_sample_stratified": bool(out.pyramid_sample_stratified),
+        "use_channel_colormap": bool(out.use_channel_colormap),
+        "ship_wasm_source": bool(out.ship_wasm_source),
+        "ship_mean_color_rgba": bool(out.ship_mean_color_rgba),
+        "ship_constant_color": bool(out.ship_constant_color),
+        "ship_categorical_entry_color": bool(out.ship_categorical_entry_color),
+        "mean_color_aggregates": bool(out.mean_color_aggregates),
+        "overlay_wire_static_raster": bool(out.overlay_wire_static_raster),
+        "overlay_wire_rows_exceed": bool(out.overlay_wire_rows_exceed),
+        "channels_dropped_compat": bool(out.channels_dropped_compat),
+    }
+
+
+def payload_build_plan(
+    *,
+    split_payload: bool,
+    wasm_source_count: int,
+    has_density_tier: bool,
+    coords_cartesian: bool,
+    has_title_options: bool,
+    has_palette: bool,
+    has_legend_options: bool,
+    legend_loc_best: bool,
+    has_extra_legends: bool,
+    has_frame_sides: bool,
+    has_colorbar_options: bool,
+    show_modebar_is_false: bool,
+    has_export_options: bool,
+    show_tooltip_is_false: bool,
+    has_padding: bool,
+    has_dom: bool,
+    has_tooltip: bool,
+    has_mark_style: bool,
+    has_interaction: bool,
+    has_annotations: bool,
+    has_animation_options: bool,
+    has_graph_meta: bool,
+) -> dict[str, bool | int]:
+    """Top-level payload build attach orchestration via ``xyg_payload_build_plan`` (ABI 303)."""
+    out = _PayloadBuildPlan()
+    ok = _lib.xyg_payload_build_plan(
+        1 if split_payload else 0,
+        int(wasm_source_count),
+        1 if has_density_tier else 0,
+        1 if coords_cartesian else 0,
+        1 if has_title_options else 0,
+        1 if has_palette else 0,
+        1 if has_legend_options else 0,
+        1 if legend_loc_best else 0,
+        1 if has_extra_legends else 0,
+        1 if has_frame_sides else 0,
+        1 if has_colorbar_options else 0,
+        1 if show_modebar_is_false else 0,
+        1 if has_export_options else 0,
+        1 if show_tooltip_is_false else 0,
+        1 if has_padding else 0,
+        1 if has_dom else 0,
+        1 if has_tooltip else 0,
+        1 if has_mark_style else 0,
+        1 if has_interaction else 0,
+        1 if has_annotations else 0,
+        1 if has_animation_options else 0,
+        1 if has_graph_meta else 0,
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_build_plan arguments")
+    kind = int(out.wasm_density_kind)
+    if kind not in (
+        DENSITY_WASM_DENSITY_NONE,
+        DENSITY_WASM_DENSITY_AUTOMATIC,
+        DENSITY_WASM_DENSITY_UNSUPPORTED,
+    ):
+        raise ValueError("invalid payload_build_plan wasm_density_kind")
+    return {
+        "attach_show_legend": bool(out.attach_show_legend),
+        "wasm_density_kind": kind,
+        "attach_wasm_density": bool(out.attach_wasm_density),
+        "attach_title_options": bool(out.attach_title_options),
+        "attach_coords": bool(out.attach_coords),
+        "attach_palette": bool(out.attach_palette),
+        "attach_legend": bool(out.attach_legend),
+        "resolve_legend_best": bool(out.resolve_legend_best),
+        "attach_extra_legends": bool(out.attach_extra_legends),
+        "attach_frame_sides": bool(out.attach_frame_sides),
+        "attach_colorbar": bool(out.attach_colorbar),
+        "attach_show_modebar": bool(out.attach_show_modebar),
+        "attach_export": bool(out.attach_export),
+        "attach_show_tooltip": bool(out.attach_show_tooltip),
+        "attach_padding": bool(out.attach_padding),
+        "attach_dom": bool(out.attach_dom),
+        "attach_tooltip": bool(out.attach_tooltip),
+        "attach_mark_style": bool(out.attach_mark_style),
+        "attach_interaction": bool(out.attach_interaction),
+        "attach_annotations": bool(out.attach_annotations),
+        "attach_animation": bool(out.attach_animation),
+        "attach_graph": bool(out.attach_graph),
+    }
+
+
+def _payload_axis_spec_attach_plan_dict(out: _PayloadAxisSpecAttachPlan) -> dict[str, bool]:
+    return {
+        "attach_id": bool(out.attach_id),
+        "attach_kind": bool(out.attach_kind),
+        "attach_side": bool(out.attach_side),
+        "attach_label": bool(out.attach_label),
+        "attach_range": bool(out.attach_range),
+        "attach_scale": bool(out.attach_scale),
+        "attach_ticks": bool(out.attach_ticks),
+        "attach_tick_sides": bool(out.attach_tick_sides),
+        "attach_tick_label_sides": bool(out.attach_tick_label_sides),
+        "attach_label_position": bool(out.attach_label_position),
+        "attach_label_offset": bool(out.attach_label_offset),
+        "attach_label_angle": bool(out.attach_label_angle),
+        "attach_tick_label_angle": bool(out.attach_tick_label_angle),
+        "attach_tick_label_strategy": bool(out.attach_tick_label_strategy),
+        "attach_tick_label_anchor": bool(out.attach_tick_label_anchor),
+        "attach_tick_label_min_gap": bool(out.attach_tick_label_min_gap),
+        "attach_constant": bool(out.attach_constant),
+        "attach_nonpositive": bool(out.attach_nonpositive),
+        "attach_reverse": bool(out.attach_reverse),
+        "attach_domain": bool(out.attach_domain),
+        "attach_bounds": bool(out.attach_bounds),
+        "attach_minor_style": bool(out.attach_minor_style),
+        "attach_format": bool(out.attach_format),
+        "attach_style": bool(out.attach_style),
+        "attach_categories": bool(out.attach_categories),
+        "attach_theta_unit": bool(out.attach_theta_unit),
+        "attach_theta_zero": bool(out.attach_theta_zero),
+        "attach_theta_direction": bool(out.attach_theta_direction),
+        "attach_sector": bool(out.attach_sector),
+        "attach_grid_shape": bool(out.attach_grid_shape),
+        "attach_hole": bool(out.attach_hole),
+        "attach_r_origin": bool(out.attach_r_origin),
+    }
+
+
+def payload_axis_spec_attach_plan(
+    *,
+    coords_cartesian: bool,
+    axis_is_x: bool,
+) -> dict[str, bool]:
+    """Axis-spec attach orchestration via ``xyg_payload_axis_spec_attach_plan`` (ABI 304).
+
+    Owns which ``_axis_spec`` slots may ship for cartesian vs polar x/y axes.
+    """
+    out = _PayloadAxisSpecAttachPlan()
+    ok = _lib.xyg_payload_axis_spec_attach_plan(
+        1 if coords_cartesian else 0,
+        1 if axis_is_x else 0,
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_axis_spec_attach_plan arguments")
+    return _payload_axis_spec_attach_plan_dict(out)
+
+
+def payload_segments_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    has_transition_keys: bool,
+) -> dict[str, bool | int | str]:
+    """Segment emit skeleton via ``xyg_payload_segments_emit_plan`` (ABI 300).
+
+    Owns segment gather attempt policy, palette default, axis ship scales,
+    trace-channel attach, errorbar role-key transition attach, and transition wrap.
+    """
+    if not isinstance(kind, str):
+        raise ValueError("kind must be a string")
+    kind_b = kind.encode("utf-8")
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attempt_gather = ctypes.c_int32(-1)
+    attempt_role_keys = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_segments_emit_plan(
+        kind_b,
+        len(kind_b),
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if has_transition_keys else 0,
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attempt_gather),
+        ctypes.byref(attempt_role_keys),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_segments_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_segments_emit_plan {name} ship scale")
+    return {
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attempt_gather": int(attempt_gather.value) == 1,
+        "attempt_role_keys": int(attempt_role_keys.value) == 1,
+    }
+
+
+def payload_bar_compact_admit(
+    widths: npt.NDArray[np.float64],
+    value0: npt.NDArray[np.float64],
+) -> tuple[bool, float, bool, float]:
+    """Bar/column compact admit via ``xyg_payload_bar_compact_admit`` (ABI 274).
+
+    Returns ``(compact, width, has_value0_const, value0_const)``.
+    """
+    n_widths = int(widths.shape[0])
+    n_value0 = int(value0.shape[0])
+    out_width = ctypes.c_double(float("nan"))
+    out_value0_const = ctypes.c_double(float("nan"))
+    out_has_value0_const = ctypes.c_int32(-1)
+    out_compact = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_bar_compact_admit(
+        n_widths,
+        widths.ctypes.data if n_widths else 0,
+        n_value0,
+        value0.ctypes.data if n_value0 else 0,
+        ctypes.byref(out_width),
+        ctypes.byref(out_value0_const),
+        ctypes.byref(out_has_value0_const),
+        ctypes.byref(out_compact),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_bar_compact_admit arguments")
+    return (
+        int(out_compact.value) == 1,
+        float(out_width.value),
+        int(out_has_value0_const.value) == 1,
+        float(out_value0_const.value),
+    )
+
+
+def payload_transition_keys_admit(
+    *,
+    has_keys: bool,
+    tier_direct: bool,
+    n_keys: int,
+    n_marks: int,
+    max_rows: int,
+) -> str | None:
+    """Transition-key admit via ``xyg_payload_transition_keys_admit`` (ABI 259).
+
+    Returns an ``animation_fallback`` reason, or ``None`` when keys may ship.
+    """
+    code = _lib.xyg_payload_transition_keys_admit(
+        1 if has_keys else 0,
+        1 if tier_direct else 0,
+        int(n_keys),
+        int(n_marks),
+        int(max_rows),
+    )
+    if code == 0:
+        return None
+    if code == 1:
+        return "snap:aggregate"
+    if code == 2:
+        return "snap:key-limit"
+    if code == 3:
+        return "index:key-count-mismatch"
+    raise ValueError("invalid payload_transition_keys_admit result")
+
+
+def payload_sample_target_indices(
+    n: int,
+    target: int,
+    seed: int = 0,
+    level: int = 0,
+    growth: float = 2.0,
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Density-overlay sample of implicit ids via ``xyg_payload_sample_target_indices``.
+
+    Owns ``min(1, target/n)``, level/growth fraction, threshold, and range
+    sampling (ABI 205). Returns ``(keep_all, indices)``.
+    """
+    n_i = _bounded_nonnegative_int(n, "n", max_value=np.iinfo(np.uint32).max)
+    target_i = _bounded_nonnegative_int(target, "target", max_value=np.iinfo(np.uint32).max)
+    if target_i == 0:
+        raise ValueError("target must be a positive integer")
+    level_i = _bounded_nonnegative_int(level, "level", max_value=np.iinfo(np.uint32).max)
+    seed_i = _bounded_nonnegative_int(seed, "seed", max_value=np.iinfo(np.uint64).max)
+    growth_f = _finite_float(growth, "growth")
+    if growth_f < 1.0:
+        raise ValueError("growth must be >= 1")
+    keep_all = ctypes.c_int32(-1)
+    cap = min(n_i, max(64, target_i * 2)) if n_i else 0
+    out = np.empty(cap, dtype=np.uint32) if cap else np.empty(0, dtype=np.uint32)
+    written = _lib.xyg_payload_sample_target_indices(
+        n_i,
+        target_i,
+        ctypes.c_uint64(seed_i),
+        ctypes.c_uint32(level_i),
+        growth_f,
+        ctypes.byref(keep_all),
+        out.ctypes.data if cap else 0,
+        cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_sample_target_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > cap:
+        out = np.empty(written, dtype=np.uint32)
+        keep_all = ctypes.c_int32(-1)
+        repeated = _lib.xyg_payload_sample_target_indices(
+            n_i,
+            target_i,
+            ctypes.c_uint64(seed_i),
+            ctypes.c_uint32(level_i),
+            growth_f,
+            ctypes.byref(keep_all),
+            out.ctypes.data,
+            written,
+        )
+        if repeated != written or int(keep_all.value) == 1:
+            raise RuntimeError(
+                "native payload_sample_target_indices returned an inconsistent count"
+            )
+        cap = written
+    return False, out[:written].copy()
+
+
+DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0
+DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1
+DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2
+DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT = 3
+DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED = 4
+DENSITY_GRID_PATH_RANGE_INDICES = 5
+
+DENSITY_COLOR_MODE_NONE = 0
+DENSITY_COLOR_MODE_CONSTANT = 1
+DENSITY_COLOR_MODE_OTHER = 2
+
+DENSITY_CHANNEL_MODE_NONE = 0
+DENSITY_CHANNEL_MODE_CONSTANT = 1
+DENSITY_CHANNEL_MODE_CATEGORICAL = 2
+DENSITY_CHANNEL_MODE_CONTINUOUS = 3
+DENSITY_CHANNEL_MODE_OTHER = 4
+
+
+def density_color_classify(
+    *,
+    channel_mode: int,
+    codes_present: bool = False,
+    codes_u8: bool = False,
+    has_counts: bool = False,
+) -> tuple[int, bool, bool, bool]:
+    """Density color-channel classify via ``xyg_density_color_classify`` (ABI 260).
+
+    Returns ``(color_mode, categorical, compact_categorical, stratified_counts)``.
+    """
+    out_color_mode = ctypes.c_int32(-1)
+    out_categorical = ctypes.c_int32(-1)
+    out_compact = ctypes.c_int32(-1)
+    out_stratified = ctypes.c_int32(-1)
+    ok = _lib.xyg_density_color_classify(
+        int(channel_mode),
+        int(bool(codes_present)),
+        int(bool(codes_u8)),
+        int(bool(has_counts)),
+        ctypes.byref(out_color_mode),
+        ctypes.byref(out_categorical),
+        ctypes.byref(out_compact),
+        ctypes.byref(out_stratified),
+    )
+    if ok != 1:
+        raise ValueError("invalid density_color_classify arguments")
+    return (
+        int(out_color_mode.value),
+        int(out_categorical.value) == 1,
+        int(out_compact.value) == 1,
+        int(out_stratified.value) == 1,
+    )
+
+
+def density_trace_color_classify(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    codes_present: bool = False,
+    codes_u8: bool = False,
+    has_counts: bool = False,
+) -> tuple[int, bool, bool, bool]:
+    """Density trace color classify via ``xyg_density_trace_color_classify`` (ABI 262).
+
+    Resolves ``color_ch.mode`` then classifies categorical metadata. Returns
+    ``(color_mode, categorical, compact_categorical, stratified_counts)``.
+    """
+    mode_b = str(mode).encode("utf-8")
+    out_color_mode = ctypes.c_int32(-1)
+    out_categorical = ctypes.c_int32(-1)
+    out_compact = ctypes.c_int32(-1)
+    out_stratified = ctypes.c_int32(-1)
+    ok = _lib.xyg_density_trace_color_classify(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+        int(bool(codes_present)),
+        int(bool(codes_u8)),
+        int(bool(has_counts)),
+        ctypes.byref(out_color_mode),
+        ctypes.byref(out_categorical),
+        ctypes.byref(out_compact),
+        ctypes.byref(out_stratified),
+    )
+    if ok != 1:
+        raise ValueError("invalid density_trace_color_classify arguments")
+    return (
+        int(out_color_mode.value),
+        int(out_categorical.value) == 1,
+        int(out_compact.value) == 1,
+        int(out_stratified.value) == 1,
+    )
+
+
+DENSITY_OVERLAY_NONE = 0
+DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1
+DENSITY_OVERLAY_STATIC_RASTER = 2
+
+
+def density_uses_channel_colormap(*, has_channel: bool, mode: str = "") -> bool:
+    """Density colormap source admit via ``xyg_density_uses_channel_colormap`` (ABI 264)."""
+    mode_b = str(mode).encode("utf-8")
+    uses = _lib.xyg_density_uses_channel_colormap(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+    )
+    if uses not in (0, 1):
+        raise ValueError("invalid density_uses_channel_colormap arguments")
+    return uses == 1
+
+
+def density_constant_color_wire_admit(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    has_constant: bool,
+) -> bool:
+    """Density constant-color wire admit via ``xyg_density_constant_color_wire_admit`` (ABI 268)."""
+    mode_b = str(mode).encode("utf-8")
+    admit = _lib.xyg_density_constant_color_wire_admit(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+        int(bool(has_constant)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_constant_color_wire_admit arguments")
+    return admit == 1
+
+
+def density_wasm_source_admit(*, split_payload: bool, wasm_eligible: bool) -> bool:
+    """Density wasm_source wire admit via ``xyg_density_wasm_source_admit`` (ABI 269)."""
+    admit = _lib.xyg_density_wasm_source_admit(
+        int(bool(split_payload)),
+        int(bool(wasm_eligible)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_wasm_source_admit arguments")
+    return admit == 1
+
+
+def density_categorical_color_wire_admit(*, categorical: bool, has_channel: bool) -> bool:
+    """Categorical legend color wire admit via ``xyg_density_categorical_color_wire_admit`` (ABI 271)."""
+    admit = _lib.xyg_density_categorical_color_wire_admit(
+        int(bool(categorical)),
+        int(bool(has_channel)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_categorical_color_wire_admit arguments")
+    return admit == 1
+
+
+def density_mean_color_wire_admit(*, has_channel: bool, mode: str = "") -> bool:
+    """Mean-color density plane wire admit via ``xyg_density_mean_color_wire_admit`` (ABI 272)."""
+    mode_b = str(mode).encode("utf-8")
+    admit = _lib.xyg_density_mean_color_wire_admit(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_mean_color_wire_admit arguments")
+    return admit == 1
+
+
+def density_channels_dropped_compat(*, dropped_count: int) -> bool:
+    """Density channels_dropped compat via ``xyg_density_channels_dropped_compat`` (ABI 273)."""
+    compat = _lib.xyg_density_channels_dropped_compat(int(dropped_count))
+    if compat not in (0, 1):
+        raise ValueError("invalid density_channels_dropped_compat arguments")
+    return compat == 1
+
+
+def density_dropped_channel_wire_admit(
+    *,
+    channel: str = "",
+    mean_color_aggregates: bool,
+) -> bool:
+    """Dropped-channel list admit via ``xyg_density_dropped_channel_wire_admit`` (ABI 274)."""
+    channel_b = str(channel).encode("utf-8")
+    admit = _lib.xyg_density_dropped_channel_wire_admit(
+        channel_b,
+        len(channel_b),
+        int(bool(mean_color_aggregates)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_dropped_channel_wire_admit arguments")
+    return admit == 1
+
+
+def density_mean_color_rgba_wire_admit(
+    *,
+    has_pyramid_rgba: bool,
+    has_bin_colors: bool,
+) -> bool:
+    """Mean-color rgba wire admit via ``xyg_density_mean_color_rgba_wire_admit`` (ABI 275)."""
+    admit = _lib.xyg_density_mean_color_rgba_wire_admit(
+        int(bool(has_pyramid_rgba)),
+        int(bool(has_bin_colors)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_mean_color_rgba_wire_admit arguments")
+    return admit == 1
+
+
+DENSITY_WASM_DENSITY_NONE = 0
+DENSITY_WASM_DENSITY_AUTOMATIC = 1
+DENSITY_WASM_DENSITY_UNSUPPORTED = 2
+
+
+def density_wasm_density_wire_kind(
+    *,
+    split_payload: bool,
+    wasm_source_count: int,
+    has_density_tier: bool,
+) -> int:
+    """Payload wasm_density wire kind via ``xyg_density_wasm_density_wire_kind`` (ABI 270)."""
+    kind = _lib.xyg_density_wasm_density_wire_kind(
+        int(bool(split_payload)),
+        int(wasm_source_count),
+        int(bool(has_density_tier)),
+    )
+    if kind not in (
+        DENSITY_WASM_DENSITY_NONE,
+        DENSITY_WASM_DENSITY_AUTOMATIC,
+        DENSITY_WASM_DENSITY_UNSUPPORTED,
+    ):
+        raise ValueError("invalid density_wasm_density_wire_kind arguments")
+    return int(kind)
+
+
+DENSITY_REDUCTION_BIN2D = 0
+DENSITY_REDUCTION_PYRAMID_COUNT = 1
+
+
+def density_reduction_kind(*, binning: str = "") -> int:
+    """Density reduction label kind via ``xyg_density_reduction_kind`` (ABI 265)."""
+    binning_b = str(binning).encode("utf-8")
+    kind = _lib.xyg_density_reduction_kind(binning_b, len(binning_b))
+    if kind not in (DENSITY_REDUCTION_BIN2D, DENSITY_REDUCTION_PYRAMID_COUNT):
+        raise ValueError("invalid density_reduction_kind arguments")
+    return int(kind)
+
+
+def density_overlay_omitted_wire(*, overlay_omitted: int, point_overlay: bool) -> str | None:
+    """Wire ``density["overlay_omitted"]`` via ``xyg_density_overlay_omitted_wire`` (ABI 266)."""
+    if overlay_omitted not in (
+        DENSITY_OVERLAY_NONE,
+        DENSITY_OVERLAY_ROWS_EXCEED_U32,
+        DENSITY_OVERLAY_STATIC_RASTER,
+    ):
+        raise ValueError("invalid density_overlay_omitted_wire overlay_omitted")
+    buf = np.empty(32, dtype=np.uint8)
+    written = _lib.xyg_density_overlay_omitted_wire(
+        int(overlay_omitted),
+        int(bool(point_overlay)),
+        buf.ctypes.data,
+        len(buf),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid density_overlay_omitted_wire arguments")
+    if written == 0:
+        return None
+    return bytes(buf[:written]).decode("ascii")
+
+
+def density_bin_coord_endpoints(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+) -> tuple[float, float, float, float]:
+    """Density binning coordinate endpoints via ``xyg_density_bin_coord_endpoints`` (ABI 263)."""
+    out_x_c0 = ctypes.c_double(float("nan"))
+    out_x_c1 = ctypes.c_double(float("nan"))
+    out_y_c0 = ctypes.c_double(float("nan"))
+    out_y_c1 = ctypes.c_double(float("nan"))
+    ok = _lib.xyg_density_bin_coord_endpoints(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(bx0),
+        float(bx1),
+        float(by0),
+        float(by1),
+        ctypes.byref(out_x_c0),
+        ctypes.byref(out_x_c1),
+        ctypes.byref(out_y_c0),
+        ctypes.byref(out_y_c1),
+    )
+    if ok != 1:
+        raise ValueError("invalid density_bin_coord_endpoints arguments")
+    return (
+        float(out_x_c0.value),
+        float(out_x_c1.value),
+        float(out_y_c0.value),
+        float(out_y_c1.value),
+    )
+
+
+def density_bin_window(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    x_c0: float,
+    x_c1: float,
+    y_c0: float,
+    y_c1: float,
+) -> tuple[float, float, float, float]:
+    """Bin window via ``xyg_density_bin_window`` (ABI 132)."""
+    out = (ctypes.c_double * 4)()
+    written = _lib.xyg_density_bin_window(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(x_c0),
+        float(x_c1),
+        float(y_c0),
+        float(y_c1),
+        out,
+    )
+    if written != 4:
+        raise ValueError("invalid density_bin_window arguments")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
+def density_full_identity(
+    *,
+    categorical: bool,
+    compact_categorical: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+) -> bool:
+    """Identity visible-row predicate via ``xyg_density_full_identity`` (ABI 132)."""
+    code = int(
+        _lib.xyg_density_full_identity(
+            int(bool(categorical)),
+            int(bool(compact_categorical)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            float(x_min),
+            float(x_max),
+            float(y_min),
+            float(y_max),
+            float(xr0),
+            float(xr1),
+            float(yr0),
+            float(yr1),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_full_identity arguments")
+    return bool(code)
+
+
+def density_pyramid_preflight(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    n_points: int,
+    has_pyramid_resource: bool,
+    x_memmapped: bool,
+    y_memmapped: bool,
+    force_pyramid: bool = False,
+    force_bin2d: bool = False,
+) -> dict[str, int | bool]:
+    """Pyramid preflight via ``xyg_density_pyramid_preflight`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    out = (ctypes.c_uint32 * 6)()
+    written = _lib.xyg_density_pyramid_preflight(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        n,
+        int(bool(has_pyramid_resource)),
+        int(bool(x_memmapped)),
+        int(bool(y_memmapped)),
+        int(bool(force_pyramid)),
+        int(bool(force_bin2d)),
+        out,
+    )
+    if written != 6:
+        raise ValueError("invalid density_pyramid_preflight arguments")
+    return {
+        "eligible": bool(out[0]),
+        "attempt": bool(out[1]),
+        "no_rescan": bool(out[2]),
+        "max_upsample": int(out[3]),
+        "tile_upsample": int(out[4]),
+    }
+
+
+def density_grid_path(
+    *,
+    oversized: bool,
+    full_identity: bool,
+    point_overlay: bool,
+    compact_categorical: bool,
+    stratified_counts: bool,
+) -> int:
+    """Exact grid-kernel path via ``xyg_density_grid_path`` (ABI 132)."""
+    code = int(
+        _lib.xyg_density_grid_path(
+            int(bool(oversized)),
+            int(bool(full_identity)),
+            int(bool(point_overlay)),
+            int(bool(compact_categorical)),
+            int(bool(stratified_counts)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_grid_path arguments")
+    return code
+
+
+def density_grid_path_identity_state(*, grid_path: int) -> bool:
+    """Grid-path visible/sel init via ``xyg_density_grid_path_identity_state`` (ABI 267)."""
+    state = int(_lib.xyg_density_grid_path_identity_state(int(grid_path)))
+    if state not in (0, 1):
+        raise ValueError("invalid density_grid_path_identity_state arguments")
+    return state == 1
+
+
+def density_format_binning(
+    *,
+    exact: bool,
+    level: int = 0,
+    tiles: bool = False,
+    upsampled: bool = False,
+) -> str:
+    """Format §28 density ``binning`` via ``xyg_density_format_binning`` (ABI 132)."""
+    buf = np.empty(64, dtype=np.uint8)
+    written = _lib.xyg_density_format_binning(
+        int(bool(exact)),
+        int(level),
+        int(bool(tiles)),
+        int(bool(upsampled)),
+        buf.ctypes.data,
+        len(buf),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid density_format_binning arguments")
+    return bytes(buf[:written]).decode("ascii")
+
+
+def density_wasm_eligible(
+    *,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    color_mode: int,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    n_points: int,
+) -> bool:
+    """WASM aggregate replay eligibility via ``xyg_density_wasm_eligible`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    code = int(
+        _lib.xyg_density_wasm_eligible(
+            int(bool(cartesian)),
+            int(bool(x_linear)),
+            int(bool(y_linear)),
+            int(color_mode),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            n,
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_wasm_eligible arguments")
+    return bool(code)
+
+
+def density_emit_plan(
+    *,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    categorical: bool,
+    compact_categorical: bool,
+    stratified_counts: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    point_overlay: bool,
+    grid_from_pyramid: bool,
+    x_memmapped: bool,
+    y_memmapped: bool,
+    has_pyramid_resource: bool,
+    force_bin2d: bool = False,
+    force_pyramid: bool = False,
+    color_mode: int,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    x_c0: float,
+    x_c1: float,
+    y_c0: float,
+    y_c1: float,
+    n_points: int,
+) -> dict[str, int | bool | float]:
+    """First-paint density emit plan via ``xyg_density_emit_meta`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    out = _DensityEmitMeta()
+    code = int(
+        _lib.xyg_density_emit_meta(
+            int(bool(cartesian)),
+            int(bool(x_linear)),
+            int(bool(y_linear)),
+            int(bool(categorical)),
+            int(bool(compact_categorical)),
+            int(bool(stratified_counts)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(point_overlay)),
+            int(bool(grid_from_pyramid)),
+            int(bool(x_memmapped)),
+            int(bool(y_memmapped)),
+            int(bool(has_pyramid_resource)),
+            int(bool(force_bin2d)),
+            int(bool(force_pyramid)),
+            int(color_mode),
+            float(x_min),
+            float(x_max),
+            float(y_min),
+            float(y_max),
+            float(xr0),
+            float(xr1),
+            float(yr0),
+            float(yr1),
+            float(x_c0),
+            float(x_c1),
+            float(y_c0),
+            float(y_c1),
+            n,
+            ctypes.byref(out),
+        )
+    )
+    if code != 0:
+        raise ValueError("invalid density_emit_plan arguments")
+    return {
+        "grid_path": int(out.grid_path),
+        "bin_window_x0": float(out.bin_window_x0),
+        "bin_window_x1": float(out.bin_window_x1),
+        "bin_window_y0": float(out.bin_window_y0),
+        "bin_window_y1": float(out.bin_window_y1),
+        "full_identity": bool(out.full_identity),
+        "oversized": bool(out.oversized),
+        "pyramid_eligible": bool(out.pyramid_eligible),
+        "pyramid_attempt": bool(out.pyramid_attempt),
+        "pyramid_no_rescan": bool(out.pyramid_no_rescan),
+        "pyramid_max_upsample": int(out.pyramid_max_upsample),
+        "pyramid_tile_upsample": int(out.pyramid_tile_upsample),
+        "wasm_eligible": bool(out.wasm_eligible),
+        "needs_pyramid_sample": bool(out.needs_pyramid_sample),
+        "overlay_omitted": int(out.overlay_omitted),
+        "visible_is_n_points": bool(out.visible_is_n_points),
+        "use_raw_range_bin2d": bool(out.use_raw_range_bin2d),
+    }
 
 
 def quantiles(
@@ -6315,6 +14413,28 @@ def _hexbin_grid_and_range(
     return w, h, x0, x1, y0, y1, 1
 
 
+def hexbin_ring(
+    hex_dx: float, hex_dy: float
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Pointy-top hexagon vertex offsets scaled by cell pitch (ABI 210)."""
+    probed = _lib.xyg_hexbin_ring(float(hex_dx), float(hex_dy), 0, 0, 0)
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid hexbin-ring request")
+    n = int(probed)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_hexbin_ring(
+        float(hex_dx),
+        float(hex_dy),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid hexbin-ring request")
+    return out_x, out_y
+
+
 def hexbin_ingress(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
@@ -6452,6 +14572,739 @@ def hexbin(
         float(dx.value),
         float(dy.value),
     )
+
+
+def hexbin_groups(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    gridsize: int | tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]] | None = None,
+    mincnt: int = 0,
+    C: npt.NDArray[np.float64] | None = None,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint32],
+    npt.NDArray[np.uint32],
+    npt.NDArray[np.uint32],
+    float,
+    float,
+]:
+    """Occupied hex-cell memberships via ``xyg_hexbin_groups``.
+
+    Returns ``(centers_x, centers_y, counts, starts, lengths, indices, dx, dy)``.
+    ``indices[starts[i]:starts[i]+lengths[i]]`` are original-row ids for cell
+    ``i``. Hosts apply a custom reducer to ``C[indices[...]]``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("hexbin x and y must have equal length")
+    w, h, x0, x1, y0, y1, use_range = _hexbin_grid_and_range(gridsize, range)
+    if mincnt < 0:
+        raise ValueError("hexbin mincnt must be nonnegative")
+    c_arr = None if C is None else _as_f64(C, "C")
+    if c_arr is not None and len(c_arr) != len(x):
+        raise ValueError("hexbin C must have the same length as x and y")
+    h_cap = w if h == 0 else h
+    cell_capacity = (w + 1) * (h_cap + 1) + w * h_cap
+    out_cx = np.empty(cell_capacity, dtype=np.float64)
+    out_cy = np.empty(cell_capacity, dtype=np.float64)
+    out_counts = np.empty(cell_capacity, dtype=np.float64)
+    out_starts = np.empty(cell_capacity, dtype=np.uint32)
+    out_lens = np.empty(cell_capacity, dtype=np.uint32)
+    out_indices = np.empty(len(x), dtype=np.uint32)
+    n_indices = ctypes.c_size_t()
+    dx = ctypes.c_double()
+    dy = ctypes.c_double()
+    written = _lib.xyg_hexbin_groups(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        0 if c_arr is None else _ptr_f64(c_arr),
+        len(x),
+        w,
+        h,
+        x0,
+        x1,
+        y0,
+        y1,
+        use_range,
+        int(mincnt),
+        _ptr_f64(out_cx),
+        _ptr_f64(out_cy),
+        _ptr_f64(out_counts),
+        out_starts.ctypes.data,
+        out_lens.ctypes.data,
+        cell_capacity,
+        out_indices.ctypes.data,
+        len(out_indices),
+        ctypes.byref(n_indices),
+        ctypes.byref(dx),
+        ctypes.byref(dy),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("hexbin x and y must contain at least one finite pair")
+    n = int(written)
+    n_idx = int(n_indices.value)
+    return (
+        out_cx[:n].copy(),
+        out_cy[:n].copy(),
+        out_counts[:n].copy(),
+        out_starts[:n].copy(),
+        out_lens[:n].copy(),
+        out_indices[:n_idx].copy(),
+        float(dx.value),
+        float(dy.value),
+    )
+
+
+def legend_normalize(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+    *,
+    x_reverse: bool = False,
+    y_reverse: bool = False,
+    x_scale: int = 0,
+    y_scale: int = 0,
+    x_constant: float = 1.0,
+    y_constant: float = 1.0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] | None:
+    """Display-space occupancy sample via ``xyg_legend_normalize`` (ABI 120).
+
+    Returns ``None`` when the series has no finite visible pair. Scale codes
+    are 0=linear, 1=log, 2=symlog.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("legend_normalize x and y must have equal length")
+    n = len(x)
+    capacity = min(n, 512) if n else 0
+    out_x = np.empty(capacity, dtype=np.float64)
+    out_y = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_legend_normalize(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        float(x_domain[0]),
+        float(x_domain[1]),
+        float(y_domain[0]),
+        float(y_domain[1]),
+        int(bool(x_reverse)),
+        int(bool(y_reverse)),
+        int(x_scale),
+        int(y_scale),
+        float(x_constant),
+        float(y_constant),
+        _ptr_f64(out_x) if capacity else 0,
+        _ptr_f64(out_y) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid legend_normalize arguments")
+    if written == 0:
+        return None
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def legend_best_loc(
+    xs: npt.NDArray[np.float64],
+    ys: npt.NDArray[np.float64],
+    starts: npt.NDArray[np.uintp],
+    label_lens: npt.NDArray[np.uint32],
+) -> int:
+    """Matplotlib ``loc="best"`` candidate index via ``xyg_legend_best_loc``."""
+    xs = _as_f64(xs, "xs")
+    ys = _as_f64(ys, "ys")
+    if len(xs) != len(ys):
+        raise ValueError("legend_best_loc xs and ys must have equal length")
+    starts = np.ascontiguousarray(starts, dtype=np.uintp)
+    label_lens = np.ascontiguousarray(label_lens, dtype=np.uint32)
+    code = int(
+        _lib.xyg_legend_best_loc(
+            _ptr_f64(xs),
+            _ptr_f64(ys),
+            len(xs),
+            starts.ctypes.data if len(starts) else 0,
+            len(starts),
+            label_lens.ctypes.data if len(label_lens) else 0,
+            len(label_lens),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid legend_best_loc arguments")
+    return code
+
+
+def ribbon_edge(
+    x0: float,
+    x1: float,
+    ya: float,
+    yb: float,
+    steps: int = 96,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Flatten one d3 ``curveBumpX`` edge via ``xyg_ribbon_edge`` (ABI 121)."""
+    steps = int(steps)
+    if steps <= 0:
+        raise ValueError("ribbon_edge steps must be positive")
+    n = steps + 1
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_ribbon_edge(
+        float(x0),
+        float(x1),
+        float(ya),
+        float(yb),
+        steps,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid ribbon_edge arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def ribbon_polygon(
+    x0: float,
+    x1: float,
+    src_lo: float,
+    src_hi: float,
+    dst_lo: float,
+    dst_hi: float,
+    steps: int = 96,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Closed flow-band polygon via ``xyg_ribbon_polygon`` (ABI 121)."""
+    steps = int(steps)
+    if steps <= 0:
+        raise ValueError("ribbon_polygon steps must be positive")
+    n = 2 * (steps + 1)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_ribbon_polygon(
+        float(x0),
+        float(x1),
+        float(src_lo),
+        float(src_hi),
+        float(dst_lo),
+        float(dst_hi),
+        steps,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid ribbon_polygon arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def monotone_tangents(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Fritsch–Carlson tangents via ``xyg_monotone_tangents`` (ABI 121)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("monotone_tangents x and y must have equal length")
+    n = len(x)
+    out = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_monotone_tangents(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        _ptr_f64(out) if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid monotone_tangents arguments")
+    return out
+
+
+def curve_flatten(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    bezier_steps: int = 16,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Data-space Hermite flatten via ``xyg_curve_flatten`` (ABI 121)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("curve_flatten x and y must have equal length")
+    bezier_steps = int(bezier_steps)
+    n = len(x)
+    capacity = 0 if n == 0 else (1 if n == 1 else 1 + (n - 1) * bezier_steps)
+    out_x = np.empty(capacity, dtype=np.float64)
+    out_y = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_curve_flatten(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        bezier_steps,
+        _ptr_f64(out_x) if capacity else 0,
+        _ptr_f64(out_y) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX or written > capacity:
+        raise ValueError("invalid curve_flatten arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def step_arrays(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    mode: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Expand compact vertices into a step polyline (ABI 211).
+
+    ``mode`` is ``1`` pre, ``2`` mid, ``3`` post. ``n < 2`` is identity.
+    Empty native pointers are ``0``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("step_arrays x and y must have equal length")
+    mode = int(mode)
+    n = len(x)
+    probed = _lib.xyg_step_arrays(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        mode,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid step-arrays request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_step_arrays(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        mode,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid step-arrays request")
+    return out_x, out_y
+
+
+def marker_path_scale(
+    cx: float,
+    cy: float,
+    scale: float,
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Pixel-space authored marker vertices via ``xyg_marker_path_scale`` (ABI 212).
+
+    Writes ``out_x = cx + scale * x``, ``out_y = cy - scale * y``. Empty native
+    pointers are ``0``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("marker_path_scale x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid marker-path-scale request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid marker-path-scale request")
+    return out_x, out_y
+
+
+def arrow_style_pack(
+    start_offset: str | None,
+    start_angle: float,
+    end_angle: float,
+    curve: float,
+    gap_start: float,
+    gap_end: float,
+    label_clear: str | None,
+    elbow: float,
+) -> npt.NDArray[np.float64]:
+    """Packed annotation-arrow style via ``xyg_arrow_style_pack`` (ABI 254).
+
+    Empty native pointers are ``0``. Returns 12 f64s (NaN = absent).
+    """
+    offset_b = b"" if start_offset is None else str(start_offset).encode("utf-8")
+    clear_b = b"" if label_clear is None else str(label_clear).encode("utf-8")
+    out = np.empty(12, dtype=np.float64)
+    ok = _lib.xyg_arrow_style_pack(
+        offset_b if offset_b else 0,
+        len(offset_b),
+        float(start_angle),
+        float(end_angle),
+        float(curve),
+        float(gap_start),
+        float(gap_end),
+        clear_b if clear_b else 0,
+        len(clear_b),
+        float(elbow),
+        _ptr_f64(out),
+        12,
+    )
+    if ok != 0:
+        raise ValueError("invalid arrow-style-pack request")
+    return out
+
+
+def arrow_geometry(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    style: npt.ArrayLike,
+) -> npt.NDArray[np.float64]:
+    """Packed annotation-arrow geometry via ``xyg_arrow_geometry`` (ABI 217)."""
+    style = _as_f64(np.asarray(style, dtype=np.float64).reshape(-1), "style")
+    if len(style) not in (0, 12):
+        raise ValueError("arrow_geometry style must have length 0 or 12")
+    out = np.empty(11, dtype=np.float64)
+    ok = _lib.xyg_arrow_geometry(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        _ptr_f64(out),
+        11,
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native arrow_geometry failed (output undefined)")
+    return out
+
+
+def arrow_shaft_points(
+    p0x: float,
+    p0y: float,
+    p1x: float,
+    p1y: float,
+    cx: float,
+    cy: float,
+    has_control: bool,
+    elbow: bool,
+    samples: int = 0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Shaft polyline via ``xyg_arrow_shaft_points`` (ABI 217)."""
+    probed = _lib.xyg_arrow_shaft_points(
+        float(p0x),
+        float(p0y),
+        float(p1x),
+        float(p1y),
+        float(cx),
+        float(cy),
+        int(bool(has_control)),
+        int(bool(elbow)),
+        int(samples),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-shaft-points request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_shaft_points(
+        float(p0x),
+        float(p0y),
+        float(p1x),
+        float(p1y),
+        float(cx),
+        float(cy),
+        int(bool(has_control)),
+        int(bool(elbow)),
+        int(samples),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-shaft-points request")
+    return out_x, out_y
+
+
+def arrow_end_decoration(
+    px: float,
+    py: float,
+    dx: float,
+    dy: float,
+    style: str,
+    head: float,
+) -> tuple[int, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Endpoint decoration via ``xyg_arrow_end_decoration`` (ABI 217)."""
+    encoded = str(style).encode("utf-8")
+    kind = ctypes.c_int32(-1)
+    probed = _lib.xyg_arrow_end_decoration(
+        float(px),
+        float(py),
+        float(dx),
+        float(dy),
+        encoded if encoded else 0,
+        len(encoded),
+        float(head),
+        0,
+        0,
+        0,
+        ctypes.byref(kind),
+    )
+    if probed == _USIZE_MAX or int(kind.value) < 0:
+        raise ValueError("invalid arrow-end-decoration request")
+    count = int(probed)
+    if count == 0:
+        return int(kind.value), np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    kind = ctypes.c_int32(-1)
+    written = _lib.xyg_arrow_end_decoration(
+        float(px),
+        float(py),
+        float(dx),
+        float(dy),
+        encoded if encoded else 0,
+        len(encoded),
+        float(head),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+        ctypes.byref(kind),
+    )
+    if written == _USIZE_MAX or written != count or int(kind.value) < 0:
+        raise ValueError("invalid arrow-end-decoration request")
+    return int(kind.value), out_x, out_y
+
+
+def arrow_taper_polygon(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    width_start: float,
+    width_end: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Tapered shaft polygon via ``xyg_arrow_taper_polygon`` (ABI 217)."""
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
+    if len(x) != len(y):
+        raise ValueError("arrow_taper_polygon x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_arrow_taper_polygon(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(width_start),
+        float(width_end),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-taper-polygon request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_taper_polygon(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(width_start),
+        float(width_end),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-taper-polygon request")
+    return out_x, out_y
+
+
+def arrow_trim_polyline_end(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    trim: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Trim arclength from a polyline end via ``xyg_arrow_trim_polyline_end`` (ABI 217)."""
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
+    if len(x) != len(y):
+        raise ValueError("arrow_trim_polyline_end x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_arrow_trim_polyline_end(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(trim),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-trim-polyline-end request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_trim_polyline_end(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(trim),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-trim-polyline-end request")
+    return out_x, out_y
+
+
+def arrow_shapes(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    style: npt.ArrayLike,
+    head_style: str,
+    tail_style: str,
+    head_size: float,
+    width_start: float,
+    width_end: float,
+    elbow_authoring: bool,
+) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Annotation arrow shapes via ``xyg_arrow_shapes`` (ABI 257).
+
+    Returns ``(meta[6], x, y)`` with sequential shaft/taper/head/tail points.
+    """
+    style = _as_f64(np.asarray(style, dtype=np.float64).reshape(-1), "style")
+    if len(style) not in (0, 12):
+        raise ValueError("arrow_shapes style must have length 0 or 12")
+    head_b = str(head_style).encode("utf-8")
+    tail_b = str(tail_style).encode("utf-8")
+    meta = np.empty(6, dtype=np.int32)
+    probed = _lib.xyg_arrow_shapes(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        head_b if head_b else 0,
+        len(head_b),
+        tail_b if tail_b else 0,
+        len(tail_b),
+        float(head_size),
+        float(width_start),
+        float(width_end),
+        int(bool(elbow_authoring)),
+        _ptr_i32(meta),
+        6,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-shapes request")
+    count = int(probed)
+    if count == 0:
+        return meta, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_shapes(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        head_b if head_b else 0,
+        len(head_b),
+        tail_b if tail_b else 0,
+        len(tail_b),
+        float(head_size),
+        float(width_start),
+        float(width_end),
+        int(bool(elbow_authoring)),
+        _ptr_i32(meta),
+        6,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-shapes request")
+    return meta, out_x, out_y
+
+
+def rounded_rect_poly(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    r_tip: float,
+    r_base: float,
+    tip_top: bool,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """CW rounded-rect outline via ``xyg_rounded_rect_poly`` (ABI 121)."""
+    out_x = np.empty(20, dtype=np.float64)
+    out_y = np.empty(20, dtype=np.float64)
+    written = _lib.xyg_rounded_rect_poly(
+        float(x),
+        float(y),
+        float(w),
+        float(h),
+        float(r_tip),
+        float(r_base),
+        int(bool(tip_top)),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        20,
+    )
+    if written == _USIZE_MAX or written > 20:
+        raise ValueError("invalid rounded_rect_poly arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
 
 
 def violin_density(
@@ -6600,6 +15453,78 @@ def histogram_edges(
     )
     if written == _USIZE_MAX:
         raise ValueError("invalid histogram_edges arguments")
+    return out[: int(written)].copy()
+
+
+def histogram_mark_edges(
+    data: npt.NDArray[np.float64],
+    *,
+    range: tuple[float, float] | None = None,
+    method: str = "auto",
+    n_bins: int = 0,
+) -> npt.NDArray[np.float64]:
+    """Composition histogram edges via ``xyg_histogram_mark_edges``.
+
+    ``method`` is ``"auto"``, ``"sturges"``, or ``"uniform"``. Empty finite
+    auto/sturges use ten bins over ``range`` or ``[0, 1]``; uniform bins use
+    the authored range or Rust ``auto_domain``.
+    """
+    data = _as_f64(data, "data")
+    key = str(method).strip().lower()
+    method_map = {"auto": 0, "sturges": 1, "uniform": 2}
+    if key not in method_map:
+        raise ValueError("histogram_mark_edges method must be 'auto', 'sturges', or 'uniform'")
+    if range is None:
+        use_range = 0
+        lo = hi = 0.0
+    else:
+        use_range = 1
+        lo, hi = _finite_increasing(range[0], range[1], "histogram range")
+    n_bins = int(n_bins)
+    if n_bins < 0:
+        raise ValueError("histogram bins must be positive")
+    capacity = 10_001
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_histogram_mark_edges(
+        _ptr_f64(data),
+        len(data),
+        lo,
+        hi,
+        use_range,
+        method_map[key],
+        n_bins,
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid histogram_mark_edges arguments")
+    return out[: int(written)].copy()
+
+
+def contour_levels(
+    data: npt.NDArray[np.float64],
+    n_levels: int = 0,
+) -> npt.NDArray[np.float64]:
+    """Composition contour isolines via ``xyg_contour_levels``.
+
+    ``n_levels > 0`` spaces interior samples across ``auto_domain`` of finite
+    ``data``. ``n_levels == 0`` sorts ``data`` as authored levels.
+    """
+    data = _as_f64(data, "data")
+    n_levels = int(n_levels)
+    if n_levels < 0:
+        raise ValueError("contour levels must be between 1 and 256")
+    capacity = 256
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_contour_levels(
+        _ptr_f64(data),
+        len(data),
+        n_levels,
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid contour_levels arguments")
     return out[: int(written)].copy()
 
 

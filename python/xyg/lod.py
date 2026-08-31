@@ -509,17 +509,15 @@ def sample_row_range_for_target(
     target_i = _integer_param(target, "sample target", min_value=1)
     if size_i == 0:
         return np.empty(0, dtype=np.uint32)
-    base_fraction = min(1.0, target_i / size_i)
-    fraction = _sample_fraction(level, base_fraction, growth)
-    if fraction >= 1.0:
-        return np.arange(size_i, dtype=np.uint32)
+    level_i = _integer_param(level, "sample level")
+    growth_f = _float_param(growth, "sample growth", min_inclusive=1.0)
     seed_i = _integer_param(seed, "sample seed", max_value=_UINT64_MAX_INT)
-    threshold = int(_sample_threshold(fraction))
-    # A two-times expectation leaves overwhelming headroom for the Bernoulli
-    # count while keeping the ABI allocation bounded. The native wrapper
-    # retries with the exact required count in the vanishingly rare overflow.
-    capacity = min(size_i, max(64, target_i * 2))
-    return kernels.sample_range_indices(size_i, seed_i, threshold, capacity)
+    keep_all, idx = kernels.payload_sample_target_indices(
+        size_i, target_i, seed_i, level_i, growth_f
+    )
+    if keep_all:
+        return np.arange(size_i, dtype=np.uint32)
+    return idx
 
 
 def bin_2d_sample_row_range_for_target(
@@ -850,10 +848,7 @@ def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     would otherwise encode to ±inf; design dossier §19). Exactly 1.0 for every
     normal domain, so the common path is unchanged; only absurd magnitudes
     normalize."""
-    half = max(abs(lo - offset), abs(hi - offset))
-    if not np.isfinite(half) or half <= F32_SAFE_MAG:
-        return 1.0
-    return F32_SAFE_MAG / half
+    return float(kernels.f32_safe_scale(float(offset), float(lo), float(hi)))
 
 
 def encode_f32_values(
@@ -870,30 +865,31 @@ def encode_f32_values(
     expected numeric domain used to pick an f32-safe scale. Windowed updates
     usually pass viewport bounds; first-payload columns pass canonical column
     bounds. The optional `kind` rides only in first-payload column tables.
+    Offset, scale, and kind presence are ABI 255 ``xyg_encoded_column_meta``.
     """
     vals = np.ascontiguousarray(np.asarray(values, dtype=np.float64).ravel())
-    offset_f = float(offset)
-    scale = f32_safe_scale(offset_f, float(lo), float(hi))
+    offset_f, scale, has_kind = kernels.encoded_column_meta(
+        float(offset), float(lo), float(hi), None if kind is None else str(kind)
+    )
     enc = (
         np.empty(0, dtype=np.float32)
         if len(vals) == 0
         else kernels.encode_f32(vals, offset_f, scale)
     )
     meta: dict[str, Any] = {"offset": offset_f, "scale": scale}
-    if kind is not None:
+    if has_kind:
         meta["kind"] = kind
     return EncodedColumn(meta=meta, values=enc)
 
 
-#: Axis scales whose geometry must be encoded around a zero origin. Callers
-#: that choose an offset themselves (the sticky append offset in `_payload`)
-#: must branch on this, not on their own copy of the scale names.
-LOG_FAMILY_SCALES = ("log", "symlog")
-
-
 def pins_offset_to_zero(scale: str | None) -> bool:
-    """Whether `scale` requires the zero origin `geometry_offset` gives it."""
-    return scale in LOG_FAMILY_SCALES
+    """Whether `scale` requires the zero origin `geometry_offset` gives it.
+
+    Admission is ABI 216 ``xyg_scale_pins_offset`` (`log` / `symlog`).
+    """
+    if scale is None:
+        return False
+    return bool(kernels.scale_pins_offset(scale))
 
 
 def geometry_offset(scale: str | None, lo: float, hi: float) -> float:
@@ -907,9 +903,7 @@ def geometry_offset(scale: str | None, lo: float, hi: float) -> float:
     decades). With offset 0 the encode error is a ~2⁻²⁴ *relative* error,
     which the log-family transform maps to a bounded sub-pixel coordinate
     error at every magnitude."""
-    if pins_offset_to_zero(scale) or not (np.isfinite(lo) and np.isfinite(hi)):
-        return 0.0
-    return (lo + hi) / 2.0
+    return float(kernels.geometry_offset(pins_offset_to_zero(scale), float(lo), float(hi)))
 
 
 def encode_window_xy_columns(

@@ -12,7 +12,6 @@ matching the §2 "typical scatter ≤ 24 B/pt" budget with headroom.
 from __future__ import annotations
 
 import numbers
-import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypeAlias, Union
@@ -263,7 +262,6 @@ def _is_categorical(arr: np.ndarray) -> bool:
 
 
 # `#rrggbb` and `rgb()/hsl()` cannot be mistaken for data; a bare `red` can.
-_FUNCTIONAL_COLOR = re.compile(r"^\s*(#|rgba?\s*\(|hsla?\s*\()", re.IGNORECASE)
 
 
 def _literal_color_rgba(arr: np.ndarray) -> Optional[npt.NDArray[np.float64]]:
@@ -291,10 +289,10 @@ def _literal_color_rgba(arr: np.ndarray) -> Optional[npt.NDArray[np.float64]]:
     # Requiring entry zero to match is exactly as strict as the `all(...)`
     # below, which already demands every entry be a color string.
     first = arr.flat[0]
-    if not isinstance(first, str) or not _FUNCTIONAL_COLOR.match(first):
+    if not isinstance(first, str) or not kernels.css_is_functional(first):
         return None
     values = arr.tolist()
-    if not all(isinstance(v, str) and _FUNCTIONAL_COLOR.match(v) for v in values):
+    if not all(isinstance(v, str) and kernels.css_is_functional(v) for v in values):
         return None
     # Distinct-first: a million-row column of a handful of colors parses each
     # one once, through the same grammar a scalar `color=` is validated with.
@@ -484,14 +482,7 @@ def _size_range(range_px: tuple[float, float]) -> tuple[float, float]:
 
 
 def _continuous_domain(values: npt.NDArray[np.float64]) -> tuple[float, float]:
-    bounds = kernels.min_max(values)
-    if bounds is None:
-        return (0.0, 1.0)
-    lo, hi = bounds
-    if lo == hi:
-        pad = abs(lo) * 0.05 or 0.5
-        return (lo - pad, hi + pad)
-    return (lo, hi)
+    return kernels.continuous_domain(values)
 
 
 def append_continuous(channel: Any, values: npt.NDArray[np.float64], label: str) -> None:
@@ -589,14 +580,17 @@ def resolve_color(
     arr = np.asarray(color)
     if arr.ndim == 2 and arr.shape in {(n, 3), (n, 4)}:
         try:
-            rgba = np.asarray(arr, dtype=np.float64)
+            flat = np.ascontiguousarray(arr, dtype=np.float64).reshape(-1)
         except (TypeError, ValueError) as exc:
             raise ValueError("direct RGB/RGBA colors must be real numeric") from exc
-        if not np.isfinite(rgba).all() or np.any((rgba < 0.0) | (rgba > 1.0)):
-            raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
-        if rgba.shape[1] == 3:
-            rgba = np.column_stack((rgba, np.ones(n, dtype=np.float64)))
-        return ColorChannel(mode="direct_rgba", rgba=np.ascontiguousarray(rgba))
+        try:
+            packed = kernels.direct_rgba_admit(flat, int(arr.shape[1]))
+        except ValueError as exc:
+            raise ValueError(
+                "direct RGB/RGBA colors must contain finite values between 0 and 1"
+            ) from exc
+        rgba = np.ascontiguousarray(packed.reshape(n, 4))
+        return ColorChannel(mode="direct_rgba", rgba=rgba)
 
     if arr.ndim != 1 or len(arr) != n:
         raise ValueError(f"color array must be 1-D length {n}, got shape {arr.shape}")
@@ -745,18 +739,15 @@ def quantize_unit_u8(values: npt.NDArray[np.float64], domain: tuple[float, float
     texels; a size ramp spans ~16 px) and is never read back into a displayed
     number — 75% less traffic than f32, same rendered output (§29).
 
-    Chunk-bounded like the other quantizers (`_QUANTIZE_CHUNK`): the arithmetic
-    is element-wise and stays in f32 exactly as the one-shot chain did, so the
-    bytes are identical while the transient stays independent of N."""
+    Chunk-bounded like the other quantizers (`_QUANTIZE_CHUNK`): normalize
+    stays ABI ``normalize_f32``; clip × 255 ties-to-even is ABI 251
+    ``xyg_clip_quantize_u8``. Bytes match the one-shot chain while the
+    transient stays independent of N."""
     out = np.empty(len(values), dtype=np.uint8)
     for start in range(0, len(values), _QUANTIZE_CHUNK):
         end = start + _QUANTIZE_CHUNK
-        # Fresh f32 kernel output: clip/scale/round can all run in place on it.
-        unit = normalize_to_unit(values[start:end], domain)
-        np.clip(unit, 0.0, 1.0, out=unit)
-        unit *= 255.0
-        np.rint(unit, out=unit)
-        out[start:end] = unit.astype(np.uint8)
+        unit = np.asarray(normalize_to_unit(values[start:end], domain), dtype=np.float64)
+        out[start:end] = kernels.clip_quantize_u8(unit)
     return out
 
 
@@ -809,7 +800,10 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
     (`var()`, `oklch()`) has no fixed channels here; it falls back to the
     built-in palette's color **at the same index**, never to one shared
     fallback, because a shared fallback collapses distinct categories into a
-    single indistinguishable color. The substitution warns (§28)."""
+    single indistinguishable color. The substitution warns (§28).
+
+    Static 0-1 channels from ``css_check`` quantize through ABI 251
+    ``xyg_clip_quantize_u8``. Browser-only status stays host."""
     lut = np.empty((max(rows, 1), 4), dtype=np.uint8)
     unresolved: list[str] = []
     for i in range(lut.shape[0]):
@@ -823,7 +817,7 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
             # substitute always parses; assert it rather than carry an
             # unreachable None through the arithmetic below.
             assert rgba is not None, "built-in palette entry failed to parse"
-        lut[i] = [round(c * 255) for c in rgba]
+        lut[i] = kernels.clip_quantize_u8(np.asarray(rgba, dtype=np.float64))
     if unresolved:
         import warnings
 
@@ -843,7 +837,9 @@ def bins_mean_color(cc: Optional[ColorChannel]) -> bool:
     Tier 2 (LOD doc §2) instead of being dropped. Cheap predicate — no
     arrays are touched — for warning/spec sites; `resolve_bin_colors` is
     gated on exactly this."""
-    return cc is not None and cc.mode in ("continuous", "categorical", "direct_rgba")
+    if cc is None:
+        return False
+    return kernels.density_mean_color_wire_admit(has_channel=True, mode=cc.mode)
 
 
 # Chunk length for full-column color-source quantization. The math is
@@ -864,36 +860,14 @@ _QUANTIZE_CHUNK = 1 << 18
 
 
 def _quantized_lut_idx(values: npt.NDArray[np.float64], domain: tuple[float, float]) -> np.ndarray:
-    """Continuous values -> u8 LUT texel indices, chunk-bounded temporaries.
-
-    Per-element math is exactly the historical one-shot chain —
-    `normalize_to_unit` (f32), widen to f64, ×255, `rint`, cast u8 — applied
-    per chunk, so results are bitwise identical while peak memory stays
-    O(chunk) + the N-byte output. The ×255/`rint` stages run in place on the
-    widened copy, so one f64 chunk buffer serves the whole pipeline."""
-    out = np.empty(len(values), dtype=np.uint8)
-    for start in range(0, len(values), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        # `normalize_to_unit` hands back a fresh f32 kernel output, so the
-        # widened copy below is ours to mutate.
-        scaled = np.asarray(normalize_to_unit(values[start:end], domain), dtype=np.float64)
-        scaled *= 255.0
-        np.rint(scaled, out=scaled)
-        out[start:end] = scaled.astype(np.uint8)
-    return out
+    """Continuous values -> u8 LUT texel indices via ``quantize_unit_u8``."""
+    return quantize_unit_u8(values, domain)
 
 
 def _quantized_rgba8(values: npt.NDArray[np.float64]) -> np.ndarray:
-    """Float RGBA rows -> straight-alpha RGBA8, chunk-bounded temporaries."""
-    out = np.empty(values.shape, dtype=np.uint8)
-    for start in range(0, len(values), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        # `clip` copies the input rows; the rest of the chain reuses that copy.
-        seg = np.clip(values[start:end], 0.0, 1.0)
-        seg *= 255.0
-        np.rint(seg, out=seg)
-        out[start:end] = seg.astype(np.uint8)
-    return out
+    """Float RGBA rows -> straight-alpha RGBA8 via ``xyg_clip_quantize_u8``."""
+    flat = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
+    return kernels.clip_quantize_u8(flat).reshape(values.shape)
 
 
 def _folded_codes_u8(codes: np.ndarray, n_palette: int) -> np.ndarray:
@@ -951,6 +925,84 @@ def resolve_bin_colors(cc: Optional[ColorChannel], sel: Any) -> Optional[dict]:
     }
 
 
+def _wire_encode_plan(
+    role: str,
+    mode: str,
+    *,
+    n_categories: int = 0,
+    style_dtype_u8: bool = False,
+    quantize_continuous: bool = False,
+) -> dict[str, bool | str]:
+    """Rust-owned buffer/transform policy for ``channels.ship_*`` (ABI 312)."""
+    return kernels.payload_channel_wire_encode(
+        role,
+        mode,
+        n_categories=n_categories,
+        style_dtype_u8=style_dtype_u8,
+        quantize_continuous=quantize_continuous,
+    )
+
+
+def _ship_wire_buffer(
+    plan: dict[str, bool | str],
+    ship_scalar: Any,
+    ship_u8: Any,
+    *,
+    vals: Optional[npt.NDArray[np.float64]] = None,
+    domain: Optional[tuple[float, float]] = None,
+    packed_rgba: Optional[npt.NDArray[np.uint8]] = None,
+    raw: Optional[np.ndarray] = None,
+) -> Any:
+    """Apply the ABI 312 transform and return a shipped buffer index."""
+    transform = plan["transform"]
+    if transform == "none":
+        return None
+    if transform == "rgba_pack":
+        if packed_rgba is None:
+            raise ValueError("direct RGBA wire encode missing packed values")
+        return ship_u8(packed_rgba.reshape(-1))
+    if transform == "quantize_u8":
+        if vals is None or domain is None:
+            raise ValueError("continuous wire encode missing values or domain")
+        return ship_u8(quantize_unit_u8(vals, domain))
+    if transform == "normalize":
+        if vals is None or domain is None:
+            raise ValueError("continuous wire encode missing values or domain")
+        return ship_scalar(normalize_to_unit(vals, domain))
+    if transform == "raw":
+        if raw is None:
+            raise ValueError("raw wire encode missing values")
+        flat = np.ascontiguousarray(raw).reshape(-1)
+        if plan["buf_kind"] == "u8":
+            return ship_u8(flat)
+        return ship_scalar(flat)
+    raise ValueError("invalid payload_channel_wire_encode transform")
+
+
+def ship_registry_attach(
+    entry: dict[str, Any],
+    trace: Any,
+    sel: Any,
+    ship_scalar: Any,
+    ship_u8: Any,
+    plan: dict[str, Any],
+) -> None:
+    """Attach channels listed in a Rust-owned ship registry plan (ABI 311).
+
+    Hosts call ``payload_channel_ship_plan`` for policy; this function
+    materializes the listed rows via ``ship_*`` using ABI 312 wire encode."""
+    for ch in plan["channels"]:
+        key = ch["registry_key"]
+        method = ch["ship_method"]
+        if method == "color_size":
+            entry["color"], entry["size"] = ship_channels(trace, sel, ship_scalar, ship_u8)
+        elif method == "color":
+            channel = getattr(trace, ch["trace_slot"])
+            entry[key] = ship_color_channel(channel, sel, ship_scalar, ship_u8)
+        elif method == "style":
+            entry[key] = ship_style_channels(trace.style_channels, sel, ship_scalar, ship_u8)
+
+
 def ship_channels(
     trace: Any,
     sel: Any,
@@ -987,11 +1039,14 @@ def ship_channels(
         if values is None or domain is None:
             raise ValueError("continuous size channel missing values or domain")
         vals = values if sel is None else values[sel]
-        if quantize_continuous:
-            size_spec["buf"] = ship_u8(quantize_unit_u8(vals, domain))
+        plan = _wire_encode_plan(
+            "size",
+            sc.mode,
+            quantize_continuous=quantize_continuous,
+        )
+        size_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, vals=vals, domain=domain)
+        if plan["mark_dtype_u8"]:
             size_spec["dtype"] = "u8"
-        else:
-            size_spec["buf"] = ship_scalar(normalize_to_unit(vals, domain))
     return color_spec, size_spec
 
 
@@ -1039,6 +1094,14 @@ def ship_color_channel(
 ) -> dict[str, Any]:
     """Ship one fill/stroke paint channel in the common wire representation."""
     color_spec = cc.spec()
+    plan = _wire_encode_plan(
+        "color",
+        cc.mode,
+        n_categories=len(cc.categories or []),
+        quantize_continuous=quantize_continuous,
+    )
+    if plan["transform"] == "none":
+        return color_spec
     if cc.mode == "direct_rgba":
         rgba = cc.rgba
         if rgba is None:
@@ -1048,38 +1111,32 @@ def ship_color_channel(
         # chunk-bounded: a full-column direct-RGBA trace otherwise holds three
         # 32-bytes-per-point f64 temporaries at once (§27).
         packed = _quantized_rgba8(values)
-        color_spec["buf"] = ship_u8(packed.reshape(-1))
-        color_spec["n"] = int(len(values))
-    elif cc.mode == "match_fill":
-        pass
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, packed_rgba=packed)
     elif cc.mode == "continuous":
         values = cc.values
         domain = cc.domain
         if values is None or domain is None:
             raise ValueError("continuous color channel missing values or domain")
         vals = values if sel is None else values[sel]
-        if quantize_continuous:
-            color_spec["buf"] = ship_u8(quantize_unit_u8(vals, domain))
-            color_spec["dtype"] = "u8"
-        else:
-            color_spec["buf"] = ship_scalar(normalize_to_unit(vals, domain))
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, vals=vals, domain=domain)
     elif cc.mode == "categorical":
         code_values = cc.codes
         categories = cc.categories
         if code_values is None or categories is None:
             raise ValueError("categorical color channel missing codes or categories")
         codes = code_values if sel is None else code_values[sel]
-        # The palette texture has exactly 256 entries.  When every category is
-        # representable, codes are lossless bytes: 75% less channel traffic
-        # and GPU storage than f32.  Keep the legacy f32 path above that limit
-        # so existing >256-category collision behavior is unchanged.
-        if len(categories) <= MAX_CATEGORIES:
-            color_spec["buf"] = ship_u8(codes)
-            color_spec["dtype"] = "u8"
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=codes)
+        if plan["ship_palette"]:
+            color_spec["palette"] = categorical_palette(cc.colors, len(categories))
+    else:
+        raise ValueError(f"unsupported color channel mode for wire encode: {cc.mode}")
+    if plan["mark_dtype_u8"]:
+        color_spec["dtype"] = "u8"
+    if plan["set_n"]:
+        if cc.mode == "direct_rgba":
+            color_spec["n"] = int(len(values))
         else:
-            color_spec["buf"] = ship_scalar(codes)
-        color_spec["palette"] = categorical_palette(cc.colors, len(categories))
-
+            raise ValueError("wire encode set_n without direct_rgba color channel")
     return color_spec
 
 
@@ -1107,7 +1164,7 @@ def resolve_style_channel(
     if arr.shape != expected:
         raise ValueError(f"{label} array must have shape {expected}, got {arr.shape}")
     values = _as_real_array(arr.reshape(-1), f"{label} array").reshape(expected)
-    if not np.isfinite(values).all():
+    if not kernels.scene_finite_all(values):
         raise ValueError(f"{label} array must contain only finite values")
     if minimum is not None and np.any(values < minimum):
         raise ValueError(f"{label} array values must be at least {minimum}")
@@ -1124,8 +1181,9 @@ def ship_style_channels(
     for name, channel in style_channels.items():
         values = channel.values if sel is None else channel.values[sel]
         spec = channel.spec()
-        flat = np.ascontiguousarray(values).reshape(-1)
-        spec["buf"] = ship_u8(flat) if channel.dtype == "u8" else ship_scalar(flat)
-        spec["n"] = int(len(values))
+        plan = _wire_encode_plan("style", "direct", style_dtype_u8=channel.dtype == "u8")
+        spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=values)
+        if plan["set_n"]:
+            spec["n"] = int(len(values))
         result[name] = spec
     return result

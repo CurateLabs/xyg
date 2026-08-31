@@ -34,7 +34,7 @@ function authoredScene(count) {
   });
   figure.style = authoring.style;
   figure.setAxis("x", authoring.axes.x); figure.setAxis("y", authoring.axes.y);
-  figure.colorbarOptions = authoring.colorbar;
+  figure.colorbar_options = authoring.colorbar;
   // Match Python's explicit ``density=False``: the evidence exercises the
   // supported direct Scene transport at every tier, not Node's interactive
   // density heuristic.

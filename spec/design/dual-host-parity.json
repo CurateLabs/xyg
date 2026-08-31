@@ -161,35 +161,35 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); packages/xy-node test/coverage.test.mjs + encode f32 goldens"
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / polar); ABI 132 xyg_density_* owns first-paint path/binning/WASM/overlay policy; ABI 264 density_uses_channel_colormap owns colormap source; ABI 301 xyg_payload_scatter_emit_plan owns tier/direct-vs-density emit; packages/xy-node test/coverage.test.mjs + encode f32 goldens; tests/fixtures/payload_cross_host.json + tests/test_payload_cross_host.py byte-identical direct-tier payload blobs including scatter_style_channels, scatter_color_ch, and scatter_log_ship_scale; tests/fixtures/density_emit_cross_host.json + tests/test_density_emit_cross_host.py density wire metadata (colormap, dropped_channels); tests/fixtures/force_emit_cross_host.json + tests/test_force_emit_cross_host.py scatter tier parity (force_direct/force_pyramid ignored like Python _emit_scatter)"
     },
     {
       "kind": "line",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens"
+      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens; tests/fixtures/payload_cross_host.json line_transition_keys and line_log_ship_scale packed blobs"
     },
     {
       "kind": "histogram",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases"
+      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases; tests/fixtures/payload_cross_host.json histogram_fixed_bins, histogram_finite_sel, histogram_style_channels, histogram_stroke_ch, histogram_color_ch, and histogram_log_ship_scale packed blobs (NaN bin rectFiniteSel parity, channel attach, and log-axis ship scale)"
     },
     {
       "kind": "area",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens"
+      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens; tests/fixtures/payload_cross_host.json area_log_ship_scale packed blob (log-axis ship scale)"
     },
     {
       "kind": "bar",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "xy_bar_stack (ABI 57) grouped/stacked/normalized; packages/xy-node marks/bar + tests"
+      "notes": "xy_bar_stack (ABI 57) grouped/stacked/normalized; packages/xy-node marks/bar + tests; tests/fixtures/payload_cross_host.json bar_compact packed blob (nested bar spec + registry columns via payload_bar_compact_admit)"
     },
     {
       "kind": "column",
@@ -222,16 +222,16 @@
     {
       "kind": "heatmap",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; constant-style Cartesian Scene Rects; categorical axes follow-up"
+      "notes": "packages/xy-node marks/heatmap grid + xy_colormap_rgba / xy_heatmap_rgba; constant-style Cartesian Scene Rects; tests/fixtures/payload_cross_host.json heatmap_colormap packed blob (nested heatmap spec + normalized grid buffer via payload_heatmap_emit_plan)"
     },
     {
       "kind": "hexbin",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens"
+      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens; tests/fixtures/payload_cross_host.json hexbin_colormap packed blob (continuous color + size channels, no metric column)"
     },
     {
       "kind": "violin",
@@ -245,7 +245,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready"
+      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready; ABI 133 Scene v26 polar line/scatter/area/bar/column/errorbar/heatmap/contour compile via XYPL; ABI 134 HeatmapPainted intern; ABI 135 named colormap tables; ABI 136 product-kind packing; ABI 137 Cartesian density Image blit; ABI 138 constant dash XYDS; ABI 139 constant linecap XYLC; ABI 140 cartesian smooth-polyline flatten; ABI 141 cartesian smooth-area Band flatten; ABI 142 cartesian mean-color density; ABI 143 polar density PolyFill tessellation; ABI 144 cartesian error_band smooth BandFlatten plus polar identity-chord smooth; ABI 145 constant marker_path XYMP tessellation; ABI 146 constant mark-fill linear-gradient XYGR; ABI 147 XYPK product packing facts"
     },
     {
       "kind": "pie",
@@ -345,7 +345,7 @@
       "name": "density / aggregate",
       "python": "ready",
       "node": "ready",
-      "notes": "Scatter density grid; graph render-graph / cluster; hexbin aggregation; screen-bounded"
+      "notes": "Scatter density grid; ABI 132 density emit policy; graph render-graph / cluster; hexbin aggregation; screen-bounded"
     },
     {
       "tier": 3,

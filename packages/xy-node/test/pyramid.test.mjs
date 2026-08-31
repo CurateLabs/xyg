@@ -108,7 +108,7 @@ test("pyramid outresolve returns null (caller falls back to bin2d)", () => {
   pyramidFree(handle);
 });
 
-test("figure force_pyramid records §28 binning on density tier", () => {
+test("force_pyramid ignored below PYRAMID_MIN like Python _density_trace_spec", () => {
   const n = 10_000;
   const x = fill(n, (i) => (i % 100) / 99);
   const y = fill(n, (i) => Math.floor(i / 100) / 99);
@@ -117,8 +117,7 @@ test("figure force_pyramid records §28 binning on density tier", () => {
   const { spec } = fig.buildPayload();
   const t = spec.traces[0];
   assert.equal(t.tier, "density");
-  assert.match(t.density.binning, /^pyramid-L/);
-  assert.equal(t.density.reduction, "pyramid-count");
+  assert.equal(t.density.reduction, "bin2d");
   assert.equal(t.density.enc, "log-u8");
   fig.dispose();
 });
@@ -199,11 +198,11 @@ test("pyramid spill compose is bit-identical to in-RAM compose", () => {
 });
 
 test("figure pyramidSpill records §28 tiles binning on density tier", () => {
-  const n = 10_000;
+  const n = PYRAMID_MIN_POINTS + 1_000;
   const x = fill(n, (i) => (i % 100) / 99);
   const y = fill(n, (i) => Math.floor(i / 100) / 99);
   const fig = figure({ width: 320, height: 240 });
-  fig.scatter(x, y, { forcePyramid: true, forceDensity: true, pyramidSpill: true });
+  fig.scatter(x, y, { forceDensity: true, pyramidSpill: true });
   const { spec } = fig.buildPayload();
   const t = spec.traces[0];
   assert.equal(t.tier, "density");

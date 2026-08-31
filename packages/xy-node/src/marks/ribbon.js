@@ -8,6 +8,22 @@
 import { asF64Array } from "../encode.js";
 import { resolveColorChannel } from "../color.js";
 
+/** Renderer-only fill/stroke alpha from compiled CSS (Python `styles._opacity_channels`). */
+function opacityChannels(extraStyle = {}) {
+  const out = {};
+  if (Object.hasOwn(extraStyle, "fill_opacity")) {
+    out.fill_opacity = Number(extraStyle.fill_opacity);
+  } else if (Object.hasOwn(extraStyle, "fill-opacity")) {
+    out.fill_opacity = Number(extraStyle["fill-opacity"]);
+  }
+  if (Object.hasOwn(extraStyle, "stroke_opacity")) {
+    out.stroke_opacity = Number(extraStyle.stroke_opacity);
+  } else if (Object.hasOwn(extraStyle, "stroke-opacity")) {
+    out.stroke_opacity = Number(extraStyle["stroke-opacity"]);
+  }
+  return out;
+}
+
 /**
  * @param {ArrayLike|TypedArray} x0
  * @param {ArrayLike|TypedArray} x1
@@ -43,15 +59,20 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
     throw new RangeError("ribbon opacity must be in [0, 1]");
   }
   const color = resolveColorChannel(opts.color, n);
+  const colorTargetRaw = opts.colorTarget ?? opts.color_target;
   const colorTarget =
-    opts.colorTarget == null ? null : resolveColorChannel(opts.colorTarget, n, color.color);
+    colorTargetRaw == null ? null : resolveColorChannel(colorTargetRaw, n, color.constant);
+  const extraStyle = opts.style ?? {};
   const style = {
     opacity,
     role: "ribbon",
     ...(opts.stroke != null ? { stroke: opts.stroke } : {}),
     ...(opts.strokeWidth ? { stroke_width: Number(opts.strokeWidth) } : {}),
-    ...(opts.style ?? {}),
+    ...opacityChannels(extraStyle),
+    ...extraStyle,
   };
+  delete style["fill-opacity"];
+  delete style["stroke-opacity"];
   return {
     traces: [
       {
@@ -65,7 +86,9 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
         y0: cols[2],
         y1: cols[3],
         color,
+        color_ch: color,
         color_target: colorTarget,
+        color2_ch: colorTarget,
         style,
         count: n,
         x_axis: opts.xAxis ?? "x",

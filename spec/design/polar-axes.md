@@ -241,8 +241,10 @@ they are 2° apart.
 
 ## 4. Parity fixtures
 
-The transform above is implemented twice — once in GLSL, once in Python (shared
-by both exporters). Prose does not bind them. `tests/fixtures/polar_transform.json`
+The transform above is implemented in GLSL for the live client and in Rust for
+static export (ABI 131 `xyg_polar_*`; Python/Node are thin packers over
+`_PolarProjection` / `polarLayout`). Prose does not bind them.
+`tests/fixtures/polar_transform.json`
 does, and it is authored from the definition in §3, not generated from either
 implementation.
 
@@ -260,15 +262,17 @@ Fixture cases are chosen so a human can check them by inspection:
 
 Three consumers must agree with that file:
 
-1. **Python** — a unit test over `_PolarProjection`. Fast, always runs.
+1. **Python / Node / Rust** — `tests/test_polar_transform.py`,
+   `tests/test_polar_abi.py`, and the Node polar layout/project test replay
+   `polar_transform.json` through the native projection. Fast, always runs.
 2. **GLSL** — `scripts/polar_parity_smoke.py` renders one scatter point per
    fixture sample in headless Chrome and compares each colour's lit-pixel
    centroid to the fixture value. This binds the *actual shader* in the shipped
    bundle, not a JS mirror of it, which is the only version that can drift
    silently. It runs in the stdlib-only CI lane beside the other smokes.
-3. **Exporters** — SVG and raster inherit (1) because they share the Python
-   projection, so their obligation is a rendered-output check, not a second
-   transform test.
+3. **Exporters** — SVG and raster call native projection through
+   `_PolarProjection`, so their obligation is a rendered-output check, not a
+   second transform test.
 
 This is deliberately stronger than the existing tick-math arrangement, where
 `js/src/30_ticks.ts` and its hand port in `python/xyg/_svg.py` are bound by
@@ -289,11 +293,17 @@ matplotlib arc-interpolates paths.
 | Heatmap cells | **true arc boundaries** | The fragment-stage inverse samples each screen pixel in (θ, r), so cell edges follow rings/spokes. |
 | Contour / error-bar segments | **chord** | They are independent data-space segments projected at their endpoints, with radial clipping before projection. |
 
-Chords need no subdivision, which is why line, scatter and area are cheap. Arcs
+Chords need no subdivision, which is why line, scatter and area are cheap.
+Scene polar `curve="smooth"` is the same identity-chord packing: hosts must
+not set `step_mode=4` / `CurveFlatten` / `BandFlatten` under `coords="polar"`.
+ABI 169 admits polar `curve="smooth"` combined with `step`: authored
+`step_mode` 1–3 expands, and smooth stays identity (no Hermite flatten).
+Hermite-flattening in (θ, r) then projecting would be a different visual from
+this section and from the compatibility polar `_curve_path`. Arcs
 flatten to polylines wherever the medium lacks a real arc: the raster display
 list always, and the GPU bar sweep by construction. SVG needs no count: it draws
 real `A` arcs (`_polar_wedge_path`), and `polar_wedge_points` is the flattened
-twin the raster path consumes.
+twin the raster path consumes through ABI 209 `xyg_polar_wedge_points`.
 
 The subdivision count is **span-proportional and recorded as a formula**
 (`config.polar_bar_segments`, mirrored by `xyPolarBarSegments` in
@@ -339,7 +349,7 @@ half-height `hr` and half-width `sweep/2 · dist`, so the standard rounded-rect
 profile applies there and rolls back out to corners that follow the arc. The
 client evaluates that profile per fragment (the annular-sector SDF in
 `RECT_FS`); the exporters sample the same profile into a polygon
-(`_rounded_wedge_points`), which is why a rounded wedge ships as a polyline
+(`xyg_polar_wedge_points`), which is why a rounded wedge ships as a polyline
 while a plain one keeps its exact `A` arcs — the rounded boundary is not a
 circular arc once rolled back, so a polyline is the honest shape rather than an
 approximation of one.
@@ -440,11 +450,31 @@ grid blits will silently project through a straight-line map.
 `heatmap`, `contour`, and `errorbar` (`POLAR_MARK_KINDS`,
 `python/xyg/config.py`).
 
-This public polar renderer support does not imply canonical Scene v12 support.
-Python and Node Scene compilation reject `coords="polar"` until Rust owns an
-explicit polar projection/chrome record. Transparent Cartesian axis/grid paint
+This public polar renderer support does not imply canonical Scene support for
+every polar mark. Scene v26 compiles polar `line`, `scatter`, `area`
+(including step-line encoded as line), `bar`/`column` (annular sectors
+tessellated to PolyFill), `errorbar` (projected polylines), `heatmap`
+(the same Rect→PolyFill tessellation; ABI 134 `HeatmapPainted` interns scalar
+colormaps and truecolor RGBA planes to per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
+matching polar errorbar) through Rust
+`polar_project` / `polar_wedge_points` (ABI 209 C ABI for compatibility flatten), polar rings/spokes/clip, and rim tick
+labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
+tessellates occupied cells to PolyFill wedges. ABI 144 polar `curve="smooth"`
+line/area pack as identity chords (§5), not flattened Hermite polylines.
+ABI 169 admits polar `curve="smooth"` plus `step` as that same identity-chord
+step expansion. ABI 145 tessellates constant polar `marker_path` contours in pixel space
+around each projected centre. ABI 170 admits constant polar `marker_glyph`
+as Scene `<text>` at those same projected centres. ABI 171 admits polar
+width-only scatter `stroke_width` as match-fill at those same centres.
+ABI 146 paints polar PolyFill wedges (and
+cartesian Rects) with constant mark `fill` linear-gradients from XYGR.
+ABI 192 polar painted heatmap inverse-rasters to one plot-covering Image blit
+(Image+XYPL); constant-style polar lattices still tessellate to PolyFill wedges.
+ABI 173 tessellates polar heatmap `corner_radius` on those PolyFill wedges
+when the inner radius is positive.
+Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden
-Cartesian chrome.
+Cartesian chrome. Polar requires explicit `coords="polar"` / XYPL input.
 
 `area` uses chord-bounded fill geometry, which supports the categorical
 composition built by `xyg.radar_chart(...)`. Each radar series closes at a full
@@ -617,7 +647,7 @@ The Plotly-parity and axis-depth increments are shipped:
 
 | Feature | Shipped contract |
 |---|---|
-| Polar heatmap / contour | Heatmap uses the browser fragment-stage inverse and the shared static inverse raster; contour uses allowlisted projected segments. |
+| Polar heatmap / contour | Heatmap uses the browser fragment-stage inverse and the shared static inverse raster; Scene compiles scalar-colormap, truecolor, and constant-style grids as PolyFill annular sectors (no image-blit record). Contour isolines compile as SegmentPair polylines through `polar_project`. |
 | Sector layout | `theta_axis(sector=...)` (or compatibility `domain=...`) controls clipping, tick trimming, chrome, and a sector-bounding-box layout. Pyplot `set_thetamin`/`set_thetamax` use degrees. Tick trimming is **modular**, matching mark culling: a sector spanning the 0/turn seam (`(300, 420)`, or the compass-natural `(-30, 30)`) keeps the authored ticks on the far side of the seam, because a data point at that same angle plots inside the sector. |
 | Hole / r-origin | `r_axis(hole=...)` and `r_axis(origin=...)` implement the §3 scale-coordinate formula and inverse; authored together they fail validation. |
 | Categorical θ axis | Category-index coordinates stay on the wire and are mapped evenly across the full turn or authored sector. |

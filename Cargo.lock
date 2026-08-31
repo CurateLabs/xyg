@@ -800,6 +800,7 @@ name = "xyg-engine"
 version = "0.1.0"
 dependencies = [
  "codspeed-divan-compat",
+ "flate2",
  "png",
 ]
 

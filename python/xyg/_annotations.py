@@ -200,6 +200,7 @@ class AnnotationsMixin(_Host):
         wrap: float | None = None,
         color: Optional[str] = None,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -209,6 +210,10 @@ class AnnotationsMixin(_Host):
         dy = self._finite_scalar(dy, "text annotation dy")
         if anchor not in {"start", "middle", "end"}:
             raise ValueError("text annotation anchor must be 'start', 'middle', or 'end'")
+        packed_style = dict(self._style_mapping(style or {}, "text annotation style"))
+        color_css = self._optional_css_color(color, "text annotation color")
+        if color_css is not None:
+            packed_style["color"] = color_css
         self.annotations.append(
             {
                 "kind": "text",
@@ -223,10 +228,12 @@ class AnnotationsMixin(_Host):
                     if wrap is not None
                     else {}
                 ),
-                "style": {
-                    "color": self._optional_css_color(color, "text annotation color"),
-                    **self._style_mapping(style or {}, "text annotation style"),
-                },
+                **(
+                    {"rotation": self._finite_scalar(rotation, "text annotation rotation")}
+                    if rotation is not None
+                    else {}
+                ),
+                "style": packed_style,
                 "class_name": self._optional_text(class_name, "text annotation class_name"),
             }
         )
@@ -242,6 +249,7 @@ class AnnotationsMixin(_Host):
         dy: float = -6.0,
         color: Optional[str] = None,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -254,6 +262,7 @@ class AnnotationsMixin(_Host):
             dy=dy,
             color=color,
             anchor=anchor,
+            rotation=rotation,
             class_name=class_name,
             style=style,
         )
@@ -273,6 +282,7 @@ class AnnotationsMixin(_Host):
         dx: float = 8.0,
         dy: float = -8.0,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -284,6 +294,18 @@ class AnnotationsMixin(_Host):
         dy = self._finite_scalar(dy, "marker dy")
         symbol = self._annotation_symbol(symbol, "marker symbol")
         anchor = self._annotation_anchor(anchor, "marker anchor")
+        packed_style = dict(self._style_mapping(style or {}, "marker style"))
+        for key in ("color", "stroke_color"):
+            if packed_style.get(key) is None:
+                packed_style.pop(key, None)
+        color_css = self._optional_css_color(color, "marker color")
+        if color_css is not None:
+            packed_style.setdefault("color", color_css)
+        stroke_css = self._optional_css_color(stroke_color, "marker stroke_color")
+        if stroke_css is not None:
+            packed_style.setdefault("stroke_color", stroke_css)
+        packed_style.setdefault("stroke_width", stroke_width)
+        packed_style.setdefault("opacity", opacity)
         self.annotations.append(
             {
                 "kind": "marker",
@@ -295,13 +317,12 @@ class AnnotationsMixin(_Host):
                 "anchor": anchor,
                 "size": size,
                 "symbol": symbol,
-                "style": {
-                    "color": self._optional_css_color(color, "marker color"),
-                    "stroke_color": self._optional_css_color(stroke_color, "marker stroke_color"),
-                    "stroke_width": stroke_width,
-                    "opacity": opacity,
-                    **self._style_mapping(style or {}, "marker style"),
-                },
+                **(
+                    {"rotation": self._finite_scalar(rotation, "marker annotation rotation")}
+                    if rotation is not None
+                    else {}
+                ),
+                "style": packed_style,
                 "class_name": self._optional_text(class_name, "marker class_name"),
             }
         )

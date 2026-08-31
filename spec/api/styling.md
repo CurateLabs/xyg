@@ -121,7 +121,7 @@ xyg.bar(
 | box | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | violin | `fill`, `fill-opacity`, `opacity` |
 | triangle mesh | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
-| heatmap, hexbin | `fill-opacity`, `opacity` |
+| heatmap, hexbin | `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 
 Canonical GraphForge numeric semantic planes additionally have a versioned
 Rust-owned resolved-paint contract (graph-mark §7.1.1). The low-level Python
@@ -839,9 +839,10 @@ without a shim-only code path.
 | Glyph advance | `0.564` | 6.2 px | conservative width estimate for column sizing and ellipsis |
 
 This governs **every static legend**, not only pyplot's: the SVG exporter and
-the native rasterizer share one `_legend_layout` (`python/xyg/_svg.py`), so a
+the native rasterizer share one `_legend_layout` packer (`python/xyg/_svg.py`)
+over Rust `xyg_legend_box_layout` (ABI 124), so a
 composed `scatter_chart`/`line_chart` legend and a pyplot one are laid out by
-the same code with the same defaults. The browser carries the three spacing
+the same engine with the same defaults. The browser carries the three spacing
 factors as CSS (`padding` in `em`, `column-gap: 2em`, `row-gap: .5em`) and
 leaves handle and label metrics to the cascade, because a DOM legend measures
 itself and can scroll where a static file cannot.
@@ -1419,7 +1420,7 @@ an unrecognized string never failed; it landed somewhere. `"northeast"` and
 `"best"` scores each candidate box by the fraction of sampled marks inside it
 and keeps the least occupied, preferring the earlier candidate on a near-tie —
 Matplotlib's rule. It resolves **once, at payload-build time**
-(`xyg._legendfit`), so the client and the two static writers all receive a
+(`xyg._legendfit` packing `xyg_legend_normalize` / `xyg_legend_best_loc`), so the client and the two static writers all receive a
 settled location and cannot disagree about it (§28).
 
 The sampling is normative, because a different stride would place the legend

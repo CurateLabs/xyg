@@ -21,6 +21,8 @@ from typing import Any, Optional
 
 import numpy as np
 
+from . import kernels
+
 _TICK_LABEL_STRATEGIES = frozenset({"auto", "hide", "rotate", "stagger", "preserve", "none", "off"})
 # Canonical anchors plus the matplotlib `ha` vocabulary the pyplot shim emits.
 _TICK_LABEL_ANCHORS = {
@@ -513,37 +515,6 @@ def dash(value: Any, label: str) -> Optional[list[float]]:
     return lengths
 
 
-def _split_top_level(text: str) -> list[str]:
-    """Split on commas that sit outside parentheses (rgb()/var() stay intact)."""
-    parts: list[str] = []
-    depth = 0
-    start = 0
-    for i, ch in enumerate(text):
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth = max(0, depth - 1)
-        elif ch == "," and depth == 0:
-            parts.append(text[start:i])
-            start = i + 1
-    parts.append(text[start:])
-    return [p.strip() for p in parts]
-
-
-def _gradient_stop(item: str, label: str) -> tuple[Optional[float], str]:
-    """One CSS color stop: `<color> [<percentage>]` -> (position 0..1 | None, color)."""
-    tokens = item.rsplit(None, 1)
-    if len(tokens) == 2 and tokens[1].endswith("%"):
-        try:
-            pos = float(tokens[1][:-1]) / 100.0
-        except ValueError as e:
-            raise ValueError(f"{label} has an invalid stop position {tokens[1]!r}") from e
-        if not np.isfinite(pos):
-            raise ValueError(f"{label} stop positions must be finite")
-        return min(max(pos, 0.0), 1.0), tokens[0].strip()
-    return None, item.strip()
-
-
 def mark_fill(value: Any, label: str) -> Optional[dict[str, Any]]:
     """Mark fill: a CSS `linear-gradient(...)` string, or `{"gradient": <that
     string>, "space": "mark"|"plot"}`. Returns the normalized wire spec
@@ -568,57 +539,32 @@ def mark_fill(value: Any, label: str) -> Optional[dict[str, Any]]:
         raise ValueError(
             f"{label} must be a 'linear-gradient(...)' string or a dict with a 'gradient' key"
         )
-    text = value.strip()
-    lowered = text.lower()
-    if not lowered.startswith("linear-gradient(") or not text.endswith(")"):
-        raise ValueError(f"{label} must be a CSS 'linear-gradient(...)' value")
-    args = _split_top_level(text[len("linear-gradient(") : -1])
-    direction = "down"
-    if args and args[0].lower() in _GRADIENT_DIRS:
-        direction = _GRADIENT_DIRS[args[0].lower()]
-        args = args[1:]
-    elif args and (args[0].lower().startswith("to ") or args[0].lower().endswith("deg")):
+    from . import kernels
+
+    code, spec = kernels.scene_parse_linear_gradient(value, space)
+    if code == 1 and spec is not None:
+        colors = [
+            css_color(color, f"{label} stop {index + 1} color")
+            for index, (_, color) in enumerate(spec["stops"])
+        ]
+        spec["stops"] = [[t, color] for (t, _), color in zip(spec["stops"], colors, strict=True)]
+        return spec
+    if code == 3:
         raise ValueError(
             f"{label} direction must be one of {sorted(_GRADIENT_DIRS)} (angles unsupported)"
         )
-    if direction in {"left", "right"} and space == "mark":
+    if code == 4:
         raise ValueError(
             f"{label}: 'to left'/'to right' need space='plot' — mark-space gradients run "
             "along each mark's value axis"
         )
-    if not 2 <= len(args) <= 8:
+    if code == 5:
         raise ValueError(f"{label} must have between 2 and 8 color stops")
-    positions: list[Optional[float]] = []
-    colors: list[str] = []
-    for item in args:
-        pos, color = _gradient_stop(item, label)
-        if not color:
-            raise ValueError(f"{label} has an empty color stop")
-        positions.append(pos)
-        colors.append(css_color(color, f"{label} stop {len(colors) + 1} color"))
-    # CSS stop-position resolution: unpositioned endpoints default to 0%/100%,
-    # positions never decrease (each anchor clamps to its predecessor), and
-    # unpositioned interior stops spread evenly between their positioned
-    # neighbors — implemented as anchor points + linear fill between them.
-    count = len(positions)
-    anchors: dict[int, float] = {i: p for i, p in enumerate(positions) if p is not None}
-    anchors.setdefault(0, 0.0)
-    anchors.setdefault(count - 1, 1.0)
-    keys = sorted(anchors)
-    prev = 0.0
-    for i in keys:
-        prev = anchors[i] = max(anchors[i], prev)
-    resolved = [0.0] * count
-    for i0, i1 in itertools.pairwise(keys):
-        v0, v1 = anchors[i0], anchors[i1]
-        for k in range(i0, i1):
-            resolved[k] = v0 + (v1 - v0) * (k - i0) / (i1 - i0)
-    resolved[count - 1] = anchors[count - 1]
-    return {
-        "space": space,
-        "dir": direction,
-        "stops": [[p, c] for p, c in zip(resolved, colors, strict=True)],
-    }
+    if code == 6:
+        raise ValueError(f"{label} has an empty color stop")
+    if code == 7:
+        raise ValueError(f"{label} has an invalid stop position")
+    raise ValueError(f"{label} must be a CSS 'linear-gradient(...)' value")
 
 
 def resolvable_paint(css: str, label: str, subject: str) -> tuple[float, float, float, float]:
@@ -631,8 +577,6 @@ def resolvable_paint(css: str, label: str, subject: str) -> tuple[float, float, 
     there as on screen. Refusing it with the reason beats every alternative:
     a shared fallback collapses distinct entries onto one color, and a silent
     per-renderer difference is what §28 exists to prevent."""
-    from . import kernels
-
     status, rgba = kernels.css_check(kernels.CSS_COLOR, css)
     if status != 1 or rgba is None:
         raise ValueError(
@@ -657,8 +601,9 @@ def resolved_hex_paint(value: Any, label: str, subject: str) -> str:
     the same bytes off the wire with no cascade involved."""
     css = css_color(value, label)
     red, green, blue, alpha = resolvable_paint(css, label, subject)
-    hex_rgb = "#{:02x}{:02x}{:02x}".format(*(int(round(c * 255)) for c in (red, green, blue)))
-    return hex_rgb if alpha >= 1.0 else f"{hex_rgb}{int(round(alpha * 255)):02x}"
+    u8 = kernels.clip_quantize_u8(np.asarray((red, green, blue, alpha), dtype=np.float64))
+    hex_rgb = f"#{int(u8[0]):02x}{int(u8[1]):02x}{int(u8[2]):02x}"
+    return hex_rgb if alpha >= 1.0 else f"{hex_rgb}{int(u8[3]):02x}"
 
 
 def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
@@ -687,8 +632,8 @@ def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
             "no alpha). Set the mark's opacity/fill-opacity instead, or use the color the "
             "stop should blend to."
         )
-    red, green, blue = (int(round(channel * 255)) for channel in rgba[:3])
-    return red, green, blue
+    u8 = kernels.clip_quantize_u8(np.asarray(rgba[:3], dtype=np.float64))
+    return int(u8[0]), int(u8[1]), int(u8[2])
 
 
 def _colormap_stop_item(item: Any, index: int, label: str) -> tuple[Optional[float], Any]:

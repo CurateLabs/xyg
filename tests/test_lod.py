@@ -269,6 +269,38 @@ def test_encode_f32_values_handles_empty_and_scalar_inputs() -> None:
     assert scalar.values.tolist() == [2.0]
 
 
+def test_encode_f32_values_packs_meta_from_kernel() -> None:
+    offset = 1e300
+    lo = offset - 1e290
+    hi = offset + 1e290
+    packed_offset, packed_scale, has_kind = kernels.encoded_column_meta(offset, lo, hi, "float")
+    column = lod.encode_f32_values(
+        np.array([offset - 1e290, offset, offset + 1e290], dtype=np.float64),
+        offset,
+        lo,
+        hi,
+        kind="float",
+    )
+    omitted_offset, omitted_scale, omitted_kind = kernels.encoded_column_meta(0.0, 0.0, 0.0, None)
+    empty = lod.encode_f32_values([], 0.0, 0.0, 0.0)
+    empty_kind_offset, empty_kind_scale, empty_has_kind = kernels.encoded_column_meta(
+        1.0, 0.0, 2.0, ""
+    )
+    empty_kind = lod.encode_f32_values([1.0], 1.0, 0.0, 2.0, kind="")
+
+    assert packed_offset == offset
+    assert has_kind
+    assert column.meta == {"offset": packed_offset, "scale": packed_scale, "kind": "float"}
+    assert not omitted_kind
+    assert empty.meta == {"offset": omitted_offset, "scale": omitted_scale}
+    assert empty_has_kind
+    assert empty_kind.meta == {
+        "offset": empty_kind_offset,
+        "scale": empty_kind_scale,
+        "kind": "",
+    }
+
+
 def test_sample_keep_mask_is_deterministic_and_monotonic_by_level() -> None:
     row_ids = np.arange(100_000, dtype=np.int64)
 
@@ -627,6 +659,19 @@ def test_pins_offset_to_zero_agrees_with_geometry_offset() -> None:
     for scale in (None, "linear"):
         assert not lod.pins_offset_to_zero(scale)
         assert lod.geometry_offset(scale, 10.0, 20.0) == 15.0
+
+    assert not lod.pins_offset_to_zero("Log")
+    assert kernels.scale_pins_offset("log")
+    assert kernels.scale_pins_offset("symlog")
+    assert not kernels.scale_pins_offset("linear")
+    assert not kernels.scale_pins_offset("")
+    assert not kernels.scale_pins_offset("Log")
+    assert kernels.geometry_offset(True, 10.0, 20.0) == 0.0
+    assert kernels.geometry_offset(False, 10.0, 20.0) == 15.0
+    assert kernels.geometry_offset(False, float("nan"), 20.0) == 0.0
+    assert kernels.f32_safe_scale(0.0, -1.0, 1.0) == 1.0
+    huge = lod.F32_SAFE_MAG * 10.0
+    assert abs(kernels.f32_safe_scale(0.0, -huge, huge) - 0.1) < 1e-12
 
 
 def test_plan_view_lod_uses_native_decision_math() -> None:

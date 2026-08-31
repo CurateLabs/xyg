@@ -11,6 +11,7 @@
 //!   first/min/max/last — provably pixel-accurate for a rasterized line (Jugel et
 //!   al., VLDB 2014). NaN-aware: buckets never span invalid values silently (§19).
 
+use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
 const MAX_ROW_THREADS: usize = 18;
@@ -860,6 +861,1692 @@ fn zone_maps_impl(data: &[f64], chunk_size: usize, threads: usize) -> Vec<ZoneMa
             .flat_map(|hd| hd.join().expect("zone_maps worker panicked"))
             .collect()
     })
+}
+
+/// Encoded extremes stay well inside f32 (max ~3.4e38); the margin also keeps
+/// the client's 1/(span*scale) map uniforms clear of f32 subnormals.
+pub const F32_SAFE_MAG: f64 = 1e37;
+
+/// Precision center for offset-encoded geometry (§4/§16).
+///
+/// Linear axes re-center on the domain midpoint. Log-family axes pin the
+/// offset to 0.0 so the shader transform after decode does not collapse the
+/// hole/decades the scale exists to separate. Non-finite bounds also pin to 0.
+pub fn geometry_offset(pin_zero: bool, lo: f64, hi: f64) -> f64 {
+    if pin_zero || !lo.is_finite() || !hi.is_finite() {
+        0.0
+    } else {
+        (lo + hi) / 2.0
+    }
+}
+
+/// Whether an axis scale name pins geometry offset to 0 (ABI 216, §16).
+///
+/// `log` and `symlog` pin; every other name, including empty, is linear-family.
+pub fn scale_pins_offset(scale: &str) -> bool {
+    matches!(scale, "log" | "symlog")
+}
+
+/// Scene dash admit: solid, a 2–8 length pattern, or reject (ABI 218).
+///
+/// Hosts map `None` / omitted to solid, `False` to reject, and a list to a
+/// pattern. Presets are case-insensitive after trim. Comma-separated text
+/// rejects the whole string when any token is non-numeric — it does not skip
+/// bad tokens. `use_lengths` is the list path, including the empty list.
+pub const SCENE_DASH_MAX_PATTERN: usize = 8;
+
+/// Admitted Scene stroke dash.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SceneDash {
+    /// Omitted, empty, or the `solid` preset.
+    Solid,
+    /// 2–8 finite lengths, each `> 0`.
+    Pattern(Vec<f64>),
+}
+
+/// Admit a Scene dash from UTF-8 text and/or an already-parsed length list.
+pub fn scene_dash_admit(text: &str, lengths: &[f64], use_lengths: bool) -> Option<SceneDash> {
+    if use_lengths {
+        return admit_scene_dash_lengths(lengths);
+    }
+    if text.is_empty() {
+        return Some(SceneDash::Solid);
+    }
+    let lowered = text.trim().to_ascii_lowercase();
+    match lowered.as_str() {
+        "solid" => Some(SceneDash::Solid),
+        "dashed" => Some(SceneDash::Pattern(vec![6.0, 4.0])),
+        "dotted" => Some(SceneDash::Pattern(vec![1.5, 3.0])),
+        "dashdot" => Some(SceneDash::Pattern(vec![6.0, 3.0, 1.5, 3.0])),
+        _ => {
+            let mut parsed = Vec::new();
+            for part in text.split(',') {
+                let part = part.trim();
+                if part.is_empty() {
+                    continue;
+                }
+                let Ok(value) = part.parse::<f64>() else {
+                    return None;
+                };
+                parsed.push(value);
+            }
+            admit_scene_dash_lengths(&parsed)
+        }
+    }
+}
+
+fn admit_scene_dash_lengths(lengths: &[f64]) -> Option<SceneDash> {
+    if !(2..=SCENE_DASH_MAX_PATTERN).contains(&lengths.len()) {
+        return None;
+    }
+    if lengths
+        .iter()
+        .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return None;
+    }
+    Some(SceneDash::Pattern(lengths.to_vec()))
+}
+
+/// Write an admitted dash into `out`. Returns the written count (`0` = solid).
+pub fn write_scene_dash(dash: &SceneDash, out: &mut [f64]) -> Option<usize> {
+    match dash {
+        SceneDash::Solid => Some(0),
+        SceneDash::Pattern(values) => {
+            if out.len() < values.len() {
+                return None;
+            }
+            out[..values.len()].copy_from_slice(values);
+            Some(values.len())
+        }
+    }
+}
+
+/// Scene linecap admit: round/omitted, butt, square, or reject (ABI 219).
+///
+/// Hosts map `None` / omitted to round, `False` to reject, `0` to butt, and
+/// `2` to square. Names are case-insensitive after trim. Empty text is
+/// omitted/round. Whitespace-only and unknown names reject — they do not
+/// fail-open as round.
+pub const SCENE_LINECAP_NONE: u8 = 255;
+
+/// Admitted Scene stroke linecap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SceneLinecap {
+    /// Omitted, empty, or the `round` name.
+    Round,
+    /// `butt` → packed code 0.
+    Butt,
+    /// `square` → packed code 2.
+    Square,
+}
+
+/// Admit a Scene linecap from UTF-8 text.
+pub fn scene_linecap_admit(text: &str) -> Option<SceneLinecap> {
+    if text.is_empty() {
+        return Some(SceneLinecap::Round);
+    }
+    match text.trim().to_ascii_lowercase().as_str() {
+        "" => None,
+        "butt" => Some(SceneLinecap::Butt),
+        "square" => Some(SceneLinecap::Square),
+        "round" => Some(SceneLinecap::Round),
+        _ => None,
+    }
+}
+
+/// Packed XYLC/XYTO linecap byte: 255 = round/omitted, 0 = butt, 2 = square.
+pub fn scene_linecap_code(cap: SceneLinecap) -> u8 {
+    match cap {
+        SceneLinecap::Round => SCENE_LINECAP_NONE,
+        SceneLinecap::Butt => 0,
+        SceneLinecap::Square => 2,
+    }
+}
+
+/// Density overlay sample opacity cap (ABI 220).
+///
+/// Hosts default omitted opacity to `0.8` then call this. Finite values are
+/// capped at `0.55`. Non-finite (NaN, inf) become `0.55` so Python `min(nan,
+/// 0.55)` cannot leak NaN onto the wire.
+pub const DENSITY_OVERLAY_OPACITY_CAP: f64 = 0.55;
+
+/// Clamp an authored density-overlay opacity to a finite paint value.
+pub fn density_overlay_opacity(authored: f64) -> f64 {
+    if authored.is_finite() {
+        authored.min(DENSITY_OVERLAY_OPACITY_CAP)
+    } else {
+        DENSITY_OVERLAY_OPACITY_CAP
+    }
+}
+
+/// Scene marker-path admit: 1–32 contours of x/y pairs (ABI 221).
+///
+/// Each contour has an even length of at least 4 finite values with
+/// `|v| ≤ 0.500001`. Total vertices are at most 96. `lengths` is the
+/// per-contour value count and must consume `values` exactly. Filled
+/// contours shorter than 6 values stay a compile-path extra, not this admit.
+pub const SCENE_MARKER_PATH_MAX_CONTOURS: usize = 32;
+pub const SCENE_MARKER_PATH_MAX_VERTICES: usize = 96;
+pub const SCENE_MARKER_PATH_MAX_ABS: f64 = 0.500001;
+
+/// Admit concatenated Scene marker-path contour values.
+pub fn scene_marker_path_admit(values: &[f64], lengths: &[u32]) -> bool {
+    if !(1..=SCENE_MARKER_PATH_MAX_CONTOURS).contains(&lengths.len()) {
+        return false;
+    }
+    let mut at = 0usize;
+    let mut total_vertices = 0usize;
+    for &n_values in lengths {
+        let n = n_values as usize;
+        if n < 4 || n % 2 != 0 {
+            return false;
+        }
+        let Some(end) = at.checked_add(n) else {
+            return false;
+        };
+        if end > values.len() {
+            return false;
+        }
+        if values[at..end]
+            .iter()
+            .any(|value| !value.is_finite() || value.abs() > SCENE_MARKER_PATH_MAX_ABS)
+        {
+            return false;
+        }
+        total_vertices += n / 2;
+        if total_vertices > SCENE_MARKER_PATH_MAX_VERTICES {
+            return false;
+        }
+        at = end;
+    }
+    at == values.len()
+}
+
+/// Scene annotation style-key admit (ABI 222).
+///
+/// Matches Python `_annotation_allowed_style` / Node `annotationAllowedStyle`:
+/// wrapped returns early with label chrome; arrow/callout/text return before
+/// labelled extras; labelled `rule`/`band`/`marker` add label keys.
+pub fn scene_annotation_style_admit(
+    kind: &str,
+    wrapped: bool,
+    labelled: bool,
+    key: &str,
+) -> bool {
+    if wrapped {
+        return matches!(
+            key,
+            "color"
+                | "opacity"
+                | "label_background"
+                | "label_border_color"
+                | "label_border_width"
+        );
+    }
+    match kind {
+        "arrow" => return matches!(key, "color" | "opacity" | "width"),
+        "callout" => {
+            return matches!(
+                key,
+                "color"
+                    | "opacity"
+                    | "width"
+                    | "label_background"
+                    | "label_border_color"
+                    | "label_border_width"
+            );
+        }
+        "text" => {
+            return matches!(
+                key,
+                "color"
+                    | "opacity"
+                    | "label_background"
+                    | "label_border_color"
+                    | "label_border_width"
+            );
+        }
+        _ => {}
+    }
+    let mut allowed = matches!(key, "color" | "opacity");
+    if kind == "rule" {
+        allowed |= matches!(key, "width" | "dash" | "linecap");
+    } else if kind == "marker" {
+        allowed |= matches!(key, "stroke_color" | "stroke_width");
+    }
+    if labelled && matches!(kind, "rule" | "band" | "marker") {
+        allowed |= matches!(
+            key,
+            "label_color"
+                | "label_opacity"
+                | "label_background"
+                | "label_border_color"
+                | "label_border_width"
+        );
+    }
+    allowed
+}
+
+/// Scene ribbon `color2` classify (ABI 223).
+///
+/// `0` absent, `1` solid, `2` gradient, `3` ends, `4` fail. Hosts still coerce
+/// channels, pack end RGBA8, and observe `style.fill`. Paint equality uses
+/// [`crate::css::color_rgba8`].
+pub const SCENE_RIBBON_COLOR2_ABSENT: i32 = 0;
+pub const SCENE_RIBBON_COLOR2_SOLID: i32 = 1;
+pub const SCENE_RIBBON_COLOR2_GRADIENT: i32 = 2;
+pub const SCENE_RIBBON_COLOR2_ENDS: i32 = 3;
+pub const SCENE_RIBBON_COLOR2_FAIL: i32 = 4;
+
+/// Classify two-ended ribbon paint from host-coerced observations.
+pub fn scene_ribbon_color2_classify(
+    has_color2: bool,
+    kind_is_ribbon: bool,
+    source_css: Option<&str>,
+    target_css: Option<&str>,
+    source_paint: &str,
+    has_fill: bool,
+    has_end_pair: bool,
+) -> i32 {
+    if !has_color2 {
+        return SCENE_RIBBON_COLOR2_ABSENT;
+    }
+    if !kind_is_ribbon {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    if let (Some(_), Some(target)) = (source_css, target_css) {
+        if crate::css::color_rgba8(source_paint, 1.0) == crate::css::color_rgba8(target, 1.0) {
+            return SCENE_RIBBON_COLOR2_SOLID;
+        }
+        if has_fill {
+            return SCENE_RIBBON_COLOR2_FAIL;
+        }
+        return SCENE_RIBBON_COLOR2_GRADIENT;
+    }
+    if has_fill {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    if !has_end_pair {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    SCENE_RIBBON_COLOR2_ENDS
+}
+
+/// Scene tick-label strategy codes (ABI 224).
+pub const SCENE_TICK_STRATEGY_AUTO: i32 = 0;
+pub const SCENE_TICK_STRATEGY_HIDE: i32 = 1;
+pub const SCENE_TICK_STRATEGY_ROTATE: i32 = 2;
+pub const SCENE_TICK_STRATEGY_STAGGER: i32 = 3;
+pub const SCENE_TICK_STRATEGY_PRESERVE: i32 = 4;
+pub const SCENE_TICK_STRATEGY_NONE: i32 = 5;
+pub const SCENE_TICK_STRATEGY_OFF: i32 = 6;
+
+/// Admit a Scene tick-label strategy name. Hyphens become underscores.
+/// Unknown names, including empty text, map to `auto` (0).
+pub fn scene_tick_label_strategy(text: &str) -> i32 {
+    let owned;
+    let key = if text.contains('-') {
+        owned = text.replace('-', "_");
+        owned.as_str()
+    } else {
+        text
+    };
+    match key {
+        "hide" => SCENE_TICK_STRATEGY_HIDE,
+        "rotate" => SCENE_TICK_STRATEGY_ROTATE,
+        "stagger" => SCENE_TICK_STRATEGY_STAGGER,
+        "preserve" => SCENE_TICK_STRATEGY_PRESERVE,
+        "none" => SCENE_TICK_STRATEGY_NONE,
+        "off" => SCENE_TICK_STRATEGY_OFF,
+        _ => SCENE_TICK_STRATEGY_AUTO,
+    }
+}
+
+/// Scene tick-label anchor codes (ABI 225).
+pub const SCENE_TICK_ANCHOR_START: i32 = 0;
+pub const SCENE_TICK_ANCHOR_CENTER: i32 = 1;
+pub const SCENE_TICK_ANCHOR_END: i32 = 2;
+pub const SCENE_TICK_ANCHOR_REJECT: i32 = -1;
+
+/// Admit a Scene tick-label anchor name. Hyphens become underscores.
+/// `middle` aliases `center`. Unknown names, including empty text, reject.
+pub fn scene_tick_anchor(text: &str) -> i32 {
+    let owned;
+    let key = if text.contains('-') {
+        owned = text.replace('-', "_");
+        owned.as_str()
+    } else {
+        text
+    };
+    match key {
+        "start" => SCENE_TICK_ANCHOR_START,
+        "center" | "middle" => SCENE_TICK_ANCHOR_CENTER,
+        "end" => SCENE_TICK_ANCHOR_END,
+        _ => SCENE_TICK_ANCHOR_REJECT,
+    }
+}
+
+/// Admit Scene fill-gradient stops (ABI 226).
+///
+/// `space` is `mark` or `plot`. `dir` is `down`/`up`/`right`/`left`. Stops are
+/// 2–8 finite `t` in `[0, 1]`, monotone, with CSS that is not `var(`. Empty
+/// and `currentcolor` paint as `mark_color`. Writes `n * 4` RGBA8 bytes.
+/// Returns `1` admitted, `0` reject.
+pub fn scene_fill_gradient_admit(
+    space: &str,
+    dir: &str,
+    t: &[f64],
+    css: &[&str],
+    mark_color: &str,
+    out_rgba: &mut [u8],
+) -> i32 {
+    if space != "mark" && space != "plot" {
+        return 0;
+    }
+    if dir != "down" && dir != "up" && dir != "right" && dir != "left" {
+        return 0;
+    }
+    if t.len() != css.len() || !(2..=8).contains(&t.len()) {
+        return 0;
+    }
+    let needed = t.len() * 4;
+    if out_rgba.len() < needed {
+        return 0;
+    }
+    let mut prev_t = -1.0;
+    for (index, (&stop_t, stop_css)) in t.iter().zip(css.iter()).enumerate() {
+        if !stop_t.is_finite() || stop_t < 0.0 || stop_t > 1.0 || stop_t < prev_t {
+            return 0;
+        }
+        let trimmed = stop_css.trim();
+        let lowered = trimmed.to_lowercase();
+        if lowered.contains("var(") {
+            return 0;
+        }
+        let paint = if lowered == "currentcolor" || trimmed.is_empty() {
+            mark_color
+        } else {
+            trimmed
+        };
+        let rgba = crate::css::color_rgba8(paint, 1.0);
+        let at = index * 4;
+        out_rgba[at..at + 4].copy_from_slice(&rgba);
+        prev_t = stop_t;
+    }
+    1
+}
+
+/// Scene finite-all admit (ABI 248).
+///
+/// `1` iff every value is finite. An empty slice is `1` (vacuous). NaN
+/// and infinities fail. Field picking stays host.
+pub fn scene_finite_all(values: &[f64]) -> i32 {
+    i32::from(values.iter().all(|value| value.is_finite()))
+}
+
+/// Scene `linear-gradient(` CSS parse (ABI 227).
+///
+/// Hosts still coerce fill mappings and wrap authoring error text. `var(`
+/// paint stays a later ABI 226 admit reject, not a parse reject. Empty split
+/// parts are kept (host table); compile-path skip-empty stays extra.
+pub const SCENE_PARSE_LINEAR_GRADIENT_OK: i32 = 1;
+pub const SCENE_PARSE_LINEAR_GRADIENT_REJECT: i32 = 0;
+pub const SCENE_PARSE_LINEAR_GRADIENT_DIRECTION: i32 = 3;
+pub const SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS: i32 = 4;
+pub const SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT: i32 = 5;
+pub const SCENE_PARSE_LINEAR_GRADIENT_EMPTY_COLOR: i32 = 6;
+pub const SCENE_PARSE_LINEAR_GRADIENT_STOP_POS: i32 = 7;
+
+/// Parsed Scene fill-gradient CSS: dir code plus resolved stop `t` and paint.
+#[derive(Debug)]
+pub struct SceneParsedLinearGradient {
+    pub dir: u8,
+    pub t: Vec<f64>,
+    pub css: Vec<String>,
+}
+
+fn split_top_level_keep_empty(text: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0usize;
+    let mut depth = 0i32;
+    for (index, ch) in text.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth = (depth - 1).max(0),
+            ',' if depth == 0 => {
+                parts.push(text[start..index].trim());
+                start = index + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    parts.push(text[start..].trim());
+    parts
+}
+
+fn parse_host_gradient_stop(item: &str) -> Result<(Option<f64>, &str), i32> {
+    let item = item.trim();
+    if let Some((color, pos)) = item.rsplit_once(char::is_whitespace) {
+        if pos.ends_with('%') {
+            let Ok(value) = pos[..pos.len() - 1].parse::<f64>() else {
+                return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_POS);
+            };
+            if !value.is_finite() {
+                return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_POS);
+            }
+            return Ok((Some((value / 100.0).clamp(0.0, 1.0)), color.trim()));
+        }
+    }
+    Ok((None, item))
+}
+
+fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
+    let count = positions.len();
+    let mut anchors: Vec<(usize, f64)> = positions
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| value.map(|t| (index, t)))
+        .collect();
+    if positions[0].is_none() {
+        anchors.push((0, 0.0));
+    }
+    if positions[count - 1].is_none() {
+        anchors.push((count - 1, 1.0));
+    }
+    anchors.sort_by_key(|(index, _)| *index);
+    let mut prev = 0.0;
+    for anchor in &mut anchors {
+        prev = anchor.1.max(prev);
+        anchor.1 = prev;
+    }
+    let mut resolved = vec![0.0; count];
+    for pair in anchors.windows(2) {
+        let (i0, v0) = pair[0];
+        let (i1, v1) = pair[1];
+        let span = (i1 - i0) as f64;
+        for k in i0..i1 {
+            resolved[k] = if span == 0.0 {
+                v0
+            } else {
+                v0 + (v1 - v0) * (k - i0) as f64 / span
+            };
+        }
+    }
+    if let Some((_, last)) = anchors.last() {
+        resolved[count - 1] = *last;
+    }
+    resolved
+}
+
+/// Parse CSS `linear-gradient(...)` into space-relative dir + resolved stops.
+pub fn scene_parse_linear_gradient(
+    css: &str,
+    space: &str,
+) -> Result<SceneParsedLinearGradient, i32> {
+    let text = css.trim();
+    let lowered = text.to_lowercase();
+    if !lowered.starts_with("linear-gradient(") || !text.ends_with(')') {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_REJECT);
+    }
+    let inner = &text["linear-gradient(".len()..text.len() - 1];
+    let mut args = split_top_level_keep_empty(inner);
+    let mut dir = 0u8;
+    if !args.is_empty() {
+        let first = args[0].to_lowercase();
+        if let Some(code) = match first.as_str() {
+            "to top" => Some(1u8),
+            "to bottom" => Some(0u8),
+            "to right" => Some(2u8),
+            "to left" => Some(3u8),
+            _ => None,
+        } {
+            dir = code;
+            args.remove(0);
+        } else if first.starts_with("to ") || first.ends_with("deg") {
+            return Err(SCENE_PARSE_LINEAR_GRADIENT_DIRECTION);
+        }
+    }
+    if (dir == 2 || dir == 3) && space == "mark" {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS);
+    }
+    if !(2..=8).contains(&args.len()) {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT);
+    }
+    let mut positions = Vec::with_capacity(args.len());
+    let mut colors = Vec::with_capacity(args.len());
+    for item in args {
+        let (pos, color) = parse_host_gradient_stop(item)?;
+        if color.is_empty() {
+            return Err(SCENE_PARSE_LINEAR_GRADIENT_EMPTY_COLOR);
+        }
+        positions.push(pos);
+        colors.push(color.to_string());
+    }
+    let resolved = resolve_host_stop_positions(&positions);
+    Ok(SceneParsedLinearGradient {
+        dir,
+        t: resolved,
+        css: colors,
+    })
+}
+
+const XYFS_TRACE_RECT_GRADIENT: i32 = 1 << 5;
+const XYFS_TRACE_CORNER_RADIUS: i32 = 1 << 6;
+const XYFS_TRACE_WEDGE_GAP: i32 = 1 << 7;
+
+fn scene_rect_kind_admits_radius(kind: &str) -> bool {
+    matches!(
+        kind,
+        "bar" | "column" | "histogram" | "heatmap" | "violin" | "box"
+    )
+}
+
+fn scene_rect_kind_admits_polar_wedge(kind: &str) -> bool {
+    matches!(kind, "bar" | "column" | "histogram")
+}
+
+/// Pack Scene-unsupported rect extras as XYFS v2 trace flags (ABI 228).
+///
+/// Hosts still coerce fill mappings (dict vs object), radius lists, and
+/// `wedge_gap`. `gradient_fail` is the already-decided unusable-gradient bit.
+pub fn scene_rect_extra_flags(
+    kind: &str,
+    polar: bool,
+    gradient_fail: bool,
+    radius: &[f64],
+    radius_seq: bool,
+    wedge_gap: f64,
+) -> i32 {
+    let mut flags = 0i32;
+    if gradient_fail {
+        flags |= XYFS_TRACE_RECT_GRADIENT;
+    }
+    let admitted = scene_rect_kind_admits_radius(kind);
+    if radius_seq {
+        if !(admitted && radius.len() == 2) && radius.iter().any(|&value| value != 0.0) {
+            flags |= XYFS_TRACE_CORNER_RADIUS;
+        }
+    } else {
+        let value = radius.first().copied().unwrap_or(0.0);
+        if !admitted && value != 0.0 {
+            flags |= XYFS_TRACE_CORNER_RADIUS;
+        }
+    }
+    if wedge_gap != 0.0 && !(polar && scene_rect_kind_admits_polar_wedge(kind)) {
+        flags |= XYFS_TRACE_WEDGE_GAP;
+    }
+    flags
+}
+
+/// Scene fill-gradient direction codes (ABI 229).
+pub const SCENE_GRAD_DIR_DOWN: i32 = 0;
+pub const SCENE_GRAD_DIR_UP: i32 = 1;
+pub const SCENE_GRAD_DIR_RIGHT: i32 = 2;
+pub const SCENE_GRAD_DIR_LEFT: i32 = 3;
+pub const SCENE_GRAD_DIR_UNKNOWN: i32 = 255;
+
+/// Pack a Scene fill-gradient direction name. No lowercasing and no hyphen
+/// rewrite. Unknown names, including empty text, return `255`.
+pub fn scene_gradient_dir(text: &str) -> i32 {
+    match text {
+        "down" => SCENE_GRAD_DIR_DOWN,
+        "up" => SCENE_GRAD_DIR_UP,
+        "right" => SCENE_GRAD_DIR_RIGHT,
+        "left" => SCENE_GRAD_DIR_LEFT,
+        _ => SCENE_GRAD_DIR_UNKNOWN,
+    }
+}
+
+/// Scene CSS `linear-gradient(` prefix (ABI 230).
+///
+/// Trim, lowercase, then `starts_with("linear-gradient(")`. Dict/object fills
+/// stay host. Compile-path flag bits stay extra.
+pub fn scene_linear_gradient_prefix(text: &str) -> i32 {
+    i32::from(
+        text.trim()
+            .to_lowercase()
+            .starts_with("linear-gradient("),
+    )
+}
+
+/// Scene fill-gradient space codes (ABI 231).
+pub const SCENE_GRAD_SPACE_MARK: i32 = 0;
+pub const SCENE_GRAD_SPACE_PLOT: i32 = 1;
+pub const SCENE_GRAD_SPACE_UNKNOWN: i32 = 255;
+
+/// Pack a Scene fill-gradient space name. No lowercasing. Unknown names,
+/// including empty text, return `255`.
+pub fn scene_gradient_space(text: &str) -> i32 {
+    match text {
+        "mark" => SCENE_GRAD_SPACE_MARK,
+        "plot" => SCENE_GRAD_SPACE_PLOT,
+        _ => SCENE_GRAD_SPACE_UNKNOWN,
+    }
+}
+
+/// Scene gradient solid CSS (ABI 249).
+///
+/// Packed RGBA8 (`len % 4 == 0`). First stop with alpha `> 0` writes
+/// `rgb(r,g,b)` (no spaces). Otherwise `rgb(0,0,0)`. Empty is the zero
+/// color. Returns written UTF-8 length, or `0` when `len` is not a
+/// multiple of 4 or `out` is too small. Field picking stays host.
+pub fn scene_gradient_solid_css(rgba: &[u8], out: &mut [u8]) -> i32 {
+    if rgba.len() % 4 != 0 {
+        return 0;
+    }
+    let (r, g, b) = rgba
+        .chunks_exact(4)
+        .find(|chunk| chunk[3] > 0)
+        .map(|chunk| (chunk[0], chunk[1], chunk[2]))
+        .unwrap_or((0, 0, 0));
+    let text = format!("rgb({r},{g},{b})");
+    let bytes = text.as_bytes();
+    if out.len() < bytes.len() {
+        return 0;
+    }
+    out[..bytes.len()].copy_from_slice(bytes);
+    bytes.len() as i32
+}
+
+/// Pack Scene fill-gradient spec blob into ``out`` (ABI 260).
+///
+/// Hosts pass UTF-8 ``space``/``dir`` field values (not pre-packed codes),
+/// parallel stop positions, and CSS stop strings. Invalid layout (length
+/// mismatch, ``css_lens`` sum mismatch, more than 255 stops) returns ``0``.
+/// Unknown space/dir names pack as ``255`` via [`scene_gradient_space`] /
+/// [`scene_gradient_dir`]. Wire format matches XYTC ``gradient_blob``.
+/// Returns bytes written, ``0`` when invalid, ``-1`` when ``out`` is too small.
+pub fn scene_gradient_spec_pack(
+    space: &str,
+    dir: &str,
+    stop_t: &[f64],
+    css: &[u8],
+    css_lens: &[u32],
+    out: &mut [u8],
+) -> i32 {
+    if stop_t.len() != css_lens.len() || stop_t.len() > 255 {
+        return 0;
+    }
+    let mut css_off = 0usize;
+    for len in css_lens {
+        let len = *len as usize;
+        if css_off.saturating_add(len) > css.len() {
+            return 0;
+        }
+        css_off += len;
+    }
+    if css_off != css.len() {
+        return 0;
+    }
+    let need = 4usize
+        + stop_t
+            .iter()
+            .zip(css_lens.iter())
+            .map(|(_, len)| 10 + *len as usize)
+            .sum::<usize>();
+    if out.len() < need {
+        return -1;
+    }
+    out[0] = scene_gradient_space(space) as u8;
+    out[1] = scene_gradient_dir(dir) as u8;
+    out[2] = stop_t.len() as u8;
+    out[3] = 0;
+    let mut off = 4usize;
+    css_off = 0;
+    for (t, len) in stop_t.iter().zip(css_lens.iter()) {
+        out[off..off + 8].copy_from_slice(&t.to_le_bytes());
+        off += 8;
+        let len_u16 = *len as u16;
+        out[off..off + 2].copy_from_slice(&len_u16.to_le_bytes());
+        off += 2;
+        let chunk_len = *len as usize;
+        out[off..off + chunk_len].copy_from_slice(&css[css_off..css_off + chunk_len]);
+        off += chunk_len;
+        css_off += chunk_len;
+    }
+    need as i32
+}
+
+const XYTC_HAS_CORNER_RADIUS: u32 = 1 << 22;
+const XYTC_HAS_WEDGE_GAP: u32 = 1 << 23;
+const XYTC_COLOR_CH: u32 = 1 << 11;
+const XYTC_COLOR_CH_CONSTANT: u32 = 1 << 12;
+const XYTC_HAS_STROKE_WIDTH: u32 = 1 << 3;
+const XYTC_HAS_WIDTH: u32 = 1 << 4;
+const XYTC_HAS_LINE_WIDTH: u32 = 1 << 5;
+const XYTC_HAS_SIZE: u32 = 1 << 6;
+const XYTC_HAS_SIZE_CH: u32 = 1 << 7;
+const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
+const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
+const XYTC_HAS_HEX: u32 = 1 << 8;
+const XYTC_HAS_DASH_PATTERN: u32 = 1 << 17;
+const XYTC_HAS_FILL: u32 = 1 << 0;
+const XYTC_HAS_STROKE: u32 = 1 << 1;
+const XYTC_HAS_LINE_COLOR: u32 = 1 << 2;
+const XYTC_HAS_GRADIENT_SPEC: u32 = 1 << 19;
+const XYTC_HAS_FILL_DICT: u32 = 1 << 20;
+const XYTC_USE_DENSITY: u32 = 1 << 14;
+const XYTC_SHOW_LEGEND: u32 = 1 << 15;
+const XYTC_HAS_NAME: u32 = 1 << 16;
+const XYTC_HAS_MARKER: u32 = 1 << 18;
+const XYTC_HAS_GLYPH: u32 = 1 << 24;
+const XYTC_JOINED_FILL: u32 = 1 << 25;
+const XYTC_COLOR2: u32 = 1 << 13;
+const XYTC_SYMBOL_INT: u32 = 1 << 21;
+
+/// Pack XYTC numeric scatter symbol flag bit (ABI 272).
+///
+/// ``symbol_is_int``: ``style.symbol`` authored as a number. String symbol
+/// names and UTF-8 ``symbol_b`` bytes stay host.
+pub fn scene_xytc_symbol_int_pack(symbol_is_int: i32) -> Option<u32> {
+    if !matches!(symbol_is_int, 0 | 1) {
+        return None;
+    }
+    if symbol_is_int == 0 {
+        return Some(0);
+    }
+    Some(XYTC_SYMBOL_INT)
+}
+
+/// Pack XYTC ribbon ``color2`` flag bits (ABI 271).
+///
+/// ``color2_class`` uses [`scene_ribbon_color2_classify`] codes (0–4).
+/// ``gradient_packed``: host already built/packed the ribbon gradient blob.
+/// Gradient spec construction stays host.
+pub fn scene_xytc_color2_flags_pack(
+    color2_class: i32,
+    paint_flags: u32,
+    gradient_packed: i32,
+) -> Option<u32> {
+    if !matches!(color2_class, 0..=4) {
+        return None;
+    }
+    if !matches!(gradient_packed, 0 | 1) {
+        return None;
+    }
+    let mut flags = 0u32;
+    match color2_class {
+        SCENE_RIBBON_COLOR2_FAIL => flags |= XYTC_COLOR2,
+        SCENE_RIBBON_COLOR2_GRADIENT => {
+            if paint_flags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC) != 0 {
+                flags |= XYTC_COLOR2;
+            } else if gradient_packed != 0 {
+                flags |= XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC;
+            } else {
+                flags |= XYTC_COLOR2;
+            }
+        }
+        _ => {}
+    }
+    Some(flags)
+}
+
+/// Pack XYTC trace meta flag bits (ABI 270).
+///
+/// Hosts still pick trace names, evaluate scatter density, pack marker blobs,
+/// and admit marker glyphs. ``marker_path_present`` gates the marker branch;
+/// glyph flags apply only when that bit is clear and kind is ``scatter``.
+pub fn scene_xytc_meta_flags_pack(
+    has_name: i32,
+    show_legend: i32,
+    kind: &str,
+    use_density: i32,
+    joined_fill: i32,
+    marker_path_present: i32,
+    marker_packed: i32,
+    glyph_packed: i32,
+) -> Option<u32> {
+    for bit in [
+        has_name,
+        show_legend,
+        use_density,
+        joined_fill,
+        marker_path_present,
+        marker_packed,
+        glyph_packed,
+    ] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    if has_name != 0 {
+        flags |= XYTC_HAS_NAME;
+    }
+    if show_legend != 0 {
+        flags |= XYTC_SHOW_LEGEND;
+    }
+    if kind == "scatter" && use_density != 0 {
+        flags |= XYTC_USE_DENSITY;
+    }
+    if kind == "triangle_mesh" && joined_fill != 0 {
+        flags |= XYTC_JOINED_FILL;
+    }
+    if kind == "scatter" {
+        if marker_path_present != 0 {
+            if marker_packed != 0 {
+                flags |= XYTC_HAS_MARKER;
+            }
+        } else if glyph_packed != 0 {
+            flags |= XYTC_HAS_GLYPH;
+        }
+    }
+    Some(flags)
+}
+
+/// Pack XYTC fill/stroke/line_color presence flag bits (ABI 269).
+///
+/// ``fill_kind``: ``0`` absent, ``1`` string CSS, ``2`` gradient-spec dict,
+/// ``3`` legacy fill dict. CSS bytes and gradient blobs stay host.
+pub fn scene_xytc_paint_presence_pack(
+    has_fill: i32,
+    fill_kind: i32,
+    has_stroke: i32,
+    has_line_color: i32,
+) -> Option<u32> {
+    for bit in [has_fill, has_stroke, has_line_color] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    if !matches!(fill_kind, 0 | 1 | 2 | 3) {
+        return None;
+    }
+    if has_fill == 0 {
+        if fill_kind != 0 {
+            return None;
+        }
+    } else if fill_kind == 0 {
+        return None;
+    }
+    let mut flags = 0u32;
+    if has_stroke != 0 {
+        flags |= XYTC_HAS_STROKE;
+    }
+    if has_line_color != 0 {
+        flags |= XYTC_HAS_LINE_COLOR;
+    }
+    if has_fill != 0 {
+        flags |= XYTC_HAS_FILL;
+        match fill_kind {
+            1 => {}
+            2 => flags |= XYTC_HAS_GRADIENT_SPEC,
+            3 => flags |= XYTC_HAS_FILL_DICT,
+            _ => return None,
+        }
+    }
+    Some(flags)
+}
+
+/// Pack XYTC dash-array flag bit (ABI 268).
+///
+/// ``is_array``: dash authored as list/tuple/array. String dash presets stay
+/// host (UTF-8 ``dash_b`` bytes). Float coercion stays host.
+pub fn scene_xytc_dash_pattern_pack(is_array: i32) -> Option<u32> {
+    if !matches!(is_array, 0 | 1) {
+        return None;
+    }
+    if is_array == 0 {
+        return Some(0);
+    }
+    Some(XYTC_HAS_DASH_PATTERN)
+}
+
+/// Pack XYTC fill/stroke/line opacity trailer values (ABI 267).
+///
+/// ``has_opacity_class`` / ``has_band_class`` gate which authored opacities
+/// replace the XYTC wire defaults (1.0). Key picking stays host.
+pub fn scene_xytc_opacity_pack(
+    has_opacity_class: i32,
+    has_band_class: i32,
+    authored_fill: f64,
+    authored_stroke: f64,
+    authored_line: f64,
+) -> Option<(f64, f64, f64)> {
+    for bit in [has_opacity_class, has_band_class] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut fill = 1.0;
+    let mut stroke = 1.0;
+    let mut line = 1.0;
+    if has_opacity_class != 0 {
+        fill = authored_fill;
+        stroke = authored_stroke;
+    }
+    if has_band_class != 0 {
+        line = authored_line;
+    }
+    Some((fill, stroke, line))
+}
+
+/// Pack XYTC hexbin pitch flag and trailer values (ABI 266).
+///
+/// ``hexbin``: kind is HEXBIN-eligible. ``has_dx`` / ``has_dy``: authored pitch
+/// keys resolved by the host (``hex_dx`` then ``dx``, etc.). Absent components
+/// stay NaN. Field picking stays host.
+pub fn scene_xytc_hex_pitch_pack(
+    hexbin: i32,
+    has_dx: i32,
+    has_dy: i32,
+    dx: f64,
+    dy: f64,
+) -> Option<(u32, f64, f64)> {
+    for bit in [hexbin, has_dx, has_dy] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    let mut hex_dx = f64::NAN;
+    let mut hex_dy = f64::NAN;
+    if hexbin != 0 {
+        flags |= XYTC_HAS_HEX;
+        if has_dx != 0 {
+            hex_dx = dx;
+        }
+        if has_dy != 0 {
+            hex_dy = dy;
+        }
+    }
+    Some((flags, hex_dx, hex_dy))
+}
+
+/// Pack XYTC stroke-perimeter flag bits (ABI 265).
+///
+/// ``band``: kind is BAND-eligible. ``present``: ``stroke_perimeter`` key set.
+/// ``perimeter_is_bool`` / ``perimeter_true`` describe the authored value.
+pub fn scene_xytc_stroke_perimeter_pack(
+    band: i32,
+    present: i32,
+    perimeter_is_bool: i32,
+    perimeter_true: i32,
+) -> Option<u32> {
+    for bit in [band, present, perimeter_is_bool, perimeter_true] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    if band == 0 || present == 0 {
+        return Some(0);
+    }
+    if perimeter_is_bool == 0 {
+        return Some(XYTC_PERIMETER_INVALID);
+    }
+    if perimeter_true != 0 {
+        return Some(XYTC_PERIMETER_TRUE);
+    }
+    Some(0)
+}
+
+/// Packed XYTC numeric style fields (ABI 264).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SceneXytcNumericStylePack {
+    pub flags: u32,
+    pub size: f64,
+    pub size_ch_value: f64,
+    pub stroke_width: f64,
+    pub width: f64,
+    pub line_width: f64,
+}
+
+/// Pack XYTC numeric style flag bits and coerced values (ABI 264).
+///
+/// Hosts pass key-presence bits and coerced f64s. ``size_ch_value`` is written
+/// only when ``has_size_ch_constant``; otherwise NaN. Absent fields keep the
+/// XYTC wire defaults (NaN size/size_ch, zero widths).
+pub fn scene_xytc_numeric_style_pack(
+    has_size: i32,
+    has_size_ch: i32,
+    has_size_ch_constant: i32,
+    has_stroke_width: i32,
+    has_width: i32,
+    has_line_width: i32,
+    size: f64,
+    size_ch_constant: f64,
+    stroke_width: f64,
+    width: f64,
+    line_width: f64,
+) -> Option<SceneXytcNumericStylePack> {
+    for bit in [
+        has_size,
+        has_size_ch,
+        has_size_ch_constant,
+        has_stroke_width,
+        has_width,
+        has_line_width,
+    ] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    let mut out_size = f64::NAN;
+    let mut size_ch_value = f64::NAN;
+    let mut out_stroke_width = 0.0;
+    let mut out_width = 0.0;
+    let mut out_line_width = 0.0;
+    if has_size != 0 {
+        flags |= XYTC_HAS_SIZE;
+        out_size = size;
+    }
+    if has_size_ch != 0 {
+        flags |= XYTC_HAS_SIZE_CH;
+        if has_size_ch_constant != 0 {
+            size_ch_value = size_ch_constant;
+        }
+    }
+    if has_stroke_width != 0 {
+        flags |= XYTC_HAS_STROKE_WIDTH;
+        out_stroke_width = stroke_width;
+    }
+    if has_width != 0 {
+        flags |= XYTC_HAS_WIDTH;
+        out_width = width;
+    }
+    if has_line_width != 0 {
+        flags |= XYTC_HAS_LINE_WIDTH;
+        out_line_width = line_width;
+    }
+    Some(SceneXytcNumericStylePack {
+        flags,
+        size: out_size,
+        size_ch_value,
+        stroke_width: out_stroke_width,
+        width: out_width,
+        line_width: out_line_width,
+    })
+}
+
+/// Pack XYTC ``color_ch`` flag bits (ABI 263).
+///
+/// ``present``: channel object exists. ``has_constant``: ``constant`` field set.
+/// Mode/constant UTF-8 stays host.
+pub fn scene_xytc_color_channel_pack(present: i32, has_constant: i32) -> Option<u32> {
+    if !matches!(present, 0 | 1) || !matches!(has_constant, 0 | 1) {
+        return None;
+    }
+    if present == 0 {
+        return Some(0);
+    }
+    let mut flags = XYTC_COLOR_CH;
+    if has_constant != 0 {
+        flags |= XYTC_COLOR_CH_CONSTANT;
+    }
+    Some(flags)
+}
+
+/// Pack XYTC corner-radius and wedge-gap trailer fields (ABI 262).
+///
+/// ``radius_seq``: ``0`` or ``1`` scalar (``r0``), ``2`` tip/base pair
+/// (``r0``, ``r1``). Hosts still pick ``corner_radius`` / ``wedge_gap`` keys
+/// and coerce list vs scalar. Returns ``(flags, r_tip, r_base, wedge_gap)``.
+pub fn scene_xytc_radius_pack(
+    kind: &str,
+    radius_seq: i32,
+    r0: f64,
+    r1: f64,
+    wedge_gap_raw: f64,
+) -> Option<(u32, f64, f64, f64)> {
+    if !matches!(radius_seq, 0 | 1 | 2) {
+        return None;
+    }
+    let mut flags = 0u32;
+    let mut r_tip = 0.0;
+    let mut r_base = 0.0;
+    let mut wedge_gap = 0.0;
+    if scene_rect_kind_admits_radius(kind) {
+        if radius_seq == 2 {
+            r_tip = r0;
+            r_base = r1;
+        } else {
+            r_tip = r0;
+            r_base = r0;
+        }
+        if r_tip != 0.0 || r_base != 0.0 {
+            flags |= XYTC_HAS_CORNER_RADIUS;
+        }
+    }
+    if scene_rect_kind_admits_polar_wedge(kind) {
+        wedge_gap = wedge_gap_raw;
+        if wedge_gap != 0.0 {
+            flags |= XYTC_HAS_WEDGE_GAP;
+        }
+    }
+    Some((flags, r_tip, r_base, wedge_gap))
+}
+
+/// Pack Scene XYTC marker-path blob into ``out`` (ABI 261).
+///
+/// Wire format: ``u32 n_contours``, ``u8 filled``, 3 zero bytes, then per
+/// contour ``u32 n_values`` + ``n_values`` little-endian f64s. Invalid
+/// layout (length mismatch) returns ``0``. Field picking stays host.
+/// Returns bytes written, ``0`` when invalid, ``-1`` when ``out`` is too small.
+pub fn scene_marker_blob_pack(
+    filled: i32,
+    values: &[f64],
+    contour_lens: &[u32],
+    out: &mut [u8],
+) -> i32 {
+    if !matches!(filled, 0 | 1) {
+        return 0;
+    }
+    let n_contours = contour_lens.len();
+    let total_values: usize = contour_lens.iter().map(|len| *len as usize).sum();
+    if total_values != values.len() {
+        return 0;
+    }
+    let need = 8usize
+        + contour_lens
+            .iter()
+            .map(|len| 4 + (*len as usize) * 8)
+            .sum::<usize>();
+    if out.len() < need {
+        return -1;
+    }
+    out[0..4].copy_from_slice(&(n_contours as u32).to_le_bytes());
+    out[4] = filled as u8;
+    out[5..8].fill(0);
+    let mut off = 8usize;
+    let mut val_off = 0usize;
+    for len in contour_lens {
+        out[off..off + 4].copy_from_slice(&len.to_le_bytes());
+        off += 4;
+        let n = *len as usize;
+        for value in &values[val_off..val_off + n] {
+            out[off..off + 8].copy_from_slice(&value.to_le_bytes());
+            off += 8;
+        }
+        val_off += n;
+    }
+    need as i32
+}
+
+/// Scene f64 arrays-equal (ABI 250).
+///
+/// `1` iff lengths match and every pair is IEEE-equal (`==`). Empty
+/// slices compare equal. NaN is never equal, including to itself.
+/// Field picking and null checks stay host.
+pub fn scene_arrays_equal(left: &[f64], right: &[f64]) -> i32 {
+    if left.len() != right.len() {
+        return 0;
+    }
+    i32::from(left.iter().zip(right.iter()).all(|(a, b)| a == b))
+}
+
+/// Scene constant-color admit (ABI 252).
+///
+/// `0` fail (data-driven without density/paint-plane), `1` style fallback,
+/// `2` use channel constant. Nonzero flags are true. Ribbon-fail and
+/// field picking stay host.
+pub const SCENE_CONSTANT_COLOR_FAIL: i32 = 0;
+pub const SCENE_CONSTANT_COLOR_FALLBACK: i32 = 1;
+pub const SCENE_CONSTANT_COLOR_CONSTANT: i32 = 2;
+
+pub fn scene_constant_color_admit(
+    has_channel: i32,
+    constant_ok: i32,
+    scatter_density: i32,
+    packs_paint_plane: i32,
+) -> i32 {
+    if has_channel == 0 {
+        return SCENE_CONSTANT_COLOR_FALLBACK;
+    }
+    if constant_ok != 0 {
+        return SCENE_CONSTANT_COLOR_CONSTANT;
+    }
+    if scatter_density != 0 || packs_paint_plane != 0 {
+        return SCENE_CONSTANT_COLOR_FALLBACK;
+    }
+    SCENE_CONSTANT_COLOR_FAIL
+}
+
+/// Admit Scene hidden-or-per-item support flags (ABI 253).
+///
+/// `1` when the trace is hidden, or has per-item channels that density
+/// color aggregation does not own. Nonzero flags are true. Field picking
+/// stays host.
+pub fn scene_hidden_or_per_item_admit(
+    hidden: i32,
+    has_per_item: i32,
+    density_aggregates: i32,
+) -> i32 {
+    if hidden != 0 {
+        return 1;
+    }
+    if has_per_item != 0 && density_aggregates == 0 {
+        return 1;
+    }
+    0
+}
+
+/// Scene channel-constant CSS (ABI 254).
+///
+/// Exact `mode == "constant"` and `has_constant != 0` copies `constant`
+/// UTF-8 into `out` and returns the written length (`0` for admitted
+/// empty CSS). Otherwise `-1`. `out` shorter than `constant` is `-2`.
+/// No lowercasing. Hosts still pick `.mode` / `.constant` vs `.color`
+/// and skip null channels.
+pub fn scene_channel_constant_css(
+    mode: &str,
+    has_constant: i32,
+    constant: &str,
+    out: &mut [u8],
+) -> i32 {
+    if mode != "constant" || has_constant == 0 {
+        return -1;
+    }
+    let bytes = constant.as_bytes();
+    if out.len() < bytes.len() {
+        return -2;
+    }
+    out[..bytes.len()].copy_from_slice(bytes);
+    i32::try_from(bytes.len()).unwrap_or(-2)
+}
+
+/// Admit Scene hexbin reduce names (ABI 232).
+///
+/// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
+/// text, return `0`. No lowercasing. Hexbin kind checks stay host.
+pub fn scene_hexbin_reduce_admit(text: &str) -> i32 {
+    i32::from(matches!(text, "count" | "mean" | "sum" | "custom"))
+}
+
+/// Scene curve-name codes (ABI 233).
+pub const SCENE_CURVE_LINEAR: i32 = 0;
+pub const SCENE_CURVE_SMOOTH: i32 = 1;
+pub const SCENE_CURVE_UNKNOWN: i32 = 255;
+
+/// Pack a Scene curve name. Trim then Unicode lowercase. Unknown names,
+/// including empty text, return `255`. Kind checks for `smooth` stay host.
+/// Compile-path `curve_smooth` in `scene_trace_compile.rs` stays extra.
+pub fn scene_curve_classify(text: &str) -> i32 {
+    match text.trim().to_lowercase().as_str() {
+        "linear" => SCENE_CURVE_LINEAR,
+        "smooth" => SCENE_CURVE_SMOOTH,
+        _ => SCENE_CURVE_UNKNOWN,
+    }
+}
+
+/// Admit Scene marker-glyph UTF-8 (ABI 234).
+///
+/// Nonempty text without NUL/CR/LF and at most 64 UTF-8 bytes returns `1`.
+/// Scatter kind and combined `marker_path` checks stay host. Compile-path
+/// `admit_glyph` in `scene_trace_compile.rs` stays extra.
+pub fn scene_marker_glyph_admit(text: &str) -> i32 {
+    i32::from(
+        !text.is_empty()
+            && text.len() <= 64
+            && !text
+                .as_bytes()
+                .iter()
+                .any(|&b| b == 0 || b == b'\n' || b == b'\r'),
+    )
+}
+
+/// Admit Scene product kinds (ABI 235).
+///
+/// Exact `scatter`/`line`/`bar`/`column`/`histogram`/`violin`/`box`/
+/// `segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/
+/// `area`/`error_band`/`ribbon`/`triangle_mesh`/`hexbin`/`heatmap` return
+/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
+/// Packing-family bits are ABI 236.
+pub fn scene_kind_admit(text: &str) -> i32 {
+    i32::from(matches!(
+        text,
+        "scatter"
+            | "line"
+            | "bar"
+            | "column"
+            | "histogram"
+            | "violin"
+            | "box"
+            | "segments"
+            | "errorbar"
+            | "stem"
+            | "contour"
+            | "box_whisker"
+            | "box_median"
+            | "area"
+            | "error_band"
+            | "ribbon"
+            | "triangle_mesh"
+            | "hexbin"
+            | "heatmap"
+    ))
+}
+
+/// Scene packing-family bits (ABI 236). Exact names; no lowercasing.
+pub const SCENE_KIND_CLASS_RECT: i32 = 1 << 0;
+pub const SCENE_KIND_CLASS_SEGMENT: i32 = 1 << 1;
+pub const SCENE_KIND_CLASS_BAND: i32 = 1 << 2;
+pub const SCENE_KIND_CLASS_RIBBON: i32 = 1 << 3;
+pub const SCENE_KIND_CLASS_POLYFILL: i32 = 1 << 4;
+pub const SCENE_KIND_CLASS_HEXBIN: i32 = 1 << 5;
+pub const SCENE_KIND_CLASS_HEATMAP: i32 = 1 << 6;
+pub const SCENE_KIND_CLASS_STROKE: i32 = 1 << 7;
+pub const SCENE_KIND_CLASS_SCATTER: i32 = 1 << 8;
+pub const SCENE_KIND_CLASS_LINE: i32 = 1 << 9;
+
+/// Classify a Scene kind into packing-family bits (ABI 236).
+///
+/// Unknown names, including empty text, return `0`. Segment kinds also set
+/// stroke. `line` sets line+stroke. Hosts still pick channels and pack rows.
+pub fn scene_kind_class(text: &str) -> i32 {
+    match text {
+        "bar" | "column" | "histogram" | "violin" | "box" => SCENE_KIND_CLASS_RECT,
+        "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => {
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        }
+        "area" | "error_band" => SCENE_KIND_CLASS_BAND,
+        "ribbon" => SCENE_KIND_CLASS_RIBBON,
+        "triangle_mesh" => SCENE_KIND_CLASS_POLYFILL,
+        "hexbin" => SCENE_KIND_CLASS_HEXBIN,
+        "heatmap" => SCENE_KIND_CLASS_HEATMAP,
+        "scatter" => SCENE_KIND_CLASS_SCATTER,
+        "line" => SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_STROKE,
+        _ => 0,
+    }
+}
+
+/// Admit Scene hexbin cell pitch (ABI 237).
+///
+/// Finite and strictly positive `dx`/`dy` return `1`. Field picking
+/// (`hex_dx` vs `dx`) stays host. Compile-path `hex_pitch` in
+/// `scene_trace_compile.rs` stays extra.
+pub fn scene_hexbin_pitch_admit(dx: f64, dy: f64) -> i32 {
+    i32::from(dx.is_finite() && dy.is_finite() && dx > 0.0 && dy > 0.0)
+}
+
+/// Admit Scene heatmap cell extent (ABI 238).
+///
+/// All four finite and strictly increasing (`x0 < x1 && y0 < y1`) return
+/// `1`. Length==2 and field picking stay host. Compile-path
+/// `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+pub fn scene_heatmap_extent_admit(x0: f64, x1: f64, y0: f64, y1: f64) -> i32 {
+    i32::from(
+        x0.is_finite()
+            && x1.is_finite()
+            && y0.is_finite()
+            && y1.is_finite()
+            && x0 < x1
+            && y0 < y1,
+    )
+}
+
+/// Admit Scene heatmap colormap eligibility (ABI 239).
+///
+/// Any nonzero flag returns `1`. Field picking and truthy coercion stay
+/// host. Kind checks stay host.
+pub fn scene_heatmap_colormap_admit(
+    truecolor: i32,
+    has_colormap: i32,
+    has_rgba_grid: i32,
+    has_rgba: i32,
+) -> i32 {
+    i32::from(
+        truecolor != 0 || has_colormap != 0 || has_rgba_grid != 0 || has_rgba != 0,
+    )
+}
+
+const XYTA_HAS_NAMED_CMAP: u32 = 1 << 6;
+const XYTA_HAS_STOPS: u32 = 1 << 7;
+const XYHF_HAS_NAMED_CMAP: u32 = 1 << 5;
+const XYHF_HAS_STOPS: u32 = 1 << 6;
+
+fn scene_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+    named_flag: u32,
+    stops_flag: u32,
+) -> (u32, Vec<u8>, Vec<u8>) {
+    match mode {
+        1 if !named_utf8.is_empty() => (named_flag, named_utf8.to_vec(), Vec::new()),
+        2 => {
+            let stops = if stop_rgb.len() >= 3 && stop_rgb.len().is_multiple_of(3) {
+                stop_rgb.to_vec()
+            } else {
+                Vec::new()
+            };
+            (stops_flag, Vec::new(), stops)
+        }
+        _ => (0, Vec::new(), Vec::new()),
+    }
+}
+
+/// Pack Scene XYTA colormap facts (ABI 258).
+///
+/// `mode`: `0` absent, `1` named UTF-8, `2` authored RGB stop rows as flat
+/// u8 triples. For mode `2`, invalid stop bytes (fewer than three or length
+/// not a multiple of three) still set `HAS_STOPS` with empty stop bytes —
+/// matching host try/except swallow. Field picking (`style.colormap` only)
+/// stays host.
+pub fn scene_xyta_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+) -> (u32, Vec<u8>, Vec<u8>) {
+    scene_colormap_pack(
+        mode,
+        named_utf8,
+        stop_rgb,
+        XYTA_HAS_NAMED_CMAP,
+        XYTA_HAS_STOPS,
+    )
+}
+
+/// Pack Scene XYHF colormap facts (ABI 259).
+///
+/// Same mode contract as [`scene_xyta_colormap_pack`], but emits XYHF attach
+/// flag bits (`1 << 5` / `1 << 6`). Node `xyHfColormap` and future Python
+/// XYHF packers use this kernel so hosts cannot drift.
+pub fn scene_xyhf_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+) -> (u32, Vec<u8>, Vec<u8>) {
+    scene_colormap_pack(
+        mode,
+        named_utf8,
+        stop_rgb,
+        XYHF_HAS_NAMED_CMAP,
+        XYHF_HAS_STOPS,
+    )
+}
+
+/// Admit Scene heatmap lattice shape (ABI 240).
+///
+/// Both `rows` and `cols` finite, integer-valued, and `>= 1` return `1`.
+/// Length==2 and field picking stay host. XYTA integer coerce uses the
+/// same kernel.
+pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
+    i32::from(
+        rows.is_finite()
+            && cols.is_finite()
+            && rows.fract() == 0.0
+            && cols.fract() == 0.0
+            && rows >= 1.0
+            && cols >= 1.0,
+    )
+}
+
+/// Admit Scene scatter paint-plane channel names (ABI 241).
+///
+/// Exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha` return
+/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
+/// Kind, density, and name gathering stay host.
+pub fn scene_scatter_paint_channel_admit(text: &str) -> i32 {
+    i32::from(matches!(
+        text,
+        "color" | "stroke" | "stroke_width" | "opacity" | "artist_alpha"
+    ))
+}
+
+/// Admit Scene hexbin colormap-plane packing (ABI 242).
+///
+/// Exact `continuous` plus a nonzero `has_values` flag return `1`. Unknown
+/// modes, including empty text, and a zero flag return `0`. No lowercasing.
+/// Kind checks and field picking (`color_ch` vs `colorChannel`, `values` vs
+/// `metric`) stay host.
+pub fn scene_hexbin_colormap_plane_admit(mode: &str, has_values: i32) -> i32 {
+    i32::from(mode == "continuous" && has_values != 0)
+}
+
+/// Admit Scene hexbin RGBA-plane packing (ABI 243).
+///
+/// Exact `categorical`/`direct_rgba` return `1`. Unknown names, including
+/// empty text, return `0`. No lowercasing. Kind checks, field picking, and
+/// RGBA8 packing stay host.
+pub fn scene_hexbin_rgba_plane_admit(mode: &str) -> i32 {
+    i32::from(matches!(mode, "categorical" | "direct_rgba"))
+}
+
+/// Admit Scene mesh paint-plane packing (ABI 244).
+///
+/// Exact `triangle_mesh` plus `joined_fill == 0` plus a nonzero
+/// `has_per_item` flag return `1`. Unknown kinds, including empty text,
+/// joined fill, or a zero flag return `0`. No lowercasing. `joined_fill`
+/// field picking and `has_per_item` gathering stay host.
+pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: i32) -> i32 {
+    i32::from(kind == "triangle_mesh" && joined_fill == 0 && has_per_item != 0)
+}
+
+/// Apply optional per-item artist-alpha replace then opacity multiply onto
+/// packed RGBA8 (ABI 245).
+///
+/// A present channel whose length is not `n` returns `false`. Artist values
+/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`;
+/// negative artist keeps the packed alpha. Opacity clips to `[0, 1]` and
+/// multiplies. The result quantizes with ties-to-even. Field picking stays
+/// host.
+pub fn scene_item_apply_opacity(
+    packed: &[u8],
+    n: usize,
+    artist: Option<&[f64]>,
+    opacity: Option<&[f64]>,
+    out: &mut [u8],
+) -> bool {
+    let Some(need) = n.checked_mul(4) else {
+        return false;
+    };
+    if packed.len() != need || out.len() != need {
+        return false;
+    }
+    if let Some(artist) = artist {
+        if artist.len() != n {
+            return false;
+        }
+    }
+    if let Some(opacity) = opacity {
+        if opacity.len() != n {
+            return false;
+        }
+    }
+    out.copy_from_slice(packed);
+    if artist.is_none() && opacity.is_none() {
+        return true;
+    }
+    for i in 0..n {
+        let mut alpha = packed[i * 4 + 3] as f64;
+        if let Some(artist) = artist {
+            if artist[i] >= 0.0 {
+                alpha = artist[i].clamp(0.0, 1.0) * 255.0;
+            }
+        }
+        if let Some(opacity) = opacity {
+            alpha *= opacity[i].clamp(0.0, 1.0);
+        }
+        out[i * 4 + 3] = alpha.clamp(0.0, 255.0).round_ties_even() as u8;
+    }
+    true
+}
+
+/// Admit Scene per-item stroke widths (ABI 246).
+///
+/// A present values slice is admitted when `len == n` and every value is
+/// finite and `>= 0`. An absent slice admits a finite `scalar >= 0`. Field
+/// picking stays host. Packing f64 bytes stays host.
+pub fn scene_item_widths_admit(values: Option<&[f64]>, n: usize, scalar: f64) -> i32 {
+    if let Some(values) = values {
+        i32::from(
+            values.len() == n && values.iter().all(|width| width.is_finite() && *width >= 0.0),
+        )
+    } else {
+        i32::from(scalar.is_finite() && scalar >= 0.0)
+    }
+}
+
+/// Scene continuous per-item fill unit-t (ABI 247).
+///
+/// `values.len()` must equal `n` and `out.len()`. A present domain uses
+/// `(lo, hi)` as-is. An absent domain takes finite min/max; no finite
+/// values fail. Zero or non-finite span writes zeros. Otherwise each
+/// value is `(v - lo) / span` clipped to `[0, 1]` (NaN stays NaN).
+/// Field picking and colormap lookup stay host.
+pub fn scene_item_fill_t(
+    values: &[f64],
+    n: usize,
+    domain: Option<(f64, f64)>,
+    out: &mut [f64],
+) -> bool {
+    if values.len() != n || out.len() != n {
+        return false;
+    }
+    let (lo, hi) = if let Some(domain) = domain {
+        domain
+    } else {
+        let mut lo = f64::INFINITY;
+        let mut hi = f64::NEG_INFINITY;
+        let mut any = false;
+        for &value in values {
+            if value.is_finite() {
+                any = true;
+                if value < lo {
+                    lo = value;
+                }
+                if value > hi {
+                    hi = value;
+                }
+            }
+        }
+        if !any {
+            return false;
+        }
+        (lo, hi)
+    };
+    let span = hi - lo;
+    if !span.is_finite() || span == 0.0 {
+        out.fill(0.0);
+        return true;
+    }
+    for (slot, &value) in out.iter_mut().zip(values.iter()) {
+        *slot = ((value - lo) / span).clamp(0.0, 1.0);
+    }
+    true
+}
+
+/// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
+///
+/// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
+pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
+    let half = (lo - offset).abs().max((hi - offset).abs());
+    if !half.is_finite() || half <= F32_SAFE_MAG {
+        1.0
+    } else {
+        F32_SAFE_MAG / half
+    }
+}
+
+/// Pack EncodedColumn wire metadata (ABI 255).
+///
+/// Echoes `offset`, writes [`f32_safe_scale`], and reports whether a `kind`
+/// string is present. `None` omits `kind`; `Some` includes it, including the
+/// empty string. Hosts copy the original kind value onto the wire dict.
+pub fn encoded_column_meta(offset: f64, lo: f64, hi: f64, kind: Option<&str>) -> (f64, f64, bool) {
+    (offset, f32_safe_scale(offset, lo, hi), kind.is_some())
 }
 
 /// Encode canonical f64 values as relative f32: `(v - offset) * scale` (§4).
@@ -3378,6 +5065,84 @@ pub fn marching_squares_into(
 /// Native counterpart of `_scene.grid_rgba`'s heatmap branch: non-finite
 /// values are missing, while finite normalized values map through the same
 /// evenly spaced color stops with ties-to-even byte rounding.
+/// Map normalized scalars `t ∈ [0, 1]` through evenly spaced color stops to a
+/// top-row-first RGBA8 image. This is the native counterpart of `_svg._lut` on
+/// Cartesian static-export grid paths: non-finite values are transparent, while
+/// finite values interpolate stops with ties-to-even byte rounding.
+pub fn colormap_rgba_into(
+    raw: &[f64],
+    w: usize,
+    h: usize,
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw.len() != w.saturating_mul(h)
+        || out.len() != raw.len().saturating_mul(4)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_nan() {
+                [0, 0, 0, 0]
+            } else {
+                colormap_color(value.clamp(0.0, 1.0), stops, alpha)
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
+/// Canonical-f64 twin of [`colormap_rgba_into`]: normalize each cell with the
+/// bulk payload's f32 rounding (`normalize_one_f32`) before stop interpolation.
+pub fn colormap_rgba_canonical_into(
+    raw_f64: &[f64],
+    w: usize,
+    h: usize,
+    domain: [f64; 2],
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw_f64.len() != w.saturating_mul(h)
+        || out.len() != raw_f64.len().saturating_mul(4)
+    {
+        return false;
+    }
+    let d0 = domain[0];
+    let d1 = domain[1];
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw_f64[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_finite() {
+                let t = f64::from(normalize_one_f32(value, d0, d1, f32::NAN));
+                if t.is_nan() {
+                    [0, 0, 0, 0]
+                } else {
+                    colormap_color(t, stops, alpha)
+                }
+            } else {
+                [0, 0, 0, 0]
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
 pub fn heatmap_rgba_into(
     raw: &[f64],
     w: usize,
@@ -3476,6 +5241,113 @@ pub fn density_rgba_into(
     true
 }
 
+/// 1D colormap sample matching `_svg._lut`: `t ∈ [0, 1]` → packed RGB.
+///
+/// Non-finite samples write black. Used by compatibility `_trace_paint_rgba`
+/// continuous channels and colorbar bands (#313).
+pub fn colormap_lut_into(t: &[f64], stops: &[[u8; 3]], out_rgb: &mut [u8]) -> bool {
+    if stops.is_empty() || out_rgb.len() != t.len().saturating_mul(3) {
+        return false;
+    }
+    for (i, value) in t.iter().enumerate() {
+        let rgb = if value.is_finite() {
+            let color = colormap_color(*value, stops, 255);
+            [color[0], color[1], color[2]]
+        } else {
+            [0, 0, 0]
+        };
+        let dest = i * 3;
+        out_rgb[dest..dest + 3].copy_from_slice(&rgb);
+    }
+    true
+}
+
+/// Legacy f64 count-grid density colormap (the remaining `_lut` density path).
+///
+/// Same stop interpolation and `t * 1.35` alpha law as [`density_rgba_into`],
+/// including the vertical flip. `t <= 0` (empty cells) stay transparent.
+pub fn density_rgba_linear_into(
+    counts: &[f64],
+    w: usize,
+    h: usize,
+    maximum: f64,
+    stops: &[[u8; 3]],
+    opacity: f64,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !opacity.is_finite()
+        || !(0.0..=1.0).contains(&opacity)
+        || counts.len() != w.saturating_mul(h)
+        || out.len() != counts.len().saturating_mul(4)
+    {
+        return false;
+    }
+    let denom = if maximum > 0.0 { maximum } else { 1.0 };
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let count = counts[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if count.is_finite() {
+                let t = (count / denom).clamp(0.0, 1.0);
+                let mut rgba = colormap_color(t, stops, 0);
+                rgba[3] = if t <= 0.0 {
+                    0
+                } else {
+                    ((t * 1.35).clamp(0.0, 1.0) * 255.0 * opacity) as u8
+                };
+                rgba
+            } else {
+                [0, 0, 0, 0]
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
+/// Matplotlib artist-alpha replace then xy opacity multiply (#313).
+///
+/// `artist_alpha[i] >= 0` replaces intrinsic alpha; otherwise intrinsic alpha
+/// is kept. Core opacity and `component_opacity` stay multiplicative. All
+/// channels clip to `[0, 1]`.
+pub fn paint_effective_rgba_into(
+    intrinsic: &[f64],
+    artist_alpha: &[f64],
+    opacity: &[f64],
+    component_opacity: f64,
+    out: &mut [f64],
+) -> bool {
+    if intrinsic.len() % 4 != 0
+        || out.len() != intrinsic.len()
+        || artist_alpha.len() * 4 != intrinsic.len()
+        || opacity.len() != artist_alpha.len()
+        || !component_opacity.is_finite()
+    {
+        return false;
+    }
+    let n = artist_alpha.len();
+    for i in 0..n {
+        let src = i * 4;
+        let base_alpha = if artist_alpha[i] >= 0.0 {
+            artist_alpha[i]
+        } else {
+            intrinsic[src + 3]
+        };
+        let alpha = (base_alpha * opacity[i] * component_opacity).clamp(0.0, 1.0);
+        out[src] = intrinsic[src].clamp(0.0, 1.0);
+        out[src + 1] = intrinsic[src + 1].clamp(0.0, 1.0);
+        out[src + 2] = intrinsic[src + 2].clamp(0.0, 1.0);
+        out[src + 3] = alpha;
+    }
+    true
+}
+
 /// Precompute the exact log-u8 density colors once. The display-list
 /// rasterizer uses this table to sample compact density bytes directly,
 /// without expanding the full grid to a temporary RGBA image.
@@ -3518,6 +5390,86 @@ pub(crate) fn density_rgba_lut(
         };
     }
     Some(lut)
+}
+
+/// Decode one log-u8 density code back to an approximate count. Matches the
+/// compatibility `_density_column` / `lodDecodeLogU8` inverse of `density_log_u8`.
+fn density_log_u8_count(code: u8, maximum: f64) -> f64 {
+    if code == 0 || !(maximum > 0.0) {
+        0.0
+    } else {
+        ((f64::from(code) / 255.0) * maximum.ln_1p()).exp_m1()
+    }
+}
+
+/// LOD doc §2 rule 1: displayed cell alpha is the physical compositing of the
+/// cell's points, `1 − (1 − a_pt)^count`, with `a_pt = channel alpha × style
+/// opacity` folded inside the exponent. Empty or all-invisible cells stay 0;
+/// `a_pt = 1` saturates any occupied cell.
+pub fn physical_density_alpha(count: f64, mean_alpha_u8: u8, opacity: f64) -> u8 {
+    if !(count > 0.0) || mean_alpha_u8 == 0 {
+        return 0;
+    }
+    if !(0.0..=1.0).contains(&opacity) {
+        return 0;
+    }
+    let a_pt = (f64::from(mean_alpha_u8) / 255.0 * opacity).clamp(0.0, 1.0);
+    if a_pt <= 0.0 {
+        return 0;
+    }
+    let coverage = if a_pt >= 1.0 {
+        1.0
+    } else {
+        -(count * (-a_pt).ln_1p()).exp_m1()
+    };
+    (coverage.clamp(0.0, 1.0) * 255.0)
+        .round_ties_even()
+        .clamp(0.0, 255.0) as u8
+}
+
+/// Map compact log-u8 counts plus a row-0-bottom mean-color RGBA8 plane to a
+/// top-row-first Image blit. RGB stays the mean point color (straight alpha);
+/// displayed alpha is [`physical_density_alpha`].
+pub fn density_mean_color_rgba_into(
+    encoded: &[u8],
+    mean_rgba: &[u8],
+    w: usize,
+    h: usize,
+    maximum: f64,
+    opacity: f64,
+    out: &mut [u8],
+) -> bool {
+    let cells = w.saturating_mul(h);
+    if w == 0
+        || h == 0
+        || encoded.len() != cells
+        || mean_rgba.len() != cells.saturating_mul(4)
+        || out.len() != cells.saturating_mul(4)
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !opacity.is_finite()
+        || !(0.0..=1.0).contains(&opacity)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let cell = row * w + col;
+            let src = cell * 4;
+            let dst = (destination_row * w + col) * 4;
+            let alpha = physical_density_alpha(
+                density_log_u8_count(encoded[cell], maximum),
+                mean_rgba[src + 3],
+                opacity,
+            );
+            out[dst] = mean_rgba[src];
+            out[dst + 1] = mean_rgba[src + 1];
+            out[dst + 2] = mean_rgba[src + 2];
+            out[dst + 3] = alpha;
+        }
+    }
+    true
 }
 
 /// 2D density aggregation (§5 Tier 2): additively bin points into a `w × h`
@@ -4943,7 +6895,7 @@ fn sample_mask_impl<T: Copy + Sync + Into<u64>>(
 /// otherwise `fraction * (2^64 - 1)` in f64 (the constant rounds to 2^64),
 /// truncated with the same saturating clamp as Python's
 /// `max(0, min(u64_max, int(...)))`.
-fn sample_threshold(fraction: f64) -> u64 {
+pub(crate) fn sample_threshold(fraction: f64) -> u64 {
     if fraction >= 1.0 {
         u64::MAX
     } else {
@@ -5823,6 +7775,88 @@ pub fn min_max(data: &[f64]) -> Option<(f64, f64)> {
     min_max_impl(data, par_threads(data.len()))
 }
 
+/// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
+/// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
+/// matching Python `channels._continuous_domain`.
+pub fn continuous_domain(data: &[f64]) -> (f64, f64) {
+    match min_max(data) {
+        None => (0.0, 1.0),
+        Some((lo, hi)) if lo == hi => {
+            let pad = lo.abs() * 0.05;
+            let pad = if pad == 0.0 { 0.5 } else { pad };
+            (lo - pad, hi + pad)
+        }
+        Some(bounds) => bounds,
+    }
+}
+
+/// Admit per-point RGB or RGBA in `[0, 1]` as contiguous Nx4 (ABI 213).
+///
+/// `components` is 3 or 4. Empty `out` is a size probe (`n * 4` floats).
+/// Non-finite or out-of-range channels return `None`.
+pub fn direct_rgba_admit(values: &[f64], components: usize, out: &mut [f64]) -> Option<usize> {
+    if components != 3 && components != 4 {
+        return None;
+    }
+    if values.len() % components != 0 {
+        return None;
+    }
+    let n = values.len() / components;
+    let need = n.checked_mul(4)?;
+    if out.is_empty() {
+        return Some(need);
+    }
+    if out.len() < need {
+        return None;
+    }
+    for i in 0..n {
+        let base = i * components;
+        let r = values[base];
+        let g = values[base + 1];
+        let b = values[base + 2];
+        let a = if components == 4 {
+            values[base + 3]
+        } else {
+            1.0
+        };
+        if !(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite()) {
+            return None;
+        }
+        if !(0.0..=1.0).contains(&r)
+            || !(0.0..=1.0).contains(&g)
+            || !(0.0..=1.0).contains(&b)
+            || !(0.0..=1.0).contains(&a)
+        {
+            return None;
+        }
+        let dest = i * 4;
+        out[dest] = r;
+        out[dest + 1] = g;
+        out[dest + 2] = b;
+        out[dest + 3] = a;
+    }
+    Some(need)
+}
+
+/// Clip unit f64 to `[0, 1]`, scale by 255, and quantize to u8 (ABI 251).
+///
+/// Ties round to even. Non-finite results (NaN) write `0`. Lengths must
+/// match; empty slices succeed. Field picking stays host.
+pub fn clip_quantize_u8(values: &[f64], out: &mut [u8]) -> i32 {
+    if values.len() != out.len() {
+        return 0;
+    }
+    for (value, dest) in values.iter().zip(out.iter_mut()) {
+        let quantized = (value.clamp(0.0, 1.0) * 255.0).round_ties_even();
+        *dest = if quantized.is_finite() {
+            quantized as u8
+        } else {
+            0
+        };
+    }
+    1
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -5832,6 +7866,30 @@ pub fn min_max(data: &[f64]) -> Option<(f64, f64)> {
 /// order-independent); a shared flag propagates the early exit.
 pub fn is_sorted_f64(data: &[f64]) -> bool {
     is_sorted_f64_impl(data, par_threads(data.len()))
+}
+
+/// NumPy `argsort(..., kind="stable")` for f64: NaNs last, `-0.0 == 0.0`,
+/// equal values (including NaNs) keep input order. Returns `None` when
+/// `len > u32::MAX` so the C ABI can reject before wrapping indices.
+pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
+    if data.len() > u32::MAX as usize {
+        return None;
+    }
+    let mut indices: Vec<u32> = (0..data.len() as u32).collect();
+    indices.sort_by(|&i, &j| {
+        let a = data[i as usize];
+        let b = data[j as usize];
+        match (a.is_nan(), b.is_nan()) {
+            (true, true) => i.cmp(&j),
+            (true, false) => Ordering::Greater,
+            (false, true) => Ordering::Less,
+            (false, false) => match a.partial_cmp(&b) {
+                Some(Ordering::Equal) | None => i.cmp(&j),
+                Some(ord) => ord,
+            },
+        }
+    });
+    Some(indices)
 }
 
 fn is_sorted_f64_impl(data: &[f64], threads: usize) -> bool {
@@ -7014,6 +9072,121 @@ mod tests {
         assert_eq!(&out[12..16], &[100, 110, 120, 216]);
     }
 
+    #[test]
+    fn physical_density_alpha_matches_lod_doc_rule_one() {
+        let expect = |k: f64| ((1.0 - 0.28_f64.powf(k)) * 255.0).round_ties_even() as u8;
+        assert_eq!(physical_density_alpha(0.0, 255, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 0.72), expect(1.0));
+        assert_eq!(physical_density_alpha(3.0, 255, 0.72), expect(3.0));
+        assert!(physical_density_alpha(50.0, 255, 0.72) >= 254);
+        assert_eq!(physical_density_alpha(2.0, 0, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 1.0), 255);
+        assert_eq!(physical_density_alpha(0.0, 255, 1.0), 0);
+    }
+
+    #[test]
+    fn density_mean_color_rgba_flips_and_shapes_physical_alpha() {
+        let encoded = [0u8, 255, 128, 1];
+        let mean = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 10, 20, 30, 255,
+        ];
+        let mut out = [0u8; 16];
+        assert!(density_mean_color_rgba_into(
+            &encoded, &mean, 2, 2, 10.0, 0.72, &mut out
+        ));
+        // Source row 0 (data bottom) flips to destination row 1.
+        assert_eq!(&out[8..12], &[255, 0, 0, 0]);
+        assert_eq!(out[12], 0);
+        assert_eq!(out[13], 255);
+        assert!(out[15] > 0);
+        assert_eq!(&out[0..4], &[0, 0, 255, 0]);
+    }
+
+    #[test]
+    fn colormap_rgba_matches_lut_goldens_and_flips_rows() {
+        let raw = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[0, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 16];
+        assert!(colormap_rgba_into(&raw, 2, 2, &stops, 200, &mut out));
+        assert_eq!(&out[0..4], &[100, 110, 120, 200]);
+        assert_eq!(&out[4..8], &[0, 0, 0, 0]);
+        assert_eq!(&out[8..12], &[0, 10, 20, 200]);
+        assert_eq!(&out[12..16], &[50, 60, 70, 200]);
+    }
+
+    #[test]
+    fn colormap_lut_matches_colormap_color() {
+        let t = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[0u8, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 12];
+        assert!(colormap_lut_into(&t, &stops, &mut out));
+        assert_eq!(&out[0..3], &colormap_color(0.0, &stops, 255)[..3]);
+        assert_eq!(&out[3..6], &colormap_color(0.5, &stops, 255)[..3]);
+        assert_eq!(&out[6..9], &colormap_color(1.0, &stops, 255)[..3]);
+        assert_eq!(&out[9..12], &[0, 0, 0]);
+    }
+
+    #[test]
+    fn density_rgba_linear_matches_log_u8_full_cell_alpha() {
+        let counts = [0.0, 100.0, 50.0, f64::NAN];
+        let stops = [[0u8, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 16];
+        assert!(density_rgba_linear_into(
+            &counts, 2, 2, 100.0, &stops, 0.85, &mut out
+        ));
+        // Input row 1 (50, NaN) flips to the top output row.
+        assert_eq!(out[3], 146);
+        assert_eq!(out[7], 0);
+        assert_eq!(out[11], 0);
+        assert_eq!(&out[12..16], &[100, 110, 120, 216]);
+    }
+
+    #[test]
+    fn paint_effective_rgba_replaces_then_multiplies() {
+        let intrinsic = [0.1, 0.2, 0.3, 0.8, 0.4, 0.5, 0.6, 0.9];
+        let artist = [-1.0, 0.5];
+        let opacity = [0.5, 1.0];
+        let mut out = [0.0; 8];
+        assert!(paint_effective_rgba_into(
+            &intrinsic, &artist, &opacity, 0.5, &mut out
+        ));
+        assert!((out[3] - 0.8 * 0.5 * 0.5).abs() < 1e-12);
+        assert!((out[7] - 0.5 * 1.0 * 0.5).abs() < 1e-12);
+        assert_eq!(&out[0..3], &[0.1, 0.2, 0.3]);
+    }
+
+    #[test]
+    fn colormap_rgba_canonical_preserves_f32_rounding() {
+        let raw = [0.25, 0.75, f64::INFINITY];
+        let stops = [[0, 0, 0], [200, 0, 0]];
+        let mut out = [0u8; 12];
+        assert!(colormap_rgba_canonical_into(
+            &raw,
+            1,
+            3,
+            [0.0, 1.0],
+            &stops,
+            255,
+            &mut out,
+        ));
+        let t0 = f64::from(normalize_one_f32(0.25, 0.0, 1.0, f32::NAN));
+        let t1 = f64::from(normalize_one_f32(0.75, 0.0, 1.0, f32::NAN));
+        assert_eq!(out[8], colormap_color(t0, &stops, 255)[0]);
+        assert_eq!(out[4], colormap_color(t1, &stops, 255)[0]);
+        assert_eq!(&out[0..4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn colormap_rgba_differs_from_heatmap_at_interior_value() {
+        let stops = [[0, 0, 0], [254, 0, 0]];
+        let mut heat = [0u8; 4];
+        let mut cmap = [0u8; 4];
+        assert!(heatmap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut heat));
+        assert!(colormap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut cmap));
+        assert_ne!(heat[0], cmap[0]);
+        assert_eq!(cmap[0], 127);
+    }
+
     /// Direct port of the per-category NumPy loop this kernel replaced
     /// (`lod.stratified_sample_keep_mask` before the fused pass) — the
     /// oracle for the parity test.
@@ -7288,6 +9461,33 @@ mod tests {
     }
 
     #[test]
+    fn geometry_offset_pins_log_family_and_nonfinite_to_zero() {
+        assert_eq!(geometry_offset(true, 10.0, 20.0), 0.0);
+        assert_eq!(geometry_offset(false, 10.0, 20.0), 15.0);
+        assert_eq!(geometry_offset(false, f64::NAN, 20.0), 0.0);
+        assert_eq!(geometry_offset(false, f64::INFINITY, 20.0), 0.0);
+        assert_eq!(f32_safe_scale(0.0, -1.0, 1.0), 1.0);
+        let huge = F32_SAFE_MAG * 10.0;
+        let scale = f32_safe_scale(0.0, -huge, huge);
+        assert!((scale - 0.1).abs() < 1e-12);
+        assert!(scale_pins_offset("log"));
+        assert!(scale_pins_offset("symlog"));
+        assert!(!scale_pins_offset("linear"));
+        assert!(!scale_pins_offset(""));
+        assert!(!scale_pins_offset("Log"));
+        let (offset, scale, has_kind) = encoded_column_meta(0.0, -1.0, 1.0, None);
+        assert_eq!(offset, 0.0);
+        assert_eq!(scale, 1.0);
+        assert!(!has_kind);
+        let (offset, scale, has_kind) = encoded_column_meta(0.0, -huge, huge, Some("float"));
+        assert_eq!(offset, 0.0);
+        assert!((scale - 0.1).abs() < 1e-12);
+        assert!(has_kind);
+        let (_, _, empty_kind) = encoded_column_meta(1.0, 0.0, 2.0, Some(""));
+        assert!(empty_kind);
+    }
+
+    #[test]
     fn encode_precision_ms_timestamps() {
         // The §25 thesis test: a 1-second span inside a 10-year ms-timestamp
         // series must survive the f32 path when re-centered on the window.
@@ -7371,6 +9571,45 @@ mod tests {
         );
         assert_eq!(min_max(&[f64::NAN, f64::INFINITY]), None);
         assert_eq!(min_max(&[]), None);
+    }
+
+    #[test]
+    fn continuous_domain_pads_equal_bounds() {
+        assert_eq!(continuous_domain(&[]), (0.0, 1.0));
+        assert_eq!(continuous_domain(&[f64::NAN]), (0.0, 1.0));
+        assert_eq!(continuous_domain(&[0.0, 100.0]), (0.0, 100.0));
+        assert_eq!(continuous_domain(&[0.0, 0.0]), (-0.5, 0.5));
+        assert_eq!(continuous_domain(&[10.0, 10.0]), (9.5, 10.5));
+    }
+
+    #[test]
+    fn direct_rgba_admit_expands_rgb_and_rejects_range() {
+        let rgb = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+        let mut out = [0.0; 8];
+        assert_eq!(direct_rgba_admit(&rgb, 3, &mut out), Some(8));
+        assert_eq!(&out, &[0.1, 0.2, 0.3, 1.0, 0.4, 0.5, 0.6, 1.0]);
+        assert_eq!(direct_rgba_admit(&rgb, 3, &mut []), Some(8));
+        assert!(direct_rgba_admit(&[0.0, 0.0, 1.1], 3, &mut out).is_none());
+        assert!(direct_rgba_admit(&[0.0, f64::NAN, 1.0], 3, &mut out).is_none());
+        let rgba = [0.1, 0.2, 0.3, 0.4];
+        assert_eq!(direct_rgba_admit(&rgba, 4, &mut out), Some(4));
+        assert_eq!(&out[..4], &[0.1, 0.2, 0.3, 0.4]);
+    }
+
+    #[test]
+    fn clip_quantize_u8_matches_host_table() {
+        let mut empty: [u8; 0] = [];
+        assert_eq!(clip_quantize_u8(&[], &mut empty), 1);
+        let mut out = [0u8; 4];
+        assert_eq!(clip_quantize_u8(&[0.0, 0.5, 1.0, 1.5], &mut out), 1);
+        assert_eq!(out, [0, 128, 255, 255]);
+        assert_eq!(clip_quantize_u8(&[0.0], &mut out), 0);
+        let mut nan_out = [255u8; 1];
+        assert_eq!(clip_quantize_u8(&[f64::NAN], &mut nan_out), 1);
+        assert_eq!(nan_out, [0]);
+        let mut half = [0u8; 1];
+        assert_eq!(clip_quantize_u8(&[1.5 / 255.0], &mut half), 1);
+        assert_eq!(half, [2]);
     }
 
     #[test]
@@ -8038,6 +10277,1006 @@ mod fuzz {
     }
 
     #[test]
+    fn scene_dash_admit_matches_host_presets_and_rejects_bad_tokens() {
+        assert_eq!(scene_dash_admit("", &[], false), Some(SceneDash::Solid));
+        assert_eq!(
+            scene_dash_admit(" solid ", &[], false),
+            Some(SceneDash::Solid)
+        );
+        assert_eq!(
+            scene_dash_admit("Dashed", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("dotted", &[], false),
+            Some(SceneDash::Pattern(vec![1.5, 3.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("dashdot", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 3.0, 1.5, 3.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("6, 4", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(scene_dash_admit("6,foo,4", &[], false), None);
+        assert_eq!(scene_dash_admit("6", &[], false), None);
+        assert_eq!(scene_dash_admit("", &[], true), None);
+        assert_eq!(
+            scene_dash_admit("", &[6.0, 4.0], true),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(scene_dash_admit("", &[6.0, 0.0], true), None);
+        assert_eq!(scene_dash_admit("", &[6.0, f64::NAN], true), None);
+        let mut out = [0.0; 8];
+        assert_eq!(write_scene_dash(&SceneDash::Solid, &mut out), Some(0));
+        assert_eq!(
+            write_scene_dash(&SceneDash::Pattern(vec![6.0, 4.0]), &mut out),
+            Some(2)
+        );
+        assert_eq!(&out[..2], &[6.0, 4.0]);
+    }
+
+    #[test]
+    fn scene_linecap_admit_matches_host_and_rejects_unknown() {
+        assert_eq!(scene_linecap_admit(""), Some(SceneLinecap::Round));
+        assert_eq!(scene_linecap_admit(" round "), Some(SceneLinecap::Round));
+        assert_eq!(scene_linecap_admit("Butt"), Some(SceneLinecap::Butt));
+        assert_eq!(scene_linecap_admit("SQUARE"), Some(SceneLinecap::Square));
+        assert_eq!(scene_linecap_admit("  "), None);
+        assert_eq!(scene_linecap_admit("foo"), None);
+        assert_eq!(scene_linecap_code(SceneLinecap::Round), 255);
+        assert_eq!(scene_linecap_code(SceneLinecap::Butt), 0);
+        assert_eq!(scene_linecap_code(SceneLinecap::Square), 2);
+    }
+
+    #[test]
+    fn density_overlay_opacity_caps_and_rejects_non_finite() {
+        assert_eq!(density_overlay_opacity(0.8), 0.55);
+        assert_eq!(density_overlay_opacity(0.3), 0.3);
+        assert_eq!(density_overlay_opacity(1.0), 0.55);
+        assert_eq!(density_overlay_opacity(f64::NAN), 0.55);
+        assert_eq!(density_overlay_opacity(f64::INFINITY), 0.55);
+        assert_eq!(density_overlay_opacity(f64::NEG_INFINITY), 0.55);
+    }
+
+    #[test]
+    fn scene_marker_path_admit_matches_host_bounds() {
+        assert!(scene_marker_path_admit(
+            &[-0.5, -0.5, 0.5, -0.5, 0.0, 0.5],
+            &[6]
+        ));
+        assert!(!scene_marker_path_admit(&[-0.5, -0.5, 0.5, -0.5], &[]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0], &[2]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.0], &[3]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, f64::NAN, 0.0], &[4]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.6, 0.0], &[4]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.5, 0.0], &[4, 0]));
+        let too_many = vec![0.0; 194];
+        assert!(!scene_marker_path_admit(&too_many, &[194]));
+    }
+
+    #[test]
+    fn scene_annotation_style_admit_matches_host_table() {
+        assert!(scene_annotation_style_admit("arrow", false, false, "width"));
+        assert!(!scene_annotation_style_admit("arrow", false, false, "dash"));
+        assert!(!scene_annotation_style_admit(
+            "arrow", false, true, "label_color"
+        ));
+        assert!(scene_annotation_style_admit("callout", false, false, "width"));
+        assert!(!scene_annotation_style_admit("text", false, false, "width"));
+        assert!(!scene_annotation_style_admit("text", true, true, "width"));
+        assert!(scene_annotation_style_admit(
+            "text", true, true, "label_background"
+        ));
+        assert!(scene_annotation_style_admit("rule", false, false, "dash"));
+        assert!(!scene_annotation_style_admit(
+            "rule", false, false, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "rule", false, true, "label_color"
+        ));
+        assert!(!scene_annotation_style_admit(
+            "band", false, false, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "band", false, true, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "marker", false, false, "stroke_width"
+        ));
+        assert!(!scene_annotation_style_admit("foo", false, true, "width"));
+        assert!(scene_annotation_style_admit("", false, false, "color"));
+        assert!(!scene_annotation_style_admit("rule", false, false, ""));
+    }
+
+    #[test]
+    fn scene_ribbon_color2_classify_matches_host_table() {
+        assert_eq!(
+            scene_ribbon_color2_classify(false, true, None, None, "#3987e5", false, false),
+            SCENE_RIBBON_COLOR2_ABSENT
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, false, None, None, "#3987e5", false, false),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#336699"),
+                "#336699",
+                false,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_SOLID
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#34d399"),
+                "#336699",
+                false,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_GRADIENT
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#34d399"),
+                "#336699",
+                true,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, true, None, Some("#34d399"), "#336699", false, true),
+            SCENE_RIBBON_COLOR2_ENDS
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, true, None, None, "#336699", false, false),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
+    }
+
+    #[test]
+    fn scene_tick_label_strategy_matches_host_table() {
+        assert_eq!(scene_tick_label_strategy("auto"), 0);
+        assert_eq!(scene_tick_label_strategy("hide"), 1);
+        assert_eq!(scene_tick_label_strategy("rotate"), 2);
+        assert_eq!(scene_tick_label_strategy("stagger"), 3);
+        assert_eq!(scene_tick_label_strategy("preserve"), 4);
+        assert_eq!(scene_tick_label_strategy("none"), 5);
+        assert_eq!(scene_tick_label_strategy("off"), 6);
+        assert_eq!(scene_tick_label_strategy("hide-overlap"), 0);
+        assert_eq!(scene_tick_label_strategy(""), 0);
+        assert_eq!(scene_tick_label_strategy("foo"), 0);
+        assert_eq!(scene_tick_label_strategy("HIDE"), 0);
+    }
+
+    #[test]
+    fn scene_tick_anchor_matches_host_table() {
+        assert_eq!(scene_tick_anchor("start"), 0);
+        assert_eq!(scene_tick_anchor("center"), 1);
+        assert_eq!(scene_tick_anchor("middle"), 1);
+        assert_eq!(scene_tick_anchor("end"), 2);
+        assert_eq!(scene_tick_anchor(""), -1);
+        assert_eq!(scene_tick_anchor("foo"), -1);
+        assert_eq!(scene_tick_anchor("START"), -1);
+        assert_eq!(scene_tick_anchor("left"), -1);
+    }
+
+    #[test]
+    fn scene_fill_gradient_admit_matches_host_table() {
+        let mut out = [0u8; 8];
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.0, 1.0],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out,
+            ),
+            1
+        );
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#336699", 1.0));
+        assert_eq!(&out[4..], &crate::css::color_rgba8("#34d399", 1.0));
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "plot",
+                "up",
+                &[0.0, 1.0],
+                &["currentcolor", ""],
+                "#3987e5",
+                &mut out,
+            ),
+            1
+        );
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#3987e5", 1.0));
+        assert_eq!(&out[4..], &crate::css::color_rgba8("#3987e5", 1.0));
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.0, 1.0],
+                &["var(--accent)", "#ffffff"],
+                "#3987e5",
+                &mut out,
+            ),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("data", "down", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("mark", "diagonal", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("mark", "down", &[0.5], &["#336699"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.5, 0.25],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out,
+            ),
+            0
+        );
+    }
+
+    #[test]
+    fn scene_parse_linear_gradient_matches_host_table() {
+        let parsed = scene_parse_linear_gradient(
+            "linear-gradient(currentColor, transparent)",
+            "mark",
+        )
+        .unwrap();
+        assert_eq!(parsed.dir, 0);
+        assert_eq!(parsed.t, vec![0.0, 1.0]);
+        assert_eq!(parsed.css, vec!["currentColor".to_string(), "transparent".to_string()]);
+        let plot = scene_parse_linear_gradient(
+            "linear-gradient(to right, red 10%, blue)",
+            "plot",
+        )
+        .unwrap();
+        assert_eq!(plot.dir, 2);
+        assert_eq!(plot.t, vec![0.1, 1.0]);
+        assert_eq!(plot.css, vec!["red".to_string(), "blue".to_string()]);
+        let nested = scene_parse_linear_gradient(
+            "linear-gradient(rgba(1,2,3,.5), var(--mid), rgb(9,9,9))",
+            "mark",
+        )
+        .unwrap();
+        assert_eq!(nested.t, vec![0.0, 0.5, 1.0]);
+        assert_eq!(nested.css[1], "var(--mid)");
+        assert_eq!(
+            scene_parse_linear_gradient("radial-gradient(red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_REJECT
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(45deg, red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_DIRECTION
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(to left, red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(red)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT
+        );
+        let upper = scene_parse_linear_gradient("LINEAR-GRADIENT(red, blue)", "mark").unwrap();
+        assert_eq!(upper.dir, 0);
+        assert_eq!(upper.css, vec!["red".to_string(), "blue".to_string()]);
+        assert_eq!(
+            scene_parse_linear_gradient("", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_REJECT
+        );
+    }
+
+    #[test]
+    fn scene_rect_extra_flags_matches_host_table() {
+        assert_eq!(scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.0), 0);
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, true, &[0.0], false, 0.0),
+            XYFS_TRACE_RECT_GRADIENT
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[1.0, 2.0], true, 0.0),
+            0
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[1.0], true, 0.0),
+            XYFS_TRACE_CORNER_RADIUS
+        );
+        assert_eq!(
+            scene_rect_extra_flags("line", false, false, &[3.0], false, 0.0),
+            XYFS_TRACE_CORNER_RADIUS
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.2),
+            XYFS_TRACE_WEDGE_GAP
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", true, false, &[0.0], false, 0.2),
+            0
+        );
+        assert_eq!(
+            scene_rect_extra_flags("heatmap", true, false, &[0.0], false, 0.2),
+            XYFS_TRACE_WEDGE_GAP
+        );
+        assert_eq!(
+            scene_rect_extra_flags("violin", false, false, &[4.0, 5.0], true, 0.0),
+            0
+        );
+    }
+
+    #[test]
+    fn scene_gradient_dir_matches_host_table() {
+        assert_eq!(scene_gradient_dir("down"), SCENE_GRAD_DIR_DOWN);
+        assert_eq!(scene_gradient_dir("up"), SCENE_GRAD_DIR_UP);
+        assert_eq!(scene_gradient_dir("right"), SCENE_GRAD_DIR_RIGHT);
+        assert_eq!(scene_gradient_dir("left"), SCENE_GRAD_DIR_LEFT);
+        assert_eq!(scene_gradient_dir(""), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("foo"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("DOWN"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("to bottom"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("to-bottom"), SCENE_GRAD_DIR_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_linear_gradient_prefix_matches_host_table() {
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient(red, blue)"), 1);
+        assert_eq!(
+            scene_linear_gradient_prefix("  LINEAR-GRADIENT(red, blue)  "),
+            1
+        );
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient(45deg, red, blue)"), 1);
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient("), 1);
+        assert_eq!(scene_linear_gradient_prefix("radial-gradient(red, blue)"), 0);
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient"), 0);
+        assert_eq!(scene_linear_gradient_prefix(""), 0);
+        assert_eq!(scene_linear_gradient_prefix("red"), 0);
+    }
+
+    #[test]
+    fn scene_gradient_space_matches_host_table() {
+        assert_eq!(scene_gradient_space("mark"), SCENE_GRAD_SPACE_MARK);
+        assert_eq!(scene_gradient_space("plot"), SCENE_GRAD_SPACE_PLOT);
+        assert_eq!(scene_gradient_space(""), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("foo"), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("MARK"), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("data"), SCENE_GRAD_SPACE_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_hexbin_reduce_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_reduce_admit("count"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("mean"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("sum"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("custom"), 1);
+        assert_eq!(scene_hexbin_reduce_admit(""), 0);
+        assert_eq!(scene_hexbin_reduce_admit("foo"), 0);
+        assert_eq!(scene_hexbin_reduce_admit("COUNT"), 0);
+        assert_eq!(scene_hexbin_reduce_admit("median"), 0);
+    }
+
+    #[test]
+    fn scene_curve_classify_matches_host_table() {
+        assert_eq!(scene_curve_classify("linear"), SCENE_CURVE_LINEAR);
+        assert_eq!(scene_curve_classify("smooth"), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify("LINEAR"), SCENE_CURVE_LINEAR);
+        assert_eq!(scene_curve_classify("SMOOTH"), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify("  Smooth  "), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify(""), SCENE_CURVE_UNKNOWN);
+        assert_eq!(scene_curve_classify("foo"), SCENE_CURVE_UNKNOWN);
+        assert_eq!(scene_curve_classify("step"), SCENE_CURVE_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_marker_glyph_admit_matches_host_table() {
+        assert_eq!(scene_marker_glyph_admit("A"), 1);
+        assert_eq!(scene_marker_glyph_admit("α"), 1);
+        assert_eq!(scene_marker_glyph_admit(""), 0);
+        assert_eq!(scene_marker_glyph_admit("a\0b"), 0);
+        assert_eq!(scene_marker_glyph_admit("a\nb"), 0);
+        assert_eq!(scene_marker_glyph_admit("a\rb"), 0);
+        assert_eq!(scene_marker_glyph_admit(&"x".repeat(64)), 1);
+        assert_eq!(scene_marker_glyph_admit(&"x".repeat(65)), 0);
+    }
+
+    #[test]
+    fn scene_kind_admit_matches_host_table() {
+        for name in [
+            "scatter",
+            "line",
+            "bar",
+            "column",
+            "histogram",
+            "violin",
+            "box",
+            "segments",
+            "errorbar",
+            "stem",
+            "contour",
+            "box_whisker",
+            "box_median",
+            "area",
+            "error_band",
+            "ribbon",
+            "triangle_mesh",
+            "hexbin",
+            "heatmap",
+        ] {
+            assert_eq!(scene_kind_admit(name), 1, "{name}");
+        }
+        assert_eq!(scene_kind_admit(""), 0);
+        assert_eq!(scene_kind_admit("mark"), 0);
+        assert_eq!(scene_kind_admit("SCATTER"), 0);
+        assert_eq!(scene_kind_admit("pie"), 0);
+        assert_eq!(scene_kind_admit(" scatter"), 0);
+    }
+
+    #[test]
+    fn scene_kind_class_matches_host_table() {
+        assert_eq!(scene_kind_class("bar"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("column"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("histogram"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("violin"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("box"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(
+            scene_kind_class("segments"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("errorbar"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("stem"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("contour"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("box_whisker"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("box_median"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(scene_kind_class("area"), SCENE_KIND_CLASS_BAND);
+        assert_eq!(scene_kind_class("error_band"), SCENE_KIND_CLASS_BAND);
+        assert_eq!(scene_kind_class("ribbon"), SCENE_KIND_CLASS_RIBBON);
+        assert_eq!(scene_kind_class("triangle_mesh"), SCENE_KIND_CLASS_POLYFILL);
+        assert_eq!(scene_kind_class("hexbin"), SCENE_KIND_CLASS_HEXBIN);
+        assert_eq!(scene_kind_class("heatmap"), SCENE_KIND_CLASS_HEATMAP);
+        assert_eq!(scene_kind_class("scatter"), SCENE_KIND_CLASS_SCATTER);
+        assert_eq!(
+            scene_kind_class("line"),
+            SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(scene_kind_class(""), 0);
+        assert_eq!(scene_kind_class("mark"), 0);
+        assert_eq!(scene_kind_class("SCATTER"), 0);
+        assert_eq!(scene_kind_class("BAR"), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_pitch_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_pitch_admit(1.0, 2.0), 1);
+        assert_eq!(scene_hexbin_pitch_admit(0.0, 1.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(1.0, 0.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(-1.0, 1.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(1.0, f64::NAN), 0);
+        assert_eq!(scene_hexbin_pitch_admit(f64::INFINITY, 1.0), 0);
+    }
+
+    #[test]
+    fn scene_heatmap_extent_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 0.0, 1.0), 1);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 0.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 0.0, 0.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(1.0, 0.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 1.0, 0.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(f64::NAN, 1.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, f64::INFINITY, 0.0, 1.0), 0);
+    }
+
+    #[test]
+    fn scene_heatmap_colormap_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 0), 0);
+        assert_eq!(scene_heatmap_colormap_admit(1, 0, 0, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 1, 0, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 1, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 1), 1);
+        assert_eq!(scene_heatmap_colormap_admit(1, 1, 1, 1), 1);
+    }
+
+    #[test]
+    fn scene_xyta_colormap_pack_matches_host_table() {
+        let (flags, cmap, stops) = scene_xyta_colormap_pack(1, b"viridis", &[]);
+        assert_eq!(flags, XYTA_HAS_NAMED_CMAP);
+        assert_eq!(cmap, b"viridis");
+        assert!(stops.is_empty());
+
+        let (flags, _cmap, stops) = scene_xyta_colormap_pack(2, &[], &[255, 0, 0, 0, 255, 0]);
+        assert_eq!(flags, XYTA_HAS_STOPS);
+        assert_eq!(stops, vec![255, 0, 0, 0, 255, 0]);
+
+        let (flags, _cmap, stops) = scene_xyta_colormap_pack(2, &[], &[255, 0]);
+        assert_eq!(flags, XYTA_HAS_STOPS);
+        assert!(stops.is_empty());
+
+        let (flags, cmap, stops) = scene_xyta_colormap_pack(0, b"ignored", &[1, 2, 3]);
+        assert_eq!(flags, 0);
+        assert!(cmap.is_empty());
+        assert!(stops.is_empty());
+    }
+
+    #[test]
+    fn scene_xyhf_colormap_pack_matches_host_table() {
+        let (flags, cmap, stops) = scene_xyhf_colormap_pack(1, b"viridis", &[]);
+        assert_eq!(flags, XYHF_HAS_NAMED_CMAP);
+        assert_eq!(cmap, b"viridis");
+        assert!(stops.is_empty());
+
+        let (flags, _cmap, stops) = scene_xyhf_colormap_pack(2, &[], &[255, 0, 0, 0, 255, 0]);
+        assert_eq!(flags, XYHF_HAS_STOPS);
+        assert_eq!(stops, vec![255, 0, 0, 0, 255, 0]);
+
+        let (flags, _cmap, stops) = scene_xyhf_colormap_pack(2, &[], &[255, 0]);
+        assert_eq!(flags, XYHF_HAS_STOPS);
+        assert!(stops.is_empty());
+    }
+
+    #[test]
+    fn scene_heatmap_shape_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_shape_admit(1.0, 2.0), 1);
+        assert_eq!(scene_heatmap_shape_admit(0.0, 2.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.0, 0.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.5, 2.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.0, f64::NAN), 0);
+        assert_eq!(scene_heatmap_shape_admit(f64::INFINITY, 2.0), 0);
+    }
+
+    #[test]
+    fn scene_scatter_paint_channel_admit_matches_host_table() {
+        for name in [
+            "color",
+            "stroke",
+            "stroke_width",
+            "opacity",
+            "artist_alpha",
+        ] {
+            assert_eq!(scene_scatter_paint_channel_admit(name), 1, "{name}");
+        }
+        assert_eq!(scene_scatter_paint_channel_admit(""), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("STROKE"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit(" color"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("size"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("symbol"), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_colormap_plane_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_colormap_plane_admit("continuous", 1), 1);
+        assert_eq!(scene_hexbin_colormap_plane_admit("continuous", 0), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("CONTINUOUS", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("categorical", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("direct_rgba", 1), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_rgba_plane_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_rgba_plane_admit("categorical"), 1);
+        assert_eq!(scene_hexbin_rgba_plane_admit("direct_rgba"), 1);
+        assert_eq!(scene_hexbin_rgba_plane_admit(""), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("CATEGORICAL"), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("continuous"), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("direct-rgba"), 0);
+    }
+
+    #[test]
+    fn scene_mesh_paint_plane_admit_matches_host_table() {
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 2), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 1, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 0), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("TRIANGLE_MESH", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_item_apply_opacity_matches_host_table() {
+        let packed = [10u8, 20, 30, 40, 1, 2, 3, 80];
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(&packed, 2, None, None, &mut out));
+        assert_eq!(out, packed);
+
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &packed,
+            2,
+            Some(&[-1.0, 0.5]),
+            None,
+            &mut out,
+        ));
+        assert_eq!(&out[..4], &[10, 20, 30, 40]);
+        assert_eq!(&out[4..], &[1, 2, 3, 128]);
+
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &packed,
+            2,
+            None,
+            Some(&[0.5, 0.25]),
+            &mut out,
+        ));
+        assert_eq!(out[3], 20);
+        assert_eq!(out[7], 20);
+
+        let mut out = [0u8; 8];
+        assert!(!scene_item_apply_opacity(
+            &packed,
+            2,
+            Some(&[0.5]),
+            None,
+            &mut out,
+        ));
+
+        let empty_in: [u8; 0] = [];
+        let mut empty_out: [u8; 0] = [];
+        assert!(scene_item_apply_opacity(
+            &empty_in,
+            0,
+            None,
+            None,
+            &mut empty_out,
+        ));
+    }
+
+    #[test]
+    fn scene_item_widths_admit_matches_host_table() {
+        assert_eq!(scene_item_widths_admit(Some(&[0.0, 1.5]), 2, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(Some(&[]), 0, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(Some(&[0.0]), 2, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(Some(&[-0.1]), 1, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(Some(&[f64::NAN]), 1, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(None, 3, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(None, 3, 2.5), 1);
+        assert_eq!(scene_item_widths_admit(None, 3, -1.0), 0);
+        assert_eq!(scene_item_widths_admit(None, 3, f64::INFINITY), 0);
+    }
+
+    #[test]
+    fn scene_item_fill_t_matches_host_table() {
+        let mut out = [0.0; 2];
+        assert!(scene_item_fill_t(&[0.0, 10.0], 2, Some((0.0, 10.0)), &mut out));
+        assert_eq!(out, [0.0, 1.0]);
+        assert!(scene_item_fill_t(&[5.0, 5.0], 2, None, &mut out));
+        assert_eq!(out, [0.0, 0.0]);
+        assert!(!scene_item_fill_t(&[f64::NAN], 1, None, &mut [0.0]));
+        assert!(!scene_item_fill_t(&[0.0], 2, None, &mut [0.0, 0.0]));
+        let mut one = [0.0];
+        assert!(scene_item_fill_t(&[-1.0], 1, Some((0.0, 1.0)), &mut one));
+        assert_eq!(one[0], 0.0);
+        assert!(scene_item_fill_t(&[2.0], 1, Some((0.0, 1.0)), &mut one));
+        assert_eq!(one[0], 1.0);
+        let mut empty: [f64; 0] = [];
+        assert!(scene_item_fill_t(&[], 0, Some((0.0, 1.0)), &mut empty));
+        assert!(!scene_item_fill_t(&[], 0, None, &mut empty));
+    }
+
+    #[test]
+    fn scene_finite_all_matches_host_table() {
+        assert_eq!(scene_finite_all(&[]), 1);
+        assert_eq!(scene_finite_all(&[0.0, 1.5]), 1);
+        assert_eq!(scene_finite_all(&[f64::NAN]), 0);
+        assert_eq!(scene_finite_all(&[f64::INFINITY]), 0);
+        assert_eq!(scene_finite_all(&[f64::NEG_INFINITY]), 0);
+        assert_eq!(scene_finite_all(&[0.0, f64::NAN]), 0);
+    }
+
+    #[test]
+    fn scene_gradient_solid_css_matches_host_table() {
+        let mut out = [0u8; 16];
+        let n = scene_gradient_solid_css(&[], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
+        let n = scene_gradient_solid_css(&[1, 2, 3, 0, 10, 20, 30, 255], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(10,20,30)");
+        let n = scene_gradient_solid_css(&[255, 0, 0, 1], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(255,0,0)");
+        let n = scene_gradient_solid_css(&[1, 2, 3, 0], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
+        assert_eq!(scene_gradient_solid_css(&[1, 2, 3], &mut out), 0);
+        assert_eq!(scene_gradient_solid_css(&[1, 2, 3, 4], &mut [0u8; 4]), 0);
+    }
+
+    #[test]
+    fn scene_gradient_spec_pack_matches_host_table() {
+        let mut out = vec![0u8; 64];
+        let css = b"#7c3aed#34d399";
+        let lens = [7u32, 7];
+        let t = [0.0f64, 1.0];
+        let n = scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out);
+        assert_eq!(n, 4 + 2 * 10 + 14);
+        assert_eq!(&out[..4], &[0, 2, 2, 0]);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out[..3]), -1);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, b"x", &lens, &mut out), 0);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &[0.0], css, &[], &mut out), 0);
+        let n = scene_gradient_spec_pack("", "", &[], &[], &[], &mut out);
+        assert_eq!(n, 4);
+        assert_eq!(&out[..4], &[255, 255, 0, 0]);
+    }
+
+    #[test]
+    fn scene_marker_blob_pack_matches_host_table() {
+        let diamond = [
+            0.0, 0.5, 0.5, 0.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.5,
+        ];
+        let lens = [10u32];
+        let mut out = vec![0u8; 128];
+        let n = scene_marker_blob_pack(1, &diamond, &lens, &mut out);
+        assert_eq!(n, 8 + 4 + 80);
+        assert_eq!(&out[..8], &[1, 0, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
+        assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
+        assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_paint_presence_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_paint_presence_pack(0, 0, 1, 1).unwrap(),
+            XYTC_HAS_STROKE | XYTC_HAS_LINE_COLOR
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 1, 0, 0).unwrap(),
+            XYTC_HAS_FILL
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 2, 0, 0).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 3, 0, 0).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_FILL_DICT
+        );
+        assert!(scene_xytc_paint_presence_pack(1, 0, 0, 0).is_none());
+        assert!(scene_xytc_paint_presence_pack(0, 1, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_meta_flags_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_meta_flags_pack(1, 1, "scatter", 1, 0, 0, 0, 0).unwrap(),
+            XYTC_HAS_NAME | XYTC_SHOW_LEGEND | XYTC_USE_DENSITY
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "triangle_mesh", 0, 1, 0, 0, 0).unwrap(),
+            XYTC_JOINED_FILL
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 1, 1, 0).unwrap(),
+            XYTC_HAS_MARKER
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 0, 0, 1).unwrap(),
+            XYTC_HAS_GLYPH
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 1, 0, 1).unwrap(),
+            0
+        );
+        assert!(scene_xytc_meta_flags_pack(2, 0, "scatter", 0, 0, 0, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_color2_flags_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_FAIL, 0, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, XYTC_HAS_FILL, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, 0, 1).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, 0, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_ABSENT, 0, 0), Some(0));
+        assert!(scene_xytc_color2_flags_pack(5, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_symbol_int_pack_matches_host_table() {
+        assert_eq!(scene_xytc_symbol_int_pack(0), Some(0));
+        assert_eq!(scene_xytc_symbol_int_pack(1), Some(XYTC_SYMBOL_INT));
+        assert!(scene_xytc_symbol_int_pack(2).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_dash_pattern_pack_matches_host_table() {
+        assert_eq!(scene_xytc_dash_pattern_pack(0), Some(0));
+        assert_eq!(scene_xytc_dash_pattern_pack(1), Some(1 << 17));
+        assert!(scene_xytc_dash_pattern_pack(2).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_opacity_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_opacity_pack(0, 0, 0.5, 0.6, 0.7).unwrap(),
+            (1.0, 1.0, 1.0)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(1, 0, 0.5, 0.6, 0.7).unwrap(),
+            (0.5, 0.6, 1.0)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(0, 1, 0.5, 0.6, 0.7).unwrap(),
+            (1.0, 1.0, 0.7)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(1, 1, 0.5, 0.6, 0.7).unwrap(),
+            (0.5, 0.6, 0.7)
+        );
+        assert!(scene_xytc_opacity_pack(2, 0, 1.0, 1.0, 1.0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_hex_pitch_pack_matches_host_table() {
+        let nan = f64::NAN;
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(0, 1, 1, 1.0, 2.0).unwrap();
+        assert_eq!(flags, 0);
+        assert!(dx.is_nan() && dy.is_nan());
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(1, 0, 0, nan, nan).unwrap();
+        assert_eq!(flags, XYTC_HAS_HEX);
+        assert!(dx.is_nan() && dy.is_nan());
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(1, 1, 1, 1.0, 2.0).unwrap();
+        assert_eq!(flags, XYTC_HAS_HEX);
+        assert_eq!((dx, dy), (1.0, 2.0));
+        assert!(scene_xytc_hex_pitch_pack(2, 0, 0, nan, nan).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_stroke_perimeter_pack_matches_host_table() {
+        assert_eq!(scene_xytc_stroke_perimeter_pack(0, 1, 1, 1), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 0, 0, 0), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 0, 0), Some(1 << 10));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 1, 0), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 1, 1), Some(1 << 9));
+        assert!(scene_xytc_stroke_perimeter_pack(2, 0, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_numeric_style_pack_matches_host_table() {
+        let nan = f64::NAN;
+        let packed = scene_xytc_numeric_style_pack(0, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0)
+            .unwrap();
+        assert_eq!(packed.flags, 0);
+        assert!(packed.size.is_nan());
+        assert!(packed.size_ch_value.is_nan());
+        let packed = scene_xytc_numeric_style_pack(1, 1, 1, 1, 1, 1, 4.0, 2.5, 1.0, 2.0, 3.0)
+            .unwrap();
+        assert_eq!(
+            packed.flags,
+            XYTC_HAS_STROKE_WIDTH
+                | XYTC_HAS_WIDTH
+                | XYTC_HAS_LINE_WIDTH
+                | XYTC_HAS_SIZE
+                | XYTC_HAS_SIZE_CH
+        );
+        assert_eq!(packed.size, 4.0);
+        assert_eq!(packed.size_ch_value, 2.5);
+        assert_eq!(packed.stroke_width, 1.0);
+        assert_eq!(packed.width, 2.0);
+        assert_eq!(packed.line_width, 3.0);
+        let packed = scene_xytc_numeric_style_pack(1, 1, 0, 0, 0, 0, 5.0, nan, 0.0, 0.0, 0.0)
+            .unwrap();
+        assert_eq!(packed.flags, XYTC_HAS_SIZE | XYTC_HAS_SIZE_CH);
+        assert!(packed.size_ch_value.is_nan());
+        assert!(scene_xytc_numeric_style_pack(2, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_color_channel_pack_matches_host_table() {
+        assert_eq!(scene_xytc_color_channel_pack(0, 0), Some(0));
+        assert_eq!(scene_xytc_color_channel_pack(1, 0), Some(1 << 11));
+        assert_eq!(
+            scene_xytc_color_channel_pack(1, 1),
+            Some((1 << 11) | (1 << 12))
+        );
+        assert!(scene_xytc_color_channel_pack(2, 0).is_none());
+        assert!(scene_xytc_color_channel_pack(1, 2).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_radius_pack_matches_host_table() {
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("bar", 2, 1.0, 2.0, 0.0).unwrap();
+        assert_eq!(flags, XYTC_HAS_CORNER_RADIUS);
+        assert_eq!((tip, base, gap), (1.0, 2.0, 0.0));
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("bar", 1, 3.0, 0.0, 0.5).unwrap();
+        assert_eq!(flags, XYTC_HAS_CORNER_RADIUS | XYTC_HAS_WEDGE_GAP);
+        assert_eq!((tip, base, gap), (3.0, 3.0, 0.5));
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("scatter", 1, 3.0, 0.0, 0.5).unwrap();
+        assert_eq!(flags, 0);
+        assert_eq!((tip, base, gap), (0.0, 0.0, 0.0));
+        assert!(scene_xytc_radius_pack("bar", 3, 0.0, 0.0, 0.0).is_none());
+    }
+
+    #[test]
+    fn scene_arrays_equal_matches_host_table() {
+        assert_eq!(scene_arrays_equal(&[], &[]), 1);
+        assert_eq!(scene_arrays_equal(&[1.0, 2.0], &[1.0, 2.0]), 1);
+        assert_eq!(scene_arrays_equal(&[1.0], &[1.0, 2.0]), 0);
+        assert_eq!(scene_arrays_equal(&[1.0], &[2.0]), 0);
+        assert_eq!(scene_arrays_equal(&[f64::NAN], &[f64::NAN]), 0);
+        assert_eq!(scene_arrays_equal(&[0.0], &[-0.0]), 1);
+    }
+
+    #[test]
+    fn scene_constant_color_admit_matches_host_table() {
+        assert_eq!(scene_constant_color_admit(0, 0, 0, 0), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 1, 0, 0), SCENE_CONSTANT_COLOR_CONSTANT);
+        assert_eq!(scene_constant_color_admit(1, 0, 1, 0), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 0, 0, 1), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 0, 0, 0), SCENE_CONSTANT_COLOR_FAIL);
+        assert_eq!(scene_constant_color_admit(1, 1, 1, 1), SCENE_CONSTANT_COLOR_CONSTANT);
+    }
+
+    #[test]
+    fn scene_hidden_or_per_item_admit_matches_host_table() {
+        assert_eq!(scene_hidden_or_per_item_admit(0, 0, 0), 0);
+        assert_eq!(scene_hidden_or_per_item_admit(1, 0, 0), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 1, 0), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 1, 1), 0);
+        assert_eq!(scene_hidden_or_per_item_admit(1, 1, 1), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_channel_constant_css_matches_host_table() {
+        let mut out = [0u8; 8];
+        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut out), 3);
+        assert_eq!(&out[..3], b"red");
+        assert_eq!(scene_channel_constant_css("constant", 1, "", &mut []), 0);
+        assert_eq!(scene_channel_constant_css("constant", 0, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("direct_rgba", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("CONSTANT", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut [0u8; 2]), -2);
+    }
+
+    #[test]
     fn is_sorted_matches_numpy_diff_predicate() {
         assert!(is_sorted_f64(&[]));
         assert!(is_sorted_f64(&[3.0]));
@@ -8049,5 +11288,17 @@ mod fuzz {
         assert!(!is_sorted_f64(&[1.0, 2.0, f64::NAN]));
         assert!(!is_sorted_f64(&[f64::NAN, 1.0, 2.0]));
         assert!(!is_sorted_f64(&[0.0, 1.0, 5.0, 4.0, 9.0]));
+    }
+
+    #[test]
+    fn argsort_stable_places_nans_last_and_keeps_ties() {
+        assert_eq!(argsort_stable_f64(&[]), Some(Vec::new()));
+        assert_eq!(argsort_stable_f64(&[3.0]), Some(vec![0]));
+        let order = argsort_stable_f64(&[3.0, 1.0, f64::NAN, 1.0, 2.0]).unwrap();
+        assert_eq!(order, vec![1, 3, 4, 0, 2]);
+        let signed_zero = argsort_stable_f64(&[-0.0, 0.0, 1.0]).unwrap();
+        assert_eq!(signed_zero, vec![0, 1, 2]);
+        let nans = argsort_stable_f64(&[f64::NAN, 0.0, f64::NAN]).unwrap();
+        assert_eq!(nans, vec![1, 0, 2]);
     }
 }

@@ -3,8 +3,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneSupportReason, sceneVersion } from "../src/index.js";
-import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, polarWedgePoints, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneChannelConstantCss, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
+import { packFigureXyTa, packFigureXyTc } from "../src/scene.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
@@ -34,26 +35,517 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   }
 
   const polar = new Figure({ coords: "polar" }); polar.line([0, 1], [0, 1]);
-  assert.throws(() => polar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const polarScene = polar.toScene();
+  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 31);
+  const polarSvg = sceneSvg(polarScene);
+  assert.ok(polarSvg.includes('data-xy-grid="ring"') || polarSvg.includes("<circle"));
+  const polarBar = new Figure({ coords: "polar" }); polarBar.bar([0, 1], [0.5, 0.8]);
+  const polarBarScene = polarBar.toScene();
+  assert.equal(new DataView(polarBarScene.buffer, polarBarScene.byteOffset).getUint32(4, true), 31);
+  const polarHeat = new Figure({ coords: "polar" }); polarHeat.heatmap([[1, 2], [3, 4]]);
+  const polarHeatScene = polarHeat.toScene();
+  assert.ok(sceneSvg(polarHeatScene).includes("<image"));
+  const polarPainted = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarPainted.setAxisDomain("x", [0, 2]);
+  polarPainted.setAxisDomain("y", [0, 2]);
+  polarPainted.heatmap([[1, 2], [3, 4]], { colormap: "viridis" });
+  const polarPaintedSvg = sceneSvg(polarPainted.toScene());
+  assert.ok(polarPaintedSvg.includes("<image"));
+  assert.ok(polarPaintedSvg.includes('data-xy-polar-heatmap="true"'));
+  assert.equal(sceneExportSupportReason(polarPainted), null);
+  const polarContour = new Figure({ coords: "polar" });
+  polarContour.contour([[1, 2], [3, 4]], { levels: 2, color: "#3987e5" });
+  const polarContourScene = polarContour.toScene();
+  assert.equal(new DataView(polarContourScene.buffer, polarContourScene.byteOffset).getUint32(4, true), 31);
+  assert.ok(sceneSvg(polarContourScene).includes("<polyline") || sceneSvg(polarContourScene).includes("<path"));
+  const polarHex = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarHex.setAxisDomain("x", [0, Math.PI * 2]);
+  polarHex.setAxisDomain("y", [0, 4]);
+  polarHex.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+    gridsize: [4, 4],
+    range: [[0, Math.PI * 2], [0, 4]],
+    color: "#3987e5",
+    mincnt: 1,
+  });
+  delete polarHex.traces[0].style.dx;
+  delete polarHex.traces[0].style.dy;
+  const polarHexSvg = sceneSvg(polarHex.toScene());
+  assert.equal((polarHexSvg.match(/<path d="M /g) ?? []).length, polarHex.traces[0].x.length);
+  assert.equal(sceneExportSupportReason(polarHex), null);
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
-  customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
+  customFont.chrome_styles = { title: { "font-family": "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
-  const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.className = "browser-only";
+  const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.class_name = "browser-only";
   assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+  const defaultFont = new Figure({ width: 240, height: 160 });
+  defaultFont.setAxisDomain("x", [0, 1]);
+  defaultFont.setAxisDomain("y", [0, 1]);
+  defaultFont.line([0, 1], [0, 1]);
+  assert.equal(sceneExportSupportReason(defaultFont), null);
+  const defaultScene = defaultFont.toScene();
+  assert.ok(sceneSvg(defaultScene).startsWith("<svg"));
+  const defaultPng = sceneStaticExport(defaultScene, "png", { scale: 1, width: 240, height: 160 });
+  assert.ok(defaultPng[0] === 0x89 && defaultPng[1] === 0x50 && defaultPng[2] === 0x4e && defaultPng[3] === 0x47);
   const gradient = new Figure(); gradient.bar([0], [1]); gradient.traces[0].style.fill = { type: "linear", colors: ["#000", "#fff"] };
   assert.throws(() => gradient.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
   for (const color of [
     { mode: "continuous", values: new Float64Array([0, 1]) },
-    { mode: "direct_rgba", rgba: new Uint8Array(8) },
-    { mode: "constant" },
+    { mode: "direct_rgba", rgba: new Uint8Array([239, 68, 68, 255, 34, 197, 94, 255]) },
   ]) {
     const colorChannel = new Figure(); colorChannel.scatter([0, 1], [0, 1]);
     colorChannel.traces[0].color = color;
-    assert.throws(() => colorChannel.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+    colorChannel.traces[0].color_ch = color;
+    colorChannel.traces[0].colorChannel = color;
+    assert.doesNotThrow(() => colorChannel.toScene());
+    assert.equal(sceneExportSupportReason(colorChannel), null);
   }
+  const incomplete = new Figure(); incomplete.scatter([0, 1], [0, 1]);
+  incomplete.traces[0].color_ch = { mode: "constant" };
+  assert.throws(() => incomplete.toScene(), /hidden or per-item|data-driven|GRADIENT/);
+  const colorOnly = new Figure(); colorOnly.scatter([0, 1], [0, 1]);
+  colorOnly.traces[0].color = { mode: "constant" };
+  assert.doesNotThrow(() => colorOnly.toScene());
+  const stringCh = new Figure(); stringCh.line([0, 1], [0, 1]);
+  stringCh.traces[0].color_ch = "#112233";
+  const packed = stringCh.toScene();
+  assert.equal(Buffer.from(packed).indexOf("#112233"), -1);
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
+  const collision = new Figure(); collision.line([0, 1], [0, 1]);
+  collision.setAxis("x", { collision: "hide" });
+  assert.doesNotThrow(() => collision.toScene());
+  const ticks = Array.from({ length: 21 }, (_, index) => index / 20);
+  const preserve = new Figure({ width: 200, height: 160 });
+  preserve.line([0, 1], [0, 1]);
+  preserve.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "preserve" });
+  preserve.setAxis("y", { domain: [0, 1] });
+  const hidden = new Figure({ width: 200, height: 160 });
+  hidden.line([0, 1], [0, 1]);
+  hidden.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "hide" });
+  hidden.setAxis("y", { domain: [0, 1] });
+  assert.ok(sceneSvg(hidden.toScene()).split("<text").length < sceneSvg(preserve.toScene()).split("<text").length);
+  const polarHide = new Figure({ coords: "polar" });
+  polarHide.line([0, 1], [0, 1]);
+  polarHide.setAxis("x", { tick_label_strategy: "hide" });
+  assert.throws(() => polarHide.toScene(), /tick formatting/);
+  const polarOff = new Figure({ coords: "polar", width: 320, height: 320 });
+  polarOff.line([0, 1], [0, 1]);
+  polarOff.setAxis("x", { tick_label_strategy: "off" });
+  assert.doesNotThrow(() => polarOff.toScene());
+  assert.ok(!sceneSvg(polarOff.toScene()).includes('data-xy-tick="theta"'));
+  const extraAxis = new Figure(); extraAxis.line([0, 1], [0, 1]);
+  extraAxis.axis_options = { x: extraAxis.xAxis ?? {}, y: extraAxis.yAxis ?? {}, z: { label: "z" } };
+  assert.throws(() => extraAxis.toScene(), /exactly x\/y/);
+});
+
+test("packChromeAxis skips null unsupported keys unlike Python set-difference", () => {
+  // Python `_pack_chrome_axis` uses set(authored) so None-valued keys still reject.
+  // Node skips null-valued keys. Recorded chrome-null-key stay-host.
+  const ok = new Figure();
+  ok.line([0, 1], [0, 1]);
+  ok.setAxis("x", { style: { not_a_key: null } });
+  assert.doesNotThrow(() => ok.toScene());
+  const bad = new Figure();
+  bad.line([0, 1], [0, 1]);
+  bad.setAxis("x", { style: { not_a_key: "red" } });
+  assert.throws(() => bad.toScene(), /does not yet encode/);
+});
+
+test("Node Scene v30 compiles constant dash polylines and keeps authored markers fail-closed", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.line([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444", width: 2, dash: "dashed" } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYDS")));
+  assert.match(sceneSvg(scene), /stroke-dasharray="6,4"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const rule = new Figure({ width: 240, height: 160 });
+  rule.setAxisDomain("x", [0, 2]);
+  rule.setAxisDomain("y", [0, 2]);
+  rule.line([0, 1], [0, 1]);
+  rule.annotations = [{ kind: "rule", axis: "x", value: 1, style: { dash: "2,2" } }];
+  assert.match(sceneSvg(rule.toScene()), /stroke-dasharray="2,2"/);
+  const marked = new Figure({ width: 240, height: 160 });
+  marked.setAxisDomain("x", [0, 1]);
+  marked.setAxisDomain("y", [0, 1]);
+  marked.line([0, 1], [0, 1], { style: { dash: "dashed", marker_path: "M0 0" } });
+  assert.throws(() => marked.toScene(), /authored markers/);
+});
+
+test("Node product encode owns figure-compile support from packed XYFS", () => {
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.stem([0], [1]);
+  assert.throws(() => polar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#3987e5", size: 8 },
+  });
+  assert.equal(Buffer.from(figure.toScene().subarray(0, 4)).toString(), "XYGS");
+});
+
+test("Node public static export matches explicit Scene consumers", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#3987e5", size: 8 },
+  });
+  const scene = figure.toScene();
+  const svg = sceneStaticExport(scene, "svg", { width: 240, height: 160 });
+  assert.equal(Buffer.from(svg).toString("utf8"), sceneSvg(scene));
+  const pdf = sceneStaticExport(scene, "pdf", { width: 240, height: 160 });
+  assert.ok(Buffer.from(pdf).subarray(0, 5).equals(Buffer.from("%PDF-")));
+  const png = sceneStaticExport(scene, "png", { scale: 1, width: 240, height: 160 });
+  assert.ok(png[0] === 0x89 && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47);
+});
+
+test("Node Scene compiles constant marker_path contours", () => {
+  const diamond = { contours: [[-0.5, 0, 0, 0.5, 0.5, 0, 0, -0.5]], filled: true };
+  const plus = { contours: [[-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]], filled: false };
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: diamond },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(!Buffer.from(scene).includes(Buffer.from("XYMP")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<path d="M /);
+  assert.match(svg, / Z"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const stroke = new Figure({ width: 240, height: 160 });
+  stroke.setAxisDomain("x", [0, 2]);
+  stroke.setAxisDomain("y", [0, 2]);
+  stroke.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: plus },
+  });
+  const strokeSvg = sceneSvg(stroke.toScene());
+  assert.equal((strokeSvg.match(/<polyline /g) ?? []).length, 2);
+  assert.match(strokeSvg, /stroke-width="1"/);
+  assert.equal(sceneExportSupportReason(stroke), null);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.scatter([0], [0.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: diamond },
+  });
+  assert.match(sceneSvg(polar.toScene()), /<path d="M /);
+    assert.equal(sceneExportSupportReason(polar), null);
+  const invalid = new Figure();
+  invalid.scatter([1], [1], { _composed: true, style: { marker_path: "M0 0" } });
+  assert.throws(() => invalid.toScene(), /authored markers/);
+});
+
+test("Node Scene compiles constant marker_glyph text markers", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "A" },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYMG")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /font-family="DejaVu Sans"/);
+  assert.match(svg, /dominant-baseline="central"/);
+  assert.match(svg, />A<\/text>/);
+  assert.doesNotMatch(svg, /<circle /);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.scatter([0], [0.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "A" },
+  });
+  assert.match(sceneSvg(polar.toScene()), />A<\/text>/);
+  assert.equal(sceneExportSupportReason(polar), null);
+  const multi = new Figure({ width: 240, height: 160 });
+  multi.setAxisDomain("x", [0, 2]);
+  multi.setAxisDomain("y", [0, 2]);
+  multi.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "AB" },
+  });
+  assert.match(sceneSvg(multi.toScene()), />AB<\/text>/);
+  assert.equal(sceneExportSupportReason(multi), null);
+  const invalid = new Figure();
+  invalid.scatter([1], [1], { _composed: true, style: { marker_glyph: "A".repeat(65) } });
+  assert.throws(() => invalid.toScene(), /authored markers/);
+});
+
+test("Node Scene compiles constant linear-gradient fills and keeps var() fail-closed", () => {
+  const fill = "linear-gradient(to bottom, #000000, #ffffff)";
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 3]);
+  figure.bar([0, 1], [1, 2], { style: { fill } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYGR")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<linearGradient id="xy-scene-g0"/);
+  assert.match(svg, /fill="url\(#xy-scene-g0\)"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const area = new Figure({ width: 240, height: 160 });
+  area.setAxisDomain("x", [0, 2]);
+  area.setAxisDomain("y", [0, 2]);
+  area.area([0, 1, 2], [0.5, 1.5, 0.75], { style: { fill } });
+  assert.match(sceneSvg(area.toScene()), /<linearGradient id="xy-scene-g0"/);
+  assert.equal(sceneExportSupportReason(area), null);
+  const transparent = new Figure({ width: 240, height: 160 });
+  transparent.setAxisDomain("x", [0, 2]);
+  transparent.setAxisDomain("y", [0, 3]);
+  transparent.bar([0, 1], [1, 2], { style: { fill: "linear-gradient(#ff0000, transparent)" } });
+  const transparentSvg = sceneSvg(transparent.toScene());
+  assert.match(transparentSvg, /stop-color="rgb\(255,0,0\)" stop-opacity="0"/);
+  assert.doesNotMatch(transparentSvg, /stop-color="rgb\(0,0,0\)" stop-opacity="0"/);
+  const plot = new Figure({ width: 240, height: 160 });
+  plot.setAxisDomain("x", [0, 2]);
+  plot.setAxisDomain("y", [0, 3]);
+  plot.bar([0, 1], [1, 2], {
+    style: { fill: { gradient: "linear-gradient(to right, #000000, #ffffff)", space: "plot" } },
+  });
+  assert.match(sceneSvg(plot.toScene()), /gradientUnits="userSpaceOnUse"/);
+  const unresolved = new Figure({ width: 240, height: 160 });
+  unresolved.setAxisDomain("x", [0, 1]);
+  unresolved.setAxisDomain("y", [0, 1]);
+  unresolved.area([0, 1], [0.2, 0.8], { style: { fill: "linear-gradient(to bottom, var(--a), #ffffff)" } });
+  assert.throws(() => unresolved.toScene(), /solid literal paints|gradient fills|non-CSS/);
+});
+
+test("Node Scene v30 compiles flattened smooth polylines and polar smooth as chords", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.line([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444", width: 2, curve: "smooth" } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  const svg = sceneSvg(scene);
+  const vertexCount = (document) => Math.max(
+    ...[...document.matchAll(/<polyline points="([^"]+)"/g)].map((match) => match[1].split(/\s+/).length),
+  );
+  const linear = new Figure({ width: 240, height: 160 });
+  linear.setAxisDomain("x", [0, 2]);
+  linear.setAxisDomain("y", [0, 2]);
+  linear.line([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444", width: 2 } });
+  assert.equal(vertexCount(svg), 1 + (3 - 1) * 16);
+  assert.equal(vertexCount(sceneSvg(linear.toScene())), 3);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const combined = new Figure({ width: 240, height: 160 });
+  combined.setAxisDomain("x", [0, 2]);
+  combined.setAxisDomain("y", [0, 2]);
+  combined.line([0, 1, 2], [0, 1, 0.5], {
+    style: { color: "#ef4444", width: 2, curve: "smooth", dash: "dashed", linecap: "butt" },
+  });
+  const combinedScene = combined.toScene();
+  assert.ok(Buffer.from(combinedScene).includes(Buffer.from("XYDS")));
+  assert.ok(Buffer.from(combinedScene).includes(Buffer.from("XYLC")));
+  const combinedSvg = sceneSvg(combinedScene);
+  assert.match(combinedSvg, /stroke-dasharray="6,4"/);
+  assert.match(combinedSvg, /stroke-linecap="butt"/);
+  assert.equal(vertexCount(combinedSvg), 1 + (3 - 1) * 16);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { curve: "smooth", color: "#ef4444" } });
+  const polarLinear = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarLinear.setAxisDomain("x", [0, Math.PI * 2]);
+  polarLinear.setAxisDomain("y", [0, 1]);
+  polarLinear.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { color: "#ef4444" } });
+  assert.equal(sceneSvg(polar.toScene()), sceneSvg(polarLinear.toScene()));
+  assert.equal(sceneExportSupportReason(polar), null);
+  const stepped = new Figure({ width: 400, height: 400, coords: "polar" });
+  stepped.setAxisDomain("x", [0, Math.PI * 2]);
+  stepped.setAxisDomain("y", [0, 1]);
+  stepped.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { color: "#ef4444", step: "mid" } });
+  const steppedSmooth = new Figure({ width: 400, height: 400, coords: "polar" });
+  steppedSmooth.setAxisDomain("x", [0, Math.PI * 2]);
+  steppedSmooth.setAxisDomain("y", [0, 1]);
+  steppedSmooth.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], {
+    style: { curve: "smooth", color: "#ef4444", step: "mid" },
+  });
+  assert.equal(sceneSvg(steppedSmooth.toScene()), sceneSvg(stepped.toScene()));
+  assert.notEqual(sceneSvg(steppedSmooth.toScene()), sceneSvg(polar.toScene()));
+  assert.equal(sceneExportSupportReason(steppedSmooth), null);
+  const cartesianStep = new Figure({ width: 240, height: 160 });
+  cartesianStep.setAxisDomain("x", [0, 2]);
+  cartesianStep.setAxisDomain("y", [0, 2]);
+  cartesianStep.line([0, 1, 2], [0, 1, 0.5], { style: { step: "mid" } });
+  const cartesianBoth = new Figure({ width: 240, height: 160 });
+  cartesianBoth.setAxisDomain("x", [0, 2]);
+  cartesianBoth.setAxisDomain("y", [0, 2]);
+  cartesianBoth.line([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth", step: "mid" } });
+  assert.equal(sceneSvg(cartesianBoth.toScene()), sceneSvg(cartesianStep.toScene()));
+  assert.equal(sceneExportSupportReason(cartesianBoth), null);
+  const cartesianAreaBoth = new Figure({ width: 240, height: 160 });
+  cartesianAreaBoth.setAxisDomain("x", [0, 2]);
+  cartesianAreaBoth.setAxisDomain("y", [0, 2]);
+  cartesianAreaBoth.area([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth", step: "mid" } });
+  const cartesianAreaStep = new Figure({ width: 240, height: 160 });
+  cartesianAreaStep.setAxisDomain("x", [0, 2]);
+  cartesianAreaStep.setAxisDomain("y", [0, 2]);
+  cartesianAreaStep.area([0, 1, 2], [0, 1, 0.5], { style: { step: "mid" } });
+  assert.equal(sceneSvg(cartesianAreaBoth.toScene()), sceneSvg(cartesianAreaStep.toScene()));
+  assert.equal(sceneExportSupportReason(cartesianAreaBoth), null);
+  const cartesianBandBoth = new Figure({ width: 240, height: 160 });
+  cartesianBandBoth.setAxisDomain("x", [0, 2]);
+  cartesianBandBoth.setAxisDomain("y", [0, 2]);
+  cartesianBandBoth.errorBand([0, 1, 2], [0, 0.5, 0.2], [0.5, 1, 0.8], { style: { curve: "smooth", step: "mid" } });
+  const cartesianBandStep = new Figure({ width: 240, height: 160 });
+  cartesianBandStep.setAxisDomain("x", [0, 2]);
+  cartesianBandStep.setAxisDomain("y", [0, 2]);
+  cartesianBandStep.errorBand([0, 1, 2], [0, 0.5, 0.2], [0.5, 1, 0.8], { style: { step: "mid" } });
+  assert.equal(sceneSvg(cartesianBandBoth.toScene()), sceneSvg(cartesianBandStep.toScene()));
+  assert.equal(sceneExportSupportReason(cartesianBandBoth), null);
+});
+
+test("Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.area([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444", curve: "smooth" } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  const svg = sceneSvg(scene);
+  const closedPointCount = (document) => Math.max(
+    ...[...document.matchAll(/<path d="([^"]+)"/g)]
+      .filter((match) => match[1].includes("Z"))
+      .map((match) => match[1].replaceAll(/[MLZ]/g, " ").trim().split(/\s+/).length / 2),
+  );
+  const linear = new Figure({ width: 240, height: 160 });
+  linear.setAxisDomain("x", [0, 2]);
+  linear.setAxisDomain("y", [0, 2]);
+  linear.area([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444" } });
+  assert.equal(closedPointCount(svg), (1 + (3 - 1) * 16) * 2);
+  assert.equal(closedPointCount(sceneSvg(linear.toScene())), 6);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.area([0, Math.PI / 2, Math.PI], [0.4, 0.8, 0.6], { style: { curve: "smooth", color: "#22c55e" } });
+  const polarLinear = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarLinear.setAxisDomain("x", [0, Math.PI * 2]);
+  polarLinear.setAxisDomain("y", [0, 1]);
+  polarLinear.area([0, Math.PI / 2, Math.PI], [0.4, 0.8, 0.6], { style: { color: "#22c55e" } });
+  assert.equal(sceneSvg(polar.toScene()), sceneSvg(polarLinear.toScene()));
+  assert.equal(sceneExportSupportReason(polar), null);
+});
+
+test("Node Scene v31 compiles flattened smooth error bands (curve=smooth)", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.errorBand([0, 1, 2], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], {
+    style: { color: "#22c55e", curve: "smooth" },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  const svg = sceneSvg(scene);
+  const closedPointCount = (document) => Math.max(
+    ...[...document.matchAll(/<path d="([^"]+)"/g)]
+      .filter((match) => match[1].includes("Z"))
+      .map((match) => match[1].replaceAll(/[MLZ]/g, " ").trim().split(/\s+/).length / 2),
+  );
+  const linear = new Figure({ width: 240, height: 160 });
+  linear.setAxisDomain("x", [0, 2]);
+  linear.setAxisDomain("y", [0, 2]);
+  linear.errorBand([0, 1, 2], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], { style: { color: "#22c55e" } });
+  assert.equal(closedPointCount(svg), (1 + (3 - 1) * 16) * 2);
+  assert.equal(closedPointCount(sceneSvg(linear.toScene())), 6);
+  assert.equal(sceneExportSupportReason(figure), null);
+});
+
+test("Node Scene v30 compiles constant linecap polylines and keeps unknown caps fail-closed", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.line([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444", width: 2, linecap: "butt" } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYLC")));
+  assert.match(sceneSvg(scene), /stroke-linecap="butt"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const rule = new Figure({ width: 240, height: 160 });
+  rule.setAxisDomain("x", [0, 2]);
+  rule.setAxisDomain("y", [0, 2]);
+  rule.line([0, 1], [0, 1]);
+  rule.annotations = [{ kind: "rule", axis: "x", value: 1, style: { linecap: "square" } }];
+  assert.match(sceneSvg(rule.toScene()), /stroke-linecap="square"/);
+  const unknown = new Figure({ width: 240, height: 160 });
+  unknown.setAxisDomain("x", [0, 1]);
+  unknown.setAxisDomain("y", [0, 1]);
+  unknown.line([0, 1], [0, 1], { style: { linecap: "flat" } });
+  assert.throws(() => unknown.toScene(), /authored markers/);
+});
+
+test("Node packs public-export eligibility through the shared Rust predicate", () => {
+  const supported = new Figure({ width: 320, height: 240 });
+  supported.setAxis("x", { domain: [0, 4] });
+  supported.setAxis("y", { domain: [0, 5] });
+  supported.scatter([1, 2], [2, 3], { style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  assert.equal(sceneExportSupportReason(supported), null);
+
+  const fluid = new Figure({ width: 320, height: 240 });
+  fluid.width = "100%";
+  fluid.scatter([1], [2]);
+  assert.equal(sceneExportSupportReason(fluid), "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT");
+
+  const extraStyle = new Figure({ width: 320, height: 240 });
+  extraStyle.setAxis("x", { domain: [0, 4] });
+  extraStyle.setAxis("y", { domain: [0, 5] });
+  extraStyle.scatter([1], [2], { style: { color: "#3987e5" } });
+  extraStyle.style = { background: "#fff", "font-family": "Example Sans" };
+  assert.equal(sceneExportSupportReason(extraStyle), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+
+  const lineNoDomain = new Figure({ width: 320, height: 240 });
+  lineNoDomain.line([0, 1], [0, 1]);
+  assert.equal(sceneExportSupportReason(lineNoDomain), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+
+  const heatmapNoDomain = new Figure({ width: 320, height: 240 });
+  heatmapNoDomain.heatmap([[0, 1, 2], [3, 4, 5]], { color: "#3987e5" });
+  assert.equal(sceneExportSupportReason(heatmapNoDomain), null);
+});
+
+test("Node encodes Scene PDF through the shared Rust SVG→PDF converter", () => {
+  const supported = new Figure({ width: 320, height: 240 });
+  supported.setAxis("x", { domain: [0, 4] });
+  supported.setAxis("y", { domain: [0, 5] });
+  supported.scatter([1, 2], [2, 3], { style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  const pdf = supported.toScenePdf();
+  assert.equal(Buffer.compare(pdf.subarray(0, 8), Buffer.from("%PDF-1.4")), 0);
+  assert.equal(Buffer.compare(pdf, svgToPdf(supported.toSceneSvg())), 0);
+  assert.throws(() => svgToPdf("<svg><foreignObject/></svg>"), /unsupported SVG feature/);
+});
+
+test("Node encodes JPEG, PNG, and WebP through the shared Rust image encoders", () => {
+  const rgb = Uint8Array.from([10, 20, 30, 40, 50, 60]);
+  const jpeg = encodeJpeg(rgb, 2, 1, 3, 90);
+  assert.equal(Buffer.compare(jpeg.subarray(0, 2), Buffer.from([0xff, 0xd8])), 0);
+  assert.equal(Buffer.compare(jpeg.subarray(jpeg.length - 2), Buffer.from([0xff, 0xd9])), 0);
+  const webp = encodeWebp(Uint8Array.from([10, 20, 30, 255]), 1, 1, 4);
+  assert.equal(Buffer.compare(webp.subarray(0, 4), Buffer.from("RIFF")), 0);
+  assert.equal(Buffer.compare(webp.subarray(8, 12), Buffer.from("WEBP")), 0);
+  const png = encodePng(Uint8Array.from([255, 0, 0, 255, 0, 0, 255, 255]), 2, 1, 4, 0, 6);
+  assert.equal(Buffer.compare(png.subarray(0, 8), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), 0);
+  assert.equal(png[25], 3); // indexed palette for two colors
+  assert.throws(() => encodeJpeg(rgb, 2, 1, 3, 0), /quality/);
+  assert.throws(() => encodePng(rgb, 2, 1, 3, 2, 6), /mode/);
 });
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {
@@ -171,6 +663,106 @@ test("Node authored tick labels override the format envelope byte-for-byte", () 
   assert.deepEqual(Buffer.from(build("$,.1f USD")), Buffer.from(build(null)));
 });
 
+test("Node Scene filters authored tick values and pairs labels during encode", () => {
+  const figure = new Figure();
+  figure.scatter([0, 1], [0, 1], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 1],
+    tick_values: [-1, 0],
+    tick_labels: ["off-domain-long-label", "zero"],
+  });
+  const scene = figure.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("zero")));
+  assert.equal(Buffer.from(scene).includes(Buffer.from("off-domain-long-label")), false);
+  const svg = sceneSvg(scene);
+  assert.match(svg, /zero/);
+  assert.equal(svg.includes("off-domain-long-label"), false);
+});
+
+test("Node Scene filters authored minor ticks on linear/log/symlog during encode", () => {
+  const cases = [
+    { type: "linear", domain: [0, 1], points: [[0, 1], [0, 1]], majors: [0, 1], minors: [-0.25, 0.25, 0.75, 1.25] },
+    { type: "log", domain: [1, 10], points: [[1, 10], [1, 2]], majors: [1, 10], minors: [0.5, 2, 5, 20] },
+    { type: "symlog", domain: [-10, 10], constant: 1, points: [[-1, 1], [-1, 1]], majors: [-10, 10], minors: [-20, -1, 1, 20] },
+  ];
+  for (const item of cases) {
+    const axis = {
+      type: item.type,
+      domain: item.domain,
+      tick_values: item.majors,
+      minor_tick_values: item.minors,
+      minor_style: { grid_color: "#22c55e", tick_color: "#22c55e", tick_length: 3 },
+    };
+    if (item.constant != null) axis.constant = item.constant;
+    const figure = new Figure();
+    figure.scatter(item.points[0], item.points[1], { id: 0 });
+    figure.setAxis("x", axis);
+    assert.match(sceneSvg(figure.toScene()), /rgba\(34,197,94/);
+    const off = new Figure();
+    off.scatter(item.points[0], item.points[1], { id: 0 });
+    off.setAxis("x", { ...axis, minor_tick_values: [item.minors[0], item.minors[item.minors.length - 1]] });
+    assert.equal(sceneSvg(off.toScene()).includes("rgba(34,197,94"), false);
+  }
+});
+
+test("Node Scene filters polar seam-crossing authored ticks and uses angular labels", () => {
+  const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+  figure.scatter([0], [0.5], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 360],
+    theta_unit: "degrees",
+    sector: [300, 420],
+    tick_values: [300, 330, 0, 30, 60, 180],
+    tick_labels: ["300", "330", "zero", "30", "60", "off-sector"],
+  });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, />zero</);
+  assert.equal(svg.includes("off-sector"), false);
+  assert.equal(svg.includes(">180<"), false);
+
+  const radians = new Figure({ width: 400, height: 400, coords: "polar" });
+  radians.scatter([0, Math.PI], [0.5, 0.8], { id: 0 });
+  radians.setAxis("x", { domain: [0, Math.PI * 2], theta_unit: "radians" });
+  radians.setAxis("y", { domain: [0, 1] });
+  const labels = [...sceneSvg(radians.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(labels.some((label) => label.includes("π")));
+  assert.equal(labels.includes("2"), false);
+  assert.equal(labels.includes("4"), false);
+});
+
+test("Node Scene materializes time strftime and polar numeric tick formats", () => {
+  const figure = new Figure({ width: 420, height: 260 });
+  figure.scatter([0, 86_400_000], [0, 1], { id: 0 });
+  figure.setAxis("x", { type: "time", domain: [0, 86_400_000], format: "%Y-%m-%d" });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /1970-01-01/);
+  assert.equal(svg.includes("5.0e7"), false);
+
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.scatter([0], [0.5], { id: 0 });
+  polar.setAxis("x", { domain: [0, 360], theta_unit: "degrees", format: ".0f" });
+  polar.setAxis("y", { domain: [0, 1], format: ".1f" });
+  const thetas = [...sceneSvg(polar.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(thetas.length > 0);
+  assert.ok(thetas.every((label) => !label.includes("°")));
+  assert.ok(thetas.some((label) => ["0", "90", "180", "270"].includes(label)));
+
+  const fallback = new Figure({ width: 320, height: 240 });
+  fallback.scatter([0, 5], [0, 5], { id: 0 });
+  fallback.setAxis("x", { domain: [0, 5], format: ".2e" });
+  fallback.setAxis("y", { domain: [0, 5] });
+  const fallbackSvg = sceneSvg(fallback.toScene());
+  assert.match(fallbackSvg, />0</);
+  assert.match(fallbackSvg, />4</);
+  assert.equal(fallbackSvg.includes(".2e"), false);
+});
+
+test("Node Scene secondary axes stay fail-closed", () => {
+  assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x or y/);
+});
+
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
   const build = (format, width = 320) => {
     const figure = new Figure({ width, height: 240 });
@@ -238,6 +830,17 @@ test("Node constant scatter stroke matches Python bytes and public defaults", ()
   assert.equal(strokeOnly.traces[0].style.stroke_width, 1);
   assert.equal(new DataView(strokeOnly.toScene().buffer).getFloat64(168, true), 1);
 
+  const widthOnly = new Figure({ width: 320, height: 240 });
+  widthOnly.setAxisDomain("x", [0, 2]); widthOnly.setAxisDomain("y", [0, 2]);
+  widthOnly.scatter([0.5], [0.5], { style: { color: "#336699", stroke_width: 2 } });
+  assert.equal(sceneExportSupportReason(widthOnly), null);
+  assert.match(sceneSvg(widthOnly.toScene()), /stroke-width="2"/);
+  const plusWidth = new Figure({ width: 320, height: 240 });
+  plusWidth.setAxisDomain("x", [0, 2]); plusWidth.setAxisDomain("y", [0, 2]);
+  plusWidth.scatter([1], [1], { style: { color: "#3987e5", symbol: "plus_line", stroke_width: 2 } });
+  assert.equal(sceneExportSupportReason(plusWidth), null);
+  assert.match(sceneSvg(plusWidth.toScene()), /stroke-width="2"/);
+
   for (const strokeWidth of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
     const invalid = new Figure({ width: 320, height: 240 });
     invalid.scatter([0.5], [0.5], { style: { stroke: "#ff8800", stroke_width: strokeWidth } });
@@ -249,7 +852,7 @@ test("Node frames the literal Scene colorbar side before Rust reserves its lane"
   for (const [side, offset, viewport] of [["right", 64, 320], ["bottom", 72, 240]]) {
     const figure = new Figure({ width: 320, height: 240 });
     figure.scatter([0, 1], [0, 1]);
-    figure.colorbarOptions = {
+    figure.colorbar_options = {
       domain: [0, 1],
       stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 128]]],
       side,
@@ -262,7 +865,7 @@ test("Node frames the literal Scene colorbar side before Rust reserves its lane"
 test("Node frames bounded Scene colorbar ticks and Rust renders shared major/minor chrome", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.scatter([0, 1], [0, 1]);
-  figure.colorbarOptions = {
+  figure.colorbar_options = {
     domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
     ticks: [0, 0.5, 1], minor_ticks: true,
   };
@@ -295,7 +898,9 @@ test("Node explicit hidden Cartesian chrome omits invisible groups without imply
 
   const polar = new Figure({ coords: "polar" });
   polar.scatter([0], [1]);
-  assert.throws(() => polar.toScene(), /supports Cartesian coordinates only/);
+  const polarScene = polar.toScene();
+  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 31);
+  assert.deepEqual(polarScene.subarray(polarScene.length - 92, polarScene.length - 88), Uint8Array.from(Buffer.from("XYPL")));
 });
 
 test("Node Scene v9 primary legend matches Python bytes and rejects unsupported variants", () => {
@@ -315,14 +920,26 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
   assert.throws(() => anchored.toScene(), /anchors/);
   const interactive = new Figure({ legend: { toggle: true } }); interactive.scatter([1], [1], { name: "x" });
   assert.throws(() => interactive.toScene(), /static/);
-  const automatic = new Figure({ legend: { loc: "best" } }); automatic.scatter([1], [1], { name: "x" });
-  assert.throws(() => automatic.toScene(), /location/);
+  const automatic = new Figure({ legend: { loc: "best" } }); automatic.scatter([0, 1], [0, 1], { name: "x" });
+  const resolved = automatic.toScene();
+  const locByte = resolved[Buffer.from(resolved).indexOf("XYLG") + 4];
+  assert.equal(locByte, 1); // upper left in Scene XYLG codes
+  const camelFont = new Figure({ legend: { style: { fontSize: 14 } } }); camelFont.scatter([1], [1], { name: "x" });
+  assert.throws(() => camelFont.toScene(), /font_size/);
+  const snakeFont = new Figure({ width: 200, height: 120, legend: { loc: "lower left", title: "Series", style: { font_size: 14 } } });
+  snakeFont.setAxisDomain("x", [0, 1]); snakeFont.setAxisDomain("y", [0, 1]);
+  snakeFont.scatter([0.25], [0.5], { id: 0, name: "observed", style: { color: "#3987e5" } });
+  assert.doesNotThrow(() => snakeFont.toScene());
 });
 
 test("Node Scene v9 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().heatmap([[0, 1], [1, 0]], { colormapStops: [0, 0, 0, 255, 255, 255] });
-  assert.throws(() => figure.toScene(), /heatmap colormap/);
+  const svg = sceneSvg(figure.toScene());
+  assert.ok(svg.includes("<rect"));
+  const named = new Figure({ width: 320, height: 240 }).heatmap([[0, 1], [1, 0]], { colormap: "binary" });
+  assert.equal(sceneExportSupportReason(named), null);
+  assert.ok(sceneSvg(named.toScene()).includes("<rect"));
 });
 
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
@@ -331,7 +948,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -437,6 +1054,206 @@ test("Node matches Python bytes for constant-style Cartesian hexbin PolyFill", (
     const painter = sceneBrowserPainter(scene);
     assert.equal(painter[new DataView(painter.buffer, painter.byteOffset, painter.byteLength).getUint32(12, true)], 4);
     assert.ok(Buffer.from(painter).includes(Buffer.from("XYLG")));
+  }
+});
+
+test("Node matches Python XYTA bytes for colormap hexbin", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    name: "hex",
+    id: 0,
+  });
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_hexbin_colormap_xyta_sha256,
+  );
+});
+
+test("Node matches Python XYTA bytes for colormap heatmap", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.heatmap([[0, 1, 2], [3, 4, 5]], {
+    x: [1, 2, 3],
+    y: [1, 3],
+    name: "heat",
+    id: 0,
+  });
+  assert.equal(figure.traces[0].style.colormap, "viridis");
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_heatmap_colormap_xyta_sha256,
+  );
+});
+
+test("Node matches Python XYTA bytes for constant-style Cartesian density", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.scatter(x, y, {
+    forceDensity: true,
+    color: "#3987e5",
+    opacity: 0.75,
+    name: "dens",
+    id: 0,
+  });
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#3987e5");
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_constant_density_xyta_sha256,
+  );
+});
+
+test("Node matches Python XYTC bytes for the bounded public literal triangle mesh", () => {
+  const figure = new Figure({ width: 360, height: 260 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.triangleMesh(
+    [-0.25, 1], [0.25, 0.5], [0.75, 2.25], [0.25, 0.5], [0.25, 1.5], [1.25, 1.75],
+    { id: 0, name: "literal mesh", color: "#22c55e", opacity: 0.75 },
+  );
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#22c55e");
+  const packed = packFigureXyTc(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_triangle_mesh_xytc_sha256,
+  );
+});
+
+test("Node matches Python XYTC bytes for the public linear ribbon", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 10]);
+  figure.setAxis("y", { type: "linear", domain: [-10, 1000] });
+  figure.ribbon([1], [9], [1], [10], [100], [1000], {
+    id: 7,
+    color: "#7c3aed",
+    opacity: 0.75,
+    strokeWidth: 2,
+    style: { "fill-opacity": 0.8, "stroke-opacity": 0.5 },
+  });
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#7c3aed");
+  assert.equal(figure.traces[0].style.fill_opacity, 0.8);
+  assert.equal(figure.traces[0].style.stroke_opacity, 0.5);
+  const packed = packFigureXyTc(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_ribbon_xytc_sha256,
+  );
+});
+
+test("Node matches Python Scene bytes for constant-style Cartesian density blit", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.scatter(x, y, {
+    forceDensity: true,
+    color: "#3987e5",
+    opacity: 0.75,
+    name: "dens",
+    id: 0,
+  });
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_constant_density_sha256,
+  );
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
+});
+
+test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, scatter, and lattice heatmap", () => {
+  const tau = 6.283185307179586;
+  const cases = [
+    {
+      key: "public_polar_hexbin_sha256",
+      build: () => {
+        const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 4]);
+        figure.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+          gridsize: [4, 4],
+          range: [[0, tau], [0, 4]],
+          color: "#3987e5",
+          opacity: 0.75,
+          name: "phex",
+          id: 0,
+        });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_bar_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 1]);
+        figure.bar([0, 1.57, 3.14], [0.5, 0.8, 0.6], { color: "#3987e5", name: "pbar", id: 0 });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_line_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 5]);
+        figure.line([0.5, 2.5, 4.5], [1, 3, 2], { color: "#3987e5", name: "pline", id: 0 });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_scatter_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 5]);
+        figure.scatter([0.5, 2.5], [1, 3], {
+          color: "#3987e5",
+          size: 6,
+          opacity: 0.8,
+          name: "pscat",
+          id: 0,
+        });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_heatmap_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, 2]);
+        figure.setAxisDomain("y", [0, 2]);
+        figure.heatmap([[1, 2], [3, 4]], { color: "#3987e5", name: "pheat", id: 0 });
+        return figure;
+      },
+    },
+  ];
+  for (const { key, build } of cases) {
+    const figure = build();
+    assert.equal(sceneExportSupportReason(figure), null, key);
+    const scene = figure.toScene();
+    assert.equal(
+      crypto.createHash("sha256").update(scene).digest("hex"),
+      figureSceneFixture[key],
+    );
   }
 });
 
@@ -571,7 +1388,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
@@ -683,6 +1500,114 @@ test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   assert.match(sceneSvg(mesh.toScene()), /<path d="M /);
 });
 
+test("Node Scene compiles constant ribbon color2 as XYGR", () => {
+  const gradient = new Figure({ width: 240, height: 160 });
+  gradient.setAxisDomain("x", [0, 1]);
+  gradient.setAxisDomain("y", [0, 1]);
+  gradient.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#34d399",
+    name: null,
+  });
+  const scene = gradient.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYGR")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<linearGradient id="xy-scene-g0"/);
+  assert.match(svg, /fill="url\(#xy-scene-g0\)"/);
+  assert.equal(sceneExportSupportReason(gradient), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 1]);
+  solid.setAxisDomain("y", [0, 1]);
+  solid.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#7c3aed",
+    name: null,
+  });
+  assert.doesNotMatch(sceneSvg(solid.toScene()), /<linearGradient/);
+  assert.equal(sceneExportSupportReason(solid), null);
+  const perItem = new Figure({ width: 240, height: 160 });
+  perItem.setAxisDomain("x", [0, 1]);
+  perItem.setAxisDomain("y", [0, 1]);
+  perItem.ribbon([0, 0.2], [0.4, 0.8], [0, 0.1], [0.2, 0.3], [0.15, 0.25], [0.35, 0.45], {
+    color: ["#7c3aed", "#2563eb"],
+    colorTarget: ["#34d399", "#f59e0b"],
+    name: null,
+  });
+  const perItemScene = perItem.toScene();
+  assert.ok(Buffer.from(perItemScene).includes(Buffer.from("XYGR")));
+  assert.equal((sceneSvg(perItemScene).match(/<linearGradient/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(perItem), null);
+  const custom = new Figure({ width: 240, height: 160 });
+  custom.setAxisDomain("x", [0, 1]);
+  custom.setAxisDomain("y", [0, 1]);
+  custom.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#34d399",
+    style: { role: "custom-ribbon" },
+    name: null,
+  });
+  assert.equal(sceneExportSupportReason(custom), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+});
+
+test("Node Scene compiles cartesian unwrapped text layout as XYAW", () => {
+  const offset = new Figure({ width: 320, height: 240 });
+  offset.setAxisDomain("x", [0, 4]);
+  offset.setAxisDomain("y", [0, 5]);
+  offset.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  offset.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "offset", dx: 6 }];
+  const scene = offset.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("offset")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, />offset</);
+  assert.equal(sceneExportSupportReason(offset), null);
+  const anchored = new Figure({ width: 320, height: 240 });
+  anchored.setAxisDomain("x", [0, 4]);
+  anchored.setAxisDomain("y", [0, 5]);
+  anchored.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  anchored.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "anchor", anchor: "end" }];
+  assert.match(sceneSvg(anchored.toScene()), /text-anchor="end"/);
+  assert.equal(sceneExportSupportReason(anchored), null);
+  const rotated = new Figure({ width: 320, height: 240 });
+  rotated.setAxisDomain("x", [0, 4]);
+  rotated.setAxisDomain("y", [0, 5]);
+  rotated.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  rotated.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", rotation: 30 }];
+  const rotatedSvg = sceneSvg(rotated.toScene());
+  assert.match(rotatedSvg, />rotated</);
+  assert.match(rotatedSvg, /transform="rotate\(-30 /);
+  assert.equal(sceneExportSupportReason(rotated), null);
+});
+
+test("Node Scene compiles labelled cartesian marker layout as XYAW", () => {
+  const offset = new Figure({ width: 320, height: 240 });
+  offset.setAxisDomain("x", [0, 4]);
+  offset.setAxisDomain("y", [0, 5]);
+  offset.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  offset.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "pin", dy: -8 }];
+  const scene = offset.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("pin")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, />pin</);
+  assert.equal(sceneExportSupportReason(offset), null);
+  const anchored = new Figure({ width: 320, height: 240 });
+  anchored.setAxisDomain("x", [0, 4]);
+  anchored.setAxisDomain("y", [0, 5]);
+  anchored.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  anchored.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "anchor", anchor: "end" }];
+  assert.match(sceneSvg(anchored.toScene()), /text-anchor="end"/);
+  assert.equal(sceneExportSupportReason(anchored), null);
+  const rotated = new Figure({ width: 320, height: 240 });
+  rotated.setAxisDomain("x", [0, 4]);
+  rotated.setAxisDomain("y", [0, 5]);
+  rotated.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  rotated.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "rotated", rotation: 30 }];
+  const rotatedSvg = sceneSvg(rotated.toScene());
+  assert.match(rotatedSvg, />rotated</);
+  assert.match(rotatedSvg, /transform="rotate\(-30 /);
+  assert.equal(sceneExportSupportReason(rotated), null);
+});
+
 test("Node Scene v9 compiles area bands", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);
@@ -717,11 +1642,12 @@ test("Node figure Scene v5 encodes titles and still rejects incomplete customiza
   const svg = titled.toSceneSvg();
   assert.match(svg, /data-xy-chrome="title"/);
   assert.match(svg, /Encoded title/);
-  for (const key of ["marker_path", "marker_glyph"]) {
-    const figure = new Figure();
-    figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
-    assert.throws(() => figure.toScene(), new RegExp(key));
-  }
+  const badPath = new Figure();
+  badPath.scatter([1], [1], { _composed: true, style: { marker_path: "M0 0" } });
+  assert.throws(() => badPath.toScene(), /authored markers/);
+  const longGlyph = new Figure();
+  longGlyph.scatter([1], [1], { _composed: true, style: { marker_glyph: "A".repeat(65) } });
+  assert.throws(() => longGlyph.toScene(), /authored markers/);
   const named = new Figure();
   named.scatter([1], [1], { _composed: true, name: "series" });
   const legendSvg = named.toSceneSvg();
@@ -852,7 +1778,7 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
     },
   });
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 31);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
   for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "reference", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
@@ -866,8 +1792,8 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
   assert.match(svg, /data-xy-slot="colorbar_tick"/);
   assert.match(svg, /data-xy-slot="annotation_label_box"/);
   for (const [mutate, reason] of [
-    [(value) => { value.chromeStyles = { title: { fontFamily: "Example Sans" } }; }, /CUSTOM_FONT/],
-    [(value) => { value.className = "browser-only"; }, /BROWSER_CSS/],
+    [(value) => { value.chrome_styles = { title: { "font-family": "Example Sans" } }; }, /CUSTOM_FONT/],
+    [(value) => { value.class_name = "browser-only"; }, /BROWSER_CSS/],
     [(value) => { value.traces[0].style.fill = { type: "linear" }; }, /GRADIENT/],
   ]) {
     const rejected = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
@@ -895,7 +1821,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
   figure.setColorbar({
     domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
   });
-  assert.throws(() => figure.setLegend({ loc: "best" }).toScene(), /location/);
+  assert.doesNotThrow(() => figure.setLegend({ loc: "best" }).toScene());
   for (const [call, value] of [[() => figure.setStyle([]), /Scene style must be an object/], [() => figure.setLegend(null), /Scene legend must be an object/], [() => figure.setAxis("x", []), /Scene x axis options must be an object/]]) {
     assert.throws(call, value);
   }
@@ -904,7 +1830,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
 test("Node Scene v25 wrapped annotations reject host layout features", () => {
   for (const [field, value, reason] of [
     ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
-    ["style", { font_family: "Example Sans" }, /custom fonts/],
+    ["style", { font_family: "Example Sans" }, /CUSTOM_FONT|custom font/],
     ["style", { markup: "<b>rich<\\/b>" }, /markup/],
     ["style", { collision: "avoid" }, /collision/],
   ]) {
@@ -914,6 +1840,55 @@ test("Node Scene v25 wrapped annotations reject host layout features", () => {
     figure.annotations[0][field] = value;
     assert.throws(() => figure.toScene(), reason);
   }
+});
+
+test("Node Scene annotation html stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", html: "<b>rich</b>" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML|annotation html/);
+});
+
+test("Node Scene annotation class_name stays fail-closed as browser CSS", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "css", class_name: "custom" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+});
+
+test("Node Scene annotation collision stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "collision", collision: "hide" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION/);
+});
+
+test("Node Scene annotation markup stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", style: { markup: "<b>rich</b>" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP/);
+});
+
+test("Node Scene annotation custom typography stays fail-closed as custom font", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "type", style: { font_family: "Comic Sans" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
+});
+
+test("Node Scene annotation style.rotation routes through Scene", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", style: { rotation: 30 } }];
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /transform="rotate\(-30 /);
 });
 
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {
@@ -949,7 +1924,9 @@ test("Node Scene v4 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [] }), /expansionModes must have length 1/);
-  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [5] }), /expansionModes values must be integers from 0 through 4/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [13] }), /expansionModes values must be integers from 0 through 12/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [12] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [11] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [1] }), /invalid canonical scene batch/);
 
   const line = {
@@ -1075,6 +2052,187 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
   ]);
 });
 
+test("Node consumes Rust-owned tick-label collision layout", () => {
+  const labels = Array.from({ length: 9 }, (_, i) => `Category_Name_${String(i).padStart(2, "0")}`);
+  const positions = Array.from({ length: 9 }, (_, i) => 100 + i * 90);
+  const kept = tickLabelLayout({
+    positions, labels, kind: "rotate", side: "bottom", anchor: "end",
+    isX: true, category: true, fontSize: 11, minGap: 8, explicitAngle: -30,
+  });
+  assert.equal(kept.length, 9);
+  assert.equal(kept[0].angle, -30);
+  assert.deepEqual(kept.map((item) => item.index), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  const centered = tickLabelLayout({
+    positions, labels, kind: "rotate", side: "bottom", anchor: "center",
+    isX: true, category: true, fontSize: 11, minGap: 8, explicitAngle: -30,
+  });
+  assert.ok(centered.length > 0 && centered.length < 9);
+  assert.deepEqual(tickLabelLayout({ positions: [0, 10], labels: ["a", "b"], kind: "none" }), []);
+});
+
+test("Node consumes Rust-owned authored tick-window filter", () => {
+  assert.deepEqual(
+    tickWindow({ rangeLo: 0, rangeHi: 360, thetaUnit: "degrees", sectorLo: 300, sectorHi: 420 }),
+    [300, 420],
+  );
+  assert.deepEqual(
+    tickWindowFilter({
+      values: [300, 330, 0, 30, 60, 200],
+      lo: 300,
+      hi: 420,
+      thetaUnit: "degrees",
+    }),
+    [300, 330, 0, 30, 60],
+  );
+  assert.deepEqual(
+    tickWindowFilter({
+      values: [0, 45, 90, 200, -10, Number.NaN],
+      lo: 0,
+      hi: 180,
+    }),
+    [0, 45, 90],
+  );
+  assert.deepEqual(
+    tickWindow({ rangeLo: 1, rangeHi: 2, thetaUnit: "degrees", kind: "category", nCategories: 4 }),
+    [0, 3],
+  );
+});
+
+test("Node consumes Rust-owned tick-label formatting", () => {
+  assert.equal(tickFormat({ value: 0.25, step: 0.25 }), "0.25");
+  assert.equal(tickFormat({ value: 1234567.8, step: 1 }), "1.2e6");
+  assert.equal(tickFormat({ value: 0.001, step: 1, scale: "log" }), "0.001");
+  assert.equal(tickFormat({ value: 12345.678, step: 1, format: "$,.1f ms" }), "$12,345.7 ms");
+  assert.equal(tickFormat({ value: 1, step: 1, kind: "category", categories: ["a", "b", "c"] }), "b");
+  assert.equal(tickFormat({ value: Math.PI / 2, step: 1, thetaUnit: "radians" }), "π/2");
+});
+
+test("Node consumes Rust-owned static legend box packing", () => {
+  const plot = { x: 0, y: 0, w: 560, h: 400 };
+  const titled = legendBoxLayout({
+    plot, names: ["1", "2", "3", "4"], title: "Classes", loc: "lower left",
+  });
+  assert.equal(titled.visibleCount, 4);
+  assert.ok(String(titled.title).startsWith("Clas"), `title was ${titled.title}`);
+  assert.ok(titled.boxW > 0 && titled.boxH > 0);
+  const wide = legendBoxLayout({
+    plot, names: ["alpha", "beta", "gamma"], title: "Classes", loc: "lower left",
+  });
+  assert.equal(wide.title, "Classes");
+  const narrow = legendBoxLayout({
+    plot: { x: 0, y: 0, w: 150, h: 400 },
+    names: ["Wmmmmmmmmmmmmmmmmmmmm", "iiiiiiiiiiiiiiiiiiii"],
+    loc: "upper right",
+  });
+  assert.ok(narrow.names.some((name) => name.endsWith("...")));
+});
+
+test("Node consumes Rust-owned text-block measure and axis rooms", () => {
+  const crlf = textBlockMeasure("first\r\nsecond", 12);
+  const lf = textBlockMeasure("first\nsecond", 12);
+  assert.deepEqual(crlf.lines, ["first", "second"]);
+  assert.deepEqual(lf.lines, crlf.lines);
+  assert.equal(crlf.lineCount, 2);
+  const rotated = textBlockRotatedExtent(10, 4, 90);
+  assert.ok(Math.abs(rotated[0] - 4) < 1e-12);
+  assert.ok(Math.abs(rotated[1] - 10) < 1e-12);
+  const titled = yAxisLeftRoom(7, 23, "Y", 12, 12 * 0.4);
+  const untitled = yAxisLeftRoom(0, 0, "", 12, 0);
+  assert.ok(titled > 23);
+  assert.equal(untitled, 0);
+});
+
+test("Node consumes Rust-owned static-export layout combination", () => {
+  assert.equal(compatIsCompact(519), true);
+  assert.equal(compatIsCompact(520), false);
+  assert.deepEqual(compatDefaultPadding(true), [6, 8, 36, 46]);
+  assert.deepEqual(compatDefaultPadding(false), [10, 14, 42, 62]);
+  assert.equal(compatTitleWrapWidth(100, 40, 40), 40);
+  assert.deepEqual(compatColorbarExtra("figure_vertical", false, false), [86, 0]);
+  assert.equal(polarLegendRoom(400), 120);
+  assert.equal(polarLegendRoom(1000), 200);
+  assert.equal(polarLabelRoom(null), 30);
+  const recut = recutPolarPlot(
+    { x: 0, y: 0, w: 200, h: 200, top_axis_room: 10 },
+    200,
+    200,
+    { polarLabelRoom: 30, authoredPadding: true },
+  );
+  assert.equal(recut.x, 30);
+  assert.equal(recut.y, 30);
+  assert.equal(recut.w, 140);
+  assert.equal(recut.h, 140);
+  assert.equal(recut.topAxisRoom, 40);
+  const combined = compatCombinePlot(900, 420);
+  assert.equal(combined.x, 62);
+  assert.equal(combined.y, 10);
+  assert.equal(combined.w, 824);
+  assert.equal(combined.h, 368);
+  const polarCombined = compatCombinePlot(200, 200, {
+    authoredPadding: [0, 0, 0, 0],
+    polar: { polarLabelRoom: 30, authoredPadding: true },
+  });
+  assert.equal(polarCombined.x, 30);
+  assert.equal(polarCombined.w, 140);
+  const extra = tightLayoutFigureExtra(800, 600, {
+    suptitleHeight: 20,
+    suptitleY: 0.98,
+    ylabelSize: 12,
+    legendBoxW: 80,
+  });
+  assert.equal(extra.left, 20);
+  assert.equal(extra.right, 92);
+});
+
+test("Node polar layout/project matches default-cardinals fixture", () => {
+  const plot = { x: 0, y: 0, w: 400, h: 400 };
+  const thetaAxis = { theta_unit: "radians", theta_zero: "E", theta_direction: "counterclockwise" };
+  const rAxis = { range: [0, 1] };
+  const metrics = polarLayout(thetaAxis, rAxis, plot);
+  const [px0, py0] = polarProject(metrics, 0, 1);
+  assert.ok(Math.abs(px0 - 400) < 1e-6);
+  assert.ok(Math.abs(py0 - 200) < 1e-6);
+  const [px1, py1] = polarProject(metrics, Math.PI / 2, 1);
+  assert.ok(Math.abs(px1 - 200) < 1e-6);
+  assert.ok(Math.abs(py1 - 0) < 1e-6);
+});
+
+test("Node polar wedge flatten matches pinned annular count", () => {
+  const metrics = polarLayout({}, { range: [0, 1] }, { x: 0, y: 0, w: 400, h: 400 });
+  const poly = polarWedgePoints(metrics, 0, Math.PI / 2, 0.5, 1, { steps: 8 });
+  assert.equal(poly.length, 18);
+  assert.ok(Math.abs(poly[0][0] - 400) < 1e-6);
+  assert.ok(Math.abs(poly[0][1] - 200) < 1e-6);
+  const auto = polarWedgePoints(metrics, 0, Math.PI / 2, 0.5, 1);
+  assert.ok(auto.length > poly.length);
+});
+
+test("Node polar heatmap inverse map stays screen-bounded", () => {
+  const metrics = polarLayout({}, { range: [0, 1] }, { x: 0, y: 0, w: 8, h: 8 });
+  const mapped = polarHeatmapInverseMap(
+    metrics,
+    { x: 0, y: 0, w: 8, h: 8 },
+    2,
+    2,
+    [0, Math.PI * 2],
+    [0, 1],
+    1,
+  );
+  assert.equal(mapped.width, 8);
+  assert.equal(mapped.height, 8);
+  assert.ok(mapped.sourceIndices.length > 0);
+  assert.ok(mapped.sourceIndices.length <= 64);
+  assert.ok(Array.from(mapped.sourceIndices).every((index) => index < 4));
+});
+
+test("Node consumes Rust-owned pyplot tight-layout solve", () => {
+  const empty = tightLayoutSolve({
+    canvasW: 800, canvasH: 600, nrows: 1, ncols: 1, compact: false, panels: [],
+  });
+  assert.ok(Math.abs(empty.left - 62 / 800) < 1e-12);
+  assert.ok(Math.abs(empty.right - (1 - 26 / 800)) < 1e-12);
+});
+
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {
   assert.equal(axisTickFixture.schema, "xyg-axis-ticks-v1");
   for (const value of axisTickFixture.cases) {
@@ -1124,7 +2282,7 @@ test("Node symlog ticks fail closed at invalid arguments and honor the 200 targe
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 25);
+  assert.equal(sceneVersion(), 31);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -1165,7 +2323,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 31);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
@@ -1175,17 +2333,634 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   assert.match(sceneSvg(hist.toScene()), /<rect /);
 });
 
-test("Node Scene rejects corner_radius and density-tier scatter", () => {
-  const rounded = new Figure({ width: 200, height: 120 });
-  rounded.bar([0, 1], [1, 2], { style: { corner_radius: 4 }, name: null });
-  assert.throws(() => rounded.toScene(), /corner_radius/);
+test("Node Scene compiles cartesian corner_radius and polar donut rounding", () => {
+  const rounded = new Figure({ width: 240, height: 160 });
+  rounded.setAxisDomain("x", [0, 2]);
+  rounded.setAxisDomain("y", [0, 3]);
+  rounded.bar([0, 1], [1, 2], { style: { color: "#22c55e", corner_radius: 4 }, name: null });
+  const scene = rounded.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(scene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(rounded), null);
+  const pie = new Figure({ width: 400, height: 400, coords: "polar" });
+  pie.setAxisDomain("x", [0, Math.PI * 2]);
+  pie.setAxisDomain("y", [0, 1]);
+  pie.bar([0], [1], { style: { corner_radius: 4 }, name: null });
+  const pieScene = pie.toScene();
+  assert.equal((sceneSvg(pieScene).match(/<path d="M/g) || []).length, 1);
+  assert.equal(sceneExportSupportReason(pie), null);
+  const donut = new Figure({ width: 400, height: 400, coords: "polar" });
+  donut.setAxisDomain("x", [0, Math.PI * 2]);
+  donut.setAxisDomain("y", [0, 1]);
+  donut.bar([0, 1.5], [1, 0.8], { base: 0.25, style: { color: "#2563eb", corner_radius: 14 }, name: null });
+  const donutScene = donut.toScene();
+  assert.equal(new DataView(donutScene.buffer, donutScene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(donutScene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(donut), null);
+  const cells = new Figure({ width: 240, height: 160 });
+  cells.setAxisDomain("x", [0, 2]);
+  cells.setAxisDomain("y", [0, 2]);
+  cells.heatmap([[1, 2], [3, 4]], { color: "#3987e5", style: { corner_radius: 6 }, name: null });
+  const cellSvg = sceneSvg(cells.toScene());
+  assert.equal((cellSvg.match(/<path d="M/g) || []).length, 4);
+  assert.equal(sceneExportSupportReason(cells), null);
+  const polarCells = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarCells.setAxisDomain("x", [0, Math.PI * 2]);
+  polarCells.setAxisDomain("y", [0, 1]);
+  polarCells.heatmap([[1, 2], [3, 4]], { color: "#3987e5", style: { corner_radius: 4 }, name: null });
+  assert.equal((sceneSvg(polarCells.toScene()).match(/<path d="M/g) || []).length, 4);
+  assert.equal(sceneExportSupportReason(polarCells), null);
+  const violin = new Figure({ width: 320, height: 240 });
+  violin.setAxisDomain("x", [-1, 5]);
+  violin.setAxisDomain("y", [-1, 5]);
+  violin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  const violinTrace = violin.traces[violin.traces.length - 1];
+  delete violinTrace.style.orientation;
+  violinTrace.style.corner_radius = 6;
+  const violinSvg = sceneSvg(violin.toScene());
+  assert.match(violinSvg, /<path d="M/);
+  assert.equal(sceneExportSupportReason(violin), null);
+  const squareViolin = new Figure({ width: 320, height: 240 });
+  squareViolin.setAxisDomain("x", [-1, 5]);
+  squareViolin.setAxisDomain("y", [-1, 5]);
+  squareViolin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  assert.notEqual(violinSvg, sceneSvg(squareViolin.toScene()));
+  const roundedBox = new Figure({ width: 320, height: 240 });
+  roundedBox.setAxisDomain("x", [-2, 102]);
+  roundedBox.setAxisDomain("y", [-2, 102]);
+  roundedBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  roundedBox.traces.find((trace) => trace.kind === "box").style.corner_radius = 6;
+  const boxSvg = sceneSvg(roundedBox.toScene());
+  assert.match(boxSvg, /<path d="M/);
+  assert.equal(sceneExportSupportReason(roundedBox), null);
+  const squareBox = new Figure({ width: 320, height: 240 });
+  squareBox.setAxisDomain("x", [-2, 102]);
+  squareBox.setAxisDomain("y", [-2, 102]);
+  squareBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  assert.notEqual(boxSvg, sceneSvg(squareBox.toScene()));
+});
 
-  const density = new Figure({ width: 200, height: 120 });
-  density.scatter(new Float64Array(200_000), new Float64Array(200_000), {
-    forceDensity: true,
+test("Node Scene compiles violin and box fill_opacity", () => {
+  const violin = new Figure({ width: 320, height: 240 });
+  violin.setAxisDomain("x", [-1, 5]);
+  violin.setAxisDomain("y", [-1, 5]);
+  violin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  const violinTrace = violin.traces[violin.traces.length - 1];
+  delete violinTrace.style.orientation;
+  violinTrace.style.fill_opacity = 0.5;
+  const violinSvg = sceneSvg(violin.toScene());
+  assert.match(violinSvg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(violin), null);
+  const squareViolin = new Figure({ width: 320, height: 240 });
+  squareViolin.setAxisDomain("x", [-1, 5]);
+  squareViolin.setAxisDomain("y", [-1, 5]);
+  squareViolin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  delete squareViolin.traces[squareViolin.traces.length - 1].style.orientation;
+  assert.notEqual(violinSvg, sceneSvg(squareViolin.toScene()));
+  const roundedBox = new Figure({ width: 320, height: 240 });
+  roundedBox.setAxisDomain("x", [-2, 102]);
+  roundedBox.setAxisDomain("y", [-2, 102]);
+  roundedBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  roundedBox.traces.find((trace) => trace.kind === "box").style.fill_opacity = 0.5;
+  const boxSvg = sceneSvg(roundedBox.toScene());
+  assert.match(boxSvg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(roundedBox), null);
+  const squareBox = new Figure({ width: 320, height: 240 });
+  squareBox.setAxisDomain("x", [-2, 102]);
+  squareBox.setAxisDomain("y", [-2, 102]);
+  squareBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  assert.notEqual(boxSvg, sceneSvg(squareBox.toScene()));
+});
+
+test("Node Scene compiles bar fill_opacity", () => {
+  const faded = new Figure({ width: 240, height: 160 });
+  faded.setAxisDomain("x", [0, 2]);
+  faded.setAxisDomain("y", [0, 3]);
+  faded.bar([0, 1], [1, 2], { style: { color: "#22c55e", fill_opacity: 0.5 }, name: null });
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 2]);
+  solid.setAxisDomain("y", [0, 3]);
+  solid.bar([0, 1], [1, 2], { style: { color: "#22c55e" }, name: null });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles heatmap fill_opacity", () => {
+  const faded = new Figure({ width: 320, height: 240 });
+  faded.setAxisDomain("x", [0, 4]);
+  faded.setAxisDomain("y", [0, 5]);
+  faded.heatmap([[1, 2], [3, 4]], {
+    style: { color: "#22c55e", opacity: 0.75, fill_opacity: 0.5 },
     name: null,
   });
-  assert.throws(() => density.toScene(), /density-tier/);
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 320, height: 240 });
+  solid.setAxisDomain("x", [0, 4]);
+  solid.setAxisDomain("y", [0, 5]);
+  solid.heatmap([[1, 2], [3, 4]], {
+    style: { color: "#22c55e", opacity: 0.75 },
+    name: null,
+  });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles heatmap stroke_opacity", () => {
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 4]);
+  stroked.setAxisDomain("y", [0, 5]);
+  stroked.heatmap([[1, 2], [3, 4]], {
+    style: {
+      color: "#22c55e",
+      opacity: 0.75,
+      stroke: "#111111",
+      stroke_width: 2,
+      stroke_opacity: 0.5,
+    },
+    name: null,
+  });
+  const svg = sceneSvg(stroked.toScene());
+  assert.match(svg, /stroke-opacity="/);
+  assert.equal(sceneExportSupportReason(stroked), null);
+});
+
+test("Node Scene compiles scatter fill_opacity", () => {
+  const faded = new Figure({ width: 240, height: 160 });
+  faded.setAxisDomain("x", [0, 2]);
+  faded.setAxisDomain("y", [0, 2]);
+  faded.scatter([0.5, 1.5], [0.5, 1.5], {
+    style: { color: "#22c55e", size: 18, opacity: 0.8, fill_opacity: 0.5 },
+    name: null,
+  });
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 2]);
+  solid.setAxisDomain("y", [0, 2]);
+  solid.scatter([0.5, 1.5], [0.5, 1.5], {
+    style: { color: "#22c55e", size: 18, opacity: 0.8 },
+    name: null,
+  });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles hexbin fill_opacity", () => {
+  const x = [0.5, 1.5, 2.5];
+  const y = [0.5, 0.5, 2.0];
+  const faded = new Figure({ width: 320, height: 240 });
+  faded.setAxisDomain("x", [0, 4]);
+  faded.setAxisDomain("y", [0, 5]);
+  faded.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#22c55e",
+    opacity: 0.75,
+    style: { fill_opacity: 0.5 },
+    name: null,
+  });
+  delete faded.traces[0].style.dx;
+  delete faded.traces[0].style.dy;
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 320, height: 240 });
+  solid.setAxisDomain("x", [0, 4]);
+  solid.setAxisDomain("y", [0, 5]);
+  solid.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#22c55e",
+    opacity: 0.75,
+    name: null,
+  });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles hexbin stroke_opacity", () => {
+  const x = [0.5, 1.5, 2.5];
+  const y = [0.5, 0.5, 2.0];
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 4]);
+  stroked.setAxisDomain("y", [0, 5]);
+  stroked.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#22c55e",
+    opacity: 0.75,
+    style: { stroke: "#111111", stroke_width: 2, stroke_opacity: 0.5 },
+    name: null,
+  });
+  delete stroked.traces[0].style.dx;
+  delete stroked.traces[0].style.dy;
+  const svg = sceneSvg(stroked.toScene());
+  assert.match(svg, /stroke-opacity="/);
+  assert.equal(sceneExportSupportReason(stroked), null);
+});
+
+test("Node Scene compiles colormap hexbin", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    colormap: "viridis",
+    name: "hex",
+    id: 0,
+  });
+  delete figure.traces[0].style.dx;
+  delete figure.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(figure), null);
+  const svg = sceneSvg(figure.toScene());
+  assert.equal((svg.match(/<path d="M /g) ?? []).length, figure.traces[0].x.length);
+  const fills = [...svg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
+  assert.match(svg, />hex<\/text>/);
+});
+
+test("Node Scene compiles polar hexbin, custom reduce, and direct_rgba cells", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 4]);
+  polar.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+    gridsize: [4, 4],
+    range: [[0, Math.PI * 2], [0, 4]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+    mincnt: 1,
+  });
+  delete polar.traces[0].style.dx;
+  delete polar.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(polar), null);
+  const polarSvg = sceneSvg(polar.toScene());
+  assert.equal((polarSvg.match(/<path d="M /g) ?? []).length, polar.traces[0].x.length);
+
+  const custom = new Figure({ width: 320, height: 240 });
+  custom.setAxisDomain("x", [0, 4]);
+  custom.setAxisDomain("y", [0, 5]);
+  custom.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+  });
+  custom.traces[0].style.reduce = "custom";
+  delete custom.traces[0].style.dx;
+  delete custom.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(custom), null);
+  assert.equal(
+    (sceneSvg(custom.toScene()).match(/<path d="M /g) ?? []).length,
+    custom.traces[0].x.length,
+  );
+
+  const painted = new Figure({ width: 320, height: 240 });
+  painted.setAxisDomain("x", [0, 4]);
+  painted.setAxisDomain("y", [0, 5]);
+  painted.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+  });
+  delete painted.traces[0].style.dx;
+  delete painted.traces[0].style.dy;
+  const n = painted.traces[0].x.length;
+  const rgba = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i += 1) rgba[i * 4 + 3] = 255;
+  rgba.set([239, 68, 68, 255], 0);
+  rgba.set([34, 197, 94, 255], 4);
+  painted.traces[0].color_ch = { mode: "direct_rgba", rgba };
+  painted.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(painted), null);
+  const paintedSvg = sceneSvg(painted.toScene());
+  assert.equal((paintedSvg.match(/<path d="M /g) ?? []).length, n);
+  const fills = [...paintedSvg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
+});
+
+test("Node Scene compiles triangle_mesh joined_fill", () => {
+  const joined = new Figure({ width: 240, height: 160 });
+  joined.setAxisDomain("x", [0, 1]);
+  joined.setAxisDomain("y", [0, 1]);
+  joined.triangleMesh([0, 1], [0, 0], [1, 1], [0, 1], [0, 0], [1, 1], {
+    color: "#22c55e",
+    style: { joined_fill: true },
+    name: null,
+  });
+  const svg = sceneSvg(joined.toScene());
+  assert.equal((svg.match(/<path d="M/g) || []).length, 1);
+  assert.equal(sceneExportSupportReason(joined), null);
+  const unjoined = new Figure({ width: 240, height: 160 });
+  unjoined.setAxisDomain("x", [0, 1]);
+  unjoined.setAxisDomain("y", [0, 1]);
+  unjoined.triangleMesh([0, 1], [0, 0], [1, 1], [0, 1], [0, 0], [1, 1], {
+    color: "#22c55e",
+    name: null,
+  });
+  assert.equal((sceneSvg(unjoined.toScene()).match(/<path d="M/g) || []).length, 2);
+  assert.notEqual(svg, sceneSvg(unjoined.toScene()));
+  const custom = new Figure({ width: 240, height: 160 });
+  custom.setAxisDomain("x", [0, 1]);
+  custom.setAxisDomain("y", [0, 1]);
+  custom.triangleMesh([0], [0], [1], [0], [0.5], [1], {
+    color: "#22c55e",
+    style: { role: "custom-mesh" },
+    name: null,
+  });
+  assert.equal(sceneExportSupportReason(custom), null);
+  assert.match(sceneSvg(custom.toScene()), /<path d="M/);
+});
+
+test("Node Scene compiles triangle_mesh per-item paint", () => {
+  const painted = new Figure({ width: 240, height: 160 });
+  painted.setAxisDomain("x", [0, 2]);
+  painted.setAxisDomain("y", [0, 2]);
+  painted.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    name: null,
+  });
+  painted.traces[0].color_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([239, 68, 68, 255, 34, 197, 94, 255]),
+  };
+  painted.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(painted), null);
+  const paintedSvg = sceneSvg(painted.toScene());
+  assert.equal((paintedSvg.match(/<path d="M/g) || []).length, 2);
+  const fills = [...paintedSvg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
+
+  const stroked = new Figure({ width: 240, height: 160 });
+  stroked.setAxisDomain("x", [0, 2]);
+  stroked.setAxisDomain("y", [0, 2]);
+  stroked.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    name: null,
+  });
+  stroked.traces[0].stroke_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([17, 17, 17, 255, 239, 68, 68, 255]),
+  };
+  stroked.traces[0].strokeChannel = stroked.traces[0].stroke_ch;
+  stroked.traces[0].style_channels = { stroke_width: { values: [1, 2] } };
+  stroked.traces[0].styleChannels = stroked.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(stroked), null);
+  const strokedSvg = sceneSvg(stroked.toScene());
+  assert.equal((strokedSvg.match(/<path d="M/g) || []).length, 2);
+  assert.match(strokedSvg, /stroke="/);
+
+  const joined = new Figure({ width: 240, height: 160 });
+  joined.setAxisDomain("x", [0, 2]);
+  joined.setAxisDomain("y", [0, 2]);
+  joined.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    style: { joined_fill: true },
+    name: null,
+  });
+  joined.traces[0].color_ch = painted.traces[0].color_ch;
+  joined.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.notEqual(sceneExportSupportReason(joined), null);
+});
+
+test("Node Scene compiles triangle_mesh fill_opacity", () => {
+  const faded = new Figure({ width: 240, height: 160 });
+  faded.setAxisDomain("x", [0, 1]);
+  faded.setAxisDomain("y", [0, 1]);
+  faded.triangleMesh([0], [0], [1], [0], [0.5], [1], {
+    color: "#22c55e",
+    opacity: 0.75,
+    style: { fill_opacity: 0.5 },
+    name: null,
+  });
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 1]);
+  solid.setAxisDomain("y", [0, 1]);
+  solid.triangleMesh([0], [0], [1], [0], [0.5], [1], {
+    color: "#22c55e",
+    opacity: 0.75,
+    name: null,
+  });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles scatter per-item paint", () => {
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 3]);
+  stroked.setAxisDomain("y", [0, 3]);
+  stroked.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    style: { stroke: "#111111", stroke_width: 2 },
+    name: null,
+    forceDirect: true,
+  });
+  stroked.traces[0].stroke_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([255, 0, 0, 255, 0, 255, 0, 255]),
+  };
+  stroked.traces[0].strokeChannel = stroked.traces[0].stroke_ch;
+  assert.equal(sceneExportSupportReason(stroked), null);
+  const strokedSvg = sceneSvg(stroked.toScene());
+  const strokes = [...strokedSvg.matchAll(/stroke="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(new Set(strokes).size > 1);
+
+  const widths = new Figure({ width: 320, height: 240 });
+  widths.setAxisDomain("x", [0, 3]);
+  widths.setAxisDomain("y", [0, 3]);
+  widths.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    style: { stroke: "#111111", stroke_width: 1 },
+    name: null,
+    forceDirect: true,
+  });
+  widths.traces[0].style_channels = { stroke_width: { values: [1, 3] } };
+  widths.traces[0].styleChannels = widths.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(widths), null);
+  const widthSvg = sceneSvg(widths.toScene());
+  assert.match(widthSvg, /stroke-width="/);
+
+  const faded = new Figure({ width: 320, height: 240 });
+  faded.setAxisDomain("x", [0, 3]);
+  faded.setAxisDomain("y", [0, 3]);
+  faded.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  faded.traces[0].style_channels = { opacity: { values: [0.25, 0.9] } };
+  faded.traces[0].styleChannels = faded.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(faded), null);
+  assert.match(sceneSvg(faded.toScene()), /<circle|<path/);
+
+  const colored = new Figure({ width: 320, height: 240 });
+  colored.setAxisDomain("x", [0, 3]);
+  colored.setAxisDomain("y", [0, 3]);
+  colored.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  colored.traces[0].color_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([239, 68, 68, 255, 34, 197, 94, 255]),
+  };
+  colored.traces[0].colorChannel = colored.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(colored), null);
+  const coloredSvg = sceneSvg(colored.toScene());
+  const fills = [...coloredSvg.matchAll(/fill="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(new Set(fills).size > 1);
+
+  const sized = new Figure({ width: 320, height: 240 });
+  sized.setAxisDomain("x", [0, 3]);
+  sized.setAxisDomain("y", [0, 3]);
+  sized.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  sized.traces[0].size_ch = { mode: "direct", values: [4, 12] };
+  sized.traces[0].sizeChannel = sized.traces[0].size_ch;
+  assert.notEqual(sceneExportSupportReason(sized), null);
+});
+
+test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
+  const gapped = new Figure({ width: 400, height: 400, coords: "polar" });
+  gapped.setAxisDomain("x", [0, Math.PI * 2]);
+  gapped.setAxisDomain("y", [0, 1]);
+  gapped.bar([0, 1.5], [1, 0.8], { style: { color: "#2563eb", wedge_gap: 12 }, name: null });
+  const scene = gapped.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(scene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(gapped), null);
+  const cartesian = new Figure({ width: 240, height: 160 });
+  cartesian.setAxisDomain("x", [0, 2]);
+  cartesian.setAxisDomain("y", [0, 3]);
+  cartesian.bar([0, 1], [1, 2], { style: { wedge_gap: 12 }, name: null });
+  assert.throws(() => cartesian.toScene(), /wedge_gap/);
+});
+
+test("Node Scene compiles polar density tessellation", () => {
+  const density = new Figure({ width: 400, height: 400, coords: "polar" });
+  density.setAxisDomain("x", [0, Math.PI * 2]);
+  density.setAxisDomain("y", [0, 1]);
+  density.scatter(new Float64Array([0, Math.PI / 2]), new Float64Array([0.5, 1]), {
+    forceDensity: true,
+    color: "#3987e5",
+    name: null,
+  });
+  const scene = density.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes("XYPL"));
+  assert.ok(!Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<path/);
+  assert.ok(!svg.includes("<image"));
+  assert.ok(!svg.includes("<rect x="));
+});
+
+test("Node Scene compiles cartesian density blit as one image", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxis("x", { domain: [-1, 1] });
+  figure.setAxis("y", { domain: [-1, 1] });
+  figure.scatter(new Float64Array(200_000), new Float64Array(200_000), {
+    forceDensity: true,
+    color: "#3987e5",
+    name: null,
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
+});
+
+test("Node Scene compiles cartesian mean-color density blit", () => {
+  const x = new Float64Array(160);
+  const y = new Float64Array(160);
+  const rgba = new Uint8Array(160 * 4);
+  for (let i = 0; i < 160; i++) {
+    x[i] = i < 80 ? 0.25 : 0.75;
+    y[i] = 0.5;
+    const off = i * 4;
+    if (i < 80) {
+      rgba[off] = 255;
+      rgba[off + 3] = 255;
+    } else {
+      rgba[off + 2] = 255;
+      rgba[off + 3] = 255;
+    }
+  }
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxis("x", { domain: [0, 1] });
+  figure.setAxis("y", { domain: [0, 1] });
+  figure.scatter(x, y, { forceDensity: true, name: null });
+  figure.traces[0].color = { mode: "direct_rgba", rgba };
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
+
+  const polar = new Figure({ width: 240, height: 160, coords: "polar" });
+  polar.setAxis("x", { domain: [0, 1] });
+  polar.setAxis("y", { domain: [0, 1] });
+  polar.scatter(x, y, { forceDensity: true, name: null });
+  polar.traces[0].color = { mode: "direct_rgba", rgba };
+  const polarScene = polar.toScene();
+  assert.ok(Buffer.from(polarScene).includes("XYPL"));
+  assert.ok(!Buffer.from(polarScene).includes("XYIM"));
+  const polarSvg = sceneSvg(polarScene);
+  assert.match(polarSvg, /<path/);
+  assert.ok(!polarSvg.includes("<image"));
+});
+
+test("Node Scene rejects hidden traces and unknown kinds", () => {
+  const hidden = new Figure({ width: 200, height: 120 });
+  hidden.line([0, 1], [0, 1], { name: null });
+  hidden.traces[0].hidden = true;
+  assert.throws(() => hidden.toScene(), /hidden or per-item/);
+
+  const unknown = new Figure({ width: 200, height: 120 });
+  unknown.line([0, 1], [0, 1], { name: null });
+  unknown.traces[0].kind = "text";
+  assert.throws(() => unknown.toScene(), /does not yet support text/);
 });
 
 test("Node Scene rejects missing or unequal rectangle columns", () => {
@@ -1202,7 +2977,7 @@ test("Node Scene rejects missing or unequal rectangle columns", () => {
     x_axis: "x",
     y_axis: "y",
   });
-  assert.throws(() => missing.toScene(), /four rectangle columns/);
+  assert.throws(() => missing.toScene(), /invalid scene trace packing/);
 
   const unequal = new Figure({ width: 200, height: 120 });
   unequal.traces.push({
@@ -1217,7 +2992,7 @@ test("Node Scene rejects missing or unequal rectangle columns", () => {
     x_axis: "x",
     y_axis: "y",
   });
-  assert.throws(() => unequal.toScene(), /equal length/);
+  assert.throws(() => unequal.toScene(), /invalid scene trace packing/);
 });
 
 test("Node Scene compiles segments, step lines, and stem", () => {
@@ -1307,4 +3082,13 @@ test("Node frames literal v23 borders for text, attached, and callout label boxe
   assert.ok(new TextDecoder().decode(painter).includes("XYLB\x04"));
   const invalid = new Figure(); invalid.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "bad", style: { color: "#667085", label_border_color: "#000" } }];
   assert.throws(() => invalid.toScene(), /requires color and width/);
+});
+
+test("sceneChannelConstantCss owns constant mode CSS pack", () => {
+  assert.equal(sceneChannelConstantCss("constant", true, "red"), "red");
+  assert.equal(sceneChannelConstantCss("constant", true, ""), "");
+  assert.equal(sceneChannelConstantCss("constant", false, "red"), null);
+  assert.equal(sceneChannelConstantCss("direct_rgba", true, "red"), null);
+  assert.equal(sceneChannelConstantCss("CONSTANT", true, "red"), null);
+  assert.equal(sceneChannelConstantCss("", true, "red"), null);
 });

@@ -280,6 +280,26 @@ Start with the smallest reusable primitive surface:
 - Example app card with normal-size data, not only a stress demo.
 - Benchmark row only when the comparison methodology is honest.
 
+## M2 close contract
+
+Milestone 2 closes only when remaining Python emit and Scene pack loops move
+into Rust and both hosts call the same kernel. Tracker
+[#731](https://github.com/CurateLabs/xyg/issues/731); children
+[#732](https://github.com/CurateLabs/xyg/issues/732) (`_payload` emit
+gather/ship) and [#733](https://github.com/CurateLabs/xyg/issues/733)
+(`_scene_v3` / `scene.js` XYTC/XYTA pack). Canonical contract:
+[`m2-close.md`](m2-close.md).
+
+Stay-host TAP extras and leftover cluster titles #287–#313 are inventory, not
+an alternate close path. Land **one kernel twin per pull request** versus
+`main`. Wait until the exact PR head's three required checks are green before
+the next push on that ref — CI cancels superseded runs. Do not delete
+`_payload.py` or `_scene_v3.py` until Rust owns the path **and** differentials
+are green. Do not route pyplot through Scene.
+
+Historical leftover-cluster table:
+[`m2-leftover-clusters.md`](m2-leftover-clusters.md).
+
 ## Pull-request gates and final review
 
 Every pull request runs three required, authoritative lanes: the complete

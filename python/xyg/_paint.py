@@ -8,6 +8,8 @@ from typing import Any
 
 import numpy as np
 
+from . import kernels
+
 ColumnReader = Callable[[int], np.ndarray]
 
 
@@ -175,14 +177,12 @@ def effective_rgba(
     non-negative. Core opacity and the component-specific fill/stroke opacity
     remain multiplicative.
     """
-    rgba = np.asarray(intrinsic, dtype=np.float64).copy()
+    rgba = np.asarray(intrinsic, dtype=np.float64)
     if rgba.ndim != 2 or rgba.shape[1] != 4:
         raise ValueError(f"intrinsic paint must have shape (N, 4), got {rgba.shape}")
     n = len(rgba)
     style = trace.get("style") or {}
     artist = style_values(trace, "artist_alpha", n, read_column, -1.0)
-    base_alpha = np.where(artist >= 0.0, artist, rgba[:, 3])
     opacity = style_values(trace, "opacity", n, read_column, default_opacity)
     component_opacity = float(style.get(f"{component}_opacity", 1.0))
-    rgba[:, 3] = np.clip(base_alpha * opacity * component_opacity, 0.0, 1.0)
-    return np.clip(rgba, 0.0, 1.0)
+    return kernels.paint_effective_rgba(rgba, artist, opacity, component_opacity)

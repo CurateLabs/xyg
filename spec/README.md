@@ -139,6 +139,10 @@ Release bar, contribution rules, and audit trail.
 
 - [`contributing.md`](process/contributing.md) — the contribution bar and the
   production invariants a change must not lose.
+- [`m2-close.md`](process/m2-close.md) — Milestone 2 close contract: remaining
+  Python emit and Scene pack loops move into Rust so both hosts call the same
+  kernel (tracker #731). Stay-host TAP extras are inventory, not an alternate
+  close path.
 - [`production-readiness.md`](process/production-readiness.md) — the release
   bar, separating hard gates from advisory measurements.
 - [`rendering-verification.md`](process/rendering-verification.md) — the

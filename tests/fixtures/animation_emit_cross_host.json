@@ -1,0 +1,266 @@
+{
+  "schema": "xyg.animation-emit-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "scatter_animation",
+      "trace_id": 50,
+      "kind": "scatter",
+      "n_points": 3,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "line_animation",
+      "trace_id": 51,
+      "kind": "line",
+      "n_points": 3,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "scatter_no_animation",
+      "trace_id": 52,
+      "kind": "scatter",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "line_no_animation",
+      "trace_id": 53,
+      "kind": "line",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "scatter_log_animation",
+      "trace_id": 54,
+      "kind": "scatter",
+      "n_points": 3,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "line_decimated_animation",
+      "trace_id": 55,
+      "kind": "line",
+      "n_points": 10001,
+      "tier": "decimated",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "area_animation",
+      "trace_id": 56,
+      "kind": "area",
+      "n_points": 3,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "area_no_animation",
+      "trace_id": 57,
+      "kind": "area",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "area_decimated_animation",
+      "trace_id": 58,
+      "kind": "area",
+      "n_points": 10001,
+      "tier": "decimated",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "density_animation",
+      "trace_id": 59,
+      "kind": "scatter",
+      "n_points": 3,
+      "tier": "density",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "density_no_animation",
+      "trace_id": 60,
+      "kind": "scatter",
+      "n_points": 2,
+      "tier": "density",
+      "animation": null
+    },
+    {
+      "name": "hist_animation",
+      "trace_id": 61,
+      "kind": "histogram",
+      "n_points": 4,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "hist_no_animation",
+      "trace_id": 62,
+      "kind": "histogram",
+      "n_points": 4,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "bar_animation",
+      "trace_id": 63,
+      "kind": "bar",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "bar_no_animation",
+      "trace_id": 64,
+      "kind": "bar",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "segments_animation",
+      "trace_id": 65,
+      "kind": "segments",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "segments_no_animation",
+      "trace_id": 66,
+      "kind": "segments",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "ribbon_animation",
+      "trace_id": 67,
+      "kind": "ribbon",
+      "n_points": 1,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "ribbon_no_animation",
+      "trace_id": 68,
+      "kind": "ribbon",
+      "n_points": 1,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "mesh_animation",
+      "trace_id": 69,
+      "kind": "triangle_mesh",
+      "n_points": 1,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "mesh_no_animation",
+      "trace_id": 70,
+      "kind": "triangle_mesh",
+      "n_points": 1,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "density_transition_keys",
+      "trace_id": 71,
+      "kind": "scatter",
+      "n_points": 2,
+      "tier": "density",
+      "animation": null,
+      "animation_fallback": "snap:aggregate"
+    },
+    {
+      "name": "hist_transition_keys",
+      "trace_id": 72,
+      "kind": "histogram",
+      "n_points": 4,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "rect_transition_keys",
+      "trace_id": 73,
+      "kind": "bar",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "segments_transition_keys",
+      "trace_id": 74,
+      "kind": "segments",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "ribbon_transition_keys",
+      "trace_id": 75,
+      "kind": "ribbon",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "mesh_transition_keys",
+      "trace_id": 76,
+      "kind": "triangle_mesh",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    }
+  ]
+}

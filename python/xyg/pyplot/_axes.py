@@ -6759,8 +6759,8 @@ class Axes(PlotTypeMixin):
                 _scale_values(props["tick_values"], host._scale_specs[key], inverse=True),
                 dtype=float,
             )
-        # Auto-ticked axes report the same nice locations the exporters draw.
-        from xyg._svg import _linear_ticks, _log_ticks
+        # Auto-ticked axes report the Rust-authored locations the exporters draw.
+        from xyg._svg import axis_ticks
 
         lo, hi = sorted(self.get_xlim() if axis == "x" else self.get_ylim())
         if not (np.isfinite(lo) and np.isfinite(hi)) or lo == hi:
@@ -6770,9 +6770,16 @@ class Axes(PlotTypeMixin):
             ticks = np.asarray(locator.tick_values(lo, hi), dtype=float).reshape(-1)
             pad = (hi - lo) * 1e-9
             return ticks[(ticks >= lo - pad) & (ticks <= hi + pad)]
-        if props.get("type_") == "log":
-            return np.asarray(_log_ticks(float(lo), float(hi))[0], dtype=float)
-        return np.asarray(_linear_ticks(float(lo), float(hi))[0], dtype=float)
+        ticks, _labeled, _step = axis_ticks(
+            {
+                "kind": "log" if props.get("type_") == "log" else "linear",
+                "range": [float(lo), float(hi)],
+                "tick_count": 6,
+            },
+            480.0,
+            True,
+        )
+        return np.asarray(ticks, dtype=float)
 
     def set_anchor(self, anchor: str | Literal[False]) -> None:
         """Anchor the axes box within its allotted space.

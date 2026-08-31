@@ -8,9 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from . import kernels
 from .channels import ColorChannel, SizeChannel, StyleChannel
 from .columns import Column
-from .config import DIRECT_SOFT_CEILING, SCATTER_DENSITY_THRESHOLD
 
 
 @dataclass
@@ -159,15 +159,29 @@ class Trace:
         """Whether this trace must preserve independently styled items."""
         return bool(self.per_item_channel_names())
 
+    def payload_force_density(self) -> int:
+        """Tri-state density override for ``xyg_payload_tier``: -1 auto, 0/1 forced."""
+        if self.force_density is True:
+            return 1
+        if self.force_density is False:
+            return 0
+        return -1
+
     def use_density(self) -> bool:
-        """Whether this scatter renders as a Tier-2 density grid (§5)."""
+        """Whether this scatter renders as a Tier-2 density grid (§5).
+
+        Polar is applied at emit time: a ``Trace`` has no chart coords, so
+        ``payload_tier`` is asked with ``polar=False`` here and the figure
+        overrides it when compiling the payload (ABI 122).
+        """
         if self.kind != "scatter":
             return False
-        if self.force_density is not None:
-            return self.force_density
-        # Per-point channels keep direct draw until the hard ceiling; plain
-        # scatter aggregates earlier (its whole win is not drawing 10M dots).
-        threshold = (
-            DIRECT_SOFT_CEILING if self.has_per_item_channels() else SCATTER_DENSITY_THRESHOLD
+        return (
+            kernels.payload_tier(
+                1,
+                self.n_points,
+                force_density=self.payload_force_density(),
+                per_item=self.has_per_item_channels(),
+            )
+            == 2
         )
-        return self.n_points > threshold

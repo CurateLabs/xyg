@@ -64,6 +64,24 @@ def test_color_continuous():
     assert c.colormap == "magma"
 
 
+def test_color_continuous_domain_pads_equal_bounds() -> None:
+    c = ch.resolve_color(np.zeros(4), 4, default_constant="#000")
+    assert c.mode == "continuous"
+    assert c.domain == (-0.5, 0.5)
+    empty = ch.resolve_color(np.array([np.nan, np.nan]), 2, default_constant="#000")
+    assert empty.domain == (0.0, 1.0)
+
+
+def test_literal_css_color_array_is_direct_rgba_not_categorical() -> None:
+    c = ch.resolve_color(np.array(["#ff0000", "#00ff00"]), 2, default_constant="#000")
+    assert c.mode == "direct_rgba"
+    assert c.rgba is not None
+    np.testing.assert_allclose(c.rgba[0], [1.0, 0.0, 0.0, 1.0])
+    named = ch.resolve_color(np.array(["red", "green"]), 2, default_constant="#000")
+    assert named.mode == "categorical"
+    assert named.categories == ["green", "red"]
+
+
 def test_color_categorical():
     cats = np.array(["b", "a", "b", "c", "a"])
     c = ch.resolve_color(cats, 5, default_constant="#000")

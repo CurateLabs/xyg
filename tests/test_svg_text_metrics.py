@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from xyg import _fontmetrics, _svg, _textblock
+from xyg import _fontmetrics, _native, _svg, _textblock
 
 
 def test_text_box_width_uses_embedded_advances_with_unknown_glyph_fallback() -> None:
@@ -76,24 +76,29 @@ def test_measurements_are_reused_only_within_one_layout_pass(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = 0
-    original = _fontmetrics.advance
+    original = _native.text_block_measure
 
-    def measured(text: str, font_size: float) -> float:
+    def measured(
+        text: object,
+        font_size: float,
+        line_height: float = 1.2,
+        max_width: float | None = None,
+    ) -> dict[str, object]:
         nonlocal calls
         calls += 1
-        return original(text, font_size)
+        return original(text, font_size, line_height=line_height, max_width=max_width)
 
-    monkeypatch.setattr(_fontmetrics, "advance", measured)
+    monkeypatch.setattr(_native, "text_block_measure", measured)
     with _textblock.measurement_cache():
         first = _textblock.measure("first\r\nsecond", 12.0)
         second = _textblock.measure("first\nsecond", 12.0)
 
     assert second is first
-    assert calls == 2
+    assert calls == 1
 
     with _textblock.measurement_cache():
         _textblock.measure("first\nsecond", 12.0)
-    assert calls == 4
+    assert calls == 2
 
 
 def test_default_layout_resolves_x_tick_room_once_when_y_gutter_does_not_grow(
@@ -127,3 +132,55 @@ def test_default_layout_resolves_x_tick_room_once_when_y_gutter_does_not_grow(
     _svg.layout(spec)
 
     assert calls == 1
+
+
+def test_scene_layout_rooms_match_rust_cartesian_gutters() -> None:
+    spec = {
+        "width": 320,
+        "height": 240,
+        "x_axis": {"kind": "linear", "domain": [0.0, 4.0], "range": [0.0, 4.0]},
+        "y_axis": {"kind": "linear", "domain": [0.0, 5.0], "range": [0.0, 5.0]},
+        "title": "Hello title",
+    }
+    rooms = _svg.scene_layout_rooms(spec)
+    expected = _native.scene_plot_layout(
+        viewport=(320.0, 240.0),
+        x_axis=(0, 0.0, 4.0, 1.0, False),
+        y_axis=(0, 0.0, 5.0, 1.0, False),
+        title="Hello title",
+    )
+    assert rooms == expected
+    width, height, _compact, plot = _svg.layout(spec)
+    compat = (
+        plot["x"],
+        width - plot["x"] - plot["w"],
+        plot["y"],
+        height - plot["y"] - plot["h"],
+    )
+    assert compat != expected
+
+
+def test_scene_layout_rooms_fail_closed_for_custom_font_and_polar() -> None:
+    base = {
+        "width": 320,
+        "height": 240,
+        "x_axis": {"kind": "linear", "domain": [0.0, 1.0]},
+        "y_axis": {"kind": "linear", "domain": [0.0, 1.0]},
+    }
+    custom = {**base, "chrome_styles": {"title": {"font-family": "Comic Sans"}}}
+    polar = {**base, "coords": "polar"}
+    category = {
+        **base,
+        "x_axis": {"kind": "category", "domain": [0.0, 1.0]},
+    }
+    assert _svg.scene_layout_rooms(custom) is None
+    assert _svg.scene_layout_rooms(polar) is None
+    assert _svg.scene_layout_rooms(category) is None
+    top_x = {**base, "x_axis": {**base["x_axis"], "side": "top"}}
+    right_y = {**base, "y_axis": {**base["y_axis"], "side": "right"}}
+    outside = {**base, "show_legend": True, "legend": {"loc": "outside right"}}
+    axes_bar = {**base, "colorbar": {"placement": "axes", "orientation": "vertical"}}
+    assert _svg.scene_layout_rooms(top_x) is None
+    assert _svg.scene_layout_rooms(right_y) is None
+    assert _svg.scene_layout_rooms(outside) is None
+    assert _svg.scene_layout_rooms(axes_bar) is None

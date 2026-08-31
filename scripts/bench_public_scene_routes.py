@@ -4,7 +4,7 @@
 This is a reproduction contract, not a CodSpeed or CI timing gate. It compiles
 the same golden public hexbin and heatmap fixtures used by Python/Node Scene
 tests, plus a small set of already-public Cartesian routes, through
-``try_public_*``.
+the same ``public_static_export`` selector used by product entry points.
 """
 
 from __future__ import annotations
@@ -31,10 +31,8 @@ from xyg import _native, kernels  # noqa: E402
 from xyg._figure import Figure  # noqa: E402
 from xyg._scene_v3 import (  # noqa: E402
     figure_scene,
+    public_static_export,
     scene_export_support_reason,
-    try_public_pdf,
-    try_public_png,
-    try_public_svg,
 )
 
 FIXTURE = ROOT / "tests" / "fixtures" / "figure_scene_v3.json"
@@ -215,10 +213,12 @@ def _measure_route(
     if expected_sha is not None and digest != expected_sha:
         raise SystemExit(f"{name} Scene SHA-256 {digest} != golden {expected_sha}")
 
-    svg_ms, svg = _time_ms(lambda: try_public_svg(figure), warmups=warmups, reps=reps)
-    png_ms, png = _time_ms(lambda: try_public_png(figure, scale=1), warmups=warmups, reps=reps)
-    pdf_ms, pdf = _time_ms(lambda: try_public_pdf(figure), warmups=warmups, reps=reps)
-    if not isinstance(svg, str) or not isinstance(png, (bytes, bytearray)):
+    svg_ms, svg = _time_ms(lambda: public_static_export(figure, "svg"), warmups=warmups, reps=reps)
+    png_ms, png = _time_ms(
+        lambda: public_static_export(figure, "png", scale=1), warmups=warmups, reps=reps
+    )
+    pdf_ms, pdf = _time_ms(lambda: public_static_export(figure, "pdf"), warmups=warmups, reps=reps)
+    if not isinstance(svg, (bytes, bytearray)) or not isinstance(png, (bytes, bytearray)):
         raise SystemExit(f"{name} public SVG/PNG export returned compatibility None")
     if not isinstance(pdf, (bytes, bytearray)):
         raise SystemExit(f"{name} public PDF export returned compatibility None")
@@ -237,7 +237,7 @@ def _measure_route(
         "scene_sha256": digest,
         "expected_scene_sha256": expected_sha,
         "scene_bytes": len(scene),
-        "svg_bytes": len(svg.encode("utf-8")),
+        "svg_bytes": len(svg),
         "png_bytes": len(png),
         "pdf_bytes": len(pdf),
         "painter_bytes": len(painter),

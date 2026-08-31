@@ -300,12 +300,13 @@ allocation cliff is structurally unreachable. Both remain the intended design; n
 exists in `js/src/` today.
 
 **Tier 0 — Direct.** Upload raw columns, draw with instancing. Simple, exact. The
-budget is channel-dependent: `Trace.use_density()` (`python/xyg/_trace.py`) picks
+budget is channel-dependent: `Trace.use_density()` (`python/xyg/_trace.py`) is a
+thin packer over `xyg_payload_tier` (ABI 122). Rust picks
 `DIRECT_SOFT_CEILING = 2_000_000` when the trace carries a per-point color or size
-channel, and `SCATTER_DENSITY_THRESHOLD = 200_000` otherwise (both in
-`python/xyg/config.py`). A plain scatter therefore aggregates at 200k — its whole win is
+channel, and `SCATTER_DENSITY_THRESHOLD = 200_000` otherwise (both lockstep in
+`python/xyg/config.py` and `crates/xyg-engine/src/lod_plan.rs`; strict `>`). A plain scatter therefore aggregates at 200k — its whole win is
 not drawing 10M dots — while a scatter whose per-point color/size aggregation would
-destroy stays direct up to 2M. `js/src/45_lod.ts` carries the matching 200k client
+destroy stays direct up to 2M. Polar charts always ship direct. `js/src/45_lod.ts` carries the matching 200k client
 budget.
 
 **Tier 1 — Decimated lines (LTTB / min-max per pixel column):** for line/area traces
@@ -458,9 +459,9 @@ re-exports several of them as a historic import path and is not listed for those
 | Constant | Value | What it gates | Read by |
 | --- | --- | --- | --- |
 | `PROTOCOL_VERSION` | `3` | Wire-spec version stamped on every payload; the client refuses a mismatch loudly (§33). | `_payload.py` |
-| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. | `_payload.py`, `interaction.py` |
-| `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()`), and the visible-count budget for view-LOD planning and drill decisions. | `_trace.py`, `interaction.py`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
-| `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). | `_trace.py`, `marks.py` |
+| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122); `xyg_payload_m4_indices` owns emit/re-decimate (ABI 204). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs` |
+| `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()` via `xyg_payload_tier`), and the visible-count budget for view-LOD planning and drill decisions. Strict `>`. | `_trace.py`, `interaction.py`; lockstep `lod_plan.rs`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
+| `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_trace.py`, `marks.py`; lockstep `lod_plan.rs` |
 | `DENSITY_GRID` | `(512, 384)` | Default density-grid cell dimensions for the initial spec, before the client requests a viewport-matched size via `density_view`. | `_payload.py` |
 | `MAX_SCREEN_DIM` | `4096` | Upper clamp on any browser-supplied pixel dimension, so untrusted widget/comm input cannot inflate decimation buckets or density grids. | `lod.py`, `_native.py` |
 | `MAX_CONTOUR_WORK` | `4_000_000` | Ceiling on contour `cells × levels`; a request over it raises instead of allocating an unbounded segment buffer. | `marks.py`, `_native.py` |
@@ -546,23 +547,74 @@ F3, still pending (above).
   stroke and optional finite non-negative scalar width (default 1px),
   constant-style polyline, ordinary area/error-band Bands,
   bar/column/histogram rectangles, at most 1,024 fill-only unjoined
-  constant-color triangle-mesh faces, solid ribbons, and
+  triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+  interned per-item scatter fill/stroke/width/opacity (ABI 196),
+  solid ribbons, and
   disconnected `segments`/error-bar/stem endpoint pairs (including the
   immediately-following generated constant built-in stem marker). Gradients,
   rounded corners, dashed or data-driven segment styles, LOD/density,
-  nonliteral palettes, triangle-mesh component alpha/outlines/per-face styles/
-  joined fills/larger batches, two-ended ribbon gradients, polar geometry, and
+  nonliteral palettes, triangle-mesh `joined_fill` plus per-face paint,
+  larger batches, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
   the bounded linear/log/symlog/category/angular/time tick ladders exposed to
-  both native hosts through one ABI,
+  both native hosts through one ABI. Python compatibility SVG/raster and pyplot
+  call that ABI through one `_svg.axis_ticks` framing function; the obsolete
+  per-family Python adapters are retired. `public_static_export` is likewise
+  the only optional Python selector for the bounded product route; it reuses
+  the predicate's compiled Scene rather than encoding twice, then ABI 164
+  `xyg_scene_static_export` owns SVG/PNG/PDF/JPEG/WebP consumers from that
+  batch, then ABI 165 folds the figure-compile `XYFS` probe into
+  `xyg_scene_encode_product` so product-path hosts do not call
+  `xyg_scene_figure_support_reason` separately, then ABI 166 tessellates
+  cartesian bar/column/histogram `corner_radius` on that same product Scene,
+  then ABI 167 applies polar bar/column/histogram `wedge_gap`, then ABI 168
+  tessellates polar bar/column/histogram `corner_radius`, then ABI 169 admits
+  polar `curve="smooth"` plus `step` as polar step expansion, then ABI 170
+  admits constant scatter `marker_glyph` as Scene `<text>` / `OP_TEXT`, then
+  ABI 171 admits scatter `stroke_width` without `stroke` as match-fill, then
+  ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
+  step expansion, then ABI 173 tessellates heatmap `corner_radius`, then ABI 174
+  tessellates violin/box `corner_radius`, then ABI 175 admits violin/box
+  `fill_opacity` / `stroke_opacity`, then ABI 176 admits bar/column/histogram
+  `fill_opacity` / `stroke_opacity`, then ABI 177 admits heatmap `fill_opacity`,
+  then ABI 178 admits scatter `fill_opacity` / `stroke_opacity`, then ABI 179
+  admits hexbin `fill_opacity`, then ABI 180 admits triangle_mesh `fill_opacity`
+  / constant stroke paint, then ABI 181 admits cartesian area/error_band
+  `curve="smooth"` plus `step` as authored band step expansion, then ABI 182
+  admits triangle_mesh `joined_fill` as one identity PolyFill ring, then ABI 183
+  admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`, then ABI 184
+  admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 185
+  admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 186
+  admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell
+  PolyFills, then ABI 187 admits cartesian unwrapped text `rotation` as XYAW
+  `wrap=0` (XYAW v2 / XYLB v6), then ABI 188 admits labelled cartesian marker
+  `rotation` as XYAW `wrap=0`, then ABI 189 owns heatmap/hexbin cell-fill
+  tessellation eligibility from packed XYTA, then ABI 190 intern cartesian
+  per-item two-ended ribbon `color2_ch` from packed XYHP kind 5, then ABI 191
+  admits constant multi-character scatter `marker_glyph` via XYMG v2, then
+  ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+  ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+  ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+  ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
+  ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
+  `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
+  panel Scene. That predicate
+  owns the public PolyFill group budget, including companion traces that share
+  the browser painter's 1,024-group ceiling. Explicit
+  Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
-  coordinate semantics—polar Scene projection remains an explicit unsupported
-  boundary rather than an inference from transparent paint. Rust owns the
+  coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
+  an inference from transparent paint. Scene v26 compiles polar line, scatter,
+  area, bar/column (PolyFill annular sectors), errorbar, heatmap
+  (tessellated lattice cells), contour (SegmentPair polylines), and hexbin
+  (HexCell PolyFills); polar
+  density remains an explicit unsupported boundary.
+  Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
   nonfinite/missing breaks, custom styles, and every other segment-like mark
   remain explicit compatibility boundaries.
@@ -814,8 +866,8 @@ detail inside a decade of millisecond timestamps).
   than the offset — after which zooming back out could never recover the point
   spread. Only log-family axes (log, symlog) decode before mapping, because their
   transforms are not affine. *Augments §4.*
-- **Log-family axes pin the encode offset to 0.0** (`lod.geometry_offset`) instead
-  of re-centering on a midpoint. A midpoint offset makes f32 error *absolute*
+- **Log-family axes pin the encode offset to 0.0** (`lod.geometry_offset`, ABI 208
+  `xyg_geometry_offset`) instead of re-centering on a midpoint. A midpoint offset makes f32 error *absolute*
   (~span/10⁷), which under symlog collapses exactly the neighborhood of zero the
   scale exists to spread (x=0 and x=1 encode to the same word when the domain
   reaches 10¹²), and under log destroys the small decades. With offset 0 the f32
@@ -1249,8 +1301,964 @@ host after Rust resolves that domain and aspect. The compact wire result
 remains the centers-only hexbin trace. Constant-style Cartesian native
 lattices compile those centers plus cell pitch onto existing Scene PolyFill
 records; polar, custom reducers, colormaps, and LOD stay compatibility.
+ABI 103 moves that Cartesian hex-cell ring and regular heatmap lattice
+reconstruction into Rust compact authoring so Python and Node pack centers+pitch
+and extent+shape only.
+ABI 104 moves disconnected endpoint pairs and unjoined triangle faces onto the
+same compact expansion so hosts pack one four-coordinate row per segment and
+two PolyFill rows per face.
+ABI 105 moves the public static-export support predicate into Rust. Hosts pack
+an `XYEF` v1 facts envelope; ABI 152 owns `XYEP` layout, kind/step/annotation
+codes, and flag derivation. Allowlists, check order, and
+`XYG_SCENE_UNSUPPORTED_*` wording are engine-owned and identical for Python
+and Node.
+ABI 106 moves Figure autorange, `_auto_domain`, and zero-baseline pinning
+into Rust. Hosts pack an `XYAR` v1 envelope of axis options, column extents,
+and rectangle predicates; padding, log-positive extents, polar defaults,
+reverse, and the default 3% margin are engine-owned and identical for Python
+and Node.
+ABI 107 moves Scene CSS→RGBA8 conversion and per-kind mark fill/stroke/width
+defaults into Rust. Hosts pack an `XYMS` v1 envelope of kind, opacities,
+authored CSS strings, and width fields; named colors, `none`, line-only
+scatter stroke, band `line_color`, default widths, and the never-invisible
+fallback are engine-owned and identical for Python and Node.
+ABI 108 moves Scene chrome default RGBA/widths and CSS overlay into Rust.
+Hosts pack an `XYCH` v1 envelope of background CSS, per-axis sides, paint
+flags, opacities, widths, and CSS strings; `grid_opacity` still scales the
+default grid color when `grid_color` is unauthored, and named chrome paints
+cannot drift.
+ABI 109 moves Figure→Scene row packing into Rust. Hosts pass kind, flags,
+step mode, style ref, trace id, diameter/symbol, extras, and literal f64
+columns; record kinds, stable-id splitting, expansion-mode assignment,
+ribbon/triangle doubling, heatmap lattice framing, and finite-coordinate
+rejection are engine-owned and identical for Python and Node.
+ABI 116 expands primary rule/band/marker annotations into ordinary Scene
+rows. Hosts pass kind, axis, style ref, index, and authored scalars plus
+axis domains; stable-id tags, domain spanning, and finite rejection are
+engine-owned and identical for Python and Node.
+ABI 117 moves figure-compile support into Rust. Hosts pass packed
+observations plus axis ids/keys; feature mapping, the primary x/y axis
+set, and the Scene axis-key allowlist are engine-owned and identical for
+Python and Node.
+ABI 118 extends that envelope to per-trace allowlist flags so kind,
+hidden/per-item, density, dash, rect extras, joined fill, hex reducer,
+heatmap colormap, and non-CSS fill diagnostics are engine-owned and
+identical for Python and Node.
+ABI 119 moves composition mark ingress into Rust. Hosts call
+`xyg_argsort_stable`, `xyg_histogram_mark_edges`, `xyg_contour_levels`, and
+`xyg_hexbin_groups`; stable NaN-last sort, integer/empty-auto histogram
+edges, contour isoline spacing, and custom-hex lattice membership are
+engine-owned and identical for Python and Node. Custom reducers stay host
+callables over those groups.
+ABI 120 moves composition `loc="best"` occupancy into Rust. Hosts call
+`xyg_legend_normalize` and `xyg_legend_best_loc`; display-space projection,
+stride/finite caps, drop-not-clamp off-plot marks, and the 0.02 tie band are
+engine-owned and identical for Python and Node. ABI 197 Scene product encode
+settles authored `loc="best"` from packed XYCL/XYNM plus XYCF domains
+(#298). Compatibility `_legendfit.py` still packs ChartView specs.
+ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
+`xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
+`xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,
+Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
+are engine-owned and identical for Python and Node. Compatibility PNG
+(`_raster.py`) calls those kernels directly (#310); `_scene.py` wrappers
+remain for tests. Hosts still map affine
+scales and apply colormaps (`grid_rgba`, #283 / #313).
+ABI 122 moves compile-time payload LOD into Rust. Hosts call
+`xyg_payload_tier`, `xyg_payload_visible_needed`, and
+`xyg_payload_visible_mask`; line M4 vs direct, scatter density vs
+direct (strict `>`, per-item ceiling, polar skip), and the finite/log
+keep mask are engine-owned and identical for Python and Node. ABI 204
+`xyg_payload_m4_indices` owns remaining line M4 emit: the closed-window
+ulp, optional nonlinear `bin_x` buckets, and polar skip on first paint
+and `decimate_view`. Hosts still map scale coordinates, gather extra
+columns, encode, and ship the chosen rows (#282 / #311).
+ABI 205 moves remaining `_emit_*` sampling into Rust. Hosts call
+`xyg_payload_visible_indices`, `xyg_payload_even_indices`, and
+`xyg_payload_sample_target_indices`; fused finite/log keep indices,
+NumPy int64 linspace stem/errorbar sampling, and density-overlay
+`min(1, target/n)` SplitMix selection are engine-owned and identical
+for Python and Node. ABI 214 `xyg_payload_segment_budget` owns the
+stem/errorbar count budget (`max(1024, floor(px_width)*4)`). ABI 215
+`xyg_payload_errorbar_indices` owns even-index expansion across concatenated
+role groups. Hosts still
+gather extra columns, and ship the chosen rows (#282 / #312).
+ABI 123 moves tick-label collision thinning into Rust. Hosts call
+`xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
+edge-anchor rotate gap, and stride downsampling are engine-owned and
+identical for Python and Node. Hosts still format `_tick_text` and map
+values to pixels (#276).
+ABI 124 moves static legend box packing into Rust. Hosts call
+`xyg_legend_box_layout`; column fit, measured ellipsis, and loc /
+bbox-to-anchor placement are engine-owned and identical for Python and
+Node. Hosts still resolve CSS font-size / em paddings, pack entry
+strings, and remap polar `legend_box_*` gutters (#275).
+ABI 125 moves text-block measure and cartesian axis rooms into Rust.
+Hosts call `xyg_text_block_measure`, `xyg_text_block_rotated_extent`,
+`xyg_y_tick_label_extent`, `xyg_y_axis_left_room`,
+`xyg_x_axis_title_room`, `xyg_x_tick_label_room`, and
+`xyg_x_tick_label_edge_rooms`; wrap, rotated extent, and title/tick
+gutter formulas are engine-owned and identical for Python and Node.
+Hosts still format `_tick_text`, resolve CSS visibility / tick offsets,
+and iterate axes on the compatibility `_svg.layout` path (#275). Default-font
+cartesian Scene-shaped specs pack those observations into `xyg_scene_plot_layout`
+(#297); custom `font-family` stays fail-closed instead of a silent DejaVu
+substitute.
+ABI 126 moves compatibility static-export padding, title-band, colorbar
+extra, right-y, and polar-recut combination into Rust. Hosts call
+`xyg_compat_is_compact`, `xyg_compat_default_padding`,
+`xyg_compat_title_wrap_width`, `xyg_compat_title_room`,
+`xyg_compat_x_axis_side_room`, `xyg_compat_colorbar_extra`,
+`xyg_compat_right_y_room`, `xyg_polar_legend_room`,
+`xyg_polar_legend_reserve`, `xyg_polar_label_room`, and
+`xyg_recut_polar_plot`; compact gutters, colorbar extras, and polar disc
+recut (including the too-small canvas fallback) are engine-owned and
+identical for Python and Node. Hosts still iterate axes, format ticks,
+measure rooms through ABI 125, resolve CSS visibility, and decide
+whether a polar legend gutter is reserved (#275).
+ABI 127 moves the pyplot tight-layout grid solve into Rust. Hosts call
+`xyg_tight_layout_solve` with measured per-panel chrome, figure-edge
+extras, and Matplotlib pad/rect; edge maxima, neighbor gaps, pad
+multiples, and `subplots_adjust` fractions are engine-owned. Hosts still
+measure `_panel_chrome`, suptitle, figure labels, and outside legends
+(#275).
+ABI 198 moves the remaining static-export padding/title/colorbar/right-y
+combination and pyplot tight-layout figure-edge extras into Rust. Hosts
+call `xyg_compat_combine_plot` and `xyg_tight_layout_figure_extra`;
+additive vs floor gutters, second x-room pass, polar recut, and
+suptitle/label/outside-legend extras are engine-owned and identical for
+Python and Node. Hosts still iterate axes, format ticks, measure ABI 125
+rooms, resolve CSS visibility, and decide polar legend reservation
+(#299). `_svg._*room` stays for polar/extra-axis/custom-font measurement.
+ABI 128 moves authored tick-window resolve and filter into Rust. Hosts
+call `xyg_tick_window` and `xyg_tick_window_filter`; linear vs modular
+angular containment (including seam-crossing sectors) is engine-owned
+and identical for Python and Node. ABI 199 Scene product encode filters
+authored cartesian majors through that window and pairs `tick_labels`
+during chrome pack (#300). ABI 200 filters authored cartesian minors
+through that same window (`require_finite`, #301). ABI 201 filters polar
+theta majors/minors through that window's modular sector and formats
+Scene polar theta labels with `format_angular_tick` (#302). ABI 202
+materializes ABI 130 time strftime and polar angular numeric formats
+onto `XYTL` during product encode (`format_axis_tick`, #303). Hosts pack
+domain tick-kind in XYCF 154–155. Invalid ABI 96 grammar still falls
+back. ABI 203 runs ABI 123 collision at Scene SVG/raster emit for
+cartesian `tick_label_strategy` / `collision` (#304). Collision rooms
+clamp only when compact/authored pads already fit `PlotLayout`;
+overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim
+auto/hide/rotate/stagger/preserve stay refused (`polar-axes.md`).
+Secondary
+axes stay fail-closed (`Scene v12 figure compilation currently supports
+exactly x/y axes`). Hosts still choose tick families via
+`xyg_scene_axis_ticks` and map values to pixels on the compatibility
+`_svg` path (#276). Polar rim collision strategies stay refused
+(`polar-axes.md`).
+ABI 130 moves Cartesian compatibility tick-label formatting into Rust.
+Hosts call `xyg_tick_format` for linear/log/time/number-spec, category,
+and angular defaults; polar tick drawing stays host-side (#276). Scene
+product-path authored `tick_labels` pair during chrome pack (ABI 199).
+Authored cartesian minors filter during chrome pack (ABI 200).
+Polar Scene theta ticks use the ABI 128 modular sector and angular labels
+(ABI 201); Scene product encode applies ABI 130 time/angular formats (ABI 202);
+secondary axes stay fail-closed.
+ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
+Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
+helpers; wedge/ring/polygon helpers remain host-side and call native projection.
+ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
+compiles polar line, scatter, area, bar/column, errorbar, heatmap, and contour through XYPL v1 into `xyg_scene_batch_encode`;
+ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
+wedges. Polar heatmap constant-style lattices tessellate Rects to
+PolyFill wedges; polar painted heatmap (ABI 192) inverse-rasters to one
+plot-covering Image blit (Image+XYPL). Polar density still tessellates
+occupied cells (no XYIM). ABI 194 admits polar hexbin as HexCell PolyFills
+through the same XYPL path.
+Polar contour reuses SegmentPair polylines through `polar_project`.
+ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
+`xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
+`xyg_density_pyramid_preflight`, and `xyg_density_wasm_eligible`; kernel
+invocation, buffer shipping, and axis-scale transforms stay host-side.
+ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
+call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
+`xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop
+interpolation (matching `_svg._lut`) is engine-owned and distinct from
+`xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. ABI 206 adds
+`xyg_colormap_lut` (1D `_lut`), `xyg_density_rgba_linear` (legacy f64
+count grids with the `t * 1.35` alpha law), and `xyg_paint_effective_rgba`
+(artist-alpha replace then xy opacity multiply) so remaining compatibility
+paint/colormap policy cannot drift (#313). Hosts still
+resolve colormap stop tables, CSS paint colors, and truecolor RGBA buffers.
+ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
+(#292). ABI 207 `xyg_polar_heatmap_inverse_map` owns the compatibility
+gather-after-inverse pixel map used by `_svg.polar_heatmap_rgba` (#283);
+hosts still color the returned source indices.
+ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode
+offset and the §19 f32-safe scale so Python and Node cannot drift.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive). ABI 255 `xyg_encoded_column_meta` owns
+`EncodedColumn` offset/scale/kind-presence packing. Hosts still copy the
+original kind string.
+ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
+`xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
+`xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
+so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
+`51_annotations.ts` keeps the same formula until WASM.
+ABI 254 `xyg_arrow_style_pack` owns comma-separated `start_offset` /
+`label_clear` packing (empty tokens and non-finite parts fail the CSV;
+exact 2 parts for offset, exact 4 non-negative parts for clear) so Python
+`_pack_style` and Node `packArrowStyle` cannot drift. ChartView still parses
+those strings until WASM. Hosts still coerce style keys and elbow truthiness.
+ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
+patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
+Invalid comma tokens reject the whole string. Hosts still coerce list vs
+string and fail-close empty strings.
+ABI 219 `xyg_scene_linecap_admit` owns Scene linecap names so Python
+`_parse_scene_linecap` and Node `parseSceneLinecap` cannot drift. Unknown
+names and whitespace-only strings reject. Hosts still fail-close empty
+strings without calling the kernel.
+ABI 220 `xyg_density_overlay_opacity` owns density overlay sample opacity
+(`min(authored, 0.55)`; non-finite → `0.55`) so Python `_payload` and Node
+`figure.js` cannot drift. Hosts still default omitted opacity to `0.8`.
+ABI 221 `xyg_scene_marker_path_admit` owns Scene marker-path contour bounds
+(1–32 contours, x/y pairs, `|v| ≤ 0.500001`, ≤ 96 vertices) so Python
+`_validated_marker_path` and Node `validateMarkerPath` cannot drift. Hosts
+still coerce mappings and fail-close non-numeric contours. Filled contours
+shorter than 6 values stay a compile-path extra.
+ABI 222 `xyg_scene_annotation_style_admit` owns Scene annotation style-key
+allowlists so Python `_annotation_allowed_style` and Node
+`annotationAllowedStyle` cannot drift. Hosts still skip markup/typography/
+rotation and raise error text.
+ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
+(absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
+Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
+pack end RGBA8.
+ABI 224 `xyg_scene_tick_label_strategy` owns Scene tick-label strategy names
+so Python `_scene_tick_label_strategy` and Node `sceneTickStrategy` cannot
+drift. Hyphens become underscores. Unknown names, including empty text, map
+to `auto`. Hosts still pick `tick_label_strategy` vs `collision` vs camelCase
+keys.
+ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
+`_scene_tick_anchor_code` and Node `anchorCode` cannot drift. `middle` aliases
+`center`. Unknown names, including empty text, reject. Hosts still pick
+`tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
+throw-on-unknown table.
+ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
+(space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
+→ mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings.
+ABI 227 `xyg_scene_parse_linear_gradient` owns CSS `linear-gradient(...)`
+parse (cardinal `to` directions, 2–8 resolved stops, nested function commas)
+so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
+`parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
+authoring error text, and run `css_color` on authoring stops. Compile-path
+skip-empty split stays extra.
+ABI 228 `xyg_scene_rect_extra_flags` owns Scene rect extra-flag pack
+(unusable-gradient bit, admitted corner-radius kinds, polar wedge-gap
+exception) so Python `_rect_extra_flags` and Node `rectExtraFlags` cannot
+drift. Hosts still coerce fill mappings, radius lists, and `wedge_gap`.
+ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
+(`down`/`up`/`right`/`left`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `dir` vs missing keys. Compile-path `to bottom` aliases stay extra.
+ABI 231 `xyg_scene_gradient_space` owns Scene fill-gradient space codes
+(`mark`/`plot`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `space` vs missing keys. XYSS plot-space is `code == 1`.
+ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
+prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
+Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
+fills as authoring. Compile-path flag bits stay extra.
+ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
+(`count`/`mean`/`sum`/`custom`; unknown/empty reject; no lowercasing) so
+Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
+drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
+`scene_export.rs` stays extra.
+ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
+`smooth` → 1; unknown/empty → 255; trim then lowercase) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
+`scene_trace_compile.rs` stays extra.
+ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
+(nonempty, no NUL/CR/LF, at most 64 bytes) so Python `_admitted_marker_glyph`
+and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
+and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
+stays extra.
+ABI 235 `xyg_scene_kind_admit` owns Scene product-kind names (exact
+`scatter`/`line`/`bar`/`column`/`histogram`/`violin`/`box`/`segments`/
+`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/`area`/`error_band`/
+`ribbon`/`triangle_mesh`/`hexbin`/`heatmap`; unknown/empty reject; no
+lowercasing) so Python `_figure_trace_support_flags` and Node
+`figureTraceSupport` cannot drift. Packing-family bits are ABI 236.
+ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
+band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
+no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
+ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
+(finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
+XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
+Compile-path `hex_pitch` in `scene_trace_compile.rs` stays extra.
+ABI 238 `xyg_scene_heatmap_extent_admit` owns Scene heatmap cell-extent
+admit (all four finite and `x0 < x1 && y0 < y1`) so Python `_heatmap_extent`
+and Node XYEP pack cannot drift. Length==2 and field picking stay host.
+Compile-path `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+ABI 239 `xyg_scene_heatmap_colormap_admit` owns Scene heatmap colormap
+eligibility (OR of already-coerced truecolor / colormap / rgba_grid / rgba
+flags) so Python `_heatmap_uses_colormap` and Node `figureTraceSupport`
+cannot drift. Field picking and truthy coercion stay host. Kind checks
+stay host.
+ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
+admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
+and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
+ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
+channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
+unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
+Node `scatterPacksPaintPlane` cannot drift. Kind, density, and name gathering
+stay host.
+ABI 242 `xyg_scene_hexbin_colormap_plane_admit` owns Scene hexbin colormap-plane
+packing (exact `continuous` plus a values-present flag; unknown/empty → 0; no
+lowercasing) so Python `_hexbin_packs_colormap_plane` and Node
+`hexbinPacksColormapPlane` cannot drift. Kind checks and field picking
+(`color_ch` vs `colorChannel`, `values` vs `metric`) stay host.
+ABI 243 `xyg_scene_hexbin_rgba_plane_admit` owns Scene hexbin RGBA-plane
+modes (exact `categorical`/`direct_rgba`; unknown/empty → 0; no lowercasing)
+so Python `_hexbin_packs_rgba_plane` and Node `hexbinPacksRgbaPlane` cannot
+drift. Kind checks, field picking, and RGBA8 packing stay host.
+ABI 244 `xyg_scene_mesh_paint_plane_admit` owns Scene mesh paint-plane packing
+(exact `triangle_mesh` plus `joined_fill == 0` plus a per-item flag;
+unknown/empty → 0; no lowercasing) so Python `_mesh_packs_paint_plane` and
+Node `meshPacksPaintPlane` cannot drift. `joined_fill` field picking and
+`has_per_item` gathering stay host.
+ABI 245 `xyg_scene_item_apply_opacity` owns Scene per-item RGBA8 artist-alpha
+replace then opacity multiply (ties-to-even u8 quantize) so Python
+`_item_apply_opacity` and Node `itemApplyOpacity` cannot drift. Field picking
+stays host.
+ABI 246 `xyg_scene_item_widths_admit` owns Scene per-item stroke-width
+admit (present values: `len == n` and every value finite `>= 0`; absent:
+finite scalar `>= 0`) so Python `_item_widths` and Node `itemWidths` cannot
+drift. Field picking and f64 packing stay host.
+ABI 247 `xyg_scene_item_fill_t` owns Scene continuous per-item fill unit-t
+(domain pair as-is, else finite min/max; zero/non-finite span → zeros;
+clip to `[0, 1]`) so Python `_item_fill_rgba8` and Node `itemFillRgba8`
+cannot drift. Field picking and colormap lookup stay host.
+ABI 248 `xyg_scene_finite_all` owns Scene finite-all admit (empty → `1`)
+so Python `_xyep_finite` / heatmap XYEP and Node `exportColumnFinite`
+cannot drift. Field picking stays host.
+ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
+(first packed RGBA8 stop with alpha `> 0` → `rgb(r,g,b)`; else
+`rgb(0,0,0)`) so Python `_gradient_solid_css` and Node `gradientSolidCss`
+cannot drift. Field picking stays host.
+ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
+match and every pair is IEEE `==`; empty equal; NaN never equals) so
+Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
+Field picking and null checks stay host.
+ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
+ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
+`channels.ship_color_channel` and Node `clipQuantizeU8` /
+`resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
+stays host.
+ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
+(`0` fail, `1` style fallback, `2` channel constant) so Python
+`_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
+and field picking stay host.
+ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
+admit (`hidden || (has_per_item && !density_aggregates)`) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Field picking stays host.
+
+ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
+`label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
+Node `packArrowStyle` cannot drift. ChartView still parses those strings
+until WASM. Hosts still coerce style keys and elbow truthiness.
+ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
+packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
+drift. Hosts still copy the original kind string.
+ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
+(`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
+and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
+`.constant` vs `.color` and skip null channels.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
+`quantizeUnitU8` / `resolveDensityBinColors` normalize through
+`xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
+Equal or non-finite domain stays a host zero-span short-circuit.
+Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
+ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
+substitute stay host.
+Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
+matching `_raster._parse_color` and Node `cssColorRgba8`.
+Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
+channels through ABI 251 `xyg_clip_quantize_u8`. Browser-only rejection stays host.
+Python `resolve_style_channel` admits finite arrays through ABI 248
+`xyg_scene_finite_all`. Bounds checks stay host.
+SVG `_rgb_css` formats 0-1 RGB through ABI 251 `xyg_clip_quantize_u8`.
+SVG authored-scatter marker RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster scatter RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster mesh/hexbin fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
+Node `scatterPaintChannelNames` uses `perItemChannelNames` (same as Python `per_item_channel_names`) for ABI 241.
+Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trace.metric` is not a values fallback.
+Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
+Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
+Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
+Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
+Node missing scatter kind uses `|| ""` (same as Python); it is not defaulted to `"scatter"`.
+Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
+Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
+Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
+Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
+Node XYHF heatmap/density colormap uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node `constantMarkColor` uses `color_ch.constant` only (same as Python); string channels, `channel.color`, and `trace.color` are not fallbacks.
+Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks. Mode/has_constant admit is ABI 254.
+Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
+Node `sourceColorCss` uses `color_ch` only (same as Python); `trace.color` is not a source-channel fallback.
+Node `resolveColorChannel` constant CSS uses `.constant` (same as Python `ColorChannel`); `composeRibbon` writes `color_ch` / `color2_ch`.
+Node `color2Channel` uses `color2_ch` only (same as Python); `color_target` / `colorTarget` are not Scene-pack fallbacks.
+Node `itemFillRgba8` uses `color_ch` only (same as Python); `trace.color` is not a fill-channel fallback.
+Node `scatterPaintChannelNames` uses `color_ch` only (same as Python); `trace.color` is not a per-item color channel.
+Node `scatterHasNonConstantColor` uses `color_ch` only (same as Python); `trace.color` is not a non-constant-color fallback.
+Node `resolveDensityBinColors` uses `color_ch` only (same as Python); `trace.color` is not a density-bin color channel.
+Node `scatterHasNonConstantColor` ignores `style.color_channel` (same as Python); only `color_ch` is a non-constant-color channel.
+Node `scatterPaintChannelNames` ignores `style.color_channel` / `stroke_channel` / `size_channel` (same as Python); per-item extras come from `style_channels`.
+Node `_emitScatterDensity` constant_color attach uses `color_ch.constant` like Python `_density_trace_spec`; `style.color` is not a density-color fallback. Node `resolveDensityBinColors` ignores `style.color_channel` (same as Python); only `color_ch` is a density-bin color channel.
+Node XYMS mark color uses `style.color` only (same as Python `_constant_color` style fallback); `trace.color` is not a mark-color fallback.
+Node XYTC style color uses `style.color` only (same as Python); `trace.color` is not a packed-color fallback.
+Node XYTC constant paint uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant fallback.
+Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
+Node XYTC color_ch packing ignores string channels (same as Python object-only); only a channel object packs COLOR_CH.
+Node `scatterHasNonConstantColor` uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant stand-in.
+Node XYTC `COLOR_CH_CONSTANT` packs whenever `channel.constant` is set (same as Python); `mode === "constant"` is not a gate.
+Node XYMS mark color uses `constantMarkColor` / ABI 252 (same as Python `_constant_color`); `style.color` is the code-1 fallback only.
+Node `scatterPerItemChannels` ignores `style.color_channel` / `size_channel` / `stroke_channel` (same as Python `has_per_item_channels`); only `*_ch` presence counts.
+Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`; a constant `color_ch` is not per-item.
+Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
+Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
+Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `packXyTaRgbaGrid` stacks flattened planes like Python `_pack_xyta` `rgba_grid`; nested 2D index fallback is not a plane layout.
+Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that buffer like Python `_pack_xyta` and does not unwrap nested `.rgba`.
+Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
+Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
+Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
+Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
+Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
+Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
+Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
+Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
+Node XYTC line color uses `style.line_color` only like Python `_pack_xytc`; `lineColor` is not a line-color key.
+Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `joinedFill` is not a joined-fill key.
+Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
+Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
+Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
+Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
+Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
+Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
+Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
+Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
+Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
+Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only like Python `_classify_ribbon_color2`; `colorChannel` is not a source-constant fallback.
+Node `itemFillRgba8` uses `color_ch` only like Python `_item_fill_rgba8`; `colorChannel` is not a fill-channel fallback.
+Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
+Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_colormap_plane`; `colorChannel` is not a colormap-plane fallback.
+Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
+Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
+Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
+Node `hexbinCellRgba8` uses `color_ch` only like Python `_hexbin_cell_rgba8`; `colorChannel` is not a cell-paint fallback.
+Node XYTA density color_ch packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a packed-constant fallback.
+Node `itemStrokeRgba8` uses `stroke_ch` only like Python `_item_stroke_rgba8`; `strokeChannel` is not a stroke-channel fallback.
+Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point_stroke_rgba8`; `strokeChannel` is not a match-fill opacity skip.
+Node `perItemChannelNames` uses `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only like Python `per_item_channel_names`; camelCase channel fields are not per-item name fallbacks.
+Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opacity`; `styleChannels` is not an opacity-channel fallback.
+Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
+Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
+Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_support_flags`; `lineCap` is not a dashed-marker linecap fallback.
+Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
+Node `packXyAfLinecap` uses `style.linecap` only like Python `_pack_xyaf`; `lineCap` is not an annotation-linecap fallback.
+Node `scatterUsesDensity` does not pass `force_direct` like Python `use_density`; `forceDirect` / `force_direct` are not density-direct overrides.
+Node hexbin XYTA values packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a hexbin-grid values fallback.
+Node `legendStyleFontSizes` uses `style.font_size` / `style.title_font_size` only like Python `_legend_input`; `fontSize` / `titleFontSize` are not legend-font fallbacks.
+Node `heatmapGridShape` uses `grid_shape` only like Python `_heatmap_shape`; `gridShape` is not a heatmap-lattice fallback.
+Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin_pitch`; `hexDx` / `hexDy` are not hexbin-pitch fallbacks.
+Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
+Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
+Node `polarAxisThetaZero` uses axis `theta_zero` only like Python `_pack_polar_scene_input`; `thetaZero` is not a polar-zero fallback.
+Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback. Node `axisMinorTickValues` uses axis `minor_tick_values` only like Python `_pack_figure_chrome`; `minorTickValues` is not a chrome-minor-tick fallback. Node `axisTickLabels` uses axis `tick_labels` only like Python `_pack_figure_chrome`; `tickLabels` is not a chrome-tick-label fallback. Node `figureXLabel` uses `x_label` then axis `label` like Python `_pack_figure_chrome`; `xLabel` is not a chrome-xlabel fallback. Node `figureYLabel` uses `y_label` then axis `label` like Python `_pack_figure_chrome`; `yLabel` is not a chrome-ylabel fallback. Node `plotTopAxisRoom` uses plot `top_axis_room` only like Python `recut_polar_plot`; `topAxisRoom` is not a polar-recut-room fallback. Node `axisTickLabelAnchor` uses axis `tick_label_anchor` only like Python `_scene_tick_anchor_code`; `tickLabelAnchor` is not a chrome-tick-anchor fallback. Node `axisTickLabelMinGap` uses axis `tick_label_min_gap` only like Python `_pack_tick_collision`; `tickLabelMinGap` is not a chrome-tick-gap fallback. Node `axisTickLabelAngle` uses axis `tick_label_angle` only like Python `_pack_tick_collision`; `tickLabelAngle` is not a chrome-tick-angle fallback. Node `axisTickLabelStrategy` uses `tick_label_strategy` then `collision` like Python `_scene_tick_label_strategy`; `tickLabelStrategy` is not a chrome-tick-strategy fallback. Node `polarCollisionKeys` uses snake-case keys only like Python `_POLAR_COLLISION_KEYS`; camelCase tick-label keys are not polar-collision-key extras. Node `figureChromeStyles` uses `chrome_styles` only like Python `_pack_figure_support`; `chromeStyles` is not a chrome-styles fallback. Node `chromeStyleHasFontFamily` uses `font-family` only like Python `_pack_figure_support`; `fontFamily` is not a chrome-font-family fallback. Node `figureClassName` uses `class_name` only like Python `_pack_figure_support`; `className` is not a figure-class-name fallback. Node `figureClassNames` uses `class_names` only like Python `_pack_figure_support`; `classNames` is not a figure-class-names fallback. Node `annotationClassName` uses `class_name` only like Python `_pack_figure_support`; `className` is not an annotation-class-name fallback. Node `figureExtraLegends` uses `extra_legends` only like Python `_pack_figure_support`; `extraLegends` is not an extra-legends fallback. Node `figureTitleOptions` uses `title_options` only like Python `_pack_public_export_support`; `titleOptions` is not a title-options fallback. Node `figureLegendOptions` uses `legend_options` only like Python `_legend_input`; `legend` is not a legend-options fallback. Node `figureColorbarOptions` uses `colorbar_options` only like Python `_colorbar_input`; `colorbarOptions` is not a colorbar-options fallback. Node `figureShowLegend` uses `show_legend` only like Python `_legend_input`; `showLegend` is not a show-legend fallback. Node `figureAxisOptions` uses `axis_options` only like Python `_pack_figure_chrome`; `xAxis` / `x_axis` are not axis-options fallbacks. Node `axisScaleName` uses axis `type` only like Python `_axis_scale`; `kind` is not an axis-scale fallback. Node `figureAutorangeAxisOptions` uses `axis_options` only like Python `_axis_scale`; `xAxis` is not an autorange-axis fallback. Node `_emitScatter` uses `force_density` only like Python `payload_force_density`; `style.force_density` is not a payload-density fallback. Node `_emitScatter` does not read `style.force_direct` like Python `_emit_scatter`; `style.force_direct` is not a payload-direct fallback. Node `_emitScatter` does not read `style.force_pyramid` like Python `_emit_scatter`; `style.force_pyramid` is not a payload-pyramid fallback. Node `chromeAxisMinorStyle` uses `minor_style` only like Python `_pack_chrome_axis`; `minorStyle` is not a chrome-minor-style fallback. Node `chromeAxisTickSides` uses `tick_sides` only like Python `_pack_chrome_axis`; `tickSides` is not a chrome-tick-sides fallback. Node `chromeAxisTickLabelSides` uses `tick_label_sides` only like Python `_pack_chrome_axis`; `tickLabelSides` is not a chrome-tick-label-sides fallback. Node `chromeAxisStyleKeys` admits snake-case keys only like Python `_SCENE_AXIS_STYLE_KEYS`; camelCase axis style keys are not a chrome-axis-style-keys fallback. Node `chromeAxisStyleHas` / `chromeAxisStyleValue` read snake-case keys only like Python `_pack_chrome_axis`; camelCase fields are not a chrome-axis-style-read fallback. Node `legendAxisScale` uses axis `type` only like Python `_axis_scale`; `scale` / `kind` are not a legend-axis-scale fallback. Node `figureAutorangeAxisScale` uses axis `type` only like Python `_axis_scale`; `kind` is not an autorange-axis-scale fallback. Node `figureAxisKind` matches Python `_axis_kind` (forced `type` time, then category labels, then `time_ms` columns); axis `kind` is not an autorange-axis-kind fallback. Node `chromeAxisTickKind` uses `Figure._axisKind` like Python `_pack_figure_chrome` / `_pack_tick_collision`; axis `kind` is not a chrome-tick-kind fallback. Node `xyEfResolvedKind` uses `Figure._axisKind` like Python `_pack_public_export_support`; axis `kind` is not an xyef-axis-kind fallback. Node `figureAutorangeThetaUnit` uses axis `theta_unit` only like Python `_pack_autorange`; `thetaUnit` is not an autorange-theta-unit fallback. Node `figureAxisIsLog` uses axis `type` only like Python `_axis_scale` log; `scale` is not an axis-is-log fallback. Node `figureAutorangeCategories` uses `_axis_categories` only like Python `_pack_autorange`; `options.categories` is not an autorange-categories fallback. Node `figureAutorangeDomain` uses axis `domain` only like Python `_pack_autorange`; `_axisRange` is not an autorange-domain fallback. Node `setPolarMeta` writes axis `theta_unit` like Python `set_axis`; `_polarMeta.thetaUnit` is not a polar-meta-unit fallback. Node `setPolarMeta` writes axis `theta_zero` like Python `set_axis`; `_polarMeta.thetaZero` is not a polar-meta-zero fallback. Node `setPolarMeta` writes axis `theta_direction` like Python `set_axis`; `_polarMeta.thetaDirection` is not a polar-meta-direction fallback. Node `setPolarMeta` writes axis `grid_shape` like Python `set_axis`; `_polarMeta.gridShape` is not a polar-meta-grid fallback. Node `setPolarMeta` writes axis `hole` like Python `set_axis`; `_polarMeta.hole` is not a polar-meta-hole fallback. Node `setPolarMeta` writes axis `sector` like Python `set_axis`; `_polarMeta.sector` is not a polar-meta-sector fallback. Node `polarAxisHole` uses axis `hole` only like Python `_pack_polar_scene_input`; `Hole` is not a polar-hole fallback. Node `polarAxisSector` uses axis `sector` only like Python `_pack_polar_scene_input`; `Sector` is not a polar-sector fallback. Node `_polarAxisSpecs` uses axis `theta_unit` like Python `_axis_spec`; `_polarMeta.thetaUnit` is not a polar-spec-unit fallback. Node `_polarAxisSpecs` uses axis `theta_zero` like Python `_axis_spec`; `_polarMeta.thetaZero` is not a polar-spec-zero fallback. Node `_polarAxisSpecs` uses axis `theta_direction` like Python `_axis_spec`; `_polarMeta.thetaDirection` is not a polar-spec-direction fallback. Node `_polarAxisSpecs` uses axis `grid_shape` like Python `_axis_spec`; `_polarMeta.gridShape` is not a polar-spec-grid fallback. Node `_polarAxisSpecs` uses axis `sector` like Python `_axis_spec`; `_polarMeta.sector` is not a polar-spec-sector fallback. Node `_polarAxisSpecs` uses axis `hole` like Python `_axis_spec`; `_polarMeta.hole` is not a polar-spec-hole fallback. Node `_polarAxisSpecs` uses axis `r_origin` like Python `_axis_spec`; `_polarMeta.rOrigin` is not a polar-spec-origin fallback. Node `packPolarSceneInput` uses figure `_range("y")` like Python `_pack_polar_scene_input`; `rAxis.range` is not a polar-range fallback. Node `shouldUseDensity` maps Boolean `false` to auto (`-1`) unlike Python `payload_force_density` `False` to `0`; that Boolean vs tri-state mapping is a recorded density-tristate stay-host. Node `sourceColorCss` keeps empty `style.color` unlike Python `_trace_source_color_css` `or` default; that empty-string mapping is a recorded source-css-empty stay-host. Node `figureXLabel` keeps empty `x_label` unlike Python `_pack_figure_chrome` `or` fallthrough; that empty-string mapping is a recorded xlabel-empty stay-host. Node `figureYLabel` keeps empty `y_label` unlike Python `_pack_figure_chrome` `or` fallthrough; that empty-string mapping is a recorded ylabel-empty stay-host. Node `packChromeAxis` skips null-valued unsupported keys unlike Python `_pack_chrome_axis` set-difference; that null-key mapping is a recorded chrome-null-key stay-host. Node `itemFillRgba8` fallback stays `sourceColorCss` unlike Python `_item_fill_rgba8` style.get; that fallback mapping is a recorded item-fill-css stay-host. Node `hexbinCellRgba8` fallback stays `sourceColorCss` unlike Python `_hexbin_cell_rgba8` style.get; that fallback mapping is a recorded hexbin-css stay-host. Node `itemStrokeRgba8` empty style.stroke stays unlike Python `_item_stroke_rgba8` or-default; that empty-string mapping is a recorded item-stroke-empty stay-host. Node `scatter()` stores f64 not `Column.kind` unlike Python time_ms columns; that authoring mapping is a recorded scatter-f64-kind stay-host. Node `_emitHexbin` ships `metric` unlike Python `_emit_hexbin` `color_ch`; that payload hexbin metric mapping is a recorded hexbin-metric stay-host. Node `_emitHeatmap` ships grid columns unlike Python `_emit_heatmap` nested heatmap; that payload heatmap grid mapping is a recorded heatmap-grid stay-host. Node `_emitRibbon` ships `t.color_target` unlike Python `_emit_ribbon` `color2_ch`; that payload ribbon color-target mapping is a recorded ribbon-color-target stay-host. Node `_emitRibbon` ships `t.color` unlike Python `_emit_ribbon` `color_ch`; that payload ribbon color mapping is a recorded ribbon-ship-color stay-host. Node `_emitTriangleMesh` ships x2/y2 via `payloadColumnShipPlan` / `shipRegistryColumns` like Python `_emit_triangle_mesh`. Node `_emitScatter` omits `transition_keys` unlike Python `_transition_entry`; that payload scatter transition mapping is a recorded Node `_emitLine` omits `transition_keys` unlike Python `_transition_entry`; that payload line transition mapping is a recorded Node `_emitArea` omits `transition_keys` unlike Python `_transition_entry`; that payload area transition mapping is a recorded Node `_emitRect` ships bar columns unlike Python nested `bar`; that payload bar compact mapping is a recorded emit-bar-compact stay-host. Node `_emitRibbon` skips `valid_indices_f64` unlike Python `_emit_ribbon`; that payload ribbon gather mapping is a recorded emit-ribbon-gather stay-host. Node `_emitTriangleMesh` skips `valid_indices_f64` unlike Python `_emit_triangle_mesh`; that payload mesh gather mapping is a recorded emit-mesh-gather stay-host. Node `_emitRect` omits `transition_keys` unlike Python `_transition_entry`; that payload rect transition mapping is a recorded Node `_emitRibbon` omits `transition_keys` unlike Python `_transition_entry`; that payload ribbon transition mapping is a recorded Node `_emitTriangleMesh` omits `transition_keys` unlike Python `_transition_entry`; that payload mesh transition mapping is a recorded Node `_emitSegments` omits `transition_keys` unlike Python `_transition_entry`; that payload segments transition mapping is a recorded Node `_emitHistogram` omits `transition_keys` unlike Python `_transition_entry`; that payload histogram transition mapping is a recorded Node `_emitHeatmap` omits color unlike Python `_emit_heatmap`; that payload heatmap color mapping is a recorded emit-heatmap-color stay-host. Node `_emitHeatmap` ships rgba_len not nested rgba_bufs unlike Python `_emit_heatmap`; that payload heatmap rgba mapping is a recorded emit-heatmap-rgba stay-host. Node `_emitScatter` omits ship scale unlike Python `_axis_scale`; that payload scatter encode mapping is a recorded emit-scatter-ship-scale stay-host. Node `_emitLine` omits ship scale unlike Python `_axis_scale`; that payload line encode mapping is a recorded emit-line-ship-scale stay-host. Node `_emitArea` omits ship scale unlike Python `_axis_scale`; that payload area encode mapping is a recorded emit-area-ship-scale stay-host. Node `_emitHexbin` omits ship scale unlike Python `_axis_scale`; that payload hexbin encode mapping is a recorded emit-hexbin-ship-scale stay-host. Node `_emitRect` omits ship scale unlike Python `_axis_scale`; that payload rect encode mapping is a recorded emit-rect-ship-scale stay-host. Node `_emitSegments` omits ship scale unlike Python `_axis_scale`; that payload segments encode mapping is a recorded emit-segments-ship-scale stay-host. Node `_emitRibbon` omits ship scale unlike Python `_axis_scale`; that payload ribbon encode mapping is a recorded emit-ribbon-ship-scale stay-host. Node `_emitTriangleMesh` omits ship scale unlike Python `_axis_scale`; that payload mesh encode mapping is a recorded emit-mesh-ship-scale stay-host. Node `_emitHistogram` omits ship scale unlike Python `_axis_scale`; that payload histogram encode mapping is a recorded emit-hist-ship-scale stay-host. Node `buildPayload` omits show_legend unlike Python `build_payload`; that payload show-legend mapping is a recorded emit-payload-show-legend stay-host.
+ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
+(optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
+skip radial-range normalization) so Python and Node cannot drift. SVG still
+emits exact `A` arcs for unrounded wedges.
+ABI 210 `xyg_hexbin_ring` owns the pointy-top hexagon vertex offsets scaled
+by cell pitch so Python `_svg.hexbin_ring` and Node `hexbinRing` cannot drift.
+ChartView `_buildHexbinMark` keeps the same fractions until WASM.
+ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3
+= pre/mid/post; `n < 2` identity) so Python `_svg._step_arrays` and Node
+`stepArrays` cannot drift. ChartView `_stepArrays` keeps the same vertices
+until WASM.
+ABI 212 `xyg_marker_path_scale` owns compatibility authored-marker pixel
+vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`) so
+Python `_svg._authored_marker_path_d` / `_raster` and Node `markerPathScale`
+cannot drift. ChartView legend/annotation scale keeps the same formula until
+WASM. SVG `d=` string assembly stays host.
+ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` /
+`xyg_direct_rgba_admit` owns the `resolve_color` CSS/numeric split, equal-bound
+domain pad, and Nx3/Nx4 admit so Python `channels.resolve_color` and Node
+`resolveColorChannel` cannot drift. Named colors stay categories. Hosts still
+factorize labels, pin palettes, and emit warning text.
+ABI 214 `xyg_payload_segment_budget` owns the stem/errorbar count budget
+(`max(1024, floor(px_width)*4)`) so Python `_payload._emit_segments` and Node
+`_emitSegments` cannot drift. ABI 215 `xyg_payload_errorbar_indices` owns
+even-index expansion across concatenated role groups so Python and Node
+cannot drift on cap-attached errorbar sampling. Hosts still expand
+transition-key role maps, gather extra columns, and ship the chosen rows.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
+Node `pinsOffsetToZero` cannot drift. ABI 255 `xyg_encoded_column_meta` owns
+`EncodedColumn` offset/scale/kind-presence packing so Python
+`lod.encode_f32_values` and Node `encodeF32Values` cannot drift. Hosts still
+copy the original kind string.
+ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
+`xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
+`xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
+so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
+`51_annotations.ts` keeps the same formula until WASM.
+ABI 254 `xyg_arrow_style_pack` owns comma-separated `start_offset` /
+`label_clear` packing (empty tokens and non-finite parts fail the CSV;
+exact 2 parts for offset, exact 4 non-negative parts for clear) so Python
+`_pack_style` and Node `packArrowStyle` cannot drift. ChartView still parses
+those strings until WASM. Hosts still coerce style keys and elbow truthiness.
+ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
+patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
+Invalid comma tokens reject the whole string. Hosts still coerce list vs
+string and fail-close empty strings.
+ABI 219 `xyg_scene_linecap_admit` owns Scene linecap names so Python
+`_parse_scene_linecap` and Node `parseSceneLinecap` cannot drift. Unknown
+names and whitespace-only strings reject. Hosts still fail-close empty
+strings without calling the kernel.
+ABI 220 `xyg_density_overlay_opacity` owns density overlay sample opacity
+(`min(authored, 0.55)`; non-finite → `0.55`) so Python `_payload` and Node
+`figure.js` cannot drift. Hosts still default omitted opacity to `0.8`.
+ABI 221 `xyg_scene_marker_path_admit` owns Scene marker-path contour bounds
+(1–32 contours, x/y pairs, `|v| ≤ 0.500001`, ≤ 96 vertices) so Python
+`_validated_marker_path` and Node `validateMarkerPath` cannot drift. Hosts
+still coerce mappings and fail-close non-numeric contours. Filled contours
+shorter than 6 values stay a compile-path extra.
+ABI 222 `xyg_scene_annotation_style_admit` owns Scene annotation style-key
+allowlists so Python `_annotation_allowed_style` and Node
+`annotationAllowedStyle` cannot drift. Hosts still skip markup/typography/
+rotation and raise error text.
+ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
+(absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
+Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
+pack end RGBA8.
+ABI 224 `xyg_scene_tick_label_strategy` owns Scene tick-label strategy names
+so Python `_scene_tick_label_strategy` and Node `sceneTickStrategy` cannot
+drift. Hyphens become underscores. Unknown names, including empty text, map
+to `auto`. Hosts still pick `tick_label_strategy` vs `collision` vs camelCase
+keys.
+ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
+`_scene_tick_anchor_code` and Node `anchorCode` cannot drift. `middle` aliases
+`center`. Unknown names, including empty text, reject. Hosts still pick
+`tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
+throw-on-unknown table.
+ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
+(space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
+→ mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings.
+ABI 227 `xyg_scene_parse_linear_gradient` owns CSS `linear-gradient(...)`
+parse (cardinal `to` directions, 2–8 resolved stops, nested function commas)
+so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
+`parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
+authoring error text, and run `css_color` on authoring stops. Compile-path
+skip-empty split stays extra.
+ABI 228 `xyg_scene_rect_extra_flags` owns Scene rect extra-flag pack
+(unusable-gradient bit, admitted corner-radius kinds, polar wedge-gap
+exception) so Python `_rect_extra_flags` and Node `rectExtraFlags` cannot
+drift. Hosts still coerce fill mappings, radius lists, and `wedge_gap`.
+ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
+(`down`/`up`/`right`/`left`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `dir` vs missing keys. Compile-path `to bottom` aliases stay extra.
+ABI 231 `xyg_scene_gradient_space` owns Scene fill-gradient space codes
+(`mark`/`plot`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `space` vs missing keys. XYSS plot-space is `code == 1`.
+ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
+prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
+Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
+fills as authoring. Compile-path flag bits stay extra.
+ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
+(`count`/`mean`/`sum`/`custom`; unknown/empty reject; no lowercasing) so
+Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
+drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
+`scene_export.rs` stays extra.
+ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
+`smooth` → 1; unknown/empty → 255; trim then lowercase) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
+`scene_trace_compile.rs` stays extra.
+ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
+(nonempty, no NUL/CR/LF, at most 64 bytes) so Python `_admitted_marker_glyph`
+and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
+and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
+stays extra.
+ABI 235 `xyg_scene_kind_admit` owns Scene product-kind names (exact
+`scatter`/`line`/`bar`/`column`/`histogram`/`violin`/`box`/`segments`/
+`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/`area`/`error_band`/
+`ribbon`/`triangle_mesh`/`hexbin`/`heatmap`; unknown/empty reject; no
+lowercasing) so Python `_figure_trace_support_flags` and Node
+`figureTraceSupport` cannot drift. Packing-family bits are ABI 236.
+ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
+band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
+no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
+ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
+(finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
+XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
+Compile-path `hex_pitch` in `scene_trace_compile.rs` stays extra.
+ABI 238 `xyg_scene_heatmap_extent_admit` owns Scene heatmap cell-extent
+admit (all four finite and `x0 < x1 && y0 < y1`) so Python `_heatmap_extent`
+and Node XYEP pack cannot drift. Length==2 and field picking stay host.
+Compile-path `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+ABI 239 `xyg_scene_heatmap_colormap_admit` owns Scene heatmap colormap
+eligibility (OR of already-coerced truecolor / colormap / rgba_grid / rgba
+flags) so Python `_heatmap_uses_colormap` and Node `figureTraceSupport`
+cannot drift. Field picking and truthy coercion stay host. Kind checks
+stay host.
+ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
+admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
+and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
+ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
+channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
+unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
+Node `scatterPacksPaintPlane` cannot drift. Kind, density, and name gathering
+stay host.
+ABI 242 `xyg_scene_hexbin_colormap_plane_admit` owns Scene hexbin colormap-plane
+packing (exact `continuous` plus a values-present flag; unknown/empty → 0; no
+lowercasing) so Python `_hexbin_packs_colormap_plane` and Node
+`hexbinPacksColormapPlane` cannot drift. Kind checks and field picking
+(`color_ch` vs `colorChannel`, `values` vs `metric`) stay host.
+ABI 243 `xyg_scene_hexbin_rgba_plane_admit` owns Scene hexbin RGBA-plane
+modes (exact `categorical`/`direct_rgba`; unknown/empty → 0; no lowercasing)
+so Python `_hexbin_packs_rgba_plane` and Node `hexbinPacksRgbaPlane` cannot
+drift. Kind checks, field picking, and RGBA8 packing stay host.
+ABI 244 `xyg_scene_mesh_paint_plane_admit` owns Scene mesh paint-plane packing
+(exact `triangle_mesh` plus `joined_fill == 0` plus a per-item flag;
+unknown/empty → 0; no lowercasing) so Python `_mesh_packs_paint_plane` and
+Node `meshPacksPaintPlane` cannot drift. `joined_fill` field picking and
+`has_per_item` gathering stay host.
+ABI 245 `xyg_scene_item_apply_opacity` owns Scene per-item RGBA8 artist-alpha
+replace then opacity multiply (ties-to-even u8 quantize) so Python
+`_item_apply_opacity` and Node `itemApplyOpacity` cannot drift. Field picking
+stays host.
+ABI 246 `xyg_scene_item_widths_admit` owns Scene per-item stroke-width
+admit (present values: `len == n` and every value finite `>= 0`; absent:
+finite scalar `>= 0`) so Python `_item_widths` and Node `itemWidths` cannot
+drift. Field picking and f64 packing stay host.
+ABI 247 `xyg_scene_item_fill_t` owns Scene continuous per-item fill unit-t
+(domain pair as-is, else finite min/max; zero/non-finite span → zeros;
+clip to `[0, 1]`) so Python `_item_fill_rgba8` and Node `itemFillRgba8`
+cannot drift. Field picking and colormap lookup stay host.
+ABI 248 `xyg_scene_finite_all` owns Scene finite-all admit (empty → `1`)
+so Python `_xyep_finite` / heatmap XYEP and Node `exportColumnFinite`
+cannot drift. Field picking stays host.
+ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
+(first packed RGBA8 stop with alpha `> 0` → `rgb(r,g,b)`; else
+`rgb(0,0,0)`) so Python `_gradient_solid_css` and Node `gradientSolidCss`
+cannot drift. Field picking stays host.
+ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
+match and every pair is IEEE `==`; empty equal; NaN never equals) so
+Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
+Field picking and null checks stay host.
+ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
+ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
+`channels.ship_color_channel` and Node `clipQuantizeU8` /
+`resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
+stays host.
+ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
+(`0` fail, `1` style fallback, `2` channel constant) so Python
+`_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
+and field picking stay host.
+ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
+admit (`hidden || (has_per_item && !density_aggregates)`) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Field picking stays host.
+
+ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
+`label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
+Node `packArrowStyle` cannot drift. ChartView still parses those strings
+until WASM. Hosts still coerce style keys and elbow truthiness.
+ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
+packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
+drift. Hosts still copy the original kind string.
+ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
+(`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
+and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
+`.constant` vs `.color` and skip null channels.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
+`quantizeUnitU8` / `resolveDensityBinColors` normalize through
+`xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
+Equal or non-finite domain stays a host zero-span short-circuit.
+Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
+ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
+substitute stay host.
+Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
+matching `_raster._parse_color` and Node `cssColorRgba8`.
+Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
+channels through ABI 251 `xyg_clip_quantize_u8`. Browser-only rejection stays host.
+Python `resolve_style_channel` admits finite arrays through ABI 248
+`xyg_scene_finite_all`. Bounds checks stay host.
+SVG `_rgb_css` formats 0-1 RGB through ABI 251 `xyg_clip_quantize_u8`.
+SVG authored-scatter marker RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster scatter RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster mesh/hexbin fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
+Node `scatterPaintChannelNames` uses `perItemChannelNames` (same as Python `per_item_channel_names`) for ABI 241.
+Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trace.metric` is not a values fallback.
+Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
+Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
+Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
+Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
+Node missing scatter kind uses `|| ""` (same as Python); it is not defaulted to `"scatter"`.
+Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
+Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
+Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
+Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
+Node XYHF heatmap/density colormap uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node `constantMarkColor` uses `color_ch.constant` only (same as Python); string channels, `channel.color`, and `trace.color` are not fallbacks.
+Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks. Mode/has_constant admit is ABI 254.
+Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
+Node `sourceColorCss` uses `color_ch` only (same as Python); `trace.color` is not a source-channel fallback.
+Node `resolveColorChannel` constant CSS uses `.constant` (same as Python `ColorChannel`); `composeRibbon` writes `color_ch` / `color2_ch`.
+Node `color2Channel` uses `color2_ch` only (same as Python); `color_target` / `colorTarget` are not Scene-pack fallbacks.
+Node `itemFillRgba8` uses `color_ch` only (same as Python); `trace.color` is not a fill-channel fallback.
+Node `scatterPaintChannelNames` uses `color_ch` only (same as Python); `trace.color` is not a per-item color channel.
+Node `scatterHasNonConstantColor` uses `color_ch` only (same as Python); `trace.color` is not a non-constant-color fallback.
+Node `resolveDensityBinColors` uses `color_ch` only (same as Python); `trace.color` is not a density-bin color channel.
+Node `scatterHasNonConstantColor` ignores `style.color_channel` (same as Python); only `color_ch` is a non-constant-color channel.
+Node `scatterPaintChannelNames` ignores `style.color_channel` / `stroke_channel` / `size_channel` (same as Python); per-item extras come from `style_channels`.
+Node `_emitScatterDensity` constant_color attach uses `color_ch.constant` like Python `_density_trace_spec`; `style.color` is not a density-color fallback. Node `resolveDensityBinColors` ignores `style.color_channel` (same as Python); only `color_ch` is a density-bin color channel.
+Node XYMS mark color uses `style.color` only (same as Python `_constant_color` style fallback); `trace.color` is not a mark-color fallback.
+Node XYTC style color uses `style.color` only (same as Python); `trace.color` is not a packed-color fallback.
+Node XYTC constant paint uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant fallback.
+Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
+Node XYTC color_ch packing ignores string channels (same as Python object-only); only a channel object packs COLOR_CH.
+Node `scatterHasNonConstantColor` uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant stand-in.
+Node XYTC `COLOR_CH_CONSTANT` packs whenever `channel.constant` is set (same as Python); `mode === "constant"` is not a gate.
+Node XYMS mark color uses `constantMarkColor` / ABI 252 (same as Python `_constant_color`); `style.color` is the code-1 fallback only.
+Node `scatterPerItemChannels` ignores `style.color_channel` / `size_channel` / `stroke_channel` (same as Python `has_per_item_channels`); only `*_ch` presence counts.
+Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`; a constant `color_ch` is not per-item.
+Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
+Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
+Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `packXyTaRgbaGrid` stacks flattened planes like Python `_pack_xyta` `rgba_grid`; nested 2D index fallback is not a plane layout.
+Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that buffer like Python `_pack_xyta` and does not unwrap nested `.rgba`.
+Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
+Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
+Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
+Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
+Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
+Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
+Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
+Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
+Node XYTC line color uses `style.line_color` only like Python `_pack_xytc`; `lineColor` is not a line-color key.
+Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `joinedFill` is not a joined-fill key.
+Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
+Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
+Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
+Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
+Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
+Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
+Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
+Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
+Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
+Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only like Python `_classify_ribbon_color2`; `colorChannel` is not a source-constant fallback.
+Node `itemFillRgba8` uses `color_ch` only like Python `_item_fill_rgba8`; `colorChannel` is not a fill-channel fallback.
+Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
+Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_colormap_plane`; `colorChannel` is not a colormap-plane fallback.
+Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
+Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
+Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
+Node `hexbinCellRgba8` uses `color_ch` only like Python `_hexbin_cell_rgba8`; `colorChannel` is not a cell-paint fallback.
+Node XYTA density color_ch packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a packed-constant fallback.
+Node `itemStrokeRgba8` uses `stroke_ch` only like Python `_item_stroke_rgba8`; `strokeChannel` is not a stroke-channel fallback.
+Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point_stroke_rgba8`; `strokeChannel` is not a match-fill opacity skip.
+Node `perItemChannelNames` uses `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only like Python `per_item_channel_names`; camelCase channel fields are not per-item name fallbacks.
+Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opacity`; `styleChannels` is not an opacity-channel fallback.
+Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
+Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
+Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_support_flags`; `lineCap` is not a dashed-marker linecap fallback.
+Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
+Node `packXyAfLinecap` uses `style.linecap` only like Python `_pack_xyaf`; `lineCap` is not an annotation-linecap fallback.
+Node `scatterUsesDensity` does not pass `force_direct` like Python `use_density`; `forceDirect` / `force_direct` are not density-direct overrides.
+Node hexbin XYTA values packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a hexbin-grid values fallback.
+Node `legendStyleFontSizes` uses `style.font_size` / `style.title_font_size` only like Python `_legend_input`; `fontSize` / `titleFontSize` are not legend-font fallbacks.
+Node `heatmapGridShape` uses `grid_shape` only like Python `_heatmap_shape`; `gridShape` is not a heatmap-lattice fallback.
+Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin_pitch`; `hexDx` / `hexDy` are not hexbin-pitch fallbacks.
+Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
+Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
+Node `polarAxisThetaZero` uses axis `theta_zero` only like Python `_pack_polar_scene_input`; `thetaZero` is not a polar-zero fallback.
+Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback. Node `axisMinorTickValues` uses axis `minor_tick_values` only like Python `_pack_figure_chrome`; `minorTickValues` is not a chrome-minor-tick fallback. Node `axisTickLabels` uses axis `tick_labels` only like Python `_pack_figure_chrome`; `tickLabels` is not a chrome-tick-label fallback. Node `figureXLabel` uses `x_label` then axis `label` like Python `_pack_figure_chrome`; `xLabel` is not a chrome-xlabel fallback. Node `figureYLabel` uses `y_label` then axis `label` like Python `_pack_figure_chrome`; `yLabel` is not a chrome-ylabel fallback. Node `plotTopAxisRoom` uses plot `top_axis_room` only like Python `recut_polar_plot`; `topAxisRoom` is not a polar-recut-room fallback. Node `axisTickLabelAnchor` uses axis `tick_label_anchor` only like Python `_scene_tick_anchor_code`; `tickLabelAnchor` is not a chrome-tick-anchor fallback. Node `axisTickLabelMinGap` uses axis `tick_label_min_gap` only like Python `_pack_tick_collision`; `tickLabelMinGap` is not a chrome-tick-gap fallback. Node `axisTickLabelAngle` uses axis `tick_label_angle` only like Python `_pack_tick_collision`; `tickLabelAngle` is not a chrome-tick-angle fallback. Node `axisTickLabelStrategy` uses `tick_label_strategy` then `collision` like Python `_scene_tick_label_strategy`; `tickLabelStrategy` is not a chrome-tick-strategy fallback. Node `polarCollisionKeys` uses snake-case keys only like Python `_POLAR_COLLISION_KEYS`; camelCase tick-label keys are not polar-collision-key extras. Node `figureChromeStyles` uses `chrome_styles` only like Python `_pack_figure_support`; `chromeStyles` is not a chrome-styles fallback. Node `chromeStyleHasFontFamily` uses `font-family` only like Python `_pack_figure_support`; `fontFamily` is not a chrome-font-family fallback. Node `figureClassName` uses `class_name` only like Python `_pack_figure_support`; `className` is not a figure-class-name fallback. Node `figureClassNames` uses `class_names` only like Python `_pack_figure_support`; `classNames` is not a figure-class-names fallback. Node `annotationClassName` uses `class_name` only like Python `_pack_figure_support`; `className` is not an annotation-class-name fallback. Node `figureExtraLegends` uses `extra_legends` only like Python `_pack_figure_support`; `extraLegends` is not an extra-legends fallback. Node `figureTitleOptions` uses `title_options` only like Python `_pack_public_export_support`; `titleOptions` is not a title-options fallback. Node `figureLegendOptions` uses `legend_options` only like Python `_legend_input`; `legend` is not a legend-options fallback. Node `figureColorbarOptions` uses `colorbar_options` only like Python `_colorbar_input`; `colorbarOptions` is not a colorbar-options fallback. Node `figureShowLegend` uses `show_legend` only like Python `_legend_input`; `showLegend` is not a show-legend fallback. Node `figureAxisOptions` uses `axis_options` only like Python `_pack_figure_chrome`; `xAxis` / `x_axis` are not axis-options fallbacks. Node `axisScaleName` uses axis `type` only like Python `_axis_scale`; `kind` is not an axis-scale fallback. Node `figureAutorangeAxisOptions` uses `axis_options` only like Python `_axis_scale`; `xAxis` is not an autorange-axis fallback. Node `_emitScatter` uses `force_density` only like Python `payload_force_density`; `style.force_density` is not a payload-density fallback. Node `_emitScatter` does not read `style.force_direct` like Python `_emit_scatter`; `style.force_direct` is not a payload-direct fallback. Node `_emitScatter` does not read `style.force_pyramid` like Python `_emit_scatter`; `style.force_pyramid` is not a payload-pyramid fallback. Node `chromeAxisMinorStyle` uses `minor_style` only like Python `_pack_chrome_axis`; `minorStyle` is not a chrome-minor-style fallback. Node `chromeAxisTickSides` uses `tick_sides` only like Python `_pack_chrome_axis`; `tickSides` is not a chrome-tick-sides fallback. Node `chromeAxisTickLabelSides` uses `tick_label_sides` only like Python `_pack_chrome_axis`; `tickLabelSides` is not a chrome-tick-label-sides fallback. Node `chromeAxisStyleKeys` admits snake-case keys only like Python `_SCENE_AXIS_STYLE_KEYS`; camelCase axis style keys are not a chrome-axis-style-keys fallback. Node `chromeAxisStyleHas` / `chromeAxisStyleValue` read snake-case keys only like Python `_pack_chrome_axis`; camelCase fields are not a chrome-axis-style-read fallback. Node `legendAxisScale` uses axis `type` only like Python `_axis_scale`; `scale` / `kind` are not a legend-axis-scale fallback. Node `figureAutorangeAxisScale` uses axis `type` only like Python `_axis_scale`; `kind` is not an autorange-axis-scale fallback. Node `figureAxisKind` matches Python `_axis_kind` (forced `type` time, then category labels, then `time_ms` columns); axis `kind` is not an autorange-axis-kind fallback. Node `chromeAxisTickKind` uses `Figure._axisKind` like Python `_pack_figure_chrome` / `_pack_tick_collision`; axis `kind` is not a chrome-tick-kind fallback. Node `xyEfResolvedKind` uses `Figure._axisKind` like Python `_pack_public_export_support`; axis `kind` is not an xyef-axis-kind fallback. Node `figureAutorangeThetaUnit` uses axis `theta_unit` only like Python `_pack_autorange`; `thetaUnit` is not an autorange-theta-unit fallback. Node `figureAxisIsLog` uses axis `type` only like Python `_axis_scale` log; `scale` is not an axis-is-log fallback. Node `figureAutorangeCategories` uses `_axis_categories` only like Python `_pack_autorange`; `options.categories` is not an autorange-categories fallback. Node `figureAutorangeDomain` uses axis `domain` only like Python `_pack_autorange`; `_axisRange` is not an autorange-domain fallback. Node `setPolarMeta` writes axis `theta_unit` like Python `set_axis`; `_polarMeta.thetaUnit` is not a polar-meta-unit fallback. Node `setPolarMeta` writes axis `theta_zero` like Python `set_axis`; `_polarMeta.thetaZero` is not a polar-meta-zero fallback. Node `setPolarMeta` writes axis `theta_direction` like Python `set_axis`; `_polarMeta.thetaDirection` is not a polar-meta-direction fallback. Node `setPolarMeta` writes axis `grid_shape` like Python `set_axis`; `_polarMeta.gridShape` is not a polar-meta-grid fallback. Node `setPolarMeta` writes axis `hole` like Python `set_axis`; `_polarMeta.hole` is not a polar-meta-hole fallback. Node `setPolarMeta` writes axis `sector` like Python `set_axis`; `_polarMeta.sector` is not a polar-meta-sector fallback. Node `polarAxisHole` uses axis `hole` only like Python `_pack_polar_scene_input`; `Hole` is not a polar-hole fallback. Node `polarAxisSector` uses axis `sector` only like Python `_pack_polar_scene_input`; `Sector` is not a polar-sector fallback. Node `_polarAxisSpecs` uses axis `theta_unit` like Python `_axis_spec`; `_polarMeta.thetaUnit` is not a polar-spec-unit fallback. Node `_polarAxisSpecs` uses axis `theta_zero` like Python `_axis_spec`; `_polarMeta.thetaZero` is not a polar-spec-zero fallback. Node `_polarAxisSpecs` uses axis `theta_direction` like Python `_axis_spec`; `_polarMeta.thetaDirection` is not a polar-spec-direction fallback. Node `_polarAxisSpecs` uses axis `grid_shape` like Python `_axis_spec`; `_polarMeta.gridShape` is not a polar-spec-grid fallback. Node `_polarAxisSpecs` uses axis `sector` like Python `_axis_spec`; `_polarMeta.sector` is not a polar-spec-sector fallback. Node `_polarAxisSpecs` uses axis `hole` like Python `_axis_spec`; `_polarMeta.hole` is not a polar-spec-hole fallback. Node `_polarAxisSpecs` uses axis `r_origin` like Python `_axis_spec`; `_polarMeta.rOrigin` is not a polar-spec-origin fallback. Node `packPolarSceneInput` uses figure `_range("y")` like Python `_pack_polar_scene_input`; `rAxis.range` is not a polar-range fallback. Node `shouldUseDensity` maps Boolean `false` to auto (`-1`) unlike Python `payload_force_density` `False` to `0`; that Boolean vs tri-state mapping is a recorded density-tristate stay-host. Node `sourceColorCss` keeps empty `style.color` unlike Python `_trace_source_color_css` `or` default; that empty-string mapping is a recorded source-css-empty stay-host. Node `figureXLabel` keeps empty `x_label` unlike Python `_pack_figure_chrome` `or` fallthrough; that empty-string mapping is a recorded xlabel-empty stay-host. Node `figureYLabel` keeps empty `y_label` unlike Python `_pack_figure_chrome` `or` fallthrough; that empty-string mapping is a recorded ylabel-empty stay-host. Node `packChromeAxis` skips null-valued unsupported keys unlike Python `_pack_chrome_axis` set-difference; that null-key mapping is a recorded chrome-null-key stay-host. Node `itemFillRgba8` fallback stays `sourceColorCss` unlike Python `_item_fill_rgba8` style.get; that fallback mapping is a recorded item-fill-css stay-host. Node `hexbinCellRgba8` fallback stays `sourceColorCss` unlike Python `_hexbin_cell_rgba8` style.get; that fallback mapping is a recorded hexbin-css stay-host. Node `itemStrokeRgba8` empty style.stroke stays unlike Python `_item_stroke_rgba8` or-default; that empty-string mapping is a recorded item-stroke-empty stay-host. Node `scatter()` stores f64 not `Column.kind` unlike Python time_ms columns; that authoring mapping is a recorded scatter-f64-kind stay-host. Node `_emitHexbin` ships `metric` unlike Python `_emit_hexbin` `color_ch`; that payload hexbin metric mapping is a recorded hexbin-metric stay-host. Node `_emitHeatmap` ships grid columns unlike Python `_emit_heatmap` nested heatmap; that payload heatmap grid mapping is a recorded heatmap-grid stay-host. Node `_emitRibbon` ships `t.color_target` unlike Python `_emit_ribbon` `color2_ch`; that payload ribbon color-target mapping is a recorded ribbon-color-target stay-host. Node `_emitRibbon` ships `t.color` unlike Python `_emit_ribbon` `color_ch`; that payload ribbon color mapping is a recorded ribbon-ship-color stay-host. Node `_emitTriangleMesh` ships x2/y2 via `payloadColumnShipPlan` / `shipRegistryColumns` like Python `_emit_triangle_mesh`. Node `_emitScatter` omits `transition_keys` unlike Python `_transition_entry`; that payload scatter transition mapping is a recorded Node `_emitLine` omits `transition_keys` unlike Python `_transition_entry`; that payload line transition mapping is a recorded Node `_emitArea` omits `transition_keys` unlike Python `_transition_entry`; that payload area transition mapping is a recorded Node `_emitRect` ships bar columns unlike Python nested `bar`; that payload bar compact mapping is a recorded emit-bar-compact stay-host. Node `_emitRibbon` skips `valid_indices_f64` unlike Python `_emit_ribbon`; that payload ribbon gather mapping is a recorded emit-ribbon-gather stay-host. Node `_emitTriangleMesh` skips `valid_indices_f64` unlike Python `_emit_triangle_mesh`; that payload mesh gather mapping is a recorded emit-mesh-gather stay-host. Node `_emitRect` omits `transition_keys` unlike Python `_transition_entry`; that payload rect transition mapping is a recorded Node `_emitRibbon` omits `transition_keys` unlike Python `_transition_entry`; that payload ribbon transition mapping is a recorded Node `_emitTriangleMesh` omits `transition_keys` unlike Python `_transition_entry`; that payload mesh transition mapping is a recorded Node `_emitSegments` omits `transition_keys` unlike Python `_transition_entry`; that payload segments transition mapping is a recorded Node `_emitHistogram` omits `transition_keys` unlike Python `_transition_entry`; that payload histogram transition mapping is a recorded Node `_emitHeatmap` omits color unlike Python `_emit_heatmap`; that payload heatmap color mapping is a recorded emit-heatmap-color stay-host. Node `_emitHeatmap` ships rgba_len not nested rgba_bufs unlike Python `_emit_heatmap`; that payload heatmap rgba mapping is a recorded emit-heatmap-rgba stay-host. Node `_emitScatter` omits ship scale unlike Python `_axis_scale`; that payload scatter encode mapping is a recorded emit-scatter-ship-scale stay-host. Node `_emitLine` omits ship scale unlike Python `_axis_scale`; that payload line encode mapping is a recorded emit-line-ship-scale stay-host. Node `_emitArea` omits ship scale unlike Python `_axis_scale`; that payload area encode mapping is a recorded emit-area-ship-scale stay-host. Node `_emitHexbin` omits ship scale unlike Python `_axis_scale`; that payload hexbin encode mapping is a recorded emit-hexbin-ship-scale stay-host. Node `_emitRect` omits ship scale unlike Python `_axis_scale`; that payload rect encode mapping is a recorded emit-rect-ship-scale stay-host. Node `_emitSegments` omits ship scale unlike Python `_axis_scale`; that payload segments encode mapping is a recorded emit-segments-ship-scale stay-host. Node `_emitRibbon` omits ship scale unlike Python `_axis_scale`; that payload ribbon encode mapping is a recorded emit-ribbon-ship-scale stay-host. Node `_emitTriangleMesh` omits ship scale unlike Python `_axis_scale`; that payload mesh encode mapping is a recorded emit-mesh-ship-scale stay-host. Node `_emitHistogram` omits ship scale unlike Python `_axis_scale`; that payload histogram encode mapping is a recorded emit-hist-ship-scale stay-host. Node `buildPayload` omits show_legend unlike Python `build_payload`; that payload show-legend mapping is a recorded emit-payload-show-legend stay-host.
+ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
+authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
+rim tick-label placement. Polar heatmap constant-style lattices use the same
+Rect tessellation; ABI 192 polar painted heatmap inverse-rasters to one Image.
+Cartesian Scene bytes change only the version u32.
+ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
+font sizes, paints, title, and per-entry meta plus labels; XYLG header
+layout, text offsets, and bounded-text rejection are engine-owned and
+identical for Python and Node.
+ABI 111 moves primary Scene colorbar framing into Rust. Hosts pass domain,
+stops, ticks, title, and text RGBA; XYCB v2 header layout, stop/tick
+tables, domain-span checks, and bounded-text rejection are engine-owned
+and identical for Python and Node.
+ABI 112 moves primary Scene annotation framing into Rust. Hosts pass typed
+row meta plus concatenated labels; XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, the XYAD envelope, and bounded-text rejection are
+engine-owned and identical for Python and Node.
+ABI 113 moves closed-subset SVG→PDF into Rust. Hosts pass UTF-8 SVG;
+path lowering, Helvetica metrics, ExtGState/shading/image embedding, and
+deterministic object numbering are engine-owned and identical for Python
+and Node.
+ABI 114 moves baseline JPEG and lossless WebP encode into Rust. Hosts
+pass packed RGB/RGBA8 pixels; YCbCr 4:4:4, Annex K tables, the libjpeg
+quality curve, VP8L simple-lossless packing, and Huffman/prefix codes are
+engine-owned and identical for Python and Node.
+ABI 115 moves filter-0 PNG encode into Rust. Hosts pass packed RGB/RGBA8
+pixels plus mode/compression; indexed-palette selection, `tRNS`, and zlib
+IDAT are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
-existing Scene Rect records; polar, colormaps, truecolor, irregular
+existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
+annular sectors. ABI 134 `HeatmapPainted` moves scalar colormap and truecolor
+tessellation plus style intern into Rust: hosts pack an XYHP plane, Rust emits
+per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
+(`xyg_colormap_stops`, XYHP paint kind 2). ABI 136 product-kind packing
+(`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product`) maps authored
+kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
+ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
+Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice.
+ABI 138 / Scene v28 compiles constant dash
+polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
+`stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
+an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
+`stroke-linecap`. ABI 140 / Scene v30 compiles cartesian `curve="smooth"`
+polylines as denser Scene polylines (`CurveFlatten=11`); ABI 141 / Scene v31
+compiles cartesian `area(curve="smooth")` as denser Scene Bands
+(`BandFlatten=12`). ABI 142 compiles cartesian mean-color density as XYHP
+kind 4 on the existing `DensityBlit` Image blit. ABI 143 polar density
+tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). ABI 144
+admits cartesian `error_band(curve="smooth")` on existing `BandFlatten=12` and
+polar `curve="smooth"` line/area/error_band as identity chords (polar-axes.md
+§5). ABI 145 admits constant scatter `marker_path` via an XYMP extras sidecar
+tessellated to PolyFill/Polyline after pixel mapping. ABI 146 admits constant
+mark `fill` linear-gradients via an XYGR extras sidecar kept on encoded Scene.
+ABI 147 owns product packing facts from packed XYPK v1. ABI 148 owns
+annotation family routing from packed XYAF v1. ABI 149 owns heatmap/density
+XYHP kind routing from packed XYHF v1. ABI 150 owns style-sidecar layout and
+extras wrapping from packed XYSS v1. ABI 151 owns Scene density binning and
+log-u8 encoding from packed columns. ABI 152 owns XYEP layout,
+kind/step/annotation codes, and flag derivation from packed XYEF v1.
+ABI 153 owns plot layout, chrome-style resolve, legend loc default/allowlists
+(empty authored loc is fail-closed, not the upper-right default), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from packed
+XYCF v1. Layout errors stay plot-layout diagnostics so the public-export
+predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+ABI 154 owns per-trace Scene compile policy from packed XYTC v1.
+ABI 155 owns heatmap/density attach policy from packed XYTO plus XYTA v1.
+ABI 156 owns XYPK construction, scatter-only symbol/diameter, density
+domain-endpoint column rewrite, and `pack_product_facts` from packed XYTT
+plus XYCL v1.
+ABI 157 owns legend-name gating, heatmap-vs-density plane selection, and
+per-trace style/dash/marker/gradient/plane extraction from packed XYTT plus
+XYNM v1.
+ABI 158 owns XYSS dash/linecap/marker/gradient record construction from
+packed XYSD plus XYAO v1.
+ABI 159 owns annotation style/row splice and XYAD extract from packed
+product rows plus XYSD plus XYAO v1.
+ABI 160 owns assembled Scene encode from packed XYAS plus XYCC plus extras.
+ABI 161 owns legend paints and XYHP wrapping from packed XYSD.
+ABI 162 owns XYCC packing, extras packing, and viewport/axis scalars from
+packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
+ABI 163 owns product-path compile, attach, sidecar, row, annotation,
+style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
+XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
+ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
+ABI 166 tessellates cartesian bar/column/histogram `corner_radius` after pixel
+mapping. ABI 167 applies polar bar/column/histogram `wedge_gap` as a constant
+pixel inset during `polar_wedge_points`. ABI 168 tessellates polar
+bar/column/histogram `corner_radius` when the inner radius is positive.
+ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion.
+ABI 170 admits constant scatter `marker_glyph` via an XYMG extras sidecar
+kept on the encoded Scene. ABI 191 admits multi-character UTF-8 (XYMG v2).
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+Combined `marker_path` + `marker_glyph` stays fail-closed. ABI 171 admits scatter
+`stroke_width` without an authored `stroke` as match-fill. ABI 172 admits
+cartesian line `curve="smooth"` plus `step` as authored step expansion.
+ABI 173 tessellates heatmap `corner_radius` (cartesian rounded Rects / polar
+wedges). ABI 174 tessellates violin/box `corner_radius` on that same Rect
+path. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on XYMS.
+ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` on that
+same path. ABI 177 admits heatmap `fill_opacity` on XYMS fill alpha.
+ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path.
+ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
+same path. Polar painted Image blit tessellates when stroke is visible.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
+hexbin on HexCell PolyFills.
+ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
+path. ABI 195 admits custom `role` and per-item fill/stroke/width interned onto
+those TriangleFace PolyFills from packed XYHP kind 6 (`joined_fill` plus per-face
+paint stays fail-closed). ABI 196 intern scatter per-item fill/stroke/width/opacity
+from packed XYHP kind 7 (per-item size/symbol stay fail-closed). ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
+ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
+the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
+ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+(hosts pack the two-stop fill, not `FLAG_COLOR2`). ABI 190 intern per-item
+two-ended paint from packed XYHP kind 5. Polar ribbon and explicit `FLAG_COLOR2`
+stay fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
+as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
+as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
+interned onto HexCell PolyFills. ABI 194 admits polar hexbin, custom reducers,
+and categorical / `direct_rgba` hexbin on that same HexCell intern. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 187 admits cartesian unwrapped text `rotation` as
+XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
+`wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
+packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
+from packed XYHP kind 5. Annotation `html` stays fail-closed
+(`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). Annotation `class_name` stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation
+`collision` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`
+(#307). Annotation `markup` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308). Annotation custom
+typography stays fail-closed as `XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309).
+Text/marker `style.rotation` lifts onto the ABI 187/188 rotation field.
+Polar stays
+fail-closed. Per-item radius
+channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

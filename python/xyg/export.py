@@ -1234,10 +1234,12 @@ def _native_image(
 
     # An export-only backdrop is not yet an authored Scene field, so it remains
     # an explicit compatibility exception.  The normal public path below uses
-    # the single Rust support predicate for SVG, PNG, and PDF.
+    # the single Rust support predicate for SVG, PNG, PDF, JPEG, and WebP.
     scene_data = (
-        _scene_v3.public_static_export(fig, fmt, width=width, height=height, scale=scale)
-        if not optimize and background is None and fmt in {"png", "svg", "pdf"}
+        _scene_v3.public_static_export(
+            fig, fmt, width=width, height=height, scale=scale, quality=quality
+        )
+        if not optimize and background is None and fmt in {"png", "svg", "pdf", "jpeg", "webp"}
         else None
     )
 
@@ -1267,15 +1269,17 @@ def _native_image(
 
         svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
         return _pdf.svg_to_pdf(svg)
+    if scene_data is not None:
+        return scene_data
     rgba = _raster.to_rgba(fig, width=width, height=height, scale=scale, background=background)
     if fmt == "jpeg":
-        from . import _jpeg
+        from . import _native
 
-        return _jpeg.encode(_flatten_alpha(rgba), quality=quality or _DEFAULT_QUALITY)
+        return _native.encode_jpeg(_flatten_alpha(rgba), quality=quality or _DEFAULT_QUALITY)
     if fmt == "webp":
-        from . import _webp
+        from . import _native
 
-        return _webp.encode(rgba)
+        return _native.encode_webp(rgba)
     raise AssertionError(f"unreachable native format {fmt!r}")
 
 
