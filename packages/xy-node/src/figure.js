@@ -30,6 +30,7 @@ import {
   DENSITY_GRID,
   DENSITY_SAMPLE_SEED,
   DENSITY_SAMPLE_TARGET,
+  WASM_AGGREGATE_MAX_POINTS,
   PROTOCOL_VERSION,
   bin2d,
   densityFormatBinning,
@@ -309,6 +310,45 @@ function shipStyleChannels(styleChannels, pw, sel = null) {
     result[name] = spec;
   }
   return result;
+}
+
+/** Attach channels listed in a Rust-owned ship registry plan (ABI 311). */
+function shipRegistryAttach(entry, trace, pw, sel, plan) {
+  for (const ch of plan.channels) {
+    const key = ch.registryKey;
+    if (ch.shipMethod === "color_size") {
+      const color = shipColorChannel(trace.color_ch, pw, sel);
+      if (color != null) entry.color = color;
+      const sizeCh = trace.size_ch;
+      if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
+        let values = sizeCh.values instanceof Float64Array
+          ? sizeCh.values
+          : Float64Array.from(sizeCh.values, Number);
+        if (sel != null) values = gatherF64(values, sel);
+        const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
+        const lo = domain[0];
+        const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+        const wirePlan = payloadChannelWireEncode({ role: "size", mode: "continuous" });
+        entry.size = {
+          mode: "continuous",
+          range_px: sizeCh.range_px ?? [8, 22],
+          domain: [lo, hi],
+          buf: shipWireBuffer(wirePlan, pw, { values, lo, hi }),
+        };
+        if (wirePlan.markDtypeU8) entry.size.dtype = "u8";
+      } else if (sizeCh?.mode === "constant") {
+        entry.size = { ...sizeCh };
+      }
+    } else if (ch.shipMethod === "color") {
+      const traceSlot = ch.traceSlot === "color2_ch"
+        ? (trace.color_target ?? trace.color2_ch)
+        : trace[ch.traceSlot];
+      const shipped = shipColorChannel(traceSlot, pw, sel);
+      if (shipped != null) entry[key] = shipped;
+    } else if (ch.shipMethod === "style") {
+      entry[key] = shipStyleChannels(trace.style_channels, pw, sel);
+    }
+  }
 }
 
 function gatherF64(arr, idx) {
@@ -1594,6 +1634,7 @@ export class Figure {
       xLinear: true,
       yLinear: true,
       pointOverlay: true,
+      splitPayload: pw.split,
       gridW: w,
       gridH: h,
       gridFromPyramid: reduction === "pyramid-count",
@@ -1636,12 +1677,33 @@ export class Figure {
       // Node payload density omits mean-color rgba. Python `_density_trace_spec`
       // ships rgba from `trace_bin_colors`. Matching Python would add
       // density.rgba. Recorded emit-density-rgba stay-host.
-      // Node payload density omits wasm_source. Python `_density_trace_spec`
-      // ships a split f64 replay source. Matching Python would add
-      // density.wasm_source. Recorded emit-density-wasm-source stay-host.
       channels_dropped: wire.channelsDroppedCompat,
       dropped_channels: [],
     };
+    if (wire.shipWasmSource) {
+      const xAxis = t.x_axis ?? "x";
+      const yAxis = t.y_axis ?? "y";
+      const wasmSource = {
+        kind: "cartesian-count-f64-stream-v1",
+        point_count: t.x.length,
+        trace_id: t.id,
+        capacity: WASM_AGGREGATE_MAX_POINTS,
+        ownership: "retain-host-replay",
+      };
+      const wasmColumnPlan = payloadColumnShipPlan({
+        kind: "density_wasm_source",
+        xAxisScale: payloadAxisScale(this, xAxis),
+        yAxisScale: payloadAxisScale(this, yAxis),
+      });
+      shipRegistryColumns(
+        wasmSource,
+        t,
+        pw,
+        wasmColumnPlan,
+        { x: t.x, y: t.y },
+      );
+      density.wasm_source = wasmSource;
+    }
     if (wire.overlayWireStaticRaster) {
       density.overlay_omitted = "static_raster";
     } else if (wire.overlayWireRowsExceed) {
@@ -2362,41 +2424,7 @@ export class Figure {
       hasStrokeCh: t.stroke_ch != null,
       hasStyleChannels,
     });
-    for (const ch of plan.channels) {
-      const key = ch.registryKey;
-      if (ch.shipMethod === "color_size") {
-        const color = shipColorChannel(t.color_ch, pw, sel);
-        if (color != null) entry.color = color;
-        const sizeCh = t.size_ch;
-        if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
-          let values = sizeCh.values instanceof Float64Array
-            ? sizeCh.values
-            : Float64Array.from(sizeCh.values, Number);
-          if (sel != null) values = gatherF64(values, sel);
-          const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
-          const lo = domain[0];
-          const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
-          const plan = payloadChannelWireEncode({ role: "size", mode: "continuous" });
-          entry.size = {
-            mode: "continuous",
-            range_px: sizeCh.range_px ?? [8, 22],
-            domain: [lo, hi],
-            buf: shipWireBuffer(plan, pw, { values, lo, hi }),
-          };
-          if (plan.markDtypeU8) entry.size.dtype = "u8";
-        } else if (sizeCh?.mode === "constant") {
-          entry.size = { ...sizeCh };
-        }
-      } else if (ch.shipMethod === "color") {
-        const traceSlot = ch.traceSlot === "color2_ch"
-          ? (t.color_target ?? t.color2_ch)
-          : t[ch.traceSlot];
-        const shipped = shipColorChannel(traceSlot, pw, sel);
-        if (shipped != null) entry[key] = shipped;
-      } else if (ch.shipMethod === "style") {
-        entry[key] = shipStyleChannels(styleChannels, pw, sel);
-      }
-    }
+    shipRegistryAttach(entry, t, pw, sel, plan);
   }
 
   _shipColor(channel, pw, sel = null) {

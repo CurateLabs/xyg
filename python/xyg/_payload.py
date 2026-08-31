@@ -1415,20 +1415,7 @@ class PayloadMixin(_Host):
             has_stroke_ch=t.stroke_ch is not None,
             has_style_channels=bool(t.style_channels),
         )
-        for ch in plan["channels"]:
-            key = ch["registry_key"]
-            method = ch["ship_method"]
-            if method == "color_size":
-                entry["color"], entry["size"] = self._ship_channels(
-                    t, sel, pw.ship_scalar, pw.ship_u8
-                )
-            elif method == "color":
-                channel = getattr(t, ch["trace_slot"])
-                entry[key] = channels.ship_color_channel(channel, sel, pw.ship_scalar, pw.ship_u8)
-            elif method == "style":
-                entry[key] = channels.ship_style_channels(
-                    t.style_channels, sel, pw.ship_scalar, pw.ship_u8
-                )
+        channels.ship_registry_attach(entry, t, sel, pw.ship_scalar, pw.ship_u8, plan)
 
     def _payload_column_ship_plan(
         self, t: Trace, *, kind: Optional[str] = None, orientation: Optional[str] = None

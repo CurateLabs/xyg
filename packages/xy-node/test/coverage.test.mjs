@@ -503,13 +503,14 @@ test("buildPayload ships show_legend via payload build plan", () => {
   assert.equal(spec.show_legend, false);
 });
 
-test("buildPayload ships wasm_density unsupported on split density without source", () => {
+test("buildPayload ships wasm_density automatic on split density with wasm_source", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
   const { spec } = fig.buildPayload({ split: true });
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.wasm_density.automatic, false);
-  assert.equal(spec.wasm_density.unsupported.code, "XYG_WASM_SOURCE_UNSUPPORTED");
+  assert.notEqual(spec.traces[0].density.wasm_source, undefined);
+  assert.equal(spec.wasm_density.automatic, true);
+  assert.equal(spec.wasm_density.source, spec.traces[0].density.wasm_source);
 });
 
 test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
@@ -523,14 +524,28 @@ test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.scale, "linear");
 });
 
-test("_emitScatterDensity omits wasm_source unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` ships density.wasm_source on split payloads.
-  // Node density encode omits that replay source. Recorded
-  // emit-density-wasm-source stay-host.
+test("_emitScatterDensity ships wasm_source on split via registry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
   const { spec } = fig.buildPayload({ split: true });
   assert.equal(spec.traces[0].tier, "density");
+  const wasmSource = spec.traces[0].density.wasm_source;
+  assert.notEqual(wasmSource, undefined);
+  assert.equal(wasmSource.kind, "cartesian-count-f64-stream-v1");
+  assert.equal(wasmSource.point_count, 2);
+  assert.equal(wasmSource.trace_id, fig.traces[0].id);
+  assert.equal(wasmSource.capacity, 8_000_000);
+  assert.equal(wasmSource.ownership, "retain-host-replay");
+  assert.equal(typeof wasmSource.x, "number");
+  assert.equal(typeof wasmSource.y, "number");
+  assert.equal(spec.columns[wasmSource.x].dtype, "f64");
+  assert.equal(spec.columns[wasmSource.y].dtype, "f64");
+});
+
+test("_emitScatterDensity omits wasm_source on unsplit payloads", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].density.wasm_source, undefined);
 });
 
