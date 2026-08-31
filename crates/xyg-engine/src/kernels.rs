@@ -1549,6 +1549,65 @@ pub fn scene_gradient_solid_css(rgba: &[u8], out: &mut [u8]) -> i32 {
     bytes.len() as i32
 }
 
+/// Pack Scene fill-gradient spec blob into ``out`` (ABI 260).
+///
+/// Hosts pass UTF-8 ``space``/``dir`` field values (not pre-packed codes),
+/// parallel stop positions, and CSS stop strings. Invalid layout (length
+/// mismatch, ``css_lens`` sum mismatch, more than 255 stops) returns ``0``.
+/// Unknown space/dir names pack as ``255`` via [`scene_gradient_space`] /
+/// [`scene_gradient_dir`]. Wire format matches XYTC ``gradient_blob``.
+/// Returns bytes written, ``0`` when invalid, ``-1`` when ``out`` is too small.
+pub fn scene_gradient_spec_pack(
+    space: &str,
+    dir: &str,
+    stop_t: &[f64],
+    css: &[u8],
+    css_lens: &[u32],
+    out: &mut [u8],
+) -> i32 {
+    if stop_t.len() != css_lens.len() || stop_t.len() > 255 {
+        return 0;
+    }
+    let mut css_off = 0usize;
+    for len in css_lens {
+        let len = *len as usize;
+        if css_off.saturating_add(len) > css.len() {
+            return 0;
+        }
+        css_off += len;
+    }
+    if css_off != css.len() {
+        return 0;
+    }
+    let need = 4usize
+        + stop_t
+            .iter()
+            .zip(css_lens.iter())
+            .map(|(_, len)| 10 + *len as usize)
+            .sum::<usize>();
+    if out.len() < need {
+        return -1;
+    }
+    out[0] = scene_gradient_space(space) as u8;
+    out[1] = scene_gradient_dir(dir) as u8;
+    out[2] = stop_t.len() as u8;
+    out[3] = 0;
+    let mut off = 4usize;
+    css_off = 0;
+    for (t, len) in stop_t.iter().zip(css_lens.iter()) {
+        out[off..off + 8].copy_from_slice(&t.to_le_bytes());
+        off += 8;
+        let len_u16 = *len as u16;
+        out[off..off + 2].copy_from_slice(&len_u16.to_le_bytes());
+        off += 2;
+        let chunk_len = *len as usize;
+        out[off..off + chunk_len].copy_from_slice(&css[css_off..css_off + chunk_len]);
+        off += chunk_len;
+        css_off += chunk_len;
+    }
+    need as i32
+}
+
 /// Scene f64 arrays-equal (ABI 250).
 ///
 /// `1` iff lengths match and every pair is IEEE-equal (`==`). Empty
@@ -10496,6 +10555,23 @@ mod fuzz {
         assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
         assert_eq!(scene_gradient_solid_css(&[1, 2, 3], &mut out), 0);
         assert_eq!(scene_gradient_solid_css(&[1, 2, 3, 4], &mut [0u8; 4]), 0);
+    }
+
+    #[test]
+    fn scene_gradient_spec_pack_matches_host_table() {
+        let mut out = vec![0u8; 64];
+        let css = b"#7c3aed#34d399";
+        let lens = [7u32, 7];
+        let t = [0.0f64, 1.0];
+        let n = scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out);
+        assert_eq!(n, 4 + 2 * 10 + 14);
+        assert_eq!(&out[..4], &[0, 2, 2, 0]);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out[..3]), -1);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, b"x", &lens, &mut out), 0);
+        assert_eq!(scene_gradient_spec_pack("mark", "right", &[0.0], css, &[], &mut out), 0);
+        let n = scene_gradient_spec_pack("", "", &[], &[], &[], &mut out);
+        assert_eq!(n, 4);
+        assert_eq!(&out[..4], &[255, 255, 0, 0]);
     }
 
     #[test]

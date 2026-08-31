@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 259;
+pub const ABI_VERSION: u32 = 260;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6530,6 +6530,79 @@ pub unsafe extern "C" fn xyg_scene_xyhf_colormap_pack(
                 .copy_from_slice(&stops);
         }
         1
+    })
+}
+
+/// Pack Scene fill-gradient spec blob (ABI 260).
+///
+/// Hosts pass UTF-8 ``space``/``dir`` field values, parallel stop positions,
+/// and CSS stop strings. Invalid layout returns ``0``. Returns bytes written,
+/// ``0`` when invalid, ``-1`` when ``out_cap`` is too small.
+///
+/// # Safety
+/// When ``space_len > 0``, ``space`` addresses readable bytes. When
+/// ``dir_len > 0``, ``dir`` addresses readable bytes. When ``n_stops > 0``,
+/// ``stop_t`` addresses readable f64s and ``css_lens`` addresses readable
+/// u32s. When ``css_len > 0``, ``css`` addresses readable bytes. When
+/// ``out_cap > 0``, ``out`` addresses writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_gradient_spec_pack(
+    space: *const u8,
+    space_len: usize,
+    dir: *const u8,
+    dir_len: usize,
+    stop_t: *const f64,
+    n_stops: usize,
+    css: *const u8,
+    css_len: usize,
+    css_lens: *const u32,
+    n_lens: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if (space_len > 0 && space.is_null())
+            || (dir_len > 0 && dir.is_null())
+            || (n_stops > 0 && (stop_t.is_null() || css_lens.is_null()))
+            || (css_len > 0 && css.is_null())
+            || (out_cap > 0 && out.is_null())
+        {
+            return 0;
+        }
+        if n_stops != n_lens {
+            return 0;
+        }
+        let space_text = if space_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(space, space_len)).unwrap_or("")
+        };
+        let dir_text = if dir_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(dir, dir_len)).unwrap_or("")
+        };
+        let stop_t = if n_stops == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(stop_t, n_stops)
+        };
+        let css = if css_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css, css_len)
+        };
+        let css_lens = if n_lens == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css_lens, n_lens)
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_cap)
+        };
+        kernels::scene_gradient_spec_pack(space_text, dir_text, stop_t, css, css_lens, out)
     })
 }
 

@@ -1536,6 +1536,48 @@ def scene_gradient_solid_css(rgba: npt.ArrayLike) -> str | None:
     return bytes(out[:code]).decode("ascii")
 
 
+def scene_gradient_spec_pack(
+    space: bytes,
+    dir: bytes,
+    stop_t: npt.ArrayLike,
+    css: bytes,
+    css_lens: npt.ArrayLike,
+) -> bytes | None:
+    """Scene fill-gradient spec blob via ``xyg_scene_gradient_spec_pack`` (ABI 260).
+
+    Hosts pass UTF-8 space/dir field bytes, parallel stop positions, and CSS
+    strings. Invalid layout returns ``None``.
+    """
+    t_arr = np.ascontiguousarray(np.asarray(stop_t, dtype=np.float64))
+    lens = np.ascontiguousarray(np.asarray(css_lens, dtype=np.uint32))
+    css_arr = np.frombuffer(css, dtype=np.uint8) if css else np.empty(0, dtype=np.uint8)
+    if t_arr.size != lens.size:
+        return None
+    cap = max(4, 4 + int(t_arr.size) * 10 + int(css_arr.size))
+    out = np.empty(cap, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_gradient_spec_pack(
+            _ptr_u8(np.frombuffer(space, dtype=np.uint8)) if space else 0,
+            len(space),
+            _ptr_u8(np.frombuffer(dir, dtype=np.uint8)) if dir else 0,
+            len(dir),
+            _ptr_f64(t_arr) if t_arr.size else 0,
+            int(t_arr.size),
+            _ptr_u8(css_arr) if css_arr.size else 0,
+            int(css_arr.size),
+            _ptr_u32(lens) if lens.size else 0,
+            int(lens.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-gradient-spec-pack request")
+    if code <= 0:
+        return None
+    return bytes(out[:code])
+
+
 def scene_hexbin_reduce_admit(text: str | None = None) -> bool:
     """Scene hexbin reduce admit via ``xyg_scene_hexbin_reduce_admit`` (ABI 232).
 

@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3321,20 +3321,7 @@ function packMarkerBlob(value) {
 }
 
 function packGradientSpec(fill) {
-  const space = sceneGradientSpace(fill.space);
-  const dir = sceneGradientDir(fill.dir);
-  if (!Array.isArray(fill.stops)) return null;
-  const parts = [new Uint8Array([space, dir, fill.stops.length & 0xff, 0])];
-  for (const stop of fill.stops) {
-    if (!Array.isArray(stop) || stop.length !== 2) return null;
-    const css = encodeUtf8(String(stop[1]));
-    const head = new Uint8Array(10);
-    const view = new DataView(head.buffer);
-    view.setFloat64(0, Number(stop[0]), true);
-    view.setUint16(8, css.length, true);
-    parts.push(head, css);
-  }
-  return concatBytes(parts);
+  return sceneGradientSpecPack(fill?.space, fill?.dir, fill?.stops);
 }
 
 /** XYTC color_ch. Python `_pack_xytc` reads `getattr(trace, "color_ch", None)` only. */

@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneChannelConstantCss, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xySceneXytaColormapPack, xySceneXyhfColormapPack, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneChannelConstantCss, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xySceneXytaColormapPack, xySceneXyhfColormapPack, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -448,6 +448,51 @@ export function sceneGradientSolidCss(rgba) {
   if (code === -2) throw new RangeError("invalid scene-gradient-solid-css request");
   if (code <= 0) return null;
   return new TextDecoder().decode(out.subarray(0, code));
+}
+
+/** Scene fill-gradient spec blob (ABI 260). Field picking stays host. */
+export function sceneGradientSpecPack(spaceText, dirText, stops) {
+  if (!Array.isArray(stops)) return null;
+  const stopT = new Float64Array(stops.length);
+  const cssParts = [];
+  const cssLens = new Uint32Array(stops.length);
+  for (let index = 0; index < stops.length; index += 1) {
+    const stop = stops[index];
+    if (!Array.isArray(stop) || stop.length !== 2) return null;
+    stopT[index] = Number(stop[0]);
+    const css = new TextEncoder().encode(String(stop[1]));
+    cssParts.push(css);
+    cssLens[index] = css.length;
+  }
+  const cssLen = cssParts.reduce((sum, part) => sum + part.length, 0);
+  const css = new Uint8Array(cssLen);
+  let cssOff = 0;
+  for (const part of cssParts) {
+    css.set(part, cssOff);
+    cssOff += part.length;
+  }
+  const cap = Math.max(4, 4 + stops.length * 10 + css.length);
+  const out = new Uint8Array(cap);
+  const space = new TextEncoder().encode(String(spaceText ?? ""));
+  const dir = new TextEncoder().encode(String(dirText ?? ""));
+  const code = Number(
+    xySceneGradientSpecPack(
+      space.length ? u8Ptr(space) : 0,
+      BigInt(space.length),
+      dir.length ? u8Ptr(dir) : 0,
+      BigInt(dir.length),
+      stopT.length ? f64Ptr(stopT) : 0,
+      BigInt(stopT.length),
+      css.length ? u8Ptr(css) : 0,
+      BigInt(css.length),
+      cssLens.length ? u32Ptr(cssLens) : 0,
+      BigInt(cssLens.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    ),
+  );
+  if (code <= 0) return null;
+  return out.subarray(0, code);
 }
 
 /** Scene heatmap colormap eligibility (ABI 239). Field picking stays host. */
