@@ -78,6 +78,16 @@ const cases = [
     fig.line([1, 10], [1, 10]);
     fig.traces[0].id = 40;
   }),
+  caseEntry("scatter_log_ship_scale", (fig) => {
+    fig.setAxis("x", { type: "log" });
+    fig.scatter([1, 10], [1, 10]);
+    fig.traces[0].id = 41;
+  }),
+  caseEntry("histogram_log_ship_scale", (fig) => {
+    fig.setAxis("x", { type: "log" });
+    fig.histogram([1, 2, 10], { bins: 2, range: [1, 10] });
+    fig.traces[0].id = 44;
+  }),
   caseEntry("histogram_fixed_bins", (fig) => {
     fig.histogram([0, 1, 1, 2, 3], { bins: 3, range: [0, 3] });
     fig.traces[0].id = 10;

@@ -96,6 +96,18 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.line([1.0, 10.0], [1.0, 10.0])
         fig.traces[0].id = 40
         return fig, {}
+    if name == "scatter_log_ship_scale":
+        fig = Figure(width=240, height=160)
+        fig.set_axis("x", type_="log")
+        fig.scatter([1.0, 10.0], [1.0, 10.0])
+        fig.traces[0].id = 41
+        return fig, {}
+    if name == "histogram_log_ship_scale":
+        fig = Figure(width=240, height=160)
+        fig.set_axis("x", type_="log")
+        fig.histogram([1.0, 2.0, 10.0], bins=2, range=(1.0, 10.0))
+        fig.traces[0].id = 44
+        return fig, {}
     if name == "histogram_fixed_bins":
         fig = Figure(width=240, height=160)
         fig.histogram([0.0, 1.0, 1.0, 2.0, 3.0], bins=3, range=(0.0, 3.0))
@@ -317,7 +329,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 27
+    assert len(fixture["cases"]) == 29
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -325,6 +337,8 @@ def test_fixture_contract(fixture: dict) -> None:
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "scatter_log_ship_scale",
+        "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
@@ -358,6 +372,8 @@ def test_fixture_contract(fixture: dict) -> None:
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "scatter_log_ship_scale",
+        "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
@@ -399,6 +415,8 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "scatter_log_ship_scale",
+        "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",

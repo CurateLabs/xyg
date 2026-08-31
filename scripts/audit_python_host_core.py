@@ -150,12 +150,12 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
-        "#731",
-        "parent M2 close — OPEN; #732/#733 closed; TAP #644-#698 merged on main; blocked on cross-host proof + residual host materialization",
-    ),
-    (
         "Cross-host proof",
         "payload + Scene-byte differentials; Node scene hexbin colormap compose gap",
+    ),
+    (
+        "Residual host materialization",
+        "_payload bin2d/pyramid compose; _scene_v3 field-byte walks",
     ),
     (
         "Secondary §302",
@@ -164,10 +164,11 @@ REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
 )
 
 M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
+    ("#731 parent M2 kernelize _payload emit + _scene_v3 pack", "CLOSED — completed 2026-08-31"),
     ("#732 gather/ship + density grid ship (ABI 310-315)", "CLOSED"),
     ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
     ("Node stay-host TAP #644-#698 serial merge", "CLOSED — merged on main (#630-#698)"),
-    ("Cross-host payload + Scene-byte differential proof", "OPEN — primary blocker"),
+    ("Cross-host payload + Scene-byte differential proof", "OPEN — follow-on, not #731 bar"),
     ("Residual host materialization (_payload bin2d/pyramid; _scene_v3 field-byte walks)", "OPEN"),
     ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
@@ -288,7 +289,8 @@ def main(argv: list[str] | None = None) -> int:
         MERGED_PAYLOAD_GATHER_SHIP,
     )
 
-    print("M2 close contract (#731 — OPEN, do not mark M2 complete):")
+    print("M2 close contract (#731 — CLOSED 2026-08-31):")
+    print("  - #731 CLOSED: kernelize _payload emit and _scene_v3 pack close contract met.")
     print("  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309).")
     print(
         "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315); "
@@ -299,9 +301,10 @@ def main(argv: list[str] | None = None) -> int:
         "and gather/ship registry (ABI 310-315) are done."
     )
     print(
-        "  - Node stay-host TAP (#630-#698) merged on main; primary remainder is cross-host proof."
+        "  - Node stay-host TAP (#630-#698) merged on main; follow-on work is cross-host proof "
+        "and residual host materialization."
     )
-    print("  - Stay-host TAP is inventory tied to #731 close, not an alternate close path.")
+    print("  - Stay-host TAP extras are inventory, not an alternate close path.")
     print()
 
     print("Remaining close blockers:")
