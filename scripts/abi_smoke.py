@@ -1329,6 +1329,14 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_transition_keys_admit.restype = ctypes.c_int32
+    lib.xyg_payload_transition_keys_admit.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4772,6 +4780,14 @@ def main() -> None:
         and bar_has_value0.value == 1
         and bar_out_value0.value == 0.0,
         "payload_bar_compact_admit uniform width",
+    )
+    ok(
+        lib.xyg_payload_transition_keys_admit(1, 0, 10, 10, 200_000) == 1,
+        "payload_transition_keys_admit snap aggregate",
+    )
+    ok(
+        lib.xyg_payload_transition_keys_admit(1, 1, 10, 10, 200_000) == 0,
+        "payload_transition_keys_admit ship",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

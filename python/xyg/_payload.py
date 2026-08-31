@@ -403,21 +403,22 @@ class PayloadMixin(_Host):
         if t.animation is not None and "animation" not in entry:
             entry["animation"] = dict(t.animation)
         keys = t.transition_keys if key_values is None else key_values
-        if keys is not None and entry.get("tier") != "direct":
-            entry["animation_fallback"] = "snap:aggregate"
-            return entry
         if keys is not None:
             values = keys if key_values is not None or sel is None else keys[sel]
-            if len(values) == int(entry.get("n_marks", len(values))):
-                if len(values) > MAX_ANIMATION_MATCH_ROWS:
-                    entry["animation_fallback"] = "snap:key-limit"
-                    return entry
-                entry["keys"] = {
-                    "lo": pw.ship_u32(values[:, 0]),
-                    "hi": pw.ship_u32(values[:, 1]),
-                }
-            else:
-                entry["animation_fallback"] = "index:key-count-mismatch"
+            fallback = kernels.payload_transition_keys_admit(
+                has_keys=True,
+                tier_direct=entry.get("tier") == "direct",
+                n_keys=len(values),
+                n_marks=int(entry.get("n_marks", len(values))),
+                max_rows=MAX_ANIMATION_MATCH_ROWS,
+            )
+            if fallback is not None:
+                entry["animation_fallback"] = fallback
+                return entry
+            entry["keys"] = {
+                "lo": pw.ship_u32(values[:, 0]),
+                "hi": pw.ship_u32(values[:, 1]),
+            }
         return entry
 
     def _emit_trace(

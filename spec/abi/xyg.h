@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 274
-#define XYG_ABI_SIGNATURE_SHA256 "2536a081ea0961a90d68faf3f766784abf86b5cd3d48271ea589d9ebf8f89be5"
+#define XYG_ABI_VERSION 275
+#define XYG_ABI_SIGNATURE_SHA256 "2db1c7b57397c19695ff262f171c39920af0fb89915472a503d24e70606c96b5"
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,6 +153,7 @@ size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_segment_budget(double px_width);
 int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item);
+int32_t xyg_payload_transition_keys_admit(int32_t has_keys, int32_t tier_direct, size_t n_keys, size_t n_marks, size_t max_rows);
 size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity);
 int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls);
