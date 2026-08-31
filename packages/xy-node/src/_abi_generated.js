@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 299;
-export const SIGNATURE_SHA256 = "bcb007d1cec2f79a05536bd80e2de6779554930d4ae8bc00da0925d20b3e3de9";
+export const ABI_VERSION = 300;
+export const SIGNATURE_SHA256 = "0d7baac078f0a67e49bc4d345856820517c47a6f6cb21d7ad41e71f0b47b100c";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -169,6 +169,7 @@ export let xyPayloadRibbonEmitPlan;
 export let xyPayloadSampleTargetIndices;
 export let xyPayloadSegmentBudget;
 export let xyPayloadSegmentsEmitGather;
+export let xyPayloadSegmentsEmitPlan;
 export let xyPayloadTier;
 export let xyPayloadTraceChannelsShipAttach;
 export let xyPayloadTransitionEntryAttach;
@@ -564,6 +565,7 @@ export function bindGeneratedAbi(lib) {
   xyPayloadSampleTargetIndices = lib.func("size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadSegmentBudget = lib.func("size_t xyg_payload_segment_budget(double px_width)");
   xyPayloadSegmentsEmitGather = lib.func("size_t xyg_payload_segments_emit_gather(const uint8_t * kind, size_t kind_len, size_t n_segments, size_t n_points, double px_width, int32_t * out_tier, int32_t * out_role_maps, int32_t * out_keep_all, uint32_t * out_indices, uint32_t * out_sources, uint32_t * out_roles, size_t capacity)");
+  xyPayloadSegmentsEmitPlan = lib.func("int32_t xyg_payload_segments_emit_plan(const uint8_t * kind, size_t kind_len, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t has_transition_keys, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition, int32_t * out_attempt_gather, int32_t * out_attempt_role_keys)");
   xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
   xyPayloadTraceChannelsShipAttach = lib.func("int32_t xyg_payload_trace_channels_ship_attach(int32_t slot, int32_t include_trace_styles, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, int32_t * out_ship_color, int32_t * out_ship_size, int32_t * out_ship_stroke, int32_t * out_ship_style_channels)");
   xyPayloadTransitionEntryAttach = lib.func("int32_t xyg_payload_transition_entry_attach(int32_t has_trace_animation, int32_t entry_has_animation, int32_t has_trace_keys, int32_t has_key_values, int32_t has_sel, int32_t tier_direct, size_t n_marks, size_t n_trace_key_rows, size_t n_key_value_rows, size_t n_sel_rows, size_t max_rows, int32_t has_tooltip_rows, size_t n_tooltip_rows, size_t n_points, int32_t * out_attach_animation, int32_t * out_attempt_keys, int32_t * out_filter_keys_by_sel, int32_t * out_ship_keys, int32_t * out_animation_fallback, int32_t * out_attach_tooltip, int32_t * out_filter_tooltip_by_sel, int32_t * out_tooltip_length_ok)");

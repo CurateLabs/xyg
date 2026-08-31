@@ -48,6 +48,8 @@ import {
   payloadHeatmapEmitPlan,
   payloadMeshEmitPlan,
   payloadRibbonEmitPlan,
+  payloadSegmentsEmitGather,
+  payloadSegmentsEmitPlan,
   payloadTraceChannelsShipAttach,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
@@ -1630,29 +1632,42 @@ export class Figure {
     if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
       throw new Error(`${t.kind} trace missing segment columns`);
     }
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
     let x0v = t.x0;
     let x1v = t.x1;
     let y0v = t.y0;
     let y1v = t.y1;
+    const prePlan = payloadSegmentsEmitPlan({
+      kind: t.kind ?? "segments",
+      nMarks: x0v.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      hasTransitionKeys: t.transition_keys != null,
+    });
     let tier = "direct";
-    const maxGroups = payloadSegmentBudget(pxWidth);
-    if (t.kind === "errorbar" && t.count) {
-      const { keepAll, indices } = payloadErrorbarIndices(x0v.length, t.count, maxGroups);
-      if (!keepAll) {
-        x0v = gatherF64(x0v, indices);
-        x1v = gatherF64(x1v, indices);
-        y0v = gatherF64(y0v, indices);
-        y1v = gatherF64(y1v, indices);
-        tier = "decimated";
+    let sourceSel = null;
+    let segmentSources = null;
+    let segmentRoles = null;
+    if (prePlan.attemptGather) {
+      const gather = payloadSegmentsEmitGather(
+        t.kind ?? "segments",
+        x0v.length,
+        t.count ?? 0,
+        pxWidth,
+      );
+      tier = gather.tier === 1 ? "decimated" : "direct";
+      if (!gather.keepAll) {
+        sourceSel = gather.indices;
+        x0v = gatherF64(x0v, sourceSel);
+        x1v = gatherF64(x1v, sourceSel);
+        y0v = gatherF64(y0v, sourceSel);
+        y1v = gatherF64(y1v, sourceSel);
       }
-    } else if (t.kind === "stem" && x0v.length > maxGroups) {
-      const { keepAll, indices } = payloadEvenIndices(x0v.length, maxGroups);
-      if (!keepAll) {
-        x0v = gatherF64(x0v, indices);
-        x1v = gatherF64(x1v, indices);
-        y0v = gatherF64(y0v, indices);
-        y1v = gatherF64(y1v, indices);
-        tier = "decimated";
+      if (gather.roleMaps) {
+        segmentSources = gather.sources;
+        segmentRoles = gather.roles;
       }
     }
     const finiteSel = rectFiniteSel(t, x0v, x1v, y0v, y1v);
@@ -1661,11 +1676,24 @@ export class Figure {
       x1v = gatherF64(x1v, finiteSel);
       y0v = gatherF64(y0v, finiteSel);
       y1v = gatherF64(y1v, finiteSel);
+      sourceSel = sourceSel == null ? finiteSel : gatherF64(sourceSel, finiteSel);
+      if (segmentSources != null && segmentRoles != null) {
+        segmentSources = gatherItems(segmentSources, finiteSel);
+        segmentRoles = gatherItems(segmentRoles, finiteSel);
+      }
     }
     const x0 = new Column(x0v);
     const x1 = new Column(x1v);
     const y0 = new Column(y0v);
     const y1 = new Column(y1v);
+    const plan = payloadSegmentsEmitPlan({
+      kind: t.kind ?? "segments",
+      nMarks: x0v.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      hasTransitionKeys: t.transition_keys != null,
+    });
     const entry = {
       id: t.id,
       kind: t.kind ?? "segments",
@@ -1677,17 +1705,22 @@ export class Figure {
       style: { ...t.style },
       tier,
       n_points: t.count ?? t.x0.length,
-      n_marks: x0v.length,
-      // Node payload segments omits ship scale. Python `_emit_segments`
-      // passes `_axis_scale` into `pw.ship`. Matching Python would pin
-      // log-axis offset to 0. Recorded emit-segments-ship-scale stay-host.
-      x0: pw.ship(x0v, x0),
-      x1: pw.ship(x1v, x1),
-      y0: pw.ship(y0v, y0),
-      y1: pw.ship(y1v, y1),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: plan.nMarks,
+      x0: pw.ship(x0v, x0, { scale: plan.xShipScale }),
+      x1: pw.ship(x1v, x1, { scale: plan.xShipScale }),
+      y0: pw.ship(y0v, y0, { scale: plan.yShipScale }),
+      y1: pw.ship(y1v, y1, { scale: plan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      sourceSel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
     // Node payload segments ships t.color. Python `_emit_segments` ships
     // color_ch via `_ship_channels`. Matching Python would ignore t.color.
     // Recorded emit-segments-color stay-host.
@@ -1699,15 +1732,12 @@ export class Figure {
       // Python would throw. Recorded emit-segments-tooltip-len stay-host.
       entry.tooltip_rows = t.tooltip_rows;
     }
-    // Node payload segments omits stroke_ch. Python `_emit_segments` ships
-    // stroke_ch via `_ship_trace_styles`. Matching Python would add
-    // entry.stroke. Recorded emit-segments-stroke stay-host.
     // Node payload segments omits style_channels. Python `_emit_segments`
     // ships them as `channels` via `_ship_trace_styles`. Matching Python
     // would add entry.channels. Recorded emit-segments-channels stay-host.
-    // Node payload segments omits transition_keys. Python `_emit_segments`
-    // ships them via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-segments-transition stay-host.
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, sourceSel);
+    }
     return entry;
   }
 

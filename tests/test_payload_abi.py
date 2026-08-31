@@ -573,6 +573,42 @@ def test_payload_ribbon_emit_plan_no_gather_without_nulls() -> None:
     assert plan["apply_palette_default"] is False
 
 
+def test_payload_segments_emit_plan_errorbar_role_keys() -> None:
+    plan = kernels.payload_segments_emit_plan(
+        kind="errorbar",
+        n_marks=33,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+        has_transition_keys=True,
+    )
+    assert plan == {
+        "n_marks": 33,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+        "attempt_gather": True,
+        "attempt_role_keys": True,
+    }
+
+
+def test_payload_segments_emit_plan_stem_no_role_keys() -> None:
+    plan = kernels.payload_segments_emit_plan(
+        kind="stem",
+        n_marks=3000,
+        style_color_is_none=False,
+        x_axis_scale="linear",
+        y_axis_scale="symlog",
+        has_transition_keys=False,
+    )
+    assert plan["attempt_role_keys"] is False
+    assert plan["y_ship_scale"] == "symlog"
+    assert plan["apply_palette_default"] is False
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")

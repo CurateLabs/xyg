@@ -233,6 +233,7 @@ payload_bar_hist_emit_plan = _impl.payload_bar_hist_emit_plan
 payload_heatmap_emit_plan = _impl.payload_heatmap_emit_plan
 payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 payload_ribbon_emit_plan = _impl.payload_ribbon_emit_plan
+payload_segments_emit_plan = _impl.payload_segments_emit_plan
 PAYLOAD_NONXY_KIND_RECT = _impl.PAYLOAD_NONXY_KIND_RECT
 PAYLOAD_NONXY_KIND_HEXBIN = _impl.PAYLOAD_NONXY_KIND_HEXBIN
 PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = _impl.PAYLOAD_NONXY_KIND_DENSITY_SAMPLE
@@ -391,6 +392,7 @@ __all__ = [
     "payload_sample_target_indices",
     "payload_segment_budget",
     "payload_segments_emit_gather",
+    "payload_segments_emit_plan",
     "payload_tier",
     "payload_trace_channels_ship_attach",
     "payload_transition_entry_attach",

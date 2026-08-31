@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 299;
+pub const ABI_VERSION: u32 = 300;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16074,6 +16074,101 @@ pub unsafe extern "C" fn xyg_payload_ribbon_emit_plan(
         *out_attach_transition = attach_transition;
         *out_attempt_gather = attempt_gather;
         *out_attach_color2 = attach_color2;
+        1
+    })
+}
+
+/// Segment emit skeleton from ``_emit_segments`` (ABI 300).
+///
+/// Owns palette default, axis ship scales, trace-channel attach,
+/// segment gather attempt policy, errorbar role-key transition attach,
+/// and transition wrap. Hosts still gather geometry and ship columns.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable. ``kind`` must address ``kind_len``
+/// readable bytes when ``kind_len`` is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_segments_emit_plan(
+    kind: *const u8,
+    kind_len: usize,
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    has_transition_keys: i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+    out_attempt_gather: *mut i32,
+    out_attempt_role_keys: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+            || out_attempt_gather.is_null()
+            || out_attempt_role_keys.is_null()
+        {
+            return 0;
+        }
+        let kind_str = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let bytes = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(bytes) {
+                Ok(s) => s,
+                Err(_) => return 0,
+            }
+        };
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let mut attempt_gather = 0i32;
+        let mut attempt_role_keys = 0i32;
+        let ok = payload_emit::payload_segments_emit_plan(
+            kind_str,
+            n_marks,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            has_transition_keys,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+            &mut attempt_gather,
+            &mut attempt_role_keys,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
+        *out_attempt_gather = attempt_gather;
+        *out_attempt_role_keys = attempt_role_keys;
         1
     })
 }

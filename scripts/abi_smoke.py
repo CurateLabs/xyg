@@ -1487,6 +1487,25 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_segments_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_segments_emit_plan.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5407,6 +5426,45 @@ def main() -> None:
         and ribbon_attempt_gather.value == 1
         and ribbon_attach_color2.value == 1,
         "payload_ribbon_emit_plan gather skeleton",
+    )
+    segments_n_marks = ctypes.c_size_t(0)
+    segments_apply_palette = ctypes.c_int32(-1)
+    segments_x_scale = ctypes.c_int32(-1)
+    segments_y_scale = ctypes.c_int32(-1)
+    segments_channel_slot = ctypes.c_int32(-1)
+    segments_include_styles = ctypes.c_int32(-1)
+    segments_attach_transition = ctypes.c_int32(-1)
+    segments_attempt_gather = ctypes.c_int32(-1)
+    segments_attempt_role_keys = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_segments_emit_plan(
+            b"errorbar",
+            8,
+            33,
+            1,
+            1,
+            0,
+            1,
+            ctypes.byref(segments_n_marks),
+            ctypes.byref(segments_apply_palette),
+            ctypes.byref(segments_x_scale),
+            ctypes.byref(segments_y_scale),
+            ctypes.byref(segments_channel_slot),
+            ctypes.byref(segments_include_styles),
+            ctypes.byref(segments_attach_transition),
+            ctypes.byref(segments_attempt_gather),
+            ctypes.byref(segments_attempt_role_keys),
+        )
+        == 1
+        and segments_n_marks.value == 33
+        and segments_apply_palette.value == 1
+        and segments_x_scale.value == 1
+        and segments_y_scale.value == 0
+        and segments_channel_slot.value == 1
+        and segments_attach_transition.value == 1
+        and segments_attempt_gather.value == 1
+        and segments_attempt_role_keys.value == 1,
+        "payload_segments_emit_plan gather skeleton",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
