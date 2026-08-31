@@ -1694,12 +1694,10 @@ test("setPolarMeta writes axis sector like Python set_axis", () => {
   assert.equal(figureAutorangeAxisOptions(leftover, "x").sector, undefined);
 });
 
-test("_polarAxisSpecs empty theta_unit stays unlike Python or-default", () => {
-  // Python `_axis_spec` uses `opts.get("theta_unit") or "radians"`.
-  // Node `??` keeps the empty string.
+test("_polarAxisSpecs empty theta_unit uses Python or-default", () => {
   const fig = figure();
   fig.setPolarMeta({ thetaUnit: "" });
-  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_unit, "");
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_unit, "radians");
 });
 
 test("_polarAxisSpecs uses axis theta_unit like Python _axis_spec", () => {
@@ -1722,12 +1720,10 @@ test("_polarAxisSpecs uses axis theta_zero like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_zero, "E");
 });
 
-test("_polarAxisSpecs empty theta_direction stays unlike Python or-default", () => {
-  // Python `_axis_spec` uses `opts.get("theta_direction") or "counterclockwise"`.
-  // Node `??` keeps the empty string.
+test("_polarAxisSpecs empty theta_direction uses Python or-default", () => {
   const fig = figure();
   fig.setPolarMeta({ thetaDirection: "" });
-  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "");
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "counterclockwise");
 });
 
 test("_polarAxisSpecs uses axis theta_direction like Python _axis_spec", () => {
@@ -1740,12 +1736,10 @@ test("_polarAxisSpecs uses axis theta_direction like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "counterclockwise");
 });
 
-test("_polarAxisSpecs empty grid_shape stays unlike Python or-default", () => {
-  // Python `_axis_spec` uses `opts.get("grid_shape") or "circular"`.
-  // Node `??` keeps the empty string.
+test("_polarAxisSpecs empty grid_shape uses Python or-default", () => {
   const fig = figure();
   fig.setPolarMeta({ gridShape: "" });
-  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "");
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "circular");
 });
 
 test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
@@ -1758,12 +1752,10 @@ test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "circular");
 });
 
-test("_polarAxisSpecs empty sector stays unlike Python or-default", () => {
-  // Python `_axis_spec` uses `opts.get("sector") or (0.0, turn)`.
-  // Node `!= null` keeps the empty list.
+test("_polarAxisSpecs empty sector uses Python or-default", () => {
   const fig = figure();
   fig.setPolarMeta({ sector: [] });
-  assert.deepEqual(fig._polarAxisSpecs([0, 1], [0, 1]).x.sector, []);
+  assert.deepEqual(fig._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, 2 * Math.PI]);
 });
 
 test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
@@ -1776,12 +1768,10 @@ test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
   assert.deepEqual(leftover._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, 2 * Math.PI]);
 });
 
-test("_polarAxisSpecs empty hole stays unlike Python or-default", () => {
-  // Python `_axis_spec` uses `opts.get("hole") or 0.0`.
-  // Node `??` keeps the empty string.
+test("_polarAxisSpecs empty hole uses Python or-default", () => {
   const fig = figure();
   fig.setPolarMeta({ hole: "" });
-  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).y.hole, "");
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).y.hole, 0.0);
 });
 
 test("_polarAxisSpecs uses axis hole like Python _axis_spec", () => {
