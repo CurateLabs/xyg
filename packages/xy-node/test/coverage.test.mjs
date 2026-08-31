@@ -539,16 +539,13 @@ test("_emitScatterDensity omits wasm_source unlike Python _density_trace_spec", 
   assert.equal(spec.traces[0].density.wasm_source, undefined);
 });
 
-test("_emitScatterDensity sample omits ship scale unlike Python _axis_scale", () => {
-  // Python `_density_sample_spec` passes `_axis_scale` into `pw.ship_values`,
-  // pinning log offset to 0. Node density sample encode keeps the column
-  // midpoint. Recorded emit-density-sample-ship-scale stay-host.
+test("_emitScatterDensity sample uses log ship scale via payload nonxy plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
-  assert.notEqual(spec.traces[0].density.sample.x.offset, 0);
+  assert.equal(spec.traces[0].density.sample.x.offset, 0);
 });
 
 test("_emitHistogram omits ship scale unlike Python _axis_scale", () => {
@@ -603,30 +600,24 @@ test("_emitSegments omits ship scale unlike Python _axis_scale", () => {
   assert.notEqual(x0Col.offset, 0);
 });
 
-test("_emitRect omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_rect` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node rect encode keeps the column midpoint. Recorded
-  // emit-rect-ship-scale stay-host.
+test("_emitRect uses log ship scale via payload nonxy plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.bar([1, 10], [1, 2]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
   const x0Col = spec.columns[spec.traces[0].x0];
-  assert.notEqual(x0Col.offset, 0);
+  assert.equal(x0Col.offset, 0);
 });
 
-test("_emitHexbin omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_hexbin` passes `_axis_scale` into `ship_values`, pinning
-  // log offset to 0. Node hexbin encode keeps the column midpoint. Recorded
-  // emit-hexbin-ship-scale stay-host.
+test("_emitHexbin uses log ship scale via payload nonxy plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "hexbin");
   const xCol = spec.columns[spec.traces[0].x];
-  assert.notEqual(xCol.offset, 0);
+  assert.equal(xCol.offset, 0);
 });
 
 test("_emitArea uses log ship scale via payload base-entry plan", () => {
@@ -742,43 +733,34 @@ test("_emitScatterDensity sample omits style_channels unlike Python _ship_trace_
   assert.equal(spec.traces[0].density.sample.channels, undefined);
 });
 
-test("_emitScatterDensity sample omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_density_sample_spec` ships stroke_ch as sample.stroke. Node
-  // density overlay keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-density-sample-stroke stay-host.
+test("_emitScatterDensity sample ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 320, height: 240 });
   fig.scatter([0, 1], [0, 1], { forceDensity: true });
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.notEqual(spec.traces[0].density.sample, undefined);
-  assert.equal(spec.traces[0].density.sample.stroke, undefined);
+  assert.equal(spec.traces[0].density.sample.stroke.color, "#112233");
 });
 
-test("_emitScatterDensity sample omits size_ch unlike Python _ship_channels", () => {
-  // Python `_density_sample_spec` ships size_ch as sample.size. Node density
-  // overlay keeps no size field even when size_ch is present.
-  // Recorded emit-density-sample-size stay-host.
+test("_emitScatterDensity sample ships size_ch via payload channel attach", () => {
   const fig = figure({ width: 320, height: 240 });
   fig.scatter([0, 1], [0, 1], { forceDensity: true });
   fig.traces[0].size_ch = { mode: "constant", constant: 8 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.notEqual(spec.traces[0].density.sample, undefined);
-  assert.equal(spec.traces[0].density.sample.size, undefined);
+  assert.equal(spec.traces[0].density.sample.size.constant, 8);
 });
 
-test("_emitScatterDensity sample omits color_ch unlike Python _ship_channels", () => {
-  // Python `_density_sample_spec` ships color_ch as sample.color. Node density
-  // overlay keeps no color field even when color_ch is present.
-  // Recorded emit-density-sample-color stay-host.
+test("_emitScatterDensity sample ships color_ch via payload channel attach", () => {
   const fig = figure({ width: 320, height: 240 });
   fig.scatter([0, 1], [0, 1], { forceDensity: true });
   fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.notEqual(spec.traces[0].density.sample, undefined);
-  assert.equal(spec.traces[0].density.sample.color, undefined);
+  assert.equal(spec.traces[0].density.sample.color.color, "#112233");
 });
 
 test("_emitScatterDensity omits transition_keys unlike Python _transition_entry", () => {
@@ -847,10 +829,7 @@ test("_emitRibbon omits transition_keys unlike Python _transition_entry", () => 
   assert.equal(spec.traces[0].keys, undefined);
 });
 
-test("_emitRect omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_rect` / `_emit_bar_compact` ship transition_keys as `keys`.
-  // Node bar/rect payload keeps no keys field even when transition_keys is
-  // present. Recorded emit-rect-transition stay-host.
+test("_emitRect ships transition_keys via payload nonxy plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   fig.traces[0].transition_keys = [
@@ -859,7 +838,7 @@ test("_emitRect omits transition_keys unlike Python _transition_entry", () => {
   ];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.notEqual(spec.traces[0].keys, undefined);
 });
 
 test("_emitTriangleMesh skips valid_indices_f64 unlike Python _emit_triangle_mesh", () => {
@@ -1061,16 +1040,13 @@ test("_emitTriangleMesh omits stroke_ch unlike Python _ship_trace_styles", () =>
   assert.equal(spec.traces[0].stroke, undefined);
 });
 
-test("_emitRect omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_rect` ships stroke_ch via `_ship_trace_styles`. Node
-  // bar/rect payload keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-rect-stroke stay-host.
+test("_emitRect ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
 test("_emitRibbon omits stroke_ch unlike Python _ship_trace_styles", () => {
@@ -1146,15 +1122,13 @@ test("_emitSegments ships t.color unlike Python color_ch", () => {
   assert.equal(spec.traces[0].color.color, "#112233");
 });
 
-test("_emitRect omits color_ch unlike Python _emit_rect", () => {
-  // Python `_emit_rect` ships color_ch. Node bar/rect payload keeps no color
-  // field even when color_ch is present. Recorded emit-rect-color stay-host.
+test("_emitRect ships color_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].color, undefined);
+  assert.equal(spec.traces[0].color.color, "#112233");
 });
 
 test("_emitRibbon ships t.color unlike Python color_ch", () => {
@@ -1204,15 +1178,13 @@ test("_emitHeatmap ships grid columns unlike Python nested heatmap", () => {
   assert.equal(spec.traces[0].heatmap, undefined);
 });
 
-test("_emitHexbin ships metric unlike Python color_ch", () => {
-  // Python `_emit_hexbin` ships color from color_ch. Node hexbin() stores
-  // both metric and color_ch, but payload keeps metric. Recorded hexbin-metric stay-host.
+test("_emitHexbin ships metric and color_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.hexbin([0, 1, 0, 1, 0.5], [0, 0, 1, 1, 0.5], { gridsize: 4 });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "hexbin");
   assert.ok(spec.traces[0].metric != null);
-  assert.equal(spec.traces[0].color, undefined);
+  assert.notEqual(spec.traces[0].color, undefined);
   assert.ok(fig.traces[0].color_ch != null);
 });
 
@@ -1354,15 +1326,13 @@ test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
-test("_emitRect omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
-  // encode omits that field. Recorded emit-rect-animation stay-host.
+test("_emitRect ships animation via payload transition attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {

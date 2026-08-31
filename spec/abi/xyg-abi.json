@@ -1,9 +1,9 @@
 {
-  "abi_version": 295,
+  "abi_version": 296,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "0ad43977baf9a31a6dfa2718c65fa170fcf468778ef3e9110260d2c8a2e7cf8b",
+  "signature_sha256": "5c49df4a3c9a6dacc25311e02151e3d952724c7a52fc6b756039caf5b5eafaa9",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21444,6 +21444,229 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)"
+    },
+    {
+      "name": "xyg_payload_nonxy_emit_plan",
+      "node_name": "xyPayloadNonxyEmitPlan",
+      "nargs": 13,
+      "arguments": [
+        {
+          "name": "kind",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_marks",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "style_color_is_none",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x_axis_type",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y_axis_type",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_tier_direct",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_n_marks",
+          "type": {
+            "rust": "*mut usize",
+            "c": "size_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "size_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_apply_palette_default",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_x_ship_scale",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_y_ship_scale",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_channel_slot",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_include_trace_styles",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_attach_transition",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_nonxy_emit_plan(int32_t kind, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition)"
     },
     {
       "name": "xyg_payload_sample_target_indices",

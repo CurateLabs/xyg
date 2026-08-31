@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 295
-#define XYG_ABI_SIGNATURE_SHA256 "0ad43977baf9a31a6dfa2718c65fa170fcf468778ef3e9110260d2c8a2e7cf8b"
+#define XYG_ABI_VERSION 296
+#define XYG_ABI_SIGNATURE_SHA256 "5c49df4a3c9a6dacc25311e02151e3d952724c7a52fc6b756039caf5b5eafaa9"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,6 +167,7 @@ size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const ui
 int32_t xyg_payload_errorbar_role_maps(size_t n_segments, size_t n_points, uint32_t * out_sources, uint32_t * out_roles, int32_t * out_applicable);
 size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
+int32_t xyg_payload_nonxy_emit_plan(int32_t kind, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition);
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_segment_budget(double px_width);
 size_t xyg_payload_segments_emit_gather(const uint8_t * kind, size_t kind_len, size_t n_segments, size_t n_points, double px_width, int32_t * out_tier, int32_t * out_role_maps, int32_t * out_keep_all, uint32_t * out_indices, uint32_t * out_sources, uint32_t * out_roles, size_t capacity);

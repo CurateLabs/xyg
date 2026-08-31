@@ -43,6 +43,8 @@ import {
   payloadErrorbarIndices,
   payloadM4Indices,
   payloadBaseEntryPlan,
+  payloadNonxyEmitPlan,
+  payloadTraceChannelsShipAttach,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
@@ -1411,11 +1413,17 @@ export class Figure {
       if (sx.length > 0) {
         const sampleX = new Column(sx);
         const sampleY = new Column(sy);
-        // Node density sample omits ship scale. Python `_density_sample_spec`
-        // passes `_axis_scale` into `pw.ship_values`. Matching Python would
-        // pin log-axis offset to 0. Recorded emit-density-sample-ship-scale stay-host.
-        const xCol = pw.ship(sx, sampleX);
-        const yCol = pw.ship(sy, sampleY);
+        const xAxis = t.x_axis ?? "x";
+        const yAxis = t.y_axis ?? "y";
+        const plan = payloadNonxyEmitPlan({
+          kind: "density_sample",
+          nMarks: sx.length,
+          styleColorIsNone: t.style?.color == null,
+          xAxisScale: payloadAxisScale(this, xAxis),
+          yAxisScale: payloadAxisScale(this, yAxis),
+        });
+        const xCol = pw.ship(sx, sampleX, { scale: plan.xShipScale });
+        const yCol = pw.ship(sy, sampleY, { scale: plan.yShipScale });
         const opacityRaw = Number(t.style?.opacity ?? 0.8);
         density.sample = {
           mode: "sampled",
@@ -1433,15 +1441,14 @@ export class Figure {
             opacity: densityOverlayOpacity(opacityRaw),
           },
         };
-        // Node density sample omits color_ch. Python `_density_sample_spec`
-        // ships color/size via `_ship_channels`. Matching Python would add
-        // sample.color. Recorded emit-density-sample-color stay-host.
-        // Node density sample omits size_ch. Python `_density_sample_spec`
-        // ships size via `_ship_channels`. Matching Python would add
-        // sample.size. Recorded emit-density-sample-size stay-host.
-        // Node density sample omits stroke_ch. Python `_density_sample_spec`
-        // ships stroke via `_ship_trace_styles`. Matching Python would add
-        // sample.stroke. Recorded emit-density-sample-stroke stay-host.
+        this._shipTraceChannelAttach(
+          density.sample,
+          t,
+          pw,
+          keepAll ? null : indices,
+          plan.channelSlot,
+          { includeTraceStyles: plan.includeTraceStyles },
+        );
         // Node density sample omits style_channels. Python `_density_sample_spec`
         // ships them as `channels` via `_ship_trace_styles`. Matching Python
         // would add sample.channels. Recorded emit-density-sample-channels stay-host.
@@ -1755,22 +1762,19 @@ export class Figure {
     const x1 = new Column(x1v);
     const y0 = new Column(y0v);
     const y1 = new Column(y1v);
-    // Node payload rect omits color_ch. Python `_emit_rect` ships color_ch
-    // via `_ship_channels`. Matching Python would add entry.color. Recorded
-    // emit-rect-color stay-host.
-    // Node payload rect omits stroke_ch. Python `_emit_rect` ships stroke_ch
-    // via `_ship_trace_styles`. Matching Python would add entry.stroke.
-    // Recorded emit-rect-stroke stay-host.
-    // Node payload rect omits style_channels. Python `_emit_rect` ships them
-    // as `channels` via `_ship_trace_styles`. Matching Python would add
-    // entry.channels. Recorded emit-rect-channels stay-host.
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const plan = payloadNonxyEmitPlan({
+      kind: "rect",
+      nMarks: x0v.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     // Node payload bar/column ships rect columns. Python `_emit_bar` ships a
     // nested `bar` spec via `_emit_bar_compact`. Matching Python would nest
     // bar. Recorded emit-bar-compact stay-host.
-    // Node payload rect omits transition_keys. Python `_emit_rect` ships them
-    // via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-rect-transition stay-host.
-    return {
+    const entry = {
       id: t.id,
       kind,
       name: t.name,
@@ -1781,17 +1785,26 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
-      n_marks: x0v.length,
-      // Node payload rect omits ship scale. Python `_emit_rect` passes
-      // `_axis_scale` into `pw.ship`. Matching Python would pin log-axis
-      // offset to 0. Recorded emit-rect-ship-scale stay-host.
-      x0: pw.ship(x0v, x0),
-      x1: pw.ship(x1v, x1),
-      y0: pw.ship(y0v, y0),
-      y1: pw.ship(y1v, y1),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: plan.nMarks,
+      x0: pw.ship(x0v, x0, { scale: plan.xShipScale }),
+      x1: pw.ship(x1v, x1, { scale: plan.xShipScale }),
+      y0: pw.ship(y0v, y0, { scale: plan.yShipScale }),
+      y1: pw.ship(y1v, y1, { scale: plan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      finiteSel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, finiteSel);
+    }
+    return entry;
   }
 
   _emitArea(t, pw, xr, pxWidth) {
@@ -1922,7 +1935,16 @@ export class Figure {
     const shipX = sel == null ? xCol : new Column(xv);
     const shipY = sel == null ? yCol : new Column(yv);
     const mCol = new Column(mv);
-    return {
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const plan = payloadNonxyEmitPlan({
+      kind: "hexbin",
+      nMarks: xv.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const entry = {
       id: t.id,
       kind: "hexbin",
       name: t.name,
@@ -1933,19 +1955,65 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.n_points ?? t.x.length,
-      n_marks: xv.length,
-      // Node payload hexbin omits ship scale. Python `_emit_hexbin` passes
-      // `_axis_scale` into `ship_values`. Matching Python would pin log-axis
-      // offset to 0. Recorded emit-hexbin-ship-scale stay-host.
-      x: pw.ship(xv, shipX),
-      y: pw.ship(yv, shipY),
+      n_marks: plan.nMarks,
+      x: pw.ship(xv, shipX, { scale: plan.xShipScale }),
+      y: pw.ship(yv, shipY, { scale: plan.yShipScale }),
       // Node payload hexbin ships metric. Python `_emit_hexbin` ships color
       // from color_ch. Matching Python would call `_shipColor`. Recorded
       // hexbin-metric stay-host.
       metric: pw.ship(mv, mCol),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      sel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
+    return entry;
+  }
+
+  _shipTraceChannelAttach(entry, t, pw, sel, slot, { includeTraceStyles = false } = {}) {
+    const styleChannels = t.style_channels;
+    const hasStyleChannels = styleChannels != null
+      && typeof styleChannels === "object"
+      && Object.keys(styleChannels).length > 0;
+    const attach = payloadTraceChannelsShipAttach(slot, {
+      includeTraceStyles,
+      hasColorCh: t.color_ch != null,
+      hasStrokeCh: t.stroke_ch != null,
+      hasStyleChannels,
+    });
+    if (attach.shipColor) {
+      const color = this._shipColor(t.color_ch, pw, sel);
+      if (color != null) entry.color = color;
+      const sizeCh = t.size_ch;
+      if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
+        let values = sizeCh.values instanceof Float64Array
+          ? sizeCh.values
+          : Float64Array.from(sizeCh.values, Number);
+        if (sel != null) values = gatherF64(values, sel);
+        const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
+        const lo = domain[0];
+        const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+        entry.size = {
+          mode: "continuous",
+          range_px: sizeCh.range_px ?? [8, 22],
+          domain: [lo, hi],
+          buf: pw.shipScalar(normalizeF32(values, lo, hi)),
+        };
+      } else if (sizeCh?.mode === "constant") {
+        entry.size = { ...sizeCh };
+      }
+    }
+    if (attach.shipStroke) {
+      const stroke = this._shipColor(t.stroke_ch, pw, sel);
+      if (stroke != null) entry.stroke = stroke;
+    }
+    // Node style_channels wire stays host; Python ships via channels.ship_style_channels.
   }
 
   _shipColor(channel, pw, sel = null) {
