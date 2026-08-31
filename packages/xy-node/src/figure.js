@@ -750,6 +750,43 @@ function attachTransitionEntry(entry, t, pw, sel = null) {
   return entry;
 }
 
+function traceNPoints(t) {
+  return t.n_points ?? t.count ?? t.x?.length ?? t.x0?.length ?? 0;
+}
+
+/** Ship optional semantic hover rows, filtered with geometry (Python `_attach_tooltip_rows`). */
+function attachTooltipRows(entry, t, sel) {
+  const nPoints = traceNPoints(t);
+  const plan = payloadTransitionEntryAttach({
+    hasTraceAnimation: false,
+    entryHasAnimation: false,
+    hasTraceKeys: false,
+    hasKeyValues: false,
+    hasSel: sel != null,
+    tierDirect: false,
+    nMarks: 0,
+    nTraceKeyRows: 0,
+    nKeyValueRows: 0,
+    nSelRows: sel?.length ?? 0,
+    maxRows: MAX_ANIMATION_MATCH_ROWS,
+    hasTooltipRows: t.tooltip_rows != null,
+    nTooltipRows: t.tooltip_rows?.length ?? 0,
+    nPoints,
+  });
+  if (!plan.attachTooltip) {
+    if (t.tooltip_rows != null && !plan.tooltipLengthOk) {
+      throw new Error(
+        `${t.kind} tooltip rows must match geometry (${t.tooltip_rows.length} != ${nPoints})`,
+      );
+    }
+    return;
+  }
+  const rows = t.tooltip_rows;
+  const indices = plan.filterTooltipBySel ? sel : null;
+  const selected = indices == null ? rows : gatherItems(rows, indices);
+  entry.tooltip_rows = selected.map((row) => ({ ...row }));
+}
+
 export class PayloadWriter {
   constructor({ split = false, borrowHeatmaps = false } = {}) {
     this.split = split;
@@ -1607,11 +1644,12 @@ export class Figure {
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles },
     );
-    if (t.tooltip_rows != null) {
-      // Node payload scatter skips tooltip_rows length. Python
-      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
-      // Python would throw. Recorded emit-scatter-tooltip-len stay-host.
-      entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
+    if (plan.attachTooltip) {
+      attachTooltipRows(entry, t, sel);
+    } else if (t.tooltip_rows != null && !plan.tooltipLengthOk) {
+      throw new Error(
+        `${t.kind} tooltip rows must match geometry (${t.tooltip_rows.length} != ${t.x.length})`,
+      );
     }
     if (plan.attachTransition && t.transition_keys != null) {
       attachTransitionEntry(entry, t, pw, sel);
@@ -2090,12 +2128,7 @@ export class Figure {
     // Recorded emit-segments-color stay-host.
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
-    if (t.tooltip_rows != null) {
-      // Node payload segments skips tooltip_rows length. Python
-      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
-      // Python would throw. Recorded emit-segments-tooltip-len stay-host.
-      entry.tooltip_rows = t.tooltip_rows;
-    }
+    attachTooltipRows(entry, t, sourceSel);
     // Node payload segments omits style_channels. Python `_emit_segments`
     // ships them as `channels` via `_ship_trace_styles`. Matching Python
     // would add entry.channels. Recorded emit-segments-channels stay-host.
@@ -2690,12 +2723,7 @@ export class Figure {
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles, hasColor2Ch: plan.attachColor2 },
     );
-    if (t.tooltip_rows != null) {
-      // Node payload ribbon skips tooltip_rows length. Python
-      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
-      // Python would throw. Recorded emit-ribbon-tooltip-len stay-host.
-      entry.tooltip_rows = t.tooltip_rows;
-    }
+    attachTooltipRows(entry, t, sel);
     // Node payload ribbon omits style_channels. Python `_emit_ribbon` ships
     // them as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-ribbon-channels stay-host.
