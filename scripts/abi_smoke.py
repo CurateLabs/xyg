@@ -370,6 +370,26 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_numeric_style_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_numeric_style_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_uint32),
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+    ]
     lib.xyg_scene_xytc_color_channel_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color_channel_pack.argtypes = [
         ctypes.c_int32,
@@ -3444,6 +3464,40 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_num_flags = ctypes.c_uint32(0)
+    xytc_num_size = ctypes.c_double(0.0)
+    xytc_num_size_ch = ctypes.c_double(0.0)
+    xytc_num_stroke = ctypes.c_double(0.0)
+    xytc_num_width = ctypes.c_double(0.0)
+    xytc_num_line = ctypes.c_double(0.0)
+    ok(
+        lib.xyg_scene_xytc_numeric_style_pack(
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            4.0,
+            2.5,
+            1.0,
+            0.0,
+            3.0,
+            ctypes.byref(xytc_num_flags),
+            ctypes.byref(xytc_num_size),
+            ctypes.byref(xytc_num_size_ch),
+            ctypes.byref(xytc_num_stroke),
+            ctypes.byref(xytc_num_width),
+            ctypes.byref(xytc_num_line),
+        )
+        == 1
+        and xytc_num_flags.value == ((1 << 3) | (1 << 5) | (1 << 6) | (1 << 7))
+        and xytc_num_size.value == 4.0
+        and xytc_num_size_ch.value == 2.5
+        and xytc_num_stroke.value == 1.0
+        and xytc_num_line.value == 3.0,
+        "scene_xytc_numeric_style_pack scatter-ish",
     )
     xytc_color_flags = ctypes.c_uint32(0)
     ok(

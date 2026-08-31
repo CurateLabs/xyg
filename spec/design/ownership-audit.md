@@ -304,6 +304,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 261 | `xyg_scene_marker_blob_pack` | `_scene_v3._pack_marker_blob` / `packMarkerBlob` |
 | (this PR) | 262 | `xyg_scene_xytc_radius_pack` | `_pack_xytc` corner-radius / wedge-gap trailer |
 | (this PR) | 263 | `xyg_scene_xytc_color_channel_pack` | `_pack_xytc` color_ch flag bits |
+| (this PR) | 264 | `xyg_scene_xytc_numeric_style_pack` | `_pack_xytc` size/size_ch/width fields |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 

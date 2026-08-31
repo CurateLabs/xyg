@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 263;
+pub const ABI_VERSION: u32 = 264;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,68 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC numeric style flag bits and coerced values (ABI 264).
+///
+/// Hosts pass key-presence bits and coerced f64s. Returns ``1`` on success,
+/// ``0`` when invalid.
+///
+/// # Safety
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_numeric_style_pack(
+    has_size: i32,
+    has_size_ch: i32,
+    has_size_ch_constant: i32,
+    has_stroke_width: i32,
+    has_width: i32,
+    has_line_width: i32,
+    size: f64,
+    size_ch_constant: f64,
+    stroke_width: f64,
+    width: f64,
+    line_width: f64,
+    out_flags: *mut u32,
+    out_size: *mut f64,
+    out_size_ch_value: *mut f64,
+    out_stroke_width: *mut f64,
+    out_width: *mut f64,
+    out_line_width: *mut f64,
+) -> i32 {
+    if out_flags.is_null()
+        || out_size.is_null()
+        || out_size_ch_value.is_null()
+        || out_stroke_width.is_null()
+        || out_width.is_null()
+        || out_line_width.is_null()
+    {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let Some(packed) = kernels::scene_xytc_numeric_style_pack(
+            has_size,
+            has_size_ch,
+            has_size_ch_constant,
+            has_stroke_width,
+            has_width,
+            has_line_width,
+            size,
+            size_ch_constant,
+            stroke_width,
+            width,
+            line_width,
+        ) else {
+            return 0;
+        };
+        *out_flags = packed.flags;
+        *out_size = packed.size;
+        *out_size_ch_value = packed.size_ch_value;
+        *out_stroke_width = packed.stroke_width;
+        *out_width = packed.width;
+        *out_line_width = packed.line_width;
+        1
     })
 }
 
