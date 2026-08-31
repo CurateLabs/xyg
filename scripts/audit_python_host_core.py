@@ -151,11 +151,11 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
         "#731",
-        "parent M2 close — OPEN; #732/#733 closed; blocked on Node stay-host TAP (#644-#698) + cross-host proof",
+        "parent M2 close — OPEN; #732/#733 closed; TAP #644-#698 merged on main; blocked on cross-host proof + residual host materialization",
     ),
     (
-        "Node TAP",
-        "payload emit #644-#693 + scene compose #694-#698 serial merge onto main",
+        "Cross-host proof",
+        "payload + Scene-byte differentials; Node scene hexbin colormap compose gap",
     ),
     (
         "Secondary §302",
@@ -166,11 +166,11 @@ REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
 M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#732 gather/ship + density grid ship (ABI 310-315)", "CLOSED"),
     ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
-    ("Node stay-host TAP #644-#698 serial merge", "OPEN — primary blocker"),
-    ("Cross-host payload + Scene-byte differential proof", "OPEN"),
+    ("Node stay-host TAP #644-#698 serial merge", "CLOSED — merged on main (#630-#698)"),
+    ("Cross-host payload + Scene-byte differential proof", "OPEN — primary blocker"),
     ("Residual host materialization (_payload bin2d/pyramid; _scene_v3 field-byte walks)", "OPEN"),
     ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
-    ("#735 close-contract doc rebase onto main", "CONFLICTED"),
+    ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
 )
 
 
@@ -298,7 +298,9 @@ def main(argv: list[str] | None = None) -> int:
         "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
         "and gather/ship registry (ABI 310-315) are done."
     )
-    print("  - Primary remainder: Node stay-host TAP (#644-#698) serial merge + cross-host proof.")
+    print(
+        "  - Node stay-host TAP (#630-#698) merged on main; primary remainder is cross-host proof."
+    )
     print("  - Stay-host TAP is inventory tied to #731 close, not an alternate close path.")
     print()
 

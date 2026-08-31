@@ -291,6 +291,7 @@ function shipColorChannel(channel, pw, sel = null, { quantizeContinuous = false 
 function shipStyleChannels(styleChannels, pw, sel = null) {
   const result = {};
   for (const [name, channel] of Object.entries(styleChannels)) {
+    if (channel?.values == null) continue;
     let values = channel.values;
     if (sel != null) {
       values = values instanceof Uint8Array
@@ -311,7 +312,7 @@ function shipStyleChannels(styleChannels, pw, sel = null) {
     if (plan.setN) spec.n = sel == null ? values.length : sel.length;
     result[name] = spec;
   }
-  return result;
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 /** Attach channels listed in a Rust-owned ship registry plan (ABI 311). */
@@ -348,7 +349,8 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
       const shipped = shipColorChannel(traceSlot, pw, sel);
       if (shipped != null) entry[key] = shipped;
     } else if (ch.shipMethod === "style") {
-      entry[key] = shipStyleChannels(trace.style_channels, pw, sel);
+      const shipped = shipStyleChannels(trace.style_channels, pw, sel);
+      if (shipped != null) entry[key] = shipped;
     }
   }
 }

@@ -300,7 +300,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 Top remaining line counts: `_svg.py` 6403, `_scene_v3.py` 4258, `_raster.py` 3651, `marks.py` 3340, `_payload.py` 2022.
 
-**M2 Node stay-host TAP (2026-08-30).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are recorded on rebased branches (`cursor/m2-node-payload-rebase-staging-7ce1` through `ee9745c9`, scene tips rebased onto that staging tip). Main already landed [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) (payload axis/show-legend/wasm-density through line/area default-styled stay-host); continue serial merge for the remaining open TAP PRs. Stay-host TAP is inventory tied to #731 close, not an alternate close path.
+**M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
 **Merged kernel stacks on main (ABI 315, 2026-08-31).** Admit/encode slices (ABI 218–291), payload orchestration plans (ABI 292–304, [#746](https://github.com/CurateLabs/xyg/pull/746)–[#758](https://github.com/CurateLabs/xyg/pull/758)), scene orchestration plans (ABI 305–309, [#759](https://github.com/CurateLabs/xyg/pull/759)–[#763](https://github.com/CurateLabs/xyg/pull/763)), and payload gather/ship registry kernels (ABI 310–315, [#765](https://github.com/CurateLabs/xyg/pull/765)–[#769](https://github.com/CurateLabs/xyg/pull/769), [#732](https://github.com/CurateLabs/xyg/issues/732) closed) are landed. Do not open more single-field admit slices.
 
@@ -321,11 +321,11 @@ Largest remaining Python core surface: `_payload` bin2d/pyramid compose and resi
 | --- | --- |
 | [#732](https://github.com/CurateLabs/xyg/issues/732) gather/ship + density grid ship (ABI 310–315) | **Closed** — kernel owns registry/attach policy |
 | [#733](https://github.com/CurateLabs/xyg/issues/733) scene orchestration plans (ABI 305–309) | **Closed** — kernel owns pack dispatch |
-| Node stay-host TAP [#644](https://github.com/CurateLabs/xyg/pull/644)–[#698](https://github.com/CurateLabs/xyg/pull/698) serial merge | **Open** — primary #731 blocker |
-| Cross-host payload + Scene-byte differential proof | **Open** — blocked on TAP convergence |
+| Node stay-host TAP [#644](https://github.com/CurateLabs/xyg/pull/644)–[#698](https://github.com/CurateLabs/xyg/pull/698) serial merge | **Closed** — merged on main (#630–#698) |
+| Cross-host payload + Scene-byte differential proof | **Open** — primary #731 blocker |
 | Residual host materialization shrink (`_payload` bin2d/pyramid compose; `_scene_v3` field-byte walks) | **Open** — orchestration delegated; hosts still execute plans |
 | Secondary §302 (_svg/_raster, marks, channels labels, lod cache) | **Open** — out of #731 close bar but blocks “Python is only a host” |
-| [#735](https://github.com/CurateLabs/xyg/pull/735) M2 close contract doc rebase onto main | **Conflicted** — `audit_python_host_core.py`, `ownership-audit.md`, tests |
+| [#735](https://github.com/CurateLabs/xyg/pull/735) M2 close contract doc rebase onto main | **Closed** — merged at 8fa63e1f |
 
 **Reclassified keep-host** (Rust already owns the decision; the Python file packs, coerces, or carries error text):
 

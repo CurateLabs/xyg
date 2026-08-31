@@ -52,6 +52,6 @@ def test_audit_cli_exits_zero():
     assert "#732 CLOSED" in proc.stdout
     assert "Remaining close blockers" in proc.stdout
     assert "#731 close checklist" in proc.stdout
-    assert "Node TAP" in proc.stdout
+    assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
     assert "do not mark M2 complete" in proc.stdout
