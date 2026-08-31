@@ -11796,6 +11796,25 @@ def density_uses_channel_colormap(*, has_channel: bool, mode: str = "") -> bool:
     return uses == 1
 
 
+def density_constant_color_wire_admit(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    has_constant: bool,
+) -> bool:
+    """Density constant-color wire admit via ``xyg_density_constant_color_wire_admit`` (ABI 268)."""
+    mode_b = str(mode).encode("utf-8")
+    admit = _lib.xyg_density_constant_color_wire_admit(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+        int(bool(has_constant)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_constant_color_wire_admit arguments")
+    return admit == 1
+
+
 DENSITY_REDUCTION_BIN2D = 0
 DENSITY_REDUCTION_PYRAMID_COUNT = 1
 

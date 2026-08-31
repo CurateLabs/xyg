@@ -1517,7 +1517,11 @@ class PayloadMixin(_Host):
             dropped_channels.remove("color")
         density["channels_dropped"] = bool(dropped_channels)  # compatibility boolean
         density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
-        if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:
+        if t.color_ch is not None and kernels.density_constant_color_wire_admit(
+            has_channel=True,
+            mode=t.color_ch.mode,
+            has_constant=t.color_ch.constant is not None,
+        ):
             density["color"] = t.color_ch.constant
         overlay_wire = kernels.density_overlay_omitted_wire(
             overlay_omitted=int(plan["overlay_omitted"]),

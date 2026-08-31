@@ -169,6 +169,17 @@ pub fn density_uses_channel_colormap(has_channel: i32, mode: &str) -> i32 {
     i32::from(matches!(mode, "constant" | "continuous"))
 }
 
+/// Whether density spec should ship ``density["color"]`` from a constant channel (ABI 268).
+///
+/// Returns ``1`` when ``color_ch`` is present, ``mode`` is ``constant``, and the
+/// host reports a non-null constant CSS value.
+pub fn density_constant_color_wire_admit(has_channel: i32, mode: &str, has_constant: i32) -> i32 {
+    if has_channel == 0 || has_constant == 0 {
+        return 0;
+    }
+    i32::from(mode == "constant")
+}
+
 pub const DENSITY_REDUCTION_BIN2D: i32 = 0;
 pub const DENSITY_REDUCTION_PYRAMID_COUNT: i32 = 1;
 
@@ -761,6 +772,15 @@ mod tests {
         assert_eq!(density_uses_channel_colormap(1, "categorical"), 0);
         assert_eq!(density_uses_channel_colormap(1, "direct_rgba"), 0);
         assert_eq!(density_uses_channel_colormap(2, "constant"), 0);
+    }
+
+    #[test]
+    fn density_constant_color_wire_admit_matches_host_table() {
+        assert_eq!(density_constant_color_wire_admit(0, "constant", 1), 0);
+        assert_eq!(density_constant_color_wire_admit(1, "constant", 0), 0);
+        assert_eq!(density_constant_color_wire_admit(1, "constant", 1), 1);
+        assert_eq!(density_constant_color_wire_admit(1, "continuous", 1), 0);
+        assert_eq!(density_constant_color_wire_admit(1, "categorical", 1), 0);
     }
 
     #[test]
