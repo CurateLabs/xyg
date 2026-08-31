@@ -370,6 +370,14 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_stroke_perimeter_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_stroke_perimeter_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
     lib.xyg_scene_xytc_numeric_style_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_numeric_style_pack.argtypes = [
         ctypes.c_int32,
@@ -3464,6 +3472,19 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_perimeter_flags = ctypes.c_uint32(0)
+    ok(
+        lib.xyg_scene_xytc_stroke_perimeter_pack(
+            1,
+            1,
+            1,
+            1,
+            ctypes.byref(xytc_perimeter_flags),
+        )
+        == 1
+        and xytc_perimeter_flags.value == (1 << 9),
+        "scene_xytc_stroke_perimeter_pack true",
     )
     xytc_num_flags = ctypes.c_uint32(0)
     xytc_num_size = ctypes.c_double(0.0)

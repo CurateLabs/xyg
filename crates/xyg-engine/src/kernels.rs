@@ -1617,6 +1617,35 @@ const XYTC_HAS_WIDTH: u32 = 1 << 4;
 const XYTC_HAS_LINE_WIDTH: u32 = 1 << 5;
 const XYTC_HAS_SIZE: u32 = 1 << 6;
 const XYTC_HAS_SIZE_CH: u32 = 1 << 7;
+const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
+const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
+
+/// Pack XYTC stroke-perimeter flag bits (ABI 265).
+///
+/// ``band``: kind is BAND-eligible. ``present``: ``stroke_perimeter`` key set.
+/// ``perimeter_is_bool`` / ``perimeter_true`` describe the authored value.
+pub fn scene_xytc_stroke_perimeter_pack(
+    band: i32,
+    present: i32,
+    perimeter_is_bool: i32,
+    perimeter_true: i32,
+) -> Option<u32> {
+    for bit in [band, present, perimeter_is_bool, perimeter_true] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    if band == 0 || present == 0 {
+        return Some(0);
+    }
+    if perimeter_is_bool == 0 {
+        return Some(XYTC_PERIMETER_INVALID);
+    }
+    if perimeter_true != 0 {
+        return Some(XYTC_PERIMETER_TRUE);
+    }
+    Some(0)
+}
 
 /// Packed XYTC numeric style fields (ABI 264).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -10780,6 +10809,16 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_stroke_perimeter_pack_matches_host_table() {
+        assert_eq!(scene_xytc_stroke_perimeter_pack(0, 1, 1, 1), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 0, 0, 0), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 0, 0), Some(1 << 10));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 1, 0), Some(0));
+        assert_eq!(scene_xytc_stroke_perimeter_pack(1, 1, 1, 1), Some(1 << 9));
+        assert!(scene_xytc_stroke_perimeter_pack(2, 0, 0, 0).is_none());
     }
 
     #[test]
