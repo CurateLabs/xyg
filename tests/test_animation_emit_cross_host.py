@@ -1,7 +1,8 @@
 """Cross-host animation attach parity: Python vs @curatelabs/xyg-node.
 
-Compares scatter, line, area, and density emit paths where Python attaches
-``t.animation`` via ``payload_base_entry_plan`` or ``_transition_entry``.
+Compares scatter, line, area, density, histogram, bar, segments, ribbon, and
+mesh emit paths where Python attaches ``t.animation`` via
+``payload_base_entry_plan`` or ``_transition_entry``.
 
 Run::
 
@@ -31,6 +32,7 @@ NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "animation_emit_cross_
 FIXTURE_JSON = ROOT / "tests" / "fixtures" / "animation_emit_cross_host.json"
 
 ANIM = {"duration": 250, "easing": "linear"}
+TRANSITION_KEYS = [[1, 2], [3, 4]]
 
 CASE_NAMES = (
     "scatter_animation",
@@ -44,6 +46,17 @@ CASE_NAMES = (
     "area_decimated_animation",
     "density_animation",
     "density_no_animation",
+    "hist_animation",
+    "hist_no_animation",
+    "bar_animation",
+    "bar_no_animation",
+    "segments_animation",
+    "segments_no_animation",
+    "ribbon_animation",
+    "ribbon_no_animation",
+    "mesh_animation",
+    "mesh_no_animation",
+    "density_transition_keys",
 )
 
 
@@ -120,6 +133,51 @@ def _build_case(name: str) -> Figure:
     elif name == "density_no_animation":
         fig.scatter([1.0, 2.0], [1.0, 2.0], density=True)
         fig.traces[-1].id = 60
+    elif name == "hist_animation":
+        fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
+        trace = fig.traces[-1]
+        trace.id = 61
+        trace.animation = dict(ANIM)
+    elif name == "hist_no_animation":
+        fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
+        fig.traces[-1].id = 62
+    elif name == "bar_animation":
+        fig.bar([0, 1], [1, 2])
+        trace = fig.traces[-1]
+        trace.id = 63
+        trace.animation = dict(ANIM)
+    elif name == "bar_no_animation":
+        fig.bar([0, 1], [1, 2])
+        fig.traces[-1].id = 64
+    elif name == "segments_animation":
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 2.0])
+        trace = fig.traces[-1]
+        trace.id = 65
+        trace.animation = dict(ANIM)
+    elif name == "segments_no_animation":
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 2.0])
+        fig.traces[-1].id = 66
+    elif name == "ribbon_animation":
+        fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0])
+        trace = fig.traces[-1]
+        trace.id = 67
+        trace.animation = dict(ANIM)
+    elif name == "ribbon_no_animation":
+        fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0])
+        fig.traces[-1].id = 68
+    elif name == "mesh_animation":
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        trace = fig.traces[-1]
+        trace.id = 69
+        trace.animation = dict(ANIM)
+    elif name == "mesh_no_animation":
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        fig.traces[-1].id = 70
+    elif name == "density_transition_keys":
+        fig.scatter([0.0, 1.0], [0.0, 1.0], density=True)
+        trace = fig.traces[-1]
+        trace.id = 71
+        trace.transition_keys = [list(row) for row in TRANSITION_KEYS]
     else:
         raise KeyError(name)
     return fig
@@ -127,13 +185,16 @@ def _build_case(name: str) -> Figure:
 
 def _emit_meta(spec: dict) -> dict:
     trace = spec["traces"][0]
-    return {
+    meta = {
         "trace_id": trace["id"],
         "kind": trace["kind"],
         "n_points": trace["n_points"],
         "tier": trace["tier"],
         "animation": trace.get("animation"),
     }
+    if "animation_fallback" in trace:
+        meta["animation_fallback"] = trace.get("animation_fallback")
+    return meta
 
 
 @pytest.fixture(scope="module")
@@ -182,11 +243,10 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     fig = _build_case(case_name)
     spec, _blob = fig.build_payload()
     meta = _emit_meta(spec)
-    assert meta["trace_id"] == entry["trace_id"]
-    assert meta["kind"] == entry["kind"]
-    assert meta["n_points"] == entry["n_points"]
-    assert meta["tier"] == entry["tier"]
-    assert meta["animation"] == entry["animation"]
+    for key, value in entry.items():
+        if key == "name":
+            continue
+        assert meta[key] == value
 
 
 @pytest.mark.parametrize("case_name", CASE_NAMES)
@@ -195,6 +255,7 @@ def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
     fig = _build_case(case_name)
     spec, _blob = fig.build_payload()
     meta = _emit_meta(spec)
-    assert meta["animation"] == node_case["animation"]
-    assert meta["tier"] == node_case["tier"]
-    assert meta["n_points"] == node_case["n_points"]
+    for key, value in node_case.items():
+        if key == "name":
+            continue
+        assert meta[key] == value

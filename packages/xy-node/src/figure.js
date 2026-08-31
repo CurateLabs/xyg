@@ -1,11 +1,3 @@
-        // emit-polar-payload-axis-side stay-host.
-        // Recorded emit-payload-axis-tick-labels stay-host.
-    // Node payload ribbon omits animation. Python `_emit_ribbon` ships
-    // t.animation via `_transition_entry`. Matching Python would add
-    // entry.animation. Recorded emit-ribbon-animation stay-host.
-    // Node payload segments omits animation. Python `_emit_segments` ships
-    // t.animation via `_transition_entry`. Matching Python would add
-    // entry.animation. Recorded emit-segments-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
  * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
@@ -1146,8 +1138,7 @@ export class Figure {
     const t = composed.traces[0];
     this.traces.push({
       id: opts.id ?? nextTraceId++,
-      kind: "histogram",    // Python would add entry.animation. Recorded emit-hist-animation stay-host.
-
+      kind: "histogram",
       name: t.name,
       x0: t.x0,
       x1: t.x1,
@@ -1189,10 +1180,7 @@ export class Figure {
   _pushRectTrace(kind, t, opts = {}) {
     const trace = {
       id: opts.id ?? nextTraceId++,
-      kind,    // Node payload rect omits animation. Python `_emit_rect` ships t.animation
-    // via `_transition_entry`. Matching Python would add entry.animation.
-    // Recorded emit-rect-animation stay-host.
-
+      kind,
       name: t.name ?? opts.name ?? null,
       x0: t.x0,
       x1: t.x1,
@@ -1901,9 +1889,6 @@ export class Figure {
         // emit-density-cat-color stay-host.
       }
     }
-    // Node payload density scatter omits transition_keys. Python `_emit_scatter`
-    // ships them via `_transition_entry` on the density path. Matching Python
-    // would add entry.keys. Recorded emit-density-transition stay-host.
     return entry;
   }
 
@@ -2225,10 +2210,7 @@ export class Figure {
     // Recorded emit-mesh-transition stay-host.
     const entry = {
       id: t.id,
-      kind: "triangle_mesh",    // Node payload mesh omits animation. Python `_emit_triangle_mesh` ships
-    // t.animation via `_transition_entry`. Matching Python would add
-    // entry.animation. Recorded emit-mesh-animation stay-host.
-
+      kind: "triangle_mesh",
       name: t.name,
       style: this._defaultStyled(t),
       tier: "direct",

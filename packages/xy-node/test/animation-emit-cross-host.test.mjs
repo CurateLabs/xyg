@@ -12,6 +12,10 @@ const fixture = JSON.parse(
 );
 
 const ANIM = { duration: 250, easing: "linear" };
+const TRANSITION_KEYS = [
+  [1, 2],
+  [3, 4],
+];
 
 function buildCase(name) {
   const entry = fixture.cases.find((c) => c.name === name);
@@ -64,32 +68,80 @@ function buildCase(name) {
   } else if (name === "density_no_animation") {
     fig.scatter([1, 2], [1, 2], { forceDensity: true });
     fig.traces[0].id = entry.trace_id;
+  } else if (name === "hist_animation") {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "hist_no_animation") {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "bar_animation") {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "bar_no_animation") {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "segments_animation") {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "segments_no_animation") {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "ribbon_animation") {
+    fig.ribbon([0], [1], [0], [1], [0], [1]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "ribbon_no_animation") {
+    fig.ribbon([0], [1], [0], [1], [0], [1]);
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "mesh_animation") {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "mesh_no_animation") {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "density_transition_keys") {
+    fig.scatter([0, 1], [0, 1], { forceDensity: true });
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
   } else {
     throw new Error(`unknown case ${name}`);
   }
   return { fig, entry };
 }
 
+function traceMeta(trace) {
+  const meta = {
+    trace_id: trace.id,
+    kind: trace.kind,
+    n_points: trace.n_points,
+    tier: trace.tier,
+    animation: trace.animation ?? null,
+  };
+  if (trace.animation_fallback != null) {
+    meta.animation_fallback = trace.animation_fallback;
+  }
+  return meta;
+}
+
 test("animation emit cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.animation-emit-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 11);
+  assert.equal(fixture.cases.length, 22);
 });
 
 for (const entry of fixture.cases) {
   test(`Node animation emit matches fixture for ${entry.name}`, () => {
     const { fig } = buildCase(entry.name);
     const { spec } = fig.buildPayload();
-    const trace = spec.traces[0];
-    assert.equal(trace.id, entry.trace_id);
-    assert.equal(trace.kind, entry.kind);
-    assert.equal(trace.n_points, entry.n_points);
-    assert.equal(trace.tier, entry.tier);
-    if (entry.animation == null) {
-      assert.equal(trace.animation, undefined);
-    } else {
-      assert.deepEqual(trace.animation, entry.animation);
+    const meta = traceMeta(spec.traces[0]);
+    for (const [key, value] of Object.entries(entry)) {
+      if (key === "name") continue;
+      assert.deepEqual(meta[key], value);
     }
   });
 }
