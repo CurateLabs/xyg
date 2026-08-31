@@ -2837,6 +2837,17 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_color_channel(trace: Any) -> tuple[int, bytes, bytes]:
+    channel = getattr(trace, "color_ch", None)
+    if channel is None:
+        return 0, b"", b""
+    has_constant = 1 if getattr(channel, "constant", None) is not None else 0
+    flags = _native.scene_xytc_color_channel_pack(1, has_constant)
+    color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
+    color_const = str(channel.constant).encode("utf-8") if has_constant else b""
+    return flags, color_mode, color_const
+
+
 def _pack_xytc_radius(trace: Any, style: dict[str, Any]) -> tuple[int, float, float, float]:
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)) and len(radius) == 2:
@@ -2947,15 +2958,8 @@ def _pack_xytc(figure: Any) -> bytes:
         if "line_color" in style:
             flags |= _XYTC_HAS_LINE_COLOR
         color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
-        color_mode = b""
-        color_const = b""
-        channel = getattr(trace, "color_ch", None)
-        if channel is not None:
-            flags |= _XYTC_COLOR_CH
-            color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
-            if getattr(channel, "constant", None) is not None:
-                flags |= _XYTC_COLOR_CH_CONSTANT
-                color_const = str(channel.constant).encode("utf-8")
+        ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
+        flags |= ch_flags
         color2_class = _classify_ribbon_color2(trace)
         if color2_class == "fail":
             flags |= _XYTC_COLOR2
