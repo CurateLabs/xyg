@@ -1755,44 +1755,36 @@ test("buildPayload ships polar axis label like Python _axis_spec", () => {
   assert.equal(spec.y_axis.label, null);
 });
 
-test("buildPayload omits polar axis tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_values` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-values stay-host.
+test("buildPayload ships polar axis tick_values like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_values: [0, 1] });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_values, undefined);
+  assert.deepEqual(spec.x_axis.tick_values, [0, 1]);
 });
 
-test("buildPayload omits polar axis minor_tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_tick_values` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-ticks stay-host.
+test("buildPayload ships polar axis minor_tick_values like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { minor_tick_values: [0.5] });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.minor_tick_values, undefined);
+  assert.deepEqual(spec.x_axis.minor_tick_values, [0.5]);
 });
 
-test("buildPayload omits polar axis tick_labels unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_labels` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-labels stay-host.
+test("buildPayload ships polar axis tick_labels like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_labels: ["a", "b"] });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_labels, undefined);
+  assert.deepEqual(spec.x_axis.tick_labels, ["a", "b"]);
 });
 
-test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_count` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-count stay-host.
+test("buildPayload ships polar axis tick_count like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_count: 4 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_count, undefined);
+  assert.equal(spec.x_axis.tick_count, 4);
 });
 
 test("buildPayload ships polar axis reverse like Python _axis_spec", () => {

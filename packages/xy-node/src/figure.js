@@ -1641,16 +1641,16 @@ export class Figure {
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_values != null) {
+    if (attach.attachTicks && opts.tick_values != null) {
       spec.tick_values = [...opts.tick_values];
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.minor_tick_values != null) {
+    if (attach.attachTicks && opts.minor_tick_values != null) {
       spec.minor_tick_values = [...opts.minor_tick_values];
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_labels != null) {
+    if (attach.attachTicks && opts.tick_labels != null) {
       spec.tick_labels = [...opts.tick_labels];
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_count != null) {
+    if (attach.attachTicks && opts.tick_count != null) {
       spec.tick_count = opts.tick_count;
     }
     if (attach.attachReverse && opts.reverse) {
