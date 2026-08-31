@@ -319,6 +319,19 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_int32,
     ]
+    lib.xyg_scene_xyta_colormap_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xyta_colormap_pack.argtypes = [
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
@@ -3273,6 +3286,48 @@ def main() -> None:
         0,
     )
     ok(arrow_probe == 5 and arrow_meta[0] == 2 and arrow_meta[3] == 3, "arrow_shapes probe")
+    xyta_flags = ctypes.c_uint32(0)
+    named = array("B", b"viridis")
+    stop_rgb = array("B", [255, 0, 0, 0, 255, 0])
+    cmap_out = array("B", [0] * len(named))
+    stops_out = array("B", [0] * len(stop_rgb))
+    ok(
+        lib.xyg_scene_xyta_colormap_pack(
+            1,
+            _ptr(named, ctypes.c_uint8),
+            len(named),
+            null_u8,
+            0,
+            ctypes.byref(xyta_flags),
+            _ptr(cmap_out, ctypes.c_uint8),
+            len(cmap_out),
+            null_u8,
+            0,
+        )
+        == 1
+        and xyta_flags.value == (1 << 6)
+        and bytes(cmap_out) == b"viridis",
+        "scene_xyta_colormap_pack named",
+    )
+    xyta_flags = ctypes.c_uint32(0)
+    ok(
+        lib.xyg_scene_xyta_colormap_pack(
+            2,
+            null_u8,
+            0,
+            _ptr(stop_rgb, ctypes.c_uint8),
+            len(stop_rgb),
+            ctypes.byref(xyta_flags),
+            null_u8,
+            0,
+            _ptr(stops_out, ctypes.c_uint8),
+            len(stops_out),
+        )
+        == 1
+        and xyta_flags.value == (1 << 7)
+        and bytes(stops_out) == bytes(stop_rgb),
+        "scene_xyta_colormap_pack stops",
+    )
     scale = ctypes.c_double()
     ok(
         lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, ctypes.byref(scale)) == 1 and scale.value == 1.0,

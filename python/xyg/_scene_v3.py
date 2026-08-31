@@ -2138,20 +2138,23 @@ def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
 
 
 def _pack_xyta_colormap(style: dict[str, Any]) -> tuple[int, bytes, bytes]:
-    flags = 0
-    cmap = b""
-    stops = b""
     colormap = style.get("colormap")
     if isinstance(colormap, str):
-        flags |= _XYTA_HAS_NAMED_CMAP
-        cmap = colormap.encode("utf-8")
+        mode = 1
+        named = colormap.encode("utf-8")
+        stop_rgb = b""
     elif colormap is not None:
-        flags |= _XYTA_HAS_STOPS
+        mode = 2
+        named = b""
         try:
-            stops = _colormap_stop_bytes(colormap, "heatmap")
+            stop_rgb = _colormap_stop_bytes(colormap, "heatmap")
         except (TypeError, ValueError, UnsupportedSceneV3):
-            stops = b""
-    return flags, cmap, stops
+            stop_rgb = b""
+    else:
+        mode = 0
+        named = b""
+        stop_rgb = b""
+    return _native.scene_xyta_colormap_pack(mode, named, stop_rgb)
 
 
 def _pack_xyta(figure: Any) -> bytes:

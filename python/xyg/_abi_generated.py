@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 257
-SIGNATURE_SHA256 = "e3d2f972bd59fba8392949a77b6da5527c0a5cc3d1cbadef5efa10854310ecd4"
+ABI_VERSION = 258
+SIGNATURE_SHA256 = "0421548649fc11572746280437a3ff3289c5b2c024ff3efb0997994c763fd3e0"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1062,6 +1062,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_version
     function.restype = ctypes.c_uint32
     function.argtypes = []
+    # int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)
+    function = lib.xyg_scene_xyta_colormap_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t
