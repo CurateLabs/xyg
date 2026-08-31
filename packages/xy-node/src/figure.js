@@ -44,6 +44,7 @@ import {
   payloadM4Indices,
   payloadBaseEntryPlan,
   payloadNonxyEmitPlan,
+  payloadBarCompactAdmit,
   payloadBarHistEmitPlan,
   payloadHeatmapEmitPlan,
   payloadMeshEmitPlan,
@@ -1091,7 +1092,7 @@ export class Figure {
   }
 
   _pushRectTrace(kind, t, opts = {}) {
-    this.traces.push({
+    const trace = {
       id: opts.id ?? nextTraceId++,
       kind,    // Node payload rect omits animation. Python `_emit_rect` ships t.animation
     // via `_transition_entry`. Matching Python would add entry.animation.
@@ -1108,7 +1109,17 @@ export class Figure {
       density: t.density,
       x_axis: t.x_axis ?? opts.xAxis ?? "x",
       y_axis: t.y_axis ?? opts.yAxis ?? "y",
-    });
+    };
+    if (kind === "bar" || kind === "column") {
+      const n = t.x0.length;
+      const x = new Float64Array(n);
+      for (let i = 0; i < n; i += 1) {
+        x[i] = (t.x0[i] + t.x1[i]) / 2.0;
+      }
+      trace.x = x;
+      trace.y = t.y1;
+    }
+    this.traces.push(trace);
   }
 
   box(values, opts = {}) {
@@ -2188,6 +2199,104 @@ export class Figure {
     return entry;
   }
 
+  _emitBarCompact(t, pw, kind) {
+    if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
+      throw new Error(`${t.kind} trace missing bar columns`);
+    }
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    const selArg = rectFiniteSel(t, x0v, x1v, y0v, y1v);
+    if (selArg != null) {
+      x0v = gatherF64(x0v, selArg);
+      x1v = gatherF64(x1v, selArg);
+      y0v = gatherF64(y0v, selArg);
+      y1v = gatherF64(y1v, selArg);
+    }
+    const orientation = t.style?.orientation ?? "vertical";
+    let pos;
+    let value0;
+    let value1;
+    let widths;
+    if (orientation === "vertical") {
+      widths = Float64Array.from({ length: x0v.length }, (_, i) => x1v[i] - x0v[i]);
+      pos = selArg == null ? t.x : gatherF64(t.x, selArg);
+      value0 = y0v;
+      value1 = selArg == null ? t.y : gatherF64(t.y, selArg);
+    } else if (orientation === "horizontal") {
+      widths = Float64Array.from({ length: y0v.length }, (_, i) => y1v[i] - y0v[i]);
+      pos = Float64Array.from({ length: y0v.length }, (_, i) => (y0v[i] + y1v[i]) / 2.0);
+      value0 = x0v;
+      value1 = x1v;
+    } else {
+      throw new Error(`unknown bar orientation ${JSON.stringify(orientation)}`);
+    }
+    const admit = payloadBarCompactAdmit(widths, value0);
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const plan = payloadBarHistEmitPlan({
+      kind: "bar_compact",
+      compact: admit.compact,
+      nMarks: pos.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      orientation,
+    });
+    if (!plan.emitBar) {
+      return this._emitRect(t, pw, kind);
+    }
+    const columnPlan = payloadColumnShipPlan({
+      kind: "bar_compact",
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      orientation,
+    });
+    const style = this._defaultStyled(t);
+    const barSpec = {
+      orientation,
+      value_axis: plan.valueAxis,
+      width: admit.width,
+    };
+    const skipKeys = admit.hasValue0Const ? new Set(["value0"]) : undefined;
+    if (admit.hasValue0Const) {
+      barSpec.value0_const = admit.value0Const;
+    }
+    shipRegistryColumns(
+      barSpec,
+      t,
+      pw,
+      columnPlan,
+      { pos, value1, value0 },
+      { skipKeys },
+    );
+    const entry = {
+      id: t.id,
+      kind,
+      name: t.name,
+      style,
+      tier: "direct",
+      n_points: t.count ?? t.x0.length,
+      n_marks: plan.nMarks,
+      x_axis: xAxis,
+      y_axis: yAxis,
+      bar: barSpec,
+    };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      selArg,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, selArg);
+    }
+    return entry;
+  }
+
   _emitRect(t, pw, kind) {
     if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
       throw new Error(`${t.kind} trace missing rectangle columns`);
@@ -2216,9 +2325,6 @@ export class Figure {
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
     });
-    // Node payload bar/column ships rect columns. Python `_emit_bar` ships a
-    // nested `bar` spec via `_emit_bar_compact`. Matching Python would nest
-    // bar. Recorded emit-bar-compact stay-host.
     const entry = {
       id: t.id,
       kind,
@@ -2707,7 +2813,9 @@ export class Figure {
         specTraces.push(this._emitSegments(t, pw, widthPx));
       } else if (t.kind === "area" || t.kind === "error_band") {
         specTraces.push(this._emitArea(t, pw, xr, widthPx));
-      } else if (t.kind === "bar" || t.kind === "violin" || t.kind === "box") {
+      } else if (t.kind === "bar" || t.kind === "column") {
+        specTraces.push(this._emitBarCompact(t, pw, t.kind));
+      } else if (t.kind === "violin" || t.kind === "box") {
         specTraces.push(this._emitRect(t, pw, t.kind));
       } else if (t.kind === "heatmap") {
         specTraces.push(this._emitHeatmap(t, pw));
