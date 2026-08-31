@@ -109,6 +109,7 @@ export function attachScatter(fig, x, y, opts = {}) {
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,
+    color_ch: t.color_ch,
     size_ch: t.size_ch,
     forceDensity: t.force_density,
     forceDirect: t.force_direct,

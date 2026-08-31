@@ -63,6 +63,11 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
         fig.traces[0].id = 7
         return fig, {}
+    if name == "scatter_categorical_color":
+        fig = Figure(width=240, height=160)
+        fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color=["a", "b", "a"])
+        fig.traces[0].id = 15
+        return fig, {}
     if name == "line_transition_keys":
         fig = Figure(width=240, height=160)
         fig.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
@@ -140,9 +145,10 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 7
+    assert len(fixture["cases"]) == 8
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
+        "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
@@ -156,6 +162,7 @@ def test_fixture_contract(fixture: dict) -> None:
     "case_name",
     [
         "scatter_direct",
+        "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
@@ -177,6 +184,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     "case_name",
     [
         "scatter_direct",
+        "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
         "segments_pass_through",
