@@ -6037,6 +6037,11 @@ export function packFigureXyTa(figure) {
   return packXyTa(figure, figure._range("x"), figure._range("y"));
 }
 
+/** Host-parity tests compare `_pack_xytc` / `packXyTc` bytes against Python fixtures. */
+export function packFigureXyTc(figure) {
+  return packXyTc(figure);
+}
+
 export function figureSceneV3(figure, { margins = null } = {}) {
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }

@@ -105,6 +105,7 @@ def _public_triangle_mesh(count: int = 2) -> Figure:
 _PUBLIC_HEXBIN_X = [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0]
 _PUBLIC_HEXBIN_Y = [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0]
 _PUBLIC_HEXBIN_C = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+_PUBLIC_POLAR_TAU = 6.283185307179586
 
 
 def _public_hexbin(reduce: str = "count") -> Figure:
@@ -159,6 +160,54 @@ def _public_heatmap() -> Figure:
         opacity=0.75,
         name="heat",
     )
+    figure.traces[-1].id = 0
+    return figure
+
+
+def _public_polar_hexbin() -> Figure:
+    """Constant-style polar hexbin with deterministic cross-host identity."""
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, _PUBLIC_POLAR_TAU)
+    figure.axis_options["y"]["domain"] = (0.0, 4.0)
+    figure.hexbin(
+        [0.5, 1.5, 2.5],
+        [1.0, 2.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, _PUBLIC_POLAR_TAU), (0.0, 4.0)),
+        color="#3987e5",
+        opacity=0.75,
+        name="phex",
+    )
+    figure.traces[-1].id = 0
+    return figure
+
+
+def _public_polar_bar() -> Figure:
+    """Bounded polar bar wedges with deterministic cross-host identity."""
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, _PUBLIC_POLAR_TAU)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.bar([0.0, 1.57, 3.14], [0.5, 0.8, 0.6], color="#3987e5", name="pbar")
+    figure.traces[-1].id = 0
+    return figure
+
+
+def _public_polar_line() -> Figure:
+    """Bounded polar polyline with deterministic cross-host identity."""
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, _PUBLIC_POLAR_TAU)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.line([0.5, 2.5, 4.5], [1.0, 3.0, 2.0], color="#3987e5", name="pline")
+    figure.traces[-1].id = 0
+    return figure
+
+
+def _public_polar_heatmap() -> Figure:
+    """Constant-style polar lattice heatmap with deterministic cross-host identity."""
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5", name="pheat")
     figure.traces[-1].id = 0
     return figure
 
@@ -1369,6 +1418,26 @@ def test_public_hexbin_colormap_xyta_matches_cross_host_fixture() -> None:
     packed = _pack_xyta(figure)
     assert packed.startswith(b"XYTA")
     assert hashlib.sha256(packed).hexdigest() == fixture["public_hexbin_colormap_xyta_sha256"]
+
+
+@pytest.mark.parametrize(
+    ("builder", "fixture_key"),
+    [
+        (_public_polar_hexbin, "public_polar_hexbin_sha256"),
+        (_public_polar_bar, "public_polar_bar_sha256"),
+        (_public_polar_line, "public_polar_line_sha256"),
+        (_public_polar_heatmap, "public_polar_heatmap_sha256"),
+    ],
+)
+def test_public_polar_marks_match_exact_cross_host_scene_bytes(
+    builder: Callable[[], Figure],
+    fixture_key: str,
+) -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = builder()
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture[fixture_key]
 
 
 def test_hexbin_without_colormap_fails_closed_from_packed_xyta() -> None:
