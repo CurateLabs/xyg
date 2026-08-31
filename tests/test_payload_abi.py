@@ -228,6 +228,79 @@ def test_payload_trace_channels_ship_attach_geometry_if_color() -> None:
     }
 
 
+def test_payload_transition_entry_attach_ship_keys() -> None:
+    from xyg.config import MAX_ANIMATION_MATCH_ROWS
+
+    plan = kernels.payload_transition_entry_attach(
+        has_trace_animation=True,
+        entry_has_animation=False,
+        has_trace_keys=True,
+        has_key_values=False,
+        has_sel=False,
+        tier_direct=True,
+        n_marks=10,
+        n_trace_key_rows=10,
+        n_key_value_rows=0,
+        n_sel_rows=0,
+        max_rows=MAX_ANIMATION_MATCH_ROWS,
+        has_tooltip_rows=False,
+        n_tooltip_rows=0,
+        n_points=10,
+    )
+    assert plan["attach_animation"]
+    assert plan["attempt_keys"]
+    assert plan["ship_keys"]
+    assert plan["animation_fallback"] is None
+
+
+def test_payload_transition_entry_attach_decimated_fallback() -> None:
+    from xyg.config import MAX_ANIMATION_MATCH_ROWS
+
+    plan = kernels.payload_transition_entry_attach(
+        has_trace_animation=False,
+        entry_has_animation=False,
+        has_trace_keys=True,
+        has_key_values=False,
+        has_sel=False,
+        tier_direct=False,
+        n_marks=10,
+        n_trace_key_rows=10,
+        n_key_value_rows=0,
+        n_sel_rows=0,
+        max_rows=MAX_ANIMATION_MATCH_ROWS,
+        has_tooltip_rows=False,
+        n_tooltip_rows=0,
+        n_points=10,
+    )
+    assert plan["attempt_keys"]
+    assert not plan["ship_keys"]
+    assert plan["animation_fallback"] == "snap:aggregate"
+
+
+def test_payload_transition_entry_attach_tooltip_filter() -> None:
+    from xyg.config import MAX_ANIMATION_MATCH_ROWS
+
+    plan = kernels.payload_transition_entry_attach(
+        has_trace_animation=False,
+        entry_has_animation=False,
+        has_trace_keys=False,
+        has_key_values=False,
+        has_sel=True,
+        tier_direct=False,
+        n_marks=0,
+        n_trace_key_rows=0,
+        n_key_value_rows=0,
+        n_sel_rows=2,
+        max_rows=MAX_ANIMATION_MATCH_ROWS,
+        has_tooltip_rows=True,
+        n_tooltip_rows=3,
+        n_points=3,
+    )
+    assert plan["attach_tooltip"]
+    assert plan["filter_tooltip_by_sel"]
+    assert plan["tooltip_length_ok"]
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))

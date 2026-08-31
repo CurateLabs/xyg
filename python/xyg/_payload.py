@@ -405,25 +405,35 @@ class PayloadMixin(_Host):
         key_values: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
         """Attach bounded declarative transition metadata to one trace spec."""
-        if t.animation is not None and "animation" not in entry:
+        plan = kernels.payload_transition_entry_attach(
+            has_trace_animation=t.animation is not None,
+            entry_has_animation="animation" in entry,
+            has_trace_keys=t.transition_keys is not None,
+            has_key_values=key_values is not None,
+            has_sel=sel is not None,
+            tier_direct=entry.get("tier") == "direct",
+            n_marks=int(entry.get("n_marks", 0)),
+            n_trace_key_rows=len(t.transition_keys) if t.transition_keys is not None else 0,
+            n_key_value_rows=len(key_values) if key_values is not None else 0,
+            n_sel_rows=len(sel) if sel is not None else 0,
+            max_rows=MAX_ANIMATION_MATCH_ROWS,
+            has_tooltip_rows=False,
+            n_tooltip_rows=0,
+            n_points=t.n_points,
+        )
+        if plan["attach_animation"]:
             entry["animation"] = dict(t.animation)
+        if not plan["attempt_keys"]:
+            return entry
         keys = t.transition_keys if key_values is None else key_values
-        if keys is not None:
-            values = keys if key_values is not None or sel is None else keys[sel]
-            fallback = kernels.payload_transition_keys_admit(
-                has_keys=True,
-                tier_direct=entry.get("tier") == "direct",
-                n_keys=len(values),
-                n_marks=int(entry.get("n_marks", len(values))),
-                max_rows=MAX_ANIMATION_MATCH_ROWS,
-            )
-            if fallback is not None:
-                entry["animation_fallback"] = fallback
-                return entry
-            entry["keys"] = {
-                "lo": pw.ship_u32(values[:, 0]),
-                "hi": pw.ship_u32(values[:, 1]),
-            }
+        values = keys[sel] if plan["filter_keys_by_sel"] else keys
+        if not plan["ship_keys"]:
+            entry["animation_fallback"] = plan["animation_fallback"]
+            return entry
+        entry["keys"] = {
+            "lo": pw.ship_u32(values[:, 0]),
+            "hi": pw.ship_u32(values[:, 1]),
+        }
         return entry
 
     def _emit_trace(
@@ -458,13 +468,34 @@ class PayloadMixin(_Host):
     @staticmethod
     def _attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
         """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
-        if t.tooltip_rows is None:
+        plan = kernels.payload_transition_entry_attach(
+            has_trace_animation=False,
+            entry_has_animation=False,
+            has_trace_keys=False,
+            has_key_values=False,
+            has_sel=sel is not None,
+            tier_direct=False,
+            n_marks=0,
+            n_trace_key_rows=0,
+            n_key_value_rows=0,
+            n_sel_rows=len(sel) if sel is not None else 0,
+            max_rows=MAX_ANIMATION_MATCH_ROWS,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+            n_points=t.n_points,
+        )
+        if not plan["attach_tooltip"]:
+            if t.tooltip_rows is not None and not plan["tooltip_length_ok"]:
+                raise ValueError(
+                    f"{t.kind} tooltip rows must match geometry "
+                    f"({len(t.tooltip_rows)} != {t.n_points})"
+                )
             return
-        if len(t.tooltip_rows) != t.n_points:
-            raise ValueError(
-                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
-            )
-        indices = range(len(t.tooltip_rows)) if sel is None else (int(i) for i in sel)
+        indices = (
+            range(len(t.tooltip_rows))
+            if not plan["filter_tooltip_by_sel"]
+            else (int(i) for i in sel)
+        )
         entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
 
     @staticmethod

@@ -5,7 +5,8 @@
 
 use crate::lod_plan::{
     payload_errorbar_indices, payload_errorbar_role_maps, payload_even_indices,
-    payload_segment_budget, PayloadIndexSel,
+    payload_segment_budget, payload_transition_keys_admit, PayloadIndexSel,
+    PAYLOAD_TRANSITION_SHIP,
 };
 
 pub const PAYLOAD_SEGMENTS_TIER_DIRECT: i32 = 0;
@@ -15,6 +16,79 @@ pub const PAYLOAD_SEGMENTS_TIER_DECIMATED: i32 = 1;
 pub const PAYLOAD_SHIP_CHANNELS_ALWAYS: i32 = 0;
 /// Ship color/size only when ``color_ch`` is present (geometry marks).
 pub const PAYLOAD_SHIP_CHANNELS_IF_COLOR: i32 = 1;
+
+/// Transition-entry / tooltip-row attach orchestration from
+/// ``_transition_entry`` and ``_attach_tooltip_rows``.
+///
+/// Hosts still copy animation dicts, ship u32 key planes, and build tooltip
+/// row lists. Returns ``1`` on success, ``0`` when ``max_rows`` is zero.
+pub fn payload_transition_entry_attach(
+    has_trace_animation: i32,
+    entry_has_animation: i32,
+    has_trace_keys: i32,
+    has_key_values: i32,
+    has_sel: i32,
+    tier_direct: i32,
+    n_marks: usize,
+    n_trace_key_rows: usize,
+    n_key_value_rows: usize,
+    n_sel_rows: usize,
+    max_rows: usize,
+    has_tooltip_rows: i32,
+    n_tooltip_rows: usize,
+    n_points: usize,
+    out_attach_animation: &mut i32,
+    out_attempt_keys: &mut i32,
+    out_filter_keys_by_sel: &mut i32,
+    out_ship_keys: &mut i32,
+    out_animation_fallback: &mut i32,
+    out_attach_tooltip: &mut i32,
+    out_filter_tooltip_by_sel: &mut i32,
+    out_tooltip_length_ok: &mut i32,
+) -> i32 {
+    if max_rows == 0 {
+        return 0;
+    }
+    *out_attach_animation = i32::from(has_trace_animation != 0 && entry_has_animation == 0);
+    *out_attempt_keys = 0;
+    *out_filter_keys_by_sel = 0;
+    *out_ship_keys = 0;
+    *out_animation_fallback = PAYLOAD_TRANSITION_SHIP;
+    *out_attach_tooltip = 0;
+    *out_filter_tooltip_by_sel = 0;
+    *out_tooltip_length_ok = 1;
+
+    let attempt_keys = has_key_values != 0 || has_trace_keys != 0;
+    *out_attempt_keys = i32::from(attempt_keys);
+    if attempt_keys {
+        let filter_keys_by_sel = has_key_values == 0 && has_sel != 0;
+        *out_filter_keys_by_sel = i32::from(filter_keys_by_sel);
+        let n_keys = if has_key_values != 0 {
+            n_key_value_rows
+        } else if filter_keys_by_sel {
+            n_sel_rows
+        } else {
+            n_trace_key_rows
+        };
+        let n_marks_eff = if n_marks > 0 { n_marks } else { n_keys };
+        let admit = payload_transition_keys_admit(1, tier_direct, n_keys, n_marks_eff, max_rows);
+        if admit == PAYLOAD_TRANSITION_SHIP {
+            *out_ship_keys = 1;
+        } else {
+            *out_animation_fallback = admit;
+        }
+    }
+
+    if has_tooltip_rows != 0 {
+        if n_tooltip_rows != n_points {
+            *out_tooltip_length_ok = 0;
+        } else {
+            *out_attach_tooltip = 1;
+            *out_filter_tooltip_by_sel = i32::from(has_sel != 0);
+        }
+    }
+    1
+}
 
 /// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
 ///
@@ -351,5 +425,177 @@ mod tests {
         assert_eq!(role_maps, 0);
         assert_eq!(keep_all, 1);
         assert_eq!(n_out, 50);
+    }
+
+    #[test]
+    fn payload_transition_entry_attach_animation_and_ship_keys() {
+        let mut attach_animation = -1;
+        let mut attempt_keys = -1;
+        let mut filter_keys = -1;
+        let mut ship_keys = -1;
+        let mut fallback = -1;
+        let mut attach_tooltip = -1;
+        let mut filter_tooltip = -1;
+        let mut tooltip_ok = -1;
+        assert_eq!(
+            payload_transition_entry_attach(
+                1,
+                0,
+                1,
+                0,
+                0,
+                1,
+                10,
+                10,
+                0,
+                0,
+                200_000,
+                0,
+                0,
+                0,
+                &mut attach_animation,
+                &mut attempt_keys,
+                &mut filter_keys,
+                &mut ship_keys,
+                &mut fallback,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(attach_animation, 1);
+        assert_eq!(attempt_keys, 1);
+        assert_eq!(filter_keys, 0);
+        assert_eq!(ship_keys, 1);
+        assert_eq!(fallback, PAYLOAD_TRANSITION_SHIP);
+        assert_eq!(attach_tooltip, 0);
+        assert_eq!(tooltip_ok, 1);
+    }
+
+    #[test]
+    fn payload_transition_entry_attach_decimated_snap_aggregate() {
+        let mut attach_animation = 0;
+        let mut attempt_keys = 0;
+        let mut filter_keys = 0;
+        let mut ship_keys = 0;
+        let mut fallback = 0;
+        let mut attach_tooltip = 0;
+        let mut filter_tooltip = 0;
+        let mut tooltip_ok = 0;
+        assert_eq!(
+            payload_transition_entry_attach(
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                10,
+                10,
+                0,
+                0,
+                200_000,
+                0,
+                0,
+                0,
+                &mut attach_animation,
+                &mut attempt_keys,
+                &mut filter_keys,
+                &mut ship_keys,
+                &mut fallback,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(ship_keys, 0);
+        assert_eq!(fallback, 1);
+    }
+
+    #[test]
+    fn payload_transition_entry_attach_filter_keys_and_tooltip() {
+        let mut attach_animation = 0;
+        let mut attempt_keys = 0;
+        let mut filter_keys = 0;
+        let mut ship_keys = 0;
+        let mut fallback = 0;
+        let mut attach_tooltip = 0;
+        let mut filter_tooltip = 0;
+        let mut tooltip_ok = 0;
+        assert_eq!(
+            payload_transition_entry_attach(
+                0,
+                0,
+                1,
+                0,
+                1,
+                1,
+                3,
+                5,
+                0,
+                3,
+                200_000,
+                1,
+                5,
+                5,
+                &mut attach_animation,
+                &mut attempt_keys,
+                &mut filter_keys,
+                &mut ship_keys,
+                &mut fallback,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(filter_keys, 1);
+        assert_eq!(ship_keys, 1);
+        assert_eq!(attach_tooltip, 1);
+        assert_eq!(filter_tooltip, 1);
+        assert_eq!(tooltip_ok, 1);
+    }
+
+    #[test]
+    fn payload_transition_entry_attach_tooltip_length_mismatch() {
+        let mut attach_animation = 0;
+        let mut attempt_keys = 0;
+        let mut filter_keys = 0;
+        let mut ship_keys = 0;
+        let mut fallback = 0;
+        let mut attach_tooltip = 0;
+        let mut filter_tooltip = 0;
+        let mut tooltip_ok = 0;
+        assert_eq!(
+            payload_transition_entry_attach(
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                200_000,
+                1,
+                2,
+                3,
+                &mut attach_animation,
+                &mut attempt_keys,
+                &mut filter_keys,
+                &mut ship_keys,
+                &mut fallback,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(attach_tooltip, 0);
+        assert_eq!(tooltip_ok, 0);
     }
 }

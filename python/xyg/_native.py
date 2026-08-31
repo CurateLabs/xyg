@@ -11660,6 +11660,84 @@ def payload_trace_channels_ship_attach(
     }
 
 
+_TRANSITION_FALLBACK_BY_CODE: tuple[str | None, ...] = (
+    None,
+    "snap:aggregate",
+    "snap:key-limit",
+    "index:key-count-mismatch",
+)
+
+
+def payload_transition_entry_attach(
+    *,
+    has_trace_animation: bool,
+    entry_has_animation: bool,
+    has_trace_keys: bool,
+    has_key_values: bool,
+    has_sel: bool,
+    tier_direct: bool,
+    n_marks: int,
+    n_trace_key_rows: int,
+    n_key_value_rows: int,
+    n_sel_rows: int,
+    max_rows: int,
+    has_tooltip_rows: bool,
+    n_tooltip_rows: int,
+    n_points: int,
+) -> dict[str, bool | str | None]:
+    """Transition/tooltip attach via ``xyg_payload_transition_entry_attach`` (ABI 294).
+
+    Owns ``_transition_entry`` / ``_attach_tooltip_rows`` when-to-ship policy.
+    """
+    attach_animation = ctypes.c_int32(-1)
+    attempt_keys = ctypes.c_int32(-1)
+    filter_keys_by_sel = ctypes.c_int32(-1)
+    ship_keys = ctypes.c_int32(-1)
+    animation_fallback = ctypes.c_int32(-1)
+    attach_tooltip = ctypes.c_int32(-1)
+    filter_tooltip_by_sel = ctypes.c_int32(-1)
+    tooltip_length_ok = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_transition_entry_attach(
+        1 if has_trace_animation else 0,
+        1 if entry_has_animation else 0,
+        1 if has_trace_keys else 0,
+        1 if has_key_values else 0,
+        1 if has_sel else 0,
+        1 if tier_direct else 0,
+        int(n_marks),
+        int(n_trace_key_rows),
+        int(n_key_value_rows),
+        int(n_sel_rows),
+        int(max_rows),
+        1 if has_tooltip_rows else 0,
+        int(n_tooltip_rows),
+        int(n_points),
+        ctypes.byref(attach_animation),
+        ctypes.byref(attempt_keys),
+        ctypes.byref(filter_keys_by_sel),
+        ctypes.byref(ship_keys),
+        ctypes.byref(animation_fallback),
+        ctypes.byref(attach_tooltip),
+        ctypes.byref(filter_tooltip_by_sel),
+        ctypes.byref(tooltip_length_ok),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_transition_entry_attach arguments")
+    fallback_code = int(animation_fallback.value)
+    if fallback_code < 0 or fallback_code >= len(_TRANSITION_FALLBACK_BY_CODE):
+        raise ValueError("invalid payload_transition_entry_attach fallback code")
+    return {
+        "attach_animation": int(attach_animation.value) == 1,
+        "attempt_keys": int(attempt_keys.value) == 1,
+        "filter_keys_by_sel": int(filter_keys_by_sel.value) == 1,
+        "ship_keys": int(ship_keys.value) == 1,
+        "animation_fallback": _TRANSITION_FALLBACK_BY_CODE[fallback_code],
+        "attach_tooltip": int(attach_tooltip.value) == 1,
+        "filter_tooltip_by_sel": int(filter_tooltip_by_sel.value) == 1,
+        "tooltip_length_ok": int(tooltip_length_ok.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

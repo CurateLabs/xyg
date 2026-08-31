@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 293;
+pub const ABI_VERSION: u32 = 294;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15502,6 +15502,99 @@ pub unsafe extern "C" fn xyg_payload_trace_channels_ship_attach(
         *out_ship_size = ship_size;
         *out_ship_stroke = ship_stroke;
         *out_ship_style_channels = ship_style;
+        1
+    })
+}
+
+/// Transition-entry / tooltip-row attach orchestration (ABI 294).
+///
+/// Owns ``_transition_entry`` and ``_attach_tooltip_rows`` when-to-ship policy.
+/// Hosts still copy animation dicts, ship key u32 planes, and build tooltip
+/// rows. ``out_ship_keys`` is ``1`` when keys may ship; otherwise
+/// ``out_animation_fallback`` carries the admit code from ABI 275.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_transition_entry_attach(
+    has_trace_animation: i32,
+    entry_has_animation: i32,
+    has_trace_keys: i32,
+    has_key_values: i32,
+    has_sel: i32,
+    tier_direct: i32,
+    n_marks: usize,
+    n_trace_key_rows: usize,
+    n_key_value_rows: usize,
+    n_sel_rows: usize,
+    max_rows: usize,
+    has_tooltip_rows: i32,
+    n_tooltip_rows: usize,
+    n_points: usize,
+    out_attach_animation: *mut i32,
+    out_attempt_keys: *mut i32,
+    out_filter_keys_by_sel: *mut i32,
+    out_ship_keys: *mut i32,
+    out_animation_fallback: *mut i32,
+    out_attach_tooltip: *mut i32,
+    out_filter_tooltip_by_sel: *mut i32,
+    out_tooltip_length_ok: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_attach_animation.is_null()
+            || out_attempt_keys.is_null()
+            || out_filter_keys_by_sel.is_null()
+            || out_ship_keys.is_null()
+            || out_animation_fallback.is_null()
+            || out_attach_tooltip.is_null()
+            || out_filter_tooltip_by_sel.is_null()
+            || out_tooltip_length_ok.is_null()
+        {
+            return 0;
+        }
+        let mut attach_animation = 0i32;
+        let mut attempt_keys = 0i32;
+        let mut filter_keys_by_sel = 0i32;
+        let mut ship_keys = 0i32;
+        let mut animation_fallback = 0i32;
+        let mut attach_tooltip = 0i32;
+        let mut filter_tooltip_by_sel = 0i32;
+        let mut tooltip_length_ok = 0i32;
+        let ok = payload_emit::payload_transition_entry_attach(
+            has_trace_animation,
+            entry_has_animation,
+            has_trace_keys,
+            has_key_values,
+            has_sel,
+            tier_direct,
+            n_marks,
+            n_trace_key_rows,
+            n_key_value_rows,
+            n_sel_rows,
+            max_rows,
+            has_tooltip_rows,
+            n_tooltip_rows,
+            n_points,
+            &mut attach_animation,
+            &mut attempt_keys,
+            &mut filter_keys_by_sel,
+            &mut ship_keys,
+            &mut animation_fallback,
+            &mut attach_tooltip,
+            &mut filter_tooltip_by_sel,
+            &mut tooltip_length_ok,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_attach_animation = attach_animation;
+        *out_attempt_keys = attempt_keys;
+        *out_filter_keys_by_sel = filter_keys_by_sel;
+        *out_ship_keys = ship_keys;
+        *out_animation_fallback = animation_fallback;
+        *out_attach_tooltip = attach_tooltip;
+        *out_filter_tooltip_by_sel = filter_tooltip_by_sel;
+        *out_tooltip_length_ok = tooltip_length_ok;
         1
     })
 }

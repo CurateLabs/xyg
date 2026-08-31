@@ -1357,6 +1357,31 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_transition_entry_attach.restype = ctypes.c_int32
+    lib.xyg_payload_transition_entry_attach.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -4984,6 +5009,78 @@ def main() -> None:
         and ship_stroke.value == 1
         and ship_style.value == 0,
         "payload_trace_channels_ship_attach geometry if color",
+    )
+    attach_animation = ctypes.c_int32(-1)
+    attempt_keys = ctypes.c_int32(-1)
+    filter_keys = ctypes.c_int32(-1)
+    ship_keys = ctypes.c_int32(-1)
+    animation_fallback = ctypes.c_int32(-1)
+    attach_tooltip = ctypes.c_int32(-1)
+    filter_tooltip = ctypes.c_int32(-1)
+    tooltip_ok = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_transition_entry_attach(
+            1,
+            0,
+            1,
+            0,
+            0,
+            1,
+            10,
+            10,
+            0,
+            0,
+            200_000,
+            0,
+            0,
+            0,
+            ctypes.byref(attach_animation),
+            ctypes.byref(attempt_keys),
+            ctypes.byref(filter_keys),
+            ctypes.byref(ship_keys),
+            ctypes.byref(animation_fallback),
+            ctypes.byref(attach_tooltip),
+            ctypes.byref(filter_tooltip),
+            ctypes.byref(tooltip_ok),
+        )
+        == 1
+        and attach_animation.value == 1
+        and attempt_keys.value == 1
+        and ship_keys.value == 1
+        and animation_fallback.value == 0,
+        "payload_transition_entry_attach ship keys",
+    )
+    ok(
+        lib.xyg_payload_transition_entry_attach(
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            3,
+            5,
+            0,
+            3,
+            200_000,
+            1,
+            5,
+            5,
+            ctypes.byref(attach_animation),
+            ctypes.byref(attempt_keys),
+            ctypes.byref(filter_keys),
+            ctypes.byref(ship_keys),
+            ctypes.byref(animation_fallback),
+            ctypes.byref(attach_tooltip),
+            ctypes.byref(filter_tooltip),
+            ctypes.byref(tooltip_ok),
+        )
+        == 1
+        and filter_keys.value == 1
+        and attach_tooltip.value == 1
+        and filter_tooltip.value == 1
+        and tooltip_ok.value == 1,
+        "payload_transition_entry_attach filter keys and tooltip",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
