@@ -102,3 +102,12 @@ test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () 
   assert.deepEqual(spec.x_axis.domain, undefined);
   assert.equal(spec.x_axis.format, undefined);
 });
+
+test("buildPayload ships cartesian axis minor_tick_values like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_tick_values: [0.25, 0.75] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.minor_tick_values, [0.25, 0.75]);
+  assert.equal(spec.y_axis.minor_tick_values, undefined);
+});
