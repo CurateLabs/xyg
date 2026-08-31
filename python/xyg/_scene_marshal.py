@@ -254,8 +254,8 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
         _mesh_packs_paint_plane,
         _ribbon_packs_end_paints,
         _scatter_packs_paint_plane,
-        _validated_marker_path,
     )
+    from xyg.marks import _validated_marker_path
 
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -274,9 +274,27 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
         try:
             validated = _validated_marker_path(marker_path)
             marker_path_valid = True
-            marker_path_filled_small = any(len(c) < 6 for c in validated["contours"])
+            marker_path_filled_small = validated["filled"] and any(
+                len(c) < 6 for c in validated["contours"]
+            )
         except ValueError:
             marker_path_valid = False
+    dash = style.get("dash")
+    dash_present = dash is not None
+    dash_text: str | None = None
+    dash_is_array = False
+    if dash_present:
+        from xyg._scene_v3 import _parse_scene_dash
+
+        parsed = _parse_scene_dash(dash)
+        if parsed is False:
+            dash_text = ""
+        elif parsed is None:
+            dash_present = False
+        elif isinstance(parsed, list):
+            dash_text = ",".join(str(part) for part in parsed)
+        else:
+            dash_text = str(dash)
     return {
         "kind": kind,
         "x_axis": str(getattr(trace, "x_axis", "x") or "x"),
@@ -293,11 +311,9 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
         "curve": _optional_str(style.get("curve")),
         "linecap_present": style.get("linecap") is not None,
         "linecap": _optional_str(style.get("linecap")),
-        "dash_present": style.get("dash") is not None,
-        "dash_text": _optional_str(style.get("dash"))
-        if not isinstance(style.get("dash"), (list, tuple))
-        else None,
-        "dash_is_array": isinstance(style.get("dash"), (list, tuple)),
+        "dash_present": dash_present,
+        "dash_text": dash_text,
+        "dash_is_array": dash_is_array,
         "fill_present": "fill" in style,
         "fill_is_string": isinstance(fill, str),
         "fill_gradient_admitted": _admitted_fill_gradient(trace) is not None,

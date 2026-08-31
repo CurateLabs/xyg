@@ -2689,6 +2689,21 @@ function marshalTraceSupportObs(trace, polar) {
       markerPathFilledSmall = validated.filled && validated.contours.some((contour) => contour.length < 6);
     }
   }
+  let dashPresent = style.dash != null;
+  let dashText = null;
+  let dashIsArray = false;
+  if (dashPresent) {
+    const parsed = parseSceneDash(style.dash);
+    if (parsed === false) {
+      dashText = "";
+    } else if (parsed == null) {
+      dashPresent = false;
+    } else if (Array.isArray(parsed)) {
+      dashText = parsed.map((part) => String(part)).join(",");
+    } else {
+      dashText = optionalStr(style.dash);
+    }
+  }
   return {
     kind,
     x_axis: String(trace.x_axis ?? "x"),
@@ -2705,9 +2720,9 @@ function marshalTraceSupportObs(trace, polar) {
     curve: optionalStr(style.curve),
     linecap_present: style.linecap != null,
     linecap: optionalStr(style.linecap),
-    dash_present: style.dash != null,
-    dash_text: Array.isArray(style.dash) ? null : optionalStr(style.dash),
-    dash_is_array: Array.isArray(style.dash),
+    dash_present: dashPresent,
+    dash_text: dashText,
+    dash_is_array: dashIsArray,
     fill_present: Object.hasOwn(style, "fill"),
     fill_is_string: typeof fill === "string",
     fill_gradient_admitted: admitFillGradient(trace) != null,
