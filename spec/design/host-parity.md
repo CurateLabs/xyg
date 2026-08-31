@@ -1623,9 +1623,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `_emitRibbon` omits ship scale.
   Node `_emitTriangleMesh` omits ship scale.
   Node `_emitHistogram` omits ship scale.
-  Node `_emitScatterDensity` omits wasm_source.
   Node `buildPayload` cartesian axes stay linear.
-  Node `buildPayload` omits wasm_density.
   Node `buildPayload` omits show_legend.
   Node `buildPayload` omits cartesian axis id.
   Node `buildPayload` omits cartesian axis kind.

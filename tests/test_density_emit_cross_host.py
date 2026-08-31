@@ -51,10 +51,29 @@ SAMPLE_CASE_KEYS = frozenset(
     }
 )
 
+WASM_SOURCE_CASE_KEYS = frozenset(
+    {
+        "trace_id",
+        "tier",
+        "has_wasm_source",
+        "wasm_source_kind",
+        "wasm_source_point_count",
+        "wasm_source_trace_id",
+        "wasm_source_capacity",
+        "wasm_source_ownership",
+        "wasm_source_x_dtype",
+        "wasm_source_y_dtype",
+        "wasm_density_automatic",
+        "buffer_layout",
+    }
+)
+
 
 def _case_keys(case_name: str, entry: dict) -> list[str]:
     if case_name.startswith("density_sample_"):
         return [key for key in entry if key in SAMPLE_CASE_KEYS]
+    if case_name.startswith("scatter_density_wasm_source"):
+        return [key for key in entry if key in WASM_SOURCE_CASE_KEYS]
     return [key for key in entry if key != "name"]
 
 
@@ -62,6 +81,7 @@ CASE_NAMES = (
     "scatter_density_colormap",
     "scatter_density_dropped_channels",
     "scatter_density_mean_color_categorical",
+    "scatter_density_wasm_source_split",
     "density_sample_color_size",
     "density_sample_stroke",
     "density_sample_style_channels",
@@ -122,6 +142,11 @@ def _build_case(name: str) -> Figure:
         )
         fig.traces[0].id = 23
         return fig
+    if name == "scatter_density_wasm_source_split":
+        fig = Figure(width=240, height=160)
+        fig.scatter([1.0, 10.0], [1.0, 10.0], density=True)
+        fig.traces[0].id = 41
+        return fig
     if name == "density_sample_color_size":
         fig = Figure(width=240, height=160)
         fig.scatter(
@@ -170,11 +195,42 @@ def _build_case(name: str) -> Figure:
     raise KeyError(name)
 
 
-def _density_wire_meta(spec: dict) -> dict:
+def _column_dtype(columns: Any, col_ref: Any) -> str | None:
+    if not isinstance(col_ref, int):
+        return None
+    if isinstance(columns, list):
+        if 0 <= col_ref < len(columns):
+            return columns[col_ref].get("dtype")
+        return None
+    if isinstance(columns, dict) and col_ref in columns:
+        return columns[col_ref].get("dtype")
+    return None
+
+
+def _wasm_source_meta(spec: dict) -> dict:
+    trace = spec["traces"][0]
+    density = trace.get("density") or {}
+    wasm_source = density.get("wasm_source") or {}
+    columns = spec.get("columns") or {}
+    return {
+        "has_wasm_source": bool(wasm_source),
+        "wasm_source_kind": wasm_source.get("kind"),
+        "wasm_source_point_count": wasm_source.get("point_count"),
+        "wasm_source_trace_id": wasm_source.get("trace_id"),
+        "wasm_source_capacity": wasm_source.get("capacity"),
+        "wasm_source_ownership": wasm_source.get("ownership"),
+        "wasm_source_x_dtype": _column_dtype(columns, wasm_source.get("x")),
+        "wasm_source_y_dtype": _column_dtype(columns, wasm_source.get("y")),
+        "wasm_density_automatic": (spec.get("wasm_density") or {}).get("automatic"),
+        "buffer_layout": spec.get("buffer_layout"),
+    }
+
+
+def _density_wire_meta(spec: dict, *, split: bool = False) -> dict:
     trace = spec["traces"][0]
     density = trace.get("density") or {}
     sample = density.get("sample") or {}
-    return {
+    meta = {
         "trace_id": trace["id"],
         "tier": trace.get("tier"),
         "density_colormap": density.get("colormap"),
@@ -197,6 +253,17 @@ def _density_wire_meta(spec: dict) -> dict:
         else None,
         "animation_fallback": trace.get("animation_fallback"),
     }
+    if split:
+        meta.update(_wasm_source_meta(spec))
+    return meta
+
+
+def _build_case_payload(name: str, fig: Figure) -> dict:
+    if name == "scatter_density_wasm_source_split":
+        spec, _buffers = fig.build_payload_split()
+        return _density_wire_meta(spec, split=True)
+    spec, _blob = fig.build_payload()
+    return _density_wire_meta(spec)
 
 
 @pytest.fixture(scope="module")
@@ -241,8 +308,7 @@ def test_fixture_contract(fixture: dict) -> None:
 @pytest.mark.parametrize("case_name", CASE_NAMES)
 def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> None:
     entry = next(case for case in fixture["cases"] if case["name"] == case_name)
-    spec, _blob = _build_case(case_name).build_payload()
-    meta = _density_wire_meta(spec)
+    meta = _build_case_payload(case_name, _build_case(case_name))
     for key in _case_keys(case_name, entry):
         assert meta[key] == entry[key], (key, meta[key], entry[key])
 
@@ -250,7 +316,6 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
 @pytest.mark.parametrize("case_name", CASE_NAMES)
 def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
     node_case = next(case for case in node_golden["cases"] if case["name"] == case_name)
-    spec, _blob = _build_case(case_name).build_payload()
-    meta = _density_wire_meta(spec)
+    meta = _build_case_payload(case_name, _build_case(case_name))
     for key in _case_keys(case_name, node_case):
         assert meta[key] == node_case[key], (key, meta[key], node_case[key])
