@@ -837,7 +837,9 @@ def bins_mean_color(cc: Optional[ColorChannel]) -> bool:
     Tier 2 (LOD doc §2) instead of being dropped. Cheap predicate — no
     arrays are touched — for warning/spec sites; `resolve_bin_colors` is
     gated on exactly this."""
-    return cc is not None and cc.mode in ("continuous", "categorical", "direct_rgba")
+    if cc is None:
+        return False
+    return kernels.density_mean_color_wire_admit(has_channel=True, mode=cc.mode)
 
 
 # Chunk length for full-column color-source quantization. The math is

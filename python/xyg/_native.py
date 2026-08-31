@@ -11837,6 +11837,19 @@ def density_categorical_color_wire_admit(*, categorical: bool, has_channel: bool
     return admit == 1
 
 
+def density_mean_color_wire_admit(*, has_channel: bool, mode: str = "") -> bool:
+    """Mean-color density plane wire admit via ``xyg_density_mean_color_wire_admit`` (ABI 272)."""
+    mode_b = str(mode).encode("utf-8")
+    admit = _lib.xyg_density_mean_color_wire_admit(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_mean_color_wire_admit arguments")
+    return admit == 1
+
+
 DENSITY_WASM_DENSITY_NONE = 0
 DENSITY_WASM_DENSITY_AUTOMATIC = 1
 DENSITY_WASM_DENSITY_UNSUPPORTED = 2

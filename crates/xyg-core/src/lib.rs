@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 287;
+pub const ABI_VERSION: u32 = 288;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15939,6 +15939,36 @@ pub unsafe extern "C" fn xyg_density_categorical_color_wire_admit(
             return 0;
         }
         density_emit::density_categorical_color_wire_admit(categorical, has_channel)
+    })
+}
+
+/// Whether a color channel aggregates to a mean-color density plane (ABI 272).
+///
+/// # Safety
+/// When ``mode_len > 0``, ``mode`` must address readable UTF-8 bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_mean_color_wire_admit(
+    has_channel: i32,
+    mode: *const u8,
+    mode_len: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if !matches!(has_channel, 0 | 1) {
+            return 0;
+        }
+        if mode_len > 0 && mode.is_null() {
+            return 0;
+        }
+        let mode_text = if mode_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(mode, mode_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return 0;
+            };
+            text
+        };
+        density_emit::density_mean_color_wire_admit(has_channel, mode_text)
     })
 }
 

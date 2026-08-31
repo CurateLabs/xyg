@@ -55,6 +55,7 @@ density_trace_color_classify = _impl.density_trace_color_classify
 density_uses_channel_colormap = _impl.density_uses_channel_colormap
 density_constant_color_wire_admit = _impl.density_constant_color_wire_admit
 density_categorical_color_wire_admit = _impl.density_categorical_color_wire_admit
+density_mean_color_wire_admit = _impl.density_mean_color_wire_admit
 density_wasm_source_admit = _impl.density_wasm_source_admit
 DENSITY_WASM_DENSITY_NONE = _impl.DENSITY_WASM_DENSITY_NONE
 DENSITY_WASM_DENSITY_AUTOMATIC = _impl.DENSITY_WASM_DENSITY_AUTOMATIC
@@ -305,6 +306,7 @@ __all__ = [
     "density_grid_path",
     "density_grid_path_identity_state",
     "density_log_u8",
+    "density_mean_color_wire_admit",
     "density_overlay_omitted_wire",
     "density_overlay_opacity",
     "density_pyramid_preflight",

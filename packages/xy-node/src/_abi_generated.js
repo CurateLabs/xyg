@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 287;
-export const SIGNATURE_SHA256 = "2cc14e79fe254fcb22bbf660081b902dcc6f8070f51e096041bc093dfd52f64a";
+export const ABI_VERSION = 288;
+export const SIGNATURE_SHA256 = "90aa798bacc25d7e1b90ea876198ce2d3103726c4e87776f7725d7490c713153";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -67,6 +67,7 @@ export let xyDensityFullIdentity;
 export let xyDensityGridPath;
 export let xyDensityGridPathIdentityState;
 export let xyDensityLogU8;
+export let xyDensityMeanColorWireAdmit;
 export let xyDensityOverlayOmittedWire;
 export let xyDensityOverlayOpacity;
 export let xyDensityPyramidPreflight;
@@ -449,6 +450,7 @@ export function bindGeneratedAbi(lib) {
   xyDensityGridPath = lib.func("int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t point_overlay, int32_t compact_categorical, int32_t stratified_counts)");
   xyDensityGridPathIdentityState = lib.func("int32_t xyg_density_grid_path_identity_state(int32_t grid_path)");
   xyDensityLogU8 = lib.func("int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)");
+  xyDensityMeanColorWireAdmit = lib.func("int32_t xyg_density_mean_color_wire_admit(int32_t has_channel, const uint8_t * mode, size_t mode_len)");
   xyDensityOverlayOmittedWire = lib.func("size_t xyg_density_overlay_omitted_wire(uint32_t overlay_omitted, int32_t point_overlay, uint8_t * out, size_t out_cap)");
   xyDensityOverlayOpacity = lib.func("int32_t xyg_density_overlay_opacity(double authored, double * out)");
   xyDensityPyramidPreflight = lib.func("size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out)");
