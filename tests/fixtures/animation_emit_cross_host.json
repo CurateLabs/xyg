@@ -1,6 +1,6 @@
 {
   "schema": "xyg.animation-emit-cross-host/v1",
-  "authority": "packages/xy-node/src/figure.js payloadBaseEntryPlan attachAnimation",
+  "authority": "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
   "protocol": 12,
   "abi_version": 315,
   "cases": [
@@ -63,6 +63,55 @@
         "duration": 250,
         "easing": "linear"
       }
+    },
+    {
+      "name": "area_animation",
+      "trace_id": 56,
+      "kind": "area",
+      "n_points": 3,
+      "tier": "direct",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "area_no_animation",
+      "trace_id": 57,
+      "kind": "area",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null
+    },
+    {
+      "name": "area_decimated_animation",
+      "trace_id": 58,
+      "kind": "area",
+      "n_points": 10001,
+      "tier": "decimated",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "density_animation",
+      "trace_id": 59,
+      "kind": "scatter",
+      "n_points": 3,
+      "tier": "density",
+      "animation": {
+        "duration": 250,
+        "easing": "linear"
+      }
+    },
+    {
+      "name": "density_no_animation",
+      "trace_id": 60,
+      "kind": "scatter",
+      "n_points": 2,
+      "tier": "density",
+      "animation": null
     }
   ]
 }

@@ -43,6 +43,27 @@ function buildCase(name) {
     fig.line(xs, ys);
     fig.traces[0].id = entry.trace_id;
     fig.traces[0].animation = { ...ANIM };
+  } else if (name === "area_animation") {
+    fig.area([0, 1, 2], [0, 1, 2]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "area_no_animation") {
+    fig.area([0, 1], [0, 1]);
+    fig.traces[0].id = entry.trace_id;
+  } else if (name === "area_decimated_animation") {
+    const n = 10001;
+    const xs = Array.from({ length: n }, (_, i) => i);
+    const ys = Array.from({ length: n }, (_, i) => i % 7);
+    fig.area(xs, ys);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "density_animation") {
+    fig.scatter([1, 2, 3], [1, 2, 3], { forceDensity: true });
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].animation = { ...ANIM };
+  } else if (name === "density_no_animation") {
+    fig.scatter([1, 2], [1, 2], { forceDensity: true });
+    fig.traces[0].id = entry.trace_id;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -53,7 +74,7 @@ test("animation emit cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.animation-emit-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 6);
+  assert.equal(fixture.cases.length, 11);
 });
 
 for (const entry of fixture.cases) {

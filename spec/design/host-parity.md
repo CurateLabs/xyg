@@ -41,13 +41,11 @@ Python. Public npm names are `@curatelabs/xyg` (paint client) and
 The paint-client artifact is in-repo as `@curatelabs/xyg` (#23); registry
 publish waits on the `@curatelabs` npm org (#13).
 
-  Node `_emitArea` omits animation.
   Node `_emitHistogram` omits animation.
   Node `_emitRect` omits animation.
   Node `_emitTriangleMesh` omits animation.
   Node `_emitSegments` omits animation.
   Node `_emitRibbon` omits animation.
-  Node `_emitScatterDensity` omits animation.
   Node `_emitScatterDensity` sample uses full n.
   Node `_emitScatterDensity` visible stays n_points.
   Node `nextTraceId` starts at 1.
