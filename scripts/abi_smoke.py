@@ -370,6 +370,19 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_radius_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_radius_pack.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_uint32),
+        F64P,
+        F64P,
+        F64P,
+    ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
@@ -3425,6 +3438,31 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_flags = ctypes.c_uint32(0)
+    xytc_tip = ctypes.c_double(0.0)
+    xytc_base = ctypes.c_double(0.0)
+    xytc_gap = ctypes.c_double(0.0)
+    bar_kind = array("B", b"bar")
+    ok(
+        lib.xyg_scene_xytc_radius_pack(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            2,
+            1.0,
+            2.0,
+            0.5,
+            ctypes.byref(xytc_flags),
+            ctypes.byref(xytc_tip),
+            ctypes.byref(xytc_base),
+            ctypes.byref(xytc_gap),
+        )
+        == 1
+        and xytc_flags.value == ((1 << 22) | (1 << 23))
+        and xytc_tip.value == 1.0
+        and xytc_base.value == 2.0
+        and xytc_gap.value == 0.5,
+        "scene_xytc_radius_pack bar",
     )
     scale = ctypes.c_double()
     ok(

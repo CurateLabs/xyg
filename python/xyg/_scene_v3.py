@@ -2837,6 +2837,20 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_radius(trace: Any, style: dict[str, Any]) -> tuple[int, float, float, float]:
+    radius = style.get("corner_radius", 0.0)
+    if isinstance(radius, (list, tuple)) and len(radius) == 2:
+        radius_seq = 2
+        r0 = float(radius[0])
+        r1 = float(radius[1])
+    else:
+        radius_seq = 1
+        r0 = float(radius or 0.0)
+        r1 = 0.0
+    wedge_gap_raw = float(style.get("wedge_gap", 0.0) or 0.0)
+    return _native.scene_xytc_radius_pack(str(trace.kind), radius_seq, r0, r1, wedge_gap_raw)
+
+
 def _pack_xytc(figure: Any) -> bytes:
     """Pack authored per-trace style literals as XYTC v1; Rust compiles XYTO."""
     traces = list(getattr(figure, "traces", None) or [])
@@ -2973,22 +2987,8 @@ def _pack_xytc(figure: Any) -> bytes:
                 marker_blob = packed_glyph
         if str(trace.kind) == "triangle_mesh" and style.get("joined_fill"):
             flags |= _XYTC_JOINED_FILL
-        r_tip = 0.0
-        r_base = 0.0
-        wedge_gap = 0.0
-        if str(trace.kind) in {"bar", "column", "histogram", "heatmap", "violin", "box"}:
-            radius = style.get("corner_radius", 0.0)
-            if isinstance(radius, (list, tuple)) and len(radius) == 2:
-                r_tip = float(radius[0])
-                r_base = float(radius[1])
-            else:
-                r_tip = r_base = float(radius or 0.0)
-            if r_tip or r_base:
-                flags |= _XYTC_HAS_CORNER_RADIUS
-            if str(trace.kind) in {"bar", "column", "histogram"}:
-                wedge_gap = float(style.get("wedge_gap", 0.0) or 0.0)
-                if wedge_gap:
-                    flags |= _XYTC_HAS_WEDGE_GAP
+        radius_flags, r_tip, r_base, wedge_gap = _pack_xytc_radius(trace, style)
+        flags |= radius_flags
         records.extend(
             _XYTR_PREFIX.pack(
                 b"XYTR",

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 261;
+pub const ABI_VERSION: u32 = 262;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,56 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC corner-radius and wedge-gap trailer fields (ABI 262).
+///
+/// ``radius_seq``: ``0`` or ``1`` scalar (``r0``), ``2`` tip/base pair.
+/// Returns ``1`` on success, ``0`` when invalid.
+///
+/// # Safety
+/// When ``kind_len > 0``, ``kind`` addresses readable bytes. Output pointers
+/// must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_radius_pack(
+    kind: *const u8,
+    kind_len: usize,
+    radius_seq: i32,
+    r0: f64,
+    r1: f64,
+    wedge_gap_raw: f64,
+    out_flags: *mut u32,
+    out_r_tip: *mut f64,
+    out_r_base: *mut f64,
+    out_wedge_gap: *mut f64,
+) -> i32 {
+    if out_flags.is_null()
+        || out_r_tip.is_null()
+        || out_r_base.is_null()
+        || out_wedge_gap.is_null()
+    {
+        return 0;
+    }
+    ffi_guard(0, || {
+        if kind_len > 0 && kind.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(kind, kind_len)).unwrap_or("")
+        };
+        let Some((flags, r_tip, r_base, wedge_gap)) =
+            kernels::scene_xytc_radius_pack(kind_text, radius_seq, r0, r1, wedge_gap_raw)
+        else {
+            return 0;
+        };
+        *out_flags = flags;
+        *out_r_tip = r_tip;
+        *out_r_base = r_base;
+        *out_wedge_gap = wedge_gap;
+        1
     })
 }
 

@@ -1608,6 +1608,49 @@ pub fn scene_gradient_spec_pack(
     need as i32
 }
 
+const XYTC_HAS_CORNER_RADIUS: u32 = 1 << 22;
+const XYTC_HAS_WEDGE_GAP: u32 = 1 << 23;
+
+/// Pack XYTC corner-radius and wedge-gap trailer fields (ABI 262).
+///
+/// ``radius_seq``: ``0`` or ``1`` scalar (``r0``), ``2`` tip/base pair
+/// (``r0``, ``r1``). Hosts still pick ``corner_radius`` / ``wedge_gap`` keys
+/// and coerce list vs scalar. Returns ``(flags, r_tip, r_base, wedge_gap)``.
+pub fn scene_xytc_radius_pack(
+    kind: &str,
+    radius_seq: i32,
+    r0: f64,
+    r1: f64,
+    wedge_gap_raw: f64,
+) -> Option<(u32, f64, f64, f64)> {
+    if !matches!(radius_seq, 0 | 1 | 2) {
+        return None;
+    }
+    let mut flags = 0u32;
+    let mut r_tip = 0.0;
+    let mut r_base = 0.0;
+    let mut wedge_gap = 0.0;
+    if scene_rect_kind_admits_radius(kind) {
+        if radius_seq == 2 {
+            r_tip = r0;
+            r_base = r1;
+        } else {
+            r_tip = r0;
+            r_base = r0;
+        }
+        if r_tip != 0.0 || r_base != 0.0 {
+            flags |= XYTC_HAS_CORNER_RADIUS;
+        }
+    }
+    if scene_rect_kind_admits_polar_wedge(kind) {
+        wedge_gap = wedge_gap_raw;
+        if wedge_gap != 0.0 {
+            flags |= XYTC_HAS_WEDGE_GAP;
+        }
+    }
+    Some((flags, r_tip, r_base, wedge_gap))
+}
+
 /// Pack Scene XYTC marker-path blob into ``out`` (ABI 261).
 ///
 /// Wire format: ``u32 n_contours``, ``u8 filled``, 3 zero bytes, then per
@@ -10633,6 +10676,23 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_radius_pack_matches_host_table() {
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("bar", 2, 1.0, 2.0, 0.0).unwrap();
+        assert_eq!(flags, XYTC_HAS_CORNER_RADIUS);
+        assert_eq!((tip, base, gap), (1.0, 2.0, 0.0));
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("bar", 1, 3.0, 0.0, 0.5).unwrap();
+        assert_eq!(flags, XYTC_HAS_CORNER_RADIUS | XYTC_HAS_WEDGE_GAP);
+        assert_eq!((tip, base, gap), (3.0, 3.0, 0.5));
+        let (flags, tip, base, gap) =
+            scene_xytc_radius_pack("scatter", 1, 3.0, 0.0, 0.5).unwrap();
+        assert_eq!(flags, 0);
+        assert_eq!((tip, base, gap), (0.0, 0.0, 0.0));
+        assert!(scene_xytc_radius_pack("bar", 3, 0.0, 0.0, 0.0).is_none());
     }
 
     #[test]
