@@ -568,17 +568,14 @@ test("_emitTriangleMesh uses log ship scale via payload mesh plan", () => {
   assert.equal(x0Col.offset, 0);
 });
 
-test("_emitRibbon omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_ribbon` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node ribbon encode keeps the column midpoint. Recorded
-  // emit-ribbon-ship-scale stay-host.
+test("_emitRibbon uses log ship scale via payload ribbon plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.ribbon([1], [10], [1], [10], [1], [10]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
   const x0Col = spec.columns[spec.traces[0].x0];
-  assert.notEqual(x0Col.offset, 0);
+  assert.equal(x0Col.offset, 0);
 });
 
 test("_emitSegments omits ship scale unlike Python _axis_scale", () => {
@@ -805,16 +802,13 @@ test("_emitTriangleMesh ships transition_keys via payload mesh plan", () => {
   assert.notEqual(spec.traces[0].keys, undefined);
 });
 
-test("_emitRibbon omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_ribbon` ships transition_keys as `keys`. Node ribbon
-  // payload keeps no keys field even when transition_keys is present.
-  // Recorded emit-ribbon-transition stay-host.
+test("_emitRibbon ships transition_keys via payload ribbon plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
   fig.traces[0].transition_keys = [[1, 2]];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.notEqual(spec.traces[0].keys, undefined);
 });
 
 test("_emitRect ships transition_keys via payload nonxy plan", () => {
@@ -839,17 +833,14 @@ test("_emitTriangleMesh gathers null geometry rows via payload mesh plan", () =>
   assert.equal(spec.traces[0].n_marks, n - 1);
 });
 
-test("_emitRibbon skips valid_indices_f64 unlike Python _emit_ribbon", () => {
-  // Python `_emit_ribbon` gathers null geometry rows via `valid_indices_f64`.
-  // Node ribbon payload keeps every band even when a geometry column has NaN.
-  // Recorded emit-ribbon-gather stay-host.
+test("_emitRibbon gathers null geometry rows via payload ribbon plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0, 1], [1, 2], [0, 0], [1, 1], [0, 0], [1, 1], { color: "#112233" });
   const n = fig.traces[0].x0.length;
   fig.traces[0].x0[0] = Number.NaN;
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].n_marks, n);
+  assert.equal(spec.traces[0].n_marks, n - 1);
 });
 
 test("_emitRect ships bar columns unlike Python nested bar", () => {
@@ -1028,16 +1019,13 @@ test("_emitRect ships stroke_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
-test("_emitRibbon omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_ribbon` ships stroke_ch via `_ship_trace_styles`. Node
-  // ribbon payload keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-ribbon-stroke stay-host.
+test("_emitRibbon ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#445566");
 });
 
 test("_emitScatter omits stroke_ch unlike Python _ship_trace_styles", () => {
@@ -1316,15 +1304,13 @@ test("_emitTriangleMesh ships animation via payload mesh plan", () => {
 });
 
 
-test("_emitRibbon omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
-  // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
+test("_emitRibbon ships animation via payload ribbon plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 

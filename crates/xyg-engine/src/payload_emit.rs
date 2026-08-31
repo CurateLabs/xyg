@@ -324,6 +324,43 @@ pub fn payload_mesh_emit_plan(
     1
 }
 
+/// Ribbon emit skeleton from ``_emit_ribbon``.
+///
+/// Owns direct tier, gathered ``n_marks``, palette default for missing trace
+/// color, axis ship scales, geometry-null ``valid_indices_f64`` gather policy,
+/// trace-channel attach slot/styles, ``color2_ch`` attach, and transition wrap.
+/// Hosts still gather geometry, ship columns, and attach channels.
+pub fn payload_ribbon_emit_plan(
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    any_geometry_nulls: i32,
+    has_color2_ch: i32,
+    out_tier_direct: &mut i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_channel_slot: &mut i32,
+    out_include_trace_styles: &mut i32,
+    out_attach_transition: &mut i32,
+    out_attempt_gather: &mut i32,
+    out_attach_color2: &mut i32,
+) -> i32 {
+    *out_tier_direct = 1;
+    *out_n_marks = n_marks;
+    *out_apply_palette_default = i32::from(style_color_is_none != 0);
+    *out_x_ship_scale = payload_base_entry_ship_scale(x_axis_type);
+    *out_y_ship_scale = payload_base_entry_ship_scale(y_axis_type);
+    *out_channel_slot = PAYLOAD_SHIP_CHANNELS_IF_COLOR;
+    *out_include_trace_styles = 1;
+    *out_attach_transition = 1;
+    *out_attempt_gather = i32::from(any_geometry_nulls != 0);
+    *out_attach_color2 = i32::from(has_color2_ch != 0);
+    1
+}
+
 /// Transition-entry / tooltip-row attach orchestration from
 /// ``_transition_entry`` and ``_attach_tooltip_rows``.
 ///
@@ -1570,5 +1607,88 @@ mod tests {
             ),
             0
         );
+    }
+
+    #[test]
+    fn payload_ribbon_emit_plan_gather_transition_and_color2() {
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attempt_gather = -1;
+        let mut attach_color2 = -1;
+        assert_eq!(
+            payload_ribbon_emit_plan(
+                8,
+                1,
+                1,
+                0,
+                1,
+                1,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut attach_color2,
+            ),
+            1
+        );
+        assert_eq!(tier_direct, 1);
+        assert_eq!(n_marks, 8);
+        assert_eq!(apply_palette, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(slot, PAYLOAD_SHIP_CHANNELS_IF_COLOR);
+        assert_eq!(include_styles, 1);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(attempt_gather, 1);
+        assert_eq!(attach_color2, 1);
+    }
+
+    #[test]
+    fn payload_ribbon_emit_plan_no_gather_without_nulls() {
+        let mut tier_direct = 0;
+        let mut n_marks = 0;
+        let mut apply_palette = 0;
+        let mut x_scale = 0;
+        let mut y_scale = 0;
+        let mut slot = 0;
+        let mut include_styles = 0;
+        let mut attach_transition = 0;
+        let mut attempt_gather = 0;
+        let mut attach_color2 = 0;
+        assert_eq!(
+            payload_ribbon_emit_plan(
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut attach_color2,
+            ),
+            1
+        );
+        assert_eq!(attempt_gather, 0);
+        assert_eq!(attach_color2, 0);
+        assert_eq!(apply_palette, 0);
     }
 }

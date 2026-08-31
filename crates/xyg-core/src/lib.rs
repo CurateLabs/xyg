@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 298;
+pub const ABI_VERSION: u32 = 299;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15988,6 +15988,92 @@ pub unsafe extern "C" fn xyg_payload_mesh_emit_plan(
         *out_attach_transition = attach_transition;
         *out_attempt_gather = attempt_gather;
         *out_gather_include_color = gather_include_color;
+        1
+    })
+}
+
+/// Ribbon emit skeleton from ``_emit_ribbon`` (ABI 299).
+///
+/// Owns geometry-null gather policy, palette default, axis ship scales,
+/// trace-channel attach, ``color2_ch`` attach, and transition wrap.
+/// Hosts still gather geometry and ship columns.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_ribbon_emit_plan(
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    any_geometry_nulls: i32,
+    has_color2_ch: i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+    out_attempt_gather: *mut i32,
+    out_attach_color2: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+            || out_attempt_gather.is_null()
+            || out_attach_color2.is_null()
+        {
+            return 0;
+        }
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let mut attempt_gather = 0i32;
+        let mut attach_color2 = 0i32;
+        let ok = payload_emit::payload_ribbon_emit_plan(
+            n_marks,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            any_geometry_nulls,
+            has_color2_ch,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+            &mut attempt_gather,
+            &mut attach_color2,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
+        *out_attempt_gather = attempt_gather;
+        *out_attach_color2 = attach_color2;
         1
     })
 }

@@ -1468,6 +1468,25 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_ribbon_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_ribbon_emit_plan.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5347,6 +5366,47 @@ def main() -> None:
         and mesh_attempt_gather.value == 1
         and mesh_gather_color.value == 1,
         "payload_mesh_emit_plan gather skeleton",
+    )
+    ribbon_tier_direct = ctypes.c_int32(-1)
+    ribbon_n_marks = ctypes.c_size_t(0)
+    ribbon_apply_palette = ctypes.c_int32(-1)
+    ribbon_x_scale = ctypes.c_int32(-1)
+    ribbon_y_scale = ctypes.c_int32(-1)
+    ribbon_channel_slot = ctypes.c_int32(-1)
+    ribbon_include_styles = ctypes.c_int32(-1)
+    ribbon_attach_transition = ctypes.c_int32(-1)
+    ribbon_attempt_gather = ctypes.c_int32(-1)
+    ribbon_attach_color2 = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_ribbon_emit_plan(
+            5,
+            1,
+            1,
+            0,
+            1,
+            1,
+            ctypes.byref(ribbon_tier_direct),
+            ctypes.byref(ribbon_n_marks),
+            ctypes.byref(ribbon_apply_palette),
+            ctypes.byref(ribbon_x_scale),
+            ctypes.byref(ribbon_y_scale),
+            ctypes.byref(ribbon_channel_slot),
+            ctypes.byref(ribbon_include_styles),
+            ctypes.byref(ribbon_attach_transition),
+            ctypes.byref(ribbon_attempt_gather),
+            ctypes.byref(ribbon_attach_color2),
+        )
+        == 1
+        and ribbon_tier_direct.value == 1
+        and ribbon_n_marks.value == 5
+        and ribbon_apply_palette.value == 1
+        and ribbon_x_scale.value == 1
+        and ribbon_y_scale.value == 0
+        and ribbon_channel_slot.value == 1
+        and ribbon_attach_transition.value == 1
+        and ribbon_attempt_gather.value == 1
+        and ribbon_attach_color2.value == 1,
+        "payload_ribbon_emit_plan gather skeleton",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
