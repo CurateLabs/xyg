@@ -370,6 +370,17 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_hex_pitch_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_hex_pitch_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_uint32),
+        F64P,
+        F64P,
+    ]
     lib.xyg_scene_xytc_stroke_perimeter_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_stroke_perimeter_pack.argtypes = [
         ctypes.c_int32,
@@ -3472,6 +3483,26 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_hex_flags = ctypes.c_uint32(0)
+    xytc_hex_dx = ctypes.c_double(0.0)
+    xytc_hex_dy = ctypes.c_double(0.0)
+    ok(
+        lib.xyg_scene_xytc_hex_pitch_pack(
+            1,
+            1,
+            1,
+            1.0,
+            2.0,
+            ctypes.byref(xytc_hex_flags),
+            ctypes.byref(xytc_hex_dx),
+            ctypes.byref(xytc_hex_dy),
+        )
+        == 1
+        and xytc_hex_flags.value == (1 << 8)
+        and xytc_hex_dx.value == 1.0
+        and xytc_hex_dy.value == 2.0,
+        "scene_xytc_hex_pitch_pack hexbin",
     )
     xytc_perimeter_flags = ctypes.c_uint32(0)
     ok(

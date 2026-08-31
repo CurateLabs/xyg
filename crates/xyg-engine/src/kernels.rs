@@ -1619,6 +1619,39 @@ const XYTC_HAS_SIZE: u32 = 1 << 6;
 const XYTC_HAS_SIZE_CH: u32 = 1 << 7;
 const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
 const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
+const XYTC_HAS_HEX: u32 = 1 << 8;
+
+/// Pack XYTC hexbin pitch flag and trailer values (ABI 266).
+///
+/// ``hexbin``: kind is HEXBIN-eligible. ``has_dx`` / ``has_dy``: authored pitch
+/// keys resolved by the host (``hex_dx`` then ``dx``, etc.). Absent components
+/// stay NaN. Field picking stays host.
+pub fn scene_xytc_hex_pitch_pack(
+    hexbin: i32,
+    has_dx: i32,
+    has_dy: i32,
+    dx: f64,
+    dy: f64,
+) -> Option<(u32, f64, f64)> {
+    for bit in [hexbin, has_dx, has_dy] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    let mut hex_dx = f64::NAN;
+    let mut hex_dy = f64::NAN;
+    if hexbin != 0 {
+        flags |= XYTC_HAS_HEX;
+        if has_dx != 0 {
+            hex_dx = dx;
+        }
+        if has_dy != 0 {
+            hex_dy = dy;
+        }
+    }
+    Some((flags, hex_dx, hex_dy))
+}
 
 /// Pack XYTC stroke-perimeter flag bits (ABI 265).
 ///
@@ -10809,6 +10842,21 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_hex_pitch_pack_matches_host_table() {
+        let nan = f64::NAN;
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(0, 1, 1, 1.0, 2.0).unwrap();
+        assert_eq!(flags, 0);
+        assert!(dx.is_nan() && dy.is_nan());
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(1, 0, 0, nan, nan).unwrap();
+        assert_eq!(flags, XYTC_HAS_HEX);
+        assert!(dx.is_nan() && dy.is_nan());
+        let (flags, dx, dy) = scene_xytc_hex_pitch_pack(1, 1, 1, 1.0, 2.0).unwrap();
+        assert_eq!(flags, XYTC_HAS_HEX);
+        assert_eq!((dx, dy), (1.0, 2.0));
+        assert!(scene_xytc_hex_pitch_pack(2, 0, 0, nan, nan).is_none());
     }
 
     #[test]

@@ -2837,6 +2837,22 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_hex_pitch(kind_class: int, style: dict[str, Any]) -> tuple[int, float, float]:
+    nan = float("nan")
+    hexbin = 1 if kind_class & _SCENE_KIND_CLASS_HEXBIN else 0
+    raw_dx = style.get("hex_dx", style.get("dx"))
+    raw_dy = style.get("hex_dy", style.get("dy"))
+    has_dx = 1 if raw_dx is not None else 0
+    has_dy = 1 if raw_dy is not None else 0
+    return _native.scene_xytc_hex_pitch_pack(
+        hexbin,
+        has_dx,
+        has_dy,
+        float(raw_dx) if has_dx else nan,
+        float(raw_dy) if has_dy else nan,
+    )
+
+
 def _pack_xytc_stroke_perimeter(kind_class: int, style: dict[str, Any]) -> int:
     band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
     present = 1 if "stroke_perimeter" in style else 0
@@ -2908,7 +2924,6 @@ def _pack_xytc(figure: Any) -> bytes:
     traces = list(getattr(figure, "traces", None) or [])
     records = bytearray(_XYTC_HEADER.pack(b"XYTC", 1, len(traces), 0))
     show_legend = bool(getattr(figure, "show_legend", True))
-    nan = float("nan")
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
@@ -2937,15 +2952,8 @@ def _pack_xytc(figure: Any) -> bytes:
             line_width,
         ) = _pack_xytc_numeric_style(trace, style)
         flags |= num_flags
-        hex_dx = hex_dy = nan
-        if kind_class & _SCENE_KIND_CLASS_HEXBIN:
-            flags |= _XYTC_HAS_HEX
-            raw_dx = style.get("hex_dx", style.get("dx"))
-            raw_dy = style.get("hex_dy", style.get("dy"))
-            if raw_dx is not None:
-                hex_dx = float(raw_dx)
-            if raw_dy is not None:
-                hex_dy = float(raw_dy)
+        hex_flags, hex_dx, hex_dy = _pack_xytc_hex_pitch(kind_class, style)
+        flags |= hex_flags
         flags |= _pack_xytc_stroke_perimeter(kind_class, style)
         dash_b = b""
         dash_pattern: list[float] = []
