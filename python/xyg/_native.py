@@ -1781,6 +1781,32 @@ def scene_xytc_paint_presence_pack(
     return int(flags.value)
 
 
+def scene_xytc_color2_flags_pack(
+    color2_class: int,
+    paint_flags: int,
+    gradient_packed: int,
+) -> int:
+    """XYTC ribbon color2 flags via ``xyg_scene_xytc_color2_flags_pack`` (ABI 271).
+
+    ``color2_class`` uses scene_ribbon_color2_classify codes (0–4). Gradient spec
+    construction stays host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_color2_flags_pack(
+            ctypes.c_int32(int(color2_class)),
+            ctypes.c_uint32(int(paint_flags)),
+            ctypes.c_int32(int(gradient_packed)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-color2-flags-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-color2-flags-pack request")
+    return int(flags.value)
+
+
 def scene_xytc_meta_flags_pack(
     has_name: int,
     show_legend: int,

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 270
-SIGNATURE_SHA256 = "cc9dfe1f49ec50802a3599df0feeaec76bec2502525fee67b938aa799bcc3735"
+ABI_VERSION = 271
+SIGNATURE_SHA256 = "a08377b0370457a9dc95f72d24809c71da4a8fdcdc6902cb38b4adb89dd785ad"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1078,6 +1078,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyta_colormap_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)
+    function = lib.xyg_scene_xytc_color2_flags_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_uint32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)
     function = lib.xyg_scene_xytc_color_channel_pack
     function.restype = ctypes.c_int32

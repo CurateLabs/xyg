@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 270;
-export const SIGNATURE_SHA256 = "cc9dfe1f49ec50802a3599df0feeaec76bec2502525fee67b938aa799bcc3735";
+export const ABI_VERSION = 271;
+export const SIGNATURE_SHA256 = "a08377b0370457a9dc95f72d24809c71da4a8fdcdc6902cb38b4adb89dd785ad";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -272,6 +272,7 @@ export let xySceneTickLabelStrategy;
 export let xySceneVersion;
 export let xySceneXyhfColormapPack;
 export let xySceneXytaColormapPack;
+export let xySceneXytcColor2FlagsPack;
 export let xySceneXytcColorChannelPack;
 export let xySceneXytcDashPatternPack;
 export let xySceneXytcHexPitchPack;
@@ -637,6 +638,7 @@ export function bindGeneratedAbi(lib) {
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
+  xySceneXytcColor2FlagsPack = lib.func("int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)");
   xySceneXytcColorChannelPack = lib.func("int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)");
   xySceneXytcDashPatternPack = lib.func("int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags)");
   xySceneXytcHexPitchPack = lib.func("int32_t xyg_scene_xytc_hex_pitch_pack(int32_t hexbin, int32_t has_dx, int32_t has_dy, double dx, double dy, uint32_t * out_flags, double * out_hex_dx, double * out_hex_dy)");
