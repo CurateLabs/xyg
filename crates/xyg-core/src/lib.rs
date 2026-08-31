@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 300;
+pub const ABI_VERSION: u32 = 301;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16169,6 +16169,134 @@ pub unsafe extern "C" fn xyg_payload_segments_emit_plan(
         *out_attach_transition = attach_transition;
         *out_attempt_gather = attempt_gather;
         *out_attempt_role_keys = attempt_role_keys;
+        1
+    })
+}
+
+/// Scatter emit skeleton from ``_emit_scatter`` (ABI 301).
+///
+/// Owns density-vs-direct tier routing, direct-tier channel attach,
+/// transition wrap, and tooltip attach flags. Hosts still visible-select,
+/// ship columns, and run ``_density_trace_spec``.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_scatter_emit_plan(
+    n_points: u64,
+    polar: i32,
+    force_density: i32,
+    force_direct: i32,
+    per_item: i32,
+    n_marks: usize,
+    has_trace_animation: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    has_transition_keys: i32,
+    has_tooltip_rows: i32,
+    n_tooltip_rows: usize,
+    out_emit_density: *mut i32,
+    out_clear_shipped_sel: *mut i32,
+    out_drill_mode_false: *mut i32,
+    out_set_shipped_sel: *mut i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_attach_animation: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+    out_attach_tooltip: *mut i32,
+    out_filter_tooltip_by_sel: *mut i32,
+    out_tooltip_length_ok: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_emit_density.is_null()
+            || out_clear_shipped_sel.is_null()
+            || out_drill_mode_false.is_null()
+            || out_set_shipped_sel.is_null()
+            || out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_attach_animation.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+            || out_attach_tooltip.is_null()
+            || out_filter_tooltip_by_sel.is_null()
+            || out_tooltip_length_ok.is_null()
+        {
+            return 0;
+        }
+        let mut emit_density = 0i32;
+        let mut clear_shipped_sel = 0i32;
+        let mut drill_mode_false = 0i32;
+        let mut set_shipped_sel = 0i32;
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut attach_animation = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let mut attach_tooltip = 0i32;
+        let mut filter_tooltip_by_sel = 0i32;
+        let mut tooltip_length_ok = 0i32;
+        let ok = payload_emit::payload_scatter_emit_plan(
+            n_points,
+            polar,
+            force_density,
+            force_direct,
+            per_item,
+            n_marks,
+            has_trace_animation,
+            x_axis_type,
+            y_axis_type,
+            has_transition_keys,
+            has_tooltip_rows,
+            n_tooltip_rows,
+            &mut emit_density,
+            &mut clear_shipped_sel,
+            &mut drill_mode_false,
+            &mut set_shipped_sel,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut attach_animation,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+            &mut attach_tooltip,
+            &mut filter_tooltip_by_sel,
+            &mut tooltip_length_ok,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_emit_density = emit_density;
+        *out_clear_shipped_sel = clear_shipped_sel;
+        *out_drill_mode_false = drill_mode_false;
+        *out_set_shipped_sel = set_shipped_sel;
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_attach_animation = attach_animation;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
+        *out_attach_tooltip = attach_tooltip;
+        *out_filter_tooltip_by_sel = filter_tooltip_by_sel;
+        *out_tooltip_length_ok = tooltip_length_ok;
         1
     })
 }

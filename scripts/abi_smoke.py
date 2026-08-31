@@ -1506,6 +1506,37 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_scatter_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_scatter_emit_plan.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5465,6 +5496,101 @@ def main() -> None:
         and segments_attempt_gather.value == 1
         and segments_attempt_role_keys.value == 1,
         "payload_segments_emit_plan gather skeleton",
+    )
+    scatter_emit_density = ctypes.c_int32(-1)
+    scatter_clear_sel = ctypes.c_int32(-1)
+    scatter_drill_false = ctypes.c_int32(-1)
+    scatter_set_sel = ctypes.c_int32(-1)
+    scatter_tier_direct = ctypes.c_int32(-1)
+    scatter_n_marks = ctypes.c_size_t(0)
+    scatter_apply_palette = ctypes.c_int32(-1)
+    scatter_attach_anim = ctypes.c_int32(-1)
+    scatter_x_scale = ctypes.c_int32(-1)
+    scatter_y_scale = ctypes.c_int32(-1)
+    scatter_channel_slot = ctypes.c_int32(-1)
+    scatter_include_styles = ctypes.c_int32(-1)
+    scatter_attach_transition = ctypes.c_int32(-1)
+    scatter_attach_tooltip = ctypes.c_int32(-1)
+    scatter_filter_tooltip = ctypes.c_int32(-1)
+    scatter_tooltip_ok = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_scatter_emit_plan(
+            200_001,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(scatter_emit_density),
+            ctypes.byref(scatter_clear_sel),
+            ctypes.byref(scatter_drill_false),
+            ctypes.byref(scatter_set_sel),
+            ctypes.byref(scatter_tier_direct),
+            ctypes.byref(scatter_n_marks),
+            ctypes.byref(scatter_apply_palette),
+            ctypes.byref(scatter_attach_anim),
+            ctypes.byref(scatter_x_scale),
+            ctypes.byref(scatter_y_scale),
+            ctypes.byref(scatter_channel_slot),
+            ctypes.byref(scatter_include_styles),
+            ctypes.byref(scatter_attach_transition),
+            ctypes.byref(scatter_attach_tooltip),
+            ctypes.byref(scatter_filter_tooltip),
+            ctypes.byref(scatter_tooltip_ok),
+        )
+        == 1
+        and scatter_emit_density.value == 1
+        and scatter_clear_sel.value == 1
+        and scatter_drill_false.value == 1
+        and scatter_attach_transition.value == 1,
+        "payload_scatter_emit_plan density tier skeleton",
+    )
+    ok(
+        lib.xyg_payload_scatter_emit_plan(
+            100,
+            0,
+            -1,
+            0,
+            0,
+            50,
+            1,
+            1,
+            0,
+            1,
+            1,
+            100,
+            ctypes.byref(scatter_emit_density),
+            ctypes.byref(scatter_clear_sel),
+            ctypes.byref(scatter_drill_false),
+            ctypes.byref(scatter_set_sel),
+            ctypes.byref(scatter_tier_direct),
+            ctypes.byref(scatter_n_marks),
+            ctypes.byref(scatter_apply_palette),
+            ctypes.byref(scatter_attach_anim),
+            ctypes.byref(scatter_x_scale),
+            ctypes.byref(scatter_y_scale),
+            ctypes.byref(scatter_channel_slot),
+            ctypes.byref(scatter_include_styles),
+            ctypes.byref(scatter_attach_transition),
+            ctypes.byref(scatter_attach_tooltip),
+            ctypes.byref(scatter_filter_tooltip),
+            ctypes.byref(scatter_tooltip_ok),
+        )
+        == 1
+        and scatter_emit_density.value == 0
+        and scatter_set_sel.value == 1
+        and scatter_n_marks.value == 50
+        and scatter_channel_slot.value == 0
+        and scatter_include_styles.value == 1
+        and scatter_attach_transition.value == 1
+        and scatter_attach_tooltip.value == 1,
+        "payload_scatter_emit_plan direct tier skeleton",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

@@ -12167,6 +12167,108 @@ def payload_ribbon_emit_plan(
     }
 
 
+def payload_scatter_emit_plan(
+    *,
+    n_points: int,
+    polar: bool,
+    force_density: int,
+    force_direct: bool,
+    per_item: bool,
+    n_marks: int,
+    has_trace_animation: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    has_transition_keys: bool,
+    has_tooltip_rows: bool,
+    n_tooltip_rows: int,
+) -> dict[str, bool | int | str]:
+    """Scatter emit skeleton via ``xyg_payload_scatter_emit_plan`` (ABI 301).
+
+    Owns density-vs-direct tier routing, direct-tier channel attach,
+    transition wrap, and tooltip attach flags.
+    """
+    if force_density not in (-1, 0, 1):
+        raise ValueError("force_density must be -1, 0, or 1")
+    emit_density = ctypes.c_int32(-1)
+    clear_shipped_sel = ctypes.c_int32(-1)
+    drill_mode_false = ctypes.c_int32(-1)
+    set_shipped_sel = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    attach_animation = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attach_tooltip = ctypes.c_int32(-1)
+    filter_tooltip_by_sel = ctypes.c_int32(-1)
+    tooltip_length_ok = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_scatter_emit_plan(
+        int(n_points),
+        1 if polar else 0,
+        int(force_density),
+        1 if force_direct else 0,
+        1 if per_item else 0,
+        int(n_marks),
+        1 if has_trace_animation else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if has_transition_keys else 0,
+        1 if has_tooltip_rows else 0,
+        int(n_tooltip_rows),
+        ctypes.byref(emit_density),
+        ctypes.byref(clear_shipped_sel),
+        ctypes.byref(drill_mode_false),
+        ctypes.byref(set_shipped_sel),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(attach_animation),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attach_tooltip),
+        ctypes.byref(filter_tooltip_by_sel),
+        ctypes.byref(tooltip_length_ok),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_scatter_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if emit_density.value == 0 and not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_scatter_emit_plan {name} ship scale")
+    result: dict[str, bool | int | str] = {
+        "emit_density": int(emit_density.value) == 1,
+        "clear_shipped_sel": int(clear_shipped_sel.value) == 1,
+        "drill_mode_false": int(drill_mode_false.value) == 1,
+        "set_shipped_sel": int(set_shipped_sel.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attach_tooltip": int(attach_tooltip.value) == 1,
+        "filter_tooltip_by_sel": int(filter_tooltip_by_sel.value) == 1,
+        "tooltip_length_ok": int(tooltip_length_ok.value) == 1,
+    }
+    if emit_density.value == 0:
+        result.update(
+            {
+                "tier_direct": int(tier_direct.value) == 1,
+                "n_marks": int(n_marks_out.value),
+                "apply_palette_default": int(apply_palette_default.value) == 1,
+                "attach_animation": int(attach_animation.value) == 1,
+                "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+                "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+                "channel_slot": int(channel_slot.value),
+                "include_trace_styles": int(include_trace_styles.value) == 1,
+            }
+        )
+    return result
+
+
 def payload_segments_emit_plan(
     *,
     kind: str,

@@ -5,8 +5,8 @@
 
 use crate::lod_plan::{
     payload_errorbar_indices, payload_errorbar_role_maps, payload_even_indices,
-    payload_segment_budget, payload_transition_keys_admit, PayloadIndexSel,
-    PAYLOAD_TRANSITION_SHIP,
+    payload_segment_budget, payload_tier, payload_transition_keys_admit, PayloadIndexSel,
+    PAYLOAD_KIND_SCATTER, PAYLOAD_TIER_DENSITY, PAYLOAD_TRANSITION_SHIP,
 };
 
 pub const PAYLOAD_SEGMENTS_TIER_DIRECT: i32 = 0;
@@ -394,6 +394,136 @@ pub fn payload_segments_emit_plan(
     *out_attach_transition = 1;
     *out_attempt_gather = 1;
     *out_attempt_role_keys = i32::from(kind == "errorbar" && has_transition_keys != 0);
+    1
+}
+
+/// Scatter emit skeleton from ``_emit_scatter``.
+///
+/// Owns density-vs-direct tier routing (``payload_tier`` / ``force_density``
+/// tri-state), direct-tier palette default (always off — raw ``t.style``),
+/// axis ship scales, trace-channel attach (``PAYLOAD_SHIP_CHANNELS_ALWAYS``),
+/// transition wrap (always for density; keyed for direct), tooltip attach
+/// flags, and density-path ``shipped_sel`` / ``drill_mode`` side effects.
+/// Hosts still visible-select, ship columns, run ``_density_trace_spec``, and
+/// attach channels.
+pub fn payload_scatter_emit_plan(
+    n_points: u64,
+    polar: i32,
+    force_density: i32,
+    force_direct: i32,
+    per_item: i32,
+    n_marks: usize,
+    has_trace_animation: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    has_transition_keys: i32,
+    has_tooltip_rows: i32,
+    n_tooltip_rows: usize,
+    out_emit_density: &mut i32,
+    out_clear_shipped_sel: &mut i32,
+    out_drill_mode_false: &mut i32,
+    out_set_shipped_sel: &mut i32,
+    out_tier_direct: &mut i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_attach_animation: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_channel_slot: &mut i32,
+    out_include_trace_styles: &mut i32,
+    out_attach_transition: &mut i32,
+    out_attach_tooltip: &mut i32,
+    out_filter_tooltip_by_sel: &mut i32,
+    out_tooltip_length_ok: &mut i32,
+) -> i32 {
+    let Some(tier) = payload_tier(
+        PAYLOAD_KIND_SCATTER,
+        n_points,
+        polar != 0,
+        force_density,
+        force_direct != 0,
+        per_item != 0,
+    ) else {
+        return 0;
+    };
+    *out_emit_density = i32::from(tier == PAYLOAD_TIER_DENSITY);
+    *out_clear_shipped_sel = 0;
+    *out_drill_mode_false = 0;
+    *out_set_shipped_sel = 0;
+    *out_tier_direct = 0;
+    *out_n_marks = 0;
+    *out_apply_palette_default = 0;
+    *out_attach_animation = 0;
+    *out_x_ship_scale = 0;
+    *out_y_ship_scale = 0;
+    *out_channel_slot = 0;
+    *out_include_trace_styles = 0;
+    *out_attach_transition = 0;
+    *out_attach_tooltip = 0;
+    *out_filter_tooltip_by_sel = 0;
+    *out_tooltip_length_ok = 1;
+
+    if tier == PAYLOAD_TIER_DENSITY {
+        *out_clear_shipped_sel = 1;
+        *out_drill_mode_false = 1;
+        *out_attach_transition = 1;
+        return 1;
+    }
+
+    *out_set_shipped_sel = 1;
+    *out_tier_direct = 1;
+    if payload_base_entry_plan(
+        has_trace_animation,
+        n_marks,
+        0,
+        x_axis_type,
+        y_axis_type,
+        out_attach_animation,
+        out_n_marks,
+        out_apply_palette_default,
+        out_x_ship_scale,
+        out_y_ship_scale,
+    ) == 0
+    {
+        return 0;
+    }
+    *out_apply_palette_default = 0;
+    *out_channel_slot = PAYLOAD_SHIP_CHANNELS_ALWAYS;
+    *out_include_trace_styles = 1;
+    *out_attach_transition = i32::from(has_transition_keys != 0);
+    let mut attach_animation = 0i32;
+    let mut attempt_keys = 0i32;
+    let mut filter_keys_by_sel = 0i32;
+    let mut ship_keys = 0i32;
+    let mut animation_fallback = 0i32;
+    const MAX_ANIMATION_MATCH_ROWS: usize = 200_000;
+    if payload_transition_entry_attach(
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        n_marks,
+        0,
+        0,
+        0,
+        MAX_ANIMATION_MATCH_ROWS,
+        has_tooltip_rows,
+        n_tooltip_rows,
+        n_points as usize,
+        &mut attach_animation,
+        &mut attempt_keys,
+        &mut filter_keys_by_sel,
+        &mut ship_keys,
+        &mut animation_fallback,
+        out_attach_tooltip,
+        out_filter_tooltip_by_sel,
+        out_tooltip_length_ok,
+    ) == 0
+    {
+        return 0;
+    }
     1
 }
 
@@ -1807,5 +1937,186 @@ mod tests {
         assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
         assert_eq!(attempt_gather, 1);
         assert_eq!(attempt_role_keys, 0);
+    }
+
+    #[test]
+    fn payload_scatter_emit_plan_density_tier_routing() {
+        use crate::lod_plan::SCATTER_DENSITY_THRESHOLD;
+
+        let mut emit_density = -1;
+        let mut clear_sel = -1;
+        let mut drill_false = -1;
+        let mut set_sel = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0usize;
+        let mut apply_palette = -1;
+        let mut attach_anim = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut channel_slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attach_tooltip = -1;
+        let mut filter_tooltip = -1;
+        let mut tooltip_ok = -1;
+        assert_eq!(
+            payload_scatter_emit_plan(
+                SCATTER_DENSITY_THRESHOLD + 1,
+                0,
+                -1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                &mut emit_density,
+                &mut clear_sel,
+                &mut drill_false,
+                &mut set_sel,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut attach_anim,
+                &mut x_scale,
+                &mut y_scale,
+                &mut channel_slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(emit_density, 1);
+        assert_eq!(clear_sel, 1);
+        assert_eq!(drill_false, 1);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(set_sel, 0);
+    }
+
+    #[test]
+    fn payload_scatter_emit_plan_direct_channels_and_tooltip() {
+        let mut emit_density = -1;
+        let mut clear_sel = -1;
+        let mut drill_false = -1;
+        let mut set_sel = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0usize;
+        let mut apply_palette = -1;
+        let mut attach_anim = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut channel_slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attach_tooltip = -1;
+        let mut filter_tooltip = -1;
+        let mut tooltip_ok = -1;
+        assert_eq!(
+            payload_scatter_emit_plan(
+                100,
+                0,
+                -1,
+                0,
+                0,
+                50,
+                1,
+                1,
+                0,
+                1,
+                1,
+                100,
+                &mut emit_density,
+                &mut clear_sel,
+                &mut drill_false,
+                &mut set_sel,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut attach_anim,
+                &mut x_scale,
+                &mut y_scale,
+                &mut channel_slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(emit_density, 0);
+        assert_eq!(set_sel, 1);
+        assert_eq!(tier_direct, 1);
+        assert_eq!(n_marks, 50);
+        assert_eq!(apply_palette, 0);
+        assert_eq!(attach_anim, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(channel_slot, PAYLOAD_SHIP_CHANNELS_ALWAYS);
+        assert_eq!(include_styles, 1);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(attach_tooltip, 1);
+        assert_eq!(filter_tooltip, 0);
+        assert_eq!(tooltip_ok, 1);
+    }
+
+    #[test]
+    fn payload_scatter_emit_plan_force_density_false_overrides_threshold() {
+        let mut emit_density = -1;
+        let mut clear_sel = -1;
+        let mut drill_false = -1;
+        let mut set_sel = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0usize;
+        let mut apply_palette = -1;
+        let mut attach_anim = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut channel_slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attach_tooltip = -1;
+        let mut filter_tooltip = -1;
+        let mut tooltip_ok = -1;
+        assert_eq!(
+            payload_scatter_emit_plan(
+                1_000_000,
+                0,
+                0,
+                0,
+                0,
+                100,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                &mut emit_density,
+                &mut clear_sel,
+                &mut drill_false,
+                &mut set_sel,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut attach_anim,
+                &mut x_scale,
+                &mut y_scale,
+                &mut channel_slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attach_tooltip,
+                &mut filter_tooltip,
+                &mut tooltip_ok,
+            ),
+            1
+        );
+        assert_eq!(emit_density, 0);
+        assert_eq!(set_sel, 1);
     }
 }

@@ -48,6 +48,7 @@ import {
   payloadHeatmapEmitPlan,
   payloadMeshEmitPlan,
   payloadRibbonEmitPlan,
+  payloadScatterEmitPlan,
   payloadSegmentsEmitGather,
   payloadSegmentsEmitPlan,
   payloadTraceChannelsShipAttach,
@@ -60,7 +61,6 @@ import {
   normalizeF32,
   payloadTier,
   pinsOffsetToZero,
-  shouldUseDensity,
   validIndicesF64,
   f64Ptr,
   u8Ptr,
@@ -160,9 +160,12 @@ const AUTORANGE_ROLES = [
   ["base", 6],
 ];
 
-/** Payload density override. Python `payload_force_density` reads `force_density` only. */
+/** Payload density override tri-state. Python `payload_force_density` reads `force_density` only. */
 export function scatterPayloadForceDensity(trace) {
-  return (trace ?? {}).force_density;
+  const v = (trace ?? {}).force_density;
+  if (v === true) return 1;
+  if (v === false) return 0;
+  return -1;
 }
 
 /** Payload bin2d override. Python `_density_trace_spec` does not read `style.force_bin2d`. */
@@ -1201,25 +1204,37 @@ export class Figure {
   }
 
   _emitScatter(t, pw, xr, yr) {
-    const forceDensity = Boolean(scatterPayloadForceDensity(t));
+    let forceDensity = scatterPayloadForceDensity(t);
     const forceDirect = Boolean(scatterPayloadForceDirect(t));
     const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
-    // Node still passes forceDirect into shouldUseDensity. Python
+    // Node still passes forceDirect into payload_scatter_emit_plan. Python
     // `_emit_scatter` never passes force_direct (ABI defaults false).
     // Dropping it would ship density for Node `forceDirect: true` on
     // large scatters. Recorded emit-force-direct stay-host.
-    // Node also ORs forcePyramid into forceDensity. Python Trace has no
+    // Node also ORs forcePyramid into auto force_density. Python Trace has no
     // force_pyramid and `_emit_scatter` never densifies from it. Dropping
     // the OR would ship direct for Node `forcePyramid: true` below the
     // density threshold. Recorded emit-force-pyramid stay-host.
-    if (
-      shouldUseDensity(t.x.length, {
-        forceDensity: forceDensity || forcePyramid,
-        forceDirect,
-        coords: this.coords,
-        perItemChannels: scatterPerItemChannels(t),
-      })
-    ) {
+    if (forceDensity === -1 && forcePyramid) {
+      forceDensity = 1;
+    }
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const prePlan = payloadScatterEmitPlan({
+      nPoints: t.x.length,
+      polar: this.coords === "polar",
+      forceDensity,
+      forceDirect,
+      perItem: scatterPerItemChannels(t),
+      nMarks: t.x.length,
+      hasTraceAnimation: t.animation != null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      hasTransitionKeys: t.transition_keys != null,
+      hasTooltipRows: t.tooltip_rows != null,
+      nTooltipRows: t.tooltip_rows?.length ?? 0,
+    });
+    if (prePlan.emitDensity) {
       return this._emitScatterDensity(t, pw, xr, yr);
     }
     const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
@@ -1233,14 +1248,26 @@ export class Figure {
       xv = gatherF64(xv, sel);
       yv = gatherF64(yv, sel);
     }
-    const xAxis = t.x_axis ?? "x";
-    const yAxis = t.y_axis ?? "y";
+    const plan = payloadScatterEmitPlan({
+      nPoints: t.x.length,
+      polar: this.coords === "polar",
+      forceDensity,
+      forceDirect,
+      perItem: scatterPerItemChannels(t),
+      nMarks: xv.length,
+      hasTraceAnimation: t.animation != null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      hasTransitionKeys: t.transition_keys != null,
+      hasTooltipRows: t.tooltip_rows != null,
+      nTooltipRows: t.tooltip_rows?.length ?? 0,
+    });
     const basePlan = payloadBaseEntryPlan({
       hasTraceAnimation: t.animation != null,
       nXv: xv.length,
       styleColorIsNone: false,
-      xAxisScale: payloadAxisScale(this, xAxis),
-      yAxisScale: payloadAxisScale(this, yAxis),
+      xAxisScale: plan.xShipScale,
+      yAxisScale: plan.yShipScale,
     });
     const entry = {
       id: t.id,
@@ -1294,8 +1321,11 @@ export class Figure {
     // Node payload scatter omits style_channels. Python `_emit_scatter` ships
     // them as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-scatter-channels stay-host.
-    if (t.transition_keys != null) {
+    if (plan.attachTransition && t.transition_keys != null) {
       attachTransitionEntry(entry, t, pw, sel);
+    }
+    if (plan.setShippedSel) {
+      t.shipped_sel = sel;
     }
     return entry;
   }
