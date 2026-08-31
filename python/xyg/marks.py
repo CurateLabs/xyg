@@ -2157,7 +2157,10 @@ def scatter(
         dropped_channels = tuple(
             name
             for name in trace.per_item_channel_names()
-            if not (color_aggregates and name == "color")
+            if kernels.density_dropped_channel_wire_admit(
+                channel=name,
+                mean_color_aggregates=color_aggregates,
+            )
         )
         mean_color_note = (
             " The color channel is kept as the surface's per-cell mean point color"

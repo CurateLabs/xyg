@@ -199,7 +199,7 @@ test("tryResolvePlatformPackageLibrary returns staged binary path", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
- 9e06c31f (ABI 273: kernelize density channels_dropped compat boolean)
+ 5d669e71 (ABI 274: kernelize density dropped-channel list filter)
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),

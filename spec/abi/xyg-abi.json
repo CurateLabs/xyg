@@ -1,9 +1,9 @@
 {
-  "abi_version": 289,
+  "abi_version": 290,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "43f71d5b5af4988522471a5c4877c2a896124bd95254b199bfa2691ebca54b8c",
+  "signature_sha256": "afe3e2b515a1fb939bcd10b641999003af199edade8fb16180ea5fe20626af01",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -7767,6 +7767,72 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_constant_color_wire_admit(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t has_constant)"
+    },
+    {
+      "name": "xyg_density_dropped_channel_wire_admit",
+      "node_name": "xyDensityDroppedChannelWireAdmit",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "channel",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "channel_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "mean_color_aggregates",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_dropped_channel_wire_admit(const uint8_t * channel, size_t channel_len, int32_t mean_color_aggregates)"
     },
     {
       "name": "xyg_density_emit_meta",
