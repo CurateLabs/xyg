@@ -23,6 +23,7 @@ import numpy as np
 
 from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
+from ._paint import trace_paint_rgba as _trace_paint_rgba
 from ._svg import (
     _AXIS,
     _AXIS_GRID_DASHES,
@@ -69,7 +70,6 @@ from ._svg import (
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
-    _trace_paint_rgba,
     affine_fast_path,
     annotation_label_placement,
     apply_export_background,

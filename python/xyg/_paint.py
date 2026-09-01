@@ -8,7 +8,8 @@ from typing import Any
 
 import numpy as np
 
-from . import kernels
+from . import _native, kernels
+from .config import DEFAULT_PALETTE
 
 ColumnReader = Callable[[int], np.ndarray]
 
@@ -186,3 +187,57 @@ def effective_rgba(
     opacity = style_values(trace, "opacity", n, read_column, default_opacity)
     component_opacity = float(style.get(f"{component}_opacity", 1.0))
     return kernels.paint_effective_rgba(rgba, artist, opacity, component_opacity)
+
+
+def _static_css(c: Any, fallback: str) -> str:
+    """Resolve static colors after chart-level tokens have been expanded."""
+    s = str(c or "").strip()
+    if not s or s.lower() == "currentcolor" or s.lower().startswith("var("):
+        return fallback
+    return s
+
+
+def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
+    if not isinstance(colormap, str):
+        return [(int(r), int(g), int(b)) for r, g, b in colormap]
+    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
+
+
+def trace_paint_rgba(
+    trace: dict[str, Any],
+    key: str,
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+) -> np.ndarray:
+    """Resolve one payload paint channel to intrinsic float RGBA."""
+    channel = trace.get(key) or {}
+    direct = direct_rgba(channel, n, read)
+    if direct is not None:
+        return direct
+    rgba = np.empty((n, 4), dtype=np.float64)
+    rgba[:, 3] = 1.0
+    mode = channel.get("mode")
+    if mode == "continuous":
+        values = np.asarray(read(channel["buf"]), dtype=np.float64).reshape(-1)[:n]
+        stops = np.asarray(_colormap_stops(channel.get("colormap", "viridis")), dtype=np.uint8)
+        rgba[:, :3] = kernels.colormap_lut(values, stops) / 255.0
+    elif mode == "categorical":
+        from . import channels as _channels
+
+        codes = np.asarray(read(channel["buf"]), dtype=np.int64)[:n]
+        palette = channel.get("palette") or DEFAULT_PALETTE
+        # Per-index resolution (channels.palette_rows_rgba8), not css_color_rgba
+        # per entry: browser-only entries must degrade to DISTINCT built-in
+        # colors, or every var() category exports as the same fallback blue.
+        table = _channels.palette_rows_rgba8(palette, len(palette)).astype(np.float64) / 255.0
+        rgba[:] = table[codes % len(table)]
+    else:
+        rgba[:] = (
+            np.asarray(
+                _native.css_color_rgba(_static_css(channel.get("color"), fallback)),
+                dtype=np.float64,
+            )
+            / 255.0
+        )
+    return rgba

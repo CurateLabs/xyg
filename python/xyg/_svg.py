@@ -30,6 +30,7 @@ import numpy as np
 
 from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
+from ._paint import trace_paint_rgba as _trace_paint_rgba
 from .config import DEFAULT_PALETTE
 
 
@@ -4943,40 +4944,6 @@ def _symbol_names(
     return [
         _SYMBOL_NAMES[int(code)] if int(code) < len(_SYMBOL_NAMES) else fallback for code in codes
     ]
-
-
-def _trace_paint_rgba(
-    trace: dict[str, Any],
-    key: str,
-    n: int,
-    fallback: str,
-    read: _paint.ColumnReader,
-) -> np.ndarray:
-    """Resolve one payload paint channel to intrinsic float RGBA."""
-    channel = trace.get(key) or {}
-    direct = _paint.direct_rgba(channel, n, read)
-    if direct is not None:
-        return direct
-    rgba = np.empty((n, 4), dtype=np.float64)
-    rgba[:, 3] = 1.0
-    mode = channel.get("mode")
-    if mode == "continuous":
-        rgba[:, :3] = _lut(channel.get("colormap", "viridis"), read(channel["buf"])[:n]) / 255.0
-    elif mode == "categorical":
-        codes = np.asarray(read(channel["buf"]), dtype=np.int64)[:n]
-        palette = channel.get("palette") or DEFAULT_PALETTE
-        # Per-index resolution (channels.palette_rows_rgba8), not _paint_rgba8
-        # per entry: browser-only entries must degrade to DISTINCT built-in
-        # colors, or every var() category exports as the same fallback blue.
-        from . import channels as _channels
-
-        table = _channels.palette_rows_rgba8(palette, len(palette)).astype(np.float64) / 255.0
-        rgba[:] = table[codes % len(table)]
-    else:
-        rgba[:] = (
-            np.asarray(_paint_rgba8(_css(channel.get("color"), fallback)), dtype=np.float64) / 255.0
-        )
-    return rgba
 
 
 # The hexagon ring around a hexbin cell center, as fractions of the cell
