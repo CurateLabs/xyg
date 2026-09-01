@@ -1774,6 +1774,14 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_scene_observations.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Trace/figure observation helpers for Scene marshal paths; delegates classify/admit to Rust."
+    },
+    {
       "path": "python/xyg/_scene_v3.py",
       "current_owner": "Python host with canonical-policy debt",
       "policy": "python-scene-migration",

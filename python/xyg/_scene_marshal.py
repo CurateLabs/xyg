@@ -63,7 +63,7 @@ def pack_chrome_facts(
     colorbar_ok: bool,
 ) -> bytes:
     """Marshal figure chrome observations and bulk-pack XYCF via Rust (ABI 321)."""
-    from xyg._scene_v3 import _SCENE_AXIS_STYLE_KEYS, UnsupportedSceneV3, _scene_side_mask
+    from xyg._scene_observations import _SCENE_AXIS_STYLE_KEYS, UnsupportedSceneV3, _scene_side_mask
 
     xa = figure.axis_options["x"]
     ya = figure.axis_options["y"]
@@ -262,13 +262,14 @@ def _optional_str(value: Any) -> str | None:
 
 
 def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
-    from xyg._scene_v3 import (
+    from xyg._scene_observations import (
         _admitted_fill_gradient,
         _admitted_fill_gradient_from_fill,
         _classify_ribbon_color2,
         _density_aggregates_color,
         _hexbin_packs_paint_plane,
         _mesh_packs_paint_plane,
+        _parse_scene_dash,
         _ribbon_packs_end_paints,
         _scatter_packs_paint_plane,
     )
@@ -301,8 +302,6 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
     dash_text: str | None = None
     dash_is_array = False
     if dash_present:
-        from xyg._scene_v3 import _parse_scene_dash
-
         parsed = _parse_scene_dash(dash)
         if parsed is False:
             dash_text = ""
@@ -429,7 +428,7 @@ def _marshal_xyta_style_channel(channel: Any) -> dict[str, Any]:
 
 def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str, Any]:
     """Marshal XYTA trace observations for ABI 323 materialize."""
-    from xyg._scene_v3 import (
+    from xyg._scene_observations import (
         _mesh_count,
         _mesh_packs_paint_plane,
         _ribbon_color2_class_code,
@@ -574,7 +573,7 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
 
 def marshal_xytc_trace_obs(trace: Any, *, show_legend: bool) -> dict[str, Any]:
     """Marshal XYTC trace observations for ABI 325 materialize."""
-    from xyg._scene_v3 import (
+    from xyg._scene_observations import (
         _channel_constant_css,
         _ribbon_end_rgba_pair,
         _trace_source_color_css,
@@ -708,7 +707,7 @@ def pack_figure_support(
     colorbar_unsupported: bool,
 ) -> bytes:
     """Marshal figure support observations and materialize XYFS via Rust (ABI 322)."""
-    from xyg._scene_v3 import (
+    from xyg._scene_observations import (
         _annotation_has_custom_typography,
         _annotation_has_markup,
         _significant_scene_axis_keys,
