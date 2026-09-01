@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from . import _native
-from ._payload_helpers import binning_coords, transition_entry
+from ._payload_helpers import binning_coords, transition_entry, visible_sel
 from ._trace import Trace
 from .columns import Column
 from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS
@@ -517,14 +517,26 @@ def emit_trace_materialized(
             entry["keys"]["hi"] = pw.ship_u32(hi)
     elif summary.attach_transition and summary.animation_fallback:
         entry["animation_fallback"] = int(summary.animation_fallback)
+    sel: np.ndarray | None = None
+    if summary.set_shipped_sel or summary.filter_tooltip_by_sel:
+        base_col = getattr(t, "base", None)
+        base_arr = base_col.values if isinstance(base_col, Column) else None
+        sel = visible_sel(
+            figure,
+            t,
+            t.x.values,
+            t.y.values,
+            base=base_arr,
+            prefiltered=int(summary.tier) != 0,
+            base_column=base_col if isinstance(base_col, Column) else None,
+        )
     if summary.attach_tooltip:
-        sel = t.shipped_sel
         entry["tooltip_rows"] = [
             dict(t.tooltip_rows[i])
             for i in (
                 range(len(t.tooltip_rows))
                 if not summary.filter_tooltip_by_sel
-                else (int(i) for i in sel or [])
+                else (int(i) for i in (sel if sel is not None else []))
             )
         ]
     elif t.tooltip_rows is not None and not summary.tooltip_length_ok:
@@ -571,5 +583,5 @@ def emit_trace_materialized(
             entry["color"] = {"mode": "continuous", "colormap": cmap, "domain": list(domain)}
         return entry
     if summary.set_shipped_sel:
-        t.shipped_sel = None
+        t.shipped_sel = sel
     return entry

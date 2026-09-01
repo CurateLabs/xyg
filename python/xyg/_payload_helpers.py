@@ -120,6 +120,34 @@ def log_visible_mask(
     )
 
 
+def visible_sel(
+    figure: Any,
+    t: Trace,
+    xv: np.ndarray,
+    yv: np.ndarray,
+    *,
+    base: Optional[np.ndarray] = None,
+    prefiltered: bool = False,
+    base_column: Optional[Column] = None,
+) -> Optional[np.ndarray]:
+    """Keep-all (``None``) vs original-row keep indices (ABI 205)."""
+    keep_all, idx = kernels.payload_visible_indices(
+        xv,
+        yv,
+        x_log=figure._axis_scale(t.x_axis) == "log",
+        y_log=figure._axis_scale(t.y_axis) == "log",
+        base=base,
+        prefiltered=prefiltered,
+        x_has_nulls=bool(t.x.zone.null_count),
+        y_has_nulls=bool(t.y.zone.null_count),
+        has_base=base is not None or base_column is not None,
+        base_has_nulls=(bool(base_column.zone.null_count) if base_column is not None else False),
+    )
+    if keep_all:
+        return None
+    return idx
+
+
 def binning_coords(
     figure: Any,
     axis_id: str,
