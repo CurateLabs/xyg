@@ -321,19 +321,34 @@ def _is_missing_category(value: Any) -> bool:
         return False
 
 
+def _category_label_kind_and_bytes(value: Any) -> tuple[int, bytes]:
+    if _is_missing_category(value):
+        return (0, b"")
+    if isinstance(value, bytes):
+        return (2, value)
+    if isinstance(value, np.bytes_):
+        return (2, bytes(value))
+    return (1, str(value).encode("utf-8"))
+
+
 def category_label(value: Any) -> str:
     """Canonical display label for category-like data.
 
     Shared by categorical color channels and categorical axes so legends,
     ticks, and composed marks agree on how messy labels display.
     """
-    if _is_missing_category(value):
-        return "(missing)"
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    if isinstance(value, np.bytes_):
-        return bytes(value).decode("utf-8", errors="replace")
-    return str(value)
+    kind, payload = _category_label_kind_and_bytes(value)
+    return kernels.category_labels([kind], [payload])[0]
+
+
+def _category_labels(values: Any) -> list[str]:
+    kinds: list[int] = []
+    payloads: list[bytes] = []
+    for value in values:
+        kind, payload = _category_label_kind_and_bytes(value)
+        kinds.append(kind)
+        payloads.append(payload)
+    return kernels.category_labels(kinds, payloads)
 
 
 def _object_column_is_stringlike(arr: np.ndarray) -> bool:
@@ -396,7 +411,7 @@ def _factorize_categories(
     label-policy path.
     """
     if arr.dtype == object and _object_column_is_stringlike(arr):
-        arr = np.asarray([category_label(value) for value in arr], dtype=np.str_)
+        arr = np.asarray(_category_labels(arr), dtype=np.str_)
     if arr.dtype.kind in ("U", "S", "b", "u", "i") and _use_native_fixed_factorizer(arr):
         compact = (
             kernels.factorize_unicode1_u8_counts(arr, MAX_CATEGORIES)
@@ -405,7 +420,7 @@ def _factorize_categories(
         )
         if compact is not None:
             raw_codes, unique_indices, raw_counts = compact
-            unique_labels = [category_label(value) for value in arr[unique_indices]]
+            unique_labels = _category_labels(arr[unique_indices])
             categories = sorted(set(unique_labels))
             index = {label: i for i, label in enumerate(categories)}
             remap = np.fromiter(
@@ -422,7 +437,7 @@ def _factorize_categories(
             return categories, raw_codes, counts
 
         raw_codes, unique_indices = kernels.factorize_fixed(arr)
-        unique_labels = [category_label(value) for value in arr[unique_indices]]
+        unique_labels = _category_labels(arr[unique_indices])
         categories = sorted(set(unique_labels))
         index = {label: i for i, label in enumerate(categories)}
         dtype = _category_code_dtype(len(categories))
@@ -433,7 +448,7 @@ def _factorize_categories(
         )
         return categories, remap[raw_codes], None
 
-    labels = [category_label(v) for v in arr.astype(object)]
+    labels = _category_labels(arr.astype(object))
     return (*kernels.factorize_display_labels(labels), None)
 
 

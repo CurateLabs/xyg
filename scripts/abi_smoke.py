@@ -308,6 +308,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint32,
         ctypes.c_uint32,
     ]
+    lib.xyg_category_labels_packed.restype = ctypes.c_size_t
+    lib.xyg_category_labels_packed.argtypes = [
+        U8P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -3097,6 +3108,24 @@ def main() -> None:
         lib.xyg_factorize_use_native_probe(512, 4096, 0) == -1,
         "factorize_use_native_probe invalid width",
     )
+    category_kinds = array("B", [1, 0, 1, 0, 1])
+    category_in_lens = array("I", [1, 0, 1, 0, 1])
+    category_in_texts = array("B", b"ba1")
+    category_out_lens = array("I", [0, 0, 0, 0, 0])
+    category_out_texts = array("B", [0] * 32)
+    category_written = lib.xyg_category_labels_packed(
+        _ptr(category_kinds, ctypes.c_uint8),
+        _ptr(category_in_lens, ctypes.c_uint32),
+        _ptr(category_in_texts, ctypes.c_uint8),
+        len(category_in_texts),
+        5,
+        _ptr(category_out_lens, ctypes.c_uint32),
+        _ptr(category_out_texts, ctypes.c_uint8),
+        len(category_out_texts),
+    )
+    ok(category_written == 5, "category_labels_packed row count")
+    category_blob = bytes(category_out_texts[: sum(category_out_lens)])
+    ok(category_blob == b"b(missing)a(missing)1", "category_labels_packed labels")
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])
     transition_first = ctypes.c_size_t(size_max)

@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 331;
+pub const ABI_VERSION: u32 = 332;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4433,6 +4433,59 @@ pub unsafe extern "C" fn xyg_factorize_use_native_probe(
         } else {
             0
         }
+    })
+}
+
+/// Canonical display labels for categorical data from packed host encodings.
+///
+/// Each row uses `kinds[i]`: `0` = missing → `"(missing)"`, `1` = valid UTF-8
+/// text, `2` = raw bytes decoded as UTF-8 with replacement. Returns the number
+/// of labels written, or `usize::MAX` when inputs or output buffers are invalid.
+///
+/// # Safety
+/// Pointers must address the declared lengths/capacities; empty slices may use
+/// null pointers.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_category_labels_packed(
+    kinds: *const u8,
+    in_lens: *const u32,
+    in_texts: *const u8,
+    in_texts_len: usize,
+    n: usize,
+    out_lens: *mut u32,
+    out_texts: *mut u8,
+    out_texts_cap: usize,
+) -> usize {
+    if n == 0 {
+        return 0;
+    }
+    if (kinds.is_null() || in_lens.is_null() || out_lens.is_null())
+        || ((in_texts_len > 0 && in_texts.is_null()) || (out_texts_cap > 0 && out_texts.is_null()))
+    {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let kinds_slice = std::slice::from_raw_parts(kinds, n);
+        let in_lens_slice = std::slice::from_raw_parts(in_lens, n);
+        let in_texts_slice = if in_texts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(in_texts, in_texts_len)
+        };
+        let out_lens_slice = std::slice::from_raw_parts_mut(out_lens, n);
+        let out_texts_slice = if out_texts_cap == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out_texts, out_texts_cap)
+        };
+        kernels::category_labels_packed(
+            kinds_slice,
+            in_lens_slice,
+            in_texts_slice,
+            out_lens_slice,
+            out_texts_slice,
+        )
+        .unwrap_or(usize::MAX)
     })
 }
 

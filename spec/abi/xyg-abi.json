@@ -1,9 +1,9 @@
 {
-  "abi_version": 331,
+  "abi_version": 332,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "4ebfa90129bc09b0bbee8ac0e7dd34fd625e43c26fc20411397e3ba938427fd2",
+  "signature_sha256": "56f8e3864913d9345832b8ce405ed921e9862e2663d0e0c875878e3442378aa8",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -3728,6 +3728,151 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers)"
+    },
+    {
+      "name": "xyg_category_labels_packed",
+      "node_name": "xyCategoryLabelsPacked",
+      "nargs": 8,
+      "arguments": [
+        {
+          "name": "kinds",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "in_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "in_texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "in_texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_lens",
+          "type": {
+            "rust": "*mut u32",
+            "c": "uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_texts",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_texts_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)"
     },
     {
       "name": "xyg_chunked_columns_cancel_before",

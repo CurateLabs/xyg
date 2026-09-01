@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 331;
-export const SIGNATURE_SHA256 = "4ebfa90129bc09b0bbee8ac0e7dd34fd625e43c26fc20411397e3ba938427fd2";
+export const ABI_VERSION = 332;
+export const SIGNATURE_SHA256 = "56f8e3864913d9345832b8ce405ed921e9862e2663d0e0c875878e3442378aa8";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -27,6 +27,7 @@ export let xyBin2dStratifiedSampleRangeU8Counted;
 export let xyBinnedEcdf;
 export let xyBoxGeometry;
 export let xyBoxStats;
+export let xyCategoryLabelsPacked;
 export let xyChunkedColumnsCancelBefore;
 export let xyChunkedColumnsFree;
 export let xyChunkedColumnsOpen;
@@ -467,6 +468,7 @@ export function bindGeneratedAbi(lib) {
   xyBinnedEcdf = lib.func("size_t xyg_binned_ecdf(const double * values, size_t len, size_t n_bins, double lo, double hi, int32_t use_range, double * out_x, double * out_cumulative, size_t capacity)");
   xyBoxGeometry = lib.func("size_t xyg_box_geometry(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, double width, uint32_t orientation, int32_t show_outliers, size_t * out_n_outliers, uint32_t * active_groups, double * group_records, size_t * outlier_offsets, double * outlier_records, size_t group_cap, size_t outlier_cap)");
   xyBoxStats = lib.func("int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers)");
+  xyCategoryLabelsPacked = lib.func("size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)");
   xyChunkedColumnsCancelBefore = lib.func("int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)");
   xyChunkedColumnsFree = lib.func("int32_t xyg_chunked_columns_free(uint64_t store)");
   xyChunkedColumnsOpen = lib.func("uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len)");

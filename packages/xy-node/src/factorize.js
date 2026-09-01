@@ -8,6 +8,7 @@
 import { DEFAULT_PALETTE } from "./encode.js";
 import {
   pointer,
+  xyCategoryLabelsPacked,
   xyFactorizeDisplayLabels,
   xyFactorizeUseNativeProbe,
   xyFactorizeFixed,
@@ -40,18 +41,74 @@ function isMissingCategory(value) {
   return value == null || (typeof value === "number" && Number.isNaN(value));
 }
 
-/** Canonical display label — lockstep with Python `category_label`. */
-export function categoryLabel(value) {
-  if (isMissingCategory(value)) return "(missing)";
-  if (typeof value === "string") return value;
+function categoryLabelKindAndBytes(value) {
+  if (isMissingCategory(value)) return { kind: 0, payload: new Uint8Array() };
+  if (typeof value === "string") {
+    return { kind: 1, payload: new TextEncoder().encode(value) };
+  }
   if (value instanceof Uint8Array) {
-    return new TextDecoder("utf-8", { fatal: false }).decode(value);
+    return { kind: 2, payload: value };
   }
   if (ArrayBuffer.isView(value)) {
-    const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    return {
+      kind: 2,
+      payload: new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
+    };
   }
-  return String(value);
+  return { kind: 1, payload: new TextEncoder().encode(String(value)) };
+}
+
+function categoryLabelsFromEncodings(encodings) {
+  const n = encodings.length;
+  if (n === 0) return [];
+  const kinds = new Uint8Array(n);
+  const inLens = new Uint32Array(n);
+  let textLen = 0;
+  for (let i = 0; i < n; i += 1) {
+    kinds[i] = encodings[i].kind;
+    inLens[i] = encodings[i].payload.length;
+    textLen += encodings[i].payload.length;
+  }
+  const inTexts = new Uint8Array(textLen);
+  let offset = 0;
+  for (const { payload } of encodings) {
+    inTexts.set(payload, offset);
+    offset += payload.length;
+  }
+  const outLens = new Uint32Array(n);
+  const outTextsCap = Math.max(256, textLen * 2 + n * 16);
+  const outTexts = new Uint8Array(outTextsCap);
+  const written = Number(
+    xyCategoryLabelsPacked(
+      pointer(kinds, "uint8_t *"),
+      pointer(inLens, "uint32_t *"),
+      pointer(inTexts, "uint8_t *"),
+      BigInt(inTexts.length),
+      BigInt(n),
+      pointer(outLens, "uint32_t *"),
+      pointer(outTexts, "uint8_t *"),
+      BigInt(outTextsCap),
+    ),
+  );
+  if (written === Number(FACTORIZE_CAPACITY_EXCEEDED)) {
+    throw new Error("native category_labels rejected the packed encodings");
+  }
+  if (written !== n) {
+    throw new Error("native category_labels returned an unexpected label count");
+  }
+  const labels = [];
+  offset = 0;
+  for (let i = 0; i < n; i += 1) {
+    const end = offset + outLens[i];
+    labels.push(new TextDecoder("utf-8").decode(outTexts.subarray(offset, end)));
+    offset = end;
+  }
+  return labels;
+}
+
+/** Canonical display label — lockstep with Python `category_label`. */
+export function categoryLabel(value) {
+  return categoryLabelsFromEncodings([categoryLabelKindAndBytes(value)])[0];
 }
 
 function recordCount(data, width) {

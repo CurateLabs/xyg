@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 331
-SIGNATURE_SHA256 = "4ebfa90129bc09b0bbee8ac0e7dd34fd625e43c26fc20411397e3ba938427fd2"
+ABI_VERSION = 332
+SIGNATURE_SHA256 = "56f8e3864913d9345832b8ce405ed921e9862e2663d0e0c875878e3442378aa8"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -98,6 +98,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_box_stats
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)
+    function = lib.xyg_category_labels_packed
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)
     function = lib.xyg_chunked_columns_cancel_before
     function.restype = ctypes.c_int32

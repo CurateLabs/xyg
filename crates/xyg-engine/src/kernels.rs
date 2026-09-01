@@ -700,6 +700,65 @@ pub const FACTORIZE_NEAR_UNIQUE_RATIO: f64 = 0.95;
 /// Narrow record width matching `channels._FACTORIZE_NARROW_ITEMSIZE`.
 pub const FACTORIZE_NARROW_ITEMSIZE: usize = 32;
 
+/// Missing-category sentinel for [`category_label`].
+pub const CATEGORY_LABEL_MISSING: u8 = 0;
+/// Valid UTF-8 display text for [`category_label`].
+pub const CATEGORY_LABEL_UTF8: u8 = 1;
+/// Raw bytes decoded as UTF-8 with replacement for [`category_label`].
+pub const CATEGORY_LABEL_BYTES: u8 = 2;
+
+/// Canonical display label for one categorical value.
+///
+/// Matches Python `channels.category_label` / Node `categoryLabel`.
+pub fn category_label(kind: u8, payload: &[u8]) -> Option<String> {
+    match kind {
+        CATEGORY_LABEL_MISSING => Some("(missing)".to_owned()),
+        CATEGORY_LABEL_UTF8 => std::str::from_utf8(payload).ok().map(str::to_owned),
+        CATEGORY_LABEL_BYTES => Some(String::from_utf8_lossy(payload).into_owned()),
+        _ => None,
+    }
+}
+
+/// Batch canonical display labels from packed host encodings.
+pub fn category_labels_packed(
+    kinds: &[u8],
+    in_lens: &[u32],
+    in_texts: &[u8],
+    out_lens: &mut [u32],
+    out_texts: &mut [u8],
+) -> Option<usize> {
+    if kinds.len() != in_lens.len() || out_lens.len() < kinds.len() {
+        return None;
+    }
+    let mut in_offset = 0usize;
+    let mut labels = Vec::with_capacity(kinds.len());
+    for (&kind, &len) in kinds.iter().zip(in_lens.iter()) {
+        let len = len as usize;
+        let end = in_offset.checked_add(len)?;
+        if end > in_texts.len() {
+            return None;
+        }
+        let payload = &in_texts[in_offset..end];
+        in_offset = end;
+        labels.push(category_label(kind, payload)?);
+    }
+    if !kinds.is_empty() && in_offset != in_texts.len() {
+        return None;
+    }
+    let total: usize = labels.iter().map(|label| label.len()).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut out_offset = 0usize;
+    for (label, slot) in labels.iter().zip(out_lens.iter_mut()) {
+        let bytes = label.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[out_offset..out_offset + bytes.len()].copy_from_slice(bytes);
+        out_offset += bytes.len();
+    }
+    Some(labels.len())
+}
+
 /// Whether the native fixed-record factorizer should run on a probe sample.
 ///
 /// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
@@ -8641,6 +8700,62 @@ mod tests {
         let texts = b"b(missing)a(missing)1";
         let packed = factorize_display_labels_packed(&lens, texts).expect("packed");
         assert_eq!(packed.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+    }
+
+    #[test]
+    fn category_label_matches_host_policy() {
+        assert_eq!(
+            category_label(CATEGORY_LABEL_MISSING, b"").as_deref(),
+            Some("(missing)")
+        );
+        assert_eq!(
+            category_label(CATEGORY_LABEL_UTF8, b"\xce\xb2").as_deref(),
+            Some("\u{03b2}")
+        );
+        assert_eq!(
+            category_label(CATEGORY_LABEL_BYTES, b"\xff\xfe").as_deref(),
+            Some("\u{fffd}\u{fffd}")
+        );
+        assert!(category_label(CATEGORY_LABEL_UTF8, b"\xff").is_none());
+        assert!(category_label(99, b"x").is_none());
+
+        let kinds = [
+            CATEGORY_LABEL_UTF8,
+            CATEGORY_LABEL_MISSING,
+            CATEGORY_LABEL_UTF8,
+            CATEGORY_LABEL_MISSING,
+            CATEGORY_LABEL_UTF8,
+        ];
+        let in_lens = [1u32, 0, 1, 0, 1];
+        let in_texts = b"ba1";
+        let mut out_lens = [0u32; 5];
+        let mut out_texts = vec![0u8; 32];
+        let written = category_labels_packed(
+            &kinds,
+            &in_lens,
+            in_texts,
+            &mut out_lens,
+            &mut out_texts,
+        )
+        .expect("packed labels");
+        assert_eq!(written, 5);
+        let mut labels = Vec::new();
+        let mut offset = 0usize;
+        for len in &out_lens {
+            let end = offset + *len as usize;
+            labels.push(std::str::from_utf8(&out_texts[offset..end]).unwrap().to_owned());
+            offset = end;
+        }
+        assert_eq!(
+            labels,
+            vec![
+                "b".to_owned(),
+                "(missing)".to_owned(),
+                "a".to_owned(),
+                "(missing)".to_owned(),
+                "1".to_owned(),
+            ]
+        );
     }
 
     #[test]

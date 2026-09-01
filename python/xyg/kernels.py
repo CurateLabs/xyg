@@ -155,6 +155,7 @@ factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
 factorize_unicode1_u8_counts = _impl.factorize_unicode1_u8_counts
 factorize_display_labels = _impl.factorize_display_labels
 factorize_use_native_probe = _impl.factorize_use_native_probe
+category_labels = _impl.category_labels
 transition_keys_fixed = _impl.transition_keys_fixed
 m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
@@ -340,6 +341,7 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "category_labels",
     "clip_quantize_u8",
     "colormap_lut",
     "colormap_rgba",

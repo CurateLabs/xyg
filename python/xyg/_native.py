@@ -1041,6 +1041,49 @@ def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int)
     return bool(ok)
 
 
+def category_labels(
+    kinds: npt.NDArray[np.uint8] | list[int],
+    payloads: list[bytes],
+) -> list[str]:
+    """Canonical display labels from packed host encodings (ABI 332)."""
+    if len(kinds) != len(payloads):
+        raise ValueError("category_labels kinds and payloads must have equal length")
+    n = len(payloads)
+    if n == 0:
+        return []
+    kind_arr = np.asarray(kinds, dtype=np.uint8)
+    if kind_arr.shape != (n,):
+        raise ValueError("category_labels kinds must be one-dimensional")
+    in_lens = np.fromiter((len(payload) for payload in payloads), dtype=np.uint32, count=n)
+    in_texts = b"".join(payloads)
+    texts = np.frombuffer(in_texts, dtype=np.uint8)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_texts_cap = max(256, len(in_texts) * 2 + n * 16)
+    out_texts = np.empty(out_texts_cap, dtype=np.uint8)
+    written = _lib.xyg_category_labels_packed(
+        kind_arr.ctypes.data,
+        in_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        out_lens.ctypes.data,
+        out_texts.ctypes.data,
+        out_texts_cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native category_labels rejected the packed encodings")
+    if int(written) != n:
+        raise ValueError("native category_labels returned an unexpected label count")
+    out_bytes = out_texts[: int(out_lens.sum())].tobytes()
+    labels: list[str] = []
+    offset = 0
+    for length in out_lens:
+        end = offset + int(length)
+        labels.append(out_bytes[offset:end].decode("utf-8"))
+        offset = end
+    return labels
+
+
 def _positive_int(value: int, label: str) -> int:
     if isinstance(value, (bool, np.bool_)):
         raise ValueError(f"{label} must be a positive integer")
