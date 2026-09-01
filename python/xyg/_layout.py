@@ -385,3 +385,38 @@ def warp_grid_rgba(
     if rows is not None:
         rgba = rgba[rows, :]
     return rgba
+
+
+def polar_wedge_points(
+    polar: _PolarProjection,
+    theta0: float,
+    theta1: float,
+    r0: float,
+    r1: float,
+    steps: Optional[int] = None,
+    corner_radius: float = 0.0,
+    wedge_gap: float = 0.0,
+    normalized: Optional[tuple[float, float]] = None,
+) -> list[tuple[float, float]]:
+    """An annular sector as a closed polygon — the flattened twin of
+    `_polar_wedge_path`, for the raster display list (no arc opcode).
+
+    Both are driven by the same angles and radii, so the two exports agree to
+    within the flattening. `steps` defaults to `config.polar_bar_segments` over
+    this wedge's own sweep — a 22.5-degree wind-rose sector is flattened with six
+    segments rather than the full-turn worst case of 96, at the same sagitta
+    bound. Pass an explicit count only to pin one. Flattening is ABI 209
+    (`xyg_polar_wedge_points`); this wrapper only packs metrics and optional
+    host-normalized radial fractions.
+    """
+    return _native.polar_wedge_points(
+        polar._metrics,
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        wedge_gap=float(wedge_gap),
+        corner_radius=float(corner_radius),
+        steps=0 if steps is None else int(steps),
+        normalized=normalized,
+    )

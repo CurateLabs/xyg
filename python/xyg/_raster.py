@@ -33,8 +33,19 @@ from ._export_chrome import (
     slot_text_color,
 )
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
+from ._export_legend import (
+    _legend_layout,
+    legend_clip_rect,
+    legend_items,
+)
 from ._fontmetrics import estimated_text_width as _estimated_text_width
-from ._layout import _PolarProjection, _Scale, affine_fast_path, warp_grid_rgba
+from ._layout import (
+    _PolarProjection,
+    _Scale,
+    affine_fast_path,
+    polar_wedge_points,
+    warp_grid_rgba,
+)
 from ._paint import (
     _css,
     effective_paint_rgba8,
@@ -126,7 +137,6 @@ from ._svg import (
     _axis_tick_sides,
     _colorbar_right_axis_room,
     _decode_title_geometry,
-    _legend_layout,
     _preserve_scene_chrome_for_axis_visibility,
     _tick_label_anchor,
     _title_entries,
@@ -134,12 +144,9 @@ from ._svg import (
     annotation_label_placement,
     axis_ticks,
     layout,
-    legend_clip_rect,
-    legend_items,
     minor_axis_ticks,
     polar_heatmap_rgba,
     polar_tick_label_layout,
-    polar_wedge_points,
 )
 
 (
