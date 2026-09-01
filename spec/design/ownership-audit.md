@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~9.9k lines; 127 delegate hooks through ABI 357 category label kinds |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~350, `_figure.py` ~1860, `channels.py` 1231, `_export_marks_raster.py` ~1430, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_export_axis_grid_raster.py` ~85, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
+Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~350, `channels.py` 1231, `_export_marks_raster.py` ~1430, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_export_axis_grid_raster.py` ~85, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers). `_figure.py` is now a ~416-line keep-host hub over `_figure_*.py`.
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -313,7 +313,7 @@ Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` 
 | Payload gather/ship | [#765](https://github.com/CurateLabs/xyg/pull/765)–[#769](https://github.com/CurateLabs/xyg/pull/769), [#732](https://github.com/CurateLabs/xyg/issues/732) | 310–315 | column registry / gather policy (`xyg_payload_column_ship_plan`, orientation + bar-compact nested keys ABI 313, density wasm_source f64 + density_sample registry ABI 314); density grid buffer registry + attach order (`xyg_payload_density_grid_ship_plan` ABI 315); channel attach-order registry (`xyg_payload_channel_ship_plan`) + `channels.ship_registry_attach` row materialization; channel wire encode policy (`xyg_payload_channel_wire_encode`) — [#732](https://github.com/CurateLabs/xyg/issues/732) **closed** |
 | Scene orchestration | [#759](https://github.com/CurateLabs/xyg/pull/759)–[#763](https://github.com/CurateLabs/xyg/pull/763) | 305–309 | XYTC/XYTA/XYFS/XYCF/XYAF/XYEF pack dispatch; polar + encode-product attach ([#733](https://github.com/CurateLabs/xyg/issues/733) **closed**) |
 
-Largest remaining Python core surface after materialization retirement: secondary §302 compat and composition (`_svg.py`/`_raster.py` path assembly, `_figure.py` hub, `channels.py` label factorization, `lod.py` cache wiring). `marks.py` is now a keep-host re-export hub over `_marks_*.py`. Payload emit and Scene pack product paths are marshal-only on the #853 branch.
+Largest remaining Python core surface after materialization retirement: secondary §302 compat and composition (`_svg.py`/`_raster.py` path assembly, `channels.py` label factorization, `lod.py` cache wiring). `marks.py` and `_figure.py` are keep-host re-export hubs over `_marks_*.py` and `_figure_*.py`. Payload emit and Scene pack product paths are marshal-only on the #853 branch.
 
 **#731 close checklist.**
 
@@ -392,7 +392,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs). **#731 close bar** (orchestration + materialization retirement + cross-host proof) is met on branch #853 pending merge. Remaining work is secondary §302 shrink:
 
 1. `_svg.py` / `_raster.py` compat path assembly — static export tessellation and host geometry (not the live payload/scene product path).
-2. `facets.py`, `_figure.py`, `_annotations.py` composition.
+2. `facets.py`, `_annotations.py` composition.
 3. `channels.py` label factorization and `lod.py` viewport/sample cache wiring (offset/scale meta is ABI 255; offset math is ABI 208).
 4. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack.
 
@@ -814,7 +814,7 @@ Forbidden:
 | `python/xyg/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_chromium.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_columns.py` | Python host | `python-host` | `keep-host`; shared payload column decode for static export emitters | — |
-| `python/xyg/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_figure.py` | Python host | `python-host` | `keep-host`; Figure composition hub binding `_figure_*.py` modules and mark methods | — |
 | `python/xyg/_figure_ingest.py` | Python host | `python-host` | `keep-host`; column ingest, array coercion, category-axis positions, heatmap cell edges | — |
 | `python/xyg/_figure_traces.py` | Python host | `python-host` | `keep-host`; rectangle trace assembly and finite-row selection | — |
 | `python/xyg/_figure_autorange.py` | Python host | `python-host` | `keep-host`; XYAR autorange packing; mirrors Node `figure.js` autorange path | — |
