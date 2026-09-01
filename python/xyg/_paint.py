@@ -273,6 +273,56 @@ def authored_marker_points(
     )
 
 
+_BEZIER_STEPS = 16
+
+
+def curve_points(
+    xv: np.ndarray,
+    yv: np.ndarray,
+    sx: Any,
+    sy: Any,
+    smooth: bool,
+    *,
+    bezier_steps: int = _BEZIER_STEPS,
+) -> np.ndarray:
+    """Pixel-space polyline; smooth uses Rust monotone-cubic flatten (ABI 121)."""
+    px = np.asarray(sx(xv), dtype=np.float64)
+    py = np.asarray(sy(yv), dtype=np.float64)
+    if not smooth or len(xv) < 3 or not (sx.affine and sy.affine):
+        return np.column_stack([px, py])
+    data_x, data_y = kernels.curve_flatten(
+        np.asarray(xv, dtype=np.float64),
+        np.asarray(yv, dtype=np.float64),
+        bezier_steps,
+    )
+    return np.column_stack(
+        [np.asarray(sx(data_x), dtype=np.float64), np.asarray(sy(data_y), dtype=np.float64)]
+    )
+
+
+def corner_radii(style: dict[str, Any]) -> tuple[float, float]:
+    """Resolve bar/rect tip and base corner radii from one style dict."""
+    cr = style.get("corner_radius", 0)
+    if isinstance(cr, (list, tuple)):
+        return float(cr[0]), float(cr[1])
+    value = float(cr or 0)
+    return value, value
+
+
+def rounded_rect_vertices(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    r_tip: float,
+    r_base: float,
+    tip_top: bool,
+) -> list[tuple[float, float]]:
+    """CW rounded-rect outline via ABI 121 ``xyg_rounded_rect_poly``."""
+    xs, ys = kernels.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
+    return list(zip(xs.tolist(), ys.tolist(), strict=True))
+
+
 def direct_rgba(channel: dict[str, Any], n: int, read_column: ColumnReader) -> np.ndarray | None:
     """Decode a packed normalized RGBA8 channel to canonical float RGBA."""
     if channel.get("mode") != "direct_rgba":

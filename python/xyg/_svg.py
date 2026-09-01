@@ -45,6 +45,9 @@ from ._paint import (
     colormap_stops as _colormap_stops,
 )
 from ._paint import (
+    corner_radii as _corner_radii,
+)
+from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
@@ -4998,13 +5001,6 @@ def _bar_fill(style: dict, color: str, svg: _Svg, plot: dict) -> tuple[str, str]
         if stroke_op < 1:
             extra += f' stroke-opacity="{_num(stroke_op)}"'
     return fill, extra
-
-
-def _corner_radii(style: dict) -> tuple[float, float]:
-    cr = style.get("corner_radius", 0)
-    if isinstance(cr, (list, tuple)):
-        return float(cr[0]), float(cr[1])
-    return float(cr or 0), float(cr or 0)
 
 
 def _rect_svg_styles(

@@ -37,7 +37,13 @@ from ._paint import (
     colormap_stops as _colormap_stops,
 )
 from ._paint import (
+    corner_radii as _corner_radii,
+)
+from ._paint import (
     css_rgba8 as _rgba,
+)
+from ._paint import (
+    curve_points as _curve_points,
 )
 from ._paint import (
     fill_opacity as _fill_opacity,
@@ -47,6 +53,9 @@ from ._paint import (
 )
 from ._paint import (
     rgba8 as _rgba8,
+)
+from ._paint import (
+    rounded_rect_vertices as _rounded_rect_vertices,
 )
 from ._paint import (
     solid_rgba8 as _solid_color,
@@ -79,7 +88,6 @@ from ._svg import (
     _colorbar_right_axis_room,
     _column,
     _column_ref,
-    _corner_radii,
     _decode_title_geometry,
     _density_column,
     _estimated_text_width,
@@ -111,32 +119,6 @@ from ._svg import (
     slot_text_color,
     warp_grid_rgba,
 )
-
-# Samples per smooth Bézier span when flattening to a polyline (#310 / ABI 121).
-_BEZIER_STEPS = 16
-
-
-def _curve_points(xv: np.ndarray, yv: np.ndarray, sx: Any, sy: Any, smooth: bool) -> np.ndarray:
-    """Pixel-space polyline; smooth uses Rust monotone-cubic flatten (ABI 121)."""
-    px = np.asarray(sx(xv), dtype=np.float64)
-    py = np.asarray(sy(yv), dtype=np.float64)
-    if not smooth or len(xv) < 3 or not (sx.affine and sy.affine):
-        return np.column_stack([px, py])
-    data_x, data_y = kernels.curve_flatten(
-        np.asarray(xv, dtype=np.float64),
-        np.asarray(yv, dtype=np.float64),
-        _BEZIER_STEPS,
-    )
-    return np.column_stack(
-        [np.asarray(sx(data_x), dtype=np.float64), np.asarray(sy(data_y), dtype=np.float64)]
-    )
-
-
-def _rounded_rect_vertices(
-    x: float, y: float, w: float, h: float, r_tip: float, r_base: float, tip_top: bool
-) -> list[tuple[float, float]]:
-    xs, ys = kernels.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
-    return list(zip(xs.tolist(), ys.tolist(), strict=True))
 
 
 def _grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
