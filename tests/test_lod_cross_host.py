@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +18,19 @@ from xyg import kernels, lod
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "lod_cross_host.json"
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "lod_cross_host.mjs"
+
+
+def _native_lib() -> Path:
+    if sys.platform == "win32":
+        name = "xyg_core.dll"
+    elif sys.platform == "darwin":
+        name = "libxyg_core.dylib"
+    else:
+        name = "libxyg_core.so"
+    return ROOT / "target" / "release" / name
+
+
+LIB = _native_lib()
 
 
 def _node_bin() -> str:
@@ -90,12 +105,15 @@ def _python_case(spec: dict) -> dict:
 def node_results() -> dict[str, dict]:
     if not _node_bin() or not NODE_SCRIPT.is_file():
         pytest.skip("node cross-host script missing")
+    env = os.environ.copy()
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), str(NODE_SCRIPT)],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
+        env=env,
     )
     payload = json.loads(proc.stdout.strip())
     return {case["name"]: case for case in payload["cases"]}
