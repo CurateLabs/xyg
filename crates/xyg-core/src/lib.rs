@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 350;
+pub const ABI_VERSION: u32 = 351;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10288,6 +10288,22 @@ pub unsafe extern "C" fn xyg_size_range_admit(
             0
         }
         Err(code) => code,
+    })
+}
+
+/// Classify whether a column uses categorical color resolution (ABI 351).
+///
+/// Returns `1` categorical, `0` continuous, or `-1` when the object probe is
+/// invalid. For non-object dtypes, pass `object_real_numeric = -1`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_array_is_categorical(
+    dtype_kind: u8,
+    object_real_numeric: i32,
+) -> i32 {
+    ffi_guard(-1, || match kernels::array_is_categorical(dtype_kind, object_real_numeric) {
+        Some(true) => 1,
+        Some(false) => 0,
+        None => -1,
     })
 }
 

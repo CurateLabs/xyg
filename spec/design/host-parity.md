@@ -879,7 +879,9 @@ pair-shape validation and authoring error text stay host-side.
 Python `channels._size_range` and Node `resolveSizeChannel` / `sizeRangeAdmit`
 validate scatter size pixel endpoints through ABI 350 `xyg_size_range_admit`;
 Node continuous size domains use ABI 213 `continuousDomain` like Python
-`_continuous_domain`.
+`_continuous_domain`. Python `channels._is_categorical` and Node
+`arrayIsCategorical` classify dtype/object columns through ABI 351
+`xyg_array_is_categorical`; object-row tag loops stay host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

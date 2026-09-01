@@ -2,7 +2,7 @@
   "schema": "xyg.density-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js buildPayload density wire metadata",
   "protocol": 12,
-  "abi_version": 350,
+  "abi_version": 351,
   "cases": [
     {
       "name": "scatter_density_colormap",

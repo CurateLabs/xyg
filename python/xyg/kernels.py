@@ -191,6 +191,7 @@ arrow_trim_polyline_end = _impl.arrow_trim_polyline_end
 min_max = _impl.min_max
 continuous_domain = _impl.continuous_domain
 size_range_admit = _impl.size_range_admit
+array_is_categorical = _impl.array_is_categorical
 direct_rgba_admit = _impl.direct_rgba_admit
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -346,6 +347,7 @@ __all__ = [
     "PAYLOAD_SHIP_CHANNELS_IF_COLOR",
     "aligned_window",
     "argsort_stable",
+    "array_is_categorical",
     "arrow_end_decoration",
     "arrow_geometry",
     "arrow_shaft_points",

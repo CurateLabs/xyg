@@ -259,6 +259,7 @@ export {
   quantizeUnitU8,
   continuousDomain,
   sizeRangeAdmit,
+  arrayIsCategorical,
   directRgbaAdmit,
   resolveColorChannel,
 } from "./color.js";

@@ -1053,6 +1053,11 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+    lib.xyg_array_is_categorical.restype = ctypes.c_int32
+    lib.xyg_array_is_categorical.argtypes = [
+        ctypes.c_uint8,
+        ctypes.c_int32,
+    ]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6057,6 +6062,13 @@ def main() -> None:
     ok(
         lib.xyg_size_range_admit(4.0, 2.0, ctypes.byref(s_lo), ctypes.byref(s_hi)) == -3,
         "size_range_admit rejects reversed range",
+    )
+    ok(
+        lib.xyg_array_is_categorical(ord("U"), -1) == 1
+        and lib.xyg_array_is_categorical(ord("f"), -1) == 0
+        and lib.xyg_array_is_categorical(ord("O"), 0) == 1
+        and lib.xyg_array_is_categorical(ord("O"), 1) == 0,
+        "array_is_categorical dtype and object probe",
     )
     hex_css = array("B", b"#ff0000")
     ok(

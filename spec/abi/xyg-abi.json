@@ -1,9 +1,9 @@
 {
-  "abi_version": 350,
+  "abi_version": 351,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "6086775420f562e2f6e6689e1d9d5ec84221fc2b0e005499248fb19c6dba0198",
+  "signature_sha256": "a13f1e4670df482e552bc733ddbc161a97c468859c5da25d4b44803620b32ad8",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -232,6 +232,56 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity)"
+    },
+    {
+      "name": "xyg_array_is_categorical",
+      "node_name": "xyArrayIsCategorical",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "dtype_kind",
+          "type": {
+            "rust": "u8",
+            "c": "uint8_t",
+            "ctypes": "ctypes.c_uint8",
+            "koffi": "uint8_t",
+            "kind": "scalar",
+            "bits": 8,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "object_real_numeric",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_array_is_categorical(uint8_t dtype_kind, int32_t object_real_numeric)"
     },
     {
       "name": "xyg_arrow_end_decoration",

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 350
-SIGNATURE_SHA256 = "6086775420f562e2f6e6689e1d9d5ec84221fc2b0e005499248fb19c6dba0198"
+ABI_VERSION = 351
+SIGNATURE_SHA256 = "a13f1e4670df482e552bc733ddbc161a97c468859c5da25d4b44803620b32ad8"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -26,6 +26,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_argsort_stable
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_array_is_categorical(uint8_t dtype_kind, int32_t object_real_numeric)
+    function = lib.xyg_array_is_categorical
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8, ctypes.c_int32]
     # size_t xyg_arrow_end_decoration(double px, double py, double dx, double dy, const uint8_t * style, size_t style_len, double head, double * out_x, double * out_y, size_t capacity, int32_t * out_kind)
     function = lib.xyg_arrow_end_decoration
     function.restype = ctypes.c_size_t

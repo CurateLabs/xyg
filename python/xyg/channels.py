@@ -246,11 +246,11 @@ class SizeChannel:
 
 
 def _is_categorical(arr: np.ndarray) -> bool:
-    if arr.dtype.kind in ("U", "S", "b"):
-        return True
+    kind = ord(arr.dtype.kind)
     if arr.dtype == object:
-        return not _object_array_is_real_numeric(arr)
-    return False
+        probe = 1 if _object_array_is_real_numeric(arr) else 0
+        return kernels.array_is_categorical(kind, probe)
+    return kernels.array_is_categorical(kind, -1)
 
 
 # `#rrggbb` and `rgb()/hsl()` cannot be mistaken for data; a bare `red` can.

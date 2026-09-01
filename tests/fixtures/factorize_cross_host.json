@@ -264,6 +264,34 @@
       "kind": "size_range_admit",
       "lo": 0.0,
       "hi": 0.0
+    },
+    {
+      "name": "array_is_categorical_unicode",
+      "kind": "array_is_categorical",
+      "dtype_kind": "U",
+      "object_real_numeric": -1,
+      "categorical": true
+    },
+    {
+      "name": "array_is_categorical_float",
+      "kind": "array_is_categorical",
+      "dtype_kind": "f",
+      "object_real_numeric": -1,
+      "categorical": false
+    },
+    {
+      "name": "array_is_categorical_object_mixed",
+      "kind": "array_is_categorical",
+      "dtype_kind": "O",
+      "object_real_numeric": 0,
+      "categorical": true
+    },
+    {
+      "name": "array_is_categorical_object_numeric",
+      "kind": "array_is_categorical",
+      "dtype_kind": "O",
+      "object_real_numeric": 1,
+      "categorical": false
     }
   ]
 }

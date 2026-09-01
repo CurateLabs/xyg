@@ -9411,6 +9411,14 @@ def size_range_admit(lo: float, hi: float) -> tuple[float, float]:
     return (float(out_lo.value), float(out_hi.value))
 
 
+def array_is_categorical(dtype_kind: int, object_real_numeric: int = -1) -> bool:
+    """Whether a column uses categorical color resolution (ABI 351)."""
+    code = int(_lib.xyg_array_is_categorical(int(dtype_kind) & 0xFF, int(object_real_numeric)))
+    if code < 0:
+        raise ValueError("invalid array-is-categorical request")
+    return code == 1
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

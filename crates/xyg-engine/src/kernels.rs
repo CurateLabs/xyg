@@ -8599,6 +8599,24 @@ pub fn size_range_admit(lo: f64, hi: f64) -> Result<(f64, f64), i32> {
     Ok((lo, hi))
 }
 
+/// Classify whether a column uses categorical color resolution (ABI 351).
+///
+/// `dtype_kind` is the NumPy dtype.kind byte (`U`, `S`, `b`, `O`, ...).
+/// For object columns, `object_real_numeric` is `0` when the column is not
+/// all-real-numeric (categorical) and `1` when it is (continuous). Pass `-1`
+/// for non-object dtypes.
+pub fn array_is_categorical(dtype_kind: u8, object_real_numeric: i32) -> Option<bool> {
+    match dtype_kind as char {
+        'U' | 'S' | 'b' => Some(true),
+        'O' => match object_real_numeric {
+            0 => Some(true),
+            1 => Some(false),
+            _ => None,
+        },
+        _ => Some(false),
+    }
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11071,6 +11089,18 @@ mod tests {
         assert_eq!(size_range_admit(f64::NAN, 1.0), Err(SIZE_RANGE_NONFINITE));
         assert_eq!(size_range_admit(-1.0, 2.0), Err(SIZE_RANGE_NEGATIVE));
         assert_eq!(size_range_admit(3.0, 2.0), Err(SIZE_RANGE_ORDER));
+    }
+
+    #[test]
+    fn array_is_categorical_matches_host_policy() {
+        assert_eq!(array_is_categorical(b'U', -1), Some(true));
+        assert_eq!(array_is_categorical(b'S', -1), Some(true));
+        assert_eq!(array_is_categorical(b'b', -1), Some(true));
+        assert_eq!(array_is_categorical(b'f', -1), Some(false));
+        assert_eq!(array_is_categorical(b'O', 0), Some(true));
+        assert_eq!(array_is_categorical(b'O', 1), Some(false));
+        assert!(array_is_categorical(b'O', -1).is_none());
+        assert!(array_is_categorical(b'O', 2).is_none());
     }
 
     #[test]

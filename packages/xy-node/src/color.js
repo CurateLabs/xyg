@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical } from "./native.js";
 import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -144,6 +144,13 @@ export function sizeRangeAdmit(lo, hi) {
   }
   if (code !== 0) throw new RangeError("invalid size-range-admit request");
   return [outLo[0], outHi[0]];
+}
+
+/** Whether a column uses categorical color resolution (ABI 351). */
+export function arrayIsCategorical(dtypeKind, objectRealNumeric = -1) {
+  const code = Number(xyArrayIsCategorical(Number(dtypeKind) & 0xff, Number(objectRealNumeric)));
+  if (code < 0) throw new RangeError("invalid array-is-categorical request");
+  return code === 1;
 }
 
 /** Admit per-point RGB/RGBA in `[0, 1]` as contiguous Nx4 (ABI 213). */

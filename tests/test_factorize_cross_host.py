@@ -202,6 +202,10 @@ def _python_size_range_case(spec: dict) -> list[float]:
     return [lo, hi]
 
 
+def _python_array_is_categorical_case(spec: dict) -> bool:
+    return kernels.array_is_categorical(ord(spec["dtype_kind"]), int(spec["object_real_numeric"]))
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -226,6 +230,7 @@ FACTORIZE_CASES = [
         "colormap_custom_stops_resolve_list",
         "colormap_custom_stops_resolve_gradient",
         "size_range_admit",
+        "array_is_categorical",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -254,6 +259,7 @@ COLORMAP_CUSTOM_GRADIENT_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_gradient"
 ]
 SIZE_RANGE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "size_range_admit"]
+ARRAY_IS_CATEGORICAL_CASES = [c for c in FIXTURE_CASES if c["kind"] == "array_is_categorical"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -420,6 +426,13 @@ def test_size_range_admit_cross_host(spec: dict, node_results: dict[str, dict]) 
     range_px = _python_size_range_case(spec)
     node = node_results[spec["name"]]
     assert range_px == node["range_px"]
+
+
+@pytest.mark.parametrize("spec", ARRAY_IS_CATEGORICAL_CASES, ids=lambda s: s["name"])
+def test_array_is_categorical_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    categorical = _python_array_is_categorical_case(spec)
+    node = node_results[spec["name"]]
+    assert categorical == node["categorical"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

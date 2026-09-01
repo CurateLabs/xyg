@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit, arrayIsCategorical } from "../src/color.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -282,6 +282,16 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       range_px: sizeRangeAdmit(spec.lo, spec.hi),
+    });
+    continue;
+  }
+  if (spec.kind === "array_is_categorical") {
+    out.push({
+      name: spec.name,
+      categorical: arrayIsCategorical(
+        spec.dtype_kind.codePointAt(0),
+        spec.object_real_numeric,
+      ),
     });
     continue;
   }
