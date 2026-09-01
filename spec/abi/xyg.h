@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 339
-#define XYG_ABI_SIGNATURE_SHA256 "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755"
+#define XYG_ABI_VERSION 340
+#define XYG_ABI_SIGNATURE_SHA256 "de040f91004f768f979479a80a8e40b5b4e64ec9e7642be8079026f0a850de25"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,6 +106,7 @@ size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32
 int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width);
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
+int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out);
 uint32_t xyg_geo_column_crs(uint64_t handle);
 int32_t xyg_geo_column_free(uint64_t handle);
 uint32_t xyg_geo_column_geometry(uint64_t handle);

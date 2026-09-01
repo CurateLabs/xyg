@@ -893,12 +893,8 @@ def _quantized_rgba8(values: npt.NDArray[np.float64]) -> np.ndarray:
 
 
 def _folded_codes_u8(codes: np.ndarray, n_palette: int) -> np.ndarray:
-    """Wide categorical codes -> u8 palette rows (mod fold), chunk-bounded."""
-    out = np.empty(len(codes), dtype=np.uint8)
-    for start in range(0, len(codes), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        out[start:end] = (codes[start:end] % n_palette).astype(np.uint8)
-    return out
+    """Wide categorical codes -> u8 palette rows (mod fold)."""
+    return kernels.fold_codes_u8(np.asarray(codes, dtype=np.uint32), n_palette)
 
 
 def resolve_bin_colors(cc: Optional[ColorChannel], sel: Any) -> Optional[dict]:

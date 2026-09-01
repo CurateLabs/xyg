@@ -85,6 +85,18 @@
       "kind": "fixed_probe",
       "dtype": "uint32",
       "row_count": 0
+    },
+    {
+      "name": "fold_codes_u8_basic",
+      "kind": "fold_codes_u8",
+      "codes": [0, 9, 10, 257, 300],
+      "n_palette": 10
+    },
+    {
+      "name": "fold_codes_u8_empty",
+      "kind": "fold_codes_u8",
+      "codes": [],
+      "n_palette": 10
     }
   ]
 }

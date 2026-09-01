@@ -3,7 +3,7 @@
 //! Hosts marshal channel values, optional ``sel``, and ABI 312 wire policy;
 //! Rust gathers, transforms, and returns u8/f32 wire buffers.
 
-use crate::kernels::{clip_quantize_u8, normalize_f32_into};
+use crate::kernels::{clip_quantize_u8, fold_codes_f64_u8, normalize_f32_into};
 use crate::payload_emit::{
     PAYLOAD_CHAN_BUF_F32, PAYLOAD_CHAN_BUF_NONE, PAYLOAD_CHAN_BUF_U8, PAYLOAD_CHAN_MODE_CATEGORICAL,
     PAYLOAD_CHAN_MAX_CATEGORIES_U8, PAYLOAD_CHAN_XFORM_NORMALIZE, PAYLOAD_CHAN_XFORM_NONE,
@@ -58,14 +58,6 @@ fn gather_u8(values: &[u8], sel: Option<&[u32]>) -> Result<Vec<u8>, i32> {
         out.push(values[i]);
     }
     Ok(out)
-}
-
-fn fold_codes_u8(codes: &[f64], n_palette: usize) -> Vec<u8> {
-    let n = n_palette.max(1);
-    codes
-        .iter()
-        .map(|&code| (code as i64).rem_euclid(n as i64) as u8)
-        .collect()
 }
 
 /// Materialize one channel wire buffer from host-marshaled values.
@@ -152,7 +144,7 @@ pub fn payload_channel_materialize(
             } else if mode == PAYLOAD_CHAN_MODE_CATEGORICAL && mark_dtype_u8 != 0 {
                 let gathered = gather_f64(values_f64, sel)?;
                 if n_categories <= PAYLOAD_CHAN_MAX_CATEGORIES_U8 {
-                    fold_codes_u8(&gathered, n_palette)
+                    fold_codes_f64_u8(&gathered, n_palette)
                 } else {
                     gathered.iter().flat_map(|v| v.to_le_bytes()).collect()
                 }

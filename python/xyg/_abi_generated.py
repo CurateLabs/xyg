@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 339
-SIGNATURE_SHA256 = "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755"
+ABI_VERSION = 340
+SIGNATURE_SHA256 = "de040f91004f768f979479a80a8e40b5b4e64ec9e7642be8079026f0a850de25"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -390,6 +390,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_figure_autorange
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out)
+    function = lib.xyg_fold_codes_u8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p]
     # uint32_t xyg_geo_column_crs(uint64_t handle)
     function = lib.xyg_geo_column_crs
     function.restype = ctypes.c_uint32

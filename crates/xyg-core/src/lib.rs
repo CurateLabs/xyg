@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 339;
+pub const ABI_VERSION: u32 = 340;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4306,6 +4306,32 @@ pub unsafe extern "C" fn xyg_remap_u8(
     let values = std::slice::from_raw_parts_mut(values, len);
     let mapping = std::slice::from_raw_parts(mapping, mapping_len);
     ffi_guard(0, || kernels::remap_u8_inplace(values, mapping) as i32)
+}
+
+/// Fold wide categorical codes onto repeating palette rows.
+///
+/// Returns `1` on success and `0` when arguments or buffers are invalid.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_fold_codes_u8(
+    codes: *const u32,
+    n: usize,
+    n_palette: u32,
+    out: *mut u8,
+) -> i32 {
+    if n_palette == 0 {
+        return 0;
+    }
+    if n == 0 {
+        return 1;
+    }
+    if codes.is_null() || out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let codes_slice = std::slice::from_raw_parts(codes, n);
+        let out_slice = std::slice::from_raw_parts_mut(out, n);
+        kernels::fold_codes_u32_into(codes_slice, n_palette as usize, out_slice) as i32
+    })
 }
 
 /// Factorize pre-canonicalized display labels (label-policy categorical path).

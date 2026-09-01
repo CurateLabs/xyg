@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 339;
-export const SIGNATURE_SHA256 = "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755";
+export const ABI_VERSION = 340;
+export const SIGNATURE_SHA256 = "de040f91004f768f979479a80a8e40b5b4e64ec9e7642be8079026f0a850de25";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -100,6 +100,7 @@ export let xyFactorizeUnicode1U8Counts;
 export let xyFactorizeUseNativeFixed;
 export let xyFactorizeUseNativeProbe;
 export let xyFigureAutorange;
+export let xyFoldCodesU8;
 export let xyGeoColumnCrs;
 export let xyGeoColumnFree;
 export let xyGeoColumnGeometry;
@@ -548,6 +549,7 @@ export function bindGeneratedAbi(lib) {
   xyFactorizeUseNativeFixed = lib.func("int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width)");
   xyFactorizeUseNativeProbe = lib.func("int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width)");
   xyFigureAutorange = lib.func("int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)");
+  xyFoldCodesU8 = lib.func("int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out)");
   xyGeoColumnCrs = lib.func("uint32_t xyg_geo_column_crs(uint64_t handle)");
   xyGeoColumnFree = lib.func("int32_t xyg_geo_column_free(uint64_t handle)");
   xyGeoColumnGeometry = lib.func("uint32_t xyg_geo_column_geometry(uint64_t handle)");

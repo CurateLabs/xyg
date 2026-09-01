@@ -687,6 +687,29 @@ pub fn remap_u8_inplace(values: &mut [u8], mapping: &[u8]) -> bool {
     true
 }
 
+/// Fold wide categorical codes onto a repeating palette row index.
+///
+/// Matches Python `channels._folded_codes_u8` / Node `foldedCodesU8`.
+pub fn fold_codes_u32_into(codes: &[u32], n_palette: usize, out: &mut [u8]) -> bool {
+    if codes.len() != out.len() {
+        return false;
+    }
+    let modulus = n_palette.max(1) as u64;
+    for (code, slot) in codes.iter().zip(out.iter_mut()) {
+        *slot = (u64::from(*code) % modulus) as u8;
+    }
+    true
+}
+
+/// Fold gathered f64 categorical codes onto palette rows for wire materialize.
+pub fn fold_codes_f64_u8(codes: &[f64], n_palette: usize) -> Vec<u8> {
+    let modulus = n_palette.max(1) as i64;
+    codes
+        .iter()
+        .map(|&code| (code as i64).rem_euclid(modulus) as u8)
+        .collect()
+}
+
 /// Width marker for [`FactorizedDisplayLabels::codes_u8`].
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
 /// Width marker for [`FactorizedDisplayLabels::codes_u32`].
@@ -8720,6 +8743,17 @@ mod tests {
             factorize_fixed_u8_into(&data, 3, &mut compact_codes, &mut too_few_unique),
             None
         );
+    }
+
+    #[test]
+    fn fold_codes_u32_matches_host_policy() {
+        let codes = [0_u32, 9, 10, 257, 300];
+        let mut out = [0_u8; 5];
+        assert!(fold_codes_u32_into(&codes, 10, &mut out));
+        assert_eq!(out, [0, 9, 0, 7, 0]);
+        assert!(fold_codes_u32_into(&codes, 0, &mut out));
+        assert_eq!(out[0], 0);
+        assert_eq!(fold_codes_f64_u8(&[0.0, 9.0, -1.0], 10), vec![0, 9, 9]);
     }
 
     #[test]

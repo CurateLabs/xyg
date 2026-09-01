@@ -2,7 +2,7 @@
   "schema": "xyg.default-styled-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js _defaultStyled emit paths",
   "protocol": 12,
-  "abi_version": 339,
+  "abi_version": 340,
   "cases": [
     {
       "name": "line_default_styled",

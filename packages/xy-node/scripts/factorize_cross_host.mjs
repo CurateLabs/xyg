@@ -15,7 +15,8 @@ import {
   objectColumnIsRealNumeric,
   useNativeFixedFactorizer,
 } from "../src/factorize.js";
-import { xyFactorizeUseNativeProbe } from "../src/native.js";
+import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
+import { u32Ptr, u8Ptr } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "factorize_cross_host.json");
@@ -113,6 +114,22 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       use_native: useNativeFixedFactorizer(values, 4),
+    });
+    continue;
+  }
+  if (spec.kind === "fold_codes_u8") {
+    const codes = Uint32Array.from(spec.codes ?? []);
+    const n = codes.length;
+    const folded = new Uint8Array(n);
+    if (n > 0) {
+      const ok = xyFoldCodesU8(u32Ptr(codes), BigInt(n), BigInt(spec.n_palette), u8Ptr(folded));
+      if (!ok) {
+        throw new Error(`fold_codes_u8 rejected ${spec.name}`);
+      }
+    }
+    out.push({
+      name: spec.name,
+      folded: [...folded],
     });
     continue;
   }

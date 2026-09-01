@@ -947,6 +947,22 @@ def transition_keys_fixed(
     raise RuntimeError(f"native transition-key encoder returned unknown status {status}")
 
 
+def fold_codes_u8(codes: npt.NDArray[np.uint32], n_palette: int) -> npt.NDArray[np.uint8]:
+    """Fold wide categorical codes onto repeating palette rows."""
+    arr = np.ascontiguousarray(codes, dtype=np.uint32)
+    if arr.ndim != 1:
+        raise ValueError("fold_codes_u8 codes must be a 1-D array")
+    n_palette = _bounded_positive_int(n_palette, "n_palette")
+    n = len(arr)
+    out = np.empty(n, dtype=np.uint8)
+    if n == 0:
+        return out
+    ok = _lib.xyg_fold_codes_u8(arr.ctypes.data, n, int(n_palette), out.ctypes.data)
+    if not ok:
+        raise ValueError("native fold_codes_u8 rejected the code array")
+    return out
+
+
 def remap_u8(values: npt.NDArray[np.uint8], mapping: npt.NDArray[np.uint8]) -> None:
     """Apply a compact categorical codebook permutation in place."""
     values = np.asarray(values)

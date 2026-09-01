@@ -288,6 +288,13 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_remap_u8.restype = ctypes.c_int32
     lib.xyg_remap_u8.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_fold_codes_u8.restype = ctypes.c_int32
+    lib.xyg_fold_codes_u8.argtypes = [
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        U8P,
+    ]
     lib.xyg_factorize_display_labels.restype = ctypes.c_size_t
     lib.xyg_factorize_display_labels.argtypes = [
         U32P,
@@ -3435,6 +3442,17 @@ def main() -> None:
         == 1
         and list(compact_codes) == [2, 0, 2, 1, 0],
         "remap_u8 in-place codebook",
+    )
+    fold_in = (ctypes.c_uint32 * 5)(0, 9, 10, 257, 300)
+    fold_out = array("B", [0] * 5)
+    ok(
+        lib.xyg_fold_codes_u8(fold_in, 5, 10, _ptr(fold_out, ctypes.c_uint8)) == 1
+        and list(fold_out) == [0, 9, 0, 7, 0],
+        "fold_codes_u8 wide categorical fold",
+    )
+    ok(
+        lib.xyg_fold_codes_u8(None, 0, 10, None) == 1,
+        "fold_codes_u8 empty column",
     )
 
     # Boundary guardrails: empty inputs may carry null pointers; invalid
