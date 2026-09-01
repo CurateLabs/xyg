@@ -1220,6 +1220,35 @@ def aligned_window(
     return float(out_lo.value), float(out_hi.value)
 
 
+def sample_threshold(fraction: float) -> int:
+    """Keep-fraction threshold matching the former Python ``lod._sample_threshold`` (ABI 327)."""
+    return int(_lib.xyg_sample_threshold(float(fraction)))
+
+
+def hash_row_ids(
+    ids: npt.NDArray[np.uint64],
+    seed: int,
+) -> npt.NDArray[np.uint64]:
+    """SplitMix64 row-id hashes (ABI 327, §5/§17).
+
+    Bit-identical to the former Python ``lod.hash_row_ids`` NumPy reference.
+    """
+    ids = np.ascontiguousarray(ids, dtype=np.uint64)
+    if ids.ndim != 1:
+        raise ValueError("ids must be a one-dimensional uint64 array")
+    out = np.empty(len(ids), dtype=np.uint64)
+    if len(ids):
+        ok = _lib.xyg_hash_row_ids(
+            ids.ctypes.data,
+            len(ids),
+            ctypes.c_uint64(int(seed)),
+            out.ctypes.data,
+        )
+        if ok != 1:
+            raise RuntimeError("xyg native hash_row_ids failed (output undefined)")
+    return out
+
+
 def encoded_column_meta(
     offset: float, lo: float, hi: float, kind: str | None = None
 ) -> tuple[float, float, bool]:

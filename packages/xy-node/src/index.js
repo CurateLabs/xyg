@@ -356,6 +356,8 @@ export {
   lodPlan,
   drillDecision,
   alignedWindow,
+  sampleThreshold,
+  hashRowIds,
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,

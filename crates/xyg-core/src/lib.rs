@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 326;
+pub const ABI_VERSION: u32 = 327;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7122,6 +7122,45 @@ pub unsafe extern "C" fn xyg_aligned_window(
             kernels::aligned_window(lo, hi, extent_lo, extent_hi, pad);
         *out_lo = aligned_lo;
         *out_hi = aligned_hi;
+        1
+    })
+}
+
+/// Sampling threshold for a keep fraction (ABI 327, §5/§17).
+///
+/// Returns `u64::MAX` when `fraction >= 1.0`; otherwise
+/// `(fraction * u64::MAX as f64) as u64` with the same saturating clamp as
+/// the former Python `lod._sample_threshold` reference.
+#[no_mangle]
+pub extern "C" fn xyg_sample_threshold(fraction: f64) -> u64 {
+    kernels::sample_threshold(fraction)
+}
+
+/// SplitMix64 row-id hashes (ABI 327, §5/§17).
+///
+/// Writes `out[i] = splitmix64(ids[i], seed)`. Bit-identical to the former
+/// Python `lod.hash_row_ids` reference. Returns 1 on success (including the
+/// empty no-op), 0 on null arguments.
+///
+/// # Safety
+/// `ids` must point to `len` readable u64s; `out` to `len` writable u64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_hash_row_ids(
+    ids: *const u64,
+    len: usize,
+    seed: u64,
+    out: *mut u64,
+) -> i32 {
+    if len == 0 {
+        return 1;
+    }
+    if ids.is_null() || out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let ids = std::slice::from_raw_parts(ids, len);
+        let out = std::slice::from_raw_parts_mut(out, len);
+        kernels::hash_row_ids(ids, seed, out);
         1
     })
 }

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 326;
-export const SIGNATURE_SHA256 = "b987c507f8a7a4d9449bfa62a80b63438cbcd9896b8cf3208d45a5c7ac985c64";
+export const ABI_VERSION = 327;
+export const SIGNATURE_SHA256 = "62c52d5159e46e8f95062afb4603fa6bc5ab118ad342100061b42bb9130fb034";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -128,6 +128,7 @@ export let xyGraphSampleEdges;
 export let xyGraphSemanticLegend;
 export let xyGraphSemanticStyleResolve;
 export let xyGraphVisualStateResolve;
+export let xyHashRowIds;
 export let xyHeatmapRgba;
 export let xyHexbin;
 export let xyHexbinGroups;
@@ -232,6 +233,7 @@ export let xyRoundedRectPoly;
 export let xySampleMask;
 export let xySampleMaskU32;
 export let xySampleRangeIndices;
+export let xySampleThreshold;
 export let xySankeyLayout;
 export let xyScalePinsOffset;
 export let xySceneAnnotationStyleAdmit;
@@ -562,6 +564,7 @@ export function bindGeneratedAbi(lib) {
   xyGraphSemanticLegend = lib.func("int32_t xyg_graph_semantic_legend(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, uint64_t capacity, uint8_t * out_field, uint8_t * out_value, uint8_t * out_rgba, uint8_t * out_shape, uint64_t * out_count)");
   xyGraphSemanticStyleResolve = lib.func("int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi)");
   xyGraphVisualStateResolve = lib.func("int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)");
+  xyHashRowIds = lib.func("int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out)");
   xyHeatmapRgba = lib.func("int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyHexbin = lib.func("size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy)");
   xyHexbinGroups = lib.func("size_t xyg_hexbin_groups(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, double * out_cx, double * out_cy, double * out_counts, uint32_t * out_starts, uint32_t * out_lens, size_t cell_capacity, uint32_t * out_indices, size_t index_capacity, size_t * out_n_indices, double * out_dx, double * out_dy)");
@@ -666,6 +669,7 @@ export function bindGeneratedAbi(lib) {
   xySampleMask = lib.func("int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
   xySampleMaskU32 = lib.func("int32_t xyg_sample_mask_u32(const uint32_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
   xySampleRangeIndices = lib.func("size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity)");
+  xySampleThreshold = lib.func("uint64_t xyg_sample_threshold(double fraction)");
   xySankeyLayout = lib.func("int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n)");
   xyScalePinsOffset = lib.func("int32_t xyg_scale_pins_offset(const uint8_t * scale, size_t len)");
   xySceneAnnotationStyleAdmit = lib.func("int32_t xyg_scene_annotation_style_admit(const uint8_t * kind, size_t kind_len, uint8_t wrapped, uint8_t labelled, const uint8_t * key, size_t key_len)");

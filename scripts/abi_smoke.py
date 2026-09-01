@@ -938,6 +938,10 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint64,
         ctypes.POINTER(ctypes.c_uint8),
     ]
+    lib.xyg_sample_threshold.restype = ctypes.c_uint64
+    lib.xyg_sample_threshold.argtypes = [D]
+    lib.xyg_hash_row_ids.restype = ctypes.c_int32
+    lib.xyg_hash_row_ids.argtypes = [U64P, ctypes.c_size_t, ctypes.c_uint64, U64P]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
@@ -4767,6 +4771,38 @@ def main() -> None:
         )
         == 1,
         "sample_mask empty/null ok status",
+    )
+    ok(
+        lib.xyg_sample_threshold(0.5) == 9_223_372_036_854_775_808,
+        "sample_threshold half fraction reference",
+    )
+    ok(
+        lib.xyg_sample_threshold(1.0) == 2**64 - 1,
+        "sample_threshold unity keeps all rows",
+    )
+    hashes = array("Q", [0, 0, 0])
+    lib.xyg_hash_row_ids(
+        _ptr(ids, ctypes.c_uint64),
+        2,
+        ctypes.c_uint64(0),
+        _ptr(hashes, ctypes.c_uint64),
+    )
+    ok(
+        list(hashes[:2]) == [0xE220A8397B1DCDAF, 0x910A2DEC89025CC1],
+        "hash_row_ids splitmix64 reference vectors",
+    )
+    hashes_null = array("Q", [7])
+    status = lib.xyg_hash_row_ids(
+        null_u64, 1, ctypes.c_uint64(0), _ptr(hashes_null, ctypes.c_uint64)
+    )
+    ok(
+        status == 0 and hashes_null[0] == 7,
+        "hash_row_ids rejects null input with 0 status, without writing",
+    )
+    ok(
+        lib.xyg_hash_row_ids(null_u64, 0, ctypes.c_uint64(0), ctypes.POINTER(ctypes.c_uint64)())
+        == 1,
+        "hash_row_ids empty/null ok status",
     )
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])

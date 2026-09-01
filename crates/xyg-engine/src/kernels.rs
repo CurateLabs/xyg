@@ -6472,6 +6472,15 @@ fn sample_expected_capacity(size: usize, threshold: u64) -> usize {
     ((size as f64 * fraction).ceil() as usize).saturating_add(16)
 }
 
+/// SplitMix64 row-id hashes for `(row_id, seed)`. Bit-identical to the former
+/// Python `lod.hash_row_ids` reference (ABI 327 delegates hosts here).
+pub fn hash_row_ids(ids: &[u64], seed: u64, out: &mut [u64]) {
+    assert_eq!(ids.len(), out.len());
+    for (&id, o) in ids.iter().zip(out.iter_mut()) {
+        *o = splitmix64(id, seed);
+    }
+}
+
 /// Deterministic sampling mask: `out[i] = splitmix64(ids[i], seed) <= threshold`.
 /// One fused pass — the NumPy expression allocates five full-width u64
 /// temporaries (~80 MB each at 10M rows) and dominated the density payload

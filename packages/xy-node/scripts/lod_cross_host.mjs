@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { drillDecision, encodeF32Values, lodPlan, alignedWindow } from "../src/encode.js";
+import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, sampleThreshold } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "lod_cross_host.json");
@@ -25,7 +25,25 @@ function runAligned(spec) {
   };
 }
 
+function shaU64(values) {
+  const bytes = new BigUint64Array(values).buffer;
+  return createHash("sha256").update(Buffer.from(bytes)).digest("hex");
+}
+
 function runCase(spec) {
+  if (spec.kind === "sample_threshold") {
+    return {
+      name: spec.name,
+      threshold: String(sampleThreshold(spec.fraction)),
+    };
+  }
+  if (spec.kind === "hash_row_ids") {
+    const hashes = hashRowIds(spec.ids, spec.seed);
+    return {
+      name: spec.name,
+      hashes_sha256: shaU64(hashes),
+    };
+  }
   if (spec.kind === "aligned_window") {
     return runAligned(spec);
   }

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 326
-SIGNATURE_SHA256 = "b987c507f8a7a4d9449bfa62a80b63438cbcd9896b8cf3208d45a5c7ac985c64"
+ABI_VERSION = 327
+SIGNATURE_SHA256 = "62c52d5159e46e8f95062afb4603fa6bc5ab118ad342100061b42bb9130fb034"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -502,6 +502,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_visual_state_resolve
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out)
+    function = lib.xyg_hash_row_ids
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_heatmap_rgba
     function.restype = ctypes.c_int32
@@ -918,6 +922,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_sample_range_indices
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_size_t, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t]
+    # uint64_t xyg_sample_threshold(double fraction)
+    function = lib.xyg_sample_threshold
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_double]
     # int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n)
     function = lib.xyg_sankey_layout
     function.restype = ctypes.c_int32

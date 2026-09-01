@@ -42,6 +42,11 @@ def _sha_f32(values: np.ndarray) -> str:
     return hashlib.sha256(arr.tobytes()).hexdigest()
 
 
+def _sha_u64(values: np.ndarray) -> str:
+    arr = np.ascontiguousarray(values, dtype=np.uint64)
+    return hashlib.sha256(arr.tobytes()).hexdigest()
+
+
 def _python_case(spec: dict) -> dict:
     if spec["kind"] == "lod_plan":
         exact, mode, gw, gh = kernels.lod_plan(
@@ -85,6 +90,20 @@ def _python_case(spec: dict) -> dict:
             "a": [a["lo"], a["hi"]],
             "b": [b["lo"], b["hi"]],
             "equal": a["lo"] == b["lo"] and a["hi"] == b["hi"],
+        }
+    if spec["kind"] == "sample_threshold":
+        return {
+            "name": spec["name"],
+            "threshold": str(kernels.sample_threshold(float(spec["fraction"]))),
+        }
+    if spec["kind"] == "hash_row_ids":
+        hashes = kernels.hash_row_ids(
+            np.asarray(spec["ids"], dtype=np.uint64),
+            int(spec["seed"]),
+        )
+        return {
+            "name": spec["name"],
+            "hashes_sha256": _sha_u64(hashes),
         }
     column = lod.encode_f32_values(
         spec["values"],
@@ -142,6 +161,12 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
         assert node["equal"] is True
         assert py["a"] == node["a"]
         assert py["b"] == node["b"]
+        return
+    if spec["kind"] == "sample_threshold":
+        assert py["threshold"] == node["threshold"]
+        return
+    if spec["kind"] == "hash_row_ids":
+        assert py["hashes_sha256"] == node["hashes_sha256"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]

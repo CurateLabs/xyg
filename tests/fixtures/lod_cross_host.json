@@ -91,6 +91,22 @@
       "extent_lo": 0.0,
       "extent_hi": 10.0,
       "pad": 4.0
+    },
+    {
+      "name": "sample_threshold_half",
+      "kind": "sample_threshold",
+      "fraction": 0.5
+    },
+    {
+      "name": "sample_threshold_one",
+      "kind": "sample_threshold",
+      "fraction": 1.0
+    },
+    {
+      "name": "hash_row_ids_reference",
+      "kind": "hash_row_ids",
+      "ids": [0, 1, 2],
+      "seed": 0
     }
   ]
 }

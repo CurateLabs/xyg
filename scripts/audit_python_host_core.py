@@ -69,6 +69,8 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("#641", "255", "xyg_encoded_column_meta", "lod.encode_f32_values meta"),
     ("#642", "256", "xyg_scene_channel_constant_css", "_scene_v3 channel CSS"),
     ("—", "326", "xyg_aligned_window", "lod.aligned_window"),
+    ("—", "327", "xyg_sample_threshold", "lod._sample_threshold"),
+    ("—", "327", "xyg_hash_row_ids", "lod.hash_row_ids"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

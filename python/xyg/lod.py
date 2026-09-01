@@ -34,9 +34,6 @@ from .config import (
     MAX_SCREEN_DIM,
 )
 
-_SPLITMIX_INCREMENT = np.uint64(0x9E3779B97F4A7C15)
-_SPLITMIX_MUL_1 = np.uint64(0xBF58476D1CE4E5B9)
-_SPLITMIX_MUL_2 = np.uint64(0x94D049BB133111EB)
 _UINT64_MAX_INT = (1 << 64) - 1
 _DEFAULT_SAMPLE_BASE_FRACTION = 1.0 / 1024.0
 # Integer categories at or above this go through np.unique instead of serving
@@ -343,10 +340,7 @@ def _sample_fraction(
 
 
 def _sample_threshold(fraction: float) -> np.uint64:
-    if fraction >= 1.0:
-        return np.uint64(_UINT64_MAX_INT)
-    threshold = max(0, min(_UINT64_MAX_INT, int(fraction * _UINT64_MAX_INT)))
-    return np.uint64(threshold)
+    return np.uint64(kernels.sample_threshold(fraction))
 
 
 def hash_row_ids(row_ids: Any, *, seed: int = 0) -> np.ndarray:
@@ -359,10 +353,7 @@ def hash_row_ids(row_ids: Any, *, seed: int = 0) -> np.ndarray:
     """
     ids = _row_ids(row_ids)
     seed_i = _integer_param(seed, "sample seed", max_value=_UINT64_MAX_INT)
-    z = ids + np.uint64(seed_i) + _SPLITMIX_INCREMENT
-    z = (z ^ (z >> np.uint64(30))) * _SPLITMIX_MUL_1
-    z = (z ^ (z >> np.uint64(27))) * _SPLITMIX_MUL_2
-    return z ^ (z >> np.uint64(31))
+    return kernels.hash_row_ids(ids, seed_i)
 
 
 def sample_keep_mask(

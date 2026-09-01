@@ -77,6 +77,8 @@ delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
 aligned_window = _impl.aligned_window
+sample_threshold = _impl.sample_threshold
+hash_row_ids = _impl.hash_row_ids
 encode_f32 = _impl.encode_f32
 encoded_column_meta = _impl.encoded_column_meta
 f32_safe_scale = _impl.f32_safe_scale
@@ -384,6 +386,7 @@ __all__ = [
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
     "geometry_offset",
+    "hash_row_ids",
     "heatmap_rgba",
     "hexbin",
     "hexbin_groups",
@@ -466,6 +469,7 @@ __all__ = [
     "rounded_rect_poly",
     "sample_mask",
     "sample_range_indices",
+    "sample_threshold",
     "scale_pins_offset",
     "scene_annotation_style_admit",
     "scene_arrays_equal",
