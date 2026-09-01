@@ -8,10 +8,6 @@ work is forbidden on the client).
 
 from __future__ import annotations
 
-import math
-import warnings
-from collections.abc import Mapping
-from os import PathLike
 from typing import Any, Optional, TypeAlias, Union
 
 import numpy as np
@@ -19,15 +15,18 @@ import numpy as np
 from . import (
     _annotations,
     _validate,
-    export,
     interaction,
-    kernels,
 )
 from . import _figure_autorange as _autorange
 from . import _figure_axis as _axis
+from . import _figure_dom as _dom
+from . import _figure_export as _export
 from . import _figure_ingest as _ingest
 from . import _figure_interaction as _interaction
+from . import _figure_palette as _palette
+from . import _figure_runtime as _runtime
 from . import _figure_traces as _traces
+from . import _figure_view_state as _view_state
 from . import marks as _marks
 from ._annotations import AnnotationsMixin
 from ._payload import PayloadMixin
@@ -49,13 +48,8 @@ from .config import (  # noqa: E402, F401
     SCATTER_DENSITY_THRESHOLD,
     default_palette_color,
 )
-from .dom import validate_dom_slots
 
 _FigureCheckpoint: TypeAlias = tuple[ColumnStoreCheckpoint, int, dict[str, list[str]], int]
-
-# "selection not passed" sentinel for state_patch_message: None is meaningful
-# there (clear the selection), so absence needs its own marker.
-_STATE_UNSET: Any = object()
 
 
 class Selection:
@@ -202,56 +196,44 @@ class Figure(AnnotationsMixin, PayloadMixin):
         # (wire-protocol §4).
         self._append_seq = 0
 
-    # -- palette ------------------------------------------------------------
+    palette_cycle = property(_palette.palette_cycle)
+    colors = property(_palette.colors)
+    palette_color = _palette.palette_color
+    next_series_color = _palette.next_series_color
 
-    @property
-    def palette_cycle(self) -> Optional[list[str]]:
-        """The chart palette as a positional cycle, or None when unset.
+    dom_class_strings = _dom.dom_class_strings
+    _dom_spec = _dom._dom_spec
 
-        A `{category: color}` palette pins colors by label; series that are not
-        categories still need an order, and the mapping's own is the only one
-        the author expressed."""
-        if self.palette is None:
-            return None
-        if isinstance(self.palette, dict):
-            return list(self.palette.values())
-        return list(self.palette)
+    density_view = _runtime.density_view
+    pick = _runtime.pick
+    select_range = _runtime.select_range
+    select_polygon = _runtime.select_polygon
+    to_shipped_indices = _runtime.to_shipped_indices
+    decimate_view = _runtime.decimate_view
+    legend_toggle = _runtime.legend_toggle
+    append = _runtime.append
 
-    @property
-    def colors(self) -> list[str]:
-        """This chart's categorical cycle — its own palette, else the default."""
-        return self.palette_cycle or list(DEFAULT_PALETTE)
+    _validated_state_ranges = _view_state.validated_state_ranges
+    _validated_state_selection = staticmethod(_view_state.validated_state_selection)
+    state_patch_message = _view_state.state_patch_message
+    view_nav_message = _view_state.view_nav_message
+    selection_rows_message = _view_state.selection_rows_message
+    view_state = _view_state.view_state
+    _record_view_ranges = _view_state.record_view_ranges
+    _record_selection = _view_state.record_selection
 
-    def palette_color(self, index: int, *, stacklevel: int = 3) -> str:
-        """Color for the `index`-th series (0-based): the chart palette, cycled.
-
-        Wrapping is allowed but never silent (§28) — see
-        `config.default_palette_color`, which owns the built-in-palette warning
-        and its CVD-order rationale."""
-        cycle = self.palette_cycle
-        if cycle is None:
-            return default_palette_color(index, stacklevel=stacklevel + 1)
-        if index >= len(cycle):
-            warnings.warn(
-                f"more than {len(cycle)} series use default colors; the chart "
-                f"palette repeats every {len(cycle)} (series "
-                f"{len(cycle) + 1} wears series 1's color). Pass a longer "
-                "xyg.theme(palette=...), or an explicit color= per series.",
-                RuntimeWarning,
-                stacklevel=stacklevel,
-            )
-        return cycle[index % len(cycle)]
-
-    def next_series_color(self, *, stacklevel: int = 4) -> str:
-        """Take the next categorical slot for one logical series.
-
-        Marks call this only when the caller gave no `color=`, so a mark that
-        builds several traces (box, stem) — or that delegates to another mark
-        body with the color already resolved — consumes exactly one slot."""
-        index = self._series_cursor
-        self._series_cursor += 1
-        return self.palette_color(index, stacklevel=stacklevel)
-
+    widget = _export.widget
+    show = _export.show
+    _ipython_display_ = _export.ipython_display_
+    to_html = _export.to_html
+    html = _export.html
+    _repr_html_ = _export.repr_html_
+    to_svg = _export.to_svg
+    to_scene = _export.to_scene
+    to_png = _export.to_png
+    to_image = _export.to_image
+    write_image = _export.write_image
+    memory_report = _export.memory_report
     set_axis = _axis.set_axis
     set_interaction = _interaction.set_interaction
     set_mark_style = _interaction.set_mark_style
@@ -397,580 +379,8 @@ class Figure(AnnotationsMixin, PayloadMixin):
     _pack_autorange = _autorange.pack_autorange
     _zero_baseline_anchor = _autorange.zero_baseline_anchor
 
-    def dom_class_strings(self) -> list[str]:
-        """Every DOM class string this figure emits, deduped in insertion order.
-
-        Contract: this is the *complete* set of class strings that can reach
-        the DOM — the chart root (``class_name``), the chrome slots
-        (``class_names`` values, including component-local classes merged into
-        those slots), and annotation labels (``annotation["class_name"]`` when
-        the annotation has text).
-        Per-trace mark ``class_name`` values are adapter-only metadata for
-        canvas geometry and do not create DOM nodes. The Reflex adapter joins
-        this inventory into the Tailwind scan manifest for static charts (XYBF
-        payloads are opaque to Tailwind's source scan), so this method must be
-        extended whenever a new DOM class-carrying surface is added.
-        """
-        class_strings: list[str] = []
-        seen: set[str] = set()
-
-        def add(value: Any) -> None:
-            if isinstance(value, str) and value.strip() and value not in seen:
-                seen.add(value)
-                class_strings.append(value)
-
-        add(self.class_name)
-        for value in self.class_names.values():
-            add(value)
-        for annotation in self.annotations:
-            if annotation.get("text"):
-                add(annotation.get("class_name"))
-        return class_strings
-
-    def _dom_spec(self) -> dict[str, Any]:
-        dom: dict[str, Any] = {}
-        class_name = self._optional_text(self.class_name, "class_name")
-        if class_name:
-            dom["class_name"] = class_name
-        class_names = self._string_mapping(self.class_names, "class_names")
-        validate_dom_slots(class_names, "class_names")
-        if class_names:
-            dom["class_names"] = class_names
-        validate_dom_slots(self.chrome_styles, "chrome_styles")
-        style = self._style_mapping(self.style, "style")
-        if style:
-            dom["style"] = style
-        chrome_slot_styles = {
-            slot: self._style_mapping(slot_style, f"chrome_styles[{slot!r}]")
-            for slot, slot_style in self.chrome_styles.items()
-        }
-        chrome_slot_styles = {
-            slot: slot_style for slot, slot_style in chrome_slot_styles.items() if slot_style
-        }
-        if chrome_slot_styles:
-            dom["styles"] = chrome_slot_styles
-        return dom
-
-    # -- per-kind payload emitters (extend here for new chart types) ---------
-
-    # -- channel & density helpers -------------------------------------------
-
     # Interaction handlers live in interaction.py (§17/§34); these delegates are
     # the public API the widget and users call.
-
-    def density_view(
-        self, trace_id: int, x0: float, x1: float, y0: float, y1: float, w: int, h: int
-    ) -> tuple[dict[str, Any], list[bytes]]:
-        """Re-bin a density-mode scatter's aggregation grid for a new viewport."""
-        return interaction.density_view(self, trace_id, x0, x1, y0, y1, w, h)
-
-    def pick(
-        self, trace_id: int, index: int, drill_seq: Optional[int] = None
-    ) -> Optional[dict[str, Any]]:
-        """Exact source-row readout for a hover/pick; `index` is a shipped
-        vertex index, translated to a canonical row when NaN rows were dropped
-        at ship time. Pass the client's `drill_seq` to reject a pick that
-        raced a drill update (wrong index space → None, never a wrong row)."""
-        return interaction.pick(self, trace_id, index, drill_seq)
-
-    def select_range(
-        self, x0: float, x1: float, y0: float, y1: float, trace_id: Optional[int] = None
-    ) -> dict[int, np.ndarray]:
-        """Box-select: the canonical row indices inside the box, per scatter trace."""
-        return interaction.select_range(self, x0, x1, y0, y1, trace_id)
-
-    def select_polygon(self, points: Any, trace_id: Optional[int] = None) -> dict[int, np.ndarray]:
-        """Lasso-select → canonical indices per scatter trace."""
-        return interaction.select_polygon(self, points, trace_id)
-
-    def to_shipped_indices(self, trace_id: int, canonical: np.ndarray) -> np.ndarray:
-        """Canonical rows → shipped vertex positions (the client's mask space)."""
-        return interaction.to_shipped_indices(self, trace_id, canonical)
-
-    def decimate_view(
-        self, x0: float, x1: float, px_width: int
-    ) -> tuple[dict[str, Any], list[bytes]]:
-        """Re-decimate the visible line windows on zoom, re-centering the
-        f32 upload offsets so precision holds at deep zoom."""
-        return interaction.decimate_view(self, x0, x1, px_width)
-
-    def legend_toggle(self, trace_id: int, hidden: bool, category: Optional[int] = None) -> None:
-        """Record a legend visibility toggle: whole trace, or one categorical
-        code. Selections, decimation, and density re-bins honor it (§34)."""
-        interaction.legend_toggle(self, trace_id, hidden, category)
-
-    def append(
-        self,
-        trace_id: int,
-        x: Any,
-        y: Any,
-        *,
-        color: Any = None,
-        size: Any = None,
-        stroke: Any = None,
-        opacity: Any = None,
-        alpha: Any = None,
-        stroke_width: Any = None,
-        symbol: Any = None,
-    ) -> tuple[dict[str, Any], list[memoryview]]:
-        """Streaming append: extend a scatter/line trace's canonical columns
-        and get the client refresh message back. The widget's `append` sends
-        it; headless callers can inspect or discard it. Payloads stay
-        screen-bounded, so this is O(pixels) on the wire regardless of how
-        much data has accumulated."""
-        return interaction.append_data(
-            self,
-            trace_id,
-            x,
-            y,
-            color,
-            size,
-            stroke,
-            opacity,
-            alpha,
-            stroke_width,
-            symbol,
-        )
-
-    # -- unified view state (spec/design/view-state.md) ---------------------
-
-    def _validated_state_ranges(self, ranges: Any) -> dict[str, list[float]]:
-        """Validate a partial ranges mapping against the declared axes.
-
-        Boundary rules match the §2 state document: exact axis IDs only,
-        finite ``[lo, hi]`` pairs, no coercion of NaN/infinity.
-        """
-        if not isinstance(ranges, dict) or not ranges:
-            raise ValueError("ranges must be a non-empty mapping of axis id to (lo, hi)")
-        out: dict[str, list[float]] = {}
-        for axis_id, pair in ranges.items():
-            if axis_id not in self.axis_options:
-                raise ValueError(f"unknown axis id {axis_id!r}")
-            if not isinstance(pair, (tuple, list)) or len(pair) != 2:
-                raise ValueError(f"range for axis {axis_id!r} must be a (lo, hi) pair")
-            lo, hi = float(pair[0]), float(pair[1])
-            if not math.isfinite(lo) or not math.isfinite(hi) or lo == hi:
-                raise ValueError(f"range for axis {axis_id!r} must be finite and non-empty")
-            out[axis_id] = [lo, hi]
-        return out
-
-    @staticmethod
-    def _validated_state_selection(
-        range: Any = None, polygon: Any = None
-    ) -> Optional[dict[str, Any]]:
-        """Normalize a geometric selection to its §2 wire shape (or None)."""
-        if range is not None and polygon is not None:
-            raise ValueError("pass range= or polygon=, not both")
-        if range is not None:
-            if isinstance(range, dict):
-                try:
-                    values = [float(range[key]) for key in ("x0", "x1", "y0", "y1")]
-                except (KeyError, TypeError, ValueError) as exc:
-                    raise ValueError("selection range must supply finite x0, x1, y0, y1") from exc
-            else:
-                try:
-                    values = [float(v) for v in range]
-                except (TypeError, ValueError) as exc:
-                    raise ValueError(
-                        "selection range must be a (x0, x1, y0, y1) tuple or dict"
-                    ) from exc
-                if len(values) != 4:
-                    raise ValueError("selection range must have exactly x0, x1, y0, y1")
-            if not all(math.isfinite(v) for v in values):
-                raise ValueError("selection range must be finite")
-            x0, x1, y0, y1 = values
-            return {"range": {"x0": x0, "x1": x1, "y0": y0, "y1": y1}}
-        if polygon is not None:
-            try:
-                points = [[float(p[0]), float(p[1])] for p in polygon]
-            except (TypeError, ValueError, IndexError) as exc:
-                raise ValueError("selection polygon must be a sequence of (x, y)") from exc
-            if len(points) < 3:
-                raise ValueError("selection polygon needs at least 3 points")
-            if not all(math.isfinite(v) for point in points for v in point):
-                raise ValueError("selection polygon must be finite")
-            return {"polygon": points}
-        return None
-
-    def state_patch_message(
-        self,
-        *,
-        ranges: Any = None,
-        selection: Any = _STATE_UNSET,
-        animate: bool = True,
-        history: bool = True,
-    ) -> dict[str, Any]:
-        """Build one §8 ``state_patch`` message (merge-patch semantics: absent
-        keys leave that facet of the client state alone)."""
-        state: dict[str, Any] = {"v": 1}
-        if ranges is not None:
-            state["ranges"] = self._validated_state_ranges(ranges)
-        if selection is not _STATE_UNSET:
-            state["selection"] = selection
-        if "ranges" not in state and "selection" not in state:
-            raise ValueError("state patch must change ranges or selection")
-        return {
-            "type": "state_patch",
-            "state": state,
-            "animate": bool(animate),
-            "history": bool(history),
-        }
-
-    def view_nav_message(self, axes: Any = None) -> dict[str, Any]:
-        """Build the §8 ``view_nav`` reset message (axes=None → the client's
-        configured reset_axes)."""
-        message: dict[str, Any] = {"type": "view_nav", "op": "reset"}
-        if axes is not None:
-            message["axes"] = self._axis_policy(tuple(axes), "reset axes")
-        return message
-
-    def selection_rows_message(self, rows: Any) -> tuple[dict[str, Any], list[bytes]]:
-        """Kernel-resolve a per-trace row-index selection into the same binary
-        mask buffers the gesture selection path ships (§5.1). Rows-selections
-        are non-durable by design; the client applies them outside history."""
-        if rows is None:
-            raise ValueError("rows selection requires per-trace row indices")
-        if not isinstance(rows, dict):
-            rows = {0: rows}
-        traces: list[dict[str, Any]] = []
-        out: list[bytes] = []
-        total = 0
-        for trace_id, indices in rows.items():
-            tid = int(trace_id)
-            if not 0 <= tid < len(self.traces):
-                raise ValueError(f"unknown trace id {trace_id!r}")
-            raw = np.asarray(indices)
-            # Canonical row indices are validated here, before the uint32
-            # wire encoding: a negative or oversized value would otherwise
-            # wrap/ship silently (-1 -> 4294967295) and inflate `total`
-            # while the browser highlights nothing (staff-review finding).
-            integral = raw.size == 0 or (
-                raw.dtype != np.bool_
-                and (
-                    np.issubdtype(raw.dtype, np.integer)
-                    or (
-                        np.issubdtype(raw.dtype, np.floating)
-                        and bool(np.all(np.isfinite(raw)))
-                        and bool(np.all(np.equal(np.mod(raw, 1), 0)))
-                    )
-                )
-            )
-            if not integral:
-                raise ValueError(
-                    f"row indices for trace {tid} must be integers, got dtype {raw.dtype}"
-                )
-            idx = np.unique(np.asarray(raw, dtype=np.int64).ravel())
-            n_rows = len(self.traces[tid].x)
-            if idx.size and (int(idx[0]) < 0 or int(idx[-1]) >= n_rows):
-                raise ValueError(
-                    f"row indices for trace {tid} must be in [0, {n_rows}), "
-                    f"got {int(idx[0])}..{int(idx[-1])}"
-                )
-            wire_idx = self.to_shipped_indices(tid, idx)
-            traces.append(
-                {
-                    "id": tid,
-                    "count": int(len(wire_idx)),
-                    "buf": len(out),
-                    "drill_seq": self.traces[tid].drill_seq,
-                }
-            )
-            out.append(wire_idx.tobytes())
-            # Deduplicated, validated canonical rows — not the raw request
-            # length and not only the currently-shipped subset.
-            total += int(idx.size)
-        return {"type": "selection_rows", "traces": traces, "total": total}, out
-
-    def view_state(self) -> dict[str, Any]:
-        """The last committed durable state (§5.1). Served from the kernel's
-        event-fed cache — no client round-trip; reads are eventually
-        consistent and start at the home ranges before any event arrives."""
-        if self._view_state_ranges is not None:
-            ranges = {axis_id: list(pair) for axis_id, pair in self._view_state_ranges.items()}
-        else:
-            ranges = {axis_id: list(self._range(axis_id)) for axis_id in self.axis_options}
-        selection = self._view_state_selection
-        if isinstance(selection, dict):
-            selection = dict(selection)
-        return {"v": 1, "ranges": ranges, "selection": selection}
-
-    def _record_view_ranges(self, ranges: dict[str, list[float]]) -> None:
-        """Fold a committed view event's ranges into the state cache."""
-        if self._view_state_ranges is None:
-            self._view_state_ranges = {
-                axis_id: list(self._range(axis_id)) for axis_id in self.axis_options
-            }
-        for axis_id, pair in ranges.items():
-            if axis_id in self.axis_options:
-                self._view_state_ranges[axis_id] = [float(pair[0]), float(pair[1])]
-
-    def _record_selection(self, selection: Optional[dict[str, Any]]) -> None:
-        """Fold a committed selection into the state cache; rows-selections
-        are recorded only as the opaque ``{"rows": true}`` marker (§2)."""
-        self._view_state_selection = selection
-
-    # -- output -----------------------------------------------------------
-
-    def widget(self, *, wasm_ticks: Optional[Mapping[str, str]] = None) -> Any:
-        if self._widget is None:
-            from .widget import FigureWidget
-
-            self._widget = FigureWidget(self, wasm_ticks=wasm_ticks)
-        return self._widget
-
-    def show(self, display: Optional[str] = None) -> Any:
-        """The live widget, or a standalone-HTML view when the html display
-        host is selected (reflex-shaped-api.md §3.3: "auto" falls back to
-        html only on WASM kernels, whose prebuilt frontends cannot load the
-        anywidget extension)."""
-        if export.notebook_display_mode(display) == "widget":
-            return self.widget()
-        return export.HtmlView(self._repr_html_())
-
-    def _ipython_display_(self) -> None:
-        from IPython.display import display  # type: ignore[import-not-found]
-
-        if export.notebook_display_mode() == "widget":
-            display(self.widget())
-        else:
-            display({"text/html": self._repr_html_()}, raw=True)
-
-    def to_html(
-        self,
-        path: Optional[str | PathLike[str]] = None,
-        *,
-        custom_css: Optional[str] = None,
-        animation_progress: Optional[float] = None,
-        wasm_ticks: bool | Mapping[str, object] = False,
-    ) -> str:
-        """Standalone interactive HTML: JS client + spec + base64 buffers in
-        one self-contained file (base64 carries a ~33% size tax). `custom_css`
-        injects an author stylesheet so `class_names` utility classes
-        (e.g. Tailwind) resolve in the export. ``wasm_ticks`` attaches
-        hosted Rust/WASM ticks when explicit Worker/WASM URLs are available."""
-        return export.to_html(
-            self,
-            path,
-            custom_css=custom_css,
-            animation_progress=animation_progress,
-            wasm_ticks=wasm_ticks,
-        )
-
-    def html(
-        self,
-        path: Optional[str | PathLike[str]] = None,
-        *,
-        custom_css: Optional[str] = None,
-        animation_progress: Optional[float] = None,
-        wasm_ticks: bool | Mapping[str, object] = False,
-    ) -> str:
-        """Alias for ``to_html`` for component-style API symmetry."""
-        return self.to_html(
-            path,
-            custom_css=custom_css,
-            animation_progress=animation_progress,
-            wasm_ticks=wasm_ticks,
-        )
-
-    def _repr_html_(self) -> str:
-        """Notebook HTML repr isolated from the host document's styles."""
-        return export.notebook_iframe(self.to_html(), width=self.width, height=self.height)
-
-    def to_svg(
-        self,
-        path: Optional[str | PathLike[str]] = None,
-        *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-    ) -> str:
-        """Return static SVG, routing the supported subset through Rust Scene.
-
-        Unsupported features take the documented compatibility renderer before
-        compilation.  Invalid input and Rust-consumer failures propagate; they
-        are never converted into a fallback.
-        """
-        from . import _scene_v3, _svg
-
-        data = _scene_v3.public_static_export(self, "svg", width=width, height=height)
-        if data is not None:
-            svg = data.decode("utf-8")
-            if path is not None:
-                export._atomic_write_text(path, svg)
-            return svg
-
-        return _svg.to_svg(self, path, width=width, height=height)
-
-    def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
-        """Compile the migrated Scene mark subset for this figure.
-
-        Supports cartesian scatter/line (including step), bar/column/histogram/
-        violin rects, segments/errorbar/stem polylines, area/error_band/ribbon
-        bands, triangle_mesh polyfills, and unlabeled rule/band annotations.
-        Unsupported marks or customization raise explicitly; ordinary SVG and
-        raster exports retain their established renderer until public Scene
-        auto-selection covers remaining chrome and CSS-spelling parity.
-        """
-        from . import _scene_v3
-
-        return _scene_v3.figure_scene(self, width=width, height=height)
-
-    def to_png(
-        self,
-        path: Optional[str] = None,
-        *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        scale: float = 2.0,
-        engine: export.Engine = export.Engine.default,
-        optimize: bool = False,
-        custom_css: Optional[str] = None,
-        sandbox: bool = True,
-        gl: str = "software",
-    ) -> bytes:
-        """Static PNG (export.py). `engine=Engine.default` paints the
-        decimated payload with the built-in Rust rasterizer — no browser,
-        millisecond export. `optimize=True` uses the slower size-oriented
-        indexed encoder. `engine=Engine.chromium` screenshots the standalone
-        HTML with an automatically discovered installed browser for browser
-        CSS/WebGL fidelity (see export.find_browser); `gl` selects its WebGL
-        backend — "software" (default, deterministic SwiftShader) or
-        "hardware" (real GPU). `custom_css` is Chromium-only and injects an
-        author stylesheet into the captured document."""
-        return export.to_png(
-            self,
-            path,
-            width=width,
-            height=height,
-            scale=scale,
-            engine=engine,
-            optimize=optimize,
-            custom_css=custom_css,
-            sandbox=sandbox,
-            gl=gl,
-        )
-
-    def to_image(
-        self,
-        format: str = "png",
-        *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        scale: float = 2.0,
-        background: Optional[str] = None,
-        engine: export.Engine | str = export.Engine.auto,
-        quality: Optional[int] = None,
-        optimize: bool = False,
-        custom_css: Optional[str] = None,
-        sandbox: bool = True,
-        gl: str = "software",
-    ) -> bytes:
-        """Unified static export: PNG/JPEG/WebP/SVG/PDF bytes (export.py).
-
-        `engine=Engine.auto` is deterministic — the browser-free native path
-        for every format, Chromium only when `custom_css` needs a real CSS
-        engine. See `export.to_image` for the format, quality, and background
-        policies."""
-        return export.to_image(
-            self,
-            format,
-            width=width,
-            height=height,
-            scale=scale,
-            background=background,
-            engine=engine,
-            quality=quality,
-            optimize=optimize,
-            custom_css=custom_css,
-            sandbox=sandbox,
-            gl=gl,
-        )
-
-    def write_image(
-        self,
-        path: str | PathLike[str],
-        *,
-        format: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        scale: float = 2.0,
-        background: Optional[str] = None,
-        engine: export.Engine | str = export.Engine.auto,
-        quality: Optional[int] = None,
-        optimize: bool = False,
-        custom_css: Optional[str] = None,
-        sandbox: bool = True,
-        gl: str = "software",
-    ) -> bytes:
-        """Atomic file export with extension-inferred format (export.py):
-        .png/.jpg/.jpeg/.webp/.svg/.pdf, plus .html routing to `to_html`."""
-        return export.write_image(
-            self,
-            path,
-            format=format,
-            width=width,
-            height=height,
-            scale=scale,
-            background=background,
-            engine=engine,
-            quality=quality,
-            optimize=optimize,
-            custom_css=custom_css,
-            sandbox=sandbox,
-            gl=gl,
-        )
-
-    def memory_report(self) -> dict[str, Any]:
-        """Every byte class itemized; if it isn't in the report it isn't real."""
-        from . import interaction  # method-local: no load-time cycle
-
-        spec, blob = self.build_payload()
-        report = self.store.memory_report()
-        channel_arrays: list[np.ndarray] = []
-        store_arrays = [column.values for column in self.store.columns]
-        seen_channels: set[tuple[int, int]] = set()
-        for trace in self.traces:
-            for channel in (trace.color_ch, trace.size_ch):
-                if channel is None:
-                    continue
-                values = (
-                    getattr(channel, "codes", None)
-                    if channel.mode == "categorical"
-                    else channel.values
-                )
-                if values is None:
-                    continue
-                capacity = getattr(channel, "_buffer", None)
-                arrays = [capacity if capacity is not None else values]
-                counts = getattr(channel, "counts", None)
-                if counts is not None:
-                    arrays.append(counts)
-                for array in arrays:
-                    key = (int(array.__array_interface__["data"][0]), int(array.nbytes))
-                    if key in seen_channels or any(
-                        np.shares_memory(array, item) for item in store_arrays
-                    ):
-                        continue
-                    seen_channels.add(key)
-                    channel_arrays.append(array)
-        report["channel_bytes"] = int(sum(array.nbytes for array in channel_arrays))
-        report["transport_bytes_first_paint"] = len(blob)
-        n_total = sum(t.n_points for t in self.traces) or 1
-        report["transport_bytes_per_point"] = len(blob) / n_total
-        report["pyramid_bytes"] = interaction.pyramid_report_bytes(self)
-        report["pyramid_spilled_bytes"] = interaction.pyramid_spilled_bytes(self)
-        report["bin_color_bytes"] = interaction.bin_color_cache_bytes(self)
-        report["legend_vis_cache_bytes"] = interaction.legend_vis_cache_bytes(self)
-        # Capacity, not live length: a streamed column's growth-buffer slack is
-        # resident RAM (§27), and equals `canonical_bytes` when nothing appended.
-        report["resident_array_bytes"] = (
-            report["canonical_capacity_bytes"]
-            + report["channel_bytes"]
-            + report["pyramid_bytes"]
-            + report["bin_color_bytes"]
-            + report["legend_vis_cache_bytes"]
-        )
-        report["backend"] = kernels.BACKEND
-        return report
 
 
 # The AnnotationsMixin methods (in `_annotations.py`) and the mark

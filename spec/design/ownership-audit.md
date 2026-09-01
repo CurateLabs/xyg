@@ -376,6 +376,11 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_figure_autorange.py` — XYAR autorange packing and Rust figure_autorange dispatch
 - `_figure_axis.py` — axis configuration, scale/kind resolution, and payload axis spec assembly
 - `_figure_interaction.py` — interaction configuration, polar validation, interaction/mark-style payload specs
+- `_figure_palette.py` — categorical palette cycle and series color selection
+- `_figure_dom.py` — DOM class inventory and payload dom spec assembly
+- `_figure_runtime.py` — runtime interaction delegates (widget comm path)
+- `_figure_view_state.py` — durable view-state cache and state_patch wire messages
+- `_figure_export.py` — display and static export entry points
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
 - `_graph.py` — ingest / id maps; layout is `xyg_graph_layout`
@@ -815,6 +820,11 @@ Forbidden:
 | `python/xyg/_figure_autorange.py` | Python host | `python-host` | `keep-host`; XYAR autorange packing; mirrors Node `figure.js` autorange path | — |
 | `python/xyg/_figure_axis.py` | Python host | `python-host` | `keep-host`; axis configuration, scale/kind resolution, payload axis spec assembly | — |
 | `python/xyg/_figure_interaction.py` | Python host | `python-host` | `keep-host`; interaction configuration, polar validation, interaction/mark-style payload specs | — |
+| `python/xyg/_figure_palette.py` | Python host | `python-host` | `keep-host`; categorical palette cycle and series color selection | — |
+| `python/xyg/_figure_dom.py` | Python host | `python-host` | `keep-host`; DOM class inventory and payload dom spec assembly | — |
+| `python/xyg/_figure_runtime.py` | Python host | `python-host` | `keep-host`; runtime interaction delegates (widget comm path) | — |
+| `python/xyg/_figure_view_state.py` | Python host | `python-host` | `keep-host`; durable view-state cache and state_patch wire messages | — |
+| `python/xyg/_figure_export.py` | Python host | `python-host` | `keep-host`; display and static export entry points | — |
 | `python/xyg/_fontmetrics.py` | Python host | `python-host` | `keep-host`; generated DejaVu advance table mirrored from Rust `font.rs` for compat SVG gutters | — |
 | `python/xyg/_framing.py` | Python host | `python-host` | `keep-host`; XYBF transport framing, not chart policy | — |
 | `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
