@@ -32,6 +32,7 @@ from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._paint import (
     _css,
+    hexbin_ring,
     trace_paint_rgb_css_list,
 )
 from ._paint import (
@@ -4681,23 +4682,17 @@ def _scatter_marks(
     effective_trace, face_intrinsic, grouped_alpha, scalar_artist = (
         _paint.scatter_grouped_artist_alpha(t, style, face_intrinsic)
     )
-    face_rgba = _paint.effective_rgba(
-        face_intrinsic, effective_trace, read, component="fill", default_opacity=0.8
+    face_rgba, stroke_rgba, face_css, face_css_constant, stroke_css, stroke_css_constant = (
+        _paint.scatter_svg_paint(
+            t, style, effective_trace, face_intrinsic, fallback, read, default_opacity=0.8
+        )
     )
-    face_css, face_css_constant = _paint.trace_paint_css_constant(t, "color", fallback)
 
     size_ch = t.get("size") or {}
     radii = _paint.scatter_radii(size_ch, read, n)
 
     stroke_widths = _paint.style_values(t, "stroke_width", n, read, 0.0)
     symbols = _symbol_names(t, n, read, str(style.get("symbol", "circle")))
-    stroke_source = _paint.trace_stroke_intrinsic(t, style, n, fallback, read, face_intrinsic)
-    stroke_css, stroke_css_constant = _paint.trace_stroke_css_meta(
-        t, style, fallback, face_css, face_css_constant
-    )
-    stroke_rgba = _paint.effective_rgba(
-        stroke_source, effective_trace, read, component="stroke", default_opacity=0.8
-    )
     marker_path = style.get("marker_path")
     marker_glyph = style.get("marker_glyph")
     if not marker_path and not marker_glyph and not grouped_alpha:
@@ -4836,16 +4831,6 @@ def _symbol_names(
     return [
         _SYMBOL_NAMES[int(code)] if int(code) < len(_SYMBOL_NAMES) else fallback for code in codes
     ]
-
-
-# The hexagon ring around a hexbin cell center, as fractions of the cell
-# pitch (style hex_dx/hex_dy). ABI 210 `xyg_hexbin_ring` owns the six
-# offsets; ChartView `_buildHexbinMark` must match.
-
-
-def hexbin_ring(style: dict) -> tuple[np.ndarray, np.ndarray]:
-    """Data-space hexagon vertex offsets (6) for a hexbin trace's cell pitch."""
-    return _native.hexbin_ring(float(style.get("hex_dx", 0.0)), float(style.get("hex_dy", 0.0)))
 
 
 def _hexbin_marks(

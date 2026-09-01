@@ -25,6 +25,7 @@ from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._paint import (
     _css,
     effective_paint_rgba8,
+    hexbin_ring,
 )
 from ._paint import (
     colormap_lut as _lut,
@@ -93,7 +94,6 @@ from ._svg import (
     annotation_label_placement,
     apply_export_background,
     axis_ticks,
-    hexbin_ring,
     layout,
     legend_clip_rect,
     legend_items,

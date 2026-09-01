@@ -243,6 +243,11 @@ def polar_clip_line_segments(
     return px0, py0, px1, py1, keep
 
 
+def hexbin_ring(style: dict[str, Any]) -> tuple[np.ndarray, np.ndarray]:
+    """Data-space hexagon vertex offsets (6) for a hexbin trace's cell pitch."""
+    return _native.hexbin_ring(float(style.get("hex_dx", 0.0)), float(style.get("hex_dy", 0.0)))
+
+
 def direct_rgba(channel: dict[str, Any], n: int, read_column: ColumnReader) -> np.ndarray | None:
     """Decode a packed normalized RGBA8 channel to canonical float RGBA."""
     if channel.get("mode") != "direct_rgba":
@@ -571,6 +576,32 @@ def scatter_grouped_artist_alpha(
     effective_style["stroke_opacity"] = 1.0
     effective_trace["style"] = effective_style
     return effective_trace, face, True, float(scalar)
+
+
+def scatter_svg_paint(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    effective_trace: dict[str, Any],
+    face_intrinsic: np.ndarray,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    default_opacity: float,
+) -> tuple[np.ndarray, np.ndarray, str, bool, str, bool]:
+    """Resolve SVG scatter face/stroke paint rows and opaque CSS metadata."""
+    face_css, face_css_constant = trace_paint_css_constant(trace, "color", fallback)
+    face_rgba = effective_rgba(
+        face_intrinsic, effective_trace, read, component="fill", default_opacity=default_opacity
+    )
+    n = len(face_intrinsic)
+    stroke_source = trace_stroke_intrinsic(trace, style, n, fallback, read, face_intrinsic)
+    stroke_css, stroke_css_constant = trace_stroke_css_meta(
+        trace, style, fallback, face_css, face_css_constant
+    )
+    stroke_rgba = effective_rgba(
+        stroke_source, effective_trace, read, component="stroke", default_opacity=default_opacity
+    )
+    return face_rgba, stroke_rgba, face_css, face_css_constant, stroke_css, stroke_css_constant
 
 
 def ribbon_fill_rgba(
