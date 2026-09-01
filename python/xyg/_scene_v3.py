@@ -13,7 +13,13 @@ from typing import Any, NoReturn
 
 from . import _native
 from ._scene_annotations import (
+    annotation_allowed_style as _annotation_allowed_style,  # noqa: F401
+)
+from ._scene_annotations import (
     colorbar_input as _colorbar_input,
+)
+from ._scene_annotations import (
+    pack_xyaf as _pack_xyaf,  # noqa: F401
 )
 from ._scene_annotations import (
     pack_xyaf_bulk as _pack_xyaf_bulk,
@@ -67,10 +73,30 @@ from ._scene_observations import (  # noqa: F401
     _xyta_hexbin_plane_observations,
 )
 from ._scene_sidecars import (
+    _XYFS_TRACE_CORNER_RADIUS,  # noqa: F401
+    _XYFS_TRACE_RECT_GRADIENT,  # noqa: F401
+    _XYFS_TRACE_WEDGE_GAP,  # noqa: F401
+)
+from ._scene_sidecars import (
+    pack_gradient_spec as _pack_gradient_spec,  # noqa: F401
+)
+from ._scene_sidecars import (
+    pack_marker_blob as _pack_marker_blob,  # noqa: F401
+)
+from ._scene_sidecars import (
     pack_xycl as _pack_xycl,
 )
 from ._scene_sidecars import (
     pack_xynm as _pack_xynm,
+)
+from ._scene_sidecars import (
+    pack_xyta_colormap as _pack_xyta_colormap,  # noqa: F401
+)
+from ._scene_sidecars import (
+    parse_scene_linecap as _parse_scene_linecap,  # noqa: F401
+)
+from ._scene_sidecars import (
+    rect_extra_flags as _rect_extra_flags,  # noqa: F401
 )
 from ._scene_unpack import (  # noqa: F401
     _unpack_gradient_blob,
