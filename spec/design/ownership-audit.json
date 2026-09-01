@@ -1798,6 +1798,14 @@
       "rationale": "XYCL/XYNM sidecars and thin ABI pack delegates (colormap, marker, gradient, linecap, rect flags)."
     },
     {
+      "path": "python/xyg/_scene_errors.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Maps Rust Scene encode errors to UnsupportedSceneV3/ValueError for figure_scene."
+    },
+    {
       "path": "python/xyg/_scene_annotations.py",
       "current_owner": "Python host",
       "policy": "python-scene-migration",
