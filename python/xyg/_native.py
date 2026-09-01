@@ -22,7 +22,7 @@ import struct
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, ClassVar, Optional, cast
+from typing import Any, ClassVar, Optional, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -1536,6 +1536,14 @@ def sample_fraction(level: int, base_fraction: float, growth: float) -> float:
     return float(_lib.xyg_sample_fraction(int(level), float(base_fraction), float(growth)))
 
 
+class StratifiedSampleRangePlan(TypedDict):
+    fraction: float
+    seed: int
+    min_count: int
+    capacity: int
+    keep_all: bool
+
+
 def stratified_sample_range_plan(
     n_rows: int,
     n_groups: int,
@@ -1544,7 +1552,7 @@ def stratified_sample_range_plan(
     growth: float,
     seed: int,
     min_per_category: int,
-) -> dict[str, int | float | bool]:
+) -> StratifiedSampleRangePlan:
     """Validate categorical sampling policy and size its bounded output (ABI 345)."""
     fraction = ctypes.c_double()
     seed_out = ctypes.c_uint64()
