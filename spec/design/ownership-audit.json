@@ -2030,6 +2030,14 @@
       "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
     },
     {
+      "path": "python/xyg/_figure_ingest.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_fontmetrics.py",
       "current_owner": "Python host",
       "policy": "python-host",
