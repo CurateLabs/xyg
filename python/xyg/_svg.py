@@ -41,9 +41,9 @@ from ._export_chrome import (
     slot_styles,
     slot_text_color,
 )
-from ._export_colormap import COLORMAP_STOPS  # noqa: F401
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
 from ._export_colorbar_svg import _colorbar
+from ._export_colormap import COLORMAP_STOPS  # noqa: F401
 from ._export_heatmap import (
     _heatmap_sample_column,  # noqa: F401
     polar_heatmap_rgba,  # noqa: F401
@@ -98,7 +98,6 @@ from ._export_path_svg import (
     _curve_path,
     _monotone_tangents,  # noqa: F401
 )
-from ._export_svg_state import _Svg
 from ._export_polar_svg import (
     _polar_frame_path,
     _polar_grid,
@@ -107,6 +106,7 @@ from ._export_polar_svg import (
     _polar_thin_radial_labels,
     _polar_tick_labels,
 )
+from ._export_svg_state import _Svg
 from ._export_svg_util import (
     _axis_grid_attrs,
     _cap_join_attrs,
@@ -140,9 +140,9 @@ from ._export_ticks import (
 from ._fontmetrics import estimated_text_width as _estimated_text_width  # noqa: F401
 from ._layout import (
     THETA_ZERO,  # noqa: F401
+    _axis_scales,
     _PolarProjection,
     _Scale,
-    _axis_scales,
     polar_wedge_points,  # noqa: F401
 )
 from ._paint import (
@@ -158,13 +158,13 @@ from ._paint import (
     colormap_stops as _colormap_stops,  # noqa: F401
 )
 from ._paint import (
-    physical_density_alpha as _physical_density_alpha,  # noqa: F401
-)
-from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
     heatmap_rgba_grid as _heatmap_rgba_grid,  # noqa: F401
+)
+from ._paint import (
+    physical_density_alpha as _physical_density_alpha,  # noqa: F401
 )
 from ._paint import (
     solid_paint as _solid_paint,
@@ -176,9 +176,6 @@ from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
 from .config import DEFAULT_PALETTE
-
-
-
 
 # Unresolved CSS paints use native `STATIC_COLOR_FALLBACK_RGBA8` via
 # `xyg_css_color_rgba` (76, 120, 168, 255).

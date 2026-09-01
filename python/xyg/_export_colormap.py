@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
+
 def _flag_stops() -> list[tuple[int, int, int]]:
     """Matplotlib's high-frequency ``flag`` map at the native 256 LUT positions."""
     x = np.linspace(0.0, 1.0, 256)
