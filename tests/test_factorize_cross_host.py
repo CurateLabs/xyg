@@ -48,6 +48,7 @@ def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
         "palette_rows_rgba8",
         "colormap_lut_rgba8",
         "literal_color_rgba_f64",
+        "stratified_sample_range_plan",
     ):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
@@ -140,6 +141,18 @@ def _python_literal_color_case(spec: dict) -> list[list[float]] | None:
     return rgba.tolist()
 
 
+def _python_stratified_plan_case(spec: dict) -> dict[str, float | int | bool]:
+    return kernels.stratified_sample_range_plan(
+        int(spec["n_rows"]),
+        int(spec["n_groups"]),
+        int(spec["target"]),
+        int(spec["level"]),
+        float(spec["growth"]),
+        int(spec["seed"]),
+        int(spec["min_per_category"]),
+    )
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -155,6 +168,7 @@ FACTORIZE_CASES = [
         "palette_rows_rgba8",
         "colormap_lut_rgba8",
         "literal_color_rgba_f64",
+        "stratified_sample_range_plan",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -164,6 +178,7 @@ QUANTIZE_UNIT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "quantize_unit_u
 PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "palette_rows_rgba8"]
 COLORMAP_LUT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_lut_rgba8"]
 LITERAL_COLOR_CASES = [c for c in FIXTURE_CASES if c["kind"] == "literal_color_rgba_f64"]
+STRATIFIED_PLAN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stratified_sample_range_plan"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -255,6 +270,17 @@ def test_literal_color_rgba_f64_cross_host(spec: dict, node_results: dict[str, d
         assert node.get("rgba") is None
         return
     assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", STRATIFIED_PLAN_CASES, ids=lambda s: s["name"])
+def test_stratified_sample_range_plan_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    plan = _python_stratified_plan_case(spec)
+    node = node_results[spec["name"]]
+    assert plan["fraction"] == node["fraction"]
+    assert plan["seed"] == node["seed"]
+    assert plan["min_count"] == node["min_count"]
+    assert plan["capacity"] == node["capacity"]
+    assert plan["keep_all"] == node["keep_all"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

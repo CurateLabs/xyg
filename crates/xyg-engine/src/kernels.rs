@@ -7459,6 +7459,68 @@ pub fn sample_fraction(level: i64, base_fraction: f64, growth: f64) -> f64 {
     fraction.min(1.0)
 }
 
+/// Validate categorical sampling policy and size its bounded output buffer.
+///
+/// Matches Python `lod._stratified_sample_range_plan` after host-side array
+/// validation. Returns `None` on invalid numeric policy.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StratifiedSampleRangePlan {
+    pub fraction: f64,
+    pub seed: u64,
+    pub min_count: u32,
+    pub capacity: usize,
+    pub keep_all: bool,
+}
+
+pub fn stratified_sample_range_plan(
+    n_rows: usize,
+    n_groups: u32,
+    target: u32,
+    level: i64,
+    growth: f64,
+    seed: u64,
+    min_per_category: u32,
+) -> Option<StratifiedSampleRangePlan> {
+    if n_groups == 0 || n_groups > 256 || target == 0 || level < 0 || !growth.is_finite() || growth < 1.0
+    {
+        return None;
+    }
+    if n_rows == 0 {
+        return Some(StratifiedSampleRangePlan {
+            fraction: 1.0,
+            seed: 0,
+            min_count: min_per_category,
+            capacity: 0,
+            keep_all: false,
+        });
+    }
+    let base_fraction = (target as f64 / n_rows as f64).min(1.0);
+    let fraction = sample_fraction(level, base_fraction, growth);
+    if fraction >= 1.0 {
+        return Some(StratifiedSampleRangePlan {
+            fraction,
+            seed: 0,
+            min_count: min_per_category,
+            capacity: n_rows,
+            keep_all: true,
+        });
+    }
+    let expectation_bound = fraction * (n_rows as f64) * f64::from(n_groups).sqrt();
+    let floor_bound = u64::from(min_per_category.saturating_mul(n_groups));
+    let capacity = n_rows.min(
+        64usize
+            .max((expectation_bound * 2.0).ceil() as usize)
+            .max(floor_bound as usize),
+    );
+    Some(StratifiedSampleRangePlan {
+        fraction,
+        seed,
+        min_count: min_per_category,
+        capacity,
+        keep_all: false,
+    })
+}
+
 /// Category-stratified deterministic sampling mask (§5/§17). Per-category keep
 /// fractions scale sublinearly (`min(1, fraction * sqrt(n / count))`) and every
 /// category keeps at least `min(min_count, count)` of its lowest-hash rows, so
@@ -10264,6 +10326,20 @@ mod tests {
         assert_eq!(sample_fraction(3, 1.0, 2.0), 1.0);
         assert_eq!(sample_fraction(5, 0.5, 1.0), 0.5);
         assert!((sample_fraction(10, 0.001, 1.5) - 0.001 * 1.5_f64.powf(10.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn stratified_sample_range_plan_matches_host_policy() {
+        let plan = stratified_sample_range_plan(1000, 4, 500, 0, 2.0, 29, 1).expect("plan");
+        assert!((plan.fraction - 0.5).abs() < 1e-12);
+        assert_eq!(plan.seed, 29);
+        assert_eq!(plan.min_count, 1);
+        assert!(plan.capacity >= 64);
+        assert!(!plan.keep_all);
+        let all = stratified_sample_range_plan(10, 4, 100, 0, 2.0, 0, 1).expect("keep all");
+        assert!(all.keep_all);
+        assert_eq!(all.capacity, 10);
+        assert!(stratified_sample_range_plan(10, 0, 1, 0, 2.0, 0, 1).is_none());
     }
 
     #[test]

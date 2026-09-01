@@ -161,6 +161,28 @@
       "kind": "literal_color_rgba_f64",
       "values": ["#ff0000", "b"],
       "expect_null": true
+    },
+    {
+      "name": "stratified_sample_range_plan_basic",
+      "kind": "stratified_sample_range_plan",
+      "n_rows": 1000,
+      "n_groups": 4,
+      "target": 500,
+      "level": 0,
+      "growth": 2.0,
+      "seed": 29,
+      "min_per_category": 1
+    },
+    {
+      "name": "stratified_sample_range_plan_keep_all",
+      "kind": "stratified_sample_range_plan",
+      "n_rows": 10,
+      "n_groups": 4,
+      "target": 100,
+      "level": 0,
+      "growth": 2.0,
+      "seed": 0,
+      "min_per_category": 1
     }
   ]
 }

@@ -83,6 +83,7 @@ zone_maps_pair = _impl.zone_maps_pair
 aligned_window = _impl.aligned_window
 sample_threshold = _impl.sample_threshold
 sample_fraction = _impl.sample_fraction
+stratified_sample_range_plan = _impl.stratified_sample_range_plan
 hash_row_ids = _impl.hash_row_ids
 encode_f32 = _impl.encode_f32
 encoded_column_meta = _impl.encoded_column_meta
@@ -581,6 +582,7 @@ __all__ = [
     "spectrogram",
     "stacked_bounds",
     "stratified_sample_mask",
+    "stratified_sample_range_plan",
     "stratified_sample_range_u8",
     "stream_append",
     "stream_capacity",

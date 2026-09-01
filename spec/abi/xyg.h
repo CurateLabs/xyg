@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 344
-#define XYG_ABI_SIGNATURE_SHA256 "a3a80f29db93836ca8db6fe0a65ec63eef74bf38df4d1c1190a287bbe52276bc"
+#define XYG_ABI_VERSION 345
+#define XYG_ABI_SIGNATURE_SHA256 "f5a580051c0a7b67b6237703638824561b41a58dd01d4be74d48863daaf6251a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -380,6 +380,7 @@ int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint
 size_t xyg_step_arrays(const double * x, const double * y, size_t n, uint8_t mode, double * out_x, double * out_y, size_t capacity);
 int32_t xyg_stratified_sample_mask(const uint64_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out);
 int32_t xyg_stratified_sample_mask_u32(const uint32_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out);
+int32_t xyg_stratified_sample_range_plan(size_t n_rows, uint32_t n_groups, uint32_t target, int64_t level, double growth, uint64_t seed, uint32_t min_per_category, double * out_fraction, uint64_t * out_seed, uint32_t * out_min_count, size_t * out_capacity, uint32_t * out_keep_all);
 size_t xyg_stratified_sample_range_u8(const uint8_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint32_t * out, size_t capacity);
 size_t xyg_stratified_sample_range_u8_counted(const uint8_t * groups, size_t len, const uint64_t * counts, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint32_t * out, size_t capacity);
 int32_t xyg_stream_append(uint64_t handle, const double * data, size_t len);

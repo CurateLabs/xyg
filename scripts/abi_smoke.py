@@ -1061,6 +1061,21 @@ def load() -> ctypes.CDLL:
     lib.xyg_hash_row_ids.argtypes = [U64P, ctypes.c_size_t, ctypes.c_uint64, U64P]
     lib.xyg_sample_fraction.restype = D
     lib.xyg_sample_fraction.argtypes = [ctypes.c_int64, D, D]
+    lib.xyg_stratified_sample_range_plan.restype = ctypes.c_int32
+    lib.xyg_stratified_sample_range_plan.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int64,
+        D,
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        F64P,
+        U64P,
+        U32P,
+        ctypes.POINTER(ctypes.c_size_t),
+        U32P,
+    ]
     lib.xyg_screen_shape.restype = ctypes.c_int32
     lib.xyg_screen_shape.argtypes = [
         ctypes.c_int32,
@@ -5283,6 +5298,50 @@ def main() -> None:
     ok(
         abs(lib.xyg_sample_fraction(0, 1.0, 2.0) - 1.0) < 1e-12,
         "sample_fraction saturated base",
+    )
+    plan_fraction = array("d", [0.0])
+    plan_seed = array("Q", [0])
+    plan_min = array("I", [0])
+    plan_capacity = array("Q", [0])
+    plan_keep = array("I", [0])
+    ok(
+        lib.xyg_stratified_sample_range_plan(
+            1000,
+            4,
+            500,
+            0,
+            2.0,
+            29,
+            1,
+            _ptr(plan_fraction, ctypes.c_double),
+            _ptr(plan_seed, ctypes.c_uint64),
+            _ptr(plan_min, ctypes.c_uint32),
+            _ptr(plan_capacity, ctypes.c_size_t),
+            _ptr(plan_keep, ctypes.c_uint32),
+        )
+        == 1
+        and abs(plan_fraction[0] - 0.5) < 1e-12
+        and plan_seed[0] == 29
+        and plan_keep[0] == 0,
+        "stratified_sample_range_plan basic",
+    )
+    ok(
+        lib.xyg_stratified_sample_range_plan(
+            10,
+            0,
+            1,
+            0,
+            2.0,
+            0,
+            1,
+            _ptr(plan_fraction, ctypes.c_double),
+            _ptr(plan_seed, ctypes.c_uint64),
+            _ptr(plan_min, ctypes.c_uint32),
+            _ptr(plan_capacity, ctypes.c_size_t),
+            _ptr(plan_keep, ctypes.c_uint32),
+        )
+        == 0,
+        "stratified_sample_range_plan invalid n_groups",
     )
     out_w = ctypes.c_int32()
     out_h = ctypes.c_int32()

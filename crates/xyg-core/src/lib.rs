@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 344;
+pub const ABI_VERSION: u32 = 345;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7692,6 +7692,54 @@ pub unsafe extern "C" fn xyg_hash_row_ids(
 #[no_mangle]
 pub extern "C" fn xyg_sample_fraction(level: i64, base_fraction: f64, growth: f64) -> f64 {
     kernels::sample_fraction(level, base_fraction, growth)
+}
+
+/// Stratified sample range planning (ABI 345, §5/§17).
+///
+/// Returns `1` on success, `0` on invalid policy, `-2` on invalid output
+/// pointers. Writes fraction, seed, min_count, capacity, and keep_all (0/1).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stratified_sample_range_plan(
+    n_rows: usize,
+    n_groups: u32,
+    target: u32,
+    level: i64,
+    growth: f64,
+    seed: u64,
+    min_per_category: u32,
+    out_fraction: *mut f64,
+    out_seed: *mut u64,
+    out_min_count: *mut u32,
+    out_capacity: *mut usize,
+    out_keep_all: *mut u32,
+) -> i32 {
+    if out_fraction.is_null()
+        || out_seed.is_null()
+        || out_min_count.is_null()
+        || out_capacity.is_null()
+        || out_keep_all.is_null()
+    {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let Some(plan) = kernels::stratified_sample_range_plan(
+            n_rows,
+            n_groups,
+            target,
+            level,
+            growth,
+            seed,
+            min_per_category,
+        ) else {
+            return 0;
+        };
+        *out_fraction = plan.fraction;
+        *out_seed = plan.seed;
+        *out_min_count = plan.min_count;
+        *out_capacity = plan.capacity;
+        *out_keep_all = u32::from(plan.keep_all);
+        1
+    })
 }
 
 /// Pack EncodedColumn offset/scale/kind-presence (ABI 255, §16/§19).

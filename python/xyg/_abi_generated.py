@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 344
-SIGNATURE_SHA256 = "a3a80f29db93836ca8db6fe0a65ec63eef74bf38df4d1c1190a287bbe52276bc"
+ABI_VERSION = 345
+SIGNATURE_SHA256 = "f5a580051c0a7b67b6237703638824561b41a58dd01d4be74d48863daaf6251a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1486,6 +1486,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_stratified_sample_mask_u32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_double, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_stratified_sample_range_plan(size_t n_rows, uint32_t n_groups, uint32_t target, int64_t level, double growth, uint64_t seed, uint32_t min_per_category, double * out_fraction, uint64_t * out_seed, uint32_t * out_min_count, size_t * out_capacity, uint32_t * out_keep_all)
+    function = lib.xyg_stratified_sample_range_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_size_t, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int64, ctypes.c_double, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_stratified_sample_range_u8(const uint8_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint32_t * out, size_t capacity)
     function = lib.xyg_stratified_sample_range_u8
     function.restype = ctypes.c_size_t

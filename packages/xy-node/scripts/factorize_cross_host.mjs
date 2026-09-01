@@ -18,6 +18,7 @@ import {
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
 import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64 } from "../src/color.js";
+import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -189,6 +190,26 @@ for (const spec of fixture.cases) {
       rows.push([...packed.slice(i * 4, i * 4 + 4)]);
     }
     out.push({ name: spec.name, rgba: rows });
+    continue;
+  }
+  if (spec.kind === "stratified_sample_range_plan") {
+    const plan = stratifiedSampleRangePlan(
+      spec.n_rows,
+      spec.n_groups,
+      spec.target,
+      spec.level,
+      spec.growth,
+      spec.seed,
+      spec.min_per_category,
+    );
+    out.push({
+      name: spec.name,
+      fraction: plan.fraction,
+      seed: Number(plan.seed),
+      min_count: plan.minCount,
+      capacity: plan.capacity,
+      keep_all: plan.keepAll,
+    });
     continue;
   }
   if (spec.kind === "stringlike") {

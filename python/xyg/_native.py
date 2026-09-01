@@ -1536,6 +1536,48 @@ def sample_fraction(level: int, base_fraction: float, growth: float) -> float:
     return float(_lib.xyg_sample_fraction(int(level), float(base_fraction), float(growth)))
 
 
+def stratified_sample_range_plan(
+    n_rows: int,
+    n_groups: int,
+    target: int,
+    level: int,
+    growth: float,
+    seed: int,
+    min_per_category: int,
+) -> dict[str, int | float | bool]:
+    """Validate categorical sampling policy and size its bounded output (ABI 345)."""
+    fraction = ctypes.c_double()
+    seed_out = ctypes.c_uint64()
+    min_count = ctypes.c_uint32()
+    capacity = ctypes.c_size_t()
+    keep_all = ctypes.c_uint32()
+    code = int(
+        _lib.xyg_stratified_sample_range_plan(
+            int(n_rows),
+            int(n_groups),
+            int(target),
+            int(level),
+            float(growth),
+            int(seed),
+            int(min_per_category),
+            ctypes.byref(fraction),
+            ctypes.byref(seed_out),
+            ctypes.byref(min_count),
+            ctypes.byref(capacity),
+            ctypes.byref(keep_all),
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid stratified-sample-range-plan request")
+    return {
+        "fraction": float(fraction.value),
+        "seed": int(seed_out.value),
+        "min_count": int(min_count.value),
+        "capacity": int(capacity.value),
+        "keep_all": bool(keep_all.value),
+    }
+
+
 def hash_row_ids(
     ids: npt.NDArray[np.uint64],
     seed: int,

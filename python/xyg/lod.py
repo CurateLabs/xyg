@@ -19,7 +19,6 @@ per-chart-kind rules live in the LOD/Tiling Contract (§28).
 
 from __future__ import annotations
 
-import math
 import numbers
 from dataclasses import dataclass
 from typing import Any, cast
@@ -627,26 +626,27 @@ def _stratified_sample_range_plan(
             or int(group_counts.sum(dtype=np.uint64)) != len(codes)
         ):
             raise ValueError("counts must be exact uint64 counts for every group")
-    base_fraction = min(1.0, target_i / len(codes))
-    fraction = _sample_fraction(
-        level,
-        base_fraction,
-        growth,
-        label="stratified sample",
-    )
-    if fraction >= 1.0:
-        return codes, group_counts, n_groups_i, fraction, 0, min_count, len(codes)
-    seed_i = _integer_param(seed, "sample seed", max_value=_UINT64_MAX_INT)
-    # Cauchy-Schwarz bounds the expected threshold survivors by
-    # `fraction * n * sqrt(k)`. Two-times that bound plus every category's
-    # floor keeps retries vanishingly rare while remaining screen-bounded.
-    expectation_bound = fraction * len(codes) * math.sqrt(n_groups_i)
-    floor_bound = min_count * n_groups_i
-    capacity = min(
+    plan = kernels.stratified_sample_range_plan(
         len(codes),
-        max(64, math.ceil(expectation_bound * 2.0), floor_bound),
+        n_groups_i,
+        target_i,
+        level,
+        growth,
+        0,
+        min_count,
     )
-    return codes, group_counts, n_groups_i, fraction, seed_i, min_count, capacity
+    if plan["keep_all"]:
+        return codes, group_counts, n_groups_i, plan["fraction"], 0, min_count, plan["capacity"]
+    seed_i = _integer_param(seed, "sample seed", max_value=_UINT64_MAX_INT)
+    return (
+        codes,
+        group_counts,
+        n_groups_i,
+        plan["fraction"],
+        seed_i,
+        min_count,
+        plan["capacity"],
+    )
 
 
 def bin_2d_stratified_sample_row_range_for_target(

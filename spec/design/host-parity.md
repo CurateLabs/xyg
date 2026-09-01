@@ -870,6 +870,10 @@ Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without
 materializing the whole column.
+Python `lod._stratified_sample_range_plan` and Node `stratifiedSampleRangePlan`
+size categorical sampling buffers through ABI 345
+`xyg_stratified_sample_range_plan`. Hosts still validate group codes and exact
+per-code counts before calling.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
 Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
