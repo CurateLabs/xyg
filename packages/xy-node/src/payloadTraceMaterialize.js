@@ -4,7 +4,7 @@ import {
   pointer,
   xyPayloadTraceEmitMaterialize,
 } from "./native.js";
-import { Column, DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, u8Ptr, u32Ptr } from "./encode.js";
+import { Column, DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, payloadVisibleIndices, u8Ptr, u32Ptr } from "./encode.js";
 import { clipQuantizeU8, directRgbaAdmit } from "./color.js";
 
 export const PAYLOAD_TRACE_EMIT_MAX_BYTES = 1 << 28;
@@ -593,8 +593,18 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   } else if (sv.getInt32(28, true) && sv.getInt32(60, true)) {
     entry.animation_fallback = TRANSITION_FALLBACK_BY_CODE[sv.getInt32(60, true)] ?? null;
   }
+  let sel = null;
+  if (sv.getInt32(48, true) || sv.getInt32(36, true)) {
+    const xv = traceColumnValues(t.x);
+    const yv = traceColumnValues(t.y);
+    const baseCol = traceColumnForEmit(t.base);
+    sel = visibleSel(figure, t, xv, yv, {
+      base: baseCol?.values ?? null,
+      prefiltered: sv.getInt32(4, true) !== 0,
+      baseCol,
+    });
+  }
   if (sv.getInt32(32, true)) {
-    const sel = t.shipped_sel;
     entry.tooltip_rows = sv.getInt32(36, true)
       ? (sel ?? []).map((i) => ({ ...t.tooltip_rows[i] }))
       : t.tooltip_rows.map((row) => ({ ...row }));
@@ -645,7 +655,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     }
     return entry;
   }
-  if (sv.getInt32(48, true)) t.shipped_sel = null;
+  if (sv.getInt32(48, true)) t.shipped_sel = sel;
   return entry;
 }
 
@@ -659,6 +669,29 @@ function scatterPayloadForceDensity(trace) {
 function figureAxisScale(figure, axisId) {
   const scale = figure.axis_options?.[axisId]?.type;
   return scale === "log" || scale === "symlog" ? scale : "linear";
+}
+
+function axisIsLog(figure, axisId) {
+  if (typeof figure._axisIsLog === "function") {
+    return figure._axisIsLog(axisId);
+  }
+  return figureAxisScale(figure, axisId) === "log";
+}
+
+function visibleSel(figure, t, xv, yv, { base = null, prefiltered = false, baseCol = null } = {}) {
+  const xCol = traceColumnForEmit(t.x);
+  const yCol = traceColumnForEmit(t.y);
+  const { keepAll, indices } = payloadVisibleIndices(xv, yv, {
+    xLog: axisIsLog(figure, t.x_axis ?? "x"),
+    yLog: axisIsLog(figure, t.y_axis ?? "y"),
+    base,
+    prefiltered,
+    xHasNulls: (xCol?.zone?.nullCount ?? xCol?.nullCount ?? 0) > 0,
+    yHasNulls: (yCol?.zone?.nullCount ?? yCol?.nullCount ?? 0) > 0,
+    hasBase: base != null || baseCol != null,
+    baseHasNulls: baseCol != null ? (baseCol.zone?.nullCount ?? baseCol.nullCount ?? 0) > 0 : false,
+  });
+  return keepAll ? null : indices;
 }
 
 function attachTransitionEntry(entry, t, pw) {
