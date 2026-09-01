@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 from . import _native, channels, interaction, kernels, lod
+from ._payload_helpers import binning_coords, payload_column_ship_plan, ship_trace_channel_attach
+from ._payload_ship import ship_registry_columns
 from ._trace import Trace
 from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .config import DENSITY_SAMPLE_SEED, DENSITY_SAMPLE_TARGET
@@ -64,8 +66,9 @@ class PayloadDensityMixin:
                     "capacity": WASM_AGGREGATE_MAX_POINTS,
                     "ownership": "retain-host-replay",
                 }
-                column_plan = self._payload_column_ship_plan(t, kind="density_wasm_source")
-                self._ship_registry_columns(
+                column_plan = payload_column_ship_plan(self, t, kind="density_wasm_source")
+                ship_registry_columns(
+                    self,
                     wasm_source,
                     t,
                     pw,
@@ -154,7 +157,7 @@ class PayloadDensityMixin:
         except (TypeError, ValueError):
             authored = float("nan")
         style["opacity"] = kernels.density_overlay_opacity(authored)
-        column_plan = self._payload_column_ship_plan(t, kind="density_sample")
+        column_plan = payload_column_ship_plan(self, t, kind="density_sample")
         sample = {
             "mode": "sampled",
             "n": int(len(sample_sel)),
@@ -166,7 +169,8 @@ class PayloadDensityMixin:
             "y_range": list(yr),
             "style": style,
         }
-        self._ship_registry_columns(
+        ship_registry_columns(
+            self,
             sample,
             t,
             pw,
@@ -174,7 +178,7 @@ class PayloadDensityMixin:
             {"x": t.x.values[sample_sel], "y": t.y.values[sample_sel]},
             nested_keys=frozenset({"x", "y"}),
         )
-        self._ship_trace_channel_attach(
+        ship_trace_channel_attach(
             sample,
             t,
             sample_sel,
@@ -269,8 +273,8 @@ class PayloadDensityMixin:
         # so every cell covers the same strip of *screen*. The wire keeps raw
         # `x_range`/`y_range` endpoints; renderers interpolate between their
         # scale coordinates.
-        bx, (bx0, bx1) = self._binning_coords(t.x_axis, t.x.values, xr)
-        by, (by0, by1) = self._binning_coords(t.y_axis, t.y.values, yr)
+        bx, (bx0, bx1) = binning_coords(self, t.x_axis, t.x.values, xr)
+        by, (by0, by1) = binning_coords(self, t.y_axis, t.y.values, yr)
         x_linear = self._axis_scale(t.x_axis) == "linear"
         y_linear = self._axis_scale(t.y_axis) == "linear"
         from . import _ooc as ooc

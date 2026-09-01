@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from . import _native
+from ._payload_helpers import binning_coords, transition_entry
 from ._trace import Trace
 from .columns import Column
 from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS
@@ -302,7 +303,7 @@ def emit_trace_materialized(
     bin_x_arr = None
     bin_x0 = bin_x1 = 0.0
     if t.kind in ("line", "area", "error_band"):
-        bx, (bin_x0, bin_x1) = figure._binning_coords(t.x_axis, t.x.values, xr)
+        bx, (bin_x0, bin_x1) = binning_coords(figure, t.x_axis, t.x.values, xr)
         if bx is not t.x.values:
             bin_x_arr = np.ascontiguousarray(bx, dtype=np.float64)
     grid_arr = None
@@ -406,7 +407,7 @@ def emit_trace_materialized(
         if summary.drill_mode_false:
             t.drill_mode = False
         entry = figure._density_trace_spec(t, xr, yr, *DENSITY_GRID, pw)
-        return figure._transition_entry(entry, t, pw) if summary.attach_transition else entry
+        return transition_entry(entry, t, pw) if summary.attach_transition else entry
     if path == PAYLOAD_TRACE_EMIT_PATH_RECT_FALLBACK:
         saved = t.kind
         try:
