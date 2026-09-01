@@ -354,11 +354,11 @@ eligibility uses the existing LINE|BAND bits (no new ABI). ABI 237 `xyg_scene_he
 | `rust-engine` | 16 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
 | `rust-wasm-abi` | 1 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
-| `python-host` | 66 | `keep-host` | current owner |
-| `python-scene-migration` | 13 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `python-host` | 81 | `keep-host` | current owner |
+| `python-scene-migration` | 11 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `node-host` | 7 | `keep-host` | current owner |
-| `node-scene-migration` | 29 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `node-scene-migration` | 27 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `node-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `browser-client` | 16 | `keep-shared-client` | current owner |
 | `browser-scene-migration` | 1 | `move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
