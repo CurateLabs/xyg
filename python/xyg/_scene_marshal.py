@@ -795,3 +795,278 @@ def pack_polar_scene_input(figure: Any) -> bytes:
         theta_zero_label=str(theta_zero) if theta_zero_is_label else "",
         theta_zero_numeric=_native._polar_theta_zero(theta_zero),
     )
+
+
+_XYEF_OBS_HAS_X = 1 << 0
+_XYEF_OBS_HAS_Y = 1 << 1
+_XYEF_OBS_X_FINITE = 1 << 2
+_XYEF_OBS_Y_FINITE = 1 << 3
+_XYEF_OBS_HAS_X0 = 1 << 4
+_XYEF_OBS_HAS_Y0 = 1 << 5
+_XYEF_OBS_HAS_X1 = 1 << 6
+_XYEF_OBS_HAS_Y1 = 1 << 7
+_XYEF_OBS_X0_FINITE = 1 << 8
+_XYEF_OBS_Y0_FINITE = 1 << 9
+_XYEF_OBS_X1_FINITE = 1 << 10
+_XYEF_OBS_Y1_FINITE = 1 << 11
+_XYEF_OBS_JOINED_FILL = 1 << 12
+_XYEF_OBS_HEATMAP_TRUECOLOR = 1 << 13
+_XYEF_OBS_HEATMAP_RGBA_GRID = 1 << 16
+_XYEF_OBS_HEATMAP_SHAPE_OK = 1 << 17
+_XYEF_OBS_HEATMAP_EXTENT_OK = 1 << 18
+_XYEF_OBS_HEATMAP_FINITE = 1 << 19
+_XYEF_OBS_STROKE_WIDTH_ONLY = 1 << 20
+_XYEF_OBS_COMPANION_XY_MATCH = 1 << 21
+_XYEF_OBS_COMPANION_AXES_MATCH = 1 << 22
+_XYEF_OBS_SYMBOL_NON_STRING = 1 << 23
+_XYEF_OBS_DENSITY_BLIT = 1 << 24
+
+
+def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:
+    for key in keys:
+        encoded = str(key).encode("utf-8")
+        if len(encoded) > 256:
+            encoded = encoded[:256]
+        buf.extend(len(encoded).to_bytes(2, "little"))
+        buf.extend(encoded)
+
+
+def _xyep_column(trace: Any, name: str) -> Any:
+    return getattr(trace, name, None)
+
+
+def _xyep_len(column: Any) -> int:
+    return 0 if column is None else int(len(column.values))
+
+
+def _xyep_finite(column: Any) -> bool:
+    if column is None:
+        return False
+    return _native.scene_finite_all(column.values)
+
+
+def pack_public_export_support(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> bytes:
+    """Pack authored XYEF facts; Rust owns the XYEP envelope (ABI 152)."""
+    from xyg._scene_observations import (
+        UnsupportedSceneV3,
+        _annotation_has_markup,
+        _heatmap_extent,
+        _heatmap_grid_values,
+        _heatmap_shape,
+        _hexbin_pitch,
+    )
+
+    export_plan = _native.scene_public_export_figure_plan(
+        polar=getattr(figure, "coords", "cartesian") == "polar",
+        has_chrome_styles=bool(getattr(figure, "chrome_styles", None)),
+        has_title_options=bool(getattr(figure, "title_options", None)),
+    )
+    flags = 0
+    if width is None and not isinstance(figure.width, int):
+        flags |= 1 << 0
+    if height is None and not isinstance(figure.height, int):
+        flags |= 1 << 1
+    if export_plan["has_chrome_styles"]:
+        flags |= 1 << 2
+    if export_plan["has_title_options"]:
+        flags |= 1 << 3
+    if export_plan["polar"]:
+        flags |= 1 << 4
+    style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
+    legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
+    colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]
+    annotations = list(getattr(figure, "annotations", None) or [])
+    traces = list(getattr(figure, "traces", None) or [])
+    payload = bytearray(b"XYEF")
+    payload.extend((1).to_bytes(4, "little"))
+    payload.extend(flags.to_bytes(4, "little"))
+    payload.extend(len(style_keys).to_bytes(4, "little"))
+    payload.extend(len(legend_keys).to_bytes(4, "little"))
+    payload.extend(len(colorbar_keys).to_bytes(4, "little"))
+    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    payload.extend(len(annotations).to_bytes(4, "little"))
+    payload.extend(len(traces).to_bytes(4, "little"))
+    _xyep_put_keys(payload, style_keys)
+    _xyep_put_keys(payload, legend_keys)
+    _xyep_put_keys(payload, colorbar_keys)
+    for axis_id, options in figure.axis_options.items():
+        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        resolved = figure._axis_kind(axis_id)
+        resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
+        authored = options.get("type")
+        authored_code = {None: 0, "linear": 1, "log": 2, "symlog": 3}.get(authored, 255)
+        side = options.get("side")
+        side_code = {None: 0, "bottom": 1, "left": 2, "top": 3, "right": 4}.get(side, 255)
+        keys = [str(key) for key, value in options.items() if value not in (None, False)]
+        payload.extend(
+            bytes(
+                (
+                    axis_code,
+                    resolved_code,
+                    authored_code,
+                    int(options.get("domain") is not None),
+                    side_code,
+                    0,
+                )
+            )
+        )
+        payload.extend(len(keys).to_bytes(2, "little"))
+        _xyep_put_keys(payload, keys)
+    for annotation in annotations:
+        if not isinstance(annotation, dict):
+            payload.extend(struct.pack("<B3sHH", 1, b"", 0, 0))
+            continue
+        kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
+        fields = [str(key) for key in annotation]
+        if _annotation_has_markup(annotation) and "markup" not in fields:
+            fields.append("markup")
+        payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
+        payload.extend(kind_b)
+        _xyep_put_keys(payload, fields)
+    for trace_index, trace in enumerate(traces):
+        style = getattr(trace, "style", None) or {}
+        export_dispatch = _native.scene_public_export_trace_dispatch_plan(
+            kind=str(trace.kind),
+            polar=export_plan["polar"],
+            use_density=str(trace.kind) == "scatter" and trace.use_density(),
+        )
+        opacity = float(style.get("opacity", 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError("trace opacity must be finite and in [0, 1]")
+        prev = traces[trace_index - 1] if trace_index else None
+        prev2 = traces[trace_index - 2] if trace_index >= 2 else None
+        prev3 = traces[trace_index - 3] if trace_index >= 3 else None
+        xv = _xyep_column(trace, "x")
+        yv = _xyep_column(trace, "y")
+        x0 = _xyep_column(trace, "x0")
+        y0 = _xyep_column(trace, "y0")
+        x1 = _xyep_column(trace, "x1")
+        y1 = _xyep_column(trace, "y1")
+        obs = 0
+        if xv is not None:
+            obs |= _XYEF_OBS_HAS_X
+        if yv is not None:
+            obs |= _XYEF_OBS_HAS_Y
+        if _xyep_finite(xv):
+            obs |= _XYEF_OBS_X_FINITE
+        if _xyep_finite(yv):
+            obs |= _XYEF_OBS_Y_FINITE
+        if x0 is not None:
+            obs |= _XYEF_OBS_HAS_X0
+        if y0 is not None:
+            obs |= _XYEF_OBS_HAS_Y0
+        if x1 is not None:
+            obs |= _XYEF_OBS_HAS_X1
+        if y1 is not None:
+            obs |= _XYEF_OBS_HAS_Y1
+        if _xyep_finite(x0):
+            obs |= _XYEF_OBS_X0_FINITE
+        if _xyep_finite(y0):
+            obs |= _XYEF_OBS_Y0_FINITE
+        if _xyep_finite(x1):
+            obs |= _XYEF_OBS_X1_FINITE
+        if _xyep_finite(y1):
+            obs |= _XYEF_OBS_Y1_FINITE
+        if style.get("joined_fill"):
+            obs |= _XYEF_OBS_JOINED_FILL
+        heatmap_rows = heatmap_cols = heatmap_values = 0
+        if trace.kind == "heatmap":
+            style_truecolor = bool(style.get("truecolor"))
+            if style_truecolor:
+                obs |= _XYEF_OBS_HEATMAP_TRUECOLOR
+            if getattr(trace, "rgba_grid", None) is not None:
+                obs |= _XYEF_OBS_HEATMAP_RGBA_GRID
+            try:
+                heatmap_rows, heatmap_cols = _heatmap_shape(trace)
+                values = _heatmap_grid_values(trace)
+                _heatmap_extent(trace)
+                obs |= _XYEF_OBS_HEATMAP_SHAPE_OK
+                obs |= _XYEF_OBS_HEATMAP_EXTENT_OK
+                heatmap_values = int(values.size)
+                if _native.scene_finite_all(values):
+                    obs |= _XYEF_OBS_HEATMAP_FINITE
+            except (UnsupportedSceneV3, ValueError, TypeError):
+                heatmap_rows = heatmap_cols = heatmap_values = 0
+        if style.get("stroke_width") is not None and style.get("stroke") is None:
+            obs |= _XYEF_OBS_STROKE_WIDTH_ONLY
+        if (
+            prev is not None
+            and xv is not None
+            and yv is not None
+            and _xyep_column(prev, "x1") is not None
+            and _xyep_column(prev, "y1") is not None
+            and _native.scene_arrays_equal(xv.values, prev.x1.values)
+            and _native.scene_arrays_equal(yv.values, prev.y1.values)
+        ):
+            obs |= _XYEF_OBS_COMPANION_XY_MATCH
+        if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
+            obs |= _XYEF_OBS_COMPANION_AXES_MATCH
+        symbol = style.get("symbol", "circle")
+        if not isinstance(symbol, str):
+            obs |= _XYEF_OBS_SYMBOL_NON_STRING
+            symbol = ""
+        if export_dispatch["pack_density_blit"]:
+            obs |= _XYEF_OBS_DENSITY_BLIT
+        role = style.get("role")
+        role_s = "" if role is None else str(role)
+        reduce = style.get("reduce")
+        reduce_s = "" if reduce is None else str(reduce)
+        try:
+            hex_dx, hex_dy = (
+                _hexbin_pitch(style)
+                if export_dispatch["pack_hexbin_pitch"]
+                else (float("nan"), float("nan"))
+            )
+        except UnsupportedSceneV3:
+            hex_dx = hex_dy = float("nan")
+        style_keys_tr = [str(key) for key, value in style.items() if value is not None]
+        kind_b = str(trace.kind).encode("utf-8")[:256]
+        step_b = str(style.get("step") or "").encode("utf-8")[:256]
+        role_b = role_s.encode("utf-8")[:256]
+        symbol_b = (symbol.encode("utf-8") if isinstance(symbol, str) else b"")[:256]
+        reduce_b = reduce_s.encode("utf-8")[:256]
+        prev_b = (str(prev.kind).encode("utf-8") if prev is not None else b"")[:256]
+        prev2_b = (str(prev2.kind).encode("utf-8") if prev2 is not None else b"")[:256]
+        prev3_b = (str(prev3.kind).encode("utf-8") if prev3 is not None else b"")[:256]
+        payload.extend(
+            struct.pack(
+                "<I6I3I10H4x2d",
+                obs,
+                _xyep_len(xv),
+                _xyep_len(yv),
+                _xyep_len(x0),
+                _xyep_len(y0),
+                _xyep_len(x1),
+                _xyep_len(y1),
+                heatmap_rows,
+                heatmap_cols,
+                heatmap_values,
+                len(style_keys_tr),
+                len(kind_b),
+                len(step_b),
+                len(role_b),
+                len(symbol_b),
+                len(reduce_b),
+                len(prev_b),
+                len(prev2_b),
+                len(prev3_b),
+                0,
+                hex_dx,
+                hex_dy,
+            )
+        )
+        payload.extend(kind_b)
+        payload.extend(step_b)
+        payload.extend(role_b)
+        payload.extend(symbol_b)
+        payload.extend(reduce_b)
+        payload.extend(prev_b)
+        payload.extend(prev2_b)
+        payload.extend(prev3_b)
+        _xyep_put_keys(payload, style_keys_tr)
+    return _native.scene_pack_public_export(bytes(payload))

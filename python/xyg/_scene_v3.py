@@ -14,6 +14,7 @@ from typing import Any, NoReturn
 import numpy as np
 
 from . import _native
+from ._scene_marshal import pack_public_export_support as _pack_public_export_support
 
 # Re-export observation helpers for existing imports (tests, scripts).
 from ._scene_observations import (  # noqa: F401
@@ -28,14 +29,19 @@ from ._scene_observations import (  # noqa: F401
     _channel_constant_css,
     _channel_end_rgba8,
     _classify_ribbon_color2,
+    _colormap_stop_bytes,
     _constant_color,
     _density_aggregates_color,
     _fill_is_gradient_authoring,
+    _heatmap_extent,
+    _heatmap_grid_values,
+    _heatmap_shape,
     _hexbin_cell_rgba8,
     _hexbin_count,
     _hexbin_packs_colormap_plane,
     _hexbin_packs_paint_plane,
     _hexbin_packs_rgba_plane,
+    _hexbin_pitch,
     _item_apply_opacity,
     _item_fill_rgba8,
     _item_stroke_rgba8,
@@ -137,30 +143,6 @@ _PUBLIC_EXPORT_KIND_CODES = {
     "heatmap": 17,
     "contour": 18,
 }
-
-_XYEF_OBS_HAS_X = 1 << 0
-_XYEF_OBS_HAS_Y = 1 << 1
-_XYEF_OBS_X_FINITE = 1 << 2
-_XYEF_OBS_Y_FINITE = 1 << 3
-_XYEF_OBS_HAS_X0 = 1 << 4
-_XYEF_OBS_HAS_Y0 = 1 << 5
-_XYEF_OBS_HAS_X1 = 1 << 6
-_XYEF_OBS_HAS_Y1 = 1 << 7
-_XYEF_OBS_X0_FINITE = 1 << 8
-_XYEF_OBS_Y0_FINITE = 1 << 9
-_XYEF_OBS_X1_FINITE = 1 << 10
-_XYEF_OBS_Y1_FINITE = 1 << 11
-_XYEF_OBS_JOINED_FILL = 1 << 12
-_XYEF_OBS_HEATMAP_TRUECOLOR = 1 << 13
-_XYEF_OBS_HEATMAP_RGBA_GRID = 1 << 16
-_XYEF_OBS_HEATMAP_SHAPE_OK = 1 << 17
-_XYEF_OBS_HEATMAP_EXTENT_OK = 1 << 18
-_XYEF_OBS_HEATMAP_FINITE = 1 << 19
-_XYEF_OBS_STROKE_WIDTH_ONLY = 1 << 20
-_XYEF_OBS_COMPANION_XY_MATCH = 1 << 21
-_XYEF_OBS_COMPANION_AXES_MATCH = 1 << 22
-_XYEF_OBS_SYMBOL_NON_STRING = 1 << 23
-_XYEF_OBS_DENSITY_BLIT = 1 << 24
 
 _LEGEND_LOCATIONS = {
     "upper right": 0,
@@ -1131,19 +1113,6 @@ def _admitted_marker_glyph(glyph: Any) -> bytes | None:
     return glyph.encode("utf-8")
 
 
-def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
-    """Return the finite data-space hex cell pitch, or fail closed."""
-    raw_dx = style.get("hex_dx", style.get("dx"))
-    raw_dy = style.get("hex_dy", style.get("dy"))
-    if raw_dx is None or raw_dy is None:
-        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
-    dx = float(raw_dx)
-    dy = float(raw_dy)
-    if not _native.scene_hexbin_pitch_admit(dx, dy):
-        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
-    return dx, dy
-
-
 def _item_widths(trace: Any, n: int) -> bytes | None:
     width_ch = (getattr(trace, "style_channels", None) or {}).get("stroke_width")
     if width_ch is not None:
@@ -1189,61 +1158,6 @@ def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
 
 def _mesh_face_widths(trace: Any) -> bytes | None:
     return _item_widths(trace, _mesh_count(trace))
-
-
-def _heatmap_uses_colormap(trace: Any) -> bool:
-    """Return whether a heatmap still needs the compatibility colormap path."""
-    style = getattr(trace, "style", None) or {}
-    return _native.scene_heatmap_colormap_admit(
-        1 if style.get("truecolor") else 0,
-        1 if style.get("colormap") is not None else 0,
-        1 if getattr(trace, "rgba_grid", None) is not None else 0,
-        1 if getattr(trace, "rgba", None) is not None else 0,
-    )
-
-
-def _heatmap_shape(trace: Any) -> tuple[int, int]:
-    """Return the finite rows x cols lattice, or fail closed."""
-    shape = getattr(trace, "grid_shape", None)
-    if shape is None or len(shape) != 2:
-        raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape")
-    rows_f, cols_f = float(shape[0]), float(shape[1])
-    if not _native.scene_heatmap_shape_admit(rows_f, cols_f):
-        raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape")
-    return int(rows_f), int(cols_f)
-
-
-def _heatmap_grid_values(trace: Any) -> np.ndarray:
-    """Return the authored scalar grid as a flat finite-checkable column."""
-    grid = getattr(trace, "grid", None)
-    if grid is None:
-        raise ValueError("heatmap Scene v12 compilation requires a scalar grid")
-    return np.asarray(getattr(grid, "values", grid), dtype=np.float64)
-
-
-def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
-    """Return the finite increasing cell rectangle covered by the grid."""
-    if trace.x is None or trace.y is None:
-        raise ValueError("heatmap Scene v12 compilation requires range columns")
-    xv = np.asarray(getattr(trace.x, "values", trace.x), dtype=np.float64)
-    yv = np.asarray(getattr(trace.y, "values", trace.y), dtype=np.float64)
-    if len(xv) != 2 or len(yv) != 2:
-        raise UnsupportedSceneV3("Scene v12 heatmap range columns must be two endpoints")
-    x0, x1 = float(xv[0]), float(xv[1])
-    y0, y1 = float(yv[0]), float(yv[1])
-    if not _native.scene_heatmap_extent_admit(x0, x1, y0, y1):
-        raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
-    return x0, x1, y0, y1
-
-
-def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
-    stops = np.ascontiguousarray(
-        [(int(red), int(green), int(blue)) for red, green, blue in colormap],
-        dtype=np.uint8,
-    )
-    if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
-        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops")
-    return np.ascontiguousarray(stops).tobytes()
 
 
 def _pack_xyta_colormap(style: dict[str, Any]) -> tuple[int, bytes, bytes]:
@@ -1834,247 +1748,6 @@ def _pack_figure_support(
     from ._scene_marshal import pack_figure_support
 
     return pack_figure_support(figure, annotations, colorbar_unsupported)
-
-
-def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:
-    for key in keys:
-        encoded = str(key).encode("utf-8")
-        if len(encoded) > 256:
-            encoded = encoded[:256]
-        buf.extend(len(encoded).to_bytes(2, "little"))
-        buf.extend(encoded)
-
-
-def _xyep_column(trace: Any, name: str) -> Any:
-    return getattr(trace, name, None)
-
-
-def _xyep_len(column: Any) -> int:
-    return 0 if column is None else int(len(column.values))
-
-
-def _xyep_finite(column: Any) -> bool:
-    if column is None:
-        return False
-    return _native.scene_finite_all(column.values)
-
-
-def _pack_public_export_support(
-    figure: Any,
-    *,
-    width: int | None = None,
-    height: int | None = None,
-) -> bytes:
-    """Pack authored XYEF facts; Rust owns the XYEP envelope (ABI 152)."""
-    export_plan = _native.scene_public_export_figure_plan(
-        polar=getattr(figure, "coords", "cartesian") == "polar",
-        has_chrome_styles=bool(getattr(figure, "chrome_styles", None)),
-        has_title_options=bool(getattr(figure, "title_options", None)),
-    )
-    flags = 0
-    if width is None and not isinstance(figure.width, int):
-        flags |= 1 << 0
-    if height is None and not isinstance(figure.height, int):
-        flags |= 1 << 1
-    if export_plan["has_chrome_styles"]:
-        flags |= 1 << 2
-    if export_plan["has_title_options"]:
-        flags |= 1 << 3
-    if export_plan["polar"]:
-        flags |= 1 << 4
-    style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
-    legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
-    colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]
-    annotations = list(getattr(figure, "annotations", None) or [])
-    traces = list(getattr(figure, "traces", None) or [])
-    payload = bytearray(b"XYEF")
-    payload.extend((1).to_bytes(4, "little"))
-    payload.extend(flags.to_bytes(4, "little"))
-    payload.extend(len(style_keys).to_bytes(4, "little"))
-    payload.extend(len(legend_keys).to_bytes(4, "little"))
-    payload.extend(len(colorbar_keys).to_bytes(4, "little"))
-    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
-    payload.extend(len(annotations).to_bytes(4, "little"))
-    payload.extend(len(traces).to_bytes(4, "little"))
-    _xyep_put_keys(payload, style_keys)
-    _xyep_put_keys(payload, legend_keys)
-    _xyep_put_keys(payload, colorbar_keys)
-    for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        resolved = figure._axis_kind(axis_id)
-        resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
-        authored = options.get("type")
-        authored_code = {None: 0, "linear": 1, "log": 2, "symlog": 3}.get(authored, 255)
-        side = options.get("side")
-        side_code = {None: 0, "bottom": 1, "left": 2, "top": 3, "right": 4}.get(side, 255)
-        keys = [str(key) for key, value in options.items() if value not in (None, False)]
-        payload.extend(
-            bytes(
-                (
-                    axis_code,
-                    resolved_code,
-                    authored_code,
-                    int(options.get("domain") is not None),
-                    side_code,
-                    0,
-                )
-            )
-        )
-        payload.extend(len(keys).to_bytes(2, "little"))
-        _xyep_put_keys(payload, keys)
-    for annotation in annotations:
-        if not isinstance(annotation, dict):
-            payload.extend(struct.pack("<B3sHH", 1, b"", 0, 0))
-            continue
-        kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
-        fields = [str(key) for key in annotation]
-        if _annotation_has_markup(annotation) and "markup" not in fields:
-            fields.append("markup")
-        payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
-        payload.extend(kind_b)
-        _xyep_put_keys(payload, fields)
-    for trace_index, trace in enumerate(traces):
-        style = getattr(trace, "style", None) or {}
-        export_dispatch = _native.scene_public_export_trace_dispatch_plan(
-            kind=str(trace.kind),
-            polar=export_plan["polar"],
-            use_density=str(trace.kind) == "scatter" and trace.use_density(),
-        )
-        opacity = float(style.get("opacity", 1.0))
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError("trace opacity must be finite and in [0, 1]")
-        prev = traces[trace_index - 1] if trace_index else None
-        prev2 = traces[trace_index - 2] if trace_index >= 2 else None
-        prev3 = traces[trace_index - 3] if trace_index >= 3 else None
-        xv = _xyep_column(trace, "x")
-        yv = _xyep_column(trace, "y")
-        x0 = _xyep_column(trace, "x0")
-        y0 = _xyep_column(trace, "y0")
-        x1 = _xyep_column(trace, "x1")
-        y1 = _xyep_column(trace, "y1")
-        obs = 0
-        if xv is not None:
-            obs |= _XYEF_OBS_HAS_X
-        if yv is not None:
-            obs |= _XYEF_OBS_HAS_Y
-        if _xyep_finite(xv):
-            obs |= _XYEF_OBS_X_FINITE
-        if _xyep_finite(yv):
-            obs |= _XYEF_OBS_Y_FINITE
-        if x0 is not None:
-            obs |= _XYEF_OBS_HAS_X0
-        if y0 is not None:
-            obs |= _XYEF_OBS_HAS_Y0
-        if x1 is not None:
-            obs |= _XYEF_OBS_HAS_X1
-        if y1 is not None:
-            obs |= _XYEF_OBS_HAS_Y1
-        if _xyep_finite(x0):
-            obs |= _XYEF_OBS_X0_FINITE
-        if _xyep_finite(y0):
-            obs |= _XYEF_OBS_Y0_FINITE
-        if _xyep_finite(x1):
-            obs |= _XYEF_OBS_X1_FINITE
-        if _xyep_finite(y1):
-            obs |= _XYEF_OBS_Y1_FINITE
-        if style.get("joined_fill"):
-            obs |= _XYEF_OBS_JOINED_FILL
-        heatmap_rows = heatmap_cols = heatmap_values = 0
-        if trace.kind == "heatmap":
-            style_truecolor = bool(style.get("truecolor"))
-            if style_truecolor:
-                obs |= _XYEF_OBS_HEATMAP_TRUECOLOR
-            if getattr(trace, "rgba_grid", None) is not None:
-                obs |= _XYEF_OBS_HEATMAP_RGBA_GRID
-            try:
-                heatmap_rows, heatmap_cols = _heatmap_shape(trace)
-                values = _heatmap_grid_values(trace)
-                _heatmap_extent(trace)
-                obs |= _XYEF_OBS_HEATMAP_SHAPE_OK
-                obs |= _XYEF_OBS_HEATMAP_EXTENT_OK
-                heatmap_values = int(values.size)
-                if _native.scene_finite_all(values):
-                    obs |= _XYEF_OBS_HEATMAP_FINITE
-            except (UnsupportedSceneV3, ValueError, TypeError):
-                heatmap_rows = heatmap_cols = heatmap_values = 0
-        if style.get("stroke_width") is not None and style.get("stroke") is None:
-            obs |= _XYEF_OBS_STROKE_WIDTH_ONLY
-        if (
-            prev is not None
-            and xv is not None
-            and yv is not None
-            and _xyep_column(prev, "x1") is not None
-            and _xyep_column(prev, "y1") is not None
-            and _native.scene_arrays_equal(xv.values, prev.x1.values)
-            and _native.scene_arrays_equal(yv.values, prev.y1.values)
-        ):
-            obs |= _XYEF_OBS_COMPANION_XY_MATCH
-        if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
-            obs |= _XYEF_OBS_COMPANION_AXES_MATCH
-        symbol = style.get("symbol", "circle")
-        if not isinstance(symbol, str):
-            obs |= _XYEF_OBS_SYMBOL_NON_STRING
-            symbol = ""
-        if export_dispatch["pack_density_blit"]:
-            obs |= _XYEF_OBS_DENSITY_BLIT
-        role = style.get("role")
-        role_s = "" if role is None else str(role)
-        reduce = style.get("reduce")
-        reduce_s = "" if reduce is None else str(reduce)
-        try:
-            hex_dx, hex_dy = (
-                _hexbin_pitch(style)
-                if export_dispatch["pack_hexbin_pitch"]
-                else (float("nan"), float("nan"))
-            )
-        except UnsupportedSceneV3:
-            hex_dx = hex_dy = float("nan")
-        style_keys_tr = [str(key) for key, value in style.items() if value is not None]
-        kind_b = str(trace.kind).encode("utf-8")[:256]
-        step_b = str(style.get("step") or "").encode("utf-8")[:256]
-        role_b = role_s.encode("utf-8")[:256]
-        symbol_b = (symbol.encode("utf-8") if isinstance(symbol, str) else b"")[:256]
-        reduce_b = reduce_s.encode("utf-8")[:256]
-        prev_b = (str(prev.kind).encode("utf-8") if prev is not None else b"")[:256]
-        prev2_b = (str(prev2.kind).encode("utf-8") if prev2 is not None else b"")[:256]
-        prev3_b = (str(prev3.kind).encode("utf-8") if prev3 is not None else b"")[:256]
-        payload.extend(
-            struct.pack(
-                "<I6I3I10H4x2d",
-                obs,
-                _xyep_len(xv),
-                _xyep_len(yv),
-                _xyep_len(x0),
-                _xyep_len(y0),
-                _xyep_len(x1),
-                _xyep_len(y1),
-                heatmap_rows,
-                heatmap_cols,
-                heatmap_values,
-                len(style_keys_tr),
-                len(kind_b),
-                len(step_b),
-                len(role_b),
-                len(symbol_b),
-                len(reduce_b),
-                len(prev_b),
-                len(prev2_b),
-                len(prev3_b),
-                0,
-                hex_dx,
-                hex_dy,
-            )
-        )
-        payload.extend(kind_b)
-        payload.extend(step_b)
-        payload.extend(role_b)
-        payload.extend(symbol_b)
-        payload.extend(reduce_b)
-        payload.extend(prev_b)
-        payload.extend(prev2_b)
-        payload.extend(prev3_b)
-        _xyep_put_keys(payload, style_keys_tr)
-    return _native.scene_pack_public_export(bytes(payload))
 
 
 def _public_scene_or_reason(

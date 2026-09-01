@@ -1787,7 +1787,15 @@
       "policy": "python-scene-migration",
       "disposition": "keep-host",
       "follow_up_issue": null,
-      "rationale": "Trace/figure observation helpers for Scene marshal paths; delegates classify/admit to Rust."
+      "rationale": "Trace/figure observation helpers (heatmap/hexbin pitch, colormap stops, ribbon classify); delegates admit/classify to Rust."
+    },
+    {
+      "path": "python/xyg/_scene_marshal.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Figure observation marshaling and XYEF public-export support pack; delegates bulk pack/materialize to Rust (ABI 319-325)."
     },
     {
       "path": "python/xyg/_scene_v3.py",

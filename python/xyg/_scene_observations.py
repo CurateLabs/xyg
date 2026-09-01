@@ -525,3 +525,60 @@ def _scene_side_mask(
             f"Scene v12 {axis_id} axis {name} must contain only {list(allowed)!r}"
         )
     return sum(1 << index for index, candidate in enumerate(allowed) if candidate in values)
+
+
+def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
+    """Return the finite data-space hex cell pitch, or fail closed."""
+    raw_dx = style.get("hex_dx", style.get("dx"))
+    raw_dy = style.get("hex_dy", style.get("dy"))
+    if raw_dx is None or raw_dy is None:
+        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
+    dx = float(raw_dx)
+    dy = float(raw_dy)
+    if not _native.scene_hexbin_pitch_admit(dx, dy):
+        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
+    return dx, dy
+
+
+def _heatmap_shape(trace: Any) -> tuple[int, int]:
+    """Return the finite rows x cols lattice, or fail closed."""
+    shape = getattr(trace, "grid_shape", None)
+    if shape is None or len(shape) != 2:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape")
+    rows_f, cols_f = float(shape[0]), float(shape[1])
+    if not _native.scene_heatmap_shape_admit(rows_f, cols_f):
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape")
+    return int(rows_f), int(cols_f)
+
+
+def _heatmap_grid_values(trace: Any) -> np.ndarray:
+    """Return the authored scalar grid as a flat finite-checkable column."""
+    grid = getattr(trace, "grid", None)
+    if grid is None:
+        raise ValueError("heatmap Scene v12 compilation requires a scalar grid")
+    return np.asarray(getattr(grid, "values", grid), dtype=np.float64)
+
+
+def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
+    """Return the finite increasing cell rectangle covered by the grid."""
+    if trace.x is None or trace.y is None:
+        raise ValueError("heatmap Scene v12 compilation requires range columns")
+    xv = np.asarray(getattr(trace.x, "values", trace.x), dtype=np.float64)
+    yv = np.asarray(getattr(trace.y, "values", trace.y), dtype=np.float64)
+    if len(xv) != 2 or len(yv) != 2:
+        raise UnsupportedSceneV3("Scene v12 heatmap range columns must be two endpoints")
+    x0, x1 = float(xv[0]), float(xv[1])
+    y0, y1 = float(yv[0]), float(yv[1])
+    if not _native.scene_heatmap_extent_admit(x0, x1, y0, y1):
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
+    return x0, x1, y0, y1
+
+
+def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
+    stops = np.ascontiguousarray(
+        [(int(red), int(green), int(blue)) for red, green, blue in colormap],
+        dtype=np.uint8,
+    )
+    if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
+        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops")
+    return np.ascontiguousarray(stops).tobytes()
