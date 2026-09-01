@@ -155,7 +155,7 @@ REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     ),
     (
         "Residual host materialization",
-        "_payload emit row gathers + channel rows; _scene_v3 field-byte walks (density grid: ABI 316 done)",
+        "_payload emit row gathers + channel rows; residual _scene_v3 pack/unpack (XYTC/XYTA field walks: ABI 323/325 done; density grid: ABI 316 done)",
     ),
     (
         "Secondary §302",
@@ -323,7 +323,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         "Density grid materialization is kernel-owned (ABI 316). Python remains authoritative "
-        "for emit row gathers, channel row materialization, and _scene_v3 field-byte pack walks. "
+        "for emit row gathers, channel row materialization, and residual _scene_v3 pack/unpack. "
+        "XYTC/XYTA trace field walks are kernel-owned (ABI 323/325). "
         "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
         "Scene pack orchestration plans are kernel-owned (#733 closed)."
     )
