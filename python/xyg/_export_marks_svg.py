@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import math
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -17,9 +18,9 @@ from ._export_marker_svg import (
     _SYMBOL_BUILDERS,
     _authored_marker_path_d,
 )
-from ._export_path_svg import _rounded_rect_path
+from ._export_path_svg import _area_fill_path, _curve_path, _rounded_rect_path
 from ._export_polar_svg import _polar_wedge_path
-from ._export_svg_util import _dash_attr, _num, escape
+from ._export_svg_util import _cap_join_attrs, _dash_attr, _num, escape
 from ._layout import _Scale, warp_grid_rgba
 from ._paint import (
     _css,
@@ -51,11 +52,15 @@ from ._paint import (
     rgba8 as _rgba8,
 )
 from ._paint import (
+    step_arrays as _step_arrays,
+)
+from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
 from ._paint import (
     trace_paint_rgba as _trace_paint_rgba,
 )
+from .config import DEFAULT_PALETTE
 
 if TYPE_CHECKING:
     from ._layout import _PolarProjection
@@ -751,3 +756,134 @@ def _heatmap_image(
     out_h, out_w = grid_rgba.shape[:2]
     rgba = grid_rgba[::-1].tobytes()
     return _grid_image(out_w, out_h, rgba, hm["x_range"], hm["y_range"], sx, sy)
+
+
+def _svg_trace_marks(
+    spec: dict[str, Any],
+    blob: bytes,
+    cols: list,
+    plot: dict[str, float],
+    sx: _Scale,
+    sy: _Scale,
+    x_scales: dict[str, _Scale],
+    y_scales: dict[str, _Scale],
+    svg: Any,
+    polar: "Optional[_PolarProjection]",
+    *,
+    palette_cycle: int = 0,
+) -> tuple[list[str], int]:
+    marks: list[str] = []
+    # The chart's categorical cycle (`xyg.theme(palette=...)`), else the
+    # built-in default. Traces normally carry a baked style color; this is the
+    # fallback for specs that do not.
+    spec_palette: Sequence[str] = spec.get("palette") or DEFAULT_PALETTE
+    palette_cycle = 0
+
+    def line_attrs(style: dict[str, Any], color: str) -> str:
+        w = float(style.get("width", 1.5))
+        op = _stroke_opacity(style)
+        return (
+            f'stroke="{escape(color)}" stroke-width="{_num(w)}" fill="none" '
+            + _cap_join_attrs(style)
+            + (f' stroke-opacity="{_num(op)}"' if op < 1 else "")
+            + _dash_attr(style)
+        )
+
+    for t in spec["traces"]:
+        style = t.get("style") or {}
+        kind = t["kind"]
+        tier = t.get("tier")
+        color = _css(style.get("color"), spec_palette[palette_cycle % len(spec_palette)])
+        palette_cycle += 1
+        trace_sx = x_scales.get(t.get("x_axis", "x"), sx)
+        trace_sy = y_scales.get(t.get("y_axis", "y"), sy)
+
+        if tier == "density" and t.get("density"):
+            marks.append(_density_image(t["density"], blob, cols, trace_sx, trace_sy, style, svg))
+            continue
+
+        if kind == "line":
+            xv = _column(blob, cols[t["x"]])
+            yv = _column(blob, cols[t["y"]])
+            if style.get("step"):
+                xv, yv = _step_arrays(xv, yv, style["step"])
+            d = _curve_path(xv, yv, trace_sx, trace_sy, style.get("curve") == "smooth", polar)
+            marks.append(f'<path d="{d}" {line_attrs(style, color)}/>')
+
+        elif kind in ("area", "error_band"):
+            xv = _column(blob, cols[t["x"]])
+            yv = _column(blob, cols[t["y"]])
+            bv = _column(blob, cols[t["base"]])
+            smooth = style.get("curve") == "smooth"
+            if polar is not None:
+                radial_min, radial_max = sorted((polar.r_lo, polar.r_hi))
+                yv = np.clip(yv, radial_min, radial_max)
+                bv = np.clip(bv, radial_min, radial_max)
+            # Still needed for the (non-perimeter) outline below; the fill
+            # builds its own paired paths so each visible run can close alone.
+            top_path = _curve_path(xv, yv, trace_sx, trace_sy, smooth, polar)
+            fill_spec = style.get("fill")
+            fill = (
+                svg.gradient(fill_spec, color, plot)
+                if isinstance(fill_spec, dict)
+                else escape(color)
+            )
+            op = _fill_opacity(style, 0.35)
+            # A polar area can be culled away entirely — every vertex outside
+            # the authored sector, or a log radial axis annihilating each row —
+            # or split into several visible runs. The flat join then produced
+            # " L  Z", malformed path data that also reached the PDF
+            # converter's _parse_path, or stitched the first top run onto the
+            # base with a stray L. Close each visible run on its own.
+            joined = _area_fill_path(xv, yv, bv, trace_sx, trace_sy, smooth, polar)
+            if joined:
+                marks.append(f'<path d="{joined}" fill="{fill}" fill-opacity="{_num(op)}"/>')
+            lw = float(style.get("line_width", 1.2))
+            if lw > 0 and (joined or top_path):
+                lop = _stroke_opacity(style, 0.35) * float(style.get("line_opacity", 1.0))
+                line_color = style.get("line_color") or color
+                outline_path = joined if style.get("stroke_perimeter") else top_path
+                marks.append(
+                    f'<path d="{outline_path}" stroke="{escape(line_color)}" stroke-width="{_num(lw)}" '
+                    'fill="none"'
+                    # The area outline named its join but inherited SVG's `butt`
+                    # cap, while the native rasterizer capped it round. Naming
+                    # both settles that on the rasterizer's answer.
+                    + _cap_join_attrs(style)
+                    + (f' stroke-opacity="{_num(lop)}"' if lop < 1 else "")
+                    + _dash_attr(style)
+                    + "/>"
+                )
+
+        elif kind == "scatter":
+            marks.extend(_scatter_marks(t, blob, cols, trace_sx, trace_sy, style, color, polar))
+
+        elif kind == "hexbin":
+            marks.append(_hexbin_marks(t, blob, cols, trace_sx, trace_sy, style, color))
+
+        elif kind in {"errorbar", "stem", "box_whisker", "box_median", "contour", "segments"}:
+            marks.append(_segment_marks(t, blob, cols, trace_sx, trace_sy, style, color, polar))
+
+        elif kind in ("bar", "column") and t.get("bar"):
+            marks.append(
+                _bar_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot, polar)
+            )
+
+        elif kind == "heatmap" and t.get("heatmap"):
+            marks.append(_heatmap_image(t["heatmap"], blob, cols, trace_sx, trace_sy, style, polar))
+
+        elif kind == "triangle_mesh":
+            marks.append(_triangle_mesh_marks(t, blob, cols, trace_sx, trace_sy, style, color))
+
+        elif kind == "ribbon":
+            # MUST precede the rect fall-through below: a ribbon ships
+            # x0/x1/y0/y1 too, so a later branch would silently draw every
+            # flow band as a rectangle.
+            marks.append(_ribbon_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg))
+
+        elif all(k in t for k in ("x0", "x1", "y0", "y1")):  # histogram / rect family
+            marks.append(
+                _rect_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot, polar)
+            )
+
+    return marks, palette_cycle

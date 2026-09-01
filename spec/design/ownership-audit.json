@@ -1854,6 +1854,30 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_export_axis_grid_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_baseline_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_chrome_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_export_annotations_svg.py",
       "current_owner": "Python host",
       "policy": "python-host",
