@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 342;
-export const SIGNATURE_SHA256 = "6982466f7a0aa22b7e87c170c69ab8663cfa753418c4e641741c9f2f3ec44996";
+export const ABI_VERSION = 343;
+export const SIGNATURE_SHA256 = "9a4136b104ea2f5be491d7fa36431909b9d26aaca33c5da8322475b438591647";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -37,6 +37,7 @@ export let xyChunkedColumnsReadPage;
 export let xyChunkedColumnsRows;
 export let xyClipQuantizeU8;
 export let xyColormapLut;
+export let xyColormapLutRgba8;
 export let xyColormapRgba;
 export let xyColormapRgbaCanonical;
 export let xyColormapStops;
@@ -488,6 +489,7 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
   xyClipQuantizeU8 = lib.func("int32_t xyg_clip_quantize_u8(const double * values, size_t values_len, uint8_t * out, size_t out_len)");
   xyColormapLut = lib.func("int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)");
+  xyColormapLutRgba8 = lib.func("int32_t xyg_colormap_lut_rgba8(const uint8_t * name, size_t name_len, const uint8_t * custom_stops, size_t custom_stop_count, size_t n_texels, uint8_t * out_rgba, size_t out_cap)");
   xyColormapRgba = lib.func("int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyColormapRgbaCanonical = lib.func("int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyColormapStops = lib.func("uint32_t xyg_colormap_stops(const uint8_t * name, size_t name_len, uint8_t * out, size_t cap)");

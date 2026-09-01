@@ -769,13 +769,12 @@ def colormap_lut_rgba8(colormap: Colormap) -> npt.NDArray[np.uint8]:
 
     Built from the same stop tables the SVG exporter mirrors from
     `js/src/10_colormaps.ts`, so a value binned through this LUT wears the
-    byte-identical color its drawn point does."""
-    from . import _svg  # deferred: channels is core, _svg owns the stop tables
-
-    lut = np.empty((256, 4), dtype=np.uint8)
-    lut[:, :3] = _svg._lut(colormap, np.linspace(0.0, 1.0, 256))
-    lut[:, 3] = 255
-    return lut
+    byte-identical color its drawn point does. Packing is ABI 343
+    ``xyg_colormap_lut_rgba8``; custom ramps pass resolved RGB stops."""
+    if isinstance(colormap, str):
+        return kernels.colormap_lut_rgba8(colormap)
+    stops = np.asarray(colormap, dtype=np.uint8).reshape(-1, 3)
+    return kernels.colormap_lut_rgba8(stops.reshape(-1))
 
 
 def categorical_palette(palette: list[str], n_categories: int) -> list[str]:

@@ -18,6 +18,7 @@ import {
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
 import { quantizeUnitU8, paletteRowsRgba8 } from "../src/color.js";
+import { colormapLutRgba8 } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "factorize_cross_host.json");
@@ -160,6 +161,17 @@ for (const spec of fixture.cases) {
     const n = Math.max(1, Math.floor(Number(spec.rows)));
     const rows = [];
     for (let i = 0; i < n; i += 1) {
+      rows.push([...lut.slice(i * 4, i * 4 + 4)]);
+    }
+    out.push({ name: spec.name, rows });
+    continue;
+  }
+  if (spec.kind === "colormap_lut_rgba8") {
+    const lut = spec.colormap != null
+      ? colormapLutRgba8(spec.colormap)
+      : colormapLutRgba8(Uint8Array.from(spec.stops.flat()));
+    const rows = [];
+    for (let i = 0; i < 256; i += 1) {
       rows.push([...lut.slice(i * 4, i * 4 + 4)]);
     }
     out.push({ name: spec.name, rows });

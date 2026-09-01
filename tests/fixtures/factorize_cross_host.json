@@ -134,6 +134,16 @@
       "palette": [],
       "rows": 1,
       "expect_error": true
+    },
+    {
+      "name": "colormap_lut_rgba8_named",
+      "kind": "colormap_lut_rgba8",
+      "colormap": "viridis"
+    },
+    {
+      "name": "colormap_lut_rgba8_custom",
+      "kind": "colormap_lut_rgba8",
+      "stops": [[0, 0, 0], [255, 255, 255]]
     }
   ]
 }

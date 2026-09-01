@@ -46,6 +46,7 @@ def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
         "fold_codes_u8",
         "quantize_unit_u8",
         "palette_rows_rgba8",
+        "colormap_lut_rgba8",
     ):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
@@ -120,6 +121,15 @@ def _python_palette_rows_case(spec: dict) -> list[list[int]] | None:
     return rows.tolist()
 
 
+def _python_colormap_lut_case(spec: dict) -> list[list[int]]:
+    if "colormap" in spec:
+        lut = ch.colormap_lut_rgba8(spec["colormap"])
+    else:
+        stops = np.asarray(spec["stops"], dtype=np.uint8).reshape(-1, 3)
+        lut = ch.colormap_lut_rgba8(stops.tolist())
+    return lut.tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -133,6 +143,7 @@ FACTORIZE_CASES = [
         "fold_codes_u8",
         "quantize_unit_u8",
         "palette_rows_rgba8",
+        "colormap_lut_rgba8",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -140,6 +151,7 @@ FIXED_PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fixed_probe"]
 FOLD_CODES_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fold_codes_u8"]
 QUANTIZE_UNIT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "quantize_unit_u8"]
 PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "palette_rows_rgba8"]
+COLORMAP_LUT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_lut_rgba8"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -212,6 +224,13 @@ def test_palette_rows_rgba8_cross_host(spec: dict, node_results: dict[str, dict]
         assert node.get("error") is True
         return
     rows = _python_palette_rows_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rows"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_LUT_CASES, ids=lambda s: s["name"])
+def test_colormap_lut_rgba8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    rows = _python_colormap_lut_case(spec)
     node = node_results[spec["name"]]
     assert rows == node["rows"]
 

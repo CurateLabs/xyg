@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 342;
+pub const ABI_VERSION: u32 = 343;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10248,6 +10248,59 @@ pub unsafe extern "C" fn xyg_palette_rows_rgba8(
             *out_unresolved = unresolved;
         }
         n
+    })
+}
+
+/// Pack a 256-texel (or custom-count) colormap LUT as straight-alpha RGBA8.
+///
+/// When `name_len > 0`, resolves stops from the built-in colormap table.
+/// Otherwise uses `custom_stops` (`custom_stop_count` RGB triples). Returns 1
+/// on success and 0 on invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_lut_rgba8(
+    name: *const u8,
+    name_len: usize,
+    custom_stops: *const u8,
+    custom_stop_count: usize,
+    n_texels: usize,
+    out_rgba: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    let count = if n_texels == 0 { 256 } else { n_texels };
+    let need = count.checked_mul(4).unwrap_or(usize::MAX);
+    if need == usize::MAX || out_cap < need || out_rgba.is_null() {
+        return 0;
+    }
+    if name_len > 0 && name.is_null() {
+        return 0;
+    }
+    if custom_stop_count > 0 && custom_stops.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let stops: Vec<[u8; 3]> = if name_len > 0 {
+            let Some(text) = read_utf8(name, name_len) else {
+                return 0;
+            };
+            crate::colormap::colormap_named_stops(text)
+        } else if custom_stop_count > 0 {
+            let stop_bytes = std::slice::from_raw_parts(custom_stops, custom_stop_count * 3);
+            stop_bytes
+                .chunks_exact(3)
+                .map(|chunk| [chunk[0], chunk[1], chunk[2]])
+                .collect()
+        } else {
+            return 0;
+        };
+        if stops.is_empty() {
+            return 0;
+        }
+        let Some(lut) = kernels::colormap_lut_rgba8_from_stops(&stops, count) else {
+            return 0;
+        };
+        let out = std::slice::from_raw_parts_mut(out_rgba, need);
+        out.copy_from_slice(&lut);
+        1
     })
 }
 

@@ -946,6 +946,16 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         U32P,
     ]
+    lib.xyg_colormap_lut_rgba8.restype = ctypes.c_int32
+    lib.xyg_colormap_lut_rgba8.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2859,6 +2869,40 @@ def main() -> None:
 
     ok(lib.xyg_abi_version() == ABI_VERSION, "abi version")
     ok(ctypes.sizeof(CZoneMap) == 64, "ZoneMap repr(C) size")
+
+    early_cmap_out = array("B", [0] * (256 * 4))
+    early_viridis = array("B", b"viridis")
+    ok(
+        lib.xyg_colormap_lut_rgba8(
+            _ptr(early_viridis, ctypes.c_uint8),
+            len(early_viridis),
+            None,
+            0,
+            256,
+            _ptr(early_cmap_out, ctypes.c_uint8),
+            len(early_cmap_out),
+        )
+        == 1
+        and early_cmap_out[3] == 255,
+        "colormap_lut_rgba8 named early",
+    )
+    custom_stops = array("B", [0, 0, 0, 255, 255, 255])
+    custom_cmap_out = array("B", [0] * (256 * 4))
+    ok(
+        lib.xyg_colormap_lut_rgba8(
+            None,
+            0,
+            _ptr(custom_stops, ctypes.c_uint8),
+            2,
+            256,
+            _ptr(custom_cmap_out, ctypes.c_uint8),
+            len(custom_cmap_out),
+        )
+        == 1
+        and custom_cmap_out[0] == 0
+        and custom_cmap_out[255 * 4] == 255,
+        "colormap_lut_rgba8 custom stops early",
+    )
 
     graph_x = array("d", [0.0]) * 4
     graph_y = array("d", [0.0]) * 4

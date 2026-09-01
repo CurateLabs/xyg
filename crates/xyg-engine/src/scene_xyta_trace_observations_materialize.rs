@@ -181,14 +181,7 @@ fn quantize_unit_u8(values: &[f64], lo: f64, hi: f64) -> Option<Vec<u8>> {
 }
 
 fn colormap_lut_rgba8(name: &str) -> Vec<u8> {
-    let stops = colormap_named_stops(name);
-    let mut t = vec![0.0f64; 256];
-    for (i, slot) in t.iter_mut().enumerate() {
-        *slot = i as f64 / 255.0;
-    }
-    let mut out = vec![0u8; 256 * 4];
-    crate::kernels::colormap_rgba_into(&t, 256, 1, &stops, 255, &mut out);
-    out
+    crate::kernels::colormap_lut_rgba8_named(name).unwrap_or_default()
 }
 
 fn channel_end_rgba8(channel: &SceneXytaColorChannelIn<'_>, n: usize, fallback: &str) -> Option<Vec<u8>> {

@@ -37,6 +37,7 @@ css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
 palette_rows_rgba8 = _impl.palette_rows_rgba8
+colormap_lut_rgba8 = _impl.colormap_lut_rgba8
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -354,6 +355,7 @@ __all__ = [
     "category_labels",
     "clip_quantize_u8",
     "colormap_lut",
+    "colormap_lut_rgba8",
     "colormap_rgba",
     "colormap_rgba_canonical",
     "continuous_domain",

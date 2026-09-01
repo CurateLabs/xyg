@@ -5761,6 +5761,39 @@ pub fn colormap_lut_into(t: &[f64], stops: &[[u8; 3]], out_rgb: &mut [u8]) -> bo
     true
 }
 
+/// Fixed-count unit-spaced colormap LUT as straight-alpha RGBA8.
+///
+/// Matches Python `channels.colormap_lut_rgba8` / Node `colormapLutRgba8`:
+/// `t[i] = i / (n_texels - 1)` for `n_texels > 1`, alpha 255 throughout.
+pub fn colormap_lut_rgba8_from_stops(stops: &[[u8; 3]], n_texels: usize) -> Option<Vec<u8>> {
+    if n_texels == 0 || stops.is_empty() {
+        return None;
+    }
+    let mut t = vec![0.0f64; n_texels];
+    for (i, slot) in t.iter_mut().enumerate().take(n_texels) {
+        *slot = if n_texels == 1 {
+            0.0
+        } else {
+            i as f64 / (n_texels - 1) as f64
+        };
+    }
+    let mut rgb = vec![0u8; n_texels * 3];
+    if !colormap_lut_into(&t, stops, &mut rgb) {
+        return None;
+    }
+    let mut out = vec![0u8; n_texels * 4];
+    for i in 0..n_texels {
+        out[i * 4..i * 4 + 3].copy_from_slice(&rgb[i * 3..i * 3 + 3]);
+        out[i * 4 + 3] = 255;
+    }
+    Some(out)
+}
+
+/// Named built-in/custom-stop-table LUT (256 texels).
+pub fn colormap_lut_rgba8_named(name: &str) -> Option<Vec<u8>> {
+    colormap_lut_rgba8_from_stops(&crate::colormap::colormap_named_stops(name), 256)
+}
+
 /// Legacy f64 count-grid density colormap (the remaining `_lut` density path).
 ///
 /// Same stop interpolation and `t * 1.35` alpha law as [`density_rgba_into`],
@@ -10475,6 +10508,17 @@ mod tests {
         assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
         assert_eq!(out[0], 0);
         assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
+    }
+
+    #[test]
+    fn colormap_lut_rgba8_matches_linspace_samples() {
+        let stops = [[0, 0, 0], [255, 255, 255]];
+        let lut = colormap_lut_rgba8_from_stops(&stops, 256).expect("lut");
+        assert_eq!(lut.len(), 256 * 4);
+        assert_eq!(&lut[..4], &[0, 0, 0, 255]);
+        assert_eq!(&lut[255 * 4..], &[255, 255, 255, 255]);
+        let mid = colormap_color(0.5, &stops, 255);
+        assert_eq!(&lut[128 * 4..128 * 4 + 4], &[mid[0], mid[1], mid[2], 255]);
     }
 
     #[test]

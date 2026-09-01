@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 342
-SIGNATURE_SHA256 = "6982466f7a0aa22b7e87c170c69ab8663cfa753418c4e641741c9f2f3ec44996"
+ABI_VERSION = 343
+SIGNATURE_SHA256 = "9a4136b104ea2f5be491d7fa36431909b9d26aaca33c5da8322475b438591647"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -138,6 +138,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_colormap_lut
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_colormap_lut_rgba8(const uint8_t * name, size_t name_len, const uint8_t * custom_stops, size_t custom_stop_count, size_t n_texels, uint8_t * out_rgba, size_t out_cap)
+    function = lib.xyg_colormap_lut_rgba8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_colormap_rgba
     function.restype = ctypes.c_int32

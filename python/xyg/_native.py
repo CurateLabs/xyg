@@ -9451,6 +9451,47 @@ def palette_rows_rgba8(
     return out.reshape(n, 4), int(unresolved.value)
 
 
+def colormap_lut_rgba8(
+    colormap: str | npt.NDArray[np.uint8],
+    *,
+    n_texels: int = 256,
+) -> npt.NDArray[np.uint8]:
+    """256-texel straight-alpha RGBA8 colormap LUT (ABI 343)."""
+    count = max(int(n_texels), 1)
+    out = np.empty(count * 4, dtype=np.uint8)
+    if isinstance(colormap, str):
+        encoded = colormap.encode("utf-8")
+        code = int(
+            _lib.xyg_colormap_lut_rgba8(
+                encoded if encoded else 0,
+                len(encoded),
+                0,
+                0,
+                count,
+                _ptr_u8(out),
+                out.size,
+            )
+        )
+    else:
+        stops = np.ascontiguousarray(colormap, dtype=np.uint8).reshape(-1)
+        if stops.size == 0 or stops.size % 3 != 0:
+            raise ValueError("colormap stops must be a non-empty multiple of 3")
+        code = int(
+            _lib.xyg_colormap_lut_rgba8(
+                0,
+                0,
+                _ptr_u8(stops),
+                stops.size // 3,
+                count,
+                _ptr_u8(out),
+                out.size,
+            )
+        )
+    if code != 1:
+        raise ValueError("invalid colormap-lut-rgba8 request")
+    return out.reshape(count, 4)
+
+
 def histogram_uniform(
     data: npt.NDArray[np.float64],
     lo: float,

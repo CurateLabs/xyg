@@ -857,9 +857,8 @@ ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
 (`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
 and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
 `.constant` vs `.color` and skip null channels.
-Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
-unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
-255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` pack 256-texel LUTs
+through ABI 343 `xyg_colormap_lut_rgba8` (named or custom RGB stops).
 Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
 `quantizeUnitU8` / `resolveDensityBinColors` normalize and quantize through
 ABI 341 `xyg_quantize_unit_u8`.
