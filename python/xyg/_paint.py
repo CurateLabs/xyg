@@ -349,6 +349,39 @@ def corner_radii(style: dict[str, Any]) -> tuple[float, float]:
     return value, value
 
 
+def box_corner_radius(style: dict[str, Any], width: float, height: float) -> float:
+    """`border_radius` in px, clamped to the box like CSS does.
+
+    Shared by the SVG and native raster text-box emitters so an exported
+    ``boxstyle="round"`` bbox is rounded exactly once, the same way.
+    """
+    try:
+        radius = float(str(style.get("border_radius", 0) or 0).removesuffix("px"))
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(radius, width / 2.0, height / 2.0))
+
+
+def rect_style_arrays(
+    trace: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    default_opacity: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Resolve batched rectangle paint, stroke width, and radii."""
+    style = trace.get("style") or {}
+    _, fills, strokes = trace_fill_and_stroke_rgba8(
+        trace, style, n, fallback, read, default_opacity=default_opacity
+    )
+    widths = style_values(trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0)))
+    radii = style_matrix(trace, "corner_radius", n, read)
+    if radii is None:
+        tip, base = corner_radii(style)
+        radii = np.tile(np.asarray([[tip, base]], dtype=np.float64), (n, 1))
+    return fills, strokes, widths, radii
+
+
 def rounded_rect_vertices(
     x: float,
     y: float,

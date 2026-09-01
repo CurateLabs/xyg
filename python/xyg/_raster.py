@@ -31,6 +31,9 @@ from ._paint import (
     authored_marker_points as _authored_marker_points,
 )
 from ._paint import (
+    box_corner_radius as _box_corner_radius,
+)
+from ._paint import (
     colormap_lut as _lut,
 )
 from ._paint import (
@@ -59,6 +62,9 @@ from ._paint import (
 )
 from ._paint import (
     physical_density_alpha as _physical_density_alpha,
+)
+from ._paint import (
+    rect_style_arrays as _rect_style_arrays,
 )
 from ._paint import (
     rgba8 as _rgba8,
@@ -93,7 +99,6 @@ from ._svg import (
     _axis_tick_label_sides,
     _axis_tick_label_strategy,
     _axis_tick_sides,
-    _box_corner_radius,
     _colorbar_right_axis_room,
     _column,
     _column_ref,
@@ -2573,28 +2578,6 @@ def _fill_maker(
             cmd.fill(poly, flat)
 
     return fill_cmd, stroke_c, sw
-
-
-def _rect_style_arrays(
-    trace: dict[str, Any],
-    n: int,
-    fallback: str,
-    read: _paint.ColumnReader,
-    default_opacity: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Resolve batched rectangle paint, stroke width, and radii."""
-    style = trace.get("style") or {}
-    _, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
-        trace, style, n, fallback, read, default_opacity=default_opacity
-    )
-    widths = _paint.style_values(
-        trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
-    )
-    radii = _paint.style_matrix(trace, "corner_radius", n, read)
-    if radii is None:
-        tip, base = _corner_radii(style)
-        radii = np.tile(np.asarray([[tip, base]], dtype=np.float64), (n, 1))
-    return fills, strokes, widths, radii
 
 
 def _emit_bars(
