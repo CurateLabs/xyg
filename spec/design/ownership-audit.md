@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~6285, `_raster.py` ~3555, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~480 (shared static-export paint layer).
+Top remaining line counts (secondary section 302): `_svg.py` ~6255, `_raster.py` ~3515, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~520 (shared static-export paint/geometry layer).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -331,7 +331,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 
 - `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
 - `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
-- `_paint.py` — shared static-export paint layer (`trace_paint_rgba`, `trace_stroke_intrinsic`, `effective_stroke_rgba8`, `effective_stroke_rgba`, `trace_paint_css_constant`, `trace_stroke_css_meta`, `colormap_lut`, CSS→RGBA8, opacity); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
+- `_paint.py` — shared static-export paint layer (`trace_paint_rgba`, stroke/CSS metadata helpers, `ribbon_fill_rgba`, `polar_clip_line_segments`, `colormap_lut`, CSS→RGBA8, opacity); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206

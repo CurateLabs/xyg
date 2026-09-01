@@ -4613,34 +4613,7 @@ def _segment_marks(
         px1, py1 = sx(x1), sy(y1)
         keep = np.ones(n, dtype=bool)
     else:
-        # Clip each independent segment jointly in radial *scale coordinates*.
-        # Clamping endpoints independently bends a diagonal error bar along the
-        # ring; interpolating theta at the two intersections preserves its
-        # authored chord and mirrors SEGMENT_VS.
-        c0 = np.asarray(polar.r_scale.coord(y0), dtype=np.float64)
-        c1 = np.asarray(polar.r_scale.coord(y1), dtype=np.float64)
-        lo = min(polar.r_lo_coord, polar.r_hi_coord)
-        hi = max(polar.r_lo_coord, polar.r_hi_coord)
-        finite = np.isfinite(x0) & np.isfinite(x1) & np.isfinite(c0) & np.isfinite(c1)
-        keep = finite & (np.maximum(c0, c1) >= lo) & (np.minimum(c0, c1) <= hi)
-        dr = c1 - c0
-        ta = np.zeros(n, dtype=np.float64)
-        tb = np.ones(n, dtype=np.float64)
-        moving = np.abs(dr) > 1e-30
-        ta[moving] = (lo - c0[moving]) / dr[moving]
-        tb[moving] = (hi - c0[moving]) / dr[moving]
-        t0 = np.maximum(0.0, np.minimum(ta, tb))
-        t1 = np.minimum(1.0, np.maximum(ta, tb))
-        clipped_x0 = x0 + (x1 - x0) * t0
-        clipped_x1 = x0 + (x1 - x0) * t1
-        clipped_c0 = np.clip(c0 + dr * t0, lo, hi)
-        clipped_c1 = np.clip(c0 + dr * t1, lo, hi)
-        clipped_y0 = polar.r_scale.value(clipped_c0)
-        clipped_y1 = polar.r_scale.value(clipped_c1)
-        keep &= polar.theta_visible_mask(clipped_x0)
-        keep &= polar.theta_visible_mask(clipped_x1)
-        px0, py0 = polar(clipped_x0, clipped_y0)
-        px1, py1 = polar(clipped_x1, clipped_y1)
+        px0, py0, px1, py1, keep = _paint.polar_clip_line_segments(polar, x0, y0, x1, y1)
     return "".join(
         f'<line x1="{_num(float(px0[i]))}" y1="{_num(float(py0[i]))}" '
         f'x2="{_num(float(px1[i]))}" y2="{_num(float(py1[i]))}" '
@@ -4958,8 +4931,7 @@ def _ribbon_marks(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    source_rgba = _trace_paint_rgba(t, "color", n, fallback, read)
-    fills, fills2 = _paint.ribbon_fill_rgba(t, n, fallback, read, default_opacity=1.0)
+    source_rgba, fills, fills2 = _paint.ribbon_fill_rgba(t, n, fallback, read, default_opacity=1.0)
     stroke_css = style.get("stroke")
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
     stroke_op = _stroke_opacity(style)

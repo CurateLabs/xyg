@@ -209,6 +209,40 @@ def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:
     return np.asarray([points_by_key[key] for key in walk[:-1]], dtype=np.float64)
 
 
+def polar_clip_line_segments(
+    polar: Any,
+    x0: np.ndarray,
+    y0: np.ndarray,
+    x1: np.ndarray,
+    y1: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Clip line segments to polar radial and theta bounds in display space."""
+    c0 = np.asarray(polar.r_scale.coord(y0), dtype=np.float64)
+    c1 = np.asarray(polar.r_scale.coord(y1), dtype=np.float64)
+    lo = min(polar.r_lo_coord, polar.r_hi_coord)
+    hi = max(polar.r_lo_coord, polar.r_hi_coord)
+    finite = np.isfinite(x0) & np.isfinite(x1) & np.isfinite(c0) & np.isfinite(c1)
+    keep = finite & (np.maximum(c0, c1) >= lo) & (np.minimum(c0, c1) <= hi)
+    dr = c1 - c0
+    ta = np.zeros(len(x0), dtype=np.float64)
+    tb = np.ones(len(x0), dtype=np.float64)
+    moving = np.abs(dr) > 1e-30
+    ta[moving] = (lo - c0[moving]) / dr[moving]
+    tb[moving] = (hi - c0[moving]) / dr[moving]
+    t0 = np.maximum(0.0, np.minimum(ta, tb))
+    t1 = np.minimum(1.0, np.maximum(ta, tb))
+    clipped_x0 = x0 + (x1 - x0) * t0
+    clipped_x1 = x0 + (x1 - x0) * t1
+    clipped_c0 = np.clip(c0 + dr * t0, lo, hi)
+    clipped_c1 = np.clip(c0 + dr * t1, lo, hi)
+    clipped_y0 = polar.r_scale.value(clipped_c0)
+    clipped_y1 = polar.r_scale.value(clipped_c1)
+    keep = keep & polar.theta_visible_mask(clipped_x0) & polar.theta_visible_mask(clipped_x1)
+    px0, py0 = polar(clipped_x0, clipped_y0)
+    px1, py1 = polar(clipped_x1, clipped_y1)
+    return px0, py0, px1, py1, keep
+
+
 def direct_rgba(channel: dict[str, Any], n: int, read_column: ColumnReader) -> np.ndarray | None:
     """Decode a packed normalized RGBA8 channel to canonical float RGBA."""
     if channel.get("mode") != "direct_rgba":
@@ -456,16 +490,18 @@ def ribbon_fill_rgba(
     read: ColumnReader,
     *,
     default_opacity: float = 1.0,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Resolve ribbon source/target fill rows as effective 0-1 RGBA."""
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Resolve ribbon source paint and effective source/target fill rows."""
     source = trace_paint_rgba(trace, "color", n, fallback, read)
     fills = effective_rgba(source, trace, read, component="fill", default_opacity=default_opacity)
     if trace.get("color_target"):
         target = trace_paint_rgba(trace, "color_target", n, fallback, read)
-        fills2 = effective_rgba(target, trace, read, component="fill", default_opacity=default_opacity)
+        fills2 = effective_rgba(
+            target, trace, read, component="fill", default_opacity=default_opacity
+        )
     else:
         fills2 = fills
-    return fills, fills2
+    return source, fills, fills2
 
 
 def ribbon_fill_rgba8(
@@ -475,9 +511,9 @@ def ribbon_fill_rgba8(
     read: ColumnReader,
     *,
     default_opacity: float = 1.0,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Resolve ribbon source/target fill rows as effective RGBA8."""
-    fills, fills2 = ribbon_fill_rgba(
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Resolve ribbon source paint and effective source/target RGBA8 fills."""
+    source, fills, fills2 = ribbon_fill_rgba(
         trace, n, fallback, read, default_opacity=default_opacity
     )
-    return rgba8(fills), rgba8(fills2)
+    return source, rgba8(fills), rgba8(fills2)

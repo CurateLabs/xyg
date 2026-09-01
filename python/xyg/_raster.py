@@ -2327,36 +2327,8 @@ def _emit_segments(
     if polar is None:
         px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
     else:
-        c0 = np.asarray(polar.r_scale.coord(y0), dtype=np.float64)
-        c1 = np.asarray(polar.r_scale.coord(y1), dtype=np.float64)
-        lo = min(polar.r_lo_coord, polar.r_hi_coord)
-        hi = max(polar.r_lo_coord, polar.r_hi_coord)
-        keep = (
-            np.isfinite(x0)
-            & np.isfinite(x1)
-            & np.isfinite(c0)
-            & np.isfinite(c1)
-            & (np.maximum(c0, c1) >= lo)
-            & (np.minimum(c0, c1) <= hi)
-        )
-        dr = c1 - c0
-        ta = np.zeros(n, dtype=np.float64)
-        tb = np.ones(n, dtype=np.float64)
-        moving = np.abs(dr) > 1e-30
-        ta[moving] = (lo - c0[moving]) / dr[moving]
-        tb[moving] = (hi - c0[moving]) / dr[moving]
-        t0 = np.maximum(0.0, np.minimum(ta, tb))
-        t1 = np.minimum(1.0, np.maximum(ta, tb))
-        clipped_x0 = x0 + (x1 - x0) * t0
-        clipped_x1 = x0 + (x1 - x0) * t1
-        clipped_c0 = np.clip(c0 + dr * t0, lo, hi)
-        clipped_c1 = np.clip(c0 + dr * t1, lo, hi)
-        keep &= polar.theta_visible_mask(clipped_x0)
-        keep &= polar.theta_visible_mask(clipped_x1)
-        clipped_y0 = polar.r_scale.value(clipped_c0)
-        clipped_y1 = polar.r_scale.value(clipped_c1)
-        px0, py0 = polar(clipped_x0[keep], clipped_y0[keep])
-        px1, py1 = polar(clipped_x1[keep], clipped_y1[keep])
+        px0, py0, px1, py1, keep = _paint.polar_clip_line_segments(polar, x0, y0, x1, y1)
+        px0, py0, px1, py1 = px0[keep], py0[keep], px1[keep], py1[keep]
         colors = colors[keep]
         widths = widths[keep]
         n = len(widths)
@@ -2391,20 +2363,6 @@ def _emit_segments(
             )
 
 
-def _mesh_fill_rgba(
-    t: dict[str, Any],
-    blob: bytes,
-    cols: list[dict[str, Any]],
-    n: int,
-    style: dict[str, Any],
-    color: str,
-) -> np.ndarray:
-    def read(index: int) -> np.ndarray:
-        return _column(blob, cols[index])
-
-    return effective_paint_rgba8(t, "color", n, color, read, component="fill", default_opacity=1.0)
-
-
 def _emit_hexbin(
     cmd: _Cmd,
     t: dict[str, Any],
@@ -2428,7 +2386,15 @@ def _emit_hexbin(
     y1 = np.asarray(sy(cy[:n, None] + ring_y[None, :-1]), dtype=np.float64).reshape(-1)
     x2 = np.asarray(sx(cx[:n, None] + ring_x[None, 1:]), dtype=np.float64).reshape(-1)
     y2 = np.asarray(sy(cy[:n, None] + ring_y[None, 1:]), dtype=np.float64).reshape(-1)
-    fills = np.repeat(_mesh_fill_rgba(t, blob, cols, n, style, color), 6, axis=0)
+
+    def read(index: int) -> np.ndarray:
+        return _column(blob, cols[index])
+
+    fills = np.repeat(
+        effective_paint_rgba8(t, "color", n, color, read, component="fill", default_opacity=1.0),
+        6,
+        axis=0,
+    )
     cmd.triangles(x0, y0, x1, y1, x2, y2, fills, 0.0, (0, 0, 0, 0))
 
 
@@ -2466,8 +2432,7 @@ def _emit_ribbon(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    source_rgba = _trace_paint_rgba(t, "color", n, color, read)
-    fills, fills2 = _paint.ribbon_fill_rgba8(t, n, color, read, default_opacity=1.0)
+    source_rgba, fills, fills2 = _paint.ribbon_fill_rgba8(t, n, color, read, default_opacity=1.0)
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
     # Outline alpha folds opacity * stroke_opacity, the same stack every other
     # stroked mark applies and the SVG writer's stroke-opacity mirrors. An
