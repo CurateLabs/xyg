@@ -396,3 +396,54 @@ def effective_stroke_rgba8(
             default_opacity=default_opacity,
         )
     )
+
+
+def effective_stroke_rgba(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    fill_intrinsic: np.ndarray,
+    *,
+    default_opacity: float,
+) -> np.ndarray:
+    """Resolve stroke paint to effective 0-1 RGBA rows."""
+    return effective_rgba(
+        trace_stroke_intrinsic(trace, style, n, fallback, read, fill_intrinsic),
+        trace,
+        read,
+        component="stroke",
+        default_opacity=default_opacity,
+    )
+
+
+def trace_paint_css_constant(trace: dict[str, Any], key: str, fallback: str) -> tuple[str, bool]:
+    """Return a paint channel CSS token and whether it is an opaque constant."""
+    channel = trace.get(key) or {}
+    css = _css(channel.get("color"), fallback)
+    constant = channel.get("mode") in {None, "constant"} and paint_rgba8(css)[3] == 255
+    return css, constant
+
+
+def trace_stroke_css_meta(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    fallback: str,
+    face_css: str,
+    face_css_constant: bool,
+) -> tuple[str, bool]:
+    """Return stroke CSS metadata for Scene fast-path SVG scatter."""
+    if (trace.get("stroke") or {}).get("mode") == "match_fill":
+        return face_css, face_css_constant
+    if trace.get("stroke") is not None:
+        stroke_css = _css((trace.get("stroke") or {}).get("color"), style.get("stroke") or face_css)
+        stroke_css_constant = (trace.get("stroke") or {}).get("mode") in {
+            None,
+            "constant",
+        } and paint_rgba8(stroke_css)[3] == 255
+        return stroke_css, stroke_css_constant
+    if style.get("stroke") is not None:
+        stroke_css = _css(style.get("stroke"), face_css)
+        return stroke_css, paint_rgba8(stroke_css)[3] == 255
+    return face_css, face_css_constant

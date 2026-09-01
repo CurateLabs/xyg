@@ -4606,12 +4606,7 @@ def _segment_marks(
     intrinsic = _trace_paint_rgba(t, "color", n, color, read)
     colors = _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0)
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
-    paint = t.get("color") or {}
-    plain_css = _css(paint.get("color"), color)
-    # Only an opaque constant color may pass through verbatim: a translucent
-    # CSS constant already contributes its alpha to stroke-opacity through
-    # effective_rgba, so repeating it inside stroke= would apply it twice.
-    constant_paint = paint.get("mode") in {None, "constant"} and _paint_rgba8(plain_css)[3] == 255
+    plain_css, constant_paint = _paint.trace_paint_css_constant(t, "color", color)
     css_paint = escape(plain_css)
     if polar is None:
         px0, py0 = sx(x0), sy(y0)
@@ -4724,11 +4719,7 @@ def _scatter_marks(
     face_rgba = _paint.effective_rgba(
         face_intrinsic, effective_trace, read, component="fill", default_opacity=0.8
     )
-    face_channel = t.get("color") or {}
-    face_css = _css(face_channel.get("color"), fallback)
-    face_css_constant = (
-        face_channel.get("mode") in {None, "constant"} and _paint_rgba8(face_css)[3] == 255
-    )
+    face_css, face_css_constant = _paint.trace_paint_css_constant(t, "color", fallback)
 
     size_ch = t.get("size") or {}
     if size_ch.get("mode") == "continuous":
@@ -4741,21 +4732,9 @@ def _scatter_marks(
     stroke_widths = _paint.style_values(t, "stroke_width", n, read, 0.0)
     symbols = _symbol_names(t, n, read, str(style.get("symbol", "circle")))
     stroke_source = _paint.trace_stroke_intrinsic(t, style, n, fallback, read, face_intrinsic)
-    if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_css = face_css
-        stroke_css_constant = face_css_constant
-    elif t.get("stroke") is not None:
-        stroke_css = _css((t.get("stroke") or {}).get("color"), style.get("stroke") or face_css)
-        stroke_css_constant = (t.get("stroke") or {}).get("mode") in {
-            None,
-            "constant",
-        } and _paint_rgba8(stroke_css)[3] == 255
-    elif style.get("stroke") is not None:
-        stroke_css = _css(style.get("stroke"), face_css)
-        stroke_css_constant = _paint_rgba8(stroke_css)[3] == 255
-    else:
-        stroke_css = face_css
-        stroke_css_constant = face_css_constant
+    stroke_css, stroke_css_constant = _paint.trace_stroke_css_meta(
+        t, style, fallback, face_css, face_css_constant
+    )
     stroke_rgba = _paint.effective_rgba(
         stroke_source, effective_trace, read, component="stroke", default_opacity=0.8
     )
@@ -5056,8 +5035,7 @@ def _triangle_mesh_marks(
 
     face = _trace_paint_rgba(t, "color", n, fallback, read)
     fills = _paint.effective_rgba(face, t, read, component="fill", default_opacity=1.0)
-    stroke_face = _paint.trace_stroke_intrinsic(t, style, n, fallback, read, face)
-    strokes = _paint.effective_rgba(stroke_face, t, read, component="stroke", default_opacity=1.0)
+    strokes = _paint.effective_stroke_rgba(t, style, n, fallback, read, face, default_opacity=1.0)
     stroke_widths = _paint.style_values(
         t, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
     )
@@ -5141,9 +5119,8 @@ def _rect_svg_styles(
 
     face = _trace_paint_rgba(trace, "color", n, fallback, read)
     fills_rgba = _paint.effective_rgba(face, trace, read, component="fill", default_opacity=0.85)
-    stroke_face = _paint.trace_stroke_intrinsic(trace, style, n, fallback, read, face)
-    strokes = _paint.effective_rgba(
-        stroke_face, trace, read, component="stroke", default_opacity=0.85
+    strokes = _paint.effective_stroke_rgba(
+        trace, style, n, fallback, read, face, default_opacity=0.85
     )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))

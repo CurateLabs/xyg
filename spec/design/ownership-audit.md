@@ -331,7 +331,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 
 - `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
 - `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
-- `_paint.py` — shared static-export paint layer (`trace_paint_rgba`, `trace_stroke_intrinsic`, `effective_stroke_rgba8`, `colormap_lut`, CSS→RGBA8, opacity); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
+- `_paint.py` — shared static-export paint layer (`trace_paint_rgba`, `trace_stroke_intrinsic`, `effective_stroke_rgba8`, `effective_stroke_rgba`, `trace_paint_css_constant`, `trace_stroke_css_meta`, `colormap_lut`, CSS→RGBA8, opacity); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
