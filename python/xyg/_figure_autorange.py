@@ -127,7 +127,9 @@ def pack_autorange(self: "Figure", axis_id: str, *, use_domain: bool = True) -> 
             trace_flags |= 1 << 0
         if t.y_axis == axis_id:
             trace_flags |= 1 << 1
-        has_endpoints = t.x0 is not None and t.x1 is not None and t.y0 is not None and t.y1 is not None
+        has_endpoints = (
+            t.x0 is not None and t.x1 is not None and t.y0 is not None and t.y1 is not None
+        )
         if has_endpoints:
             trace_flags |= 1 << 2
         if t.base is not None:

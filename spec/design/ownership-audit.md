@@ -374,6 +374,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_figure_ingest.py` — column ingest, array coercion, category-axis positions, heatmap cell edges
 - `_figure_traces.py` — rectangle trace assembly and finite-row selection
 - `_figure_autorange.py` — XYAR autorange packing and Rust figure_autorange dispatch
+- `_figure_axis.py` — axis configuration, scale/kind resolution, and payload axis spec assembly
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
 - `_graph.py` — ingest / id maps; layout is `xyg_graph_layout`
@@ -811,6 +812,7 @@ Forbidden:
 | `python/xyg/_figure_ingest.py` | Python host | `python-host` | `keep-host`; column ingest, array coercion, category-axis positions, heatmap cell edges | — |
 | `python/xyg/_figure_traces.py` | Python host | `python-host` | `keep-host`; rectangle trace assembly and finite-row selection | — |
 | `python/xyg/_figure_autorange.py` | Python host | `python-host` | `keep-host`; XYAR autorange packing; mirrors Node `figure.js` autorange path | — |
+| `python/xyg/_figure_axis.py` | Python host | `python-host` | `keep-host`; axis configuration, scale/kind resolution, payload axis spec assembly | — |
 | `python/xyg/_fontmetrics.py` | Python host | `python-host` | `keep-host`; generated DejaVu advance table mirrored from Rust `font.rs` for compat SVG gutters | — |
 | `python/xyg/_framing.py` | Python host | `python-host` | `keep-host`; XYBF transport framing, not chart policy | — |
 | `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
