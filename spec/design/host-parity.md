@@ -864,12 +864,14 @@ Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
 ABI 341 `xyg_quantize_unit_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
 Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
-rows through ABI 342 `xyg_palette_rows_rgba8`. Browser-only palette status
-and per-index substitute warnings stay host.
+rows through ABI 342 `xyg_palette_rows_rgba8`. ABI 346 adds per-entry
+unresolved flags so browser-only warnings stay host without a second CSS parse.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without
 materializing the whole column.
+Node `channelEndRgba8` categorical paints index ABI 342 `paletteRowsRgba8`
+rows like Python `palette_rows_rgba8`, not per-point CSS reparsing.
 Python `lod._stratified_sample_range_plan` and Node `stratifiedSampleRangePlan`
 size categorical sampling buffers through ABI 345
 `xyg_stratified_sample_range_plan`. Hosts still validate group codes and exact

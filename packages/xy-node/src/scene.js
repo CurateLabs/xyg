@@ -76,7 +76,7 @@ import {
   xyFoldCodesU8,
 } from "./native.js";
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
-import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
+import { clipQuantizeU8, cssColorRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
 import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1693,12 +1693,15 @@ export function channelEndRgba8(channel, n, fallback) {
         const codes = channel.codes;
         const paletteSrc = channel.palette;
         const palette = [...(paletteSrc != null && paletteSrc.length ? paletteSrc : DEFAULT_PALETTE)];
-        const css = [];
-        for (let i = 0; i < codes.length; i += 1) {
+        if (codes.length !== n) return null;
+        const lut = paletteRowsRgba8(palette, palette.length);
+        const out = new Uint8Array(n * 4);
+        for (let i = 0; i < n; i += 1) {
           const code = Number(codes[i]);
-          css.push(palette[((code % palette.length) + palette.length) % palette.length]);
+          const idx = ((code % palette.length) + palette.length) % palette.length;
+          out.set(lut.subarray(idx * 4, idx * 4 + 4), i * 4);
         }
-        return channelEndRgba8({ mode: "direct_rgba", rgba: cssColorsToRgba8(css) }, n, fallback);
+        return out;
       } catch {
         return null;
       }
