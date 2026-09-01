@@ -1138,16 +1138,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
     @staticmethod
     def _real_float_array(arr: np.ndarray, label: str) -> np.ndarray:
-        try:
-            kernels.real_numeric_dtype_admit(ord(arr.dtype.kind))
-        except ValueError as exc:
-            raise ValueError(str(exc).replace("values", label)) from exc
-        if arr.dtype == object and any(isinstance(value, (bool, np.bool_)) for value in arr.flat):
-            raise ValueError(f"{label} must be real numeric, not boolean")
-        try:
-            return arr.astype(np.float64, copy=False)
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"{label} must be real numeric") from e
+        return channels._as_real_array(arr, label)
 
     @staticmethod
     def _bar_value_matrix(values: Any, n_x: int, kind: str) -> np.ndarray:
