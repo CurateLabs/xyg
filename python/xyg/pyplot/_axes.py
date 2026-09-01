@@ -4345,7 +4345,7 @@ class Axes(PlotTypeMixin):
 
     def _iter_entry_arrays(self, axis: str) -> Iterator[tuple[np.ndarray, bool]]:
         """Yield each (array, needs_finite_filter) an entry contributes to *axis*."""
-        from xyg.channels import category_label
+        from xyg import channels
 
         host = self._y2_of or self
         y_axis = "y2" if self._y2_of is not None else "y"
@@ -4365,11 +4365,7 @@ class Axes(PlotTypeMixin):
             except (TypeError, ValueError):
                 if array.dtype.kind not in {"U", "S", "O", "b"}:
                     raise
-            labels = (
-                array.tolist()
-                if array.dtype.kind == "U"
-                else [category_label(value) for value in array.astype(object)]
-            )
+            labels = array.tolist() if array.dtype.kind == "U" else channels._category_labels(array)
             positions = np.empty(len(labels), dtype=np.float64)
             for index, label in enumerate(labels):
                 text = str(label)

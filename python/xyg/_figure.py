@@ -1227,7 +1227,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
             # `category_label` reduces to `str` — and `tolist()` already
             # yields plain `str`. Skips two O(n) Python passes per axis.
             return arr.tolist()
-        return [channels.category_label(raw) for raw in arr.astype(object)]
+        return channels._category_labels(arr)
 
     @staticmethod
     def _materialize_sequence(values: Any) -> Any:
