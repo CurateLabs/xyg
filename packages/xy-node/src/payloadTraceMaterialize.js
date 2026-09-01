@@ -222,11 +222,12 @@ function channelDesc(ch, nPoints = 0) {
   } else if (ch.mode === "constant" && ch.constant != null && nPoints > 0) {
     mode = CHAN_MODE.direct;
     f64 = new Float64Array(nPoints).fill(Number(ch.constant));
-  } else if (ch.mode === "direct_rgba" && ch.values != null) {
+  } else if (ch.mode === "direct_rgba" && (ch.rgba != null || ch.values != null)) {
     mode = CHAN_MODE.direct_rgba;
-    const packed = ch.values instanceof Uint8Array
-      ? ch.values
-      : clipQuantizeU8(directRgbaAdmit(rgbaChannelF64(ch.values), 4));
+    const source = ch.rgba ?? ch.values;
+    const packed = source instanceof Uint8Array
+      ? source
+      : clipQuantizeU8(directRgbaAdmit(rgbaChannelF64(source), 4));
     f64 = rgbaChannelF64(packed);
   } else if (ch.mode === "direct_rgba") {
     mode = CHAN_MODE.direct_rgba;
@@ -558,7 +559,14 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       : pw.shipScalar(new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4));
     const spec = { buf };
     if (cv.getInt32(8, true)) spec.dtype = "u8";
-    if (cv.getInt32(12, true)) spec.palette = true;
+    if (cv.getInt32(12, true)) {
+      const cc = t.color_ch;
+      const cats = cc?.categories ?? [];
+      const palette = cc?.palette ?? cc?.colors;
+      spec.palette = cc && Array.isArray(cats) && palette
+        ? Array.from({ length: cats.length }, (_, i) => palette[i % palette.length])
+        : true;
+    }
     if (cv.getInt32(16, true)) spec.n = cv.getUint32(20, true);
     if (key === "color") {
       entry.color = { ...traceChannelSpec(t.color_ch, "color"), ...spec };

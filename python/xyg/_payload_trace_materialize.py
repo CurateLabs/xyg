@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from . import _native
+from . import _native, channels
 from ._payload_helpers import binning_coords, transition_entry, visible_sel
 from ._trace import Trace
 from .columns import Column
@@ -247,7 +247,11 @@ def _channel_desc(ch: Any):
         f64 = np.ascontiguousarray(ch.values, dtype=np.float64).reshape(-1)
     elif ch.mode == "categorical" and ch.codes is not None:
         u8 = np.ascontiguousarray(ch.codes, dtype=np.uint8).reshape(-1)
-    elif ch.mode in ("direct_rgba", "direct") and getattr(ch, "values", None) is not None:
+    elif ch.mode == "direct_rgba":
+        rgba = getattr(ch, "rgba", None)
+        if rgba is not None:
+            f64 = np.ascontiguousarray(rgba, dtype=np.float64).reshape(-1)
+    elif ch.mode == "direct" and getattr(ch, "values", None) is not None:
         f64 = np.ascontiguousarray(ch.values, dtype=np.float64).reshape(-1)
     return (
         _TraceChannelDesc(
@@ -481,7 +485,9 @@ def emit_trace_materialized(
         if wire.mark_dtype_u8:
             spec["dtype"] = "u8"
         if wire.ship_palette:
-            spec["palette"] = True
+            cc = t.color_ch
+            cats = getattr(cc, "categories", None) or () if cc else ()
+            spec["palette"] = channels.categorical_palette(cc.colors, len(cats)) if cc else True
         if wire.set_n:
             spec["n"] = int(wire.len)
         if key == "color":
@@ -493,7 +499,10 @@ def emit_trace_materialized(
         elif key == "channels":
             entry["channels"] = spec
         elif key == "color_target":
-            entry["color_target"] = spec
+            entry["color_target"] = {
+                **(t.color2_ch.spec() if t.color2_ch else {"mode": "constant"}),
+                **spec,
+            }
     if summary.attach_transition and summary.transition_lo_len:
         lo = np.frombuffer(
             blob[

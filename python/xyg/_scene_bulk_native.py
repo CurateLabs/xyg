@@ -9,10 +9,10 @@ from typing import Any
 
 import numpy as np
 
-_lib = None
-_ptr_u8 = None
-_ptr_f64 = None
-_optional_u8_ptr = None
+_lib: Any = None
+_ptr_u8: Any = None
+_ptr_f64: Any = None
+_optional_u8_ptr: Any = None
 SCENE_XYCF_PACK_MAX = 1 << 20
 SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18
 SCENE_POLAR_INPUT_PACK_MAX = 92

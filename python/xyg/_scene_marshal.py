@@ -694,7 +694,11 @@ def marshal_xytc_trace_obs(trace: Any, *, show_legend: bool) -> dict[str, Any]:
         "color_ch_mode": None
         if channel is None or isinstance(channel, str)
         else getattr(channel, "mode", ""),
-        "color_ch_constant": None if not color_ch_has_constant else str(channel.constant),
+        "color_ch_constant": (
+            None
+            if not color_ch_has_constant or channel is None or isinstance(channel, str)
+            else str(channel.constant)
+        ),
         "linecap": style.get("linecap"),
         "step": style.get("step"),
         "curve": style.get("curve"),

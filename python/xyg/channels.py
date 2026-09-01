@@ -966,6 +966,9 @@ def _ship_wire_buffer(
     if transform == "rgba_pack":
         if packed_rgba is None:
             raise ValueError("direct RGBA wire encode missing packed values")
+        rgba = np.ascontiguousarray(packed_rgba, dtype=np.float64).reshape(-1)
+        if rgba.size and rgba.max(initial=0.0) > 1.0:
+            rgba = rgba / 255.0
         materialized = kernels.payload_channel_materialize(
             role=role,
             mode="direct_rgba",
@@ -975,7 +978,7 @@ def _ship_wire_buffer(
             domain=(0.0, 1.0),
             n_palette=0,
             sel=sel_arr,
-            values_f64=packed_rgba.reshape(-1, 4),
+            values_f64=rgba,
             values_u8=None,
         )
     elif transform in {"quantize_u8", "normalize"}:
@@ -1000,7 +1003,7 @@ def _ship_wire_buffer(
             role=role,
             mode=mode,
             n_categories=n_categories,
-            style_dtype_u8=plan.get("mark_dtype_u8", False),
+            style_dtype_u8=bool(plan.get("mark_dtype_u8", False)),
             quantize_continuous=False,
             domain=(0.0, 1.0),
             n_palette=n_palette,
@@ -1149,6 +1152,8 @@ def ship_color_channel(
         if rgba is None:
             raise ValueError("direct RGBA color channel missing values")
         values = rgba if sel is None else rgba[sel]
+        if values.dtype != np.uint8:
+            values = (np.clip(values, 0.0, 1.0) * 255.0).astype(np.uint8)
         color_spec["buf"] = _ship_wire_buffer(
             plan,
             ship_scalar,

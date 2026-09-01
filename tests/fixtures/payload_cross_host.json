@@ -186,9 +186,9 @@
       "kind": "histogram",
       "tier": "direct",
       "n_marks": 2,
-      "payload_blob_len": 32,
-      "payload_blob_sha256": "82194cc9c1c62de7c35591cb429bbc849ebdfbcf4d2863b0f1b9bab13501a794",
-      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000000000000000000080bf0000803f",
+      "payload_blob_len": 40,
+      "payload_blob_sha256": "11b6f4b1d8fba03ba7820002ceedd3912909f063b4a9caab54e0e6717abc9f52",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000000000000000000080bf0000803fff0000ff00ff00ff",
       "trace_keys": null
     },
     {
@@ -303,9 +303,9 @@
       "kind": "bar",
       "tier": "direct",
       "n_marks": 2,
-      "payload_blob_len": 16,
-      "payload_blob_sha256": "55090b99bb7f1c18c589bf3e72621fc753c3b1d8af4060ce1467a30f75ac6a6b",
-      "payload_blob_hex": "000000bf0000003f000000bf0000003f",
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "ab16e25d4d4ba647b9b4bfdbbcc14bb857e78234ae6871285225ba8283c2894f",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003fff0000ff00ff00ff",
       "trace_keys": null
     },
     {
@@ -316,9 +316,9 @@
       "kind": "triangle_mesh",
       "tier": "direct",
       "n_marks": 1,
-      "payload_blob_len": 24,
-      "payload_blob_sha256": "9d908ecfb6b256def8b49a7c504e6c889c4b0e41fe6ce3e01863dd7b61a20aa0",
-      "payload_blob_hex": "000000000000000000000000000000000000000000000000",
+      "payload_blob_len": 28,
+      "payload_blob_sha256": "b33f43532e21cb12c584b2337fbccfa190f9355759b0ee53b2784852029ca986",
+      "payload_blob_hex": "000000000000000000000000000000000000000000000000ff0000ff",
       "trace_keys": null
     },
     {
@@ -355,9 +355,9 @@
       "kind": "segments",
       "tier": "direct",
       "n_marks": 2,
-      "payload_blob_len": 32,
-      "payload_blob_sha256": "e170d78067c14bfc2fb6fa803463eed28b43619070f8172572d683772defec4e",
-      "payload_blob_hex": "000000bf0000003f000000bf0000003f000000bf0000003f0000003f000000bf",
+      "payload_blob_len": 40,
+      "payload_blob_sha256": "269dcfd4b8581725a76568f582a6400deb41de48acd25ffef838053ee96f3dac",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f000000bf0000003f0000003f000000bfff0000ff00ff00ff",
       "trace_keys": null
     },
     {
