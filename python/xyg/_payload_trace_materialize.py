@@ -474,6 +474,8 @@ def emit_trace_materialized(
                 entry["color"] = t.color_ch.spec() if t.color_ch else {"mode": "constant"}
             elif key == "size":
                 entry["size"] = t.size_ch.spec() if t.size_ch else {"mode": "constant"}
+            elif key == "color_target":
+                entry["color_target"] = t.color2_ch.spec() if t.color2_ch else {"mode": "constant"}
             continue
         raw = blob[wire.bytes_offset : wire.bytes_offset + wire.bytes_len]
         buf = (
