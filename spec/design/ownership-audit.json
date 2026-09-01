@@ -1790,6 +1790,14 @@
       "rationale": "Trace/figure observation helpers (heatmap/hexbin pitch, colormap stops, ribbon classify); delegates admit/classify to Rust."
     },
     {
+      "path": "python/xyg/_scene_sidecars.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "XYCL/XYNM sidecars and thin ABI pack delegates (colormap, marker, gradient, linecap, rect flags)."
+    },
+    {
       "path": "python/xyg/_scene_annotations.py",
       "current_owner": "Python host",
       "policy": "python-scene-migration",
