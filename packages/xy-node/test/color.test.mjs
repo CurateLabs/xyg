@@ -7,6 +7,7 @@ import {
   directRgbaAdmit,
   resolveColorChannel,
 } from "../src/index.js";
+import { factorizeCategories } from "../src/factorize.js";
 
 test("cssIsFunctional admits hash and rgb and rejects named colors", () => {
   assert.equal(cssIsFunctional("#ff0000"), true);
@@ -24,6 +25,16 @@ test("directRgbaAdmit expands rgb and rejects out of range", () => {
   const packed = directRgbaAdmit([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], 3);
   assert.deepEqual([...packed], [0.1, 0.2, 0.3, 1, 0.4, 0.5, 0.6, 1]);
   assert.throws(() => directRgbaAdmit([0, 0, 1.1], 3), /finite values/);
+});
+
+test("factorizeCategories uses native kernel for Uint8Array columns", () => {
+  const raw = Uint8Array.from([1, 0, 1]);
+  const factored = factorizeCategories(raw);
+  assert.equal(factored.mode, "categorical");
+  assert.deepEqual(factored.categories, ["0", "1"]);
+  assert.deepEqual([...factored.codes], [1, 0, 1]);
+  assert.equal(factored.counts[0], 1n);
+  assert.equal(factored.counts[1], 2n);
 });
 
 test("resolveColorChannel splits css numeric categorical and direct rgba", () => {

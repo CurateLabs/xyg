@@ -5,6 +5,7 @@
  */
 import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8 } from "./native.js";
 import { DEFAULT_PALETTE, normalizeF32 } from "./encode.js";
+import { factorizeCategories } from "./factorize.js";
 
 function u8Ptr(view) {
   return pointer(view, "uint8_t *");
@@ -185,34 +186,6 @@ export function quantizeUnitU8(values, lo, hi) {
   }
   const unit = normalizeF32(values, lo, hi, { nanMode: "zero" });
   return clipQuantizeU8(Float64Array.from(unit));
-}
-
-function categoryLabel(value) {
-  if (value == null) return "(missing)";
-  if (typeof value === "number" && Number.isNaN(value)) return "(missing)";
-  return String(value);
-}
-
-function factorizeCategories(raw) {
-  const labels = raw.map(categoryLabel);
-  const categories = [...new Set(labels)].sort();
-  const index = new Map(categories.map((label, i) => [label, i]));
-  const codes =
-    categories.length <= 256 ? new Uint8Array(labels.length) : new Uint32Array(labels.length);
-  for (let i = 0; i < labels.length; i += 1) {
-    codes[i] = index.get(labels[i]);
-  }
-  const counts = new BigUint64Array(categories.length);
-  for (let i = 0; i < codes.length; i += 1) {
-    counts[codes[i]] += 1n;
-  }
-  return {
-    mode: "categorical",
-    codes,
-    categories,
-    counts,
-    palette: [...DEFAULT_PALETTE],
-  };
 }
 
 function flattenRgbRows(raw, n) {
