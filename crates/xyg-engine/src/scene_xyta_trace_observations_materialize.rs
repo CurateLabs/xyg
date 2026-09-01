@@ -168,7 +168,7 @@ fn pack_colormap(style: &SceneXytaColormapInput<'_>) -> (u32, Vec<u8>, Vec<u8>) 
 fn palette_rows_rgba8(palette: &[&str], rows: usize) -> Vec<u8> {
     let n = rows.max(1);
     let mut out = vec![0u8; n * 4];
-    let _ = crate::kernels::palette_rows_rgba8(palette, rows, &mut out);
+    let _ = crate::kernels::palette_rows_rgba8(palette, rows, &mut out, None);
     out
 }
 

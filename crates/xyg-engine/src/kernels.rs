@@ -8527,23 +8527,44 @@ fn rgba_unit_f32_to_u8(rgba: [f32; 4]) -> [u8; 4] {
 ///
 /// Matches Python `channels.palette_rows_rgba8` / Node `paletteRowsRgba8`.
 /// Returns the unresolved-entry count when `entries` is non-empty.
-pub fn palette_rows_rgba8(entries: &[&str], rows: usize, out: &mut [u8]) -> Option<u32> {
+pub fn palette_rows_rgba8(
+    entries: &[&str],
+    rows: usize,
+    out: &mut [u8],
+    entry_unresolved: Option<&mut [u8]>,
+) -> Option<u32> {
     let n = rows.max(1);
     if entries.is_empty() || out.len() < n * 4 {
         return None;
     }
     let palette_len = entries.len();
-    let mut unresolved = 0u32;
-    for i in 0..n {
-        let entry = entries[i % palette_len];
+    let mut entry_bad = vec![false; palette_len];
+    let mut resolved_rows: Vec<[u8; 4]> = Vec::with_capacity(palette_len);
+    for (i, entry) in entries.iter().enumerate() {
         let row = match crate::css::parse_color(entry) {
             Ok(crate::css::Checked::Parsed(Some(rgba))) => rgba_unit_f32_to_u8(rgba),
             _ => {
-                unresolved += 1;
+                entry_bad[i] = true;
                 crate::css::color_rgba8(DEFAULT_PALETTE[i % DEFAULT_PALETTE.len()], 1.0)
             }
         };
-        out[i * 4..i * 4 + 4].copy_from_slice(&row);
+        resolved_rows.push(row);
+    }
+    if let Some(flags) = entry_unresolved {
+        if flags.len() < palette_len {
+            return None;
+        }
+        for (i, bad) in entry_bad.iter().enumerate() {
+            flags[i] = u8::from(*bad);
+        }
+    }
+    let mut unresolved = 0u32;
+    for i in 0..n {
+        let entry_idx = i % palette_len;
+        out[i * 4..i * 4 + 4].copy_from_slice(&resolved_rows[entry_idx]);
+        if entry_bad[entry_idx] {
+            unresolved += 1;
+        }
     }
     Some(unresolved)
 }
@@ -10636,13 +10657,16 @@ mod tests {
     fn palette_rows_rgba8_matches_host_policy() {
         let entries = ["#ff0000", "var(--x)"];
         let mut out = vec![0u8; 8];
-        let unresolved = palette_rows_rgba8(&entries, 2, &mut out).expect("palette rows");
+        let unresolved = palette_rows_rgba8(&entries, 2, &mut out, None).expect("palette rows");
         assert_eq!(unresolved, 1);
         assert_eq!(&out[..4], &crate::css::color_rgba8("#ff0000", 1.0));
         assert_eq!(
             &out[4..],
             &crate::css::color_rgba8(DEFAULT_PALETTE[1], 1.0)
         );
+        let mut flags = [0u8; 2];
+        let _ = palette_rows_rgba8(&entries, 2, &mut out, Some(&mut flags));
+        assert_eq!(flags, [0, 1]);
     }
 
     #[test]

@@ -806,18 +806,14 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
     fallback, because a shared fallback collapses distinct categories into a
     single indistinguishable color. The substitution warns (§28).
 
-    Row packing is ABI 342 ``xyg_palette_rows_rgba8``; browser-only status
-    for the warning stays host."""
+    Row packing is ABI 342 ``xyg_palette_rows_rgba8``; ABI 346 entry-unresolved
+    flags drive browser-only warnings without a second CSS parse pass."""
     entries = [str(entry) for entry in palette]
-    lut, unresolved_count = kernels.palette_rows_rgba8(entries, rows)
+    lut, unresolved_count, entry_flags = kernels.palette_rows_rgba8(entries, rows)
     if unresolved_count:
         import warnings
 
-        bad = []
-        for entry in entries:
-            status, rgba = kernels.css_check(kernels.CSS_COLOR, entry)
-            if status != 1 or rgba is None:
-                bad.append(entry)
+        bad = [entry for entry, flag in zip(entries, entry_flags, strict=True) if flag]
         warnings.warn(
             f"palette entries {sorted(set(bad))} resolve only in a browser, so "
             "the aggregated density surface and static exports cannot paint them; "

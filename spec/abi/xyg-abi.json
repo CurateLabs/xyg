@@ -1,9 +1,9 @@
 {
-  "abi_version": 345,
+  "abi_version": 346,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "f5a580051c0a7b67b6237703638824561b41a58dd01d4be74d48863daaf6251a",
+  "signature_sha256": "12b44eca4ab23a53c26e606ec76bf8b3d21b05fa8067b5e7f093e9bb7baa5d51",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21826,7 +21826,7 @@
     {
       "name": "xyg_palette_rows_rgba8",
       "node_name": "xyPaletteRowsRgba8",
-      "nargs": 8,
+      "nargs": 10,
       "arguments": [
         {
           "name": "entry_lens",
@@ -21951,6 +21951,37 @@
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
           }
+        },
+        {
+          "name": "out_entry_unresolved",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "entry_unresolved_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
         }
       ],
       "returns": {
@@ -21965,7 +21996,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved)"
+      "c_signature": "size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved, uint8_t * out_entry_unresolved, size_t entry_unresolved_cap)"
     },
     {
       "name": "xyg_payload_axis_spec_attach_plan",

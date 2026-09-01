@@ -945,6 +945,8 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
         U32P,
+        U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_colormap_lut_rgba8.restype = ctypes.c_int32
     lib.xyg_colormap_lut_rgba8.argtypes = [
@@ -4533,6 +4535,7 @@ def main() -> None:
         palette_packed.extend(item)
     palette_out = array("B", [0] * 8)
     palette_unresolved = array("I", [0])
+    palette_entry_flags = array("B", [0, 0])
     palette_written = lib.xyg_palette_rows_rgba8(
         _ptr(palette_lens, ctypes.c_uint32),
         _ptr(palette_packed, ctypes.c_uint8),
@@ -4542,9 +4545,14 @@ def main() -> None:
         _ptr(palette_out, ctypes.c_uint8),
         len(palette_out),
         _ptr(palette_unresolved, ctypes.c_uint32),
+        _ptr(palette_entry_flags, ctypes.c_uint8),
+        len(palette_entry_flags),
     )
     ok(
-        palette_written == 2 and palette_unresolved[0] == 1 and palette_out[0] == 255,
+        palette_written == 2
+        and palette_unresolved[0] == 1
+        and palette_out[0] == 255
+        and list(palette_entry_flags) == [0, 1],
         "palette_rows_rgba8 basic",
     )
     ok(
@@ -4557,6 +4565,8 @@ def main() -> None:
             _ptr(palette_out, ctypes.c_uint8),
             len(palette_out),
             _ptr(palette_unresolved, ctypes.c_uint32),
+            null_u8,
+            0,
         )
         == ctypes.c_size_t(-1).value,
         "palette_rows_rgba8 empty entries",

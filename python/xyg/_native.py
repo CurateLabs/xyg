@@ -9469,8 +9469,8 @@ def quantize_unit_u8(
 def palette_rows_rgba8(
     entries: Sequence[str],
     rows: int,
-) -> tuple[npt.NDArray[np.uint8], int]:
-    """Indexed palette rows as straight-alpha RGBA8 (ABI 342)."""
+) -> tuple[npt.NDArray[np.uint8], int, npt.NDArray[np.uint8]]:
+    """Indexed palette rows as straight-alpha RGBA8 (ABI 342/346)."""
     texts = [str(entry) for entry in entries]
     if not texts:
         raise ValueError("palette_rows_rgba8 requires at least one entry")
@@ -9478,6 +9478,7 @@ def palette_rows_rgba8(
     lens, packed = _pack_utf8_strings(texts)
     out = np.empty(n * 4, dtype=np.uint8)
     unresolved = ctypes.c_uint32()
+    entry_flags = np.empty(len(texts), dtype=np.uint8)
     written = _lib.xyg_palette_rows_rgba8(
         lens.ctypes.data,
         _ptr_u8(packed) if packed.size else 0,
@@ -9487,10 +9488,12 @@ def palette_rows_rgba8(
         _ptr_u8(out),
         out.size,
         ctypes.byref(unresolved),
+        _ptr_u8(entry_flags),
+        entry_flags.size,
     )
     if written == _USIZE_MAX:
         raise ValueError("invalid palette-rows-rgba8 request")
-    return out.reshape(n, 4), int(unresolved.value)
+    return out.reshape(n, 4), int(unresolved.value), entry_flags
 
 
 def colormap_lut_rgba8(

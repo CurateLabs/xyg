@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 345;
-export const SIGNATURE_SHA256 = "f5a580051c0a7b67b6237703638824561b41a58dd01d4be74d48863daaf6251a";
+export const ABI_VERSION = 346;
+export const SIGNATURE_SHA256 = "12b44eca4ab23a53c26e606ec76bf8b3d21b05fa8067b5e7f093e9bb7baa5d51";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -621,7 +621,7 @@ export function bindGeneratedAbi(lib) {
   xyObjectRowsAllRealNumeric = lib.func("int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n)");
   xyObjectRowsAllStringlike = lib.func("int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
-  xyPaletteRowsRgba8 = lib.func("size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved)");
+  xyPaletteRowsRgba8 = lib.func("size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved, uint8_t * out_entry_unresolved, size_t entry_unresolved_cap)");
   xyPayloadAxisSpecAttachPlan = lib.func("int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)");
   xyPayloadBarCompactAdmit = lib.func("int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)");
   xyPayloadBarHistEmitPlan = lib.func("int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_emit_bar, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_pos_ship_scale, int32_t * out_value_ship_scale, int32_t * out_value_axis, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition)");

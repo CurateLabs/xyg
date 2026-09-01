@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 345
-SIGNATURE_SHA256 = "f5a580051c0a7b67b6237703638824561b41a58dd01d4be74d48863daaf6251a"
+ABI_VERSION = 346
+SIGNATURE_SHA256 = "12b44eca4ab23a53c26e606ec76bf8b3d21b05fa8067b5e7f093e9bb7baa5d51"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -658,10 +658,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
-    # size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved)
+    # size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved, uint8_t * out_entry_unresolved, size_t entry_unresolved_cap)
     function = lib.xyg_palette_rows_rgba8
     function.restype = ctypes.c_size_t
-    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)
     function = lib.xyg_payload_axis_spec_attach_plan
     function.restype = ctypes.c_int32

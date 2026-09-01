@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 345;
+pub const ABI_VERSION: u32 = 346;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10248,6 +10248,8 @@ pub unsafe extern "C" fn xyg_palette_rows_rgba8(
     out_rgba: *mut u8,
     out_cap: usize,
     out_unresolved: *mut u32,
+    out_entry_unresolved: *mut u8,
+    entry_unresolved_cap: usize,
 ) -> usize {
     let n = rows.max(1);
     let need = n.saturating_mul(4);
@@ -10289,7 +10291,17 @@ pub unsafe extern "C" fn xyg_palette_rows_rgba8(
         }
         let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
         let out = std::slice::from_raw_parts_mut(out_rgba, need);
-        let Some(unresolved) = kernels::palette_rows_rgba8(&refs, rows, out) else {
+        let entry_flags = if out_entry_unresolved.is_null() || entry_unresolved_cap == 0 {
+            None
+        } else if entry_unresolved_cap < n_entries {
+            return usize::MAX;
+        } else {
+            Some(std::slice::from_raw_parts_mut(
+                out_entry_unresolved,
+                entry_unresolved_cap.min(n_entries),
+            ))
+        };
+        let Some(unresolved) = kernels::palette_rows_rgba8(&refs, rows, out, entry_flags) else {
             return usize::MAX;
         };
         if !out_unresolved.is_null() {

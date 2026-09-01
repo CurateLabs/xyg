@@ -219,6 +219,7 @@ export function paletteRowsRgba8(palette, rows) {
   const { lens, packed } = packUtf8Strings(src);
   const out = new Uint8Array(n * 4);
   const unresolved = new Uint32Array(1);
+  const entryFlags = new Uint8Array(src.length);
   const USIZE_MAX_64 = (1n << 64n) - 1n;
   const written = xyPaletteRowsRgba8(
     lens.length ? u32Ptr(lens) : 0,
@@ -229,6 +230,8 @@ export function paletteRowsRgba8(palette, rows) {
     u8Ptr(out),
     BigInt(out.length),
     u32Ptr(unresolved),
+    u8Ptr(entryFlags),
+    BigInt(entryFlags.length),
   );
   if (written === USIZE_MAX_64) {
     throw new RangeError("invalid palette-rows-rgba8 request");
