@@ -112,6 +112,8 @@ from ._paint import (  # noqa: F401
 from ._paint import (  # noqa: F401
     step_arrays as _step_arrays,  # noqa: F401
 )
+from ._svg_figure import to_svg  # noqa: F401
+from ._svg_render import render_svg  # noqa: F401
 from .config import DEFAULT_PALETTE  # noqa: F401
 
 # Unresolved CSS paints use native `STATIC_COLOR_FALLBACK_RGBA8` via
@@ -179,7 +181,3 @@ _AXIS_TEXT_EDGE_PAD = 4.0
 # Gap between the y title's ink and the nearest tick label's ink, as a fraction
 # of the title's font size. Matplotlib leaves 5.6 px at its 13.89 px (10 pt at
 # 100 dpi) default — measured with `Text.get_window_extent` on 3.11.1.
-
-
-from ._svg_figure import to_svg  # noqa: F401
-from ._svg_render import render_svg  # noqa: F401

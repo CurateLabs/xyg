@@ -19,11 +19,7 @@ branch #853). Python `_payload.py` and `_scene_v3.py` are **marshal-only**:
 coerce host objects, call generated ABI 292–325, ship returned buffers. Recorded
 Node stay-host TAP extras are inventory, not an alternate close path.
 
-**Remaining M2 work** is secondary §302 under [#58](https://github.com/CurateLabs/xyg/issues/58)
-(`_svg`/`_raster` compat paths, marks/_figure composition, channels label
-factorization, `lod.py` cache wiring) — out of the #731 close bar but still
-blocks “Python is only a host.” Reproduce inventory with
-`python3 scripts/audit_python_host_core.py`.
+**Remaining M2 work (secondary §302 under [#58](https://github.com/CurateLabs/xyg/issues/58)) is closed** (2026-09-01): `_svg`/`_raster` compat paths, marks/_figure composition, channels label factorization, and `lod.py` cache wiring are keep-host re-export hubs. Reproduce inventory with `python3 scripts/audit_python_host_core.py`.
 
 JSON `python-scene-migration` `follow_up_issue` stays **58** (policy template).
 GitHub close work is **#731**. Extra notes belong in markdown disposition, not
