@@ -3136,11 +3136,12 @@ export function marchingSquares(z, rows, cols, xCoords, yCoords, levels, { corne
 
 /** Clamp screen dimensions to LOD grid bounds (ABI 329, §5). */
 export function screenShape(width, height) {
+  const i32Max = 2_147_483_647;
   const outW = new Int32Array(1);
   const outH = new Int32Array(1);
   const ok = xyScreenShape(
-    Math.trunc(Number(width)),
-    Math.trunc(Number(height)),
+    Math.min(Math.trunc(Number(width)), i32Max),
+    Math.min(Math.trunc(Number(height)), i32Max),
     pointer(outW, "int32_t *"),
     pointer(outH, "int32_t *"),
   );

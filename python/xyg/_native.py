@@ -12670,11 +12670,16 @@ def screen_shape(width: int, height: int) -> tuple[int, int]:
     """Clamp screen dimensions to the product LOD grid bounds (ABI 329, §5)."""
     if isinstance(width, (bool, np.bool_)) or isinstance(height, (bool, np.bool_)):
         raise ValueError("screen dimensions must be integers")
+    # The C ABI uses i32; huge frontend pixel counts must not wrap before Rust
+    # clamps them to MAX_SCREEN_DIM.
+    _i32_max = 2_147_483_647
+    width = min(int(width), _i32_max)
+    height = min(int(height), _i32_max)
     out_w = ctypes.c_int32()
     out_h = ctypes.c_int32()
     ok = _lib.xyg_screen_shape(
-        int(width),
-        int(height),
+        width,
+        height,
         ctypes.byref(out_w),
         ctypes.byref(out_h),
     )

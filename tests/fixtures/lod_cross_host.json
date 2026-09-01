@@ -139,6 +139,12 @@
       "kind": "screen_shape",
       "width": 8000,
       "height": 9000
+    },
+    {
+      "name": "screen_shape_clamp_frontend_overflow",
+      "kind": "screen_shape",
+      "width": 1000000000000,
+      "height": 16
     }
   ]
 }
