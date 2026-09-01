@@ -8761,14 +8761,13 @@ mod tests {
     #[test]
     fn label_codes_first_seen_preserves_order() {
         let rows = ["b", "a", "b", "(missing)", "a"];
-        let refs: Vec<&str> = rows.iter().copied().collect();
-        let first_seen = label_codes_first_seen(&refs).expect("first seen");
+        let first_seen = label_codes_first_seen(&rows).expect("first seen");
         assert_eq!(
             first_seen.categories,
             vec!["b".to_owned(), "a".to_owned(), "(missing)".to_owned()]
         );
         assert_eq!(first_seen.codes_u8.as_deref(), Some([0, 1, 0, 2, 1].as_slice()));
-        let sorted = factorize_display_labels(&refs).expect("sorted");
+        let sorted = factorize_display_labels(&rows).expect("sorted");
         assert_eq!(
             sorted.categories,
             vec!["(missing)".to_owned(), "a".to_owned(), "b".to_owned()]
