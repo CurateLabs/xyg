@@ -4603,8 +4603,9 @@ def _segment_marks(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    colors = _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0)
+    colors = _paint.effective_paint_rgba(
+        t, "color", n, color, read, component="stroke", default_opacity=1.0
+    )
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
     plain_css, constant_paint = _paint.trace_paint_css_constant(t, "color", color)
     css_paint = escape(plain_css)
@@ -5000,9 +5001,9 @@ def _triangle_mesh_marks(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    face = _trace_paint_rgba(t, "color", n, fallback, read)
-    fills = _paint.effective_rgba(face, t, read, component="fill", default_opacity=1.0)
-    strokes = _paint.effective_stroke_rgba(t, style, n, fallback, read, face, default_opacity=1.0)
+    face, fills, strokes = _paint.trace_fill_and_stroke_rgba(
+        t, style, n, fallback, read, default_opacity=1.0
+    )
     stroke_widths = _paint.style_values(
         t, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
     )
@@ -5084,10 +5085,8 @@ def _rect_svg_styles(
         fill, extra = _bar_fill(style, fallback, svg, plot)
         return [fill] * n, [extra] * n, radii
 
-    face = _trace_paint_rgba(trace, "color", n, fallback, read)
-    fills_rgba = _paint.effective_rgba(face, trace, read, component="fill", default_opacity=0.85)
-    strokes = _paint.effective_stroke_rgba(
-        trace, style, n, fallback, read, face, default_opacity=0.85
+    face, fills_rgba, strokes = _paint.trace_fill_and_stroke_rgba(
+        trace, style, n, fallback, read, default_opacity=0.85
     )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))

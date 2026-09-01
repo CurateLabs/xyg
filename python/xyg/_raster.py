@@ -50,9 +50,6 @@ from ._paint import (
 from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
-from ._paint import (
-    trace_paint_rgba as _trace_paint_rgba,
-)
 from ._svg import (
     _AXIS,
     _AXIS_GRID_DASHES,
@@ -2092,9 +2089,9 @@ def _emit_authored_scatter(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    face = _trace_paint_rgba(t, "color", n, color, read)
-    fills = _rgba8(_paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8))
-    strokes = _paint.effective_stroke_rgba8(t, style, n, color, read, face, default_opacity=0.8)
+    face, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
+        t, style, n, color, read, default_opacity=0.8
+    )
     size_ch = t.get("size") or {}
     if size_ch.get("mode") == "continuous":
         values = _column(blob, cols[size_ch["buf"]])
@@ -2239,12 +2236,8 @@ def _emit_scatter(
     n = len(xv)
     if n == 0:
         return
-    face_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    fills = _rgba8(
-        _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=0.8)
-    )
-    strokes = _paint.effective_stroke_rgba8(
-        t, style, n, color, read, face_intrinsic, default_opacity=0.8
+    face_intrinsic, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
+        t, style, n, color, read, default_opacity=0.8
     )
     if size_ch.get("mode") == "continuous":
         sv = _column(blob, cols[size_ch["buf"]])
@@ -2319,9 +2312,8 @@ def _emit_segments(
         return _column(blob, cols[index])
 
     n = len(x0)
-    intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    colors = _rgba8(
-        _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0)
+    colors = effective_paint_rgba8(
+        t, "color", n, color, read, component="stroke", default_opacity=1.0
     )
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
     if polar is None:
@@ -2494,12 +2486,8 @@ def _emit_triangle_mesh(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    face_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    fills = _rgba8(
-        _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=1.0)
-    )
-    strokes = _paint.effective_stroke_rgba8(
-        t, style, n, color, read, face_intrinsic, default_opacity=1.0
+    face_intrinsic, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
+        t, style, n, color, read, default_opacity=1.0
     )
 
     x0, y0, x1, y1, x2, y2 = vertices
@@ -2633,13 +2621,9 @@ def _rect_style_arrays(
     default_opacity: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Resolve batched rectangle paint, stroke width, and radii."""
-    face = _trace_paint_rgba(trace, "color", n, fallback, read)
-    fills = _rgba8(
-        _paint.effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
-    )
     style = trace.get("style") or {}
-    strokes = _paint.effective_stroke_rgba8(
-        trace, style, n, fallback, read, face, default_opacity=default_opacity
+    _, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
+        trace, style, n, fallback, read, default_opacity=default_opacity
     )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))

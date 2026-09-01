@@ -390,6 +390,65 @@ def effective_paint_rgba8(
     )
 
 
+def effective_paint_rgba(
+    trace: dict[str, Any],
+    key: str,
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    component: str,
+    default_opacity: float,
+) -> np.ndarray:
+    """Resolve one paint channel to effective 0-1 RGBA rows."""
+    intrinsic = trace_paint_rgba(trace, key, n, fallback, read)
+    return effective_rgba(
+        intrinsic,
+        trace,
+        read,
+        component=component,
+        default_opacity=default_opacity,
+    )
+
+
+def trace_fill_and_stroke_rgba8(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    default_opacity: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Resolve face paint plus effective fill/stroke RGBA8 rows."""
+    face = trace_paint_rgba(trace, "color", n, fallback, read)
+    fills = rgba8(
+        effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
+    )
+    strokes = effective_stroke_rgba8(
+        trace, style, n, fallback, read, face, default_opacity=default_opacity
+    )
+    return face, fills, strokes
+
+
+def trace_fill_and_stroke_rgba(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    default_opacity: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Resolve face paint plus effective fill/stroke 0-1 RGBA rows."""
+    face = trace_paint_rgba(trace, "color", n, fallback, read)
+    fills = effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
+    strokes = effective_stroke_rgba(
+        trace, style, n, fallback, read, face, default_opacity=default_opacity
+    )
+    return face, fills, strokes
+
+
 def trace_stroke_intrinsic(
     trace: dict[str, Any],
     style: dict[str, Any],
