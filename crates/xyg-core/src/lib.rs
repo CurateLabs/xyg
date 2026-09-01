@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 333;
+pub const ABI_VERSION: u32 = 334;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14977,6 +14977,39 @@ pub unsafe extern "C" fn xyg_screen_shape(
             1
         }
         None => 0,
+    }
+}
+
+/// Order a possibly flipped viewport window as `(lo_x, hi_x, lo_y, hi_y)`.
+///
+/// `require_area != 0` rejects zero width or height. Returns `1` on success,
+/// `0` when any bound is non-finite, and `-1` when area is required but zero.
+///
+/// # Safety
+/// `out` must address four writable f64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_normalize_window(
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    require_area: i32,
+    out: *mut f64,
+) -> i32 {
+    if out.is_null() {
+        return 0;
+    }
+    match lod_plan::normalize_window(x0, x1, y0, y1, require_area != 0) {
+        Ok((lo_x, hi_x, lo_y, hi_y)) => {
+            let slice = std::slice::from_raw_parts_mut(out, 4);
+            slice[0] = lo_x;
+            slice[1] = hi_x;
+            slice[2] = lo_y;
+            slice[3] = hi_y;
+            1
+        }
+        Err(lod_plan::NormalizeWindowError::NonFinite) => 0,
+        Err(lod_plan::NormalizeWindowError::ZeroArea) => -1,
     }
 }
 

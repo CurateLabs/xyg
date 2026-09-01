@@ -984,6 +984,8 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_normalize_window.restype = ctypes.c_int32
+    lib.xyg_normalize_window.argtypes = [D, D, D, D, ctypes.c_int32, F64P]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
@@ -4939,6 +4941,23 @@ def main() -> None:
         "screen_shape low clamp",
     )
     ok(out_w.value == 16 and out_h.value == 16, "screen_shape low clamp output")
+    norm_out = array("d", [0.0, 0.0, 0.0, 0.0])
+    ok(
+        lib.xyg_normalize_window(5.0, 1.0, 4.0, 2.0, 1, _ptr(norm_out, ctypes.c_double)) == 1,
+        "normalize_window ordered",
+    )
+    ok(
+        tuple(norm_out) == (1.0, 5.0, 2.0, 4.0),
+        "normalize_window ordered output",
+    )
+    ok(
+        lib.xyg_normalize_window(1.0, 1.0, 2.0, 3.0, 0, _ptr(norm_out, ctypes.c_double)) == 1,
+        "normalize_window degenerate allowed",
+    )
+    ok(
+        lib.xyg_normalize_window(1.0, 1.0, 2.0, 3.0, 1, _ptr(norm_out, ctypes.c_double)) == -1,
+        "normalize_window zero area rejected",
+    )
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])
     lib.xyg_sample_mask_u32(

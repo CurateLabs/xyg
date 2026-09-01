@@ -58,6 +58,36 @@ pub fn screen_shape(w: i32, h: i32) -> (i32, i32) {
     )
 }
 
+/// Order a possibly flipped request window as `(lo_x, hi_x, lo_y, hi_y)`.
+///
+/// Matches Python `lod.normalize_window` / Node `normalizeWindow`.
+pub fn normalize_window(
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    require_area: bool,
+) -> Result<(f64, f64, f64, f64), NormalizeWindowError> {
+    if !x0.is_finite() || !x1.is_finite() || !y0.is_finite() || !y1.is_finite() {
+        return Err(NormalizeWindowError::NonFinite);
+    }
+    let lo_x = x0.min(x1);
+    let hi_x = x0.max(x1);
+    let lo_y = y0.min(y1);
+    let hi_y = y0.max(y1);
+    if require_area && (lo_x == hi_x || lo_y == hi_y) {
+        return Err(NormalizeWindowError::ZeroArea);
+    }
+    Ok((lo_x, hi_x, lo_y, hi_y))
+}
+
+/// Validation failure for [`normalize_window`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NormalizeWindowError {
+    NonFinite,
+    ZeroArea,
+}
+
 /// Hysteresis-guarded drill decision: stay in exact marks until the visible
 /// count clearly exceeds the budget again (§5).
 pub fn drill_decision(visible: u64, budget: f64, in_drill: bool, exit_factor: f64) -> Option<bool> {
@@ -684,6 +714,26 @@ pub fn payload_sample_target_indices(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn normalize_window_orders_and_validates() {
+        assert_eq!(
+            normalize_window(5.0, 1.0, 4.0, 2.0, true),
+            Ok((1.0, 5.0, 2.0, 4.0))
+        );
+        assert_eq!(
+            normalize_window(1.0, 1.0, 2.0, 3.0, false),
+            Ok((1.0, 1.0, 2.0, 3.0))
+        );
+        assert_eq!(
+            normalize_window(1.0, 1.0, 2.0, 3.0, true),
+            Err(NormalizeWindowError::ZeroArea)
+        );
+        assert_eq!(
+            normalize_window(f64::NAN, 1.0, 2.0, 3.0, true),
+            Err(NormalizeWindowError::NonFinite)
+        );
+    }
 
     #[test]
     fn drill_hysteresis_matches_python_fixtures() {

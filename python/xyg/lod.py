@@ -148,13 +148,7 @@ def normalize_window(
         vals = [float(v) for v in (x0, x1, y0, y1)]
     except (TypeError, ValueError) as e:
         raise ValueError("view window bounds must be finite") from e
-    if not all(np.isfinite(vals)):
-        raise ValueError("view window bounds must be finite")
-    lo_x, hi_x = min(vals[0], vals[1]), max(vals[0], vals[1])
-    lo_y, hi_y = min(vals[2], vals[3]), max(vals[2], vals[3])
-    if require_area and (lo_x == hi_x or lo_y == hi_y):
-        raise ValueError("view window must have non-zero width and height")
-    return lo_x, hi_x, lo_y, hi_y
+    return kernels.normalize_window(*vals, require_area=require_area)
 
 
 def screen_shape(w: int, h: int) -> tuple[int, int]:

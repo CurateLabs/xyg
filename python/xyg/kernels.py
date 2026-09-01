@@ -238,6 +238,7 @@ weighted_ecdf = _impl.weighted_ecdf
 drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
 screen_shape = _impl.screen_shape
+normalize_window = _impl.normalize_window
 lod_plan = _impl.lod_plan
 payload_tier = _impl.payload_tier
 payload_m4_indices = _impl.payload_m4_indices
@@ -418,6 +419,7 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "normalize_window",
     "object_rows_all_stringlike",
     "paint_effective_rgba",
     "payload_axis_spec_attach_plan",

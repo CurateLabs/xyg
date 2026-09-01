@@ -356,6 +356,7 @@ export {
   lodPlan,
   drillDecision,
   alignedWindow,
+  normalizeWindow,
   sampleThreshold,
   sampleFraction,
   hashRowIds,

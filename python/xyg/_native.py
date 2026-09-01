@@ -12754,6 +12754,31 @@ def screen_shape(width: int, height: int) -> tuple[int, int]:
     return int(out_w.value), int(out_h.value)
 
 
+def normalize_window(
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    *,
+    require_area: bool = True,
+) -> tuple[float, float, float, float]:
+    """Order a possibly-flipped request window (ABI 334, §5)."""
+    out = (ctypes.c_double * 4)()
+    ok = _lib.xyg_normalize_window(
+        float(x0),
+        float(x1),
+        float(y0),
+        float(y1),
+        1 if require_area else 0,
+        out,
+    )
+    if ok == 0:
+        raise ValueError("view window bounds must be finite")
+    if ok < 0:
+        raise ValueError("view window must have non-zero width and height")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
 def lod_grid_shape(
     width: int, height: int, visible: int, target_per_cell: float = 16.0
 ) -> tuple[int, int]:

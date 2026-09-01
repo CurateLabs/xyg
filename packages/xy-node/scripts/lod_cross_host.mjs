@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, sampleFraction, sampleThreshold, screenShape } from "../src/encode.js";
+import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, normalizeWindow, sampleFraction, sampleThreshold, screenShape } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "lod_cross_host.json");
@@ -56,6 +56,18 @@ function runCase(spec) {
       name: spec.name,
       width: shape[0],
       height: shape[1],
+    };
+  }
+  if (spec.kind === "normalize_window") {
+    const window = normalizeWindow(spec.x0, spec.x1, spec.y0, spec.y1, {
+      requireArea: spec.require_area,
+    });
+    return {
+      name: spec.name,
+      lo_x: window[0],
+      hi_x: window[1],
+      lo_y: window[2],
+      hi_y: window[3],
     };
   }
   if (spec.kind === "aligned_window") {

@@ -117,6 +117,21 @@ def _python_case(spec: dict) -> dict:
     if spec["kind"] == "screen_shape":
         w, h = kernels.screen_shape(int(spec["width"]), int(spec["height"]))
         return {"name": spec["name"], "width": w, "height": h}
+    if spec["kind"] == "normalize_window":
+        lo_x, hi_x, lo_y, hi_y = lod.normalize_window(
+            float(spec["x0"]),
+            float(spec["x1"]),
+            float(spec["y0"]),
+            float(spec["y1"]),
+            require_area=bool(spec["require_area"]),
+        )
+        return {
+            "name": spec["name"],
+            "lo_x": lo_x,
+            "hi_x": hi_x,
+            "lo_y": lo_y,
+            "hi_y": hi_y,
+        }
     column = lod.encode_f32_values(
         spec["values"],
         float(spec["offset"]),
@@ -186,6 +201,12 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
     if spec["kind"] == "screen_shape":
         assert py["width"] == node["width"]
         assert py["height"] == node["height"]
+        return
+    if spec["kind"] == "normalize_window":
+        assert py["lo_x"] == node["lo_x"]
+        assert py["hi_x"] == node["hi_x"]
+        assert py["lo_y"] == node["lo_y"]
+        assert py["hi_y"] == node["hi_y"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]
