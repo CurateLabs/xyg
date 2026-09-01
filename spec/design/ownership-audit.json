@@ -2211,7 +2211,7 @@
       "policy": "python-scene-migration",
       "disposition": "split-and-move-rust",
       "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "rationale": "LOD decision math and f32 encode delegate to Rust (xy_lod_plan, xy_drill_decision, xy_encode_f32, ABI 255); cross-host proof in tests/test_lod_cross_host.py. Stay-host: trace drill_history cache, aligned_window pad grid, BufferWriter wire packing."
     },
     {
       "path": "python/xyg/marks.py",

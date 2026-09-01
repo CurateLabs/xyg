@@ -1,0 +1,102 @@
+"""Cross-host LOD parity: Python lod.py vs Node encode.js kernel delegates."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import shutil
+import subprocess
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from xyg import kernels, lod
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURE = ROOT / "tests" / "fixtures" / "lod_cross_host.json"
+NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "lod_cross_host.mjs"
+
+
+def _node_bin() -> str:
+    return shutil.which("node") or ""
+
+
+def _sha_f32(values: np.ndarray) -> str:
+    arr = np.ascontiguousarray(values, dtype=np.float32)
+    return hashlib.sha256(arr.tobytes()).hexdigest()
+
+
+def _python_case(spec: dict) -> dict:
+    if spec["kind"] == "lod_plan":
+        exact, mode, gw, gh = kernels.lod_plan(
+            spec["visible"],
+            float(spec["budget"]),
+            bool(spec["in_drill"]),
+            exit_factor=float(spec["exit_factor"]),
+            width=int(spec["width"]),
+            height=int(spec["height"]),
+            target_per_cell=float(spec["target_per_cell"]),
+        )
+        return {
+            "name": spec["name"],
+            "exact": exact,
+            "mode": mode,
+            "grid_w": gw,
+            "grid_h": gh,
+        }
+    if spec["kind"] == "drill_decision":
+        exact = kernels.drill_decision(
+            spec["visible"],
+            float(spec["budget"]),
+            bool(spec["in_drill"]),
+            float(spec["exit_factor"]),
+        )
+        return {"name": spec["name"], "exact": exact}
+    column = lod.encode_f32_values(
+        spec["values"],
+        float(spec["offset"]),
+        float(spec["lo"]),
+        float(spec["hi"]),
+        kind=spec.get("kind"),
+    )
+    return {
+        "name": spec["name"],
+        "meta": column.meta,
+        "values_sha256": _sha_f32(column.values),
+        "length": len(column.values),
+    }
+
+
+@pytest.fixture(scope="module")
+def node_results() -> dict[str, dict]:
+    if not _node_bin() or not NODE_SCRIPT.is_file():
+        pytest.skip("node cross-host script missing")
+    proc = subprocess.run(
+        [_node_bin(), str(NODE_SCRIPT)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(proc.stdout.strip())
+    return {case["name"]: case for case in payload["cases"]}
+
+
+@pytest.mark.parametrize("spec", json.loads(FIXTURE.read_text())["cases"], ids=lambda s: s["name"])
+def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    py = _python_case(spec)
+    node = node_results[spec["name"]]
+    assert py["name"] == node["name"]
+    if spec["kind"] == "lod_plan":
+        assert py["exact"] == node["exact"]
+        assert py["mode"] == node["mode"]
+        assert py["grid_w"] == node["grid_w"]
+        assert py["grid_h"] == node["grid_h"]
+        return
+    if spec["kind"] == "drill_decision":
+        assert py["exact"] == node["exact"]
+        return
+    assert py["meta"] == node["meta"]
+    assert py["values_sha256"] == node["values_sha256"]
+    assert py["length"] == node["length"]
