@@ -354,3 +354,45 @@ def effective_paint_rgba8(
             default_opacity=default_opacity,
         )
     )
+
+
+def trace_stroke_intrinsic(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    fill_intrinsic: np.ndarray,
+) -> np.ndarray:
+    """Resolve intrinsic stroke RGBA rows before effective opacity."""
+    if (trace.get("stroke") or {}).get("mode") == "match_fill":
+        return np.asarray(fill_intrinsic, copy=True)
+    if trace.get("stroke") is not None:
+        return trace_paint_rgba(trace, "stroke", n, fallback, read)
+    style_stroke = style.get("stroke")
+    if style_stroke is not None:
+        rgba = np.asarray(paint_rgba8(_css(style_stroke, fallback)), dtype=np.float64) / 255.0
+        return np.tile(rgba, (n, 1))
+    return np.asarray(fill_intrinsic, copy=True)
+
+
+def effective_stroke_rgba8(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    fill_intrinsic: np.ndarray,
+    *,
+    default_opacity: float,
+) -> np.ndarray:
+    """Resolve stroke paint to effective RGBA8 rows."""
+    return rgba8(
+        effective_rgba(
+            trace_stroke_intrinsic(trace, style, n, fallback, read, fill_intrinsic),
+            trace,
+            read,
+            component="stroke",
+            default_opacity=default_opacity,
+        )
+    )

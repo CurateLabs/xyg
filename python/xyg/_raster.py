@@ -2094,30 +2094,7 @@ def _emit_authored_scatter(
 
     face = _trace_paint_rgba(t, "color", n, color, read)
     fills = _rgba8(_paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8))
-    if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_intrinsic = face
-    elif t.get("stroke") is not None:
-        stroke_intrinsic = _trace_paint_rgba(t, "stroke", n, color, read)
-    elif style.get("stroke") is not None:
-        stroke_intrinsic = np.tile(
-            np.asarray(
-                _parse_color(_css(style.get("stroke"), color)),
-                dtype=np.float64,
-            )
-            / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_intrinsic = face
-    strokes = _rgba8(
-        _paint.effective_rgba(
-            stroke_intrinsic,
-            t,
-            read,
-            component="stroke",
-            default_opacity=0.8,
-        )
-    )
+    strokes = _paint.effective_stroke_rgba8(t, style, n, color, read, face, default_opacity=0.8)
     size_ch = t.get("size") or {}
     if size_ch.get("mode") == "continuous":
         values = _column(blob, cols[size_ch["buf"]])
@@ -2266,7 +2243,9 @@ def _emit_scatter(
     fills = _rgba8(
         _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=0.8)
     )
-
+    strokes = _paint.effective_stroke_rgba8(
+        t, style, n, color, read, face_intrinsic, default_opacity=0.8
+    )
     if size_ch.get("mode") == "continuous":
         sv = _column(blob, cols[size_ch["buf"]])
         r0, r1 = size_ch.get("range_px", [2, 18])
@@ -2280,20 +2259,6 @@ def _emit_scatter(
         np.asarray(read(symbol_channel["buf"]), dtype=np.uint8)[:n]
         if symbol_channel is not None
         else np.full(n, sym, dtype=np.uint8)
-    )
-    if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_intrinsic = face_intrinsic
-    elif t.get("stroke") is not None:
-        stroke_intrinsic = _trace_paint_rgba(t, "stroke", n, color, read)
-    elif style.get("stroke") is not None:
-        stroke_intrinsic = np.tile(
-            np.asarray(_parse_color(_css(style.get("stroke"), color)), dtype=np.float64) / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_intrinsic = face_intrinsic
-    strokes = _rgba8(
-        _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=0.8)
     )
     if polar is not None:
         # Cull out-of-range radii the way the client shader does: below r_lo a
@@ -2573,24 +2538,16 @@ def _emit_triangle_mesh(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    fills = _mesh_fill_rgba(t, blob, cols, n, style, color)
+    face_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
+    fills = _rgba8(
+        _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=1.0)
+    )
+    strokes = _paint.effective_stroke_rgba8(
+        t, style, n, color, read, face_intrinsic, default_opacity=1.0
+    )
 
     x0, y0, x1, y1, x2, y2 = vertices
     widths = _paint.style_values(t, "stroke_width", n, read, float(style.get("stroke_width", 0.0)))
-    if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    elif t.get("stroke") is not None:
-        stroke_intrinsic = _trace_paint_rgba(t, "stroke", n, color, read)
-    elif style.get("stroke") is not None:
-        stroke_intrinsic = np.tile(
-            np.asarray(_parse_color(_css(style.get("stroke"), color)), dtype=np.float64) / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    strokes = _rgba8(
-        _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=1.0)
-    )
     projected = (sx(x0[:n]), sy(y0[:n]), sx(x1[:n]), sy(y1[:n]), sx(x2[:n]), sy(y2[:n]))
     if n == 0:
         return

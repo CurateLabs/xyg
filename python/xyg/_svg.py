@@ -4740,12 +4740,11 @@ def _scatter_marks(
 
     stroke_widths = _paint.style_values(t, "stroke_width", n, read, 0.0)
     symbols = _symbol_names(t, n, read, str(style.get("symbol", "circle")))
+    stroke_source = _paint.trace_stroke_intrinsic(t, style, n, fallback, read, face_intrinsic)
     if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_source = face_intrinsic.copy()
         stroke_css = face_css
         stroke_css_constant = face_css_constant
     elif t.get("stroke") is not None:
-        stroke_source = _trace_paint_rgba(t, "stroke", n, fallback, read)
         stroke_css = _css((t.get("stroke") or {}).get("color"), style.get("stroke") or face_css)
         stroke_css_constant = (t.get("stroke") or {}).get("mode") in {
             None,
@@ -4753,12 +4752,8 @@ def _scatter_marks(
         } and _paint_rgba8(stroke_css)[3] == 255
     elif style.get("stroke") is not None:
         stroke_css = _css(style.get("stroke"), face_css)
-        stroke_source = np.tile(
-            np.asarray(_paint_rgba8(stroke_css), dtype=np.float64) / 255.0, (n, 1)
-        )
         stroke_css_constant = _paint_rgba8(stroke_css)[3] == 255
     else:
-        stroke_source = face_intrinsic.copy()
         stroke_css = face_css
         stroke_css_constant = face_css_constant
     stroke_rgba = _paint.effective_rgba(
@@ -5061,17 +5056,7 @@ def _triangle_mesh_marks(
 
     face = _trace_paint_rgba(t, "color", n, fallback, read)
     fills = _paint.effective_rgba(face, t, read, component="fill", default_opacity=1.0)
-    if (t.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_face = face
-    elif t.get("stroke") is not None:
-        stroke_face = _trace_paint_rgba(t, "stroke", n, fallback, read)
-    elif style.get("stroke") is not None:
-        stroke_face = np.tile(
-            np.asarray(_paint_rgba8(_css(style.get("stroke"), fallback)), dtype=np.float64) / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_face = face
+    stroke_face = _paint.trace_stroke_intrinsic(t, style, n, fallback, read, face)
     strokes = _paint.effective_rgba(stroke_face, t, read, component="stroke", default_opacity=1.0)
     stroke_widths = _paint.style_values(
         t, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
