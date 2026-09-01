@@ -19,7 +19,7 @@ from typing import Any, Optional, TypeAlias, Union
 import numpy as np
 import numpy.typing as npt
 
-from . import _validate, config, kernels
+from . import _native, _validate, config, kernels
 
 _finite_scalar = _validate.finite_scalar
 
@@ -741,6 +741,13 @@ def quantize_unit_u8(values: npt.NDArray[np.float64], domain: tuple[float, float
     return kernels.quantize_unit_u8(np.ascontiguousarray(values, dtype=np.float64), domain)
 
 
+def _colormap_stops_rgb(colormap: Colormap) -> npt.NDArray[np.uint8]:
+    """RGB stop table for ``kernels.colormap_lut`` / exporter LUT sampling."""
+    if isinstance(colormap, str):
+        return np.asarray(_native.colormap_stops(colormap), dtype=np.uint8)
+    return np.ascontiguousarray(colormap, dtype=np.uint8).reshape(-1, 3)
+
+
 def colormap_lut_rgba8(colormap: Colormap) -> npt.NDArray[np.uint8]:
     """The client's 256-texel colormap LUT as (256, 4) straight-alpha RGBA8.
 
@@ -1078,19 +1085,19 @@ def resolve_direct_rgba(cc: ColorChannel) -> ColorChannel:
     physically cannot coexist with the two-ended gradient. Resolving here keeps
     the numeric `color=` encodings of the mark signature working and makes the
     renderers agree by construction: continuous values run through the same
-    `normalize_to_unit` + `_svg._lut` chain the static exporters apply to the
-    shipped buffer, and categorical codes index the same `palette_rows_rgba8`
-    table, so the resolved bytes match what the exporters computed for
-    themselves before this existed. Only sensible on small-N direct-tier marks,
-    where four bytes per item is noise.
+    ``normalize_to_unit`` + ``kernels.colormap_lut`` chain the static exporters
+    apply to the shipped buffer, and categorical codes index the same
+    ``palette_rows_rgba8`` table, so the resolved bytes match what the exporters
+    computed for themselves before this existed. Only sensible on small-N
+    direct-tier marks, where four bytes per item is noise.
     """
     if cc.mode == "continuous":
-        from ._svg import _lut  # circular at module scope: _svg reaches back here
-
         if cc.values is None or cc.domain is None:
             raise ValueError("continuous color channel missing values or domain")
+        unit = normalize_to_unit(cc.values, cc.domain)
+        rgb = kernels.colormap_lut(unit, _colormap_stops_rgb(cc.colormap))
         rgba = np.empty((len(cc.values), 4), dtype=np.float64)
-        rgba[:, :3] = _lut(cc.colormap, normalize_to_unit(cc.values, cc.domain)) / 255.0
+        rgba[:, :3] = rgb.astype(np.float64) / 255.0
         rgba[:, 3] = 1.0
         return ColorChannel(mode="direct_rgba", rgba=rgba)
     if cc.mode == "categorical":
