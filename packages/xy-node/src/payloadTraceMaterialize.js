@@ -4,7 +4,16 @@ import {
   pointer,
   xyPayloadTraceEmitMaterialize,
 } from "./native.js";
-import { Column, DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, payloadVisibleIndices, u8Ptr, u32Ptr } from "./encode.js";
+import {
+  Column,
+  DEFAULT_PALETTE,
+  f64Ptr,
+  payloadChannelWireEncode,
+  payloadTransitionEntryAttach,
+  payloadVisibleIndices,
+  u8Ptr,
+  u32Ptr,
+} from "./encode.js";
 import { clipQuantizeU8, directRgbaAdmit } from "./color.js";
 
 export const PAYLOAD_TRACE_EMIT_MAX_BYTES = 1 << 28;
@@ -201,6 +210,74 @@ function styleWireChannel(ch) {
     return ch[keys[0]];
   }
   return ch;
+}
+
+function gatherF64(arr, idx) {
+  const src = arr instanceof Float64Array ? arr : Float64Array.from(arr, Number);
+  const out = new Float64Array(idx.length);
+  for (let i = 0; i < idx.length; i += 1) out[i] = src[idx[i]];
+  return out;
+}
+
+function gatherItems(arr, idx) {
+  if (arr == null) return arr;
+  const out = new Array(idx.length);
+  for (let i = 0; i < idx.length; i += 1) out[i] = arr[idx[i]];
+  return out;
+}
+
+function resolveStyleChannelValues(channel, sel, nMarks) {
+  if (channel?.values != null) {
+    let values = channel.values;
+    if (sel != null) {
+      values = values instanceof Uint8Array
+        ? gatherItems(values, sel)
+        : gatherF64(values, sel);
+    }
+    return values;
+  }
+  if (channel?.mode === "constant" && channel.constant != null) {
+    const n = sel != null ? sel.length : nMarks;
+    if (n == null || n <= 0) return null;
+    const constant = Number(channel.constant);
+    if (!Number.isFinite(constant)) return null;
+    if (channel.dtype === "u8") {
+      const out = new Uint8Array(n);
+      out.fill(constant);
+      return out;
+    }
+    return new Float64Array(n).fill(constant);
+  }
+  return null;
+}
+
+function shipStyleChannelWire(plan, pw, raw) {
+  const flat = raw instanceof Float64Array || raw instanceof Uint8Array || raw instanceof Uint32Array
+    ? raw
+    : Float64Array.from(raw, Number);
+  return plan.bufKind === "u8" ? pw.shipU8(flat) : pw.shipScalar(flat);
+}
+
+function shipStyleChannels(styleChannels, pw, sel = null, nMarks = null) {
+  const result = {};
+  for (const [name, channel] of Object.entries(styleChannels)) {
+    const values = resolveStyleChannelValues(channel, sel, nMarks);
+    if (values == null) continue;
+    const plan = payloadChannelWireEncode({
+      role: "style",
+      mode: "direct",
+      styleDtypeU8: channel.dtype === "u8",
+    });
+    const spec = {
+      mode: "direct",
+      components: channel.components ?? 1,
+      dtype: channel.dtype ?? "f32",
+      buf: shipStyleChannelWire(plan, pw, values),
+    };
+    if (plan.setN) spec.n = values.length;
+    result[name] = spec;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function channelDesc(ch, nPoints = 0) {
@@ -531,23 +608,22 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     const colIdx = pw._appendFromMaterialized(enc, meta);
     target[key] = colIdx;
   }
+  let shipStyleChannelsFlag = false;
   const nChan = Number(sv.getBigUint64(72, true));
   for (let i = 0; i < nChan; i += 1) {
     const base = i * CHAN_OUT_SIZE;
     const cv = new DataView(chanOut.buffer, chanOut.byteOffset + base, CHAN_OUT_SIZE);
     const key = CHAN_REGISTRY[cv.getInt32(0, true)];
     const bufKind = cv.getInt32(4, true);
+    if (key === "channels") {
+      shipStyleChannelsFlag = true;
+      continue;
+    }
     if (bufKind === 0) {
       if (key === "color") entry.color = traceChannelSpec(t.color_ch, "color");
       else if (key === "size") entry.size = traceChannelSpec(t.size_ch, "size");
       else if (key === "stroke") entry.stroke = traceChannelSpec(t.stroke_ch, "color");
-      else if (key === "channels") {
-        const styleName = styleChannelEntryName(t.style_channels);
-        const wire = styleWireChannel(t.style_channels);
-        if (styleName != null && wire != null) {
-          entry.channels = { [styleName]: styleWireSpec(wire) };
-        }
-      } else if (key === "color_target") {
+      else if (key === "color_target") {
         entry.color_target = traceChannelSpec(t.color2_ch, "color");
       }
       continue;
@@ -575,12 +651,6 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       entry.size = { ...traceChannelSpec(t.size_ch, "size"), ...spec };
     } else if (key === "stroke") {
       entry.stroke = { ...traceChannelSpec(t.stroke_ch, "color"), ...spec };
-    } else if (key === "channels") {
-      const styleName = styleChannelEntryName(t.style_channels);
-      const wire = styleWireChannel(t.style_channels);
-      const channelSpec = wire != null ? { ...styleWireSpec(wire), ...spec } : spec;
-      if (styleName != null) entry.channels = { [styleName]: channelSpec };
-      else entry.channels = channelSpec;
     } else if (key === "color_target") {
       entry.color_target = { ...traceChannelSpec(t.color2_ch, "color"), ...spec };
     }
@@ -665,6 +735,10 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     return entry;
   }
   if (sv.getInt32(48, true)) t.shipped_sel = sel;
+  if (shipStyleChannelsFlag && t.style_channels) {
+    const shipped = shipStyleChannels(t.style_channels, pw, sel, entry.n_marks);
+    if (shipped != null) entry.channels = shipped;
+  }
   return entry;
 }
 
