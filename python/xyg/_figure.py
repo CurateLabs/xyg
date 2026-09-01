@@ -1213,7 +1213,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
                 # O(n) copy of the column.
                 values = values[:0].to_numpy(zero_copy_only=False)
         arr = np.asarray(values)
-        return arr.dtype.kind in ("U", "S", "O", "b")
+        return channels._is_categorical(arr)
 
     @staticmethod
     def _category_axis_labels(values: Any, axis: str) -> list[str]:
