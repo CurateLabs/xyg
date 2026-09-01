@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from . import channels, export
+from . import channels, export, kernels
 from ._png import encode as encode_png
 from ._png import png_truecolor
 from ._raster import render_raster
@@ -63,17 +63,8 @@ def _subset_data(data: Any, mask: np.ndarray, n: int) -> Any:
 
 def _label_codes(labels: Sequence[str]) -> tuple[np.ndarray, list[str]]:
     """Dedupe display labels in first-seen order; codes index the dedup list."""
-    unique: list[str] = []
-    lookup: dict[str, int] = {}
-    codes = np.empty(len(labels), dtype=np.intp)
-    for i, label in enumerate(labels):
-        code = lookup.get(label)
-        if code is None:
-            code = len(unique)
-            lookup[label] = code
-            unique.append(label)
-        codes[i] = code
-    return codes, unique
+    categories, codes = kernels.label_codes_first_seen(list(labels))
+    return codes.astype(np.intp, copy=False), categories
 
 
 def _facet_values(data: Any, by: Any) -> tuple[np.ndarray, list[str]]:

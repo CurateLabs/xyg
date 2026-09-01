@@ -10,6 +10,7 @@ import {
   pointer,
   xyCategoryLabelsPacked,
   xyFactorizeDisplayLabels,
+  xyLabelCodesFirstSeen,
   xyFactorizeUseNativeProbe,
   xyObjectRowsAllStringlike,
   xyFactorizeFixed,
@@ -416,6 +417,73 @@ function factorizeStringlikeJsArray(raw) {
     ?? factorizeFixedWide(packed.data, packed.width, labelAt);
   if (native != null) return native;
   return factorizeJsArray(labels);
+}
+
+function labelCodesFirstSeenJs(labels) {
+  const n = labels.length;
+  if (n === 0) {
+    return { categories: [], codes: new Uint8Array(0) };
+  }
+  const enc = new TextEncoder();
+  const encoded = labels.map((label) => enc.encode(label));
+  const lens = Uint32Array.from(encoded, (bytes) => bytes.length);
+  const texts = new Uint8Array(lens.reduce((sum, len) => sum + len, 0));
+  let offset = 0;
+  for (const bytes of encoded) {
+    texts.set(bytes, offset);
+    offset += bytes.length;
+  }
+  const outCodesRaw = new Uint8Array(n * 4);
+  const codeWidth = new Uint32Array(1);
+  const categoryLensCap = Math.max(n, 256);
+  const categoryLens = new Uint32Array(categoryLensCap);
+  const categoryTextsCap = Math.max(256, texts.length * 2);
+  const categoryTexts = new Uint8Array(categoryTextsCap);
+  const written = xyLabelCodesFirstSeen(
+    u32Ptr(lens),
+    u8Ptr(texts),
+    BigInt(texts.length),
+    BigInt(n),
+    u8Ptr(outCodesRaw),
+    BigInt(outCodesRaw.length),
+    u32Ptr(codeWidth),
+    u32Ptr(categoryLens),
+    u8Ptr(categoryTexts),
+    BigInt(categoryTexts.length),
+    BigInt(categoryLensCap),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("native label_codes_first_seen rejected the label array");
+  }
+  const nCategories = Number(written);
+  const categories = [];
+  let textOffset = 0;
+  const dec = new TextDecoder();
+  for (let i = 0; i < nCategories; i += 1) {
+    const len = categoryLens[i];
+    categories.push(dec.decode(categoryTexts.subarray(textOffset, textOffset + len)));
+    textOffset += len;
+  }
+  const width = Number(codeWidth[0]);
+  let codes;
+  if (width === 1) {
+    codes = outCodesRaw.slice(0, n);
+  } else if (width === 4) {
+    codes = new Uint32Array(outCodesRaw.buffer, outCodesRaw.byteOffset, n);
+  } else {
+    throw new RangeError("native label_codes_first_seen returned an unknown code width");
+  }
+  return { categories, codes };
+}
+
+/**
+ * Dedupe display labels in first-seen order for facet panels.
+ *
+ * @param {string[]} labels
+ * @returns {{categories: string[], codes: Uint8Array|Uint32Array}}
+ */
+export function labelCodesFirstSeen(labels) {
+  return labelCodesFirstSeenJs(labels.map((value) => String(value)));
 }
 
 function factorizeDisplayLabelsJs(labels) {

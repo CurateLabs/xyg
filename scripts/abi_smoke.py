@@ -302,6 +302,20 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
+    lib.xyg_label_codes_first_seen.restype = ctypes.c_size_t
+    lib.xyg_label_codes_first_seen.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
     lib.xyg_factorize_use_native_probe.restype = ctypes.c_int32
     lib.xyg_factorize_use_native_probe.argtypes = [
         ctypes.c_uint32,
@@ -3106,6 +3120,38 @@ def main() -> None:
     ok(
         cat_blob == b"(missing)1ab",
         "factorize_display_labels sorted categories",
+    )
+    first_seen_lens = array("I", [1, 1, 1, 9, 1])
+    first_seen_texts = array("B", b"bab(missing)a")
+    first_seen_codes = array("B", [99] * 20)
+    first_seen_width = array("I", [99])
+    first_seen_category_lens = array("I", [99] * 8)
+    first_seen_category_texts = array("B", [0] * 32)
+    first_seen_count = lib.xyg_label_codes_first_seen(
+        _ptr(first_seen_lens, ctypes.c_uint32),
+        _ptr(first_seen_texts, ctypes.c_uint8),
+        len(first_seen_texts),
+        5,
+        _ptr(first_seen_codes, ctypes.c_uint8),
+        len(first_seen_codes),
+        _ptr(first_seen_width, ctypes.c_uint32),
+        _ptr(first_seen_category_lens, ctypes.c_uint32),
+        _ptr(first_seen_category_texts, ctypes.c_uint8),
+        len(first_seen_category_texts),
+        8,
+    )
+    ok(
+        first_seen_count == 3 and first_seen_width[0] == 1,
+        "label_codes_first_seen mixed-object width",
+    )
+    ok(
+        list(first_seen_codes[:5]) == [0, 1, 0, 2, 1],
+        "label_codes_first_seen mixed-object codes",
+    )
+    first_seen_blob = bytes(first_seen_category_texts[: sum(first_seen_category_lens[:3])])
+    ok(
+        first_seen_blob == b"ba(missing)",
+        "label_codes_first_seen first-seen categories",
     )
     ok(
         lib.xyg_factorize_use_native_probe(100, 4096, 4) == 1,

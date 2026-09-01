@@ -1029,6 +1029,66 @@ def factorize_display_labels(
     return categories, codes
 
 
+def label_codes_first_seen(
+    labels: list[str] | npt.NDArray[np.str_],
+) -> tuple[list[str], npt.NDArray[np.uint8] | npt.NDArray[np.uint32]]:
+    """First-seen unique categories plus per-row codes for facet panels."""
+    if isinstance(labels, np.ndarray):
+        if labels.dtype.kind not in ("U", "S") or labels.ndim != 1:
+            raise ValueError("label_codes_first_seen expects a 1-D string array")
+        row_labels = [str(value) for value in labels]
+    else:
+        row_labels = [str(value) for value in labels]
+    n = len(row_labels)
+    if n == 0:
+        return [], np.empty(0, dtype=np.uint8)
+    label_lens = np.fromiter(
+        (len(label.encode("utf-8")) for label in row_labels),
+        dtype=np.uint32,
+        count=n,
+    )
+    label_texts = b"".join(label.encode("utf-8") for label in row_labels)
+    texts = np.frombuffer(label_texts, dtype=np.uint8)
+    out_codes_raw = np.empty(n * 4, dtype=np.uint8)
+    code_width = np.empty(1, dtype=np.uint32)
+    category_lens_cap = max(n, 256)
+    category_lens = np.empty(category_lens_cap, dtype=np.uint32)
+    category_texts_cap = max(256, len(label_texts) * 2)
+    category_texts = np.empty(category_texts_cap, dtype=np.uint8)
+    written = _lib.xyg_label_codes_first_seen(
+        label_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        out_codes_raw.ctypes.data,
+        len(out_codes_raw),
+        code_width.ctypes.data,
+        category_lens.ctypes.data,
+        category_texts.ctypes.data,
+        len(category_texts),
+        category_lens_cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native label_codes_first_seen rejected the label array")
+    n_categories = int(written)
+    cat_lens = category_lens[:n_categories]
+    cat_bytes = category_texts[: int(cat_lens.sum())].tobytes()
+    categories: list[str] = []
+    offset = 0
+    for length in cat_lens:
+        end = offset + int(length)
+        categories.append(cat_bytes[offset:end].decode("utf-8"))
+        offset = end
+    width = int(code_width[0])
+    if width == 1:
+        codes = out_codes_raw[:n].copy()
+    elif width == 4:
+        codes = np.frombuffer(out_codes_raw[: n * 4], dtype="<u4").copy()
+    else:
+        raise ValueError("native label_codes_first_seen returned an unknown code width")
+    return categories, codes
+
+
 def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int) -> bool:
     """Whether the native fixed-record factorizer should run on a probe sample."""
     if isinstance(distinct, (bool, np.bool_)) or isinstance(probe_len, (bool, np.bool_)):

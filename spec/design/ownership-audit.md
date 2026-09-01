@@ -810,7 +810,7 @@ Forbidden:
 | `python/xyg/config.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/dom.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/export.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/facets.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/facets.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 336 owns first-seen label dedupe for facet panels via `label_codes_first_seen`; hosts still own grid layout, row subsetting, and shared-domain coordination | #58 |
 | `python/xyg/graph_layout.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/interaction.py` | Python host | `python-host` | `keep-host`; ABI 204 owns line/area re-decimate skip, closed-window ulp, and polar skip | — |
 | `python/xyg/kernels.py` | Python host | `python-host` | `keep-host`; ABI 256 `scene_channel_constant_css` wrapper | — |

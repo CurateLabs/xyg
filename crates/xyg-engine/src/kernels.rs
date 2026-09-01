@@ -909,6 +909,68 @@ pub fn factorize_display_labels_packed(
     factorize_display_labels(&refs)
 }
 
+/// Dedupe display labels in first-seen order; codes index the dedup list.
+///
+/// Matches Python `facets._label_codes`.
+pub fn label_codes_first_seen(row_labels: &[&str]) -> Option<FactorizedDisplayLabels> {
+    if row_labels.is_empty() {
+        return Some(FactorizedDisplayLabels {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(Vec::new()),
+            codes_u32: None,
+        });
+    }
+    use std::collections::HashMap;
+    let mut categories: Vec<String> = Vec::new();
+    let mut index: HashMap<&str, usize> = HashMap::new();
+    let mut codes_raw: Vec<usize> = Vec::with_capacity(row_labels.len());
+    for &label in row_labels {
+        let code = if let Some(&code) = index.get(label) {
+            code
+        } else {
+            let code = categories.len();
+            index.insert(label, code);
+            categories.push(label.to_owned());
+            code
+        };
+        codes_raw.push(code);
+    }
+    if categories.len() <= 256 {
+        let codes: Vec<u8> = codes_raw
+            .into_iter()
+            .map(|code| u8::try_from(code).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(codes),
+            codes_u32: None,
+        })
+    } else {
+        let codes: Vec<u32> = codes_raw
+            .into_iter()
+            .map(|code| u32::try_from(code).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            codes_u8: None,
+            codes_u32: Some(codes),
+        })
+    }
+}
+
+/// Packed UTF-8 row labels → first-seen categories + codes.
+pub fn label_codes_first_seen_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+) -> Option<FactorizedDisplayLabels> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    label_codes_first_seen(&refs)
+}
+
 /// One-pass statistics for a chunk of a column (§22).
 ///
 /// Non-finite values (NaN and ±∞) count as nulls: neither is plottable, both
@@ -8693,6 +8755,23 @@ mod tests {
                 &mut counts[..1],
             ),
             None,
+        );
+    }
+
+    #[test]
+    fn label_codes_first_seen_preserves_order() {
+        let rows = ["b", "a", "b", "(missing)", "a"];
+        let refs: Vec<&str> = rows.iter().copied().collect();
+        let first_seen = label_codes_first_seen(&refs).expect("first seen");
+        assert_eq!(
+            first_seen.categories,
+            vec!["b".to_owned(), "a".to_owned(), "(missing)".to_owned()]
+        );
+        assert_eq!(first_seen.codes_u8.as_deref(), Some([0, 1, 0, 2, 1].as_slice()));
+        let sorted = factorize_display_labels(&refs).expect("sorted");
+        assert_eq!(
+            sorted.categories,
+            vec!["(missing)".to_owned(), "a".to_owned(), "b".to_owned()]
         );
     }
 

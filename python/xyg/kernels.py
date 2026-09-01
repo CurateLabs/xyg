@@ -154,6 +154,7 @@ factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
 factorize_unicode1_u8_counts = _impl.factorize_unicode1_u8_counts
 factorize_display_labels = _impl.factorize_display_labels
+label_codes_first_seen = _impl.label_codes_first_seen
 factorize_use_native_probe = _impl.factorize_use_native_probe
 category_labels = _impl.category_labels
 object_rows_all_stringlike = _impl.object_rows_all_stringlike
@@ -409,6 +410,7 @@ __all__ = [
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
+    "label_codes_first_seen",
     "legend_best_loc",
     "legend_normalize",
     "local_log_density",

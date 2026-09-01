@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 335
-SIGNATURE_SHA256 = "0ee217e5ed4230b0025ce0dfcffea33fbc14bc77870cc99d238a8ad83f3af701"
+ABI_VERSION = 336
+SIGNATURE_SHA256 = "462b8c1aceab50a3eae7c6e19700b0c85cf2d5b8f2e4f2ade8bced20f92ac322"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -566,6 +566,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_is_sorted
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_label_codes_first_seen(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap)
+    function = lib.xyg_label_codes_first_seen
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
     # int32_t xyg_legend_best_loc(const double * xs, const double * ys, size_t n, const size_t * starts, size_t n_series, const uint32_t * label_lens, size_t n_labels)
     function = lib.xyg_legend_best_loc
     function.restype = ctypes.c_int32

@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 335;
+pub const ABI_VERSION: u32 = 336;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4362,6 +4362,100 @@ pub unsafe extern "C" fn xyg_factorize_display_labels(
             std::slice::from_raw_parts(label_texts, label_texts_len)
         };
         let Some(factored) = kernels::factorize_display_labels_packed(label_lens, label_texts) else {
+            return usize::MAX;
+        };
+        let n_categories = factored.categories.len();
+        if n_categories > category_lens_cap {
+            return usize::MAX;
+        }
+        let out_category_lens =
+            std::slice::from_raw_parts_mut(out_category_lens, category_lens_cap);
+        let out_category_texts =
+            std::slice::from_raw_parts_mut(out_category_texts, out_category_texts_cap);
+        if kernels::write_packed_utf8_labels(
+            &factored.categories,
+            out_category_lens,
+            out_category_texts,
+        )
+        .is_none()
+        {
+            return usize::MAX;
+        }
+        let out_codes = std::slice::from_raw_parts_mut(out_codes, out_codes_cap);
+        *out_code_width = factored.code_width;
+        match factored.code_width {
+            kernels::FACTORIZE_DISPLAY_LABELS_CODE_U8 => {
+                let Some(codes) = factored.codes_u8 else {
+                    return usize::MAX;
+                };
+                if codes.len() != n || out_codes.len() < n {
+                    return usize::MAX;
+                }
+                out_codes[..n].copy_from_slice(&codes);
+            }
+            kernels::FACTORIZE_DISPLAY_LABELS_CODE_U32 => {
+                let Some(codes) = factored.codes_u32 else {
+                    return usize::MAX;
+                };
+                if codes.len() != n || out_codes.len() < n.saturating_mul(4) {
+                    return usize::MAX;
+                }
+                for (slot, code) in codes.iter().enumerate() {
+                    out_codes[slot * 4..slot * 4 + 4].copy_from_slice(&code.to_le_bytes());
+                }
+            }
+            _ => return usize::MAX,
+        }
+        n_categories
+    })
+}
+
+/// First-seen label dedupe for facet panels and other stable-order categoricals.
+///
+/// Same buffer contract as [`xyg_factorize_display_labels`], but categories
+/// preserve first-seen order instead of lexicographic sort.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_label_codes_first_seen(
+    label_lens: *const u32,
+    label_texts: *const u8,
+    label_texts_len: usize,
+    n: usize,
+    out_codes: *mut u8,
+    out_codes_cap: usize,
+    out_code_width: *mut u32,
+    out_category_lens: *mut u32,
+    out_category_texts: *mut u8,
+    out_category_texts_cap: usize,
+    category_lens_cap: usize,
+) -> usize {
+    if (label_texts_len > 0 && label_texts.is_null())
+        || out_codes_cap < n.saturating_mul(4)
+        || out_codes.is_null()
+        || out_code_width.is_null()
+        || (n > 0 && label_lens.is_null())
+    {
+        return usize::MAX;
+    }
+    if category_lens_cap == 0 && n > 0 {
+        return usize::MAX;
+    }
+    if (out_category_texts_cap > 0 && out_category_texts.is_null())
+        || (category_lens_cap > 0 && out_category_lens.is_null())
+    {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let label_lens = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(label_lens, n)
+        };
+        let label_texts = if label_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(label_texts, label_texts_len)
+        };
+        let Some(factored) = kernels::label_codes_first_seen_packed(label_lens, label_texts) else {
             return usize::MAX;
         };
         let n_categories = factored.categories.len();

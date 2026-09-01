@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 335;
-export const SIGNATURE_SHA256 = "0ee217e5ed4230b0025ce0dfcffea33fbc14bc77870cc99d238a8ad83f3af701";
+export const ABI_VERSION = 336;
+export const SIGNATURE_SHA256 = "462b8c1aceab50a3eae7c6e19700b0c85cf2d5b8f2e4f2ade8bced20f92ac322";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -144,6 +144,7 @@ export let xyHistogramMarkEdges;
 export let xyHistogramUniform;
 export let xyIndexedTriangles;
 export let xyIsSorted;
+export let xyLabelCodesFirstSeen;
 export let xyLegendBestLoc;
 export let xyLegendBoxLayout;
 export let xyLegendNormalize;
@@ -588,6 +589,7 @@ export function bindGeneratedAbi(lib) {
   xyHistogramUniform = lib.func("size_t xyg_histogram_uniform(const double * data, size_t len, double lo, double hi, size_t n_bins, int32_t density, double * out_counts)");
   xyIndexedTriangles = lib.func("size_t xyg_indexed_triangles(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * values, size_t value_len, uint32_t value_mode, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)");
   xyIsSorted = lib.func("int32_t xyg_is_sorted(const double * data, size_t len)");
+  xyLabelCodesFirstSeen = lib.func("size_t xyg_label_codes_first_seen(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap)");
   xyLegendBestLoc = lib.func("int32_t xyg_legend_best_loc(const double * xs, const double * ys, size_t n, const size_t * starts, size_t n_series, const uint32_t * label_lens, size_t n_labels)");
   xyLegendBoxLayout = lib.func("size_t xyg_legend_box_layout(double plot_x, double plot_y, double plot_w, double plot_h, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, size_t n, const uint8_t * title, size_t title_len, const uint8_t * loc, size_t loc_len, double font_size, double handlelength, double handletextpad, double handleheight, uint32_t ncols, double padding_em, double row_gap_em, const double * anchor, size_t anchor_len, double border_axes_pad, double * out_metrics, double * out_column_widths, double * out_column_offsets, size_t col_cap, uint32_t * out_name_lens, uint8_t * out_names, size_t names_cap, uint8_t * out_title, size_t title_cap, size_t * out_title_len)");
   xyLegendNormalize = lib.func("size_t xyg_legend_normalize(const double * x, const double * y, size_t len, double xlo, double xhi, double ylo, double yhi, int32_t x_reverse, int32_t y_reverse, int32_t x_scale, int32_t y_scale, double x_constant, double y_constant, double * out_x, double * out_y, size_t capacity)");
