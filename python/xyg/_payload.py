@@ -1,7 +1,6 @@
 """Wire-spec compiler for `Figure`: `build_payload` plus the per-kind
-emitters and the Tier-2 density/sample specs, and the `_PayloadWriter` that
-owns the binary blob + column table. Split out of `_figure.py` as a mixin;
-`Figure` inherits `PayloadMixin`, so every `self.*` resolves through the
+emitters and the Tier-2 density/sample specs. Split out of `_figure.py` as a
+mixin; `Figure` inherits `PayloadMixin`, so every `self.*` resolves through the
 concrete `Figure` via the MRO (§29: data moves as typed binary buffers)."""
 
 from __future__ import annotations
@@ -12,6 +11,8 @@ import numpy as np
 
 from . import channels, kernels, lod
 from ._payload_density import PayloadDensityMixin
+from ._payload_ship import ship_registry_columns
+from ._payload_writer import PayloadWriter
 from ._trace import Trace
 from .columns import Column
 from .config import (
@@ -20,223 +21,9 @@ from .config import (
 )
 
 if TYPE_CHECKING:
-    # Type-only host base so the mixin's `self.*` resolves against the Figure
-    # surface (a Protocol, so no inheritance cycle); runtime base is `object`.
     from ._hosts import FigureHost as _Host
 else:
     _Host = object
-
-
-class _PayloadWriter:
-    """Accumulates the binary blob + column table for `build_payload`.
-
-    The single place that knows the wire encoding, so every chart type ships
-    columns the same way (§29): `ship` for offset-encoded geometry (§4), and
-    `ship_scalar` for raw f32 channels/grids already in final units, and
-    `ship_u8` for byte-precision categorical/density values. Adding a chart
-    means calling these, not re-implementing the encoding.
-    """
-
-    def __init__(
-        self,
-        *,
-        split: bool = False,
-        borrow_heatmaps: bool = False,
-        point_overlay: bool = True,
-    ) -> None:
-        # split=True: every column ships as its own wire buffer — spec entries
-        # carry `buf` (the wire-buffer index) with byte_offset 0, and
-        # `buffers()` returns per-column views with no join copy. Packed mode
-        # keeps the single `blob()` with global byte offsets (standalone
-        # export, streaming-refresh reopen state).
-        self.columns: list[dict[str, Any]] = []
-        self._chunks: list[bytes | np.ndarray] = []
-        self._pos = 0
-        self._split = split
-        self.borrow_heatmaps = borrow_heatmaps
-        self.borrowed: list[np.ndarray] = []
-        # point_overlay=False: skip the density tier's sampled point overlay.
-        # Only the *raster* exporters set this. They draw density traces
-        # through `_emit_grid`, which never reads `density["sample"]`, so on
-        # that path the overlay is an O(N) SplitMix scan plus two gathers whose
-        # result no pixel consumes. The browser client *does* draw it
-        # (`50_chartview.ts`), so `build_payload`/`build_payload_split` must
-        # keep shipping it.
-        self.point_overlay = point_overlay
-
-    def ship(self, values: np.ndarray, col: "Column", *, scale: str | None = None) -> int:
-        """Offset-encoded geometry column: `(v - offset) * scale` as f32
-        (§4/§16). Scale is 1.0 except for absurd-magnitude domains, where it
-        normalizes so finite f64 can't overflow to ±inf in f32 (§19).
-        `scale` is the target axis scale: log-family axes pin the offset to
-        0.0 (`lod.geometry_offset`) so relative f32 precision survives the
-        shader-side transform."""
-        # Direct append payloads need a stable encoding so their previous
-        # bytes remain a prefix of the new column. Log-family axes retain
-        # their required zero origin; linear axes use the column's sticky
-        # shipped offset and re-center only when it leaves the safe span.
-        offset = (
-            lod.geometry_offset(scale, col.min, col.max)
-            if lod.pins_offset_to_zero(scale)
-            else col.suggest_offset()
-        )
-        encoded = lod.encode_f32_values(
-            values,
-            offset,
-            col.min,
-            col.max,
-            kind=col.kind,
-        )
-        return self._append(encoded.values, encoded.meta)
-
-    def ship_scalar(self, values: np.ndarray) -> int:
-        """Raw f32 column already in final units (no offset): channel/grid/heights."""
-        enc = np.ascontiguousarray(values, dtype=np.float32)
-        return self._append(enc, {})
-
-    def ship_u8(self, values: np.ndarray) -> int:
-        """Raw byte column, padded so every later f32 column stays aligned."""
-        enc = np.ascontiguousarray(values, dtype=np.uint8).reshape(-1)
-        index = len(self.columns)
-        if self._split:
-            # One buffer per column: fold the alignment padding into the u8
-            # buffer itself (spec `len` still counts only real values), so the
-            # split layout stays a byte-identical repack of the packed blob.
-            padding = (-len(enc)) % 4
-            padded = np.concatenate([enc, np.zeros(padding, np.uint8)]) if padding else enc
-            self.columns.append(
-                {"buf": len(self._chunks), "byte_offset": 0, "len": int(len(enc)), "dtype": "u8"}
-            )
-            self._chunks.append(padded)
-            self._pos += padded.nbytes
-            return index
-        self.columns.append({"byte_offset": self._pos, "len": int(len(enc)), "dtype": "u8"})
-        self._chunks.append(enc)
-        self._pos += enc.nbytes
-        padding = (-self._pos) % 4
-        if padding:
-            self._chunks.append(bytes(padding))
-            self._pos += padding
-        return index
-
-    def ship_u32(self, values: np.ndarray) -> int:
-        """Raw uint32 identity words used by keyed transitions.
-
-        Keys remain binary row data, never JSON metadata. Packed and split
-        layouts share the ordinary four-byte alignment contract.
-        """
-        enc = np.ascontiguousarray(values, dtype="<u4").reshape(-1)
-        return self._append(enc, {"dtype": "u32"})
-
-    def ship_f64(self, values: np.ndarray) -> int:
-        """Ship a canonical f64 column for an explicitly bounded WASM source.
-
-        This is deliberately separate from painter geometry and is valid only
-        in the live split transport.  Packed payloads serve export/notebook
-        consumers and retain their screen-bounded painter contract; the
-        browser host retains this canonical source and transfers only bounded
-        replay chunks to the dedicated Worker. It is never decoded from
-        offset f32 on the UI thread.
-        """
-        return self._append(
-            np.ascontiguousarray(values, dtype="<f8").reshape(-1),
-            {"dtype": "f64"},
-        )
-
-    def borrow_f64(self, values: np.ndarray) -> int:
-        """Register canonical f64 storage as a synchronous raster-only span.
-
-        Span 0 is the owned payload blob; borrowed arrays start at 1. Nothing
-        about the public browser payload uses this representation.
-        """
-        arr = np.ascontiguousarray(values, dtype="<f8").reshape(-1)
-        span = len(self.borrowed) + 1
-        self.borrowed.append(arr)
-        index = len(self.columns)
-        self.columns.append({"span": span, "byte_offset": 0, "len": int(len(arr)), "dtype": "f64"})
-        return index
-
-    def ship_values(
-        self, values: np.ndarray, *, kind: str = "float", scale: str | None = None
-    ) -> int:
-        """Offset-encoded temporary geometry not backed by a canonical Column."""
-        vals = np.ascontiguousarray(values, dtype=np.float64)
-        bounds = kernels.min_max(vals)
-        lo, hi = bounds if bounds is not None else (0.0, 0.0)
-        offset = lod.geometry_offset(scale, lo, hi) if bounds is not None else 0.0
-        encoded = lod.encode_f32_values(vals, offset, lo, hi, kind=kind)
-        return self._append(encoded.values, encoded.meta)
-
-    def _append_from_materialized(self, enc: np.ndarray, meta: dict[str, Any]) -> int:
-        """Register a Rust-materialized column without host-side re-encoding."""
-        enc = np.ascontiguousarray(enc)
-        idx = len(self.columns)
-        if self._split:
-            self.columns.append({"buf": len(self._chunks), "byte_offset": 0, **meta})
-            self._chunks.append(enc)
-            self._pos += enc.nbytes
-            return idx
-        self.columns.append({"byte_offset": self._pos, **meta})
-        self._chunks.append(enc)
-        self._pos += enc.nbytes
-        if meta.get("dtype") != "u8" and meta.get("dtype") != "u32":
-            padding = (-self._pos) % 4
-            if padding:
-                self._chunks.append(bytes(padding))
-                self._pos += padding
-        return idx
-
-    def _append(self, enc: np.ndarray, meta: dict[str, Any]) -> int:
-        # Retain the encoded array until blob assembly so each column is copied
-        # once into the final bytes object, rather than once in `tobytes()` and
-        # again by `join` — and split mode ships these views with no copy at all.
-        enc = np.ascontiguousarray(enc)
-        idx = len(self.columns)
-        if self._split:
-            # `buf` indexes the wire buffer list (== `_chunks`), which can
-            # drift from the column table (`borrow_f64` columns own no chunk).
-            self.columns.append(
-                {"buf": len(self._chunks), "byte_offset": 0, "len": int(len(enc)), **meta}
-            )
-        else:
-            self.columns.append({"byte_offset": self._pos, "len": int(len(enc)), **meta})
-        self._chunks.append(enc)
-        self._pos += enc.nbytes
-        return idx
-
-    def blob(self) -> bytes:
-        return b"".join(
-            chunk if isinstance(chunk, bytes) else chunk.data.cast("B") for chunk in self._chunks
-        )
-
-    def buffers(self) -> list[memoryview]:
-        """Per-column wire buffers (split mode): zero-copy views over the
-        encoded chunks, ready to ship as separate binary comm frames."""
-        return [
-            memoryview(c).cast("B") if isinstance(c, bytes) else c.data.cast("B")
-            for c in self._chunks
-        ]
-
-
-def _column_ship_scale_axis(col: dict[str, Any], plan: dict[str, Any]) -> str:
-    """Map a resolved column ship scale name to the x/y axis slot for gather materialize."""
-    x_name = str(plan["x_ship_scale"])
-    y_name = str(plan["y_ship_scale"])
-    name = str(col["ship_scale"])
-    if name == x_name and name != y_name:
-        return "x"
-    if name == y_name and name != x_name:
-        return "y"
-    slot = str(col["trace_slot"])
-    if slot.startswith("y") or slot in {
-        "base",
-        "value1",
-        "value0",
-        "target_y0",
-        "target_y1",
-    }:
-        return "y"
-    return "x"
 
 
 class PayloadMixin(PayloadDensityMixin, _Host):
@@ -249,7 +36,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         (§5 Tier 1); dense scatter ships a density grid (§5 Tier 2). Every
         reduction is recorded in the spec — no silent quality changes (§28).
         """
-        pw = _PayloadWriter()
+        pw = PayloadWriter()
         spec = self._payload_spec(pw, self._resolve_px_width(px_width))
         return spec, pw.blob()
 
@@ -266,7 +53,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         multi-buffer messages on the update path; this extends it to first
         paint).
         """
-        pw = _PayloadWriter(split=True)
+        pw = PayloadWriter(split=True)
         spec = self._payload_spec(pw, self._resolve_px_width(px_width))
         spec["buffer_layout"] = "split"
         return spec, pw.buffers()
@@ -275,7 +62,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         self, px_width: Optional[int] = None
     ) -> tuple[dict[str, Any], bytes, tuple[np.ndarray, ...]]:
         """Private static-export payload with borrowed canonical heatmap spans."""
-        pw = _PayloadWriter(borrow_heatmaps=True, point_overlay=False)
+        pw = PayloadWriter(borrow_heatmaps=True, point_overlay=False)
         spec = self._payload_spec(pw, self._resolve_px_width(px_width))
         return spec, pw.blob(), tuple(pw.borrowed)
 
@@ -294,7 +81,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         px_width, _ = lod.screen_shape(px_width, 16)
         return px_width
 
-    def _payload_spec(self, pw: "_PayloadWriter", px_width: int) -> dict[str, Any]:
+    def _payload_spec(self, pw: PayloadWriter, px_width: int) -> dict[str, Any]:
         # `_range` is an O(traces x chunks) autorange scan and is invariant
         # while this build runs (emitters only touch shipped_sel/drill state),
         # so each axis pays for it once even when many traces share an axis.
@@ -455,7 +242,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
     def _transition_entry(
         entry: dict[str, Any],
         t: Trace,
-        pw: "_PayloadWriter",
+        pw: PayloadWriter,
         sel: Optional[np.ndarray] = None,
         key_values: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
@@ -493,7 +280,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         return entry
 
     def _emit_trace(
-        self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
+        self, t: Trace, pw: PayloadWriter, xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
         from ._payload_trace_materialize import emit_trace_materialized
 
@@ -617,7 +404,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         entry: dict[str, Any],
         t: Trace,
         sel,
-        pw: "_PayloadWriter",
+        pw: PayloadWriter,
         slot: int,
         *,
         include_trace_styles: bool,
@@ -649,7 +436,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         self,
         entry: dict[str, Any],
         t: Trace,
-        pw: "_PayloadWriter",
+        pw: PayloadWriter,
         column_plan: dict[str, Any],
         arrays: dict[str, np.ndarray],
         *,
@@ -657,71 +444,17 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         nested_keys: Optional[frozenset[str]] = None,
         sel: np.ndarray | None = None,
     ) -> None:
-        """Ship gathered geometry arrays into ``entry`` per the column registry."""
-        cols = [
-            col
-            for col in column_plan["columns"]
-            if skip_keys is None or col["registry_key"] not in skip_keys
-        ]
-        if not cols:
-            return
-        x_scale = self._axis_scale(t.x_axis).encode("utf-8")
-        y_scale = self._axis_scale(t.y_axis).encode("utf-8")
-        descriptors: list[dict[str, Any]] = []
-        values: list[np.ndarray] = []
-        kinds: list[bytes] = []
-        scales: list[bytes] = []
-        for col in cols:
-            key = col["registry_key"]
-            slot = col["trace_slot"]
-            source = getattr(t, slot, None)
-            if sel is not None and isinstance(source, Column):
-                raw_arr = source.values
-            else:
-                raw_arr = arrays[key] if key in arrays else arrays[slot]
-            column = source if isinstance(source, Column) else getattr(t, slot, None)
-            if col["ship_method"] == "offset" and isinstance(column, Column):
-                col_min, col_max = float(column.min), float(column.max)
-                sticky = float(column.suggest_offset())
-                kind_b = str(column.kind).encode("utf-8")
-            elif col["ship_method"] == "values":
-                bounds = kernels.min_max(raw_arr)
-                col_min, col_max = bounds if bounds is not None else (0.0, 0.0)
-                sticky = 0.0
-                kind_b = str(column.kind if column is not None else "float").encode("utf-8")
-            else:
-                col_min, col_max = 0.0, 0.0
-                sticky = 0.0
-                kind_b = b""
-            descriptors.append(
-                {
-                    "registry_key": key,
-                    "ship_method": col["ship_method"],
-                    "ship_scale": _column_ship_scale_axis(col, column_plan),
-                    "col_min": col_min,
-                    "col_max": col_max,
-                    "sticky_offset": sticky,
-                }
-            )
-            values.append(np.ascontiguousarray(raw_arr, dtype=np.float64).reshape(-1))
-            kinds.append(kind_b)
-            axis_slot = _column_ship_scale_axis(col, column_plan)
-            scales.append(x_scale if axis_slot == "x" else y_scale)
-        materialized = kernels.payload_column_gather_materialize(
+        ship_registry_columns(
+            self,
+            entry,
+            t,
+            pw,
+            column_plan,
+            arrays,
+            skip_keys=skip_keys,
+            nested_keys=nested_keys,
             sel=sel,
-            columns=descriptors,
-            values=values,
-            kinds=kinds,
-            axis_scales=scales,
         )
-        for col, mat in zip(cols, materialized, strict=True):
-            key = col["registry_key"]
-            enc = np.frombuffer(mat["bytes"], dtype="<f4" if mat["dtype_code"] == 0 else "<f8")
-            col_idx = pw._append_from_materialized(enc, mat["meta"])
-            if nested_keys is not None and key in nested_keys:
-                entry[key] = {"col": col_idx, **pw.columns[col_idx]}
-            else:
-                entry[key] = col_idx
 
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False

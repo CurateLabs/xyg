@@ -12,14 +12,14 @@ from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .config import DENSITY_SAMPLE_SEED, DENSITY_SAMPLE_TARGET
 
 if TYPE_CHECKING:
-    from ._payload import _PayloadWriter
+    from ._payload_writer import PayloadWriter
 
 
 class PayloadDensityMixin:
     def _ship_density_grid_buffers(
         self,
         density: dict[str, Any],
-        pw: "_PayloadWriter",
+        pw: "PayloadWriter",
         grid_plan: dict[str, Any],
         *,
         encoded_grid: np.ndarray,
@@ -41,7 +41,7 @@ class PayloadDensityMixin:
         density: dict[str, Any],
         entry: dict[str, Any],
         t: Trace,
-        pw: "_PayloadWriter",
+        pw: "PayloadWriter",
         grid_plan: dict[str, Any],
         wire: dict[str, Any],
         *,
@@ -121,7 +121,7 @@ class PayloadDensityMixin:
         visible: int,
         xr: tuple[float, float],
         yr: tuple[float, float],
-        pw: "_PayloadWriter",
+        pw: "PayloadWriter",
         *,
         sample_sel: Optional[np.ndarray] = None,
     ) -> Optional[dict[str, Any]]:
@@ -191,7 +191,7 @@ class PayloadDensityMixin:
         yr,
         w: int,
         h: int,
-        pw: "_PayloadWriter",
+        pw: "PayloadWriter",
         bx0: float,
         bx1: float,
         by0: float,
@@ -259,7 +259,7 @@ class PayloadDensityMixin:
             dropped_count=int(dropped_count),
         )
 
-    def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "_PayloadWriter") -> dict[str, Any]:  # noqa: ANN001
+    def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "PayloadWriter") -> dict[str, Any]:  # noqa: ANN001
         """Bin a scatter into a density grid and build its spec entry (§5 Tier 2).
         The grid ships in the client's one-byte log texture precision; exact
         visible counts remain metadata, and the client recomputes the

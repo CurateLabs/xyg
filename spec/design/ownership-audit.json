@@ -1806,6 +1806,22 @@
       "rationale": "Maps Rust Scene encode errors to UnsupportedSceneV3/ValueError for figure_scene."
     },
     {
+      "path": "python/xyg/_payload_writer.py",
+      "current_owner": "Python host",
+      "policy": "python-payload-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Wire blob + column table accumulator for build_payload (§29 ship helpers)."
+    },
+    {
+      "path": "python/xyg/_payload_ship.py",
+      "current_owner": "Python host",
+      "policy": "python-payload-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Column registry gather + ship via payload_column_gather_materialize (ABI 310/314)."
+    },
+    {
       "path": "python/xyg/_scene_annotations.py",
       "current_owner": "Python host",
       "policy": "python-scene-migration",

@@ -13,7 +13,7 @@ from .columns import Column
 from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS
 
 if TYPE_CHECKING:
-    from ._payload import _PayloadWriter
+    from ._payload_writer import PayloadWriter
 
 PAYLOAD_TRACE_EMIT_MAX_BYTES = 1 << 28
 PAYLOAD_TRACE_EMIT_MAX_GEOM = 8
@@ -268,7 +268,7 @@ def _channel_desc(ch: Any):
 def emit_trace_materialized(
     figure: Any,
     t: Trace,
-    pw: "_PayloadWriter",
+    pw: "PayloadWriter",
     xr: tuple[float, float],
     yr: tuple[float, float],
     px_width: int,
