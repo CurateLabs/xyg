@@ -11,6 +11,7 @@ import {
   xyCategoryLabelsPacked,
   xyFactorizeDisplayLabels,
   xyFactorizeUseNativeProbe,
+  xyObjectRowsAllStringlike,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -354,16 +355,22 @@ function factorizeTypedArray(view) {
   if (!useNativeFixedFactorizer(view, width)) return null;
   return factorizeFixedRecords(view, width) ?? factorizeFixedWide(view, width);
 }
+function objectRowStringlikeTag(value) {
+  if (isMissingCategory(value)) return 0;
+  if (typeof value === "string") return 1;
+  if (value instanceof Uint8Array) return 2;
+  if (ArrayBuffer.isView(value)) return 2;
+  return 3;
+}
+
 export function objectColumnIsStringlike(raw) {
   if (!Array.isArray(raw)) return false;
-  for (const value of raw) {
-    if (isMissingCategory(value)) continue;
-    if (typeof value === "string") continue;
-    if (value instanceof Uint8Array) continue;
-    if (ArrayBuffer.isView(value)) continue;
-    return false;
+  const tags = Uint8Array.from(raw, objectRowStringlikeTag);
+  const ok = Number(xyObjectRowsAllStringlike(pointer(tags, "uint8_t *"), BigInt(tags.length)));
+  if (ok < 0) {
+    throw new Error("native object_rows_all_stringlike rejected the row tags");
   }
-  return true;
+  return ok === 1;
 }
 
 function packUnicodeLabels(labels) {

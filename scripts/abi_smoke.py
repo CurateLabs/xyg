@@ -319,6 +319,8 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_object_rows_all_stringlike.restype = ctypes.c_int32
+    lib.xyg_object_rows_all_stringlike.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -3126,6 +3128,19 @@ def main() -> None:
     ok(category_written == 5, "category_labels_packed row count")
     category_blob = bytes(category_out_texts[: sum(category_out_lens)])
     ok(category_blob == b"b(missing)a(missing)1", "category_labels_packed labels")
+    stringlike_tags = array("B", [1, 0, 2, 3])
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 3) == 1,
+        "object_rows_all_stringlike accepts missing/text/bytes",
+    )
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 4) == 0,
+        "object_rows_all_stringlike rejects other rows",
+    )
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 0) == 1,
+        "object_rows_all_stringlike empty column",
+    )
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])
     transition_first = ctypes.c_size_t(size_max)

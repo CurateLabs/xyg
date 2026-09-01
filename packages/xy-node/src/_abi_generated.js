@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 332;
-export const SIGNATURE_SHA256 = "56f8e3864913d9345832b8ce405ed921e9862e2663d0e0c875878e3442378aa8";
+export const ABI_VERSION = 333;
+export const SIGNATURE_SHA256 = "39f37c361b7ba00109592487923a2a67e2fb772c0c972822c40e89e5af312038";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -158,6 +158,7 @@ export let xyMarkerPathScale;
 export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
+export let xyObjectRowsAllStringlike;
 export let xyPaintEffectiveRgba;
 export let xyPayloadAxisSpecAttachPlan;
 export let xyPayloadBarCompactAdmit;
@@ -599,6 +600,7 @@ export function bindGeneratedAbi(lib) {
   xyMinMax = lib.func("int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max)");
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
+  xyObjectRowsAllStringlike = lib.func("int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
   xyPayloadAxisSpecAttachPlan = lib.func("int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)");
   xyPayloadBarCompactAdmit = lib.func("int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)");

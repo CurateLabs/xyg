@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { factorizeCategories } from "../src/factorize.js";
+import { factorizeCategories, objectColumnIsStringlike } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe } from "../src/native.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -81,6 +81,14 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       use_native: ok === 1,
+    });
+    continue;
+  }
+  if (spec.kind === "stringlike") {
+    const raw = spec.values.map((value) => (value === null ? null : value));
+    out.push({
+      name: spec.name,
+      stringlike: objectColumnIsStringlike(raw),
     });
     continue;
   }

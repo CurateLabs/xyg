@@ -38,8 +38,8 @@ def _node_bin() -> str:
 
 
 def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
-    if spec["kind"] == "probe":
-        raise AssertionError("probe cases use _python_probe_case")
+    if spec["kind"] in ("probe", "stringlike"):
+        raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
         arr = np.asarray(spec["values"], dtype=np.uint8)
     elif spec["kind"] == "object":
@@ -63,9 +63,15 @@ def _python_probe_case(spec: dict) -> bool:
     )
 
 
+def _python_stringlike_case(spec: dict) -> bool:
+    arr = np.asarray(spec["values"], dtype=object)
+    return ch._object_column_is_stringlike(arr)
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
-FACTORIZE_CASES = [c for c in FIXTURE_CASES if c["kind"] != "probe"]
+FACTORIZE_CASES = [c for c in FIXTURE_CASES if c["kind"] not in ("probe", "stringlike")]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
+STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 
 
 @pytest.fixture(scope="module")
@@ -104,3 +110,10 @@ def test_factorize_probe_cross_host(spec: dict, node_results: dict[str, dict]) -
     use_native = _python_probe_case(spec)
     node = node_results[spec["name"]]
     assert use_native == node["use_native"]
+
+
+@pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])
+def test_object_stringlike_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    stringlike = _python_stringlike_case(spec)
+    node = node_results[spec["name"]]
+    assert stringlike == node["stringlike"]

@@ -36,6 +36,16 @@
       "distinct": 3890,
       "probe_len": 4096,
       "record_width": 64
+    },
+    {
+      "name": "stringlike_only",
+      "kind": "stringlike",
+      "values": ["a", null, "b", null]
+    },
+    {
+      "name": "stringlike_with_int",
+      "kind": "stringlike",
+      "values": ["a", 1, null]
     }
   ]
 }

@@ -759,6 +759,31 @@ pub fn category_labels_packed(
     Some(labels.len())
 }
 
+/// Missing or string/bytes row in an object column stringlike probe.
+pub const OBJECT_ROW_MISSING: u8 = 0;
+/// UTF-8 text row in an object column stringlike probe.
+pub const OBJECT_ROW_TEXT: u8 = 1;
+/// Raw bytes row in an object column stringlike probe.
+pub const OBJECT_ROW_BYTES: u8 = 2;
+/// Non-stringlike row (numeric/object/etc.) in the probe.
+pub const OBJECT_ROW_OTHER: u8 = 3;
+
+/// True when every packed row tag is missing, text, or bytes.
+///
+/// Matches Python `channels._object_column_is_stringlike` /
+/// Node `objectColumnIsStringlike` after hosts classify each object row.
+pub fn object_rows_all_stringlike(row_tags: &[u8]) -> Option<bool> {
+    let mut ok = true;
+    for &tag in row_tags {
+        match tag {
+            OBJECT_ROW_MISSING | OBJECT_ROW_TEXT | OBJECT_ROW_BYTES => {}
+            OBJECT_ROW_OTHER => ok = false,
+            _ => return None,
+        }
+    }
+    Some(ok)
+}
+
 /// Whether the native fixed-record factorizer should run on a probe sample.
 ///
 /// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
@@ -8700,6 +8725,24 @@ mod tests {
         let texts = b"b(missing)a(missing)1";
         let packed = factorize_display_labels_packed(&lens, texts).expect("packed");
         assert_eq!(packed.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+    }
+
+    #[test]
+    fn object_rows_all_stringlike_matches_host_policy() {
+        assert_eq!(object_rows_all_stringlike(&[]), Some(true));
+        assert_eq!(
+            object_rows_all_stringlike(&[
+                OBJECT_ROW_TEXT,
+                OBJECT_ROW_MISSING,
+                OBJECT_ROW_BYTES,
+            ]),
+            Some(true)
+        );
+        assert_eq!(
+            object_rows_all_stringlike(&[OBJECT_ROW_TEXT, OBJECT_ROW_OTHER]),
+            Some(false)
+        );
+        assert!(object_rows_all_stringlike(&[99]).is_none());
     }
 
     #[test]

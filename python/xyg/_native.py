@@ -1084,6 +1084,17 @@ def category_labels(
     return labels
 
 
+def object_rows_all_stringlike(row_tags: npt.NDArray[np.uint8] | list[int]) -> bool:
+    """True when every object-column row is missing or string/bytes typed."""
+    tags = np.asarray(row_tags, dtype=np.uint8)
+    if tags.ndim != 1:
+        raise ValueError("object_rows_all_stringlike expects a 1-D tag array")
+    ok = _lib.xyg_object_rows_all_stringlike(tags.ctypes.data, len(tags))
+    if ok < 0:
+        raise ValueError("native object_rows_all_stringlike rejected the row tags")
+    return bool(ok)
+
+
 def _positive_int(value: int, label: str) -> int:
     if isinstance(value, (bool, np.bool_)):
         raise ValueError(f"{label} must be a positive integer")

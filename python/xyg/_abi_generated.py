@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 332
-SIGNATURE_SHA256 = "56f8e3864913d9345832b8ce405ed921e9862e2663d0e0c875878e3442378aa8"
+ABI_VERSION = 333
+SIGNATURE_SHA256 = "39f37c361b7ba00109592487923a2a67e2fb772c0c972822c40e89e5af312038"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -622,6 +622,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n)
+    function = lib.xyg_object_rows_all_stringlike
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32

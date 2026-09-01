@@ -351,17 +351,24 @@ def _category_labels(values: Any) -> list[str]:
     return kernels.category_labels(kinds, payloads)
 
 
+def _object_row_stringlike_tag(value: Any) -> int:
+    if _is_missing_category(value):
+        return 0
+    if isinstance(value, (str, bytes, np.str_, np.bytes_)):
+        return 1 if isinstance(value, (str, np.str_)) else 2
+    return 3
+
+
 def _object_column_is_stringlike(arr: np.ndarray) -> bool:
     """True when every row is missing or a string/bytes value."""
     if arr.dtype != object:
         return False
-    for value in arr:
-        if _is_missing_category(value):
-            continue
-        if isinstance(value, (str, bytes, np.str_, np.bytes_)):
-            continue
-        return False
-    return True
+    tags = np.fromiter(
+        (_object_row_stringlike_tag(value) for value in arr),
+        dtype=np.uint8,
+        count=len(arr),
+    )
+    return kernels.object_rows_all_stringlike(tags)
 
 
 def _category_code_dtype(category_count: int) -> type[np.uint8] | type[np.uint32]:
