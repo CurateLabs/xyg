@@ -38,7 +38,9 @@ def transition_entry(
         n_points=t.n_points,
     )
     if plan["attach_animation"]:
-        entry["animation"] = dict(t.animation)
+        animation = t.animation
+        if animation is not None:
+            entry["animation"] = dict(animation)
     if not plan["attempt_keys"]:
         return entry
     keys = t.transition_keys if key_values is None else key_values
@@ -78,10 +80,16 @@ def attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarra
                 f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
             )
         return
-    indices = (
-        range(len(t.tooltip_rows)) if not plan["filter_tooltip_by_sel"] else (int(i) for i in sel)
-    )
-    entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
+    tooltip_rows = t.tooltip_rows
+    if tooltip_rows is None:
+        return
+    if not plan["filter_tooltip_by_sel"]:
+        indices = range(len(tooltip_rows))
+    else:
+        if sel is None:
+            return
+        indices = (int(i) for i in sel)
+    entry["tooltip_rows"] = [dict(tooltip_rows[i]) for i in indices]
 
 
 def visible_mask_needed(

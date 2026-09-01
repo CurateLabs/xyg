@@ -372,6 +372,7 @@ def pack_xyaf_bulk(annotations: list[Any]) -> bytes:
         return _native.scene_xyaf_bulk_pack(normalized)
     except _native.SceneXyafBulkPackError as error:
         _raise_xyaf_bulk_error(error, normalized)
+        raise AssertionError("unreachable") from error
 
 
 def pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
@@ -407,3 +408,4 @@ def pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         return _native.scene_xyaf_bulk_pack([annotation], indices=[int(index)])
     except _native.SceneXyafBulkPackError as error:
         _raise_xyaf_bulk_error(error, [annotation])
+        raise AssertionError("unreachable") from error

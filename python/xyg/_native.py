@@ -13367,6 +13367,8 @@ def payload_bar_hist_emit_plan(
         raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
     if kind_i == PAYLOAD_BAR_HIST_KIND_HISTOGRAM:
         orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
+    if orientation_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
     emit_bar = ctypes.c_int32(-1)
     tier_direct = ctypes.c_int32(-1)
     n_marks_out = ctypes.c_size_t(0)

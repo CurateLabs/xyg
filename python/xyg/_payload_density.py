@@ -14,10 +14,13 @@ from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .config import DENSITY_SAMPLE_SEED, DENSITY_SAMPLE_TARGET
 
 if TYPE_CHECKING:
+    from ._hosts import FigureHost as _Host
     from ._payload_writer import PayloadWriter
+else:
+    _Host = object
 
 
-class PayloadDensityMixin:
+class PayloadDensityMixin(_Host):
     def _ship_density_grid_buffers(
         self,
         density: dict[str, Any],
@@ -87,7 +90,7 @@ class PayloadDensityMixin:
                     for name in dropped_channels
                     if kernels.density_dropped_channel_wire_admit(
                         channel=name,
-                        mean_color_aggregates=int(wire["mean_color_aggregates"]),
+                        mean_color_aggregates=bool(wire["mean_color_aggregates"]),
                     )
                 ]
                 dropped_channels[:] = filtered
@@ -183,8 +186,8 @@ class PayloadDensityMixin:
             t,
             sample_sel,
             pw,
-            plan["channel_slot"],
-            include_trace_styles=plan["include_trace_styles"],
+            int(plan["channel_slot"]),
+            include_trace_styles=bool(plan["include_trace_styles"]),
         )
         return sample
 
@@ -330,7 +333,7 @@ class PayloadDensityMixin:
         color_codes = None
         color_counts = None
         if t.color_ch is not None and t.color_ch.codes is not None:
-            color_codes = t.color_ch.codes
+            color_codes = np.ascontiguousarray(t.color_ch.codes, dtype=np.uint8)
             if t.color_ch.counts is not None:
                 color_counts = t.color_ch.counts
         materialized = kernels.payload_density_grid_materialize(

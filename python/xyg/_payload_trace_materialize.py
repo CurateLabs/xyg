@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -438,7 +438,7 @@ def emit_trace_materialized(
         entry["decimation_px"] = int(summary.decimation_px)
     if summary.attach_animation and t.animation is not None:
         entry["animation"] = dict(t.animation)
-    target = entry
+    target: dict[str, Any] = entry
     if summary.has_bar:
         bar_spec = {
             "orientation": "vertical" if summary.bar_orientation == 0 else "horizontal",
@@ -465,7 +465,8 @@ def emit_trace_materialized(
             if geom.has_kind:
                 meta["kind"] = (col_kinds[idx] if idx < len(col_kinds) else b"").decode("utf-8")
         col_idx = pw._append_from_materialized(enc, meta)
-        target[key] = {"col": col_idx, **pw.columns[col_idx]} if int(geom.nested) else col_idx
+        shipped = {"col": col_idx, **pw.columns[col_idx]} if int(geom.nested) else col_idx
+        cast(dict[str, Any], target)[key] = shipped
     for idx in range(int(summary.n_channels)):
         wire = chan_out[idx]
         key = _CHAN_REGISTRY[int(wire.registry_key)]
@@ -542,34 +543,44 @@ def emit_trace_materialized(
             base_column=base_col if isinstance(base_col, Column) else None,
         )
     if summary.attach_tooltip:
-        entry["tooltip_rows"] = [
-            dict(t.tooltip_rows[i])
-            for i in (
-                range(len(t.tooltip_rows))
-                if not summary.filter_tooltip_by_sel
-                else (int(i) for i in (sel if sel is not None else []))
-            )
-        ]
+        tooltip_rows = t.tooltip_rows
+        if tooltip_rows is not None:
+            entry["tooltip_rows"] = [
+                dict(tooltip_rows[i])
+                for i in (
+                    range(len(tooltip_rows))
+                    if not summary.filter_tooltip_by_sel
+                    else (int(i) for i in (sel if sel is not None else []))
+                )
+            ]
     elif t.tooltip_rows is not None and not summary.tooltip_length_ok:
         raise ValueError(
             f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
         )
     if path == PAYLOAD_TRACE_EMIT_PATH_HEATMAP_RGBA:
+        rgba_grid = t.rgba_grid
+        grid_shape = t.grid_shape
+        if rgba_grid is None or grid_shape is None:
+            raise ValueError("heatmap rgba grid missing for rgba emit path")
         entry["heatmap"] = {
-            "rgba_bufs": [pw.ship_scalar(column.values) for column in t.rgba_grid],
-            "w": int(t.grid_shape[1]),
-            "h": int(t.grid_shape[0]),
+            "rgba_bufs": [pw.ship_scalar(column.values) for column in rgba_grid],
+            "w": int(grid_shape[1]),
+            "h": int(grid_shape[0]),
             "x_range": list(t.style["x_range"]),
             "y_range": list(t.style["y_range"]),
         }
         return entry
     if path == PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID and summary.has_heatmap:
-        rows, cols = t.grid_shape
+        grid_shape = t.grid_shape
+        grid = t.grid
+        if grid_shape is None or grid is None:
+            raise ValueError("heatmap grid missing for grid emit path")
+        rows, cols = grid_shape
         raw = blob[
             summary.heatmap_grid_offset : summary.heatmap_grid_offset + summary.heatmap_grid_len
         ]
         if summary.heatmap_borrow_canonical:
-            buf_idx = pw.borrow_f64(t.grid.values)
+            buf_idx = pw.borrow_f64(grid.values)
             encoding = "canonical-f64"
         else:
             buf_idx = pw.ship_scalar(np.frombuffer(raw, dtype="<f4"))

@@ -1153,12 +1153,13 @@ def ship_color_channel(
             raise ValueError("direct RGBA color channel missing values")
         values = rgba if sel is None else rgba[sel]
         if values.dtype != np.uint8:
-            values = (np.clip(values, 0.0, 1.0) * 255.0).astype(np.uint8)
+            values = np.ascontiguousarray((np.clip(values, 0.0, 1.0) * 255.0).astype(np.uint8))
+        packed_rgba = np.ascontiguousarray(values, dtype=np.uint8)
         color_spec["buf"] = _ship_wire_buffer(
             plan,
             ship_scalar,
             ship_u8,
-            packed_rgba=values,
+            packed_rgba=packed_rgba,
             sel=None,
             role="color",
             mode="direct_rgba",

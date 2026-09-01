@@ -91,4 +91,4 @@ def attach_build_plan_fields(
     if build_plan["attach_animation"]:
         spec["animation"] = dict(figure.animation_options)
     if build_plan["attach_graph"]:
-        spec["graph"] = list(getattr(figure, "_graph_meta", None))
+        spec["graph"] = list(getattr(figure, "_graph_meta", None) or [])
