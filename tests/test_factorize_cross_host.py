@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from xyg import channels as ch
+from xyg import kernels
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "factorize_cross_host.json"
@@ -37,6 +38,8 @@ def _node_bin() -> str:
 
 
 def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
+    if spec["kind"] == "probe":
+        raise AssertionError("probe cases use _python_probe_case")
     if spec["kind"] == "uint8":
         arr = np.asarray(spec["values"], dtype=np.uint8)
     elif spec["kind"] == "object":
@@ -50,6 +53,19 @@ def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
         arr = np.asarray(spec["values"], dtype=str)
     cats, codes, counts = ch._factorize_categories(arr)
     return cats, codes, counts
+
+
+def _python_probe_case(spec: dict) -> bool:
+    return kernels.factorize_use_native_probe(
+        int(spec["distinct"]),
+        int(spec["probe_len"]),
+        int(spec["record_width"]),
+    )
+
+
+FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
+FACTORIZE_CASES = [c for c in FIXTURE_CASES if c["kind"] != "probe"]
+PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
 
 
 @pytest.fixture(scope="module")
@@ -70,7 +86,7 @@ def node_results() -> dict[str, dict]:
     return {case["name"]: case for case in payload["cases"]}
 
 
-@pytest.mark.parametrize("spec", json.loads(FIXTURE.read_text())["cases"], ids=lambda s: s["name"])
+@pytest.mark.parametrize("spec", FACTORIZE_CASES, ids=lambda s: s["name"])
 def test_factorize_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
     cats, codes, counts = _python_case(spec)
     node = node_results[spec["name"]]
@@ -81,3 +97,10 @@ def test_factorize_cross_host(spec: dict, node_results: dict[str, dict]) -> None
     else:
         assert node["counts"] is not None
         np.testing.assert_array_equal(counts, np.asarray(node["counts"], dtype=np.uint64))
+
+
+@pytest.mark.parametrize("spec", PROBE_CASES, ids=lambda s: s["name"])
+def test_factorize_probe_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    use_native = _python_probe_case(spec)
+    node = node_results[spec["name"]]
+    assert use_native == node["use_native"]

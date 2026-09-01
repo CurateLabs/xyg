@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { factorizeCategories } from "../src/factorize.js";
+import { xyFactorizeUseNativeProbe } from "../src/native.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "factorize_cross_host.json");
@@ -69,6 +70,20 @@ function digestFactored(name, factored) {
 const fixture = JSON.parse(readFileSync(FIXTURE, "utf8"));
 const out = [];
 for (const spec of fixture.cases) {
+  if (spec.kind === "probe") {
+    const ok = Number(
+      xyFactorizeUseNativeProbe(
+        BigInt(spec.distinct),
+        BigInt(spec.probe_len),
+        BigInt(spec.record_width),
+      ),
+    );
+    out.push({
+      name: spec.name,
+      use_native: ok === 1,
+    });
+    continue;
+  }
   const raw = buildValues(spec);
   out.push(digestFactored(spec.name, factorizeCategories(raw)));
 }

@@ -374,12 +374,7 @@ def _use_native_fixed_factorizer(arr: np.ndarray) -> bool:
         rows = np.linspace(0, n - 1, _FACTORIZE_PROBE_ROWS, dtype=np.intp)
         probe = arr[rows]
     distinct = len(np.unique(probe))
-    if distinct <= _FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES:
-        return True
-    near_unique = (
-        1.0 if arr.dtype.itemsize <= _FACTORIZE_NARROW_ITEMSIZE else _FACTORIZE_NEAR_UNIQUE_RATIO
-    )
-    return distinct < near_unique * len(probe)
+    return kernels.factorize_use_native_probe(distinct, len(probe), int(arr.dtype.itemsize))
 
 
 def _factorize_categories(

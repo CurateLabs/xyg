@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 330;
+pub const ABI_VERSION: u32 = 331;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4407,6 +4407,32 @@ pub unsafe extern "C" fn xyg_factorize_display_labels(
             _ => return usize::MAX,
         }
         n_categories
+    })
+}
+
+/// Whether a fixed-record factorizer probe should use the native hash path.
+///
+/// Returns `1` when native factorization should run, `0` when the host should
+/// fall back to the label-policy path, and `-1` for invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_factorize_use_native_probe(
+    distinct: u32,
+    probe_len: u32,
+    record_width: u32,
+) -> i32 {
+    if record_width == 0 {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        if kernels::factorize_use_native_probe(
+            distinct as usize,
+            probe_len as usize,
+            record_width as usize,
+        ) {
+            1
+        } else {
+            0
+        }
     })
 }
 

@@ -9,6 +9,7 @@ import { DEFAULT_PALETTE } from "./encode.js";
 import {
   pointer,
   xyFactorizeDisplayLabels,
+  xyFactorizeUseNativeProbe,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -96,10 +97,15 @@ function distinctProbeCount(data, width) {
 function useNativeFixedFactorizer(data, width) {
   const n = recordCount(data, width);
   const distinct = distinctProbeCount(data, width);
-  if (distinct <= FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES) return true;
-  const nearUnique =
-    width <= FACTORIZE_NARROW_ITEMSIZE ? 1.0 : FACTORIZE_NEAR_UNIQUE_RATIO;
-  return distinct < nearUnique * Math.min(n, FACTORIZE_PROBE_ROWS);
+  const ok = xyFactorizeUseNativeProbe(
+    BigInt(distinct),
+    BigInt(Math.min(n, FACTORIZE_PROBE_ROWS)),
+    BigInt(width),
+  );
+  if (ok < 0) {
+    throw new RangeError("native factorize_use_native_probe rejected the probe");
+  }
+  return ok === 1;
 }
 
 function sortedCategoryRemap(uniqueLabels) {

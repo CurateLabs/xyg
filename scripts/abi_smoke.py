@@ -302,6 +302,12 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
+    lib.xyg_factorize_use_native_probe.restype = ctypes.c_int32
+    lib.xyg_factorize_use_native_probe.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+    ]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -3074,6 +3080,22 @@ def main() -> None:
     ok(
         cat_blob == b"(missing)1ab",
         "factorize_display_labels sorted categories",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(100, 4096, 4) == 1,
+        "factorize_use_native_probe low distinct",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(4096, 4096, 4) == 0,
+        "factorize_use_native_probe near-unique narrow",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(3890, 4096, 64) == 1,
+        "factorize_use_native_probe wide below ratio",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(512, 4096, 0) == -1,
+        "factorize_use_native_probe invalid width",
     )
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])

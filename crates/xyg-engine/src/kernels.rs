@@ -691,6 +691,32 @@ pub fn remap_u8_inplace(values: &mut [u8], mapping: &[u8]) -> bool {
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
 /// Width marker for [`FactorizedDisplayLabels::codes_u32`].
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U32: u32 = 4;
+/// Probe row count matching `channels._FACTORIZE_PROBE_ROWS`.
+pub const FACTORIZE_PROBE_ROWS: usize = 4096;
+/// Distinct-probe ceiling matching `channels._FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES`.
+pub const FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES: usize = 512;
+/// Near-unique ratio for wide records (`channels._FACTORIZE_NEAR_UNIQUE_RATIO`).
+pub const FACTORIZE_NEAR_UNIQUE_RATIO: f64 = 0.95;
+/// Narrow record width matching `channels._FACTORIZE_NARROW_ITEMSIZE`.
+pub const FACTORIZE_NARROW_ITEMSIZE: usize = 32;
+
+/// Whether the native fixed-record factorizer should run on a probe sample.
+///
+/// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
+pub fn factorize_use_native_probe(distinct: usize, probe_len: usize, record_width: usize) -> bool {
+    if probe_len == 0 {
+        return true;
+    }
+    if distinct <= FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES {
+        return true;
+    }
+    let near_unique = if record_width <= FACTORIZE_NARROW_ITEMSIZE {
+        1.0
+    } else {
+        FACTORIZE_NEAR_UNIQUE_RATIO
+    };
+    (distinct as f64) < near_unique * (probe_len as f64)
+}
 
 /// Sorted unique categories plus per-row codes for the label-policy path.
 ///
@@ -8615,6 +8641,19 @@ mod tests {
         let texts = b"b(missing)a(missing)1";
         let packed = factorize_display_labels_packed(&lens, texts).expect("packed");
         assert_eq!(packed.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+    }
+
+    #[test]
+    fn factorize_use_native_probe_matches_host_policy() {
+        assert!(factorize_use_native_probe(100, 4096, 4));
+        assert!(factorize_use_native_probe(512, 4096, 4));
+        assert!(factorize_use_native_probe(513, 4096, 4));
+        assert!(factorize_use_native_probe(4095, 4096, 4));
+        assert!(!factorize_use_native_probe(4096, 4096, 4));
+        assert!(factorize_use_native_probe(3890, 4096, 64));
+        assert!(factorize_use_native_probe(3891, 4096, 64));
+        assert!(!factorize_use_native_probe(3892, 4096, 64));
+        assert!(factorize_use_native_probe(0, 0, 8));
     }
 
     #[test]

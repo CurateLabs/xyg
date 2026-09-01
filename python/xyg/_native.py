@@ -1029,6 +1029,18 @@ def factorize_display_labels(
     return categories, codes
 
 
+def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int) -> bool:
+    """Whether the native fixed-record factorizer should run on a probe sample."""
+    if isinstance(distinct, (bool, np.bool_)) or isinstance(probe_len, (bool, np.bool_)):
+        raise ValueError("probe counts must be integers")
+    if isinstance(record_width, (bool, np.bool_)) or int(record_width) <= 0:
+        raise ValueError("record_width must be a positive integer")
+    ok = _lib.xyg_factorize_use_native_probe(int(distinct), int(probe_len), int(record_width))
+    if ok < 0:
+        raise ValueError("native factorize_use_native_probe rejected the probe")
+    return bool(ok)
+
+
 def _positive_int(value: int, label: str) -> int:
     if isinstance(value, (bool, np.bool_)):
         raise ValueError(f"{label} must be a positive integer")

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 330
-SIGNATURE_SHA256 = "61f5439236006c58273827626cdd3f20a187c941928535688cf82020e305958a"
+ABI_VERSION = 331
+SIGNATURE_SHA256 = "4ebfa90129bc09b0bbee8ac0e7dd34fd625e43c26fc20411397e3ba938427fd2"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -374,6 +374,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_factorize_unicode1_u8_counts
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width)
+    function = lib.xyg_factorize_use_native_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
     # int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)
     function = lib.xyg_figure_autorange
     function.restype = ctypes.c_int32

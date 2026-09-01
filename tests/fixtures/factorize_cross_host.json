@@ -15,6 +15,27 @@
       "name": "stringlike_unicode",
       "kind": "unicode",
       "values": ["β", "a", "β", "", "é"]
+    },
+    {
+      "name": "probe_low_distinct",
+      "kind": "probe",
+      "distinct": 100,
+      "probe_len": 4096,
+      "record_width": 4
+    },
+    {
+      "name": "probe_near_unique_narrow",
+      "kind": "probe",
+      "distinct": 4096,
+      "probe_len": 4096,
+      "record_width": 4
+    },
+    {
+      "name": "probe_near_unique_wide",
+      "kind": "probe",
+      "distinct": 3890,
+      "probe_len": 4096,
+      "record_width": 64
     }
   ]
 }
