@@ -27,6 +27,8 @@ def test_audit_lists_eight_scene_migration_files():
 
 
 def test_audit_cli_exits_zero():
+    from xyg._abi_generated import ABI_VERSION
+
     root = Path(__file__).resolve().parents[1]
     proc = subprocess.run(
         [sys.executable, str(root / "scripts" / "audit_python_host_core.py")],
@@ -38,7 +40,7 @@ def test_audit_cli_exits_zero():
     assert proc.returncode == 0
     assert "python-scene-migration core-logic re-audit" in proc.stdout
     assert "§302 blocker rollup" in proc.stdout
-    assert "abi_version: 329" in proc.stdout
+    assert f"abi_version: {ABI_VERSION}" in proc.stdout
     assert "Merged scene lane on main" in proc.stdout
     assert "Merged payload stack on main" in proc.stdout
     assert "Merged payload orchestration on main" in proc.stdout

@@ -36,9 +36,11 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_329() -> None:
+def test_abi_version_matches_native_core() -> None:
+    from xyg._abi_generated import ABI_VERSION
+
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 329
+    assert manifest["abi_version"] == ABI_VERSION
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
