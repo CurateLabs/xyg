@@ -4991,17 +4991,12 @@ def hexbin_ring(style: dict) -> tuple[np.ndarray, np.ndarray]:
 
 def _mesh_fills(t: dict, blob: bytes, cols: list, n: int, fallback: str) -> list[str]:
     """Per-mark CSS fill colors from a trace's color channel (n marks)."""
-    color_ch = t.get("color") or {}
-    mode = color_ch.get("mode")
-    if mode == "continuous":
-        values = _column(blob, cols[color_ch["buf"]])[:n]
-        rgb = _lut(color_ch.get("colormap", "viridis"), values)
-        return [f"rgb({r},{g},{b})" for r, g, b in rgb]
-    if mode == "categorical":
-        codes = _column(blob, cols[color_ch["buf"]])[:n].astype(int)
-        palette = color_ch.get("palette") or DEFAULT_PALETTE
-        return [palette[code % len(palette)] for code in codes]
-    return [_css(color_ch.get("color"), fallback)] * n
+
+    def read(index: int) -> np.ndarray:
+        return _column(blob, cols[index])
+
+    rgba_u8 = _rgba8(_trace_paint_rgba(t, "color", n, fallback, read))
+    return [f"rgb({int(r)},{int(g)},{int(b)})" for r, g, b, _ in rgba_u8]
 
 
 def _hexbin_marks(
