@@ -102,16 +102,18 @@ def _heatmap_rgba_samples(
     borrowed: tuple[np.ndarray, ...],
 ) -> np.ndarray:
     """Color selected flat heatmap cells without expanding the source grid."""
+    from . import _svg
+
     count = len(indices)
     if "rgba_bufs" in hm:
         rgba = np.empty((count, 4), dtype=np.uint8)
         for channel, column_index in enumerate(hm["rgba_bufs"]):
-            values = _heatmap_sample_column(cols[column_index], indices, blob, borrowed)
+            values = _svg._heatmap_sample_column(cols[column_index], indices, blob, borrowed)
             rgba[:, channel] = np.clip(values * 255.0, 0.0, 255.0).astype(np.uint8)
         rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
         return rgba
 
-    values = _heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
+    values = _svg._heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
     stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
     alpha = int(255 * _fill_opacity(style, 0.95))
     if hm.get("enc") == "canonical-f64":

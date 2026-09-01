@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~3710, `_raster.py` ~3410, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~880, `_export_layout.py` ~800, `_export_ticks.py` ~360, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
+Top remaining line counts (secondary section 302): `_svg.py` ~3180, `_raster.py` ~3410, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~880, `_export_layout.py` ~800, `_export_polar_svg.py` ~350, `_export_svg_util.py` ~235, `_export_ticks.py` ~360, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -332,6 +332,8 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
 - `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
 - `_columns.py` — shared payload column decode (`column`, `column_ref`, `density_column`) for static export emitters
+- `_export_svg_util.py` — shared static-export escape, text metrics, stroke attrs, and annotation text boxes
+- `_export_polar_svg.py` — shared static-export polar SVG grid, wedge paths, and tick labels
 - `_export_chrome.py` — shared static-export chrome slots, theme tokens, and CSS token resolution
 - `_export_annotations.py` — shared static-export annotation placement and axis-title geometry
 - `_export_legend.py` — shared static-export legend row expansion and box layout (`legend_items`, `legend_clip_rect`, `_legend_layout`)
@@ -782,6 +784,8 @@ Forbidden:
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
 | `python/xyg/_export_chrome.py` | Python host | `python-host` | `keep-host`; shared static-export chrome slots, theme tokens, CSS token resolution, and colorbar tick budget for `_svg`/`_raster` | — |
+| `python/xyg/_export_svg_util.py` | Python host | `python-host` | `keep-host`; shared static-export SVG escape, text metrics, stroke attrs, and text boxes for `_svg` | — |
+| `python/xyg/_export_polar_svg.py` | Python host | `python-host` | `keep-host`; shared static-export polar SVG grid, wedge paths, and tick labels for `_svg` | — |
 | `python/xyg/_export_annotations.py` | Python host | `python-host` | `keep-host`; shared static-export annotation placement and axis-title geometry for `_svg`/`_raster` | — |
 | `python/xyg/_export_legend.py` | Python host | `python-host` | `keep-host`; shared static-export legend row expansion and box layout for `_svg`/`_raster` | — |
 | `python/xyg/_export_layout.py` | Python host | `python-host` | `keep-host`; shared static-export layout, gutter rooms, title bands, and polar recut for `_svg`/`_raster` | — |
