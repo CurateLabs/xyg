@@ -70,8 +70,8 @@ def _label_codes(labels: Sequence[str]) -> tuple[np.ndarray, list[str]]:
 def _facet_values(data: Any, by: Any) -> tuple[np.ndarray, list[str]]:
     """Factorize the facet column into per-row codes + first-seen labels.
 
-    One `np.unique` pass instead of a per-label O(k·n) rescan; object columns
-    (mixed/unsortable values) fall back to a single Python pass. Rows group by
+    Fixed-width columns factorize in Rust on raw records; object columns
+    canonicalize display labels then dedupe in first-seen order. Rows group by
     their `category_label` display string, matching categorical channels.
     """
     if isinstance(by, str):
@@ -94,18 +94,11 @@ def _facet_values(data: Any, by: Any) -> tuple[np.ndarray, list[str]]:
     if arr.ndim != 1:
         raise ValueError("facet_chart by= must resolve to a 1-D column")
     if arr.dtype == object:
-        return _label_codes([channels.category_label(value) for value in arr])
-    uniques, inverse = np.unique(arr, return_inverse=True)
-    # np.unique sorts; recover first-seen order to preserve panel ordering.
-    first = np.full(len(uniques), len(arr), dtype=np.intp)
-    np.minimum.at(first, inverse, np.arange(len(arr), dtype=np.intp))
-    order = np.argsort(first, kind="stable")
-    remap = np.empty(len(uniques), dtype=np.intp)
-    remap[order] = np.arange(len(uniques), dtype=np.intp)
-    codes = remap[inverse]
-    label_codes, labels = _label_codes([channels.category_label(value) for value in uniques[order]])
-    if len(labels) != len(uniques):  # distinct raw values sharing a display label
-        codes = label_codes[codes]
+        return _label_codes(channels._category_labels(arr))
+    raw_codes, unique_indices = kernels.factorize_fixed(arr)
+    display_labels = channels._category_labels(arr[unique_indices])
+    label_codes, labels = _label_codes(display_labels)
+    codes = label_codes[raw_codes.astype(np.intp, copy=False)]
     return codes, labels
 
 

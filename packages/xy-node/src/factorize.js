@@ -113,6 +113,26 @@ export function categoryLabel(value) {
   return categoryLabelsFromEncodings([categoryLabelKindAndBytes(value)])[0];
 }
 
+function categoryLabels(values) {
+  return categoryLabelsFromEncodings(values.map(categoryLabelKindAndBytes));
+}
+
+function categoryLabelFromFloat(value) {
+  if (Number.isNaN(value)) {
+    return categoryLabel(Number.NaN);
+  }
+  const text = Number.isInteger(value) ? `${value}.0` : String(value);
+  return categoryLabelsFromEncodings([{ kind: 1, payload: new TextEncoder().encode(text) }])[0];
+}
+
+function facetTypedCategoryLabel(view, index) {
+  const value = view[index];
+  if (view instanceof Float64Array || view instanceof Float32Array) {
+    return categoryLabelFromFloat(value);
+  }
+  return categoryLabel(value);
+}
+
 function recordCount(data, width) {
   if (data instanceof Uint8Array && width > 1 && data.length % width === 0) {
     return data.length / width;
@@ -484,6 +504,61 @@ function labelCodesFirstSeenJs(labels) {
  */
 export function labelCodesFirstSeen(labels) {
   return labelCodesFirstSeenJs(labels.map((value) => String(value)));
+}
+
+function factorizeFixedFirstSeen(view) {
+  const width = view.BYTES_PER_ELEMENT;
+  const n = view.length;
+  if (n === 0) {
+    return {
+      rawCodes: new Uint32Array(0),
+      uniqueIndices: new Uint32Array(0),
+      uniq: 0,
+    };
+  }
+  const codes = new Uint32Array(n);
+  const uniqueIndices = new Uint32Array(n);
+  const bytes = bytesView(view);
+  const written = xyFactorizeFixed(
+    u8Ptr(bytes),
+    BigInt(n),
+    BigInt(width),
+    u32Ptr(codes),
+    u32Ptr(uniqueIndices),
+  );
+  if (written === USIZE_MAX_64 || written > BigInt(n)) {
+    throw new RangeError("native factorize_fixed rejected the record array");
+  }
+  return { rawCodes: codes, uniqueIndices, uniq: Number(written) };
+}
+
+/**
+ * Factorize a facet column into first-seen panel codes + labels.
+ *
+ * Mirrors Python `facets._facet_values` for typed columns (native
+ * `factorize_fixed` + display-label dedupe) and object columns (batch
+ * `category_label` + first-seen dedupe).
+ *
+ * @param {Array|TypedArray} raw
+ * @returns {{categories: string[], codes: Uint8Array|Uint32Array}}
+ */
+export function facetValues(raw) {
+  if (ArrayBuffer.isView(raw) && !(raw instanceof DataView)) {
+    const view = /** @type {ArrayBufferView & {length: number}} */ (raw);
+    const { rawCodes, uniqueIndices, uniq } = factorizeFixedFirstSeen(view);
+    const displayLabels = [];
+    for (let i = 0; i < uniq; i += 1) {
+      displayLabels.push(facetTypedCategoryLabel(view, uniqueIndices[i]));
+    }
+    const { categories, codes: labelCodes } = labelCodesFirstSeenJs(displayLabels);
+    const out = new Uint32Array(view.length);
+    for (let i = 0; i < view.length; i += 1) {
+      out[i] = labelCodes[rawCodes[i]];
+    }
+    return { categories, codes: out };
+  }
+  const rows = Array.isArray(raw) ? raw : [...raw];
+  return labelCodesFirstSeenJs(categoryLabels(rows));
 }
 
 function factorizeDisplayLabelsJs(labels) {
