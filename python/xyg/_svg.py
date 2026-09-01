@@ -20,7 +20,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import math
-import re
 from collections.abc import Callable, Sequence
 from itertools import pairwise
 from os import PathLike
@@ -33,9 +32,21 @@ from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
+from ._export_chrome import (
+    apply_export_background,
+    legend_options_with_slot,
+    slot_font_size,
+    slot_styles,
+    slot_text_color,
+)
+from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
 from ._fontmetrics import estimated_text_width as _estimated_text_width
 from ._fontmetrics import text_width as _fontmetrics_text_width
-from ._layout import _PolarProjection, _Scale
+from ._layout import (
+    _PolarProjection,
+    _Scale,
+    warp_grid_rgba,
+)
 from ._paint import (
     _css,
     hexbin_ring,
@@ -639,79 +650,6 @@ STATIC_STYLED_SLOTS: tuple[str, ...] = (
 )
 
 
-def slot_styles(spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """`styles={slot: {...}}` from the payload, normalized to kebab-case CSS.
-
-    `chrome_styles` keeps whatever spelling the caller used (`font_size` and
-    `font-size` both reach the browser, which sees the same declaration); the
-    static writers match on property names, so they need one spelling.
-    """
-    raw = (spec.get("dom") or {}).get("styles") or {}
-    out: dict[str, dict[str, Any]] = {}
-    for slot, decls in raw.items():
-        if not isinstance(decls, dict):
-            continue
-        out[str(slot)] = {
-            (k if str(k).startswith("--") else str(k).replace("_", "-")): v
-            for k, v in decls.items()
-        }
-    return out
-
-
-#: `styles={"legend": ...}` is CSS; `xyg.legend(style=...)` reaches the writers
-#: under the browser's camelCase property spelling. Same declaration, two
-#: spellings — the writers key on the second, so the first is translated.
-_LEGEND_SLOT_ALIASES: dict[str, str] = {
-    "background-color": "background",
-    "box-shadow": "boxShadow",
-    "border-radius": "borderRadius",
-    "row-gap": "rowGap",
-}
-
-
-def legend_options_with_slot(spec: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
-    """Fold the chart-level legend styling into a legend's own options, so every
-    spelling that agrees in the browser also agrees in a file.
-
-    Three sources, widest first: the `--chart-legend-bg` theme token, the
-    `styles={"legend": ...}` slot, then `xyg.legend(style=...)` — the narrowest
-    selector and the winner.
-    """
-    slot = slot_styles(spec).get("legend") or {}
-    token = (spec.get("dom") or {}).get("style", {}).get("--chart-legend-bg")
-    own = options.get("style") or {}
-    if not slot and token is None and not own:
-        return options
-
-    def canonical(style: dict[str, Any]) -> dict[str, Any]:
-        return {_LEGEND_SLOT_ALIASES.get(str(key), str(key)): value for key, value in style.items()}
-
-    folded: dict[str, Any] = {}
-    if token is not None:
-        # The browser's rule is `background:var(--chart-legend-bg, <default>)`,
-        # so the token is the frame's paint, at full strength.
-        folded["background"] = token
-    folded.update(canonical(slot))
-    # `xyg.legend(style=...)` is canonicalized too. It happens to reach the
-    # writers through `chrome_styles` as well today, but a legend built without
-    # that mirror — an extra legend, or an adapter — would otherwise lose its
-    # kebab-case declarations here.
-    folded.update(canonical(own))
-    return {**options, "style": folded}
-
-
-def slot_text_color(style: dict[str, Any], fallback: str) -> str:
-    """A slot's resolved text paint. `fill` is the SVG spelling and wins; CSS
-    authors reach for `color`, so both are accepted."""
-    for prop in ("fill", "color"):
-        value = style.get(prop)
-        if value is not None:
-            resolved = _css(value, "")
-            if resolved:
-                return resolved
-    return fallback
-
-
 def _slot_size_attr(style: dict[str, Any]) -> str:
     """` font-size="N"` only when the slot asks for one. Text that inherits the
     root `font-size` must keep inheriting it when unstyled, so that existing
@@ -719,11 +657,6 @@ def _slot_size_attr(style: dict[str, Any]) -> str:
     if "font-size" not in style:
         return ""
     return f' font-size="{_num(_px_size(style["font-size"], 11.0))}"'
-
-
-def slot_font_size(style: dict[str, Any], default: float) -> float:
-    """A slot's resolved font size in px, or `default`."""
-    return _px_size(style.get("font-size"), default) if "font-size" in style else default
 
 
 def slot_text_attrs(style: dict[str, Any], **defaults: Any) -> str:
@@ -748,120 +681,6 @@ def slot_text_attrs(style: dict[str, Any], **defaults: Any) -> str:
         # attribute and breaks the document.
         parts.append(f' {prop}="{_escape_attr(value)}"')
     return "".join(parts)
-
-
-def apply_export_background(spec: dict[str, Any], background: Optional[str]) -> None:
-    """Apply the unified export API's `background=` override to a payload spec.
-
-    An explicit export background replaces the ENTIRE painted backdrop — the
-    canvas underlay, the theme figure patch (`theme(background=)`), and the
-    plot-rect fill (`--chart-bg`) — so the requested color (or transparency)
-    is what actually shows regardless of chart theme, instead of being buried
-    under the theme paints. The plot token becomes "transparent" rather than
-    the override color so translucent backgrounds composite exactly once.
-    Shared by the raster exporter and (via SVG) the PDF exporter."""
-    if background is None:
-        return
-    spec["canvas_background"] = background
-    dom = spec.setdefault("dom", {})
-    if isinstance(dom, dict):
-        style = dom.setdefault("style", {})
-        if isinstance(style, dict):
-            style.pop("background", None)
-            style["--chart-bg"] = "transparent"
-
-
-_CSS_VAR_RE = re.compile(
-    r"^var\(\s*(--[A-Za-z_][A-Za-z0-9_-]*)\s*(?:,\s*(.+))?\)$",
-    re.DOTALL | re.IGNORECASE,
-)
-_STATIC_PAINT_KEYS = frozenset(
-    {
-        "axis_color",
-        "background",
-        "canvas_background",
-        "color",
-        "fill",
-        "grid_color",
-        "label_color",
-        "line_color",
-        "stroke",
-        "stroke_color",
-        "tick_color",
-    }
-)
-
-
-def _resolve_css_var(value: Any, variables: dict[str, Any], seen: tuple[str, ...] = ()) -> Any:
-    """Resolve a complete ``var(--token[, fallback])`` static paint value."""
-    if not isinstance(value, str):
-        return value
-    match = _CSS_VAR_RE.fullmatch(value.strip())
-    if match is None:
-        return value
-    name, fallback = match.groups()
-    if name in seen:
-        return fallback.strip() if fallback is not None else value
-    replacement = variables.get(name, fallback)
-    if replacement is None:
-        return value
-    if isinstance(replacement, str):
-        replacement = replacement.strip()
-    return _resolve_css_var(replacement, variables, (*seen, name))
-
-
-def _resolve_static_css_vars(spec: dict[str, Any]) -> dict[str, Any]:
-    """Resolve chart-level color tokens with a copy-on-write spec traversal.
-
-    This deliberately handles complete color-token references only. Browser
-    expressions containing variables, such as ``color-mix(...)``, retain the
-    documented native fallback instead of approximating the browser CSS engine.
-    """
-    dom_style = (spec.get("dom") or {}).get("style") or {}
-    variables = {key: value for key, value in dom_style.items() if key.startswith("--")}
-
-    def resolve_stops(value: Any) -> Any:
-        if not isinstance(value, list):
-            return value
-        changed = False
-        out: list[Any] = []
-        for stop in value:
-            if isinstance(stop, (list, tuple)) and len(stop) >= 2:
-                paint = _resolve_css_var(stop[1], variables)
-                if paint != stop[1]:
-                    changed = True
-                    copied = list(stop)
-                    copied[1] = paint
-                    out.append(copied if isinstance(stop, list) else tuple(copied))
-                    continue
-            out.append(stop)
-        return out if changed else value
-
-    def rewrite(value: Any) -> Any:
-        if isinstance(value, dict):
-            changed = False
-            out: dict[Any, Any] = {}
-            for key, item in value.items():
-                if key == "stops":
-                    resolved = resolve_stops(item)
-                elif isinstance(item, str) and (
-                    key in _STATIC_PAINT_KEYS
-                    or (isinstance(key, str) and (key.startswith("--") or key.endswith("_color")))
-                ):
-                    resolved = _resolve_css_var(item, variables)
-                else:
-                    resolved = rewrite(item)
-                changed = changed or resolved is not item
-                out[key] = resolved
-            return out if changed else value
-        if isinstance(value, list):
-            out = [rewrite(item) for item in value]
-            return (
-                out if any(new is not old for new, old in zip(out, value, strict=True)) else value
-            )
-        return value
-
-    return rewrite(spec)
 
 
 def _num(v: float) -> str:
@@ -4731,46 +4550,6 @@ def _rect_marks(
                 f'fill="{fills[i]}"{extras[i]}/>'
             )
     return "".join(out)
-
-
-def warp_axis_indices(scale: _Scale, lo: float, hi: float, n_src: int) -> Optional[np.ndarray]:
-    """Source-cell index per output cell for a *data-uniform* grid shown on a
-    nonlinear axis, or None when no warp is needed (affine axis).
-
-    A data-uniform grid (heatmap) stretched linearly between its transformed
-    endpoints places every internal cell edge wrong on a log/symlog axis; the
-    fix is to resample it into a grid that is uniform in scale coordinates
-    (== uniform on screen), nearest-neighbor so cells stay crisp. Output
-    resolution is at least the source's and at most the pixel span (capped),
-    so no cell is lost and no image explodes. Shared by the SVG and native
-    raster exporters. Density grids are already uniform in scale coordinates
-    (§28) and must NOT be warped."""
-    if scale.affine:
-        return None
-    c0, c1 = float(scale.coord(lo)), float(scale.coord(hi))
-    if not (np.isfinite(c0) and np.isfinite(c1)) or c0 == c1:
-        return None
-    px_span = abs(float(scale(hi)) - float(scale(lo)))
-    n_out = int(np.clip(round(px_span), n_src, 4096))
-    centers = c0 + (np.arange(n_out, dtype=np.float64) + 0.5) * ((c1 - c0) / n_out)
-    values = np.asarray(scale.value(centers), dtype=np.float64)
-    idx = np.floor((values - lo) / (hi - lo) * n_src).astype(np.int64)
-    return np.clip(idx, 0, n_src - 1)
-
-
-def warp_grid_rgba(
-    rgba: np.ndarray, x_range: list, y_range: list, sx: _Scale, sy: _Scale
-) -> np.ndarray:
-    """Resample a data-uniform (h, w, 4) grid so it is uniform in scale
-    coordinates; identity on affine axes. Row 0 stays the y_range bottom."""
-    h, w = rgba.shape[:2]
-    cols = warp_axis_indices(sx, float(x_range[0]), float(x_range[1]), w)
-    rows = warp_axis_indices(sy, float(y_range[0]), float(y_range[1]), h)
-    if cols is not None:
-        rgba = rgba[:, cols]
-    if rows is not None:
-        rgba = rgba[rows, :]
-    return rgba
 
 
 _POLAR_HEATMAP_MAX_DIMENSION = 4096

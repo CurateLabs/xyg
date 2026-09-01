@@ -356,3 +356,32 @@ def affine_fast_path(sx: _Scale, sy: _Scale, polar: Optional[_PolarProjection] =
     scatter projected as cartesian (§6).
     """
     return polar is None and sx.affine and sy.affine
+
+
+def warp_axis_indices(scale: _Scale, lo: float, hi: float, n_src: int) -> Optional[np.ndarray]:
+    """Source-cell index per output cell for a data-uniform grid on a nonlinear axis."""
+    if scale.affine:
+        return None
+    c0, c1 = float(scale.coord(lo)), float(scale.coord(hi))
+    if not (np.isfinite(c0) and np.isfinite(c1)) or c0 == c1:
+        return None
+    px_span = abs(float(scale(hi)) - float(scale(lo)))
+    n_out = int(np.clip(round(px_span), n_src, 4096))
+    centers = c0 + (np.arange(n_out, dtype=np.float64) + 0.5) * ((c1 - c0) / n_out)
+    values = np.asarray(scale.value(centers), dtype=np.float64)
+    idx = np.floor((values - lo) / (hi - lo) * n_src).astype(np.int64)
+    return np.clip(idx, 0, n_src - 1)
+
+
+def warp_grid_rgba(
+    rgba: np.ndarray, x_range: list, y_range: list, sx: _Scale, sy: _Scale
+) -> np.ndarray:
+    """Resample a data-uniform (h, w, 4) grid so it is uniform in scale coordinates."""
+    h, w = rgba.shape[:2]
+    cols = warp_axis_indices(sx, float(x_range[0]), float(x_range[1]), w)
+    rows = warp_axis_indices(sy, float(y_range[0]), float(y_range[1]), h)
+    if cols is not None:
+        rgba = rgba[:, cols]
+    if rows is not None:
+        rgba = rgba[rows, :]
+    return rgba

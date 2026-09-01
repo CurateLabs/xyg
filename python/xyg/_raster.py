@@ -25,8 +25,16 @@ from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
+from ._export_chrome import (
+    apply_export_background,
+    legend_options_with_slot,
+    slot_font_size,
+    slot_styles,
+    slot_text_color,
+)
+from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
 from ._fontmetrics import estimated_text_width as _estimated_text_width
-from ._layout import _PolarProjection, _Scale, affine_fast_path
+from ._layout import _PolarProjection, _Scale, affine_fast_path, warp_grid_rgba
 from ._paint import (
     _css,
     effective_paint_rgba8,
@@ -120,25 +128,18 @@ from ._svg import (
     _decode_title_geometry,
     _legend_layout,
     _preserve_scene_chrome_for_axis_visibility,
-    _resolve_static_css_vars,
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
     annotation_label_placement,
-    apply_export_background,
     axis_ticks,
     layout,
     legend_clip_rect,
     legend_items,
-    legend_options_with_slot,
     minor_axis_ticks,
     polar_heatmap_rgba,
     polar_tick_label_layout,
     polar_wedge_points,
-    slot_font_size,
-    slot_styles,
-    slot_text_color,
-    warp_grid_rgba,
 )
 
 (
