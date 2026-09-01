@@ -1363,7 +1363,7 @@
       "policy": "node-host",
       "disposition": "keep-host",
       "follow_up_issue": null,
-      "rationale": "Node categorical factorization shell mirroring python/xyg/channels._factorize_categories; fixed-width TypedArrays and stringlike JS arrays route through native xyg_factorize_* / xyg_remap_u8."
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/dom.js",
@@ -2211,7 +2211,7 @@
       "policy": "python-scene-migration",
       "disposition": "split-and-move-rust",
       "follow_up_issue": 58,
-      "rationale": "LOD decision math, f32 encode, and aligned_window delegate to Rust (xy_lod_plan, xy_drill_decision, xy_encode_f32, xyg_aligned_window ABI 326, ABI 255); cross-host proof in tests/test_lod_cross_host.py. Stay-host: trace drill_history cache and BufferWriter wire packing."
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
     },
     {
       "path": "python/xyg/marks.py",
