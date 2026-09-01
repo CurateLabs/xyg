@@ -7,6 +7,11 @@ from typing import Any, Optional
 
 from ._export_chrome import _TEXT, slot_text_color
 from ._export_legend import _legend_layout
+from ._export_marker_svg import (
+    _SYMBOL_BUILDERS,
+    _authored_marker_path_d,
+    _star_path,
+)
 from ._export_svg_util import (
     _dash_attr,
     _num,
@@ -24,10 +29,8 @@ _LEGEND_LINE_KINDS = frozenset({"line", "segments", "step", "stairs", "errorbar"
 
 def _legend_marker_svg(style: dict[str, Any], x: float, y: float, default_color: str) -> str:
     """Render one Matplotlib legend marker at the center of its line handle."""
-    from . import _svg as _svg_module
-
     symbol = str(style.get("symbol", "circle"))
-    builder = _svg_module._SYMBOL_BUILDERS.get(symbol)
+    builder = _SYMBOL_BUILDERS.get(symbol)
     marker_path = style.get("marker_path")
     marker_glyph = style.get("marker_glyph")
     radius = max(0.5, float(style.get("size", 8.0)) / 2.0)
@@ -51,7 +54,7 @@ def _legend_marker_svg(style: dict[str, Any], x: float, y: float, default_color:
             f'fill="{escape(color)}"{stroke_attr}>{escape(str(marker_glyph))}</text>'
         )
     if marker_path:
-        d = _svg_module._authored_marker_path_d(marker_path, float(x), float(y), 2 * radius)
+        d = _authored_marker_path_d(marker_path, float(x), float(y), 2 * radius)
         fill = escape(color) if bool(marker_path.get("filled", True)) else "none"
         return f'<path d="{d}" fill="{fill}"{stroke_attr}/>'
     if builder is None:
@@ -64,8 +67,6 @@ def _legend_marker_svg(style: dict[str, Any], x: float, y: float, default_color:
 
 def _legend_hatch_svg(x0: float, x1: float, y0: float, y1: float, hatch: str, color: str) -> str:
     """Small, bounded hatch sample for explicit patch legend handles."""
-    from . import _svg as _svg_module
-
     paths: list[str] = []
     shapes: list[str] = []
     mid_y = (y0 + y1) / 2
@@ -90,8 +91,7 @@ def _legend_hatch_svg(x0: float, x1: float, y0: float, y1: float, hatch: str, co
     if "*" in hatch:
         radius = min(x1 - x0, y1 - y0) * 0.28
         shapes.append(
-            _svg_module._star_path((x0 + x1) / 2, mid_y, radius, 5, 0.45, -90.0)
-            + f' fill="{escape(color)}"/>'
+            _star_path((x0 + x1) / 2, mid_y, radius, 5, 0.45, -90.0) + f' fill="{escape(color)}"/>'
         )
     if paths:
         shapes.insert(

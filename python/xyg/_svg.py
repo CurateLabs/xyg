@@ -19,23 +19,20 @@ from __future__ import annotations
 
 import base64
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from os import PathLike
 from typing import Any, Optional
 
 import numpy as np
 
 from . import _native, _paint, _png, _textblock, kernels
-from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
 from ._export_annotations import (
-    _annotation_connector_unclipped,
-    _annotation_first_baseline,
     _axis_label_geometry,
-    annotation_label_placement,
 )
+from ._export_annotations_svg import _annotation_svg
 from ._export_chrome import (
     _AXIS,
     _GRID,
@@ -81,6 +78,11 @@ from ._export_legend_svg import (
     _legend,  # noqa: F401
     _legend_hatch_svg,  # noqa: F401
 )
+from ._export_marker_svg import (
+    _SYMBOL_BUILDERS,
+    _authored_marker_path_d,  # noqa: F401
+    _star_path,  # noqa: F401
+)
 from ._export_polar_svg import (
     _polar_frame_path,
     _polar_grid,
@@ -96,9 +98,6 @@ from ._export_svg_util import (
     _dash_attr,
     _escape_attr,
     _num,
-    _svg_font_attrs,
-    _svg_mathtext_spans,
-    _svg_text_box,
     _text_block_content,
     _text_cell,  # noqa: F401
     escape,
@@ -134,7 +133,7 @@ from ._paint import (
     trace_paint_rgb_css_list,
 )
 from ._paint import (
-    authored_marker_points as _authored_marker_points,
+    authored_marker_points as _authored_marker_points,  # noqa: F401
 )
 from ._paint import (
     colormap_lut as _colormap_lut,
@@ -156,9 +155,6 @@ from ._paint import (
 )
 from ._paint import (
     physical_density_alpha as _physical_density_alpha,
-)
-from ._paint import (
-    px_size as _px_size,
 )
 from ._paint import (
     rgb_css as _rgb_css,
@@ -873,89 +869,6 @@ def _curve_path(
             f"C {_num(c1x)} {_num(c1y)} {_num(c2x)} {_num(c2y)} {_num(px[i + 1])} {_num(py[i + 1])}"
         )
     return " ".join(parts)
-
-
-_SYMBOL_BUILDERS = {
-    "pixel": lambda cx, cy, r: (
-        f'<rect x="{_num(cx - r)}" y="{_num(cy - r)}" width="{_num(2 * r)}" height="{_num(2 * r)}"'
-    ),
-    "square": lambda cx, cy, r: (
-        f'<rect x="{_num(cx - r)}" y="{_num(cy - r)}" width="{_num(2 * r)}" height="{_num(2 * r)}"'
-    ),
-    "diamond": lambda cx, cy, r: (
-        f'<path d="M {_num(cx)} {_num(cy - 2**0.5 * r)} '
-        f"L {_num(cx + 2**0.5 * r)} {_num(cy)} "
-        f"L {_num(cx)} {_num(cy + 2**0.5 * r)} "
-        f'L {_num(cx - 2**0.5 * r)} {_num(cy)} Z"'
-    ),
-    "thin_diamond": lambda cx, cy, r: (
-        f'<path d="M {_num(cx)} {_num(cy - 2**0.5 * r)} '
-        f"L {_num(cx + 0.6 * 2**0.5 * r)} {_num(cy)} "
-        f"L {_num(cx)} {_num(cy + 2**0.5 * r)} "
-        f'L {_num(cx - 0.6 * 2**0.5 * r)} {_num(cy)} Z"'
-    ),
-    "triangle": lambda cx, cy, r: (
-        f'<path d="M {_num(cx)} {_num(cy - r)} L {_num(cx + r)} {_num(cy + r)} L {_num(cx - r)} {_num(cy + r)} Z"'
-    ),
-    "triangle_down": lambda cx, cy, r: (
-        f'<path d="M {_num(cx)} {_num(cy + r)} L {_num(cx + r)} {_num(cy - r)} L {_num(cx - r)} {_num(cy - r)} Z"'
-    ),
-    "triangle_left": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - r)} {_num(cy)} L {_num(cx + r)} {_num(cy - r)} L {_num(cx + r)} {_num(cy + r)} Z"'
-    ),
-    "triangle_right": lambda cx, cy, r: (
-        f'<path d="M {_num(cx + r)} {_num(cy)} L {_num(cx - r)} {_num(cy - r)} L {_num(cx - r)} {_num(cy + r)} Z"'
-    ),
-    "cross": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - 0.34 * r)} {_num(cy - r)} H {_num(cx + 0.34 * r)} V {_num(cy - 0.34 * r)} '
-        f"H {_num(cx + r)} V {_num(cy + 0.34 * r)} H {_num(cx + 0.34 * r)} V {_num(cy + r)} "
-        f"H {_num(cx - 0.34 * r)} V {_num(cy + 0.34 * r)} H {_num(cx - r)} V {_num(cy - 0.34 * r)} "
-        f'H {_num(cx - 0.34 * r)} Z"'
-    ),
-    "x": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - 0.72 * r)} {_num(cy - r)} L {_num(cx)} {_num(cy - 0.28 * r)} '
-        f"L {_num(cx + 0.72 * r)} {_num(cy - r)} L {_num(cx + r)} {_num(cy - 0.72 * r)} "
-        f"L {_num(cx + 0.28 * r)} {_num(cy)} L {_num(cx + r)} {_num(cy + 0.72 * r)} "
-        f"L {_num(cx + 0.72 * r)} {_num(cy + r)} L {_num(cx)} {_num(cy + 0.28 * r)} "
-        f"L {_num(cx - 0.72 * r)} {_num(cy + r)} L {_num(cx - r)} {_num(cy + 0.72 * r)} "
-        f'L {_num(cx - 0.28 * r)} {_num(cy)} L {_num(cx - r)} {_num(cy - 0.72 * r)} Z"'
-    ),
-    "plus_line": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - r)} {_num(cy)} H {_num(cx + r)} M {_num(cx)} {_num(cy - r)} V {_num(cy + r)}" fill="none"'
-    ),
-    "x_line": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - 0.707 * r)} {_num(cy - 0.707 * r)} L {_num(cx + 0.707 * r)} {_num(cy + 0.707 * r)} '
-        f'M {_num(cx + 0.707 * r)} {_num(cy - 0.707 * r)} L {_num(cx - 0.707 * r)} {_num(cy + 0.707 * r)}" fill="none"'
-    ),
-    "horizontal_line": lambda cx, cy, r: (
-        f'<path d="M {_num(cx - r)} {_num(cy)} H {_num(cx + r)}" fill="none"'
-    ),
-    "vertical_line": lambda cx, cy, r: (
-        f'<path d="M {_num(cx)} {_num(cy - r)} V {_num(cy + r)}" fill="none"'
-    ),
-    "pentagon": lambda cx, cy, r: _regular_polygon_path(cx, cy, r, 5, -90.0),
-    "hexagon": lambda cx, cy, r: _regular_polygon_path(cx, cy, r, 6, -90.0),
-    "star": lambda cx, cy, r: _star_path(cx, cy, r, 5, 0.45, -90.0),
-}
-
-
-def _regular_polygon_path(cx: float, cy: float, r: float, n: int, start_deg: float) -> str:
-    pts = []
-    for i in range(n):
-        theta = np.radians(start_deg + i * 360.0 / n)
-        pts.append((cx + r * np.cos(theta), cy + r * np.sin(theta)))
-    d = "M " + " L ".join(f"{_num(px)} {_num(py)}" for px, py in pts)
-    return f'<path d="{d} Z"'
-
-
-def _star_path(cx: float, cy: float, r: float, points: int, inner: float, start_deg: float) -> str:
-    pts = []
-    for i in range(points * 2):
-        radius = r if i % 2 == 0 else r * inner
-        theta = np.radians(start_deg + i * 180.0 / points)
-        pts.append((cx + radius * np.cos(theta), cy + radius * np.sin(theta)))
-    d = "M " + " L ".join(f"{_num(px)} {_num(py)}" for px, py in pts)
-    return f'<path d="{d} Z"'
 
 
 # ---------------------------------------------------------------------------
@@ -1711,224 +1624,6 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     )
 
 
-def _annotation_svg(
-    annotations: Sequence[dict[str, Any]],
-    sx: Callable[[float], float],
-    sy: Callable[[float], float],
-    plot: dict[str, float],
-    width: float,
-    height: float,
-    polar: "Optional[_PolarProjection]" = None,
-) -> tuple[list[str], list[str], list[str]]:
-    marks: list[str] = []
-    unclipped_marks: list[str] = []
-    labels: list[str] = []
-    px0, py0 = plot["x"], plot["y"]
-
-    def point(x: float, y: float) -> tuple[float, float]:
-        """A point-anchored annotation's position.
-
-        Under polar the pair is (theta, r) and must project jointly — the
-        separable sx/sy would read them as cartesian, putting `(0, 0)` (the
-        disc centre, at any angle) in the bottom-left corner instead.
-
-        Only point-anchored kinds route through here. `rule` and `band` are
-        genuinely different geometry on a disc — a theta rule is a spoke, an r
-        rule is a ring, a band is an annulus or a sector — and stay deferred
-        (polar-axes.md §9) rather than being drawn as straight cartesian bars.
-        """
-        if polar is not None:
-            px, py = polar(x, y)
-            return float(px), float(py)
-        return float(sx(x)), float(sy(y))
-
-    for ann in annotations:
-        style = ann.get("style") or {}
-        color = escape(_css(style.get("color"), "#667085"))
-        opacity = float(style.get("opacity", 1.0))
-        start = max(0.0, min(1.0, float(style.get("span_start", 0.0))))
-        end = max(start, min(1.0, float(style.get("span_end", 1.0))))
-        kind = ann.get("kind")
-        if kind == "rule":
-            if ann.get("axis") == "x":
-                pos = float(sx(float(ann["value"])))
-                coords = (pos, py0 + (1 - end) * plot["h"], pos, py0 + (1 - start) * plot["h"])
-            else:
-                pos = float(sy(float(ann["value"])))
-                coords = (px0 + start * plot["w"], pos, px0 + end * plot["w"], pos)
-            marks.append(
-                f'<line x1="{_num(coords[0])}" y1="{_num(coords[1])}" '
-                f'x2="{_num(coords[2])}" y2="{_num(coords[3])}" stroke="{color}" '
-                f'stroke-width="{_num(float(style.get("width", 1.5)))}" stroke-opacity="{_num(opacity)}"'
-                f"{_dash_attr(style)}/>"
-            )
-        elif kind == "band":
-            a, b = float(ann["start"]), float(ann["end"])
-            if ann.get("axis") == "x":
-                x0, x1 = sorted((float(sx(a)), float(sx(b))))
-                y0, y1 = py0 + (1 - end) * plot["h"], py0 + (1 - start) * plot["h"]
-            else:
-                y0, y1 = sorted((float(sy(a)), float(sy(b))))
-                x0, x1 = px0 + start * plot["w"], px0 + end * plot["w"]
-            marks.append(
-                f'<rect x="{_num(x0)}" y="{_num(y0)}" width="{_num(x1 - x0)}" '
-                f'height="{_num(y1 - y0)}" fill="{color}" fill-opacity="{_num(float(style.get("opacity", 0.14)))}"/>'
-            )
-        elif kind in ("arrow", "callout"):
-            connector_marks = (
-                unclipped_marks
-                if _annotation_connector_unclipped(ann, sx, sy, plot, polar)
-                else marks
-            )
-            if kind == "arrow":
-                x0, y0 = point(float(ann["x0"]), float(ann["y0"]))
-                x1, y1 = point(float(ann["x1"]), float(ann["y1"]))
-            else:  # pointer from the offset label back to the data point
-                x1, y1 = point(float(ann["x"]), float(ann["y"]))
-                x0, y0 = x1 + float(ann.get("dx", 0.0)), y1 + float(ann.get("dy", 0.0))
-            if all(np.isfinite(v) for v in (x0, y0, x1, y1)):
-                shapes = _arrow_shapes(x0, y0, x1, y1, style)
-                stroke_width = _num(max(0.5, float(style.get("width", 1.5))))
-                if shapes["taper"] is not None:
-                    taper = " ".join(f"{_num(px)},{_num(py)}" for px, py in shapes["taper"])
-                    connector_marks.append(
-                        f'<polygon points="{taper}" fill="{color}" fill-opacity="{_num(opacity)}"/>'
-                    )
-                else:
-                    shaft = " ".join(f"{_num(px)},{_num(py)}" for px, py in shapes["shaft"])
-                    connector_marks.append(
-                        f'<polyline points="{shaft}" fill="none" '
-                        f'stroke="{color}" stroke-width="{stroke_width}" '
-                        f'stroke-opacity="{_num(opacity)}"{_dash_attr(style)}/>'
-                    )
-                for decoration in (shapes["head"], shapes["tail"]):
-                    if decoration is None:
-                        continue
-                    points = " ".join(f"{_num(px)},{_num(py)}" for px, py in decoration["points"])
-                    if decoration["kind"] == "fill":
-                        connector_marks.append(
-                            f'<polygon points="{points}" fill="{color}" '
-                            f'fill-opacity="{_num(opacity)}"/>'
-                        )
-                    else:
-                        connector_marks.append(
-                            f'<polyline points="{points}" fill="none" stroke="{color}" '
-                            f'stroke-width="{stroke_width}" stroke-opacity="{_num(opacity)}"/>'
-                        )
-        elif kind == "marker":
-            mx, my = point(float(ann["x"]), float(ann["y"]))
-            if all(np.isfinite(v) for v in (mx, my)):
-                radius = max(0.5, float(ann.get("size", 8.0)) / 2.0)
-                builder = _SYMBOL_BUILDERS.get(str(ann.get("symbol", "circle")))
-                stroke_w = float(style.get("stroke_width", 0.0))
-                stroke_attr = (
-                    f' stroke="{escape(_css(style.get("stroke_color"), color))}"'
-                    f' stroke-width="{_num(stroke_w)}"'
-                    + (f' stroke-opacity="{_num(opacity)}"' if opacity < 1 else "")
-                    if stroke_w
-                    else ""
-                )
-                fill = escape(_css(style.get("color"), "#2563eb"))
-                shape = (
-                    f'<circle cx="{_num(mx)}" cy="{_num(my)}" r="{_num(radius)}"'
-                    if builder is None
-                    else builder(mx, my, radius)
-                )
-                marks.append(f'{shape} fill="{fill}" fill-opacity="{_num(opacity)}"{stroke_attr}/>')
-        if ann.get("text"):
-            tx, ty, label_anchor, vertical_align = annotation_label_placement(
-                ann, style, sx, sy, plot, width, height, polar
-            )
-            if not (np.isfinite(tx) and np.isfinite(ty)):
-                continue
-            style = {**style, "vertical_align": vertical_align} if vertical_align else style
-            anchor = {"start": "start", "middle": "middle", "end": "end"}.get(label_anchor, "start")
-            font_size = _px_size(style.get("font_size"), 11.0)
-            lines = str(ann["text"]).splitlines() or [""]
-            line_height = font_size * 1.2
-            rotation = float(style.get("rotation", 0.0)) % 360.0
-            if rotation in (90.0, 270.0):
-                # Vertical text, mirroring the native rasterizer's geometry:
-                # vertical_align anchors along the reading axis, the horizontal
-                # anchor shifts the baseline across the post-rotation box.
-                cw = rotation == 270.0
-                va = str(style.get("vertical_align", ""))
-                along = {
-                    "center": "middle",
-                    "top": "start" if cw else "end",
-                    "bottom": "end" if cw else "start",
-                }.get(va, "start")
-                ascent, descent = font_size * 0.78, font_size * 0.22
-                if cw:
-                    base = {"middle": (descent - ascent) / 2, "end": -ascent}.get(anchor, descent)
-                else:
-                    base = {"middle": (ascent - descent) / 2, "end": -descent}.get(anchor, ascent)
-                stack = -line_height if cw else line_height  # later lines: glyph-down
-                by = ty + float(ann.get("dy", 0))
-                text_opacity = float(
-                    style.get(
-                        "label_opacity",
-                        style.get("opacity", 1.0) if kind == "text" else 1.0,
-                    )
-                )
-                line_offset = 0
-                for index, line in enumerate(lines):
-                    bx = tx + float(ann.get("dx", 0)) + base + index * stack
-                    styled_line = _svg_mathtext_spans(line, style, line_offset)
-                    labels.append(
-                        f'<text text-anchor="{along}" font-size="{_num(font_size)}" '
-                        f'transform="rotate({90 if cw else -90} {_num(bx)} {_num(by)})" '
-                        f'x="{_num(bx)}" y="{_num(by)}" '
-                        + (f'fill-opacity="{_num(text_opacity)}" ' if text_opacity < 1 else "")
-                        + f'fill="{color}">{styled_line}</text>'
-                    )
-                    line_offset += len(line) + 1
-                continue
-            x_text = tx + float(ann.get("dx", 0))
-            vertical_align = style.get("vertical_align")
-            y_text = _annotation_first_baseline(
-                ty + float(ann.get("dy", 0)),
-                len(lines),
-                line_height,
-                font_size,
-                vertical_align,
-            )
-            line_offset = 0
-            tspan_parts = []
-            for index, line in enumerate(lines):
-                styled_line = _svg_mathtext_spans(line, style, line_offset)
-                tspan_parts.append(
-                    f'<tspan x="{_num(x_text)}" y="{_num(y_text + index * line_height)}">'
-                    f"{styled_line}</tspan>"
-                )
-                line_offset += len(line) + 1
-            tspans = "".join(tspan_parts)
-            text_opacity = float(
-                style.get(
-                    "label_opacity",
-                    style.get("opacity", 1.0) if kind == "text" else 1.0,
-                )
-            )
-            # A callout's `color` paints its arrow; the label prefers its own.
-            label_color = escape(_css(style.get("label_color"), "")) or color
-            labels.extend(
-                _svg_text_box(style, lines, x_text, y_text, line_height, font_size, anchor)
-            )
-            font_attrs = _svg_font_attrs(style)
-            rotation_attr = (
-                f' transform="rotate({_num(-rotation)} {_num(x_text)} {_num(y_text)})"'
-                if rotation
-                else ""
-            )
-            labels.append(
-                f'<text text-anchor="{anchor}" font-size="{_num(font_size)}"{font_attrs}'
-                f"{rotation_attr} "
-                + (f'fill-opacity="{_num(text_opacity)}" ' if text_opacity < 1 else "")
-                + f'fill="{label_color}">{tspans}</text>'
-            )
-    return marks, unclipped_marks, labels
-
-
 def _segment_marks(
     t: dict[str, Any],
     blob: bytes,
@@ -1979,24 +1674,6 @@ def _segment_marks(
 #: overhead bounded while staying a single linear pass (byte-identical output:
 #: concatenation is associative).
 _SVG_MARK_BLOCK = 4096
-
-
-def _authored_marker_path_d(
-    marker_path: dict[str, Any], cx: float, cy: float, diameter: float
-) -> str:
-    parts: list[str] = []
-    for contour in marker_path.get("contours") or ():
-        values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
-        if not len(values):
-            continue
-        px, py = _authored_marker_points(values[:, 0], values[:, 1], cx, cy, diameter)
-        parts.append(f"M {_num(float(px[0]))} {_num(float(py[0]))}")
-        parts.extend(
-            f"L {_num(float(x))} {_num(float(y))}" for x, y in zip(px[1:], py[1:], strict=True)
-        )
-        if bool(marker_path.get("filled", True)):
-            parts.append("Z")
-    return " ".join(parts)
 
 
 def _scatter_marks(
