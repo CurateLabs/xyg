@@ -239,6 +239,7 @@ drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
 screen_shape = _impl.screen_shape
 normalize_window = _impl.normalize_window
+view_visible_mask = _impl.view_visible_mask
 lod_plan = _impl.lod_plan
 payload_tier = _impl.payload_tier
 payload_m4_indices = _impl.payload_m4_indices
@@ -583,6 +584,7 @@ __all__ = [
     "triangle_edges",
     "valid_indices_f64",
     "vector_segments",
+    "view_visible_mask",
     "violin_density",
     "violin_rects",
     "weighted_ecdf",

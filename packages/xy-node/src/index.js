@@ -361,6 +361,7 @@ export {
   sampleFraction,
   hashRowIds,
   screenShape,
+  viewVisibleMask,
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,

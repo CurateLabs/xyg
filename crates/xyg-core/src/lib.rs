@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 334;
+pub const ABI_VERSION: u32 = 335;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15011,6 +15011,44 @@ pub unsafe extern "C" fn xyg_normalize_window(
         Err(lod_plan::NormalizeWindowError::NonFinite) => 0,
         Err(lod_plan::NormalizeWindowError::ZeroArea) => -1,
     }
+}
+
+/// Cartesian viewport visibility mask for paired f64 columns (§19).
+///
+/// Writes `1`/`0` per row. Returns the row count, or `usize::MAX` when
+/// pointers, lengths, or output capacity are invalid.
+///
+/// # Safety
+/// When `n > 0`, `x`, `y`, and `out` must address `n` elements.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_view_visible_mask(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    out: *mut u8,
+) -> usize {
+    if n == 0 {
+        return 0;
+    }
+    if x.is_null() || y.is_null() || out.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        lod_plan::view_visible_mask(
+            std::slice::from_raw_parts(x, n),
+            std::slice::from_raw_parts(y, n),
+            lo_x,
+            hi_x,
+            lo_y,
+            hi_y,
+            std::slice::from_raw_parts_mut(out, n),
+        )
+        .unwrap_or(usize::MAX)
+    })
 }
 
 /// Hysteresis-guarded drill decision (§5). Writes `1`/`0` into `out_exact`.

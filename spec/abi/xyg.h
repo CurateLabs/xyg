@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 334
-#define XYG_ABI_SIGNATURE_SHA256 "f13c7401e9e8d53a6e03f641177997bcd123ffd7179d38810ea3a27e4f424b6a"
+#define XYG_ABI_VERSION 335
+#define XYG_ABI_SIGNATURE_SHA256 "0ee217e5ed4230b0025ce0dfcffea33fbc14bc77870cc99d238a8ad83f3af701"
 
 #ifdef __cplusplus
 extern "C" {
@@ -442,6 +442,7 @@ int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width
 size_t xyg_triangle_edges(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1);
 size_t xyg_valid_indices_f64(const double *const * columns, size_t n_columns, size_t len, uint64_t positive_mask, uint32_t * out, size_t capacity);
 size_t xyg_vector_segments(const double * x, const double * y, const double * u, const double * v, size_t len, double scale, uint32_t pivot, double head_ratio, double * out_x0, double * out_x1, double * out_y0, double * out_y1);
+size_t xyg_view_visible_mask(const double * x, const double * y, size_t n, double lo_x, double hi_x, double lo_y, double hi_y, uint8_t * out);
 int32_t xyg_violin_density(const double * data, size_t len, size_t n_bins, double * out_edges, double * out_density);
 size_t xyg_violin_rects(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, size_t bins, double width, uint32_t orientation, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_groups, double * out_edges, double * out_density, size_t out_cap);
 size_t xyg_weighted_ecdf(const double * values, const double * weights, size_t len, double * out_values, double * out_cumulative);

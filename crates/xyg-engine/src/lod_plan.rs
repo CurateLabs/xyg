@@ -88,6 +88,34 @@ pub enum NormalizeWindowError {
     ZeroArea,
 }
 
+/// Boolean mask of rows inside a Cartesian viewport window (§19).
+///
+/// Non-finite coordinates compare false. Matches Python `lod.visible_mask`.
+pub fn view_visible_mask(
+    x: &[f64],
+    y: &[f64],
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    out: &mut [u8],
+) -> Option<usize> {
+    if x.len() != y.len() || out.len() < x.len() {
+        return None;
+    }
+    for (slot, (&xv, &yv)) in out.iter_mut().zip(x.iter().zip(y.iter())) {
+        *slot = u8::from(
+            xv.is_finite()
+                && yv.is_finite()
+                && xv >= lo_x
+                && xv <= hi_x
+                && yv >= lo_y
+                && yv <= hi_y,
+        );
+    }
+    Some(x.len())
+}
+
 /// Hysteresis-guarded drill decision: stay in exact marks until the visible
 /// count clearly exceeds the budget again (§5).
 pub fn drill_decision(visible: u64, budget: f64, in_drill: bool, exit_factor: f64) -> Option<bool> {
@@ -714,6 +742,16 @@ pub fn payload_sample_target_indices(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn view_visible_mask_drops_nonfinite_and_outside_window() {
+        let x = [0.0, 1.0, 2.0, f64::NAN, 5.0];
+        let y = [0.0, 1.0, 2.0, 3.0, 5.0];
+        let mut out = [9u8; 5];
+        let written = view_visible_mask(&x, &y, 0.5, 4.5, 0.5, 4.5, &mut out).expect("mask");
+        assert_eq!(written, 5);
+        assert_eq!(out, [0, 1, 1, 0, 0]);
+    }
 
     #[test]
     fn normalize_window_orders_and_validates() {

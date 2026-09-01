@@ -177,7 +177,7 @@ def visible_mask(
     """Boolean mask of rows inside the window. NaN/±inf compare False on
     either side, so non-finite rows never enter a drilled subset
     (non-finite must never reach a vertex buffer; design dossier §19)."""
-    return (xv >= lo_x) & (xv <= hi_x) & (yv >= lo_y) & (yv <= hi_y)
+    return kernels.view_visible_mask(xv, yv, lo_x, hi_x, lo_y, hi_y)
 
 
 def drill_decision(

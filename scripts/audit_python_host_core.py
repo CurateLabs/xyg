@@ -78,6 +78,7 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("—", "332", "xyg_category_labels_packed", "channels category_label"),
     ("—", "333", "xyg_object_rows_all_stringlike", "channels object stringlike probe"),
     ("—", "334", "xyg_normalize_window", "lod.normalize_window"),
+    ("—", "335", "xyg_view_visible_mask", "lod.visible_mask"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

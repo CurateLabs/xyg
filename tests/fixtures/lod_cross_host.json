@@ -163,6 +163,16 @@
       "y0": 2.0,
       "y1": 3.0,
       "require_area": false
+    },
+    {
+      "name": "view_visible_mask_mixed",
+      "kind": "view_visible_mask",
+      "x": [0.0, 1.0, 2.0, null, 5.0],
+      "y": [0.0, 1.0, 2.0, 3.0, 5.0],
+      "lo_x": 0.5,
+      "hi_x": 4.5,
+      "lo_y": 0.5,
+      "hi_y": 4.5
     }
   ]
 }

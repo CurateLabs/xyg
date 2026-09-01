@@ -12779,6 +12779,40 @@ def normalize_window(
     return float(out[0]), float(out[1]), float(out[2]), float(out[3])
 
 
+def view_visible_mask(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+) -> npt.NDArray[np.bool_]:
+    """Boolean mask of rows inside a Cartesian viewport window (ABI 335, §19)."""
+    xv = np.ascontiguousarray(x, dtype=np.float64)
+    yv = np.ascontiguousarray(y, dtype=np.float64)
+    if xv.shape != yv.shape or xv.ndim != 1:
+        raise ValueError("view_visible_mask expects equal-length 1-D x/y arrays")
+    n = len(xv)
+    if n == 0:
+        return np.empty(0, dtype=np.bool_)
+    out = np.empty(n, dtype=np.uint8)
+    written = _lib.xyg_view_visible_mask(
+        xv.ctypes.data,
+        yv.ctypes.data,
+        n,
+        float(lo_x),
+        float(hi_x),
+        float(lo_y),
+        float(hi_y),
+        out.ctypes.data,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native view_visible_mask rejected the coordinate arrays")
+    if int(written) != n:
+        raise ValueError("native view_visible_mask returned an unexpected row count")
+    return out.astype(np.bool_, copy=False)
+
+
 def lod_grid_shape(
     width: int, height: int, visible: int, target_per_cell: float = 16.0
 ) -> tuple[int, int]:

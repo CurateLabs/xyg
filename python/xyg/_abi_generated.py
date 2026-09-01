@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 334
-SIGNATURE_SHA256 = "f13c7401e9e8d53a6e03f641177997bcd123ffd7179d38810ea3a27e4f424b6a"
+ABI_VERSION = 335
+SIGNATURE_SHA256 = "0ee217e5ed4230b0025ce0dfcffea33fbc14bc77870cc99d238a8ad83f3af701"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1734,6 +1734,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_vector_segments
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_view_visible_mask(const double * x, const double * y, size_t n, double lo_x, double hi_x, double lo_y, double hi_y, uint8_t * out)
+    function = lib.xyg_view_visible_mask
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # int32_t xyg_violin_density(const double * data, size_t len, size_t n_bins, double * out_edges, double * out_density)
     function = lib.xyg_violin_density
     function.restype = ctypes.c_int32

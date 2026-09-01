@@ -986,6 +986,17 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_normalize_window.restype = ctypes.c_int32
     lib.xyg_normalize_window.argtypes = [D, D, D, D, ctypes.c_int32, F64P]
+    lib.xyg_view_visible_mask.restype = ctypes.c_size_t
+    lib.xyg_view_visible_mask.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        D,
+        D,
+        D,
+        D,
+        U8P,
+    ]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
@@ -4958,6 +4969,24 @@ def main() -> None:
         lib.xyg_normalize_window(1.0, 1.0, 2.0, 3.0, 1, _ptr(norm_out, ctypes.c_double)) == -1,
         "normalize_window zero area rejected",
     )
+    view_x = array("d", [0.0, 1.0, 2.0, float("nan"), 5.0])
+    view_y = array("d", [0.0, 1.0, 2.0, 3.0, 5.0])
+    view_mask = array("B", [9, 9, 9, 9, 9])
+    ok(
+        lib.xyg_view_visible_mask(
+            _ptr(view_x, ctypes.c_double),
+            _ptr(view_y, ctypes.c_double),
+            5,
+            0.5,
+            4.5,
+            0.5,
+            4.5,
+            _ptr(view_mask, ctypes.c_uint8),
+        )
+        == 5,
+        "view_visible_mask row count",
+    )
+    ok(list(view_mask) == [0, 1, 1, 0, 0], "view_visible_mask values")
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])
     lib.xyg_sample_mask_u32(

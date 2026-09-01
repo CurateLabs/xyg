@@ -47,6 +47,13 @@ def _sha_u64(values: np.ndarray) -> str:
     return hashlib.sha256(arr.tobytes()).hexdigest()
 
 
+def _float_array(values: list) -> np.ndarray:
+    return np.asarray(
+        [float("nan") if value is None else float(value) for value in values],
+        dtype=np.float64,
+    )
+
+
 def _python_case(spec: dict) -> dict:
     if spec["kind"] == "lod_plan":
         exact, mode, gw, gh = kernels.lod_plan(
@@ -132,6 +139,18 @@ def _python_case(spec: dict) -> dict:
             "lo_y": lo_y,
             "hi_y": hi_y,
         }
+    if spec["kind"] == "view_visible_mask":
+        x = _float_array(spec["x"])
+        y = _float_array(spec["y"])
+        mask = lod.visible_mask(
+            x,
+            y,
+            float(spec["lo_x"]),
+            float(spec["hi_x"]),
+            float(spec["lo_y"]),
+            float(spec["hi_y"]),
+        )
+        return {"name": spec["name"], "mask": mask.astype(np.uint8).tolist()}
     column = lod.encode_f32_values(
         spec["values"],
         float(spec["offset"]),
@@ -207,6 +226,9 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
         assert py["hi_x"] == node["hi_x"]
         assert py["lo_y"] == node["lo_y"]
         assert py["hi_y"] == node["hi_y"]
+        return
+    if spec["kind"] == "view_visible_mask":
+        assert py["mask"] == node["mask"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]

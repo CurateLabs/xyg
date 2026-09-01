@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, normalizeWindow, sampleFraction, sampleThreshold, screenShape } from "../src/encode.js";
+import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, normalizeWindow, viewVisibleMask, sampleFraction, sampleThreshold, screenShape } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "lod_cross_host.json");
@@ -68,6 +68,22 @@ function runCase(spec) {
       hi_x: window[1],
       lo_y: window[2],
       hi_y: window[3],
+    };
+  }
+  if (spec.kind === "view_visible_mask") {
+    const x = spec.x.map((value) => (value == null ? Number.NaN : Number(value)));
+    const y = spec.y.map((value) => (value == null ? Number.NaN : Number(value)));
+    const mask = viewVisibleMask(
+      x,
+      y,
+      spec.lo_x,
+      spec.hi_x,
+      spec.lo_y,
+      spec.hi_y,
+    );
+    return {
+      name: spec.name,
+      mask: [...mask],
     };
   }
   if (spec.kind === "aligned_window") {
