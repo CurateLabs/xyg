@@ -26,6 +26,9 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    colormap_stops as _colormap_stops,
+)
+from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
@@ -64,7 +67,6 @@ from ._svg import (
     _axis_tick_sides,
     _box_corner_radius,
     _colorbar_right_axis_room,
-    _colormap_stops,
     _column,
     _column_ref,
     _corner_radii,

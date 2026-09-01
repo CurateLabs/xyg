@@ -71,6 +71,24 @@ def rgb_css(paint: Any) -> str:
     return f"rgb({int(u8[0])},{int(u8[1])},{int(u8[2])})"
 
 
+def rgba8_hex(row: Any) -> str:
+    """Format one RGBA8 row as ``#rrggbb`` for static legend swatches."""
+    red, green, blue = int(row[0]), int(row[1]), int(row[2])
+    return f"#{red:02x}{green:02x}{blue:02x}"
+
+
+def colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
+    """Evenly spaced RGB stops for a shipped colormap.
+
+    Named maps resolve through ``xyg_colormap_stops`` (ABI 135). A sequence is
+    an already-resolved custom ramp (`channels.resolve_colormap`) and is used
+    verbatim.
+    """
+    if not isinstance(colormap, str):
+        return [(int(r), int(g), int(b)) for r, g, b in colormap]
+    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
+
+
 def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:
     """Recover one exterior walk from a connected tessellated polygon.
 
@@ -246,12 +264,6 @@ def effective_rgba(
     return kernels.paint_effective_rgba(rgba, artist, opacity, component_opacity)
 
 
-def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
-    if not isinstance(colormap, str):
-        return [(int(r), int(g), int(b)) for r, g, b in colormap]
-    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
-
-
 def trace_paint_rgba(
     trace: dict[str, Any],
     key: str,
@@ -269,7 +281,7 @@ def trace_paint_rgba(
     mode = channel.get("mode")
     if mode == "continuous":
         values = np.asarray(read(channel["buf"]), dtype=np.float64).reshape(-1)[:n]
-        stops = np.asarray(_colormap_stops(channel.get("colormap", "viridis")), dtype=np.uint8)
+        stops = np.asarray(colormap_stops(channel.get("colormap", "viridis")), dtype=np.uint8)
         rgba[:, :3] = kernels.colormap_lut(values, stops) / 255.0
     elif mode == "categorical":
         from . import channels as _channels

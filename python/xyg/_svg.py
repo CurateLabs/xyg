@@ -34,6 +34,9 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    colormap_stops as _colormap_stops,
+)
+from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
@@ -44,6 +47,9 @@ from ._paint import (
 )
 from ._paint import (
     rgba8 as _rgba8,
+)
+from ._paint import (
+    rgba8_hex as _rgba8_hex,
 )
 from ._paint import (
     solid_paint as _solid_paint,
@@ -930,18 +936,6 @@ def _colormap_key(colormap: Any) -> str:
     if isinstance(colormap, str):
         return colormap
     return "custom-" + hashlib.sha256(repr(_colormap_stops(colormap)).encode()).hexdigest()[:12]
-
-
-def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
-    """Evenly spaced RGB stops for a shipped colormap.
-
-    Named maps resolve through ``xyg_colormap_stops`` (ABI 135). A sequence is
-    an already-resolved custom ramp (`channels.resolve_colormap`) and is used
-    verbatim.
-    """
-    if not isinstance(colormap, str):
-        return [(int(r), int(g), int(b)) for r, g, b in colormap]
-    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
 
 
 def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
@@ -5736,8 +5730,7 @@ def legend_items(traces: list[dict], palette: Sequence[str] = DEFAULT_PALETTE) -
             rows = _channels.palette_rows_rgba8(entry_palette, len(entry_palette))
             for index, category in enumerate(categories):
                 item_style = dict(style)
-                red, green, blue, _alpha = rows[index % len(rows)]
-                item_style["color"] = f"#{int(red):02x}{int(green):02x}{int(blue):02x}"
+                item_style["color"] = _rgba8_hex(rows[index % len(rows)])
                 items.append(
                     {"name": str(category), "kind": trace.get("kind"), "style": item_style}
                 )
