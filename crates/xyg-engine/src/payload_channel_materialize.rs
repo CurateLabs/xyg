@@ -193,6 +193,10 @@ pub fn payload_channel_materialize(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::payload_emit::{
+        PAYLOAD_CHAN_MODE_CONSTANT, PAYLOAD_CHAN_MODE_CONTINUOUS, PAYLOAD_CHAN_MODE_DIRECT,
+        PAYLOAD_CHAN_WIRE_ROLE_COLOR, PAYLOAD_CHAN_WIRE_ROLE_STYLE,
+    };
 
     #[test]
     fn continuous_f32_materialize() {

@@ -4160,7 +4160,7 @@ mod tests {
 
     #[test]
     fn payload_column_ship_plan_ribbon_six_columns_with_targets() {
-        let (gather, _, n, _, y_scale, cols) =
+        let (gather, _, n, _, _y_scale, cols) =
             run_column_ship_plan("ribbon", PAYLOAD_BAR_ORIENTATION_VERTICAL);
         assert_eq!(gather, PAYLOAD_GATHER_VALID_INDICES);
         assert_eq!(n, 6);
