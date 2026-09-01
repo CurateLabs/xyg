@@ -1181,6 +1181,19 @@ def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int)
     return bool(ok)
 
 
+def factorize_use_native_fixed(values: np.ndarray) -> bool:
+    """Probe a fixed-width column and choose the native hash factorizer path."""
+    records, width = _fixed_records(values)
+    n = len(records)
+    if n == 0:
+        ok = _lib.xyg_factorize_use_native_fixed(None, 0, width)
+    else:
+        ok = _lib.xyg_factorize_use_native_fixed(records.ctypes.data, n, width)
+    if ok < 0:
+        raise ValueError("native factorize_use_native_fixed rejected the record array")
+    return bool(ok)
+
+
 def category_labels(
     kinds: npt.NDArray[np.uint8] | list[int],
     payloads: list[bytes],

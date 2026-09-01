@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 338;
+pub const ABI_VERSION: u32 = 339;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4650,6 +4650,43 @@ pub unsafe extern "C" fn xyg_factorize_use_native_probe(
             1
         } else {
             0
+        }
+    })
+}
+
+/// Probe a fixed-width column and decide whether the native hash path should run.
+///
+/// Returns `1` when native factorization should run, `0` when the host should
+/// fall back to the label-policy path, and `-1` for invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_factorize_use_native_fixed(
+    data: *const u8,
+    n_rows: usize,
+    record_width: u32,
+) -> i32 {
+    if record_width == 0 {
+        return -1;
+    }
+    if n_rows == 0 {
+        return ffi_guard(-1, || match kernels::factorize_use_native_fixed(&[], 0, record_width as usize) {
+            Some(true) => 1,
+            Some(false) => 0,
+            None => -1,
+        });
+    }
+    if data.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let width = record_width as usize;
+        let Some(expected) = n_rows.checked_mul(width) else {
+            return -1;
+        };
+        let data_slice = std::slice::from_raw_parts(data, expected);
+        match kernels::factorize_use_native_fixed(data_slice, n_rows, width) {
+            Some(true) => 1,
+            Some(false) => 0,
+            None => -1,
         }
     })
 }

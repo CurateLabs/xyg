@@ -66,6 +66,25 @@
       "name": "real_numeric_all_missing",
       "kind": "real_numeric",
       "values": [null, null]
+    },
+    {
+      "name": "fixed_probe_repetitive_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 50000,
+      "modulo": 100
+    },
+    {
+      "name": "fixed_probe_near_unique_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 5000
+    },
+    {
+      "name": "fixed_probe_empty_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 0
     }
   ]
 }

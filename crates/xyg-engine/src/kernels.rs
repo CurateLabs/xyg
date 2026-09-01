@@ -12,7 +12,7 @@
 //!   al., VLDB 2014). NaN-aware: buckets never span invalid values silently (§19).
 
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 const MAX_ROW_THREADS: usize = 18;
 
@@ -815,6 +815,35 @@ pub fn object_rows_all_real_numeric(row_tags: &[u8]) -> Option<bool> {
     Some(seen)
 }
 
+/// Distinct record count in the fixed-record factorizer probe sample.
+///
+/// Matches Python `np.unique(probe)` / Node `distinctProbeCount` after hosts
+/// choose the same evenly spaced row indices across the full column.
+pub fn distinct_probe_count(data: &[u8], n_rows: usize, record_width: usize) -> Option<usize> {
+    if record_width == 0 {
+        return None;
+    }
+    let expected = n_rows.checked_mul(record_width)?;
+    if data.len() != expected {
+        return None;
+    }
+    let probe_len = n_rows.min(FACTORIZE_PROBE_ROWS);
+    let mut seen: HashSet<&[u8]> = HashSet::new();
+    for i in 0..probe_len {
+        let idx = if n_rows <= FACTORIZE_PROBE_ROWS {
+            i
+        } else if probe_len <= 1 {
+            0
+        } else {
+            (i * (n_rows - 1)) / (probe_len - 1)
+        };
+        let start = idx * record_width;
+        let end = start + record_width;
+        seen.insert(&data[start..end]);
+    }
+    Some(seen.len())
+}
+
 /// Whether the native fixed-record factorizer should run on a probe sample.
 ///
 /// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
@@ -831,6 +860,16 @@ pub fn factorize_use_native_probe(distinct: usize, probe_len: usize, record_widt
         FACTORIZE_NEAR_UNIQUE_RATIO
     };
     (distinct as f64) < near_unique * (probe_len as f64)
+}
+
+/// Probe a fixed-width column and decide whether the native hash path should run.
+///
+/// Matches Python `channels._use_native_fixed_factorizer` /
+/// Node `useNativeFixedFactorizer` after hosts pass the raw record bytes.
+pub fn factorize_use_native_fixed(data: &[u8], n_rows: usize, record_width: usize) -> Option<bool> {
+    let distinct = distinct_probe_count(data, n_rows, record_width)?;
+    let probe_len = n_rows.min(FACTORIZE_PROBE_ROWS);
+    Some(factorize_use_native_probe(distinct, probe_len, record_width))
 }
 
 /// Sorted unique categories plus per-row codes for the label-policy path.
@@ -9042,6 +9081,44 @@ mod tests {
         assert!(factorize_use_native_probe(3891, 4096, 64));
         assert!(!factorize_use_native_probe(3892, 4096, 64));
         assert!(factorize_use_native_probe(0, 0, 8));
+    }
+
+    #[test]
+    fn distinct_probe_count_matches_linspace_sampling() {
+        let mut data = Vec::new();
+        for i in 0..5000_u32 {
+            data.extend_from_slice(&i.to_le_bytes());
+        }
+        assert_eq!(distinct_probe_count(&data, 5000, 4), Some(4096));
+
+        let mut repetitive = Vec::new();
+        for row in 0..50_000_u32 {
+            repetitive.extend_from_slice(&(row % 100).to_le_bytes());
+        }
+        assert_eq!(distinct_probe_count(&repetitive, 50_000, 4), Some(100));
+        assert_eq!(distinct_probe_count(&[], 0, 4), Some(0));
+    }
+
+    #[test]
+    fn factorize_use_native_fixed_matches_host_policy() {
+        let mut repetitive = Vec::new();
+        for i in 0..50_000_u32 {
+            repetitive.extend_from_slice(&(i % 100).to_le_bytes());
+        }
+        assert_eq!(
+            factorize_use_native_fixed(&repetitive, 50_000, 4),
+            Some(true)
+        );
+
+        let mut near_unique = Vec::new();
+        for i in 0..5000_u32 {
+            near_unique.extend_from_slice(&i.to_le_bytes());
+        }
+        assert_eq!(
+            factorize_use_native_fixed(&near_unique, 5000, 4),
+            Some(false)
+        );
+        assert_eq!(factorize_use_native_fixed(&[], 0, 4), Some(true));
     }
 
     #[test]

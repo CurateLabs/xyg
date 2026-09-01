@@ -405,14 +405,7 @@ def _use_native_fixed_factorizer(arr: np.ndarray) -> bool:
     repeats get scarce while narrow ones hold it until the probe is entirely
     distinct. Sampling across the full array keeps the decision independent of N.
     """
-    n = len(arr)
-    if n <= _FACTORIZE_PROBE_ROWS:
-        probe = arr
-    else:
-        rows = np.linspace(0, n - 1, _FACTORIZE_PROBE_ROWS, dtype=np.intp)
-        probe = arr[rows]
-    distinct = len(np.unique(probe))
-    return kernels.factorize_use_native_probe(distinct, len(probe), int(arr.dtype.itemsize))
+    return kernels.factorize_use_native_fixed(arr)
 
 
 def _factorize_categories(

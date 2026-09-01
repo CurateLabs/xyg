@@ -38,7 +38,7 @@ def _node_bin() -> str:
 
 
 def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
-    if spec["kind"] in ("probe", "stringlike", "real_numeric"):
+    if spec["kind"] in ("probe", "stringlike", "real_numeric", "fixed_probe"):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
         arr = np.asarray(spec["values"], dtype=np.uint8)
@@ -73,11 +73,29 @@ def _python_real_numeric_case(spec: dict) -> bool:
     return ch._object_array_is_real_numeric(arr)
 
 
+def _build_fixed_probe_array(spec: dict) -> np.ndarray:
+    row_count = int(spec["row_count"])
+    dtype = np.dtype(spec["dtype"])
+    if row_count == 0:
+        return np.asarray([], dtype=dtype)
+    if "modulo" in spec:
+        return np.asarray([i % int(spec["modulo"]) for i in range(row_count)], dtype=dtype)
+    return np.arange(row_count, dtype=dtype)
+
+
+def _python_fixed_probe_case(spec: dict) -> bool:
+    arr = _build_fixed_probe_array(spec)
+    return ch._use_native_fixed_factorizer(arr)
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
-    c for c in FIXTURE_CASES if c["kind"] not in ("probe", "stringlike", "real_numeric")
+    c
+    for c in FIXTURE_CASES
+    if c["kind"] not in ("probe", "stringlike", "real_numeric", "fixed_probe")
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
+FIXED_PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fixed_probe"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -116,6 +134,13 @@ def test_factorize_cross_host(spec: dict, node_results: dict[str, dict]) -> None
 @pytest.mark.parametrize("spec", PROBE_CASES, ids=lambda s: s["name"])
 def test_factorize_probe_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
     use_native = _python_probe_case(spec)
+    node = node_results[spec["name"]]
+    assert use_native == node["use_native"]
+
+
+@pytest.mark.parametrize("spec", FIXED_PROBE_CASES, ids=lambda s: s["name"])
+def test_factorize_fixed_probe_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    use_native = _python_fixed_probe_case(spec)
     node = node_results[spec["name"]]
     assert use_native == node["use_native"]
 

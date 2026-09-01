@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 338;
-export const SIGNATURE_SHA256 = "bfa0f3e767223c807ab098b24618614081ea6f2104600ed5c3361b054d4b767b";
+export const ABI_VERSION = 339;
+export const SIGNATURE_SHA256 = "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -97,6 +97,7 @@ export let xyFactorizeFixed;
 export let xyFactorizeFixedU8;
 export let xyFactorizeFixedU8Counts;
 export let xyFactorizeUnicode1U8Counts;
+export let xyFactorizeUseNativeFixed;
 export let xyFactorizeUseNativeProbe;
 export let xyFigureAutorange;
 export let xyGeoColumnCrs;
@@ -544,6 +545,7 @@ export function bindGeneratedAbi(lib) {
   xyFactorizeFixedU8 = lib.func("size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity)");
   xyFactorizeFixedU8Counts = lib.func("size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
   xyFactorizeUnicode1U8Counts = lib.func("size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32_t swap_endian, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
+  xyFactorizeUseNativeFixed = lib.func("int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width)");
   xyFactorizeUseNativeProbe = lib.func("int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width)");
   xyFigureAutorange = lib.func("int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)");
   xyGeoColumnCrs = lib.func("uint32_t xyg_geo_column_crs(uint64_t handle)");

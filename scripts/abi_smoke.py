@@ -339,6 +339,12 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint32,
         ctypes.c_uint32,
     ]
+    lib.xyg_factorize_use_native_fixed.restype = ctypes.c_int32
+    lib.xyg_factorize_use_native_fixed.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+    ]
     lib.xyg_category_labels_packed.restype = ctypes.c_size_t
     lib.xyg_category_labels_packed.argtypes = [
         U8P,
@@ -3223,6 +3229,36 @@ def main() -> None:
     ok(
         lib.xyg_factorize_use_native_probe(512, 4096, 0) == -1,
         "factorize_use_native_probe invalid width",
+    )
+    repetitive = (ctypes.c_uint32 * 50_000)(*[(i % 100) for i in range(50_000)])
+    repetitive_u8 = ctypes.cast(repetitive, ctypes.POINTER(ctypes.c_uint8))
+    ok(
+        lib.xyg_factorize_use_native_fixed(
+            repetitive_u8,
+            len(repetitive),
+            4,
+        )
+        == 1,
+        "factorize_use_native_fixed repetitive column",
+    )
+    near_unique = (ctypes.c_uint32 * 5000)(*range(5000))
+    near_unique_u8 = ctypes.cast(near_unique, ctypes.POINTER(ctypes.c_uint8))
+    ok(
+        lib.xyg_factorize_use_native_fixed(
+            near_unique_u8,
+            len(near_unique),
+            4,
+        )
+        == 0,
+        "factorize_use_native_fixed near-unique column",
+    )
+    ok(
+        lib.xyg_factorize_use_native_fixed(None, 0, 4) == 1,
+        "factorize_use_native_fixed empty column",
+    )
+    ok(
+        lib.xyg_factorize_use_native_fixed(None, 0, 0) == -1,
+        "factorize_use_native_fixed invalid width",
     )
     category_kinds = array("B", [1, 0, 1, 0, 1])
     category_in_lens = array("I", [1, 0, 1, 0, 1])

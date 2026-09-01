@@ -9,7 +9,12 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { factorizeCategories, objectColumnIsStringlike, objectColumnIsRealNumeric } from "../src/factorize.js";
+import {
+  factorizeCategories,
+  objectColumnIsStringlike,
+  objectColumnIsRealNumeric,
+  useNativeFixedFactorizer,
+} from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe } from "../src/native.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -23,6 +28,25 @@ function mulberry32(seed) {
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+function buildFixedProbeValues(spec) {
+  const rowCount = spec.row_count;
+  if (rowCount === 0) {
+    return new Uint32Array(0);
+  }
+  if (spec.modulo != null) {
+    const out = new Uint32Array(rowCount);
+    for (let i = 0; i < rowCount; i += 1) {
+      out[i] = i % spec.modulo;
+    }
+    return out;
+  }
+  const out = new Uint32Array(rowCount);
+  for (let i = 0; i < rowCount; i += 1) {
+    out[i] = i;
+  }
+  return out;
 }
 
 function buildValues(spec) {
@@ -81,6 +105,14 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       use_native: ok === 1,
+    });
+    continue;
+  }
+  if (spec.kind === "fixed_probe") {
+    const values = buildFixedProbeValues(spec);
+    out.push({
+      name: spec.name,
+      use_native: useNativeFixedFactorizer(values, 4),
     });
     continue;
   }

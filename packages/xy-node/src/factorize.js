@@ -12,7 +12,7 @@ import {
   xyFactorizeDisplayLabels,
   xyLabelCodesFirstSeen,
   xySortedDisplayLabelRemap,
-  xyFactorizeUseNativeProbe,
+  xyFactorizeUseNativeFixed,
   xyObjectRowsAllStringlike,
   xyObjectRowsAllRealNumeric,
   xyFactorizeFixed,
@@ -22,10 +22,6 @@ import {
 } from "./native.js";
 
 export const MAX_CATEGORIES = 256;
-const FACTORIZE_PROBE_ROWS = 4096;
-const FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES = 512;
-const FACTORIZE_NEAR_UNIQUE_RATIO = 0.95;
-const FACTORIZE_NARROW_ITEMSIZE = 32;
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const FACTORIZE_CAPACITY_EXCEEDED = USIZE_MAX_64 - 1n;
 
@@ -142,49 +138,25 @@ function recordCount(data, width) {
   return data.length;
 }
 
-function recordKey(data, index, width) {
-  const byteOffset = index * width;
-  if (data instanceof Uint8Array && width > 1) {
-    const slice = new Uint8Array(data.buffer, data.byteOffset + byteOffset, width);
-    let key = "";
-    for (let i = 0; i < slice.length; i += 1) key += `\0${slice[i]}`;
-    return key;
-  }
-  if (width === 1) return data[index];
-  const slice = new Uint8Array(data.buffer, data.byteOffset + byteOffset, width);
-  let key = "";
-  for (let i = 0; i < slice.length; i += 1) key += `\0${slice[i]}`;
-  return key;
-}
-
 function decodeRecord(view, index, width) {
   if (width === 1) return view[index];
   const byteOffset = index * width;
   return new Uint8Array(view.buffer, view.byteOffset + byteOffset, width);
 }
 
-function distinctProbeCount(data, width) {
+export function useNativeFixedFactorizer(data, width) {
   const n = recordCount(data, width);
-  const probeLen = Math.min(n, FACTORIZE_PROBE_ROWS);
-  const seen = new Set();
-  for (let i = 0; i < probeLen; i += 1) {
-    const idx =
-      n <= FACTORIZE_PROBE_ROWS ? i : Math.floor((i * (n - 1)) / (probeLen - 1));
-    seen.add(recordKey(data, idx, width));
+  if (n === 0) {
+    const ok = xyFactorizeUseNativeFixed(null, 0n, BigInt(width));
+    if (ok < 0) {
+      throw new RangeError("native factorize_use_native_fixed rejected the record array");
+    }
+    return ok === 1;
   }
-  return seen.size;
-}
-
-function useNativeFixedFactorizer(data, width) {
-  const n = recordCount(data, width);
-  const distinct = distinctProbeCount(data, width);
-  const ok = xyFactorizeUseNativeProbe(
-    BigInt(distinct),
-    BigInt(Math.min(n, FACTORIZE_PROBE_ROWS)),
-    BigInt(width),
-  );
+  const bytes = data instanceof Uint8Array && width > 1 ? data : bytesView(data);
+  const ok = xyFactorizeUseNativeFixed(u8Ptr(bytes), BigInt(n), BigInt(width));
   if (ok < 0) {
-    throw new RangeError("native factorize_use_native_probe rejected the probe");
+    throw new RangeError("native factorize_use_native_fixed rejected the record array");
   }
   return ok === 1;
 }

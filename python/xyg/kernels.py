@@ -157,6 +157,7 @@ factorize_display_labels = _impl.factorize_display_labels
 label_codes_first_seen = _impl.label_codes_first_seen
 sorted_display_label_remap = _impl.sorted_display_label_remap
 factorize_use_native_probe = _impl.factorize_use_native_probe
+factorize_use_native_fixed = _impl.factorize_use_native_fixed
 category_labels = _impl.category_labels
 object_rows_all_stringlike = _impl.object_rows_all_stringlike
 object_rows_all_real_numeric = _impl.object_rows_all_real_numeric
@@ -398,6 +399,7 @@ __all__ = [
     "factorize_fixed_u8",
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
+    "factorize_use_native_fixed",
     "factorize_use_native_probe",
     "geometry_offset",
     "hash_row_ids",

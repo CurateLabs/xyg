@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 338
-#define XYG_ABI_SIGNATURE_SHA256 "bfa0f3e767223c807ab098b24618614081ea6f2104600ed5c3361b054d4b767b"
+#define XYG_ABI_VERSION 339
+#define XYG_ABI_SIGNATURE_SHA256 "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755"
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,6 +103,7 @@ size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint3
 size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity);
 size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);
 size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32_t swap_endian, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);
+int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width);
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
 uint32_t xyg_geo_column_crs(uint64_t handle);

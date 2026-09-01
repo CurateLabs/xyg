@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 338
-SIGNATURE_SHA256 = "bfa0f3e767223c807ab098b24618614081ea6f2104600ed5c3361b054d4b767b"
+ABI_VERSION = 339
+SIGNATURE_SHA256 = "170f3d8d758e9bb8260e50771d886c8dcc7378439588e545b3d6cc0ef071a755"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -378,6 +378,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_factorize_unicode1_u8_counts
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width)
+    function = lib.xyg_factorize_use_native_fixed
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32]
     # int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width)
     function = lib.xyg_factorize_use_native_probe
     function.restype = ctypes.c_int32
