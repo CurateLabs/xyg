@@ -4363,7 +4363,7 @@ class Axes(PlotTypeMixin):
             try:
                 return np.asarray(unit_converted_values(array), dtype=np.float64).reshape(-1)
             except (TypeError, ValueError):
-                if array.dtype.kind not in {"U", "S", "O", "b"}:
+                if not channels._is_categorical(array):
                     raise
             labels = array.tolist() if array.dtype.kind == "U" else channels._category_labels(array)
             positions = np.empty(len(labels), dtype=np.float64)
