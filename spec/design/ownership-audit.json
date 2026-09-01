@@ -1358,14 +1358,6 @@
       "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
     },
     {
-      "path": "packages/xy-node/src/factorize.js",
-      "current_owner": "Node host",
-      "policy": "node-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
-    },
-    {
       "path": "packages/xy-node/src/dom.js",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -1380,6 +1372,14 @@
       "disposition": "split-and-move-rust",
       "follow_up_issue": 58,
       "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/factorize.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/figure.js",
@@ -1775,11 +1775,35 @@
     },
     {
       "path": "python/xyg/_annotations.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_annotations_marks.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_annotations_rules.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_annotations_spec.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_arrowgeom.py",
@@ -1791,22 +1815,6 @@
     },
     {
       "path": "python/xyg/_benchmark_theme.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_columns.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_chromium.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1862,7 +1870,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_chrome.py",
+      "path": "python/xyg/_chromium.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1870,23 +1878,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_svg_util.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_svg_state.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_polar_svg.py",
+      "path": "python/xyg/_columns.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1902,7 +1894,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_axis_grid_svg.py",
+      "path": "python/xyg/_export_annotations_svg.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1918,7 +1910,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_baseline_svg.py",
+      "path": "python/xyg/_export_axis_grid_svg.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1927,6 +1919,22 @@
     },
     {
       "path": "python/xyg/_export_baseline_raster.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_baseline_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_chrome.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -1950,86 +1958,6 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_annotations_svg.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_marker_svg.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_path_svg.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_marks_svg.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_legend.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_legend_svg.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_legend_raster.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_marks_raster.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_polar_raster.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_export_raster_cmd.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
       "path": "python/xyg/_export_colorbar_svg.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -2046,7 +1974,111 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_export_heatmap.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_export_layout.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_legend.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_legend_raster.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_legend_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_marker_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_marks_raster.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_marks_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_path_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_polar_raster.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_polar_svg.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_raster_cmd.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_svg_state.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_export_svg_util.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2062,7 +2094,15 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_export_heatmap.py",
+      "path": "python/xyg/_facets_data.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_facets_grid.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2071,22 +2111,6 @@
     },
     {
       "path": "python/xyg/_figure.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_figure_ingest.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_figure_traces.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2110,6 +2134,30 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_figure_dom.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_figure_export.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_figure_ingest.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_figure_interaction.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -2126,14 +2174,6 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_figure_dom.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
       "path": "python/xyg/_figure_runtime.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -2142,7 +2182,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_figure_view_state.py",
+      "path": "python/xyg/_figure_traces.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2150,7 +2190,7 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
-      "path": "python/xyg/_figure_export.py",
+      "path": "python/xyg/_figure_view_state.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2278,6 +2318,134 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_marks_bar.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_contour.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_distribution.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_errorbar.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_graph.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_heatmap.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_hexbin.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_histogram.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_line.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_ribbon.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_sankey.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_scatter.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_segments.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_step.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_style.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_marks_triangle_mesh.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_native.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -2375,142 +2543,30 @@
     },
     {
       "path": "python/xyg/_raster.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_raster_figure.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_raster_render.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_sankey.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_distribution.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_style.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_bar.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_contour.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_scatter.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_errorbar.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_hexbin.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_heatmap.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_line.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_histogram.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_ribbon.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_segments.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_step.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_graph.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_sankey.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_marks_triangle_mesh.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -2599,11 +2655,27 @@
     },
     {
       "path": "python/xyg/_svg.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_svg_figure.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_svg_render.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_textblock.py",
@@ -2711,11 +2783,11 @@
     },
     {
       "path": "python/xyg/facets.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/graph_layout.py",

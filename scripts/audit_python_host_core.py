@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -41,17 +40,7 @@ LOCAL_RE = re.compile(
     r"for .+ in range\(|np\.(where|argsort|concatenate|stack))\b"
 )
 
-BLOCKER_MAP: dict[str, str] = {
-    "python/xyg/lod.py": "EncodedColumn meta + LOD host cache",
-    "python/xyg/marks.py": "marks composition / validation",
-    "python/xyg/facets.py": "facet grid orchestration",
-    "python/xyg/_figure.py": "Figure composition hub",
-    "python/xyg/_annotations.py": "annotation composition",
-    "python/xyg/_fontmetrics.py": "DejaVu metrics table (compat SVG gutters)",
-    "python/xyg/_raster.py": "raster tessellation dispatch + host geometry",
-    "python/xyg/_svg.py": "SVG path assembly + host color sample",
-    "python/xyg/channels.py": "color channel resolve / LUT pack",
-}
+BLOCKER_MAP: dict[str, str] = {}
 
 MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
     ("#851", "316", "xyg_payload_density_grid_materialize"),
@@ -193,12 +182,7 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
     ),
 )
 
-REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
-    (
-        "Secondary §302",
-        "_svg/_raster compat paths, marks/_figure composition, channels label factorization, lod cache wiring",
-    ),
-)
+REMAINING_CLOSE: tuple[tuple[str, str], ...] = ()
 
 M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#731 parent M2 kernelize _payload emit + _scene_v3 pack", "CLOSED — completed 2026-08-31"),
@@ -214,7 +198,10 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
         "CLOSED — _payload.py / _scene_v3.py marshal-only; keep-host helpers "
         "_payload_trace_materialize.py / _scene_marshal.py coerce and call Rust",
     ),
-    ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
+    (
+        "Secondary §302 composition hubs",
+        "CLOSED — marks/_figure/channels/lod/facets/_annotations/_svg/_raster split to keep-host modules",
+    ),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
 )
 
@@ -279,10 +266,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     paths = _load_paths(args.manifest)
-    if not paths:
-        print("audit_python_host_core: no python-scene-migration entries", file=sys.stderr)
-        return 1
-
     abi_version = _read_abi_version()
 
     print("python-scene-migration core-logic re-audit")
@@ -291,6 +274,71 @@ def main(argv: list[str] | None = None) -> int:
     if abi_version is not None:
         print(f"abi_version: {abi_version}")
     print()
+
+    if not paths:
+        print("No python-scene-migration production files remain.")
+        print()
+        print("§302 blocker rollup: (none)")
+        print()
+        _print_stack(
+            "Merged kernel stack on main (#640 -> #642, ABI 254-256):", MERGED_KERNEL_STACK
+        )
+        _print_stack("Merged scene lane on main (#703 -> #718, ABI 257-272):", MERGED_SCENE_LANE)
+        _print_stack(
+            "Merged payload stack on main (#719 -> #741, ABI 273-291):", MERGED_PAYLOAD_STACK
+        )
+        _print_stack(
+            "Merged payload orchestration on main (#746 -> #758, ABI 292-304, #732):",
+            MERGED_PAYLOAD_ORCHESTRATION,
+        )
+        _print_stack(
+            "Merged scene orchestration on main (#759 -> #763, ABI 305-309, #733 CLOSED):",
+            MERGED_SCENE_ORCHESTRATION,
+        )
+        _print_stack(
+            "Merged payload gather/ship on main (#765 -> #770/#732, ABI 310-315, #732 CLOSED):",
+            MERGED_PAYLOAD_GATHER_SHIP,
+        )
+        _print_stack(
+            "Merged host materialization retirement (#851/#853, ABI 316-325):",
+            MERGED_MATERIALIZATION_RETIREMENT,
+        )
+        print("M2 close contract (#731 — CLOSED 2026-08-31):")
+        print("  - #731 CLOSED: kernelize _payload emit and _scene_v3 pack close contract met.")
+        print(
+            "  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309)."
+        )
+        print(
+            "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315)."
+        )
+        print(
+            "  - Host materialization retirement CLOSED (big pushes 1-3, ABI 316-325): "
+            "_payload.py / _scene_v3.py marshal-only."
+        )
+        print(
+            "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
+            "gather/ship registry (ABI 310-315), and materialization retirement (ABI 316-325) are done."
+        )
+        print("  - Node stay-host TAP (#630-#698) merged on main.")
+        print("  - Stay-host TAP extras are inventory, not an alternate close path.")
+        print()
+        print("Remaining close blockers:")
+        for issue, desc in REMAINING_CLOSE:
+            print(f"  - {issue}: {desc}")
+        print()
+        print("#731 close checklist:")
+        for gate, status in M731_CLOSE_CHECKLIST:
+            print(f"  - {gate}: {status}")
+        print()
+        print("Totals: 0 lines, 0 delegate hooks, 0 local-orchestration hooks")
+        print(
+            "Density grid materialization is kernel-owned (ABI 316). Payload trace emit "
+            "and Scene trace pack are marshal-only via ABI 321 and ABI 317-318/323/325. "
+            "Keep-host coercion lives in _payload_trace_materialize.py and _scene_marshal.py. "
+            "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
+            "Scene pack orchestration plans are kernel-owned (#733 closed)."
+        )
+        return 0
 
     by_blocker: dict[str, list[str]] = defaultdict(list)
     total_lines = 0

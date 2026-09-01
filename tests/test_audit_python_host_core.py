@@ -17,13 +17,13 @@ def _load():
     return mod
 
 
-def test_audit_lists_eight_scene_migration_files():
+def test_audit_lists_no_scene_migration_files():
     mod = _load()
     paths = mod._load_paths(mod.MANIFEST)
-    assert len(paths) == 8
+    assert len(paths) == 0
     assert "python/xyg/_payload.py" not in paths
     assert "python/xyg/_scene_v3.py" not in paths
-    assert "python/xyg/_svg.py" in paths
+    assert "python/xyg/_svg.py" not in paths
 
 
 def test_audit_cli_exits_zero():
@@ -39,7 +39,7 @@ def test_audit_cli_exits_zero():
     )
     assert proc.returncode == 0
     assert "python-scene-migration core-logic re-audit" in proc.stdout
-    assert "§302 blocker rollup" in proc.stdout
+    assert "No python-scene-migration production files remain." in proc.stdout
     assert f"abi_version: {ABI_VERSION}" in proc.stdout
     assert "Merged scene lane on main" in proc.stdout
     assert "Merged payload stack on main" in proc.stdout
