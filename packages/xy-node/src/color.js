@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit } from "./native.js";
 import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -127,6 +127,23 @@ export function continuousDomain(values) {
   );
   if (code !== 0) throw new RangeError("invalid continuous-domain request");
   return [lo[0], hi[0]];
+}
+
+/** Admit scatter size pixel range endpoints (ABI 350). */
+export function sizeRangeAdmit(lo, hi) {
+  const outLo = new Float64Array(1);
+  const outHi = new Float64Array(1);
+  const code = Number(
+    xySizeRangeAdmit(Number(lo), Number(hi), f64Ptr(outLo), f64Ptr(outHi)),
+  );
+  if (code === -1) {
+    throw new RangeError("size_range must contain exactly two finite pixel values");
+  }
+  if (code === -2 || code === -3) {
+    throw new RangeError("size_range must be non-negative and ordered low-to-high");
+  }
+  if (code !== 0) throw new RangeError("invalid size-range-admit request");
+  return [outLo[0], outHi[0]];
 }
 
 /** Admit per-point RGB/RGBA in `[0, 1]` as contiguous Nx4 (ABI 213). */

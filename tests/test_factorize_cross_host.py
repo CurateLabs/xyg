@@ -197,6 +197,11 @@ def _python_colormap_custom_stops_gradient_case(spec: dict) -> list[list[int]]:
     return kernels.colormap_custom_stops_resolve_gradient(spec["gradient"])
 
 
+def _python_size_range_case(spec: dict) -> list[float]:
+    lo, hi = kernels.size_range_admit(float(spec["lo"]), float(spec["hi"]))
+    return [lo, hi]
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -220,6 +225,7 @@ FACTORIZE_CASES = [
         "colormap_is_builtin",
         "colormap_custom_stops_resolve_list",
         "colormap_custom_stops_resolve_gradient",
+        "size_range_admit",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -247,6 +253,7 @@ COLORMAP_CUSTOM_LIST_CASES = [
 COLORMAP_CUSTOM_GRADIENT_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_gradient"
 ]
+SIZE_RANGE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "size_range_admit"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -406,6 +413,13 @@ def test_colormap_custom_stops_gradient_cross_host(
     stops = _python_colormap_custom_stops_gradient_case(spec)
     node = node_results[spec["name"]]
     assert stops == node["stops"]
+
+
+@pytest.mark.parametrize("spec", SIZE_RANGE_CASES, ids=lambda s: s["name"])
+def test_size_range_admit_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    range_px = _python_size_range_case(spec)
+    node = node_results[spec["name"]]
+    assert range_px == node["range_px"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

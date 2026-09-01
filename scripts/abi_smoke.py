@@ -1046,6 +1046,13 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
+    lib.xyg_size_range_admit.restype = ctypes.c_int32
+    lib.xyg_size_range_admit.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6038,6 +6045,18 @@ def main() -> None:
         and abs(dlo.value + 0.5) < 1e-15
         and abs(dhi.value - 0.5) < 1e-15,
         "continuous domain zero pad",
+    )
+    s_lo = ctypes.c_double()
+    s_hi = ctypes.c_double()
+    ok(
+        lib.xyg_size_range_admit(2.0, 18.0, ctypes.byref(s_lo), ctypes.byref(s_hi)) == 0
+        and s_lo.value == 2.0
+        and s_hi.value == 18.0,
+        "size_range_admit basic",
+    )
+    ok(
+        lib.xyg_size_range_admit(4.0, 2.0, ctypes.byref(s_lo), ctypes.byref(s_hi)) == -3,
+        "size_range_admit rejects reversed range",
     )
     hex_css = array("B", b"#ff0000")
     ok(

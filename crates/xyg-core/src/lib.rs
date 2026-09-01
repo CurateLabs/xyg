@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 349;
+pub const ABI_VERSION: u32 = 350;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10261,6 +10261,33 @@ pub unsafe extern "C" fn xyg_continuous_domain(
         *out_lo = lo;
         *out_hi = hi;
         0
+    })
+}
+
+/// Admit scatter size pixel range endpoints (ABI 350).
+///
+/// Returns `0` on success and writes normalized `(lo, hi)`, or a negative
+/// [`kernels::SIZE_RANGE_*`] code.
+///
+/// # Safety
+/// `out_lo` and `out_hi` each address one writable f64.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_size_range_admit(
+    lo: f64,
+    hi: f64,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    if out_lo.is_null() || out_hi.is_null() {
+        return -4;
+    }
+    ffi_guard(-4, || match kernels::size_range_admit(lo, hi) {
+        Ok((a, b)) => {
+            *out_lo = a;
+            *out_hi = b;
+            0
+        }
+        Err(code) => code,
     })
 }
 

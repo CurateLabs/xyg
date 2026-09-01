@@ -8578,6 +8578,27 @@ pub fn min_max(data: &[f64]) -> Option<(f64, f64)> {
     min_max_impl(data, par_threads(data.len()))
 }
 
+pub const SIZE_RANGE_NONFINITE: i32 = -1;
+pub const SIZE_RANGE_NEGATIVE: i32 = -2;
+pub const SIZE_RANGE_ORDER: i32 = -3;
+
+/// Admit scatter size pixel range endpoints (ABI 350).
+///
+/// Both endpoints must be finite and non-negative with `hi >= lo`, matching
+/// Python `channels._size_range` / Node `resolveSizeChannel` range validation.
+pub fn size_range_admit(lo: f64, hi: f64) -> Result<(f64, f64), i32> {
+    if !lo.is_finite() || !hi.is_finite() {
+        return Err(SIZE_RANGE_NONFINITE);
+    }
+    if lo < 0.0 || hi < 0.0 {
+        return Err(SIZE_RANGE_NEGATIVE);
+    }
+    if hi < lo {
+        return Err(SIZE_RANGE_ORDER);
+    }
+    Ok((lo, hi))
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11041,6 +11062,15 @@ mod tests {
         assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
         assert_eq!(out[0], 0);
         assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
+    }
+
+    #[test]
+    fn size_range_admit_matches_host_policy() {
+        assert_eq!(size_range_admit(2.0, 18.0), Ok((2.0, 18.0)));
+        assert_eq!(size_range_admit(0.0, 0.0), Ok((0.0, 0.0)));
+        assert_eq!(size_range_admit(f64::NAN, 1.0), Err(SIZE_RANGE_NONFINITE));
+        assert_eq!(size_range_admit(-1.0, 2.0), Err(SIZE_RANGE_NEGATIVE));
+        assert_eq!(size_range_admit(3.0, 2.0), Err(SIZE_RANGE_ORDER));
     }
 
     #[test]

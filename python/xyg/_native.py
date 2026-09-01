@@ -9390,6 +9390,27 @@ def continuous_domain(data: npt.NDArray[np.float64]) -> tuple[float, float]:
     return (float(lo.value), float(hi.value))
 
 
+def size_range_admit(lo: float, hi: float) -> tuple[float, float]:
+    """Admit scatter size pixel range endpoints via ``xyg_size_range_admit`` (ABI 350)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_size_range_admit(
+            float(lo),
+            float(hi),
+            ctypes.byref(out_lo),
+            ctypes.byref(out_hi),
+        )
+    )
+    if code == -1:
+        raise ValueError("size_range must contain exactly two finite pixel values")
+    if code in (-2, -3):
+        raise ValueError("size_range must be non-negative and ordered low-to-high")
+    if code != 0:
+        raise ValueError("invalid size-range-admit request")
+    return (float(out_lo.value), float(out_hi.value))
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

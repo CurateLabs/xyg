@@ -480,11 +480,7 @@ def _size_range(range_px: tuple[float, float]) -> tuple[float, float]:
         lo_raw, hi_raw = range_px
     except (TypeError, ValueError) as e:
         raise ValueError("size_range must contain exactly two finite pixel values") from e
-    lo = _finite_scalar(lo_raw, "size_range[0]")
-    hi = _finite_scalar(hi_raw, "size_range[1]")
-    if lo < 0 or hi < 0 or hi < lo:
-        raise ValueError("size_range must be non-negative and ordered low-to-high")
-    return (lo, hi)
+    return kernels.size_range_admit(lo_raw, hi_raw)
 
 
 def _continuous_domain(values: npt.NDArray[np.float64]) -> tuple[float, float]:

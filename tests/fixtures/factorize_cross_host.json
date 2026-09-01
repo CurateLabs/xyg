@@ -252,6 +252,18 @@
       "name": "colormap_custom_stops_gradient",
       "kind": "colormap_custom_stops_resolve_gradient",
       "gradient": "linear-gradient(#000000, #ffffff 25%, #000000)"
+    },
+    {
+      "name": "size_range_basic",
+      "kind": "size_range_admit",
+      "lo": 2.0,
+      "hi": 18.0
+    },
+    {
+      "name": "size_range_zero",
+      "kind": "size_range_admit",
+      "lo": 0.0,
+      "hi": 0.0
     }
   ]
 }

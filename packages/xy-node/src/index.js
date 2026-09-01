@@ -258,6 +258,7 @@ export {
   clipQuantizeU8,
   quantizeUnitU8,
   continuousDomain,
+  sizeRangeAdmit,
   directRgbaAdmit,
   resolveColorChannel,
 } from "./color.js";

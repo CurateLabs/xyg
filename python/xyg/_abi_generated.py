@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 349
-SIGNATURE_SHA256 = "efc137311b516115ae7dbdea345dd47313f40cc603213b47a5ea343e23f2e1e6"
+ABI_VERSION = 350
+SIGNATURE_SHA256 = "6086775420f562e2f6e6689e1d9d5ec84221fc2b0e005499248fb19c6dba0198"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1494,6 +1494,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_size_range_admit(double lo, double hi, double * out_lo, double * out_hi)
+    function = lib.xyg_size_range_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_sorted_display_label_remap(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, const uint64_t * in_counts, uint8_t * out_remap, size_t out_remap_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap, uint64_t * out_category_counts, size_t out_category_counts_cap)
     function = lib.xyg_sorted_display_label_remap
     function.restype = ctypes.c_size_t

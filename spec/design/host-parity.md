@@ -876,6 +876,10 @@ Python `is_colormap`, `_is_resolved_stops`, and `_validate.colormap_stops` /
 Node `colormapIsBuiltin`, `colormapResolvedStopsAdmit`, and
 `colormapCustomStopsResolve*` share ABI 349 colormap custom-stop resolve;
 pair-shape validation and authoring error text stay host-side.
+Python `channels._size_range` and Node `resolveSizeChannel` / `sizeRangeAdmit`
+validate scatter size pixel endpoints through ABI 350 `xyg_size_range_admit`;
+Node continuous size domains use ABI 213 `continuousDomain` like Python
+`_continuous_domain`.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

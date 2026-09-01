@@ -190,6 +190,7 @@ arrow_taper_polygon = _impl.arrow_taper_polygon
 arrow_trim_polyline_end = _impl.arrow_trim_polyline_end
 min_max = _impl.min_max
 continuous_domain = _impl.continuous_domain
+size_range_admit = _impl.size_range_admit
 direct_rgba_admit = _impl.direct_rgba_admit
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -593,6 +594,7 @@ __all__ = [
     "scene_xytc_trace_dispatch_plan",
     "screen_shape",
     "sector_triangles",
+    "size_range_admit",
     "sorted_display_label_remap",
     "spectrogram",
     "stacked_bounds",
