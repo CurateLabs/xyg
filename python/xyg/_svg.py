@@ -34,12 +34,14 @@ from ._export_chrome import (
     _AXIS,
     _GRID,
     _TEXT,
+    _colorbar_tick_target,  # noqa: F401
     apply_export_background,
     legend_options_with_slot,
     slot_font_size,
     slot_styles,
     slot_text_color,
 )
+from ._export_colormap import COLORMAP_STOPS  # noqa: F401
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
 from ._export_colorbar_svg import _colorbar
 from ._export_heatmap import (
@@ -96,6 +98,7 @@ from ._export_path_svg import (
     _curve_path,
     _monotone_tangents,  # noqa: F401
 )
+from ._export_svg_state import _Svg
 from ._export_polar_svg import (
     _polar_frame_path,
     _polar_grid,
@@ -125,17 +128,21 @@ from ._export_ticks import (
     _axis_tick_sides,
     _colorbar_right_axis_room,
     _fmt_axis,  # noqa: F401
+    _fmt_log,  # noqa: F401
     _preserve_scene_chrome_for_axis_visibility,
     _tick_label_anchor,
     _tick_text,  # noqa: F401
+    _tick_window,  # noqa: F401
+    _tick_window_filter,  # noqa: F401
     axis_ticks,
     minor_axis_ticks,
 )
 from ._fontmetrics import estimated_text_width as _estimated_text_width  # noqa: F401
 from ._layout import (
-    _axis_scales,
+    THETA_ZERO,  # noqa: F401
     _PolarProjection,
     _Scale,
+    _axis_scales,
     polar_wedge_points,  # noqa: F401
 )
 from ._paint import (
@@ -146,6 +153,12 @@ from ._paint import (
 )
 from ._paint import (
     colormap_lut as _colormap_lut,
+)
+from ._paint import (
+    colormap_stops as _colormap_stops,  # noqa: F401
+)
+from ._paint import (
+    physical_density_alpha as _physical_density_alpha,  # noqa: F401
 )
 from ._paint import (
     fill_opacity as _fill_opacity,
@@ -165,393 +178,6 @@ from ._paint import (
 from .config import DEFAULT_PALETTE
 
 
-def _flag_stops() -> list[tuple[int, int, int]]:
-    """Matplotlib's high-frequency ``flag`` map at the native 256 LUT positions."""
-    x = np.linspace(0.0, 1.0, 256)
-    channels = np.column_stack(
-        (
-            0.75 * np.sin((x * 31.5 + 0.25) * np.pi) + 0.5,
-            np.sin(x * 31.5 * np.pi),
-            0.75 * np.sin((x * 31.5 - 0.25) * np.pi) + 0.5,
-        )
-    )
-    # Match Matplotlib's ``bytes=True`` conversion, which truncates rather than
-    # rounds each clipped channel after scaling it to the uint8 range.
-    rgb = (np.clip(channels, 0.0, 1.0) * 255.0).astype(np.uint8)
-    return [(int(row[0]), int(row[1]), int(row[2])) for row in rgb]
-
-
-# Built-in tables mirrored from `crates/xyg-engine/src/colormap.rs` and
-# `js/src/10_colormaps.ts` (§36) — native ABI 135 is authoritative for hosts;
-# this copy stays for JS-sync tests and gallery goldens.
-COLORMAP_STOPS: dict[str, list[tuple[int, int, int]]] = {
-    "binary": [(255, 255, 255), (0, 0, 0)],
-    "flag": _flag_stops(),
-    "reds": [
-        (255, 245, 240),
-        (254, 229, 216),
-        (253, 202, 181),
-        (252, 171, 143),
-        (252, 138, 106),
-        (251, 105, 74),
-        (241, 68, 50),
-        (217, 37, 35),
-        (188, 20, 26),
-        (152, 12, 19),
-        (103, 0, 13),
-    ],
-    "bone": [
-        (0, 0, 0),
-        (22, 22, 30),
-        (45, 45, 62),
-        (66, 66, 93),
-        (89, 92, 121),
-        (112, 123, 144),
-        (134, 154, 166),
-        (157, 185, 188),
-        (185, 210, 210),
-        (221, 233, 233),
-        (255, 255, 255),
-    ],
-    "autumn": [
-        (255, 0, 0),
-        (255, 25, 0),
-        (255, 51, 0),
-        (255, 76, 0),
-        (255, 102, 0),
-        (255, 128, 0),
-        (255, 153, 0),
-        (255, 179, 0),
-        (255, 204, 0),
-        (255, 230, 0),
-        (255, 255, 0),
-    ],
-    "winter": [
-        (0, 0, 255),
-        (0, 25, 242),
-        (0, 51, 230),
-        (0, 76, 217),
-        (0, 102, 204),
-        (0, 128, 191),
-        (0, 153, 178),
-        (0, 179, 166),
-        (0, 204, 153),
-        (0, 230, 140),
-        (0, 255, 128),
-    ],
-    "bupu": [
-        (247, 252, 253),
-        (229, 239, 246),
-        (204, 221, 236),
-        (178, 202, 225),
-        (154, 180, 214),
-        (140, 149, 198),
-        (140, 116, 181),
-        (138, 81, 165),
-        (133, 45, 144),
-        (118, 12, 113),
-        (77, 0, 75),
-    ],
-    "gray": [
-        (0, 0, 0),
-        (25, 25, 25),
-        (51, 51, 51),
-        (76, 76, 76),
-        (102, 102, 102),
-        (128, 128, 128),
-        (153, 153, 153),
-        (179, 179, 179),
-        (204, 204, 204),
-        (230, 230, 230),
-        (255, 255, 255),
-    ],
-    "viridis": [
-        (68, 1, 84),
-        (72, 36, 117),
-        (65, 68, 135),
-        (53, 95, 141),
-        (42, 120, 142),
-        (33, 145, 140),
-        (34, 168, 132),
-        (68, 191, 112),
-        (122, 209, 81),
-        (189, 223, 38),
-        (253, 231, 37),
-    ],
-    "plasma": [
-        (13, 8, 135),
-        (65, 4, 157),
-        (106, 0, 168),
-        (143, 13, 164),
-        (177, 42, 144),
-        (204, 71, 120),
-        (225, 100, 98),
-        (242, 132, 75),
-        (252, 166, 54),
-        (252, 206, 37),
-        (240, 249, 33),
-    ],
-    "inferno": [
-        (0, 0, 4),
-        (22, 11, 57),
-        (66, 10, 104),
-        (106, 23, 110),
-        (147, 38, 103),
-        (188, 55, 84),
-        (221, 81, 58),
-        (243, 120, 25),
-        (252, 165, 10),
-        (246, 215, 70),
-        (252, 255, 164),
-    ],
-    "magma": [
-        (0, 0, 4),
-        (20, 14, 54),
-        (59, 15, 112),
-        (100, 26, 128),
-        (140, 41, 129),
-        (183, 55, 121),
-        (222, 73, 104),
-        (247, 112, 92),
-        (254, 159, 109),
-        (254, 207, 146),
-        (252, 253, 191),
-    ],
-    "cividis": [
-        (0, 34, 78),
-        (8, 51, 112),
-        (53, 69, 108),
-        (79, 87, 108),
-        (102, 105, 112),
-        (125, 124, 120),
-        (148, 142, 119),
-        (174, 163, 113),
-        (200, 184, 102),
-        (229, 207, 82),
-        (254, 232, 56),
-    ],
-    "coolwarm": [
-        (59, 76, 192),
-        (89, 119, 227),
-        (123, 159, 249),
-        (158, 190, 255),
-        (192, 212, 245),
-        (221, 220, 220),
-        (242, 203, 183),
-        (247, 172, 142),
-        (238, 132, 104),
-        (214, 82, 68),
-        (180, 4, 38),
-    ],
-    "turbo": [
-        (48, 18, 59),
-        (69, 89, 203),
-        (62, 155, 254),
-        (25, 213, 205),
-        (70, 248, 132),
-        (164, 252, 60),
-        (225, 221, 55),
-        (254, 164, 49),
-        (240, 91, 18),
-        (195, 37, 3),
-        (122, 4, 3),
-    ],
-    "rainbow": [
-        (128, 0, 255),
-        (78, 77, 252),
-        (25, 150, 243),
-        (24, 205, 228),
-        (77, 243, 206),
-        (128, 255, 180),
-        (178, 243, 150),
-        (230, 205, 115),
-        (255, 150, 79),
-        (255, 77, 39),
-        (255, 0, 0),
-    ],
-    "jet": [
-        (0, 0, 128),
-        (0, 0, 241),
-        (0, 76, 255),
-        (0, 176, 255),
-        (41, 255, 206),
-        (125, 255, 122),
-        (206, 255, 41),
-        (255, 196, 0),
-        (255, 104, 0),
-        (241, 8, 0),
-        (128, 0, 0),
-    ],
-    "rdgy": [
-        (103, 0, 31),
-        (177, 24, 43),
-        (214, 96, 77),
-        (243, 164, 129),
-        (253, 219, 199),
-        (254, 254, 254),
-        (224, 224, 224),
-        (185, 185, 185),
-        (135, 135, 135),
-        (76, 76, 76),
-        (26, 26, 26),
-    ],
-    "rdbu": [
-        (103, 0, 31),
-        (177, 24, 43),
-        (214, 96, 77),
-        (243, 164, 129),
-        (253, 219, 199),
-        (246, 247, 247),
-        (209, 229, 240),
-        (144, 196, 221),
-        (67, 147, 195),
-        (32, 101, 171),
-        (5, 48, 97),
-    ],
-    "blues": [
-        (247, 251, 255),
-        (227, 238, 249),
-        (208, 225, 242),
-        (183, 212, 234),
-        (148, 196, 223),
-        (106, 174, 214),
-        (74, 152, 201),
-        (46, 126, 188),
-        (23, 100, 171),
-        (8, 74, 145),
-        (8, 48, 107),
-    ],
-    "purples": [
-        (252, 251, 253),
-        (242, 240, 247),
-        (226, 226, 239),
-        (206, 207, 229),
-        (182, 182, 216),
-        (158, 154, 200),
-        (134, 131, 189),
-        (114, 98, 172),
-        (97, 64, 155),
-        (79, 31, 139),
-        (63, 0, 125),
-    ],
-    "pubu": [
-        (255, 247, 251),
-        (240, 234, 244),
-        (219, 218, 235),
-        (192, 201, 226),
-        (156, 185, 217),
-        (115, 169, 207),
-        (66, 149, 195),
-        (24, 124, 182),
-        (5, 103, 162),
-        (4, 83, 130),
-        (2, 56, 88),
-    ],
-    "piyg": [
-        (142, 1, 82),
-        (196, 26, 124),
-        (222, 119, 174),
-        (241, 181, 217),
-        (253, 224, 239),
-        (247, 247, 246),
-        (230, 245, 208),
-        (183, 224, 133),
-        (127, 188, 65),
-        (76, 145, 33),
-        (39, 100, 25),
-    ],
-    "prgn": [
-        (64, 0, 75),
-        (117, 41, 130),
-        (153, 112, 171),
-        (193, 164, 206),
-        (231, 212, 232),
-        (246, 247, 246),
-        (217, 240, 211),
-        (165, 218, 159),
-        (90, 174, 97),
-        (26, 119, 54),
-        (0, 68, 27),
-    ],
-    "rdylgn": [
-        (165, 0, 38),
-        (214, 47, 39),
-        (244, 109, 67),
-        (253, 173, 96),
-        (254, 224, 139),
-        (254, 255, 190),
-        (217, 239, 139),
-        (165, 216, 106),
-        (102, 189, 99),
-        (25, 151, 80),
-        (0, 104, 55),
-    ],
-    "rdylbu": [
-        (165, 0, 38),
-        (214, 47, 38),
-        (244, 109, 67),
-        (252, 172, 96),
-        (254, 224, 144),
-        (254, 254, 192),
-        (224, 243, 247),
-        (169, 216, 232),
-        (116, 173, 209),
-        (68, 115, 179),
-        (49, 54, 149),
-    ],
-    "ylgn": [
-        (255, 255, 229),
-        (248, 252, 194),
-        (229, 244, 171),
-        (200, 232, 154),
-        (162, 216, 137),
-        (119, 197, 120),
-        (75, 176, 98),
-        (46, 146, 76),
-        (21, 120, 62),
-        (0, 96, 51),
-        (0, 69, 41),
-    ],
-    "wistia": [
-        (228, 255, 122),
-        (238, 245, 84),
-        (249, 236, 45),
-        (255, 223, 21),
-        (255, 206, 10),
-        (255, 188, 0),
-        (255, 177, 0),
-        (255, 165, 0),
-        (254, 153, 0),
-        (253, 139, 0),
-        (252, 127, 0),
-    ],
-    "puor": [
-        (127, 59, 8),
-        (177, 87, 6),
-        (224, 130, 20),
-        (252, 182, 97),
-        (254, 224, 182),
-        (246, 246, 246),
-        (216, 218, 235),
-        (177, 169, 209),
-        (128, 115, 172),
-        (83, 38, 134),
-        (45, 0, 75),
-    ],
-    "spectral": [
-        (158, 1, 66),
-        (212, 61, 79),
-        (244, 109, 67),
-        (253, 173, 96),
-        (254, 224, 139),
-        (255, 255, 190),
-        (230, 245, 152),
-        (170, 220, 164),
-        (102, 194, 165),
-        (51, 135, 188),
-        (94, 79, 162),
-    ],
-}
 
 
 # Unresolved CSS paints use native `STATIC_COLOR_FALLBACK_RGBA8` via
@@ -608,119 +234,6 @@ STATIC_STYLED_SLOTS: tuple[str, ...] = (
     "colorbar_title",
     "colorbar_tick",
 )
-
-
-class _Svg:
-    """One export pass: collects defs + body elements, then assembles."""
-
-    def __init__(self, id_prefix: str = "") -> None:
-        self.defs: list[str] = []
-        self.body: list[str] = []
-        self._uid = 0
-        # Composed documents (facet grids) nest several exports into one SVG;
-        # the prefix keeps ids unique so url(#...) refs stay panel-local.
-        self._id_prefix = id_prefix
-
-    def uid(self, prefix: str) -> str:
-        self._uid += 1
-        return f"{self._id_prefix}{prefix}{self._uid}"
-
-    def gradient(self, fill: dict[str, Any], mark_color: str, plot: Optional[dict] = None) -> str:
-        """Register a <linearGradient> for a validated fill spec; returns url(#id).
-
-        Mark space maps to each element's bounding box (exact for bars/rects;
-        the area approximation is documented). Plot space maps to the plot rect.
-        """
-        gid = self.uid("g")
-        direction = fill.get("dir", "down")
-        # Gradient line start/end per CSS: "down" starts at the top.
-        ends = {
-            "down": (0, 0, 0, 1),
-            "up": (0, 1, 0, 0),
-            "right": (0, 0, 1, 0),
-            "left": (1, 0, 0, 0),
-        }[direction if direction in ("down", "up", "left", "right") else "down"]
-        if fill.get("space") == "plot" and plot:
-            x0 = plot["x"] + ends[0] * plot["w"]
-            y0 = plot["y"] + ends[1] * plot["h"]
-            x1 = plot["x"] + ends[2] * plot["w"]
-            y1 = plot["y"] + ends[3] * plot["h"]
-            units = f'gradientUnits="userSpaceOnUse" x1="{_num(x0)}" y1="{_num(y0)}" x2="{_num(x1)}" y2="{_num(y1)}"'
-        else:
-            units = f'x1="{ends[0]}" y1="{ends[1]}" x2="{ends[2]}" y2="{ends[3]}"'
-        raw_stops = fill.get("stops", [])
-        resolved = [_css(c, mark_color) for _t, c in raw_stops]
-        stops_out: list[str] = []
-        for index, ((t, raw_color), color) in enumerate(zip(raw_stops, resolved, strict=True)):
-            offset = _num(t * 100)
-            if str(raw_color).strip().lower() != "transparent":
-                escaped = escape(color, {chr(34): "&quot;"})
-                stops_out.append(f'<stop offset="{offset}%" stop-color="{escaped}"/>')
-                continue
-
-            # SVG interpolates stop RGB independently from stop opacity. A
-            # literal `transparent` stop is transparent black, which makes a
-            # colored fade pass through a muddy gray fringe. Give the zero-
-            # opacity stop the adjacent visible hue instead, matching the
-            # browser renderer's premultiplied-alpha interpolation. When a
-            # transparent stop sits between two different colors, duplicate
-            # it at the same offset; the invisible color switch preserves the
-            # hue on both segments.
-            previous = next(
-                (
-                    resolved[i]
-                    for i in range(index - 1, -1, -1)
-                    if str(raw_stops[i][1]).strip().lower() != "transparent"
-                ),
-                None,
-            )
-            following = next(
-                (
-                    resolved[i]
-                    for i in range(index + 1, len(raw_stops))
-                    if str(raw_stops[i][1]).strip().lower() != "transparent"
-                ),
-                None,
-            )
-            transparent_colors = [previous or following or mark_color]
-            if previous and following and previous != following:
-                transparent_colors.append(following)
-            for transparent_color in transparent_colors:
-                escaped = escape(transparent_color, {chr(34): "&quot;"})
-                stops_out.append(
-                    f'<stop offset="{offset}%" stop-color="{escaped}" stop-opacity="0"/>'
-                )
-        stops = "".join(stops_out)
-        self.defs.append(f'<linearGradient id="{gid}" {units}>{stops}</linearGradient>')
-        return f"url(#{gid})"
-
-    def gradient_vector(
-        self, x0: float, y0: float, x1: float, y1: float, stops: list[tuple[float, str, float]]
-    ) -> str:
-        """Register a two-point <linearGradient> in user space; returns url(#id).
-
-        `gradient()` above is closed over four axis-aligned directions, which is
-        the right vocabulary for a bar or an area but cannot express a ribbon's
-        gradient — that one runs along the flow, from one face to the other, and
-        every band in a diagram has its own. Hence an explicit endpoint pair.
-        Each stop is ``(offset, color, opacity)``: per-stop opacity is how the
-        alpha channel interpolates along the vector, exactly as the raster's
-        RGBA stops and the client's `mix` do. `userSpaceOnUse` and
-        `stop-opacity` are both in the PDF converter's allowlist, so this
-        survives PDF export unchanged.
-        """
-        gid = self.uid("g")
-        units = (
-            f'gradientUnits="userSpaceOnUse" x1="{_num(x0)}" y1="{_num(y0)}" '
-            f'x2="{_num(x1)}" y2="{_num(y1)}"'
-        )
-        parts = []
-        for offset, color, opacity in stops:
-            escaped = escape(color, {chr(34): "&quot;"})
-            alpha = f' stop-opacity="{_num(opacity)}"' if opacity < 1 else ""
-            parts.append(f'<stop offset="{_num(offset * 100)}%" stop-color="{escaped}"{alpha}/>')
-        self.defs.append(f'<linearGradient id="{gid}" {units}>{"".join(parts)}</linearGradient>')
-        return f"url(#{gid})"
 
 
 # ---------------------------------------------------------------------------
