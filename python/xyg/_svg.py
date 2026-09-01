@@ -5141,17 +5141,7 @@ def _rect_svg_styles(
 
     face = _trace_paint_rgba(trace, "color", n, fallback, read)
     fills_rgba = _paint.effective_rgba(face, trace, read, component="fill", default_opacity=0.85)
-    if (trace.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_face = face
-    elif trace.get("stroke") is not None:
-        stroke_face = _trace_paint_rgba(trace, "stroke", n, fallback, read)
-    elif style.get("stroke") is not None:
-        stroke_face = np.tile(
-            np.asarray(_paint_rgba8(_css(style.get("stroke"), fallback)), dtype=np.float64) / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_face = face
+    stroke_face = _paint.trace_stroke_intrinsic(trace, style, n, fallback, read, face)
     strokes = _paint.effective_rgba(
         stroke_face, trace, read, component="stroke", default_opacity=0.85
     )

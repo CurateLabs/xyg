@@ -2682,21 +2682,8 @@ def _rect_style_arrays(
         _paint.effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
     )
     style = trace.get("style") or {}
-    if (trace.get("stroke") or {}).get("mode") == "match_fill":
-        stroke_face = face
-    elif trace.get("stroke") is not None:
-        stroke_face = _trace_paint_rgba(trace, "stroke", n, fallback, read)
-    elif style.get("stroke") is not None:
-        stroke_face = np.tile(
-            np.asarray(_parse_color(_css(style.get("stroke"), fallback)), dtype=np.float64) / 255.0,
-            (n, 1),
-        )
-    else:
-        stroke_face = face
-    strokes = _rgba8(
-        _paint.effective_rgba(
-            stroke_face, trace, read, component="stroke", default_opacity=default_opacity
-        )
+    strokes = _paint.effective_stroke_rgba8(
+        trace, style, n, fallback, read, face, default_opacity=default_opacity
     )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
