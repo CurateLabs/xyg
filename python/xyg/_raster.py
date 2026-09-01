@@ -25,12 +25,19 @@ from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
+from ._export_annotations import (
+    _annotation_connector_unclipped,
+    _annotation_first_baseline,
+    _axis_label_geometry,
+    annotation_label_placement,
+)
 from ._export_chrome import (
     _AXIS,
     _AXIS_GRID_DASHES,
     _GRID,
     _TEXT,
     COLORBAR_FONT_SIZE,
+    _colorbar_tick_target,
     apply_export_background,
     legend_options_with_slot,
     slot_font_size,
@@ -59,6 +66,7 @@ from ._export_ticks import (
     _axis_tick_label_strategy,
     _axis_tick_sides,
     _colorbar_right_axis_room,
+    _fmt_log,
     _preserve_scene_chrome_for_axis_visibility,
     _tick_label_anchor,
     axis_ticks,
@@ -145,13 +153,7 @@ from ._paint import (
 from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
-from ._svg import (
-    DEFAULT_PALETTE,
-    _annotation_connector_unclipped,
-    _annotation_first_baseline,
-    _axis_label_geometry,
-    annotation_label_placement,
-)
+from .config import DEFAULT_PALETTE
 
 (
     _CLIP,
@@ -3117,7 +3119,6 @@ def _emit_colorbar(
     title_paint = _parse_color(slot_text_color(title_slot, text_color))
     tick_size = slot_font_size(tick_slot, COLORBAR_FONT_SIZE)
     tick_paint = _parse_color(slot_text_color(tick_slot, text_color))
-    from ._svg import _colorbar_tick_target, _fmt_log
 
     orientation = options.get("orientation", "vertical")
     shrink = float(options.get("shrink", 1.0))

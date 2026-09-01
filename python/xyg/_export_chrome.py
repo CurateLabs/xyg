@@ -23,6 +23,12 @@ _AXIS_GRID_DASHES = {
 #: different one from its document root.
 COLORBAR_FONT_SIZE = 10.0
 
+
+def _colorbar_tick_target(length: float) -> int:
+    """Major-tick budget for the rendered colorbar length in CSS pixels."""
+    return max(2, min(8, int(max(0.0, float(length)) // 48.0) + 1))
+
+
 #: `styles={"legend": ...}` is CSS; `xyg.legend(style=...)` reaches the writers
 #: under the browser's camelCase property spelling. Same declaration, two
 #: spellings — the writers key on the second, so the first is translated.
