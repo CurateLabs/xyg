@@ -13,7 +13,6 @@ use crate::kernels::{
 use crate::scene_pack_orchestrate::scene_figure_support_trace_dispatch_plan;
 use crate::scene_figure_support_pack::{
     scene_figure_support_pack, FigureSupportAxisInput, FigureSupportTraceInput,
-    SCENE_FIGURE_SUPPORT_PACK_MAX,
 };
 use crate::scene_pack_orchestrate::scene_figure_support_figure_plan;
 

@@ -16221,6 +16221,7 @@ pub struct XygPayloadDensityGridMaterializeOut {
     pub visible_sel_len: usize,
 }
 
+#[allow(dead_code)]
 fn density_emit_meta_from_c(c: &XygDensityEmitMeta) -> density_emit::DensityEmitMeta {
     density_emit::DensityEmitMeta {
         grid_path: c.grid_path,

@@ -46,9 +46,6 @@ fn put_keys(buf: &mut Vec<u8>, keys: &[String]) -> Result<(), i32> {
 
 fn put_axes(buf: &mut Vec<u8>, axes: &[FigureSupportAxisInput]) -> Result<(), i32> {
     for axis in axes {
-        if axis.axis_code > 255 {
-            return Err(-1);
-        }
         buf.push(axis.axis_code);
         buf.extend_from_slice(&[0, 0, 0]);
         if axis.keys.len() > u32::MAX as usize {

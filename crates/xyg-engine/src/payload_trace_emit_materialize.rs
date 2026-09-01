@@ -20,10 +20,10 @@ use crate::payload_emit::{
     PAYLOAD_CHAN_SHIP_COLOR_SIZE, PAYLOAD_CHAN_SHIP_STYLE, PAYLOAD_CHAN_SLOT_COLOR,
     PAYLOAD_CHAN_SLOT_COLOR2, PAYLOAD_CHAN_SLOT_STROKE, PAYLOAD_CHAN_WIRE_ROLE_COLOR,
     PAYLOAD_CHAN_WIRE_ROLE_SIZE, PAYLOAD_CHAN_WIRE_ROLE_STYLE, PAYLOAD_COL_KEY_POS,
-    PAYLOAD_COL_KEY_VALUE0, PAYLOAD_COL_KEY_VALUE1, PAYLOAD_COL_SCALE_X, PAYLOAD_COL_SCALE_Y,
-    PAYLOAD_COL_SHIP_F64, PAYLOAD_COL_SHIP_OFFSET, PAYLOAD_COL_SHIP_VALUES,
+    PAYLOAD_COL_KEY_VALUE0, PAYLOAD_COL_KEY_VALUE1, PAYLOAD_COL_SCALE_Y, PAYLOAD_COL_SHIP_OFFSET,
+    PAYLOAD_COL_SHIP_VALUES,
     PAYLOAD_GATHER_M4, PAYLOAD_GATHER_RECT_FINITE, PAYLOAD_GATHER_SEGMENTS,
-    PAYLOAD_GATHER_VALID_INDICES, PAYLOAD_GATHER_VISIBLE_SEL, PAYLOAD_HEATMAP_PATH_GRID,
+    PAYLOAD_GATHER_VALID_INDICES, PAYLOAD_GATHER_VISIBLE_SEL,
     PAYLOAD_HEATMAP_PATH_RGBA, PAYLOAD_NONXY_KIND_HEXBIN, PAYLOAD_NONXY_KIND_RECT,
     PAYLOAD_SEGMENTS_TIER_DECIMATED, PAYLOAD_SHIP_CHANNELS_ALWAYS, PAYLOAD_SHIP_CHANNELS_IF_COLOR,
     PAYLOAD_TRACE_SLOT_BASE, PAYLOAD_TRACE_SLOT_X, PAYLOAD_TRACE_SLOT_X0, PAYLOAD_TRACE_SLOT_X1,
@@ -190,12 +190,18 @@ fn col_values<'a>(cols: &'a [PayloadTraceColumnIn<'a>], idx: usize) -> Option<&'
 fn apply_sel(values: &[f64], sel: Option<&[u32]>) -> Result<Vec<f64>, i32> {
     match sel {
         None => Ok(values.to_vec()),
-        Some(sel) if sel.is_empty() => Ok(Vec::new()),
+        Some([]) => Ok(Vec::new()),
         Some(sel) => sel
             .iter()
             .map(|&i| values.get(i as usize).copied().ok_or(-1))
             .collect(),
     }
+}
+
+fn apply_sel_u32(values: &[u32], sel: &[u32]) -> Result<Vec<u32>, i32> {
+    sel.iter()
+        .map(|&i| values.get(i as usize).copied().ok_or(-1))
+        .collect()
 }
 
 fn combine_sel(outer: Option<&[u32]>, inner: &[u32]) -> Vec<u32> {
@@ -425,17 +431,24 @@ pub fn payload_trace_emit_materialize(inp: &PayloadTraceEmitMaterializeIn<'_>) -
         let n_out = payload_segments_emit_gather(inp.kind, n, inp.segment_count as usize, f64::from(inp.px_width), &mut tier, &mut roles, &mut keep, &mut idx, &mut src, &mut rl).ok_or(-1)?;
         if keep == 0 { idx.truncate(n_out); sel = Some(idx); dec = tier == PAYLOAD_SEGMENTS_TIER_DECIMATED; }
         if roles != 0 {
-            src.truncate(n_out); rl.truncate(n_out);
-            if let Some(ref s) = sel { let mut ns = Vec::with_capacity(s.len()); let mut nr = Vec::with_capacity(s.len()); for &i in s { ns.push(src[i as usize]); nr.push(rl[i as usize]); } src = ns; rl = nr; }
+            src.truncate(n_out);
+            rl.truncate(n_out);
             ch_sel = sel.clone();
-            if inp.kind == "errorbar" && inp.has_transition_keys != 0 { attempt_role = 1; }
+            if inp.kind == "errorbar" && inp.has_transition_keys != 0 {
+                attempt_role = 1;
+            }
         }
         let _x0g = apply_sel(x0, sel.as_deref())?;
         let _x1g = apply_sel(col_values(&inp.columns, PAYLOAD_TRACE_COL_X1).ok_or(-1)?, sel.as_deref())?;
         let _y0g = apply_sel(col_values(&inp.columns, PAYLOAD_TRACE_COL_Y0).ok_or(-1)?, sel.as_deref())?;
         let _y1g = apply_sel(col_values(&inp.columns, PAYLOAD_TRACE_COL_Y1).ok_or(-1)?, sel.as_deref())?;
         if let Some(f) = rect_finite_sel(&inp.columns, x0.len(), &inp.color_ch)? {
-            sel = Some(if let Some(ref s) = sel { combine_sel(Some(s), &f) } else { f }); ch_sel = sel.clone();
+            if roles != 0 && keep != 0 {
+                src = apply_sel_u32(&src, &f)?;
+                rl = apply_sel_u32(&rl, &f)?;
+            }
+            sel = Some(if let Some(ref s) = sel { combine_sel(Some(s), &f) } else { f });
+            ch_sel = sel.clone();
         }
         if attempt_role != 0 && !dec {
             let lo = inp.transition_keys_lo.ok_or(-1)?; let hi = inp.transition_keys_hi.ok_or(-1)?;

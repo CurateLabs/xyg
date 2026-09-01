@@ -311,10 +311,10 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
     let Some(y_label) = string_ref_opt(&input.y_label) else {
         return -1;
     };
-    let Some(x_format) = string_ref_opt(&input.x_format) else {
+    let Some(_x_format) = string_ref_opt(&input.x_format) else {
         return -1;
     };
-    let Some(y_format) = string_ref_opt(&input.y_format) else {
+    let Some(_y_format) = string_ref_opt(&input.y_format) else {
         return -1;
     };
     let Some(x_major_b) = scene_optional_f64(x_major, input.x_major_len) else {
@@ -359,44 +359,63 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
         color: abi!(opt_str(&leg.color)),
         background: abi!(opt_str(&leg.background)),
     };
-    let mut colorbar_stops_owned: Vec<scene_chrome_pack::ChromeColorbarStop> = Vec::new();
-    let mut colorbar_ticks_owned: Vec<f64> = Vec::new();
-    let colorbar = if input.colorbar_present != 0 {
+    struct OwnedColorbar<'cb> {
+        stops: Vec<scene_chrome_pack::ChromeColorbarStop>,
+        ticks: Vec<f64>,
+        title: Option<&'cb str>,
+        domain_lo: f64,
+        domain_hi: f64,
+        side_bottom: i32,
+        invalid_side: i32,
+        minor_ticks: i32,
+        text_rgba: [u8; 4],
+    }
+    let owned_colorbar = if input.colorbar_present != 0 {
         let cb = &input.colorbar;
         let stop_count = cb.stop_count as usize;
         let Some(stops_blob) = scene_optional_bytes(colorbar_stops, stop_count * 12) else {
             return -1;
         };
-        colorbar_stops_owned = Vec::with_capacity(stop_count);
+        let mut stops = Vec::with_capacity(stop_count);
         for index in 0..stop_count {
             let at = index * 12;
             let value = f64::from_le_bytes(stops_blob[at..at + 8].try_into().unwrap());
             let rgba: [u8; 4] = stops_blob[at + 8..at + 12].try_into().unwrap();
-            colorbar_stops_owned.push(scene_chrome_pack::ChromeColorbarStop { value, rgba });
+            stops.push(scene_chrome_pack::ChromeColorbarStop { value, rgba });
         }
         let tick_count = cb.tick_count as usize;
         let Some(ticks) = scene_optional_f64(colorbar_ticks, tick_count) else {
             return -1;
         };
-        colorbar_ticks_owned = ticks.to_vec();
-        Some(scene_chrome_pack::ChromeColorbarInput {
+        Some(OwnedColorbar {
+            stops,
+            ticks: ticks.to_vec(),
+            title: abi!(opt_str(&cb.title)),
             domain_lo: cb.domain_lo,
             domain_hi: cb.domain_hi,
-            stops: &colorbar_stops_owned,
             side_bottom: cb.side_bottom,
             invalid_side: cb.invalid_side,
             minor_ticks: cb.minor_ticks,
-            title: abi!(opt_str(&cb.title)),
             text_rgba: cb.text_rgba,
-            ticks: if tick_count == 0 {
-                None
-            } else {
-                Some(colorbar_ticks_owned.as_slice())
-            },
         })
     } else {
         None
     };
+    let colorbar = owned_colorbar.as_ref().map(|owned| scene_chrome_pack::ChromeColorbarInput {
+        domain_lo: owned.domain_lo,
+        domain_hi: owned.domain_hi,
+        stops: &owned.stops,
+        side_bottom: owned.side_bottom,
+        invalid_side: owned.invalid_side,
+        minor_ticks: owned.minor_ticks,
+        title: owned.title,
+        text_rgba: owned.text_rgba,
+        ticks: if owned.ticks.is_empty() {
+            None
+        } else {
+            Some(owned.ticks.as_slice())
+        },
+    });
     let pack_input = scene_chrome_pack::SceneChromePackInput {
         width: input.width,
         height: input.height,
@@ -846,8 +865,8 @@ pub struct XygXyafBulkAnnotationIn {
     pub style: XygXyafBulkStyleIn,
 }
 
-unsafe fn read_style_extra_keys<'a>(
-    blob: &'a [u8],
+unsafe fn read_style_extra_keys(
+    blob: &[u8],
     key_count: u32,
 ) -> Result<(Vec<String>, usize), i32> {
     let mut extra_keys = Vec::with_capacity(key_count as usize);

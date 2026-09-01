@@ -624,12 +624,11 @@ pub fn scene_xyta_trace_observations_materialize(
         out.cmap_flags = cmap_flags;
         out.cmap = cmap;
         out.stops = stops;
-        if input.color_ch.present != 0
-            && input.color_ch.mode == "constant"
-            && input.color_ch.constant.is_some()
-        {
-            out.has_color_ch = 1;
-            out.color_ch = input.color_ch.constant.unwrap().as_bytes().to_vec();
+        if input.color_ch.present != 0 && input.color_ch.mode == "constant" {
+            if let Some(constant) = &input.color_ch.constant {
+                out.has_color_ch = 1;
+                out.color_ch = constant.as_bytes().to_vec();
+            }
         }
         if let Some(css) = input.style_color {
             out.has_style_color = 1;

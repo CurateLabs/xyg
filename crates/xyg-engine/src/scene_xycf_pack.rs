@@ -210,8 +210,7 @@ pub fn scene_xycf_pack(header: &XycfPackHeader, sidecars: &XycfPackSidecars<'_>)
     )?;
     check_len(sidecars.colorbar_ticks.len(), header.colorbar_tick_count as usize)?;
     check_len(sidecars.legend_lens.len(), header.legend_count as usize)?;
-    let mut out = Vec::with_capacity(XYCF_HEADER_BYTES);
-    out.resize(XYCF_HEADER_BYTES, 0);
+    let mut out = vec![0u8; XYCF_HEADER_BYTES];
     write_header_full(&mut out, header)?;
     out.extend_from_slice(sidecars.title);
     out.extend_from_slice(sidecars.x_label);

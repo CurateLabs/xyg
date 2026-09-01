@@ -10,7 +10,7 @@ use crate::kernels::{
     SceneDash, SceneLinecap,
 };
 use crate::scene_pack_orchestrate::scene_xyaf_annotation_dispatch_plan;
-use crate::scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput, SCENE_XYAF_PACK_MAX_RECORD};
+use crate::scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput};
 
 pub const SCENE_XYAF_BULK_PACK_MAX: usize = 1 << 22;
 const MAX_ANNOTATIONS: usize = 128;
@@ -276,7 +276,7 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         let text = obs.text.unwrap_or("");
         if text.contains('\0')
             || (wrapped && text.contains('\r'))
-            || !text.is_empty() && text.as_bytes().len() > 4096
+            || !text.is_empty() && text.len() > 4096
         {
             return Err(XyafBulkPackError::new(XyafBulkError::Text, index));
         }

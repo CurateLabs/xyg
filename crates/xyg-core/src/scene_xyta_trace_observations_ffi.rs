@@ -359,23 +359,28 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(
     };
     let style_color_text = read_utf8(style_color, header.style_color_len);
     let style_stroke_text = read_utf8(style_stroke, header.style_stroke_len);
-    let mut style_colormap_stops_flat = Vec::new();
+    let style_colormap_stops_owned: Option<Vec<u8>> = if header.style_colormap_mode == 2 {
+        let stops_bytes = match optional_bytes(style_colormap_stops, header.style_colormap_stops_len) {
+            Some(v) => v,
+            None => return -1,
+        };
+        if stops_bytes.len() % 3 != 0 || stops_bytes.is_empty() {
+            return -1;
+        }
+        Some(stops_bytes.to_vec())
+    } else {
+        None
+    };
     let style_colormap = match header.style_colormap_mode {
         1 => match read_utf8(style_colormap_named, header.style_colormap_named_len) {
             Some(name) => SceneXytaColormapInput::Named(name),
             None => return -1,
         },
-        2 => {
-            let stops_bytes = match optional_bytes(style_colormap_stops, header.style_colormap_stops_len) {
-                Some(v) => v,
-                None => return -1,
-            };
-            if stops_bytes.len() % 3 != 0 || stops_bytes.is_empty() {
-                return -1;
-            }
-            style_colormap_stops_flat = stops_bytes.to_vec();
-            SceneXytaColormapInput::Stops(&style_colormap_stops_flat)
-        }
+        2 => SceneXytaColormapInput::Stops(
+            style_colormap_stops_owned
+                .as_ref()
+                .expect("mode 2 implies owned stops"),
+        ),
         _ => SceneXytaColormapInput::None,
     };
     let color_palette = match xyta_read_palette(
@@ -402,9 +407,9 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(
         Some(v) => v,
         None => return -1,
     };
-    let color_palette_refs: Vec<&str> = color_palette.iter().copied().collect();
-    let stroke_palette_refs: Vec<&str> = stroke_palette.iter().copied().collect();
-    let color2_palette_refs: Vec<&str> = color2_palette.iter().copied().collect();
+    let color_palette_refs: Vec<&str> = color_palette.to_vec();
+    let stroke_palette_refs: Vec<&str> = stroke_palette.to_vec();
+    let color2_palette_refs: Vec<&str> = color2_palette.to_vec();
     let color_channel = match xyta_color_channel_from_c(
         &*color_ch,
         color_mode,

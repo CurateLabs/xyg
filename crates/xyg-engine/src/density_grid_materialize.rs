@@ -13,6 +13,7 @@ use crate::density_emit::{
 };
 use crate::kernels::{self, BinColorSource};
 use crate::lod_plan::{self, PayloadIndexSel};
+#[cfg(not(target_family = "wasm"))]
 use crate::tile_store;
 use crate::tiles;
 
@@ -115,18 +116,25 @@ fn try_pyramid_compose(
     let mut grid = vec![0.0f32; cells];
     match resource {
         DENSITY_RESOURCE_TILE_STORE => {
-            let mut rgba = pyr_colored.then(|| vec![0u8; cells * 4]);
-            let level = tile_store::reg_with(handle, |store| {
-                if pyr_colored {
-                    let rgba_buf = rgba.as_mut()?;
-                    store
-                        .compose_color(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid, rgba_buf)
-                        .ok()?
-                } else {
-                    store.compose(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid).ok()?
-                }
-            })??;
-            Some((grid, rgba, level, true))
+            #[cfg(not(target_family = "wasm"))]
+            {
+                let mut rgba = pyr_colored.then(|| vec![0u8; cells * 4]);
+                let level = tile_store::reg_with(handle, |store| {
+                    if pyr_colored {
+                        let rgba_buf = rgba.as_mut()?;
+                        store
+                            .compose_color(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid, rgba_buf)
+                            .ok()?
+                    } else {
+                        store.compose(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid).ok()?
+                    }
+                })??;
+                Some((grid, rgba, level, true))
+            }
+            #[cfg(target_family = "wasm")]
+            {
+                None
+            }
         }
         DENSITY_RESOURCE_PYRAMID => {
             if pyr_colored {
