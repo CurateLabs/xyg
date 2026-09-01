@@ -55,6 +55,22 @@ def solid_paint(css: Any) -> str | None:
     return s
 
 
+def fill_opacity(style: dict[str, Any], default: float = 1.0) -> float:
+    """CSS whole-mark opacity multiplied by the fill-only channel."""
+    return float(style.get("opacity", default)) * float(style.get("fill_opacity", 1.0))
+
+
+def stroke_opacity(style: dict[str, Any], default: float = 1.0) -> float:
+    """CSS whole-mark opacity multiplied by the stroke-only channel."""
+    return float(style.get("opacity", default)) * float(style.get("stroke_opacity", 1.0))
+
+
+def rgb_css(paint: Any) -> str:
+    """Format 0-1 RGB as ``rgb(r,g,b)`` via ABI 251 ``xyg_clip_quantize_u8``."""
+    u8 = kernels.clip_quantize_u8(np.asarray((paint[0], paint[1], paint[2]), dtype=np.float64))
+    return f"rgb({int(u8[0])},{int(u8[1])},{int(u8[2])})"
+
+
 def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:
     """Recover one exterior walk from a connected tessellated polygon.
 

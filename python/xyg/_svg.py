@@ -34,13 +34,22 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    fill_opacity as _fill_opacity,
+)
+from ._paint import (
     paint_rgba8 as _paint_rgba8,
+)
+from ._paint import (
+    rgb_css as _rgb_css,
 )
 from ._paint import (
     rgba8 as _rgba8,
 )
 from ._paint import (
     solid_paint as _solid_paint,
+)
+from ._paint import (
+    stroke_opacity as _stroke_opacity,
 )
 from ._paint import (
     trace_paint_rgba as _trace_paint_rgba,
@@ -75,16 +84,6 @@ def escape(data: str, entities: dict[str, str] | None = None) -> str:
 def _escape_attr(data: Any) -> str:
     """Escape arbitrary text for a double-quoted XML attribute."""
     return escape(str(data), {'"': "&quot;"})
-
-
-def _fill_opacity(style: dict[str, Any], default: float = 1.0) -> float:
-    """CSS whole-mark opacity multiplied by the fill-only channel."""
-    return float(style.get("opacity", default)) * float(style.get("fill_opacity", 1.0))
-
-
-def _stroke_opacity(style: dict[str, Any], default: float = 1.0) -> float:
-    """CSS whole-mark opacity multiplied by the stroke-only channel."""
-    return float(style.get("opacity", default)) * float(style.get("stroke_opacity", 1.0))
 
 
 def _flag_stops() -> list[tuple[int, int, int]]:
@@ -950,12 +949,6 @@ def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
     values = np.asarray(t, dtype=np.float64).reshape(-1)
     stops = np.asarray(_colormap_stops(colormap), dtype=np.uint8)
     return kernels.colormap_lut(values, stops)
-
-
-def _rgb_css(paint: Any) -> str:
-    """Format 0-1 RGB as ``rgb(r,g,b)`` via ABI 251 ``xyg_clip_quantize_u8``."""
-    u8 = kernels.clip_quantize_u8(np.asarray((paint[0], paint[1], paint[2]), dtype=np.float64))
-    return f"rgb({int(u8[0])},{int(u8[1])},{int(u8[2])})"
 
 
 _TEXT_ANCHORS = {"start": "start", "center": "middle", "end": "end"}
@@ -5738,9 +5731,13 @@ def legend_items(traces: list[dict], palette: Sequence[str] = DEFAULT_PALETTE) -
         if color.get("mode") == "categorical":
             categories = color.get("categories") or []
             entry_palette = list(color.get("palette") or palette) or list(palette)
+            from . import channels as _channels
+
+            rows = _channels.palette_rows_rgba8(entry_palette, len(entry_palette))
             for index, category in enumerate(categories):
                 item_style = dict(style)
-                item_style["color"] = entry_palette[index % len(entry_palette)]
+                red, green, blue, _alpha = rows[index % len(rows)]
+                item_style["color"] = f"#{int(red):02x}{int(green):02x}{int(blue):02x}"
                 items.append(
                     {"name": str(category), "kind": trace.get("kind"), "style": item_style}
                 )

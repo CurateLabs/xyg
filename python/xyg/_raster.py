@@ -26,6 +26,9 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    fill_opacity as _fill_opacity,
+)
+from ._paint import (
     paint_rgba8 as _parse_color,
 )
 from ._paint import (
@@ -33,6 +36,9 @@ from ._paint import (
 )
 from ._paint import (
     solid_paint as _solid_paint,
+)
+from ._paint import (
+    stroke_opacity as _stroke_opacity,
 )
 from ._paint import (
     trace_paint_rgba as _trace_paint_rgba,
@@ -65,7 +71,6 @@ from ._svg import (
     _decode_title_geometry,
     _density_column,
     _estimated_text_width,
-    _fill_opacity,
     _heatmap_rgba_grid,
     _legend_layout,
     _lut,
@@ -76,7 +81,6 @@ from ._svg import (
     _resolve_static_css_vars,
     _Scale,
     _step_arrays,
-    _stroke_opacity,
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
