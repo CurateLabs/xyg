@@ -1790,6 +1790,14 @@
       "rationale": "Trace/figure observation helpers (heatmap/hexbin pitch, colormap stops, ribbon classify); delegates admit/classify to Rust."
     },
     {
+      "path": "python/xyg/_scene_annotations.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Colorbar and XYAF annotation marshal/validation; delegates pack to Rust (ABI 111/324)."
+    },
+    {
       "path": "python/xyg/_scene_marshal.py",
       "current_owner": "Python host",
       "policy": "python-scene-migration",
