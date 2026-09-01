@@ -1251,9 +1251,12 @@ def ship_style_channels(
     result: dict[str, Any] = {}
     for name, channel in style_channels.items():
         values = channel.values if sel is None else channel.values[sel]
+        values = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
         spec = channel.spec()
         plan = _wire_encode_plan("style", "direct", style_dtype_u8=channel.dtype == "u8")
-        spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=values)
+        spec["buf"] = _ship_wire_buffer(
+            plan, ship_scalar, ship_u8, raw=values, role="style", mode="direct"
+        )
         if plan["set_n"]:
             spec["n"] = int(len(values))
         result[name] = spec
