@@ -387,6 +387,51 @@ def warp_grid_rgba(
     return rgba
 
 
+def _axes_by_id(spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Named axes from a payload spec, including primary x/y."""
+    axes = dict(spec.get("axes") or {})
+    axes["x"] = spec["x_axis"]
+    axes["y"] = spec["y_axis"]
+    return axes
+
+
+def _axis_scales(
+    spec: dict[str, Any], plot: dict[str, float]
+) -> tuple[
+    dict[str, _Scale],
+    dict[str, _Scale],
+    _Scale,
+    _Scale,
+    list[tuple[str, dict[str, Any], _Scale]],
+    list[tuple[str, dict[str, Any], _Scale]],
+]:
+    """Pixel scales for every configured axis plus the named-axis lists."""
+    axes = _axes_by_id(spec)
+    x_scales = {
+        axis_id: _Scale(axis, plot["x"], plot["x"] + plot["w"])
+        for axis_id, axis in axes.items()
+        if axis_id.startswith("x")
+    }
+    y_scales = {
+        axis_id: _Scale(axis, plot["y"] + plot["h"], plot["y"])
+        for axis_id, axis in axes.items()
+        if axis_id.startswith("y")
+    }
+    sx = x_scales["x"]
+    sy = y_scales["y"]
+    extra_x_axes = [
+        (axis_id, axis, x_scales[axis_id])
+        for axis_id, axis in axes.items()
+        if axis_id != "x" and axis_id.startswith("x")
+    ]
+    extra_y_axes = [
+        (axis_id, axis, y_scales[axis_id])
+        for axis_id, axis in axes.items()
+        if axis_id != "y" and axis_id.startswith("y")
+    ]
+    return x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes
+
+
 def polar_wedge_points(
     polar: _PolarProjection,
     theta0: float,

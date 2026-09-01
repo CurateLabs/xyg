@@ -26,6 +26,11 @@ from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
 from ._export_chrome import (
+    _AXIS,
+    _AXIS_GRID_DASHES,
+    _GRID,
+    _TEXT,
+    COLORBAR_FONT_SIZE,
     apply_export_background,
     legend_options_with_slot,
     slot_font_size,
@@ -33,13 +38,30 @@ from ._export_chrome import (
     slot_text_color,
 )
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
+from ._export_heatmap import polar_heatmap_rgba
 from ._export_legend import (
     _legend_layout,
     legend_clip_rect,
     legend_items,
 )
+from ._export_ticks import (
+    _axis_tick_font_size,
+    _axis_tick_label_baseline_shift,
+    _axis_tick_label_layout,
+    _axis_tick_label_offset,
+    _axis_tick_label_sides,
+    _axis_tick_label_strategy,
+    _axis_tick_sides,
+    _colorbar_right_axis_room,
+    _preserve_scene_chrome_for_axis_visibility,
+    _tick_label_anchor,
+    axis_ticks,
+    minor_axis_ticks,
+    polar_tick_label_layout,
+)
 from ._fontmetrics import estimated_text_width as _estimated_text_width
 from ._layout import (
+    _axis_scales,
     _PolarProjection,
     _Scale,
     affine_fast_path,
@@ -118,35 +140,15 @@ from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
 from ._svg import (
-    _AXIS,
-    _AXIS_GRID_DASHES,
-    _GRID,
-    _TEXT,
-    COLORBAR_FONT_SIZE,
     DEFAULT_PALETTE,
     _annotation_connector_unclipped,
     _annotation_first_baseline,
     _axis_label_geometry,
-    _axis_scales,
-    _axis_tick_font_size,
-    _axis_tick_label_baseline_shift,
-    _axis_tick_label_layout,
-    _axis_tick_label_offset,
-    _axis_tick_label_sides,
-    _axis_tick_label_strategy,
-    _axis_tick_sides,
-    _colorbar_right_axis_room,
     _decode_title_geometry,
-    _preserve_scene_chrome_for_axis_visibility,
-    _tick_label_anchor,
     _title_entries,
     _title_metrics,
     annotation_label_placement,
-    axis_ticks,
     layout,
-    minor_axis_ticks,
-    polar_heatmap_rgba,
-    polar_tick_label_layout,
 )
 
 (

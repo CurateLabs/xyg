@@ -7,6 +7,22 @@ from typing import Any, Optional
 
 from ._paint import _css, px_size
 
+# Light-theme chrome colors (the client derives these from currentColor).
+_TEXT = "rgba(32,32,32,0.85)"
+_GRID = "rgba(32,32,32,0.14)"
+_AXIS = "rgba(32,32,32,0.55)"
+_AXIS_GRID_DASHES = {
+    "solid": None,
+    "dashed": [6.0, 4.0],
+    "dotted": [1.0, 3.0],
+    "dashdot": [6.0, 3.0, 1.0, 3.0],
+}
+
+#: The `colorbar` slot's own font size, from its stylesheet rule in
+#: `js/src/20_theme.ts`. Every writer names it so none of them inherits a
+#: different one from its document root.
+COLORBAR_FONT_SIZE = 10.0
+
 #: `styles={"legend": ...}` is CSS; `xyg.legend(style=...)` reaches the writers
 #: under the browser's camelCase property spelling. Same declaration, two
 #: spellings — the writers key on the second, so the first is translated.

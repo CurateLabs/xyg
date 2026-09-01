@@ -23,7 +23,7 @@ import math
 from collections.abc import Callable, Sequence
 from itertools import pairwise
 from os import PathLike
-from typing import Any, NamedTuple, Optional, cast
+from typing import Any, Optional, cast
 
 import numpy as np
 
@@ -33,6 +33,11 @@ from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
 from ._export_chrome import (
+    _AXIS,
+    _AXIS_GRID_DASHES,
+    _GRID,
+    _TEXT,
+    COLORBAR_FONT_SIZE,
     apply_export_background,
     legend_options_with_slot,
     slot_font_size,
@@ -40,13 +45,34 @@ from ._export_chrome import (
     slot_text_color,
 )
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
+from ._export_heatmap import polar_heatmap_rgba
 from ._export_legend import (
     _legend_layout,
     legend_clip_rect,
     legend_items,
 )
+from ._export_ticks import (
+    _POLAR_RLABEL_DEG,
+    _axis_tick_font_size,
+    _axis_tick_label_baseline_shift,
+    _axis_tick_label_layout,
+    _axis_tick_label_offset,
+    _axis_tick_label_sides,
+    _axis_tick_label_strategy,
+    _axis_tick_sides,
+    _colorbar_right_axis_room,
+    _fmt_log,
+    _preserve_scene_chrome_for_axis_visibility,
+    _tick_label_anchor,
+    _tick_text,
+    axis_ticks,
+    minor_axis_ticks,
+    polar_tick_label_layout,
+)
 from ._fontmetrics import estimated_text_width as _estimated_text_width
 from ._layout import (
+    _axes_by_id,
+    _axis_scales,
     _PolarProjection,
     _Scale,
     polar_wedge_points,
@@ -525,59 +551,11 @@ COLORMAP_STOPS: dict[str, list[tuple[int, int, int]]] = {
     ],
 }
 
-# Light-theme chrome colors (the client derives these from currentColor).
-_TEXT = "rgba(32,32,32,0.85)"
-_GRID = "rgba(32,32,32,0.14)"
-_AXIS = "rgba(32,32,32,0.55)"
-_FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif"
-_MS = {"s": 1e3, "m": 6e4, "h": 36e5, "d": 864e5}
+
 # Unresolved CSS paints use native `STATIC_COLOR_FALLBACK_RGBA8` via
 # `xyg_css_color_rgba` (76, 120, 168, 255).
-_AXIS_GRID_DASHES = {
-    "solid": None,
-    "dashed": [6.0, 4.0],
-    "dotted": [1.0, 3.0],
-    "dashdot": [6.0, 3.0, 1.0, 3.0],
-}
-
-
-# ---------------------------------------------------------------------------
-# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96),
-# label formatting (ABI 130), and Scene product-path authored filter/pairing
-# (ABI 199). Hosts still resolve authored tick_labels on `_svg` drawing.
-# ---------------------------------------------------------------------------
-
-
-def _fmt_log(v: float) -> str:
-    """Colorbar log tick labels — same magnitude policy as axis log ticks."""
-    return _native.tick_format(float(v), 1.0, scale="log")
-
-
-def _fmt_axis(axis: dict[str, Any], v: float, step: float) -> str:
-    return _native.tick_format(
-        float(v),
-        float(step),
-        kind=axis.get("kind"),
-        scale=axis.get("scale"),
-        theta_unit=axis.get("theta_unit"),
-        format=axis.get("format"),
-        categories=axis.get("categories"),
-    )
-
-
-def _tick_text(axis: dict[str, Any], value: float, step: float) -> str:
-    values = axis.get("tick_values")
-    labels = axis.get("tick_labels")
-    if values is not None and labels is not None:
-        for index, candidate in enumerate(values):
-            if float(candidate) == value and index < len(labels):
-                return str(labels[index])
-    return _fmt_axis(axis, value, step)
-
-
-# ---------------------------------------------------------------------------
-# Scales (see `_layout.py`)
-# ---------------------------------------------------------------------------
+_MS = {"s": 1e3, "m": 6e4, "h": 36e5, "d": 864e5}
+_FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif"
 
 
 def _colormap_key(colormap: Any) -> str:
@@ -593,14 +571,6 @@ _lut = _colormap_lut
 
 
 _TEXT_ANCHORS = {"start": "start", "center": "middle", "end": "end"}
-
-
-def _tick_label_anchor(axis: dict[str, Any], style: dict[str, Any], default: str) -> str:
-    """Canonical tick-label anchor (``start``/``center``/``end``) from the
-    axis spec or its style — validators normalize the mpl aliases upstream —
-    with ``default`` (the classic layout) when unset."""
-    raw = axis.get("tick_label_anchor") or style.get("tick_label_anchor")
-    return raw if raw in ("start", "center", "end") else default
 
 
 #: Text properties the VECTOR writers honor on a chrome slot (SVG, and PDF via
@@ -629,11 +599,6 @@ SLOT_RASTER_PROPS: tuple[str, ...] = (
     "fill",
     "color",
 )
-
-#: The `colorbar` slot's own font size, from its stylesheet rule in
-#: `js/src/20_theme.ts`. Every writer names it so none of them inherits a
-#: different one from its document root.
-COLORBAR_FONT_SIZE = 10.0
 
 #: Slots the native writers style. Every one names chrome that a static file
 #: actually contains; the rest of `CHART_DOM_SLOTS` is live-only chrome
@@ -1058,81 +1023,6 @@ def _dash_attr(style: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 # Renderer
 # ---------------------------------------------------------------------------
-
-
-def _axes_by_id(spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Return every configured axis keyed by its wire id.
-
-    Older payloads only carried the primary ``x_axis``/``y_axis`` fields;
-    current payloads additionally carry an ``axes`` mapping for named axes.
-    Static exporters accept both shapes and let the primary compatibility
-    fields win, matching the browser client's normalization.
-    """
-    axes = dict(spec.get("axes") or {})
-    axes["x"] = spec["x_axis"]
-    axes["y"] = spec["y_axis"]
-    return axes
-
-
-def _axis_scales(
-    spec: dict[str, Any], plot: dict[str, float]
-) -> tuple[
-    dict[str, _Scale],
-    dict[str, _Scale],
-    _Scale,
-    _Scale,
-    list[tuple[str, dict[str, Any], _Scale]],
-    list[tuple[str, dict[str, Any], _Scale]],
-]:
-    """Pixel scales for every configured axis plus the named-axis lists —
-    shared by the SVG and native exporters so their geometry stays identical.
-
-    Returns ``(x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes)``.
-    """
-    axes = _axes_by_id(spec)
-    x_scales = {
-        axis_id: _Scale(axis, plot["x"], plot["x"] + plot["w"])
-        for axis_id, axis in axes.items()
-        if axis_id.startswith("x")
-    }
-    y_scales = {
-        axis_id: _Scale(axis, plot["y"] + plot["h"], plot["y"])
-        for axis_id, axis in axes.items()
-        if axis_id.startswith("y")
-    }
-    sx = x_scales["x"]
-    sy = y_scales["y"]  # y grows downward in raster space
-    extra_x_axes = [
-        (axis_id, axis, x_scales[axis_id])
-        for axis_id, axis in axes.items()
-        if axis_id != "x" and axis_id.startswith("x")
-    ]
-    extra_y_axes = [
-        (axis_id, axis, y_scales[axis_id])
-        for axis_id, axis in axes.items()
-        if axis_id != "y" and axis_id.startswith("y")
-    ]
-    return x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes
-
-
-def _colorbar_right_axis_room(
-    y_axis: dict[str, Any],
-    extra_y_axes: list[tuple[str, dict[str, Any], _Scale]],
-    compact: bool,
-) -> float:
-    """Gutter layout() reserves for visible right-side named y axes.
-
-    The vertical colorbar shifts right by this amount so its bar/ticks/label
-    clear the axis tick labels (plot-right+8) and rotated axis title
-    (plot-right+40); the JS client applies the identical rule."""
-    axes = [y_axis, *(axis for _axis_id, axis, _axis_scale in extra_y_axes)]
-    if any(
-        (axis.get("side", "left") == "right" or "right" in _axis_tick_label_sides(axis, is_x=False))
-        and _axis_tick_label_strategy(axis) != "none"
-        for axis in axes
-    ):
-        return float(_native.compat_right_y_room(compact))
-    return 0.0
 
 
 # Smallest gap between the canvas edge and the outermost axis ink.
@@ -1790,17 +1680,6 @@ def _polar_combine_args(spec: dict[str, Any], width: float, compact: bool) -> di
 # Mirrored by POLAR_LABEL_ROOM in js/src/50_chartview.ts.
 _POLAR_LABEL_ROOM = 30.0
 
-# Angle of the spoke the radial tick labels run along, in degrees off the theta
-# zero direction. Matplotlib's default `rlabel_position`; keeping the labels off
-# the zero spoke stops them colliding with the theta=0 angular label. Shared by
-# both exporters so they cannot drift apart.
-# Mirrored by POLAR_RLABEL_DEG in js/src/50_chartview.ts.
-_POLAR_RLABEL_DEG = 22.5
-
-# Gap in px between the outer ring and the angular tick labels.
-# Mirrored by POLAR_TICK_GAP in js/src/50_chartview.ts.
-_POLAR_TICK_GAP = 8.0
-
 # Gutter reserved for a legend beside a disc. A Cartesian legend overlays the
 # plot because data rarely reaches a corner; a disc inscribed in its rect leaves
 # no corner at all, so an inside legend lands on the marks — an `upper right` box
@@ -1950,277 +1829,6 @@ def _recut_polar_plot(
             plot[key] = recut[key]
         else:
             plot.pop(key, None)
-
-
-def _tick_window(axis: dict[str, Any]) -> tuple[float, float]:
-    """The value window ticks are drawn in — the sector for an angular axis."""
-    lo, hi = (float(v) for v in axis["range"])
-    sector = axis.get("sector")
-    if sector:
-        sector_lo, sector_hi = float(sector[0]), float(sector[1])
-    else:
-        sector_lo = sector_hi = float("nan")
-    return _native.tick_window(
-        lo,
-        hi,
-        theta_unit=axis.get("theta_unit"),
-        kind="category" if axis.get("kind") == "category" else "linear",
-        n_categories=len(axis.get("categories") or []),
-        sector_lo=sector_lo,
-        sector_hi=sector_hi,
-    )
-
-
-def _tick_window_filter(
-    axis: dict[str, Any],
-    lo: float,
-    hi: float,
-    values: Sequence[Any],
-    *,
-    require_finite: bool = False,
-) -> list[float]:
-    """Compact ``values`` that fall inside the axis window.
-
-    An angular window may cross the 0/turn seam — ``sector=(300, 420)``, or the
-    compass-natural ``(-30, 30)``. The plain ``low <= v <= high`` test throws
-    away every tick authored on the far side of that seam (0, 30 and 60 for the
-    first; 330, 340, 350 for the second) while a *data point* at the very same
-    angle plots inside the sector, because mark culling is modular. Ticks now
-    use the same modular containment as
-    `_PolarProjection._angular_value_visible_mask`, so the spokes and the marks
-    agree about what the sector contains.
-    """
-    return _native.tick_window_filter(
-        [float(v) for v in values],
-        lo,
-        hi,
-        theta_unit=axis.get("theta_unit"),
-        kind="category" if axis.get("kind") == "category" else "linear",
-        require_finite=require_finite,
-    )
-
-
-def axis_ticks(
-    axis: dict[str, Any], length_px: float, is_x: bool
-) -> tuple[list[float], list[float], float]:
-    """(ticks, labeled ticks, step) for an axis at a given pixel length — shared
-    tick density so SVG and PNG label the same values."""
-    kind = axis.get("kind")
-    lo, hi = _tick_window(axis)
-    if axis.get("tick_values") is not None:
-        ticks = _tick_window_filter(axis, lo, hi, axis["tick_values"])
-        step = abs(ticks[1] - ticks[0]) if len(ticks) > 1 else 1.0
-        return ticks, ticks, step
-    requested = axis.get("tick_count")
-    if isinstance(requested, (int, float)) and not isinstance(requested, bool) and requested > 0:
-        target = max(1, min(200, int(requested)))
-    else:
-        target = max(3, int(length_px / 80)) if is_x else max(3, int(length_px / 45))
-    aux = 0.0
-    if kind == "category":
-        categories = axis.get("categories") or []
-        # Category theta is category-index space, even though it also carries
-        # angular descriptors. Each category is one spoke/polygon vertex, so
-        # the automatic target must not thin it by pixel density.
-        if axis.get("theta_unit") is not None and requested is None:
-            target = len(categories)
-        rust_kind = 2
-        aux = float(len(categories))
-    elif axis.get("theta_unit") is not None:
-        rust_kind = 3 if axis["theta_unit"] == "degrees" else 4
-    elif axis.get("scale") == "log" or kind == "log":
-        rust_kind = 1
-    elif axis.get("scale") == "symlog":
-        rust_kind = 6
-        aux = float(axis.get("constant", 1.0))
-    elif kind == "time":
-        rust_kind = 5
-    else:
-        rust_kind = 0
-    try:
-        return _native.scene_axis_ticks(rust_kind, lo, hi, target, aux=aux)
-    except ValueError:
-        return [], [], _MS["d"] if rust_kind == 5 else 1.0
-
-
-def minor_axis_ticks(axis: dict[str, Any]) -> list[float]:
-    values = axis.get("minor_tick_values")
-    if values is None:
-        return []
-    lo, hi = _tick_window(axis)
-    return _tick_window_filter(axis, lo, hi, values, require_finite=True)
-
-
-def _axis_tick_label_strategy(axis: dict[str, Any]) -> str:
-    value = str(axis.get("tick_label_strategy") or "auto").replace("-", "_")
-    return (
-        value
-        if value in {"auto", "hide", "rotate", "stagger", "preserve", "none", "off"}
-        else "auto"
-    )
-
-
-def _axis_tick_font_size(axis: dict[str, Any]) -> float:
-    style = axis.get("style") or {}
-    default = 12 if style.get("_scene_public_chrome_defaults") else 11
-    return max(8.0, float(style.get("tick_label_size", style.get("tick_size", default))))
-
-
-def _axis_visibility_switch(style: dict[str, Any]) -> bool:
-    """Whether an axis uses a public ticks/text visibility shorthand."""
-    return (style.get("tick_length") == 0 and style.get("tick_width") == 0) or (
-        style.get("tick_label_color") == "#00000000" and style.get("label_color") == "#00000000"
-    )
-
-
-def _preserve_scene_chrome_for_axis_visibility(spec: dict[str, Any]) -> dict[str, Any]:
-    """Keep a visibility-switch fallback visually continuous with public Scene.
-
-    A default circle-scatter export takes the Rust Scene path, whose bounded
-    chrome has 12 px tick labels and 4 px major ticks. ``ticks=False`` and
-    ``text=False`` deliberately fall back because Scene does not yet model
-    their independent visibility contract.  Preserve the otherwise-default
-    Scene chrome in that fallback, changing only the requested switch; without
-    this bridge the route itself resized every label and also erased the other
-    axis's default ticks.
-    """
-    primary = (spec.get("x_axis") or {}, spec.get("y_axis") or {})
-    if not any(_axis_visibility_switch(axis.get("style") or {}) for axis in primary):
-        return spec
-    copied = dict(spec)
-    for name in ("x_axis", "y_axis"):
-        axis = dict(spec[name])
-        axis["style"] = {**(axis.get("style") or {}), "_scene_public_chrome_defaults": True}
-        copied[name] = axis
-    return copied
-
-
-def _axis_tick_geometry_authored(axis: dict[str, Any]) -> bool:
-    """True when the axis authored tick geometry (label pad or mark length).
-
-    Core's default ``tick_length`` is 0 and it has no default ``tick_padding``,
-    so deriving the spine-to-label distance from tick geometry unconditionally
-    would move the tick labels of *every* chart that styles no ticks. Charts
-    that author neither key therefore keep the historical placement, and only
-    authored geometry — an explicit ``tick_length``/``tick_padding``, or
-    pyplot's rc-supplied ``{x,y}tick.major.pad`` — opts into matplotlib's rule.
-    The visibility shorthand's exact ``tick_length=0, tick_width=0`` sentinel
-    only suppresses paint and therefore keeps the historical label placement.
-    """
-    style = axis.get("style") or {}
-    if "tick_padding" in style:
-        return True
-    if "tick_length" not in style:
-        return False
-    return not (
-        float(style.get("tick_length", 0)) == 0.0 and float(style.get("tick_width", 1)) == 0.0
-    )
-
-
-def _axis_tick_sides(axis: dict[str, Any], *, is_x: bool) -> list[str]:
-    """Sides that paint tick marks, independent of the label-bearing side."""
-    allowed = ("bottom", "top") if is_x else ("left", "right")
-    authored = axis.get("tick_sides")
-    if not isinstance(authored, list):
-        return [axis.get("side", allowed[0])]
-    return [side for side in allowed if side in authored]
-
-
-def _axis_tick_label_sides(axis: dict[str, Any], *, is_x: bool) -> list[str]:
-    """Sides that paint tick labels, independent of tick marks and titles."""
-    allowed = ("bottom", "top") if is_x else ("left", "right")
-    authored = axis.get("tick_label_sides")
-    if not isinstance(authored, list):
-        return [axis.get("side", allowed[0])]
-    return [side for side in allowed if side in authored]
-
-
-def _axis_tick_label_offset(axis: dict[str, Any], unstyled: float, font_room: float = 0.0) -> float:
-    """Distance from the axis spine to a tick label's anchor point, in px.
-
-    Matplotlib measures tick padding from the outward end of the tick mark
-    rather than from the spine, and the anchor then sits ``font_room`` times the
-    tick font size further out (the SVG/raster anchor is the text baseline, so
-    an x label below the plot must clear the ascent). Axes that author no tick
-    geometry keep `unstyled`, the caller's historical gap for that side — see
-    `_axis_tick_geometry_authored`. Those gaps were already asymmetric per side
-    (16/7/8 px for bottom/top/y here), so per-side defaults reproduce the
-    existing contract rather than approximate it.
-    """
-    if not _axis_tick_geometry_authored(axis):
-        return unstyled
-    style = axis.get("style") or {}
-    length = max(0.0, float(style.get("tick_length", 0)))
-    direction = str(style.get("tick_direction", "out"))
-    outward = 0.0 if direction == "in" else length / 2 if direction == "inout" else length
-    pad = outward + float(style.get("tick_padding", 4))
-    return pad + _axis_tick_font_size(axis) * font_room
-
-
-def _axis_tick_label_baseline_shift(axis: dict[str, Any]) -> float:
-    """Baseline nudge that centers a y tick label on its tick, in px.
-
-    Font-proportional once tick geometry is authored (matplotlib centers the
-    label on its cap height); unstyled axes keep the historical flat 4 px so
-    core charts do not shift. See `_axis_tick_geometry_authored`.
-    """
-    if not _axis_tick_geometry_authored(axis):
-        return 4.0
-    return _axis_tick_font_size(axis) * 0.35
-
-
-def _axis_tick_label_layout(
-    axis: dict[str, Any],
-    values: list[float],
-    step: float,
-    scale: _Scale,
-    is_x: bool,
-) -> list[dict[str, Any]]:
-    """Thin packer over Rust tick-label collision layout (ABI 123).
-
-    Hosts still format ``_tick_text`` and map values to pixels. Auto / hide /
-    rotate / stagger thinning lives in ``tick_layout.rs`` so SVG, raster, and
-    Node cannot drift from ChartView ``_layoutTickLabels``.
-    """
-    strategy = _axis_tick_label_strategy(axis)
-    font_size = _axis_tick_font_size(axis)
-    min_gap = float(axis.get("tick_label_min_gap", 8 if is_x else 4))
-    raw_angle = axis.get("tick_label_angle")
-    explicit_angle = float(raw_angle) if raw_angle is not None else float("nan")
-    # y collision keeps the centered extent model: every label on an axis
-    # shares one anchor+angle, so an anchored y layout shifts all boxes by
-    # the same offset and pairwise gaps are unchanged.  Mirror JS exactly.
-    axis_style = axis.get("style") or {}
-    anchor = _tick_label_anchor(axis, axis_style, "center") if is_x else "center"
-    positions = np.asarray(scale(values), dtype=np.float64)
-    texts = [_tick_text(axis, value, step) for value in values]
-    side_raw = str(axis.get("side") or "").strip().lower()
-    side = side_raw if side_raw in {"bottom", "top", "left", "right"} else "bottom"
-    kept = _native.scene_tick_label_layout(
-        positions,
-        texts,
-        kind=strategy,
-        side=side,
-        anchor=anchor,
-        is_x=is_x,
-        category=axis.get("kind") == "category",
-        font_size=font_size,
-        min_gap=min_gap,
-        explicit_angle=explicit_angle,
-    )
-    out: list[dict[str, Any]] = []
-    for item in kept:
-        index = int(item["index"])
-        out.append(
-            {
-                "value": float(values[index]),
-                "pos": float(positions[index]),
-                "text": texts[index],
-                "angle": float(item["angle"]),
-                "row": int(item["row"]),
-            }
-        )
-    return out
 
 
 def _axis_label_geometry(
@@ -2560,96 +2168,6 @@ def _polar_grid(
             f'x2="{_num(x1)}" y2="{_num(y1)}" stroke="{t_grid}" '
             f'stroke-width="{t_width}"{t_attrs}/>'
         )
-
-
-class PolarTickLabel(NamedTuple):
-    """One placed polar tick label, in renderer-neutral terms.
-
-    `anchor` is the SVG vocabulary ("start"/"middle"/"end"); the raster
-    exporter maps it to its own enum at the call site. `dy` is already folded
-    into `y`; it is carried separately only so a caller can re-derive the
-    unshifted anchor point if it ever needs one.
-    """
-
-    x: float
-    y: float
-    anchor: str
-    size: float
-    text: str
-    spin: float
-
-
-def polar_tick_label_layout(
-    polar: "_PolarProjection",
-    theta_values: list[float],
-    r_values: list[float],
-    theta_step: float,
-    r_step: float,
-    theta_axis: dict[str, Any],
-    r_axis: dict[str, Any],
-    theta_size: float,
-    r_size: float,
-    hide_theta: bool,
-    hide_r: bool,
-) -> "tuple[list[PolarTickLabel], list[PolarTickLabel]]":
-    """Where every polar tick label goes: (angular, radial).
-
-    The placement — rim offset, quadrant anchor, baseline nudge, the 22.5-degree
-    radial spoke — lives here once so the two exporters cannot drift on it; each
-    keeps only its own sink loop. The cartesian label machinery is
-    edge-relative (a side in {top, bottom, left, right} plus a 1-D collision
-    axis) and neither concept survives a disc, so polar places its own rather
-    than bending that code.
-
-    Mirrored by the polar label loop in js/src/50_chartview.ts, which places DOM
-    nodes with CSS translate percentages instead of anchors.
-    """
-    angular: list[PolarTickLabel] = []
-    radial: list[PolarTickLabel] = []
-    theta_spin = float(theta_axis.get("tick_label_angle") or 0.0)
-    r_spin = float(r_axis.get("tick_label_angle") or 0.0)
-    if not hide_theta:
-        for v in polar.filter_theta_values(theta_values):
-            angle = float(polar.angle(v))
-            # Just outside the rim, nudged along the outward normal so the
-            # glyph box clears the ring rather than straddling it.
-            x = polar.cx + (polar.radius + _POLAR_TICK_GAP) * math.cos(angle)
-            y = polar.cy - (polar.radius + _POLAR_TICK_GAP) * math.sin(angle)
-            cos_a, sin_a = math.cos(angle), math.sin(angle)
-            anchor = "middle" if abs(cos_a) < 0.3 else ("start" if cos_a > 0 else "end")
-            # The baseline sits at the glyph bottom, so a label above the circle
-            # needs no shift while one below needs close to a full ascent.
-            dy = 0.0 if abs(sin_a) < 0.3 else (-0.1 * theta_size if sin_a > 0 else 0.8 * theta_size)
-            # _tick_text, not _fmt_angle: authored tick_labels (the category
-            # names on a radar chart) must win over the angle.
-            angular.append(
-                PolarTickLabel(
-                    x, y + dy, anchor, theta_size, _tick_text(theta_axis, v, theta_step), theta_spin
-                )
-            )
-    if not hide_r:
-        # Matplotlib's default rlabel_position: off the zero spoke, so the
-        # radial labels do not pile onto the theta=0 angular label.
-        angle = polar.zero + polar.dir * math.radians(_POLAR_RLABEL_DEG)
-        if not polar.angle_visible(angle):
-            angle = (polar.sector_a0 + polar.sector_a1) / 2.0
-        for v in r_values:
-            if not bool(polar.visible_mask(v)):
-                continue
-            radius = float(polar.norm_radius(v)) * polar.radius
-            if radius <= 0.0:
-                continue
-            radial.append(
-                PolarTickLabel(
-                    polar.cx + radius * math.cos(angle) + 3.0,
-                    polar.cy - radius * math.sin(angle) - 3.0,
-                    "start",
-                    r_size,
-                    _tick_text(r_axis, v, r_step),
-                    r_spin,
-                )
-            )
-    return angular, radial
 
 
 def _polar_tick_labels(
@@ -4517,117 +4035,6 @@ def _rect_marks(
                 f'fill="{fills[i]}"{extras[i]}/>'
             )
     return "".join(out)
-
-
-_POLAR_HEATMAP_MAX_DIMENSION = 4096
-
-
-def polar_heatmap_rgba(
-    hm: dict[str, Any],
-    blob: bytes,
-    cols: list[dict[str, Any]],
-    style: dict[str, Any],
-    polar: _PolarProjection,
-    borrowed: tuple[np.ndarray, ...] = (),
-    *,
-    output_scale: float = 1.0,
-) -> np.ndarray:
-    """Inverse-raster a regular heatmap into the visible annular sector.
-
-    The returned image is top-first RGBA and covers ``polar.plot``. Rust (ABI
-    207) owns the inverse map; this wrapper colors only the returned source
-    cells via ``_heatmap_rgba_samples`` so work stays bounded by output pixels,
-    not source cells. ``output_scale`` lets native raster export sample once
-    per device pixel; SVG uses the default one sample per logical pixel.
-    """
-    source_w, source_h = int(hm["w"]), int(hm["h"])
-    out_w, out_h, rows, cols_i, source_indices = _native.polar_heatmap_inverse_map(
-        polar._metrics,
-        polar.plot,
-        source_w,
-        source_h,
-        hm["x_range"],
-        hm["y_range"],
-        output_scale,
-    )
-    if out_w > _POLAR_HEATMAP_MAX_DIMENSION or out_h > _POLAR_HEATMAP_MAX_DIMENSION:
-        raise ValueError("polar heatmap output exceeds the screen-bounded cap")
-    out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
-    if len(source_indices):
-        out[rows, cols_i] = _heatmap_rgba_samples(
-            hm,
-            source_indices.astype(np.int64, copy=False),
-            blob,
-            cols,
-            style,
-            borrowed,
-        )
-    return out
-
-
-def _heatmap_sample_column(
-    meta: dict[str, Any],
-    indices: np.ndarray,
-    blob: bytes,
-    borrowed: tuple[np.ndarray, ...],
-) -> np.ndarray:
-    """Decode only selected rows from one heatmap source column.
-
-    Polar inverse-raster output is screen-bounded. Expanding a source grid
-    before sampling defeats that contract (and the raster payload's borrowed
-    canonical-f64 path), so this helper indexes the wire/canonical storage
-    first and widens only the selected values.
-    """
-    dtype_name = str(meta.get("dtype", "f32"))
-    dtype = {"u8": np.uint8, "f32": np.dtype("<f4"), "f64": np.dtype("<f8")}.get(dtype_name)
-    if dtype is None:
-        raise ValueError(f"unsupported heatmap column dtype {dtype_name!r}")
-    span = int(meta.get("span", 0))
-    if span:
-        # Do not pass dtype= here: a defensive metadata/array mismatch would
-        # cast the *entire* borrowed source before we sample it, defeating the
-        # source-bounded contract. Index first, then cast only selected cells.
-        values = np.asarray(borrowed[span - 1]).reshape(-1)[: int(meta["len"])]
-        selected = values[indices].astype(dtype, copy=False)
-    else:
-        values = np.frombuffer(
-            blob,
-            dtype=dtype,
-            count=int(meta["len"]),
-            offset=int(meta.get("byte_offset", 0)),
-        )
-        selected = values[indices]
-    selected = selected.astype(np.float64, copy=False)
-    return selected / (meta.get("scale") or 1.0) + meta.get("offset", 0.0)
-
-
-def _heatmap_rgba_samples(
-    hm: dict[str, Any],
-    indices: np.ndarray,
-    blob: bytes,
-    cols: list[dict[str, Any]],
-    style: dict[str, Any],
-    borrowed: tuple[np.ndarray, ...],
-) -> np.ndarray:
-    """Color selected flat heatmap cells without expanding the source grid."""
-    count = len(indices)
-    if "rgba_bufs" in hm:
-        rgba = np.empty((count, 4), dtype=np.uint8)
-        for channel, column_index in enumerate(hm["rgba_bufs"]):
-            values = _heatmap_sample_column(cols[column_index], indices, blob, borrowed)
-            rgba[:, channel] = np.clip(values * 255.0, 0.0, 255.0).astype(np.uint8)
-        rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
-        return rgba
-
-    values = _heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
-    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
-    alpha = int(255 * _fill_opacity(style, 0.95))
-    if hm.get("enc") == "canonical-f64":
-        d0, d1 = (float(value) for value in hm["domain"])
-        rgba = kernels.colormap_rgba_canonical(values, len(indices), 1, (d0, d1), stops, alpha)
-    else:
-        rgba = kernels.colormap_rgba(values, len(indices), 1, stops, alpha)
-    return rgba[:, 0, :]
 
 
 def _grid_image(
