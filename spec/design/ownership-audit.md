@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~4700, `_raster.py` ~3410, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~880, `_export_ticks.py` ~360, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~185, `_columns.py` ~40 (shared static-export helpers).
+Top remaining line counts (secondary section 302): `_svg.py` ~3910, `_raster.py` ~3410, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~880, `_export_layout.py` ~800, `_export_ticks.py` ~360, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~185, `_columns.py` ~40 (shared static-export helpers).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -334,6 +334,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_columns.py` — shared payload column decode (`column`, `column_ref`, `density_column`) for static export emitters
 - `_export_chrome.py` — shared static-export chrome slots, theme tokens, and CSS token resolution
 - `_export_legend.py` — shared static-export legend row expansion and box layout (`legend_items`, `legend_clip_rect`, `_legend_layout`)
+- `_export_layout.py` — shared static-export layout, gutter rooms, title bands, polar recut (`layout`, `scene_layout_rooms`, axis room helpers)
 - `_export_ticks.py` — shared static-export tick ladders, label layout, and polar tick placement
 - `_export_heatmap.py` — shared static-export polar heatmap inverse-raster sampling
 - `_layout.py` — shared static-export scale/polar projection (`_Scale`, `_PolarProjection`, `_axis_scales`, `affine_fast_path`, `polar_wedge_points`, `warp_grid_rgba`)
@@ -781,6 +782,7 @@ Forbidden:
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
 | `python/xyg/_export_chrome.py` | Python host | `python-host` | `keep-host`; shared static-export chrome slots, theme tokens, and CSS token resolution for `_svg`/`_raster` | — |
 | `python/xyg/_export_legend.py` | Python host | `python-host` | `keep-host`; shared static-export legend row expansion and box layout for `_svg`/`_raster` | — |
+| `python/xyg/_export_layout.py` | Python host | `python-host` | `keep-host`; shared static-export layout, gutter rooms, title bands, and polar recut for `_svg`/`_raster` | — |
 | `python/xyg/_export_ticks.py` | Python host | `python-host` | `keep-host`; shared static-export tick ladders, label layout, and polar tick placement for `_svg`/`_raster` | — |
 | `python/xyg/_export_heatmap.py` | Python host | `python-host` | `keep-host`; shared static-export polar heatmap inverse-raster sampling for `_svg`/`_raster` | — |
 | `python/xyg/_layout.py` | Python host | `python-host` | `keep-host`; shared static-export scale, polar projection, axis scales, wedge flatten, and grid warp for `_svg`/`_raster` | — |

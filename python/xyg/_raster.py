@@ -39,6 +39,12 @@ from ._export_chrome import (
 )
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars
 from ._export_heatmap import polar_heatmap_rgba
+from ._export_layout import (
+    _decode_title_geometry,
+    _title_entries,
+    _title_metrics,
+    layout,
+)
 from ._export_legend import (
     _legend_layout,
     legend_clip_rect,
@@ -144,11 +150,7 @@ from ._svg import (
     _annotation_connector_unclipped,
     _annotation_first_baseline,
     _axis_label_geometry,
-    _decode_title_geometry,
-    _title_entries,
-    _title_metrics,
     annotation_label_placement,
-    layout,
 )
 
 (
