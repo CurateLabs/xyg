@@ -48,7 +48,6 @@ BLOCKER_MAP: dict[str, str] = {
     "python/xyg/_figure.py": "Figure composition hub",
     "python/xyg/_annotations.py": "annotation composition",
     "python/xyg/_fontmetrics.py": "DejaVu metrics table (compat SVG gutters)",
-    "python/xyg/_paint.py": "paint dispatch (triangle_mesh_boundary stay-host)",
     "python/xyg/_raster.py": "raster tessellation dispatch + host geometry",
     "python/xyg/_svg.py": "SVG path assembly + host color sample",
     "python/xyg/channels.py": "color channel resolve / LUT pack",

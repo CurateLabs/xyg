@@ -204,6 +204,17 @@ def test_both_factorizer_paths_agree_across_the_width_threshold() -> None:
         np.testing.assert_array_equal(native_codes, object_codes)
 
 
+def test_factorize_uint8_native_sorted_codes_match_node_host() -> None:
+    """Lockstep with packages/xy-node/test/color.test.mjs native uint8 case."""
+    arr = np.array([1, 0, 1], dtype=np.uint8)
+    cats, codes, counts = ch._factorize_categories(arr)
+    assert cats == ["0", "1"]
+    np.testing.assert_array_equal(codes, [1, 0, 1])
+    assert counts is not None
+    assert int(counts[0]) == 1
+    assert int(counts[1]) == 2
+
+
 def test_numeric_object_color_with_missing_is_continuous():
     vals = np.array([1, None, 2.5, np.nan], dtype=object)
     c = ch.resolve_color(vals, 4, default_constant="#000")

@@ -383,10 +383,11 @@ def _factorize_categories(
     not mutually orderable. Chart labels are strings on the client anyway, so
     canonicalize to display labels first, sort those labels for deterministic
     palettes, and then map each row back to its code. Fixed-width NumPy
-    strings/bytes/bools can identify equal records in Rust without creating N
-    Python objects; only their compact unique set crosses the label-policy path.
+    strings/bytes/bools/fixed-width integers can identify equal records in Rust
+    without creating N Python objects; only their compact unique set crosses the
+    label-policy path.
     """
-    if arr.dtype.kind in ("U", "S", "b") and _use_native_fixed_factorizer(arr):
+    if arr.dtype.kind in ("U", "S", "b", "u", "i") and _use_native_fixed_factorizer(arr):
         compact = (
             kernels.factorize_unicode1_u8_counts(arr, MAX_CATEGORIES)
             if arr.dtype.kind == "U" and arr.dtype.itemsize == 4
