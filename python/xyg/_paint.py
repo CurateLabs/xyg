@@ -89,6 +89,24 @@ def colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
     return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
 
 
+def colormap_lut(colormap: Any, t: np.ndarray) -> np.ndarray:
+    """Vectorized colormap sample: t in [0,1] -> (n,3) uint8 via ABI 206."""
+    values = np.asarray(t, dtype=np.float64).reshape(-1)
+    stops = np.asarray(colormap_stops(colormap), dtype=np.uint8)
+    return kernels.colormap_lut(values, stops)
+
+
+def css_rgba8(css: Any, fallback: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
+    """Resolve one CSS paint token to RGBA8 after static var() fallback."""
+    return paint_rgba8(_css(css, fallback), opacity)
+
+
+def solid_rgba8(css: Any) -> tuple[int, int, int, int] | None:
+    """Parseable solid CSS to RGBA8, or None when the fill must be omitted."""
+    s = solid_paint(css)
+    return None if s is None else paint_rgba8(s)
+
+
 def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:
     """Recover one exterior walk from a connected tessellated polygon.
 

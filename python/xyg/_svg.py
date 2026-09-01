@@ -34,6 +34,9 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    colormap_lut as _colormap_lut,
+)
+from ._paint import (
     colormap_stops as _colormap_stops,
 )
 from ._paint import (
@@ -938,11 +941,7 @@ def _colormap_key(colormap: Any) -> str:
     return "custom-" + hashlib.sha256(repr(_colormap_stops(colormap)).encode()).hexdigest()[:12]
 
 
-def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
-    """Vectorized colormap sample: t in [0,1] -> (n,3) uint8 via ABI 206."""
-    values = np.asarray(t, dtype=np.float64).reshape(-1)
-    stops = np.asarray(_colormap_stops(colormap), dtype=np.uint8)
-    return kernels.colormap_lut(values, stops)
+_lut = _colormap_lut
 
 
 _TEXT_ANCHORS = {"start": "start", "center": "middle", "end": "end"}
@@ -4921,7 +4920,7 @@ def _mesh_fills(t: dict, blob: bytes, cols: list, n: int, fallback: str) -> list
         return _column(blob, cols[index])
 
     rgba_u8 = _rgba8(_trace_paint_rgba(t, "color", n, fallback, read))
-    return [f"rgb({int(r)},{int(g)},{int(b)})" for r, g, b, _ in rgba_u8]
+    return [_rgb_css(row[:3] / 255.0) for row in rgba_u8]
 
 
 def _hexbin_marks(

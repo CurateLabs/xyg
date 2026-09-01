@@ -26,7 +26,13 @@ from ._paint import (
     _css,
 )
 from ._paint import (
+    colormap_lut as _lut,
+)
+from ._paint import (
     colormap_stops as _colormap_stops,
+)
+from ._paint import (
+    css_rgba8 as _rgba,
 )
 from ._paint import (
     fill_opacity as _fill_opacity,
@@ -38,7 +44,7 @@ from ._paint import (
     rgba8 as _rgba8,
 )
 from ._paint import (
-    solid_paint as _solid_paint,
+    solid_rgba8 as _solid_color,
 )
 from ._paint import (
     stroke_opacity as _stroke_opacity,
@@ -75,7 +81,6 @@ from ._svg import (
     _estimated_text_width,
     _heatmap_rgba_grid,
     _legend_layout,
-    _lut,
     _physical_density_alpha,
     _PolarProjection,
     _preserve_scene_chrome_for_axis_visibility,
@@ -235,18 +240,6 @@ _SYMBOLS = {
     "horizontal_line": 17,
     "vertical_line": 18,
 }
-
-
-def _rgba(css: Any, fallback: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
-    return _parse_color(_css(css, fallback), opacity)
-
-
-def _solid_color(css: Any) -> Optional[tuple[int, int, int, int]]:
-    """A parseable solid CSS color, or None when unset/unpaintable (var(),
-    gradients) — for background fills that must be skipped rather than
-    fallback-painted. One policy with the SVG exporter (`_solid_paint`)."""
-    s = _solid_paint(css)
-    return None if s is None else _parse_color(s)
 
 
 # cmd.text anchor codes (must match crates/xyg-engine/src/raster.rs): start/center/end of string.
