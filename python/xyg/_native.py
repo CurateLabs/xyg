@@ -9446,6 +9446,50 @@ def object_row_real_numeric_tag_from_probe(probe: int) -> int:
     return code
 
 
+def object_row_stringlike_tags_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to stringlike object-row tags (ABI 356)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_object_row_stringlike_tags_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid object-row-stringlike-tags request")
+    return out
+
+
+def object_row_real_numeric_tags_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to real-numeric object-row tags (ABI 356)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_object_row_real_numeric_tags_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid object-row-real-numeric-tags request")
+    return out
+
+
 def category_label_kind_from_probe(probe: int) -> int:
     """Map a host value probe to a category-label kind byte (ABI 354)."""
     code = int(_lib.xyg_category_label_kind_from_probe(int(probe) & 0xFF))

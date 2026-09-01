@@ -102,6 +102,7 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("—", "354", "xyg_category_label_kind_from_probe", "channels category_label kind"),
     ("—", "355", "xyg_category_code_width", "channels categorical code width"),
     ("—", "355", "xyg_category_palette_rows", "channels palette_rgba8 rows"),
+    ("—", "356", "xyg_object_row_*_tags_from_probes", "channels object-row tag batch"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

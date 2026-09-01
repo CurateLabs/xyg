@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 355
-#define XYG_ABI_SIGNATURE_SHA256 "57792504ac81980039c0669d46a13b29ce7874e0df6ada83a73689df36614bc2"
+#define XYG_ABI_VERSION 356
+#define XYG_ABI_SIGNATURE_SHA256 "947916702d1f33b8a66399f097c1b45e3d4517d28a8a808087241cd6f74bc02c"
 
 #ifdef __cplusplus
 extern "C" {
@@ -183,7 +183,9 @@ size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, doubl
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
 int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t require_area, double * out);
 int32_t xyg_object_row_real_numeric_tag_from_probe(uint8_t probe);
+int32_t xyg_object_row_real_numeric_tags_from_probes(const uint8_t * probes, size_t n, uint8_t * out);
 int32_t xyg_object_row_stringlike_tag_from_probe(uint8_t probe);
+int32_t xyg_object_row_stringlike_tags_from_probes(const uint8_t * probes, size_t n, uint8_t * out);
 int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n);
 int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n);
 int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out);

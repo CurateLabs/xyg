@@ -8675,6 +8675,34 @@ pub fn object_row_real_numeric_tag_from_probe(probe: u8) -> Option<u8> {
     }
 }
 
+/// Batch map value probes to stringlike row tags (ABI 356).
+pub fn object_row_stringlike_tags_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match object_row_stringlike_tag_from_probe(*probe) {
+            Some(tag) => *slot = tag,
+            None => return false,
+        }
+    }
+    true
+}
+
+/// Batch map value probes to real-numeric row tags (ABI 356).
+pub fn object_row_real_numeric_tags_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match object_row_real_numeric_tag_from_probe(*probe) {
+            Some(tag) => *slot = tag,
+            None => return false,
+        }
+    }
+    true
+}
+
 /// Map a host value probe to a category-label kind byte (ABI 354).
 pub fn category_label_kind_from_probe(probe: u8) -> Option<u8> {
     Some(match probe {
@@ -11265,6 +11293,38 @@ mod tests {
         assert_eq!(category_code_width(257), FACTORIZE_DISPLAY_LABELS_CODE_U32);
         assert_eq!(category_palette_rows(300), MAX_CATEGORY_CODES_U8);
         assert_eq!(category_palette_rows(8), 8);
+    }
+
+    #[test]
+    fn object_row_tags_from_probes_batch_matches_scalar() {
+        let probes = [
+            VALUE_PROBE_MISSING,
+            VALUE_PROBE_TEXT,
+            VALUE_PROBE_REAL,
+            VALUE_PROBE_BOOL,
+        ];
+        let mut out = [0u8; 4];
+        assert!(object_row_stringlike_tags_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                OBJECT_ROW_MISSING,
+                OBJECT_ROW_TEXT,
+                OBJECT_ROW_OTHER,
+                OBJECT_ROW_OTHER,
+            ]
+        );
+        assert!(object_row_real_numeric_tags_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                OBJECT_ROW_REAL_MISSING,
+                OBJECT_ROW_REAL_TEXT,
+                OBJECT_ROW_REAL_NUMERIC,
+                OBJECT_ROW_REAL_BOOL,
+            ]
+        );
+        assert!(!object_row_stringlike_tags_from_probes(&[99], &mut [0]));
     }
 
     #[test]

@@ -236,6 +236,16 @@ def _python_category_palette_rows_case(spec: dict) -> int:
     return kernels.category_palette_rows(int(spec["n_categories"]))
 
 
+def _python_object_row_stringlike_tags_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.object_row_stringlike_tags_from_probes(probes).tolist()
+
+
+def _python_object_row_real_numeric_tags_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.object_row_real_numeric_tags_from_probes(probes).tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -267,6 +277,8 @@ FACTORIZE_CASES = [
         "category_label_kind",
         "category_code_width",
         "category_palette_rows",
+        "object_row_stringlike_tags_batch",
+        "object_row_real_numeric_tags_batch",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -308,6 +320,12 @@ OBJECT_ROW_REAL_NUMERIC_TAG_CASES = [
 CATEGORY_LABEL_KIND_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_label_kind"]
 CATEGORY_CODE_WIDTH_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_code_width"]
 CATEGORY_PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_palette_rows"]
+OBJECT_ROW_STRINGLIKE_TAGS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_stringlike_tags_batch"
+]
+OBJECT_ROW_REAL_NUMERIC_TAGS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tags_batch"
+]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -525,6 +543,24 @@ def test_category_palette_rows_cross_host(spec: dict, node_results: dict[str, di
     palette_rows = _python_category_palette_rows_case(spec)
     node = node_results[spec["name"]]
     assert palette_rows == node["palette_rows"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_STRINGLIKE_TAGS_BATCH_CASES, ids=lambda s: s["name"])
+def test_object_row_stringlike_tags_batch_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    tags = _python_object_row_stringlike_tags_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert tags == node["tags"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_REAL_NUMERIC_TAGS_BATCH_CASES, ids=lambda s: s["name"])
+def test_object_row_real_numeric_tags_batch_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    tags = _python_object_row_real_numeric_tags_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert tags == node["tags"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

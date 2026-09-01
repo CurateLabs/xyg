@@ -895,6 +895,9 @@ payload encoding stays host-side.
 Python `palette_rgba8` and Node `categoryCodeWidth` / `categoryPaletteRows` share
 ABI 355 `xyg_category_code_width` and `xyg_category_palette_rows` for the 256
 category u8/u32 boundary and indexed palette row cap.
+Python `channels._object_column_is_*` and Node `objectColumnIs*` batch map host
+value probes through ABI 356 `xyg_object_row_*_tags_from_probes`; per-row Python/
+JS type inspection stays host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

@@ -1070,6 +1070,18 @@ def load() -> ctypes.CDLL:
     lib.xyg_category_code_width.argtypes = [ctypes.c_uint64]
     lib.xyg_category_palette_rows.restype = ctypes.c_uint64
     lib.xyg_category_palette_rows.argtypes = [ctypes.c_uint64]
+    lib.xyg_object_row_stringlike_tags_from_probes.restype = ctypes.c_int32
+    lib.xyg_object_row_stringlike_tags_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_object_row_real_numeric_tags_from_probes.restype = ctypes.c_int32
+    lib.xyg_object_row_real_numeric_tags_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6107,6 +6119,18 @@ def main() -> None:
     ok(
         lib.xyg_category_palette_rows(300) == 256 and lib.xyg_category_palette_rows(8) == 8,
         "category_palette_rows cap",
+    )
+    probes = array("B", [0, 2, 3, 1])
+    tags = array("B", [0, 0, 0, 0])
+    ok(
+        lib.xyg_object_row_stringlike_tags_from_probes(
+            _ptr(probes, ctypes.c_uint8),
+            len(probes),
+            _ptr(tags, ctypes.c_uint8),
+        )
+        == 1
+        and list(tags) == [0, 1, 2, 3],
+        "object_row_stringlike_tags_from_probes batch",
     )
     hex_css = array("B", b"#ff0000")
     ok(

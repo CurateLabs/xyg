@@ -17,6 +17,8 @@ import {
   xyObjectRowsAllRealNumeric,
   xyObjectRowStringlikeTagFromProbe,
   xyObjectRowRealNumericTagFromProbe,
+  xyObjectRowStringlikeTagsFromProbes,
+  xyObjectRowRealNumericTagsFromProbes,
   xyCategoryLabelKindFromProbe,
   xyCategoryCodeWidth,
   xyCategoryPaletteRows,
@@ -442,6 +444,28 @@ export function objectRowRealNumericTagFromProbe(probe) {
   return code;
 }
 
+export function objectRowStringlikeTagsFromProbes(probes) {
+  const src = probes instanceof Uint8Array ? probes : Uint8Array.from(probes, Number);
+  const out = new Uint8Array(src.length);
+  if (out.length === 0) return out;
+  const code = Number(
+    xyObjectRowStringlikeTagsFromProbes(u8Ptr(src), BigInt(src.length), u8Ptr(out)),
+  );
+  if (code !== 1) throw new RangeError("invalid object-row-stringlike-tags request");
+  return out;
+}
+
+export function objectRowRealNumericTagsFromProbes(probes) {
+  const src = probes instanceof Uint8Array ? probes : Uint8Array.from(probes, Number);
+  const out = new Uint8Array(src.length);
+  if (out.length === 0) return out;
+  const code = Number(
+    xyObjectRowRealNumericTagsFromProbes(u8Ptr(src), BigInt(src.length), u8Ptr(out)),
+  );
+  if (code !== 1) throw new RangeError("invalid object-row-real-numeric-tags request");
+  return out;
+}
+
 export function categoryLabelKindFromProbe(probe) {
   const code = Number(xyCategoryLabelKindFromProbe(Number(probe) & 0xff));
   if (code < 0) throw new RangeError("invalid category-label-kind request");
@@ -462,7 +486,8 @@ function objectRowRealNumericTag(value) {
 
 export function objectColumnIsRealNumeric(raw) {
   if (!Array.isArray(raw)) return false;
-  const tags = Uint8Array.from(raw, objectRowRealNumericTag);
+  const probes = Uint8Array.from(raw, valueProbe);
+  const tags = objectRowRealNumericTagsFromProbes(probes);
   const ok = Number(xyObjectRowsAllRealNumeric(pointer(tags, "uint8_t *"), BigInt(tags.length)));
   if (ok < 0) {
     throw new Error("native object_rows_all_real_numeric rejected the row tags");
@@ -476,7 +501,8 @@ function objectRowStringlikeTag(value) {
 
 export function objectColumnIsStringlike(raw) {
   if (!Array.isArray(raw)) return false;
-  const tags = Uint8Array.from(raw, objectRowStringlikeTag);
+  const probes = Uint8Array.from(raw, valueProbe);
+  const tags = objectRowStringlikeTagsFromProbes(probes);
   const ok = Number(xyObjectRowsAllStringlike(pointer(tags, "uint8_t *"), BigInt(tags.length)));
   if (ok < 0) {
     throw new Error("native object_rows_all_stringlike rejected the row tags");

@@ -370,11 +370,8 @@ def _object_column_is_stringlike(arr: np.ndarray) -> bool:
     """True when every row is missing or a string/bytes value."""
     if arr.dtype != object:
         return False
-    tags = np.fromiter(
-        (_object_row_stringlike_tag(value) for value in arr),
-        dtype=np.uint8,
-        count=len(arr),
-    )
+    probes = np.fromiter((_value_probe(value) for value in arr), dtype=np.uint8, count=len(arr))
+    tags = kernels.object_row_stringlike_tags_from_probes(probes)
     return kernels.object_rows_all_stringlike(tags)
 
 
@@ -445,11 +442,8 @@ def _factorize_categories(
 def _object_array_is_real_numeric(arr: np.ndarray) -> bool:
     if arr.dtype != object:
         return False
-    tags = np.fromiter(
-        (_object_row_real_numeric_tag(value) for value in arr),
-        dtype=np.uint8,
-        count=len(arr),
-    )
+    probes = np.fromiter((_value_probe(value) for value in arr), dtype=np.uint8, count=len(arr))
+    tags = kernels.object_row_real_numeric_tags_from_probes(probes)
     return kernels.object_rows_all_real_numeric(tags)
 
 
@@ -598,7 +592,7 @@ def resolve_color(
             # green, in the wrong order, with a legend of hex codes.
             return ColorChannel(mode="direct_rgba", rgba=literal)
         cats, codes, counts = _factorize_categories(arr)
-        if len(cats) > MAX_CATEGORIES:
+        if kernels.category_code_width(len(cats)) == 4:
             import warnings
 
             # The client's palette LUT is 256-wide; beyond that, codes collide

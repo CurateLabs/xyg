@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 355;
+pub const ABI_VERSION: u32 = 356;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10315,6 +10315,54 @@ pub unsafe extern "C" fn xyg_object_row_real_numeric_tag_from_probe(probe: u8) -
     ffi_guard(-1, || match kernels::object_row_real_numeric_tag_from_probe(probe) {
         Some(tag) => i32::from(tag),
         None => -1,
+    })
+}
+
+/// Batch map value probes to stringlike row tags (ABI 356).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_object_row_stringlike_tags_from_probes(
+    probes: *const u8,
+    n: usize,
+    out: *mut u8,
+) -> i32 {
+    ffi_guard(-1, || {
+        if n == 0 {
+            return 1;
+        }
+        if probes.is_null() || out.is_null() {
+            return -1;
+        }
+        let probes = std::slice::from_raw_parts(probes, n);
+        let out = std::slice::from_raw_parts_mut(out, n);
+        if kernels::object_row_stringlike_tags_from_probes(probes, out) {
+            1
+        } else {
+            -1
+        }
+    })
+}
+
+/// Batch map value probes to real-numeric row tags (ABI 356).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_object_row_real_numeric_tags_from_probes(
+    probes: *const u8,
+    n: usize,
+    out: *mut u8,
+) -> i32 {
+    ffi_guard(-1, || {
+        if n == 0 {
+            return 1;
+        }
+        if probes.is_null() || out.is_null() {
+            return -1;
+        }
+        let probes = std::slice::from_raw_parts(probes, n);
+        let out = std::slice::from_raw_parts_mut(out, n);
+        if kernels::object_row_real_numeric_tags_from_probes(probes, out) {
+            1
+        } else {
+            -1
+        }
     })
 }
 

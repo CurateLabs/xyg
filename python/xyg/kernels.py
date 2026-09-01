@@ -195,6 +195,8 @@ array_is_categorical = _impl.array_is_categorical
 real_numeric_dtype_admit = _impl.real_numeric_dtype_admit
 object_row_stringlike_tag_from_probe = _impl.object_row_stringlike_tag_from_probe
 object_row_real_numeric_tag_from_probe = _impl.object_row_real_numeric_tag_from_probe
+object_row_stringlike_tags_from_probes = _impl.object_row_stringlike_tags_from_probes
+object_row_real_numeric_tags_from_probes = _impl.object_row_real_numeric_tags_from_probes
 category_label_kind_from_probe = _impl.category_label_kind_from_probe
 category_code_width = _impl.category_code_width
 category_palette_rows = _impl.category_palette_rows
@@ -464,7 +466,9 @@ __all__ = [
     "normalize_f32",
     "normalize_window",
     "object_row_real_numeric_tag_from_probe",
+    "object_row_real_numeric_tags_from_probes",
     "object_row_stringlike_tag_from_probe",
+    "object_row_stringlike_tags_from_probes",
     "object_rows_all_real_numeric",
     "object_rows_all_stringlike",
     "paint_effective_rgba",

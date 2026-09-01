@@ -18,7 +18,7 @@ import {
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
 import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit, arrayIsCategorical, realNumericDtypeAdmit } from "../src/color.js";
-import { objectRowStringlikeTagFromProbe, objectRowRealNumericTagFromProbe, categoryLabelKindFromProbe, categoryCodeWidth, categoryPaletteRows } from "../src/factorize.js";
+import { objectRowStringlikeTagFromProbe, objectRowRealNumericTagFromProbe, categoryLabelKindFromProbe, categoryCodeWidth, categoryPaletteRows, objectRowStringlikeTagsFromProbes, objectRowRealNumericTagsFromProbes } from "../src/factorize.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -342,6 +342,20 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       palette_rows: categoryPaletteRows(spec.n_categories),
+    });
+    continue;
+  }
+  if (spec.kind === "object_row_stringlike_tags_batch") {
+    out.push({
+      name: spec.name,
+      tags: Array.from(objectRowStringlikeTagsFromProbes(spec.probes)),
+    });
+    continue;
+  }
+  if (spec.kind === "object_row_real_numeric_tags_batch") {
+    out.push({
+      name: spec.name,
+      tags: Array.from(objectRowRealNumericTagsFromProbes(spec.probes)),
     });
     continue;
   }

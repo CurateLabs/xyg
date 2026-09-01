@@ -408,6 +408,18 @@
       "kind": "category_palette_rows",
       "n_categories": 8,
       "palette_rows": 8
+    },
+    {
+      "name": "object_row_stringlike_tags_batch_mixed",
+      "kind": "object_row_stringlike_tags_batch",
+      "probes": [0, 2, 3, 1],
+      "tags": [0, 1, 2, 3]
+    },
+    {
+      "name": "object_row_real_numeric_tags_batch_mixed",
+      "kind": "object_row_real_numeric_tags_batch",
+      "probes": [0, 4, 1, 5],
+      "tags": [0, 1, 2, 4]
     }
   ]
 }
