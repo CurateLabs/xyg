@@ -22,6 +22,9 @@ import numpy as np
 
 from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
+from ._columns import column as _column
+from ._columns import column_ref as _column_ref
+from ._columns import density_column as _density_column
 from ._paint import (
     _css,
     effective_paint_rgba8,
@@ -38,6 +41,9 @@ from ._paint import (
 )
 from ._paint import (
     colormap_stops as _colormap_stops,
+)
+from ._paint import (
+    compat_grid_rgba as _compat_grid_rgba,
 )
 from ._paint import (
     corner_radii as _corner_radii,
@@ -58,10 +64,19 @@ from ._paint import (
     grad_stops as _grad_stops,
 )
 from ._paint import (
+    grid_dest_rect as _grid_dest_rect,
+)
+from ._paint import (
+    heatmap_rgba_grid as _heatmap_rgba_grid,
+)
+from ._paint import (
     paint_rgba8 as _parse_color,
 )
 from ._paint import (
     physical_density_alpha as _physical_density_alpha,
+)
+from ._paint import (
+    px_size as _px_size,
 )
 from ._paint import (
     rect_style_arrays as _rect_style_arrays,
@@ -100,16 +115,11 @@ from ._svg import (
     _axis_tick_label_strategy,
     _axis_tick_sides,
     _colorbar_right_axis_room,
-    _column,
-    _column_ref,
     _decode_title_geometry,
-    _density_column,
     _estimated_text_width,
-    _heatmap_rgba_grid,
     _legend_layout,
     _PolarProjection,
     _preserve_scene_chrome_for_axis_visibility,
-    _px_size,
     _resolve_static_css_vars,
     _Scale,
     _tick_label_anchor,
@@ -132,57 +142,6 @@ from ._svg import (
     slot_text_color,
     warp_grid_rgba,
 )
-
-
-def _grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
-    """Pixel destination rect (x, y, w, h) for a grid image, matching `_svg._grid_image`."""
-    px0, px1 = float(sx(x_range[0])), float(sx(x_range[1]))
-    py0, py1 = float(sy(y_range[1])), float(sy(y_range[0]))
-    return min(px0, px1), min(py0, py1), abs(px1 - px0), abs(py1 - py0)
-
-
-def _compat_grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple:
-    """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first)."""
-    w, h = int(g["w"]), int(g["h"])
-    stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
-    if kind == "density":
-        if g.get("enc") == "log-u8":
-            meta = cols[g["buf"]]
-            encoded = np.frombuffer(
-                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
-            )
-            gmax = float(g.get("max") or 1.0) or 1.0
-            rgba = kernels.density_rgba(
-                encoded,
-                w,
-                h,
-                gmax,
-                stops,
-                float(style.get("opacity", 0.85)),
-            )
-            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-        grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
-        gmax = float(g.get("max") or 1.0) or 1.0
-        rgba = kernels.density_rgba_linear(
-            grid,
-            w,
-            h,
-            gmax,
-            stops,
-            float(style.get("opacity", 0.85)),
-        )
-        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-    meta = cols[g["buf"]]
-    alpha = int(255 * float(style.get("opacity", 0.95)))
-    if g.get("enc") == "canonical-f64":
-        values = _column(blob, meta).reshape(h, w)
-        d0, d1 = (float(value) for value in g["domain"])
-        rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
-        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-    raw = _column(blob, meta).reshape(h, w)
-    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
-    return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-
 
 (
     _CLIP,

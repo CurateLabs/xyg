@@ -30,6 +30,9 @@ import numpy as np
 
 from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
+from ._columns import column as _column
+from ._columns import column_ref as _column_ref
+from ._columns import density_column as _density_column
 from ._paint import (
     _css,
     hexbin_ring,
@@ -54,10 +57,16 @@ from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
+    heatmap_rgba_grid as _heatmap_rgba_grid,
+)
+from ._paint import (
     paint_rgba8 as _paint_rgba8,
 )
 from ._paint import (
     physical_density_alpha as _physical_density_alpha,
+)
+from ._paint import (
+    px_size as _px_size,
 )
 from ._paint import (
     rgb_css as _rgb_css,
@@ -555,36 +564,6 @@ def _tick_text(axis: dict[str, Any], value: float, step: float) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _column(blob: bytes, meta: dict[str, Any]) -> np.ndarray:
-    dtype = np.uint8 if meta.get("dtype") == "u8" else np.float32
-    raw = np.frombuffer(blob, dtype=dtype, count=meta["len"], offset=meta["byte_offset"])
-    return raw.astype(np.float64) / (meta.get("scale") or 1.0) + meta.get("offset", 0.0)
-
-
-def _column_ref(blob: bytes, cols: list[Any], ref: Any) -> np.ndarray:
-    """Resolve a payload column reference (registry index or nested bar descriptor)."""
-    if isinstance(ref, dict):
-        if "byte_offset" in ref:
-            return _column(blob, ref)
-        if "col" in ref:
-            return _column(blob, cols[ref["col"]])
-        raise TypeError(f"invalid column reference: {ref!r}")
-    return _column(blob, cols[ref])
-
-
-def _density_column(blob: bytes, meta: dict[str, Any], density: dict[str, Any]) -> np.ndarray:
-    """Decode either legacy f32 counts or the compact log-u8 density wire."""
-    if density.get("enc") != "log-u8":
-        return _column(blob, meta)
-    values = np.frombuffer(
-        blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
-    ).astype(np.float64)
-    maximum = float(density.get("max") or 0.0)
-    if maximum <= 0.0:
-        return np.zeros(len(values), dtype=np.float64)
-    return np.expm1((values / 255.0) * np.log1p(maximum))
-
-
 class _Scale:
     """value -> px for one axis (linear / time-in-ms / log / category)."""
 
@@ -970,19 +949,6 @@ def _tick_label_anchor(axis: dict[str, Any], style: dict[str, Any], default: str
     with ``default`` (the classic layout) when unset."""
     raw = axis.get("tick_label_anchor") or style.get("tick_label_anchor")
     return raw if raw in ("start", "center", "end") else default
-
-
-def _px_size(value: Any, default: float) -> float:
-    """Tolerant CSS px length — `15` or `"15px"` — matching the browser, where
-    annotation styles land as CSS declarations; `default` on anything else."""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value.strip().removesuffix("px"))
-        except ValueError:
-            return default
-    return default
 
 
 #: Text properties the VECTOR writers honor on a chrome slot (SVG, and PDF via
@@ -5204,35 +5170,6 @@ def warp_grid_rgba(
     if rows is not None:
         rgba = rgba[rows, :]
     return rgba
-
-
-def _heatmap_rgba_grid(
-    hm: dict[str, Any],
-    blob: bytes,
-    cols: list[dict[str, Any]],
-    style: dict[str, Any],
-    borrowed: tuple[np.ndarray, ...] = (),
-) -> np.ndarray:
-    """Decode a heatmap as an `(h, w, 4)` uint8 grid, row 0 at the bottom."""
-    w, h = int(hm["w"]), int(hm["h"])
-    if "rgba_bufs" in hm:
-        channels = [_column(blob, cols[index]) for index in hm["rgba_bufs"]]
-        rgba = np.clip(np.column_stack(channels) * 255.0, 0, 255).astype(np.uint8)
-        rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
-        return rgba.reshape(h, w, 4)
-
-    meta = cols[hm["buf"]]
-    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
-    alpha = int(255 * _fill_opacity(style, 0.95))
-    if hm.get("enc") == "canonical-f64":
-        values = np.asarray(borrowed[int(meta["span"]) - 1], dtype=np.float64)[: int(meta["len"])]
-        d0, d1 = (float(value) for value in hm["domain"])
-        rgba = kernels.colormap_rgba_canonical(values.reshape(h, w), w, h, (d0, d1), stops, alpha)
-        return rgba[::-1]
-    values = _column(blob, meta)
-    raw = values.reshape(h, w)
-    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
-    return rgba[::-1]
 
 
 _POLAR_HEATMAP_MAX_DIMENSION = 4096

@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from . import _native, kernels
+from . import _columns, _native, kernels
 from .config import DEFAULT_PALETTE
 
 ColumnReader = Callable[[int], np.ndarray]
@@ -63,6 +63,18 @@ def fill_opacity(style: dict[str, Any], default: float = 1.0) -> float:
 def stroke_opacity(style: dict[str, Any], default: float = 1.0) -> float:
     """CSS whole-mark opacity multiplied by the stroke-only channel."""
     return float(style.get("opacity", default)) * float(style.get("stroke_opacity", 1.0))
+
+
+def px_size(value: Any, default: float) -> float:
+    """Tolerant CSS px length — `15` or `"15px"` — matching the browser."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip().removesuffix("px"))
+        except ValueError:
+            return default
+    return default
 
 
 def rgb_css(paint: Any) -> str:
@@ -786,3 +798,84 @@ def ribbon_fill_rgba8(
         trace, n, fallback, read, default_opacity=default_opacity
     )
     return source, rgba8(fills), rgba8(fills2)
+
+
+def grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
+    """Pixel destination rect (x, y, w, h) for a grid image, matching `_svg._grid_image`."""
+    px0, px1 = float(sx(x_range[0])), float(sx(x_range[1]))
+    py0, py1 = float(sy(y_range[1])), float(sy(y_range[0]))
+    return min(px0, px1), min(py0, py1), abs(px1 - px0), abs(py1 - py0)
+
+
+def heatmap_rgba_grid(
+    hm: dict[str, Any],
+    blob: bytes,
+    cols: list[dict[str, Any]],
+    style: dict[str, Any],
+    borrowed: tuple[np.ndarray, ...] = (),
+) -> np.ndarray:
+    """Decode a heatmap as an `(h, w, 4)` uint8 grid, row 0 at the bottom."""
+    w, h = int(hm["w"]), int(hm["h"])
+    if "rgba_bufs" in hm:
+        channels = [_columns.column(blob, cols[index]) for index in hm["rgba_bufs"]]
+        rgba = np.clip(np.column_stack(channels) * 255.0, 0, 255).astype(np.uint8)
+        rgba[:, 3] = (rgba[:, 3].astype(np.float64) * fill_opacity(style)).astype(np.uint8)
+        return rgba.reshape(h, w, 4)
+
+    meta = cols[hm["buf"]]
+    stops = np.asarray(colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
+    alpha = int(255 * fill_opacity(style, 0.95))
+    if hm.get("enc") == "canonical-f64":
+        values = np.asarray(borrowed[int(meta["span"]) - 1], dtype=np.float64)[: int(meta["len"])]
+        d0, d1 = (float(value) for value in hm["domain"])
+        rgba = kernels.colormap_rgba_canonical(values.reshape(h, w), w, h, (d0, d1), stops, alpha)
+        return rgba[::-1]
+    values = _columns.column(blob, meta)
+    raw = values.reshape(h, w)
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+    return rgba[::-1]
+
+
+def compat_grid_rgba(
+    kind: str, g: dict, blob: bytes, cols: list, style: dict
+) -> tuple[np.ndarray, list, list]:
+    """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first)."""
+    w, h = int(g["w"]), int(g["h"])
+    stops = np.asarray(colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
+    if kind == "density":
+        if g.get("enc") == "log-u8":
+            meta = cols[g["buf"]]
+            encoded = np.frombuffer(
+                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
+            )
+            gmax = float(g.get("max") or 1.0) or 1.0
+            rgba = kernels.density_rgba(
+                encoded,
+                w,
+                h,
+                gmax,
+                stops,
+                float(style.get("opacity", 0.85)),
+            )
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+        grid = _columns.density_column(blob, cols[g["buf"]], g).reshape(h, w)
+        gmax = float(g.get("max") or 1.0) or 1.0
+        rgba = kernels.density_rgba_linear(
+            grid,
+            w,
+            h,
+            gmax,
+            stops,
+            float(style.get("opacity", 0.85)),
+        )
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    meta = cols[g["buf"]]
+    alpha = int(255 * float(style.get("opacity", 0.95)))
+    if g.get("enc") == "canonical-f64":
+        values = _columns.column(blob, meta).reshape(h, w)
+        d0, d1 = (float(value) for value in g["domain"])
+        rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    raw = _columns.column(blob, meta).reshape(h, w)
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+    return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
