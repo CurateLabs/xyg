@@ -8687,6 +8687,65 @@ pub fn write_packed_strings(out_lens: &mut [u32], out_texts: &mut [u8], values: 
     Some(())
 }
 
+/// Sample a continuous color channel to canonical straight-alpha f64 RGBA rows.
+///
+/// Matches Python `channels.resolve_direct_rgba` / exporter LUT sampling.
+pub fn color_channel_direct_rgba_f64_continuous(
+    values: &[f64],
+    lo: f64,
+    hi: f64,
+    stops: &[[u8; 3]],
+) -> Option<Vec<f64>> {
+    if values.is_empty() {
+        return Some(Vec::new());
+    }
+    if stops.is_empty() || !domain_increasing_finite(lo, hi) {
+        return None;
+    }
+    let mut units = vec![0.0f64; values.len()];
+    for (unit, &value) in units.iter_mut().zip(values) {
+        *unit = f64::from(normalize_one_f32(value, lo, hi, 0.0));
+    }
+    let mut rgb = vec![0u8; values.len() * 3];
+    if !colormap_lut_into(&units, stops, &mut rgb) {
+        return None;
+    }
+    let mut out = Vec::with_capacity(values.len() * 4);
+    for i in 0..values.len() {
+        let base = i * 3;
+        out.push(rgb[base] as f64 / 255.0);
+        out.push(rgb[base + 1] as f64 / 255.0);
+        out.push(rgb[base + 2] as f64 / 255.0);
+        out.push(1.0);
+    }
+    Some(out)
+}
+
+/// Sample a categorical color channel to canonical straight-alpha f64 RGBA rows.
+pub fn color_channel_direct_rgba_f64_categorical(
+    codes: &[u32],
+    palette: &[&str],
+) -> Option<Vec<f64>> {
+    if palette.is_empty() {
+        return None;
+    }
+    if codes.is_empty() {
+        return Some(Vec::new());
+    }
+    let palette_len = palette.len();
+    let mut lut = vec![0u8; palette_len * 4];
+    palette_rows_rgba8(palette, palette_len, &mut lut, None)?;
+    let mut out = Vec::with_capacity(codes.len() * 4);
+    for &code in codes {
+        let idx = (code as usize) % palette_len;
+        let row = idx * 4;
+        for byte in &lut[row..row + 4] {
+            out.push(*byte as f64 / 255.0);
+        }
+    }
+    Some(out)
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -10506,6 +10565,27 @@ mod tests {
         assert_eq!(resolved.colors[1], "#111111");
         assert_eq!(resolved.colors[2], "#222222");
         assert_ne!(resolved.colors[1], resolved.colors[2]);
+    }
+
+    #[test]
+    fn color_channel_direct_rgba_f64_continuous_matches_lut_path() {
+        let values = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[255, 0, 0], [0, 255, 0]];
+        let rgba = color_channel_direct_rgba_f64_continuous(&values, 0.0, 1.0, &stops).expect("rgba");
+        assert_eq!(rgba.len(), 16);
+        assert!((rgba[0] - 1.0).abs() < 1e-12);
+        assert!((rgba[5] - 0.5019607843137255).abs() < 1e-6);
+        assert!((rgba[9] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn color_channel_direct_rgba_f64_categorical_indexes_palette() {
+        let rgba = color_channel_direct_rgba_f64_categorical(&[0, 1, 2], &["#ff0000", "#00ff00"])
+            .expect("rgba");
+        assert_eq!(rgba.len(), 12);
+        assert!((rgba[0] - 1.0).abs() < 1e-12);
+        assert!((rgba[5] - 1.0).abs() < 1e-12);
+        assert!((rgba[8] - 1.0).abs() < 1e-12);
     }
 
     #[test]

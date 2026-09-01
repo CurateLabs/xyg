@@ -870,6 +870,8 @@ Python `categorical_palette` and Node `categoricalPalette` repeat base palette
 colors through ABI 347 `xyg_categorical_palette`. Python `resolve_color`
 palette-map resolution and Node `categoricalPaletteMapResolve` share ABI 347
 `xyg_categorical_palette_map_resolve`; browser-only warnings stay host-side.
+Python `resolve_direct_rgba` and Node `colorChannelDirectRgbaF64*` sample LUT
+channels through ABI 348 `xyg_color_channel_direct_rgba_f64_*`.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

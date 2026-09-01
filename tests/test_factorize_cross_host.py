@@ -165,6 +165,23 @@ def _python_categorical_palette_map_case(spec: dict) -> dict[str, object]:
     )
 
 
+def _python_direct_rgba_continuous_case(spec: dict) -> list[list[float]]:
+    rgba = kernels.color_channel_direct_rgba_f64_continuous(
+        np.asarray(spec["values"], dtype=np.float64),
+        (float(spec["domain"][0]), float(spec["domain"][1])),
+        np.asarray(spec["stops"], dtype=np.uint8),
+    )
+    return rgba.tolist()
+
+
+def _python_direct_rgba_categorical_case(spec: dict) -> list[list[float]]:
+    rgba = kernels.color_channel_direct_rgba_f64_categorical(
+        np.asarray(spec["codes"], dtype=np.uint32),
+        spec["palette"],
+    )
+    return rgba.tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -183,6 +200,8 @@ FACTORIZE_CASES = [
         "stratified_sample_range_plan",
         "categorical_palette",
         "categorical_palette_map_resolve",
+        "color_channel_direct_rgba_f64_continuous",
+        "color_channel_direct_rgba_f64_categorical",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -196,6 +215,12 @@ STRATIFIED_PLAN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stratified_sa
 CATEGORICAL_PALETTE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "categorical_palette"]
 CATEGORICAL_PALETTE_MAP_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "categorical_palette_map_resolve"
+]
+DIRECT_RGBA_CONTINUOUS_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "color_channel_direct_rgba_f64_continuous"
+]
+DIRECT_RGBA_CATEGORICAL_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "color_channel_direct_rgba_f64_categorical"
 ]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
@@ -315,6 +340,24 @@ def test_categorical_palette_map_cross_host(spec: dict, node_results: dict[str, 
     assert resolved["colors"] == node["colors"]
     assert resolved["unmapped_count"] == node["unmapped_count"]
     assert resolved["map_exhausted"] == node["map_exhausted"]
+
+
+@pytest.mark.parametrize("spec", DIRECT_RGBA_CONTINUOUS_CASES, ids=lambda s: s["name"])
+def test_color_channel_direct_rgba_continuous_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    rows = _python_direct_rgba_continuous_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", DIRECT_RGBA_CATEGORICAL_CASES, ids=lambda s: s["name"])
+def test_color_channel_direct_rgba_categorical_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    rows = _python_direct_rgba_categorical_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rgba"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

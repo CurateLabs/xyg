@@ -40,6 +40,8 @@ palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8
 categorical_palette = _impl.categorical_palette
 categorical_palette_map_resolve = _impl.categorical_palette_map_resolve
+color_channel_direct_rgba_f64_continuous = _impl.color_channel_direct_rgba_f64_continuous
+color_channel_direct_rgba_f64_categorical = _impl.color_channel_direct_rgba_f64_categorical
 literal_color_rgba_f64 = _impl.literal_color_rgba_f64
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
@@ -357,9 +359,10 @@ __all__ = [
     "box_geometry",
     "box_stats",
     "categorical_palette",
-    "categorical_palette_map_resolve",
     "category_labels",
     "clip_quantize_u8",
+    "color_channel_direct_rgba_f64_categorical",
+    "color_channel_direct_rgba_f64_continuous",
     "colormap_lut",
     "colormap_lut_rgba8",
     "colormap_rgba",

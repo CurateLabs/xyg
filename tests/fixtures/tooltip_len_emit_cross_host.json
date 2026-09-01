@@ -2,7 +2,7 @@
   "schema": "xyg.tooltip-len-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js attachTooltipRows",
   "protocol": 12,
-  "abi_version": 347,
+  "abi_version": 348,
   "cases": [
     {
       "name": "scatter_tooltip_ok",

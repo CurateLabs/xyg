@@ -208,6 +208,19 @@
         "a": "#ff0000"
       },
       "default_palette": ["#111111", "#222222", "#333333"]
+    },
+    {
+      "name": "color_channel_direct_rgba_f64_continuous",
+      "kind": "color_channel_direct_rgba_f64_continuous",
+      "values": [0.0, 0.5, 1.0],
+      "domain": [0.0, 1.0],
+      "stops": [[255, 0, 0], [0, 255, 0]]
+    },
+    {
+      "name": "color_channel_direct_rgba_f64_categorical",
+      "kind": "color_channel_direct_rgba_f64_categorical",
+      "codes": [0, 1, 2],
+      "palette": ["#ff0000", "#00ff00"]
     }
   ]
 }

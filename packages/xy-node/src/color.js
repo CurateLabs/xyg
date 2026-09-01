@@ -3,8 +3,8 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve } from "./native.js";
-import { DEFAULT_PALETTE } from "./encode.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical } from "./native.js";
+import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
 function u8Ptr(view) {
@@ -355,6 +355,61 @@ export function categoricalPaletteMapResolve(categories, paletteMap, defaultPale
     unmappedCount: Number(unmapped[0]),
     mapExhausted: Boolean(exhausted[0]),
   };
+}
+
+/** Sample a continuous color channel to canonical f64 RGBA rows (ABI 348). */
+export function colorChannelDirectRgbaF64Continuous(values, domain, colormap) {
+  const vals = values instanceof Float64Array ? values : Float64Array.from(values, Number);
+  const lo = Number(domain[0]);
+  const hi = Number(domain[1]);
+  let stops;
+  if (typeof colormap === "string") {
+    stops = colormapNamedStops(colormap);
+  } else {
+    stops = Uint8Array.from(colormap);
+  }
+  const out = new Float64Array(vals.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyColorChannelDirectRgbaF64Continuous(
+    f64Ptr(vals),
+    BigInt(vals.length),
+    lo,
+    hi,
+    u8Ptr(stops),
+    BigInt(stops.length / 3),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid color-channel-direct-rgba-f64-continuous request");
+  }
+  return out;
+}
+
+/** Sample a categorical color channel to canonical f64 RGBA rows (ABI 348). */
+export function colorChannelDirectRgbaF64Categorical(codes, palette) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("colorChannelDirectRgbaF64Categorical requires a palette");
+  }
+  const codeArr = codes instanceof Uint32Array ? codes : Uint32Array.from(codes, Number);
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Float64Array(codeArr.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyColorChannelDirectRgbaF64Categorical(
+    u32Ptr(codeArr),
+    BigInt(codeArr.length),
+    u32Ptr(lens),
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid color-channel-direct-rgba-f64-categorical request");
+  }
+  return out;
 }
 
 function flattenRgbRows(raw, n) {

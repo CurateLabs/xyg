@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical } from "../src/color.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -229,6 +229,28 @@ for (const spec of fixture.cases) {
       unmapped_count: resolved.unmappedCount,
       map_exhausted: resolved.mapExhausted,
     });
+    continue;
+  }
+  if (spec.kind === "color_channel_direct_rgba_f64_continuous") {
+    const rgba = colorChannelDirectRgbaF64Continuous(
+      spec.values,
+      spec.domain,
+      Uint8Array.from(spec.stops.flat()),
+    );
+    const rows = [];
+    for (let i = 0; i < spec.values.length; i += 1) {
+      rows.push([...rgba.slice(i * 4, i * 4 + 4)]);
+    }
+    out.push({ name: spec.name, rgba: rows });
+    continue;
+  }
+  if (spec.kind === "color_channel_direct_rgba_f64_categorical") {
+    const rgba = colorChannelDirectRgbaF64Categorical(spec.codes, spec.palette);
+    const rows = [];
+    for (let i = 0; i < spec.codes.length; i += 1) {
+      rows.push([...rgba.slice(i * 4, i * 4 + 4)]);
+    }
+    out.push({ name: spec.name, rgba: rows });
     continue;
   }
   if (spec.kind === "stringlike") {

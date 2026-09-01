@@ -1001,6 +1001,28 @@ def load() -> ctypes.CDLL:
         U32P,
         U32P,
     ]
+    lib.xyg_color_channel_direct_rgba_f64_continuous.restype = ctypes.c_size_t
+    lib.xyg_color_channel_direct_rgba_f64_continuous.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_color_channel_direct_rgba_f64_categorical.restype = ctypes.c_size_t
+    lib.xyg_color_channel_direct_rgba_f64_categorical.argtypes = [
+        U32P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -4672,6 +4694,48 @@ def main() -> None:
     ok(
         map_written == 3 and map_unmapped[0] == 2 and map_exhausted[0] == 0,
         "categorical_palette_map_resolve basic",
+    )
+    direct_values = array("d", [0.0, 0.5, 1.0])
+    direct_stops = array("B", [255, 0, 0, 0, 255, 0])
+    direct_out = array("d", [0.0] * 12)
+    direct_written = lib.xyg_color_channel_direct_rgba_f64_continuous(
+        _ptr(direct_values, ctypes.c_double),
+        3,
+        0.0,
+        1.0,
+        _ptr(direct_stops, ctypes.c_uint8),
+        2,
+        _ptr(direct_out, ctypes.c_double),
+        len(direct_out),
+    )
+    ok(
+        direct_written == 3
+        and abs(direct_out[0] - 1.0) < 1e-12
+        and abs(direct_out[9] - 1.0) < 1e-12,
+        "color_channel_direct_rgba_f64_continuous basic",
+    )
+    direct_codes = array("I", [0, 1])
+    direct_palette = [b"#ff0000", b"#00ff00"]
+    direct_palette_lens = array("I", [len(item) for item in direct_palette])
+    direct_palette_packed = array("B")
+    for item in direct_palette:
+        direct_palette_packed.extend(item)
+    direct_cat_out = array("d", [0.0] * 8)
+    direct_cat_written = lib.xyg_color_channel_direct_rgba_f64_categorical(
+        _ptr(direct_codes, ctypes.c_uint32),
+        2,
+        _ptr(direct_palette_lens, ctypes.c_uint32),
+        _ptr(direct_palette_packed, ctypes.c_uint8),
+        len(direct_palette_packed),
+        2,
+        _ptr(direct_cat_out, ctypes.c_double),
+        len(direct_cat_out),
+    )
+    ok(
+        direct_cat_written == 2
+        and abs(direct_cat_out[0] - 1.0) < 1e-12
+        and abs(direct_cat_out[5] - 1.0) < 1e-12,
+        "color_channel_direct_rgba_f64_categorical basic",
     )
     literal_entries = [b"#ff0000", b"#00ff00"]
     literal_lens = array("I", [len(item) for item in literal_entries])

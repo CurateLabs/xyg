@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 347;
+pub const ABI_VERSION: u32 = 348;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10473,6 +10473,97 @@ pub unsafe extern "C" fn xyg_categorical_palette_map_resolve(
             *out_map_exhausted = u32::from(resolved.map_exhausted);
         }
         n_categories
+    })
+}
+
+/// Sample a continuous color channel to canonical f64 RGBA rows (ABI 348).
+///
+/// Returns the row count on success or `usize::MAX` on invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_color_channel_direct_rgba_f64_continuous(
+    values: *const f64,
+    n: usize,
+    lo: f64,
+    hi: f64,
+    stops: *const u8,
+    stop_count: usize,
+    out: *mut f64,
+    out_cap: usize,
+) -> usize {
+    let need = n.saturating_mul(4);
+    if need == usize::MAX || out_cap < need || values.is_null() || out.is_null() {
+        return usize::MAX;
+    }
+    if stop_count == 0 || stops.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let values_slice = std::slice::from_raw_parts(values, n);
+        let stop_bytes = std::slice::from_raw_parts(stops, stop_count * 3);
+        let stops_table: Vec<[u8; 3]> = stop_bytes
+            .chunks_exact(3)
+            .map(|chunk| [chunk[0], chunk[1], chunk[2]])
+            .collect();
+        if stops_table.is_empty() {
+            return usize::MAX;
+        }
+        let Some(rgba) =
+            kernels::color_channel_direct_rgba_f64_continuous(values_slice, lo, hi, &stops_table)
+        else {
+            return usize::MAX;
+        };
+        if rgba.len() != need {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts_mut(out, need).copy_from_slice(&rgba);
+        n
+    })
+}
+
+/// Sample a categorical color channel to canonical f64 RGBA rows (ABI 348).
+///
+/// Returns the row count on success or `usize::MAX` on invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_color_channel_direct_rgba_f64_categorical(
+    codes: *const u32,
+    n: usize,
+    entry_lens: *const u32,
+    entry_texts: *const u8,
+    entry_texts_len: usize,
+    n_entries: usize,
+    out: *mut f64,
+    out_cap: usize,
+) -> usize {
+    let need = n.saturating_mul(4);
+    if need == usize::MAX || out_cap < need || codes.is_null() || out.is_null() {
+        return usize::MAX;
+    }
+    if n_entries == 0 || entry_lens.is_null() {
+        return usize::MAX;
+    }
+    if entry_texts_len > 0 && entry_texts.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let codes_slice = std::slice::from_raw_parts(codes, n);
+        let lens = std::slice::from_raw_parts(entry_lens, n_entries);
+        let texts = if entry_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(entry_texts, entry_texts_len)
+        };
+        let Some(entries) = read_packed_utf8_labels(lens, texts) else {
+            return usize::MAX;
+        };
+        let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
+        let Some(rgba) = kernels::color_channel_direct_rgba_f64_categorical(codes_slice, &refs) else {
+            return usize::MAX;
+        };
+        if rgba.len() != need {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts_mut(out, need).copy_from_slice(&rgba);
+        n
     })
 }
 

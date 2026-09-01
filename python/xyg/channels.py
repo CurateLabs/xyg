@@ -1094,19 +1094,14 @@ def resolve_direct_rgba(cc: ColorChannel) -> ColorChannel:
     if cc.mode == "continuous":
         if cc.values is None or cc.domain is None:
             raise ValueError("continuous color channel missing values or domain")
-        unit = normalize_to_unit(cc.values, cc.domain)
-        rgb = kernels.colormap_lut(unit, _colormap_stops_rgb(cc.colormap))
-        rgba = np.empty((len(cc.values), 4), dtype=np.float64)
-        rgba[:, :3] = rgb.astype(np.float64) / 255.0
-        rgba[:, 3] = 1.0
+        rgba = kernels.color_channel_direct_rgba_f64_continuous(cc.values, cc.domain, cc.colormap)
         return ColorChannel(mode="direct_rgba", rgba=rgba)
     if cc.mode == "categorical":
         if cc.codes is None:
             raise ValueError("categorical color channel missing codes")
         palette = list(cc.palette or config.DEFAULT_PALETTE)
-        table = palette_rows_rgba8(palette, len(palette)).astype(np.float64) / 255.0
-        codes = np.asarray(cc.codes, dtype=np.int64)
-        return ColorChannel(mode="direct_rgba", rgba=table[codes % len(table)])
+        rgba = kernels.color_channel_direct_rgba_f64_categorical(cc.codes, palette)
+        return ColorChannel(mode="direct_rgba", rgba=rgba)
     return cc
 
 

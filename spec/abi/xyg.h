@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 347
-#define XYG_ABI_SIGNATURE_SHA256 "2bb8b3663d5883a9f2c7b778239c4c81312b76ec36b47f6cef81c02de21df930"
+#define XYG_ABI_VERSION 348
+#define XYG_ABI_SIGNATURE_SHA256 "29d61c35f87c6f4098b223bda5d8cedbc420f858c05a2c19c34dd5da4382a799"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +44,8 @@ size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0,
 size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 uint64_t xyg_chunked_columns_rows(uint64_t store);
 int32_t xyg_clip_quantize_u8(const double * values, size_t values_len, uint8_t * out, size_t out_len);
+size_t xyg_color_channel_direct_rgba_f64_categorical(const uint32_t * codes, size_t n, const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, double * out, size_t out_cap);
+size_t xyg_color_channel_direct_rgba_f64_continuous(const double * values, size_t n, double lo, double hi, const uint8_t * stops, size_t stop_count, double * out, size_t out_cap);
 int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out);
 int32_t xyg_colormap_lut_rgba8(const uint8_t * name, size_t name_len, const uint8_t * custom_stops, size_t custom_stop_count, size_t n_texels, uint8_t * out_rgba, size_t out_cap);
 int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);

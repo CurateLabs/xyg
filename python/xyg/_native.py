@@ -9591,6 +9591,59 @@ def categorical_palette_map_resolve(
     }
 
 
+def color_channel_direct_rgba_f64_continuous(
+    values: npt.NDArray[np.float64],
+    domain: tuple[float, float],
+    colormap: str | npt.NDArray[np.uint8],
+) -> npt.NDArray[np.float64]:
+    """Sample a continuous color channel to canonical f64 RGBA rows (ABI 348)."""
+    vals = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
+    if isinstance(colormap, str):
+        stops = np.asarray(colormap_stops(colormap), dtype=np.uint8)
+    else:
+        stops = np.ascontiguousarray(colormap, dtype=np.uint8).reshape(-1, 3)
+    out = np.empty(vals.size * 4, dtype=np.float64)
+    written = _lib.xyg_color_channel_direct_rgba_f64_continuous(
+        _ptr_f64(vals),
+        vals.size,
+        float(domain[0]),
+        float(domain[1]),
+        _ptr_u8(stops),
+        stops.shape[0],
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid color-channel-direct-rgba-f64-continuous request")
+    return out.reshape(vals.size, 4)
+
+
+def color_channel_direct_rgba_f64_categorical(
+    codes: np.ndarray,
+    palette: Sequence[str],
+) -> npt.NDArray[np.float64]:
+    """Sample a categorical color channel to canonical f64 RGBA rows (ABI 348)."""
+    entries = [str(entry) for entry in palette]
+    if not entries:
+        raise ValueError("color_channel_direct_rgba_f64_categorical requires a palette")
+    code_arr = np.ascontiguousarray(codes, dtype=np.uint32).reshape(-1)
+    lens, packed = _pack_utf8_strings(entries)
+    out = np.empty(code_arr.size * 4, dtype=np.float64)
+    written = _lib.xyg_color_channel_direct_rgba_f64_categorical(
+        code_arr.ctypes.data,
+        code_arr.size,
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(entries),
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid color-channel-direct-rgba-f64-categorical request")
+    return out.reshape(code_arr.size, 4)
+
+
 def colormap_lut_rgba8(
     colormap: str | npt.NDArray[np.uint8],
     *,
