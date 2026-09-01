@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 337;
+pub const ABI_VERSION: u32 = 338;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4496,6 +4496,130 @@ pub unsafe extern "C" fn xyg_label_codes_first_seen(
                 }
                 for (slot, code) in codes.iter().enumerate() {
                     out_codes[slot * 4..slot * 4 + 4].copy_from_slice(&code.to_le_bytes());
+                }
+            }
+            _ => return usize::MAX,
+        }
+        n_categories
+    })
+}
+
+/// Sorted display-label remap for native fixed-record categoricals.
+///
+/// Input labels are packed UTF-8 unique display labels in first-seen order.
+/// On success returns the sorted category count and writes `out_code_width`
+/// as `1` (u8 remap in the first `n` bytes of `out_remap`) or `4` (u32 remap
+/// in the first `n` little-endian u32 slots). When `in_counts` is non-null it
+/// must address `n` readable u64 counts and `out_category_counts` must address
+/// at least the returned category count; aggregated counts are written there.
+///
+/// # Safety
+/// Same as [`xyg_factorize_display_labels`], except `out_remap` receives the
+/// per-unique remap instead of per-row codes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_sorted_display_label_remap(
+    label_lens: *const u32,
+    label_texts: *const u8,
+    label_texts_len: usize,
+    n: usize,
+    in_counts: *const u64,
+    out_remap: *mut u8,
+    out_remap_cap: usize,
+    out_code_width: *mut u32,
+    out_category_lens: *mut u32,
+    out_category_texts: *mut u8,
+    out_category_texts_cap: usize,
+    category_lens_cap: usize,
+    out_category_counts: *mut u64,
+    out_category_counts_cap: usize,
+) -> usize {
+    if (label_texts_len > 0 && label_texts.is_null())
+        || out_remap_cap < n.saturating_mul(4)
+        || out_remap.is_null()
+        || out_code_width.is_null()
+        || (n > 0 && label_lens.is_null())
+    {
+        return usize::MAX;
+    }
+    if category_lens_cap == 0 && n > 0 {
+        return usize::MAX;
+    }
+    if (out_category_texts_cap > 0 && out_category_texts.is_null())
+        || (category_lens_cap > 0 && out_category_lens.is_null())
+    {
+        return usize::MAX;
+    }
+    if (in_counts.is_null() && out_category_counts_cap > 0 && out_category_counts.is_null())
+        || (!in_counts.is_null() && out_category_counts.is_null())
+    {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let label_lens = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(label_lens, n)
+        };
+        let label_texts = if label_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(label_texts, label_texts_len)
+        };
+        let counts = if in_counts.is_null() {
+            None
+        } else {
+            Some(std::slice::from_raw_parts(in_counts, n))
+        };
+        let Some(remapped) =
+            kernels::sorted_display_label_remap_packed(label_lens, label_texts, counts)
+        else {
+            return usize::MAX;
+        };
+        let n_categories = remapped.categories.len();
+        if n_categories > category_lens_cap
+            || (counts.is_some() && n_categories > out_category_counts_cap)
+        {
+            return usize::MAX;
+        }
+        let out_category_lens =
+            std::slice::from_raw_parts_mut(out_category_lens, category_lens_cap);
+        let out_category_texts =
+            std::slice::from_raw_parts_mut(out_category_texts, out_category_texts_cap);
+        if kernels::write_packed_utf8_labels(
+            &remapped.categories,
+            out_category_lens,
+            out_category_texts,
+        )
+        .is_none()
+        {
+            return usize::MAX;
+        }
+        if let (Some(agg), false) = (remapped.counts.as_ref(), out_category_counts.is_null()) {
+            let out_category_counts =
+                std::slice::from_raw_parts_mut(out_category_counts, out_category_counts_cap);
+            out_category_counts[..n_categories].copy_from_slice(agg);
+        }
+        let out_remap = std::slice::from_raw_parts_mut(out_remap, out_remap_cap);
+        *out_code_width = remapped.code_width;
+        match remapped.code_width {
+            kernels::FACTORIZE_DISPLAY_LABELS_CODE_U8 => {
+                let Some(remap) = remapped.remap_u8 else {
+                    return usize::MAX;
+                };
+                if remap.len() != n || out_remap.len() < n {
+                    return usize::MAX;
+                }
+                out_remap[..n].copy_from_slice(&remap);
+            }
+            kernels::FACTORIZE_DISPLAY_LABELS_CODE_U32 => {
+                let Some(remap) = remapped.remap_u32 else {
+                    return usize::MAX;
+                };
+                if remap.len() != n || out_remap.len() < n.saturating_mul(4) {
+                    return usize::MAX;
+                }
+                for (slot, code) in remap.iter().enumerate() {
+                    out_remap[slot * 4..slot * 4 + 4].copy_from_slice(&code.to_le_bytes());
                 }
             }
             _ => return usize::MAX,

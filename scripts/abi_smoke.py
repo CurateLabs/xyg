@@ -316,6 +316,23 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
+    lib.xyg_sorted_display_label_remap.restype = ctypes.c_size_t
+    lib.xyg_sorted_display_label_remap.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U64P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_factorize_use_native_probe.restype = ctypes.c_int32
     lib.xyg_factorize_use_native_probe.argtypes = [
         ctypes.c_uint32,
@@ -3154,6 +3171,42 @@ def main() -> None:
     ok(
         first_seen_blob == b"ba(missing)",
         "label_codes_first_seen first-seen categories",
+    )
+    sorted_remap_lens = array("I", [1, 1, 1])
+    sorted_remap_texts = array("B", b"bab")
+    sorted_remap_out = array("B", [99] * 12)
+    sorted_remap_width = array("I", [99])
+    sorted_remap_category_lens = array("I", [99] * 4)
+    sorted_remap_category_texts = array("B", [0] * 16)
+    sorted_remap_in_counts = array("Q", [2, 1, 3])
+    sorted_remap_out_counts = array("Q", [0] * 4)
+    sorted_remap_count = lib.xyg_sorted_display_label_remap(
+        _ptr(sorted_remap_lens, ctypes.c_uint32),
+        _ptr(sorted_remap_texts, ctypes.c_uint8),
+        len(sorted_remap_texts),
+        3,
+        _ptr(sorted_remap_in_counts, ctypes.c_uint64),
+        _ptr(sorted_remap_out, ctypes.c_uint8),
+        len(sorted_remap_out),
+        _ptr(sorted_remap_width, ctypes.c_uint32),
+        _ptr(sorted_remap_category_lens, ctypes.c_uint32),
+        _ptr(sorted_remap_category_texts, ctypes.c_uint8),
+        len(sorted_remap_category_texts),
+        4,
+        _ptr(sorted_remap_out_counts, ctypes.c_uint64),
+        4,
+    )
+    ok(
+        sorted_remap_count == 2 and sorted_remap_width[0] == 1,
+        "sorted_display_label_remap width",
+    )
+    ok(
+        list(sorted_remap_out[:3]) == [1, 0, 1],
+        "sorted_display_label_remap remap",
+    )
+    ok(
+        list(sorted_remap_out_counts[:2]) == [1, 5],
+        "sorted_display_label_remap counts",
     )
     ok(
         lib.xyg_factorize_use_native_probe(100, 4096, 4) == 1,

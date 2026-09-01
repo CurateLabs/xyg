@@ -940,6 +940,90 @@ pub fn factorize_display_labels_packed(
     factorize_display_labels(&refs)
 }
 
+/// Sorted unique categories plus remap for first-seen unique display labels.
+///
+/// Matches Python/Node `_factorize_categories` after native fixed-record
+/// factorization: each input label is one compact unique row's display label
+/// (duplicate display strings may appear), categories are sorted
+/// lexicographically, and `remap[i]` is the sorted code for input `i`.
+pub struct SortedDisplayLabelRemap {
+    pub categories: Vec<String>,
+    pub code_width: u32,
+    pub remap_u8: Option<Vec<u8>>,
+    pub remap_u32: Option<Vec<u32>>,
+    pub counts: Option<Vec<u64>>,
+}
+
+pub fn sorted_display_label_remap(
+    unique_labels: &[&str],
+    in_counts: Option<&[u64]>,
+) -> Option<SortedDisplayLabelRemap> {
+    if let Some(counts) = in_counts {
+        if counts.len() != unique_labels.len() {
+            return None;
+        }
+    }
+    if unique_labels.is_empty() {
+        return Some(SortedDisplayLabelRemap {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            remap_u8: Some(Vec::new()),
+            remap_u32: None,
+            counts: in_counts.map(|_| Vec::new()),
+        });
+    }
+    use std::collections::{BTreeSet, HashMap};
+    let categories: BTreeSet<&str> = unique_labels.iter().copied().collect();
+    let categories: Vec<String> = categories.into_iter().map(str::to_owned).collect();
+    let index: HashMap<&str, usize> = categories
+        .iter()
+        .enumerate()
+        .map(|(i, label)| (label.as_str(), i))
+        .collect();
+    let mut out_counts = in_counts.map(|_| vec![0u64; categories.len()]);
+    if let (Some(counts), Some(agg)) = (in_counts, out_counts.as_mut()) {
+        for (label, count) in unique_labels.iter().zip(counts.iter()) {
+            agg[*index.get(label)?] += *count;
+        }
+    }
+    if categories.len() <= 256 {
+        let remap: Vec<u8> = unique_labels
+            .iter()
+            .map(|label| u8::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(SortedDisplayLabelRemap {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            remap_u8: Some(remap),
+            remap_u32: None,
+            counts: out_counts,
+        })
+    } else {
+        let remap: Vec<u32> = unique_labels
+            .iter()
+            .map(|label| u32::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(SortedDisplayLabelRemap {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            remap_u8: None,
+            remap_u32: Some(remap),
+            counts: out_counts,
+        })
+    }
+}
+
+/// Packed UTF-8 unique labels → sorted categories + remap (+ optional counts).
+pub fn sorted_display_label_remap_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+    in_counts: Option<&[u64]>,
+) -> Option<SortedDisplayLabelRemap> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    sorted_display_label_remap(&refs, in_counts)
+}
+
 /// Dedupe display labels in first-seen order; codes index the dedup list.
 ///
 /// Matches Python `facets._label_codes`.
@@ -8874,6 +8958,21 @@ mod tests {
             Some(false)
         );
         assert!(object_rows_all_real_numeric(&[99]).is_none());
+    }
+
+    #[test]
+    fn sorted_display_label_remap_matches_host_policy() {
+        let empty = sorted_display_label_remap(&[], None).expect("empty");
+        assert!(empty.categories.is_empty());
+        assert_eq!(empty.remap_u8.as_deref(), Some(&[] as &[u8]));
+
+        let remapped = sorted_display_label_remap(&["b", "a", "b"], None).expect("basic");
+        assert_eq!(remapped.categories, vec!["a".to_owned(), "b".to_owned()]);
+        assert_eq!(remapped.remap_u8.as_deref(), Some([1, 0, 1].as_slice()));
+
+        let with_counts = sorted_display_label_remap(&["b", "a", "b"], Some(&[2, 1, 3]))
+            .expect("counts");
+        assert_eq!(with_counts.counts.as_deref(), Some([1, 5].as_slice()));
     }
 
     #[test]

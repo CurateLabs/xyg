@@ -11,6 +11,7 @@ import {
   xyCategoryLabelsPacked,
   xyFactorizeDisplayLabels,
   xyLabelCodesFirstSeen,
+  xySortedDisplayLabelRemap,
   xyFactorizeUseNativeProbe,
   xyObjectRowsAllStringlike,
   xyObjectRowsAllRealNumeric,
@@ -188,11 +189,78 @@ function useNativeFixedFactorizer(data, width) {
   return ok === 1;
 }
 
+function sortedDisplayLabelRemapJs(uniqueLabels, rawCounts = null) {
+  const n = uniqueLabels.length;
+  if (n === 0) {
+    return {
+      categories: [],
+      remap: new Uint8Array(0),
+      counts: rawCounts == null ? null : new BigUint64Array(0),
+      width: 1,
+    };
+  }
+  const enc = new TextEncoder();
+  const encoded = uniqueLabels.map((label) => enc.encode(label));
+  const lens = Uint32Array.from(encoded, (bytes) => bytes.length);
+  const texts = new Uint8Array(lens.reduce((sum, len) => sum + len, 0));
+  let offset = 0;
+  for (const bytes of encoded) {
+    texts.set(bytes, offset);
+    offset += bytes.length;
+  }
+  const outRemapRaw = new Uint8Array(n * 4);
+  const codeWidth = new Uint32Array(1);
+  const categoryLensCap = Math.max(n, 256);
+  const categoryLens = new Uint32Array(categoryLensCap);
+  const categoryTextsCap = Math.max(256, texts.length * 2);
+  const categoryTexts = new Uint8Array(categoryTextsCap);
+  const categoryCounts = new BigUint64Array(categoryLensCap);
+  const inCountsPtr =
+    rawCounts == null ? null : u64Ptr(rawCounts.subarray(0, n));
+  const written = xySortedDisplayLabelRemap(
+    u32Ptr(lens),
+    u8Ptr(texts),
+    BigInt(texts.length),
+    BigInt(n),
+    inCountsPtr,
+    u8Ptr(outRemapRaw),
+    BigInt(outRemapRaw.length),
+    u32Ptr(codeWidth),
+    u32Ptr(categoryLens),
+    u8Ptr(categoryTexts),
+    BigInt(categoryTexts.length),
+    BigInt(categoryLensCap),
+    rawCounts == null ? null : u64Ptr(categoryCounts),
+    rawCounts == null ? 0n : BigInt(categoryCounts.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("native sorted_display_label_remap rejected the label array");
+  }
+  const nCategories = Number(written);
+  const categories = [];
+  let textOffset = 0;
+  const dec = new TextDecoder();
+  for (let i = 0; i < nCategories; i += 1) {
+    const len = categoryLens[i];
+    categories.push(dec.decode(categoryTexts.subarray(textOffset, textOffset + len)));
+    textOffset += len;
+  }
+  const width = Number(codeWidth[0]);
+  let remap;
+  if (width === 1) {
+    remap = outRemapRaw.slice(0, n);
+  } else if (width === 4) {
+    remap = new Uint32Array(outRemapRaw.buffer, outRemapRaw.byteOffset, n);
+  } else {
+    throw new RangeError("native sorted_display_label_remap returned an unknown code width");
+  }
+  const counts =
+    rawCounts == null ? null : categoryCounts.subarray(0, nCategories);
+  return { categories, remap, counts, width };
+}
+
 function sortedCategoryRemap(uniqueLabels) {
-  const categories = [...new Set(uniqueLabels)].sort();
-  const index = new Map(categories.map((label, i) => [label, i]));
-  const remap = uniqueLabels.map((label) => index.get(label));
-  return { categories, remap };
+  return sortedDisplayLabelRemapJs(uniqueLabels);
 }
 
 function remapIsIdentity(remap) {
@@ -200,15 +268,6 @@ function remapIsIdentity(remap) {
     if (remap[i] !== i) return false;
   }
   return true;
-}
-
-function aggregateCounts(uniqueLabels, rawCounts, categories) {
-  const index = new Map(categories.map((label, i) => [label, i]));
-  const counts = new BigUint64Array(categories.length);
-  for (let i = 0; i < uniqueLabels.length; i += 1) {
-    counts[index.get(uniqueLabels[i])] += BigInt(rawCounts[i]);
-  }
-  return counts;
 }
 
 function finalizeCompactFactorization(
@@ -226,15 +285,14 @@ function finalizeCompactFactorization(
       labelAt != null ? labelAt(idx) : categoryLabel(decodeRecord(view, idx, width)),
     );
   }
-  const { categories, remap } = sortedCategoryRemap(uniqueLabels);
+  const { categories, remap, counts } = sortedDisplayLabelRemapJs(uniqueLabels, rawCounts);
   if (!remapIsIdentity(remap)) {
-    const mapping = Uint8Array.from(remap);
+    const mapping = remap instanceof Uint8Array ? remap : Uint8Array.from(remap);
     const ok = Number(
       xyRemapU8(u8Ptr(rawCodes), BigInt(rawCodes.length), u8Ptr(mapping), BigInt(mapping.length)),
     );
     if (ok !== 1) throw new RangeError("native remap_u8 rejected categorical remap");
   }
-  const counts = aggregateCounts(uniqueLabels, rawCounts, categories);
   return {
     mode: "categorical",
     codes: rawCodes,
@@ -352,7 +410,7 @@ function factorizeFixedWide(data, width, labelAt) {
       labelAt != null ? labelAt(idx) : categoryLabel(decodeRecord(data, idx, width)),
     );
   }
-  const { categories, remap } = sortedCategoryRemap(uniqueLabels);
+  const { categories, remap } = sortedDisplayLabelRemapJs(uniqueLabels);
   const outCodes =
     categories.length <= MAX_CATEGORIES ? new Uint8Array(n) : new Uint32Array(n);
   for (let i = 0; i < n; i += 1) {
@@ -521,6 +579,11 @@ function labelCodesFirstSeenJs(labels) {
     throw new RangeError("native label_codes_first_seen returned an unknown code width");
   }
   return { categories, codes };
+}
+
+export function sortedDisplayLabelRemap(uniqueLabels, rawCounts = null) {
+  const { categories, remap, counts } = sortedDisplayLabelRemapJs(uniqueLabels, rawCounts);
+  return { categories, remap, counts };
 }
 
 /**

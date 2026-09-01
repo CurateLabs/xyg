@@ -2,7 +2,7 @@
   "schema": "xyg.animation-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
   "protocol": 12,
-  "abi_version": 337,
+  "abi_version": 338,
   "cases": [
     {
       "name": "scatter_animation",

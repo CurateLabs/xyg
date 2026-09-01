@@ -1089,6 +1089,86 @@ def label_codes_first_seen(
     return categories, codes
 
 
+def sorted_display_label_remap(
+    labels: list[str] | npt.NDArray[np.str_],
+    counts: npt.NDArray[np.uint64] | None = None,
+) -> tuple[
+    list[str],
+    npt.NDArray[np.uint8] | npt.NDArray[np.uint32],
+    npt.NDArray[np.uint64] | None,
+]:
+    """Sorted categories plus remap for first-seen unique display labels."""
+    if isinstance(labels, np.ndarray):
+        if labels.dtype.kind not in ("U", "S") or labels.ndim != 1:
+            raise ValueError("sorted_display_label_remap expects a 1-D string array")
+        row_labels = [str(value) for value in labels]
+    else:
+        row_labels = [str(value) for value in labels]
+    n = len(row_labels)
+    if counts is not None and len(counts) != n:
+        raise ValueError("sorted_display_label_remap counts must match labels")
+    if n == 0:
+        return (
+            [],
+            np.empty(0, dtype=np.uint8),
+            None if counts is None else np.empty(0, dtype=np.uint64),
+        )
+    label_lens = np.fromiter(
+        (len(label.encode("utf-8")) for label in row_labels),
+        dtype=np.uint32,
+        count=n,
+    )
+    label_texts = b"".join(label.encode("utf-8") for label in row_labels)
+    texts = np.frombuffer(label_texts, dtype=np.uint8)
+    out_remap_raw = np.empty(n * 4, dtype=np.uint8)
+    code_width = np.empty(1, dtype=np.uint32)
+    category_lens_cap = max(n, 256)
+    category_lens = np.empty(category_lens_cap, dtype=np.uint32)
+    category_texts_cap = max(256, len(label_texts) * 2)
+    category_texts = np.empty(category_texts_cap, dtype=np.uint8)
+    category_counts_cap = category_lens_cap
+    category_counts = np.empty(category_counts_cap, dtype=np.uint64)
+    in_counts_ptr = counts.ctypes.data if counts is not None else None
+    written = _lib.xyg_sorted_display_label_remap(
+        label_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        in_counts_ptr,
+        out_remap_raw.ctypes.data,
+        len(out_remap_raw),
+        code_width.ctypes.data,
+        category_lens.ctypes.data,
+        category_texts.ctypes.data,
+        len(category_texts),
+        category_lens_cap,
+        category_counts.ctypes.data if counts is not None else None,
+        category_counts_cap if counts is not None else 0,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native sorted_display_label_remap rejected the label array")
+    n_categories = int(written)
+    cat_lens = category_lens[:n_categories]
+    cat_bytes = category_texts[: int(cat_lens.sum())].tobytes()
+    categories: list[str] = []
+    offset = 0
+    for length in cat_lens:
+        end = offset + int(length)
+        categories.append(cat_bytes[offset:end].decode("utf-8"))
+        offset = end
+    width = int(code_width[0])
+    if width == 1:
+        remap = out_remap_raw[:n].copy()
+    elif width == 4:
+        remap = np.frombuffer(out_remap_raw[: n * 4], dtype="<u4").copy()
+    else:
+        raise ValueError("native sorted_display_label_remap returned an unknown code width")
+    out_counts = None
+    if counts is not None:
+        out_counts = category_counts[:n_categories].copy()
+    return categories, remap, out_counts
+
+
 def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int) -> bool:
     """Whether the native fixed-record factorizer should run on a probe sample."""
     if isinstance(distinct, (bool, np.bool_)) or isinstance(probe_len, (bool, np.bool_)):

@@ -444,31 +444,18 @@ def _factorize_categories(
         if compact is not None:
             raw_codes, unique_indices, raw_counts = compact
             unique_labels = _category_labels(arr[unique_indices])
-            categories = sorted(set(unique_labels))
-            index = {label: i for i, label in enumerate(categories)}
-            remap = np.fromiter(
-                (index[label] for label in unique_labels),
-                dtype=np.uint8,
-                count=len(unique_labels),
+            categories, remap, counts = kernels.sorted_display_label_remap(
+                unique_labels, raw_counts
             )
-            identity = np.arange(len(remap), dtype=np.uint8)
-            if not np.array_equal(remap, identity):
+            if not np.array_equal(remap, np.arange(len(remap), dtype=remap.dtype)):
                 kernels.remap_u8(raw_codes, remap)
-            counts = np.zeros(len(categories), dtype=np.uint64)
-            for label, count in zip(unique_labels, raw_counts, strict=True):
-                counts[index[label]] += count
             return categories, raw_codes, counts
 
         raw_codes, unique_indices = kernels.factorize_fixed(arr)
         unique_labels = _category_labels(arr[unique_indices])
-        categories = sorted(set(unique_labels))
-        index = {label: i for i, label in enumerate(categories)}
-        dtype = _category_code_dtype(len(categories))
-        remap = np.fromiter(
-            (index[label] for label in unique_labels),
-            dtype=dtype,
-            count=len(unique_labels),
-        )
+        categories, remap, _counts = kernels.sorted_display_label_remap(unique_labels)
+        if int(remap.dtype.itemsize) == 1:
+            return categories, remap[raw_codes.astype(np.intp, copy=False)], None
         return categories, remap[raw_codes], None
 
     labels = _category_labels(arr.astype(object))

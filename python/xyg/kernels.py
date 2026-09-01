@@ -155,6 +155,7 @@ factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
 factorize_unicode1_u8_counts = _impl.factorize_unicode1_u8_counts
 factorize_display_labels = _impl.factorize_display_labels
 label_codes_first_seen = _impl.label_codes_first_seen
+sorted_display_label_remap = _impl.sorted_display_label_remap
 factorize_use_native_probe = _impl.factorize_use_native_probe
 category_labels = _impl.category_labels
 object_rows_all_stringlike = _impl.object_rows_all_stringlike
@@ -564,6 +565,7 @@ __all__ = [
     "scene_xytc_trace_dispatch_plan",
     "screen_shape",
     "sector_triangles",
+    "sorted_display_label_remap",
     "spectrogram",
     "stacked_bounds",
     "stratified_sample_mask",
