@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from itertools import pairwise
+from typing import Any, Optional, cast
 
 import numpy as np
 
@@ -27,6 +28,7 @@ from ._export_ticks import (
     axis_ticks,
 )
 from ._paint import _css
+from ._paint import authored_marker_points as _authored_marker_points
 from ._paint import colormap_lut as _lut
 from ._paint import css_rgba8 as _rgba
 from ._paint import paint_rgba8 as _parse_color

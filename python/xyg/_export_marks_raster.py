@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -18,6 +19,7 @@ from ._export_annotations import (
     annotation_label_placement,
 )
 from ._export_chrome import _TEXT
+from ._export_heatmap import polar_heatmap_rgba
 from ._export_raster_cmd import (
     _CAP_CODES,
     _SYMBOLS,
@@ -25,6 +27,7 @@ from ._export_raster_cmd import (
     _rect_pts,
     _round_rect_pts,
 )
+from ._fontmetrics import estimated_text_width as _estimated_text_width
 from ._layout import _Scale, affine_fast_path, polar_wedge_points, warp_grid_rgba
 from ._paint import (
     _css,

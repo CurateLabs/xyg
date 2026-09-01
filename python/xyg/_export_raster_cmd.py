@@ -5,11 +5,12 @@ from __future__ import annotations
 import math
 import struct
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from . import _textblock
+from ._layout import _Scale
 from ._paint import colormap_stops as _colormap_stops
 from .config import DEFAULT_PALETTE
 
