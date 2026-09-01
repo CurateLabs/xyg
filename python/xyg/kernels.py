@@ -76,6 +76,7 @@ density_wasm_eligible = _impl.density_wasm_eligible
 delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
+aligned_window = _impl.aligned_window
 encode_f32 = _impl.encode_f32
 encoded_column_meta = _impl.encoded_column_meta
 f32_safe_scale = _impl.f32_safe_scale
@@ -314,6 +315,7 @@ __all__ = [
     "PAYLOAD_NONXY_KIND_RECT",
     "PAYLOAD_SHIP_CHANNELS_ALWAYS",
     "PAYLOAD_SHIP_CHANNELS_IF_COLOR",
+    "aligned_window",
     "argsort_stable",
     "arrow_end_decoration",
     "arrow_geometry",

@@ -53,6 +53,24 @@ def _python_case(spec: dict) -> dict:
             float(spec["exit_factor"]),
         )
         return {"name": spec["name"], "exact": exact}
+    if spec["kind"] == "aligned_window":
+        lo, hi = kernels.aligned_window(
+            float(spec["lo"]),
+            float(spec["hi"]),
+            float(spec["extent_lo"]),
+            float(spec["extent_hi"]),
+            float(spec["pad"]),
+        )
+        return {"name": spec["name"], "lo": lo, "hi": hi}
+    if spec["kind"] == "aligned_window_pair":
+        a = _python_case({**spec["a"], "name": f"{spec['name']}_a", "kind": "aligned_window"})
+        b = _python_case({**spec["b"], "name": f"{spec['name']}_b", "kind": "aligned_window"})
+        return {
+            "name": spec["name"],
+            "a": [a["lo"], a["hi"]],
+            "b": [b["lo"], b["hi"]],
+            "equal": a["lo"] == b["lo"] and a["hi"] == b["hi"],
+        }
     column = lod.encode_f32_values(
         spec["values"],
         float(spec["offset"]),
@@ -96,6 +114,16 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
         return
     if spec["kind"] == "drill_decision":
         assert py["exact"] == node["exact"]
+        return
+    if spec["kind"] == "aligned_window":
+        assert py["lo"] == node["lo"]
+        assert py["hi"] == node["hi"]
+        return
+    if spec["kind"] == "aligned_window_pair":
+        assert py["equal"] is True
+        assert node["equal"] is True
+        assert py["a"] == node["a"]
+        assert py["b"] == node["b"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]

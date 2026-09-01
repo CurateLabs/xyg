@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { drillDecision, encodeF32Values, lodPlan } from "../src/encode.js";
+import { drillDecision, encodeF32Values, lodPlan, alignedWindow } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "lod_cross_host.json");
@@ -16,7 +16,29 @@ function shaF32(values) {
   return createHash("sha256").update(Buffer.from(bytes)).digest("hex");
 }
 
+function runAligned(spec) {
+  const window = alignedWindow(spec.lo, spec.hi, spec.extent_lo, spec.extent_hi, spec.pad);
+  return {
+    name: spec.name,
+    lo: window[0],
+    hi: window[1],
+  };
+}
+
 function runCase(spec) {
+  if (spec.kind === "aligned_window") {
+    return runAligned(spec);
+  }
+  if (spec.kind === "aligned_window_pair") {
+    const a = runAligned({ ...spec.a, name: `${spec.name}_a` });
+    const b = runAligned({ ...spec.b, name: `${spec.name}_b` });
+    return {
+      name: spec.name,
+      a: [a.lo, a.hi],
+      b: [b.lo, b.hi],
+      equal: a.lo === b.lo && a.hi === b.hi,
+    };
+  }
   if (spec.kind === "lod_plan") {
     const plan = lodPlan(spec.visible, spec.budget, {
       inDrill: spec.in_drill,

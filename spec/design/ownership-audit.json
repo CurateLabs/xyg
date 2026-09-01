@@ -2211,7 +2211,7 @@
       "policy": "python-scene-migration",
       "disposition": "split-and-move-rust",
       "follow_up_issue": 58,
-      "rationale": "LOD decision math and f32 encode delegate to Rust (xy_lod_plan, xy_drill_decision, xy_encode_f32, ABI 255); cross-host proof in tests/test_lod_cross_host.py. Stay-host: trace drill_history cache, aligned_window pad grid, BufferWriter wire packing."
+      "rationale": "LOD decision math, f32 encode, and aligned_window delegate to Rust (xy_lod_plan, xy_drill_decision, xy_encode_f32, xyg_aligned_window ABI 326, ABI 255); cross-host proof in tests/test_lod_cross_host.py. Stay-host: trace drill_history cache and BufferWriter wire packing."
     },
     {
       "path": "python/xyg/marks.py",

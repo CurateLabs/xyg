@@ -1200,6 +1200,26 @@ def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
     return float(out.value)
 
 
+def aligned_window(
+    lo: float, hi: float, extent_lo: float, extent_hi: float, pad: float
+) -> tuple[float, float]:
+    """Snap a 1-D window outward to the power-of-two grid over its extent (ABI 326, LOD T13)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    ok = _lib.xyg_aligned_window(
+        float(lo),
+        float(hi),
+        float(extent_lo),
+        float(extent_hi),
+        float(pad),
+        ctypes.byref(out_lo),
+        ctypes.byref(out_hi),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native aligned_window failed (output undefined)")
+    return float(out_lo.value), float(out_hi.value)
+
+
 def encoded_column_meta(
     offset: float, lo: float, hi: float, kind: str | None = None
 ) -> tuple[float, float, bool]:

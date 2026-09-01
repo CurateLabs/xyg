@@ -5,14 +5,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 325
-#define XYG_ABI_SIGNATURE_SHA256 "1cedacd317cc3bf7086e526e07d07bb9ec2c415f1ba1c3efc567b69412b2d444"
+#define XYG_ABI_VERSION 326
+#define XYG_ABI_SIGNATURE_SHA256 "b987c507f8a7a4d9449bfa62a80b63438cbcd9896b8cf3208d45a5c7ac985c64"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 uint32_t xyg_abi_version();
+int32_t xyg_aligned_window(double lo, double hi, double extent_lo, double extent_hi, double pad, double * out_lo, double * out_hi);
 size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity);
 size_t xyg_arrow_end_decoration(double px, double py, double dx, double dy, const uint8_t * style, size_t style_len, double head, double * out_x, double * out_y, size_t capacity, int32_t * out_kind);
 int32_t xyg_arrow_geometry(double x0, double y0, double x1, double y1, const double * style, size_t style_len, double * out, size_t out_len);

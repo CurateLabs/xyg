@@ -67,6 +67,30 @@
       "lo": 0.0,
       "hi": 0.0,
       "kind": null
+    },
+    {
+      "name": "aligned_window_contains",
+      "kind": "aligned_window",
+      "lo": -3.0,
+      "hi": 5.0,
+      "extent_lo": 0.0,
+      "extent_hi": 100.0,
+      "pad": 2.0
+    },
+    {
+      "name": "aligned_window_pan_stable",
+      "kind": "aligned_window_pair",
+      "a": {"lo": 10.0, "hi": 14.0, "extent_lo": 0.0, "extent_hi": 128.0, "pad": 2.0},
+      "b": {"lo": 10.5, "hi": 14.5, "extent_lo": 0.0, "extent_hi": 128.0, "pad": 2.0}
+    },
+    {
+      "name": "aligned_window_degenerate",
+      "kind": "aligned_window",
+      "lo": 1.0,
+      "hi": 9.0,
+      "extent_lo": 0.0,
+      "extent_hi": 10.0,
+      "pad": 4.0
     }
   ]
 }

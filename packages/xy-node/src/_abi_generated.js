@@ -1,12 +1,13 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 325;
-export const SIGNATURE_SHA256 = "1cedacd317cc3bf7086e526e07d07bb9ec2c415f1ba1c3efc567b69412b2d444";
+export const ABI_VERSION = 326;
+export const SIGNATURE_SHA256 = "b987c507f8a7a4d9449bfa62a80b63438cbcd9896b8cf3208d45a5c7ac985c64";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
 }
 
+export let xyAlignedWindow;
 export let xyArgsortStable;
 export let xyArrowEndDecoration;
 export let xyArrowGeometry;
@@ -440,6 +441,7 @@ export let xyZoneMaps;
 export let xyZoneMapsPair;
 
 export function bindGeneratedAbi(lib) {
+  xyAlignedWindow = lib.func("int32_t xyg_aligned_window(double lo, double hi, double extent_lo, double extent_hi, double pad, double * out_lo, double * out_hi)");
   xyArgsortStable = lib.func("size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity)");
   xyArrowEndDecoration = lib.func("size_t xyg_arrow_end_decoration(double px, double py, double dx, double dy, const uint8_t * style, size_t style_len, double head, double * out_x, double * out_y, size_t capacity, int32_t * out_kind)");
   xyArrowGeometry = lib.func("int32_t xyg_arrow_geometry(double x0, double y0, double x1, double y1, const double * style, size_t style_len, double * out, size_t out_len)");

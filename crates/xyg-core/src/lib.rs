@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 325;
+pub const ABI_VERSION: u32 = 326;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7094,6 +7094,34 @@ pub unsafe extern "C" fn xyg_f32_safe_scale(
     }
     ffi_guard(0, || {
         *out_scale = kernels::f32_safe_scale(offset, lo, hi);
+        1
+    })
+}
+
+/// Snap a 1-D window outward to the power-of-two grid over its extent (ABI 326, LOD T13).
+///
+/// Writes `out_lo` and `out_hi`. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `out_lo` and `out_hi` must be writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_aligned_window(
+    lo: f64,
+    hi: f64,
+    extent_lo: f64,
+    extent_hi: f64,
+    pad: f64,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    if out_lo.is_null() || out_hi.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let (aligned_lo, aligned_hi) =
+            kernels::aligned_window(lo, hi, extent_lo, extent_hi, pad);
+        *out_lo = aligned_lo;
+        *out_hi = aligned_hi;
         1
     })
 }

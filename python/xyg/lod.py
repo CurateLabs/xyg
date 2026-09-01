@@ -790,23 +790,13 @@ def aligned_window(
     input window (client request elision needs containment, and a view panned
     past the data extent must stay contained even though nothing lives there);
     the snapped span stays within ``(1 + 2·pad) × span`` of the input window.
+
+    Decision math lives in Rust (`xyg_aligned_window`, ABI 326); this host only
+    coerces arguments.
     """
-    span = hi - lo
-    extent = extent_hi - extent_lo
-    if not (
-        np.isfinite(span) and np.isfinite(extent) and span > 0.0 and extent > 0.0 and pad >= 1.0
-    ):
-        return lo, hi
-    if pad * span >= extent:
-        return min(extent_lo, lo), max(extent_hi, hi)
-    level = max(0, math.ceil(math.log2(extent / (pad * span))))
-    block = extent / (1 << level)
-    b0 = math.floor((lo - extent_lo) / block)
-    b1 = math.ceil((hi - extent_lo) / block)
-    # The min/max guards absorb the one-ulp case where a bound lands exactly
-    # on a grid line and float rounding would nudge the snapped edge inside
-    # the window — containment is the contract, alignment the optimization.
-    return (min(lo, extent_lo + b0 * block), max(hi, extent_lo + b1 * block))
+    return kernels.aligned_window(
+        float(lo), float(hi), float(extent_lo), float(extent_hi), float(pad)
+    )
 
 
 class BufferWriter:

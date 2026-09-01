@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 325
-SIGNATURE_SHA256 = "1cedacd317cc3bf7086e526e07d07bb9ec2c415f1ba1c3efc567b69412b2d444"
+ABI_VERSION = 326
+SIGNATURE_SHA256 = "b987c507f8a7a4d9449bfa62a80b63438cbcd9896b8cf3208d45a5c7ac985c64"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -18,6 +18,10 @@ def bind_abi_version(lib: ctypes.CDLL):
 
 
 def bind_generated_abi(lib: ctypes.CDLL) -> None:
+    # int32_t xyg_aligned_window(double lo, double hi, double extent_lo, double extent_hi, double pad, double * out_lo, double * out_hi)
+    function = lib.xyg_aligned_window
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity)
     function = lib.xyg_argsort_stable
     function.restype = ctypes.c_size_t

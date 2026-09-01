@@ -2540,6 +2540,44 @@ pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
     }
 }
 
+/// Snap a 1-D window outward to the power-of-two grid over its extent (LOD T13).
+///
+/// The result always contains `[lo, hi]`. Degenerate inputs pass through unchanged.
+pub fn aligned_window(
+    lo: f64,
+    hi: f64,
+    extent_lo: f64,
+    extent_hi: f64,
+    pad: f64,
+) -> (f64, f64) {
+    let span = hi - lo;
+    let extent = extent_hi - extent_lo;
+    if !(span.is_finite()
+        && extent.is_finite()
+        && span > 0.0
+        && extent > 0.0
+        && pad >= 1.0)
+    {
+        return (lo, hi);
+    }
+    if pad * span >= extent {
+        return (extent_lo.min(lo), extent_hi.max(hi));
+    }
+    let level_f = (extent / (pad * span)).log2().ceil();
+    let level = if level_f.is_finite() {
+        (level_f.max(0.0) as u64).min(63)
+    } else {
+        0
+    };
+    let block = extent / (1u64 << level) as f64;
+    let b0 = ((lo - extent_lo) / block).floor();
+    let b1 = ((hi - extent_lo) / block).ceil();
+    (
+        lo.min(extent_lo + b0 * block),
+        hi.max(extent_lo + b1 * block),
+    )
+}
+
 /// Pack EncodedColumn wire metadata (ABI 255).
 ///
 /// Echoes `offset`, writes [`f32_safe_scale`], and reports whether a `kind`
@@ -9485,6 +9523,29 @@ mod tests {
         assert!(has_kind);
         let (_, _, empty_kind) = encoded_column_meta(1.0, 0.0, 2.0, Some(""));
         assert!(empty_kind);
+    }
+
+    #[test]
+    fn aligned_window_contains_input_and_is_pan_stable() {
+        let (lo, hi) = aligned_window(-3.0, 5.0, 0.0, 100.0, 2.0);
+        assert!(lo <= -3.0 && hi >= 5.0);
+        let a = aligned_window(10.0, 14.0, 0.0, 128.0, 2.0);
+        let b = aligned_window(10.5, 14.5, 0.0, 128.0, 2.0);
+        assert_eq!(a, b);
+        let span = 14.0 - 10.0;
+        let level = (128.0_f64 / (2.0 * span)).log2().ceil() as u32;
+        let block = 128.0 / (1u64 << level) as f64;
+        assert!((a.0 / block - (a.0 / block).round()).abs() < 1e-12);
+        assert!((a.1 / block - (a.1 / block).round()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn aligned_window_degenerate_inputs_pass_through() {
+        assert_eq!(aligned_window(3.0, 3.0, 0.0, 10.0, 2.0), (3.0, 3.0));
+        assert_eq!(aligned_window(1.0, 2.0, 5.0, 5.0, 2.0), (1.0, 2.0));
+        assert_eq!(aligned_window(1.0, 2.0, 0.0, f64::INFINITY, 2.0), (1.0, 2.0));
+        assert_eq!(aligned_window(1.0, 9.0, 0.0, 10.0, 4.0), (0.0, 10.0));
+        assert_eq!(aligned_window(-2.0, 9.0, 0.0, 10.0, 4.0), (-2.0, 10.0));
     }
 
     #[test]
