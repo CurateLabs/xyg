@@ -649,30 +649,15 @@ def resolve_color(
                 stacklevel=3,
             )
         if palette_map is not None:
-            # Pinned by label, so a category keeps its color whatever else
-            # shares the chart and whichever facet panel it lands in. A
-            # category the map does not name takes the next default color the
-            # map has NOT already spent — cycling the map's own values would
-            # paint every unmapped category the same as a mapped one.
-            spent = set(palette_map.values())
-            spare = [color for color in config.DEFAULT_PALETTE if color not in spent]
-            # A map that pins every built-in color leaves nothing distinct for
-            # an unmapped category, so it necessarily reuses one — say which,
-            # rather than let two categories quietly share a color (§28).
-            exhausted = not spare
-            if exhausted:
-                spare = list(config.DEFAULT_PALETTE)
-            resolved: list[str] = []
-            unmapped: list[str] = []
-            for category in cats:
-                if category in palette_map:
-                    resolved.append(palette_map[category])
-                else:
-                    resolved.append(spare[len(unmapped) % len(spare)])
-                    unmapped.append(category)
-            if unmapped:
+            resolved = kernels.categorical_palette_map_resolve(
+                cats,
+                palette_map,
+                default_palette=list(config.DEFAULT_PALETTE),
+            )
+            if resolved["unmapped_count"]:
                 import warnings
 
+                unmapped = [category for category in cats if category not in palette_map]
                 warnings.warn(
                     f"{len(unmapped)} categor{'y' if len(unmapped) == 1 else 'ies'} "
                     f"({', '.join(map(repr, unmapped[:4]))}"
@@ -683,13 +668,13 @@ def resolve_color(
                         " The map already pins every built-in color, so those "
                         "fallbacks repeat a color the map assigned to another "
                         "category."
-                        if exhausted
+                        if resolved["map_exhausted"]
                         else ""
                     ),
                     RuntimeWarning,
                     stacklevel=3,
                 )
-            palette_out = resolved
+            palette_out = resolved["colors"]
         else:
             palette_out = cycle
         return ColorChannel(
@@ -776,7 +761,7 @@ def categorical_palette(palette: list[str], n_categories: int) -> list[str]:
     The repeat rule is a wire contract — the client indexes this list by
     category code (and folds wide codes modulo it) — so it has exactly one
     definition, shared by every producer of a categorical color spec."""
-    return [palette[i % len(palette)] for i in range(n_categories)]
+    return kernels.categorical_palette(palette, n_categories)
 
 
 def palette_rgba8(palette: list[str], n_categories: int) -> npt.NDArray[np.uint8]:

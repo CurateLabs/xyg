@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64 } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve } from "./native.js";
 import { DEFAULT_PALETTE } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -205,6 +205,18 @@ function packUtf8Strings(texts) {
   return { lens, packed };
 }
 
+function unpackUtf8Strings(lens, packed, count) {
+  const dec = new TextDecoder();
+  const out = [];
+  let at = 0;
+  for (let i = 0; i < count; i += 1) {
+    const length = Number(lens[i]);
+    out.push(dec.decode(packed.subarray(at, at + length)));
+    at += length;
+  }
+  return out;
+}
+
 function u32Ptr(view) {
   return pointer(view, "uint32_t *");
 }
@@ -260,6 +272,89 @@ export function literalColorRgbaF64(colors) {
     return null;
   }
   return out;
+}
+
+/** Repeat base palette colors for categorical wire specs (ABI 347). */
+export function categoricalPalette(palette, nCategories) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("categoricalPalette requires at least one entry");
+  }
+  const n = Math.floor(Number(nCategories));
+  if (!(n > 0)) {
+    throw new RangeError("categoricalPalette requires a positive category count");
+  }
+  const { lens, packed } = packUtf8Strings(src);
+  const outLens = new Uint32Array(n);
+  const outCap = src.reduce((sum, entry) => sum + entry.length, 0) * n;
+  const outTexts = new Uint8Array(Math.max(outCap, 1));
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyCategoricalPalette(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    BigInt(n),
+    u32Ptr(outLens),
+    u8Ptr(outTexts),
+    BigInt(outTexts.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid categorical-palette request");
+  }
+  return unpackUtf8Strings(outLens, outTexts, n);
+}
+
+/** Resolve one shipped color per category from a label→color map (ABI 347). */
+export function categoricalPaletteMapResolve(categories, paletteMap, defaultPalette = DEFAULT_PALETTE) {
+  const catTexts = categories?.length ? categories.map((entry) => String(entry)) : [];
+  const n = catTexts.length;
+  if (n === 0) {
+    return { colors: [], unmappedCount: 0, mapExhausted: false };
+  }
+  const { lens: catLens, packed: catPacked } = packUtf8Strings(catTexts);
+  const mapKeys = paletteMap ? Object.keys(paletteMap) : [];
+  const mapValues = mapKeys.map((key) => String(paletteMap[key]));
+  const { lens: keyLens, packed: keyPacked } = packUtf8Strings(mapKeys);
+  const { lens: valueLens, packed: valuePacked } = packUtf8Strings(mapValues);
+  const defaults = defaultPalette?.length ? defaultPalette.map((entry) => String(entry)) : [];
+  const { lens: defLens, packed: defPacked } = packUtf8Strings(defaults);
+  const outLens = new Uint32Array(n);
+  const outCap = [...catTexts, ...mapValues, ...defaults].reduce((sum, entry) => sum + entry.length, 0) + 64;
+  const outTexts = new Uint8Array(Math.max(outCap, 1));
+  const unmapped = new Uint32Array(1);
+  const exhausted = new Uint32Array(1);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyCategoricalPaletteMapResolve(
+    u32Ptr(catLens),
+    catPacked.length ? u8Ptr(catPacked) : 0,
+    BigInt(catPacked.length),
+    BigInt(n),
+    mapKeys.length ? u32Ptr(keyLens) : 0,
+    keyPacked.length ? u8Ptr(keyPacked) : 0,
+    BigInt(keyPacked.length),
+    mapValues.length ? u32Ptr(valueLens) : 0,
+    valuePacked.length ? u8Ptr(valuePacked) : 0,
+    BigInt(valuePacked.length),
+    BigInt(mapKeys.length),
+    defaults.length ? u32Ptr(defLens) : 0,
+    defPacked.length ? u8Ptr(defPacked) : 0,
+    BigInt(defPacked.length),
+    BigInt(defaults.length),
+    u32Ptr(outLens),
+    u8Ptr(outTexts),
+    BigInt(outTexts.length),
+    u32Ptr(unmapped),
+    u32Ptr(exhausted),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid categorical-palette-map-resolve request");
+  }
+  return {
+    colors: unpackUtf8Strings(outLens, outTexts, n),
+    unmappedCount: Number(unmapped[0]),
+    mapExhausted: Boolean(exhausted[0]),
+  };
 }
 
 function flattenRgbRows(raw, n) {

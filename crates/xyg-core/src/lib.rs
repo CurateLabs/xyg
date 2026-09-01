@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 346;
+pub const ABI_VERSION: u32 = 347;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10308,6 +10308,171 @@ pub unsafe extern "C" fn xyg_palette_rows_rgba8(
             *out_unresolved = unresolved;
         }
         n
+    })
+}
+
+/// Repeat base palette colors for categorical wire specs (ABI 347).
+///
+/// Returns the number of colors written, or `usize::MAX` on invalid arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_categorical_palette(
+    entry_lens: *const u32,
+    entry_texts: *const u8,
+    entry_texts_len: usize,
+    n_entries: usize,
+    n_categories: usize,
+    out_lens: *mut u32,
+    out_texts: *mut u8,
+    out_texts_cap: usize,
+) -> usize {
+    if n_entries == 0 || n_categories == 0 {
+        return usize::MAX;
+    }
+    if entry_lens.is_null() || out_lens.is_null() {
+        return usize::MAX;
+    }
+    if (entry_texts_len > 0 && entry_texts.is_null()) || (out_texts_cap > 0 && out_texts.is_null()) {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let lens = std::slice::from_raw_parts(entry_lens, n_entries);
+        let texts = if entry_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(entry_texts, entry_texts_len)
+        };
+        let Some(entries) = read_packed_utf8_labels(lens, texts) else {
+            return usize::MAX;
+        };
+        let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
+        let Some(colors) = kernels::categorical_palette_repeat(&refs, n_categories) else {
+            return usize::MAX;
+        };
+        let out_lens_slice = std::slice::from_raw_parts_mut(out_lens, n_categories);
+        let out_texts_slice = if out_texts_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out_texts, out_texts_cap)
+        };
+        kernels::write_packed_strings(out_lens_slice, out_texts_slice, &colors)
+            .map(|()| n_categories)
+            .unwrap_or(usize::MAX)
+    })
+}
+
+/// Resolve one shipped color per category from a label→color map (ABI 347).
+///
+/// Returns the number of colors written, or `usize::MAX` on invalid arguments.
+/// When `out_unmapped` / `out_map_exhausted` are non-null, writes warning flags.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_categorical_palette_map_resolve(
+    category_lens: *const u32,
+    category_texts: *const u8,
+    category_texts_len: usize,
+    n_categories: usize,
+    map_key_lens: *const u32,
+    map_key_texts: *const u8,
+    map_key_texts_len: usize,
+    map_value_lens: *const u32,
+    map_value_texts: *const u8,
+    map_value_texts_len: usize,
+    n_map: usize,
+    default_lens: *const u32,
+    default_texts: *const u8,
+    default_texts_len: usize,
+    n_default: usize,
+    out_lens: *mut u32,
+    out_texts: *mut u8,
+    out_texts_cap: usize,
+    out_unmapped: *mut u32,
+    out_map_exhausted: *mut u32,
+) -> usize {
+    if n_categories == 0 || category_lens.is_null() || out_lens.is_null() {
+        return usize::MAX;
+    }
+    if (category_texts_len > 0 && category_texts.is_null())
+        || (map_key_texts_len > 0 && map_key_texts.is_null())
+        || (map_value_texts_len > 0 && map_value_texts.is_null())
+        || (default_texts_len > 0 && default_texts.is_null())
+        || (out_texts_cap > 0 && out_texts.is_null())
+    {
+        return usize::MAX;
+    }
+    if n_map > 0 && (map_key_lens.is_null() || map_value_lens.is_null()) {
+        return usize::MAX;
+    }
+    if n_default > 0 && default_lens.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let cat_lens = std::slice::from_raw_parts(category_lens, n_categories);
+        let cat_texts = if category_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(category_texts, category_texts_len)
+        };
+        let Some(categories) = read_packed_utf8_labels(cat_lens, cat_texts) else {
+            return usize::MAX;
+        };
+        let cat_refs: Vec<&str> = categories.iter().map(String::as_str).collect();
+        let (map_keys, map_values) = if n_map == 0 {
+            (Vec::new(), Vec::new())
+        } else {
+            let key_lens = std::slice::from_raw_parts(map_key_lens, n_map);
+            let value_lens = std::slice::from_raw_parts(map_value_lens, n_map);
+            let key_texts = if map_key_texts_len == 0 {
+                &[][..]
+            } else {
+                std::slice::from_raw_parts(map_key_texts, map_key_texts_len)
+            };
+            let value_texts = if map_value_texts_len == 0 {
+                &[][..]
+            } else {
+                std::slice::from_raw_parts(map_value_texts, map_value_texts_len)
+            };
+            let Some(keys) = read_packed_utf8_labels(key_lens, key_texts) else {
+                return usize::MAX;
+            };
+            let Some(values) = read_packed_utf8_labels(value_lens, value_texts) else {
+                return usize::MAX;
+            };
+            (keys, values)
+        };
+        let default_palette = if n_default == 0 {
+            Vec::new()
+        } else {
+            let def_lens = std::slice::from_raw_parts(default_lens, n_default);
+            let def_texts = if default_texts_len == 0 {
+                &[][..]
+            } else {
+                std::slice::from_raw_parts(default_texts, default_texts_len)
+            };
+            read_packed_utf8_labels(def_lens, def_texts).unwrap_or_default()
+        };
+        let key_refs: Vec<&str> = map_keys.iter().map(String::as_str).collect();
+        let value_refs: Vec<&str> = map_values.iter().map(String::as_str).collect();
+        let default_refs: Vec<&str> = default_palette.iter().map(String::as_str).collect();
+        let Some(resolved) =
+            kernels::categorical_palette_map_resolve(&cat_refs, &key_refs, &value_refs, &default_refs)
+        else {
+            return usize::MAX;
+        };
+        let out_lens_slice = std::slice::from_raw_parts_mut(out_lens, n_categories);
+        let out_texts_slice = if out_texts_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out_texts, out_texts_cap)
+        };
+        if kernels::write_packed_strings(out_lens_slice, out_texts_slice, &resolved.colors).is_none() {
+            return usize::MAX;
+        }
+        if !out_unmapped.is_null() {
+            *out_unmapped = resolved.unmapped_count;
+        }
+        if !out_map_exhausted.is_null() {
+            *out_map_exhausted = u32::from(resolved.map_exhausted);
+        }
+        n_categories
     })
 }
 

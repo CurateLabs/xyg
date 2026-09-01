@@ -8594,6 +8594,99 @@ pub fn literal_color_rgba_f64_from_strs(entries: &[&str]) -> Option<Vec<f64>> {
     Some(out)
 }
 
+/// Repeat base palette colors for categorical wire specs.
+///
+/// Matches Python `channels.categorical_palette` / Node `categoricalPalette`.
+pub fn categorical_palette_repeat(entries: &[&str], n_categories: usize) -> Option<Vec<String>> {
+    if entries.is_empty() {
+        return None;
+    }
+    Some(
+        (0..n_categories)
+            .map(|i| entries[i % entries.len()].to_owned())
+            .collect(),
+    )
+}
+
+pub struct PaletteMapResolve {
+    pub colors: Vec<String>,
+    pub unmapped_count: u32,
+    pub map_exhausted: bool,
+}
+
+/// Resolve one shipped color per category from a label→color map.
+///
+/// Unmapped categories take the first unused built-in/default palette colors;
+/// when every default is already spent by the map, fall back to cycling the
+/// full default palette. Matches Python `resolve_color`'s `palette_map` branch.
+pub fn categorical_palette_map_resolve(
+    categories: &[&str],
+    map_keys: &[&str],
+    map_values: &[&str],
+    default_palette: &[&str],
+) -> Option<PaletteMapResolve> {
+    if map_keys.len() != map_values.len() {
+        return None;
+    }
+    let default: &[&str] = if default_palette.is_empty() {
+        DEFAULT_PALETTE.as_slice()
+    } else {
+        default_palette
+    };
+    if default.is_empty() {
+        return None;
+    }
+    let mut map = std::collections::HashMap::with_capacity(map_keys.len());
+    for (key, value) in map_keys.iter().zip(map_values.iter()) {
+        map.insert(*key, *value);
+    }
+    let spent: std::collections::HashSet<&str> = map_values.iter().copied().collect();
+    let mut spare: Vec<&str> = default
+        .iter()
+        .copied()
+        .filter(|color| !spent.contains(color))
+        .collect();
+    let map_exhausted = spare.is_empty();
+    if map_exhausted {
+        spare = default.to_vec();
+    }
+    let mut colors = Vec::with_capacity(categories.len());
+    let mut unmapped_count = 0u32;
+    for category in categories {
+        if let Some(color) = map.get(category) {
+            colors.push((*color).to_string());
+        } else {
+            let idx = unmapped_count as usize;
+            colors.push(spare[idx % spare.len()].to_string());
+            unmapped_count += 1;
+        }
+    }
+    Some(PaletteMapResolve {
+        colors,
+        unmapped_count,
+        map_exhausted,
+    })
+}
+
+/// Write UTF-8 strings into a packed `(lens, texts)` buffer.
+pub fn write_packed_strings(out_lens: &mut [u32], out_texts: &mut [u8], values: &[String]) -> Option<()> {
+    if out_lens.len() < values.len() {
+        return None;
+    }
+    let total: usize = values.iter().map(String::len).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut offset = 0usize;
+    for (value, slot) in values.iter().zip(out_lens.iter_mut()) {
+        let bytes = value.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[offset..offset + bytes.len()].copy_from_slice(bytes);
+        offset += bytes.len();
+    }
+    Some(())
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -10361,6 +10454,58 @@ mod tests {
         assert!(all.keep_all);
         assert_eq!(all.capacity, 10);
         assert!(stratified_sample_range_plan(10, 0, 1, 0, 2.0, 0, 1).is_none());
+    }
+
+    #[test]
+    fn categorical_palette_repeat_cycles_base_palette() {
+        let out = categorical_palette_repeat(&["#ff0000", "#00ff00"], 5).expect("palette");
+        assert_eq!(
+            out,
+            vec![
+                "#ff0000".to_string(),
+                "#00ff00".to_string(),
+                "#ff0000".to_string(),
+                "#00ff00".to_string(),
+                "#ff0000".to_string(),
+            ]
+        );
+        assert!(categorical_palette_repeat(&[], 3).is_none());
+    }
+
+    #[test]
+    fn categorical_palette_map_resolve_uses_spare_defaults() {
+        let brand = [
+            ("setosa", "#4c72b0"),
+            ("versicolor", "#dd8452"),
+            ("virginica", "#55a868"),
+        ];
+        let keys: Vec<&str> = brand.iter().map(|(k, _)| *k).collect();
+        let values: Vec<&str> = brand.iter().map(|(_, v)| *v).collect();
+        let categories = ["setosa", "versicolor", "virginica"];
+        let resolved = categorical_palette_map_resolve(&categories, &keys, &values, &[])
+            .expect("resolve");
+        assert_eq!(
+            resolved.colors,
+            vec!["#4c72b0".to_string(), "#dd8452".to_string(), "#55a868".to_string()]
+        );
+        assert_eq!(resolved.unmapped_count, 0);
+        assert!(!resolved.map_exhausted);
+    }
+
+    #[test]
+    fn categorical_palette_map_resolve_assigns_unused_defaults_to_unmapped() {
+        let resolved = categorical_palette_map_resolve(
+            &["a", "b", "c"],
+            &["a"],
+            &["#ff0000"],
+            &["#111111", "#222222", "#333333"],
+        )
+        .expect("resolve");
+        assert_eq!(resolved.colors[0], "#ff0000");
+        assert_eq!(resolved.unmapped_count, 2);
+        assert_eq!(resolved.colors[1], "#111111");
+        assert_eq!(resolved.colors[2], "#222222");
+        assert_ne!(resolved.colors[1], resolved.colors[2]);
     }
 
     #[test]

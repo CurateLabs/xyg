@@ -866,6 +866,10 @@ Equal or non-finite domain stays a host zero-span short-circuit.
 Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
 rows through ABI 342 `xyg_palette_rows_rgba8`. ABI 346 adds per-entry
 unresolved flags so browser-only warnings stay host without a second CSS parse.
+Python `categorical_palette` and Node `categoricalPalette` repeat base palette
+colors through ABI 347 `xyg_categorical_palette`. Python `resolve_color`
+palette-map resolution and Node `categoricalPaletteMapResolve` share ABI 347
+`xyg_categorical_palette_map_resolve`; browser-only warnings stay host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

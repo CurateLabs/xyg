@@ -9504,6 +9504,93 @@ def palette_rows_rgba8(
     return out.reshape(n, 4), int(unresolved.value), entry_flags
 
 
+def categorical_palette(entries: Sequence[str], n_categories: int) -> list[str]:
+    """Repeat base palette colors for categorical wire specs (ABI 347)."""
+    texts = [str(entry) for entry in entries]
+    if not texts:
+        raise ValueError("categorical_palette requires at least one entry")
+    n = int(n_categories)
+    if n <= 0:
+        raise ValueError("categorical_palette requires a positive category count")
+    lens, packed = _pack_utf8_strings(texts)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_cap = sum(len(text.encode("utf-8")) for text in texts) * n
+    out_texts = np.empty(max(out_cap, 1), dtype=np.uint8)
+    written = _lib.xyg_categorical_palette(
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(texts),
+        n,
+        out_lens.ctypes.data,
+        _ptr_u8(out_texts),
+        out_texts.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid categorical-palette request")
+    return _unpack_utf8_strings(out_lens, out_texts, n)
+
+
+class PaletteMapResolve(TypedDict):
+    colors: list[str]
+    unmapped_count: int
+    map_exhausted: bool
+
+
+def categorical_palette_map_resolve(
+    categories: Sequence[str],
+    palette_map: Mapping[str, str],
+    *,
+    default_palette: Sequence[str] | None = None,
+) -> PaletteMapResolve:
+    """Resolve one shipped color per category from a label→color map (ABI 347)."""
+    cat_texts = [str(category) for category in categories]
+    n = len(cat_texts)
+    if n == 0:
+        return {"colors": [], "unmapped_count": 0, "map_exhausted": False}
+    cat_lens, cat_packed = _pack_utf8_strings(cat_texts)
+    map_keys = [str(key) for key in palette_map]
+    map_values = [str(palette_map[key]) for key in palette_map]
+    key_lens, key_packed = _pack_utf8_strings(map_keys)
+    value_lens, value_packed = _pack_utf8_strings(map_values)
+    default = [str(entry) for entry in (default_palette or ())]
+    def_lens, def_packed = _pack_utf8_strings(default)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_cap = sum(len(text.encode("utf-8")) for text in cat_texts + map_values + default) + 64
+    out_texts = np.empty(max(out_cap, 1), dtype=np.uint8)
+    unmapped = ctypes.c_uint32()
+    exhausted = ctypes.c_uint32()
+    written = _lib.xyg_categorical_palette_map_resolve(
+        cat_lens.ctypes.data,
+        _ptr_u8(cat_packed) if cat_packed.size else 0,
+        int(cat_packed.size),
+        n,
+        key_lens.ctypes.data if map_keys else 0,
+        _ptr_u8(key_packed) if key_packed.size else 0,
+        int(key_packed.size),
+        value_lens.ctypes.data if map_values else 0,
+        _ptr_u8(value_packed) if value_packed.size else 0,
+        int(value_packed.size),
+        len(map_keys),
+        def_lens.ctypes.data if default else 0,
+        _ptr_u8(def_packed) if def_packed.size else 0,
+        int(def_packed.size),
+        len(default),
+        out_lens.ctypes.data,
+        _ptr_u8(out_texts),
+        out_texts.size,
+        ctypes.byref(unmapped),
+        ctypes.byref(exhausted),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid categorical-palette-map-resolve request")
+    return {
+        "colors": _unpack_utf8_strings(out_lens, out_texts, n),
+        "unmapped_count": int(unmapped.value),
+        "map_exhausted": bool(exhausted.value),
+    }
+
+
 def colormap_lut_rgba8(
     colormap: str | npt.NDArray[np.uint8],
     *,

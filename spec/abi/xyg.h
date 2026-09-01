@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 346
-#define XYG_ABI_SIGNATURE_SHA256 "12b44eca4ab23a53c26e606ec76bf8b3d21b05fa8067b5e7f093e9bb7baa5d51"
+#define XYG_ABI_VERSION 347
+#define XYG_ABI_SIGNATURE_SHA256 "2bb8b3663d5883a9f2c7b778239c4c81312b76ec36b47f6cef81c02de21df930"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +33,8 @@ size_t xyg_bin_2d_stratified_sample_range_u8_counted(const double * x, const dou
 size_t xyg_binned_ecdf(const double * values, size_t len, size_t n_bins, double lo, double hi, int32_t use_range, double * out_x, double * out_cumulative, size_t capacity);
 size_t xyg_box_geometry(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, double width, uint32_t orientation, int32_t show_outliers, size_t * out_n_outliers, uint32_t * active_groups, double * group_records, size_t * outlier_offsets, double * outlier_records, size_t group_cap, size_t outlier_cap);
 int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers);
+size_t xyg_categorical_palette(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t n_categories, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap);
+size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted);
 size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap);
 int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation);
 int32_t xyg_chunked_columns_free(uint64_t store);

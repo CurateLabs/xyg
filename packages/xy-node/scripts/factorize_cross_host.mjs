@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64 } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve } from "../src/color.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -209,6 +209,25 @@ for (const spec of fixture.cases) {
       min_count: plan.minCount,
       capacity: plan.capacity,
       keep_all: plan.keepAll,
+    });
+    continue;
+  }
+  if (spec.kind === "categorical_palette") {
+    const colors = categoricalPalette(spec.palette, spec.n_categories);
+    out.push({ name: spec.name, colors });
+    continue;
+  }
+  if (spec.kind === "categorical_palette_map_resolve") {
+    const resolved = categoricalPaletteMapResolve(
+      spec.categories,
+      spec.palette_map ?? {},
+      spec.default_palette ?? [],
+    );
+    out.push({
+      name: spec.name,
+      colors: resolved.colors,
+      unmapped_count: resolved.unmappedCount,
+      map_exhausted: resolved.mapExhausted,
     });
     continue;
   }

@@ -967,6 +967,40 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_categorical_palette.restype = ctypes.c_size_t
+    lib.xyg_categorical_palette.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_categorical_palette_map_resolve.restype = ctypes.c_size_t
+    lib.xyg_categorical_palette_map_resolve.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -4570,6 +4604,74 @@ def main() -> None:
         )
         == ctypes.c_size_t(-1).value,
         "palette_rows_rgba8 empty entries",
+    )
+    cat_palette_entries = [b"#ff0000", b"#00ff00"]
+    cat_palette_lens = array("I", [len(item) for item in cat_palette_entries])
+    cat_palette_packed = array("B")
+    for item in cat_palette_entries:
+        cat_palette_packed.extend(item)
+    cat_palette_out_lens = array("I", [0, 0, 0])
+    cat_palette_out = array("B", [0] * 64)
+    cat_palette_written = lib.xyg_categorical_palette(
+        _ptr(cat_palette_lens, ctypes.c_uint32),
+        _ptr(cat_palette_packed, ctypes.c_uint8),
+        len(cat_palette_packed),
+        len(cat_palette_entries),
+        3,
+        _ptr(cat_palette_out_lens, ctypes.c_uint32),
+        _ptr(cat_palette_out, ctypes.c_uint8),
+        len(cat_palette_out),
+    )
+    ok(
+        cat_palette_written == 3
+        and cat_palette_out_lens[0] == 7
+        and bytes(cat_palette_out[: cat_palette_out_lens[0]]) == b"#ff0000",
+        "categorical_palette basic",
+    )
+    map_categories = [b"a", b"b", b"c"]
+    map_keys = [b"a"]
+    map_values = [b"#ff0000"]
+    map_cat_lens = array("I", [1, 1, 1])
+    map_key_lens = array("I", [1])
+    map_value_lens = array("I", [7])
+    map_cat_packed = array("B")
+    for item in map_categories:
+        map_cat_packed.extend(item)
+    map_key_packed = array("B")
+    for item in map_keys:
+        map_key_packed.extend(item)
+    map_value_packed = array("B")
+    for item in map_values:
+        map_value_packed.extend(item)
+    map_out_lens = array("I", [0, 0, 0])
+    map_out = array("B", [0] * 64)
+    map_unmapped = array("I", [0])
+    map_exhausted = array("I", [0])
+    map_written = lib.xyg_categorical_palette_map_resolve(
+        _ptr(map_cat_lens, ctypes.c_uint32),
+        _ptr(map_cat_packed, ctypes.c_uint8),
+        len(map_cat_packed),
+        3,
+        _ptr(map_key_lens, ctypes.c_uint32),
+        _ptr(map_key_packed, ctypes.c_uint8),
+        len(map_key_packed),
+        _ptr(map_value_lens, ctypes.c_uint32),
+        _ptr(map_value_packed, ctypes.c_uint8),
+        len(map_value_packed),
+        1,
+        null_u32,
+        null_u8,
+        0,
+        0,
+        _ptr(map_out_lens, ctypes.c_uint32),
+        _ptr(map_out, ctypes.c_uint8),
+        len(map_out),
+        _ptr(map_unmapped, ctypes.c_uint32),
+        _ptr(map_exhausted, ctypes.c_uint32),
+    )
+    ok(
+        map_written == 3 and map_unmapped[0] == 2 and map_exhausted[0] == 0,
+        "categorical_palette_map_resolve basic",
     )
     literal_entries = [b"#ff0000", b"#00ff00"]
     literal_lens = array("I", [len(item) for item in literal_entries])

@@ -73,6 +73,7 @@ import {
   PYRAMID_NO_RESCAN_ROWS,
 } from "./encode.js";
 import {
+  categoricalPalette,
   clipQuantizeU8,
   cssColorRgba8,
   directRgbaAdmit,
@@ -270,10 +271,6 @@ function asF64(value) {
 
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
-}
-
-function categoricalPalette(palette, nCategories) {
-  return Array.from({ length: nCategories }, (_, i) => palette[i % palette.length]);
 }
 
 /** Slim categorical color spec for density trace entries (legend toggle path). */

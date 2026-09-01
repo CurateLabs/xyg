@@ -38,6 +38,8 @@ clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
 palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8
+categorical_palette = _impl.categorical_palette
+categorical_palette_map_resolve = _impl.categorical_palette_map_resolve
 literal_color_rgba_f64 = _impl.literal_color_rgba_f64
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
@@ -354,6 +356,8 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "categorical_palette",
+    "categorical_palette_map_resolve",
     "category_labels",
     "clip_quantize_u8",
     "colormap_lut",

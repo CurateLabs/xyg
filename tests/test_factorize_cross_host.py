@@ -153,6 +153,18 @@ def _python_stratified_plan_case(spec: dict) -> dict[str, float | int | bool]:
     )
 
 
+def _python_categorical_palette_case(spec: dict) -> list[str]:
+    return ch.categorical_palette(spec["palette"], int(spec["n_categories"]))
+
+
+def _python_categorical_palette_map_case(spec: dict) -> dict[str, object]:
+    return kernels.categorical_palette_map_resolve(
+        spec["categories"],
+        spec["palette_map"],
+        default_palette=spec.get("default_palette"),
+    )
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -169,6 +181,8 @@ FACTORIZE_CASES = [
         "colormap_lut_rgba8",
         "literal_color_rgba_f64",
         "stratified_sample_range_plan",
+        "categorical_palette",
+        "categorical_palette_map_resolve",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -179,6 +193,10 @@ PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "palette_rows_rgb
 COLORMAP_LUT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_lut_rgba8"]
 LITERAL_COLOR_CASES = [c for c in FIXTURE_CASES if c["kind"] == "literal_color_rgba_f64"]
 STRATIFIED_PLAN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stratified_sample_range_plan"]
+CATEGORICAL_PALETTE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "categorical_palette"]
+CATEGORICAL_PALETTE_MAP_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "categorical_palette_map_resolve"
+]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -281,6 +299,22 @@ def test_stratified_sample_range_plan_cross_host(spec: dict, node_results: dict[
     assert plan["min_count"] == node["min_count"]
     assert plan["capacity"] == node["capacity"]
     assert plan["keep_all"] == node["keep_all"]
+
+
+@pytest.mark.parametrize("spec", CATEGORICAL_PALETTE_CASES, ids=lambda s: s["name"])
+def test_categorical_palette_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    colors = _python_categorical_palette_case(spec)
+    node = node_results[spec["name"]]
+    assert colors == node["colors"]
+
+
+@pytest.mark.parametrize("spec", CATEGORICAL_PALETTE_MAP_CASES, ids=lambda s: s["name"])
+def test_categorical_palette_map_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    resolved = _python_categorical_palette_map_case(spec)
+    node = node_results[spec["name"]]
+    assert resolved["colors"] == node["colors"]
+    assert resolved["unmapped_count"] == node["unmapped_count"]
+    assert resolved["map_exhausted"] == node["map_exhausted"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

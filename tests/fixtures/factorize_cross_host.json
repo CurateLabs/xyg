@@ -183,6 +183,31 @@
       "growth": 2.0,
       "seed": 0,
       "min_per_category": 1
+    },
+    {
+      "name": "categorical_palette_basic",
+      "kind": "categorical_palette",
+      "palette": ["#ff0000", "#00ff00"],
+      "n_categories": 5
+    },
+    {
+      "name": "categorical_palette_map_basic",
+      "kind": "categorical_palette_map_resolve",
+      "categories": ["setosa", "versicolor", "virginica"],
+      "palette_map": {
+        "setosa": "#4c72b0",
+        "versicolor": "#dd8452",
+        "virginica": "#55a868"
+      }
+    },
+    {
+      "name": "categorical_palette_map_unmapped",
+      "kind": "categorical_palette_map_resolve",
+      "categories": ["a", "b", "c"],
+      "palette_map": {
+        "a": "#ff0000"
+      },
+      "default_palette": ["#111111", "#222222", "#333333"]
     }
   ]
 }
