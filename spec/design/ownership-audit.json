@@ -1774,6 +1774,14 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_scene_unpack.py",
+      "current_owner": "Python host",
+      "policy": "python-scene-migration",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "Test/introspection unpack of Rust-owned Scene wire records (XYCC, XYAS); product encode uses scene_encode_product."
+    },
+    {
       "path": "python/xyg/_scene_observations.py",
       "current_owner": "Python host",
       "policy": "python-scene-migration",

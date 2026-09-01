@@ -56,6 +56,13 @@ from ._scene_observations import (  # noqa: F401
     _trace_source_color_css,
     _xyta_hexbin_plane_observations,
 )
+from ._scene_unpack import (  # noqa: F401
+    _unpack_gradient_blob,
+    _unpack_marker_blob,
+    _unpack_xyas,
+    _unpack_xycc,
+    _xycc_tick_labels,
+)
 from .marks import _SYMBOL_CODES
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
@@ -604,8 +611,6 @@ _XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10
 _XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11
 _XYAF_STYLE_UNSUPPORTED = 1 << 31
 _XYAF_HEADER = struct.Struct("<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f")
-_XYAS_HEADER = struct.Struct("<4sIIIII")
-_XYAS_STYLE = struct.Struct("<4s4sd")
 
 
 def _pack_annotation_mark_row(
@@ -1076,110 +1081,6 @@ def _scene_chrome_style(figure: Any) -> bytes:
     return scene_chrome_style(figure)
 
 
-_XYCC_HEADER = struct.Struct("<4sIII4d16I48x")
-
-
-def _xycc_tick_labels(blob: bytes) -> list[str] | None:
-    if not blob:
-        return None
-    if len(blob) < 12 or blob[:4] != b"XYTL":
-        raise ValueError("invalid scene chrome packing")
-    count = int.from_bytes(blob[8:12], "little")
-    at = 12
-    labels: list[str] = []
-    for _ in range(count):
-        length = int.from_bytes(blob[at : at + 4], "little")
-        at += 4
-        labels.append(blob[at : at + length].decode("utf-8"))
-        at += length
-    if at != len(blob):
-        raise ValueError("invalid scene chrome packing")
-    return labels
-
-
-def _unpack_xycc(blob: bytes) -> dict[str, Any]:
-    """Split Rust-owned XYCC chrome into encode-ready chrome fields."""
-    if len(blob) < _XYCC_HEADER.size or blob[:4] != b"XYCC":
-        raise ValueError("invalid scene chrome packing")
-    (
-        _magic,
-        version,
-        _flags,
-        _reserved,
-        margin_left,
-        margin_right,
-        margin_top,
-        margin_bottom,
-        chrome_len,
-        title_len,
-        xlabel_len,
-        ylabel_len,
-        x_major_count,
-        x_major_auto,
-        x_minor_count,
-        y_major_count,
-        y_major_auto,
-        y_minor_count,
-        x_labels_len,
-        y_labels_len,
-        x_format_len,
-        y_format_len,
-        legend_len,
-        colorbar_len,
-    ) = _XYCC_HEADER.unpack_from(blob)
-    if version != 1:
-        raise ValueError("invalid scene chrome facts version")
-    at = _XYCC_HEADER.size
-
-    def take(length: int) -> bytes:
-        nonlocal at
-        chunk = blob[at : at + length]
-        at += length
-        return chunk
-
-    chrome_style = take(chrome_len)
-    title = take(title_len).decode("utf-8")
-    x_label = take(xlabel_len).decode("utf-8")
-    y_label = take(ylabel_len).decode("utf-8")
-    x_major = (
-        list(struct.unpack(f"<{x_major_count}d", take(x_major_count * 8))) if x_major_count else []
-    )
-    x_minor = (
-        list(struct.unpack(f"<{x_minor_count}d", take(x_minor_count * 8))) if x_minor_count else []
-    )
-    y_major = (
-        list(struct.unpack(f"<{y_major_count}d", take(y_major_count * 8))) if y_major_count else []
-    )
-    y_minor = (
-        list(struct.unpack(f"<{y_minor_count}d", take(y_minor_count * 8))) if y_minor_count else []
-    )
-    x_tick_labels = _xycc_tick_labels(take(x_labels_len))
-    y_tick_labels = _xycc_tick_labels(take(y_labels_len))
-    x_format_b = take(x_format_len)
-    y_format_b = take(y_format_len)
-    legend_input = take(legend_len)
-    colorbar_input = take(colorbar_len)
-    if at != len(blob):
-        raise ValueError("invalid scene chrome packing")
-    return {
-        "margins": (margin_left, margin_right, margin_top, margin_bottom),
-        "chrome_style": chrome_style,
-        "title": title,
-        "x_label": x_label,
-        "y_label": y_label,
-        "x_major_ticks": None if x_major_auto else x_major,
-        "x_minor_ticks": x_minor,
-        "y_major_ticks": None if y_major_auto else y_major,
-        "y_minor_ticks": y_minor,
-        "x_tick_labels": x_tick_labels,
-        "y_tick_labels": y_tick_labels,
-        "x_format": None if not x_format_b else x_format_b.decode("utf-8"),
-        "y_format": None if not y_format_b else y_format_b.decode("utf-8"),
-        "legend_input": legend_input,
-        "colorbar_input": colorbar_input,
-    }
-
-
 def _pack_chrome_facts(
     figure: Any,
     *,
@@ -1558,18 +1459,12 @@ def _gradient_solid_css(gradient: dict[str, Any]) -> str:
 
 _XYTC_HEADER = struct.Struct("<4sIII")
 _XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I2df")
-_XYTO_ENVELOPE = struct.Struct("<4sIII")
-_XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
 _XYTA_HEADER = struct.Struct("<4sIII")
 _XYTA_PREFIX = struct.Struct("<II2i8I4H6d2f16x")
-_XYTT_ENVELOPE = struct.Struct("<4sIII")
-_XYTT_EXTRA = struct.Struct("<IIII4d")
 _XYCL_HEADER = struct.Struct("<4sIII")
 _XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
 _XYNM_HEADER = struct.Struct("<4sIII")
 _XYNM_PREFIX = struct.Struct("<H")
-_XYSD_HEADER = struct.Struct("<4sIII")
-_XYSD_PREFIX = struct.Struct("<4s4sdBBH6I4x")
 _XYTA_HEATMAP = 1 << 0
 _XYTA_DENSITY = 1 << 1
 _XYTA_HAS_RGBA = 1 << 2
@@ -1612,8 +1507,6 @@ _XYTC_HAS_CORNER_RADIUS = 1 << 22
 _XYTC_HAS_WEDGE_GAP = 1 << 23
 _XYTC_HAS_GLYPH = 1 << 24
 _XYTC_JOINED_FILL = 1 << 25
-_XYTO_LINECAP_NONE = 255
-_GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
 
 
 def _pack_marker_blob(value: Any) -> bytes | None:
@@ -1709,110 +1602,6 @@ def _pack_xytc(figure: Any) -> bytes:
     return bytes(records)
 
 
-def _unpack_marker_blob(blob: bytes) -> dict[str, Any] | None:
-    if len(blob) < 8:
-        return None
-    n_contours = struct.unpack_from("<I", blob, 0)[0]
-    filled = blob[4] != 0
-    at = 8
-    contours: list[list[float]] = []
-    for _ in range(int(n_contours)):
-        n_values = struct.unpack_from("<I", blob, at)[0]
-        at += 4
-        values = list(struct.unpack_from(f"<{n_values}d", blob, at))
-        at += int(n_values) * 8
-        contours.append(values)
-    return {"contours": contours, "filled": bool(filled)}
-
-
-def _unpack_gradient_blob(blob: bytes) -> dict[str, Any] | None:
-    if len(blob) < 4:
-        return None
-    space, direction, n_stops = blob[0], blob[1], blob[2]
-    at = 4
-    stops: list[tuple[float, tuple[int, int, int, int]]] = []
-    for _ in range(int(n_stops)):
-        t = float(struct.unpack_from("<f", blob, at)[0])
-        rgba = (int(blob[at + 4]), int(blob[at + 5]), int(blob[at + 6]), int(blob[at + 7]))
-        at += 8
-        stops.append((t, rgba))
-    return {
-        "space": "plot" if space else "mark",
-        "dir": _GRAD_DIR_FROM_CODE.get(int(direction), "down"),
-        "stops": stops,
-    }
-
-
-def _unpack_xyto(blob: bytes) -> list[dict[str, Any]]:
-    """Split Rust-owned XYTO compile output into per-trace Scene fields."""
-    if len(blob) < _XYTO_ENVELOPE.size or blob[:4] != b"XYTO":
-        raise ValueError("invalid scene trace compile packing")
-    _magic, version, n_traces, _reserved = _XYTO_ENVELOPE.unpack_from(blob, 0)
-    if version != 1:
-        raise ValueError("invalid scene trace compile facts version")
-    at = _XYTO_ENVELOPE.size
-    compiled: list[dict[str, Any]] = []
-    for _ in range(int(n_traces)):
-        (
-            magic,
-            rec_version,
-            _rec_reserved,
-            fill,
-            stroke,
-            stroke_width,
-            diameter,
-            symbol,
-            legend_kind,
-            legend_include,
-            legend_symbol,
-            authored_step,
-            fact_bits,
-            dash_count,
-            linecap,
-            has_marker,
-            has_gradient,
-            _pad,
-            marker_len,
-            gradient_len,
-            hex_dx,
-            hex_dy,
-        ) = _XYTO_PREFIX.unpack_from(blob, at)
-        if magic != b"XYTO" or rec_version != 1:
-            raise ValueError("invalid scene trace compile packing")
-        at += _XYTO_PREFIX.size
-        dash = None
-        if dash_count:
-            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
-            at += int(dash_count) * 8
-        marker = blob[at : at + marker_len]
-        at += int(marker_len)
-        gradient = blob[at : at + gradient_len]
-        at += int(gradient_len)
-        compiled.append(
-            {
-                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
-                "dash": dash,
-                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
-                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
-                "fill_gradient": _unpack_gradient_blob(gradient)
-                if has_gradient and gradient
-                else None,
-                "diameter": float(diameter),
-                "symbol": int(symbol),
-                "legend_kind": int(legend_kind),
-                "legend_include": bool(legend_include),
-                "legend_symbol": int(legend_symbol),
-                "authored_step": int(authored_step),
-                "fact_bits": int(fact_bits),
-                "hex_dx": float(hex_dx),
-                "hex_dy": float(hex_dy),
-            }
-        )
-    if at != len(blob):
-        raise ValueError("invalid scene trace compile packing")
-    return compiled
-
-
 def _raise_trace_compile(error: _native.SceneTraceCompileError, figure: Any) -> NoReturn:
     traces = list(getattr(figure, "traces", None) or [])
     trace = traces[error.index] if 0 <= error.index < len(traces) else None
@@ -1848,99 +1637,6 @@ def _raise_trace_compile(error: _native.SceneTraceCompileError, figure: Any) -> 
     if error.code == -2:
         raise ValueError("invalid scene trace compile facts version") from error
     raise ValueError("invalid scene trace compile packing") from error
-
-
-def _unpack_xytt(blob: bytes) -> list[dict[str, Any]]:
-    """Split Rust-owned XYTT attach output into per-trace Scene fields."""
-    if len(blob) < _XYTT_ENVELOPE.size or blob[:4] != b"XYTT":
-        raise ValueError("invalid scene trace attach packing")
-    _magic, version, n_traces, _reserved = _XYTT_ENVELOPE.unpack_from(blob, 0)
-    if version != 1:
-        raise ValueError("invalid scene trace attach facts version")
-    at = _XYTT_ENVELOPE.size
-    attached: list[dict[str, Any]] = []
-    for _ in range(int(n_traces)):
-        (
-            magic,
-            rec_version,
-            _rec_reserved,
-            fill,
-            stroke,
-            stroke_width,
-            diameter,
-            symbol,
-            legend_kind,
-            legend_include,
-            legend_symbol,
-            authored_step,
-            fact_bits,
-            dash_count,
-            linecap,
-            has_marker,
-            has_gradient,
-            _pad,
-            marker_len,
-            gradient_len,
-            hex_dx,
-            hex_dy,
-        ) = _XYTO_PREFIX.unpack_from(blob, at)
-        if magic != b"XYTO" or rec_version != 1:
-            raise ValueError("invalid scene trace attach packing")
-        heatmap_len, density_len, grid_rows, grid_cols, x0, x1, y0, y1 = _XYTT_EXTRA.unpack_from(
-            blob, at + _XYTO_PREFIX.size
-        )
-        at += _XYTO_PREFIX.size + _XYTT_EXTRA.size
-        dash = None
-        if dash_count:
-            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
-            at += int(dash_count) * 8
-        marker = blob[at : at + marker_len]
-        at += int(marker_len)
-        gradient = blob[at : at + gradient_len]
-        at += int(gradient_len)
-        heatmap = blob[at : at + heatmap_len]
-        at += int(heatmap_len)
-        density = blob[at : at + density_len]
-        at += int(density_len)
-        columns = None
-        if density_len:
-            columns = [
-                np.asarray([x0, x1], dtype=np.float64),
-                np.asarray([y0, y1], dtype=np.float64),
-                None,
-                None,
-                None,
-                None,
-                None,
-            ]
-        attached.append(
-            {
-                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
-                "dash": dash,
-                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
-                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
-                "fill_gradient": _unpack_gradient_blob(gradient)
-                if has_gradient and gradient
-                else None,
-                "diameter": float(diameter),
-                "symbol": int(symbol),
-                "legend_kind": int(legend_kind),
-                "legend_include": bool(legend_include),
-                "legend_symbol": int(legend_symbol),
-                "authored_step": int(authored_step),
-                "fact_bits": int(fact_bits),
-                "hex_dx": float(hex_dx),
-                "hex_dy": float(hex_dy),
-                "heatmap": bytes(heatmap) if heatmap_len else b"",
-                "density": bytes(density) if density_len else b"",
-                "grid_rows": float(grid_rows),
-                "grid_cols": float(grid_cols),
-                "columns": columns,
-            }
-        )
-    if at != len(blob):
-        raise ValueError("invalid scene trace attach packing")
-    return attached
 
 
 def _raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> NoReturn:
@@ -1988,76 +1684,6 @@ def _raise_trace_rows(error: _native.SceneTraceRowsError) -> NoReturn:
     raise ValueError("invalid scene trace column packing") from error
 
 
-def _unpack_xysd(blob: bytes) -> dict[str, Any]:
-    """Split Rust-owned XYSD sidecar output into per-trace Scene fields."""
-    if len(blob) < _XYSD_HEADER.size or blob[:4] != b"XYSD":
-        raise ValueError("invalid scene sidecar packing")
-    _magic, version, n_traces, _reserved = _XYSD_HEADER.unpack_from(blob, 0)
-    if version != 1:
-        raise ValueError("invalid scene sidecar facts version")
-    at = _XYSD_HEADER.size
-    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
-    dashes: list[list[float] | None] = []
-    linecaps: list[int | None] = []
-    marker_paths: list[dict[str, Any] | None] = []
-    fill_gradients: list[dict[str, Any] | None] = []
-    planes: list[bytes] = []
-    legend: list[tuple[int, int, int, str]] = []
-    for index in range(int(n_traces)):
-        if at + _XYSD_PREFIX.size > len(blob):
-            raise ValueError("invalid scene sidecar packing")
-        (
-            fill,
-            stroke,
-            stroke_width,
-            linecap,
-            legend_kind,
-            legend_symbol,
-            dash_len,
-            marker_len,
-            gradient_len,
-            plane_len,
-            name_len,
-            _reserved_len,
-        ) = _XYSD_PREFIX.unpack_from(blob, at)
-        at += _XYSD_PREFIX.size
-        need = int(dash_len) + int(marker_len) + int(gradient_len) + int(plane_len) + int(name_len)
-        if at + need > len(blob):
-            raise ValueError("invalid scene sidecar packing")
-        dash_blob = blob[at : at + dash_len]
-        at += int(dash_len)
-        marker = blob[at : at + marker_len]
-        at += int(marker_len)
-        gradient = blob[at : at + gradient_len]
-        at += int(gradient_len)
-        plane = blob[at : at + plane_len]
-        at += int(plane_len)
-        name = blob[at : at + name_len]
-        at += int(name_len)
-        styles.append((tuple(fill), tuple(stroke), float(stroke_width)))
-        dashes.append(
-            list(struct.unpack(f"<{len(dash_blob) // 8}d", dash_blob)) if dash_blob else None
-        )
-        linecaps.append(None if linecap == _XYTO_LINECAP_NONE else int(linecap))
-        marker_paths.append(_unpack_marker_blob(marker) if marker else None)
-        fill_gradients.append(_unpack_gradient_blob(gradient) if gradient else None)
-        if plane:
-            planes.append(bytes(plane))
-        if name:
-            legend.append((index, int(legend_kind), int(legend_symbol), name.decode("utf-8")))
-    if at != len(blob):
-        raise ValueError("invalid scene sidecar packing")
-    return {
-        "styles": styles,
-        "dashes": dashes,
-        "linecaps": linecaps,
-        "marker_paths": marker_paths,
-        "fill_gradients": fill_gradients,
-        "planes": planes,
-        "legend": legend,
-    }
-
-
 def _raise_trace_sidecars(error: _native.SceneTraceSidecarsError) -> NoReturn:
     if error.code == -2:
         raise ValueError("invalid scene sidecar facts version") from error
@@ -2068,61 +1694,6 @@ def _raise_annotation_splice(error: _native.SceneAnnotationSpliceError) -> NoRet
     if error.code == -2:
         raise ValueError("invalid scene annotation splice version") from error
     raise ValueError("invalid scene annotation splice packing") from error
-
-
-def _unpack_xyas(blob: bytes) -> dict[str, Any]:
-    """Split Rust-owned XYAS splice output into Scene styles, rows, and XYAD."""
-    if len(blob) < _XYAS_HEADER.size or blob[:4] != b"XYAS":
-        raise ValueError("invalid scene annotation splice packing")
-    _magic, version, n_styles, n_rows, xyad_len, _reserved = _XYAS_HEADER.unpack_from(blob, 0)
-    if version != 1:
-        raise ValueError("invalid scene annotation splice version")
-    at = _XYAS_HEADER.size
-    need = int(n_styles) * _XYAS_STYLE.size + int(n_rows) * 56 + int(xyad_len)
-    if at + need > len(blob):
-        raise ValueError("invalid scene annotation splice packing")
-    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
-    for _ in range(int(n_styles)):
-        fill, stroke, width = _XYAS_STYLE.unpack_from(blob, at)
-        styles.append((tuple(fill), tuple(stroke), float(width)))
-        at += _XYAS_STYLE.size
-    kinds: list[int] = []
-    stable_ids: list[int] = []
-    style_refs: list[int] = []
-    diameters: list[float] = []
-    symbols: list[int] = []
-    expansion_modes: list[int] = []
-    coordinates: list[list[float]] = [[], [], [], []]
-    if n_rows:
-        raw = np.frombuffer(blob[at : at + int(n_rows) * 56], dtype=np.uint8).reshape(
-            int(n_rows), 56
-        )
-        kinds.extend(int(value) for value in raw[:, 0])
-        symbols.extend(int(value) for value in raw[:, 1])
-        expansion_modes.extend(int(value) for value in raw[:, 2])
-        style_refs.extend(int(value) for value in np.frombuffer(raw[:, 4:8].tobytes(), dtype="<u4"))
-        stable_ids.extend(
-            int(value) for value in np.frombuffer(raw[:, 8:16].tobytes(), dtype="<u8")
-        )
-        nums = np.frombuffer(raw[:, 16:56].tobytes(), dtype="<f8").reshape(-1, 5)
-        diameters.extend(float(value) for value in nums[:, 0])
-        for axis in range(4):
-            coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
-        at += int(n_rows) * 56
-    xyad = bytes(blob[at : at + int(xyad_len)])
-    if at + int(xyad_len) != len(blob):
-        raise ValueError("invalid scene annotation splice packing")
-    return {
-        "styles": styles,
-        "kinds": kinds,
-        "stable_ids": stable_ids,
-        "style_refs": style_refs,
-        "diameters": diameters,
-        "symbols": symbols,
-        "expansion_modes": expansion_modes,
-        "coordinates": coordinates,
-        "xyad": xyad,
-    }
 
 
 def figure_scene(
