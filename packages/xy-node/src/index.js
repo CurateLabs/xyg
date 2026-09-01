@@ -355,6 +355,7 @@ export {
   marchingSquares,
   lodPlan,
   drillDecision,
+  alignedWindow,
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,
