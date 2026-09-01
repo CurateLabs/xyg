@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 352
-SIGNATURE_SHA256 = "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852"
+ABI_VERSION = 353
+SIGNATURE_SHA256 = "65656514cd2ce9f846ff0ec54b7756892184a84920b625cf56e7bad5bc1627d6"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -682,6 +682,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_window
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_object_row_real_numeric_tag_from_probe(uint8_t probe)
+    function = lib.xyg_object_row_real_numeric_tag_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
+    # int32_t xyg_object_row_stringlike_tag_from_probe(uint8_t probe)
+    function = lib.xyg_object_row_stringlike_tag_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
     # int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n)
     function = lib.xyg_object_rows_all_real_numeric
     function.restype = ctypes.c_int32

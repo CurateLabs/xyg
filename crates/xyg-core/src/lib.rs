@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 352;
+pub const ABI_VERSION: u32 = 353;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10298,6 +10298,24 @@ pub unsafe extern "C" fn xyg_size_range_admit(
 #[no_mangle]
 pub unsafe extern "C" fn xyg_real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
     ffi_guard(-3, || kernels::real_numeric_dtype_admit(dtype_kind))
+}
+
+/// Map a host value probe to an object-column stringlike row tag (ABI 353).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_object_row_stringlike_tag_from_probe(probe: u8) -> i32 {
+    ffi_guard(-1, || match kernels::object_row_stringlike_tag_from_probe(probe) {
+        Some(tag) => i32::from(tag),
+        None => -1,
+    })
+}
+
+/// Map a host value probe to an object-column real-numeric row tag (ABI 353).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_object_row_real_numeric_tag_from_probe(probe: u8) -> i32 {
+    ffi_guard(-1, || match kernels::object_row_real_numeric_tag_from_probe(probe) {
+        Some(tag) => i32::from(tag),
+        None => -1,
+    })
 }
 
 /// Classify whether a column uses categorical color resolution (ABI 351).

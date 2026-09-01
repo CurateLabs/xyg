@@ -1,9 +1,9 @@
 {
-  "abi_version": 352,
+  "abi_version": 353,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852",
+  "signature_sha256": "65656514cd2ce9f846ff0ec54b7756892184a84920b625cf56e7bad5bc1627d6",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -22732,6 +22732,76 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t require_area, double * out)"
+    },
+    {
+      "name": "xyg_object_row_real_numeric_tag_from_probe",
+      "node_name": "xyObjectRowRealNumericTagFromProbe",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "probe",
+          "type": {
+            "rust": "u8",
+            "c": "uint8_t",
+            "ctypes": "ctypes.c_uint8",
+            "koffi": "uint8_t",
+            "kind": "scalar",
+            "bits": 8,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_object_row_real_numeric_tag_from_probe(uint8_t probe)"
+    },
+    {
+      "name": "xyg_object_row_stringlike_tag_from_probe",
+      "node_name": "xyObjectRowStringlikeTagFromProbe",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "probe",
+          "type": {
+            "rust": "u8",
+            "c": "uint8_t",
+            "ctypes": "ctypes.c_uint8",
+            "koffi": "uint8_t",
+            "kind": "scalar",
+            "bits": 8,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_object_row_stringlike_tag_from_probe(uint8_t probe)"
     },
     {
       "name": "xyg_object_rows_all_real_numeric",

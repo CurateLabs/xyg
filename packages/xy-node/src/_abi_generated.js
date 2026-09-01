@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 352;
-export const SIGNATURE_SHA256 = "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852";
+export const ABI_VERSION = 353;
+export const SIGNATURE_SHA256 = "65656514cd2ce9f846ff0ec54b7756892184a84920b625cf56e7bad5bc1627d6";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -173,6 +173,8 @@ export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
 export let xyNormalizeWindow;
+export let xyObjectRowRealNumericTagFromProbe;
+export let xyObjectRowStringlikeTagFromProbe;
 export let xyObjectRowsAllRealNumeric;
 export let xyObjectRowsAllStringlike;
 export let xyPaintEffectiveRgba;
@@ -638,6 +640,8 @@ export function bindGeneratedAbi(lib) {
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
   xyNormalizeWindow = lib.func("int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t require_area, double * out)");
+  xyObjectRowRealNumericTagFromProbe = lib.func("int32_t xyg_object_row_real_numeric_tag_from_probe(uint8_t probe)");
+  xyObjectRowStringlikeTagFromProbe = lib.func("int32_t xyg_object_row_stringlike_tag_from_probe(uint8_t probe)");
   xyObjectRowsAllRealNumeric = lib.func("int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n)");
   xyObjectRowsAllStringlike = lib.func("int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");

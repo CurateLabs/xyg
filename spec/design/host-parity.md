@@ -886,6 +886,9 @@ Python `channels._as_real_array`, `_figure._real_float_array`, and `columns`
 numeric ingest plus Node `realNumericDtypeAdmit` reject boolean/complex dtype
 kinds through ABI 352 `xyg_real_numeric_dtype_admit`; object-row real-numeric
 probes stay host-side.
+Python `channels._object_row_*_tag` and Node `objectRow*TagFromProbe` map host
+value probes through ABI 353 `xyg_object_row_*_tag_from_probe`; per-row Python/
+JS type inspection stays host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

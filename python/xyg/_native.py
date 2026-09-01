@@ -9430,6 +9430,22 @@ def real_numeric_dtype_admit(dtype_kind: int) -> None:
         raise ValueError("invalid real-numeric-dtype-admit request")
 
 
+def object_row_stringlike_tag_from_probe(probe: int) -> int:
+    """Map a host value probe to a stringlike object-row tag (ABI 353)."""
+    code = int(_lib.xyg_object_row_stringlike_tag_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid object-row-stringlike-tag request")
+    return code
+
+
+def object_row_real_numeric_tag_from_probe(probe: int) -> int:
+    """Map a host value probe to a real-numeric object-row tag (ABI 353)."""
+    code = int(_lib.xyg_object_row_real_numeric_tag_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid object-row-real-numeric-tag request")
+    return code
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

@@ -335,28 +335,30 @@ def _category_labels(values: Any) -> list[str]:
     return kernels.category_labels(kinds, payloads)
 
 
-def _object_row_stringlike_tag(value: Any) -> int:
-    if _is_missing_category(value):
-        return 0
-    if isinstance(value, (str, bytes, np.str_, np.bytes_)):
-        return 1 if isinstance(value, (str, np.str_)) else 2
-    return 3
-
-
-def _object_row_real_numeric_tag(value: Any) -> int:
+def _value_probe(value: Any) -> int:
     if _is_missing_category(value):
         return 0
     if isinstance(value, (bool, np.bool_)):
+        return 1
+    if isinstance(value, (str, np.str_)):
         return 2
-    if isinstance(value, (str, bytes, np.bytes_)):
+    if isinstance(value, (bytes, np.bytes_)):
         return 3
     if isinstance(value, numbers.Real):
-        return 1
+        return 4
     try:
         float(value)
     except (TypeError, ValueError):
-        return 5
-    return 4
+        return 6
+    return 5
+
+
+def _object_row_stringlike_tag(value: Any) -> int:
+    return kernels.object_row_stringlike_tag_from_probe(_value_probe(value))
+
+
+def _object_row_real_numeric_tag(value: Any) -> int:
+    return kernels.object_row_real_numeric_tag_from_probe(_value_probe(value))
 
 
 def _object_column_is_stringlike(arr: np.ndarray) -> bool:

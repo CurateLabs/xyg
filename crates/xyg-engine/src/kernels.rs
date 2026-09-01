@@ -8632,6 +8632,47 @@ pub fn real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
     }
 }
 
+/// Host-side value probe before object-row tag mapping (ABI 353).
+pub const VALUE_PROBE_MISSING: u8 = 0;
+/// Boolean scalar (must be checked before real probes).
+pub const VALUE_PROBE_BOOL: u8 = 1;
+/// UTF-8 text scalar.
+pub const VALUE_PROBE_TEXT: u8 = 2;
+/// Raw bytes scalar.
+pub const VALUE_PROBE_BYTES: u8 = 3;
+/// Real numeric scalar (`numbers.Real` / finite number).
+pub const VALUE_PROBE_REAL: u8 = 4;
+/// Real numeric after host `float()` coercion succeeds.
+pub const VALUE_PROBE_COERCIBLE: u8 = 5;
+/// Non-numeric / non-stringlike scalar.
+pub const VALUE_PROBE_OTHER: u8 = 6;
+
+/// Map a host value probe to an object-column stringlike row tag (ABI 353).
+pub fn object_row_stringlike_tag_from_probe(probe: u8) -> Option<u8> {
+    Some(match probe {
+        VALUE_PROBE_MISSING => OBJECT_ROW_MISSING,
+        VALUE_PROBE_TEXT => OBJECT_ROW_TEXT,
+        VALUE_PROBE_BYTES => OBJECT_ROW_BYTES,
+        VALUE_PROBE_BOOL | VALUE_PROBE_REAL | VALUE_PROBE_COERCIBLE | VALUE_PROBE_OTHER => {
+            OBJECT_ROW_OTHER
+        }
+        _ => return None,
+    })
+}
+
+/// Map a host value probe to an object-column real-numeric row tag (ABI 353).
+pub fn object_row_real_numeric_tag_from_probe(probe: u8) -> Option<u8> {
+    match probe {
+        VALUE_PROBE_MISSING => Some(OBJECT_ROW_REAL_MISSING),
+        VALUE_PROBE_REAL => Some(OBJECT_ROW_REAL_NUMERIC),
+        VALUE_PROBE_BOOL => Some(OBJECT_ROW_REAL_BOOL),
+        VALUE_PROBE_TEXT | VALUE_PROBE_BYTES => Some(OBJECT_ROW_REAL_TEXT),
+        VALUE_PROBE_COERCIBLE => Some(OBJECT_ROW_REAL_COERCIBLE),
+        VALUE_PROBE_OTHER => Some(OBJECT_ROW_REAL_OTHER),
+        _ => None,
+    }
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11126,6 +11167,45 @@ mod tests {
         assert_eq!(real_numeric_dtype_admit(b'b'), REAL_NUMERIC_DTYPE_BOOL);
         assert_eq!(real_numeric_dtype_admit(b'c'), REAL_NUMERIC_DTYPE_COMPLEX);
         assert_eq!(real_numeric_dtype_admit(b'C'), REAL_NUMERIC_DTYPE_COMPLEX);
+    }
+
+    #[test]
+    fn object_row_tag_from_probe_matches_host_policy() {
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_MISSING),
+            Some(OBJECT_ROW_MISSING)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_TEXT),
+            Some(OBJECT_ROW_TEXT)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_BYTES),
+            Some(OBJECT_ROW_BYTES)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_BOOL),
+            Some(OBJECT_ROW_OTHER)
+        );
+        assert!(object_row_stringlike_tag_from_probe(99).is_none());
+
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_REAL),
+            Some(OBJECT_ROW_REAL_NUMERIC)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_BOOL),
+            Some(OBJECT_ROW_REAL_BOOL)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_COERCIBLE),
+            Some(OBJECT_ROW_REAL_COERCIBLE)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_OTHER),
+            Some(OBJECT_ROW_REAL_OTHER)
+        );
+        assert!(object_row_real_numeric_tag_from_probe(99).is_none());
     }
 
     #[test]

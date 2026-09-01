@@ -15,6 +15,8 @@ import {
   xyFactorizeUseNativeFixed,
   xyObjectRowsAllStringlike,
   xyObjectRowsAllRealNumeric,
+  xyObjectRowStringlikeTagFromProbe,
+  xyObjectRowRealNumericTagFromProbe,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -407,20 +409,36 @@ function factorizeTypedArray(view) {
   if (!useNativeFixedFactorizer(view, width)) return null;
   return factorizeFixedRecords(view, width) ?? factorizeFixedWide(view, width);
 }
-function objectRowRealNumericTag(value) {
+function valueProbe(value) {
   if (isMissingCategory(value)) return 0;
-  if (typeof value === "boolean") return 2;
-  if (typeof value === "string" || value instanceof Uint8Array || ArrayBuffer.isView(value)) {
-    return 3;
-  }
-  if (typeof value === "number" && Number.isFinite(value)) return 1;
+  if (typeof value === "boolean") return 1;
+  if (typeof value === "string") return 2;
+  if (value instanceof Uint8Array) return 3;
+  if (ArrayBuffer.isView(value)) return 3;
+  if (typeof value === "number" && Number.isFinite(value)) return 4;
   try {
     const coerced = Number(value);
-    if (Number.isFinite(coerced)) return 4;
+    if (Number.isFinite(coerced)) return 5;
   } catch {
-    return 5;
+    return 6;
   }
-  return 5;
+  return 6;
+}
+
+export function objectRowStringlikeTagFromProbe(probe) {
+  const code = Number(xyObjectRowStringlikeTagFromProbe(Number(probe) & 0xff));
+  if (code < 0) throw new RangeError("invalid object-row-stringlike-tag request");
+  return code;
+}
+
+export function objectRowRealNumericTagFromProbe(probe) {
+  const code = Number(xyObjectRowRealNumericTagFromProbe(Number(probe) & 0xff));
+  if (code < 0) throw new RangeError("invalid object-row-real-numeric-tag request");
+  return code;
+}
+
+function objectRowRealNumericTag(value) {
+  return objectRowRealNumericTagFromProbe(valueProbe(value));
 }
 
 export function objectColumnIsRealNumeric(raw) {
@@ -434,11 +452,7 @@ export function objectColumnIsRealNumeric(raw) {
 }
 
 function objectRowStringlikeTag(value) {
-  if (isMissingCategory(value)) return 0;
-  if (typeof value === "string") return 1;
-  if (value instanceof Uint8Array) return 2;
-  if (ArrayBuffer.isView(value)) return 2;
-  return 3;
+  return objectRowStringlikeTagFromProbe(valueProbe(value));
 }
 
 export function objectColumnIsStringlike(raw) {

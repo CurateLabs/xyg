@@ -193,6 +193,8 @@ continuous_domain = _impl.continuous_domain
 size_range_admit = _impl.size_range_admit
 array_is_categorical = _impl.array_is_categorical
 real_numeric_dtype_admit = _impl.real_numeric_dtype_admit
+object_row_stringlike_tag_from_probe = _impl.object_row_stringlike_tag_from_probe
+object_row_real_numeric_tag_from_probe = _impl.object_row_real_numeric_tag_from_probe
 direct_rgba_admit = _impl.direct_rgba_admit
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -455,6 +457,8 @@ __all__ = [
     "monotone_tangents",
     "normalize_f32",
     "normalize_window",
+    "object_row_real_numeric_tag_from_probe",
+    "object_row_stringlike_tag_from_probe",
     "object_rows_all_real_numeric",
     "object_rows_all_stringlike",
     "paint_effective_rgba",

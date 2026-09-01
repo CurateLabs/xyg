@@ -312,6 +312,54 @@
       "dtype_kind": "c",
       "ok": false,
       "error": "complex"
+    },
+    {
+      "name": "object_row_stringlike_tag_missing",
+      "kind": "object_row_stringlike_tag",
+      "probe": 0,
+      "tag": 0
+    },
+    {
+      "name": "object_row_stringlike_tag_text",
+      "kind": "object_row_stringlike_tag",
+      "probe": 2,
+      "tag": 1
+    },
+    {
+      "name": "object_row_stringlike_tag_bytes",
+      "kind": "object_row_stringlike_tag",
+      "probe": 3,
+      "tag": 2
+    },
+    {
+      "name": "object_row_stringlike_tag_bool",
+      "kind": "object_row_stringlike_tag",
+      "probe": 1,
+      "tag": 3
+    },
+    {
+      "name": "object_row_real_numeric_tag_real",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 4,
+      "tag": 1
+    },
+    {
+      "name": "object_row_real_numeric_tag_bool",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 1,
+      "tag": 2
+    },
+    {
+      "name": "object_row_real_numeric_tag_coercible",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 5,
+      "tag": 4
+    },
+    {
+      "name": "object_row_real_numeric_tag_other",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 6,
+      "tag": 5
     }
   ]
 }
