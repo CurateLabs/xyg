@@ -450,6 +450,9 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     pointer(outLen, "size_t *"),
   ));
   if (code !== 0) {
+    if (code === -3) {
+      throw new RangeError("errorbar role-qualified animation key collision");
+    }
     throw new RangeError(`payload_trace_emit_materialize failed (${code}) for kind ${t.kind}`);
   }
   const blob = outBytes.subarray(0, Number(outLen[0]));
@@ -526,9 +529,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       }
     }
     const colIdx = pw._appendFromMaterialized(enc, meta);
-    target[key] = gv.getInt32(4, true)
-      ? { col: colIdx, ...pw.columns[colIdx] }
-      : colIdx;
+    target[key] = colIdx;
   }
   const nChan = Number(sv.getBigUint64(72, true));
   for (let i = 0; i < nChan; i += 1) {

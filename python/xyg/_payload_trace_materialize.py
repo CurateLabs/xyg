@@ -402,6 +402,8 @@ def emit_trace_materialized(
         )
     )
     if code != 0:
+        if code == -3:
+            raise ValueError("errorbar role-qualified animation key collision")
         raise ValueError(f"payload_trace_emit_materialize failed ({code}) for kind {t.kind!r}")
     blob = bytes(out_bytes[: int(out_len.value)])
     path = int(summary.emit_path)
@@ -465,8 +467,7 @@ def emit_trace_materialized(
             if geom.has_kind:
                 meta["kind"] = (col_kinds[idx] if idx < len(col_kinds) else b"").decode("utf-8")
         col_idx = pw._append_from_materialized(enc, meta)
-        shipped = {"col": col_idx, **pw.columns[col_idx]} if int(geom.nested) else col_idx
-        cast(dict[str, Any], target)[key] = shipped
+        cast(dict[str, Any], target)[key] = col_idx
     for idx in range(int(summary.n_channels)):
         wire = chan_out[idx]
         key = _CHAN_REGISTRY[int(wire.registry_key)]
@@ -528,7 +529,10 @@ def emit_trace_materialized(
             entry["keys"]["lo"] = pw.ship_u32(lo)
             entry["keys"]["hi"] = pw.ship_u32(hi)
     elif summary.attach_transition and summary.animation_fallback:
-        entry["animation_fallback"] = int(summary.animation_fallback)
+        code = int(summary.animation_fallback)
+        table = _native._TRANSITION_FALLBACK_BY_CODE
+        if 0 <= code < len(table) and table[code] is not None:
+            entry["animation_fallback"] = table[code]
     sel: np.ndarray | None = None
     if summary.set_shipped_sel or summary.filter_tooltip_by_sel:
         base_col = getattr(t, "base", None)
