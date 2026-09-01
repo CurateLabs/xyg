@@ -71,6 +71,7 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("—", "326", "xyg_aligned_window", "lod.aligned_window"),
     ("—", "327", "xyg_sample_threshold", "lod._sample_threshold"),
     ("—", "327", "xyg_hash_row_ids", "lod.hash_row_ids"),
+    ("—", "328", "xyg_sample_fraction", "lod._sample_fraction"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

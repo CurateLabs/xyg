@@ -107,6 +107,20 @@
       "kind": "hash_row_ids",
       "ids": [0, 1, 2],
       "seed": 0
+    },
+    {
+      "name": "sample_fraction_level2",
+      "kind": "sample_fraction",
+      "level": 2,
+      "base_fraction": 0.25,
+      "growth": 2.0
+    },
+    {
+      "name": "sample_fraction_saturated",
+      "kind": "sample_fraction",
+      "level": 0,
+      "base_fraction": 1.0,
+      "growth": 2.0
     }
   ]
 }

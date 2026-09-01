@@ -6951,6 +6951,20 @@ pub fn sample_threshold(fraction: f64) -> u64 {
     }
 }
 
+/// Zoom/detail sampling fraction: `min(1, base * growth^level)` with the same
+/// early exits and non-finite overflow handling as Python `lod._sample_fraction`
+/// and Node `sampleFraction`.
+pub fn sample_fraction(level: i64, base_fraction: f64, growth: f64) -> f64 {
+    if base_fraction >= 1.0 || growth == 1.0 {
+        return base_fraction.min(1.0);
+    }
+    let fraction = base_fraction * growth.powf(level as f64);
+    if !fraction.is_finite() {
+        return 1.0;
+    }
+    fraction.min(1.0)
+}
+
 /// Category-stratified deterministic sampling mask (§5/§17). Per-category keep
 /// fractions scale sublinearly (`min(1, fraction * sqrt(n / count))`) and every
 /// category keeps at least `min(min_count, count)` of its lowest-hash rows, so
@@ -9428,6 +9442,15 @@ mod tests {
         assert_eq!(sample_threshold(2.0), u64::MAX);
         assert_eq!(sample_threshold(0.0), 0);
         assert_eq!(sample_threshold(-1.0), 0);
+    }
+
+    #[test]
+    fn sample_fraction_matches_host_reference() {
+        assert_eq!(sample_fraction(0, 0.25, 2.0), 0.25);
+        assert_eq!(sample_fraction(2, 0.25, 2.0), 1.0);
+        assert_eq!(sample_fraction(3, 1.0, 2.0), 1.0);
+        assert_eq!(sample_fraction(5, 0.5, 1.0), 0.5);
+        assert!((sample_fraction(10, 0.001, 1.5) - 0.001 * 1.5_f64.powf(10.0)).abs() < 1e-12);
     }
 
     #[test]

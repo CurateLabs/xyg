@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 327;
-export const SIGNATURE_SHA256 = "62c52d5159e46e8f95062afb4603fa6bc5ab118ad342100061b42bb9130fb034";
+export const ABI_VERSION = 328;
+export const SIGNATURE_SHA256 = "9d281850f9577e08877c1d8ead163a4ec849361f2dd620579f0249f5f5bcd89b";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -230,6 +230,7 @@ export let xyRfft;
 export let xyRibbonEdge;
 export let xyRibbonPolygon;
 export let xyRoundedRectPoly;
+export let xySampleFraction;
 export let xySampleMask;
 export let xySampleMaskU32;
 export let xySampleRangeIndices;
@@ -666,6 +667,7 @@ export function bindGeneratedAbi(lib) {
   xyRibbonEdge = lib.func("size_t xyg_ribbon_edge(double x0, double x1, double ya, double yb, size_t steps, double * out_x, double * out_y, size_t capacity)");
   xyRibbonPolygon = lib.func("size_t xyg_ribbon_polygon(double x0, double x1, double src_lo, double src_hi, double dst_lo, double dst_hi, size_t steps, double * out_x, double * out_y, size_t capacity)");
   xyRoundedRectPoly = lib.func("size_t xyg_rounded_rect_poly(double x, double y, double w, double h, double r_tip, double r_base, int32_t tip_top, double * out_x, double * out_y, size_t capacity)");
+  xySampleFraction = lib.func("double xyg_sample_fraction(int64_t level, double base_fraction, double growth)");
   xySampleMask = lib.func("int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
   xySampleMaskU32 = lib.func("int32_t xyg_sample_mask_u32(const uint32_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
   xySampleRangeIndices = lib.func("size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity)");

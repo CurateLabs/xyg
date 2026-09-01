@@ -942,6 +942,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_sample_threshold.argtypes = [D]
     lib.xyg_hash_row_ids.restype = ctypes.c_int32
     lib.xyg_hash_row_ids.argtypes = [U64P, ctypes.c_size_t, ctypes.c_uint64, U64P]
+    lib.xyg_sample_fraction.restype = D
+    lib.xyg_sample_fraction.argtypes = [ctypes.c_int64, D, D]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
@@ -4803,6 +4805,14 @@ def main() -> None:
         lib.xyg_hash_row_ids(null_u64, 0, ctypes.c_uint64(0), ctypes.POINTER(ctypes.c_uint64)())
         == 1,
         "hash_row_ids empty/null ok status",
+    )
+    ok(
+        abs(lib.xyg_sample_fraction(2, 0.25, 2.0) - 1.0) < 1e-12,
+        "sample_fraction level-2 reference",
+    )
+    ok(
+        abs(lib.xyg_sample_fraction(0, 1.0, 2.0) - 1.0) < 1e-12,
+        "sample_fraction saturated base",
     )
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])

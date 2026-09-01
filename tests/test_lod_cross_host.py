@@ -105,6 +105,15 @@ def _python_case(spec: dict) -> dict:
             "name": spec["name"],
             "hashes_sha256": _sha_u64(hashes),
         }
+    if spec["kind"] == "sample_fraction":
+        return {
+            "name": spec["name"],
+            "fraction": kernels.sample_fraction(
+                int(spec["level"]),
+                float(spec["base_fraction"]),
+                float(spec["growth"]),
+            ),
+        }
     column = lod.encode_f32_values(
         spec["values"],
         float(spec["offset"]),
@@ -167,6 +176,9 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
         return
     if spec["kind"] == "hash_row_ids":
         assert py["hashes_sha256"] == node["hashes_sha256"]
+        return
+    if spec["kind"] == "sample_fraction":
+        assert py["fraction"] == node["fraction"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]

@@ -330,13 +330,7 @@ def _sample_fraction(
         max_inclusive=1.0,
     )
     growth_f = _float_param(growth, f"{label} growth", min_inclusive=1.0)
-    if base >= 1.0 or growth_f == 1.0:
-        return min(1.0, base)
-    try:
-        fraction = base * (growth_f**level_i)
-    except OverflowError:
-        return 1.0
-    return min(1.0, fraction)
+    return kernels.sample_fraction(level_i, base, growth_f)
 
 
 def _sample_threshold(fraction: float) -> np.uint64:

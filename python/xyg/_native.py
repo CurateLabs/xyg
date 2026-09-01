@@ -1225,6 +1225,11 @@ def sample_threshold(fraction: float) -> int:
     return int(_lib.xyg_sample_threshold(float(fraction)))
 
 
+def sample_fraction(level: int, base_fraction: float, growth: float) -> float:
+    """Zoom/detail sampling fraction (ABI 328, §5/§17)."""
+    return float(_lib.xyg_sample_fraction(int(level), float(base_fraction), float(growth)))
+
+
 def hash_row_ids(
     ids: npt.NDArray[np.uint64],
     seed: int,

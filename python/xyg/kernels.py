@@ -78,6 +78,7 @@ zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
 aligned_window = _impl.aligned_window
 sample_threshold = _impl.sample_threshold
+sample_fraction = _impl.sample_fraction
 hash_row_ids = _impl.hash_row_ids
 encode_f32 = _impl.encode_f32
 encoded_column_meta = _impl.encoded_column_meta
@@ -467,6 +468,7 @@ __all__ = [
     "ribbon_edge",
     "ribbon_polygon",
     "rounded_rect_poly",
+    "sample_fraction",
     "sample_mask",
     "sample_range_indices",
     "sample_threshold",

@@ -357,6 +357,7 @@ export {
   drillDecision,
   alignedWindow,
   sampleThreshold,
+  sampleFraction,
   hashRowIds,
   payloadTier,
   payloadM4Indices,

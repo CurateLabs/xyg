@@ -1,9 +1,9 @@
 {
-  "abi_version": 327,
+  "abi_version": 328,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "62c52d5159e46e8f95062afb4603fa6bc5ab118ad342100061b42bb9130fb034",
+  "signature_sha256": "9d281850f9577e08877c1d8ead163a4ec849361f2dd620579f0249f5f5bcd89b",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -33784,6 +33784,71 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_rounded_rect_poly(double x, double y, double w, double h, double r_tip, double r_base, int32_t tip_top, double * out_x, double * out_y, size_t capacity)"
+    },
+    {
+      "name": "xyg_sample_fraction",
+      "node_name": "xySampleFraction",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "level",
+          "type": {
+            "rust": "i64",
+            "c": "int64_t",
+            "ctypes": "ctypes.c_int64",
+            "koffi": "int64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "base_fraction",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "growth",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "f64",
+        "c": "double",
+        "ctypes": "ctypes.c_double",
+        "koffi": "double",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "double xyg_sample_fraction(int64_t level, double base_fraction, double growth)"
     },
     {
       "name": "xyg_sample_mask",

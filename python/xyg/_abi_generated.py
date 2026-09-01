@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 327
-SIGNATURE_SHA256 = "62c52d5159e46e8f95062afb4603fa6bc5ab118ad342100061b42bb9130fb034"
+ABI_VERSION = 328
+SIGNATURE_SHA256 = "9d281850f9577e08877c1d8ead163a4ec849361f2dd620579f0249f5f5bcd89b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -910,6 +910,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rounded_rect_poly
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # double xyg_sample_fraction(int64_t level, double base_fraction, double growth)
+    function = lib.xyg_sample_fraction
+    function.restype = ctypes.c_double
+    function.argtypes = [ctypes.c_int64, ctypes.c_double, ctypes.c_double]
     # int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)
     function = lib.xyg_sample_mask
     function.restype = ctypes.c_int32

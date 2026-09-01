@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, sampleThreshold } from "../src/encode.js";
+import { drillDecision, encodeF32Values, hashRowIds, lodPlan, alignedWindow, sampleFraction, sampleThreshold } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "lod_cross_host.json");
@@ -42,6 +42,12 @@ function runCase(spec) {
     return {
       name: spec.name,
       hashes_sha256: shaU64(hashes),
+    };
+  }
+  if (spec.kind === "sample_fraction") {
+    return {
+      name: spec.name,
+      fraction: sampleFraction(spec.level, spec.base_fraction, spec.growth),
     };
   }
   if (spec.kind === "aligned_window") {

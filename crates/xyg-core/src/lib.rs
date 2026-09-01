@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 327;
+pub const ABI_VERSION: u32 = 328;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7163,6 +7163,15 @@ pub unsafe extern "C" fn xyg_hash_row_ids(
         kernels::hash_row_ids(ids, seed, out);
         1
     })
+}
+
+/// Zoom/detail sampling fraction (ABI 328, §5/§17).
+///
+/// Returns `min(1, base_fraction * growth^level)` with the same early exits
+/// and non-finite overflow handling as Python `lod._sample_fraction`.
+#[no_mangle]
+pub extern "C" fn xyg_sample_fraction(level: i64, base_fraction: f64, growth: f64) -> f64 {
+    kernels::sample_fraction(level, base_fraction, growth)
 }
 
 /// Pack EncodedColumn offset/scale/kind-presence (ABI 255, §16/§19).
