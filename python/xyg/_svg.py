@@ -4678,30 +4678,16 @@ def _scatter_marks(
         return _column(blob, cols[index])
 
     face_intrinsic = _trace_paint_rgba(t, "color", n, fallback, read)
-    scalar_artist = style.get("artist_alpha")
-    grouped_alpha = scalar_artist is not None and not (t.get("channels") or {}).get("artist_alpha")
-    effective_trace = t
-    if grouped_alpha:
-        face_intrinsic[:, 3] = 1.0
-        effective_trace = dict(t)
-        effective_style = dict(style)
-        effective_style.pop("artist_alpha", None)
-        effective_style["opacity"] = 1.0
-        effective_style["fill_opacity"] = 1.0
-        effective_style["stroke_opacity"] = 1.0
-        effective_trace["style"] = effective_style
+    effective_trace, face_intrinsic, grouped_alpha, scalar_artist = (
+        _paint.scatter_grouped_artist_alpha(t, style, face_intrinsic)
+    )
     face_rgba = _paint.effective_rgba(
         face_intrinsic, effective_trace, read, component="fill", default_opacity=0.8
     )
     face_css, face_css_constant = _paint.trace_paint_css_constant(t, "color", fallback)
 
     size_ch = t.get("size") or {}
-    if size_ch.get("mode") == "continuous":
-        sv = _column(blob, cols[size_ch["buf"]])
-        r0, r1 = size_ch.get("range_px", [2, 18])
-        radii = (r0 + (r1 - r0) * np.clip(sv, 0, 1)) / 2
-    else:
-        radii = np.full(n, float(size_ch.get("size", 4.0)) / 2)
+    radii = _paint.scatter_radii(size_ch, read, n)
 
     stroke_widths = _paint.style_values(t, "stroke_width", n, read, 0.0)
     symbols = _symbol_names(t, n, read, str(style.get("symbol", "circle")))
@@ -4862,15 +4848,6 @@ def hexbin_ring(style: dict) -> tuple[np.ndarray, np.ndarray]:
     return _native.hexbin_ring(float(style.get("hex_dx", 0.0)), float(style.get("hex_dy", 0.0)))
 
 
-def _mesh_fills(t: dict, blob: bytes, cols: list, n: int, fallback: str) -> list[str]:
-    """Per-mark CSS fill colors from a trace's color channel (n marks)."""
-
-    def read(index: int) -> np.ndarray:
-        return _column(blob, cols[index])
-
-    return trace_paint_rgb_css_list(t, "color", n, fallback, read)
-
-
 def _hexbin_marks(
     t: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, fallback: str
 ) -> str:
@@ -4878,7 +4855,11 @@ def _hexbin_marks(
     cx = _column(blob, cols[t["x"]])
     cy = _column(blob, cols[t["y"]])
     n = min(len(cx), len(cy))
-    fills = _mesh_fills(t, blob, cols, n, fallback)
+
+    def read(index: int) -> np.ndarray:
+        return _column(blob, cols[index])
+
+    fills = trace_paint_rgb_css_list(t, "color", n, fallback, read)
     ring_x, ring_y = hexbin_ring(style)
     xs = np.asarray(sx(cx[:n, None] + ring_x[None, :]), dtype=np.float64)
     ys = np.asarray(sy(cy[:n, None] + ring_y[None, :]), dtype=np.float64)

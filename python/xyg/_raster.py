@@ -2093,12 +2093,7 @@ def _emit_authored_scatter(
         t, style, n, color, read, default_opacity=0.8
     )
     size_ch = t.get("size") or {}
-    if size_ch.get("mode") == "continuous":
-        values = _column(blob, cols[size_ch["buf"]])
-        r0, r1 = size_ch.get("range_px", [2, 18])
-        radii = (r0 + (r1 - r0) * np.clip(values, 0, 1)) / 2
-    else:
-        radii = np.full(n, float(size_ch.get("size", 4.0)) / 2)
+    radii = _paint.scatter_radii(size_ch, read, n)
     widths = _paint.style_values(t, "stroke_width", n, read, float(style.get("stroke_width", 0)))
     marker_path = style.get("marker_path")
     marker_glyph = style.get("marker_glyph")
@@ -2239,12 +2234,7 @@ def _emit_scatter(
     face_intrinsic, fills, strokes = _paint.trace_fill_and_stroke_rgba8(
         t, style, n, color, read, default_opacity=0.8
     )
-    if size_ch.get("mode") == "continuous":
-        sv = _column(blob, cols[size_ch["buf"]])
-        r0, r1 = size_ch.get("range_px", [2, 18])
-        radii = (r0 + (r1 - r0) * np.clip(sv, 0, 1)) / 2
-    else:
-        radii = np.full(n, float(size_ch.get("size", 4.0)) / 2)
+    radii = _paint.scatter_radii(size_ch, read, n)
 
     widths = _paint.style_values(t, "stroke_width", n, read, sw)
     symbol_channel = (t.get("channels") or {}).get("symbol")

@@ -542,6 +542,37 @@ def trace_stroke_css_meta(
     return face_css, face_css_constant
 
 
+def scatter_radii(size_ch: dict[str, Any], read: ColumnReader, n: int) -> np.ndarray:
+    """Resolve scatter marker radii from a size channel spec."""
+    if size_ch.get("mode") == "continuous":
+        values = np.asarray(read(int(size_ch["buf"])), dtype=np.float64).reshape(-1)[:n]
+        r0, r1 = size_ch.get("range_px", [2, 18])
+        return (r0 + (r1 - r0) * np.clip(values, 0, 1)) / 2
+    return np.full(n, float(size_ch.get("size", 4.0)) / 2)
+
+
+def scatter_grouped_artist_alpha(
+    trace: dict[str, Any],
+    style: dict[str, Any],
+    face_intrinsic: np.ndarray,
+) -> tuple[dict[str, Any], np.ndarray, bool, float | None]:
+    """Normalize trace paint when matplotlib scalar artist_alpha groups on SVG."""
+    scalar = style.get("artist_alpha")
+    grouped = scalar is not None and not (trace.get("channels") or {}).get("artist_alpha")
+    if not grouped:
+        return trace, face_intrinsic, False, None
+    face = np.asarray(face_intrinsic, copy=True)
+    face[:, 3] = 1.0
+    effective_trace = dict(trace)
+    effective_style = dict(style)
+    effective_style.pop("artist_alpha", None)
+    effective_style["opacity"] = 1.0
+    effective_style["fill_opacity"] = 1.0
+    effective_style["stroke_opacity"] = 1.0
+    effective_trace["style"] = effective_style
+    return effective_trace, face, True, float(scalar)
+
+
 def ribbon_fill_rgba(
     trace: dict[str, Any],
     n: int,
