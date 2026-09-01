@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 341
-SIGNATURE_SHA256 = "3edb691ac7fda0cbea775f4acaab6128803c2eaf6d7bf577049fdf28a60f9f3c"
+ABI_VERSION = 342
+SIGNATURE_SHA256 = "6982466f7a0aa22b7e87c170c69ab8663cfa753418c4e641741c9f2f3ec44996"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -650,6 +650,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved)
+    function = lib.xyg_palette_rows_rgba8
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)
     function = lib.xyg_payload_axis_spec_attach_plan
     function.restype = ctypes.c_int32

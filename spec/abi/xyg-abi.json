@@ -1,9 +1,9 @@
 {
-  "abi_version": 341,
+  "abi_version": 342,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "3edb691ac7fda0cbea775f4acaab6128803c2eaf6d7bf577049fdf28a60f9f3c",
+  "signature_sha256": "6982466f7a0aa22b7e87c170c69ab8663cfa753418c4e641741c9f2f3ec44996",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21581,6 +21581,150 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)"
+    },
+    {
+      "name": "xyg_palette_rows_rgba8",
+      "node_name": "xyPaletteRowsRgba8",
+      "nargs": 8,
+      "arguments": [
+        {
+          "name": "entry_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "entry_texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "entry_texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_entries",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "rows",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_rgba",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_unresolved",
+          "type": {
+            "rust": "*mut u32",
+            "c": "uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved)"
     },
     {
       "name": "xyg_payload_axis_spec_attach_plan",

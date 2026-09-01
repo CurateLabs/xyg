@@ -115,6 +115,25 @@
       "kind": "quantize_unit_u8",
       "values": [1],
       "domain": [5, 5]
+    },
+    {
+      "name": "palette_rows_rgba8_basic",
+      "kind": "palette_rows_rgba8",
+      "palette": ["#ff0000", "#00ff00"],
+      "rows": 3
+    },
+    {
+      "name": "palette_rows_rgba8_browser_only",
+      "kind": "palette_rows_rgba8",
+      "palette": ["#ff0000", "var(--x)"],
+      "rows": 2
+    },
+    {
+      "name": "palette_rows_rgba8_empty_palette",
+      "kind": "palette_rows_rgba8",
+      "palette": [],
+      "rows": 1,
+      "expect_error": true
     }
   ]
 }

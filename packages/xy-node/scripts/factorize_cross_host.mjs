@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8 } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8 } from "../src/color.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "factorize_cross_host.json");
@@ -144,6 +144,25 @@ for (const spec of fixture.cases) {
       name: spec.name,
       quantized: [...quantized],
     });
+    continue;
+  }
+  if (spec.kind === "palette_rows_rgba8") {
+    if (spec.expect_error) {
+      try {
+        paletteRowsRgba8(spec.palette ?? [], spec.rows ?? 1);
+        throw new Error(`expected palette_rows_rgba8 error for ${spec.name}`);
+      } catch {
+        out.push({ name: spec.name, error: true });
+      }
+      continue;
+    }
+    const lut = paletteRowsRgba8(spec.palette, spec.rows);
+    const n = Math.max(1, Math.floor(Number(spec.rows)));
+    const rows = [];
+    for (let i = 0; i < n; i += 1) {
+      rows.push([...lut.slice(i * 4, i * 4 + 4)]);
+    }
+    out.push({ name: spec.name, rows });
     continue;
   }
   if (spec.kind === "stringlike") {

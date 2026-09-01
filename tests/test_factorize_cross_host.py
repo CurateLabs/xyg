@@ -45,6 +45,7 @@ def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
         "fixed_probe",
         "fold_codes_u8",
         "quantize_unit_u8",
+        "palette_rows_rgba8",
     ):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
@@ -110,6 +111,15 @@ def _python_quantize_unit_case(spec: dict) -> list[int]:
     return ch.quantize_unit_u8(values, domain).tolist()
 
 
+def _python_palette_rows_case(spec: dict) -> list[list[int]] | None:
+    if spec.get("expect_error"):
+        with pytest.raises((ValueError, RuntimeError)):
+            ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+        return None
+    rows = ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+    return rows.tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -122,12 +132,14 @@ FACTORIZE_CASES = [
         "fixed_probe",
         "fold_codes_u8",
         "quantize_unit_u8",
+        "palette_rows_rgba8",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
 FIXED_PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fixed_probe"]
 FOLD_CODES_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fold_codes_u8"]
 QUANTIZE_UNIT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "quantize_unit_u8"]
+PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "palette_rows_rgba8"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -189,6 +201,19 @@ def test_quantize_unit_u8_cross_host(spec: dict, node_results: dict[str, dict]) 
     quantized = _python_quantize_unit_case(spec)
     node = node_results[spec["name"]]
     assert quantized == node["quantized"]
+
+
+@pytest.mark.parametrize("spec", PALETTE_ROWS_CASES, ids=lambda s: s["name"])
+def test_palette_rows_rgba8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    if spec.get("expect_error"):
+        with pytest.raises((ValueError, RuntimeError)):
+            ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+        node = node_results[spec["name"]]
+        assert node.get("error") is True
+        return
+    rows = _python_palette_rows_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rows"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

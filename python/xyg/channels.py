@@ -815,27 +815,20 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
     fallback, because a shared fallback collapses distinct categories into a
     single indistinguishable color. The substitution warns (§28).
 
-    Static 0-1 channels from ``css_check`` quantize through ABI 251
-    ``xyg_clip_quantize_u8``. Browser-only status stays host."""
-    lut = np.empty((max(rows, 1), 4), dtype=np.uint8)
-    unresolved: list[str] = []
-    for i in range(lut.shape[0]):
-        entry = str(palette[i % len(palette)])
-        status, rgba = kernels.css_check(kernels.CSS_COLOR, entry)
-        if status != 1 or rgba is None:
-            unresolved.append(entry)
-            substitute = config.DEFAULT_PALETTE[i % len(config.DEFAULT_PALETTE)]
-            _status, rgba = kernels.css_check(kernels.CSS_COLOR, substitute)
-            # The built-in palette is literal hex by construction, so the
-            # substitute always parses; assert it rather than carry an
-            # unreachable None through the arithmetic below.
-            assert rgba is not None, "built-in palette entry failed to parse"
-        lut[i] = kernels.clip_quantize_u8(np.asarray(rgba, dtype=np.float64))
-    if unresolved:
+    Row packing is ABI 342 ``xyg_palette_rows_rgba8``; browser-only status
+    for the warning stays host."""
+    entries = [str(entry) for entry in palette]
+    lut, unresolved_count = kernels.palette_rows_rgba8(entries, rows)
+    if unresolved_count:
         import warnings
 
+        bad = []
+        for entry in entries:
+            status, rgba = kernels.css_check(kernels.CSS_COLOR, entry)
+            if status != 1 or rgba is None:
+                bad.append(entry)
         warnings.warn(
-            f"palette entries {sorted(set(unresolved))} resolve only in a browser, so "
+            f"palette entries {sorted(set(bad))} resolve only in a browser, so "
             "the aggregated density surface and static exports cannot paint them; "
             "those categories fall back to the built-in palette there. Pass literal "
             "colors (hex/rgb()/hsl()/named) for identical color across renderers.",

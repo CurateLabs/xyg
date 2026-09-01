@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 341
-#define XYG_ABI_SIGNATURE_SHA256 "3edb691ac7fda0cbea775f4acaab6128803c2eaf6d7bf577049fdf28a60f9f3c"
+#define XYG_ABI_VERSION 342
+#define XYG_ABI_SIGNATURE_SHA256 "6982466f7a0aa22b7e87c170c69ab8663cfa753418c4e641741c9f2f3ec44996"
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,6 +171,7 @@ int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t
 int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n);
 int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n);
 int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out);
+size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved);
 int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out);
 int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact);
 int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_emit_bar, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_pos_ship_scale, int32_t * out_value_ship_scale, int32_t * out_value_axis, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition);

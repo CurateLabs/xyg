@@ -8410,6 +8410,49 @@ pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -
     1
 }
 
+/// Built-in categorical palette matching `python/xyg/config.DEFAULT_PALETTE`.
+pub const DEFAULT_PALETTE: [&str; 8] = [
+    "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9",
+    "#e66767",
+];
+
+fn rgba_unit_f32_to_u8(rgba: [f32; 4]) -> [u8; 4] {
+    let channels = [
+        f64::from(rgba[0]),
+        f64::from(rgba[1]),
+        f64::from(rgba[2]),
+        f64::from(rgba[3]),
+    ];
+    let mut out = [0u8; 4];
+    let _ = clip_quantize_u8(&channels, &mut out);
+    out
+}
+
+/// Indexed palette rows as straight-alpha RGBA8.
+///
+/// Matches Python `channels.palette_rows_rgba8` / Node `paletteRowsRgba8`.
+/// Returns the unresolved-entry count when `entries` is non-empty.
+pub fn palette_rows_rgba8(entries: &[&str], rows: usize, out: &mut [u8]) -> Option<u32> {
+    let n = rows.max(1);
+    if entries.is_empty() || out.len() < n * 4 {
+        return None;
+    }
+    let palette_len = entries.len();
+    let mut unresolved = 0u32;
+    for i in 0..n {
+        let entry = entries[i % palette_len];
+        let row = match crate::css::parse_color(entry) {
+            Ok(crate::css::Checked::Parsed(Some(rgba))) => rgba_unit_f32_to_u8(rgba),
+            _ => {
+                unresolved += 1;
+                crate::css::color_rgba8(DEFAULT_PALETTE[i % DEFAULT_PALETTE.len()], 1.0)
+            }
+        };
+        out[i * 4..i * 4 + 4].copy_from_slice(&row);
+    }
+    Some(unresolved)
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -10432,6 +10475,19 @@ mod tests {
         assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
         assert_eq!(out[0], 0);
         assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
+    }
+
+    #[test]
+    fn palette_rows_rgba8_matches_host_policy() {
+        let entries = ["#ff0000", "var(--x)"];
+        let mut out = vec![0u8; 8];
+        let unresolved = palette_rows_rgba8(&entries, 2, &mut out).expect("palette rows");
+        assert_eq!(unresolved, 1);
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#ff0000", 1.0));
+        assert_eq!(
+            &out[4..],
+            &crate::css::color_rgba8(DEFAULT_PALETTE[1], 1.0)
+        );
     }
 
     #[test]

@@ -935,6 +935,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         U8P,
     ]
+    lib.xyg_palette_rows_rgba8.restype = ctypes.c_size_t
+    lib.xyg_palette_rows_rgba8.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -4446,6 +4457,41 @@ def main() -> None:
         == 1
         and list(bad_domain_out) == [0],
         "quantize_unit_u8 bad domain",
+    )
+    palette_entries = [b"#ff0000", b"var(--x)"]
+    palette_lens = array("I", [len(item) for item in palette_entries])
+    palette_packed = array("B")
+    for item in palette_entries:
+        palette_packed.extend(item)
+    palette_out = array("B", [0] * 8)
+    palette_unresolved = array("I", [0])
+    palette_written = lib.xyg_palette_rows_rgba8(
+        _ptr(palette_lens, ctypes.c_uint32),
+        _ptr(palette_packed, ctypes.c_uint8),
+        len(palette_packed),
+        len(palette_entries),
+        2,
+        _ptr(palette_out, ctypes.c_uint8),
+        len(palette_out),
+        _ptr(palette_unresolved, ctypes.c_uint32),
+    )
+    ok(
+        palette_written == 2 and palette_unresolved[0] == 1 and palette_out[0] == 255,
+        "palette_rows_rgba8 basic",
+    )
+    ok(
+        lib.xyg_palette_rows_rgba8(
+            _ptr(palette_lens, ctypes.c_uint32),
+            _ptr(palette_packed, ctypes.c_uint8),
+            len(palette_packed),
+            0,
+            2,
+            _ptr(palette_out, ctypes.c_uint8),
+            len(palette_out),
+            _ptr(palette_unresolved, ctypes.c_uint32),
+        )
+        == ctypes.c_size_t(-1).value,
+        "palette_rows_rgba8 empty entries",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

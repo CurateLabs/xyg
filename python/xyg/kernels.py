@@ -36,6 +36,7 @@ css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
+palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -433,6 +434,7 @@ __all__ = [
     "object_rows_all_real_numeric",
     "object_rows_all_stringlike",
     "paint_effective_rgba",
+    "palette_rows_rgba8",
     "payload_axis_spec_attach_plan",
     "payload_bar_compact_admit",
     "payload_bar_hist_emit_plan",

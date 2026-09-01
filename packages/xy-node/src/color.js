@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8 } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8 } from "./native.js";
 import { DEFAULT_PALETTE } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -189,6 +189,50 @@ export function quantizeUnitU8(values, lo, hi) {
   const code = xyQuantizeUnitU8(f64Ptr(src), BigInt(n), lo, hi, u8Ptr(out));
   if (code === -2) throw new RangeError("invalid quantize-unit-u8 request");
   if (code !== 1) throw new RangeError("invalid quantize-unit-u8 request");
+  return out;
+}
+
+function packUtf8Strings(texts) {
+  const encoded = texts.map((text) => new TextEncoder().encode(String(text)));
+  const lens = Uint32Array.from(encoded.map((item) => item.length));
+  const total = lens.reduce((sum, len) => sum + len, 0);
+  const packed = new Uint8Array(total);
+  let at = 0;
+  for (const item of encoded) {
+    packed.set(item, at);
+    at += item.length;
+  }
+  return { lens, packed };
+}
+
+function u32Ptr(view) {
+  return pointer(view, "uint32_t *");
+}
+
+/** Indexed palette rows as straight-alpha RGBA8 (ABI 342). */
+export function paletteRowsRgba8(palette, rows) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("paletteRowsRgba8 requires at least one entry");
+  }
+  const n = Math.max(1, Math.floor(Number(rows)));
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Uint8Array(n * 4);
+  const unresolved = new Uint32Array(1);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyPaletteRowsRgba8(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    BigInt(n),
+    u8Ptr(out),
+    BigInt(out.length),
+    u32Ptr(unresolved),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid palette-rows-rgba8 request");
+  }
   return out;
 }
 

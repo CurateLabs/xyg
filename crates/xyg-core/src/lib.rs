@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 341;
+pub const ABI_VERSION: u32 = 342;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10182,6 +10182,72 @@ pub unsafe extern "C" fn xyg_quantize_unit_u8(
             std::slice::from_raw_parts_mut(out, values_len)
         };
         kernels::quantize_unit_u8_into(values, lo, hi, out)
+    })
+}
+
+/// Pack indexed palette entries into straight-alpha RGBA8 rows.
+///
+/// Returns the number of rows written, or `usize::MAX` on invalid arguments.
+/// When `out_unresolved` is non-null, writes the count of browser-only entries
+/// that were substituted from the built-in palette.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_palette_rows_rgba8(
+    entry_lens: *const u32,
+    entry_texts: *const u8,
+    entry_texts_len: usize,
+    n_entries: usize,
+    rows: usize,
+    out_rgba: *mut u8,
+    out_cap: usize,
+    out_unresolved: *mut u32,
+) -> usize {
+    let n = rows.max(1);
+    let need = n.checked_mul(4).unwrap_or(usize::MAX);
+    if need == usize::MAX || out_cap < need {
+        return usize::MAX;
+    }
+    if n_entries == 0 {
+        return usize::MAX;
+    }
+    if entry_lens.is_null() || out_rgba.is_null() {
+        return usize::MAX;
+    }
+    if entry_texts_len > 0 && entry_texts.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let lens = std::slice::from_raw_parts(entry_lens, n_entries);
+        let texts = if entry_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(entry_texts, entry_texts_len)
+        };
+        let mut offset = 0usize;
+        let mut entries: Vec<String> = Vec::with_capacity(n_entries);
+        for &len in lens {
+            let len = len as usize;
+            let end = offset + len;
+            if end > texts.len() {
+                return usize::MAX;
+            }
+            let Ok(text) = std::str::from_utf8(&texts[offset..end]) else {
+                return usize::MAX;
+            };
+            entries.push(text.to_owned());
+            offset = end;
+        }
+        if offset != texts.len() {
+            return usize::MAX;
+        }
+        let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
+        let out = std::slice::from_raw_parts_mut(out_rgba, need);
+        let Some(unresolved) = kernels::palette_rows_rgba8(&refs, rows, out) else {
+            return usize::MAX;
+        };
+        if !out_unresolved.is_null() {
+            *out_unresolved = unresolved;
+        }
+        n
     })
 }
 
