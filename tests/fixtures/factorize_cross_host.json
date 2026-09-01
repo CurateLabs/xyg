@@ -1,0 +1,20 @@
+{
+  "schema": "xyg.factorize-cross-host/v1",
+  "cases": [
+    {
+      "name": "uint8_native",
+      "kind": "uint8",
+      "values": [1, 0, 1]
+    },
+    {
+      "name": "mixed_object",
+      "kind": "object",
+      "values": ["b", null, "a", null, 1]
+    },
+    {
+      "name": "stringlike_unicode",
+      "kind": "unicode",
+      "values": ["β", "a", "β", "", "é"]
+    }
+  ]
+}

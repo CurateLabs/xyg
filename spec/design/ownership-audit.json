@@ -1363,7 +1363,7 @@
       "policy": "node-host",
       "disposition": "keep-host",
       "follow_up_issue": null,
-      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+      "rationale": "Node categorical factorization shell mirroring python/xyg/channels._factorize_categories; fixed-width TypedArrays and stringlike JS arrays route through native xyg_factorize_* / xyg_remap_u8."
     },
     {
       "path": "packages/xy-node/src/dom.js",

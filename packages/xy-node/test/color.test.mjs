@@ -37,6 +37,24 @@ test("factorizeCategories uses native kernel for Uint8Array columns", () => {
   assert.equal(factored.counts[1], 2n);
 });
 
+test("factorizeCategories handles mixed object labels", () => {
+  const raw = ["b", null, "a", Number.NaN, 1];
+  const factored = factorizeCategories(raw);
+  assert.deepEqual(factored.categories, ["(missing)", "1", "a", "b"]);
+  assert.deepEqual([...factored.codes], [3, 0, 2, 0, 1]);
+});
+
+test("factorizeCategories routes stringlike arrays through native kernel", () => {
+  const raw = ["β", "a", "β", "", "é"];
+  const factored = factorizeCategories(raw);
+  assert.deepEqual(factored.categories, ["", "a", "é", "β"]);
+  assert.deepEqual([...factored.codes], [3, 1, 3, 0, 2]);
+  assert.equal(factored.counts[0], 1n);
+  assert.equal(factored.counts[1], 1n);
+  assert.equal(factored.counts[2], 1n);
+  assert.equal(factored.counts[3], 2n);
+});
+
 test("resolveColorChannel splits css numeric categorical and direct rgba", () => {
   const constant = resolveColorChannel("#3987e5", 3);
   assert.equal(constant.mode, "constant");
