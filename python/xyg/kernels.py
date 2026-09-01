@@ -233,6 +233,7 @@ welch_spectra = _impl.welch_spectra
 weighted_ecdf = _impl.weighted_ecdf
 drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
+screen_shape = _impl.screen_shape
 lod_plan = _impl.lod_plan
 payload_tier = _impl.payload_tier
 payload_m4_indices = _impl.payload_m4_indices
@@ -546,6 +547,7 @@ __all__ = [
     "scene_xytc_stroke_perimeter_pack",
     "scene_xytc_symbol_int_pack",
     "scene_xytc_trace_dispatch_plan",
+    "screen_shape",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

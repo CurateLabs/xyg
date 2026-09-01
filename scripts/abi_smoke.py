@@ -944,6 +944,13 @@ def load() -> ctypes.CDLL:
     lib.xyg_hash_row_ids.argtypes = [U64P, ctypes.c_size_t, ctypes.c_uint64, U64P]
     lib.xyg_sample_fraction.restype = D
     lib.xyg_sample_fraction.argtypes = [ctypes.c_int64, D, D]
+    lib.xyg_screen_shape.restype = ctypes.c_int32
+    lib.xyg_screen_shape.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
@@ -4814,6 +4821,18 @@ def main() -> None:
         abs(lib.xyg_sample_fraction(0, 1.0, 2.0) - 1.0) < 1e-12,
         "sample_fraction saturated base",
     )
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok(
+        lib.xyg_screen_shape(640, 360, ctypes.byref(out_w), ctypes.byref(out_h)) == 1,
+        "screen_shape default dimensions",
+    )
+    ok(out_w.value == 640 and out_h.value == 360, "screen_shape default output")
+    ok(
+        lib.xyg_screen_shape(8, 10, ctypes.byref(out_w), ctypes.byref(out_h)) == 1,
+        "screen_shape low clamp",
+    )
+    ok(out_w.value == 16 and out_h.value == 16, "screen_shape low clamp output")
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])
     lib.xyg_sample_mask_u32(

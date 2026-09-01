@@ -359,6 +359,7 @@ export {
   sampleThreshold,
   sampleFraction,
   hashRowIds,
+  screenShape,
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,

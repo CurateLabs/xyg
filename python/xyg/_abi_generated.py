@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 328
-SIGNATURE_SHA256 = "9d281850f9577e08877c1d8ead163a4ec849361f2dd620579f0249f5f5bcd89b"
+ABI_VERSION = 329
+SIGNATURE_SHA256 = "c6d299647c433b74523fb2af4e9cb2845e9b2d5dbf3ec824a44f499e417daccd"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1402,6 +1402,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_trace_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_screen_shape(int32_t px_w, int32_t px_h, int32_t * out_w, int32_t * out_h)
+    function = lib.xyg_screen_shape
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t

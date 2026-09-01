@@ -114,6 +114,9 @@ def _python_case(spec: dict) -> dict:
                 float(spec["growth"]),
             ),
         }
+    if spec["kind"] == "screen_shape":
+        w, h = kernels.screen_shape(int(spec["width"]), int(spec["height"]))
+        return {"name": spec["name"], "width": w, "height": h}
     column = lod.encode_f32_values(
         spec["values"],
         float(spec["offset"]),
@@ -179,6 +182,10 @@ def test_lod_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
         return
     if spec["kind"] == "sample_fraction":
         assert py["fraction"] == node["fraction"]
+        return
+    if spec["kind"] == "screen_shape":
+        assert py["width"] == node["width"]
+        assert py["height"] == node["height"]
         return
     assert py["meta"] == node["meta"]
     assert py["values_sha256"] == node["values_sha256"]

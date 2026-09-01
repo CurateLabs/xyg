@@ -174,7 +174,7 @@ def screen_shape(w: int, h: int) -> tuple[int, int]:
         raise ValueError("screen dimensions must be finite") from e
     if not np.isfinite(wf) or not np.isfinite(hf):
         raise ValueError("screen dimensions must be finite")
-    return max(16, min(int(wf), MAX_SCREEN_DIM)), max(16, min(int(hf), MAX_SCREEN_DIM))
+    return kernels.screen_shape(int(wf), int(hf))
 
 
 def visible_mask(

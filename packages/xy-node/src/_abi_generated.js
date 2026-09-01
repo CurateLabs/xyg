@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 328;
-export const SIGNATURE_SHA256 = "9d281850f9577e08877c1d8ead163a4ec849361f2dd620579f0249f5f5bcd89b";
+export const ABI_VERSION = 329;
+export const SIGNATURE_SHA256 = "c6d299647c433b74523fb2af4e9cb2845e9b2d5dbf3ec824a44f499e417daccd";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -353,6 +353,7 @@ export let xySceneXytcSymbolIntPack;
 export let xySceneXytcTraceDispatchPlan;
 export let xySceneXytcTraceObservationsMaterialize;
 export let xySceneXytcTracePack;
+export let xyScreenShape;
 export let xySectorTriangles;
 export let xySpectrogram;
 export let xyStackedBounds;
@@ -790,6 +791,7 @@ export function bindGeneratedAbi(lib) {
   xySceneXytcTraceDispatchPlan = lib.func("int32_t xyg_scene_xytc_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t marker_path_present, int32_t use_density, int32_t joined_fill, void * out)");
   xySceneXytcTraceObservationsMaterialize = lib.func("int32_t xyg_scene_xytc_trace_observations_materialize(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol, const uint8_t * stroke, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * dash, const double * dash_values, const uint8_t * fill_string, const uint8_t * fill_space, const uint8_t * fill_dir, const double * fill_stop_t, const uint8_t * fill_stop_css, const uint32_t * fill_stop_css_lens, const uint8_t * fill_dict_gradient, const uint8_t * fill_dict_space, const double * marker_values, const uint32_t * marker_lens, const uint8_t * marker_glyph, const uint8_t * source_paint, const uint8_t * color2_source_const, const uint8_t * color2_target_const, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * linecap, const uint8_t * step, const uint8_t * curve, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)");
   xySceneXytcTracePack = lib.func("int32_t xyg_scene_xytc_trace_pack(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol_b, const uint8_t * dash_b, const double * dash_pattern, const uint8_t * linecap_b, const uint8_t * step_b, const uint8_t * curve_b, const uint8_t * fill_css, const uint8_t * fill_space, const uint8_t * fill_gradient_blob, const uint8_t * stroke_css, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * marker_blob, const uint8_t * color2_gradient_blob, uint8_t * out, size_t out_cap, size_t * out_len)");
+  xyScreenShape = lib.func("int32_t xyg_screen_shape(int32_t px_w, int32_t px_h, int32_t * out_w, int32_t * out_h)");
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");
   xySpectrogram = lib.func("int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)");
   xyStackedBounds = lib.func("int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper)");

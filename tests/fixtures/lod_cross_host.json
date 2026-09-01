@@ -121,6 +121,24 @@
       "level": 0,
       "base_fraction": 1.0,
       "growth": 2.0
+    },
+    {
+      "name": "screen_shape_default",
+      "kind": "screen_shape",
+      "width": 640,
+      "height": 360
+    },
+    {
+      "name": "screen_shape_clamp_low",
+      "kind": "screen_shape",
+      "width": 8,
+      "height": 10
+    },
+    {
+      "name": "screen_shape_clamp_high",
+      "kind": "screen_shape",
+      "width": 8000,
+      "height": 9000
     }
   ]
 }

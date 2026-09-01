@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 328;
+pub const ABI_VERSION: u32 = 329;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14744,6 +14744,32 @@ pub unsafe extern "C" fn xyg_sankey_layout(
 // View LOD plan + distribution stats (lod_plan.rs / stats.rs).
 // Hosts validate inputs and assemble string mode names; Rust owns the math.
 // ---------------------------------------------------------------------------
+
+/// Clamp a browser/client screen shape to `[MIN_SCREEN_DIM, MAX_SCREEN_DIM]` (ABI 329, §5).
+///
+/// Writes `out_w` and `out_h`. Hosts validate finite dimensions first.
+///
+/// # Safety
+/// `out_w` and `out_h` must be writable i32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_screen_shape(
+    px_w: i32,
+    px_h: i32,
+    out_w: *mut i32,
+    out_h: *mut i32,
+) -> i32 {
+    if out_w.is_null() || out_h.is_null() {
+        return 0;
+    }
+    match ffi_guard(None, || Some(lod_plan::screen_shape(px_w, px_h))) {
+        Some((w, h)) => {
+            *out_w = w;
+            *out_h = h;
+            1
+        }
+        None => 0,
+    }
+}
 
 /// Hysteresis-guarded drill decision (§5). Writes `1`/`0` into `out_exact`.
 /// Returns 1 on success, 0 when budget/exit_factor are non-finite or ≤ 0.

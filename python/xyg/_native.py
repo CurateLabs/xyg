@@ -12606,6 +12606,23 @@ def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: flo
     return bool(out.value)
 
 
+def screen_shape(width: int, height: int) -> tuple[int, int]:
+    """Clamp screen dimensions to the product LOD grid bounds (ABI 329, §5)."""
+    if isinstance(width, (bool, np.bool_)) or isinstance(height, (bool, np.bool_)):
+        raise ValueError("screen dimensions must be integers")
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok = _lib.xyg_screen_shape(
+        int(width),
+        int(height),
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native screen_shape failed (output undefined)")
+    return int(out_w.value), int(out_h.value)
+
+
 def lod_grid_shape(
     width: int, height: int, visible: int, target_per_cell: float = 16.0
 ) -> tuple[int, int]:
