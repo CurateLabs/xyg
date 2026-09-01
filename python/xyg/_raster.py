@@ -25,6 +25,8 @@ from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._columns import column as _column
 from ._columns import column_ref as _column_ref
 from ._columns import density_column as _density_column
+from ._fontmetrics import estimated_text_width as _estimated_text_width
+from ._layout import _PolarProjection, _Scale, affine_fast_path
 from ._paint import (
     _css,
     effective_paint_rgba8,
@@ -116,16 +118,12 @@ from ._svg import (
     _axis_tick_sides,
     _colorbar_right_axis_room,
     _decode_title_geometry,
-    _estimated_text_width,
     _legend_layout,
-    _PolarProjection,
     _preserve_scene_chrome_for_axis_visibility,
     _resolve_static_css_vars,
-    _Scale,
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
-    affine_fast_path,
     annotation_label_placement,
     apply_export_background,
     axis_ticks,

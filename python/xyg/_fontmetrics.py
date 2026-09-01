@@ -89,3 +89,22 @@ def advance(text: str, font_size: float) -> float:
         else:
             units += EXTRA_ADVANCES.get(code, _MISSING)
     return font_size * units / BASE_PX
+
+
+def text_width(value: object, font_size: float, *, missing_advance: float) -> float:
+    """Embedded-face advance with a conservative fallback for unknown glyphs."""
+    text = str(value)
+    missing = sum(
+        1 for char in text if not (FIRST <= ord(char) <= LAST or ord(char) in EXTRA_ADVANCES)
+    )
+    embedded_fallback = font_size * EXTRA_ADVANCES[0xFFFD] / BASE_PX
+    extra = max(0.0, float(missing_advance) - embedded_fallback)
+    return advance(text, font_size) + missing * extra
+
+
+def estimated_text_width(lines: list[str], font_size: float) -> float:
+    """Measured label-box width using the embedded DejaVu face."""
+    return max(
+        (text_width(line, font_size, missing_advance=font_size) for line in lines),
+        default=0.0,
+    )
