@@ -10202,7 +10202,7 @@ pub unsafe extern "C" fn xyg_palette_rows_rgba8(
     out_unresolved: *mut u32,
 ) -> usize {
     let n = rows.max(1);
-    let need = n.checked_mul(4).unwrap_or(usize::MAX);
+    let need = n.saturating_mul(4);
     if need == usize::MAX || out_cap < need {
         return usize::MAX;
     }
@@ -10267,7 +10267,7 @@ pub unsafe extern "C" fn xyg_colormap_lut_rgba8(
     out_cap: usize,
 ) -> i32 {
     let count = if n_texels == 0 { 256 } else { n_texels };
-    let need = count.checked_mul(4).unwrap_or(usize::MAX);
+    let need = count.saturating_mul(4);
     if need == usize::MAX || out_cap < need || out_rgba.is_null() {
         return 0;
     }
