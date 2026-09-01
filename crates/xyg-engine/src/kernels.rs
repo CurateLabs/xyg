@@ -784,6 +784,37 @@ pub fn object_rows_all_stringlike(row_tags: &[u8]) -> Option<bool> {
     Some(ok)
 }
 
+/// Missing row in an object-column real-numeric probe.
+pub const OBJECT_ROW_REAL_MISSING: u8 = 0;
+/// `numbers.Real` row excluding bool in the host probe.
+pub const OBJECT_ROW_REAL_NUMERIC: u8 = 1;
+/// Boolean row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_BOOL: u8 = 2;
+/// String/bytes row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_TEXT: u8 = 3;
+/// Host `float()`-coercible row that is not `numbers.Real`.
+pub const OBJECT_ROW_REAL_COERCIBLE: u8 = 4;
+/// Non-real row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_OTHER: u8 = 5;
+
+/// True when the column contains at least one real numeric row and every
+/// non-missing row is real numeric.
+///
+/// Matches Python `channels._object_array_is_real_numeric` /
+/// Node `objectColumnIsRealNumeric` after hosts classify each object row.
+pub fn object_rows_all_real_numeric(row_tags: &[u8]) -> Option<bool> {
+    let mut seen = false;
+    for &tag in row_tags {
+        match tag {
+            OBJECT_ROW_REAL_MISSING => {}
+            OBJECT_ROW_REAL_NUMERIC | OBJECT_ROW_REAL_COERCIBLE => seen = true,
+            OBJECT_ROW_REAL_BOOL | OBJECT_ROW_REAL_TEXT | OBJECT_ROW_REAL_OTHER => return Some(false),
+            _ => return None,
+        }
+    }
+    Some(seen)
+}
+
 /// Whether the native fixed-record factorizer should run on a probe sample.
 ///
 /// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
@@ -8821,6 +8852,28 @@ mod tests {
             Some(false)
         );
         assert!(object_rows_all_stringlike(&[99]).is_none());
+    }
+
+    #[test]
+    fn object_rows_all_real_numeric_matches_host_policy() {
+        assert_eq!(object_rows_all_real_numeric(&[]), Some(false));
+        assert_eq!(
+            object_rows_all_real_numeric(&[OBJECT_ROW_REAL_MISSING, OBJECT_ROW_REAL_MISSING]),
+            Some(false)
+        );
+        assert_eq!(
+            object_rows_all_real_numeric(&[
+                OBJECT_ROW_REAL_NUMERIC,
+                OBJECT_ROW_REAL_MISSING,
+                OBJECT_ROW_REAL_COERCIBLE,
+            ]),
+            Some(true)
+        );
+        assert_eq!(
+            object_rows_all_real_numeric(&[OBJECT_ROW_REAL_NUMERIC, OBJECT_ROW_REAL_TEXT]),
+            Some(false)
+        );
+        assert!(object_rows_all_real_numeric(&[99]).is_none());
     }
 
     #[test]

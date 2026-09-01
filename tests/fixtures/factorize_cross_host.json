@@ -46,6 +46,26 @@
       "name": "stringlike_with_int",
       "kind": "stringlike",
       "values": ["a", 1, null]
+    },
+    {
+      "name": "real_numeric_only",
+      "kind": "real_numeric",
+      "values": [1, 2.0, null]
+    },
+    {
+      "name": "real_numeric_with_text",
+      "kind": "real_numeric",
+      "values": [1, "a"]
+    },
+    {
+      "name": "real_numeric_empty",
+      "kind": "real_numeric",
+      "values": []
+    },
+    {
+      "name": "real_numeric_all_missing",
+      "kind": "real_numeric",
+      "values": [null, null]
     }
   ]
 }

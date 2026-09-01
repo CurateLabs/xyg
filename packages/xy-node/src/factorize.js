@@ -13,6 +13,7 @@ import {
   xyLabelCodesFirstSeen,
   xyFactorizeUseNativeProbe,
   xyObjectRowsAllStringlike,
+  xyObjectRowsAllRealNumeric,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -376,6 +377,32 @@ function factorizeTypedArray(view) {
   if (!useNativeFixedFactorizer(view, width)) return null;
   return factorizeFixedRecords(view, width) ?? factorizeFixedWide(view, width);
 }
+function objectRowRealNumericTag(value) {
+  if (isMissingCategory(value)) return 0;
+  if (typeof value === "boolean") return 2;
+  if (typeof value === "string" || value instanceof Uint8Array || ArrayBuffer.isView(value)) {
+    return 3;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) return 1;
+  try {
+    const coerced = Number(value);
+    if (Number.isFinite(coerced)) return 4;
+  } catch {
+    return 5;
+  }
+  return 5;
+}
+
+export function objectColumnIsRealNumeric(raw) {
+  if (!Array.isArray(raw)) return false;
+  const tags = Uint8Array.from(raw, objectRowRealNumericTag);
+  const ok = Number(xyObjectRowsAllRealNumeric(pointer(tags, "uint8_t *"), BigInt(tags.length)));
+  if (ok < 0) {
+    throw new Error("native object_rows_all_real_numeric rejected the row tags");
+  }
+  return ok === 1;
+}
+
 function objectRowStringlikeTag(value) {
   if (isMissingCategory(value)) return 0;
   if (typeof value === "string") return 1;

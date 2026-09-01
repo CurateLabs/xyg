@@ -158,6 +158,7 @@ label_codes_first_seen = _impl.label_codes_first_seen
 factorize_use_native_probe = _impl.factorize_use_native_probe
 category_labels = _impl.category_labels
 object_rows_all_stringlike = _impl.object_rows_all_stringlike
+object_rows_all_real_numeric = _impl.object_rows_all_real_numeric
 transition_keys_fixed = _impl.transition_keys_fixed
 m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
@@ -423,6 +424,7 @@ __all__ = [
     "monotone_tangents",
     "normalize_f32",
     "normalize_window",
+    "object_rows_all_real_numeric",
     "object_rows_all_stringlike",
     "paint_effective_rgba",
     "payload_axis_spec_attach_plan",

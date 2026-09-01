@@ -38,7 +38,7 @@ def _node_bin() -> str:
 
 
 def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
-    if spec["kind"] in ("probe", "stringlike"):
+    if spec["kind"] in ("probe", "stringlike", "real_numeric"):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
         arr = np.asarray(spec["values"], dtype=np.uint8)
@@ -68,10 +68,18 @@ def _python_stringlike_case(spec: dict) -> bool:
     return ch._object_column_is_stringlike(arr)
 
 
+def _python_real_numeric_case(spec: dict) -> bool:
+    arr = np.asarray(spec["values"], dtype=object)
+    return ch._object_array_is_real_numeric(arr)
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
-FACTORIZE_CASES = [c for c in FIXTURE_CASES if c["kind"] not in ("probe", "stringlike")]
+FACTORIZE_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] not in ("probe", "stringlike", "real_numeric")
+]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
+REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
 
 @pytest.fixture(scope="module")
@@ -117,3 +125,10 @@ def test_object_stringlike_cross_host(spec: dict, node_results: dict[str, dict])
     stringlike = _python_stringlike_case(spec)
     node = node_results[spec["name"]]
     assert stringlike == node["stringlike"]
+
+
+@pytest.mark.parametrize("spec", REAL_NUMERIC_CASES, ids=lambda s: s["name"])
+def test_object_real_numeric_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    real_numeric = _python_real_numeric_case(spec)
+    node = node_results[spec["name"]]
+    assert real_numeric == node["real_numeric"]

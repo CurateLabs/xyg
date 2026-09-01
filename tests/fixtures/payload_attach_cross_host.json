@@ -2,7 +2,7 @@
   "schema": "xyg.payload-attach-cross-host/v1",
   "authority": "python/xyg/_payload.py build_payload ABI 303 attach flags (wasm_density, frame_sides, tooltip, mark_style, interaction, export, show_modebar, show_tooltip, animation, graph, palette)",
   "protocol": 12,
-  "abi_version": 336,
+  "abi_version": 337,
   "cases": [
     {
       "name": "wasm_density_automatic_split",

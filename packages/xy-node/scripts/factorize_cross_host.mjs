@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { factorizeCategories, objectColumnIsStringlike } from "../src/factorize.js";
+import { factorizeCategories, objectColumnIsStringlike, objectColumnIsRealNumeric } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe } from "../src/native.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -89,6 +89,14 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       stringlike: objectColumnIsStringlike(raw),
+    });
+    continue;
+  }
+  if (spec.kind === "real_numeric") {
+    const raw = spec.values.map((value) => (value === null ? null : value));
+    out.push({
+      name: spec.name,
+      real_numeric: objectColumnIsRealNumeric(raw),
     });
     continue;
   }

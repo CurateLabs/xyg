@@ -80,6 +80,7 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("—", "334", "xyg_normalize_window", "lod.normalize_window"),
     ("—", "335", "xyg_view_visible_mask", "lod.visible_mask"),
     ("—", "336", "xyg_label_codes_first_seen", "facets._label_codes"),
+    ("—", "337", "xyg_object_rows_all_real_numeric", "channels real-numeric probe"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

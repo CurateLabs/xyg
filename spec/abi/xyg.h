@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 336
-#define XYG_ABI_SIGNATURE_SHA256 "462b8c1aceab50a3eae7c6e19700b0c85cf2d5b8f2e4f2ade8bced20f92ac322"
+#define XYG_ABI_VERSION 337
+#define XYG_ABI_SIGNATURE_SHA256 "bcabe1ce25ae3b1e5e3c66e9b7c829dc8c8e1905c35ccc053c86583ac19d371d"
 
 #ifdef __cplusplus
 extern "C" {
@@ -166,6 +166,7 @@ int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * 
 size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
 int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t require_area, double * out);
+int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n);
 int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n);
 int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out);
 int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out);

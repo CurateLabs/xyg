@@ -359,6 +359,22 @@ def _object_row_stringlike_tag(value: Any) -> int:
     return 3
 
 
+def _object_row_real_numeric_tag(value: Any) -> int:
+    if _is_missing_category(value):
+        return 0
+    if isinstance(value, (bool, np.bool_)):
+        return 2
+    if isinstance(value, (str, bytes, np.bytes_)):
+        return 3
+    if isinstance(value, numbers.Real):
+        return 1
+    try:
+        float(value)
+    except (TypeError, ValueError):
+        return 5
+    return 4
+
+
 def _object_column_is_stringlike(arr: np.ndarray) -> bool:
     """True when every row is missing or a string/bytes value."""
     if arr.dtype != object:
@@ -460,14 +476,14 @@ def _factorize_categories(
 
 
 def _object_array_is_real_numeric(arr: np.ndarray) -> bool:
-    seen = False
-    for value in arr:
-        if _is_missing_category(value):
-            continue
-        seen = True
-        if not _is_real_number_object(value):
-            return False
-    return seen
+    if arr.dtype != object:
+        return False
+    tags = np.fromiter(
+        (_object_row_real_numeric_tag(value) for value in arr),
+        dtype=np.uint8,
+        count=len(arr),
+    )
+    return kernels.object_rows_all_real_numeric(tags)
 
 
 def _is_real_number_object(value: Any) -> bool:

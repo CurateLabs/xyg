@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 336;
+pub const ABI_VERSION: u32 = 337;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4604,6 +4604,36 @@ pub unsafe extern "C" fn xyg_object_rows_all_stringlike(
     }
     ffi_guard(-1, || {
         match kernels::object_rows_all_stringlike(std::slice::from_raw_parts(row_tags, n)) {
+            Some(true) => 1,
+            Some(false) => 0,
+            None => -1,
+        }
+    })
+}
+
+/// Object-column real-numeric probe over host row tags.
+///
+/// Returns `1` when every non-missing row is real numeric and at least one
+/// non-missing row exists, `0` otherwise, and `-1` for invalid pointers or
+/// unknown tags.
+///
+/// # Safety
+/// When `n > 0`, `row_tags` must address `n` readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_object_rows_all_real_numeric(
+    row_tags: *const u8,
+    n: usize,
+) -> i32 {
+    if row_tags.is_null() && n > 0 {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let tags = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(row_tags, n)
+        };
+        match kernels::object_rows_all_real_numeric(tags) {
             Some(true) => 1,
             Some(false) => 0,
             None => -1,

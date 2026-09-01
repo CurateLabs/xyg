@@ -335,6 +335,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_object_rows_all_stringlike.restype = ctypes.c_int32
     lib.xyg_object_rows_all_stringlike.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_object_rows_all_real_numeric.restype = ctypes.c_int32
+    lib.xyg_object_rows_all_real_numeric.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -3199,6 +3201,20 @@ def main() -> None:
     ok(
         lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 0) == 1,
         "object_rows_all_stringlike empty column",
+    )
+    real_numeric_tags = array("B", [1, 0, 4])
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_tags, ctypes.c_uint8), 3) == 1,
+        "object_rows_all_real_numeric accepts numeric/coercible rows",
+    )
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_tags, ctypes.c_uint8), 0) == 0,
+        "object_rows_all_real_numeric empty column",
+    )
+    real_numeric_mixed = array("B", [1, 3])
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_mixed, ctypes.c_uint8), 2) == 0,
+        "object_rows_all_real_numeric rejects text rows",
     )
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])
