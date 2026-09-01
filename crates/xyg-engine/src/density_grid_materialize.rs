@@ -63,6 +63,57 @@ fn sample_fraction_for(n: usize, target: u64, level: u32) -> Option<f64> {
     Some((base * SAMPLE_GROWTH.powi(level_i)).min(1.0))
 }
 
+fn n_groups_from_codes(codes: &[u8]) -> Option<usize> {
+    codes.iter().map(|&code| code as usize).max().map(|max| max + 1)
+}
+
+/// Resolve exact per-code counts, computing them from dense u8 codes when the
+/// host did not ship factorizer counts (object-array categoricals).
+fn resolve_group_counts(codes: &[u8], counts: Option<&[u64]>) -> Option<Vec<u64>> {
+    if let Some(counts) = counts {
+        if counts.is_empty()
+            || counts.len() > 256
+            || counts
+                .iter()
+                .try_fold(0u64, |sum, &count| sum.checked_add(count))?
+                != codes.len() as u64
+        {
+            return None;
+        }
+        return Some(counts.to_vec());
+    }
+    let n_groups = n_groups_from_codes(codes)?;
+    if n_groups == 0 || n_groups > 256 {
+        return None;
+    }
+    let mut computed = vec![0u64; n_groups];
+    for &code in codes {
+        *computed.get_mut(code as usize)? += 1;
+    }
+    Some(computed)
+}
+
+fn stratified_sample_sel(
+    codes: &[u8],
+    counts: Option<&[u64]>,
+    seed: u64,
+    fraction: f64,
+    min_count: u64,
+) -> Option<Vec<u32>> {
+    if fraction >= 1.0 {
+        return Some((0..codes.len() as u32).collect());
+    }
+    match counts {
+        Some(counts) => {
+            kernels::stratified_sample_range_u8_counted(codes, counts, seed, fraction, min_count)
+        }
+        None => {
+            let n_groups = n_groups_from_codes(codes)?;
+            kernels::stratified_sample_range_u8(codes, n_groups, seed, fraction, min_count)
+        }
+    }
+}
+
 fn pyramid_sample_sel(
     n_points: u64,
     stratified: bool,
@@ -75,11 +126,7 @@ fn pyramid_sample_sel(
             return None;
         }
         let fraction = sample_fraction_for(codes.len(), DENSITY_SAMPLE_TARGET, 0)?;
-        if fraction >= 1.0 {
-            return Some((0..codes.len() as u32).collect());
-        }
-        let counts = counts?;
-        kernels::stratified_sample_range_u8_counted(
+        stratified_sample_sel(
             codes,
             counts,
             DENSITY_SAMPLE_SEED as u64,
@@ -273,7 +320,8 @@ pub fn payload_density_grid_materialize(
             binning = binning_exact();
         } else if path == DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED {
             let codes = color_codes.ok_or(DensityGridMaterializeError::StratifiedFailed)?;
-            let counts = color_counts.ok_or(DensityGridMaterializeError::StratifiedFailed)?;
+            let counts = resolve_group_counts(codes, color_counts)
+                .ok_or(DensityGridMaterializeError::StratifiedFailed)?;
             let fraction = sample_fraction_for(bx.len(), DENSITY_SAMPLE_TARGET, 0)
                 .ok_or(DensityGridMaterializeError::StratifiedFailed)?;
             let mut g = vec![0.0f32; cells];
@@ -282,7 +330,7 @@ pub fn payload_density_grid_materialize(
                     bx,
                     by,
                     codes,
-                    counts,
+                    &counts,
                     bx0,
                     bx1,
                     by0,
@@ -300,22 +348,20 @@ pub fn payload_density_grid_materialize(
             binning = binning_exact();
         } else if path == DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT {
             let codes = color_codes.ok_or(DensityGridMaterializeError::StratifiedFailed)?;
-            let counts = color_counts.ok_or(DensityGridMaterializeError::StratifiedFailed)?;
             let mut g = vec![0.0f32; cells];
             kernels::bin_2d(bx, by, bx0, bx1, by0, by1, w, h, &mut g);
             let fraction = sample_fraction_for(codes.len(), DENSITY_SAMPLE_TARGET, 0)
                 .ok_or(DensityGridMaterializeError::StratifiedFailed)?;
-            sample_sel = if fraction >= 1.0 {
-                Some((0..codes.len() as u32).collect())
-            } else {
-                kernels::stratified_sample_range_u8_counted(
+            sample_sel = Some(
+                stratified_sample_sel(
                     codes,
-                    counts,
+                    color_counts,
                     DENSITY_SAMPLE_SEED as u64,
                     fraction,
                     1,
                 )
-            };
+                .ok_or(DensityGridMaterializeError::StratifiedFailed)?,
+            );
             grid = Some(g);
             binning = binning_exact();
         } else if path == DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED {
@@ -475,5 +521,86 @@ mod tests {
         assert!(out.gmax >= 0.0);
         assert_eq!(out.binning, "exact");
         assert!(!out.grid_from_pyramid);
+    }
+
+    #[test]
+    fn materialize_stratified_split_without_shipped_counts() {
+        let n = 10_000usize;
+        let mut x = vec![0.0f64; n];
+        let mut y = vec![0.0f64; n];
+        let mut codes = vec![0u8; n];
+        for i in 0..n {
+            x[i] = (i as f64 / n as f64).fract();
+            y[i] = ((i * 7) as f64 / n as f64).fract();
+            codes[i] = if i == 17 { 1 } else { 0 };
+        }
+        let meta = emit_meta(
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            crate::density_emit::DENSITY_COLOR_MODE_OTHER,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            n as u64,
+        )
+        .expect("stratified split meta");
+        let out = payload_density_grid_materialize(
+            &meta,
+            n as u64,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            32,
+            32,
+            &x,
+            &y,
+            &x,
+            &y,
+            false,
+            DENSITY_RESOURCE_NONE,
+            0,
+            false,
+            2,
+            2,
+            false,
+            false,
+            false,
+            Some(&codes),
+            None,
+            None,
+            false,
+        )
+        .expect("stratified split without counts");
+        assert_eq!(out.encoded_grid.len(), 32 * 32);
+        let sample = out.sample_sel.expect("sample rows");
+        assert!(!sample.is_empty());
+        assert!(sample.contains(&17));
     }
 }
