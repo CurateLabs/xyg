@@ -9644,6 +9644,122 @@ def color_channel_direct_rgba_f64_categorical(
     return out.reshape(code_arr.size, 4)
 
 
+_COLORMAP_RESOLVE_ERRORS: dict[int, str] = {
+    -1: "cannot be resolved to fixed channels",
+    -2: "is translucent",
+    -3: "between 2 and 256 color stops",
+    -4: "has a direction keyword, but a colormap maps values to colors and has no direction",
+    -5: "position must be between 0 and 1",
+    -6: "must be a CSS 'linear-gradient(...)' value",
+    -7: "colormap stop output buffer is too small",
+}
+
+
+def _colormap_resolve_error(code: int, label: str) -> ValueError:
+    if code == -2:
+        return ValueError(
+            f"{label} is translucent; colormap stops are opaque RGB (a LUT carries "
+            "no alpha). Set the mark's opacity/fill-opacity instead, or use the color the "
+            "stop should blend to."
+        )
+    if code == -1:
+        return ValueError(
+            f"{label} cannot be resolved to fixed channels; colormap stops must be "
+            "hex, rgb()/rgba(), hsl()/hsla(), or a named color (var()/oklch()/color-mix() "
+            "resolve only in a browser, and XYG has to resolve this one itself for SVG, "
+            "native PNG, and aggregated density surfaces)"
+        )
+    if code == -3:
+        return ValueError(f"{label} must have between 2 and 256 color stops")
+    if code == -4:
+        return ValueError(
+            f"{label} gradient has a direction keyword, but a colormap maps values to "
+            "colors and has no direction; drop it, or reverse the stop order"
+        )
+    if code == -5:
+        return ValueError(f"{label} position must be between 0 and 1")
+    if code == -6:
+        return ValueError(f"{label} must be a CSS 'linear-gradient(...)' value")
+    return ValueError(f"{label} colormap resolve failed ({code})")
+
+
+def colormap_is_builtin(name: str) -> bool:
+    """True when `name` is a built-in colormap, including `_r` variants (ABI 349)."""
+    encoded = name.encode("utf-8")
+    ok = int(_lib.xyg_colormap_is_builtin(encoded if encoded else 0, len(encoded)))
+    if ok < 0:
+        raise ValueError("colormap_is_builtin requires a UTF-8 name")
+    return bool(ok)
+
+
+def colormap_resolved_stops_admit(stops: npt.NDArray[np.uint8]) -> int:
+    """Return stop count when `stops` is canonical wire RGB, else 0 (ABI 349)."""
+    flat = np.ascontiguousarray(stops, dtype=np.uint8).reshape(-1)
+    if flat.size == 0 or flat.size % 3 != 0:
+        return 0
+    return int(
+        _lib.xyg_colormap_resolved_stops_admit(
+            _ptr_u8(flat),
+            flat.size // 3,
+        )
+    )
+
+
+def colormap_custom_stops_resolve_gradient(css: str, *, label: str = "colormap") -> list[list[int]]:
+    """Resolve custom colormap stops from CSS linear-gradient (ABI 349)."""
+    encoded = css.encode("utf-8")
+    out = np.empty(256 * 3, dtype=np.uint8)
+    code = int(
+        _lib.xyg_colormap_custom_stops_resolve_gradient(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if code <= 0:
+        raise _colormap_resolve_error(code, label)
+    return _unpack_rgb_stops(out[: code * 3])
+
+
+def colormap_custom_stops_resolve_list(
+    colors: Sequence[str],
+    positions: Sequence[float | None],
+    *,
+    label: str = "colormap",
+) -> list[list[int]]:
+    """Resolve custom colormap stops from CSS color strings (ABI 349)."""
+    n = len(colors)
+    if len(positions) != n:
+        raise ValueError(f"{label} colors and positions must have equal length")
+    pos = np.asarray(
+        [np.nan if value is None else float(value) for value in positions],
+        dtype=np.float64,
+    )
+    pos_arr = np.ascontiguousarray(pos, dtype=np.float64)
+    lens, packed = _pack_utf8_strings([str(color) for color in colors])
+    out = np.empty(256 * 3, dtype=np.uint8)
+    code = int(
+        _lib.xyg_colormap_custom_stops_resolve_list(
+            lens.ctypes.data,
+            _ptr_u8(packed) if packed.size else 0,
+            int(packed.size),
+            _ptr_f64(pos_arr),
+            n,
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if code <= 0:
+        raise _colormap_resolve_error(code, label)
+    return _unpack_rgb_stops(out[: code * 3])
+
+
+def _unpack_rgb_stops(flat: npt.NDArray[np.uint8]) -> list[list[int]]:
+    rows = flat.reshape(-1, 3)
+    return [[int(r), int(g), int(b)] for r, g, b in rows]
+
+
 def colormap_lut_rgba8(
     colormap: str | npt.NDArray[np.uint8],
     *,

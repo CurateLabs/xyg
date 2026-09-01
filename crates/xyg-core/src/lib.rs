@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 348;
+pub const ABI_VERSION: u32 = 349;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -9573,6 +9573,149 @@ pub unsafe extern "C" fn xyg_colormap_stops(
             text
         };
         colormap::write_colormap_stops(name, std::slice::from_raw_parts_mut(out, cap)) as u32
+    })
+}
+
+/// True when `name` is a built-in colormap, including `_r` variants (ABI 349).
+///
+/// Returns `1` when recognized, `0` when not, or `-1` when `name` is not UTF-8.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_is_builtin(name: *const u8, name_len: usize) -> i32 {
+    if name_len > 0 && name.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let text = if name_len == 0 {
+            ""
+        } else {
+            let Some(text) = read_utf8(name, name_len) else {
+                return -1;
+            };
+            text
+        };
+        i32::from(colormap::colormap_is_builtin(text))
+    })
+}
+
+/// Admit canonical resolved colormap stops: 2–256 RGB rows (ABI 349).
+///
+/// Returns the stop count on success or `0` when the table is not canonical.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_resolved_stops_admit(
+    stops: *const u8,
+    stop_count: usize,
+) -> i32 {
+    if stop_count == 0 {
+        return 0;
+    }
+    if stops.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let bytes = std::slice::from_raw_parts(stops, stop_count * 3);
+        if bytes.len() != stop_count * 3 {
+            return 0;
+        }
+        let table: Vec<[u8; 3]> = bytes
+            .chunks_exact(3)
+            .map(|chunk| [chunk[0], chunk[1], chunk[2]])
+            .collect();
+        if colormap::colormap_resolved_stops_admit(&table) {
+            stop_count as i32
+        } else {
+            0
+        }
+    })
+}
+
+/// Resolve custom colormap stops from CSS `linear-gradient(...)` (ABI 349).
+///
+/// Returns the stop count on success or a negative [`kernels::COLORMAP_RESOLVE_*`] code.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_custom_stops_resolve_gradient(
+    css: *const u8,
+    css_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if css_len > 0 && css.is_null() {
+        return kernels::COLORMAP_RESOLVE_GRADIENT_PARSE;
+    }
+    if out_cap == 0 || out.is_null() {
+        return kernels::COLORMAP_RESOLVE_OUTPUT_TOO_SMALL;
+    }
+    ffi_guard(kernels::COLORMAP_RESOLVE_GRADIENT_PARSE, || {
+        let text = if css_len == 0 {
+            ""
+        } else {
+            let Some(text) = read_utf8(css, css_len) else {
+                return kernels::COLORMAP_RESOLVE_GRADIENT_PARSE;
+            };
+            text
+        };
+        match kernels::colormap_custom_stops_resolve_gradient(
+            text,
+            std::slice::from_raw_parts_mut(out, out_cap),
+        ) {
+            Ok(count) => count as i32,
+            Err(code) => code,
+        }
+    })
+}
+
+/// Resolve custom colormap stops from packed CSS strings (ABI 349).
+///
+/// `positions` holds one f64 per stop; NaN means no explicit position. Returns
+/// the stop count on success or a negative [`kernels::COLORMAP_RESOLVE_*`] code.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_custom_stops_resolve_list(
+    css_lens: *const u32,
+    css_texts: *const u8,
+    css_texts_len: usize,
+    positions: *const f64,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if n == 0 {
+        return kernels::COLORMAP_RESOLVE_STOP_COUNT;
+    }
+    if css_lens.is_null() || css_texts.is_null() || positions.is_null() || out.is_null() {
+        return kernels::COLORMAP_RESOLVE_STOP_COUNT;
+    }
+    if out_cap == 0 {
+        return kernels::COLORMAP_RESOLVE_OUTPUT_TOO_SMALL;
+    }
+    ffi_guard(kernels::COLORMAP_RESOLVE_STOP_COUNT, || {
+        let lens = std::slice::from_raw_parts(css_lens, n);
+        let texts = if css_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css_texts, css_texts_len)
+        };
+        let pos_slice = std::slice::from_raw_parts(positions, n);
+        let Some(css) = read_packed_utf8_labels(lens, texts) else {
+            return kernels::COLORMAP_RESOLVE_STOP_COUNT;
+        };
+        let css_refs: Vec<&str> = css.iter().map(String::as_str).collect();
+        let pos_opts: Vec<Option<f64>> = pos_slice
+            .iter()
+            .map(|value| {
+                if value.is_nan() {
+                    None
+                } else {
+                    Some(*value)
+                }
+            })
+            .collect();
+        match kernels::colormap_custom_stops_resolve_list(
+            &css_refs,
+            &pos_opts,
+            std::slice::from_raw_parts_mut(out, out_cap),
+        ) {
+            Ok(count) => count as i32,
+            Err(code) => code,
+        }
     })
 }
 

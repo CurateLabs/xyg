@@ -14,7 +14,6 @@ raises `ValueError` (occasionally `TypeError`) naming `label`.
 
 from __future__ import annotations
 
-import itertools
 import re
 from functools import lru_cache
 from typing import Any, Optional
@@ -656,26 +655,6 @@ def _colormap_stop_item(item: Any, index: int, label: str) -> tuple[Optional[flo
     return pos, color
 
 
-# Positioned ramps resample onto the client's LUT width, so the shipped stops
-# reproduce the declared gradient exactly rather than approximately.
-_LUT_TEXELS = 256
-
-
-def _resample_stops(positions: list[float], rgb: list[tuple[int, int, int]]) -> list[list[int]]:
-    """Positioned stops -> `_LUT_TEXELS` evenly spaced stops.
-
-    The wire form for a colormap is always *evenly spaced* stops — the same
-    shape the built-in tables use — so every renderer keeps one interpolation
-    path. Sampling at the LUT's own texel count makes the round trip exact."""
-    grid = np.linspace(0.0, 1.0, _LUT_TEXELS)
-    pos = np.asarray(positions, dtype=np.float64)
-    channels = np.asarray(rgb, dtype=np.float64)
-    out = np.empty((_LUT_TEXELS, 3), dtype=np.int64)
-    for c in range(3):
-        out[:, c] = np.rint(np.interp(grid, pos, channels[:, c]))
-    return [[int(v) for v in row] for row in out]
-
-
 def colormap_stops(value: Any, label: str) -> list[list[int]]:
     """A custom colormap as evenly spaced 8-bit RGB stops.
 
@@ -683,46 +662,14 @@ def colormap_stops(value: Any, label: str) -> list[list[int]]:
     optionally as `(position, color)` pairs. Uniformly spaced input ships as
     given; positioned input resamples onto the LUT grid."""
     if isinstance(value, str):
-        gradient = mark_fill(value, label)
-        assert gradient is not None
-        if gradient["dir"] != "down":
-            # A mark fill runs along a direction in space; a colormap maps a
-            # VALUE to a color and has no spatial axis, so a direction keyword
-            # here would be accepted and ignored. Refuse it instead (§28).
-            raise ValueError(
-                f"{label} gradient has a direction keyword, but a colormap maps values to "
-                "colors and has no direction; drop it, or reverse the stop order"
-            )
-        stops = gradient["stops"]
-        positions = [float(p) for p, _ in stops]
-        rgb = [_resolved_rgb(c, f"{label} stop {i + 1}") for i, (_, c) in enumerate(stops)]
-    else:
-        items = list(value)
-        if not 2 <= len(items) <= 256:
-            raise ValueError(f"{label} must have between 2 and 256 color stops, got {len(items)}")
-        raw = [_colormap_stop_item(item, i, label) for i, item in enumerate(items)]
-        rgb = [_resolved_rgb(c, f"{label}[{i}]") for i, (_, c) in enumerate(raw)]
-        declared = [p for p, _ in raw]
-        if all(p is None for p in declared):
-            return [list(c) for c in rgb]
-        count = len(declared)
-        anchors: dict[int, float] = {i: p for i, p in enumerate(declared) if p is not None}
-        anchors.setdefault(0, 0.0)
-        anchors.setdefault(count - 1, 1.0)
-        keys = sorted(anchors)
-        previous = 0.0
-        for i in keys:
-            previous = anchors[i] = max(anchors[i], previous)
-        positions = [0.0] * count
-        for i0, i1 in itertools.pairwise(keys):
-            v0, v1 = anchors[i0], anchors[i1]
-            for k in range(i0, i1):
-                positions[k] = v0 + (v1 - v0) * (k - i0) / (i1 - i0)
-        positions[count - 1] = anchors[count - 1]
-    uniform = np.linspace(positions[0], positions[-1], len(positions))
-    if positions[0] == 0.0 and positions[-1] == 1.0 and np.allclose(positions, uniform):
-        return [list(c) for c in rgb]
-    return _resample_stops(positions, rgb)
+        return kernels.colormap_custom_stops_resolve_gradient(value, label=label)
+    items = list(value)
+    if not 2 <= len(items) <= 256:
+        raise ValueError(f"{label} must have between 2 and 256 color stops, got {len(items)}")
+    raw = [_colormap_stop_item(item, i, label) for i, item in enumerate(items)]
+    colors = [str(color) for _, color in raw]
+    positions = [pos for pos, _ in raw]
+    return kernels.colormap_custom_stops_resolve_list(colors, positions, label=label)
 
 
 def axis_label_position(value: Any, label: str) -> Optional[str | dict[str, str | int | float]]:

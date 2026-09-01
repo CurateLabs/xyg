@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 348
-SIGNATURE_SHA256 = "29d61c35f87c6f4098b223bda5d8cedbc420f858c05a2c19c34dd5da4382a799"
+ABI_VERSION = 349
+SIGNATURE_SHA256 = "efc137311b516115ae7dbdea345dd47313f40cc603213b47a5ea343e23f2e1e6"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -150,6 +150,18 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_color_channel_direct_rgba_f64_continuous
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_custom_stops_resolve_gradient(const uint8_t * css, size_t css_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_colormap_custom_stops_resolve_gradient
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_custom_stops_resolve_list(const uint32_t * css_lens, const uint8_t * css_texts, size_t css_texts_len, const double * positions, size_t n, uint8_t * out, size_t out_cap)
+    function = lib.xyg_colormap_custom_stops_resolve_list
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_is_builtin(const uint8_t * name, size_t name_len)
+    function = lib.xyg_colormap_is_builtin
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)
     function = lib.xyg_colormap_lut
     function.restype = ctypes.c_int32
@@ -158,6 +170,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_colormap_lut_rgba8
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_resolved_stops_admit(const uint8_t * stops, size_t stop_count)
+    function = lib.xyg_colormap_resolved_stops_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_colormap_rgba
     function.restype = ctypes.c_int32

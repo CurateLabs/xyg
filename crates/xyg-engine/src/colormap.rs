@@ -320,6 +320,30 @@ pub fn write_colormap_stops(name: &str, out: &mut [u8]) -> usize {
     stops.len()
 }
 
+/// Built-in colormap names exposed by the Python/Node host (`channels.COLORMAPS`).
+const BUILTIN_COLORMAP_NAMES: &[&str] = &[
+    "viridis", "magma", "plasma", "inferno", "cividis", "autumn", "gray", "turbo", "coolwarm",
+    "blues", "rdylgn", "rainbow", "spectral", "piyg", "purples", "pubu", "prgn", "rdgy", "rdbu",
+    "jet", "binary", "flag", "reds", "bone", "winter", "bupu", "rdylbu", "ylgn", "wistia", "puor",
+];
+
+/// True when `name` is a built-in colormap, including `_r` variants.
+///
+/// Unlike [`colormap_named_stops`], unknown names are **not** accepted.
+pub fn colormap_is_builtin(name: &str) -> bool {
+    if BUILTIN_COLORMAP_NAMES.contains(&name) {
+        return true;
+    }
+    name.ends_with("_r")
+        && name.len() > 2
+        && BUILTIN_COLORMAP_NAMES.contains(&&name[..name.len() - 2])
+}
+
+/// Whether `stops` is already canonical wire form: 2–256 rows of opaque RGB u8.
+pub fn colormap_resolved_stops_admit(stops: &[[u8; 3]]) -> bool {
+    (2..=MAX_COLORMAP_STOPS).contains(&stops.len())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,5 +364,13 @@ mod tests {
     #[test]
     fn flag_has_native_lut_resolution() {
         assert_eq!(colormap_named_stops("flag").len(), 256);
+    }
+
+    #[test]
+    fn colormap_is_builtin_matches_host_table() {
+        assert!(colormap_is_builtin("magma"));
+        assert!(colormap_is_builtin("magma_r"));
+        assert!(!colormap_is_builtin("nope"));
+        assert!(!colormap_is_builtin("viridis_extra"));
     }
 }

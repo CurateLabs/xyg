@@ -1840,6 +1840,192 @@ fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
     resolved
 }
 
+/// Colormap custom-stop resolve errors (ABI 349). Hosts map these to ValueError text.
+pub const COLORMAP_RESOLVE_UNRESOLVED_COLOR: i32 = -1;
+pub const COLORMAP_RESOLVE_TRANSLUCENT_STOP: i32 = -2;
+pub const COLORMAP_RESOLVE_STOP_COUNT: i32 = -3;
+pub const COLORMAP_RESOLVE_DIRECTION_KEYWORD: i32 = -4;
+pub const COLORMAP_RESOLVE_INVALID_POSITION: i32 = -5;
+pub const COLORMAP_RESOLVE_GRADIENT_PARSE: i32 = -6;
+pub const COLORMAP_RESOLVE_OUTPUT_TOO_SMALL: i32 = -7;
+
+const COLORMAP_LUT_TEXELS: usize = 256;
+
+fn resolve_opaque_colormap_stop_rgb(css: &str) -> Result<[u8; 3], i32> {
+    match crate::css::parse_color(css.trim()) {
+        Ok(crate::css::Checked::Parsed(Some(rgba))) => {
+            if rgba[3] < 1.0 {
+                return Err(COLORMAP_RESOLVE_TRANSLUCENT_STOP);
+            }
+            Ok([
+                bankers_round_u8(rgba[0] * 255.0),
+                bankers_round_u8(rgba[1] * 255.0),
+                bankers_round_u8(rgba[2] * 255.0),
+            ])
+        }
+        Ok(crate::css::Checked::Parsed(None) | crate::css::Checked::Passthrough) => {
+            Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR)
+        }
+        Err(_) => Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR),
+    }
+}
+
+fn bankers_round_u8(value: f32) -> u8 {
+    let clamped = value.clamp(0.0, 255.0);
+    let floor = clamped.floor();
+    let frac = clamped - floor;
+    let base = floor as u32;
+    let rounded = if frac > 0.5 {
+        base + 1
+    } else if frac < 0.5 {
+        base
+    } else if base % 2 == 0 {
+        base
+    } else {
+        base + 1
+    };
+    rounded.min(255) as u8
+}
+
+fn linear_interp(t: f64, xs: &[f64], ys: &[f64]) -> f64 {
+    debug_assert_eq!(xs.len(), ys.len());
+    if xs.is_empty() {
+        return 0.0;
+    }
+    if t <= xs[0] {
+        return ys[0];
+    }
+    if t >= xs[xs.len() - 1] {
+        return ys[ys.len() - 1];
+    }
+    for i in 0..xs.len() - 1 {
+        if t >= xs[i] && t <= xs[i + 1] {
+            let span = xs[i + 1] - xs[i];
+            if span == 0.0 {
+                return ys[i];
+            }
+            let frac = (t - xs[i]) / span;
+            return ys[i] + (ys[i + 1] - ys[i]) * frac;
+        }
+    }
+    ys[ys.len() - 1]
+}
+
+fn positions_are_uniform(positions: &[f64]) -> bool {
+    if positions.is_empty() {
+        return true;
+    }
+    if positions[0] != 0.0 || positions[positions.len() - 1] != 1.0 {
+        return false;
+    }
+    if positions.len() == 1 {
+        return true;
+    }
+    positions.iter().enumerate().all(|(index, value)| {
+        let expected = index as f64 / (positions.len() - 1) as f64;
+        (*value - expected).abs() <= 1e-9
+    })
+}
+
+fn resample_positioned_colormap_stops(positions: &[f64], rgb: &[[u8; 3]]) -> Vec<[u8; 3]> {
+    let mut out = vec![[0u8; 3]; COLORMAP_LUT_TEXELS];
+    for channel in 0..3 {
+        let values: Vec<f64> = rgb.iter().map(|row| row[channel] as f64).collect();
+        for (index, slot) in out.iter_mut().enumerate() {
+            let t = if COLORMAP_LUT_TEXELS == 1 {
+                0.0
+            } else {
+                index as f64 / (COLORMAP_LUT_TEXELS - 1) as f64
+            };
+            slot[channel] = bankers_round_u8(linear_interp(t, positions, &values) as f32);
+        }
+    }
+    out
+}
+
+fn finalize_colormap_custom_stops(
+    positions: &[f64],
+    rgb: &[[u8; 3]],
+    out: &mut [u8],
+) -> Result<usize, i32> {
+    if !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&rgb.len()) {
+        return Err(COLORMAP_RESOLVE_STOP_COUNT);
+    }
+    let stops: Vec<[u8; 3]> = if positions_are_uniform(positions) {
+        rgb.to_vec()
+    } else {
+        resample_positioned_colormap_stops(positions, rgb)
+    };
+    let needed = stops.len() * 3;
+    if out.len() < needed {
+        return Err(COLORMAP_RESOLVE_OUTPUT_TOO_SMALL);
+    }
+    for (index, stop) in stops.iter().enumerate() {
+        let start = index * 3;
+        out[start..start + 3].copy_from_slice(stop);
+    }
+    Ok(stops.len())
+}
+
+/// Resolve a custom colormap from CSS `linear-gradient(...)` (ABI 349).
+///
+/// Colormaps have no spatial direction; a direction keyword is rejected. Hosts
+/// still wrap authoring error text.
+pub fn colormap_custom_stops_resolve_gradient(css: &str, out: &mut [u8]) -> Result<usize, i32> {
+    let parsed = scene_parse_linear_gradient(css, "mark").map_err(|code| match code {
+        SCENE_PARSE_LINEAR_GRADIENT_DIRECTION
+        | SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS => COLORMAP_RESOLVE_DIRECTION_KEYWORD,
+        SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT => COLORMAP_RESOLVE_STOP_COUNT,
+        SCENE_PARSE_LINEAR_GRADIENT_STOP_POS => COLORMAP_RESOLVE_INVALID_POSITION,
+        _ => COLORMAP_RESOLVE_GRADIENT_PARSE,
+    })?;
+    if parsed.dir != 0 {
+        return Err(COLORMAP_RESOLVE_DIRECTION_KEYWORD);
+    }
+    let rgb: Result<Vec<[u8; 3]>, i32> = parsed
+        .css
+        .iter()
+        .map(|color| resolve_opaque_colormap_stop_rgb(color))
+        .collect();
+    finalize_colormap_custom_stops(&parsed.t, &rgb?, out)
+}
+
+/// Resolve a custom colormap from packed CSS color strings (ABI 349).
+///
+/// `positions` may be `None` per stop (uniform spacing). Positions must lie in
+/// `[0, 1]` and be non-decreasing when present.
+pub fn colormap_custom_stops_resolve_list(
+    css: &[&str],
+    positions: &[Option<f64>],
+    out: &mut [u8],
+) -> Result<usize, i32> {
+    if css.len() != positions.len() || !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&css.len())
+    {
+        return Err(COLORMAP_RESOLVE_STOP_COUNT);
+    }
+    for pos in positions.iter().flatten() {
+        if !pos.is_finite() || *pos < 0.0 || *pos > 1.0 {
+            return Err(COLORMAP_RESOLVE_INVALID_POSITION);
+        }
+    }
+    let rgb: Vec<[u8; 3]> = css
+        .iter()
+        .map(|color| resolve_opaque_colormap_stop_rgb(color))
+        .collect::<Result<_, _>>()?;
+    let resolved_positions = if positions.iter().all(|value| value.is_none()) {
+        if css.len() == 1 {
+            vec![0.0]
+        } else {
+            (0..css.len())
+                .map(|index| index as f64 / (css.len() - 1) as f64)
+                .collect()
+        }
+    } else {
+        resolve_host_stop_positions(positions)
+    };
+    finalize_colormap_custom_stops(&resolved_positions, &rgb, out)
+}
+
 /// Parse CSS `linear-gradient(...)` into space-relative dir + resolved stops.
 pub fn scene_parse_linear_gradient(
     css: &str,
@@ -10876,6 +11062,42 @@ mod tests {
         assert_eq!(&lut[255 * 4..], &[255, 255, 255, 255]);
         let mid = colormap_color(0.5, &stops, 255);
         assert_eq!(&lut[128 * 4..128 * 4 + 4], &[mid[0], mid[1], mid[2], 255]);
+    }
+
+    #[test]
+    fn colormap_custom_stops_resolve_matches_host_policy() {
+        let mut out = vec![0u8; 256 * 3];
+        let count = colormap_custom_stops_resolve_list(
+            &["#0b1220", "#2563eb", "#22d3ee", "#fde68a"],
+            &[None, None, None, None],
+            &mut out,
+        )
+        .expect("uniform list");
+        assert_eq!(count, 4);
+        assert_eq!(&out[..3], &[11, 18, 32]);
+        assert_eq!(&out[9..12], &[253, 230, 138]);
+
+        let count = colormap_custom_stops_resolve_gradient(
+            "linear-gradient(#000000, #ffffff 25%, #000000)",
+            &mut out,
+        )
+        .expect("gradient");
+        assert_eq!(count, 256);
+        assert_eq!(&out[..3], &[0, 0, 0]);
+        assert_eq!(&out[(256 - 1) * 3..], &[0, 0, 0]);
+        assert_eq!(&out[64 * 3..64 * 3 + 3], &[255, 255, 255]);
+
+        assert_eq!(
+            colormap_custom_stops_resolve_list(&["var(--x)", "#fff"], &[None, None], &mut out),
+            Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR)
+        );
+        assert_eq!(
+            colormap_custom_stops_resolve_gradient(
+                "linear-gradient(to top, #000, #fff)",
+                &mut out
+            ),
+            Err(COLORMAP_RESOLVE_DIRECTION_KEYWORD)
+        );
     }
 
     #[test]

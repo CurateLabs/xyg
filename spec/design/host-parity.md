@@ -872,6 +872,10 @@ palette-map resolution and Node `categoricalPaletteMapResolve` share ABI 347
 `xyg_categorical_palette_map_resolve`; browser-only warnings stay host-side.
 Python `resolve_direct_rgba` and Node `colorChannelDirectRgbaF64*` sample LUT
 channels through ABI 348 `xyg_color_channel_direct_rgba_f64_*`.
+Python `is_colormap`, `_is_resolved_stops`, and `_validate.colormap_stops` /
+Node `colormapIsBuiltin`, `colormapResolvedStopsAdmit`, and
+`colormapCustomStopsResolve*` share ABI 349 colormap custom-stop resolve;
+pair-shape validation and authoring error text stay host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

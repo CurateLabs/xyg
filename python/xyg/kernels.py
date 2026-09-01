@@ -38,6 +38,10 @@ clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
 palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8
+colormap_is_builtin = _impl.colormap_is_builtin
+colormap_resolved_stops_admit = _impl.colormap_resolved_stops_admit
+colormap_custom_stops_resolve_gradient = _impl.colormap_custom_stops_resolve_gradient
+colormap_custom_stops_resolve_list = _impl.colormap_custom_stops_resolve_list
 categorical_palette = _impl.categorical_palette
 categorical_palette_map_resolve = _impl.categorical_palette_map_resolve
 color_channel_direct_rgba_f64_continuous = _impl.color_channel_direct_rgba_f64_continuous
@@ -363,8 +367,12 @@ __all__ = [
     "clip_quantize_u8",
     "color_channel_direct_rgba_f64_categorical",
     "color_channel_direct_rgba_f64_continuous",
+    "colormap_custom_stops_resolve_gradient",
+    "colormap_custom_stops_resolve_list",
+    "colormap_is_builtin",
     "colormap_lut",
     "colormap_lut_rgba8",
+    "colormap_resolved_stops_admit",
     "colormap_rgba",
     "colormap_rgba_canonical",
     "continuous_domain",

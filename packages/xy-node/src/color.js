@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList } from "./native.js";
 import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -410,6 +410,67 @@ export function colorChannelDirectRgbaF64Categorical(codes, palette) {
     throw new RangeError("invalid color-channel-direct-rgba-f64-categorical request");
   }
   return out;
+}
+
+/** True when `name` is a built-in colormap, including `_r` variants (ABI 349). */
+export function colormapIsBuiltin(name) {
+  const encoded = new TextEncoder().encode(String(name ?? ""));
+  const ok = Number(xyColormapIsBuiltin(encoded.length ? u8Ptr(encoded) : null, BigInt(encoded.length)));
+  if (ok < 0) throw new RangeError("colormapIsBuiltin requires a UTF-8 name");
+  return ok === 1;
+}
+
+function unpackRgbStops(flat, count) {
+  const rows = [];
+  for (let i = 0; i < count; i += 1) {
+    const base = i * 3;
+    rows.push([flat[base], flat[base + 1], flat[base + 2]]);
+  }
+  return rows;
+}
+
+/** Resolve custom colormap stops from CSS linear-gradient (ABI 349). */
+export function colormapCustomStopsResolveGradient(css) {
+  const encoded = new TextEncoder().encode(String(css ?? ""));
+  const out = new Uint8Array(256 * 3);
+  const code = Number(
+    xyColormapCustomStopsResolveGradient(
+      encoded.length ? u8Ptr(encoded) : null,
+      BigInt(encoded.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    ),
+  );
+  if (code <= 0) throw new RangeError(`colormap gradient resolve failed (${code})`);
+  return unpackRgbStops(out, code);
+}
+
+/** Resolve custom colormap stops from CSS color strings (ABI 349). */
+export function colormapCustomStopsResolveList(colors, positions) {
+  const css = colors.map((color) => String(color));
+  const pos = Float64Array.from(positions, (value) => (value == null ? Number.NaN : Number(value)));
+  const { lens, packed } = packUtf8Strings(css);
+  const out = new Uint8Array(256 * 3);
+  const code = Number(
+    xyColormapCustomStopsResolveList(
+      u32Ptr(lens),
+      packed.length ? u8Ptr(packed) : null,
+      BigInt(packed.length),
+      f64Ptr(pos),
+      BigInt(css.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    ),
+  );
+  if (code <= 0) throw new RangeError(`colormap list resolve failed (${code})`);
+  return unpackRgbStops(out, code);
+}
+
+/** Return stop count when `stops` is canonical wire RGB, else 0 (ABI 349). */
+export function colormapResolvedStopsAdmit(stops) {
+  const flat = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (!flat.length || flat.length % 3 !== 0) return 0;
+  return Number(xyColormapResolvedStopsAdmit(u8Ptr(flat), BigInt(flat.length / 3)));
 }
 
 function flattenRgbRows(raw, n) {

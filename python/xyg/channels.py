@@ -61,9 +61,7 @@ COLORMAPS = (
 
 def is_colormap(name: Any) -> bool:
     """Return whether *name* is a built-in colormap, including ``_r`` variants."""
-    return isinstance(name, str) and (
-        name in COLORMAPS or (name.endswith("_r") and name[:-2] in COLORMAPS)
-    )
+    return isinstance(name, str) and kernels.colormap_is_builtin(name)
 
 
 # A resolved colormap on the wire: a built-in name, or explicit evenly spaced
@@ -86,17 +84,11 @@ def _is_resolved_stops(value: Any) -> bool:
     256 texels wide."""
     if isinstance(value, str) or not isinstance(value, (list, tuple)):
         return False
-    if not 2 <= len(value) <= 256:
+    try:
+        flat = np.asarray(value, dtype=np.uint8).reshape(-1)
+    except (TypeError, ValueError):
         return False
-    return all(
-        isinstance(stop, (list, tuple))
-        and len(stop) == 3
-        and all(
-            isinstance(c, (int, np.integer)) and not isinstance(c, bool) and 0 <= int(c) <= 255
-            for c in stop
-        )
-        for stop in value
-    )
+    return kernels.colormap_resolved_stops_admit(flat) > 0
 
 
 def resolve_colormap(value: ColormapLike, label: str = "colormap") -> Colormap:

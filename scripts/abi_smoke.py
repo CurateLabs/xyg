@@ -958,6 +958,27 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_colormap_is_builtin.restype = ctypes.c_int32
+    lib.xyg_colormap_is_builtin.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_colormap_resolved_stops_admit.restype = ctypes.c_int32
+    lib.xyg_colormap_resolved_stops_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_colormap_custom_stops_resolve_gradient.restype = ctypes.c_int32
+    lib.xyg_colormap_custom_stops_resolve_gradient.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_colormap_custom_stops_resolve_list.restype = ctypes.c_int32
+    lib.xyg_colormap_custom_stops_resolve_list.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_literal_color_rgba_f64.restype = ctypes.c_size_t
     lib.xyg_literal_color_rgba_f64.argtypes = [
         U32P,
@@ -2984,6 +3005,66 @@ def main() -> None:
         and custom_cmap_out[0] == 0
         and custom_cmap_out[255 * 4] == 255,
         "colormap_lut_rgba8 custom stops early",
+    )
+
+    magma = array("B", b"magma")
+    nope = array("B", b"nope")
+    ok(
+        lib.xyg_colormap_is_builtin(_ptr(magma, ctypes.c_uint8), len(magma)) == 1,
+        "colormap_is_builtin magma",
+    )
+    ok(
+        lib.xyg_colormap_is_builtin(_ptr(nope, ctypes.c_uint8), len(nope)) == 0,
+        "colormap_is_builtin unknown",
+    )
+    admit_stops = array("B", [0, 0, 0, 255, 255, 255])
+    ok(
+        lib.xyg_colormap_resolved_stops_admit(
+            _ptr(admit_stops, ctypes.c_uint8),
+            2,
+        )
+        == 2,
+        "colormap_resolved_stops_admit canonical",
+    )
+    cmap_out = array("B", [0] * (256 * 3))
+    gradient = array("B", b"linear-gradient(#000000, #ffffff 25%, #000000)")
+    cmap_count = lib.xyg_colormap_custom_stops_resolve_gradient(
+        _ptr(gradient, ctypes.c_uint8),
+        len(gradient),
+        _ptr(cmap_out, ctypes.c_uint8),
+        len(cmap_out),
+    )
+    ok(
+        cmap_count == 256
+        and cmap_out[0] == 0
+        and cmap_out[1] == 0
+        and cmap_out[2] == 0
+        and cmap_out[64 * 3] == 255
+        and cmap_out[64 * 3 + 1] == 255
+        and cmap_out[64 * 3 + 2] == 255,
+        "colormap_custom_stops_resolve_gradient positioned",
+    )
+    list_lens = array("I", [7, 7])
+    list_texts = array("B", b"#0b1220#2563eb")
+    list_pos = array("d", [float("nan"), float("nan")])
+    list_count = lib.xyg_colormap_custom_stops_resolve_list(
+        _ptr(list_lens, ctypes.c_uint32),
+        _ptr(list_texts, ctypes.c_uint8),
+        len(list_texts),
+        _ptr(list_pos, ctypes.c_double),
+        2,
+        _ptr(cmap_out, ctypes.c_uint8),
+        len(cmap_out),
+    )
+    ok(
+        list_count == 2
+        and cmap_out[0] == 11
+        and cmap_out[1] == 18
+        and cmap_out[2] == 32
+        and cmap_out[3] == 37
+        and cmap_out[4] == 99
+        and cmap_out[5] == 235,
+        "colormap_custom_stops_resolve_list uniform",
     )
 
     graph_x = array("d", [0.0]) * 4
