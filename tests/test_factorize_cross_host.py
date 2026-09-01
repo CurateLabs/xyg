@@ -189,11 +189,7 @@ def _python_colormap_is_builtin_case(spec: dict) -> bool:
 def _python_colormap_custom_stops_list_case(spec: dict) -> list[list[int]]:
     colors = spec["colors"]
     positions = spec.get("positions")
-    positions = (
-        [None] * len(colors)
-        if positions is None
-        else [float(p) for p in positions]
-    )
+    positions = [None] * len(colors) if positions is None else [float(p) for p in positions]
     return kernels.colormap_custom_stops_resolve_list(colors, positions)
 
 
