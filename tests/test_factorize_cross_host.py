@@ -206,6 +206,16 @@ def _python_array_is_categorical_case(spec: dict) -> bool:
     return kernels.array_is_categorical(ord(spec["dtype_kind"]), int(spec["object_real_numeric"]))
 
 
+def _python_real_numeric_dtype_admit_case(spec: dict) -> dict[str, object]:
+    try:
+        kernels.real_numeric_dtype_admit(ord(spec["dtype_kind"]))
+        return {"ok": True}
+    except ValueError as exc:
+        msg = str(exc)
+        error = "boolean" if "boolean" in msg else "complex"
+        return {"ok": False, "error": error}
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -231,6 +241,7 @@ FACTORIZE_CASES = [
         "colormap_custom_stops_resolve_gradient",
         "size_range_admit",
         "array_is_categorical",
+        "real_numeric_dtype_admit",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -260,6 +271,9 @@ COLORMAP_CUSTOM_GRADIENT_CASES = [
 ]
 SIZE_RANGE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "size_range_admit"]
 ARRAY_IS_CATEGORICAL_CASES = [c for c in FIXTURE_CASES if c["kind"] == "array_is_categorical"]
+REAL_NUMERIC_DTYPE_ADMIT_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "real_numeric_dtype_admit"
+]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -433,6 +447,15 @@ def test_array_is_categorical_cross_host(spec: dict, node_results: dict[str, dic
     categorical = _python_array_is_categorical_case(spec)
     node = node_results[spec["name"]]
     assert categorical == node["categorical"]
+
+
+@pytest.mark.parametrize("spec", REAL_NUMERIC_DTYPE_ADMIT_CASES, ids=lambda s: s["name"])
+def test_real_numeric_dtype_admit_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    result = _python_real_numeric_dtype_admit_case(spec)
+    node = node_results[spec["name"]]
+    assert result["ok"] == node["ok"]
+    if not result["ok"]:
+        assert result["error"] == node["error"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

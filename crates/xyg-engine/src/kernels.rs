@@ -8617,6 +8617,21 @@ pub fn array_is_categorical(dtype_kind: u8, object_real_numeric: i32) -> Option<
     }
 }
 
+pub const REAL_NUMERIC_DTYPE_BOOL: i32 = -1;
+pub const REAL_NUMERIC_DTYPE_COMPLEX: i32 = -2;
+
+/// Reject boolean/complex NumPy dtype kinds before real f64 coercion (ABI 352).
+///
+/// Returns `0` when the dtype kind may proceed to real-numeric coercion.
+/// Object columns and per-row bool checks stay host-side.
+pub fn real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
+    match dtype_kind as char {
+        'b' => REAL_NUMERIC_DTYPE_BOOL,
+        'c' | 'C' => REAL_NUMERIC_DTYPE_COMPLEX,
+        _ => 0,
+    }
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11101,6 +11116,16 @@ mod tests {
         assert_eq!(array_is_categorical(b'O', 1), Some(false));
         assert!(array_is_categorical(b'O', -1).is_none());
         assert!(array_is_categorical(b'O', 2).is_none());
+    }
+
+    #[test]
+    fn real_numeric_dtype_admit_matches_host_policy() {
+        assert_eq!(real_numeric_dtype_admit(b'f'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'i'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'O'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'b'), REAL_NUMERIC_DTYPE_BOOL);
+        assert_eq!(real_numeric_dtype_admit(b'c'), REAL_NUMERIC_DTYPE_COMPLEX);
+        assert_eq!(real_numeric_dtype_admit(b'C'), REAL_NUMERIC_DTYPE_COMPLEX);
     }
 
     #[test]

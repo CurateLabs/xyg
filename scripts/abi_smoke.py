@@ -1058,6 +1058,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint8,
         ctypes.c_int32,
     ]
+    lib.xyg_real_numeric_dtype_admit.restype = ctypes.c_int32
+    lib.xyg_real_numeric_dtype_admit.argtypes = [ctypes.c_uint8]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6069,6 +6071,12 @@ def main() -> None:
         and lib.xyg_array_is_categorical(ord("O"), 0) == 1
         and lib.xyg_array_is_categorical(ord("O"), 1) == 0,
         "array_is_categorical dtype and object probe",
+    )
+    ok(
+        lib.xyg_real_numeric_dtype_admit(ord("f")) == 0
+        and lib.xyg_real_numeric_dtype_admit(ord("b")) == -1
+        and lib.xyg_real_numeric_dtype_admit(ord("c")) == -2,
+        "real_numeric_dtype_admit bool complex reject",
     )
     hex_css = array("B", b"#ff0000")
     ok(

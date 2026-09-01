@@ -882,6 +882,10 @@ Node continuous size domains use ABI 213 `continuousDomain` like Python
 `_continuous_domain`. Python `channels._is_categorical` and Node
 `arrayIsCategorical` classify dtype/object columns through ABI 351
 `xyg_array_is_categorical`; object-row tag loops stay host-side.
+Python `channels._as_real_array`, `_figure._real_float_array`, and `columns`
+numeric ingest plus Node `realNumericDtypeAdmit` reject boolean/complex dtype
+kinds through ABI 352 `xyg_real_numeric_dtype_admit`; object-row real-numeric
+probes stay host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 351;
+pub const ABI_VERSION: u32 = 352;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10289,6 +10289,15 @@ pub unsafe extern "C" fn xyg_size_range_admit(
         }
         Err(code) => code,
     })
+}
+
+/// Reject boolean/complex NumPy dtype kinds before real f64 coercion (ABI 352).
+///
+/// Returns `0` when the dtype kind may proceed, or a negative
+/// [`kernels::REAL_NUMERIC_DTYPE_*`] code.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
+    ffi_guard(-3, || kernels::real_numeric_dtype_admit(dtype_kind))
 }
 
 /// Classify whether a column uses categorical color resolution (ABI 351).

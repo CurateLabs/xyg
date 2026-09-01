@@ -463,10 +463,10 @@ def _is_real_number_object(value: Any) -> bool:
 
 
 def _as_real_array(values: np.ndarray, label: str) -> npt.NDArray[np.float64]:
-    if np.issubdtype(values.dtype, np.bool_):
-        raise ValueError(f"{label} must be real numeric, not boolean")
-    if np.issubdtype(values.dtype, np.complexfloating):
-        raise ValueError(f"{label} must be real numeric")
+    try:
+        kernels.real_numeric_dtype_admit(ord(values.dtype.kind))
+    except ValueError as exc:
+        raise ValueError(str(exc).replace("values", label)) from exc
     if values.dtype == object and not _object_array_is_real_numeric(values):
         raise ValueError(f"{label} must be real numeric")
     try:

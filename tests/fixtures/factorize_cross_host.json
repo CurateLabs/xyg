@@ -292,6 +292,26 @@
       "dtype_kind": "O",
       "object_real_numeric": 1,
       "categorical": false
+    },
+    {
+      "name": "real_numeric_dtype_float",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "f",
+      "ok": true
+    },
+    {
+      "name": "real_numeric_dtype_bool",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "b",
+      "ok": false,
+      "error": "boolean"
+    },
+    {
+      "name": "real_numeric_dtype_complex",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "c",
+      "ok": false,
+      "error": "complex"
     }
   ]
 }

@@ -9419,6 +9419,17 @@ def array_is_categorical(dtype_kind: int, object_real_numeric: int = -1) -> bool
     return code == 1
 
 
+def real_numeric_dtype_admit(dtype_kind: int) -> None:
+    """Reject boolean/complex dtype kinds before real f64 coercion (ABI 352)."""
+    code = int(_lib.xyg_real_numeric_dtype_admit(int(dtype_kind) & 0xFF))
+    if code == -1:
+        raise ValueError("values must be real numeric, not boolean")
+    if code == -2:
+        raise ValueError("values must be real numeric")
+    if code != 0:
+        raise ValueError("invalid real-numeric-dtype-admit request")
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

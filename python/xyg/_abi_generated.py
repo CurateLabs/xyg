@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 351
-SIGNATURE_SHA256 = "a13f1e4670df482e552bc733ddbc161a97c468859c5da25d4b44803620b32ad8"
+ABI_VERSION = 352
+SIGNATURE_SHA256 = "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -970,6 +970,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rasterize_spans
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
+    # int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind)
+    function = lib.xyg_real_numeric_dtype_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
     # uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)
     function = lib.xyg_rect_zero_baseline_flags
     function.restype = ctypes.c_uint8

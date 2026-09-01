@@ -1138,12 +1138,12 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
     @staticmethod
     def _real_float_array(arr: np.ndarray, label: str) -> np.ndarray:
-        if np.issubdtype(arr.dtype, np.bool_):
-            raise ValueError(f"{label} must be real numeric, not boolean")
+        try:
+            kernels.real_numeric_dtype_admit(ord(arr.dtype.kind))
+        except ValueError as exc:
+            raise ValueError(str(exc).replace("values", label)) from exc
         if arr.dtype == object and any(isinstance(value, (bool, np.bool_)) for value in arr.flat):
             raise ValueError(f"{label} must be real numeric, not boolean")
-        if np.issubdtype(arr.dtype, np.complexfloating):
-            raise ValueError(f"{label} must be real numeric")
         try:
             return arr.astype(np.float64, copy=False)
         except (TypeError, ValueError) as e:

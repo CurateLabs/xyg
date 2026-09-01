@@ -1,9 +1,9 @@
 {
-  "abi_version": 351,
+  "abi_version": 352,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "a13f1e4670df482e552bc733ddbc161a97c468859c5da25d4b44803620b32ad8",
+  "signature_sha256": "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -35440,6 +35440,41 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)"
+    },
+    {
+      "name": "xyg_real_numeric_dtype_admit",
+      "node_name": "xyRealNumericDtypeAdmit",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "dtype_kind",
+          "type": {
+            "rust": "u8",
+            "c": "uint8_t",
+            "ctypes": "ctypes.c_uint8",
+            "koffi": "uint8_t",
+            "kind": "scalar",
+            "bits": 8,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind)"
     },
     {
       "name": "xyg_rect_zero_baseline_flags",

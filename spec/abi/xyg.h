@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 351
-#define XYG_ABI_SIGNATURE_SHA256 "a13f1e4670df482e552bc733ddbc161a97c468859c5da25d4b44803620b32ad8"
+#define XYG_ABI_VERSION 352
+#define XYG_ABI_SIGNATURE_SHA256 "168ce5a1089c7afd7d977c92bb3e23c4c1b3063a72ea71d40129c7be1e1f3852"
 
 #ifdef __cplusplus
 extern "C" {
@@ -251,6 +251,7 @@ size_t xyg_rasterize_png(const uint8_t * cmd, size_t cmd_len, uint8_t * out, siz
 size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h);
+int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind);
 uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n);
 size_t xyg_recut_polar_plot(const double * in_plot, double width, double height, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding, int32_t y_titled, int32_t keeps_bottom, double * out_plot);
 int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len);

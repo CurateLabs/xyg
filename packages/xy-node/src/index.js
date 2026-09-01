@@ -260,6 +260,7 @@ export {
   continuousDomain,
   sizeRangeAdmit,
   arrayIsCategorical,
+  realNumericDtypeAdmit,
   directRgbaAdmit,
   resolveColorChannel,
 } from "./color.js";

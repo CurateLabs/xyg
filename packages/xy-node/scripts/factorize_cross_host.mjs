@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit, arrayIsCategorical } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit, arrayIsCategorical, realNumericDtypeAdmit } from "../src/color.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -293,6 +293,20 @@ for (const spec of fixture.cases) {
         spec.object_real_numeric,
       ),
     });
+    continue;
+  }
+  if (spec.kind === "real_numeric_dtype_admit") {
+    try {
+      realNumericDtypeAdmit(spec.dtype_kind.codePointAt(0));
+      out.push({ name: spec.name, ok: true });
+    } catch (err) {
+      const msg = String(err?.message ?? err);
+      out.push({
+        name: spec.name,
+        ok: false,
+        error: msg.includes("boolean") ? "boolean" : "complex",
+      });
+    }
     continue;
   }
   if (spec.kind === "stringlike") {
