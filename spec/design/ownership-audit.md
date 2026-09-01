@@ -295,10 +295,10 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | Check | Result |
 | --- | --- |
 | `verify_ownership.py` | 228 tracked production files classified |
-| `abi_smoke.py` | 491 ABI checks passed |
-| `audit_python_host_core.py` | 11 `python-scene-migration` files; ~19.8k lines; delegate hooks rising as hosts call ABI 316-325 materialize entry points |
+| `abi_smoke.py` | 557 ABI checks passed |
+| `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` 6414, `_raster.py` 3652, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1263.
+Top remaining line counts (secondary section 302): `_svg.py` 6414, `_raster.py` 3652, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231.
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -801,10 +801,10 @@ Forbidden:
 | `python/xyg/_textblock.py` | Python host | `python-host` | `keep-host`; ABI 125 packer plus a pass-scoped measurement cache | — |
 | `python/xyg/_trace.py` | Python host | `python-host` | `keep-host`; ABI 122 owns the density/M4 threshold decision; this module packs kind/force/per-item onto `payload_tier` | — |
 | `python/xyg/_typing.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_validate.py` | Python host | `python-host` | `keep-host`; `resolved_hex_paint` / `_resolved_rgb` quantize css_check 0-1 through ABI 251 | — |
+| `python/xyg/_validate.py` | Python host | `python-host` | `keep-host`; `resolved_hex_paint` quantizes css_check 0-1 through ABI 251; `colormap_stops` delegates to ABI 349 | — |
 | `python/xyg/_webp.py` | Python host | `python-host` | `keep-host`; ABI 114 moves lossless WebP encode into Rust; this module only coerces a NumPy array | #274 |
 | `python/xyg/channel.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 213 owns CSS/numeric split, domain pad, and direct RGBA admit; ABI 251 owns clip-quantize u8; 256-texel LUT uses ABI 343; `quantize_unit_u8` / `_quantized_lut_idx` use ABI 341; `palette_rows_rgba8` uses ABI 342; `resolve_style_channel` admits finite arrays through ABI 248; fixed-width and string-like object categoricals route through native factorize/remap; ABI 330 owns label-policy sort/index/codes after `category_label`; ABI 331 owns native-probe eligibility; ABI 332 owns `category_label` canonicalization; ABI 333 owns object-column stringlike probe; ABI 337 owns object-column real-numeric probe; ABI 338 owns sorted display-label remap after native fixed factorize; ABI 340 owns fold_codes_u8; browser-only palette warnings stay host | #58 |
+| `python/xyg/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 213 owns CSS/numeric split, domain pad, and direct RGBA admit; ABI 251 owns clip-quantize u8; 256-texel LUT uses ABI 343; `quantize_unit_u8` / `_quantized_lut_idx` use ABI 341; `palette_rows_rgba8` uses ABI 342; `resolve_style_channel` admits finite arrays through ABI 248; fixed-width and string-like object categoricals route through native factorize/remap; ABI 330 owns label-policy sort/index/codes after `category_label`; ABI 331 owns native-probe eligibility; ABI 332 owns `category_label` canonicalization; ABI 333 owns object-column stringlike probe; ABI 337 owns object-column real-numeric probe; ABI 338 owns sorted display-label remap after native fixed factorize; ABI 340 owns fold_codes_u8; ABI 347 owns categorical palette repeat and palette-map resolve; ABI 348 owns `resolve_direct_rgba` sampling; ABI 349 owns `resolve_colormap` custom-stop resolve; browser-only palette warnings stay host | #58 |
 | `python/xyg/columns.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/components.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/config.py` | Python host | `python-host` | `keep-host` | — |
