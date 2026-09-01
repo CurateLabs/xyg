@@ -336,6 +336,19 @@ def category_label(value: Any) -> str:
     return str(value)
 
 
+def _object_column_is_stringlike(arr: np.ndarray) -> bool:
+    """True when every row is missing or a string/bytes value."""
+    if arr.dtype != object:
+        return False
+    for value in arr:
+        if _is_missing_category(value):
+            continue
+        if isinstance(value, (str, bytes, np.str_, np.bytes_)):
+            continue
+        return False
+    return True
+
+
 def _category_code_dtype(category_count: int) -> type[np.uint8] | type[np.uint32]:
     return np.uint8 if category_count <= MAX_CATEGORIES else np.uint32
 
@@ -387,6 +400,8 @@ def _factorize_categories(
     without creating N Python objects; only their compact unique set crosses the
     label-policy path.
     """
+    if arr.dtype == object and _object_column_is_stringlike(arr):
+        arr = np.asarray([category_label(value) for value in arr], dtype=np.str_)
     if arr.dtype.kind in ("U", "S", "b", "u", "i") and _use_native_fixed_factorizer(arr):
         compact = (
             kernels.factorize_unicode1_u8_counts(arr, MAX_CATEGORIES)

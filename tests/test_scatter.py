@@ -230,6 +230,19 @@ def test_numeric_string_object_color_stays_categorical():
     assert c.categories == ["(missing)", "1", "2"]
 
 
+def test_stringlike_object_color_uses_native_factorizer() -> None:
+    rng = np.random.default_rng(2)
+    categories = np.asarray([f"group-{i:03d}" for i in range(400)])
+    labels = categories[rng.integers(0, len(categories), size=15_000)]
+    object_labels = labels.astype(object)
+    assert ch._object_column_is_stringlike(object_labels)
+    native_cats, native_codes, native_counts = ch._factorize_categories(object_labels)
+    plain_cats, plain_codes, plain_counts = ch._factorize_categories(labels)
+    assert native_cats == plain_cats
+    np.testing.assert_array_equal(native_codes, plain_codes)
+    assert native_counts is None and plain_counts is None
+
+
 def test_color_bad_length():
     with pytest.raises(ValueError, match="length 10"):
         ch.resolve_color(np.arange(5.0), 10, default_constant="#000")
