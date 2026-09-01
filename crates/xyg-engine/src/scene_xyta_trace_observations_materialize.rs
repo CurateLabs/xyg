@@ -8,8 +8,8 @@ use crate::colormap::colormap_named_stops;
 use crate::css;
 use crate::density_emit::density_mean_color_wire_admit;
 use crate::kernels::{
-    clip_quantize_u8, scene_heatmap_shape_admit, scene_item_apply_opacity, scene_item_fill_t,
-    scene_item_widths_admit, scene_xyta_colormap_pack,
+    clip_quantize_u8, quantize_unit_u8_into, scene_heatmap_shape_admit, scene_item_apply_opacity,
+    scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack,
 };
 use crate::scene_pack_orchestrate::XytaTraceDispatchPlan;
 
@@ -177,14 +177,8 @@ fn palette_rows_rgba8(palette: &[&str], rows: usize) -> Vec<u8> {
 }
 
 fn quantize_unit_u8(values: &[f64], lo: f64, hi: f64) -> Option<Vec<u8>> {
-    if values.is_empty() {
-        return Some(Vec::new());
-    }
-    let mut scratch = vec![0.0f32; values.len()];
-    crate::kernels::normalize_f32_into(values, lo, hi, 0.0, &mut scratch);
-    let unit: Vec<f64> = scratch.iter().map(|v| f64::from(*v)).collect();
     let mut out = vec![0u8; values.len()];
-    if clip_quantize_u8(&unit, &mut out) == 0 {
+    if quantize_unit_u8_into(values, lo, hi, &mut out) == 0 {
         return None;
     }
     Some(out)

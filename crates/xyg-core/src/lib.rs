@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 340;
+pub const ABI_VERSION: u32 = 341;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10149,6 +10149,39 @@ pub unsafe extern "C" fn xyg_clip_quantize_u8(
             std::slice::from_raw_parts_mut(out, out_len)
         };
         kernels::clip_quantize_u8(values, out)
+    })
+}
+
+/// Normalize over `[lo, hi]` then clip-quantize to u8.
+///
+/// Returns `1` on success, `0` on invalid buffers, and `-2` on null pointers
+/// when lengths are nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_quantize_unit_u8(
+    values: *const f64,
+    values_len: usize,
+    lo: f64,
+    hi: f64,
+    out: *mut u8,
+) -> i32 {
+    if values_len > 0 && values.is_null() {
+        return -2;
+    }
+    if values_len > 0 && out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if values_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, values_len)
+        };
+        let out = if values_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, values_len)
+        };
+        kernels::quantize_unit_u8_into(values, lo, hi, out)
     })
 }
 

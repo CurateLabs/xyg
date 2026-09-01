@@ -17,6 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
+import { quantizeUnitU8 } from "../src/color.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = join(ROOT, "tests", "fixtures", "factorize_cross_host.json");
@@ -130,6 +131,18 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       folded: [...folded],
+    });
+    continue;
+  }
+  if (spec.kind === "quantize_unit_u8") {
+    const values = Float64Array.from(
+      (spec.values ?? []).map((value) => (value == null ? Number.NaN : Number(value))),
+    );
+    const domain = spec.domain ?? [0, 1];
+    const quantized = quantizeUnitU8(values, Number(domain[0]), Number(domain[1]));
+    out.push({
+      name: spec.name,
+      quantized: [...quantized],
     });
     continue;
   }

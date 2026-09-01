@@ -38,7 +38,14 @@ def _node_bin() -> str:
 
 
 def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
-    if spec["kind"] in ("probe", "stringlike", "real_numeric", "fixed_probe", "fold_codes_u8"):
+    if spec["kind"] in (
+        "probe",
+        "stringlike",
+        "real_numeric",
+        "fixed_probe",
+        "fold_codes_u8",
+        "quantize_unit_u8",
+    ):
         raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
     if spec["kind"] == "uint8":
         arr = np.asarray(spec["values"], dtype=np.uint8)
@@ -94,15 +101,33 @@ def _python_fold_codes_case(spec: dict) -> list[int]:
     return folded.tolist()
 
 
+def _python_quantize_unit_case(spec: dict) -> list[int]:
+    values = np.asarray(
+        [float("nan") if value is None else float(value) for value in spec["values"]],
+        dtype=np.float64,
+    )
+    domain = (float(spec["domain"][0]), float(spec["domain"][1]))
+    return ch.quantize_unit_u8(values, domain).tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
     for c in FIXTURE_CASES
-    if c["kind"] not in ("probe", "stringlike", "real_numeric", "fixed_probe", "fold_codes_u8")
+    if c["kind"]
+    not in (
+        "probe",
+        "stringlike",
+        "real_numeric",
+        "fixed_probe",
+        "fold_codes_u8",
+        "quantize_unit_u8",
+    )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
 FIXED_PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fixed_probe"]
 FOLD_CODES_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fold_codes_u8"]
+QUANTIZE_UNIT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "quantize_unit_u8"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -157,6 +182,13 @@ def test_fold_codes_u8_cross_host(spec: dict, node_results: dict[str, dict]) -> 
     folded = _python_fold_codes_case(spec)
     node = node_results[spec["name"]]
     assert folded == node["folded"]
+
+
+@pytest.mark.parametrize("spec", QUANTIZE_UNIT_CASES, ids=lambda s: s["name"])
+def test_quantize_unit_u8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    quantized = _python_quantize_unit_case(spec)
+    node = node_results[spec["name"]]
+    assert quantized == node["quantized"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

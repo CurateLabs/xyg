@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 340;
-export const SIGNATURE_SHA256 = "de040f91004f768f979479a80a8e40b5b4e64ec9e7642be8079026f0a850de25";
+export const ABI_VERSION = 341;
+export const SIGNATURE_SHA256 = "3edb691ac7fda0cbea775f4acaab6128803c2eaf6d7bf577049fdf28a60f9f3c";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -224,6 +224,7 @@ export let xyPyramidFree;
 export let xyPyramidSpill;
 export let xyQuadMeshTriangles;
 export let xyQuantiles;
+export let xyQuantizeUnitU8;
 export let xyRangeIndices;
 export let xyRangeIndicesRows;
 export let xyRasterize;
@@ -673,6 +674,7 @@ export function bindGeneratedAbi(lib) {
   xyPyramidSpill = lib.func("uint64_t xyg_pyramid_spill(uint64_t handle)");
   xyQuadMeshTriangles = lib.func("size_t xyg_quad_mesh_triangles(const double * x, size_t x_len, const double * y, size_t y_len, const double * values, size_t cell_rows, size_t cell_cols, uint32_t layout, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)");
   xyQuantiles = lib.func("size_t xyg_quantiles(const double * data, size_t len, const double * probs, size_t n_probs, double * out)");
+  xyQuantizeUnitU8 = lib.func("int32_t xyg_quantize_unit_u8(const double * values, size_t values_len, double lo, double hi, uint8_t * out)");
   xyRangeIndices = lib.func("size_t xyg_range_indices(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out)");
   xyRangeIndicesRows = lib.func("size_t xyg_range_indices_rows(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out)");
   xyRasterize = lib.func("int32_t xyg_rasterize(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h)");

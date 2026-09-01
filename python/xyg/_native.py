@@ -9400,6 +9400,30 @@ def clip_quantize_u8(values: npt.ArrayLike) -> npt.NDArray[np.uint8]:
     return out
 
 
+def quantize_unit_u8(
+    values: npt.NDArray[np.float64],
+    domain: tuple[float, float],
+) -> npt.NDArray[np.uint8]:
+    """Normalize over ``domain`` and quantize to u8 (normalize + ABI 251)."""
+    arr = _as_f64(values, "quantize_unit_u8")
+    lo, hi = domain
+    out = np.empty(arr.size, dtype=np.uint8)
+    code = int(
+        _lib.xyg_quantize_unit_u8(
+            _ptr_f64(arr) if arr.size else 0,
+            int(arr.size),
+            float(lo),
+            float(hi),
+            _ptr_u8(out) if out.size else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid quantize-unit-u8 request")
+    if code != 1:
+        raise ValueError("invalid quantize-unit-u8 request")
+    return out
+
+
 def histogram_uniform(
     data: npt.NDArray[np.float64],
     lo: float,

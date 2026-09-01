@@ -35,6 +35,7 @@ css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
+quantize_unit_u8 = _impl.quantize_unit_u8
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -480,6 +481,7 @@ __all__ = [
     "pyramid_spill",
     "quad_mesh_triangles",
     "quantiles",
+    "quantize_unit_u8",
     "range_indices",
     "range_indices_rows",
     "rasterize",

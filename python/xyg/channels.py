@@ -760,17 +760,8 @@ def quantize_unit_u8(values: npt.NDArray[np.float64], domain: tuple[float, float
     value is only ever a GPU LUT/ramp coordinate (a colormap texture has 256
     texels; a size ramp spans ~16 px) and is never read back into a displayed
     number — 75% less traffic than f32, same rendered output (§29).
-
-    Chunk-bounded like the other quantizers (`_QUANTIZE_CHUNK`): normalize
-    stays ABI ``normalize_f32``; clip × 255 ties-to-even is ABI 251
-    ``xyg_clip_quantize_u8``. Bytes match the one-shot chain while the
-    transient stays independent of N."""
-    out = np.empty(len(values), dtype=np.uint8)
-    for start in range(0, len(values), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        unit = np.asarray(normalize_to_unit(values[start:end], domain), dtype=np.float64)
-        out[start:end] = kernels.clip_quantize_u8(unit)
-    return out
+    """
+    return kernels.quantize_unit_u8(np.ascontiguousarray(values, dtype=np.float64), domain)
 
 
 def colormap_lut_rgba8(colormap: Colormap) -> npt.NDArray[np.uint8]:

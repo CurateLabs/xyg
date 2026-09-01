@@ -927,6 +927,14 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
     lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_quantize_unit_u8.restype = ctypes.c_int32
+    lib.xyg_quantize_unit_u8.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -4407,6 +4415,37 @@ def main() -> None:
         == 1
         and nan_out[0] == 0,
         "clip_quantize_u8 nan",
+    )
+    unit_in = array("d", [0.0, 5.0, 10.0])
+    unit_out = array("B", [0] * 3)
+    ok(
+        lib.xyg_quantize_unit_u8(
+            _ptr(unit_in, ctypes.c_double),
+            len(unit_in),
+            0.0,
+            10.0,
+            _ptr(unit_out, ctypes.c_uint8),
+        )
+        == 1
+        and list(unit_out) == [0, 128, 255],
+        "quantize_unit_u8 basic",
+    )
+    ok(
+        lib.xyg_quantize_unit_u8(null_f64, 0, 0.0, 1.0, null_u8) == 1,
+        "quantize_unit_u8 empty",
+    )
+    bad_domain_out = array("B", [99])
+    ok(
+        lib.xyg_quantize_unit_u8(
+            _ptr(array("d", [1.0]), ctypes.c_double),
+            1,
+            5.0,
+            5.0,
+            _ptr(bad_domain_out, ctypes.c_uint8),
+        )
+        == 1
+        and list(bad_domain_out) == [0],
+        "quantize_unit_u8 bad domain",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

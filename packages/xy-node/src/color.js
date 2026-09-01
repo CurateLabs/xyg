@@ -3,8 +3,8 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8 } from "./native.js";
-import { DEFAULT_PALETTE, normalizeF32 } from "./encode.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8 } from "./native.js";
+import { DEFAULT_PALETTE } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
 function u8Ptr(view) {
@@ -178,14 +178,18 @@ export function clipQuantizeU8(values) {
   return out;
 }
 
-/** Normalize over `[lo, hi]` then ABI 251 clip-quantize (Python `quantize_unit_u8`). */
+/** Normalize over `[lo, hi]` then ABI 341 clip-quantize (Python `quantize_unit_u8`). */
 export function quantizeUnitU8(values, lo, hi) {
   const n = values == null ? 0 : values.length;
-  if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo) {
-    return new Uint8Array(n);
+  const out = new Uint8Array(n);
+  if (n === 0) {
+    return out;
   }
-  const unit = normalizeF32(values, lo, hi, { nanMode: "zero" });
-  return clipQuantizeU8(Float64Array.from(unit));
+  const src = values instanceof Float64Array ? values : Float64Array.from(values);
+  const code = xyQuantizeUnitU8(f64Ptr(src), BigInt(n), lo, hi, u8Ptr(out));
+  if (code === -2) throw new RangeError("invalid quantize-unit-u8 request");
+  if (code !== 1) throw new RangeError("invalid quantize-unit-u8 request");
+  return out;
 }
 
 function flattenRgbRows(raw, n) {

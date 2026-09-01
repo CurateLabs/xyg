@@ -8379,6 +8379,37 @@ pub fn clip_quantize_u8(values: &[f64], out: &mut [u8]) -> i32 {
     1
 }
 
+fn domain_increasing_finite(lo: f64, hi: f64) -> bool {
+    lo.is_finite() && hi.is_finite() && hi > lo
+}
+
+/// Normalize over `[lo, hi]` then clip-quantize to u8 (ABI 251 compose).
+///
+/// Matches Python `channels.quantize_unit_u8` / Node `quantizeUnitU8`.
+/// Non-finite inputs map to `0` in the unit step; invalid domains write zeros.
+pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -> i32 {
+    if values.len() != out.len() {
+        return 0;
+    }
+    if values.is_empty() {
+        return 1;
+    }
+    if !domain_increasing_finite(lo, hi) {
+        out.fill(0);
+        return 1;
+    }
+    for (value, dest) in values.iter().zip(out.iter_mut()) {
+        let unit = normalize_one_f32(*value, lo, hi, 0.0);
+        let quantized = (f64::from(unit) * 255.0).round_ties_even();
+        *dest = if quantized.is_finite() {
+            quantized as u8
+        } else {
+            0
+        };
+    }
+    1
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -10384,6 +10415,23 @@ mod tests {
         let mut half = [0u8; 1];
         assert_eq!(clip_quantize_u8(&[1.5 / 255.0], &mut half), 1);
         assert_eq!(half, [2]);
+    }
+
+    #[test]
+    fn quantize_unit_u8_matches_host_policy() {
+        let mut out = [0u8; 3];
+        assert_eq!(quantize_unit_u8_into(&[0.0, 5.0, 10.0], 0.0, 10.0, &mut out), 1);
+        assert_eq!(out, [0, 128, 255]);
+        assert_eq!(
+            quantize_unit_u8_into(&[f64::INFINITY], 0.0, 1.0, &mut out[..1]),
+            1
+        );
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[f64::NAN], 0.0, 1.0, &mut out[..1]), 1);
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
     }
 
     #[test]

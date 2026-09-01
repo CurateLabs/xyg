@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 340
-SIGNATURE_SHA256 = "de040f91004f768f979479a80a8e40b5b4e64ec9e7642be8079026f0a850de25"
+ABI_VERSION = 341
+SIGNATURE_SHA256 = "3edb691ac7fda0cbea775f4acaab6128803c2eaf6d7bf577049fdf28a60f9f3c"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -886,6 +886,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_quantiles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_quantize_unit_u8(const double * values, size_t values_len, double lo, double hi, uint8_t * out)
+    function = lib.xyg_quantize_unit_u8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_range_indices(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out)
     function = lib.xyg_range_indices
     function.restype = ctypes.c_size_t

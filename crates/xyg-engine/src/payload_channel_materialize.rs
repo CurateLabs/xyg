@@ -3,7 +3,7 @@
 //! Hosts marshal channel values, optional ``sel``, and ABI 312 wire policy;
 //! Rust gathers, transforms, and returns u8/f32 wire buffers.
 
-use crate::kernels::{clip_quantize_u8, fold_codes_f64_u8, normalize_f32_into};
+use crate::kernels::{clip_quantize_u8, fold_codes_f64_u8, normalize_f32_into, quantize_unit_u8_into};
 use crate::payload_emit::{
     PAYLOAD_CHAN_BUF_F32, PAYLOAD_CHAN_BUF_NONE, PAYLOAD_CHAN_BUF_U8, PAYLOAD_CHAN_MODE_CATEGORICAL,
     PAYLOAD_CHAN_MAX_CATEGORIES_U8, PAYLOAD_CHAN_XFORM_NORMALIZE, PAYLOAD_CHAN_XFORM_NONE,
@@ -129,11 +129,8 @@ pub fn payload_channel_materialize(
         }
         PAYLOAD_CHAN_XFORM_QUANTIZE_U8 => {
             let gathered = gather_f64(values_f64, sel)?;
-            let mut unit = vec![0f32; gathered.len()];
-            normalize_f32_into(&gathered, domain_lo, domain_hi, 0.0, &mut unit);
-            let unit_f64: Vec<f64> = unit.iter().map(|&v| f64::from(v)).collect();
-            let mut out = vec![0u8; unit_f64.len()];
-            if clip_quantize_u8(&unit_f64, &mut out) == 0 {
+            let mut out = vec![0u8; gathered.len()];
+            if quantize_unit_u8_into(&gathered, domain_lo, domain_hi, &mut out) == 0 {
                 return Err(-1);
             }
             out

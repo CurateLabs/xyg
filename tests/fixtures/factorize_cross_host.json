@@ -97,6 +97,24 @@
       "kind": "fold_codes_u8",
       "codes": [],
       "n_palette": 10
+    },
+    {
+      "name": "quantize_unit_u8_basic",
+      "kind": "quantize_unit_u8",
+      "values": [0, 5, 10],
+      "domain": [0, 10]
+    },
+    {
+      "name": "quantize_unit_u8_nonfinite",
+      "kind": "quantize_unit_u8",
+      "values": [null, 0.5],
+      "domain": [0, 1]
+    },
+    {
+      "name": "quantize_unit_u8_bad_domain",
+      "kind": "quantize_unit_u8",
+      "values": [1],
+      "domain": [5, 5]
     }
   ]
 }
