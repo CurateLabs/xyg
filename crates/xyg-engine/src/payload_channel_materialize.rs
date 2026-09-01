@@ -149,16 +149,15 @@ pub fn payload_channel_materialize(
             out
         }
         PAYLOAD_CHAN_XFORM_RAW => {
-            if mode == PAYLOAD_CHAN_MODE_CATEGORICAL && mark_dtype_u8 != 0 {
+            if !values_u8.is_empty() {
+                gather_u8(values_u8, sel)?
+            } else if mode == PAYLOAD_CHAN_MODE_CATEGORICAL && mark_dtype_u8 != 0 {
                 let gathered = gather_f64(values_f64, sel)?;
                 if n_categories <= PAYLOAD_CHAN_MAX_CATEGORIES_U8 {
                     fold_codes_u8(&gathered, n_palette)
                 } else {
-                    let gathered = gather_f64(values_f64, sel)?;
                     gathered.iter().flat_map(|v| v.to_le_bytes()).collect()
                 }
-            } else if !values_u8.is_empty() {
-                gather_u8(values_u8, sel)?
             } else {
                 let gathered = gather_f64(values_f64, sel)?;
                 if buf_kind == PAYLOAD_CHAN_BUF_U8 {
@@ -257,5 +256,28 @@ mod tests {
         assert_eq!(out.buf_kind, PAYLOAD_CHAN_BUF_F32);
         assert_eq!(out.len, 2);
         assert_eq!(out.bytes.len(), 8);
+    }
+
+    #[test]
+    fn categorical_u8_materialize_from_codes() {
+        let codes = [0u8, 1, 0, 1, 0];
+        let out = payload_channel_materialize(
+            PAYLOAD_CHAN_WIRE_ROLE_COLOR,
+            PAYLOAD_CHAN_MODE_CATEGORICAL,
+            2,
+            0,
+            0,
+            0.0,
+            1.0,
+            0,
+            None,
+            &[],
+            &codes,
+        )
+        .unwrap();
+        assert_eq!(out.buf_kind, PAYLOAD_CHAN_BUF_U8);
+        assert_eq!(out.len, 5);
+        assert_eq!(out.bytes, codes);
+        assert_eq!(out.ship_palette, 1);
     }
 }

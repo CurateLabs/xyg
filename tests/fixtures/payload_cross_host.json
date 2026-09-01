@@ -25,9 +25,9 @@
       "kind": "scatter",
       "tier": "direct",
       "n_marks": 3,
-      "payload_blob_len": 24,
-      "payload_blob_sha256": "202195d909001510911deac79229dbad7f356a85b3bad8e54976ce5bbc231c64",
-      "payload_blob_hex": "000080bf000000000000803f000000bf0000003f00000000",
+      "payload_blob_len": 28,
+      "payload_blob_sha256": "049a4f3599c720d214fdd4a7cdd49767f22b3e8b3b90a572a5b92e0cb4cb519e",
+      "payload_blob_hex": "000080bf000000000000803f000000bf0000003f0000000000010000",
       "trace_keys": null
     },
     {
