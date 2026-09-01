@@ -687,6 +687,118 @@ pub fn remap_u8_inplace(values: &mut [u8], mapping: &[u8]) -> bool {
     true
 }
 
+/// Width marker for [`FactorizedDisplayLabels::codes_u8`].
+pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
+/// Width marker for [`FactorizedDisplayLabels::codes_u32`].
+pub const FACTORIZE_DISPLAY_LABELS_CODE_U32: u32 = 4;
+
+/// Sorted unique categories plus per-row codes for the label-policy path.
+///
+/// Matches Python/Node `_factorize_categories` / `factorizeJsArray`: canonical
+/// display labels are sorted lexicographically, then each row maps to its code.
+pub struct FactorizedDisplayLabels {
+    pub categories: Vec<String>,
+    pub code_width: u32,
+    pub codes_u8: Option<Vec<u8>>,
+    pub codes_u32: Option<Vec<u32>>,
+}
+
+fn read_packed_row_labels(label_lens: &[u32], label_texts: &[u8]) -> Option<Vec<String>> {
+    let mut labels = Vec::with_capacity(label_lens.len());
+    let mut offset = 0usize;
+    for &len in label_lens {
+        let len = len as usize;
+        let end = offset.checked_add(len)?;
+        if end > label_texts.len() {
+            return None;
+        }
+        labels.push(std::str::from_utf8(&label_texts[offset..end]).ok()?.to_owned());
+        offset = end;
+    }
+    if !label_lens.is_empty() && offset != label_texts.len() {
+        return None;
+    }
+    Some(labels)
+}
+
+pub fn write_packed_utf8_labels(
+    labels: &[String],
+    out_lens: &mut [u32],
+    out_texts: &mut [u8],
+) -> Option<usize> {
+    if out_lens.len() < labels.len() {
+        return None;
+    }
+    let total: usize = labels.iter().map(|label| label.len()).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut offset = 0usize;
+    for (label, slot) in labels.iter().zip(out_lens.iter_mut()) {
+        let bytes = label.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[offset..offset + bytes.len()].copy_from_slice(bytes);
+        offset += bytes.len();
+    }
+    Some(total)
+}
+
+/// Factorize pre-canonicalized display labels (label-policy categorical path).
+pub fn factorize_display_labels(row_labels: &[&str]) -> Option<FactorizedDisplayLabels> {
+    if row_labels.is_empty() {
+        return Some(FactorizedDisplayLabels {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(Vec::new()),
+            codes_u32: None,
+        });
+    }
+    let categories: std::collections::BTreeSet<&str> =
+        row_labels.iter().copied().collect();
+    let categories: Vec<String> = categories.into_iter().map(str::to_owned).collect();
+    use std::collections::HashMap;
+    let index: HashMap<&str, usize> = categories
+        .iter()
+        .enumerate()
+        .map(|(i, label)| (label.as_str(), i))
+        .collect();
+    if categories.len() <= 256 {
+        let codes: Vec<u8> = row_labels
+            .iter()
+            .map(|label| {
+                u8::try_from(*index.get(label)?).ok()
+            })
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(codes),
+            codes_u32: None,
+        })
+    } else {
+        let codes: Vec<u32> = row_labels
+            .iter()
+            .map(|label| u32::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            codes_u8: None,
+            codes_u32: Some(codes),
+        })
+    }
+}
+
+/// Packed UTF-8 row labels → sorted categories + codes.
+pub fn factorize_display_labels_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+) -> Option<FactorizedDisplayLabels> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    factorize_display_labels(&refs)
+}
+
 /// One-pass statistics for a chunk of a column (§22).
 ///
 /// Non-finite values (NaN and ±∞) count as nulls: neither is plottable, both
@@ -8472,6 +8584,37 @@ mod tests {
             ),
             None,
         );
+    }
+
+    #[test]
+    fn factorize_display_labels_matches_label_policy() {
+        let rows = ["b", "(missing)", "a", "(missing)", "1"];
+        let factored = factorize_display_labels(&rows).expect("mixed labels");
+        assert_eq!(
+            factored.categories,
+            ["(missing)", "1", "a", "b"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(factored.code_width, FACTORIZE_DISPLAY_LABELS_CODE_U8);
+        assert_eq!(factored.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+
+        let empty = factorize_display_labels(&[]).expect("empty");
+        assert!(empty.categories.is_empty());
+        assert_eq!(empty.codes_u8.as_deref(), Some(&[] as &[u8]));
+
+        let many: Vec<String> = (0..300).map(|i| format!("cat-{i:03}")).collect();
+        let refs: Vec<&str> = many.iter().map(String::as_str).collect();
+        let wide = factorize_display_labels(&refs).expect("wide");
+        assert_eq!(wide.categories.len(), 300);
+        assert_eq!(wide.code_width, FACTORIZE_DISPLAY_LABELS_CODE_U32);
+        assert_eq!(wide.codes_u32.as_ref().map(Vec::len), Some(300));
+
+        let lens = [1u32, 9, 1, 9, 1];
+        let texts = b"b(missing)a(missing)1";
+        let packed = factorize_display_labels_packed(&lens, texts).expect("packed");
+        assert_eq!(packed.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
     }
 
     #[test]

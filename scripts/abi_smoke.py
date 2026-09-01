@@ -288,6 +288,20 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_remap_u8.restype = ctypes.c_int32
     lib.xyg_remap_u8.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_factorize_display_labels.restype = ctypes.c_size_t
+    lib.xyg_factorize_display_labels.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -3034,6 +3048,32 @@ def main() -> None:
     ok(
         swapped_count == 4 and list(unicode_codes) == [0, 1, 0, 2, 3],
         "factorize_unicode1_u8_counts swapped endian",
+    )
+    display_lens = array("I", [1, 9, 1, 9, 1])
+    display_texts = array("B", b"b(missing)a(missing)1")
+    display_codes = array("B", [99] * 20)
+    display_width = array("I", [99])
+    display_category_lens = array("I", [99] * 8)
+    display_category_texts = array("B", [0] * 32)
+    display_count = lib.xyg_factorize_display_labels(
+        _ptr(display_lens, ctypes.c_uint32),
+        _ptr(display_texts, ctypes.c_uint8),
+        len(display_texts),
+        5,
+        _ptr(display_codes, ctypes.c_uint8),
+        len(display_codes),
+        _ptr(display_width, ctypes.c_uint32),
+        _ptr(display_category_lens, ctypes.c_uint32),
+        _ptr(display_category_texts, ctypes.c_uint8),
+        len(display_category_texts),
+        8,
+    )
+    ok(display_count == 4 and display_width[0] == 1, "factorize_display_labels mixed-object width")
+    ok(list(display_codes[:5]) == [3, 0, 2, 0, 1], "factorize_display_labels mixed-object codes")
+    cat_blob = bytes(display_category_texts[: sum(display_category_lens[:4])])
+    ok(
+        cat_blob == b"(missing)1ab",
+        "factorize_display_labels sorted categories",
     )
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])

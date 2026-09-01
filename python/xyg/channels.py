@@ -439,14 +439,7 @@ def _factorize_categories(
         return categories, remap[raw_codes], None
 
     labels = [category_label(v) for v in arr.astype(object)]
-    categories = sorted(set(labels))
-    index = {label: i for i, label in enumerate(categories)}
-    codes = np.fromiter(
-        (index[label] for label in labels),
-        dtype=_category_code_dtype(len(categories)),
-        count=len(labels),
-    )
-    return categories, codes, None
+    return (*kernels.factorize_display_labels(labels), None)
 
 
 def _object_array_is_real_numeric(arr: np.ndarray) -> bool:

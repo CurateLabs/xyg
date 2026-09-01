@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 329
-#define XYG_ABI_SIGNATURE_SHA256 "c6d299647c433b74523fb2af4e9cb2845e9b2d5dbf3ec824a44f499e417daccd"
+#define XYG_ABI_VERSION 330
+#define XYG_ABI_SIGNATURE_SHA256 "61f5439236006c58273827626cdd3f20a187c941928535688cf82020e305958a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +97,7 @@ size_t xyg_encode_png(const uint8_t * pixels, size_t n, size_t width, size_t hei
 size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap);
 int32_t xyg_encoded_column_meta(double offset, double lo, double hi, const uint8_t * kind, size_t kind_len, double * out, size_t out_cap);
 int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale);
+size_t xyg_factorize_display_labels(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap);
 size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices);
 size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity);
 size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);

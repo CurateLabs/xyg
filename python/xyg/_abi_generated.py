@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 329
-SIGNATURE_SHA256 = "c6d299647c433b74523fb2af4e9cb2845e9b2d5dbf3ec824a44f499e417daccd"
+ABI_VERSION = 330
+SIGNATURE_SHA256 = "61f5439236006c58273827626cdd3f20a187c941928535688cf82020e305958a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -354,6 +354,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_f32_safe_scale
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_factorize_display_labels(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap)
+    function = lib.xyg_factorize_display_labels
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
     # size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)
     function = lib.xyg_factorize_fixed
     function.restype = ctypes.c_size_t

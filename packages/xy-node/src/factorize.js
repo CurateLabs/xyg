@@ -8,6 +8,7 @@
 import { DEFAULT_PALETTE } from "./encode.js";
 import {
   pointer,
+  xyFactorizeDisplayLabels,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -347,16 +348,65 @@ function factorizeStringlikeJsArray(raw) {
   return factorizeJsArray(labels);
 }
 
-function factorizeJsArray(raw) {
-  const labels = raw.map(categoryLabel);
-  const categories = [...new Set(labels)].sort();
-  const index = new Map(categories.map((label, i) => [label, i]));
-  const codes =
-    categories.length <= MAX_CATEGORIES
-      ? new Uint8Array(labels.length)
-      : new Uint32Array(labels.length);
-  for (let i = 0; i < labels.length; i += 1) {
-    codes[i] = index.get(labels[i]);
+function factorizeDisplayLabelsJs(labels) {
+  const n = labels.length;
+  if (n === 0) {
+    return {
+      mode: "categorical",
+      codes: new Uint8Array(0),
+      categories: [],
+      counts: null,
+      palette: [...DEFAULT_PALETTE],
+    };
+  }
+  const enc = new TextEncoder();
+  const encoded = labels.map((label) => enc.encode(label));
+  const lens = Uint32Array.from(encoded, (bytes) => bytes.length);
+  const texts = new Uint8Array(lens.reduce((sum, len) => sum + len, 0));
+  let offset = 0;
+  for (const bytes of encoded) {
+    texts.set(bytes, offset);
+    offset += bytes.length;
+  }
+  const outCodesRaw = new Uint8Array(n * 4);
+  const codeWidth = new Uint32Array(1);
+  const categoryLensCap = Math.max(n, 256);
+  const categoryLens = new Uint32Array(categoryLensCap);
+  const categoryTextsCap = Math.max(256, texts.length * 2);
+  const categoryTexts = new Uint8Array(categoryTextsCap);
+  const written = xyFactorizeDisplayLabels(
+    u32Ptr(lens),
+    u8Ptr(texts),
+    BigInt(texts.length),
+    BigInt(n),
+    u8Ptr(outCodesRaw),
+    BigInt(outCodesRaw.length),
+    u32Ptr(codeWidth),
+    u32Ptr(categoryLens),
+    u8Ptr(categoryTexts),
+    BigInt(categoryTexts.length),
+    BigInt(categoryLensCap),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("native factorize_display_labels rejected the label array");
+  }
+  const nCategories = Number(written);
+  const categories = [];
+  let textOffset = 0;
+  const dec = new TextDecoder();
+  for (let i = 0; i < nCategories; i += 1) {
+    const len = categoryLens[i];
+    categories.push(dec.decode(categoryTexts.subarray(textOffset, textOffset + len)));
+    textOffset += len;
+  }
+  const width = Number(codeWidth[0]);
+  let codes;
+  if (width === 1) {
+    codes = outCodesRaw.slice(0, n);
+  } else if (width === 4) {
+    codes = new Uint32Array(outCodesRaw.buffer, outCodesRaw.byteOffset, n);
+  } else {
+    throw new RangeError("native factorize_display_labels returned an unknown code width");
   }
   return {
     mode: "categorical",
@@ -365,6 +415,11 @@ function factorizeJsArray(raw) {
     counts: null,
     palette: [...DEFAULT_PALETTE],
   };
+}
+
+function factorizeJsArray(raw) {
+  const labels = raw.map(categoryLabel);
+  return factorizeDisplayLabelsJs(labels);
 }
 
 function materializeTypedLabels(view) {

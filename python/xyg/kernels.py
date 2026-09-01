@@ -153,6 +153,7 @@ factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
 factorize_unicode1_u8_counts = _impl.factorize_unicode1_u8_counts
+factorize_display_labels = _impl.factorize_display_labels
 transition_keys_fixed = _impl.transition_keys_fixed
 m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
@@ -383,6 +384,7 @@ __all__ = [
     "encode_f32",
     "encoded_column_meta",
     "f32_safe_scale",
+    "factorize_display_labels",
     "factorize_fixed",
     "factorize_fixed_u8",
     "factorize_fixed_u8_counts",
