@@ -33,7 +33,7 @@ def test_m2_leftover_spec_points_at_close_contract() -> None:
     assert "not** the M2 close" in leftover
     assert "#731" in leftover
     assert "m2-close.md" in leftover
-    assert "both hosts call the same kernel" in close
+    assert "both hosts calling the same kernel" in close
     assert "#732" in close
     assert "#733" in close
     assert "not an alternate close path" in close
