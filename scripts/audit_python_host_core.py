@@ -176,7 +176,7 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
         "CLOSED — payload cross-host + hexbin colormap XYTA scene-byte goldens green",
     ),
     (
-        "Host materialization retirement (big pushes 1–3, ABI 316–325)",
+        "Host materialization retirement (big pushes 1-3, ABI 316-325)",
         "CLOSED — _payload.py / _scene_v3.py marshal-only; keep-host helpers "
         "_payload_trace_materialize.py / _scene_marshal.py coerce and call Rust",
     ),
