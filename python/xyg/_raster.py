@@ -4,10 +4,9 @@ encode PNG. Browser-free and screen-bounded — the same decimated payload the S
 exporter consumes.
 
 Reuses `_svg`'s layout/scale/tick/colormap math and ABI 121 tessellation
-kernels so the raster matches the SVG (and the live chart). Compatibility
-`_scene.py` wrappers stay for tests; this emitter calls `kernels` directly
-(#310). The one thing the SVG path never needed — a CSS-color → RGBA8 parser
-— lives here, since the browser did that resolution for the SVG/widget.
+kernels so the raster matches the SVG (and the live chart). Shared CSS and
+trace paint resolution live in `_paint.py`. Compatibility `_scene.py`
+wrappers stay for tests; this emitter calls `kernels` directly (#310).
 """
 
 from __future__ import annotations
@@ -23,7 +22,21 @@ import numpy as np
 
 from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
-from ._paint import trace_paint_rgba as _trace_paint_rgba
+from ._paint import (
+    _css,
+)
+from ._paint import (
+    paint_rgba8 as _parse_color,
+)
+from ._paint import (
+    rgba8 as _rgba8,
+)
+from ._paint import (
+    solid_paint as _solid_paint,
+)
+from ._paint import (
+    trace_paint_rgba as _trace_paint_rgba,
+)
 from ._svg import (
     _AXIS,
     _AXIS_GRID_DASHES,
@@ -49,7 +62,6 @@ from ._svg import (
     _column,
     _column_ref,
     _corner_radii,
-    _css,
     _decode_title_geometry,
     _density_column,
     _estimated_text_width,
@@ -62,9 +74,7 @@ from ._svg import (
     _preserve_scene_chrome_for_axis_visibility,
     _px_size,
     _resolve_static_css_vars,
-    _rgba8,
     _Scale,
-    _solid_paint,
     _step_arrays,
     _stroke_opacity,
     _tick_label_anchor,
@@ -87,9 +97,6 @@ from ._svg import (
     slot_styles,
     slot_text_color,
     warp_grid_rgba,
-)
-from ._svg import (
-    _paint_rgba8 as _parse_color,
 )
 
 # Samples per smooth Bézier span when flattening to a polyline (#310 / ABI 121).

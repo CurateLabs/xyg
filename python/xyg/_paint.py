@@ -14,6 +14,47 @@ from .config import DEFAULT_PALETTE
 ColumnReader = Callable[[int], np.ndarray]
 
 
+def _css(c: Any, fallback: str) -> str:
+    """Resolve static colors after chart-level tokens have been expanded."""
+    s = str(c or "").strip()
+    if not s or s.lower() == "currentcolor" or s.lower().startswith("var("):
+        return fallback
+    return s
+
+
+def paint_rgba8(css: Any, opacity: float = 1.0) -> tuple[int, int, int, int]:
+    """Resolve a CSS paint to RGBA8 via ``xyg_css_color_rgba``.
+
+    Same conversion as the compatibility raster exporter and Node
+    ``cssColorRgba8``. Unresolved / browser-only values use the native
+    never-invisible fallback.
+    """
+    return _native.css_color_rgba(str(css), float(opacity))
+
+
+def rgba8(paint: Any) -> np.ndarray:
+    """Format 0-1 RGBA rows as RGBA8 via ABI 251 ``xyg_clip_quantize_u8``."""
+    arr = np.asarray(paint, dtype=np.float64)
+    return np.ascontiguousarray(
+        kernels.clip_quantize_u8(arr.reshape(-1)).reshape(arr.shape), dtype=np.uint8
+    )
+
+
+def solid_paint(css: Any) -> str | None:
+    """A parseable solid CSS color string, or None when unset/unpaintable.
+
+    ``var()`` and gradients are omitted rather than fallback-painted. Fully
+    transparent colors (alpha 0) are pure no-op fills and are omitted as well.
+    """
+    s = _css(css, "")
+    if not s:
+        return None
+    _status, rgba = kernels.css_check(kernels.CSS_COLOR, s)
+    if rgba is None or rgba[3] == 0:
+        return None
+    return s
+
+
 def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:
     """Recover one exterior walk from a connected tessellated polygon.
 
@@ -189,14 +230,6 @@ def effective_rgba(
     return kernels.paint_effective_rgba(rgba, artist, opacity, component_opacity)
 
 
-def _static_css(c: Any, fallback: str) -> str:
-    """Resolve static colors after chart-level tokens have been expanded."""
-    s = str(c or "").strip()
-    if not s or s.lower() == "currentcolor" or s.lower().startswith("var("):
-        return fallback
-    return s
-
-
 def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
     if not isinstance(colormap, str):
         return [(int(r), int(g), int(b)) for r, g, b in colormap]
@@ -235,8 +268,7 @@ def trace_paint_rgba(
     else:
         rgba[:] = (
             np.asarray(
-                _native.css_color_rgba(_static_css(channel.get("color"), fallback)),
-                dtype=np.float64,
+                _native.css_color_rgba(_css(channel.get("color"), fallback)), dtype=np.float64
             )
             / 255.0
         )
