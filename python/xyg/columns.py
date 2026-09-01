@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from . import _ooc, kernels
+from . import _ooc, channels, kernels
 
 ColumnStoreCheckpoint = tuple[int, dict[tuple[int, int, int], int]]
 
@@ -619,8 +619,11 @@ def _canonicalize(data: Any) -> tuple[npt.NDArray[np.float64], str, int]:
                 if "boolean" not in msg
                 else "columns must be real numeric or datetime-like, not boolean"
             ) from exc
-        if arr.dtype == object and any(isinstance(value, (bool, np.bool_)) for value in arr):
-            raise ValueError("columns must be real numeric or datetime-like, not boolean")
+        if arr.dtype == object:
+            if any(isinstance(value, (bool, np.bool_)) for value in arr):
+                raise ValueError("columns must be real numeric or datetime-like, not boolean")
+            if not channels._object_array_is_real_numeric(arr):
+                raise ValueError("columns must be real numeric or datetime-like")
         try:
             arr, copies = _astype_counted(arr, np.float64, copies)
         except (TypeError, ValueError) as e:

@@ -438,7 +438,7 @@ def _factorize_categories(
             return categories, remap[raw_codes.astype(np.intp, copy=False)], None
         return categories, remap[raw_codes], None
 
-    labels = _category_labels(arr.astype(object))
+    labels = _category_labels(arr)
     return (*kernels.factorize_display_labels(labels), None)
 
 
