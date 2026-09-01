@@ -43,6 +43,8 @@ def test_audit_cli_exits_zero():
     assert "Merged payload orchestration on main" in proc.stdout
     assert "Merged scene orchestration on main" in proc.stdout
     assert "Merged payload gather/ship on main" in proc.stdout
+    assert "Merged host materialization retirement" in proc.stdout
+    assert "Host materialization retirement CLOSED" in proc.stdout
     assert "#768" in proc.stdout
     assert "xyg_payload_column_ship_plan" in proc.stdout
     assert "xyg_payload_channel_wire_encode" in proc.stdout
@@ -55,4 +57,5 @@ def test_audit_cli_exits_zero():
     assert "#731 close checklist" in proc.stdout
     assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
+    assert "Residual host materialization" not in proc.stdout
     assert "do not mark M2 complete" not in proc.stdout

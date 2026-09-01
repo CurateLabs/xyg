@@ -1,7 +1,7 @@
 # M2 close contract
 
-**Status:** closed (#731, 2026-08-31). Residual host materialization tracked in
-[`m2-big-pushes.md`](m2-big-pushes.md). Tracker [#731](https://github.com/CurateLabs/xyg/issues/731).
+**Status:** closed (#731, 2026-08-31). Host materialization retirement (ABI 316–325) tracked in
+[`m2-big-pushes.md`](m2-big-pushes.md) — **closed on branch #853**, pending merge to `main`.
 Children: [#732](https://github.com/CurateLabs/xyg/issues/732),
 [#733](https://github.com/CurateLabs/xyg/issues/733).
 GitHub milestone 2 description matches this file.

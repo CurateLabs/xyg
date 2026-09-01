@@ -617,21 +617,23 @@ drift. Hosts still transform axis-scale coordinates, invoke `bin_2d` /
 pyramid compose kernels, ship buffers, and assemble the wire spec.
 ABI 316 `xyg_payload_density_grid_materialize` owns the execution half of
 that grid body (bin2d / pyramid compose, log-u8 encode, optional mean-color
-RGBA, overlay sample selection) after emit-plan policy is resolved. Python
-ABI proof lives in `tests/test_density_grid_materialize_abi.py` (encoded-grid
-SHA golden mirroring the engine test); Node wiring and density cross-host
-grid-buffer SHA in `density_emit_cross_host.json` follow once hosts call the
-316 entry point instead of local `bin_2d` / encode.
-ABI 317 `xyg_scene_xytc_trace_pack` and ABI 318 `xyg_scene_xyta_trace_pack`
-(M2 Push 2) will retire host-side XYTC/XYTA field-byte walks in
-`_scene_v3.py` and `packages/xy-node/src/scene.js`: hosts marshal figure/trace
-inputs only and ship the returned compile/attach fact buffers. Until those
-entry points land, cross-host proof is the checked-in `trace_pack_sha256`
-matrix in `tests/fixtures/figure_scene_v3.json` exercised by
-`tests/test_scene_trace_pack_abi.py` and
-`packages/xy-node/scripts/scene_trace_pack_cross_host.mjs` for scatter, line,
-hexbin, heatmap, ribbon, and triangle mesh (XYTC/XYTA bytes plus the Rust
-XYTR/XYTT compile/attach chain).
+RGBA, overlay sample selection) after emit-plan policy is resolved. Hosts
+marshal observations and ship returned buffers; Python ABI proof lives in
+`tests/test_density_grid_materialize_abi.py`; Node density cross-host grid-buffer
+SHA in `density_emit_cross_host.json`.
+ABI 317 `xyg_scene_xytc_trace_pack`, ABI 318 `xyg_scene_xyta_trace_pack`, ABI
+323 `xyg_scene_xyta_trace_observations_materialize`, and ABI 325
+`xyg_scene_xytc_trace_observations_materialize` (M2 Push 2) retired host-side
+XYTC/XYTA field-byte walks: `_scene_v3.py` and `packages/xy-node/src/scene.js`
+marshal figure/trace inputs via `_scene_marshal.py` / bulk packers and ship
+returned compile/attach fact buffers. Cross-host proof is the checked-in
+`trace_pack_sha256` matrix in `tests/fixtures/figure_scene_v3.json` exercised
+by `tests/test_scene_trace_pack_abi.py` and
+`packages/xy-node/scripts/scene_trace_pack_cross_host.mjs`.
+ABI 321 `xyg_payload_trace_emit_materialize` (M2 payload writer ship) retired
+host-side emit row gathers and channel materialization in `_payload.py`; Python
+`_payload_trace_materialize.py` and Node `payloadTraceMaterialize.js` marshal
+trace observations and ship returned geometry/channel blobs.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot

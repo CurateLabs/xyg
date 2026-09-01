@@ -1,8 +1,6 @@
 # M2 big pushes — host materialization retirement
 
-**Status:** active (2026-08-31). Replaces the field-by-field stay-host TAP cadence for
-the remaining #731 residuals. Orchestration kernels ABI 218–315 are landed; this
-document tracks **execution retirement** only.
+**Status:** closed (2026-09-01). Pushes 1–3 landed on `cursor/m2-payload-writer-ship-7ce1` (PR #853, ABI 316–325). Orchestration kernels ABI 218–315 were already on `main`; this document tracked **execution retirement**, now complete on the branch pending merge.
 
 ## Complete retirement (goal)
 

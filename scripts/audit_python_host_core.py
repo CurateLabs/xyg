@@ -55,6 +55,17 @@ BLOCKER_MAP: dict[str, str] = {
     "python/xyg/channels.py": "color channel resolve / LUT pack",
 }
 
+MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
+    ("#851", "316", "xyg_payload_density_grid_materialize"),
+    ("#851", "317", "xyg_scene_xytc_trace_pack"),
+    ("#851", "318", "xyg_scene_xyta_trace_pack"),
+    ("#853", "319", "xyg_scene_chrome_pack bulk XYCF/XYAF/XYFS"),
+    ("#853", "320", "xyg_payload_channel_materialize"),
+    ("#853", "321", "xyg_payload_trace_emit_materialize"),
+    ("#853", "323", "xyg_scene_xyta_trace_observations_materialize"),
+    ("#853", "325", "xyg_scene_xytc_trace_observations_materialize"),
+)
+
 MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("#640", "254", "xyg_arrow_style_pack", "_arrowgeom._pack_style"),
     ("#641", "255", "xyg_encoded_column_meta", "lod.encode_f32_values meta"),
@@ -150,10 +161,6 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
-        "Residual host materialization",
-        "_payload_trace_materialize marshal glue; _scene_marshal chrome/export walks (XYTC/XYTA field walks: ABI 323/325 done; density grid: ABI 316 done)",
-    ),
-    (
         "Secondary §302",
         "_svg/_raster compat paths, marks/_figure composition, channels label factorization, lod cache wiring",
     ),
@@ -168,7 +175,11 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
         "Cross-host payload + Scene-byte differential proof",
         "CLOSED — payload cross-host + hexbin colormap XYTA scene-byte goldens green",
     ),
-    ("Residual host materialization (_payload emit gathers; _scene_v3 pack walks)", "OPEN"),
+    (
+        "Host materialization retirement (big pushes 1–3, ABI 316–325)",
+        "CLOSED — _payload.py / _scene_v3.py marshal-only; keep-host helpers "
+        "_payload_trace_materialize.py / _scene_marshal.py coerce and call Rust",
+    ),
     ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
 )
@@ -287,22 +298,24 @@ def main(argv: list[str] | None = None) -> int:
         "Merged payload gather/ship on main (#765 -> #770/#732, ABI 310-315, #732 CLOSED):",
         MERGED_PAYLOAD_GATHER_SHIP,
     )
+    _print_stack(
+        "Merged host materialization retirement (#851/#853, ABI 316-325):",
+        MERGED_MATERIALIZATION_RETIREMENT,
+    )
 
     print("M2 close contract (#731 — CLOSED 2026-08-31):")
     print("  - #731 CLOSED: kernelize _payload emit and _scene_v3 pack close contract met.")
     print("  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309).")
+    print("  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315).")
     print(
-        "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315); "
-        "hosts still materialize grids and channel/style rows."
+        "  - Host materialization retirement CLOSED (big pushes 1-3, ABI 316-325): "
+        "_payload.py / _scene_v3.py marshal-only."
     )
     print(
         "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
-        "and gather/ship registry (ABI 310-315) are done."
+        "gather/ship registry (ABI 310-315), and materialization retirement (ABI 316-325) are done."
     )
-    print(
-        "  - Node stay-host TAP (#630-#698) merged on main; follow-on work is cross-host proof "
-        "and residual host materialization."
-    )
+    print("  - Node stay-host TAP (#630-#698) merged on main.")
     print("  - Stay-host TAP extras are inventory, not an alternate close path.")
     print()
 
@@ -321,9 +334,9 @@ def main(argv: list[str] | None = None) -> int:
         f"{total_local} local-orchestration hooks"
     )
     print(
-        "Density grid materialization is kernel-owned (ABI 316). Python remains authoritative "
-        "for emit row gathers, channel row materialization, and residual _scene_v3 pack/unpack. "
-        "XYTC/XYTA trace field walks are kernel-owned (ABI 323/325). "
+        "Density grid materialization is kernel-owned (ABI 316). Payload trace emit and "
+        "Scene trace pack are marshal-only via ABI 321 and ABI 317-318/323/325. "
+        "Keep-host coercion lives in _payload_trace_materialize.py and _scene_marshal.py. "
         "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
         "Scene pack orchestration plans are kernel-owned (#733 closed)."
     )
