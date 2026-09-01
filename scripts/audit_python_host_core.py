@@ -150,12 +150,8 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
-        "Cross-host proof",
-        "payload + Scene-byte differentials (hexbin colormap XYTA/payload goldens green on #852)",
-    ),
-    (
         "Residual host materialization",
-        "_payload emit row gathers + channel rows; residual _scene_v3 pack/unpack (XYTC/XYTA field walks: ABI 323/325 done; density grid: ABI 316 done)",
+        "_payload_trace_materialize marshal glue; _scene_marshal chrome/export walks (XYTC/XYTA field walks: ABI 323/325 done; density grid: ABI 316 done)",
     ),
     (
         "Secondary §302",
@@ -168,7 +164,10 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#732 gather/ship + density grid ship (ABI 310-315)", "CLOSED"),
     ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
     ("Node stay-host TAP #644-#698 serial merge", "CLOSED — merged on main (#630-#698)"),
-    ("Cross-host payload + Scene-byte differential proof", "OPEN — follow-on, not #731 bar"),
+    (
+        "Cross-host payload + Scene-byte differential proof",
+        "CLOSED — payload cross-host + hexbin colormap XYTA scene-byte goldens green",
+    ),
     ("Residual host materialization (_payload emit gathers; _scene_v3 pack walks)", "OPEN"),
     ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
