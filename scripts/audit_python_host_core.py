@@ -29,7 +29,9 @@ DELEGATE_RE = re.compile(
     r"encoded_column_meta|arrow_style_pack|arrow_shapes|scene_channel_constant_css|"
     r"payload_.*_plan|scene_.*_plan|payload_segments_emit_gather|"
     r"payload_trace_channels_ship_attach|payload_transition_entry_attach|"
-    r"payload_column_ship_plan|payload_density_grid_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode)\b"
+    r"payload_column_ship_plan|payload_density_grid_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode|"
+    r"payload_trace_emit_materialize|payload_channel_materialize|scene_chrome_pack|"
+    r"scene_xytc_trace|scene_xyta_trace|scene_.*_materialize)\b"
 )
 
 # Heuristic: likely host-local orchestration (not exhaustive).
@@ -40,8 +42,6 @@ LOCAL_RE = re.compile(
 )
 
 BLOCKER_MAP: dict[str, str] = {
-    "python/xyg/_payload.py": "payload emit orchestration",
-    "python/xyg/_scene_v3.py": "scene_v3 pack / figure-to-record",
     "_arrowgeom.py": "arrow style pack (ABI 254/257 shapes orchestration)",
     "python/xyg/lod.py": "EncodedColumn meta + LOD host cache",
     "python/xyg/marks.py": "marks composition / validation",

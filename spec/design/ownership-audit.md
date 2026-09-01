@@ -296,9 +296,9 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | --- | --- |
 | `verify_ownership.py` | 228 tracked production files classified |
 | `abi_smoke.py` | 491 ABI checks passed |
-| `audit_python_host_core.py` | 13 `python-scene-migration` files; 25 957 lines; 335 delegate hooks; 95 local-orchestration hooks |
+| `audit_python_host_core.py` | 11 `python-scene-migration` files; ~19.8k lines; delegate hooks rising as hosts call ABI 316-325 materialize entry points |
 
-Top remaining line counts: `_svg.py` 6403, `_scene_v3.py` 4258, `_raster.py` 3651, `marks.py` 3340, `_payload.py` 2022.
+Top remaining line counts (secondary section 302): `_svg.py` 6414, `_raster.py` 3652, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1263.
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -772,11 +772,11 @@ Forbidden:
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` stays host joined-fill geometry | #58 |
-| `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-payload-migration` | `keep-host`; thin `build_payload` orchestration delegating to ABI 321 trace materialize and ABI 303 build-plan attach | #58 |
+| `python/xyg/_payload.py` | Python host | `python-host` | `keep-host`; marshal-only `build_payload` delegating to ABI 303 + ABI 321 via `_payload_trace_materialize.py` | — |
 | `python/xyg/_payload_helpers.py` | Python host | `python-payload-migration` | `keep-host`; transition/tooltip attach, visible-mask predicates, binning coords, channel ship delegates | — |
 | `python/xyg/_payload_ship.py` | Python host | `python-payload-migration` | `keep-host`; column registry gather + ship via `payload_column_gather_materialize` (ABI 310/314) | — |
 | `python/xyg/_payload_spec_attach.py` | Python host | `python-payload-migration` | `keep-host`; apply `payload_build_plan` optional top-level spec attach fields (ABI 303) | — |
-| `python/xyg/_payload_trace_materialize.py` | Python host | `python-payload-migration` | `keep-host`; ABI 321 trace emit materialize marshal; host recomputes `shipped_sel` via ABI 205 when summary flags require it | — |
+| `python/xyg/_payload_trace_materialize.py` | Python host | `python-host` | `keep-host`; ABI 321 trace emit materialize marshal | — |
 | `python/xyg/_payload_writer.py` | Python host | `python-payload-migration` | `keep-host`; wire blob + column table accumulator for `build_payload` (§29 ship helpers) | — |
 | `python/xyg/_payload_density.py` | Python host | `python-payload-migration` | `keep-host`; density tier payload helpers: grid ship (ABI 315/316), sample overlay, wasm source attach | — |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
@@ -786,12 +786,12 @@ Forbidden:
 | `python/xyg/_scene.py` | Python host | `python-host` | `keep-host`; ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206 colormap kernels | — |
 | `python/xyg/_scene_annotations.py` | Python host | `python-scene-migration` | `keep-host`; colorbar + XYAF validate/pack delegates | — |
 | `python/xyg/_scene_errors.py` | Python host | `python-scene-migration` | `keep-host`; maps Rust Scene encode errors to Python exceptions for `figure_scene` | — |
-| `python/xyg/_scene_marshal.py` | Python host | `python-scene-migration` | `keep-host`; chrome/export/XYTC/XYTA marshal helpers extracted from `_scene_v3` | — |
+| `python/xyg/_scene_marshal.py` | Python host | `python-host` | `keep-host`; chrome/export/XYTC/XYTA marshal helpers calling ABI 319-325 bulk packers | — |
 | `python/xyg/_scene_observations.py` | Python host | `python-scene-migration` | `keep-host`; trace/figure observation helpers delegating admit/classify to Rust | — |
 | `python/xyg/_scene_sidecars.py` | Python host | `python-scene-migration` | `keep-host`; XYCL/XYNM sidecars and thin ABI pack delegates | — |
 | `python/xyg/_scene_unpack.py` | Python host | `python-scene-migration` | `keep-host`; Scene record unpack helpers for tests and export consumers | — |
 | `python/xyg/_scene_bulk_native.py` | Python host | `python-scene-migration` | `keep-host`; ctypes bindings for scene bulk packers (ABI 321-324) | — |
-| `python/xyg/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `keep-host`; thin `figure_scene` entry + ABI pack delegates (XYTC/XYTA field walks: ABI 323/325 done) | #58 |
+| `python/xyg/_scene_v3.py` | Python host | `python-host` | `keep-host`; marshal-only `figure_scene` entry delegating to `_scene_marshal.py` + Rust encode | — |
 | `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 207 owns polar heatmap inverse-map hits; ABI 209 owns polar wedge flatten; ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; ABI 212 owns authored marker-path scale; `_paint_rgba8` uses `xyg_css_color_rgba`; `_rgb_css` uses ABI 251; authored-scatter marker RGBA8 uses ABI 251; hosts still color sampled cells and emit SVG `A` arcs / `d=` strings | #58 |
 | `python/xyg/_textblock.py` | Python host | `python-host` | `keep-host`; ABI 125 packer plus a pass-scoped measurement cache | — |
