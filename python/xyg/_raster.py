@@ -11,17 +11,16 @@ wrappers stay for tests; this emitter calls `kernels` directly (#310).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from os import PathLike
 from typing import Any, Optional
 
 import numpy as np
 
 from . import _png, _textblock
+from ._export_axis_grid_raster import _raster_axis_grid
 from ._export_baseline_raster import _raster_baselines
 from ._export_chrome import (
     _AXIS,
-    _AXIS_GRID_DASHES,
     _GRID,
     _TEXT,
     apply_export_background,
@@ -35,20 +34,9 @@ from ._export_layout import (
 from ._export_legend_raster import _emit_colorbar, _emit_legend  # noqa: F401
 from ._export_marks_raster import (
     _emit_annotations,  # noqa: F401
-    _emit_area,
-    _emit_bars,
     _emit_grid,  # noqa: F401
-    _emit_hexbin,
-    _emit_line,
-    _emit_rects,
-    _emit_ribbon,
-    _emit_scatter,
-    _emit_segments,
     _emit_text_box,  # noqa: F401
-    _emit_triangle_mesh,
-)
-from ._export_polar_raster import (
-    _emit_polar_grid,
+    _raster_trace_marks,
 )
 from ._export_raster_cmd import (
     _FILL,  # noqa: F401
@@ -169,52 +157,27 @@ def render_raster(
     hide_y = ya.get("tick_label_strategy") == "none"
 
     cmd.clip(px0, py0, plot["w"], plot["h"])
-    if polar is not None:
-        _emit_polar_grid(cmd, polar, xt, yt, xstyle, ystyle, default_grid, hide_x, hide_y)
-    for v in [] if hide_x or polar is not None else xmt:
-        gx = float(sx(v))
-        cmd.stroke(
-            [(gx, py0), (gx, py1)],
-            float(xmstyle.get("grid_width", 1)),
-            _parse_color(
-                _css(xmstyle.get("grid_color"), "transparent"),
-                float(xmstyle.get("grid_opacity", 1.0)),
-            ),
-            dash=_AXIS_GRID_DASHES.get(str(xmstyle.get("grid_dash", "solid"))),
-        )
-    for v in [] if hide_y or polar is not None else ymt:
-        gy = float(sy(v))
-        cmd.stroke(
-            [(px0, gy), (px1, gy)],
-            float(ymstyle.get("grid_width", 1)),
-            _parse_color(
-                _css(ymstyle.get("grid_color"), "transparent"),
-                float(ymstyle.get("grid_opacity", 1.0)),
-            ),
-            dash=_AXIS_GRID_DASHES.get(str(ymstyle.get("grid_dash", "solid"))),
-        )
-    for v in [] if hide_x or polar is not None else xt:
-        gx = float(sx(v))
-        cmd.stroke(
-            [(gx, py0), (gx, py1)],
-            float(xstyle.get("grid_width", 1)),
-            _parse_color(
-                _css(xstyle.get("grid_color"), default_grid),
-                float(xstyle.get("grid_opacity", 1.0)),
-            ),
-            dash=_AXIS_GRID_DASHES.get(str(xstyle.get("grid_dash", "solid"))),
-        )
-    for v in [] if hide_y or polar is not None else yt:
-        gy = float(sy(v))
-        cmd.stroke(
-            [(px0, gy), (px1, gy)],
-            float(ystyle.get("grid_width", 1)),
-            _parse_color(
-                _css(ystyle.get("grid_color"), default_grid),
-                float(ystyle.get("grid_opacity", 1.0)),
-            ),
-            dash=_AXIS_GRID_DASHES.get(str(ystyle.get("grid_dash", "solid"))),
-        )
+    _raster_axis_grid(
+        cmd,
+        polar,
+        sx,
+        sy,
+        xt=xt,
+        yt=yt,
+        xmt=xmt,
+        ymt=ymt,
+        xstyle=xstyle,
+        ystyle=ystyle,
+        xmstyle=xmstyle,
+        ymstyle=ymstyle,
+        default_grid=default_grid,
+        hide_x=hide_x,
+        hide_y=hide_y,
+        px0=px0,
+        py0=py0,
+        px1=px1,
+        py1=py1,
+    )
 
     # Grid/frame chrome is drawn before the shaped clip. Marks then share one
     # analytic annular-sector clip in the native painter, matching SVG's
@@ -222,48 +185,19 @@ def render_raster(
     if polar is not None:
         cmd.polar_clip(polar)
 
-    spec_palette: Sequence[str] = spec.get("palette") or DEFAULT_PALETTE
-    for palette_i, t in enumerate(spec["traces"]):
-        style = t.get("style") or {}
-        color = _css(style.get("color"), spec_palette[palette_i % len(spec_palette)])
-        kind = t["kind"]
-        trace_sx = x_scales.get(t.get("x_axis", "x"), sx)
-        trace_sy = y_scales.get(t.get("y_axis", "y"), sy)
-        if t.get("tier") == "density" and t.get("density"):
-            _emit_grid(cmd, "density", t["density"], blob, cols, trace_sx, trace_sy, style)
-        elif kind == "line":
-            _emit_line(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
-        elif kind in ("area", "error_band"):
-            _emit_area(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
-        elif kind == "scatter":
-            _emit_scatter(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
-        elif kind == "hexbin":
-            _emit_hexbin(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
-        elif kind in {"errorbar", "stem", "box_whisker", "box_median", "contour", "segments"}:
-            _emit_segments(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
-        elif kind in ("bar", "column") and t.get("bar"):
-            _emit_bars(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
-        elif kind == "heatmap" and t.get("heatmap"):
-            _emit_grid(
-                cmd,
-                "heatmap",
-                t["heatmap"],
-                blob,
-                cols,
-                trace_sx,
-                trace_sy,
-                style,
-                borrowed,
-                polar,
-            )
-        elif kind == "triangle_mesh":
-            _emit_triangle_mesh(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
-        elif kind == "ribbon":
-            # MUST precede the rect fall-through: a ribbon ships x0/x1/y0/y1
-            # too, so a later branch would draw every band as a rectangle.
-            _emit_ribbon(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
-        elif all(k in t for k in ("x0", "x1", "y0", "y1")):
-            _emit_rects(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
+    _raster_trace_marks(
+        cmd,
+        spec,
+        blob,
+        cols,
+        plot,
+        sx,
+        sy,
+        x_scales,
+        y_scales,
+        polar,
+        borrowed=borrowed,
+    )
 
     _emit_annotations(cmd, spec.get("annotations") or [], sx, sy, plot, width, height, polar=polar)
 
@@ -338,7 +272,7 @@ def render_raster(
         hide_x=hide_x,
         hide_y=hide_y,
         default_text=default_text,
-        spec_palette=spec_palette,
+        spec_palette=spec.get("palette") or DEFAULT_PALETTE,
     )
 
     w_px, h_px = max(1, round(width * scale)), max(1, round(height * scale))
@@ -352,9 +286,6 @@ def render_raster(
     if fast_png:
         return _native.rasterize_png_spans(cmd.buf, spans, w_px, h_px)
     return _native.rasterize_spans(cmd.buf, spans, w_px, h_px)
-
-
-# Trace kinds whose legend entry is a short line sample (with dash) rather
 
 
 def _export_payload(

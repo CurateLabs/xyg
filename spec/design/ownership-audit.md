@@ -294,11 +294,11 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 | Check | Result |
 | --- | --- |
-| `verify_ownership.py` | 228 tracked production files classified |
+| `verify_ownership.py` | 291 tracked production files classified |
 | `abi_smoke.py` | 557 ABI checks passed |
-| `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
+| `audit_python_host_core.py` | 8 `python-scene-migration` files; ~9.9k lines; 127 delegate hooks through ABI 357 category label kinds |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~420, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_export_marks_raster.py` ~1340, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
+Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~350, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_export_marks_raster.py` ~1430, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_export_axis_grid_raster.py` ~85, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -335,6 +335,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_export_svg_util.py` — shared static-export escape, text metrics, stroke attrs, and annotation text boxes
 - `_export_svg_state.py` — shared static-export mutable SVG document state (`_Svg` gradient registry)
 - `_export_axis_grid_svg.py` — shared static-export Cartesian/polar grid lines and tick labels
+- `_export_axis_grid_raster.py` — shared static-export raster axis grid lines
 - `_export_baseline_svg.py` — shared static-export axis frames and tick marks
 - `_export_chrome_svg.py` — shared static-export titles, axis labels, legends, and colorbar chrome
 - `_export_baseline_raster.py` — shared static-export raster axis frames and tick marks
@@ -800,6 +801,7 @@ Forbidden:
 | `python/xyg/_export_polar_svg.py` | Python host | `python-host` | `keep-host`; shared static-export polar SVG grid, wedge paths, and tick labels for `_svg` | — |
 | `python/xyg/_export_annotations.py` | Python host | `python-host` | `keep-host`; shared static-export annotation placement and axis-title geometry for `_svg`/`_raster` | — |
 | `python/xyg/_export_axis_grid_svg.py` | Python host | `python-host` | `keep-host`; shared static-export axis grid lines and tick labels for `_svg` | — |
+| `python/xyg/_export_axis_grid_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster axis grid lines for `_raster` | — |
 | `python/xyg/_export_baseline_svg.py` | Python host | `python-host` | `keep-host`; shared static-export axis frames and tick marks for `_svg` | — |
 | `python/xyg/_export_chrome_svg.py` | Python host | `python-host` | `keep-host`; shared static-export title/legend/colorbar chrome for `_svg` | — |
 | `python/xyg/_export_annotations_svg.py` | Python host | `python-host` | `keep-host`; shared static-export annotation SVG emit for `_svg` | — |

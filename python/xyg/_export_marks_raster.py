@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Callable, Sequence
+from typing import Any, Optional
 
 import numpy as np
 
@@ -28,7 +28,7 @@ from ._export_raster_cmd import (
     _round_rect_pts,
 )
 from ._fontmetrics import estimated_text_width as _estimated_text_width
-from ._layout import _Scale, affine_fast_path, polar_wedge_points, warp_grid_rgba
+from ._layout import _PolarProjection, _Scale, affine_fast_path, polar_wedge_points, warp_grid_rgba
 from ._paint import (
     _css,
     effective_paint_rgba8,
@@ -94,9 +94,7 @@ from ._paint import (
 from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
-
-if TYPE_CHECKING:
-    from ._layout import _PolarProjection
+from .config import DEFAULT_PALETTE
 
 _png_rgba = _png.png_truecolor
 
@@ -1378,3 +1376,61 @@ def _emit_grid(
         h, w = rgba.shape[0], rgba.shape[1]
     dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
     cmd.image(dx, dy, dw, dh, w, h, rgba.tobytes(), nearest=kind == "heatmap")
+
+
+def _raster_trace_marks(
+    cmd: _Cmd,
+    spec: dict[str, Any],
+    blob: bytes,
+    cols: list[Any],
+    plot: dict[str, float],
+    sx: _Scale,
+    sy: _Scale,
+    x_scales: dict[str, _Scale],
+    y_scales: dict[str, _Scale],
+    polar: Optional[_PolarProjection],
+    *,
+    borrowed: tuple[np.ndarray, ...] = (),
+) -> None:
+    spec_palette: Sequence[str] = spec.get("palette") or DEFAULT_PALETTE
+    for palette_i, t in enumerate(spec["traces"]):
+        style = t.get("style") or {}
+        color = _css(style.get("color"), spec_palette[palette_i % len(spec_palette)])
+        kind = t["kind"]
+        trace_sx = x_scales.get(t.get("x_axis", "x"), sx)
+        trace_sy = y_scales.get(t.get("y_axis", "y"), sy)
+        if t.get("tier") == "density" and t.get("density"):
+            _emit_grid(cmd, "density", t["density"], blob, cols, trace_sx, trace_sy, style)
+        elif kind == "line":
+            _emit_line(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
+        elif kind in ("area", "error_band"):
+            _emit_area(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
+        elif kind == "scatter":
+            _emit_scatter(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
+        elif kind == "hexbin":
+            _emit_hexbin(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+        elif kind in {"errorbar", "stem", "box_whisker", "box_median", "contour", "segments"}:
+            _emit_segments(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
+        elif kind in ("bar", "column") and t.get("bar"):
+            _emit_bars(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
+        elif kind == "heatmap" and t.get("heatmap"):
+            _emit_grid(
+                cmd,
+                "heatmap",
+                t["heatmap"],
+                blob,
+                cols,
+                trace_sx,
+                trace_sy,
+                style,
+                borrowed,
+                polar,
+            )
+        elif kind == "triangle_mesh":
+            _emit_triangle_mesh(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+        elif kind == "ribbon":
+            # MUST precede the rect fall-through: a ribbon ships x0/x1/y0/y1
+            # too, so a later branch would draw every band as a rectangle.
+            _emit_ribbon(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+        elif all(k in t for k in ("x0", "x1", "y0", "y1")):
+            _emit_rects(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)

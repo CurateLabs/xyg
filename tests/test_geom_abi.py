@@ -69,6 +69,7 @@ def test_compatibility_raster_calls_abi_121_kernels_not_scene_wrappers() -> None
     root = Path(__file__).resolve().parents[1]
     raster_modules = (
         "python/xyg/_raster.py",
+        "python/xyg/_export_axis_grid_raster.py",
         "python/xyg/_export_marks_raster.py",
         "python/xyg/_export_raster_cmd.py",
         "python/xyg/_export_baseline_raster.py",
