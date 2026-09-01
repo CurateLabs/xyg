@@ -4,7 +4,60 @@
  */
 
 import { cssIsFunctional, resolveColorChannel } from "../color.js";
-import { asF64Array, encodeF32Values, minMax } from "../encode.js";
+import { asF64Array, canonicalScatterColumn, encodeF32Values, minMax } from "../encode.js";
+
+const BUILTIN_SYMBOLS = [
+  "circle",
+  "square",
+  "diamond",
+  "triangle",
+  "cross",
+  "hexagon",
+  "pentagon",
+  "star",
+  "triangle_down",
+  "triangle_left",
+  "triangle_right",
+  "x",
+  "point",
+  "pixel",
+  "thin_diamond",
+  "plus_line",
+  "x_line",
+  "horizontal_line",
+  "vertical_line",
+];
+const SYMBOL_CODES = new Map(BUILTIN_SYMBOLS.map((name, code) => [name, code]));
+
+/** Match Python `_validate.point_symbol` for scatter marker shapes. */
+export function validatePointSymbol(symbol, label = "scatter symbol") {
+  if (typeof symbol !== "string" || !SYMBOL_CODES.has(symbol)) {
+    throw new RangeError(`${label} must be one of ${[...BUILTIN_SYMBOLS].sort().join(", ")}`);
+  }
+  return symbol;
+}
+
+/** Match Python `marks._direct_symbols` for scatter symbol authoring. */
+export function resolveSymbolChannel(symbol, n) {
+  if (symbol == null) {
+    return { symbolValue: "circle", styleChannels: null };
+  }
+  if (typeof symbol === "string") {
+    return { symbolValue: validatePointSymbol(symbol), styleChannels: null };
+  }
+  const values = Array.from(symbol);
+  if (values.length !== n) {
+    throw new RangeError(`scatter symbol array must be 1-D length ${n}, got length ${values.length}`);
+  }
+  const codes = new Uint8Array(n);
+  for (let index = 0; index < n; index += 1) {
+    codes[index] = SYMBOL_CODES.get(validatePointSymbol(values[index], `scatter symbol[${index}]`));
+  }
+  return {
+    symbolValue: "circle",
+    styleChannels: { symbol: { values: codes, dtype: "u8" } },
+  };
+}
 
 /** Match Python `marks._stroke_channel` for scatter stroke authoring. */
 export function resolveStrokeChannel(stroke, n) {
@@ -69,8 +122,10 @@ export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
  * @returns {{traces: object[]}}
  */
 export function composeScatter(x, y, opts = {}) {
-  const xa = asF64Array(x, "x");
-  const ya = asF64Array(y, "y");
+  const xCol = canonicalScatterColumn(x, "x");
+  const yCol = canonicalScatterColumn(y, "y");
+  const xa = xCol.values;
+  const ya = yCol.values;
   if (xa.length !== ya.length) {
     throw new RangeError("scatter x/y length mismatch");
   }
@@ -91,8 +146,30 @@ export function composeScatter(x, y, opts = {}) {
   if (rawStyle.size != null) delete rawStyle.size;
   const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
   if (rawStyle.stroke != null) delete rawStyle.stroke;
+  const symbolInput = opts.symbol ?? rawStyle.symbol ?? "circle";
+  if (rawStyle.symbol != null) delete rawStyle.symbol;
+  const strokeWidthInput = opts.stroke_width ?? opts.strokeWidth ?? rawStyle.stroke_width ?? null;
+  if (rawStyle.stroke_width != null) delete rawStyle.stroke_width;
   const size_ch = opts.size_ch ?? resolveSizeChannel(sizeInput, n, sizeRange);
   const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, n);
+  const { symbolValue, styleChannels: symbolStyleChannels } = resolveSymbolChannel(symbolInput, n);
+  let strokeWidth = strokeWidthInput == null ? 0.0 : Number(strokeWidthInput);
+  if ((strokeValue != null || strokeCh != null) && strokeWidthInput == null) {
+    strokeWidth = 1.0;
+  }
+  let resolvedStrokeCh = strokeCh;
+  if (
+    strokeValue == null
+    && resolvedStrokeCh == null
+    && strokeWidthInput != null
+    && strokeWidth !== 0
+  ) {
+    resolvedStrokeCh = { mode: "match_fill" };
+  }
+  const style_channels = {
+    ...(opts.style_channels ?? {}),
+    ...(symbolStyleChannels ?? {}),
+  };
   return {
     traces: [
       {
@@ -100,13 +177,18 @@ export function composeScatter(x, y, opts = {}) {
         name: opts.name ?? null,
         x: xa,
         y: ya,
+        _xCol: xCol,
+        _yCol: yCol,
         color_ch,
         size_ch,
-        ...(strokeCh != null ? { stroke_ch: strokeCh } : {}),
+        ...(resolvedStrokeCh != null ? { stroke_ch: resolvedStrokeCh } : {}),
+        ...(Object.keys(style_channels).length ? { style_channels } : {}),
         style: normalizeScatterStyle({
           opacity,
           ...rawStyle,
+          ...(symbolValue !== "circle" ? { symbol: symbolValue } : {}),
           ...(strokeValue != null ? { stroke: strokeValue } : {}),
+          ...(strokeWidthInput != null || strokeWidth !== 0 ? { stroke_width: strokeWidth } : {}),
         }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
@@ -139,6 +221,8 @@ export function attachScatter(fig, x, y, opts = {}) {
     id: t.id,
     color_ch: t.color_ch,
     size_ch: t.size_ch,
+    ...(t.stroke_ch != null ? { stroke_ch: t.stroke_ch } : {}),
+    ...(t.style_channels != null ? { style_channels: t.style_channels } : {}),
     forceDensity: t.force_density,
     forceDirect: t.force_direct,
     forcePyramid: t.force_pyramid,

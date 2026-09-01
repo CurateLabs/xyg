@@ -1,0 +1,325 @@
+{
+  "schema": "xyg.payload-chrome-cross-host/v1",
+  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, extra_legends, annotations, and _dom_spec",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "show_legend_default",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "show_legend_false",
+      "show_legend": false,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "legend_loc_upper_right",
+      "show_legend": true,
+      "legend": {
+        "loc": "upper right",
+        "title": "Series"
+      },
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "legend_loc_best",
+      "show_legend": true,
+      "legend": {
+        "loc": "upper right"
+      },
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "title_options_center",
+      "show_legend": true,
+      "legend": null,
+      "title_options": [
+        {
+          "text": "T",
+          "loc": "center",
+          "geometry": 2
+        }
+      ],
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "title_options_defaults",
+      "show_legend": true,
+      "legend": null,
+      "title_options": [
+        {
+          "text": "T",
+          "geometry": 2
+        }
+      ],
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "colorbar_right",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": {
+        "domain": [
+          0.0,
+          1.0
+        ],
+        "stops": [
+          [
+            0.0,
+            [
+              0,
+              0,
+              0,
+              255
+            ]
+          ],
+          [
+            1.0,
+            [
+              255,
+              255,
+              255,
+              255
+            ]
+          ]
+        ],
+        "title": "Scale"
+      },
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "colorbar_bottom_minor",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": {
+        "domain": [
+          0.0,
+          1.0
+        ],
+        "stops": [
+          [
+            0.0,
+            [
+              0,
+              0,
+              0,
+              255
+            ]
+          ],
+          [
+            1.0,
+            [
+              255,
+              255,
+              255,
+              255
+            ]
+          ]
+        ],
+        "side": "bottom",
+        "minor_ticks": true
+      },
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "extra_legends_lower_left",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": [
+        {
+          "loc": "lower left",
+          "title": "Extra"
+        }
+      ],
+      "annotations": null,
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "annotation_text",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": [
+        {
+          "text": "hi",
+          "kind": "text",
+          "x": 0.0,
+          "y": 1.0,
+          "dx": 0.0,
+          "dy": 0.0,
+          "anchor": "start"
+        }
+      ],
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "annotation_rule",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": [
+        {
+          "text": "line",
+          "style": {
+            "color": "#ff0000",
+            "width": 2.0
+          },
+          "kind": "rule",
+          "axis": "x",
+          "value": 1.0
+        }
+      ],
+      "padding": null,
+      "dom": null
+    },
+    {
+      "name": "dom_class_name",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": {
+        "class_name": "root-node"
+      }
+    },
+    {
+      "name": "dom_style",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": {
+        "style": {
+          "width": "100%"
+        }
+      }
+    },
+    {
+      "name": "dom_class_names",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": {
+        "class_names": {
+          "title": "t"
+        }
+      }
+    },
+    {
+      "name": "dom_chrome_styles",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": {
+        "styles": {
+          "title": {
+            "font-size": "18px",
+            "color": "#333333"
+          }
+        }
+      }
+    },
+    {
+      "name": "padding_explicit",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": [
+        8.0,
+        8.0,
+        8.0,
+        8.0
+      ],
+      "dom": null
+    },
+    {
+      "name": "chrome_combined",
+      "show_legend": false,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
+      "padding": null,
+      "dom": {
+        "class_name": "root-node",
+        "class_names": {
+          "canvas": "p"
+        },
+        "style": {
+          "height": "320px"
+        },
+        "styles": {
+          "title": {
+            "font-weight": "bold"
+          }
+        }
+      }
+    }
+  ]
+}

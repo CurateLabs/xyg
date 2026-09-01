@@ -1176,6 +1176,24 @@ export function encodedColumnMeta(offset, lo, hi, kind = null) {
   return { offset: out[0], scale: out[1], hasKind: code === 1 };
 }
 
+/** Canonical scatter column — preserves Column.kind like Python Column ingest. */
+export function canonicalScatterColumn(value, name = "values") {
+  if (value instanceof Column) return value;
+  if (
+    value != null
+    && typeof value === "object"
+    && !ArrayBuffer.isView(value)
+    && value.kind != null
+  ) {
+    const values = value.values != null ? asF64Array(value.values, name) : asF64Array(value, name);
+    return new Column(values, { kind: String(value.kind) });
+  }
+  if (Array.isArray(value) && value.length > 0 && value[0] instanceof Date) {
+    return new Column(Float64Array.from(value, (item) => item.getTime()), { kind: "time_ms" });
+  }
+  return new Column(asF64Array(value, name));
+}
+
 export function asF64Array(value, name = "values") {
   if (value instanceof Float64Array) {
     return value;
@@ -4159,7 +4177,11 @@ export function shipRegistryColumns(entry, trace, pw, columnPlan, arrays, opts =
     const values = arrays[key] ?? arrays[slot];
     let colIdx;
     if (col.shipMethod === "offset") {
-      colIdx = pw.ship(values, trace[slot], { scale: col.shipScale });
+      const slotCol = trace[`_${slot}Col`];
+      const column = slotCol instanceof Column
+        ? slotCol
+        : (trace[slot] instanceof Column ? trace[slot] : new Column(trace[slot]));
+      colIdx = pw.ship(values, column, { scale: col.shipScale });
     } else if (col.shipMethod === "f64") {
       if (typeof pw.shipF64 !== "function") {
         throw new RangeError("payload shipF64 unavailable");
@@ -6003,20 +6025,22 @@ export function densityWasmEligible({
 /**
  * Whether a scatter should use the density tier (Python Trace.use_density).
  * Polar / forceDirect always ship direct; threshold is strict `>` (ABI 122).
- * Boolean `forceDensity` false maps to ABI auto (`-1`), not Python
- * `payload_force_density` False → `0`. Recorded density-tristate stay-host.
+ * Tri-state `forceDensity`: undefined auto (`-1`), true forced on (`1`), false forced off (`0`).
  */
 export function shouldUseDensity(nPoints, {
-  forceDensity = false,
+  forceDensity,
   forceDirect = false,
   coords = "cartesian",
   perItemChannels = false,
 } = {}) {
+  let fd = -1;
+  if (forceDensity === true) fd = 1;
+  else if (forceDensity === false) fd = 0;
   return payloadTier({
     kind: 1,
     nPoints,
     polar: coords === "polar",
-    forceDensity: forceDensity ? 1 : -1,
+    forceDensity: fd,
     forceDirect,
     perItem: perItemChannels,
   }) === 2;

@@ -78,6 +78,18 @@ const cases = [
     fig.line([1, 10], [1, 10]);
     fig.traces[0].id = 40;
   }),
+  caseEntry("line_log_m4_bin_x", (fig) => {
+    const n = 10001;
+    const x = new Float64Array(n);
+    const y = new Float64Array(n);
+    for (let i = 0; i < n; i += 1) {
+      x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+      y[i] = i;
+    }
+    fig.setAxis("x", { type: "log", domain: [1, 100] });
+    fig.line(x, y);
+    fig.traces[0].id = 45;
+  }),
   caseEntry("scatter_log_ship_scale", (fig) => {
     fig.setAxis("x", { type: "log" });
     fig.scatter([1, 10], [1, 10]);
@@ -185,6 +197,11 @@ const cases = [
     fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
     fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 28;
+  }),
+  caseEntry("ribbon_color2_ch", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233", colorTarget: "#445566" });
+    fig.traces[0].color2_ch = { mode: "constant", constant: "#778899" };
+    fig.traces[0].id = 46;
   }),
   caseEntry("segments_stroke_ch", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);

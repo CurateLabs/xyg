@@ -17,6 +17,7 @@
 
 import {
   Column,
+  canonicalScatterColumn,
   DENSITY_GRID,
   DENSITY_SAMPLE_SEED,
   DENSITY_SAMPLE_TARGET,
@@ -81,6 +82,7 @@ import {
 } from "./color.js";
 import {
   xyAutoDomain,
+  xyCssCheck,
   xyFigureAutorange,
   xyRectZeroBaselineFlags,
 } from "./native.js";
@@ -113,9 +115,12 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
+import { validateDomSlots } from "./dom.js";
 import {
+  figureChromeStyles,
   figureSceneV3,
   resolveDensityBinColors,
+  resolveLegendBestLoc,
   scatterPaintChannelNames,
   scaleMap,
   sceneRasterCommands,
@@ -126,8 +131,6 @@ import {
 export { PROTOCOL_VERSION };
 
 const DEFAULT_COLORMAP = "viridis";
-
-let nextTraceId = 1;
 
 function densityColorChannelMeta(trace) {
   const channel = trace.color_ch;
@@ -154,17 +157,84 @@ function densityColorChannelMeta(trace) {
 
 function domSpec(fig) {
   const dom = {};
-  if (fig.class_name) dom.class_name = fig.class_name;
-  if (fig.class_names && Object.keys(fig.class_names).length > 0) {
-    dom.class_names = fig.class_names;
+  const className = optionalText(fig.class_name, "class_name");
+  if (className) dom.class_name = className;
+  const classNames = fig.class_names;
+  if (classNames && Object.keys(classNames).length > 0) {
+    validateDomSlots(classNames, "class_names");
+    dom.class_names = classNames;
   }
+  const chromeStyles = figureChromeStyles(fig) ?? {};
+  validateDomSlots(chromeStyles, "chrome_styles");
   if (fig.style && Object.keys(fig.style).length > 0) {
-    dom.style = fig.style;
+    const style = styleMapping(fig.style, "style");
+    if (Object.keys(style).length > 0) dom.style = style;
   }
+  const styles = {};
+  for (const [slot, slotStyle] of Object.entries(chromeStyles)) {
+    const mapped = styleMapping(slotStyle, `chrome_styles[${JSON.stringify(slot)}]`);
+    if (Object.keys(mapped).length > 0) styles[slot] = mapped;
+  }
+  if (Object.keys(styles).length > 0) dom.styles = styles;
   return Object.keys(dom).length > 0 ? dom : null;
 }
 
-function payloadBuildPlanForFigure(fig, { split, specTraces, dom }) {
+/** Figure-level mark_style spec (Python `_mark_style_spec`). */
+function markStyleSpec(fig) {
+  const spec = {};
+  for (const state of ["hover", "selected", "unselected"]) {
+    const style = fig.mark_style?.[state];
+    if (style != null && typeof style === "object" && Object.keys(style).length > 0) {
+      spec[state] = { ...style };
+    }
+  }
+  return spec;
+}
+
+/** Figure-level interaction spec (Python `_interaction_spec`, simplified pass-through). */
+function interactionSpec(fig) {
+  const interaction = fig.interaction ?? {};
+  const spec = {};
+  for (const name of [
+    "hover",
+    "click",
+    "select",
+    "brush",
+    "crosshair",
+    "navigation",
+    "pan",
+    "zoom",
+    "wheel_zoom",
+    "box_zoom",
+    "zoom_buttons",
+    "double_click_reset",
+    "link_select",
+    "history",
+    "pan_axes",
+    "zoom_axes",
+    "reset_axes",
+    "link_axes",
+    "zoom_limits",
+    "default_drag_action",
+    "link_group",
+  ]) {
+    if (name in interaction) {
+      spec[name] = interaction[name];
+    }
+  }
+  return spec;
+}
+
+/** Chart palette as a positional cycle (Python `Figure.palette_cycle`). */
+function paletteCycle(palette) {
+  if (palette == null) return null;
+  if (typeof palette === "object" && !Array.isArray(palette)) {
+    return Object.values(palette);
+  }
+  return [...palette];
+}
+
+function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations, markStyle, interaction }) {
   const wasmSources = specTraces
     .map((entry) => entry.density?.wasm_source)
     .filter((source) => source != null);
@@ -188,16 +258,16 @@ function payloadBuildPlanForFigure(fig, { split, specTraces, dom }) {
     hasPadding: fig.padding != null,
     hasDom: dom != null,
     hasTooltip: fig.tooltip != null,
-    hasMarkStyle: false,
-    hasInteraction: false,
-    hasAnnotations: false,
+    hasMarkStyle: Object.keys(markStyle).length > 0,
+    hasInteraction: Object.keys(interaction).length > 0,
+    hasAnnotations: annotations.length > 0,
     hasAnimationOptions: fig.animation_options != null,
     hasGraphMeta: fig._graphMeta != null,
   });
 }
 
 function asF64(value) {
-  if (value instanceof Float64Array) return value;// next-trace-id-base stay-host.
+  if (value instanceof Float64Array) return value;
 
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
@@ -416,10 +486,7 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
       if (color != null) entry.color = color;
       shipSizeChannel(entry, trace.size_ch, pw, sel);
     } else if (ch.shipMethod === "color") {
-      const traceSlot = ch.traceSlot === "color2_ch"
-        ? (trace.color_target ?? trace.color2_ch)
-        : trace[ch.traceSlot];
-      const shipped = shipColorChannel(traceSlot, pw, sel);
+      const shipped = shipColorChannel(trace[ch.traceSlot], pw, sel);
       if (shipped != null) entry[key] = shipped;
     } else if (ch.shipMethod === "style") {
       const shipped = shipStyleChannels(trace.style_channels, pw, sel, entry.n_marks);
@@ -541,10 +608,8 @@ export function figureAxisKind(figure, axisId) {
   for (const trace of figure?.traces ?? []) {
     if (axis === "x" && trace.x_axis !== axisId) continue;
     if (axis === "y" && trace.y_axis !== axisId) continue;
-    const col = axis === "x" ? trace.x : trace.y;
-    // Node scatter stores f64, so this time_ms scan is a no-op on typical
-    // Node traces. Python Column.kind can be time_ms. Recorded
-    // scatter-f64-kind stay-host.
+    const col = axis === "x" ? (trace._xCol ?? trace.x) : (trace._yCol ?? trace.y);
+    if (col instanceof Column && col.kind === "time_ms") return "time";
     if (col?.kind === "time_ms") return "time";
   }
   return "linear";
@@ -562,6 +627,14 @@ function columnValues(col) {
   if (ArrayBuffer.isView(col) || Array.isArray(col)) return asF64(col);
   if (col.values != null) return asF64(col.values);
   return asF64(col);
+}
+
+function traceGeometryCol(trace, axis) {
+  const cached = axis === "x" ? trace._xCol : trace._yCol;
+  if (cached instanceof Column) return cached;
+  const col = axis === "x" ? trace.x : trace.y;
+  if (col instanceof Column) return col;
+  return new Column(columnValues(col));
 }
 
 function columnExtent(col) {
@@ -715,6 +788,267 @@ function requireAnnotationObject(annotation) {
     throw new TypeError("annotation must be an object");
   }
   return annotation;
+}
+
+const CSS_DECLARATION = 0;
+
+const CSS_ERROR_REASONS = {
+  [-1]: "is empty",
+  [-2]: "contains an unsafe character (';', '{', '}', '</', or a control character)",
+  [-3]: "has unbalanced quotes or parentheses",
+  [-4]: "is not a valid hex color (use #rgb, #rgba, #rrggbb, or #rrggbbaa)",
+  [-5]: "is not valid color syntax",
+  [-6]: "is not a recognized CSS color name",
+  [-7]: "has an invalid number",
+  [-8]: "has an unknown unit",
+  [-9]: "uses an unknown function",
+  [-10]: "is not a valid CSS property name",
+};
+
+function cssPropertyName(key) {
+  if (key.startsWith("--")) {
+    return `--${key.slice(2).replaceAll("_", "-")}`;
+  }
+  return key.replaceAll("_", "-");
+}
+
+function cssCheck(kind, value, prop = "") {
+  const valueBytes = new TextEncoder().encode(String(value ?? ""));
+  const propBytes = new TextEncoder().encode(String(prop ?? ""));
+  const outRgba = new Float32Array(4);
+  return xyCssCheck(
+    kind,
+    propBytes.length ? u8Ptr(propBytes) : 0,
+    BigInt(propBytes.length),
+    valueBytes.length ? u8Ptr(valueBytes) : 0,
+    BigInt(valueBytes.length),
+    outRgba,
+  );
+}
+
+function cssReason(status) {
+  return CSS_ERROR_REASONS[status] ?? "is not valid CSS";
+}
+
+function finiteScalar(value, label) {
+  if (typeof value === "boolean") {
+    throw new RangeError(`${label} must be a finite real number`);
+  }
+  const out = Number(value);
+  if (!Number.isFinite(out)) {
+    throw new RangeError(`${label} must be finite`);
+  }
+  return out;
+}
+
+function positiveScalar(value, label) {
+  const out = finiteScalar(value, label);
+  if (out <= 0) {
+    throw new RangeError(`${label} must be positive`);
+  }
+  return out;
+}
+
+function opacityScalar(value, label) {
+  const out = finiteScalar(value, label);
+  if (out < 0 || out > 1) {
+    throw new RangeError(`${label} must be between 0 and 1`);
+  }
+  return out;
+}
+
+function optionalText(value, label) {
+  if (value == null || typeof value === "string") {
+    return value;
+  }
+  throw new RangeError(`${label} must be a string or null`);
+}
+
+function requiredText(value, label) {
+  const text = optionalText(value, label);
+  if (text == null || text === "") {
+    throw new RangeError(`${label} must be a non-empty string`);
+  }
+  return text;
+}
+
+function styleMapping(value, label) {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+  }
+  const out = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof key !== "string") {
+      throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+    }
+    if (typeof item === "boolean") {
+      throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+    }
+    if (typeof item === "string") {
+      const status = cssCheck(CSS_DECLARATION, item, cssPropertyName(key));
+      if (status <= 0) {
+        throw new RangeError(`${label}[${JSON.stringify(key)}] ${JSON.stringify(item)} ${cssReason(status)}`);
+      }
+      out[key] = item;
+      continue;
+    }
+    if (typeof item === "number") {
+      if (!Number.isFinite(item)) {
+        throw new RangeError(`${label} numeric values must be finite`);
+      }
+      out[key] = item;
+      continue;
+    }
+    throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+  }
+  return out;
+}
+
+function annotationAxis(axis, label) {
+  if (axis !== "x" && axis !== "y") {
+    throw new RangeError(`${label} must be 'x' or 'y'`);
+  }
+  return axis;
+}
+
+function annotationAnchor(anchor, label) {
+  if (anchor !== "start" && anchor !== "middle" && anchor !== "end") {
+    throw new RangeError(`${label} must be 'start', 'middle', or 'end'`);
+  }
+  return anchor;
+}
+
+function annotationSymbol(symbol, label) {
+  const allowed = new Set(["circle", "square", "diamond", "cross"]);
+  if (!allowed.has(symbol)) {
+    throw new RangeError(`${label} must be one of ${[...allowed].sort().join(", ")}`);
+  }
+  return symbol;
+}
+
+function annotationValue(fig, value, axis, label) {
+  const categories = fig._axis_categories?.[axis];
+  if (typeof value === "string" && categories != null) {
+    const normalized = value.trim();
+    const index = categories.indexOf(normalized);
+    if (index < 0) {
+      throw new RangeError(`${label} category ${JSON.stringify(value)} is not present on the ${axis}-axis`);
+    }
+    return index;
+  }
+  if (typeof value === "string") {
+    throw new RangeError(
+      `${label} must be a finite coordinate; string coordinates require a categorical ${axis}-axis`,
+    );
+  }
+  return finiteScalar(value, label);
+}
+
+function annotationCommon(annotation) {
+  const out = {};
+  const text = optionalText(annotation.text, "annotation text");
+  if (text != null) {
+    out.text = text;
+  }
+  const className = optionalText(annotation.class_name, "annotation class_name");
+  if (className != null) {
+    out.class_name = className;
+  }
+  const rawStyle = annotation.style ?? {};
+  if (rawStyle == null || typeof rawStyle !== "object" || Array.isArray(rawStyle)) {
+    throw new RangeError("annotation style must be a dict[str, str | int | float]");
+  }
+  const filteredStyle = Object.fromEntries(
+    Object.entries(rawStyle).filter(([, item]) => item != null),
+  );
+  const style = styleMapping(filteredStyle, "annotation style");
+  if (Object.prototype.hasOwnProperty.call(style, "label_opacity")) {
+    style.label_opacity = opacityScalar(style.label_opacity, "annotation style label_opacity");
+  }
+  if (Object.keys(style).length > 0) {
+    out.style = style;
+  }
+  return out;
+}
+
+/** Compile authored annotations like Python `Figure._annotation_specs`. */
+function annotationSpecs(fig) {
+  const specs = [];
+  for (const [index, annotation] of (fig.annotations ?? []).entries()) {
+    const kind = annotation.kind;
+    const label = `annotation[${index}]`;
+    if (kind === "rule") {
+      const axis = annotationAxis(annotation.axis, `${label}.axis`);
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "rule",
+        axis,
+        value: annotationValue(fig, annotation.value, axis, `${label}.value`),
+      });
+    } else if (kind === "band") {
+      const axis = annotationAxis(annotation.axis, `${label}.axis`);
+      const start = annotationValue(fig, annotation.start, axis, `${label}.start`);
+      const end = annotationValue(fig, annotation.end, axis, `${label}.end`);
+      if (end <= start) {
+        throw new RangeError(`${label} end must be greater than start`);
+      }
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "band",
+        axis,
+        start,
+        end,
+      });
+    } else if (kind === "text") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "text",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        text: requiredText(annotation.text, `${label}.text`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else if (kind === "marker") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "marker",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        size: positiveScalar(annotation.size ?? 8.0, `${label}.size`),
+        symbol: annotationSymbol(annotation.symbol ?? "circle", `${label}.symbol`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else if (kind === "arrow") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "arrow",
+        x0: annotationValue(fig, annotation.x0, "x", `${label}.x0`),
+        y0: annotationValue(fig, annotation.y0, "y", `${label}.y0`),
+        x1: annotationValue(fig, annotation.x1, "x", `${label}.x1`),
+        y1: annotationValue(fig, annotation.y1, "y", `${label}.y1`),
+      });
+    } else if (kind === "callout") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "callout",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        text: requiredText(annotation.text, `${label}.text`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else {
+      throw new RangeError(
+        `${label} kind must be 'rule', 'band', 'text', 'marker', 'arrow', or 'callout'`,
+      );
+    }
+  }
+  return specs;
 }
 
 function requirePlainObject(value, name) {
@@ -985,6 +1319,20 @@ export class Figure {
     // single validation/packing seam for the bounded Rust-owned annotation
     // contract, so Node cannot acquire a second annotation policy.
     this.annotations = (opts.annotations ?? []).map((annotation) => copyAnnotation(requireAnnotationObject(annotation)));
+    this.extra_legends = opts.extra_legends ?? null;
+    this.frame_sides = opts.frame_sides ?? null;
+    this.export_options = opts.export_options ?? null;
+    this.show_modebar = opts.show_modebar ?? opts.showModebar ?? true;
+    this.show_tooltip = opts.show_tooltip ?? opts.showTooltip ?? true;
+    this.tooltip = opts.tooltip ?? null;
+    this.interaction = opts.interaction ?? {};
+    this.mark_style = opts.mark_style ?? {};
+    this.animation_options = opts.animation_options ?? opts.animationOptions ?? null;
+    this.palette = opts.palette ?? null;
+    this.padding = opts.padding ?? null;
+    this.class_name = opts.class_name ?? opts.className ?? null;
+    this.class_names = opts.class_names ?? opts.classNames ?? {};
+    this.chrome_styles = opts.chrome_styles ?? opts.chromeStyles ?? {};
     this.traces = [];
     this.axis_options = { x: {}, y: {} };
     this._graphMeta = null;
@@ -1106,7 +1454,9 @@ export class Figure {
     );
     if (opts._composed) {
       const rawStyle = { ...(opts.style ?? {}) };
-      const xv = asF64(x);
+      const xCol = canonicalScatterColumn(x, "x");
+      const yCol = canonicalScatterColumn(y, "y");
+      const xv = xCol.values;
       const colorInput = opts.color ?? rawStyle.color ?? null;
       const sizeInput = opts.size ?? rawStyle.size ?? null;
       const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
@@ -1115,13 +1465,13 @@ export class Figure {
       if (rawStyle.stroke != null) delete rawStyle.stroke;
       const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, xv.length);
       this.traces.push({
-        id: opts.id ?? nextTraceId++,
+        id: opts.id ?? this.traces.length,
         kind: "scatter",
         name: opts.name ?? null,
-        // Node scatter stores f64, not Column.kind. Python Column infers
-        // time_ms. Recorded scatter-f64-kind stay-host.
         x: xv,
-        y: asF64(y),
+        y: yCol.values,
+        _xCol: xCol,
+        _yCol: yCol,
         style: normalizeScatterStyle({
           ...rawStyle,
           ...(strokeValue != null ? { stroke: strokeValue } : {}),
@@ -1152,14 +1502,19 @@ export class Figure {
     const fp = forcePyramid ?? t.force_pyramid;
     const ps = pyramidSpill ?? t.pyramid_spill;
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "scatter",
       name: t.name,
       x: t.x,
       y: t.y,
+      ...(t._xCol != null ? { _xCol: t._xCol } : {}),
+      ...(t._yCol != null ? { _yCol: t._yCol } : {}),
       color_ch: opts.color_ch ?? t.color_ch,
       size_ch: opts.size_ch ?? t.size_ch,
       ...((opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {}),
+      ...((opts.style_channels ?? t.style_channels) != null
+        ? { style_channels: opts.style_channels ?? t.style_channels }
+        : {}),
       style: { ...t.style },
       x_axis: t.x_axis,
       y_axis: t.y_axis,
@@ -1175,7 +1530,7 @@ export class Figure {
     const composed = composeLine(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1191,7 +1546,7 @@ export class Figure {
     const composed = composeHistogram(values, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "histogram",
       name: t.name,
       x0: t.x0,
@@ -1210,7 +1565,7 @@ export class Figure {
     const composed = composeArea(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "area",
       name: t.name,
       x: t.x,
@@ -1233,7 +1588,7 @@ export class Figure {
 
   _pushRectTrace(kind, t, opts = {}) {
     const trace = {
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind,
       name: t.name ?? opts.name ?? null,
       x0: t.x0,
@@ -1283,7 +1638,7 @@ export class Figure {
     const t = composed.traces[0];
     // Browser paints ecdf as line + style.step (Python parity).
     this.traces.push({
-      id: opts.id ?? t.id ?? nextTraceId++,
+      id: opts.id ?? t.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1316,7 +1671,7 @@ export class Figure {
     const composed = composeErrorBand(x, lower, upper, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "error_band",
       name: t.name,
       x: t.x,
@@ -1345,7 +1700,7 @@ export class Figure {
     const composed = composeStep(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1361,7 +1716,7 @@ export class Figure {
     const composed = composeStairs(edges, values, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "line",
       name: t.name,
       x: t.x,
@@ -1377,7 +1732,7 @@ export class Figure {
     const composed = composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       ...t,
     });
     return this;
@@ -1395,7 +1750,7 @@ export class Figure {
     for (const t of composed.traces) {
       if (t.kind === "area") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           kind: "area",
           name: t.name,
           x: t.x,
@@ -1407,7 +1762,7 @@ export class Figure {
         });
       } else if (t.kind === "line") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           kind: "line",
           name: t.name,
           x: t.x,
@@ -1423,7 +1778,7 @@ export class Figure {
 
   _pushSegmentTrace(t, opts = {}) {
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: t.kind ?? "segments",
       name: t.name ?? null,
       x0: t.x0,
@@ -1447,7 +1802,7 @@ export class Figure {
     const composed = composeHeatmap(z, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "heatmap",
       name: t.name,
       x: t.x,
@@ -1468,7 +1823,7 @@ export class Figure {
     const composed = composeHexbin(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       kind: "hexbin",
       name: t.name,
       x: t.x,
@@ -1543,7 +1898,7 @@ export class Figure {
     for (const t of composed.traces) {
       if (t.kind === "ribbon") {
         this.traces.push({
-          id: nextTraceId++,
+          id: this.traces.length,
           ...t,
         });
       } else if (t.kind === "segments") {
@@ -1562,7 +1917,7 @@ export class Figure {
     const composed = composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts);
     const t = composed.traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
+      id: opts.id ?? this.traces.length,
       ...t,
     });
     return this;
@@ -1598,7 +1953,6 @@ export class Figure {
     });
     const spec = {};
     if (attach.attachId) spec.id = axisId;
-    if (attach.attachKind) spec.kind = this._axisKind(axisId);
     if (attach.attachLabel) {
       let label = null;
       if (axisId === "x") label = this.x_label ?? null;
@@ -1610,18 +1964,83 @@ export class Figure {
     if (attach.attachSide) {
       spec.side = opts.side ?? (axis === "x" ? "bottom" : "left");
     }
+    if (attach.attachTickSides && opts.tick_sides != null) {
+      spec.tick_sides = [...opts.tick_sides];
+    }
+    if (attach.attachTickLabelSides && opts.tick_label_sides != null) {
+      spec.tick_label_sides = [...opts.tick_label_sides];
+    }
+    if (attach.attachLabelPosition && opts.label_position != null) {
+      spec.label_position = opts.label_position;
+    }
+    if (attach.attachLabelOffset && opts.label_offset != null) {
+      spec.label_offset = opts.label_offset;
+    }
+    if (attach.attachLabelAngle && opts.label_angle != null) {
+      spec.label_angle = opts.label_angle;
+    }
+    if (attach.attachTickLabelAngle && opts.tick_label_angle != null) {
+      spec.tick_label_angle = opts.tick_label_angle;
+    }
+    if (attach.attachTickLabelStrategy && opts.tick_label_strategy != null) {
+      spec.tick_label_strategy = opts.tick_label_strategy;
+    }
+    if (attach.attachTickLabelAnchor && opts.tick_label_anchor != null) {
+      spec.tick_label_anchor = opts.tick_label_anchor;
+    }
+    if (attach.attachTickLabelMinGap && opts.tick_label_min_gap != null) {
+      spec.tick_label_min_gap = opts.tick_label_min_gap;
+    }
+    const kind = this._axisKind(axisId);
     const scale = payloadAxisScale(this, axisId);
+    if (attach.attachKind) spec.kind = kind;
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_values != null) {
+    if (attach.attachConstant && scale === "symlog") {
+      spec.constant = opts.constant ?? 1;
+    }
+    if (attach.attachNonpositive && scale === "log" && opts.nonpositive != null) {
+      spec.nonpositive = opts.nonpositive;
+    }
+    if (attach.attachTicks && opts.tick_values != null) {
       spec.tick_values = [...opts.tick_values];
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.minor_tick_values != null) {
+    if (attach.attachTicks && opts.minor_tick_values != null) {
       spec.minor_tick_values = [...opts.minor_tick_values];
     }
-    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_labels != null) {
+    if (attach.attachTicks && opts.tick_labels != null) {
       spec.tick_labels = [...opts.tick_labels];
+    }
+    if (attach.attachTicks && opts.tick_count != null) {
+      spec.tick_count = opts.tick_count;
+    }
+    if (attach.attachReverse && opts.reverse) {
+      spec.reverse = true;
+    }
+    if (attach.attachDomain && opts.domain != null) {
+      spec.domain = [...opts.domain];
+    }
+    let bounds = opts.bounds ?? null;
+    if (bounds === "data") {
+      // Resolve once on the host so the client receives concrete limits even
+      // when an independent explicit domain sets view0.
+      bounds = this._range(axisId, { useDomain: false });
+    }
+    if (attach.attachBounds && bounds != null) {
+      spec.bounds = [...bounds].sort((a, b) => a - b);
+    }
+    if (attach.attachMinorStyle && opts.minor_style) {
+      spec.minor_style = { ...opts.minor_style };
+    }
+    if (attach.attachStyle && opts.style) {
+      spec.style = { ...opts.style };
+    }
+    if (attach.attachFormat && opts.format != null) {
+      spec.format = opts.format;
+    }
+    if (attach.attachCategories && kind === "category") {
+      spec.categories = [...(this._axis_categories?.[axisId] ?? [])];
     }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
@@ -1642,7 +2061,7 @@ export class Figure {
       }
     }
     if (attach.attachHole) {
-      spec.hole = opts.hole ?? 0.0;
+      spec.hole = opts.hole || 0.0;
       if (attach.attachROrigin && opts.r_origin != null) {
         spec.r_origin = opts.r_origin;
       }
@@ -1749,12 +2168,12 @@ export class Figure {
       }
       return entry;
     }
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
     t._xCol = xCol;
     t._yCol = yCol;
-    let xv = t.x;
-    let yv = t.y;
+    let xv = xCol.values;
+    let yv = yCol.values;
     const sel = this._visibleSel(t, xv, yv, { xCol, yCol });
     if (sel != null) {
       xv = gatherF64(xv, sel);
@@ -1840,27 +2259,27 @@ export class Figure {
     const yAxis = t.y_axis ?? "y";
     const xLinear = payloadAxisScale(this, xAxis) === "linear";
     const yLinear = payloadAxisScale(this, yAxis) === "linear";
-    const xBin = this._binningCoords(xAxis, t.x, xr);
-    const yBin = this._binningCoords(yAxis, t.y, yr);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
+    t._xCol = xCol;
+    t._yCol = yCol;
+    const xBin = this._binningCoords(xAxis, xCol.values, xr);
+    const yBin = this._binningCoords(yAxis, yCol.values, yr);
     const bx = xBin.values;
     const by = yBin.values;
     const bx0 = xBin.b0;
     const bx1 = xBin.b1;
     const by0 = yBin.b0;
     const by1 = yBin.b1;
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
-    t._xCol = xCol;
-    t._yCol = yCol;
-    const xmm = minMax(t.x) ?? xr;
-    const ymm = minMax(t.y) ?? yr;
+    const xmm = minMax(xCol.values) ?? xr;
+    const ymm = minMax(yCol.values) ?? yr;
     const colorMeta = densityColorChannelMeta(t);
     let rangeSel = null;
-    let visible = t.x.length;
+    let visible = xCol.length;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
-      shouldUsePyramid(t.x.length, { forceBin2d })
+      shouldUsePyramid(xCol.length, { forceBin2d })
     ) {
       let cache = this._pyramids.get(t.id);
       if (cache == null) {
@@ -1868,7 +2287,7 @@ export class Figure {
         this._pyramids.set(t.id, cache);
       }
       hasPyramidResource = true;
-      const served = densityViewFromPyramid(cache, t.x, t.y, bx0, bx1, by0, by1, w, h, {
+      const served = densityViewFromPyramid(cache, xCol.values, yCol.values, bx0, bx1, by0, by1, w, h, {
         noRescan,
         forceSpill,
       });
@@ -2045,7 +2464,7 @@ export class Figure {
           t,
           pw,
           wasmColumnPlan,
-          { x: t.x, y: t.y },
+          { x: xCol.values, y: yCol.values },
         );
         density.wasm_source = wasmSource;
       } else if (kind === "tiles") {
@@ -2094,8 +2513,8 @@ export class Figure {
         if (sampleSel != null && sampleSel.length === 0) {
           continue;
         }
-        const sx = sampleSel == null ? t.x : gatherF64(t.x, sampleSel);
-        const sy = sampleSel == null ? t.y : gatherF64(t.y, sampleSel);
+        const sx = sampleSel == null ? xCol.values : gatherF64(xCol.values, sampleSel);
+        const sy = sampleSel == null ? yCol.values : gatherF64(yCol.values, sampleSel);
         if (sx.length > 0) {
           const xAxis = t.x_axis ?? "x";
           const yAxis = t.y_axis ?? "y";
@@ -2163,47 +2582,76 @@ export class Figure {
     this._pyramids.clear();
   }
 
-  _emitLine(t, pw, xr, pxWidth) {
-    let xv = t.x;
-    let yv = t.y;
+  _m4Decimate(t, xr, pxWidth, ...arrays) {
+    const xAxis = t.x_axis ?? "x";
+    const xBin = this._binningCoords(xAxis, arrays[0], xr);
+    const useBin = xBin.values !== arrays[0];
     const { tier: tierCode, indices } = payloadM4Indices({
-      nPoints: xv.length,
-      x: xv,
-      y: yv,
+      nPoints: t.x.length,
+      x: arrays[0],
+      y: arrays[1],
       x0: xr[0],
       x1: xr[1],
       nBuckets: pxWidth,
       polar: this.coords === "polar",
+      binX: useBin ? xBin.values : null,
+      binX0: useBin ? xBin.b0 : 0,
+      binX1: useBin ? xBin.b1 : 0,
     });
-    const decimated = tierCode === 1;
-    let tier = "direct";
-    if (decimated) {    // Recorded emit-line-m4-bin-x stay-host.
-
-      xv = gatherF64(xv, indices);
-      yv = gatherF64(yv, indices);
-      tier = "decimated";
+    if (tierCode === 0) {
+      return { tier: "direct", arrays, indices: null };
     }
-    const xCol = !decimated && t._xCol instanceof Column ? t._xCol : new Column(xv);
-    const yCol = !decimated && t._yCol instanceof Column ? t._yCol : new Column(yv);
-    if (!decimated) {
+    if (indices.length === 0) {
+      return {
+        tier: "decimated",
+        arrays: arrays.map((array) => array.subarray(0, 0)),
+        indices,
+      };
+    }
+    return {
+      tier: "decimated",
+      arrays: arrays.map((array) => gatherF64(array, indices)),
+      indices,
+    };
+  }
+
+  _emitLine(t, pw, xr, pxWidth) {
+    const m4 = this._m4Decimate(t, xr, pxWidth, t.x, t.y);
+    let [xv, yv] = m4.arrays;
+    const tier = m4.tier;
+    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(xv);
+    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    if (tier === "direct") {
       t._xCol = xCol;
       t._yCol = yCol;
+    } else {
+      if (!(t._xCol instanceof Column)) {
+        t._xCol = new Column(t.x);
+      }
+      if (!(t._yCol instanceof Column)) {
+        t._yCol = new Column(t.y);
+      }
     }
     const vis = this._visibleSel(t, xv, yv, {
-      prefiltered: decimated,
+      prefiltered: tier !== "direct",
+      xCol: t._xCol instanceof Column ? t._xCol : new Column(t.x),
+      yCol: t._yCol instanceof Column ? t._yCol : new Column(t.y),
     });
     if (vis != null) {
       xv = gatherF64(xv, vis);
       yv = gatherF64(yv, vis);
     }
-    const shipX = vis == null ? xCol : new Column(xv);
-    const shipY = vis == null ? yCol : new Column(yv);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const basePlan = payloadBaseEntryPlan({
       hasTraceAnimation: t.animation != null,
       nXv: xv.length,
       styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const columnPlan = payloadColumnShipPlan({
+      kind: "line",
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
     });
@@ -2215,11 +2663,10 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: basePlan.nMarks,
-      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
-      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(entry, t, pw, columnPlan, { x: xv, y: yv });
     if (basePlan.attachAnimation) {
       entry.animation = { ...t.animation };
     }
@@ -2637,51 +3084,48 @@ export class Figure {
   }
 
   _emitArea(t, pw, xr, pxWidth) {
-    const { tier: tierCode, indices } = payloadM4Indices({
-      nPoints: t.x.length,
-      x: t.x,
-      y: t.y,
-      x0: xr[0],
-      x1: xr[1],
-      nBuckets: pxWidth,
-      polar: this.coords === "polar",
-    });
-    let xv = t.x;
-    let yv = t.y;
-    let bv = t.base;    // Recorded emit-area-m4-bin-x stay-host.
-
-    let tier = "direct";
-    if (tierCode === 1) {
-      xv = gatherF64(xv, indices);
-      yv = gatherF64(yv, indices);
-      bv = gatherF64(bv, indices);
-      tier = "decimated";
-    }
-    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(xv);
-    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    const m4 = this._m4Decimate(t, xr, pxWidth, t.x, t.y, t.base);
+    let [xv, yv, bv] = m4.arrays;
+    const tier = m4.tier;
+    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(t.x);
+    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(t.y);
     if (tier === "direct") {
       t._xCol = xCol;
       t._yCol = yCol;
+    } else {
+      if (!(t._xCol instanceof Column)) {
+        t._xCol = new Column(t.x);
+      }
+      if (!(t._yCol instanceof Column)) {
+        t._yCol = new Column(t.y);
+      }
     }
-    const baseCol = new Column(bv);
+    if (!(t._baseCol instanceof Column)) {
+      t._baseCol = new Column(t.base);
+    }
     const vis = this._visibleSel(t, xv, yv, {
       base: bv,
-      baseCol: new Column(t.base),
+      baseCol: t._baseCol,
+      xCol: t._xCol,
+      yCol: t._yCol,
+      prefiltered: tier !== "direct",
     });
     if (vis != null) {
       xv = gatherF64(xv, vis);
       yv = gatherF64(yv, vis);
       bv = gatherF64(bv, vis);
     }
-    const shipX = vis == null ? xCol : new Column(xv);
-    const shipY = vis == null ? yCol : new Column(yv);
-    const shipB = vis == null ? baseCol : new Column(bv);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const basePlan = payloadBaseEntryPlan({
       hasTraceAnimation: t.animation != null,
       nXv: xv.length,
       styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const columnPlan = payloadColumnShipPlan({
+      kind: t.kind === "error_band" ? "error_band" : "area",
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
     });
@@ -2693,12 +3137,10 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: basePlan.nMarks,
-      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
-      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
-      base: pw.ship(bv, shipB, { scale: basePlan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(entry, t, pw, columnPlan, { x: xv, y: yv, base: bv });
     if (basePlan.attachAnimation) {
       entry.animation = { ...t.animation };
     }
@@ -2995,15 +3437,16 @@ export class Figure {
           throw new RangeError("line append requires ascending x");
         }
       }
-      const prev = t.x.length === 0 ? Number.NaN : t.x[t.x.length - 1];
+      const prevVals = columnValues(t.x);
+      const prev = prevVals.length === 0 ? Number.NaN : prevVals[prevVals.length - 1];
       if (Number.isFinite(prev) && ax[0] < prev) {
         throw new RangeError(
           `line append must continue the series: new x starts at ${ax[0]}, before the current last x ${prev}`,
         );
       }
     }
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
     xCol.append(ax);
     yCol.append(ay);
     t._xCol = xCol;
@@ -3102,7 +3545,17 @@ export class Figure {
     const wasmSources = specTraces
       .map((entry) => entry.density?.wasm_source)
       .filter((source) => source != null);
-    const buildPlan = payloadBuildPlanForFigure(this, { split, specTraces, dom });
+    const annotations = annotationSpecs(this);
+    const markStyle = markStyleSpec(this);
+    const interaction = interactionSpec(this);
+    const buildPlan = payloadBuildPlanForFigure(this, {
+      split,
+      specTraces,
+      dom,
+      annotations,
+      markStyle,
+      interaction,
+    });
     const spec = {
       protocol: PROTOCOL_VERSION,
       width: this.width,
@@ -3115,7 +3568,6 @@ export class Figure {
       columns: pw.columns,
       backend: "native",
       show_legend: this.show_legend,
-      // spec.title_options. Recorded emit-payload-title-options stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (buildPlan.attachWasmDensity) {
@@ -3137,17 +3589,73 @@ export class Figure {
     if (buildPlan.attachCoords) {
       spec.coords = this.coords;
     }
+    if (buildPlan.attachPalette) {
+      spec.palette = paletteCycle(this.palette);
+    }
     if (buildPlan.attachPadding) {
       spec.padding = [...this.padding];
     }
     if (buildPlan.attachDom) {
       spec.dom = dom;
     }
+    if (buildPlan.attachTitleOptions) {
+      spec.title_options = (this.title_options ?? []).map((entry) => {
+        const packed = { ...entry };
+        const geometryY = packed.y ?? 1.0;
+        const geometryPad = packed.pad ?? 8.0;
+        delete packed.y;
+        delete packed.pad;
+        return {
+          ...packed,
+          geometry: pw.shipScalar(Float32Array.from([geometryY, geometryPad])),
+        };
+      });
+    }
+    if (buildPlan.attachLegend) {
+      let legend = { ...this.legend_options };
+      if (buildPlan.resolveLegendBest) {
+        legend = { ...legend, loc: resolveLegendBestLoc(this) };
+      }
+      spec.legend = legend;
+    }
+    if (buildPlan.attachColorbar) {
+      spec.colorbar = this.colorbar_options;
+    }
+    if (buildPlan.attachExtraLegends) {
+      spec.extra_legends = this.extra_legends;
+    }
+    if (buildPlan.attachFrameSides) {
+      spec.frame_sides = [...this.frame_sides];
+    }
+    if (buildPlan.attachShowModebar) {
+      spec.show_modebar = false;
+    }
+    if (buildPlan.attachExport) {
+      spec.export = this.export_options;
+    }
+    if (buildPlan.attachShowTooltip) {
+      spec.show_tooltip = false;
+    }
+    if (buildPlan.attachTooltip) {
+      spec.tooltip = this.tooltip;
+    }
+    if (buildPlan.attachMarkStyle) {
+      spec.mark_style = markStyle;
+    }
+    if (buildPlan.attachInteraction) {
+      spec.interaction = interaction;
+    }
+    if (buildPlan.attachAnnotations) {
+      spec.annotations = annotations;
+    }
+    if (buildPlan.attachAnimation) {
+      spec.animation = { ...this.animation_options };
+    }
+    if (buildPlan.attachGraph) {
+      spec.graph = this._graphMeta;
+    }
     if (split) {
       spec.buffer_layout = "split";
-    }
-    if (this._graphMeta) {
-      spec.graph = this._graphMeta;
     }
     return {
       spec,

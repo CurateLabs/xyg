@@ -139,13 +139,11 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.throws(() => extraAxis.toScene(), /exactly x\/y/);
 });
 
-test("packChromeAxis skips null unsupported keys unlike Python set-difference", () => {
-  // Python `_pack_chrome_axis` uses set(authored) so None-valued keys still reject.
-  // Node skips null-valued keys. Recorded chrome-null-key stay-host.
+test("packChromeAxis rejects null unsupported keys like Python set-difference", () => {
   const ok = new Figure();
   ok.line([0, 1], [0, 1]);
   ok.setAxis("x", { style: { not_a_key: null } });
-  assert.doesNotThrow(() => ok.toScene());
+  assert.throws(() => ok.toScene(), /does not yet encode/);
   const bad = new Figure();
   bad.line([0, 1], [0, 1]);
   bad.setAxis("x", { style: { not_a_key: "red" } });

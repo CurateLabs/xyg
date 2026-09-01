@@ -935,10 +935,8 @@ test("sourceColorCss uses color_ch only like Python", () => {
   );
 });
 
-test("sourceColorCss empty style.color stays unlike Python or-default", () => {
-  // Python `_trace_source_color_css` uses `.get("color") or "#3987e5"`.
-  // Node `??` keeps the empty string.
-  assert.equal(sourceColorCss({ style: { color: "" } }), "");
+test("sourceColorCss empty style.color falls through like Python or-default", () => {
+  assert.equal(sourceColorCss({ style: { color: "" } }), "#3987e5");
 });
 
 test("color2Channel uses color2_ch only like Python", () => {
@@ -948,10 +946,7 @@ test("color2Channel uses color2_ch only like Python", () => {
   assert.equal(color2Channel({ colorTarget: ch }), null);
 });
 
-test("itemFillRgba8 null style.color uses sourceColorCss unlike Python get", () => {
-  // Python `_item_fill_rgba8` uses style.get("color", default); a None
-  // value stringifies and fail-closes. Node sourceColorCss `??` uses the
-  // default CSS.
+test("itemFillRgba8 null style.color uses style.get default like Python", () => {
   const missing = itemFillRgba8({}, 1);
   const nulled = itemFillRgba8({ style: { color: null } }, 1);
   assert.deepEqual([...nulled], [...missing]);
@@ -974,13 +969,11 @@ test("itemFillRgba8 uses color_ch only like Python", () => {
   assert.deepEqual([...fromCamel], [...fallback]);
 });
 
-test("itemStrokeRgba8 empty style.stroke stays unlike Python or-default", () => {
-  // Python `_item_stroke_rgba8` uses `.get("stroke") or "transparent"`.
-  // Node `??` keeps the empty string, which is not the transparent fallback.
+test("itemStrokeRgba8 empty style.stroke falls through like Python or-default", () => {
   const fills = new Uint8Array([1, 2, 3, 4]);
   const missing = itemStrokeRgba8({}, fills, 1);
   const empty = itemStrokeRgba8({ style: { stroke: "" } }, fills, 1);
-  assert.notDeepEqual([...empty], [...missing]);
+  assert.deepEqual([...empty], [...missing]);
 });
 
 test("itemStrokeRgba8 uses stroke_ch only like Python", () => {
@@ -1245,10 +1238,7 @@ test("sceneHexbinColormapPlaneAdmit matches host table", () => {
 });
 
 
-test("hexbinCellRgba8 null style.color uses sourceColorCss unlike Python get", () => {
-  // Python `_hexbin_cell_rgba8` uses style.get("color", default); a None
-  // value stringifies and fail-closes. Node sourceColorCss `??` uses the
-  // default CSS.
+test("hexbinCellRgba8 null style.color uses style.get default like Python", () => {
   const missing = hexbinCellRgba8({ x: [0] });
   const nulled = hexbinCellRgba8({ x: [0], style: { color: null } });
   assert.deepEqual([...nulled], [...missing]);
@@ -1580,13 +1570,11 @@ test("figureAutorangeAxisScale uses type only like Python _axis_scale", () => {
   assert.equal(figureAutorangeAxisScale({ type: "time" }), "linear");
 });
 
-test("figureAxisKind Node scatter f64 stays linear unlike Python Column.kind", () => {
-  // Python Column infers time_ms. Node scatter() stores f64, so the
-  // time_ms scan is a no-op on typical traces.
+test("figureAxisKind scatter Column.kind time_ms matches Python", () => {
   const fig = figure();
-  fig.scatter([1, 2], [3, 4]);
-  assert.equal(fig.traces[0].x.kind, undefined);
-  assert.equal(figureAxisKind(fig, "x"), "linear");
+  fig.scatter([new Date("2020-01-01"), new Date("2020-01-02")], [3, 4]);
+  assert.equal(fig.traces[0]._xCol.kind, "time_ms");
+  assert.equal(figureAxisKind(fig, "x"), "time");
 });
 
 test("figureAxisKind matches Python _axis_kind", () => {
@@ -1894,10 +1882,8 @@ test("figureXLabel uses x_label then axis label like Python", () => {
   assert.equal(figureXLabel({}, { label: "X" }), "X");
 });
 
-test("figureXLabel empty x_label stays unlike Python or-fallthrough", () => {
-  // Python `_pack_figure_chrome` uses `figure.x_label or axis label`.
-  // Node `??` keeps the empty string.
-  assert.equal(figureXLabel({ x_label: "" }, { label: "X" }), "");
+test("figureXLabel empty x_label falls through like Python or-fallthrough", () => {
+  assert.equal(figureXLabel({ x_label: "" }, { label: "X" }), "X");
 });
 
 test("figureYLabel uses y_label then axis label like Python", () => {
@@ -1907,10 +1893,8 @@ test("figureYLabel uses y_label then axis label like Python", () => {
   assert.equal(figureYLabel({}, { label: "Y" }), "Y");
 });
 
-test("figureYLabel empty y_label stays unlike Python or-fallthrough", () => {
-  // Python `_pack_figure_chrome` uses `figure.y_label or axis label`.
-  // Node `??` keeps the empty string.
-  assert.equal(figureYLabel({ y_label: "" }, { label: "Y" }), "");
+test("figureYLabel empty y_label falls through like Python or-fallthrough", () => {
+  assert.equal(figureYLabel({ y_label: "" }, { label: "Y" }), "Y");
 });
 
 test("plotTopAxisRoom uses top_axis_room only like Python", () => {
@@ -2219,8 +2203,8 @@ test("scatterPacksPaintPlane missing kind matches Python empty not scatter", () 
     true,
   );
   assert.equal(
-    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, forceDirect: true }),
-    true,
+    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, force_density: false }),
+    false,
   );
   assert.equal(
     scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, force_direct: true }),

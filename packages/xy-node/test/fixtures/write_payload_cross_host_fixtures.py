@@ -94,6 +94,17 @@ def main() -> None:
     cases.append(_case("line_log_ship_scale", fig))
 
     fig = Figure(width=240, height=160)
+    n = 10001
+    x = np.empty(n, dtype=np.float64)
+    y = np.arange(n, dtype=np.float64)
+    x[:9000] = 1.0 + np.arange(9000, dtype=np.float64) * 0.001
+    x[9000:] = 10.0 + np.arange(n - 9000, dtype=np.float64) * 0.09
+    fig.set_axis("x", type_="log", domain=(1.0, 100.0))
+    fig.line(x, y)
+    fig.traces[0].id = 45
+    cases.append(_case("line_log_m4_bin_x", fig))
+
+    fig = Figure(width=240, height=160)
     fig.set_axis("x", type_="log")
     fig.scatter([1.0, 10.0], [1.0, 10.0])
     fig.traces[0].id = 41
@@ -225,6 +236,21 @@ def main() -> None:
     fig.traces[0].stroke_ch = channels.ColorChannel(mode="constant", constant="#445566")
     fig.traces[0].id = 28
     cases.append(_case("ribbon_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.ribbon(
+        [0.0],
+        [1.0],
+        [0.0],
+        [1.0],
+        [0.0],
+        [1.0],
+        color="#112233",
+        color_target="#445566",
+    )
+    fig.traces[0].color2_ch = channels.ColorChannel(mode="constant", constant="#778899")
+    fig.traces[0].id = 46
+    cases.append(_case("ribbon_color2_ch", fig))
 
     fig = Figure(width=240, height=160)
     fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])

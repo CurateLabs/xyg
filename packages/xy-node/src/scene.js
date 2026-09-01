@@ -1393,7 +1393,7 @@ export function packPolarSceneInput(figure) {
   view.setFloat64(52, Number(rLo), true);
   view.setFloat64(60, Number(rHi), true);
   view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
-  view.setFloat64(76, Number(polarAxisHole(rAxis) ?? 0), true);
+  view.setFloat64(76, Number(polarAxisHole(rAxis) || 0), true);
   view.setFloat64(84, scale.constant, true);
   return out;
 }
@@ -1564,12 +1564,17 @@ export function color2Channel(trace) {
   return trace.color2_ch ?? null;
 }
 
+/** Python `(trace.style or {}).get("color", default)` for item/hexbin fallbacks. */
+function traceStyleColorDefault(trace, defaultCss = "#3987e5") {
+  const style = trace.style ?? {};
+  if (!Object.hasOwn(style, "color")) return defaultCss;
+  return String(style.color ?? defaultCss);
+}
+
 export function sourceColorCss(trace) {
   const css = channelConstantCss(trace.color_ch);
   if (css != null) return css;
-  // Node `??` keeps empty `style.color`. Python `_trace_source_color_css`
-  // uses `.get("color") or "#3987e5"`. Recorded source-css-empty stay-host.
-  return String(trace.style?.color ?? "#3987e5");
+  return String((trace.style ?? {}).color || "#3987e5");
 }
 
 export function classifyRibbonColor2(trace) {
@@ -1870,7 +1875,7 @@ export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
     Number(rLo),
     Number(rHi),
     origin == null ? Number.NaN : Number(origin),
-    Number(polarAxisHole(rAxis) ?? 0),
+    Number(polarAxisHole(rAxis) || 0),
     scale.kind,
     scale.constant,
     scale.maskNonpositive ? 1 : 0,
@@ -2330,9 +2335,7 @@ function packChromeAxis(axis, options, sides) {
   const style = options.style ?? {};
   const minor = chromeAxisMinorStyle(options) ?? {};
   for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
-    // Node skips null-valued keys. Python `_pack_chrome_axis` uses
-    // set(authored) so None-valued keys still reject. Recorded chrome-null-key stay-host.
-    const unsupported = Object.keys(authored).filter((key) => authored[key] != null && !AXIS_STYLE_KEYS.has(key));
+    const unsupported = Object.keys(authored).filter((key) => !AXIS_STYLE_KEYS.has(key));
     if (unsupported.length) {
       throw new RangeError(`Scene v12 does not yet encode ${axis} axis ${label} keys`);
     }
@@ -3939,8 +3942,7 @@ export function packXyTaColormap(trace) {
 /** Density XYTA constant color_ch. Python `_pack_xyta` reads `getattr(trace, "color_ch", None)` only. */
 export function packXyTaDensityColorCh(trace) {
   const channel = trace.color_ch;
-  if (channel != null && channel.mode === "constant" && channel.constant != null) {// density Scene falls back to viridis. Recorded scene-density-color-ch stay-host.
-
+  if (channel != null && channel.mode === "constant" && channel.constant != null) {
     return { flags: XYTA_HAS_COLOR_CH, bytes: encodeUtf8(String(channel.constant)) };
   }
   return { flags: 0, bytes: new Uint8Array() };
@@ -4941,16 +4943,12 @@ export function annotationClassName(annotation) {
 
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
 export function figureXLabel(figure, xAxis) {
-  // Node `??` keeps empty `x_label`. Python `or` falls through to axis `label`.
-  // Recorded xlabel-empty stay-host.
-  return (figure ?? {}).x_label ?? (xAxis ?? {}).label;
+  return (figure ?? {}).x_label || (xAxis ?? {}).label;
 }
 
 /** Chrome y-axis label. Python `_pack_figure_chrome` reads `figure.y_label` then `axis.get("label")`. */
 export function figureYLabel(figure, yAxis) {
-  // Node `??` keeps empty `y_label`. Python `or` falls through to axis `label`.
-  // Recorded ylabel-empty stay-host.
-  return (figure ?? {}).y_label ?? (yAxis ?? {}).label;
+  return (figure ?? {}).y_label || (yAxis ?? {}).label;
 }
 
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
@@ -5467,7 +5465,7 @@ function legendAxisSpec(figure, axisId) {
   return { domain: [lo, hi], reverse, scale, constant };
 }
 
-function resolveLegendBestLoc(figure) {
+export function resolveLegendBestLoc(figure) {
   const series = [];
   const labelLens = [];
   for (const trace of figure.traces ?? []) {
@@ -5757,7 +5755,7 @@ export function scatterHasNonConstantColor(trace) {
 export function scatterUsesDensity(trace) {
   if (String(trace.kind || "") !== "scatter") return false;
   return shouldUseDensity(trace.x?.length ?? 0, {
-    forceDensity: Boolean(trace.force_density),
+    forceDensity: trace.force_density,
     coords: "cartesian",
     perItemChannels: perItemChannelNames(trace).length > 0,
   });
@@ -5908,12 +5906,10 @@ function hexbinCount(trace) {
 }
 
 export function hexbinCellRgba8(trace) {
-  // Node fallback stays sourceColorCss (`??`). Python `_hexbin_cell_rgba8`
-  // uses style.get("color", default). Recorded hexbin-css stay-host.
   return channelEndRgba8(
     trace.color_ch,
     hexbinCount(trace),
-    sourceColorCss(trace),
+    traceStyleColorDefault(trace),
   );
 }
 
@@ -5958,9 +5954,7 @@ export function itemApplyOpacity(trace, packed, n) {
 }
 
 export function itemFillRgba8(trace, n) {
-  // Node fallback stays sourceColorCss (`??`). Python `_item_fill_rgba8`
-  // uses style.get("color", default). Recorded item-fill-css stay-host.
-  const fallback = sourceColorCss(trace);
+  const fallback = traceStyleColorDefault(trace);
   const channel = trace.color_ch;
   let packed = channelEndRgba8(channel, n, fallback);
   if (packed == null && channel != null && typeof channel === "object" && channel.mode === "continuous" && channel.values != null) {
@@ -5986,9 +5980,7 @@ export function itemFillRgba8(trace, n) {
 export function itemStrokeRgba8(trace, fills, n) {
   const strokeCh = trace.stroke_ch;
   if (strokeCh != null && strokeCh.mode === "match_fill") return fills;
-  // Node `??` keeps empty `style.stroke`. Python `_item_stroke_rgba8`
-  // uses `.get("stroke") or "transparent"`. Recorded item-stroke-empty stay-host.
-  const fallback = String((trace.style ?? {}).stroke ?? "transparent");
+  const fallback = String((trace.style ?? {}).stroke || "transparent");
   const packed = channelEndRgba8(strokeCh, n, fallback);
   if (packed != null) return packed;
   if (strokeCh == null) return channelEndRgba8(null, n, fallback);

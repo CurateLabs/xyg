@@ -93,14 +93,67 @@ test("buildPayload ships log axis scale like Python _axis_spec", () => {
   assert.equal(spec.y_axis.scale, undefined);
 });
 
+test("buildPayload ships symlog axis constant like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "symlog", constant: 2 });
+  fig.scatter([-1, 1], [-1, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, "symlog");
+  assert.equal(spec.x_axis.constant, 2);
+});
+
+test("buildPayload ships log axis nonpositive like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log", nonpositive: "mask" });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.nonpositive, "mask");
+});
+
+test("buildPayload ships category axis labels like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig._axis_categories = { x: ["a", "b", "c"] };
+  fig.scatter([0, 1, 2], [0, 1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, "category");
+  assert.deepEqual(spec.x_axis.categories, ["a", "b", "c"]);
+});
+
+test("buildPayload polar ships symlog y scale and constant like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "symlog", constant: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "symlog");
+  assert.equal(spec.y_axis.constant, 2);
+});
+
+test("buildPayload polar ships log y nonpositive like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log", nonpositive: "mask" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "log");
+  assert.equal(spec.y_axis.nonpositive, "mask");
+});
+
+test("buildPayload polar ships category x labels like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig._axis_categories = { x: ["a", "b"] };
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, "category");
+  assert.deepEqual(spec.x_axis.categories, ["a", "b"]);
+});
+
 test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_values: [0, 0.5, 1], domain: [0, 1], format: ".2f" });
   const { spec } = fig.buildPayload();
   assert.deepEqual(spec.x_axis.tick_values, [0, 0.5, 1]);
-  assert.deepEqual(spec.x_axis.domain, undefined);
-  assert.equal(spec.x_axis.format, undefined);
+  assert.deepEqual(spec.x_axis.domain, [0, 1]);
+  assert.equal(spec.x_axis.format, ".2f");
 });
 
 test("buildPayload ships cartesian axis minor_tick_values like Python _axis_spec", () => {
@@ -119,4 +172,273 @@ test("buildPayload ships cartesian axis tick_labels like Python _axis_spec", () 
   const { spec } = fig.buildPayload();
   assert.deepEqual(spec.x_axis.tick_labels, ["a", "b"]);
   assert.equal(spec.y_axis.tick_labels, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_count like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_count: 4 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_count, 4);
+  assert.equal(spec.y_axis.tick_count, undefined);
+});
+
+test("buildPayload ships polar axis tick_values like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_values: [0, 0.5, 1], domain: [0, 1], format: ".2f" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_values, [0, 0.5, 1]);
+  assert.deepEqual(spec.x_axis.domain, [0, 1]);
+  assert.equal(spec.x_axis.format, ".2f");
+});
+
+test("buildPayload ships polar axis minor_tick_values like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { minor_tick_values: [0.25, 0.75] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.minor_tick_values, [0.25, 0.75]);
+  assert.equal(spec.y_axis.minor_tick_values, undefined);
+});
+
+test("buildPayload ships polar axis tick_labels like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_values: [0, 1], tick_labels: ["a", "b"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_labels, ["a", "b"]);
+  assert.equal(spec.y_axis.tick_labels, undefined);
+});
+
+test("buildPayload ships polar axis tick_count like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_count: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_count, 4);
+  assert.equal(spec.y_axis.tick_count, undefined);
+});
+
+test("buildPayload ships cartesian axis reverse like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { reverse: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.reverse, true);
+  assert.equal(spec.y_axis.reverse, undefined);
+});
+
+test("buildPayload ships cartesian axis domain like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { domain: [0, 3] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.domain, [0, 3]);
+  assert.equal(spec.y_axis.domain, undefined);
+});
+
+test("buildPayload ships cartesian axis format like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { format: ".2f" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.format, ".2f");
+  assert.equal(spec.y_axis.format, undefined);
+});
+
+test("buildPayload ships cartesian axis bounds like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { bounds: [0, 2] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.bounds, [0, 2]);
+  assert.equal(spec.y_axis.bounds, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_sides like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_sides: ["bottom"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_sides, ["bottom"]);
+  assert.equal(spec.y_axis.tick_sides, undefined);
+});
+
+test("buildPayload ships polar axis tick_sides like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_sides: ["bottom"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_sides, ["bottom"]);
+});
+
+test("buildPayload ships cartesian axis tick_label_sides like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_label_sides, ["bottom"]);
+  assert.equal(spec.y_axis.tick_label_sides, undefined);
+});
+
+test("buildPayload ships polar axis tick_label_sides like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.tick_label_sides, ["bottom"]);
+});
+
+test("buildPayload ships cartesian axis label_position like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_position: "end" });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.label_position, "end");
+  assert.equal(spec.y_axis.label_position, undefined);
+});
+
+test("buildPayload ships polar axis label_position like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_position: "end" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.label_position, "end");
+});
+
+test("buildPayload ships cartesian axis label_offset like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_offset: 8 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_offset, 8);
+  assert.equal(spec.y_axis.label_offset, undefined);
+});
+
+test("buildPayload ships cartesian axis label_angle like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_angle: 45 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, 45);
+  assert.equal(spec.y_axis.label_angle, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_angle like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_angle: 30 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_angle, 30);
+  assert.equal(spec.y_axis.tick_label_angle, undefined);
+});
+
+test("buildPayload ships polar axis label_offset like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_offset: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_offset, 4);
+});
+
+test("buildPayload ships polar axis label_angle like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_angle: 15 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, 15);
+});
+
+test("buildPayload ships polar axis tick_label_angle like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_angle: 20 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_angle, 20);
+});
+
+test("buildPayload ships cartesian axis tick_label_strategy like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_strategy: "rotate" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_strategy, "rotate");
+  assert.equal(spec.y_axis.tick_label_strategy, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_anchor like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_anchor: "end" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_anchor, "end");
+  assert.equal(spec.y_axis.tick_label_anchor, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_min_gap like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_min_gap: 9 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, 9);
+  assert.equal(spec.y_axis.tick_label_min_gap, undefined);
+});
+
+test("buildPayload ships polar axis tick_label_strategy like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_strategy: "stagger" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_strategy, "stagger");
+});
+
+test("buildPayload ships polar axis tick_label_anchor like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_anchor: "center" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_anchor, "center");
+});
+
+test("buildPayload ships polar axis tick_label_min_gap like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_min_gap: 12 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, 12);
+});
+
+test("buildPayload ships cartesian axis minor_style like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_style: { tick_color: "#888" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_style.tick_color, "#888");
+  assert.equal(spec.y_axis.minor_style, undefined);
+});
+
+test("buildPayload ships polar axis minor_style like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { minor_style: { tick_color: "#111" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_style.tick_color, "#111");
+});
+
+test("buildPayload ships cartesian axis style like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { style: { tick_color: "#111" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style.tick_color, "#111");
+  assert.equal(spec.y_axis.style, undefined);
+});
+
+test("buildPayload ships polar axis style like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { style: { tick_color: "#222" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style.tick_color, "#222");
 });
