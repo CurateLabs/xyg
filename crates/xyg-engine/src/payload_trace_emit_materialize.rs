@@ -453,7 +453,11 @@ pub fn payload_trace_emit_materialize(inp: &PayloadTraceEmitMaterializeIn<'_>) -
         if attempt_role != 0 && !dec {
             let lo = inp.transition_keys_lo.ok_or(-1)?; let hi = inp.transition_keys_hi.ok_or(-1)?;
             let mut ol = vec![0u32; src.len()]; let mut oh = vec![0u32; src.len()];
-            if payload_errorbar_role_keys(lo, hi, &src, &rl, &mut ol, &mut oh).is_some() { role_lo = Some(ol); role_hi = Some(oh); } else { attempt_role = 0; }
+            match payload_errorbar_role_keys(lo, hi, &src, &rl, &mut ol, &mut oh) {
+                Some(Ok(_)) => { role_lo = Some(ol); role_hi = Some(oh); }
+                Some(Err(true)) => return Err(-3),
+                _ => { attempt_role = 0; }
+            }
         }
     } else if gather == PAYLOAD_GATHER_RECT_FINITE {
         let x0 = col_values(&inp.columns, PAYLOAD_TRACE_COL_X0).ok_or(-1)?;
