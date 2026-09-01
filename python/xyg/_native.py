@@ -9594,7 +9594,7 @@ def categorical_palette_map_resolve(
 def color_channel_direct_rgba_f64_continuous(
     values: npt.NDArray[np.float64],
     domain: tuple[float, float],
-    colormap: str | npt.NDArray[np.uint8],
+    colormap: str | list[list[int]] | npt.NDArray[np.uint8],
 ) -> npt.NDArray[np.float64]:
     """Sample a continuous color channel to canonical f64 RGBA rows (ABI 348)."""
     vals = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
