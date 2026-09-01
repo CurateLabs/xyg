@@ -9498,6 +9498,28 @@ def category_label_kind_from_probe(probe: int) -> int:
     return code
 
 
+def category_label_kinds_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to category-label kind bytes (ABI 357)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_category_label_kinds_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid category-label-kinds request")
+    return out
+
+
 def category_code_width(n_categories: int) -> int:
     """Categorical wire code width marker: 1 (u8) or 4 (u32) (ABI 355)."""
     return int(_lib.xyg_category_code_width(int(n_categories)))

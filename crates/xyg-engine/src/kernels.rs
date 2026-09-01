@@ -8717,6 +8717,20 @@ pub fn category_label_kind_from_probe(probe: u8) -> Option<u8> {
     })
 }
 
+/// Batch map value probes to category-label kind bytes (ABI 357).
+pub fn category_label_kinds_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match category_label_kind_from_probe(*probe) {
+            Some(kind) => *slot = kind,
+            None => return false,
+        }
+    }
+    true
+}
+
 /// Categorical wire code width for `n_categories` (ABI 355).
 pub fn category_code_width(n_categories: usize) -> u32 {
     if n_categories <= MAX_CATEGORY_CODES_U8 {
@@ -11325,6 +11339,22 @@ mod tests {
             ]
         );
         assert!(!object_row_stringlike_tags_from_probes(&[99], &mut [0]));
+    }
+
+    #[test]
+    fn category_label_kinds_from_probes_batch_matches_scalar() {
+        let probes = [VALUE_PROBE_MISSING, VALUE_PROBE_TEXT, VALUE_PROBE_BYTES, VALUE_PROBE_BOOL];
+        let mut out = [0u8; 4];
+        assert!(category_label_kinds_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                CATEGORY_LABEL_MISSING,
+                CATEGORY_LABEL_UTF8,
+                CATEGORY_LABEL_BYTES,
+                CATEGORY_LABEL_UTF8,
+            ]
+        );
     }
 
     #[test]

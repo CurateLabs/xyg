@@ -305,19 +305,23 @@ def _is_missing_category(value: Any) -> bool:
         return False
 
 
+def _category_label_payload(value: Any, probe: int) -> bytes:
+    if probe == 0:
+        return b""
+    if probe == 3:
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, np.bytes_):
+            return bytes(value)
+    if probe == 2 and isinstance(value, (str, np.str_)):
+        return str(value).encode("utf-8")
+    return str(value).encode("utf-8")
+
+
 def _category_label_kind_and_bytes(value: Any) -> tuple[int, bytes]:
     probe = _value_probe(value)
     kind = kernels.category_label_kind_from_probe(probe)
-    if kind == 0:
-        return (0, b"")
-    if probe == 3:
-        if isinstance(value, bytes):
-            return (kind, value)
-        if isinstance(value, np.bytes_):
-            return (kind, bytes(value))
-    if probe == 2 and isinstance(value, (str, np.str_)):
-        return (kind, str(value).encode("utf-8"))
-    return (kind, str(value).encode("utf-8"))
+    return kind, _category_label_payload(value, probe)
 
 
 def category_label(value: Any) -> str:
@@ -331,13 +335,20 @@ def category_label(value: Any) -> str:
 
 
 def _category_labels(values: Any) -> list[str]:
-    kinds: list[int] = []
-    payloads: list[bytes] = []
-    for value in values:
-        kind, payload = _category_label_kind_and_bytes(value)
-        kinds.append(kind)
-        payloads.append(payload)
-    return kernels.category_labels(kinds, payloads)
+    values_list = values.tolist() if isinstance(values, np.ndarray) else list(values)
+    if not values_list:
+        return []
+    probes = np.fromiter(
+        (_value_probe(value) for value in values_list),
+        dtype=np.uint8,
+        count=len(values_list),
+    )
+    kinds = kernels.category_label_kinds_from_probes(probes)
+    payloads = [
+        _category_label_payload(value, int(probe))
+        for value, probe in zip(values_list, probes, strict=True)
+    ]
+    return kernels.category_labels(kinds.tolist(), payloads)
 
 
 def _value_probe(value: Any) -> int:
@@ -356,14 +367,6 @@ def _value_probe(value: Any) -> int:
     except (TypeError, ValueError):
         return 6
     return 5
-
-
-def _object_row_stringlike_tag(value: Any) -> int:
-    return kernels.object_row_stringlike_tag_from_probe(_value_probe(value))
-
-
-def _object_row_real_numeric_tag(value: Any) -> int:
-    return kernels.object_row_real_numeric_tag_from_probe(_value_probe(value))
 
 
 def _object_column_is_stringlike(arr: np.ndarray) -> bool:

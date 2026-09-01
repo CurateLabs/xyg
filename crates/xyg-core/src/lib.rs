@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 356;
+pub const ABI_VERSION: u32 = 357;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10372,6 +10372,30 @@ pub unsafe extern "C" fn xyg_category_label_kind_from_probe(probe: u8) -> i32 {
     ffi_guard(-1, || match kernels::category_label_kind_from_probe(probe) {
         Some(kind) => i32::from(kind),
         None => -1,
+    })
+}
+
+/// Batch map value probes to category-label kind bytes (ABI 357).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_category_label_kinds_from_probes(
+    probes: *const u8,
+    n: usize,
+    out: *mut u8,
+) -> i32 {
+    ffi_guard(-1, || {
+        if n == 0 {
+            return 1;
+        }
+        if probes.is_null() || out.is_null() {
+            return -1;
+        }
+        let probes = std::slice::from_raw_parts(probes, n);
+        let out = std::slice::from_raw_parts_mut(out, n);
+        if kernels::category_label_kinds_from_probes(probes, out) {
+            1
+        } else {
+            -1
+        }
     })
 }
 

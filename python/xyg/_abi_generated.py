@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 356
-SIGNATURE_SHA256 = "947916702d1f33b8a66399f097c1b45e3d4517d28a8a808087241cd6f74bc02c"
+ABI_VERSION = 357
+SIGNATURE_SHA256 = "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -118,6 +118,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_category_label_kind_from_probe
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint8]
+    # int32_t xyg_category_label_kinds_from_probes(const uint8_t * probes, size_t n, uint8_t * out)
+    function = lib.xyg_category_label_kinds_from_probes
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)
     function = lib.xyg_category_labels_packed
     function.restype = ctypes.c_size_t

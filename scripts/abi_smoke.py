@@ -1082,6 +1082,12 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
+    lib.xyg_category_label_kinds_from_probes.restype = ctypes.c_int32
+    lib.xyg_category_label_kinds_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6131,6 +6137,17 @@ def main() -> None:
         == 1
         and list(tags) == [0, 1, 2, 3],
         "object_row_stringlike_tags_from_probes batch",
+    )
+    kinds = array("B", [0, 0, 0, 0])
+    ok(
+        lib.xyg_category_label_kinds_from_probes(
+            _ptr(probes, ctypes.c_uint8),
+            len(probes),
+            _ptr(kinds, ctypes.c_uint8),
+        )
+        == 1
+        and list(kinds) == [0, 1, 2, 1],
+        "category_label_kinds_from_probes batch",
     )
     hex_css = array("B", b"#ff0000")
     ok(

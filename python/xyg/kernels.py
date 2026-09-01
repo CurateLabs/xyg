@@ -198,6 +198,7 @@ object_row_real_numeric_tag_from_probe = _impl.object_row_real_numeric_tag_from_
 object_row_stringlike_tags_from_probes = _impl.object_row_stringlike_tags_from_probes
 object_row_real_numeric_tags_from_probes = _impl.object_row_real_numeric_tags_from_probes
 category_label_kind_from_probe = _impl.category_label_kind_from_probe
+category_label_kinds_from_probes = _impl.category_label_kinds_from_probes
 category_code_width = _impl.category_code_width
 category_palette_rows = _impl.category_palette_rows
 direct_rgba_admit = _impl.direct_rgba_admit
@@ -376,6 +377,7 @@ __all__ = [
     "categorical_palette",
     "category_code_width",
     "category_label_kind_from_probe",
+    "category_label_kinds_from_probes",
     "category_labels",
     "category_palette_rows",
     "clip_quantize_u8",

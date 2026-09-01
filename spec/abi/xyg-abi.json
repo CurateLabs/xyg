@@ -1,9 +1,9 @@
 {
-  "abi_version": 356,
+  "abi_version": 357,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "947916702d1f33b8a66399f097c1b45e3d4517d28a8a808087241cd6f74bc02c",
+  "signature_sha256": "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -4324,6 +4324,73 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_category_label_kind_from_probe(uint8_t probe)"
+    },
+    {
+      "name": "xyg_category_label_kinds_from_probes",
+      "node_name": "xyCategoryLabelKindsFromProbes",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "probes",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "n",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_category_label_kinds_from_probes(const uint8_t * probes, size_t n, uint8_t * out)"
     },
     {
       "name": "xyg_category_labels_packed",

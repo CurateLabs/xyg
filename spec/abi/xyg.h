@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 356
-#define XYG_ABI_SIGNATURE_SHA256 "947916702d1f33b8a66399f097c1b45e3d4517d28a8a808087241cd6f74bc02c"
+#define XYG_ABI_VERSION 357
+#define XYG_ABI_SIGNATURE_SHA256 "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +38,7 @@ size_t xyg_categorical_palette(const uint32_t * entry_lens, const uint8_t * entr
 size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted);
 uint32_t xyg_category_code_width(uint64_t n_categories);
 int32_t xyg_category_label_kind_from_probe(uint8_t probe);
+int32_t xyg_category_label_kinds_from_probes(const uint8_t * probes, size_t n, uint8_t * out);
 size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap);
 uint64_t xyg_category_palette_rows(uint64_t n_categories);
 int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation);

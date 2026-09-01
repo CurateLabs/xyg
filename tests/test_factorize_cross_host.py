@@ -246,6 +246,11 @@ def _python_object_row_real_numeric_tags_batch_case(spec: dict) -> list[int]:
     return kernels.object_row_real_numeric_tags_from_probes(probes).tolist()
 
 
+def _python_category_label_kinds_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.category_label_kinds_from_probes(probes).tolist()
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -279,6 +284,7 @@ FACTORIZE_CASES = [
         "category_palette_rows",
         "object_row_stringlike_tags_batch",
         "object_row_real_numeric_tags_batch",
+        "category_label_kinds_batch",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -325,6 +331,9 @@ OBJECT_ROW_STRINGLIKE_TAGS_BATCH_CASES = [
 ]
 OBJECT_ROW_REAL_NUMERIC_TAGS_BATCH_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tags_batch"
+]
+CATEGORY_LABEL_KINDS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "category_label_kinds_batch"
 ]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
@@ -561,6 +570,13 @@ def test_object_row_real_numeric_tags_batch_cross_host(
     tags = _python_object_row_real_numeric_tags_batch_case(spec)
     node = node_results[spec["name"]]
     assert tags == node["tags"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_LABEL_KINDS_BATCH_CASES, ids=lambda s: s["name"])
+def test_category_label_kinds_batch_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    kinds = _python_category_label_kinds_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert kinds == node["kinds"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

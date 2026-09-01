@@ -20,6 +20,7 @@ import {
   xyObjectRowStringlikeTagsFromProbes,
   xyObjectRowRealNumericTagsFromProbes,
   xyCategoryLabelKindFromProbe,
+  xyCategoryLabelKindsFromProbes,
   xyCategoryCodeWidth,
   xyCategoryPaletteRows,
   xyFactorizeFixed,
@@ -48,23 +49,24 @@ function isMissingCategory(value) {
   return value == null || (typeof value === "number" && Number.isNaN(value));
 }
 
-function categoryLabelKindAndBytes(value) {
-  const probe = valueProbe(value);
-  const kind = categoryLabelKindFromProbe(probe);
-  if (kind === 0) return { kind: 0, payload: new Uint8Array() };
+function categoryLabelPayload(value, probe) {
+  if (probe === 0) return new Uint8Array();
   if (probe === 3) {
-    if (value instanceof Uint8Array) return { kind, payload: value };
+    if (value instanceof Uint8Array) return value;
     if (ArrayBuffer.isView(value)) {
-      return {
-        kind,
-        payload: new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
-      };
+      return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     }
   }
   if (probe === 2 && typeof value === "string") {
-    return { kind, payload: new TextEncoder().encode(value) };
+    return new TextEncoder().encode(value);
   }
-  return { kind, payload: new TextEncoder().encode(String(value)) };
+  return new TextEncoder().encode(String(value));
+}
+
+function categoryLabelKindAndBytes(value) {
+  const probe = valueProbe(value);
+  const kind = categoryLabelKindFromProbe(probe);
+  return { kind, payload: categoryLabelPayload(value, probe) };
 }
 
 function categoryLabelsFromEncodings(encodings) {
@@ -121,7 +123,15 @@ export function categoryLabel(value) {
 }
 
 function categoryLabels(values) {
-  return categoryLabelsFromEncodings(values.map(categoryLabelKindAndBytes));
+  if (values.length === 0) return [];
+  const probes = Uint8Array.from(values, valueProbe);
+  const kinds = categoryLabelKindsFromProbes(probes);
+  return categoryLabelsFromEncodings(
+    values.map((value, index) => ({
+      kind: kinds[index],
+      payload: categoryLabelPayload(value, probes[index]),
+    })),
+  );
 }
 
 function categoryLabelFromFloat(value) {
@@ -472,16 +482,23 @@ export function categoryLabelKindFromProbe(probe) {
   return code;
 }
 
+export function categoryLabelKindsFromProbes(probes) {
+  const src = probes instanceof Uint8Array ? probes : Uint8Array.from(probes, Number);
+  const out = new Uint8Array(src.length);
+  if (out.length === 0) return out;
+  const code = Number(
+    xyCategoryLabelKindsFromProbes(u8Ptr(src), BigInt(src.length), u8Ptr(out)),
+  );
+  if (code !== 1) throw new RangeError("invalid category-label-kinds request");
+  return out;
+}
+
 export function categoryCodeWidth(nCategories) {
   return Number(xyCategoryCodeWidth(BigInt(nCategories)));
 }
 
 export function categoryPaletteRows(nCategories) {
   return Number(xyCategoryPaletteRows(BigInt(nCategories)));
-}
-
-function objectRowRealNumericTag(value) {
-  return objectRowRealNumericTagFromProbe(valueProbe(value));
 }
 
 export function objectColumnIsRealNumeric(raw) {
@@ -493,10 +510,6 @@ export function objectColumnIsRealNumeric(raw) {
     throw new Error("native object_rows_all_real_numeric rejected the row tags");
   }
   return ok === 1;
-}
-
-function objectRowStringlikeTag(value) {
-  return objectRowStringlikeTagFromProbe(valueProbe(value));
 }
 
 export function objectColumnIsStringlike(raw) {

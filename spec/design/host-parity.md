@@ -898,6 +898,9 @@ category u8/u32 boundary and indexed palette row cap.
 Python `channels._object_column_is_*` and Node `objectColumnIs*` batch map host
 value probes through ABI 356 `xyg_object_row_*_tags_from_probes`; per-row Python/
 JS type inspection stays host-side.
+Python `channels._category_labels` and Node `categoryLabels` batch map host value
+probes through ABI 357 `xyg_category_label_kinds_from_probes`; UTF-8 payload
+encoding stays host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without
