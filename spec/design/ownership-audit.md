@@ -331,7 +331,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 
 - `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
 - `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
-- `_paint.py` — ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
+- `_paint.py` — shared static-export paint layer (`trace_paint_rgba`, `colormap_lut`, CSS→RGBA8, opacity); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
@@ -775,7 +775,7 @@ Forbidden:
 | `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 occupancy scoring; ABI 197 Scene product encode settles `loc="best"` from XYCL/XYNM. This module still packs ChartView compatibility specs | — |
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_paint.py` | Python host | `python-host` | `keep-host`; ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` recorded stay-host joined-fill geometry | — |
+| `python/xyg/_paint.py` | Python host | `python-host` | `keep-host`; shared static-export paint resolution for `_svg`/`_raster` (`trace_paint_rgba`, `colormap_lut`, CSS→RGBA8); ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` recorded stay-host joined-fill geometry | — |
 | `python/xyg/_payload.py` | Python host | `python-host` | `keep-host`; marshal-only `build_payload` delegating to ABI 303 + ABI 321 via `_payload_trace_materialize.py` | — |
 | `python/xyg/_payload_helpers.py` | Python host | `python-payload-migration` | `keep-host`; transition/tooltip attach, visible-mask predicates, binning coords, channel ship delegates | — |
 | `python/xyg/_payload_ship.py` | Python host | `python-payload-migration` | `keep-host`; column registry gather + ship via `payload_column_gather_materialize` (ABI 310/314) | — |

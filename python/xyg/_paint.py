@@ -319,3 +319,38 @@ def trace_paint_rgba(
             / 255.0
         )
     return rgba
+
+
+def trace_paint_rgb_css_list(
+    trace: dict[str, Any],
+    key: str,
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+) -> list[str]:
+    """Resolve one paint channel to static SVG ``rgb(r,g,b)`` strings."""
+    rows = rgba8(trace_paint_rgba(trace, key, n, fallback, read))
+    return [rgb_css(row[:3] / 255.0) for row in rows]
+
+
+def effective_paint_rgba8(
+    trace: dict[str, Any],
+    key: str,
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    component: str,
+    default_opacity: float,
+) -> np.ndarray:
+    """Resolve one paint channel to effective RGBA8 rows."""
+    intrinsic = trace_paint_rgba(trace, key, n, fallback, read)
+    return rgba8(
+        effective_rgba(
+            intrinsic,
+            trace,
+            read,
+            component=component,
+            default_opacity=default_opacity,
+        )
+    )

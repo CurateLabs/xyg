@@ -24,6 +24,7 @@ from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._paint import (
     _css,
+    effective_paint_rgba8,
 )
 from ._paint import (
     colormap_lut as _lut,
@@ -2436,8 +2437,7 @@ def _mesh_fill_rgba(
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    return _rgba8(_paint.effective_rgba(intrinsic, t, read, component="fill", default_opacity=1.0))
+    return effective_paint_rgba8(t, "color", n, color, read, component="fill", default_opacity=1.0)
 
 
 def _emit_hexbin(

@@ -32,6 +32,7 @@ from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._paint import (
     _css,
+    trace_paint_rgb_css_list,
 )
 from ._paint import (
     colormap_lut as _colormap_lut,
@@ -4919,8 +4920,7 @@ def _mesh_fills(t: dict, blob: bytes, cols: list, n: int, fallback: str) -> list
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
 
-    rgba_u8 = _rgba8(_trace_paint_rgba(t, "color", n, fallback, read))
-    return [_rgb_css(row[:3] / 255.0) for row in rgba_u8]
+    return trace_paint_rgb_css_list(t, "color", n, fallback, read)
 
 
 def _hexbin_marks(
