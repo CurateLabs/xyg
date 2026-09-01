@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList } from "../src/color.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -251,6 +251,31 @@ for (const spec of fixture.cases) {
       rows.push([...rgba.slice(i * 4, i * 4 + 4)]);
     }
     out.push({ name: spec.name, rgba: rows });
+    continue;
+  }
+  if (spec.kind === "colormap_is_builtin") {
+    out.push({
+      name: spec.name,
+      builtin: colormapIsBuiltin(spec.colormap_name),
+    });
+    continue;
+  }
+  if (spec.kind === "colormap_custom_stops_resolve_list") {
+    const positions =
+      spec.positions == null
+        ? spec.colors.map(() => null)
+        : spec.positions.map((value) => (value == null ? null : Number(value)));
+    out.push({
+      name: spec.name,
+      stops: colormapCustomStopsResolveList(spec.colors, positions),
+    });
+    continue;
+  }
+  if (spec.kind === "colormap_custom_stops_resolve_gradient") {
+    out.push({
+      name: spec.name,
+      stops: colormapCustomStopsResolveGradient(spec.gradient),
+    });
     continue;
   }
   if (spec.kind === "stringlike") {

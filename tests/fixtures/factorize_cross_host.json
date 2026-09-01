@@ -221,6 +221,37 @@
       "kind": "color_channel_direct_rgba_f64_categorical",
       "codes": [0, 1, 2],
       "palette": ["#ff0000", "#00ff00"]
+    },
+    {
+      "name": "colormap_is_builtin_magma",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "magma"
+    },
+    {
+      "name": "colormap_is_builtin_magma_r",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "magma_r"
+    },
+    {
+      "name": "colormap_is_builtin_unknown",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "nope"
+    },
+    {
+      "name": "colormap_custom_stops_uniform",
+      "kind": "colormap_custom_stops_resolve_list",
+      "colors": ["#0b1220", "#2563eb", "#22d3ee", "#fde68a"]
+    },
+    {
+      "name": "colormap_custom_stops_positioned",
+      "kind": "colormap_custom_stops_resolve_list",
+      "colors": ["#000000", "#ffffff", "#000000"],
+      "positions": [0.0, 0.25, 1.0]
+    },
+    {
+      "name": "colormap_custom_stops_gradient",
+      "kind": "colormap_custom_stops_resolve_gradient",
+      "gradient": "linear-gradient(#000000, #ffffff 25%, #000000)"
     }
   ]
 }

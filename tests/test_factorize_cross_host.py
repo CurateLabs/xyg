@@ -182,6 +182,24 @@ def _python_direct_rgba_categorical_case(spec: dict) -> list[list[float]]:
     return rgba.tolist()
 
 
+def _python_colormap_is_builtin_case(spec: dict) -> bool:
+    return ch.is_colormap(spec["colormap_name"])
+
+
+def _python_colormap_custom_stops_list_case(spec: dict) -> list[list[int]]:
+    colors = spec["colors"]
+    positions = spec.get("positions")
+    if positions is None:
+        positions = [None] * len(colors)
+    else:
+        positions = [float(p) for p in positions]
+    return kernels.colormap_custom_stops_resolve_list(colors, positions)
+
+
+def _python_colormap_custom_stops_gradient_case(spec: dict) -> list[list[int]]:
+    return kernels.colormap_custom_stops_resolve_gradient(spec["gradient"])
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -202,6 +220,9 @@ FACTORIZE_CASES = [
         "categorical_palette_map_resolve",
         "color_channel_direct_rgba_f64_continuous",
         "color_channel_direct_rgba_f64_categorical",
+        "colormap_is_builtin",
+        "colormap_custom_stops_resolve_list",
+        "colormap_custom_stops_resolve_gradient",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -221,6 +242,13 @@ DIRECT_RGBA_CONTINUOUS_CASES = [
 ]
 DIRECT_RGBA_CATEGORICAL_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "color_channel_direct_rgba_f64_categorical"
+]
+COLORMAP_IS_BUILTIN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_is_builtin"]
+COLORMAP_CUSTOM_LIST_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_list"
+]
+COLORMAP_CUSTOM_GRADIENT_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_gradient"
 ]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
@@ -358,6 +386,29 @@ def test_color_channel_direct_rgba_categorical_cross_host(
     rows = _python_direct_rgba_categorical_case(spec)
     node = node_results[spec["name"]]
     assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_IS_BUILTIN_CASES, ids=lambda s: s["name"])
+def test_colormap_is_builtin_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    builtin = _python_colormap_is_builtin_case(spec)
+    node = node_results[spec["name"]]
+    assert builtin == node["builtin"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_CUSTOM_LIST_CASES, ids=lambda s: s["name"])
+def test_colormap_custom_stops_list_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    stops = _python_colormap_custom_stops_list_case(spec)
+    node = node_results[spec["name"]]
+    assert stops == node["stops"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_CUSTOM_GRADIENT_CASES, ids=lambda s: s["name"])
+def test_colormap_custom_stops_gradient_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    stops = _python_colormap_custom_stops_gradient_case(spec)
+    node = node_results[spec["name"]]
+    assert stops == node["stops"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])
