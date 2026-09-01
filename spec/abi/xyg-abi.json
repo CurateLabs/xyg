@@ -1,9 +1,9 @@
 {
-  "abi_version": 353,
+  "abi_version": 354,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "65656514cd2ce9f846ff0ec54b7756892184a84920b625cf56e7bad5bc1627d6",
+  "signature_sha256": "8db786d305325ca3c2d15858e83423135edf5fddf643c9aad08faac7b37b7247",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -4254,6 +4254,41 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted)"
+    },
+    {
+      "name": "xyg_category_label_kind_from_probe",
+      "node_name": "xyCategoryLabelKindFromProbe",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "probe",
+          "type": {
+            "rust": "u8",
+            "c": "uint8_t",
+            "ctypes": "ctypes.c_uint8",
+            "koffi": "uint8_t",
+            "kind": "scalar",
+            "bits": 8,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_category_label_kind_from_probe(uint8_t probe)"
     },
     {
       "name": "xyg_category_labels_packed",

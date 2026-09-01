@@ -1064,6 +1064,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_object_row_stringlike_tag_from_probe.argtypes = [ctypes.c_uint8]
     lib.xyg_object_row_real_numeric_tag_from_probe.restype = ctypes.c_int32
     lib.xyg_object_row_real_numeric_tag_from_probe.argtypes = [ctypes.c_uint8]
+    lib.xyg_category_label_kind_from_probe.restype = ctypes.c_int32
+    lib.xyg_category_label_kind_from_probe.argtypes = [ctypes.c_uint8]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6087,6 +6089,12 @@ def main() -> None:
         and lib.xyg_object_row_real_numeric_tag_from_probe(4) == 1
         and lib.xyg_object_row_real_numeric_tag_from_probe(1) == 2,
         "object_row_tag_from_probe stringlike and real numeric",
+    )
+    ok(
+        lib.xyg_category_label_kind_from_probe(0) == 0
+        and lib.xyg_category_label_kind_from_probe(2) == 1
+        and lib.xyg_category_label_kind_from_probe(3) == 2,
+        "category_label_kind_from_probe missing text bytes",
     )
     hex_css = array("B", b"#ff0000")
     ok(

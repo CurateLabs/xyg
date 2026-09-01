@@ -889,6 +889,9 @@ probes stay host-side.
 Python `channels._object_row_*_tag` and Node `objectRow*TagFromProbe` map host
 value probes through ABI 353 `xyg_object_row_*_tag_from_probe`; per-row Python/
 JS type inspection stays host-side.
+Python `channels._category_label_kind_and_bytes` and Node `categoryLabelKindAndBytes`
+select label kinds through ABI 354 `xyg_category_label_kind_from_probe`; UTF-8
+payload encoding stays host-side.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

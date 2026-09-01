@@ -306,13 +306,18 @@ def _is_missing_category(value: Any) -> bool:
 
 
 def _category_label_kind_and_bytes(value: Any) -> tuple[int, bytes]:
-    if _is_missing_category(value):
+    probe = _value_probe(value)
+    kind = kernels.category_label_kind_from_probe(probe)
+    if kind == 0:
         return (0, b"")
-    if isinstance(value, bytes):
-        return (2, value)
-    if isinstance(value, np.bytes_):
-        return (2, bytes(value))
-    return (1, str(value).encode("utf-8"))
+    if probe == 3:
+        if isinstance(value, bytes):
+            return (kind, value)
+        if isinstance(value, np.bytes_):
+            return (kind, bytes(value))
+    if probe == 2 and isinstance(value, (str, np.str_)):
+        return (kind, str(value).encode("utf-8"))
+    return (kind, str(value).encode("utf-8"))
 
 
 def category_label(value: Any) -> str:
@@ -450,18 +455,6 @@ def _object_array_is_real_numeric(arr: np.ndarray) -> bool:
         count=len(arr),
     )
     return kernels.object_rows_all_real_numeric(tags)
-
-
-def _is_real_number_object(value: Any) -> bool:
-    if isinstance(value, (bool, np.bool_, str, bytes, np.bytes_)):
-        return False
-    if isinstance(value, numbers.Real):
-        return True
-    try:
-        float(value)
-    except (TypeError, ValueError):
-        return False
-    return True
 
 
 def _as_real_array(values: np.ndarray, label: str) -> npt.NDArray[np.float64]:

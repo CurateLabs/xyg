@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 353
-SIGNATURE_SHA256 = "65656514cd2ce9f846ff0ec54b7756892184a84920b625cf56e7bad5bc1627d6"
+ABI_VERSION = 354
+SIGNATURE_SHA256 = "8db786d305325ca3c2d15858e83423135edf5fddf643c9aad08faac7b37b7247"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -110,6 +110,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_categorical_palette_map_resolve
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_category_label_kind_from_probe(uint8_t probe)
+    function = lib.xyg_category_label_kind_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
     # size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)
     function = lib.xyg_category_labels_packed
     function.restype = ctypes.c_size_t

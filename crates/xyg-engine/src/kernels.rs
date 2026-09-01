@@ -8673,6 +8673,20 @@ pub fn object_row_real_numeric_tag_from_probe(probe: u8) -> Option<u8> {
     }
 }
 
+/// Map a host value probe to a category-label kind byte (ABI 354).
+pub fn category_label_kind_from_probe(probe: u8) -> Option<u8> {
+    Some(match probe {
+        VALUE_PROBE_MISSING => CATEGORY_LABEL_MISSING,
+        VALUE_PROBE_BYTES => CATEGORY_LABEL_BYTES,
+        VALUE_PROBE_TEXT
+        | VALUE_PROBE_BOOL
+        | VALUE_PROBE_REAL
+        | VALUE_PROBE_COERCIBLE
+        | VALUE_PROBE_OTHER => CATEGORY_LABEL_UTF8,
+        _ => return None,
+    })
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11206,6 +11220,27 @@ mod tests {
             Some(OBJECT_ROW_REAL_OTHER)
         );
         assert!(object_row_real_numeric_tag_from_probe(99).is_none());
+    }
+
+    #[test]
+    fn category_label_kind_from_probe_matches_host_policy() {
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_MISSING),
+            Some(CATEGORY_LABEL_MISSING)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_TEXT),
+            Some(CATEGORY_LABEL_UTF8)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_BYTES),
+            Some(CATEGORY_LABEL_BYTES)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_BOOL),
+            Some(CATEGORY_LABEL_UTF8)
+        );
+        assert!(category_label_kind_from_probe(99).is_none());
     }
 
     #[test]

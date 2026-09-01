@@ -18,7 +18,7 @@ import {
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
 import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64, categoricalPalette, categoricalPaletteMapResolve, colorChannelDirectRgbaF64Continuous, colorChannelDirectRgbaF64Categorical, colormapIsBuiltin, colormapCustomStopsResolveGradient, colormapCustomStopsResolveList, sizeRangeAdmit, arrayIsCategorical, realNumericDtypeAdmit } from "../src/color.js";
-import { objectRowStringlikeTagFromProbe, objectRowRealNumericTagFromProbe } from "../src/factorize.js";
+import { objectRowStringlikeTagFromProbe, objectRowRealNumericTagFromProbe, categoryLabelKindFromProbe } from "../src/factorize.js";
 import { stratifiedSampleRangePlan } from "../src/encode.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
@@ -321,6 +321,13 @@ for (const spec of fixture.cases) {
     out.push({
       name: spec.name,
       tag: objectRowRealNumericTagFromProbe(spec.probe),
+    });
+    continue;
+  }
+  if (spec.kind === "category_label_kind") {
+    out.push({
+      name: spec.name,
+      label_kind: categoryLabelKindFromProbe(spec.probe),
     });
     continue;
   }

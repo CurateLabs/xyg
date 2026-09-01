@@ -17,6 +17,7 @@ import {
   xyObjectRowsAllRealNumeric,
   xyObjectRowStringlikeTagFromProbe,
   xyObjectRowRealNumericTagFromProbe,
+  xyCategoryLabelKindFromProbe,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -44,20 +45,22 @@ function isMissingCategory(value) {
 }
 
 function categoryLabelKindAndBytes(value) {
-  if (isMissingCategory(value)) return { kind: 0, payload: new Uint8Array() };
-  if (typeof value === "string") {
-    return { kind: 1, payload: new TextEncoder().encode(value) };
+  const probe = valueProbe(value);
+  const kind = categoryLabelKindFromProbe(probe);
+  if (kind === 0) return { kind: 0, payload: new Uint8Array() };
+  if (probe === 3) {
+    if (value instanceof Uint8Array) return { kind, payload: value };
+    if (ArrayBuffer.isView(value)) {
+      return {
+        kind,
+        payload: new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
+      };
+    }
   }
-  if (value instanceof Uint8Array) {
-    return { kind: 2, payload: value };
+  if (probe === 2 && typeof value === "string") {
+    return { kind, payload: new TextEncoder().encode(value) };
   }
-  if (ArrayBuffer.isView(value)) {
-    return {
-      kind: 2,
-      payload: new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
-    };
-  }
-  return { kind: 1, payload: new TextEncoder().encode(String(value)) };
+  return { kind, payload: new TextEncoder().encode(String(value)) };
 }
 
 function categoryLabelsFromEncodings(encodings) {
@@ -434,6 +437,12 @@ export function objectRowStringlikeTagFromProbe(probe) {
 export function objectRowRealNumericTagFromProbe(probe) {
   const code = Number(xyObjectRowRealNumericTagFromProbe(Number(probe) & 0xff));
   if (code < 0) throw new RangeError("invalid object-row-real-numeric-tag request");
+  return code;
+}
+
+export function categoryLabelKindFromProbe(probe) {
+  const code = Number(xyCategoryLabelKindFromProbe(Number(probe) & 0xff));
+  if (code < 0) throw new RangeError("invalid category-label-kind request");
   return code;
 }
 

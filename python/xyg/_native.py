@@ -9446,6 +9446,14 @@ def object_row_real_numeric_tag_from_probe(probe: int) -> int:
     return code
 
 
+def category_label_kind_from_probe(probe: int) -> int:
+    """Map a host value probe to a category-label kind byte (ABI 354)."""
+    code = int(_lib.xyg_category_label_kind_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid category-label-kind request")
+    return code
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

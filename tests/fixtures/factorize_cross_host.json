@@ -360,6 +360,30 @@
       "kind": "object_row_real_numeric_tag",
       "probe": 6,
       "tag": 5
+    },
+    {
+      "name": "category_label_kind_missing",
+      "kind": "category_label_kind",
+      "probe": 0,
+      "label_kind": 0
+    },
+    {
+      "name": "category_label_kind_text",
+      "kind": "category_label_kind",
+      "probe": 2,
+      "label_kind": 1
+    },
+    {
+      "name": "category_label_kind_bytes",
+      "kind": "category_label_kind",
+      "probe": 3,
+      "label_kind": 2
+    },
+    {
+      "name": "category_label_kind_bool",
+      "kind": "category_label_kind",
+      "probe": 1,
+      "label_kind": 1
     }
   ]
 }

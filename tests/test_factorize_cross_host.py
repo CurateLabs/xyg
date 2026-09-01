@@ -224,6 +224,10 @@ def _python_object_row_real_numeric_tag_case(spec: dict) -> int:
     return kernels.object_row_real_numeric_tag_from_probe(int(spec["probe"]))
 
 
+def _python_category_label_kind_case(spec: dict) -> int:
+    return kernels.category_label_kind_from_probe(int(spec["probe"]))
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -252,6 +256,7 @@ FACTORIZE_CASES = [
         "real_numeric_dtype_admit",
         "object_row_stringlike_tag",
         "object_row_real_numeric_tag",
+        "category_label_kind",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -290,6 +295,7 @@ OBJECT_ROW_STRINGLIKE_TAG_CASES = [
 OBJECT_ROW_REAL_NUMERIC_TAG_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tag"
 ]
+CATEGORY_LABEL_KIND_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_label_kind"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -486,6 +492,13 @@ def test_object_row_real_numeric_tag_cross_host(spec: dict, node_results: dict[s
     tag = _python_object_row_real_numeric_tag_case(spec)
     node = node_results[spec["name"]]
     assert tag == node["tag"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_LABEL_KIND_CASES, ids=lambda s: s["name"])
+def test_category_label_kind_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    label_kind = _python_category_label_kind_case(spec)
+    node = node_results[spec["name"]]
+    assert label_kind == node["label_kind"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])
