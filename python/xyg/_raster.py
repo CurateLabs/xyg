@@ -2467,16 +2467,7 @@ def _emit_ribbon(
         return _column(blob, cols[index])
 
     source_rgba = _trace_paint_rgba(t, "color", n, color, read)
-    fills = _rgba8(
-        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0)
-    )
-    if t.get("color_target"):
-        target_rgba = _trace_paint_rgba(t, "color_target", n, color, read)
-        fills2 = _rgba8(
-            _paint.effective_rgba(target_rgba, t, read, component="fill", default_opacity=1.0)
-        )
-    else:
-        fills2 = fills
+    fills, fills2 = _paint.ribbon_fill_rgba8(t, n, color, read, default_opacity=1.0)
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
     # Outline alpha folds opacity * stroke_opacity, the same stack every other
     # stroked mark applies and the SVG writer's stroke-opacity mirrors. An

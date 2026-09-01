@@ -447,3 +447,37 @@ def trace_stroke_css_meta(
         stroke_css = _css(style.get("stroke"), face_css)
         return stroke_css, paint_rgba8(stroke_css)[3] == 255
     return face_css, face_css_constant
+
+
+def ribbon_fill_rgba(
+    trace: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    default_opacity: float = 1.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Resolve ribbon source/target fill rows as effective 0-1 RGBA."""
+    source = trace_paint_rgba(trace, "color", n, fallback, read)
+    fills = effective_rgba(source, trace, read, component="fill", default_opacity=default_opacity)
+    if trace.get("color_target"):
+        target = trace_paint_rgba(trace, "color_target", n, fallback, read)
+        fills2 = effective_rgba(target, trace, read, component="fill", default_opacity=default_opacity)
+    else:
+        fills2 = fills
+    return fills, fills2
+
+
+def ribbon_fill_rgba8(
+    trace: dict[str, Any],
+    n: int,
+    fallback: str,
+    read: ColumnReader,
+    *,
+    default_opacity: float = 1.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Resolve ribbon source/target fill rows as effective RGBA8."""
+    fills, fills2 = ribbon_fill_rgba(
+        trace, n, fallback, read, default_opacity=default_opacity
+    )
+    return rgba8(fills), rgba8(fills2)

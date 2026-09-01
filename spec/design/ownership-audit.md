@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~6310, `_raster.py` ~3560, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~400 (shared static-export paint layer).
+Top remaining line counts (secondary section 302): `_svg.py` ~6285, `_raster.py` ~3555, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~480 (shared static-export paint layer).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -775,7 +775,7 @@ Forbidden:
 | `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 occupancy scoring; ABI 197 Scene product encode settles `loc="best"` from XYCL/XYNM. This module still packs ChartView compatibility specs | — |
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_paint.py` | Python host | `python-host` | `keep-host`; shared static-export paint resolution for `_svg`/`_raster` (`trace_paint_rgba`, `trace_stroke_intrinsic`, `effective_stroke_rgba8`, `colormap_lut`, CSS→RGBA8); ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` recorded stay-host joined-fill geometry | — |
+| `python/xyg/_paint.py` | Python host | `python-host` | `keep-host`; shared static-export paint resolution for `_svg`/`_raster` (`trace_paint_rgba`, stroke/CSS metadata helpers, `colormap_lut`, CSS→RGBA8); ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` recorded stay-host joined-fill geometry | — |
 | `python/xyg/_payload.py` | Python host | `python-host` | `keep-host`; marshal-only `build_payload` delegating to ABI 303 + ABI 321 via `_payload_trace_materialize.py` | — |
 | `python/xyg/_payload_helpers.py` | Python host | `python-payload-migration` | `keep-host`; transition/tooltip attach, visible-mask predicates, binning coords, channel ship delegates | — |
 | `python/xyg/_payload_ship.py` | Python host | `python-payload-migration` | `keep-host`; column registry gather + ship via `payload_column_gather_materialize` (ABI 310/314) | — |

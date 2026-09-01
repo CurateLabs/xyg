@@ -4959,12 +4959,7 @@ def _ribbon_marks(
         return _column(blob, cols[index])
 
     source_rgba = _trace_paint_rgba(t, "color", n, fallback, read)
-    fills = _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0)
-    if t.get("color_target"):
-        target_rgba = _trace_paint_rgba(t, "color_target", n, fallback, read)
-        fills2 = _paint.effective_rgba(target_rgba, t, read, component="fill", default_opacity=1.0)
-    else:
-        fills2 = fills
+    fills, fills2 = _paint.ribbon_fill_rgba(t, n, fallback, read, default_opacity=1.0)
     stroke_css = style.get("stroke")
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
     stroke_op = _stroke_opacity(style)
