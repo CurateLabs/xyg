@@ -69,6 +69,7 @@ from ._svg import (
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
+    _trace_paint_rgba,
     affine_fast_path,
     annotation_label_placement,
     apply_export_background,
@@ -86,6 +87,9 @@ from ._svg import (
     slot_styles,
     slot_text_color,
     warp_grid_rgba,
+)
+from ._svg import (
+    _paint_rgba8 as _parse_color,
 )
 
 # Samples per smooth Bézier span when flattening to a polyline (#310 / ABI 121).
@@ -218,16 +222,6 @@ _SYMBOLS = {
     "horizontal_line": 17,
     "vertical_line": 18,
 }
-
-
-def _parse_color(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
-    """Resolve a CSS color string to RGBA8 via `xyg_css_color_rgba`
-    (`crates/xyg-engine/src/css.rs`). Scene packing, native raster, and Node
-    hosts share this conversion so named colors, `none`, and the never-invisible
-    fallback cannot drift."""
-    from . import _native
-
-    return _native.css_color_rgba(css, opacity)
 
 
 def _rgba(css: Any, fallback: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
@@ -2063,35 +2057,6 @@ def _emit_area(
             cmd.stroke(top, lw, line_color, dash=style.get("dash"))
             if style.get("stroke_perimeter"):
                 cmd.stroke(base, lw, line_color, dash=style.get("dash"))
-
-
-def _trace_paint_rgba(
-    trace: dict[str, Any],
-    key: str,
-    n: int,
-    fallback: str,
-    read: _paint.ColumnReader,
-) -> np.ndarray:
-    """Resolve one payload paint channel to intrinsic float RGBA."""
-    channel = trace.get(key) or {}
-    direct = _paint.direct_rgba(channel, n, read)
-    if direct is not None:
-        return direct
-    rgba = np.empty((n, 4), dtype=np.float64)
-    rgba[:, 3] = 1.0
-    mode = channel.get("mode")
-    if mode == "continuous":
-        rgba[:, :3] = _lut(channel.get("colormap", "viridis"), read(channel["buf"])[:n]) / 255.0
-    elif mode == "categorical":
-        codes = np.asarray(read(channel["buf"]), dtype=np.int64)[:n]
-        palette = channel.get("palette") or DEFAULT_PALETTE
-        table = np.asarray([_parse_color(value) for value in palette], dtype=np.float64) / 255.0
-        rgba[:] = table[codes % len(table)]
-    else:
-        rgba[:] = (
-            np.asarray(_parse_color(_css(channel.get("color"), fallback)), dtype=np.float64) / 255.0
-        )
-    return rgba
 
 
 def _emit_authored_scatter(

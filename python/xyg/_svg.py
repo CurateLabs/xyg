@@ -937,13 +937,14 @@ def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
     return kernels.colormap_lut(values, stops)
 
 
-def _paint_rgba8(css: Any) -> tuple[int, int, int, int]:
+def _paint_rgba8(css: Any, opacity: float = 1.0) -> tuple[int, int, int, int]:
     """Resolve a CSS paint to RGBA8 via ``xyg_css_color_rgba``.
 
-    Same conversion as ``_raster._parse_color`` and Node ``cssColorRgba8``.
-    Unresolved / browser-only values use the native never-invisible fallback.
+    Same conversion as the compatibility raster exporter and Node
+    ``cssColorRgba8``. Unresolved / browser-only values use the native
+    never-invisible fallback.
     """
-    return _native.css_color_rgba(str(css), 1.0)
+    return _native.css_color_rgba(str(css), float(opacity))
 
 
 def _rgb_css(paint: Any) -> str:
