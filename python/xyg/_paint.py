@@ -1,4 +1,4 @@
-"""Shared direct-paint and alpha resolution for static exporters."""
+"""Shared direct-paint, alpha, and static-export geometry for exporters."""
 
 from __future__ import annotations
 
@@ -105,6 +105,46 @@ def solid_rgba8(css: Any) -> tuple[int, int, int, int] | None:
     """Parseable solid CSS to RGBA8, or None when the fill must be omitted."""
     s = solid_paint(css)
     return None if s is None else paint_rgba8(s)
+
+
+def physical_density_alpha(counts: Any, mean_alpha_u8: Any, style_opacity: float) -> np.ndarray:
+    """Displayed alpha of a mean-color density cell (LOD doc §2 rule 1)."""
+    counts_arr = np.asarray(counts, dtype=np.float64)
+    alpha_u8 = np.asarray(mean_alpha_u8)
+    a_pt = np.clip((alpha_u8.astype(np.float64) / 255.0) * float(style_opacity), 0.0, 1.0)
+    coverage = np.zeros(a_pt.shape, dtype=np.float64)
+    saturated = a_pt >= 1.0
+    partial = ~saturated & (a_pt > 0.0)
+    coverage[partial] = -np.expm1(counts_arr[partial] * np.log1p(-a_pt[partial]))
+    coverage[saturated] = 1.0
+    alpha = (np.clip(coverage, 0.0, 1.0) * 255.0).astype(np.uint8)
+    alpha[(counts_arr <= 0) | (alpha_u8 == 0)] = 0
+    return alpha
+
+
+def grad_line(
+    space: str,
+    direction: str,
+    bbox: tuple[float, float, float, float],
+    plot: dict[str, float],
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Linear-gradient endpoints for mark or plot space."""
+    x, y, w, h = bbox if space != "plot" else (plot["x"], plot["y"], plot["w"], plot["h"])
+    cx, cy = x + w / 2, y + h / 2
+    return {
+        "down": ((cx, y), (cx, y + h)),
+        "up": ((cx, y + h), (cx, y)),
+        "right": ((x, cy), (x + w, cy)),
+        "left": ((x + w, cy), (x, cy)),
+    }.get(direction, ((cx, y), (cx, y + h)))
+
+
+def grad_stops(fill_spec: dict[str, Any], mark_color: str) -> list[tuple[float, tuple[int, ...]]]:
+    """Resolve gradient stop offsets and RGBA8 colors."""
+    return [
+        (float(offset), paint_rgba8(_css(color, mark_color)))
+        for offset, color in fill_spec.get("stops", [])
+    ]
 
 
 def triangle_mesh_boundary(*vertices: np.ndarray) -> np.ndarray | None:

@@ -54,6 +54,9 @@ from ._paint import (
     paint_rgba8 as _paint_rgba8,
 )
 from ._paint import (
+    physical_density_alpha as _physical_density_alpha,
+)
+from ._paint import (
     rgb_css as _rgb_css,
 )
 from ._paint import (
@@ -5365,30 +5368,6 @@ def _grid_image(
         f'preserveAspectRatio="none" style="image-rendering:pixelated" '
         f'href="data:image/png;base64,{b64}"/>'
     )
-
-
-def _physical_density_alpha(counts: Any, mean_alpha_u8: Any, style_opacity: float) -> Any:
-    """Displayed alpha of a mean-color density cell (LOD doc §2 rule 1).
-
-    The physical compositing of the cell's own points — ``1 − (1 − a_pt)^k``
-    for k points whose drawn per-point alpha is ``a_pt = channel alpha ×
-    style opacity`` — so the surface and real marks agree on lightness at
-    every zoom. Style opacity folds INSIDE the exponent: dense cells
-    saturate past it exactly like overplotted marks do. The same law as the
-    client's texture upload (``lodWriteGridTexture``); shared by the SVG and
-    native-raster exporters. Returns u8; empty or all-invisible cells are 0.
-    """
-    counts = np.asarray(counts, dtype=np.float64)
-    a8 = np.asarray(mean_alpha_u8)
-    a_pt = np.clip((a8.astype(np.float64) / 255.0) * float(style_opacity), 0.0, 1.0)
-    coverage = np.zeros(a_pt.shape, dtype=np.float64)
-    saturated = a_pt >= 1.0
-    partial = ~saturated & (a_pt > 0.0)
-    coverage[partial] = -np.expm1(counts[partial] * np.log1p(-a_pt[partial]))
-    coverage[saturated] = 1.0
-    alpha = (np.clip(coverage, 0.0, 1.0) * 255.0).astype(np.uint8)
-    alpha[(counts <= 0) | (a8 == 0)] = 0
-    return alpha
 
 
 def _density_image(

@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~19.8k lines; delegate hooks rising through ABI 349 colormap resolve |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~6190, `_raster.py` ~3470, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~715 (shared static-export paint/geometry layer).
+Top remaining line counts (secondary section 302): `_svg.py` ~6175, `_raster.py` ~3465, `marks.py` 3340, `_figure.py` 2488, `channels.py` 1231, `_paint.py` ~760 (shared static-export paint/geometry layer).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -331,7 +331,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 
 - `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
 - `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
-- `_paint.py` — shared static-export paint/geometry layer (fill/stroke bundles, scatter/ribbon helpers, ABI 121/210/211/212 curve/hexbin/step/marker/rounded-rect helpers, `polar_clip_line_segments`, CSS→RGBA8); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
+- `_paint.py` — shared static-export paint/geometry layer (fill/stroke bundles, scatter/ribbon helpers, density alpha + linear-gradient helpers, ABI 121/210/211/212 curve/hexbin/step/marker/rounded-rect helpers, `polar_clip_line_segments`, CSS→RGBA8); ABI 206 `effective_rgba` marshal; `triangle_mesh_boundary` recorded stay-host joined-fill walk
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206

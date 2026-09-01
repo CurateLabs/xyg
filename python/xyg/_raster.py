@@ -49,7 +49,16 @@ from ._paint import (
     fill_opacity as _fill_opacity,
 )
 from ._paint import (
+    grad_line as _grad_line,
+)
+from ._paint import (
+    grad_stops as _grad_stops,
+)
+from ._paint import (
     paint_rgba8 as _parse_color,
+)
+from ._paint import (
+    physical_density_alpha as _physical_density_alpha,
 )
 from ._paint import (
     rgba8 as _rgba8,
@@ -93,7 +102,6 @@ from ._svg import (
     _estimated_text_width,
     _heatmap_rgba_grid,
     _legend_layout,
-    _physical_density_alpha,
     _PolarProjection,
     _preserve_scene_chrome_for_axis_visibility,
     _px_size,
@@ -811,28 +819,6 @@ def _round_rect_pts(
             angle = start + (math.pi / 2.0) * (i / steps)
             pts.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
     return pts
-
-
-def _grad_line(
-    space: str,
-    direction: str,
-    bbox: tuple[float, float, float, float],
-    plot: dict[str, float],
-) -> tuple[tuple[float, float], tuple[float, float]]:
-    """(g0, g1) endpoints for a linear gradient over a mark bbox (mark space) or
-    the plot rect (plot space)."""
-    x, y, w, h = bbox if space != "plot" else (plot["x"], plot["y"], plot["w"], plot["h"])
-    cx, cy = x + w / 2, y + h / 2
-    return {
-        "down": ((cx, y), (cx, y + h)),
-        "up": ((cx, y + h), (cx, y)),
-        "right": ((x, cy), (x + w, cy)),
-        "left": ((x + w, cy), (x, cy)),
-    }.get(direction, ((cx, y), (cx, y + h)))
-
-
-def _grad_stops(fill_spec: dict, mark_color: str) -> list:
-    return [(float(o), _parse_color(_css(c, mark_color))) for o, c in fill_spec.get("stops", [])]
 
 
 def _emit_polar_grid(
