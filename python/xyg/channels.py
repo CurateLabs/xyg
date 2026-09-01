@@ -441,7 +441,7 @@ def _factorize_categories(
                 unique_labels, raw_counts
             )
             if not np.array_equal(remap, np.arange(len(remap), dtype=remap.dtype)):
-                kernels.remap_u8(raw_codes, remap)
+                kernels.remap_u8(raw_codes, np.asarray(remap, dtype=np.uint8))
             return categories, raw_codes, counts
 
         raw_codes, unique_indices = kernels.factorize_fixed(arr)
