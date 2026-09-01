@@ -52,6 +52,7 @@ from ._svg import (
     _decode_title_geometry,
     _density_column,
     _estimated_text_width,
+    _fill_opacity,
     _heatmap_rgba_grid,
     _legend_layout,
     _lut,
@@ -64,6 +65,7 @@ from ._svg import (
     _Scale,
     _solid_paint,
     _step_arrays,
+    _stroke_opacity,
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
@@ -242,14 +244,6 @@ def _solid_color(css: Any) -> Optional[tuple[int, int, int, int]]:
 
 # cmd.text anchor codes (must match crates/xyg-engine/src/raster.rs): start/center/end of string.
 _TEXT_ANCHOR_CODES = {"start": 0, "center": 1, "end": 2}
-
-
-def _fill_opacity(style: dict[str, Any], default: float = 1.0) -> float:
-    return float(style.get("opacity", default)) * float(style.get("fill_opacity", 1.0))
-
-
-def _stroke_opacity(style: dict[str, Any], default: float = 1.0) -> float:
-    return float(style.get("opacity", default)) * float(style.get("stroke_opacity", 1.0))
 
 
 class _Cmd:
