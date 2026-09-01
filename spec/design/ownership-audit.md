@@ -298,7 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 8 `python-scene-migration` files; ~9.9k lines; 127 delegate hooks through ABI 357 category label kinds |
 
-Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~350, `marks.py` ~3080, `_figure.py` 2488, `channels.py` 1231, `_export_marks_raster.py` ~1430, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_export_axis_grid_raster.py` ~85, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
+Top remaining line counts (secondary section 302): `_svg.py` ~360, `_raster.py` ~350, `marks.py` ~2650, `_figure.py` 2488, `channels.py` 1231, `_export_marks_raster.py` ~1430, `_export_marks_svg.py` ~890, `_export_raster_cmd.py` ~660, `_export_chrome_raster.py` ~340, `_export_baseline_raster.py` ~235, `_export_axis_grid_raster.py` ~85, `_paint.py` ~880, `_export_layout.py` ~800, `_export_legend_raster.py` ~500, `_export_colormap.py` ~400, `_export_axis_grid_svg.py` ~280, `_export_baseline_svg.py` ~225, `_export_colorbar_svg.py` ~330, `_export_polar_svg.py` ~350, `_export_polar_raster.py` ~140, `_export_chrome_svg.py` ~180, `_export_annotations_svg.py` ~240, `_export_path_svg.py` ~145, `_export_marker_svg.py` ~115, `_export_svg_util.py` ~235, `_export_svg_state.py` ~120, `_export_ticks.py` ~360, `_export_legend_svg.py` ~230, `_layout.py` ~470, `_export_legend.py` ~180, `_export_heatmap.py` ~130, `_export_chrome.py` ~190, `_export_annotations.py` ~230, `_columns.py` ~40 (shared static-export helpers).
 
 **M2 Node stay-host TAP (2026-08-31).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are **merged on main** (with [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) and replay helper [#699](https://github.com/CurateLabs/xyg/pull/699)). Staging branches (`cursor/m2-node-payload-rebase-staging-7ce1`, scene rebase tips) are fully absorbed (0 commits ahead of main). Stay-host TAP is inventory tied to #731 close, not an alternate close path.
 
@@ -357,6 +357,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_marks_distribution.py` — shared box/violin multi-group helpers (Node `marks/distribution.js` parity)
 - `_marks_style.py` — cross-cutting style coercion, symbol codes, segment trace assembly
+- `_marks_bar.py` — bar/column rect marks and multi-series style helpers (Node `marks/bar.js` parity)
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
 - `_graph.py` — ingest / id maps; layout is `xyg_graph_layout`
@@ -841,7 +842,7 @@ Forbidden:
 | `python/xyg/_sankey.py` | Python host | `python-host` | `keep-host`; ABI `xyg_sankey_layout`; this module resolves names and error text | — |
 | `python/xyg/_marks_distribution.py` | Python host | `python-host` | `keep-host`; shared box/violin multi-group helpers; mirrors Node `marks/distribution.js` | — |
 | `python/xyg/_marks_style.py` | Python host | `python-host` | `keep-host`; cross-cutting mark style coercion and segment trace assembly | — |
-| `python/xyg/_marks_style.py` | Python host | `python-host` | `keep-host`; cross-cutting mark style coercion and segment trace assembly | — |
+| `python/xyg/_marks_bar.py` | Python host | `python-host` | `keep-host`; bar/column rect marks and multi-series style helpers; mirrors Node `marks/bar.js` | — |
 | `python/xyg/_scene.py` | Python host | `python-host` | `keep-host`; ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206 colormap kernels | — |
 | `python/xyg/_scene_annotations.py` | Python host | `python-scene-migration` | `keep-host`; colorbar + XYAF validate/pack delegates | — |
 | `python/xyg/_scene_errors.py` | Python host | `python-scene-migration` | `keep-host`; maps Rust Scene encode errors to Python exceptions for `figure_scene` | — |
