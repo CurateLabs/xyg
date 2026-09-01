@@ -18,6 +18,8 @@ import {
   xyObjectRowStringlikeTagFromProbe,
   xyObjectRowRealNumericTagFromProbe,
   xyCategoryLabelKindFromProbe,
+  xyCategoryCodeWidth,
+  xyCategoryPaletteRows,
   xyFactorizeFixed,
   xyFactorizeFixedU8Counts,
   xyFactorizeUnicode1U8Counts,
@@ -389,7 +391,7 @@ function factorizeFixedWide(data, width, labelAt) {
   }
   const { categories, remap } = sortedDisplayLabelRemapJs(uniqueLabels);
   const outCodes =
-    categories.length <= MAX_CATEGORIES ? new Uint8Array(n) : new Uint32Array(n);
+    categoryCodeWidth(categories.length) === 1 ? new Uint8Array(n) : new Uint32Array(n);
   for (let i = 0; i < n; i += 1) {
     outCodes[i] = remap[codes[i]];
   }
@@ -444,6 +446,14 @@ export function categoryLabelKindFromProbe(probe) {
   const code = Number(xyCategoryLabelKindFromProbe(Number(probe) & 0xff));
   if (code < 0) throw new RangeError("invalid category-label-kind request");
   return code;
+}
+
+export function categoryCodeWidth(nCategories) {
+  return Number(xyCategoryCodeWidth(BigInt(nCategories)));
+}
+
+export function categoryPaletteRows(nCategories) {
+  return Number(xyCategoryPaletteRows(BigInt(nCategories)));
 }
 
 function objectRowRealNumericTag(value) {

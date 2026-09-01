@@ -1,9 +1,9 @@
 {
-  "abi_version": 354,
+  "abi_version": 355,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "8db786d305325ca3c2d15858e83423135edf5fddf643c9aad08faac7b37b7247",
+  "signature_sha256": "57792504ac81980039c0669d46a13b29ce7874e0df6ada83a73689df36614bc2",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -4256,6 +4256,41 @@
       "c_signature": "size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted)"
     },
     {
+      "name": "xyg_category_code_width",
+      "node_name": "xyCategoryCodeWidth",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "n_categories",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "u32",
+        "c": "uint32_t",
+        "ctypes": "ctypes.c_uint32",
+        "koffi": "uint32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "uint32_t xyg_category_code_width(uint64_t n_categories)"
+    },
+    {
       "name": "xyg_category_label_kind_from_probe",
       "node_name": "xyCategoryLabelKindFromProbe",
       "nargs": 1,
@@ -4434,6 +4469,41 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)"
+    },
+    {
+      "name": "xyg_category_palette_rows",
+      "node_name": "xyCategoryPaletteRows",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "n_categories",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "u64",
+        "c": "uint64_t",
+        "ctypes": "ctypes.c_uint64",
+        "koffi": "uint64_t",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "uint64_t xyg_category_palette_rows(uint64_t n_categories)"
     },
     {
       "name": "xyg_chunked_columns_cancel_before",

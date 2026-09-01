@@ -384,6 +384,30 @@
       "kind": "category_label_kind",
       "probe": 1,
       "label_kind": 1
+    },
+    {
+      "name": "category_code_width_u8",
+      "kind": "category_code_width",
+      "n_categories": 256,
+      "code_width": 1
+    },
+    {
+      "name": "category_code_width_u32",
+      "kind": "category_code_width",
+      "n_categories": 257,
+      "code_width": 4
+    },
+    {
+      "name": "category_palette_rows_capped",
+      "kind": "category_palette_rows",
+      "n_categories": 300,
+      "palette_rows": 256
+    },
+    {
+      "name": "category_palette_rows_small",
+      "kind": "category_palette_rows",
+      "n_categories": 8,
+      "palette_rows": 8
     }
   ]
 }

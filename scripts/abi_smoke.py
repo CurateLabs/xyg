@@ -1066,6 +1066,10 @@ def load() -> ctypes.CDLL:
     lib.xyg_object_row_real_numeric_tag_from_probe.argtypes = [ctypes.c_uint8]
     lib.xyg_category_label_kind_from_probe.restype = ctypes.c_int32
     lib.xyg_category_label_kind_from_probe.argtypes = [ctypes.c_uint8]
+    lib.xyg_category_code_width.restype = ctypes.c_uint32
+    lib.xyg_category_code_width.argtypes = [ctypes.c_uint64]
+    lib.xyg_category_palette_rows.restype = ctypes.c_uint64
+    lib.xyg_category_palette_rows.argtypes = [ctypes.c_uint64]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -6095,6 +6099,14 @@ def main() -> None:
         and lib.xyg_category_label_kind_from_probe(2) == 1
         and lib.xyg_category_label_kind_from_probe(3) == 2,
         "category_label_kind_from_probe missing text bytes",
+    )
+    ok(
+        lib.xyg_category_code_width(256) == 1 and lib.xyg_category_code_width(257) == 4,
+        "category_code_width u8 u32 boundary",
+    )
+    ok(
+        lib.xyg_category_palette_rows(300) == 256 and lib.xyg_category_palette_rows(8) == 8,
+        "category_palette_rows cap",
     )
     hex_css = array("B", b"#ff0000")
     ok(

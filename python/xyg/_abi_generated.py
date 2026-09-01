@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 354
-SIGNATURE_SHA256 = "8db786d305325ca3c2d15858e83423135edf5fddf643c9aad08faac7b37b7247"
+ABI_VERSION = 355
+SIGNATURE_SHA256 = "57792504ac81980039c0669d46a13b29ce7874e0df6ada83a73689df36614bc2"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -110,6 +110,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_categorical_palette_map_resolve
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # uint32_t xyg_category_code_width(uint64_t n_categories)
+    function = lib.xyg_category_code_width
+    function.restype = ctypes.c_uint32
+    function.argtypes = [ctypes.c_uint64]
     # int32_t xyg_category_label_kind_from_probe(uint8_t probe)
     function = lib.xyg_category_label_kind_from_probe
     function.restype = ctypes.c_int32
@@ -118,6 +122,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_category_labels_packed
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # uint64_t xyg_category_palette_rows(uint64_t n_categories)
+    function = lib.xyg_category_palette_rows
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_uint64]
     # int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)
     function = lib.xyg_chunked_columns_cancel_before
     function.restype = ctypes.c_int32

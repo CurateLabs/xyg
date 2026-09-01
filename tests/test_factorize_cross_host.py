@@ -228,6 +228,14 @@ def _python_category_label_kind_case(spec: dict) -> int:
     return kernels.category_label_kind_from_probe(int(spec["probe"]))
 
 
+def _python_category_code_width_case(spec: dict) -> int:
+    return kernels.category_code_width(int(spec["n_categories"]))
+
+
+def _python_category_palette_rows_case(spec: dict) -> int:
+    return kernels.category_palette_rows(int(spec["n_categories"]))
+
+
 FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
 FACTORIZE_CASES = [
     c
@@ -257,6 +265,8 @@ FACTORIZE_CASES = [
         "object_row_stringlike_tag",
         "object_row_real_numeric_tag",
         "category_label_kind",
+        "category_code_width",
+        "category_palette_rows",
     )
 ]
 PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
@@ -296,6 +306,8 @@ OBJECT_ROW_REAL_NUMERIC_TAG_CASES = [
     c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tag"
 ]
 CATEGORY_LABEL_KIND_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_label_kind"]
+CATEGORY_CODE_WIDTH_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_code_width"]
+CATEGORY_PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_palette_rows"]
 STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
 REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
 
@@ -499,6 +511,20 @@ def test_category_label_kind_cross_host(spec: dict, node_results: dict[str, dict
     label_kind = _python_category_label_kind_case(spec)
     node = node_results[spec["name"]]
     assert label_kind == node["label_kind"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_CODE_WIDTH_CASES, ids=lambda s: s["name"])
+def test_category_code_width_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    code_width = _python_category_code_width_case(spec)
+    node = node_results[spec["name"]]
+    assert code_width == node["code_width"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_PALETTE_ROWS_CASES, ids=lambda s: s["name"])
+def test_category_palette_rows_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    palette_rows = _python_category_palette_rows_case(spec)
+    node = node_results[spec["name"]]
+    assert palette_rows == node["palette_rows"]
 
 
 @pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])

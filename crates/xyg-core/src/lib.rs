@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 354;
+pub const ABI_VERSION: u32 = 355;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10325,6 +10325,24 @@ pub unsafe extern "C" fn xyg_category_label_kind_from_probe(probe: u8) -> i32 {
         Some(kind) => i32::from(kind),
         None => -1,
     })
+}
+
+/// Categorical wire code width for `n_categories` (ABI 355).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_category_code_width(n_categories: u64) -> u32 {
+    match usize::try_from(n_categories) {
+        Ok(n) => kernels::category_code_width(n),
+        Err(_) => kernels::FACTORIZE_DISPLAY_LABELS_CODE_U32,
+    }
+}
+
+/// Indexed palette row count capped at 256 (ABI 355).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_category_palette_rows(n_categories: u64) -> u64 {
+    match usize::try_from(n_categories) {
+        Ok(n) => kernels::category_palette_rows(n) as u64,
+        Err(_) => kernels::MAX_CATEGORY_CODES_U8 as u64,
+    }
 }
 
 /// Classify whether a column uses categorical color resolution (ABI 351).

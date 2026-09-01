@@ -714,6 +714,8 @@ pub fn fold_codes_f64_u8(codes: &[f64], n_palette: usize) -> Vec<u8> {
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
 /// Width marker for [`FactorizedDisplayLabels::codes_u32`].
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U32: u32 = 4;
+/// Maximum categories that ship as u8 wire codes (`channels.MAX_CATEGORIES`).
+pub const MAX_CATEGORY_CODES_U8: usize = 256;
 /// Probe row count matching `channels._FACTORIZE_PROBE_ROWS`.
 pub const FACTORIZE_PROBE_ROWS: usize = 4096;
 /// Distinct-probe ceiling matching `channels._FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES`.
@@ -8687,6 +8689,20 @@ pub fn category_label_kind_from_probe(probe: u8) -> Option<u8> {
     })
 }
 
+/// Categorical wire code width for `n_categories` (ABI 355).
+pub fn category_code_width(n_categories: usize) -> u32 {
+    if n_categories <= MAX_CATEGORY_CODES_U8 {
+        FACTORIZE_DISPLAY_LABELS_CODE_U8
+    } else {
+        FACTORIZE_DISPLAY_LABELS_CODE_U32
+    }
+}
+
+/// Indexed palette row count capped at [`MAX_CATEGORY_CODES_U8`] (ABI 355).
+pub fn category_palette_rows(n_categories: usize) -> usize {
+    n_categories.min(MAX_CATEGORY_CODES_U8)
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -11241,6 +11257,14 @@ mod tests {
             Some(CATEGORY_LABEL_UTF8)
         );
         assert!(category_label_kind_from_probe(99).is_none());
+    }
+
+    #[test]
+    fn category_code_width_matches_host_policy() {
+        assert_eq!(category_code_width(256), FACTORIZE_DISPLAY_LABELS_CODE_U8);
+        assert_eq!(category_code_width(257), FACTORIZE_DISPLAY_LABELS_CODE_U32);
+        assert_eq!(category_palette_rows(300), MAX_CATEGORY_CODES_U8);
+        assert_eq!(category_palette_rows(8), 8);
     }
 
     #[test]

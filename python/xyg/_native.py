@@ -9454,6 +9454,16 @@ def category_label_kind_from_probe(probe: int) -> int:
     return code
 
 
+def category_code_width(n_categories: int) -> int:
+    """Categorical wire code width marker: 1 (u8) or 4 (u32) (ABI 355)."""
+    return int(_lib.xyg_category_code_width(int(n_categories)))
+
+
+def category_palette_rows(n_categories: int) -> int:
+    """Indexed palette row count capped at 256 (ABI 355)."""
+    return int(_lib.xyg_category_palette_rows(int(n_categories)))
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,

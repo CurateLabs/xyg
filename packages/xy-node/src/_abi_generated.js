@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 354;
-export const SIGNATURE_SHA256 = "8db786d305325ca3c2d15858e83423135edf5fddf643c9aad08faac7b37b7247";
+export const ABI_VERSION = 355;
+export const SIGNATURE_SHA256 = "57792504ac81980039c0669d46a13b29ce7874e0df6ada83a73689df36614bc2";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -30,8 +30,10 @@ export let xyBoxGeometry;
 export let xyBoxStats;
 export let xyCategoricalPalette;
 export let xyCategoricalPaletteMapResolve;
+export let xyCategoryCodeWidth;
 export let xyCategoryLabelKindFromProbe;
 export let xyCategoryLabelsPacked;
+export let xyCategoryPaletteRows;
 export let xyChunkedColumnsCancelBefore;
 export let xyChunkedColumnsFree;
 export let xyChunkedColumnsOpen;
@@ -498,8 +500,10 @@ export function bindGeneratedAbi(lib) {
   xyBoxStats = lib.func("int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers)");
   xyCategoricalPalette = lib.func("size_t xyg_categorical_palette(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t n_categories, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)");
   xyCategoricalPaletteMapResolve = lib.func("size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted)");
+  xyCategoryCodeWidth = lib.func("uint32_t xyg_category_code_width(uint64_t n_categories)");
   xyCategoryLabelKindFromProbe = lib.func("int32_t xyg_category_label_kind_from_probe(uint8_t probe)");
   xyCategoryLabelsPacked = lib.func("size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)");
+  xyCategoryPaletteRows = lib.func("uint64_t xyg_category_palette_rows(uint64_t n_categories)");
   xyChunkedColumnsCancelBefore = lib.func("int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)");
   xyChunkedColumnsFree = lib.func("int32_t xyg_chunked_columns_free(uint64_t store)");
   xyChunkedColumnsOpen = lib.func("uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len)");

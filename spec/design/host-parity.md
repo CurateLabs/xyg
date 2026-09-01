@@ -892,6 +892,9 @@ JS type inspection stays host-side.
 Python `channels._category_label_kind_and_bytes` and Node `categoryLabelKindAndBytes`
 select label kinds through ABI 354 `xyg_category_label_kind_from_probe`; UTF-8
 payload encoding stays host-side.
+Python `palette_rgba8` and Node `categoryCodeWidth` / `categoryPaletteRows` share
+ABI 355 `xyg_category_code_width` and `xyg_category_palette_rows` for the 256
+category u8/u32 boundary and indexed palette row cap.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

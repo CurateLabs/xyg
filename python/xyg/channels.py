@@ -378,10 +378,6 @@ def _object_column_is_stringlike(arr: np.ndarray) -> bool:
     return kernels.object_rows_all_stringlike(tags)
 
 
-def _category_code_dtype(category_count: int) -> type[np.uint8] | type[np.uint32]:
-    return np.uint8 if category_count <= MAX_CATEGORIES else np.uint32
-
-
 def _use_native_fixed_factorizer(arr: np.ndarray) -> bool:
     """Choose the O(N) hash path unless a bounded global probe says it cannot pay.
 
@@ -767,7 +763,7 @@ def palette_rgba8(palette: list[str], n_categories: int) -> npt.NDArray[np.uint8
     so the aggregate plane substitutes the built-in palette's color at the same
     index and *says so* (§28), rather than filling the cell black and letting a
     density surface disagree with the points it aggregates."""
-    return palette_rows_rgba8(palette, min(n_categories, MAX_CATEGORIES))
+    return palette_rows_rgba8(palette, kernels.category_palette_rows(n_categories))
 
 
 def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint8]:
