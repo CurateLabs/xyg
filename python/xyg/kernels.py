@@ -38,6 +38,7 @@ clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
 palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8
+literal_color_rgba_f64 = _impl.literal_color_rgba_f64
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -423,6 +424,7 @@ __all__ = [
     "label_codes_first_seen",
     "legend_best_loc",
     "legend_normalize",
+    "literal_color_rgba_f64",
     "local_log_density",
     "lod_grid_shape",
     "lod_plan",

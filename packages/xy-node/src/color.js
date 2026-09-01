@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8 } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64 } from "./native.js";
 import { DEFAULT_PALETTE } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -236,6 +236,29 @@ export function paletteRowsRgba8(palette, rows) {
   return out;
 }
 
+/** Functional CSS color column to canonical f64 RGBA rows (ABI 344). */
+export function literalColorRgbaF64(colors) {
+  const src = colors?.length ? colors.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    return null;
+  }
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Float64Array(src.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyLiteralColorRgbaF64(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    return null;
+  }
+  return out;
+}
+
 function flattenRgbRows(raw, n) {
   if (raw.length !== n) return null;
   const first = raw[0];
@@ -299,7 +322,10 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
       };
     }
     if (raw.every((v) => typeof v === "string" && cssIsFunctional(v))) {
-      return { mode: "direct_rgba", rgba: cssColorsToRgba8(raw) };
+      const packed = literalColorRgbaF64(raw);
+      if (packed) {
+        return { mode: "direct_rgba", rgba: clipQuantizeU8(packed) };
+      }
     }
     return factorizeCategories(raw);
   }

@@ -294,17 +294,9 @@ def _literal_color_rgba(arr: np.ndarray) -> Optional[npt.NDArray[np.float64]]:
     values = arr.tolist()
     if not all(isinstance(v, str) and kernels.css_is_functional(v) for v in values):
         return None
-    # Distinct-first: a million-row column of a handful of colors parses each
-    # one once, through the same grammar a scalar `color=` is validated with.
-    resolved: dict[str, tuple[float, float, float, float]] = {}
-    for value in set(values):
-        status, rgba = kernels.css_check(kernels.CSS_COLOR, value)
-        if status != 1 or rgba is None:
-            # A malformed `#gg0000`, or a `var()` no DOM-free renderer can
-            # resolve: not paint this function can hand on.
-            return None
-        resolved[value] = rgba
-    return np.array([resolved[v] for v in values], dtype=np.float64)
+    # ABI 344 packs the column in Rust so every host parses with the same
+    # functional-color gate and static CSS grammar.
+    return kernels.literal_color_rgba_f64(values)
 
 
 def _is_missing_category(value: Any) -> bool:

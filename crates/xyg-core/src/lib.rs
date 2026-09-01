@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 343;
+pub const ABI_VERSION: u32 = 344;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10301,6 +10301,69 @@ pub unsafe extern "C" fn xyg_colormap_lut_rgba8(
         let out = std::slice::from_raw_parts_mut(out_rgba, need);
         out.copy_from_slice(&lut);
         1
+    })
+}
+
+/// Pack a column of functional CSS color strings into canonical f64 RGBA rows.
+///
+/// Returns the row count on success or `usize::MAX` on invalid arguments or
+/// when any entry is not unambiguous paint syntax.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_literal_color_rgba_f64(
+    entry_lens: *const u32,
+    entry_texts: *const u8,
+    entry_texts_len: usize,
+    n_entries: usize,
+    out_rgba: *mut f64,
+    out_cap: usize,
+) -> usize {
+    if n_entries == 0 {
+        return usize::MAX;
+    }
+    let need = n_entries.saturating_mul(4);
+    if need == 0 || out_cap < need || out_rgba.is_null() {
+        return usize::MAX;
+    }
+    if entry_lens.is_null() {
+        return usize::MAX;
+    }
+    if entry_texts_len > 0 && entry_texts.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let lens = std::slice::from_raw_parts(entry_lens, n_entries);
+        let texts = if entry_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(entry_texts, entry_texts_len)
+        };
+        let mut offset = 0usize;
+        let mut entries: Vec<String> = Vec::with_capacity(n_entries);
+        for &len in lens {
+            let len = len as usize;
+            let end = offset + len;
+            if end > texts.len() {
+                return usize::MAX;
+            }
+            let Ok(text) = std::str::from_utf8(&texts[offset..end]) else {
+                return usize::MAX;
+            };
+            entries.push(text.to_owned());
+            offset = end;
+        }
+        if offset != texts.len() {
+            return usize::MAX;
+        }
+        let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
+        let Some(packed) = kernels::literal_color_rgba_f64_from_strs(&refs) else {
+            return usize::MAX;
+        };
+        if packed.len() != need {
+            return usize::MAX;
+        }
+        let out = std::slice::from_raw_parts_mut(out_rgba, need);
+        out.copy_from_slice(&packed);
+        n_entries
     })
 }
 

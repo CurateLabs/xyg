@@ -17,7 +17,7 @@ import {
 } from "../src/factorize.js";
 import { xyFactorizeUseNativeProbe, xyFoldCodesU8 } from "../src/native.js";
 import { u32Ptr, u8Ptr } from "../src/encode.js";
-import { quantizeUnitU8, paletteRowsRgba8 } from "../src/color.js";
+import { quantizeUnitU8, paletteRowsRgba8, literalColorRgbaF64 } from "../src/color.js";
 import { colormapLutRgba8 } from "../src/encode.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -175,6 +175,20 @@ for (const spec of fixture.cases) {
       rows.push([...lut.slice(i * 4, i * 4 + 4)]);
     }
     out.push({ name: spec.name, rows });
+    continue;
+  }
+  if (spec.kind === "literal_color_rgba_f64") {
+    const packed = literalColorRgbaF64(spec.values ?? []);
+    if (spec.expect_null) {
+      out.push({ name: spec.name, rgba: null });
+      continue;
+    }
+    const n = (spec.values ?? []).length;
+    const rows = [];
+    for (let i = 0; i < n; i += 1) {
+      rows.push([...packed.slice(i * 4, i * 4 + 4)]);
+    }
+    out.push({ name: spec.name, rgba: rows });
     continue;
   }
   if (spec.kind === "stringlike") {

@@ -87,6 +87,7 @@ MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("—", "341", "xyg_quantize_unit_u8", "channels quantize unit u8"),
     ("—", "342", "xyg_palette_rows_rgba8", "channels palette rows rgba8"),
     ("—", "343", "xyg_colormap_lut_rgba8", "channels colormap lut rgba8"),
+    ("—", "344", "xyg_literal_color_rgba_f64", "channels literal color rgba f64"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (

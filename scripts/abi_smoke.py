@@ -956,6 +956,15 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_literal_color_rgba_f64.restype = ctypes.c_size_t
+    lib.xyg_literal_color_rgba_f64.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -4536,6 +4545,43 @@ def main() -> None:
         )
         == ctypes.c_size_t(-1).value,
         "palette_rows_rgba8 empty entries",
+    )
+    literal_entries = [b"#ff0000", b"#00ff00"]
+    literal_lens = array("I", [len(item) for item in literal_entries])
+    literal_packed = array("B")
+    for item in literal_entries:
+        literal_packed.extend(item)
+    literal_out = array("d", [0.0] * 8)
+    literal_written = lib.xyg_literal_color_rgba_f64(
+        _ptr(literal_lens, ctypes.c_uint32),
+        _ptr(literal_packed, ctypes.c_uint8),
+        len(literal_packed),
+        len(literal_entries),
+        _ptr(literal_out, ctypes.c_double),
+        len(literal_out),
+    )
+    ok(
+        literal_written == 2
+        and abs(literal_out[0] - 1.0) < 1e-12
+        and abs(literal_out[4] - 0.0) < 1e-12
+        and abs(literal_out[5] - 1.0) < 1e-12,
+        "literal_color_rgba_f64 basic",
+    )
+    bad_literal = [b"red"]
+    bad_lens = array("I", [len(bad_literal[0])])
+    bad_packed = array("B")
+    bad_packed.extend(bad_literal[0])
+    ok(
+        lib.xyg_literal_color_rgba_f64(
+            _ptr(bad_lens, ctypes.c_uint32),
+            _ptr(bad_packed, ctypes.c_uint8),
+            len(bad_packed),
+            1,
+            _ptr(literal_out, ctypes.c_double),
+            len(literal_out),
+        )
+        == ctypes.c_size_t(-1).value,
+        "literal_color_rgba_f64 named reject",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

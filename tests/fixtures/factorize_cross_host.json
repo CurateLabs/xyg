@@ -144,6 +144,23 @@
       "name": "colormap_lut_rgba8_custom",
       "kind": "colormap_lut_rgba8",
       "stops": [[0, 0, 0], [255, 255, 255]]
+    },
+    {
+      "name": "literal_color_rgba_f64_basic",
+      "kind": "literal_color_rgba_f64",
+      "values": ["#ff0000", "#00ff00", "#0000ff"]
+    },
+    {
+      "name": "literal_color_rgba_f64_named",
+      "kind": "literal_color_rgba_f64",
+      "values": ["red", "green"],
+      "expect_null": true
+    },
+    {
+      "name": "literal_color_rgba_f64_malformed",
+      "kind": "literal_color_rgba_f64",
+      "values": ["#ff0000", "b"],
+      "expect_null": true
     }
   ]
 }

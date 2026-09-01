@@ -866,6 +866,10 @@ Equal or non-finite domain stays a host zero-span short-circuit.
 Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
 rows through ABI 342 `xyg_palette_rows_rgba8`. Browser-only palette status
 and per-index substitute warnings stay host.
+Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
+pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
+syntax probe stays host-side so categorical columns are rejected without
+materializing the whole column.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
 Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1

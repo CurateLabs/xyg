@@ -9492,6 +9492,26 @@ def colormap_lut_rgba8(
     return out.reshape(count, 4)
 
 
+def literal_color_rgba_f64(values: Sequence[str]) -> npt.NDArray[np.float64] | None:
+    """Functional CSS color column to canonical f64 RGBA rows (ABI 344)."""
+    texts = [str(v) for v in values]
+    if not texts:
+        return None
+    lens, packed = _pack_utf8_strings(texts)
+    out = np.empty(len(texts) * 4, dtype=np.float64)
+    written = _lib.xyg_literal_color_rgba_f64(
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(texts),
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        return None
+    return out.reshape(len(texts), 4)
+
+
 def histogram_uniform(
     data: npt.NDArray[np.float64],
     lo: float,

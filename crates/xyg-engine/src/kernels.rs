@@ -8486,6 +8486,31 @@ pub fn palette_rows_rgba8(entries: &[&str], rows: usize, out: &mut [u8]) -> Opti
     Some(unresolved)
 }
 
+/// Pack functional CSS color strings into canonical straight-alpha f64 RGBA rows.
+///
+/// Returns `None` when any entry is not unambiguous paint syntax (`#`, `rgb()`,
+/// `hsl()`) or fails to parse as statically resolvable color.
+pub fn literal_color_rgba_f64_from_strs(entries: &[&str]) -> Option<Vec<f64>> {
+    if entries.is_empty() {
+        return None;
+    }
+    let mut out = Vec::with_capacity(entries.len().saturating_mul(4));
+    for entry in entries {
+        if !crate::css::is_functional_color(entry) {
+            return None;
+        }
+        match crate::css::parse_color(entry) {
+            Ok(crate::css::Checked::Parsed(Some(rgba))) => {
+                for c in rgba {
+                    out.push(f64::from(c));
+                }
+            }
+            _ => return None,
+        }
+    }
+    Some(out)
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -10508,6 +10533,16 @@ mod tests {
         assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
         assert_eq!(out[0], 0);
         assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
+    }
+
+    #[test]
+    fn literal_color_rgba_f64_rejects_named_and_malformed() {
+        let good = ["#ff0000", "#00ff00", "#0000ff"];
+        let packed = literal_color_rgba_f64_from_strs(&good).expect("paint");
+        assert_eq!(packed.len(), 12);
+        assert!((packed[0] - 1.0).abs() < 1e-6);
+        assert!(literal_color_rgba_f64_from_strs(&["#ff0000", "b"]).is_none());
+        assert!(literal_color_rgba_f64_from_strs(&["red", "green"]).is_none());
     }
 
     #[test]
