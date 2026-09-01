@@ -10,6 +10,7 @@ import numpy as np
 from . import _native, channels
 from ._payload_helpers import binning_coords, transition_entry, visible_sel
 from ._trace import Trace
+from .channels import MAX_CATEGORIES
 from .columns import Column
 from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS
 
@@ -246,7 +247,12 @@ def _channel_desc(ch: Any):
     if ch.mode == "continuous" and ch.values is not None:
         f64 = np.ascontiguousarray(ch.values, dtype=np.float64).reshape(-1)
     elif ch.mode == "categorical" and ch.codes is not None:
-        u8 = np.ascontiguousarray(ch.codes, dtype=np.uint8).reshape(-1)
+        codes_arr = np.asarray(ch.codes)
+        n_cats = len(getattr(ch, "categories", []) or [])
+        if codes_arr.dtype == np.uint32 or n_cats > MAX_CATEGORIES:
+            f64 = np.ascontiguousarray(codes_arr, dtype=np.float64).reshape(-1)
+        else:
+            u8 = np.ascontiguousarray(codes_arr, dtype=np.uint8).reshape(-1)
     elif ch.mode == "direct_rgba":
         rgba = getattr(ch, "rgba", None)
         if rgba is not None:
@@ -468,14 +474,20 @@ def emit_trace_materialized(
                 meta["kind"] = (col_kinds[idx] if idx < len(col_kinds) else b"").decode("utf-8")
         col_idx = pw._append_from_materialized(enc, meta)
         cast(dict[str, Any], target)[key] = col_idx
+    ship_style_channels = False
     for idx in range(int(summary.n_channels)):
         wire = chan_out[idx]
         key = _CHAN_REGISTRY[int(wire.registry_key)]
+        if key == "channels":
+            ship_style_channels = True
+            continue
         if wire.buf_kind == 0:
             if key == "color":
                 entry["color"] = t.color_ch.spec() if t.color_ch else {"mode": "constant"}
             elif key == "size":
                 entry["size"] = t.size_ch.spec() if t.size_ch else {"mode": "constant"}
+            elif key == "stroke":
+                entry["stroke"] = t.stroke_ch.spec() if t.stroke_ch else {"mode": "constant"}
             elif key == "color_target":
                 entry["color_target"] = t.color2_ch.spec() if t.color2_ch else {"mode": "constant"}
             continue
@@ -493,15 +505,19 @@ def emit_trace_materialized(
             cats = getattr(cc, "categories", None) or () if cc else ()
             spec["palette"] = channels.categorical_palette(cc.colors, len(cats)) if cc else True
         if wire.set_n:
-            spec["n"] = int(wire.len)
+            if key == "color" and t.color_ch is not None and t.color_ch.mode == "direct_rgba":
+                spec["n"] = int(summary.n_marks)
+            else:
+                spec["n"] = int(wire.len)
         if key == "color":
             entry["color"] = {**(t.color_ch.spec() if t.color_ch else {"mode": "constant"}), **spec}
         elif key == "size":
             entry["size"] = {**(t.size_ch.spec() if t.size_ch else {"mode": "constant"}), **spec}
         elif key == "stroke":
-            entry["stroke"] = spec
-        elif key == "channels":
-            entry["channels"] = spec
+            entry["stroke"] = {
+                **(t.stroke_ch.spec() if t.stroke_ch else {"mode": "constant"}),
+                **spec,
+            }
         elif key == "color_target":
             entry["color_target"] = {
                 **(t.color2_ch.spec() if t.color2_ch else {"mode": "constant"}),
@@ -574,7 +590,7 @@ def emit_trace_materialized(
             "y_range": list(t.style["y_range"]),
         }
         return entry
-    if path == PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID and summary.has_heatmap:
+    if path == PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID:
         grid_shape = t.grid_shape
         grid = t.grid
         if grid_shape is None or grid is None:
@@ -610,4 +626,8 @@ def emit_trace_materialized(
         return entry
     if summary.set_shipped_sel:
         t.shipped_sel = sel
+    if ship_style_channels and t.style_channels:
+        shipped = channels.ship_style_channels(t.style_channels, sel, pw.ship_scalar, pw.ship_u8)
+        if shipped:
+            entry["channels"] = shipped
     return entry

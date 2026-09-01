@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,6 +24,12 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "scene_chrome_pack_cross_host.mjs"
 BULK_NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "scene_bulk_pack_cross_host.mjs"
 BULK_FIXTURE = ROOT / "tests" / "fixtures" / "scene_bulk_pack_minimal.json"
+LIB = (
+    ROOT
+    / "target"
+    / "release"
+    / ("libxyg_core.dylib" if sys.platform == "darwin" else "libxyg_core.so")
+)
 
 
 def _node_bin() -> str:
@@ -176,12 +184,15 @@ def test_scene_xyaf_bulk_pack_via_scene_v3_helper() -> None:
     not _node_bin() or not NODE_SCRIPT.is_file(), reason="node cross-host script missing"
 )
 def test_scene_chrome_pack_cross_host_node() -> None:
+    env = os.environ.copy()
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), str(NODE_SCRIPT)],
         cwd=ROOT / "packages" / "xy-node",
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     assert proc.returncode == 0, proc.stderr
     payload = json.loads(proc.stdout)
@@ -266,12 +277,15 @@ def test_scene_bulk_pack_minimal_fixture_bytes() -> None:
 )
 def test_scene_bulk_pack_cross_host_node() -> None:
     fixture = _bulk_fixture()
+    env = os.environ.copy()
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), str(BULK_NODE_SCRIPT)],
         cwd=ROOT / "packages" / "xy-node",
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     assert proc.returncode == 0, proc.stderr
     payload = json.loads(proc.stdout)

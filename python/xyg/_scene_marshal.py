@@ -520,16 +520,20 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         rgba_grid_f64 = np.empty(0, dtype=np.float64)
     xv = _trace_column(trace, "x")
     yv = _trace_column(trace, "y")
-    x_values = (
-        np.ascontiguousarray(xv, dtype=np.float64)
-        if xv is not None
-        else np.empty(0, dtype=np.float64)
-    )
-    y_values = (
-        np.ascontiguousarray(yv, dtype=np.float64)
-        if yv is not None
-        else np.empty(0, dtype=np.float64)
-    )
+    if dispatch["pack_density"]:
+        x_values = np.empty(0, dtype=np.float64)
+        y_values = np.empty(0, dtype=np.float64)
+    else:
+        x_values = (
+            np.ascontiguousarray(xv, dtype=np.float64)
+            if xv is not None
+            else np.empty(0, dtype=np.float64)
+        )
+        y_values = (
+            np.ascontiguousarray(yv, dtype=np.float64)
+            if yv is not None
+            else np.empty(0, dtype=np.float64)
+        )
     style_channels = getattr(trace, "style_channels", None) or {}
     fallback_color = str(style.get("color", "#3987e5"))
     return {
