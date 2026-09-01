@@ -37,24 +37,25 @@ from ._export_layout import (
     _decode_title_geometry,
     _title_entries,
     _title_metrics,
-    layout,
+    layout,  # noqa: F401
 )
 from ._export_legend import (
     legend_clip_rect,
     legend_items,
 )
-from ._export_legend_raster import _emit_colorbar, _emit_legend
+from ._export_legend_raster import _emit_colorbar, _emit_legend  # noqa: F401
 from ._export_marks_raster import (
-    _emit_annotations,
+    _emit_annotations,  # noqa: F401
     _emit_area,
     _emit_bars,
-    _emit_grid,
+    _emit_grid,  # noqa: F401
     _emit_hexbin,
     _emit_line,
     _emit_rects,
     _emit_ribbon,
     _emit_scatter,
     _emit_segments,
+    _emit_text_box,  # noqa: F401
     _emit_triangle_mesh,
     _native_font_emphasis,
 )
@@ -64,7 +65,15 @@ from ._export_polar_raster import (
     _polar_label_paint,
 )
 from ._export_raster_cmd import (
+    _FILL,  # noqa: F401
+    _STROKE,  # noqa: F401
+    _STYLED_TEXT,  # noqa: F401
+    _SYMBOLS,  # noqa: F401
     _TEXT_ANCHOR_CODES,
+    _TEXT_BOLD,  # noqa: F401
+    _TEXT_OP,  # noqa: F401
+    _TEXT_ROT_CCW,  # noqa: F401
+    _TEXT_ROT_CW,  # noqa: F401
     _Cmd,
     _emit_text_block,
     _rect_pts,
@@ -92,7 +101,7 @@ from ._paint import (
     _css,
 )
 from ._paint import (
-    paint_rgba8 as _parse_color,
+    paint_rgba8 as _parse_color,  # noqa: F401
 )
 from ._paint import (
     solid_rgba8 as _solid_color,

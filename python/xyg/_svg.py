@@ -73,18 +73,22 @@ from ._export_polar_svg import _polar_frame_path
 from ._export_svg_state import _Svg
 from ._export_svg_util import _num, escape
 from ._export_ticks import (
+    _axis_tick_label_layout,  # noqa: F401
     _fmt_axis,  # noqa: F401
     _fmt_log,  # noqa: F401
     _preserve_scene_chrome_for_axis_visibility,
     _tick_text,  # noqa: F401
     _tick_window,  # noqa: F401
     _tick_window_filter,  # noqa: F401
+    axis_ticks,  # noqa: F401
+    minor_axis_ticks,  # noqa: F401
 )
 from ._fontmetrics import estimated_text_width as _estimated_text_width  # noqa: F401
 from ._layout import (
     THETA_ZERO,  # noqa: F401
     _axis_scales,
     _PolarProjection,
+    _Scale,  # noqa: F401
     polar_wedge_points,  # noqa: F401
 )
 from ._paint import (
