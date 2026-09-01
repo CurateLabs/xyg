@@ -248,6 +248,31 @@ def hexbin_ring(style: dict[str, Any]) -> tuple[np.ndarray, np.ndarray]:
     return _native.hexbin_ring(float(style.get("hex_dx", 0.0)), float(style.get("hex_dy", 0.0)))
 
 
+def step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
+    """Expand compact vertices into a step polyline via ABI 211."""
+    mode = 1 if where == "pre" else 2 if where == "mid" else 3
+    return _native.step_arrays(
+        np.asarray(xv, dtype=np.float64), np.asarray(yv, dtype=np.float64), mode
+    )
+
+
+def authored_marker_points(
+    unit_x: np.ndarray,
+    unit_y: np.ndarray,
+    cx: float,
+    cy: float,
+    scale: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Pixel-space authored marker vertices via ABI 212."""
+    return _native.marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        np.asarray(unit_x, dtype=np.float64),
+        np.asarray(unit_y, dtype=np.float64),
+    )
+
+
 def direct_rgba(channel: dict[str, Any], n: int, read_column: ColumnReader) -> np.ndarray | None:
     """Decode a packed normalized RGBA8 channel to canonical float RGBA."""
     if channel.get("mode") != "direct_rgba":

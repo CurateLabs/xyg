@@ -28,6 +28,9 @@ from ._paint import (
     hexbin_ring,
 )
 from ._paint import (
+    authored_marker_points as _authored_marker_points,
+)
+from ._paint import (
     colormap_lut as _lut,
 )
 from ._paint import (
@@ -49,6 +52,9 @@ from ._paint import (
     solid_rgba8 as _solid_color,
 )
 from ._paint import (
+    step_arrays as _step_arrays,
+)
+from ._paint import (
     stroke_opacity as _stroke_opacity,
 )
 from ._svg import (
@@ -60,7 +66,6 @@ from ._svg import (
     DEFAULT_PALETTE,
     _annotation_connector_unclipped,
     _annotation_first_baseline,
-    _authored_marker_points,
     _axis_label_geometry,
     _axis_scales,
     _axis_tick_font_size,
@@ -86,7 +91,6 @@ from ._svg import (
     _px_size,
     _resolve_static_css_vars,
     _Scale,
-    _step_arrays,
     _tick_label_anchor,
     _title_entries,
     _title_metrics,

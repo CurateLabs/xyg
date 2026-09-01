@@ -36,6 +36,9 @@ from ._paint import (
     trace_paint_rgb_css_list,
 )
 from ._paint import (
+    authored_marker_points as _authored_marker_points,
+)
+from ._paint import (
     colormap_lut as _colormap_lut,
 )
 from ._paint import (
@@ -58,6 +61,9 @@ from ._paint import (
 )
 from ._paint import (
     solid_paint as _solid_paint,
+)
+from ._paint import (
+    step_arrays as _step_arrays,
 )
 from ._paint import (
     stroke_opacity as _stroke_opacity,
@@ -1503,34 +1509,6 @@ def _curve_path(
             f"C {_num(c1x)} {_num(c1y)} {_num(c2x)} {_num(c2y)} {_num(px[i + 1])} {_num(py[i + 1])}"
         )
     return " ".join(parts)
-
-
-def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
-    """Expand compact vertices into a step polyline via ABI 211.
-
-    Unknown ``where`` values keep the historical else=``post`` mapping.
-    """
-    mode = 1 if where == "pre" else 2 if where == "mid" else 3
-    return _native.step_arrays(
-        np.asarray(xv, dtype=np.float64), np.asarray(yv, dtype=np.float64), mode
-    )
-
-
-def _authored_marker_points(
-    unit_x: np.ndarray,
-    unit_y: np.ndarray,
-    cx: float,
-    cy: float,
-    scale: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Pixel-space authored marker vertices via ABI 212."""
-    return _native.marker_path_scale(
-        float(cx),
-        float(cy),
-        float(scale),
-        np.asarray(unit_x, dtype=np.float64),
-        np.asarray(unit_y, dtype=np.float64),
-    )
 
 
 _SYMBOL_BUILDERS = {
