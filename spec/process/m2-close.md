@@ -12,15 +12,18 @@ Reproduce remaining Python core surfaces with
 
 ## Contract
 
-M2 closes only when remaining Python **emit** and **Scene pack** loops move
-into Rust and **both hosts call the same kernel**. Recorded Node stay-host TAP
-extras are inventory, not an alternate close path.
+M2 **#731 close bar** required Python **emit** and **Scene pack** loops to
+move into Rust with **both hosts calling the same kernel**. That bar is
+**closed** (2026-08-31 orchestration; 2026-09-01 materialization retirement on
+branch #853). Python `_payload.py` and `_scene_v3.py` are **marshal-only**:
+coerce host objects, call generated ABI 292–325, ship returned buffers. Recorded
+Node stay-host TAP extras are inventory, not an alternate close path.
 
-Python `_payload.py` and `_scene_v3.py` still assemble product output. Rust
-already owns LOD tier, M4/visible indices, density kernels, and Scene
-admit/encode slices (ABI 122, 204–205, 214–215, 218–256). Hosts still gather
-columns, fill XYTC/XYTA envelopes, and ship keys. That duplicated policy is
-the remaining M2 bar.
+**Remaining M2 work** is secondary §302 under [#58](https://github.com/CurateLabs/xyg/issues/58)
+(`_svg`/`_raster` compat paths, marks/_figure composition, channels label
+factorization, `lod.py` cache wiring) — out of the #731 close bar but still
+blocks “Python is only a host.” Reproduce inventory with
+`python3 scripts/audit_python_host_core.py`.
 
 JSON `python-scene-migration` `follow_up_issue` stays **58** (policy template).
 GitHub close work is **#731**. Extra notes belong in markdown disposition, not
@@ -28,13 +31,12 @@ in `ownership-audit.json` rationale fields.
 
 ## Children
 
-Close independently. Parent #731 stays open until every child is closed with
-differentials.
+Closed with differentials (2026-08-31 / 2026-09-01):
 
-| Issue | Surface | Remaining loops |
+| Issue | Surface | Outcome |
 | --- | --- | --- |
-| [#732](https://github.com/CurateLabs/xyg/issues/732) | `python/xyg/_payload.py` live paint emit (`build_payload`, `_emit_*`, `_density_trace_spec`, `_axis_spec`, `_transition_entry`, `_ship_channels`); Node `figure.js` twin | Extra-column gather and ship. Index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215. |
-| [#733](https://github.com/CurateLabs/xyg/issues/733) | `python/xyg/_scene_v3.py` figure-to-record pack (`_pack_xytc` XYTC, `_pack_xyta` XYTA); Node `scene.js` twin | Pack loops. ABI 218–256 are admit/encode kernels, not the envelope assembly. |
+| [#732](https://github.com/CurateLabs/xyg/issues/732) | `python/xyg/_payload.py` live paint emit; Node `figure.js` twin | **Closed** — gather/ship registry + wire encode are Rust-owned (ABI 310–315); emit materialize is ABI 321 marshal-only |
+| [#733](https://github.com/CurateLabs/xyg/issues/733) | `python/xyg/_scene_v3.py` figure-to-record pack; Node `scene.js` twin | **Closed** — pack dispatch is Rust-owned (ABI 305–309); trace/chrome materialize is ABI 317–325 marshal-only |
 
 ## Close when
 

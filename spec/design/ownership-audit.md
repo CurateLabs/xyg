@@ -329,6 +329,8 @@ Largest remaining Python core surface after materialization retirement: secondar
 
 **Reclassified keep-host** (Rust already owns the decision; the Python file packs, coerces, or carries error text):
 
+- `_arrowgeom.py` — ABI 217/254/257 marshal-only; compat SVG/raster unpacks kernel geometry
+- `_fontmetrics.py` — generated DejaVu advance table mirrored from `crates/xyg-engine/src/font.rs`
 - `_sankey.py` — name resolution and diagnostic wording over `xyg_sankey_layout`
 - `_textblock.py` — ABI 125 packer plus a pass-scoped measurement cache
 - `_scene.py` — ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206
@@ -341,7 +343,7 @@ Largest remaining Python core surface after materialization retirement: secondar
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs). **#731 close bar** (orchestration + materialization retirement + cross-host proof) is met on branch #853 pending merge. Remaining work is secondary §302 shrink:
 
 1. `_svg.py` / `_raster.py` compat path assembly — static export tessellation and host geometry (not the live payload/scene product path).
-2. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition and `_fontmetrics.py` generated DejaVu table used by compatibility SVG gutters.
+2. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition.
 3. `channels.py` label factorization and `lod.py` viewport/sample cache wiring (offset/scale meta is ABI 255; offset math is ABI 208).
 4. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack.
 
@@ -354,8 +356,8 @@ eligibility uses the existing LINE|BAND bits (no new ABI). ABI 237 `xyg_scene_he
 | `rust-engine` | 16 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
 | `rust-wasm-abi` | 1 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
-| `python-host` | 81 | `keep-host` | current owner |
-| `python-scene-migration` | 11 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `python-host` | 83 | `keep-host` | current owner |
+| `python-scene-migration` | 9 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `node-host` | 7 | `keep-host` | current owner |
 | `node-scene-migration` | 27 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
@@ -758,11 +760,11 @@ Forbidden:
 | `python/xyg/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
 | `python/xyg/_wasm_aggregate_generated.py` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `python/xyg/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xyg/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 217 owns connectionstyle/shaft/taper/trim/end geometry; ABI 254 owns `start_offset`/`label_clear` CSV pack; ABI 257 owns `arrow_shapes` orchestration for compat SVG/raster; hosts still coerce style keys and elbow truthiness; ChartView still parses those strings until WASM | #58 |
+| `python/xyg/_arrowgeom.py` | Python host | `python-host` | `keep-host`; ABI 217 owns connectionstyle/shaft/taper/trim/end geometry; ABI 254 owns `start_offset`/`label_clear` CSV pack; ABI 257 owns `arrow_shapes` orchestration; hosts coerce style keys and unpack kernel buffers; ChartView still parses CSV until WASM | — |
 | `python/xyg/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_chromium.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xyg/_fontmetrics.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_fontmetrics.py` | Python host | `python-host` | `keep-host`; generated DejaVu advance table mirrored from Rust `font.rs` for compat SVG gutters | — |
 | `python/xyg/_framing.py` | Python host | `python-host` | `keep-host`; XYBF transport framing, not chart policy | — |
 | `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_graph.py` | Python host | `python-host` | `keep-host`; ingest/id maps; layout is `xyg_graph_layout` | — |

@@ -17,10 +17,10 @@ def _load():
     return mod
 
 
-def test_audit_lists_eleven_scene_migration_files():
+def test_audit_lists_nine_scene_migration_files():
     mod = _load()
     paths = mod._load_paths(mod.MANIFEST)
-    assert len(paths) == 11
+    assert len(paths) == 9
     assert "python/xyg/_payload.py" not in paths
     assert "python/xyg/_scene_v3.py" not in paths
     assert "python/xyg/_svg.py" in paths

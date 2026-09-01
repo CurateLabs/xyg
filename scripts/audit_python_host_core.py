@@ -42,7 +42,6 @@ LOCAL_RE = re.compile(
 )
 
 BLOCKER_MAP: dict[str, str] = {
-    "_arrowgeom.py": "arrow style pack (ABI 254/257 shapes orchestration)",
     "python/xyg/lod.py": "EncodedColumn meta + LOD host cache",
     "python/xyg/marks.py": "marks composition / validation",
     "python/xyg/facets.py": "facet grid orchestration",
