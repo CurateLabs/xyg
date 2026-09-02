@@ -1,12 +1,15 @@
 # M2 close contract
 
-**Status:** closed (#731, 2026-08-31). Host materialization retirement (ABI 316–325) tracked in
-[`m2-big-pushes.md`](m2-big-pushes.md) — **closed on branch #853**, pending merge to `main`.
-Children: [#732](https://github.com/CurateLabs/xyg/issues/732),
+**Status:** #731 close bar closed (2026-08-31). Host materialization retirement
+(ABI 316–325) landed on `main` via PR [#852](https://github.com/CurateLabs/xyg/pull/852)
+(`8752bd95a`, 2026-09-02). Children: [#732](https://github.com/CurateLabs/xyg/issues/732),
 [#733](https://github.com/CurateLabs/xyg/issues/733).
-GitHub milestone 2 description matches this file.
 
-In-repo pointer: [`issues/m2-close.md`](../design/issues/m2-close.md).
+Post-landing host-parity follow-on (adversarial review): tracker
+[#855](https://github.com/CurateLabs/xyg/issues/855). In-repo pointer:
+[`issues/m2-host-parity-findings.md`](../design/issues/m2-host-parity-findings.md).
+
+In-repo pointer for the emit/pack contract: [`issues/m2-close.md`](../design/issues/m2-close.md).
 Reproduce remaining Python core surfaces with
 `python3 scripts/audit_python_host_core.py`.
 
@@ -76,6 +79,18 @@ keep-host inventories for Python (~80 files) and Node (~30 files) in
 documented compatibility fallback (#59). Reproduce with `make check-host-parity` (or
 `python3 scripts/audit_host_parity_landing.py`); CI runs the same orchestrator in
 the `test` job after `uv sync`.
+
+**Post-landing follow-on ([#855](https://github.com/CurateLabs/xyg/issues/855)).**
+Adversarial review after #852 showed the live payload/Scene compile seam is
+marshal-only, but the default public static-export path for most ordinary
+charts still runs Python `_export_*`, Node has no twin, inventory metrics are
+lexical, and the landing gate does not cover SVG/PNG or Scene-byte ABI tests.
+Children: [#856](https://github.com/CurateLabs/xyg/issues/856) (P0 autorange
+admit), [#857](https://github.com/CurateLabs/xyg/issues/857) (P0 static
+parity; blocked by #856), [#858](https://github.com/CurateLabs/xyg/issues/858)
+(P1 inventory gates), [#859](https://github.com/CurateLabs/xyg/issues/859)
+(P1 landing-gate proof; blocked by #857 for SVG/PNG),
+[#860](https://github.com/CurateLabs/xyg/issues/860) (P2 spec/ledger leftovers).
 
 - Bump `ABI_VERSION` and run `python3 scripts/gen_abi_manifest.py --write` on
   signature change; never edit generated ABI declarations by hand.

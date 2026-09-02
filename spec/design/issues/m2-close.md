@@ -10,3 +10,7 @@ Canonical contract:
 This file remains a stable in-repo pointer so specs can cite a path even if
 GitHub issue numbers move; prefer linking `#731` / `#732` / `#733` in commits
 and PRs.
+
+Post-landing host-parity follow-on (do not reopen this contract):
+[`m2-host-parity-findings.md`](m2-host-parity-findings.md)
+([#855](https://github.com/CurateLabs/xyg/issues/855)).
