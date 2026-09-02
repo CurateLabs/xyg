@@ -21,6 +21,8 @@ from collections.abc import Sequence  # noqa: F401
 from os import PathLike  # noqa: F401
 from typing import Any, Optional  # noqa: F401
 
+import numpy as np  # noqa: F401 — tests monkeypatch `_svg.np.asarray`
+
 from ._export_annotations import _annotation_connector_unclipped  # noqa: F401
 from ._export_annotations_svg import _annotation_svg  # noqa: F401
 from ._export_axis_grid_svg import _svg_axis_grid_and_labels  # noqa: F401
@@ -57,6 +59,7 @@ from ._export_legend import (  # noqa: F401
     _legend_layout,  # noqa: F401
     _legend_text_width,  # noqa: F401
     legend_clip_rect,
+    legend_items,  # noqa: F401
 )
 from ._export_legend_svg import (  # noqa: F401
     _LEGEND_LINE_KINDS,  # noqa: F401
@@ -64,14 +67,24 @@ from ._export_legend_svg import (  # noqa: F401
     _legend_hatch_svg,  # noqa: F401
 )
 from ._export_marker_svg import (  # noqa: F401
+    _SYMBOL_BUILDERS,  # noqa: F401
     _authored_marker_path_d,  # noqa: F401
     _star_path,  # noqa: F401
 )
-from ._export_marks_svg import _segment_marks, _svg_trace_marks  # noqa: F401
+from ._export_marks_svg import (  # noqa: F401
+    _bar_marks,  # noqa: F401
+    _hexbin_marks,  # noqa: F401
+    _rect_marks,  # noqa: F401
+    _ribbon_marks,  # noqa: F401
+    _scatter_marks,  # noqa: F401
+    _segment_marks,  # noqa: F401
+    _svg_trace_marks,  # noqa: F401
+    _triangle_mesh_marks,  # noqa: F401
+)
 from ._export_path_svg import _monotone_tangents  # noqa: F401
 from ._export_polar_svg import _polar_frame_path  # noqa: F401
 from ._export_svg_state import _Svg  # noqa: F401
-from ._export_svg_util import _num, escape  # noqa: F401
+from ._export_svg_util import _num, _svg_mathtext_spans, _text_cell, escape  # noqa: F401
 from ._export_ticks import (  # noqa: F401
     _axis_tick_label_layout,  # noqa: F401
     _fmt_axis,  # noqa: F401
@@ -90,6 +103,7 @@ from ._layout import (  # noqa: F401
     _PolarProjection,
     _Scale,  # noqa: F401
     polar_wedge_points,  # noqa: F401
+    warp_axis_indices,  # noqa: F401
 )
 from ._paint import (  # noqa: F401
     authored_marker_points as _authored_marker_points,  # noqa: F401
@@ -102,6 +116,9 @@ from ._paint import (  # noqa: F401
 )
 from ._paint import (  # noqa: F401
     heatmap_rgba_grid as _heatmap_rgba_grid,  # noqa: F401
+)
+from ._paint import (  # noqa: F401
+    paint_rgba8 as _paint_rgba8,  # noqa: F401
 )
 from ._paint import (  # noqa: F401
     physical_density_alpha as _physical_density_alpha,  # noqa: F401

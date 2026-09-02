@@ -8,12 +8,32 @@ work is forbidden on the client).
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Any, Optional, TypeAlias, Union
 
 import numpy as np
 
 from . import (
     _annotations,
+    _annotations_marks,
+    _annotations_rules,
+    _annotations_spec,
+    _marks_bar,
+    _marks_contour,
+    _marks_distribution,
+    _marks_errorbar,
+    _marks_graph,
+    _marks_heatmap,
+    _marks_hexbin,
+    _marks_histogram,
+    _marks_line,
+    _marks_ribbon,
+    _marks_sankey,
+    _marks_scatter,
+    _marks_segments,
+    _marks_step,
+    _marks_style,
+    _marks_triangle_mesh,
     _validate,
     interaction,
 )
@@ -384,11 +404,41 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
 
 # The AnnotationsMixin methods (in `_annotations.py`) and the mark
-# implementations (in `marks.py`) carry `-> "Figure"` / `self: "Figure"`
-# annotations; expose the concrete class in those modules so
+# implementations (in `marks.py` / `_marks_*.py`) carry `-> "Figure"` /
+# `self: "Figure"` annotations; expose the concrete class in those modules so
 # `typing.get_type_hints` resolves it at runtime without a load-time cycle.
-_annotations.Figure = Figure
-_marks.Figure = Figure
+# `typing.get_type_hints` resolves forward refs in each mark module's globals.
+_HINT_GLOBALS = {"Figure": Figure, "Sequence": Sequence, "Mapping": Mapping}
+for _mod in (
+    _marks,
+    _marks_bar,
+    _marks_contour,
+    _marks_distribution,
+    _marks_errorbar,
+    _marks_graph,
+    _marks_heatmap,
+    _marks_hexbin,
+    _marks_histogram,
+    _marks_line,
+    _marks_ribbon,
+    _marks_sankey,
+    _marks_scatter,
+    _marks_segments,
+    _marks_step,
+    _marks_style,
+    _marks_triangle_mesh,
+    _autorange,
+    _axis,
+    _ingest,
+    _interaction,
+    _traces,
+    _annotations,
+    _annotations_marks,
+    _annotations_rules,
+    _annotations_spec,
+):
+    for _hint_name, _hint_value in _HINT_GLOBALS.items():
+        setattr(_mod, _hint_name, _hint_value)
 
 # The bound mark methods report Figure-owned identity in tracebacks and docs
 # even though the function objects live in the declarative core.

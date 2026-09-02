@@ -25,15 +25,24 @@ from ._export_chrome import (  # noqa: F401
 )
 from ._export_chrome import resolve_static_css_vars as _resolve_static_css_vars  # noqa: F401
 from ._export_chrome_raster import _raster_chrome  # noqa: F401
+from ._export_heatmap import polar_heatmap_rgba  # noqa: F401
 from ._export_layout import (  # noqa: F401
     _decode_title_geometry,
     layout,  # noqa: F401
 )
-from ._export_legend_raster import _emit_colorbar, _emit_legend  # noqa: F401
+from ._export_legend_raster import _emit_colorbar, _emit_legend, _emit_legend_hatch  # noqa: F401
 from ._export_marks_raster import (  # noqa: F401
     _emit_annotations,  # noqa: F401
+    _emit_authored_scatter,  # noqa: F401
+    _emit_bars,  # noqa: F401
     _emit_grid,  # noqa: F401
+    _emit_hexbin,  # noqa: F401
+    _emit_rects,  # noqa: F401
+    _emit_ribbon,  # noqa: F401
+    _emit_scatter,  # noqa: F401
+    _emit_segments,  # noqa: F401
     _emit_text_box,  # noqa: F401
+    _emit_triangle_mesh,  # noqa: F401
     _raster_trace_marks,
 )
 from ._export_raster_cmd import (  # noqa: F401

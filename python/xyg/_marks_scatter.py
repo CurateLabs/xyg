@@ -14,7 +14,14 @@ from ._marks_style import (
 )
 from ._trace import Trace
 from ._typing import ArrayLike, Scalar
-from .config import DIRECT_SOFT_CEILING
+
+
+def _direct_soft_ceiling() -> int:
+    """Read ceiling from the marks hub so tests can monkeypatch `marks.DIRECT_SOFT_CEILING`."""
+    from . import marks as _marks_mod
+
+    return _marks_mod.DIRECT_SOFT_CEILING
+
 
 if TYPE_CHECKING:
     from ._figure import Figure
@@ -209,10 +216,10 @@ def scatter(
             if color_aggregates
             else ""
         )
-        if density is None and dropped_channels and n > DIRECT_SOFT_CEILING:
+        if density is None and dropped_channels and n > _direct_soft_ceiling():
             warnings.warn(
                 f"scatter has {n:,} points with per-point styles — above the "
-                f"direct ceiling ({DIRECT_SOFT_CEILING:,}). Falling back to a "
+                f"direct ceiling ({_direct_soft_ceiling():,}). Falling back to a "
                 f"density surface; dropped channels: {', '.join(dropped_channels)} "
                 "(aggregating arbitrary instance styles needs the §5-F5 aggregation algebra, not yet "
                 f"implemented).{mean_color_note} "
@@ -221,20 +228,20 @@ def scatter(
                 stacklevel=2,
             )
             trace.force_density = True
-        elif density is None and n > DIRECT_SOFT_CEILING:
+        elif density is None and n > _direct_soft_ceiling():
             warnings.warn(
                 f"scatter has {n:,} points above the soft ceiling "
-                f"({DIRECT_SOFT_CEILING:,}); using a density surface for the "
+                f"({_direct_soft_ceiling():,}); using a density surface for the "
                 f"initial render.{mean_color_note}",
                 RuntimeWarning,
                 stacklevel=2,
             )
-        elif density is False and n > DIRECT_SOFT_CEILING:
+        elif density is False and n > _direct_soft_ceiling():
             # §28: opting out of aggregation above the ceiling is allowed but
             # never silent — fill-rate and the ~1 GB allocation cliff are real (§5 F3).
             warnings.warn(
                 f"density=False with {n:,} points forces direct draw above the "
-                f"ceiling ({DIRECT_SOFT_CEILING:,}); expect fill-rate-bound frames "
+                f"ceiling ({_direct_soft_ceiling():,}); expect fill-rate-bound frames "
                 "and possible buffer-allocation failure.",
                 RuntimeWarning,
                 stacklevel=2,

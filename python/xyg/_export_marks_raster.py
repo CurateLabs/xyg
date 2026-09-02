@@ -19,7 +19,6 @@ from ._export_annotations import (
     annotation_label_placement,
 )
 from ._export_chrome import _TEXT
-from ._export_heatmap import polar_heatmap_rgba
 from ._export_raster_cmd import (
     _CAP_CODES,
     _SYMBOLS,
@@ -1258,8 +1257,10 @@ def _emit_grid(
 ) -> None:
     if kind == "heatmap":
         if polar is not None:
+            from . import _raster as _raster_hub
+
             rgba = np.ascontiguousarray(
-                polar_heatmap_rgba(
+                _raster_hub.polar_heatmap_rgba(
                     g,
                     blob,
                     cols,

@@ -28,6 +28,7 @@ from . import _lod_sample as _sample
 from . import _lod_viewport as _viewport
 from . import kernels  # noqa: F401 — re-export for test monkeypatch
 from ._lod_encode import F32_SAFE_MAG
+from ._lod_sample import _sample_threshold  # noqa: F401
 from ._lod_types import EncodedColumn, LodPlan
 from ._lod_viewport import ViewportRequest
 

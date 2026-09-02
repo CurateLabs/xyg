@@ -18,6 +18,7 @@ from . import _channels_ship as _ship
 from . import kernels  # noqa: F401 — re-export for test monkeypatch
 from ._channels_colormap import COLORMAPS, ColormapLike, is_colormap, resolve_colormap
 from ._channels_labels import MAX_CATEGORIES
+from ._channels_lut import _QUANTIZE_CHUNK  # noqa: F401
 from ._channels_types import (
     DEFAULT_COLORMAP,
     ColorChannel,

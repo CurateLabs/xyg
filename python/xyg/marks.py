@@ -87,6 +87,7 @@ from ._marks_style import (
 from ._marks_triangle_mesh import (
     triangle_mesh,  # noqa: F401
 )
+from .config import DIRECT_SOFT_CEILING  # noqa: F401
 
 # Bound by `_figure` after `Figure` is defined (breaks the import cycle).
 Figure: Any = None
