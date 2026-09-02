@@ -73,7 +73,8 @@ on tip `9274b94f9` (Python 3.11 floor, Rust + Python + JS, WASM foundation).
 Disposition parity: 0 `python-scene-migration`, 0 `node-scene-migration`; honest
 keep-host inventories for Python (~80 files) and Node (~30 files) in
 `audit_python_host_core.py`. Browser: `49_wasm_ticks.ts` adapter + `30_ticks.ts`
-documented compatibility fallback (#59). Reproduce with
+documented compatibility fallback (#59). Reproduce with `make check-host-parity` (or
+`python3 scripts/audit_host_parity_landing.py`),
 `python3 scripts/audit_python_host_core.py`, `uv run pytest tests/test_*cross_host*.py`,
 and `uv run pytest tests/test_wasm_ticks_chartview_contract.py`.
 
