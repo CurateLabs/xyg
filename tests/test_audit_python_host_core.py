@@ -84,5 +84,8 @@ def test_audit_cli_exits_zero():
     assert "node keep-host policy files:" in proc.stdout
     assert "Cross-host disposition parity" in proc.stdout
     assert "node-scene-migration files: 0" in proc.stdout
+    assert "WASM / browser host parity inventory" in proc.stdout
+    assert "browser-wasm-adapter modules:" in proc.stdout
+    assert "tests/test_wasm_ticks_chartview_contract.py" in proc.stdout
     assert "Residual host materialization" not in proc.stdout
     assert "do not mark M2 complete" not in proc.stdout

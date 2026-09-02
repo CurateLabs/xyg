@@ -253,7 +253,17 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
         "Secondary §302 composition hubs",
         "CLOSED — marks/_figure/channels/lod/facets/_annotations/_svg/_raster split to keep-host modules",
     ),
+    (
+        "Node marshal disposition parity",
+        "CLOSED — 0 node-scene-migration tags; node keep-host policy inventory in audit",
+    ),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
+)
+
+WASM_PARITY_CONTRACTS: tuple[str, ...] = (
+    "tests/test_wasm_ticks_chartview_contract.py",
+    "tests/test_*cross_host*.py",
+    "tests/browser/wasm_foundation_page.mjs",
 )
 
 
@@ -392,6 +402,48 @@ def _print_keep_host_policy_audit(manifest_path: Path) -> None:
         "  practical Node/WASM parity requires migration tags at zero and "
         "keep-host inventories to stay marshal/coerce only or documented debt."
     )
+    print()
+    _print_wasm_parity_audit(manifest)
+
+
+def _print_wasm_parity_audit(manifest: dict) -> None:
+    adapter_paths = _policy_paths_by_tag(manifest, "browser-wasm-adapter")
+    generated_paths = _policy_paths_by_tag(manifest, "browser-wasm-generated")
+    wasm_migration_paths = _policy_paths_by_tag(manifest, "browser-wasm-migration")
+    browser_client_paths = _policy_paths_by_tag(manifest, "browser-client")
+    browser_migration = _policy_paths_by_tag(manifest, "browser-scene-migration")
+
+    print("WASM / browser host parity inventory:")
+    print(
+        "  ChartView primary Cartesian + colorbar ticks consume Rust/WASM via "
+        "js/src/49_wasm_ticks.ts; js/src/30_ticks.ts is the documented compatibility "
+        "fallback for uncovered axes until #59 completes the cutover."
+    )
+    print(f"  browser-client paint modules: {len(browser_client_paths)}")
+    print(
+        f"  browser-wasm-adapter modules: {len(adapter_paths)} "
+        f"({sum(_analyze(ROOT / rel)[0] for rel in adapter_paths)} lines)"
+    )
+    for rel in adapter_paths[:6]:
+        n_lines, _, _ = _analyze(ROOT / rel)
+        print(f"    - {rel}: {n_lines} lines")
+    if len(adapter_paths) > 6:
+        print(f"    - ... and {len(adapter_paths) - 6} more")
+    print(f"  browser-wasm-generated modules: {len(generated_paths)}")
+    if wasm_migration_paths:
+        print(f"  browser-wasm-migration modules: {len(wasm_migration_paths)}")
+    if browser_migration:
+        browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_migration)
+        print(
+            f"  browser-scene-migration compatibility generators: "
+            f"{len(browser_migration)} ({browser_lines} lines)"
+        )
+        for rel in browser_migration:
+            n_lines, _, _ = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines")
+    print("  differential proof contracts:")
+    for contract in WASM_PARITY_CONTRACTS:
+        print(f"    - {contract}")
     print()
 
 
