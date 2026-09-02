@@ -3,7 +3,7 @@
  * Encode stays in Rust (`xyg_encode_f32`); host only coerces and attaches.
  */
 
-import { cssIsFunctional, resolveColorChannel } from "../color.js";
+import { cssIsFunctional, continuousDomain, resolveColorChannel, sizeRangeAdmit } from "../color.js";
 import { asF64Array, canonicalScatterColumn, encodeF32Values, minMax } from "../encode.js";
 
 const BUILTIN_SYMBOLS = [
@@ -97,7 +97,10 @@ function optionalBoolean(value, name) {
 
 /** Match Python `channels.resolve_size` for Scene XYTC diameter packing. */
 export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
-  const range_px = rangePx;
+  if (!Array.isArray(rangePx) || rangePx.length !== 2) {
+    throw new RangeError("size_range must contain exactly two finite pixel values");
+  }
+  const range_px = sizeRangeAdmit(rangePx[0], rangePx[1]);
   if (size == null) {
     return { mode: "constant", constant: 4.0, range_px };
   }
@@ -109,10 +112,8 @@ export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
   if (values.length !== n) {
     throw new RangeError(`size array must be 1-D length ${n}, got length ${values.length}`);
   }
-  const mm = minMax(values) ?? [0, 1];
-  const lo = mm[0];
-  const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
-  return { mode: "continuous", values, domain: [lo, hi], range_px };
+  const domain = continuousDomain(values);
+  return { mode: "continuous", values, domain, range_px };
 }
 
 /**

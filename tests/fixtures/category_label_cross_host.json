@@ -1,0 +1,33 @@
+{
+  "schema": "xyg.category-label-cross-host/v1",
+  "cases": [
+    {
+      "name": "null",
+      "kind": "null"
+    },
+    {
+      "name": "nan",
+      "kind": "nan"
+    },
+    {
+      "name": "utf8_beta",
+      "kind": "string",
+      "value": "\u03b2"
+    },
+    {
+      "name": "utf8_empty",
+      "kind": "string",
+      "value": ""
+    },
+    {
+      "name": "bytes_invalid_utf8",
+      "kind": "bytes",
+      "hex": "c3ff"
+    },
+    {
+      "name": "int",
+      "kind": "int",
+      "value": 42
+    }
+  ]
+}

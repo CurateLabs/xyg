@@ -1,0 +1,178 @@
+{
+  "schema": "xyg.lod-cross-host/v1",
+  "cases": [
+    {
+      "name": "lod_direct",
+      "kind": "lod_plan",
+      "visible": 100000,
+      "budget": 200000,
+      "in_drill": false,
+      "exit_factor": 1.15,
+      "width": 1200,
+      "height": 800,
+      "target_per_cell": 16.0
+    },
+    {
+      "name": "lod_aggregate",
+      "kind": "lod_plan",
+      "visible": 350000,
+      "budget": 200000,
+      "in_drill": false,
+      "exit_factor": 1.15,
+      "width": 1200,
+      "height": 800,
+      "target_per_cell": 16.0
+    },
+    {
+      "name": "lod_drill_hysteresis",
+      "kind": "lod_plan",
+      "visible": 225000,
+      "budget": 200000,
+      "in_drill": true,
+      "exit_factor": 1.15,
+      "width": 1200,
+      "height": 800,
+      "target_per_cell": 16.0
+    },
+    {
+      "name": "drill_enter",
+      "kind": "drill_decision",
+      "visible": 100000,
+      "budget": 200000,
+      "in_drill": false,
+      "exit_factor": 1.15
+    },
+    {
+      "name": "drill_stay_aggregate",
+      "kind": "drill_decision",
+      "visible": 350000,
+      "budget": 200000,
+      "in_drill": false,
+      "exit_factor": 1.15
+    },
+    {
+      "name": "encode_f32_column",
+      "kind": "encode_f32_values",
+      "values": [-1.0, 0.0, 1.0],
+      "offset": 0.0,
+      "lo": -1.0,
+      "hi": 1.0,
+      "kind": "float"
+    },
+    {
+      "name": "encode_f32_empty",
+      "kind": "encode_f32_values",
+      "values": [],
+      "offset": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "kind": null
+    },
+    {
+      "name": "aligned_window_contains",
+      "kind": "aligned_window",
+      "lo": -3.0,
+      "hi": 5.0,
+      "extent_lo": 0.0,
+      "extent_hi": 100.0,
+      "pad": 2.0
+    },
+    {
+      "name": "aligned_window_pan_stable",
+      "kind": "aligned_window_pair",
+      "a": {"lo": 10.0, "hi": 14.0, "extent_lo": 0.0, "extent_hi": 128.0, "pad": 2.0},
+      "b": {"lo": 10.5, "hi": 14.5, "extent_lo": 0.0, "extent_hi": 128.0, "pad": 2.0}
+    },
+    {
+      "name": "aligned_window_degenerate",
+      "kind": "aligned_window",
+      "lo": 1.0,
+      "hi": 9.0,
+      "extent_lo": 0.0,
+      "extent_hi": 10.0,
+      "pad": 4.0
+    },
+    {
+      "name": "sample_threshold_half",
+      "kind": "sample_threshold",
+      "fraction": 0.5
+    },
+    {
+      "name": "sample_threshold_one",
+      "kind": "sample_threshold",
+      "fraction": 1.0
+    },
+    {
+      "name": "hash_row_ids_reference",
+      "kind": "hash_row_ids",
+      "ids": [0, 1, 2],
+      "seed": 0
+    },
+    {
+      "name": "sample_fraction_level2",
+      "kind": "sample_fraction",
+      "level": 2,
+      "base_fraction": 0.25,
+      "growth": 2.0
+    },
+    {
+      "name": "sample_fraction_saturated",
+      "kind": "sample_fraction",
+      "level": 0,
+      "base_fraction": 1.0,
+      "growth": 2.0
+    },
+    {
+      "name": "screen_shape_default",
+      "kind": "screen_shape",
+      "width": 640,
+      "height": 360
+    },
+    {
+      "name": "screen_shape_clamp_low",
+      "kind": "screen_shape",
+      "width": 8,
+      "height": 10
+    },
+    {
+      "name": "screen_shape_clamp_high",
+      "kind": "screen_shape",
+      "width": 8000,
+      "height": 9000
+    },
+    {
+      "name": "screen_shape_clamp_frontend_overflow",
+      "kind": "screen_shape",
+      "width": 1000000000000,
+      "height": 16
+    },
+    {
+      "name": "normalize_window_ordered",
+      "kind": "normalize_window",
+      "x0": 5.0,
+      "x1": 1.0,
+      "y0": 4.0,
+      "y1": 2.0,
+      "require_area": true
+    },
+    {
+      "name": "normalize_window_degenerate_allowed",
+      "kind": "normalize_window",
+      "x0": 1.0,
+      "x1": 1.0,
+      "y0": 2.0,
+      "y1": 3.0,
+      "require_area": false
+    },
+    {
+      "name": "view_visible_mask_mixed",
+      "kind": "view_visible_mask",
+      "x": [0.0, 1.0, 2.0, null, 5.0],
+      "y": [0.0, 1.0, 2.0, 3.0, 5.0],
+      "lo_x": 0.5,
+      "hi_x": 4.5,
+      "lo_y": 0.5,
+      "hi_y": 4.5
+    }
+  ]
+}

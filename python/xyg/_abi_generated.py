@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 315
-SIGNATURE_SHA256 = "5162d63142bd5b02d3fab8088121800ce857c50c6ac4712b0df45570eba751f4"
+ABI_VERSION = 357
+SIGNATURE_SHA256 = "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -18,10 +18,18 @@ def bind_abi_version(lib: ctypes.CDLL):
 
 
 def bind_generated_abi(lib: ctypes.CDLL) -> None:
+    # int32_t xyg_aligned_window(double lo, double hi, double extent_lo, double extent_hi, double pad, double * out_lo, double * out_hi)
+    function = lib.xyg_aligned_window
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity)
     function = lib.xyg_argsort_stable
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_array_is_categorical(uint8_t dtype_kind, int32_t object_real_numeric)
+    function = lib.xyg_array_is_categorical
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8, ctypes.c_int32]
     # size_t xyg_arrow_end_decoration(double px, double py, double dx, double dy, const uint8_t * style, size_t style_len, double head, double * out_x, double * out_y, size_t capacity, int32_t * out_kind)
     function = lib.xyg_arrow_end_decoration
     function.restype = ctypes.c_size_t
@@ -94,6 +102,34 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_box_stats
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_categorical_palette(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t n_categories, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)
+    function = lib.xyg_categorical_palette
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted)
+    function = lib.xyg_categorical_palette_map_resolve
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # uint32_t xyg_category_code_width(uint64_t n_categories)
+    function = lib.xyg_category_code_width
+    function.restype = ctypes.c_uint32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_category_label_kind_from_probe(uint8_t probe)
+    function = lib.xyg_category_label_kind_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
+    # int32_t xyg_category_label_kinds_from_probes(const uint8_t * probes, size_t n, uint8_t * out)
+    function = lib.xyg_category_label_kinds_from_probes
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap)
+    function = lib.xyg_category_labels_packed
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # uint64_t xyg_category_palette_rows(uint64_t n_categories)
+    function = lib.xyg_category_palette_rows
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_uint64]
     # int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)
     function = lib.xyg_chunked_columns_cancel_before
     function.restype = ctypes.c_int32
@@ -126,10 +162,38 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_clip_quantize_u8
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_color_channel_direct_rgba_f64_categorical(const uint32_t * codes, size_t n, const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, double * out, size_t out_cap)
+    function = lib.xyg_color_channel_direct_rgba_f64_categorical
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_color_channel_direct_rgba_f64_continuous(const double * values, size_t n, double lo, double hi, const uint8_t * stops, size_t stop_count, double * out, size_t out_cap)
+    function = lib.xyg_color_channel_direct_rgba_f64_continuous
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_custom_stops_resolve_gradient(const uint8_t * css, size_t css_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_colormap_custom_stops_resolve_gradient
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_custom_stops_resolve_list(const uint32_t * css_lens, const uint8_t * css_texts, size_t css_texts_len, const double * positions, size_t n, uint8_t * out, size_t out_cap)
+    function = lib.xyg_colormap_custom_stops_resolve_list
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_is_builtin(const uint8_t * name, size_t name_len)
+    function = lib.xyg_colormap_is_builtin
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)
     function = lib.xyg_colormap_lut
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_colormap_lut_rgba8(const uint8_t * name, size_t name_len, const uint8_t * custom_stops, size_t custom_stop_count, size_t n_texels, uint8_t * out_rgba, size_t out_cap)
+    function = lib.xyg_colormap_lut_rgba8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_colormap_resolved_stops_admit(const uint8_t * stops, size_t stop_count)
+    function = lib.xyg_colormap_resolved_stops_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_colormap_rgba
     function.restype = ctypes.c_int32
@@ -350,6 +414,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_f32_safe_scale
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_factorize_display_labels(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap)
+    function = lib.xyg_factorize_display_labels
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
     # size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)
     function = lib.xyg_factorize_fixed
     function.restype = ctypes.c_size_t
@@ -366,10 +434,22 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_factorize_unicode1_u8_counts
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width)
+    function = lib.xyg_factorize_use_native_fixed
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32]
+    # int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width)
+    function = lib.xyg_factorize_use_native_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
     # int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)
     function = lib.xyg_figure_autorange
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out)
+    function = lib.xyg_fold_codes_u8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p]
     # uint32_t xyg_geo_column_crs(uint64_t handle)
     function = lib.xyg_geo_column_crs
     function.restype = ctypes.c_uint32
@@ -498,6 +578,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_visual_state_resolve
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out)
+    function = lib.xyg_hash_row_ids
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_heatmap_rgba
     function.restype = ctypes.c_int32
@@ -546,6 +630,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_is_sorted
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_label_codes_first_seen(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, uint8_t * out_codes, size_t out_codes_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap)
+    function = lib.xyg_label_codes_first_seen
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
     # int32_t xyg_legend_best_loc(const double * xs, const double * ys, size_t n, const size_t * starts, size_t n_series, const uint32_t * label_lens, size_t n_labels)
     function = lib.xyg_legend_best_loc
     function.restype = ctypes.c_int32
@@ -558,6 +646,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_legend_normalize
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_literal_color_rgba_f64(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, double * out_rgba, size_t out_cap)
+    function = lib.xyg_literal_color_rgba_f64
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_local_log_density(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, float * out)
     function = lib.xyg_local_log_density
     function.restype = ctypes.c_int32
@@ -602,10 +694,42 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_normalize_window(double x0, double x1, double y0, double y1, int32_t require_area, double * out)
+    function = lib.xyg_normalize_window
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_object_row_real_numeric_tag_from_probe(uint8_t probe)
+    function = lib.xyg_object_row_real_numeric_tag_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
+    # int32_t xyg_object_row_real_numeric_tags_from_probes(const uint8_t * probes, size_t n, uint8_t * out)
+    function = lib.xyg_object_row_real_numeric_tags_from_probes
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_object_row_stringlike_tag_from_probe(uint8_t probe)
+    function = lib.xyg_object_row_stringlike_tag_from_probe
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
+    # int32_t xyg_object_row_stringlike_tags_from_probes(const uint8_t * probes, size_t n, uint8_t * out)
+    function = lib.xyg_object_row_stringlike_tags_from_probes
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_object_rows_all_real_numeric(const uint8_t * row_tags, size_t n)
+    function = lib.xyg_object_rows_all_real_numeric
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_object_rows_all_stringlike(const uint8_t * row_tags, size_t n)
+    function = lib.xyg_object_rows_all_stringlike
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved, uint8_t * out_entry_unresolved, size_t entry_unresolved_cap)
+    function = lib.xyg_palette_rows_rgba8
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)
     function = lib.xyg_payload_axis_spec_attach_plan
     function.restype = ctypes.c_int32
@@ -626,6 +750,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_build_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_payload_channel_materialize(int32_t role, int32_t mode, size_t n_categories, int32_t style_dtype_u8, int32_t quantize_continuous, double domain_lo, double domain_hi, size_t n_palette, const uint32_t * sel, size_t sel_len, const double * values_f64, size_t values_f64_len, const uint8_t * values_u8, size_t values_u8_len, uint8_t * out, size_t out_cap, int32_t * out_meta)
+    function = lib.xyg_payload_channel_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_payload_channel_ship_plan(int32_t slot, int32_t include_trace_styles, int32_t has_color2_ch, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, size_t * out_n_channels, void * out_channels, size_t capacity)
     function = lib.xyg_payload_channel_ship_plan
     function.restype = ctypes.c_int32
@@ -634,10 +762,18 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_channel_wire_encode
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_payload_column_gather_materialize(const uint32_t * sel, size_t sel_len, const void * columns, size_t n_columns, const double *const * values, const uint8_t *const * kinds, const uint8_t *const * axis_scales, void * out, uint8_t * out_bytes, size_t out_bytes_cap, size_t * out_bytes_len)
+    function = lib.xyg_payload_column_gather_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity)
     function = lib.xyg_payload_column_ship_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_payload_density_grid_materialize(const void * input, const double * x_raw, const double * y_raw, const double * bx, const double * by, const uint8_t * color_codes, const uint64_t * color_counts, const uint8_t * color_idx, const uint8_t * color_rgba, const uint8_t * color_lut, uint8_t * out_binning, uint8_t * out_encoded, uint8_t * out_rgba, uint32_t * out_sample_sel, uint32_t * out_visible_sel, void * out)
+    function = lib.xyg_payload_density_grid_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_payload_density_grid_ship_plan(int32_t ship_mean_color_rgba, int32_t ship_wasm_source, int32_t attach_sample, int32_t has_tiles, int32_t ship_constant_color, int32_t overlay_wire_rows_exceed, int32_t overlay_wire_static_raster, int32_t ship_categorical_entry_color, size_t * out_n_buffers, void * out_buffers, size_t buffer_capacity, size_t * out_n_attach, void * out_attach, size_t attach_capacity)
     function = lib.xyg_payload_density_grid_ship_plan
     function.restype = ctypes.c_int32
@@ -710,6 +846,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_trace_channels_ship_attach
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_payload_trace_emit_materialize(const void * emit_in, const uint8_t * kind, const uint8_t * x_axis_scale, const uint8_t * y_axis_scale, const uint8_t * orientation, const void * columns, const double *const * column_values, const uint8_t *const * column_kinds, const void * color_ch, const void * stroke_ch, const void * color2_ch, const void * size_ch, const void * style_channels, const double * color_f64, const double * stroke_f64, const double * color2_f64, const double * size_f64, const double * style_f64, const uint8_t * color_u8, const uint8_t * stroke_u8, const uint8_t * color2_u8, const uint8_t * size_u8, const uint8_t * style_u8, const uint32_t * transition_lo, const uint32_t * transition_hi, const double * bin_x, const double * grid_values, void * summary, void * geom_out, size_t geom_cap, void * chan_out, size_t chan_cap, uint8_t * out_bytes, size_t out_bytes_cap, size_t * out_bytes_len)
+    function = lib.xyg_payload_trace_emit_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_payload_transition_entry_attach(int32_t has_trace_animation, int32_t entry_has_animation, int32_t has_trace_keys, int32_t has_key_values, int32_t has_sel, int32_t tier_direct, size_t n_marks, size_t n_trace_key_rows, size_t n_key_value_rows, size_t n_sel_rows, size_t max_rows, int32_t has_tooltip_rows, size_t n_tooltip_rows, size_t n_points, int32_t * out_attach_animation, int32_t * out_attempt_keys, int32_t * out_filter_keys_by_sel, int32_t * out_ship_keys, int32_t * out_animation_fallback, int32_t * out_attach_tooltip, int32_t * out_filter_tooltip_by_sel, int32_t * out_tooltip_length_ok)
     function = lib.xyg_payload_transition_entry_attach
     function.restype = ctypes.c_int32
@@ -826,6 +966,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_quantiles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_quantize_unit_u8(const double * values, size_t values_len, double lo, double hi, uint8_t * out)
+    function = lib.xyg_quantize_unit_u8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_range_indices(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out)
     function = lib.xyg_range_indices
     function.restype = ctypes.c_size_t
@@ -858,6 +1002,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rasterize_spans
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
+    # int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind)
+    function = lib.xyg_real_numeric_dtype_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8]
     # uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)
     function = lib.xyg_rect_zero_baseline_flags
     function.restype = ctypes.c_uint8
@@ -886,6 +1034,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rounded_rect_poly
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # double xyg_sample_fraction(int64_t level, double base_fraction, double growth)
+    function = lib.xyg_sample_fraction
+    function.restype = ctypes.c_double
+    function.argtypes = [ctypes.c_int64, ctypes.c_double, ctypes.c_double]
     # int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)
     function = lib.xyg_sample_mask
     function.restype = ctypes.c_int32
@@ -898,6 +1050,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_sample_range_indices
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_size_t, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t]
+    # uint64_t xyg_sample_threshold(double fraction)
+    function = lib.xyg_sample_threshold
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_double]
     # int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n)
     function = lib.xyg_sankey_layout
     function.restype = ctypes.c_int32
@@ -930,6 +1086,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_channel_constant_css
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_chrome_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_constant_color_admit(int32_t has_channel, int32_t constant_ok, int32_t scatter_density, int32_t packs_paint_plane)
     function = lib.xyg_scene_constant_color_admit
     function.restype = ctypes.c_int32
@@ -962,6 +1122,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_figure_support_figure_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_figure_support_materialize(int32_t polar, int32_t colorbar_unsupported, int32_t has_custom_font, int32_t has_browser_css, int32_t has_extra_legends, const void * annotations, size_t annotation_count, const void * axes, size_t axis_count, const uint8_t * axis_keys_blob, size_t axis_keys_len, const void * traces, size_t trace_count, const double * corner_radius, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_figure_support_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_scene_figure_support_pack(uint32_t flags, const uint8_t * axes_blob, size_t axes_len, const uint8_t * traces_blob, size_t traces_len, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_figure_support_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_figure_support_reason
     function.restype = ctypes.c_size_t
@@ -1162,6 +1330,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_polar_figure_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_polar_input_pack(const void * input, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_polar_input_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out)
     function = lib.xyg_scene_public_export_figure_plan
     function.restype = ctypes.c_int32
@@ -1246,10 +1418,22 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyaf_annotation_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xyaf_bulk_pack(const void * annotations, size_t annotation_count, const uint8_t * extra_style_keys_blob, size_t extra_style_keys_len, uint8_t * out, size_t out_cap, size_t * out_len, uint32_t * error_index)
+    function = lib.xyg_scene_xyaf_bulk_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_scene_xyaf_pack(const void * input, const uint8_t * text, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xyaf_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_xycf_figure_plan(int32_t show_legend, int32_t colorbar_ok, int32_t polar, void * out)
     function = lib.xyg_scene_xycf_figure_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xycf_pack(const void * input, const uint8_t * title, const uint8_t * x_label, const uint8_t * y_label, const uint8_t * x_format, const uint8_t * y_format, const double * x_major, const double * x_minor, const double * y_major, const double * y_minor, const uint8_t * x_labels_blob, const uint8_t * y_labels_blob, const uint8_t * chrome, const uint8_t * legend_loc, const uint8_t * legend_title, const uint8_t * legend_meta, const uint32_t * legend_lens, const uint8_t * legend_blob, const uint8_t * colorbar_stops_blob, const double * colorbar_ticks, const uint8_t * colorbar_title, const uint8_t * collision_extra, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xycf_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_xycl_figure_plan(int32_t polar, void * out)
     function = lib.xyg_scene_xycl_figure_plan
     function.restype = ctypes.c_int32
@@ -1274,6 +1458,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyta_trace_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xyta_trace_observations_materialize(const void * input, const uint8_t * fallback_color, const uint8_t * style_color, const uint8_t * style_stroke, const uint8_t * style_colormap_named, const uint8_t * style_colormap_stops, const double * grid_values, const uint8_t * rgba_u8, const double * rgba_grid_f64, const double * x_values, const double * y_values, const void * color_ch, const uint8_t * color_mode, const uint8_t * color_constant, const uint8_t * color_colormap, const double * color_values_f64, const uint8_t * color_rgba_u8, const uint8_t * color_codes_u8, const int64_t * color_codes_i64, const uint8_t *const * color_palette_ptrs, const size_t * color_palette_lens, const void * stroke_ch, const uint8_t * stroke_mode, const uint8_t * stroke_constant, const uint8_t * stroke_colormap, const double * stroke_values_f64, const uint8_t * stroke_rgba_u8, const uint8_t * stroke_codes_u8, const int64_t * stroke_codes_i64, const uint8_t *const * stroke_palette_ptrs, const size_t * stroke_palette_lens, const void * color2_ch, const uint8_t * color2_mode, const uint8_t * color2_constant, const uint8_t * color2_colormap, const double * color2_values_f64, const uint8_t * color2_rgba_u8, const uint8_t * color2_codes_u8, const int64_t * color2_codes_i64, const uint8_t *const * color2_palette_ptrs, const size_t * color2_palette_lens, const void * opacity_ch, const double * opacity_values, const void * artist_ch, const double * artist_values, const void * stroke_width_ch, const double * stroke_width_values, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xyta_trace_observations_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_scene_xyta_trace_pack(const void * input, const uint8_t * grid, const uint8_t * rgba, const uint8_t * rgba_grid, const uint8_t * x, const uint8_t * y, const uint8_t * mean_rgba, const uint8_t * idx, const uint8_t * lut, const uint8_t * cmap, const uint8_t * stops, const uint8_t * color_ch, const uint8_t * style_color, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xyta_trace_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)
     function = lib.xyg_scene_xytc_color2_flags_pack
     function.restype = ctypes.c_int32
@@ -1326,10 +1518,30 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_trace_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_trace_observations_materialize(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol, const uint8_t * stroke, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * dash, const double * dash_values, const uint8_t * fill_string, const uint8_t * fill_space, const uint8_t * fill_dir, const double * fill_stop_t, const uint8_t * fill_stop_css, const uint32_t * fill_stop_css_lens, const uint8_t * fill_dict_gradient, const uint8_t * fill_dict_space, const double * marker_values, const uint32_t * marker_lens, const uint8_t * marker_glyph, const uint8_t * source_paint, const uint8_t * color2_source_const, const uint8_t * color2_target_const, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * linecap, const uint8_t * step, const uint8_t * curve, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xytc_trace_observations_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_trace_pack(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol_b, const uint8_t * dash_b, const double * dash_pattern, const uint8_t * linecap_b, const uint8_t * step_b, const uint8_t * curve_b, const uint8_t * fill_css, const uint8_t * fill_space, const uint8_t * fill_gradient_blob, const uint8_t * stroke_css, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * marker_blob, const uint8_t * color2_gradient_blob, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xytc_trace_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_screen_shape(int32_t px_w, int32_t px_h, int32_t * out_w, int32_t * out_h)
+    function = lib.xyg_screen_shape
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_size_range_admit(double lo, double hi, double * out_lo, double * out_hi)
+    function = lib.xyg_size_range_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_sorted_display_label_remap(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, const uint64_t * in_counts, uint8_t * out_remap, size_t out_remap_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap, uint64_t * out_category_counts, size_t out_category_counts_cap)
+    function = lib.xyg_sorted_display_label_remap
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)
     function = lib.xyg_spectrogram
     function.restype = ctypes.c_int32
@@ -1350,6 +1562,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_stratified_sample_mask_u32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_double, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_stratified_sample_range_plan(size_t n_rows, uint32_t n_groups, uint32_t target, int64_t level, double growth, uint64_t seed, uint32_t min_per_category, double * out_fraction, uint64_t * out_seed, uint32_t * out_min_count, size_t * out_capacity, uint32_t * out_keep_all)
+    function = lib.xyg_stratified_sample_range_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_size_t, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int64, ctypes.c_double, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_stratified_sample_range_u8(const uint8_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint32_t * out, size_t capacity)
     function = lib.xyg_stratified_sample_range_u8
     function.restype = ctypes.c_size_t
@@ -1634,6 +1850,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_vector_segments
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_view_visible_mask(const double * x, const double * y, size_t n, double lo_x, double hi_x, double lo_y, double hi_y, uint8_t * out)
+    function = lib.xyg_view_visible_mask
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # int32_t xyg_violin_density(const double * data, size_t len, size_t n_bins, double * out_edges, double * out_density)
     function = lib.xyg_violin_density
     function.restype = ctypes.c_int32

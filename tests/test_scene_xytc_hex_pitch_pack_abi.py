@@ -25,15 +25,3 @@ def test_scene_xytc_hex_pitch_pack_hexbin_with_pitch() -> None:
     flags, dx, dy = kernels.scene_xytc_hex_pitch_pack(1, 1, 1, 1.0, 2.0)
     assert flags == 1 << 8
     assert (dx, dy) == (1.0, 2.0)
-
-
-def test_pack_xytc_hex_pitch_delegates_to_kernel() -> None:
-    from xyg import _scene_v3 as scene
-
-    flags, dx, dy = scene._pack_xytc_hex_pitch(
-        scene._SCENE_KIND_CLASS_HEXBIN,
-        {"hex_dx": 1.5, "dy": 2.5},
-    )
-    assert flags == 1 << 8
-    assert dx == 1.5
-    assert dy == 2.5

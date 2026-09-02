@@ -1677,16 +1677,15 @@ ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
 (`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
 and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
 `.constant` vs `.color` and skip null channels.
-Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
-unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
-255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` pack 256-texel LUTs
+through ABI 343 `xyg_colormap_lut_rgba8` (named or custom RGB stops).
 Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
-`quantizeUnitU8` / `resolveDensityBinColors` normalize through
-`xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
+`quantizeUnitU8` / `resolveDensityBinColors` normalize and quantize through
+ABI 341 `xyg_quantize_unit_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
-Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
-ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
-substitute stay host.
+Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
+rows through ABI 342 `xyg_palette_rows_rgba8`. Browser-only palette status
+and per-index substitute warnings stay host.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
 Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
@@ -2006,16 +2005,15 @@ ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
 (`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
 and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
 `.constant` vs `.color` and skip null channels.
-Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
-unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
-255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` pack 256-texel LUTs
+through ABI 343 `xyg_colormap_lut_rgba8` (named or custom RGB stops).
 Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
-`quantizeUnitU8` / `resolveDensityBinColors` normalize through
-`xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
+`quantizeUnitU8` / `resolveDensityBinColors` normalize and quantize through
+ABI 341 `xyg_quantize_unit_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
-Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
-ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
-substitute stay host.
+Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
+rows through ABI 342 `xyg_palette_rows_rgba8`. Browser-only palette status
+and per-index substitute warnings stay host.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
 Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1

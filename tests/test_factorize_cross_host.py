@@ -1,0 +1,593 @@
+"""Cross-host categorical factorization parity: Python vs Node."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from xyg import channels as ch
+from xyg import kernels
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURE = ROOT / "tests" / "fixtures" / "factorize_cross_host.json"
+NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "factorize_cross_host.mjs"
+
+
+def _native_lib() -> Path:
+    if sys.platform == "win32":
+        name = "xyg_core.dll"
+    elif sys.platform == "darwin":
+        name = "libxyg_core.dylib"
+    else:
+        name = "libxyg_core.so"
+    return ROOT / "target" / "release" / name
+
+
+LIB = _native_lib()
+
+
+def _node_bin() -> str:
+    return shutil.which("node") or ""
+
+
+def _python_case(spec: dict) -> tuple[list[str], np.ndarray, np.ndarray | None]:
+    if spec["kind"] in (
+        "probe",
+        "stringlike",
+        "real_numeric",
+        "fixed_probe",
+        "fold_codes_u8",
+        "quantize_unit_u8",
+        "palette_rows_rgba8",
+        "colormap_lut_rgba8",
+        "literal_color_rgba_f64",
+        "stratified_sample_range_plan",
+    ):
+        raise AssertionError(f"{spec['kind']} cases use dedicated helpers")
+    if spec["kind"] == "uint8":
+        arr = np.asarray(spec["values"], dtype=np.uint8)
+    elif spec["kind"] == "object":
+        arr = np.asarray(spec["values"], dtype=object)
+    elif spec["kind"] == "unicode" and "seed" in spec:
+        rng = np.random.default_rng(spec["seed"])
+        categories = np.asarray([f"group-{i:03d}" for i in range(spec["category_count"])])
+        labels = categories[rng.integers(0, len(categories), size=spec["row_count"])]
+        arr = labels.astype(object)
+    else:
+        arr = np.asarray(spec["values"], dtype=str)
+    cats, codes, counts = ch._factorize_categories(arr)
+    return cats, codes, counts
+
+
+def _python_probe_case(spec: dict) -> bool:
+    return kernels.factorize_use_native_probe(
+        int(spec["distinct"]),
+        int(spec["probe_len"]),
+        int(spec["record_width"]),
+    )
+
+
+def _python_stringlike_case(spec: dict) -> bool:
+    arr = np.asarray(spec["values"], dtype=object)
+    return ch._object_column_is_stringlike(arr)
+
+
+def _python_real_numeric_case(spec: dict) -> bool:
+    arr = np.asarray(spec["values"], dtype=object)
+    return ch._object_array_is_real_numeric(arr)
+
+
+def _build_fixed_probe_array(spec: dict) -> np.ndarray:
+    row_count = int(spec["row_count"])
+    dtype = np.dtype(spec["dtype"])
+    if row_count == 0:
+        return np.asarray([], dtype=dtype)
+    if "modulo" in spec:
+        return np.asarray([i % int(spec["modulo"]) for i in range(row_count)], dtype=dtype)
+    return np.arange(row_count, dtype=dtype)
+
+
+def _python_fixed_probe_case(spec: dict) -> bool:
+    arr = _build_fixed_probe_array(spec)
+    return ch._use_native_fixed_factorizer(arr)
+
+
+def _python_fold_codes_case(spec: dict) -> list[int]:
+    codes = np.asarray(spec["codes"], dtype=np.uint32)
+    folded = ch._folded_codes_u8(codes, int(spec["n_palette"]))
+    return folded.tolist()
+
+
+def _python_quantize_unit_case(spec: dict) -> list[int]:
+    values = np.asarray(
+        [float("nan") if value is None else float(value) for value in spec["values"]],
+        dtype=np.float64,
+    )
+    domain = (float(spec["domain"][0]), float(spec["domain"][1]))
+    return ch.quantize_unit_u8(values, domain).tolist()
+
+
+def _python_palette_rows_case(spec: dict) -> list[list[int]] | None:
+    if spec.get("expect_error"):
+        with pytest.raises((ValueError, RuntimeError)):
+            ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+        return None
+    rows = ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+    return rows.tolist()
+
+
+def _python_colormap_lut_case(spec: dict) -> list[list[int]]:
+    if "colormap" in spec:
+        lut = ch.colormap_lut_rgba8(spec["colormap"])
+    else:
+        stops = np.asarray(spec["stops"], dtype=np.uint8).reshape(-1, 3)
+        lut = ch.colormap_lut_rgba8(stops.tolist())
+    return lut.tolist()
+
+
+def _python_literal_color_case(spec: dict) -> list[list[float]] | None:
+    rgba = kernels.literal_color_rgba_f64(spec["values"])
+    if spec.get("expect_null"):
+        assert rgba is None
+        return None
+    assert rgba is not None
+    return rgba.tolist()
+
+
+def _python_stratified_plan_case(spec: dict) -> dict[str, float | int | bool]:
+    return kernels.stratified_sample_range_plan(
+        int(spec["n_rows"]),
+        int(spec["n_groups"]),
+        int(spec["target"]),
+        int(spec["level"]),
+        float(spec["growth"]),
+        int(spec["seed"]),
+        int(spec["min_per_category"]),
+    )
+
+
+def _python_categorical_palette_case(spec: dict) -> list[str]:
+    return ch.categorical_palette(spec["palette"], int(spec["n_categories"]))
+
+
+def _python_categorical_palette_map_case(spec: dict) -> dict[str, object]:
+    return kernels.categorical_palette_map_resolve(
+        spec["categories"],
+        spec["palette_map"],
+        default_palette=spec.get("default_palette"),
+    )
+
+
+def _python_direct_rgba_continuous_case(spec: dict) -> list[list[float]]:
+    rgba = kernels.color_channel_direct_rgba_f64_continuous(
+        np.asarray(spec["values"], dtype=np.float64),
+        (float(spec["domain"][0]), float(spec["domain"][1])),
+        np.asarray(spec["stops"], dtype=np.uint8),
+    )
+    return rgba.tolist()
+
+
+def _python_direct_rgba_categorical_case(spec: dict) -> list[list[float]]:
+    rgba = kernels.color_channel_direct_rgba_f64_categorical(
+        np.asarray(spec["codes"], dtype=np.uint32),
+        spec["palette"],
+    )
+    return rgba.tolist()
+
+
+def _python_colormap_is_builtin_case(spec: dict) -> bool:
+    return ch.is_colormap(spec["colormap_name"])
+
+
+def _python_colormap_custom_stops_list_case(spec: dict) -> list[list[int]]:
+    colors = spec["colors"]
+    positions = spec.get("positions")
+    positions = [None] * len(colors) if positions is None else [float(p) for p in positions]
+    return kernels.colormap_custom_stops_resolve_list(colors, positions)
+
+
+def _python_colormap_custom_stops_gradient_case(spec: dict) -> list[list[int]]:
+    return kernels.colormap_custom_stops_resolve_gradient(spec["gradient"])
+
+
+def _python_size_range_case(spec: dict) -> list[float]:
+    lo, hi = kernels.size_range_admit(float(spec["lo"]), float(spec["hi"]))
+    return [lo, hi]
+
+
+def _python_array_is_categorical_case(spec: dict) -> bool:
+    return kernels.array_is_categorical(ord(spec["dtype_kind"]), int(spec["object_real_numeric"]))
+
+
+def _python_real_numeric_dtype_admit_case(spec: dict) -> dict[str, object]:
+    try:
+        kernels.real_numeric_dtype_admit(ord(spec["dtype_kind"]))
+        return {"ok": True}
+    except ValueError as exc:
+        msg = str(exc)
+        error = "boolean" if "boolean" in msg else "complex"
+        return {"ok": False, "error": error}
+
+
+def _python_object_row_stringlike_tag_case(spec: dict) -> int:
+    return kernels.object_row_stringlike_tag_from_probe(int(spec["probe"]))
+
+
+def _python_object_row_real_numeric_tag_case(spec: dict) -> int:
+    return kernels.object_row_real_numeric_tag_from_probe(int(spec["probe"]))
+
+
+def _python_category_label_kind_case(spec: dict) -> int:
+    return kernels.category_label_kind_from_probe(int(spec["probe"]))
+
+
+def _python_category_code_width_case(spec: dict) -> int:
+    return kernels.category_code_width(int(spec["n_categories"]))
+
+
+def _python_category_palette_rows_case(spec: dict) -> int:
+    return kernels.category_palette_rows(int(spec["n_categories"]))
+
+
+def _python_object_row_stringlike_tags_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.object_row_stringlike_tags_from_probes(probes).tolist()
+
+
+def _python_object_row_real_numeric_tags_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.object_row_real_numeric_tags_from_probes(probes).tolist()
+
+
+def _python_category_label_kinds_batch_case(spec: dict) -> list[int]:
+    probes = np.asarray(spec["probes"], dtype=np.uint8)
+    return kernels.category_label_kinds_from_probes(probes).tolist()
+
+
+FIXTURE_CASES = json.loads(FIXTURE.read_text())["cases"]
+FACTORIZE_CASES = [
+    c
+    for c in FIXTURE_CASES
+    if c["kind"]
+    not in (
+        "probe",
+        "stringlike",
+        "real_numeric",
+        "fixed_probe",
+        "fold_codes_u8",
+        "quantize_unit_u8",
+        "palette_rows_rgba8",
+        "colormap_lut_rgba8",
+        "literal_color_rgba_f64",
+        "stratified_sample_range_plan",
+        "categorical_palette",
+        "categorical_palette_map_resolve",
+        "color_channel_direct_rgba_f64_continuous",
+        "color_channel_direct_rgba_f64_categorical",
+        "colormap_is_builtin",
+        "colormap_custom_stops_resolve_list",
+        "colormap_custom_stops_resolve_gradient",
+        "size_range_admit",
+        "array_is_categorical",
+        "real_numeric_dtype_admit",
+        "object_row_stringlike_tag",
+        "object_row_real_numeric_tag",
+        "category_label_kind",
+        "category_code_width",
+        "category_palette_rows",
+        "object_row_stringlike_tags_batch",
+        "object_row_real_numeric_tags_batch",
+        "category_label_kinds_batch",
+    )
+]
+PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "probe"]
+FIXED_PROBE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fixed_probe"]
+FOLD_CODES_CASES = [c for c in FIXTURE_CASES if c["kind"] == "fold_codes_u8"]
+QUANTIZE_UNIT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "quantize_unit_u8"]
+PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "palette_rows_rgba8"]
+COLORMAP_LUT_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_lut_rgba8"]
+LITERAL_COLOR_CASES = [c for c in FIXTURE_CASES if c["kind"] == "literal_color_rgba_f64"]
+STRATIFIED_PLAN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stratified_sample_range_plan"]
+CATEGORICAL_PALETTE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "categorical_palette"]
+CATEGORICAL_PALETTE_MAP_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "categorical_palette_map_resolve"
+]
+DIRECT_RGBA_CONTINUOUS_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "color_channel_direct_rgba_f64_continuous"
+]
+DIRECT_RGBA_CATEGORICAL_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "color_channel_direct_rgba_f64_categorical"
+]
+COLORMAP_IS_BUILTIN_CASES = [c for c in FIXTURE_CASES if c["kind"] == "colormap_is_builtin"]
+COLORMAP_CUSTOM_LIST_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_list"
+]
+COLORMAP_CUSTOM_GRADIENT_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "colormap_custom_stops_resolve_gradient"
+]
+SIZE_RANGE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "size_range_admit"]
+ARRAY_IS_CATEGORICAL_CASES = [c for c in FIXTURE_CASES if c["kind"] == "array_is_categorical"]
+REAL_NUMERIC_DTYPE_ADMIT_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "real_numeric_dtype_admit"
+]
+OBJECT_ROW_STRINGLIKE_TAG_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_stringlike_tag"
+]
+OBJECT_ROW_REAL_NUMERIC_TAG_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tag"
+]
+CATEGORY_LABEL_KIND_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_label_kind"]
+CATEGORY_CODE_WIDTH_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_code_width"]
+CATEGORY_PALETTE_ROWS_CASES = [c for c in FIXTURE_CASES if c["kind"] == "category_palette_rows"]
+OBJECT_ROW_STRINGLIKE_TAGS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_stringlike_tags_batch"
+]
+OBJECT_ROW_REAL_NUMERIC_TAGS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "object_row_real_numeric_tags_batch"
+]
+CATEGORY_LABEL_KINDS_BATCH_CASES = [
+    c for c in FIXTURE_CASES if c["kind"] == "category_label_kinds_batch"
+]
+STRINGLIKE_CASES = [c for c in FIXTURE_CASES if c["kind"] == "stringlike"]
+REAL_NUMERIC_CASES = [c for c in FIXTURE_CASES if c["kind"] == "real_numeric"]
+
+
+@pytest.fixture(scope="module")
+def node_results() -> dict[str, dict]:
+    if not _node_bin() or not NODE_SCRIPT.is_file():
+        pytest.skip("node cross-host script missing")
+    env = os.environ.copy()
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
+    proc = subprocess.run(
+        [_node_bin(), str(NODE_SCRIPT)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    payload = json.loads(proc.stdout.strip())
+    return {case["name"]: case for case in payload["cases"]}
+
+
+@pytest.mark.parametrize("spec", FACTORIZE_CASES, ids=lambda s: s["name"])
+def test_factorize_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    cats, codes, counts = _python_case(spec)
+    node = node_results[spec["name"]]
+    assert cats == node["categories"]
+    np.testing.assert_array_equal(codes, np.asarray(node["codes"], dtype=codes.dtype))
+    if counts is None:
+        assert node["counts"] is None
+    else:
+        assert node["counts"] is not None
+        np.testing.assert_array_equal(counts, np.asarray(node["counts"], dtype=np.uint64))
+
+
+@pytest.mark.parametrize("spec", PROBE_CASES, ids=lambda s: s["name"])
+def test_factorize_probe_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    use_native = _python_probe_case(spec)
+    node = node_results[spec["name"]]
+    assert use_native == node["use_native"]
+
+
+@pytest.mark.parametrize("spec", FIXED_PROBE_CASES, ids=lambda s: s["name"])
+def test_factorize_fixed_probe_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    use_native = _python_fixed_probe_case(spec)
+    node = node_results[spec["name"]]
+    assert use_native == node["use_native"]
+
+
+@pytest.mark.parametrize("spec", FOLD_CODES_CASES, ids=lambda s: s["name"])
+def test_fold_codes_u8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    folded = _python_fold_codes_case(spec)
+    node = node_results[spec["name"]]
+    assert folded == node["folded"]
+
+
+@pytest.mark.parametrize("spec", QUANTIZE_UNIT_CASES, ids=lambda s: s["name"])
+def test_quantize_unit_u8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    quantized = _python_quantize_unit_case(spec)
+    node = node_results[spec["name"]]
+    assert quantized == node["quantized"]
+
+
+@pytest.mark.parametrize("spec", PALETTE_ROWS_CASES, ids=lambda s: s["name"])
+def test_palette_rows_rgba8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    if spec.get("expect_error"):
+        with pytest.raises((ValueError, RuntimeError)):
+            ch.palette_rows_rgba8(spec["palette"], int(spec["rows"]))
+        node = node_results[spec["name"]]
+        assert node.get("error") is True
+        return
+    rows = _python_palette_rows_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rows"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_LUT_CASES, ids=lambda s: s["name"])
+def test_colormap_lut_rgba8_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    rows = _python_colormap_lut_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rows"]
+
+
+@pytest.mark.parametrize("spec", LITERAL_COLOR_CASES, ids=lambda s: s["name"])
+def test_literal_color_rgba_f64_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    rows = _python_literal_color_case(spec)
+    node = node_results[spec["name"]]
+    if spec.get("expect_null"):
+        assert node.get("rgba") is None
+        return
+    assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", STRATIFIED_PLAN_CASES, ids=lambda s: s["name"])
+def test_stratified_sample_range_plan_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    plan = _python_stratified_plan_case(spec)
+    node = node_results[spec["name"]]
+    assert plan["fraction"] == node["fraction"]
+    assert plan["seed"] == node["seed"]
+    assert plan["min_count"] == node["min_count"]
+    assert plan["capacity"] == node["capacity"]
+    assert plan["keep_all"] == node["keep_all"]
+
+
+@pytest.mark.parametrize("spec", CATEGORICAL_PALETTE_CASES, ids=lambda s: s["name"])
+def test_categorical_palette_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    colors = _python_categorical_palette_case(spec)
+    node = node_results[spec["name"]]
+    assert colors == node["colors"]
+
+
+@pytest.mark.parametrize("spec", CATEGORICAL_PALETTE_MAP_CASES, ids=lambda s: s["name"])
+def test_categorical_palette_map_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    resolved = _python_categorical_palette_map_case(spec)
+    node = node_results[spec["name"]]
+    assert resolved["colors"] == node["colors"]
+    assert resolved["unmapped_count"] == node["unmapped_count"]
+    assert resolved["map_exhausted"] == node["map_exhausted"]
+
+
+@pytest.mark.parametrize("spec", DIRECT_RGBA_CONTINUOUS_CASES, ids=lambda s: s["name"])
+def test_color_channel_direct_rgba_continuous_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    rows = _python_direct_rgba_continuous_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", DIRECT_RGBA_CATEGORICAL_CASES, ids=lambda s: s["name"])
+def test_color_channel_direct_rgba_categorical_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    rows = _python_direct_rgba_categorical_case(spec)
+    node = node_results[spec["name"]]
+    assert rows == node["rgba"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_IS_BUILTIN_CASES, ids=lambda s: s["name"])
+def test_colormap_is_builtin_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    builtin = _python_colormap_is_builtin_case(spec)
+    node = node_results[spec["name"]]
+    assert builtin == node["builtin"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_CUSTOM_LIST_CASES, ids=lambda s: s["name"])
+def test_colormap_custom_stops_list_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    stops = _python_colormap_custom_stops_list_case(spec)
+    node = node_results[spec["name"]]
+    assert stops == node["stops"]
+
+
+@pytest.mark.parametrize("spec", COLORMAP_CUSTOM_GRADIENT_CASES, ids=lambda s: s["name"])
+def test_colormap_custom_stops_gradient_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    stops = _python_colormap_custom_stops_gradient_case(spec)
+    node = node_results[spec["name"]]
+    assert stops == node["stops"]
+
+
+@pytest.mark.parametrize("spec", SIZE_RANGE_CASES, ids=lambda s: s["name"])
+def test_size_range_admit_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    range_px = _python_size_range_case(spec)
+    node = node_results[spec["name"]]
+    assert range_px == node["range_px"]
+
+
+@pytest.mark.parametrize("spec", ARRAY_IS_CATEGORICAL_CASES, ids=lambda s: s["name"])
+def test_array_is_categorical_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    categorical = _python_array_is_categorical_case(spec)
+    node = node_results[spec["name"]]
+    assert categorical == node["categorical"]
+
+
+@pytest.mark.parametrize("spec", REAL_NUMERIC_DTYPE_ADMIT_CASES, ids=lambda s: s["name"])
+def test_real_numeric_dtype_admit_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    result = _python_real_numeric_dtype_admit_case(spec)
+    node = node_results[spec["name"]]
+    assert result["ok"] == node["ok"]
+    if not result["ok"]:
+        assert result["error"] == node["error"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_STRINGLIKE_TAG_CASES, ids=lambda s: s["name"])
+def test_object_row_stringlike_tag_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    tag = _python_object_row_stringlike_tag_case(spec)
+    node = node_results[spec["name"]]
+    assert tag == node["tag"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_REAL_NUMERIC_TAG_CASES, ids=lambda s: s["name"])
+def test_object_row_real_numeric_tag_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    tag = _python_object_row_real_numeric_tag_case(spec)
+    node = node_results[spec["name"]]
+    assert tag == node["tag"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_LABEL_KIND_CASES, ids=lambda s: s["name"])
+def test_category_label_kind_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    label_kind = _python_category_label_kind_case(spec)
+    node = node_results[spec["name"]]
+    assert label_kind == node["label_kind"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_CODE_WIDTH_CASES, ids=lambda s: s["name"])
+def test_category_code_width_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    code_width = _python_category_code_width_case(spec)
+    node = node_results[spec["name"]]
+    assert code_width == node["code_width"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_PALETTE_ROWS_CASES, ids=lambda s: s["name"])
+def test_category_palette_rows_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    palette_rows = _python_category_palette_rows_case(spec)
+    node = node_results[spec["name"]]
+    assert palette_rows == node["palette_rows"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_STRINGLIKE_TAGS_BATCH_CASES, ids=lambda s: s["name"])
+def test_object_row_stringlike_tags_batch_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    tags = _python_object_row_stringlike_tags_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert tags == node["tags"]
+
+
+@pytest.mark.parametrize("spec", OBJECT_ROW_REAL_NUMERIC_TAGS_BATCH_CASES, ids=lambda s: s["name"])
+def test_object_row_real_numeric_tags_batch_cross_host(
+    spec: dict, node_results: dict[str, dict]
+) -> None:
+    tags = _python_object_row_real_numeric_tags_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert tags == node["tags"]
+
+
+@pytest.mark.parametrize("spec", CATEGORY_LABEL_KINDS_BATCH_CASES, ids=lambda s: s["name"])
+def test_category_label_kinds_batch_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    kinds = _python_category_label_kinds_batch_case(spec)
+    node = node_results[spec["name"]]
+    assert kinds == node["kinds"]
+
+
+@pytest.mark.parametrize("spec", STRINGLIKE_CASES, ids=lambda s: s["name"])
+def test_object_stringlike_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    stringlike = _python_stringlike_case(spec)
+    node = node_results[spec["name"]]
+    assert stringlike == node["stringlike"]
+
+
+@pytest.mark.parametrize("spec", REAL_NUMERIC_CASES, ids=lambda s: s["name"])
+def test_object_real_numeric_cross_host(spec: dict, node_results: dict[str, dict]) -> None:
+    real_numeric = _python_real_numeric_case(spec)
+    node = node_results[spec["name"]]
+    assert real_numeric == node["real_numeric"]

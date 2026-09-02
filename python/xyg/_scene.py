@@ -100,14 +100,14 @@ def rounded_rect_poly(
 def grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple:
     """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first), matching
     `_svg._density_image`/`_heatmap_image`. Returns (rgba, x_range, y_range)."""
-    from . import _raster
+    from . import _paint
 
-    return _raster._compat_grid_rgba(kind, g, blob, cols, style)
+    return _paint.compat_grid_rgba(kind, g, blob, cols, style)
 
 
 def grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
     """Pixel destination rect (x, y, w, h) for a grid image, matching
     `_svg._grid_image`."""
-    from . import _raster
+    from . import _paint
 
-    return _raster._grid_dest_rect(x_range, y_range, sx, sy)
+    return _paint.grid_dest_rect(x_range, y_range, sx, sy)

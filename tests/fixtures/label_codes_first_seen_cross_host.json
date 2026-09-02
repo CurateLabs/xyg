@@ -1,0 +1,21 @@
+{
+  "schema": "xyg.label-codes-first-seen-cross-host/v1",
+  "cases": [
+    {
+      "name": "empty",
+      "labels": []
+    },
+    {
+      "name": "basic_first_seen",
+      "labels": ["b", "a", "b", "(missing)", "a"]
+    },
+    {
+      "name": "mixed_object_labels",
+      "labels": ["b", "(missing)", "a", "(missing)", "1"]
+    },
+    {
+      "name": "unicode",
+      "labels": ["β", "a", "β", "", "é", "a"]
+    }
+  ]
+}

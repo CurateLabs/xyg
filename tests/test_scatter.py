@@ -204,6 +204,17 @@ def test_both_factorizer_paths_agree_across_the_width_threshold() -> None:
         np.testing.assert_array_equal(native_codes, object_codes)
 
 
+def test_factorize_uint8_native_sorted_codes_match_node_host() -> None:
+    """Lockstep with packages/xy-node/test/color.test.mjs native uint8 case."""
+    arr = np.array([1, 0, 1], dtype=np.uint8)
+    cats, codes, counts = ch._factorize_categories(arr)
+    assert cats == ["0", "1"]
+    np.testing.assert_array_equal(codes, [1, 0, 1])
+    assert counts is not None
+    assert int(counts[0]) == 1
+    assert int(counts[1]) == 2
+
+
 def test_numeric_object_color_with_missing_is_continuous():
     vals = np.array([1, None, 2.5, np.nan], dtype=object)
     c = ch.resolve_color(vals, 4, default_constant="#000")
@@ -217,6 +228,19 @@ def test_numeric_string_object_color_stays_categorical():
     c = ch.resolve_color(vals, 3, default_constant="#000")
     assert c.mode == "categorical"
     assert c.categories == ["(missing)", "1", "2"]
+
+
+def test_stringlike_object_color_uses_native_factorizer() -> None:
+    rng = np.random.default_rng(2)
+    categories = np.asarray([f"group-{i:03d}" for i in range(400)])
+    labels = categories[rng.integers(0, len(categories), size=15_000)]
+    object_labels = labels.astype(object)
+    assert ch._object_column_is_stringlike(object_labels)
+    native_cats, native_codes, native_counts = ch._factorize_categories(object_labels)
+    plain_cats, plain_codes, plain_counts = ch._factorize_categories(labels)
+    assert native_cats == plain_cats
+    np.testing.assert_array_equal(native_codes, plain_codes)
+    assert native_counts is None and plain_counts is None
 
 
 def test_color_bad_length():

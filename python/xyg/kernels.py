@@ -35,6 +35,18 @@ css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
+quantize_unit_u8 = _impl.quantize_unit_u8
+palette_rows_rgba8 = _impl.palette_rows_rgba8
+colormap_lut_rgba8 = _impl.colormap_lut_rgba8
+colormap_is_builtin = _impl.colormap_is_builtin
+colormap_resolved_stops_admit = _impl.colormap_resolved_stops_admit
+colormap_custom_stops_resolve_gradient = _impl.colormap_custom_stops_resolve_gradient
+colormap_custom_stops_resolve_list = _impl.colormap_custom_stops_resolve_list
+categorical_palette = _impl.categorical_palette
+categorical_palette_map_resolve = _impl.categorical_palette_map_resolve
+color_channel_direct_rgba_f64_continuous = _impl.color_channel_direct_rgba_f64_continuous
+color_channel_direct_rgba_f64_categorical = _impl.color_channel_direct_rgba_f64_categorical
+literal_color_rgba_f64 = _impl.literal_color_rgba_f64
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -76,6 +88,11 @@ density_wasm_eligible = _impl.density_wasm_eligible
 delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
+aligned_window = _impl.aligned_window
+sample_threshold = _impl.sample_threshold
+sample_fraction = _impl.sample_fraction
+stratified_sample_range_plan = _impl.stratified_sample_range_plan
+hash_row_ids = _impl.hash_row_ids
 encode_f32 = _impl.encode_f32
 encoded_column_meta = _impl.encoded_column_meta
 f32_safe_scale = _impl.f32_safe_scale
@@ -149,6 +166,15 @@ factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
 factorize_unicode1_u8_counts = _impl.factorize_unicode1_u8_counts
+factorize_display_labels = _impl.factorize_display_labels
+label_codes_first_seen = _impl.label_codes_first_seen
+sorted_display_label_remap = _impl.sorted_display_label_remap
+factorize_use_native_probe = _impl.factorize_use_native_probe
+factorize_use_native_fixed = _impl.factorize_use_native_fixed
+fold_codes_u8 = _impl.fold_codes_u8
+category_labels = _impl.category_labels
+object_rows_all_stringlike = _impl.object_rows_all_stringlike
+object_rows_all_real_numeric = _impl.object_rows_all_real_numeric
 transition_keys_fixed = _impl.transition_keys_fixed
 m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
@@ -164,6 +190,17 @@ arrow_taper_polygon = _impl.arrow_taper_polygon
 arrow_trim_polyline_end = _impl.arrow_trim_polyline_end
 min_max = _impl.min_max
 continuous_domain = _impl.continuous_domain
+size_range_admit = _impl.size_range_admit
+array_is_categorical = _impl.array_is_categorical
+real_numeric_dtype_admit = _impl.real_numeric_dtype_admit
+object_row_stringlike_tag_from_probe = _impl.object_row_stringlike_tag_from_probe
+object_row_real_numeric_tag_from_probe = _impl.object_row_real_numeric_tag_from_probe
+object_row_stringlike_tags_from_probes = _impl.object_row_stringlike_tags_from_probes
+object_row_real_numeric_tags_from_probes = _impl.object_row_real_numeric_tags_from_probes
+category_label_kind_from_probe = _impl.category_label_kind_from_probe
+category_label_kinds_from_probes = _impl.category_label_kinds_from_probes
+category_code_width = _impl.category_code_width
+category_palette_rows = _impl.category_palette_rows
 direct_rgba_admit = _impl.direct_rgba_admit
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -229,6 +266,9 @@ welch_spectra = _impl.welch_spectra
 weighted_ecdf = _impl.weighted_ecdf
 drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
+screen_shape = _impl.screen_shape
+normalize_window = _impl.normalize_window
+view_visible_mask = _impl.view_visible_mask
 lod_plan = _impl.lod_plan
 payload_tier = _impl.payload_tier
 payload_m4_indices = _impl.payload_m4_indices
@@ -248,6 +288,12 @@ payload_heatmap_emit_plan = _impl.payload_heatmap_emit_plan
 payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 payload_column_ship_plan = _impl.payload_column_ship_plan
 payload_density_grid_ship_plan = _impl.payload_density_grid_ship_plan
+payload_density_grid_materialize = _impl.payload_density_grid_materialize
+payload_column_gather_materialize = _impl.payload_column_gather_materialize
+payload_channel_materialize = _impl.payload_channel_materialize
+scene_xyaf_pack = _impl.scene_xyaf_pack
+scene_xycf_pack = _impl.scene_xycf_pack
+scene_figure_support_pack = _impl.scene_figure_support_pack
 payload_channel_ship_plan = _impl.payload_channel_ship_plan
 payload_channel_wire_encode = _impl.payload_channel_wire_encode
 payload_ribbon_emit_plan = _impl.payload_ribbon_emit_plan
@@ -308,7 +354,9 @@ __all__ = [
     "PAYLOAD_NONXY_KIND_RECT",
     "PAYLOAD_SHIP_CHANNELS_ALWAYS",
     "PAYLOAD_SHIP_CHANNELS_IF_COLOR",
+    "aligned_window",
     "argsort_stable",
+    "array_is_categorical",
     "arrow_end_decoration",
     "arrow_geometry",
     "arrow_shaft_points",
@@ -326,8 +374,21 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "categorical_palette",
+    "category_code_width",
+    "category_label_kind_from_probe",
+    "category_label_kinds_from_probes",
+    "category_labels",
+    "category_palette_rows",
     "clip_quantize_u8",
+    "color_channel_direct_rgba_f64_categorical",
+    "color_channel_direct_rgba_f64_continuous",
+    "colormap_custom_stops_resolve_gradient",
+    "colormap_custom_stops_resolve_list",
+    "colormap_is_builtin",
     "colormap_lut",
+    "colormap_lut_rgba8",
+    "colormap_resolved_stops_admit",
     "colormap_rgba",
     "colormap_rgba_canonical",
     "continuous_domain",
@@ -371,11 +432,16 @@ __all__ = [
     "encode_f32",
     "encoded_column_meta",
     "f32_safe_scale",
+    "factorize_display_labels",
     "factorize_fixed",
     "factorize_fixed_u8",
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
+    "factorize_use_native_fixed",
+    "factorize_use_native_probe",
+    "fold_codes_u8",
     "geometry_offset",
+    "hash_row_ids",
     "heatmap_rgba",
     "hexbin",
     "hexbin_groups",
@@ -387,8 +453,10 @@ __all__ = [
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
+    "label_codes_first_seen",
     "legend_best_loc",
     "legend_normalize",
+    "literal_color_rgba_f64",
     "local_log_density",
     "lod_grid_shape",
     "lod_plan",
@@ -398,15 +466,26 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "normalize_window",
+    "object_row_real_numeric_tag_from_probe",
+    "object_row_real_numeric_tags_from_probes",
+    "object_row_stringlike_tag_from_probe",
+    "object_row_stringlike_tags_from_probes",
+    "object_rows_all_real_numeric",
+    "object_rows_all_stringlike",
     "paint_effective_rgba",
+    "palette_rows_rgba8",
     "payload_axis_spec_attach_plan",
     "payload_bar_compact_admit",
     "payload_bar_hist_emit_plan",
     "payload_base_entry_plan",
     "payload_build_plan",
+    "payload_channel_materialize",
     "payload_channel_ship_plan",
     "payload_channel_wire_encode",
+    "payload_column_gather_materialize",
     "payload_column_ship_plan",
+    "payload_density_grid_materialize",
     "payload_density_grid_ship_plan",
     "payload_density_trace_emit_plan",
     "payload_errorbar_indices",
@@ -444,17 +523,21 @@ __all__ = [
     "pyramid_spill",
     "quad_mesh_triangles",
     "quantiles",
+    "quantize_unit_u8",
     "range_indices",
     "range_indices_rows",
     "rasterize",
     "rasterize_png",
+    "real_numeric_dtype_admit",
     "remap_u8",
     "rfft",
     "ribbon_edge",
     "ribbon_polygon",
     "rounded_rect_poly",
+    "sample_fraction",
     "sample_mask",
     "sample_range_indices",
+    "sample_threshold",
     "scale_pins_offset",
     "scene_annotation_style_admit",
     "scene_arrays_equal",
@@ -464,6 +547,9 @@ __all__ = [
     "scene_dash_admit",
     "scene_encode_product_attach_plan",
     "scene_figure_support_figure_plan",
+    "scene_figure_support_pack",
+    "scene_figure_support_pack",
+    "scene_figure_support_pack",
     "scene_figure_support_trace_dispatch_plan",
     "scene_fill_gradient_admit",
     "scene_finite_all",
@@ -500,7 +586,13 @@ __all__ = [
     "scene_tick_anchor",
     "scene_tick_label_strategy",
     "scene_xyaf_annotation_dispatch_plan",
+    "scene_xyaf_pack",
+    "scene_xyaf_pack",
+    "scene_xyaf_pack",
     "scene_xycf_figure_plan",
+    "scene_xycf_pack",
+    "scene_xycf_pack",
+    "scene_xycf_pack",
     "scene_xycl_figure_plan",
     "scene_xyhf_colormap_pack",
     "scene_xynm_figure_plan",
@@ -520,10 +612,14 @@ __all__ = [
     "scene_xytc_stroke_perimeter_pack",
     "scene_xytc_symbol_int_pack",
     "scene_xytc_trace_dispatch_plan",
+    "screen_shape",
     "sector_triangles",
+    "size_range_admit",
+    "sorted_display_label_remap",
     "spectrogram",
     "stacked_bounds",
     "stratified_sample_mask",
+    "stratified_sample_range_plan",
     "stratified_sample_range_u8",
     "stream_append",
     "stream_capacity",
@@ -545,6 +641,7 @@ __all__ = [
     "triangle_edges",
     "valid_indices_f64",
     "vector_segments",
+    "view_visible_mask",
     "violin_density",
     "violin_rects",
     "weighted_ecdf",

@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from . import _ooc, kernels
+from . import _ooc, channels, kernels
 
 ColumnStoreCheckpoint = tuple[int, dict[tuple[int, int, int], int]]
 
@@ -610,12 +610,20 @@ def _canonicalize(data: Any) -> tuple[npt.NDArray[np.float64], str, int]:
         arr, copies = _datetime_to_float_ms(arr, copies)
         kind = "time_ms"
     else:
-        if np.issubdtype(arr.dtype, np.bool_):
-            raise ValueError("columns must be real numeric or datetime-like, not boolean")
-        if np.issubdtype(arr.dtype, np.complexfloating):
-            raise ValueError("columns must be real numeric or datetime-like")
-        if arr.dtype == object and any(isinstance(value, (bool, np.bool_)) for value in arr):
-            raise ValueError("columns must be real numeric or datetime-like, not boolean")
+        try:
+            kernels.real_numeric_dtype_admit(ord(arr.dtype.kind))
+        except ValueError as exc:
+            msg = str(exc).replace("values", "columns")
+            raise ValueError(
+                msg.replace("real numeric", "real numeric or datetime-like")
+                if "boolean" not in msg
+                else "columns must be real numeric or datetime-like, not boolean"
+            ) from exc
+        if arr.dtype == object:
+            if any(isinstance(value, (bool, np.bool_)) for value in arr):
+                raise ValueError("columns must be real numeric or datetime-like, not boolean")
+            if not channels._object_array_is_real_numeric(arr):
+                raise ValueError("columns must be real numeric or datetime-like")
         try:
             arr, copies = _astype_counted(arr, np.float64, copies)
         except (TypeError, ValueError) as e:

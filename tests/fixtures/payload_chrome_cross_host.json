@@ -2,7 +2,7 @@
   "schema": "xyg.payload-chrome-cross-host/v1",
   "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, extra_legends, annotations, and _dom_spec",
   "protocol": 12,
-  "abi_version": 315,
+  "abi_version": 357,
   "cases": [
     {
       "name": "show_legend_default",

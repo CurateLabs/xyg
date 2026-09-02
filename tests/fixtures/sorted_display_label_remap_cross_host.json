@@ -1,0 +1,18 @@
+{
+  "schema": "xyg.sorted-display-label-remap-cross-host/v1",
+  "cases": [
+    {
+      "name": "empty",
+      "labels": []
+    },
+    {
+      "name": "sorted_basic",
+      "labels": ["b", "a", "b"]
+    },
+    {
+      "name": "with_counts",
+      "labels": ["b", "a", "b"],
+      "counts": [2, 1, 3]
+    }
+  ]
+}

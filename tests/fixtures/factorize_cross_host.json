@@ -1,0 +1,431 @@
+{
+  "schema": "xyg.factorize-cross-host/v1",
+  "cases": [
+    {
+      "name": "uint8_native",
+      "kind": "uint8",
+      "values": [1, 0, 1]
+    },
+    {
+      "name": "mixed_object",
+      "kind": "object",
+      "values": ["b", null, "a", null, 1]
+    },
+    {
+      "name": "stringlike_unicode",
+      "kind": "unicode",
+      "values": ["β", "a", "β", "", "é"]
+    },
+    {
+      "name": "probe_low_distinct",
+      "kind": "probe",
+      "distinct": 100,
+      "probe_len": 4096,
+      "record_width": 4
+    },
+    {
+      "name": "probe_near_unique_narrow",
+      "kind": "probe",
+      "distinct": 4096,
+      "probe_len": 4096,
+      "record_width": 4
+    },
+    {
+      "name": "probe_near_unique_wide",
+      "kind": "probe",
+      "distinct": 3890,
+      "probe_len": 4096,
+      "record_width": 64
+    },
+    {
+      "name": "stringlike_only",
+      "kind": "stringlike",
+      "values": ["a", null, "b", null]
+    },
+    {
+      "name": "stringlike_with_int",
+      "kind": "stringlike",
+      "values": ["a", 1, null]
+    },
+    {
+      "name": "real_numeric_only",
+      "kind": "real_numeric",
+      "values": [1, 2.0, null]
+    },
+    {
+      "name": "real_numeric_with_text",
+      "kind": "real_numeric",
+      "values": [1, "a"]
+    },
+    {
+      "name": "real_numeric_empty",
+      "kind": "real_numeric",
+      "values": []
+    },
+    {
+      "name": "real_numeric_all_missing",
+      "kind": "real_numeric",
+      "values": [null, null]
+    },
+    {
+      "name": "fixed_probe_repetitive_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 50000,
+      "modulo": 100
+    },
+    {
+      "name": "fixed_probe_near_unique_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 5000
+    },
+    {
+      "name": "fixed_probe_empty_uint32",
+      "kind": "fixed_probe",
+      "dtype": "uint32",
+      "row_count": 0
+    },
+    {
+      "name": "fold_codes_u8_basic",
+      "kind": "fold_codes_u8",
+      "codes": [0, 9, 10, 257, 300],
+      "n_palette": 10
+    },
+    {
+      "name": "fold_codes_u8_empty",
+      "kind": "fold_codes_u8",
+      "codes": [],
+      "n_palette": 10
+    },
+    {
+      "name": "quantize_unit_u8_basic",
+      "kind": "quantize_unit_u8",
+      "values": [0, 5, 10],
+      "domain": [0, 10]
+    },
+    {
+      "name": "quantize_unit_u8_nonfinite",
+      "kind": "quantize_unit_u8",
+      "values": [null, 0.5],
+      "domain": [0, 1]
+    },
+    {
+      "name": "quantize_unit_u8_bad_domain",
+      "kind": "quantize_unit_u8",
+      "values": [1],
+      "domain": [5, 5]
+    },
+    {
+      "name": "palette_rows_rgba8_basic",
+      "kind": "palette_rows_rgba8",
+      "palette": ["#ff0000", "#00ff00"],
+      "rows": 3
+    },
+    {
+      "name": "palette_rows_rgba8_browser_only",
+      "kind": "palette_rows_rgba8",
+      "palette": ["#ff0000", "var(--x)"],
+      "rows": 2
+    },
+    {
+      "name": "palette_rows_rgba8_empty_palette",
+      "kind": "palette_rows_rgba8",
+      "palette": [],
+      "rows": 1,
+      "expect_error": true
+    },
+    {
+      "name": "colormap_lut_rgba8_named",
+      "kind": "colormap_lut_rgba8",
+      "colormap": "viridis"
+    },
+    {
+      "name": "colormap_lut_rgba8_custom",
+      "kind": "colormap_lut_rgba8",
+      "stops": [[0, 0, 0], [255, 255, 255]]
+    },
+    {
+      "name": "literal_color_rgba_f64_basic",
+      "kind": "literal_color_rgba_f64",
+      "values": ["#ff0000", "#00ff00", "#0000ff"]
+    },
+    {
+      "name": "literal_color_rgba_f64_named",
+      "kind": "literal_color_rgba_f64",
+      "values": ["red", "green"],
+      "expect_null": true
+    },
+    {
+      "name": "literal_color_rgba_f64_malformed",
+      "kind": "literal_color_rgba_f64",
+      "values": ["#ff0000", "b"],
+      "expect_null": true
+    },
+    {
+      "name": "stratified_sample_range_plan_basic",
+      "kind": "stratified_sample_range_plan",
+      "n_rows": 1000,
+      "n_groups": 4,
+      "target": 500,
+      "level": 0,
+      "growth": 2.0,
+      "seed": 29,
+      "min_per_category": 1
+    },
+    {
+      "name": "stratified_sample_range_plan_keep_all",
+      "kind": "stratified_sample_range_plan",
+      "n_rows": 10,
+      "n_groups": 4,
+      "target": 100,
+      "level": 0,
+      "growth": 2.0,
+      "seed": 0,
+      "min_per_category": 1
+    },
+    {
+      "name": "categorical_palette_basic",
+      "kind": "categorical_palette",
+      "palette": ["#ff0000", "#00ff00"],
+      "n_categories": 5
+    },
+    {
+      "name": "categorical_palette_map_basic",
+      "kind": "categorical_palette_map_resolve",
+      "categories": ["setosa", "versicolor", "virginica"],
+      "palette_map": {
+        "setosa": "#4c72b0",
+        "versicolor": "#dd8452",
+        "virginica": "#55a868"
+      }
+    },
+    {
+      "name": "categorical_palette_map_unmapped",
+      "kind": "categorical_palette_map_resolve",
+      "categories": ["a", "b", "c"],
+      "palette_map": {
+        "a": "#ff0000"
+      },
+      "default_palette": ["#111111", "#222222", "#333333"]
+    },
+    {
+      "name": "color_channel_direct_rgba_f64_continuous",
+      "kind": "color_channel_direct_rgba_f64_continuous",
+      "values": [0.0, 0.5, 1.0],
+      "domain": [0.0, 1.0],
+      "stops": [[255, 0, 0], [0, 255, 0]]
+    },
+    {
+      "name": "color_channel_direct_rgba_f64_categorical",
+      "kind": "color_channel_direct_rgba_f64_categorical",
+      "codes": [0, 1, 2],
+      "palette": ["#ff0000", "#00ff00"]
+    },
+    {
+      "name": "colormap_is_builtin_magma",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "magma"
+    },
+    {
+      "name": "colormap_is_builtin_magma_r",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "magma_r"
+    },
+    {
+      "name": "colormap_is_builtin_unknown",
+      "kind": "colormap_is_builtin",
+      "colormap_name": "nope"
+    },
+    {
+      "name": "colormap_custom_stops_uniform",
+      "kind": "colormap_custom_stops_resolve_list",
+      "colors": ["#0b1220", "#2563eb", "#22d3ee", "#fde68a"]
+    },
+    {
+      "name": "colormap_custom_stops_positioned",
+      "kind": "colormap_custom_stops_resolve_list",
+      "colors": ["#000000", "#ffffff", "#000000"],
+      "positions": [0.0, 0.25, 1.0]
+    },
+    {
+      "name": "colormap_custom_stops_gradient",
+      "kind": "colormap_custom_stops_resolve_gradient",
+      "gradient": "linear-gradient(#000000, #ffffff 25%, #000000)"
+    },
+    {
+      "name": "size_range_basic",
+      "kind": "size_range_admit",
+      "lo": 2.0,
+      "hi": 18.0
+    },
+    {
+      "name": "size_range_zero",
+      "kind": "size_range_admit",
+      "lo": 0.0,
+      "hi": 0.0
+    },
+    {
+      "name": "array_is_categorical_unicode",
+      "kind": "array_is_categorical",
+      "dtype_kind": "U",
+      "object_real_numeric": -1,
+      "categorical": true
+    },
+    {
+      "name": "array_is_categorical_float",
+      "kind": "array_is_categorical",
+      "dtype_kind": "f",
+      "object_real_numeric": -1,
+      "categorical": false
+    },
+    {
+      "name": "array_is_categorical_object_mixed",
+      "kind": "array_is_categorical",
+      "dtype_kind": "O",
+      "object_real_numeric": 0,
+      "categorical": true
+    },
+    {
+      "name": "array_is_categorical_object_numeric",
+      "kind": "array_is_categorical",
+      "dtype_kind": "O",
+      "object_real_numeric": 1,
+      "categorical": false
+    },
+    {
+      "name": "real_numeric_dtype_float",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "f",
+      "ok": true
+    },
+    {
+      "name": "real_numeric_dtype_bool",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "b",
+      "ok": false,
+      "error": "boolean"
+    },
+    {
+      "name": "real_numeric_dtype_complex",
+      "kind": "real_numeric_dtype_admit",
+      "dtype_kind": "c",
+      "ok": false,
+      "error": "complex"
+    },
+    {
+      "name": "object_row_stringlike_tag_missing",
+      "kind": "object_row_stringlike_tag",
+      "probe": 0,
+      "tag": 0
+    },
+    {
+      "name": "object_row_stringlike_tag_text",
+      "kind": "object_row_stringlike_tag",
+      "probe": 2,
+      "tag": 1
+    },
+    {
+      "name": "object_row_stringlike_tag_bytes",
+      "kind": "object_row_stringlike_tag",
+      "probe": 3,
+      "tag": 2
+    },
+    {
+      "name": "object_row_stringlike_tag_bool",
+      "kind": "object_row_stringlike_tag",
+      "probe": 1,
+      "tag": 3
+    },
+    {
+      "name": "object_row_real_numeric_tag_real",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 4,
+      "tag": 1
+    },
+    {
+      "name": "object_row_real_numeric_tag_bool",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 1,
+      "tag": 2
+    },
+    {
+      "name": "object_row_real_numeric_tag_coercible",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 5,
+      "tag": 4
+    },
+    {
+      "name": "object_row_real_numeric_tag_other",
+      "kind": "object_row_real_numeric_tag",
+      "probe": 6,
+      "tag": 5
+    },
+    {
+      "name": "category_label_kind_missing",
+      "kind": "category_label_kind",
+      "probe": 0,
+      "label_kind": 0
+    },
+    {
+      "name": "category_label_kind_text",
+      "kind": "category_label_kind",
+      "probe": 2,
+      "label_kind": 1
+    },
+    {
+      "name": "category_label_kind_bytes",
+      "kind": "category_label_kind",
+      "probe": 3,
+      "label_kind": 2
+    },
+    {
+      "name": "category_label_kind_bool",
+      "kind": "category_label_kind",
+      "probe": 1,
+      "label_kind": 1
+    },
+    {
+      "name": "category_code_width_u8",
+      "kind": "category_code_width",
+      "n_categories": 256,
+      "code_width": 1
+    },
+    {
+      "name": "category_code_width_u32",
+      "kind": "category_code_width",
+      "n_categories": 257,
+      "code_width": 4
+    },
+    {
+      "name": "category_palette_rows_capped",
+      "kind": "category_palette_rows",
+      "n_categories": 300,
+      "palette_rows": 256
+    },
+    {
+      "name": "category_palette_rows_small",
+      "kind": "category_palette_rows",
+      "n_categories": 8,
+      "palette_rows": 8
+    },
+    {
+      "name": "object_row_stringlike_tags_batch_mixed",
+      "kind": "object_row_stringlike_tags_batch",
+      "probes": [0, 2, 3, 1],
+      "tags": [0, 1, 2, 3]
+    },
+    {
+      "name": "object_row_real_numeric_tags_batch_mixed",
+      "kind": "object_row_real_numeric_tags_batch",
+      "probes": [0, 4, 1, 5],
+      "tags": [0, 1, 2, 4]
+    },
+    {
+      "name": "category_label_kinds_batch_mixed",
+      "kind": "category_label_kinds_batch",
+      "probes": [0, 2, 3, 1],
+      "kinds": [0, 1, 2, 1]
+    }
+  ]
+}
