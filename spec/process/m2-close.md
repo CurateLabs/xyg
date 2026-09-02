@@ -69,7 +69,7 @@ walks.
 
 **Branch landing readiness (2026-09-02, `cursor/m2-payload-writer-ship-7ce1`).**
 PR [#853](https://github.com/CurateLabs/xyg/pull/853) is mergeable with green CI
-on tip `9274b94f9` (Python 3.11 floor, Rust + Python + JS, WASM foundation).
+on tip `57f82f1a6` (Python 3.11 floor, Rust + Python + JS, WASM foundation).
 Disposition parity: 0 `python-scene-migration`, 0 `node-scene-migration`; honest
 keep-host inventories for Python (~80 files) and Node (~30 files) in
 `audit_python_host_core.py`. Browser: `49_wasm_ticks.ts` adapter + `30_ticks.ts`
