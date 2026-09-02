@@ -8,6 +8,8 @@ the MRO. Only numpy + the columns/channels helpers are needed at module level.""
 
 from __future__ import annotations
 
+from typing import Any
+
 from ._annotations_marks import AnnotationsMarksMixin
 from ._annotations_rules import AnnotationsRulesMixin
 from ._annotations_spec import AnnotationsSpecMixin
@@ -15,3 +17,7 @@ from ._annotations_spec import AnnotationsSpecMixin
 
 class AnnotationsMixin(AnnotationsRulesMixin, AnnotationsMarksMixin, AnnotationsSpecMixin):
     """Combined annotation API bound onto `Figure`."""
+
+
+# Bound by `_figure` after `Figure` is defined (breaks the import cycle).
+Figure: Any = None

@@ -183,8 +183,9 @@ def _scatter_marks(
             )
         ]
     if grouped_alpha:
-        fill_group = float(scalar_artist) * _fill_opacity(style, 1.0)
-        stroke_group = float(scalar_artist) * _stroke_opacity(style, 1.0)
+        artist_alpha = float(scalar_artist if scalar_artist is not None else 1.0)
+        fill_group = artist_alpha * _fill_opacity(style, 1.0)
+        stroke_group = artist_alpha * _stroke_opacity(style, 1.0)
         blocks = [f'<g fill-opacity="{_num(fill_group)}" stroke-opacity="{_num(stroke_group)}">']
     else:
         blocks = ["<g>"]

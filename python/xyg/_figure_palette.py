@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from .config import DEFAULT_PALETTE, default_palette_color
 
@@ -20,7 +20,7 @@ def palette_cycle(self) -> Optional[list[str]]:
     if self.palette is None:
         return None
     if isinstance(self.palette, dict):
-        return list(self.palette.values())
+        return cast(list[str], list(self.palette.values()))
     return list(self.palette)
 
 

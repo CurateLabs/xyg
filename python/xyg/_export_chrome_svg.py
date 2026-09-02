@@ -18,6 +18,7 @@ from ._export_legend import legend_items
 from ._export_legend_svg import _legend
 from ._export_svg_util import _escape_attr, _num, _text_block_content, escape, slot_text_attrs
 from ._export_ticks import _axis_tick_label_strategy, _colorbar_right_axis_room
+from ._layout import _Scale
 from ._paint import _css
 
 
@@ -27,8 +28,8 @@ def _svg_chrome(
     width: float,
     xa: dict[str, Any],
     ya: dict[str, Any],
-    extra_x_axes: list[tuple[str, dict[str, Any], object]],
-    extra_y_axes: list[tuple[str, dict[str, Any], object]],
+    extra_x_axes: list[tuple[str, dict[str, Any], _Scale]],
+    extra_y_axes: list[tuple[str, dict[str, Any], _Scale]],
     *,
     compact: bool,
     clip_id: str,

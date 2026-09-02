@@ -11,6 +11,8 @@ axis-position helpers — through it.
 
 from __future__ import annotations
 
+from typing import Any
+
 from ._marks_bar import (
     bar,  # noqa: F401
     column,  # noqa: F401
@@ -85,3 +87,6 @@ from ._marks_style import (
 from ._marks_triangle_mesh import (
     triangle_mesh,  # noqa: F401
 )
+
+# Bound by `_figure` after `Figure` is defined (breaks the import cycle).
+Figure: Any = None
