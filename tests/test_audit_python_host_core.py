@@ -26,6 +26,16 @@ def test_audit_lists_no_scene_migration_files():
     assert "python/xyg/_svg.py" not in paths
 
 
+def test_keep_host_policy_paths_cover_export_emitters():
+    mod = _load()
+    manifest = mod._load_manifest(mod.MANIFEST)
+    paths = mod._keep_host_policy_paths(manifest)
+    assert "python/xyg/_export_marks_svg.py" in paths
+    assert "python/xyg/_scene_marshal.py" in paths
+    assert "python/xyg/_payload.py" in paths
+    assert "python/xyg/kernels.py" not in paths
+
+
 def test_audit_cli_exits_zero():
     from xyg._abi_generated import ABI_VERSION
 
@@ -60,5 +70,8 @@ def test_audit_cli_exits_zero():
     assert "#731 close checklist" in proc.stdout
     assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
+    assert "Keep-host policy surface audit" in proc.stdout
+    assert "Cross-host disposition parity" in proc.stdout
+    assert "node-scene-migration files:" in proc.stdout
     assert "Residual host materialization" not in proc.stdout
     assert "do not mark M2 complete" not in proc.stdout

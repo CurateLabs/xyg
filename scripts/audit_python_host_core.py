@@ -6,6 +6,11 @@ production file is classified; this script measures how much algorithmic work
 remains in Python files tagged ``python-scene-migration`` — the §302 blockers
 from ``spec/design/ownership-audit.md``.
 
+When no ``python-scene-migration`` files remain, the script also audits
+documented keep-host compatibility/marshal surfaces (static export emitters,
+scene observation marshaling, payload density attach) and reports remaining
+Node ``node-scene-migration`` inventory for practical parity tracking.
+
 Exit 0 always; prints a human-readable report to stdout.
 """
 
@@ -41,6 +46,35 @@ LOCAL_RE = re.compile(
 )
 
 BLOCKER_MAP: dict[str, str] = {}
+
+# Keep-host surfaces that may still carry compatibility export / observation policy.
+# Zero ``python-scene-migration`` tags does not mean these are Rust-owned.
+KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
+    {
+        "python/xyg/_paint.py",
+        "python/xyg/_layout.py",
+        "python/xyg/_scene_marshal.py",
+        "python/xyg/_scene_observations.py",
+        "python/xyg/_payload_trace_materialize.py",
+        "python/xyg/_payload_density.py",
+        "python/xyg/_payload.py",
+        "python/xyg/_scene_v3.py",
+        "python/xyg/_channels_labels.py",
+        "python/xyg/_lod_sample.py",
+        "python/xyg/_svg_render.py",
+        "python/xyg/_raster_render.py",
+    }
+)
+
+KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = (
+    "python/xyg/_export_",
+    "python/xyg/_marks_",
+    "python/xyg/_figure_",
+    "python/xyg/_channels_",
+    "python/xyg/_lod_",
+    "python/xyg/_facets_",
+    "python/xyg/_annotations_",
+)
 
 MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
     ("#851", "316", "xyg_payload_density_grid_materialize"),
@@ -226,6 +260,97 @@ def _load_paths(manifest_path: Path) -> list[str]:
     return sorted(out)
 
 
+def _load_manifest(manifest_path: Path) -> dict:
+    return json.loads(manifest_path.read_text(encoding="utf-8"))
+
+
+def _is_keep_host_policy_surface(path: str) -> bool:
+    if path in KEEP_HOST_POLICY_EXACT:
+        return True
+    return any(path.startswith(prefix) for prefix in KEEP_HOST_POLICY_PREFIXES)
+
+
+def _keep_host_policy_paths(manifest: dict) -> list[str]:
+    out: list[str] = []
+    for entry in manifest.get("files", []):
+        path = entry.get("path", "")
+        if entry.get("policy") != "python-host":
+            continue
+        if _is_keep_host_policy_surface(path):
+            out.append(path)
+    return sorted(out)
+
+
+def _policy_paths_by_tag(manifest: dict, policy: str) -> list[str]:
+    return sorted(
+        entry["path"]
+        for entry in manifest.get("files", [])
+        if entry.get("policy") == policy
+    )
+
+
+def _print_keep_host_policy_audit(manifest_path: Path) -> None:
+    manifest = _load_manifest(manifest_path)
+    paths = _keep_host_policy_paths(manifest)
+    node_paths = _policy_paths_by_tag(manifest, "node-scene-migration")
+    browser_paths = _policy_paths_by_tag(manifest, "browser-scene-migration")
+
+    total_lines = 0
+    total_delegate = 0
+    total_local = 0
+    rows: list[tuple[int, int, int, str]] = []
+
+    for rel in paths:
+        full = ROOT / rel
+        n_lines, n_delegate, n_local = _analyze(full)
+        total_lines += n_lines
+        total_delegate += n_delegate
+        total_local += n_local
+        rows.append((n_lines, n_delegate, n_local, rel))
+
+    print("Keep-host policy surface audit (compatibility export + marshal seams):")
+    print(
+        "  Zero python-scene-migration tags does not retire these surfaces; "
+        "see spec/design/ownership-audit.md post-M2 inventory."
+    )
+    print(f"  python keep-host policy files: {len(paths)}")
+    print(
+        f"  totals: {total_lines} lines, {total_delegate} delegate hooks, "
+        f"{total_local} local-orchestration hooks"
+    )
+    print("  top surfaces by line count:")
+    for n_lines, n_delegate, n_local, rel in sorted(rows, reverse=True)[:15]:
+        ratio = (100.0 * n_delegate / n_lines) if n_lines else 0.0
+        print(
+            f"    - {rel}: {n_lines} lines, {n_delegate} delegate ({ratio:.1f}%), "
+            f"{n_local} local"
+        )
+    print()
+
+    node_lines = sum(_analyze(ROOT / rel)[0] for rel in node_paths)
+    print("Cross-host disposition parity:")
+    print(f"  node-scene-migration files: {len(node_paths)} ({node_lines} lines)")
+    for rel in node_paths[:8]:
+        n_lines, n_delegate, n_local = _analyze(ROOT / rel)
+        print(f"    - {rel}: {n_lines} lines, {n_delegate} delegate, {n_local} local")
+    if len(node_paths) > 8:
+        print(f"    - ... and {len(node_paths) - 8} more")
+    if browser_paths:
+        browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_paths)
+        print(
+            f"  browser-scene-migration files: {len(browser_paths)} "
+            f"({browser_lines} lines)"
+        )
+        for rel in browser_paths:
+            n_lines, _, _ = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines")
+    print(
+        "  practical Node/WASM parity requires these inventories to converge "
+        "(marshal/coerce only) or stay explicitly documented compatibility debt."
+    )
+    print()
+
+
 def _analyze(path: Path) -> tuple[int, int, int]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -338,6 +463,7 @@ def main(argv: list[str] | None = None) -> int:
             "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
             "Scene pack orchestration plans are kernel-owned (#733 closed)."
         )
+        _print_keep_host_policy_audit(args.manifest)
         return 0
 
     by_blocker: dict[str, list[str]] = defaultdict(list)
