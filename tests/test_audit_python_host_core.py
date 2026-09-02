@@ -36,6 +36,16 @@ def test_keep_host_policy_paths_cover_export_emitters():
     assert "python/xyg/kernels.py" not in paths
 
 
+def test_node_keep_host_policy_paths_cover_marshal_surfaces():
+    mod = _load()
+    manifest = mod._load_manifest(mod.MANIFEST)
+    paths = mod._node_keep_host_policy_paths(manifest)
+    assert "packages/xy-node/src/scene.js" in paths
+    assert "packages/xy-node/src/marks/scatter.js" in paths
+    assert "packages/xy-node/src/encode.js" in paths
+    assert "packages/xy-node/src/abi.js" not in paths
+
+
 def test_audit_cli_exits_zero():
     from xyg._abi_generated import ABI_VERSION
 
@@ -71,7 +81,8 @@ def test_audit_cli_exits_zero():
     assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
     assert "Keep-host policy surface audit" in proc.stdout
+    assert "node keep-host policy files:" in proc.stdout
     assert "Cross-host disposition parity" in proc.stdout
-    assert "node-scene-migration files:" in proc.stdout
+    assert "node-scene-migration files: 0" in proc.stdout
     assert "Residual host materialization" not in proc.stdout
     assert "do not mark M2 complete" not in proc.stdout

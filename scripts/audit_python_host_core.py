@@ -76,6 +76,23 @@ KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = (
     "python/xyg/_annotations_",
 )
 
+# Node marshal/coerce surfaces (zero node-scene-migration does not retire these).
+NODE_KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
+    {
+        "packages/xy-node/src/charts.js",
+        "packages/xy-node/src/color.js",
+        "packages/xy-node/src/encode.js",
+        "packages/xy-node/src/figure.js",
+        "packages/xy-node/src/graph.js",
+        "packages/xy-node/src/scene.js",
+        "packages/xy-node/src/pyramid.js",
+        "packages/xy-node/src/sankey.js",
+        "packages/xy-node/src/payloadTraceMaterialize.js",
+    }
+)
+
+NODE_KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = ("packages/xy-node/src/marks/",)
+
 MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
     ("#851", "316", "xyg_payload_density_grid_materialize"),
     ("#851", "317", "xyg_scene_xytc_trace_pack"),
@@ -270,6 +287,12 @@ def _is_keep_host_policy_surface(path: str) -> bool:
     return any(path.startswith(prefix) for prefix in KEEP_HOST_POLICY_PREFIXES)
 
 
+def _is_node_keep_host_policy_surface(path: str) -> bool:
+    if path in NODE_KEEP_HOST_POLICY_EXACT:
+        return True
+    return any(path.startswith(prefix) for prefix in NODE_KEEP_HOST_POLICY_PREFIXES)
+
+
 def _keep_host_policy_paths(manifest: dict) -> list[str]:
     out: list[str] = []
     for entry in manifest.get("files", []):
@@ -281,20 +304,29 @@ def _keep_host_policy_paths(manifest: dict) -> list[str]:
     return sorted(out)
 
 
+def _node_keep_host_policy_paths(manifest: dict) -> list[str]:
+    out: list[str] = []
+    for entry in manifest.get("files", []):
+        path = entry.get("path", "")
+        if entry.get("policy") != "node-host":
+            continue
+        if _is_node_keep_host_policy_surface(path):
+            out.append(path)
+    return sorted(out)
+
+
 def _policy_paths_by_tag(manifest: dict, policy: str) -> list[str]:
     return sorted(
-        entry["path"]
-        for entry in manifest.get("files", [])
-        if entry.get("policy") == policy
+        entry["path"] for entry in manifest.get("files", []) if entry.get("policy") == policy
     )
 
 
-def _print_keep_host_policy_audit(manifest_path: Path) -> None:
-    manifest = _load_manifest(manifest_path)
-    paths = _keep_host_policy_paths(manifest)
-    node_paths = _policy_paths_by_tag(manifest, "node-scene-migration")
-    browser_paths = _policy_paths_by_tag(manifest, "browser-scene-migration")
-
+def _print_policy_surface_block(
+    label: str,
+    paths: list[str],
+    *,
+    top_n: int = 15,
+) -> tuple[int, int, int]:
     total_lines = 0
     total_delegate = 0
     total_local = 0
@@ -308,45 +340,57 @@ def _print_keep_host_policy_audit(manifest_path: Path) -> None:
         total_local += n_local
         rows.append((n_lines, n_delegate, n_local, rel))
 
-    print("Keep-host policy surface audit (compatibility export + marshal seams):")
-    print(
-        "  Zero python-scene-migration tags does not retire these surfaces; "
-        "see spec/design/ownership-audit.md post-M2 inventory."
-    )
-    print(f"  python keep-host policy files: {len(paths)}")
+    print(f"  {label}: {len(paths)}")
     print(
         f"  totals: {total_lines} lines, {total_delegate} delegate hooks, "
         f"{total_local} local-orchestration hooks"
     )
     print("  top surfaces by line count:")
-    for n_lines, n_delegate, n_local, rel in sorted(rows, reverse=True)[:15]:
+    for n_lines, n_delegate, n_local, rel in sorted(rows, reverse=True)[:top_n]:
         ratio = (100.0 * n_delegate / n_lines) if n_lines else 0.0
         print(
-            f"    - {rel}: {n_lines} lines, {n_delegate} delegate ({ratio:.1f}%), "
-            f"{n_local} local"
+            f"    - {rel}: {n_lines} lines, {n_delegate} delegate ({ratio:.1f}%), {n_local} local"
         )
+    return total_lines, total_delegate, total_local
+
+
+def _print_keep_host_policy_audit(manifest_path: Path) -> None:
+    manifest = _load_manifest(manifest_path)
+    py_paths = _keep_host_policy_paths(manifest)
+    node_paths = _node_keep_host_policy_paths(manifest)
+    node_migration = _policy_paths_by_tag(manifest, "node-scene-migration")
+    browser_paths = _policy_paths_by_tag(manifest, "browser-scene-migration")
+
+    print("Keep-host policy surface audit (compatibility export + marshal seams):")
+    print(
+        "  Zero scene-migration tags does not retire these surfaces; "
+        "see spec/design/ownership-audit.md post-M2 inventory."
+    )
+    _print_policy_surface_block("python keep-host policy files", py_paths)
+    print()
+    _print_policy_surface_block("node keep-host policy files", node_paths, top_n=10)
     print()
 
-    node_lines = sum(_analyze(ROOT / rel)[0] for rel in node_paths)
     print("Cross-host disposition parity:")
-    print(f"  node-scene-migration files: {len(node_paths)} ({node_lines} lines)")
-    for rel in node_paths[:8]:
-        n_lines, n_delegate, n_local = _analyze(ROOT / rel)
-        print(f"    - {rel}: {n_lines} lines, {n_delegate} delegate, {n_local} local")
-    if len(node_paths) > 8:
-        print(f"    - ... and {len(node_paths) - 8} more")
+    print(
+        f"  node-scene-migration files: {len(node_migration)} "
+        f"({sum(_analyze(ROOT / rel)[0] for rel in node_migration)} lines)"
+    )
+    if node_migration:
+        for rel in node_migration[:8]:
+            n_lines, n_delegate, n_local = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines, {n_delegate} delegate, {n_local} local")
+        if len(node_migration) > 8:
+            print(f"    - ... and {len(node_migration) - 8} more")
     if browser_paths:
         browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_paths)
-        print(
-            f"  browser-scene-migration files: {len(browser_paths)} "
-            f"({browser_lines} lines)"
-        )
+        print(f"  browser-scene-migration files: {len(browser_paths)} ({browser_lines} lines)")
         for rel in browser_paths:
             n_lines, _, _ = _analyze(ROOT / rel)
             print(f"    - {rel}: {n_lines} lines")
     print(
-        "  practical Node/WASM parity requires these inventories to converge "
-        "(marshal/coerce only) or stay explicitly documented compatibility debt."
+        "  practical Node/WASM parity requires migration tags at zero and "
+        "keep-host inventories to stay marshal/coerce only or documented debt."
     )
     print()
 

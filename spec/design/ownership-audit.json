@@ -1335,11 +1335,11 @@
     },
     {
       "path": "packages/xy-node/src/charts.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/chunked-columns.js",
@@ -1351,11 +1351,11 @@
     },
     {
       "path": "packages/xy-node/src/color.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/dom.js",
@@ -1367,11 +1367,11 @@
     },
     {
       "path": "packages/xy-node/src/encode.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/factorize.js",
@@ -1383,11 +1383,11 @@
     },
     {
       "path": "packages/xy-node/src/figure.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/force_scheduler.js",
@@ -1399,11 +1399,11 @@
     },
     {
       "path": "packages/xy-node/src/graph.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/html.js",
@@ -1423,19 +1423,19 @@
     },
     {
       "path": "packages/xy-node/src/marks/area.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/bar.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/box.js",
@@ -1447,19 +1447,19 @@
     },
     {
       "path": "packages/xy-node/src/marks/contour.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/distribution.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/ecdf.js",
@@ -1471,123 +1471,123 @@
     },
     {
       "path": "packages/xy-node/src/marks/error_band.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/errorbar.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/heatmap.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/hexbin.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/histogram.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/line.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/polar.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/radar.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/ribbon.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/scatter.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/segments.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/stem.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/step.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/triangle_mesh.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/marks/violin.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/native-path.js",
@@ -1615,27 +1615,27 @@
     },
     {
       "path": "packages/xy-node/src/pyramid.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/sankey.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/scene.js",
-      "current_owner": "Node host with canonical-policy debt",
-      "policy": "node-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/sceneBulkNative.js",
