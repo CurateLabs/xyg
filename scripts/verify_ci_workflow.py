@@ -1075,6 +1075,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_abi_parity.py",
         "scripts/gen_abi_manifest.py --check",
         "scripts/verify_ownership.py",
+        "scripts/audit_host_parity_landing.py",
         "scripts/check_stale_names.py",
         "cargo test --workspace",
         "Verify bundled Reflex integration import",
