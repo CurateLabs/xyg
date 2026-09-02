@@ -67,18 +67,15 @@ Each big push is one PR (Rust + both hosts + fixtures + spec). Do not resume
 field-by-field stay-host slices for `_payload` grid compose or `_scene_v3` pack
 walks.
 
-**Branch landing readiness (2026-09-02, `cursor/m2-big-push-scene-trace-pack-7ce1`).**
-PR [#852](https://github.com/CurateLabs/xyg/pull/852) is mergeable with green CI
-on tip `be7960202` (Python 3.11 floor, Rust + Python + JS, WASM foundation).
-PR #853 merged into stack base; #852 is green and mergeable to `main`.
+**Landed on `main` (2026-09-02).** PR [#852](https://github.com/CurateLabs/xyg/pull/852)
+merged at `8752bd95a` (includes host-parity landing gate in CI). Post-merge
+verification: `make check-host-parity` green on `main`.
 Disposition parity: 0 `python-scene-migration`, 0 `node-scene-migration`; honest
 keep-host inventories for Python (~80 files) and Node (~30 files) in
 `audit_python_host_core.py`. Browser: `49_wasm_ticks.ts` adapter + `30_ticks.ts`
 documented compatibility fallback (#59). Reproduce with `make check-host-parity` (or
 `python3 scripts/audit_host_parity_landing.py`); CI runs the same orchestrator in
 the `test` job after `uv sync`.
-`python3 scripts/audit_python_host_core.py`, `uv run pytest tests/test_*cross_host*.py`,
-and `uv run pytest tests/test_wasm_ticks_chartview_contract.py`.
 
 - Bump `ABI_VERSION` and run `python3 scripts/gen_abi_manifest.py --write` on
   signature change; never edit generated ABI declarations by hand.
