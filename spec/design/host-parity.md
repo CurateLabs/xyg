@@ -615,6 +615,25 @@ Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
 `xyg_density_wasm_eligible` so path/binning/WASM/overlay decisions cannot
 drift. Hosts still transform axis-scale coordinates, invoke `bin_2d` /
 pyramid compose kernels, ship buffers, and assemble the wire spec.
+ABI 316 `xyg_payload_density_grid_materialize` owns the execution half of
+that grid body (bin2d / pyramid compose, log-u8 encode, optional mean-color
+RGBA, overlay sample selection) after emit-plan policy is resolved. Hosts
+marshal observations and ship returned buffers; Python ABI proof lives in
+`tests/test_density_grid_materialize_abi.py`; Node density cross-host grid-buffer
+SHA in `density_emit_cross_host.json`.
+ABI 317 `xyg_scene_xytc_trace_pack`, ABI 318 `xyg_scene_xyta_trace_pack`, ABI
+323 `xyg_scene_xyta_trace_observations_materialize`, and ABI 325
+`xyg_scene_xytc_trace_observations_materialize` (M2 Push 2) retired host-side
+XYTC/XYTA field-byte walks: `_scene_v3.py` and `packages/xy-node/src/scene.js`
+marshal figure/trace inputs via `_scene_marshal.py` / bulk packers and ship
+returned compile/attach fact buffers. Cross-host proof is the checked-in
+`trace_pack_sha256` matrix in `tests/fixtures/figure_scene_v3.json` exercised
+by `tests/test_scene_trace_pack_abi.py` and
+`packages/xy-node/scripts/scene_trace_pack_cross_host.mjs`.
+ABI 321 `xyg_payload_trace_emit_materialize` (M2 payload writer ship) retired
+host-side emit row gathers and channel materialization in `_payload.py`; Python
+`_payload_trace_materialize.py` and Node `payloadTraceMaterialize.js` marshal
+trace observations and ship returned geometry/channel blobs.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot
@@ -838,16 +857,60 @@ ABI 256 `xyg_scene_channel_constant_css` owns Scene channel-constant CSS
 (`mode == "constant"` and `has_constant`) so Python `_channel_constant_css`
 and Node `channelConstantCss` cannot drift. Hosts still pick `.mode` /
 `.constant` vs `.color` and skip null channels.
-Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
-unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
-255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` pack 256-texel LUTs
+through ABI 343 `xyg_colormap_lut_rgba8` (named or custom RGB stops).
 Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
-`quantizeUnitU8` / `resolveDensityBinColors` normalize through
-`xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
+`quantizeUnitU8` / `resolveDensityBinColors` normalize and quantize through
+ABI 341 `xyg_quantize_unit_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
-Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
-ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
-substitute stay host.
+Python `palette_rows_rgba8` and Node `paletteRowsRgba8` pack indexed palette
+rows through ABI 342 `xyg_palette_rows_rgba8`. ABI 346 adds per-entry
+unresolved flags so browser-only warnings stay host without a second CSS parse.
+Python `categorical_palette` and Node `categoricalPalette` repeat base palette
+colors through ABI 347 `xyg_categorical_palette`. Python `resolve_color`
+palette-map resolution and Node `categoricalPaletteMapResolve` share ABI 347
+`xyg_categorical_palette_map_resolve`; browser-only warnings stay host-side.
+Python `resolve_direct_rgba` and Node `colorChannelDirectRgbaF64*` sample LUT
+channels through ABI 348 `xyg_color_channel_direct_rgba_f64_*`.
+Python `is_colormap`, `_is_resolved_stops`, and `_validate.colormap_stops` /
+Node `colormapIsBuiltin`, `colormapResolvedStopsAdmit`, and
+`colormapCustomStopsResolve*` share ABI 349 colormap custom-stop resolve;
+pair-shape validation and authoring error text stay host-side.
+Python `channels._size_range` and Node `resolveSizeChannel` / `sizeRangeAdmit`
+validate scatter size pixel endpoints through ABI 350 `xyg_size_range_admit`;
+Node continuous size domains use ABI 213 `continuousDomain` like Python
+`_continuous_domain`. Python `channels._is_categorical` and Node
+`arrayIsCategorical` classify dtype/object columns through ABI 351
+`xyg_array_is_categorical`; object-row tag loops stay host-side.
+Python `channels._as_real_array`, `_figure._real_float_array`, and `columns`
+numeric ingest plus Node `realNumericDtypeAdmit` reject boolean/complex dtype
+kinds through ABI 352 `xyg_real_numeric_dtype_admit`; object-row real-numeric
+probes stay host-side.
+Python `channels._object_row_*_tag` and Node `objectRow*TagFromProbe` map host
+value probes through ABI 353 `xyg_object_row_*_tag_from_probe`; per-row Python/
+JS type inspection stays host-side.
+Python `channels._category_label_kind_and_bytes` and Node `categoryLabelKindAndBytes`
+select label kinds through ABI 354 `xyg_category_label_kind_from_probe`; UTF-8
+payload encoding stays host-side.
+Python `palette_rgba8` and Node `categoryCodeWidth` / `categoryPaletteRows` share
+ABI 355 `xyg_category_code_width` and `xyg_category_palette_rows` for the 256
+category u8/u32 boundary and indexed palette row cap.
+Python `channels._object_column_is_*` and Node `objectColumnIs*` batch map host
+value probes through ABI 356 `xyg_object_row_*_tags_from_probes`; per-row Python/
+JS type inspection stays host-side.
+Python `channels._category_labels` and Node `categoryLabels` batch map host value
+probes through ABI 357 `xyg_category_label_kinds_from_probes`; UTF-8 payload
+encoding stays host-side.
+Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
+pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
+syntax probe stays host-side so categorical columns are rejected without
+materializing the whole column.
+Node `channelEndRgba8` categorical paints index ABI 342 `paletteRowsRgba8`
+rows like Python `palette_rows_rgba8`, not per-point CSS reparsing.
+Python `lod._stratified_sample_range_plan` and Node `stratifiedSampleRangePlan`
+size categorical sampling buffers through ABI 345
+`xyg_stratified_sample_range_plan`. Hosts still validate group codes and exact
+per-code counts before calling.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
 Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1

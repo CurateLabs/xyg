@@ -48,6 +48,7 @@ pub mod compat_layout;
 pub mod css;
 pub mod dashboard;
 pub mod density_emit;
+pub mod density_grid_materialize;
 pub mod edge_route;
 pub mod geo;
 pub mod geo_viewport;
@@ -90,6 +91,69 @@ pub mod scene_trace_rows;
 pub use scene_trace_rows::{pack_trace_rows, TraceRowsCode, TraceRowsError};
 pub mod scene_trace_sidecars;
 pub use scene_trace_sidecars::{pack_trace_sidecars, TraceSidecarsCode, TraceSidecarsError};
+pub mod scene_xytc_trace_pack;
+pub use scene_xytc_trace_pack::{
+    scene_xytc_trace_pack, XytcTracePackInput, XytcTraceStyleInput,
+    SCENE_XYTC_TRACE_PACK_MAX_RECORD,
+};
+pub mod scene_xytc_trace_observations_materialize;
+pub use scene_xytc_trace_observations_materialize::{
+    scene_xytc_trace_observations_materialize, SceneXytcGradientStopIn,
+    SceneXytcTraceObservationsIn, SceneXytcTraceObservationsOut,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
+};
+pub mod scene_xyta_trace_pack;
+pub use scene_xyta_trace_pack::{
+    scene_xyta_trace_pack, XytaTracePackInput, SCENE_XYTA_TRACE_PACK_MAX_RECORD,
+};
+pub mod scene_xyta_trace_observations_materialize;
+pub use scene_xyta_trace_observations_materialize::{
+    scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn,
+    SceneXytaColormapInput, SceneXytaStyleChannelIn, SceneXytaTraceObservationsIn,
+    SceneXytaTraceObservationsOut, SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+};
+pub mod scene_xyaf_pack;
+pub use scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput, SCENE_XYAF_PACK_MAX_RECORD};
+pub mod scene_xyaf_bulk_pack;
+pub use scene_xyaf_bulk_pack::{
+    scene_xyaf_bulk_pack, XyafBulkAnnotationObs, XyafBulkError, XyafBulkPackError,
+    XyafBulkStyleObs, SCENE_XYAF_BULK_PACK_MAX,
+};
+pub mod scene_xycf_pack;
+pub use scene_xycf_pack::{
+    scene_xycf_pack, XycfPackHeader, XycfPackSidecars, SCENE_XYCF_PACK_MAX, XYCF_HEADER_BYTES,
+};
+pub mod scene_figure_support_pack;
+pub use scene_figure_support_pack::{
+    scene_figure_support_pack, FigureSupportAxisInput, FigureSupportTraceInput,
+    SCENE_FIGURE_SUPPORT_PACK_MAX,
+};
+pub mod scene_chrome_pack;
+pub use scene_chrome_pack::{scene_chrome_pack, SceneChromePackInput, SCENE_CHROME_PACK_MAX};
+pub mod scene_figure_support_materialize;
+pub use scene_figure_support_materialize::{
+    scene_figure_support_materialize, SceneFigureSupportMaterializeIn,
+    SCENE_FIGURE_SUPPORT_MATERIALIZE_MAX,
+};
+pub mod scene_polar_input_pack;
+pub use scene_polar_input_pack::{
+    scene_polar_input_pack, ScenePolarInputPackIn, SCENE_POLAR_INPUT_PACK_MAX,
+};
+pub mod payload_column_gather_materialize;
+pub use payload_column_gather_materialize::{
+    payload_column_gather_materialize, PayloadColumnMaterializeIn, PayloadColumnMaterializeOut,
+    PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX,
+};
+pub mod payload_channel_materialize;
+pub use payload_channel_materialize::{
+    payload_channel_materialize, PayloadChannelMaterializeOut, PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES,
+};
+pub mod payload_trace_emit_materialize;
+pub use payload_trace_emit_materialize::{
+    payload_trace_emit_materialize, PayloadTraceChannelIn, PayloadTraceColumnIn,
+    PayloadTraceEmitMaterializeIn, PayloadTraceEmitMaterialized, PAYLOAD_TRACE_EMIT_MAX_BYTES,
+    PAYLOAD_TRACE_EMIT_MAX_CHANNELS, PAYLOAD_TRACE_EMIT_MAX_GEOM,
+};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

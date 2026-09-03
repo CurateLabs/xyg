@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
+import { pointer, xyAlignedWindow, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapLutRgba8, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHashRowIds, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyNormalizeWindow, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadColumnGatherMaterialize, xyPayloadChannelMaterialize, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleFraction, xyStratifiedSampleRangePlan, xySampleMaskU32, xySampleThreshold, xyScreenShape, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportPack, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXyafPack, xySceneXycfFigurePlan, xySceneXycfPack, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytaTracePack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcTracePack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViewVisibleMask, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
 
 
 export const PROTOCOL_VERSION = 12;
@@ -1145,6 +1145,92 @@ export function f32SafeScale(offset, lo, hi) {
     throw new Error("xyg_f32_safe_scale failed");
   }
   return out[0];
+}
+
+/** Snap a 1-D window outward to the power-of-two grid over its extent (ABI 326, LOD T13). */
+export function alignedWindow(lo, hi, extentLo, extentHi, pad) {
+  const outLo = new Float64Array(1);
+  const outHi = new Float64Array(1);
+  const ok = xyAlignedWindow(
+    Number(lo),
+    Number(hi),
+    Number(extentLo),
+    Number(extentHi),
+    Number(pad),
+    f64Ptr(outLo),
+    f64Ptr(outHi),
+  );
+  if (ok !== 1) {
+    throw new Error("xyg_aligned_window failed");
+  }
+  return [outLo[0], outHi[0]];
+}
+
+/** Order a possibly-flipped viewport window (ABI 334, §5). */
+export function normalizeWindow(x0, x1, y0, y1, { requireArea = true } = {}) {
+  const out = new Float64Array(4);
+  const ok = xyNormalizeWindow(
+    Number(x0),
+    Number(x1),
+    Number(y0),
+    Number(y1),
+    requireArea ? 1 : 0,
+    f64Ptr(out),
+  );
+  if (ok === 0) {
+    throw new Error("view window bounds must be finite");
+  }
+  if (ok < 0) {
+    throw new Error("view window must have non-zero width and height");
+  }
+  return [out[0], out[1], out[2], out[3]];
+}
+
+/** Cartesian viewport visibility mask (ABI 335, §19). */
+export function viewVisibleMask(x, y, loX, hiX, loY, hiY) {
+  const xv = Float64Array.from(x);
+  const yv = Float64Array.from(y);
+  if (xv.length !== yv.length) {
+    throw new Error("viewVisibleMask expects equal-length x/y arrays");
+  }
+  const n = xv.length;
+  if (n === 0) return new Uint8Array(0);
+  const out = new Uint8Array(n);
+  const written = Number(
+    xyViewVisibleMask(
+      f64Ptr(xv),
+      f64Ptr(yv),
+      BigInt(n),
+      Number(loX),
+      Number(hiX),
+      Number(loY),
+      Number(hiY),
+      u8Ptr(out),
+    ),
+  );
+  if (written === Number(USIZE_MAX_64)) {
+    throw new Error("native view_visible_mask rejected the coordinate arrays");
+  }
+  if (written !== n) {
+    throw new Error("native view_visible_mask returned an unexpected row count");
+  }
+  return out;
+}
+
+/** SplitMix64 row-id hashes (ABI 327, §5/§17). */
+export function hashRowIds(ids, seed) {
+  const view =
+    ids instanceof BigUint64Array
+      ? ids
+      : BigUint64Array.from(ids, (value) => BigInt(value));
+  const out = new BigUint64Array(view.length);
+  if (view.length) {
+    const ok = xyHashRowIds(u64Ptr(view), BigInt(view.length), BigInt(seed), u64Ptr(out));
+    if (ok !== 1) {
+      throw new Error("xyg_hash_row_ids failed");
+    }
+  }
+  return out;
 }
 
 /** EncodedColumn offset/scale/kind-presence (ABI 255). Hosts copy the original kind. */
@@ -2428,20 +2514,45 @@ export function colormapLut(t, stops) {
   return out;
 }
 
-/** 256-texel RGBA8 LUT matching Python `colormap_lut_rgba8` (ABI 206 + host alpha). */
-export function colormapLutRgba8(name) {
-  const stopBytes = colormapNamedStops(name ?? "viridis");
-  const t = new Float64Array(256);
-  for (let i = 0; i < 256; i++) t[i] = i / 255;
-  const rgb = colormapLut(t, stopBytes);
-  const lut = new Uint8Array(256 * 4);
-  for (let i = 0; i < 256; i++) {
-    lut[i * 4] = rgb[i * 3];
-    lut[i * 4 + 1] = rgb[i * 3 + 1];
-    lut[i * 4 + 2] = rgb[i * 3 + 2];
-    lut[i * 4 + 3] = 255;
+/** 256-texel RGBA8 LUT matching Python `colormap_lut_rgba8` (ABI 343). */
+export function colormapLutRgba8(nameOrStops, nTexels = 256) {
+  const count = Math.max(1, Math.floor(Number(nTexels)));
+  const out = new Uint8Array(count * 4);
+  let ok;
+  if (typeof nameOrStops === "string" || nameOrStops == null) {
+    const encoded = new TextEncoder().encode(String(nameOrStops ?? "viridis"));
+    ok = Number(
+      xyColormapLutRgba8(
+        encoded.length ? u8Ptr(encoded) : 0,
+        BigInt(encoded.length),
+        0,
+        0n,
+        BigInt(count),
+        u8Ptr(out),
+        BigInt(out.length),
+      ),
+    );
+  } else {
+    const stopArr = nameOrStops instanceof Uint8Array ? nameOrStops : Uint8Array.from(nameOrStops);
+    if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+      throw new RangeError("colormapLutRgba8 stops must be a non-empty multiple of 3");
+    }
+    ok = Number(
+      xyColormapLutRgba8(
+        0,
+        0n,
+        stopArr.length ? u8Ptr(stopArr) : 0,
+        BigInt(stopArr.length / 3),
+        BigInt(count),
+        u8Ptr(out),
+        BigInt(out.length),
+      ),
+    );
   }
-  return lut;
+  if (ok !== 1) {
+    throw new Error("xy_colormap_lut_rgba8 failed");
+  }
+  return out;
 }
 
 /** Legacy f64 count-grid density colormap (ABI 206). */
@@ -2898,22 +3009,53 @@ export function bin2dIndices(x, y, x0, x1, y0, y1, w, h) {
 
 const SAMPLE_UINT64_MAX = 18446744073709551615n;
 
-function sampleFraction(level, baseFraction, growth) {
-  const levelI = Math.floor(Number(level));
-  const base = Number(baseFraction);
-  const growthF = Number(growth);
-  if (base >= 1.0 || growthF === 1.0) {
-    return Math.min(1.0, base);
-  }
-  const fraction = base * growthF ** levelI;
-  return Number.isFinite(fraction) ? Math.min(1.0, fraction) : 1.0;
+export function sampleFraction(level, baseFraction, growth) {
+  return Number(xySampleFraction(BigInt(Math.floor(Number(level))), Number(baseFraction), Number(growth)));
 }
 
-function sampleThreshold(fraction) {
-  if (fraction >= 1.0) {
-    return SAMPLE_UINT64_MAX;
+/** Stratified sample range planning (ABI 345, Python `lod._stratified_sample_range_plan`). */
+export function stratifiedSampleRangePlan(
+  nRows,
+  nGroups,
+  target,
+  level,
+  growth,
+  seed,
+  minPerCategory,
+) {
+  const fraction = new Float64Array(1);
+  const seedOut = new BigUint64Array(1);
+  const minCount = new Uint32Array(1);
+  const capacity = new BigUint64Array(1);
+  const keepAll = new Uint32Array(1);
+  const code = Number(xyStratifiedSampleRangePlan(
+    BigInt(Math.max(0, Math.floor(Number(nRows)))),
+    Number(nGroups) >>> 0,
+    Number(target) >>> 0,
+    BigInt(Math.floor(Number(level))),
+    Number(growth),
+    BigInt(seed),
+    Number(minPerCategory) >>> 0,
+    pointer(fraction, "double *"),
+    pointer(seedOut, "uint64_t *"),
+    pointer(minCount, "uint32_t *"),
+    pointer(capacity, "size_t *"),
+    pointer(keepAll, "uint32_t *"),
+  ));
+  if (code !== 1) {
+    throw new RangeError("invalid stratified-sample-range-plan request");
   }
-  return BigInt(Math.max(0, Math.min(Number(SAMPLE_UINT64_MAX), Math.floor(fraction * Number(SAMPLE_UINT64_MAX)))));
+  return {
+    fraction: fraction[0],
+    seed: seedOut[0],
+    minCount: minCount[0],
+    capacity: Number(capacity[0]),
+    keepAll: keepAll[0] === 1,
+  };
+}
+
+export function sampleThreshold(fraction) {
+  return xySampleThreshold(Number(fraction));
 }
 
 /** Deterministic subset mask for explicit row ids (`xyg_sample_mask_u32`). */
@@ -3107,6 +3249,23 @@ export function marchingSquares(z, rows, cols, xCoords, yCoords, levels, { corne
     capacity = written;
   }
   throw new Error("xy_marching_squares inconsistent capacity");
+}
+
+/** Clamp screen dimensions to LOD grid bounds (ABI 329, §5). */
+export function screenShape(width, height) {
+  const i32Max = 2_147_483_647;
+  const outW = new Int32Array(1);
+  const outH = new Int32Array(1);
+  const ok = xyScreenShape(
+    Math.min(Math.trunc(Number(width)), i32Max),
+    Math.min(Math.trunc(Number(height)), i32Max),
+    pointer(outW, "int32_t *"),
+    pointer(outH, "int32_t *"),
+  );
+  if (ok !== 1) {
+    throw new Error("xyg_screen_shape failed");
+  }
+  return [outW[0], outH[0]];
 }
 
 /**
@@ -4121,6 +4280,8 @@ export function payloadColumnShipPlan({
     throw new RangeError("invalid payload-column-ship-plan gather policy");
   }
   const n = Number(nColumns[0]);
+  const xScale = scaleName(xShipScale[0]);
+  const yScale = scaleName(yShipScale[0]);
   const outColumns = [];
   for (let idx = 0; idx < n; idx += 1) {
     const base = idx * 20;
@@ -4136,6 +4297,7 @@ export function payloadColumnShipPlan({
       || slotCode >= PAYLOAD_TRACE_SLOT_ATTR.length
       || methodCode < 0
       || methodCode >= PAYLOAD_COL_SHIP_METHOD_BY_CODE.length
+      || (scaleCode !== 0 && scaleCode !== 1)
     ) {
       throw new RangeError("invalid payload-column-ship-plan column descriptor");
     }
@@ -4143,7 +4305,7 @@ export function payloadColumnShipPlan({
       registryKey: PAYLOAD_COL_REGISTRY_KEY_BY_CODE[keyCode],
       traceSlot: PAYLOAD_TRACE_SLOT_ATTR[slotCode],
       shipMethod: PAYLOAD_COL_SHIP_METHOD_BY_CODE[methodCode],
-      shipScale: scaleName(scaleCode),
+      shipScale: scaleCode === 1 ? yScale : xScale,
       gather,
     });
   }
@@ -4309,6 +4471,341 @@ export function shipDensityGridBuffers(density, pw, gridPlan, buffers) {
       density[buf.registryKey] = pw.shipU8(values);
     }
   }
+}
+
+/** Pyramid/tile-store resource kind for ABI 316 density grid materialize. */
+export const DENSITY_RESOURCE_NONE = 0;
+export const DENSITY_RESOURCE_PYRAMID = 1;
+export const DENSITY_RESOURCE_TILE_STORE = 2;
+
+const PAYLOAD_DENSITY_GRID_MATERIALIZE_IN_BYTES = 344;
+const PAYLOAD_DENSITY_GRID_MATERIALIZE_OUT_BYTES = 64;
+const DENSITY_BINNING_CAP = 64;
+
+function readPayloadDensityGridMaterializeOut(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let off = 0;
+  const gmax = view.getFloat64(off, true);
+  off += 8;
+  const visible = Number(view.getBigUint64(off, true));
+  off += 8;
+  const gridFromPyramid = view.getUint32(off, true) === 1;
+  off += 4;
+  const hasPyramidRgba = view.getUint32(off, true) === 1;
+  off += 4;
+  const pyramidLevel = view.getInt32(off, true);
+  off += 4;
+  const fromTiles = view.getUint32(off, true) === 1;
+  off += 4;
+  const encodedLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const rgbaLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const sampleSelLen = Number(view.getBigUint64(off, true));
+  off += 8;
+  const visibleSelLen = Number(view.getBigUint64(off, true));
+  return {
+    gmax,
+    visible,
+    gridFromPyramid,
+    hasPyramidRgba,
+    pyramidLevel,
+    fromTiles,
+    encodedLen,
+    rgbaLen,
+    sampleSelLen,
+    visibleSelLen,
+  };
+}
+
+function densityBinColorPtrs(source, n) {
+  if (source == null || n <= 0) {
+    return { idxPtr: 0, rgbaPtr: 0, lutPtr: 0, lutLen: 0n };
+  }
+  if (source.rgba != null) {
+    const rgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    if (rgba.length !== n * 4) {
+      throw new RangeError("payloadDensityGridMaterialize rgba length must be 4 * n");
+    }
+    return { idxPtr: 0, rgbaPtr: u8Ptr(rgba), lutPtr: 0, lutLen: 0n };
+  }
+  if (source.idx != null && source.lut != null) {
+    const idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+    const lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    if (idx.length !== n) {
+      throw new RangeError("payloadDensityGridMaterialize idx length must match geometry");
+    }
+    if (lut.length < 4 || lut.length % 4 !== 0 || lut.length / 4 > 256) {
+      throw new RangeError("payloadDensityGridMaterialize lut must be 1..256 RGBA8 entries");
+    }
+    return {
+      idxPtr: u8Ptr(idx),
+      rgbaPtr: 0,
+      lutPtr: u8Ptr(lut),
+      lutLen: BigInt(lut.length / 4),
+    };
+  }
+  return { idxPtr: 0, rgbaPtr: 0, lutPtr: 0, lutLen: 0n };
+}
+
+function packPayloadDensityGridMaterializeIn(fields) {
+  const buf = Buffer.alloc(PAYLOAD_DENSITY_GRID_MATERIALIZE_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setF64 = (off, value) => {
+    buf.writeDoubleLE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setI32(0, fields.cartesian);
+  setI32(4, fields.xLinear);
+  setI32(8, fields.yLinear);
+  setI32(12, fields.categorical);
+  setI32(16, fields.compactCategorical);
+  setI32(20, fields.stratifiedCounts);
+  setI32(24, fields.xHasNulls);
+  setI32(28, fields.yHasNulls);
+  setI32(32, fields.pointOverlay);
+  setI32(36, fields.gridFromPyramid);
+  setI32(40, fields.xMemmapped);
+  setI32(44, fields.yMemmapped);
+  setI32(48, fields.hasPyramidResource);
+  setI32(52, fields.forceBin2d);
+  setI32(56, fields.forcePyramid);
+  setI32(60, fields.colorMode);
+  setF64(64, fields.xMin);
+  setF64(72, fields.xMax);
+  setF64(80, fields.yMin);
+  setF64(88, fields.yMax);
+  setF64(96, fields.xr0);
+  setF64(104, fields.xr1);
+  setF64(112, fields.yr0);
+  setF64(120, fields.yr1);
+  setF64(128, fields.bx0);
+  setF64(136, fields.bx1);
+  setF64(144, fields.by0);
+  setF64(152, fields.by1);
+  setF64(160, fields.xC0);
+  setF64(168, fields.xC1);
+  setF64(176, fields.yC0);
+  setF64(184, fields.yC1);
+  setU64(192, fields.nPoints);
+  setU64(200, fields.w);
+  setU64(208, fields.h);
+  setU64(216, fields.len);
+  setI32(224, fields.pyramidAttempt);
+  setI32(228, fields.pyramidResource);
+  setU64(232, fields.pyramidHandle);
+  setI32(240, fields.pyrColored);
+  setU64(248, fields.maxUpsample);
+  setU64(256, fields.tileUpsample);
+  setI32(264, fields.pyramidNoRescan);
+  setI32(268, fields.needsPyramidSample);
+  setI32(272, fields.pyramidSampleStratified);
+  setU64(280, fields.nColorCounts);
+  setU64(288, fields.colorLutLen);
+  setI32(296, fields.shipMeanColor);
+  setU64(304, fields.binningCap);
+  setU64(312, fields.encodedCap);
+  setU64(320, fields.rgbaCap);
+  setU64(328, fields.sampleSelCap);
+  setU64(336, fields.visibleSelCap);
+  return buf;
+}
+
+/** Density grid materialize via `xyg_payload_density_grid_materialize` (ABI 316). */
+export function payloadDensityGridMaterialize({
+  emitPlan,
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  xHasNulls = false,
+  yHasNulls = false,
+  pointOverlay = true,
+  xMemmapped = false,
+  yMemmapped = false,
+  hasPyramidResource = false,
+  forceBin2d = false,
+  forcePyramid = false,
+  xMin = 0,
+  xMax = 1,
+  yMin = 0,
+  yMax = 1,
+  xr0 = 0,
+  xr1 = 1,
+  yr0 = 0,
+  yr1 = 1,
+  bx0 = 0,
+  bx1 = 1,
+  by0 = 0,
+  by1 = 1,
+  nPoints = 0,
+  w = DENSITY_GRID[0],
+  h = DENSITY_GRID[1],
+  xRaw,
+  yRaw,
+  bx,
+  by,
+  pyramidAttempt = false,
+  pyramidResource = DENSITY_RESOURCE_NONE,
+  pyramidHandle = 0n,
+  pyrColored = false,
+  maxUpsample = 2,
+  tileUpsample = 2,
+  pyramidNoRescan = false,
+  needsPyramidSample = false,
+  pyramidSampleStratified = false,
+  colorCodes = null,
+  colorCounts = null,
+  binColors = null,
+  shipMeanColor = false,
+} = {}) {
+  const xa = asF64Array(xRaw, "x");
+  const ya = asF64Array(yRaw, "y");
+  const bxa = asF64Array(bx, "bx");
+  const bya = asF64Array(by, "by");
+  const len = xa.length;
+  if (len !== ya.length || len !== bxa.length || len !== bya.length) {
+    throw new RangeError("payloadDensityGridMaterialize geometry length mismatch");
+  }
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const cells = ww * hh;
+  const outBinning = new Uint8Array(DENSITY_BINNING_CAP);
+  const outEncoded = new Uint8Array(cells);
+  const outRgba = new Uint8Array(cells * 4);
+  const outSampleSel = new Uint32Array(len);
+  const outVisibleSel = new Uint32Array(len);
+  const summary = new Uint8Array(PAYLOAD_DENSITY_GRID_MATERIALIZE_OUT_BYTES);
+  const plan = emitPlan ?? {};
+  let codesPtr = 0;
+  if (colorCodes != null) {
+    const codes = colorCodes instanceof Uint8Array ? colorCodes : Uint8Array.from(colorCodes);
+    if (codes.length !== len) {
+      throw new RangeError("payloadDensityGridMaterialize color codes length must match geometry");
+    }
+    codesPtr = len ? u8Ptr(codes) : 0;
+  }
+  let countsPtr = 0;
+  let nColorCounts = 0;
+  if (colorCounts != null) {
+    const counts = colorCounts instanceof BigUint64Array
+      ? colorCounts
+      : BigUint64Array.from(colorCounts, (v) => BigInt(v));
+    if (counts.length === 0) {
+      throw new RangeError("payloadDensityGridMaterialize color counts must be non-empty");
+    }
+    countsPtr = pointer(counts, "uint64_t *");
+    nColorCounts = counts.length;
+  }
+  const colorPtrs = densityBinColorPtrs(binColors, len);
+  const input = packPayloadDensityGridMaterializeIn({
+    cartesian: cartesian ? 1 : 0,
+    xLinear: xLinear ? 1 : 0,
+    yLinear: yLinear ? 1 : 0,
+    categorical: plan.categorical ? 1 : 0,
+    compactCategorical: plan.compactCategorical ? 1 : 0,
+    stratifiedCounts: plan.stratifiedCounts ? 1 : 0,
+    xHasNulls: xHasNulls ? 1 : 0,
+    yHasNulls: yHasNulls ? 1 : 0,
+    pointOverlay: pointOverlay ? 1 : 0,
+    gridFromPyramid: 0,
+    xMemmapped: xMemmapped ? 1 : 0,
+    yMemmapped: yMemmapped ? 1 : 0,
+    hasPyramidResource: hasPyramidResource ? 1 : 0,
+    forceBin2d: forceBin2d ? 1 : 0,
+    forcePyramid: forcePyramid ? 1 : 0,
+    colorMode: plan.colorMode ?? 0,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    xr0,
+    xr1,
+    yr0,
+    yr1,
+    bx0,
+    bx1,
+    by0,
+    by1,
+    xC0: plan.xC0 ?? 0,
+    xC1: plan.xC1 ?? 1,
+    yC0: plan.yC0 ?? 0,
+    yC1: plan.yC1 ?? 1,
+    nPoints,
+    w: ww,
+    h: hh,
+    len,
+    pyramidAttempt: pyramidAttempt ? 1 : 0,
+    pyramidResource,
+    pyramidHandle,
+    pyrColored: pyrColored ? 1 : 0,
+    maxUpsample,
+    tileUpsample,
+    pyramidNoRescan: pyramidNoRescan ? 1 : 0,
+    needsPyramidSample: needsPyramidSample ? 1 : 0,
+    pyramidSampleStratified: pyramidSampleStratified ? 1 : 0,
+    nColorCounts,
+    colorLutLen: Number(colorPtrs.lutLen),
+    shipMeanColor: shipMeanColor ? 1 : 0,
+    binningCap: DENSITY_BINNING_CAP,
+    encodedCap: cells,
+    rgbaCap: outRgba.length,
+    sampleSelCap: len,
+    visibleSelCap: len,
+  });
+  const code = Number(xyPayloadDensityGridMaterialize(
+    input,
+    len ? f64Ptr(xa) : 0,
+    len ? f64Ptr(ya) : 0,
+    len ? f64Ptr(bxa) : 0,
+    len ? f64Ptr(bya) : 0,
+    codesPtr,
+    countsPtr,
+    colorPtrs.idxPtr,
+    colorPtrs.rgbaPtr,
+    colorPtrs.lutPtr,
+    u8Ptr(outBinning),
+    u8Ptr(outEncoded),
+    u8Ptr(outRgba),
+    len ? u32Ptr(outSampleSel) : 0,
+    len ? u32Ptr(outVisibleSel) : 0,
+    u8Ptr(summary),
+  ));
+  if (code === -1) {
+    throw new RangeError("invalid payload-density-grid-materialize request");
+  }
+  if (code === -2) {
+    throw new Error("xyg_payload_density_grid_materialize hit an unexpected grid path");
+  }
+  if (code === -3) {
+    throw new Error("xyg_payload_density_grid_materialize stratified sample failed");
+  }
+  if (code !== 0) {
+    throw new Error(`xyg_payload_density_grid_materialize failed (${code})`);
+  }
+  const parsed = readPayloadDensityGridMaterializeOut(summary);
+  let binning = "";
+  for (let idx = 0; idx < outBinning.length; idx += 1) {
+    if (outBinning[idx] === 0) break;
+    binning += String.fromCharCode(outBinning[idx]);
+  }
+  return {
+    encoded: outEncoded.subarray(0, parsed.encodedLen),
+    max: parsed.gmax,
+    rgba: parsed.rgbaLen > 0 ? outRgba.subarray(0, parsed.rgbaLen) : null,
+    sampleSel: parsed.sampleSelLen > 0 ? outSampleSel.slice(0, parsed.sampleSelLen) : null,
+    visibleSel: parsed.visibleSelLen > 0 ? outVisibleSel.slice(0, parsed.visibleSelLen) : null,
+    visible: parsed.visible,
+    binning,
+    gridFromPyramid: parsed.gridFromPyramid,
+    hasPyramidRgba: parsed.hasPyramidRgba,
+    pyramidLevel: parsed.pyramidLevel,
+    fromTiles: parsed.fromTiles,
+    reduction: parsed.gridFromPyramid ? "pyramid-count" : "bin2d",
+  };
 }
 
 const PAYLOAD_CHANNEL_SHIP_MAX = 5;
@@ -5420,6 +5917,640 @@ export function sceneXytaTraceDispatchPlan({
   return readSceneXytaTraceDispatchPlan(out);
 }
 
+const SCENE_XYTC_TRACE_STYLE_IN_BYTES = 336;
+const SCENE_XYTC_TRACE_PACK_IN_BYTES = 408;
+const SCENE_XYTA_TRACE_PACK_IN_BYTES = 256;
+export const SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20;
+export const SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22;
+
+function packSceneXytcTraceStyleIn(style) {
+  const buf = Buffer.alloc(SCENE_XYTC_TRACE_STYLE_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU16 = (off, value) => {
+    buf.writeUInt16LE(Number(value) & 0xFFFF, off);
+  };
+  const setF64 = (off, value) => {
+    buf.writeDoubleLE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setI32(0, style.symbolIsInt);
+  setU16(4, style.symbolInt);
+  setF64(8, style.opacity);
+  setF64(16, style.fillOpacity);
+  setF64(24, style.strokeOpacity);
+  setF64(32, style.lineOpacity);
+  setI32(40, style.hasStroke);
+  setI32(44, style.hasLineColor);
+  setI32(48, style.hasSize);
+  setF64(56, style.size);
+  setI32(64, style.hasSizeCh);
+  setI32(68, style.hasSizeChConstant);
+  setF64(72, style.sizeChConstant);
+  setI32(80, style.hasStrokeWidth);
+  setF64(88, style.strokeWidth);
+  setI32(96, style.hasWidth);
+  setF64(104, style.width);
+  setI32(112, style.hasLineWidth);
+  setF64(120, style.lineWidth);
+  setI32(128, style.hasHexDx);
+  setF64(136, style.hexDx);
+  setI32(144, style.hasHexDy);
+  setF64(152, style.hexDy);
+  setI32(160, style.hasStrokePerimeter);
+  setI32(164, style.strokePerimeterIsBool);
+  setI32(168, style.strokePerimeterTrue);
+  setI32(172, style.dashIsArray);
+  setI32(176, style.hasFill);
+  setI32(180, style.fillKind);
+  setI32(184, style.colorChPresent);
+  setI32(188, style.colorChHasConstant);
+  setI32(192, style.radiusSeq);
+  setF64(200, style.r0);
+  setF64(208, style.r1);
+  setF64(216, style.wedgeGapRaw);
+  setU64(224, style.symbolLen);
+  setU64(232, style.dashLen);
+  setU64(240, style.dashPatternLen);
+  setU64(248, style.linecapLen);
+  setU64(256, style.stepLen);
+  setU64(264, style.curveLen);
+  setU64(272, style.fillCssLen);
+  setU64(280, style.fillSpaceLen);
+  setU64(288, style.fillGradientLen);
+  setU64(296, style.strokeCssLen);
+  setU64(304, style.lineColorLen);
+  setU64(312, style.colorCssLen);
+  setU64(320, style.colorModeLen);
+  setU64(328, style.colorConstLen);
+  return buf;
+}
+
+function packSceneXytcTracePackIn(fields, styleBuf) {
+  const buf = Buffer.alloc(SCENE_XYTC_TRACE_PACK_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setI32(0, fields.showLegend);
+  setI32(4, fields.hasName);
+  setI32(8, fields.markerPathPresent);
+  setI32(12, fields.useDensity);
+  setI32(16, fields.joinedFill);
+  setI32(20, fields.markerPacked);
+  setI32(24, fields.glyphPacked);
+  setI32(28, fields.color2Class);
+  setI32(32, fields.color2GradientPacked);
+  setU64(40, fields.kindLen);
+  setU64(48, fields.nameLen);
+  setU64(56, fields.markerBlobLen);
+  setU64(64, fields.color2GradientLen);
+  styleBuf.copy(buf, 72);
+  return buf;
+}
+
+function packSceneXytaTracePackIn(fields) {
+  const buf = Buffer.alloc(SCENE_XYTA_TRACE_PACK_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU32 = (off, value) => {
+    buf.writeUInt32LE(Number(value) >>> 0, off);
+  };
+  const setF32 = (off, value) => {
+    buf.writeFloatLE(Number(value), off);
+  };
+  const setF64 = (off, value) => {
+    buf.writeDoubleLE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setU32(0, fields.traceId);
+  setI32(4, fields.packHeatmap);
+  setI32(8, fields.packHexbinColormap);
+  setI32(12, fields.packHexbinRgba);
+  setI32(16, fields.packRibbonEnds);
+  setI32(20, fields.packMeshFaces);
+  setI32(24, fields.packScatterPaint);
+  setI32(28, fields.packDensity);
+  setF64(32, fields.gridShapeRows);
+  setF64(40, fields.gridShapeCols);
+  setI32(48, fields.hasGridShape);
+  setI32(52, fields.hasGrid);
+  setI32(56, fields.hasRgba);
+  setI32(60, fields.hasRgbaGrid);
+  setI32(64, fields.truecolor);
+  setI32(68, fields.hasCmapDomain);
+  setF64(72, fields.cmapLo);
+  setF64(80, fields.cmapHi);
+  setI32(88, fields.hasColorCh);
+  setI32(92, fields.hasStyleColor);
+  setI32(96, fields.hasOpacity);
+  setI32(100, fields.hasFillOpacity);
+  setF32(104, fields.opacity);
+  setF32(108, fields.fillOpacity);
+  setF64(112, fields.domainX0);
+  setF64(120, fields.domainX1);
+  setF64(128, fields.domainY0);
+  setF64(136, fields.domainY1);
+  setU32(144, fields.cmapFlags);
+  setI32(148, fields.rows);
+  setI32(152, fields.cols);
+  setU64(160, fields.gridLen);
+  setU64(168, fields.rgbaLen);
+  setU64(176, fields.rgbaGridLen);
+  setU64(184, fields.xLen);
+  setU64(192, fields.yLen);
+  setU64(200, fields.meanRgbaLen);
+  setU64(208, fields.idxLen);
+  setU64(216, fields.lutLen);
+  setU64(224, fields.cmapLen);
+  setU64(232, fields.stopsLen);
+  setU64(240, fields.colorChLen);
+  setU64(248, fields.styleColorLen);
+  return buf;
+}
+
+/** Pack one authored trace into an XYTR v1 record via `xyg_scene_xytc_trace_pack` (ABI 317). */
+export function sceneXytcTracePack({
+  showLegend = true,
+  kind,
+  hasName = false,
+  name,
+  markerPathPresent = false,
+  useDensity = false,
+  joinedFill = false,
+  markerPacked = false,
+  glyphPacked = false,
+  markerBlob,
+  color2Class = 0,
+  color2GradientBlob,
+  color2GradientPacked = false,
+  style,
+  symbolB,
+  dashB,
+  dashPattern,
+  linecapB,
+  stepB,
+  curveB,
+  fillCss,
+  fillSpace,
+  fillGradientBlob,
+  strokeCss,
+  lineColor,
+  colorCss,
+  colorMode,
+  colorConst,
+}) {
+  const kindBytes = kind instanceof Uint8Array ? kind : new TextEncoder().encode(String(kind ?? ""));
+  const nameBytes = name instanceof Uint8Array ? name : new TextEncoder().encode(String(name ?? ""));
+  const symbolBytes = symbolB instanceof Uint8Array ? symbolB : new Uint8Array();
+  const dashBytes = dashB instanceof Uint8Array ? dashB : new Uint8Array();
+  const dashPat = dashPattern instanceof Float64Array
+    ? dashPattern
+    : Float64Array.from(dashPattern ?? []);
+  const linecapBytes = linecapB instanceof Uint8Array ? linecapB : new Uint8Array();
+  const stepBytes = stepB instanceof Uint8Array ? stepB : new Uint8Array();
+  const curveBytes = curveB instanceof Uint8Array ? curveB : new Uint8Array();
+  const fillCssBytes = fillCss instanceof Uint8Array ? fillCss : new Uint8Array();
+  const fillSpaceBytes = fillSpace instanceof Uint8Array ? fillSpace : new Uint8Array();
+  const fillGradBytes = fillGradientBlob instanceof Uint8Array ? fillGradientBlob : new Uint8Array();
+  const strokeBytes = strokeCss instanceof Uint8Array ? strokeCss : new Uint8Array();
+  const lineColorBytes = lineColor instanceof Uint8Array ? lineColor : new Uint8Array();
+  const colorCssBytes = colorCss instanceof Uint8Array ? colorCss : new Uint8Array();
+  const colorModeBytes = colorMode instanceof Uint8Array ? colorMode : new Uint8Array();
+  const colorConstBytes = colorConst instanceof Uint8Array ? colorConst : new Uint8Array();
+  const markerBytes = markerBlob instanceof Uint8Array ? markerBlob : new Uint8Array();
+  const color2GradBytes = color2GradientBlob instanceof Uint8Array ? color2GradientBlob : new Uint8Array();
+  const styleBuf = packSceneXytcTraceStyleIn({
+    symbolIsInt: style.symbolIsInt,
+    symbolInt: style.symbolInt,
+    opacity: style.opacity,
+    fillOpacity: style.fillOpacity,
+    strokeOpacity: style.strokeOpacity,
+    lineOpacity: style.lineOpacity,
+    hasStroke: style.hasStroke,
+    hasLineColor: style.hasLineColor,
+    hasSize: style.hasSize,
+    size: style.size,
+    hasSizeCh: style.hasSizeCh,
+    hasSizeChConstant: style.hasSizeChConstant,
+    sizeChConstant: style.sizeChConstant,
+    hasStrokeWidth: style.hasStrokeWidth,
+    strokeWidth: style.strokeWidth,
+    hasWidth: style.hasWidth,
+    width: style.width,
+    hasLineWidth: style.hasLineWidth,
+    lineWidth: style.lineWidth,
+    hasHexDx: style.hasHexDx,
+    hexDx: style.hexDx,
+    hasHexDy: style.hasHexDy,
+    hexDy: style.hexDy,
+    hasStrokePerimeter: style.hasStrokePerimeter,
+    strokePerimeterIsBool: style.strokePerimeterIsBool,
+    strokePerimeterTrue: style.strokePerimeterTrue,
+    dashIsArray: style.dashIsArray,
+    hasFill: style.hasFill,
+    fillKind: style.fillKind,
+    colorChPresent: style.colorChPresent,
+    colorChHasConstant: style.colorChHasConstant,
+    radiusSeq: style.radiusSeq,
+    r0: style.r0,
+    r1: style.r1,
+    wedgeGapRaw: style.wedgeGapRaw,
+    symbolLen: symbolBytes.length,
+    dashLen: dashBytes.length,
+    dashPatternLen: dashPat.length,
+    linecapLen: linecapBytes.length,
+    stepLen: stepBytes.length,
+    curveLen: curveBytes.length,
+    fillCssLen: fillCssBytes.length,
+    fillSpaceLen: fillSpaceBytes.length,
+    fillGradientLen: fillGradBytes.length,
+    strokeCssLen: strokeBytes.length,
+    lineColorLen: lineColorBytes.length,
+    colorCssLen: colorCssBytes.length,
+    colorModeLen: colorModeBytes.length,
+    colorConstLen: colorConstBytes.length,
+  });
+  const inputBuf = packSceneXytcTracePackIn({
+    showLegend: showLegend ? 1 : 0,
+    hasName: hasName ? 1 : 0,
+    markerPathPresent: markerPathPresent ? 1 : 0,
+    useDensity: useDensity ? 1 : 0,
+    joinedFill: joinedFill ? 1 : 0,
+    markerPacked: markerPacked ? 1 : 0,
+    glyphPacked: glyphPacked ? 1 : 0,
+    color2Class,
+    color2GradientPacked: color2GradientPacked ? 1 : 0,
+    kindLen: kindBytes.length,
+    nameLen: nameBytes.length,
+    markerBlobLen: markerBytes.length,
+    color2GradientLen: color2GradBytes.length,
+  }, styleBuf);
+  const out = new Uint8Array(SCENE_XYTC_TRACE_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytcTracePack(
+    inputBuf,
+    kindBytes.length ? u8Ptr(kindBytes) : 0,
+    nameBytes.length ? u8Ptr(nameBytes) : 0,
+    symbolBytes.length ? u8Ptr(symbolBytes) : 0,
+    dashBytes.length ? u8Ptr(dashBytes) : 0,
+    dashPat.length ? f64Ptr(dashPat) : 0,
+    linecapBytes.length ? u8Ptr(linecapBytes) : 0,
+    stepBytes.length ? u8Ptr(stepBytes) : 0,
+    curveBytes.length ? u8Ptr(curveBytes) : 0,
+    fillCssBytes.length ? u8Ptr(fillCssBytes) : 0,
+    fillSpaceBytes.length ? u8Ptr(fillSpaceBytes) : 0,
+    fillGradBytes.length ? u8Ptr(fillGradBytes) : 0,
+    strokeBytes.length ? u8Ptr(strokeBytes) : 0,
+    lineColorBytes.length ? u8Ptr(lineColorBytes) : 0,
+    colorCssBytes.length ? u8Ptr(colorCssBytes) : 0,
+    colorModeBytes.length ? u8Ptr(colorModeBytes) : 0,
+    colorConstBytes.length ? u8Ptr(colorConstBytes) : 0,
+    markerBytes.length ? u8Ptr(markerBytes) : 0,
+    color2GradBytes.length ? u8Ptr(color2GradBytes) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) {
+    throw new RangeError("sceneXytcTracePack output buffer too small");
+  }
+  if (code !== 0) {
+    throw new RangeError("invalid sceneXytcTracePack arguments");
+  }
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Pack one attach trace into an XYTA v1 record via `xyg_scene_xyta_trace_pack` (ABI 318). */
+export function sceneXytaTracePack({
+  traceId = 0,
+  packHeatmap = false,
+  packHexbinColormap = false,
+  packHexbinRgba = false,
+  packRibbonEnds = false,
+  packMeshFaces = false,
+  packScatterPaint = false,
+  packDensity = false,
+  gridShapeRows = Number.NaN,
+  gridShapeCols = Number.NaN,
+  hasGridShape = false,
+  hasGrid = false,
+  hasRgba = false,
+  hasRgbaGrid = false,
+  truecolor = false,
+  hasCmapDomain = false,
+  cmapLo = Number.NaN,
+  cmapHi = Number.NaN,
+  hasColorCh = false,
+  hasStyleColor = false,
+  hasOpacity = false,
+  hasFillOpacity = false,
+  opacity = Number.NaN,
+  fillOpacity = Number.NaN,
+  domainX0 = Number.NaN,
+  domainX1 = Number.NaN,
+  domainY0 = Number.NaN,
+  domainY1 = Number.NaN,
+  cmapFlags = 0,
+  rows = 0,
+  cols = 0,
+  grid,
+  rgba,
+  rgbaGrid,
+  x,
+  y,
+  meanRgba,
+  idx,
+  lut,
+  cmap,
+  stops,
+  colorCh,
+  styleColor,
+}) {
+  const gridBytes = grid instanceof Uint8Array ? grid : new Uint8Array();
+  const rgbaBytes = rgba instanceof Uint8Array ? rgba : new Uint8Array();
+  const rgbaGridBytes = rgbaGrid instanceof Uint8Array ? rgbaGrid : new Uint8Array();
+  const xBytes = x instanceof Uint8Array ? x : new Uint8Array();
+  const yBytes = y instanceof Uint8Array ? y : new Uint8Array();
+  const meanRgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : new Uint8Array();
+  const idxBytes = idx instanceof Uint8Array ? idx : new Uint8Array();
+  const lutBytes = lut instanceof Uint8Array ? lut : new Uint8Array();
+  const cmapBytes = cmap instanceof Uint8Array ? cmap : new Uint8Array();
+  const stopsBytes = stops instanceof Uint8Array ? stops : new Uint8Array();
+  const colorChBytes = colorCh instanceof Uint8Array ? colorCh : new Uint8Array();
+  const styleColorBytes = styleColor instanceof Uint8Array ? styleColor : new Uint8Array();
+  const inputBuf = packSceneXytaTracePackIn({
+    traceId,
+    packHeatmap: packHeatmap ? 1 : 0,
+    packHexbinColormap: packHexbinColormap ? 1 : 0,
+    packHexbinRgba: packHexbinRgba ? 1 : 0,
+    packRibbonEnds: packRibbonEnds ? 1 : 0,
+    packMeshFaces: packMeshFaces ? 1 : 0,
+    packScatterPaint: packScatterPaint ? 1 : 0,
+    packDensity: packDensity ? 1 : 0,
+    gridShapeRows,
+    gridShapeCols,
+    hasGridShape: hasGridShape ? 1 : 0,
+    hasGrid: hasGrid ? 1 : 0,
+    hasRgba: hasRgba ? 1 : 0,
+    hasRgbaGrid: hasRgbaGrid ? 1 : 0,
+    truecolor: truecolor ? 1 : 0,
+    hasCmapDomain: hasCmapDomain ? 1 : 0,
+    cmapLo,
+    cmapHi,
+    hasColorCh: hasColorCh ? 1 : 0,
+    hasStyleColor: hasStyleColor ? 1 : 0,
+    hasOpacity: hasOpacity ? 1 : 0,
+    hasFillOpacity: hasFillOpacity ? 1 : 0,
+    opacity,
+    fillOpacity,
+    domainX0,
+    domainX1,
+    domainY0,
+    domainY1,
+    cmapFlags,
+    rows,
+    cols,
+    gridLen: gridBytes.length,
+    rgbaLen: rgbaBytes.length,
+    rgbaGridLen: rgbaGridBytes.length,
+    xLen: xBytes.length,
+    yLen: yBytes.length,
+    meanRgbaLen: meanRgbaBytes.length,
+    idxLen: idxBytes.length,
+    lutLen: lutBytes.length,
+    cmapLen: cmapBytes.length,
+    stopsLen: stopsBytes.length,
+    colorChLen: colorChBytes.length,
+    styleColorLen: styleColorBytes.length,
+  });
+  const out = new Uint8Array(SCENE_XYTA_TRACE_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytaTracePack(
+    inputBuf,
+    gridBytes.length ? u8Ptr(gridBytes) : 0,
+    rgbaBytes.length ? u8Ptr(rgbaBytes) : 0,
+    rgbaGridBytes.length ? u8Ptr(rgbaGridBytes) : 0,
+    xBytes.length ? u8Ptr(xBytes) : 0,
+    yBytes.length ? u8Ptr(yBytes) : 0,
+    meanRgbaBytes.length ? u8Ptr(meanRgbaBytes) : 0,
+    idxBytes.length ? u8Ptr(idxBytes) : 0,
+    lutBytes.length ? u8Ptr(lutBytes) : 0,
+    cmapBytes.length ? u8Ptr(cmapBytes) : 0,
+    stopsBytes.length ? u8Ptr(stopsBytes) : 0,
+    colorChBytes.length ? u8Ptr(colorChBytes) : 0,
+    styleColorBytes.length ? u8Ptr(styleColorBytes) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) {
+    throw new RangeError("sceneXytaTracePack output buffer too small");
+  }
+  if (code !== 0) {
+    throw new RangeError("invalid sceneXytaTracePack arguments");
+  }
+  return out.subarray(0, Number(outLen[0]));
+}
+
+const SCENE_XYAF_PACK_MAX_RECORD = 1 << 16;
+const SCENE_XYCF_PACK_MAX = 1 << 20;
+const SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18;
+const PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES = 1 << 28;
+const PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES = 1 << 28;
+const SCENE_XYAF_PACK_IN_BYTES = 232;
+const SCENE_XYCF_PACK_IN_BYTES = 344;
+
+/** Pack one XYAF v1 record via `xyg_scene_xyaf_pack` (ABI 319). */
+export function sceneXyafPack({
+  index = 0,
+  kindCode = 0,
+  axisCode = 0,
+  symbol = 0,
+  anchor = 255,
+  facts = 0,
+  styleBits = 0,
+  linecap = 255,
+  dashCount = 0,
+  nums = [],
+  color = new Uint8Array(4),
+  stroke = new Uint8Array(4),
+  labelColor = new Uint8Array(4),
+  labelFill = new Uint8Array(4),
+  labelBorder = new Uint8Array(4),
+  dash = new Float32Array(8),
+  text = new Uint8Array(0),
+} = {}) {
+  const input = Buffer.alloc(232);
+  input.writeUInt32LE(index >>> 0, 0);
+  input.writeUInt8(kindCode & 0xff, 4);
+  input.writeUInt8(axisCode & 0xff, 5);
+  input.writeUInt8(symbol & 0xff, 6);
+  input.writeUInt8(anchor & 0xff, 7);
+  input.writeUInt32LE(facts >>> 0, 8);
+  input.writeUInt32LE(styleBits >>> 0, 12);
+  input.writeUInt8(linecap & 0xff, 16);
+  input.writeUInt8(dashCount & 0xff, 17);
+  input.writeBigUInt64LE(BigInt(text.length), 24);
+  for (let i = 0; i < 18; i += 1) input.writeDoubleLE(Number(nums[i] ?? Number.NaN), 32 + i * 8);
+  input.set(color.subarray(0, 4), 176);
+  input.set(stroke.subarray(0, 4), 180);
+  input.set(labelColor.subarray(0, 4), 184);
+  input.set(labelFill.subarray(0, 4), 188);
+  input.set(labelBorder.subarray(0, 4), 192);
+  for (let i = 0; i < 8; i += 1) input.writeFloatLE(Number(dash[i] ?? 0), 196 + i * 4);
+  const out = new Uint8Array(SCENE_XYAF_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXyafPack(
+    u8Ptr(input),
+    text.length ? u8Ptr(text) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneXyafPack output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneXyafPack arguments");
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Pack XYFS v2 support envelope via `xyg_scene_figure_support_pack` (ABI 319). */
+export function sceneFigureSupportPack({ flags = 0, axesBlob = new Uint8Array(0), tracesBlob = new Uint8Array(0) } = {}) {
+  const out = new Uint8Array(SCENE_FIGURE_SUPPORT_PACK_MAX);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneFigureSupportPack(
+    flags >>> 0,
+    axesBlob.length ? u8Ptr(axesBlob) : 0,
+    BigInt(axesBlob.length),
+    tracesBlob.length ? u8Ptr(tracesBlob) : 0,
+    BigInt(tracesBlob.length),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneFigureSupportPack output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneFigureSupportPack arguments");
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Gather and offset-ship geometry columns via `xyg_payload_column_gather_materialize` (ABI 320). */
+export function payloadColumnGatherMaterialize({ sel = null, columns = [], values = [], kinds = [], axisScales = [] } = {}) {
+  const n = columns.length;
+  const desc = Buffer.alloc(n * 56);
+  const valuePtrs = Buffer.alloc(n * 8);
+  const kindPtrs = Buffer.alloc(n * 8);
+  const scalePtrs = Buffer.alloc(n * 8);
+  const shipMethod = { offset: 0, values: 1, f64: 2 };
+  const shipScale = { x: 0, y: 1 };
+  for (let i = 0; i < n; i += 1) {
+    const base = i * 56;
+    desc.writeInt32LE(shipMethod[columns[i].shipMethod], base);
+    desc.writeInt32LE(shipScale[columns[i].shipScale], base + 4);
+    const arr = asF64Array(values[i]);
+    desc.writeBigUInt64LE(BigInt(arr.length), base + 8);
+    desc.writeDoubleLE(Number(columns[i].colMin ?? 0), base + 16);
+    desc.writeDoubleLE(Number(columns[i].colMax ?? 0), base + 24);
+    desc.writeBigUInt64LE(BigInt((kinds[i] ?? new Uint8Array(0)).length), base + 32);
+    desc.writeDoubleLE(Number(columns[i].stickyOffset ?? 0), base + 40);
+    const scaleBytes = new TextEncoder().encode(String(axisScales[i] ?? "linear"));
+    desc.writeBigUInt64LE(BigInt(scaleBytes.length), base + 48);
+    valuePtrs.writeBigUInt64LE(BigInt(f64Ptr(arr)), i * 8);
+    kindPtrs.writeBigUInt64LE(BigInt((kinds[i] ?? new Uint8Array(0)).length ? u8Ptr(kinds[i]) : 0), i * 8);
+    scalePtrs.writeBigUInt64LE(BigInt(scaleBytes.length ? u8Ptr(scaleBytes) : 0), i * 8);
+  }
+  const selArr = sel == null ? new Uint32Array(0) : sel;
+  const outDesc = Buffer.alloc(n * 48);
+  const outBytes = new Uint8Array(PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES);
+  const outBytesLen = new BigUint64Array(1);
+  const written = Number(xyPayloadColumnGatherMaterialize(
+    selArr.length ? u32Ptr(selArr) : 0,
+    BigInt(selArr.length),
+    u8Ptr(desc),
+    BigInt(n),
+    u8Ptr(valuePtrs),
+    u8Ptr(kindPtrs),
+    u8Ptr(scalePtrs),
+    u8Ptr(outDesc),
+    u8Ptr(outBytes),
+    BigInt(outBytes.length),
+    pointer(outBytesLen, "size_t *"),
+  ));
+  if (written < 0) throw new RangeError("invalid payloadColumnGatherMaterialize arguments");
+  const blob = outBytes.subarray(0, Number(outBytesLen[0]));
+  const result = [];
+  for (let i = 0; i < written; i += 1) {
+    const base = i * 48;
+    const view = new DataView(outDesc.buffer, outDesc.byteOffset + base, 48);
+    const bytesOffset = Number(view.getBigUint64(32, true));
+    const bytesLen = Number(view.getBigUint64(40, true));
+    result.push({
+      dtypeCode: view.getInt32(0, true),
+      meta: {
+        len: view.getUint32(16, true),
+        offset: view.getFloat64(8, true),
+        scale: view.getFloat64(24, true),
+      },
+      bytes: blob.subarray(bytesOffset, bytesOffset + bytesLen),
+    });
+  }
+  return result;
+}
+
+/** Materialize one channel wire buffer via `xyg_payload_channel_materialize` (ABI 320). */
+export function payloadChannelMaterialize({
+  role = "color",
+  mode = "continuous",
+  nCategories = 0,
+  styleDtypeU8 = false,
+  quantizeContinuous = false,
+  domain = [0, 1],
+  nPalette = 0,
+  sel = null,
+  valuesF64 = new Float64Array(0),
+  valuesU8 = new Uint8Array(0),
+} = {}) {
+  const roleCode = { color: 0, size: 1, style: 2 }[role];
+  const modeCode = { constant: 0, continuous: 1, categorical: 2, direct_rgba: 3, match_fill: 4, direct: 5 }[mode];
+  const selArr = sel == null ? new Uint32Array(0) : sel;
+  const out = new Uint8Array(PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES);
+  const meta = new Int32Array(5);
+  const nbytes = Number(xyPayloadChannelMaterialize(
+    roleCode,
+    modeCode,
+    BigInt(nCategories),
+    styleDtypeU8 ? 1 : 0,
+    quantizeContinuous ? 1 : 0,
+    Number(domain[0]),
+    Number(domain[1]),
+    BigInt(nPalette),
+    selArr.length ? u32Ptr(selArr) : 0,
+    BigInt(selArr.length),
+    valuesF64.length ? f64Ptr(valuesF64) : 0,
+    BigInt(valuesF64.length),
+    valuesU8.length ? u8Ptr(valuesU8) : 0,
+    BigInt(valuesU8.length),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(meta, "int32_t *"),
+  ));
+  if (nbytes < 0) throw new RangeError("invalid payloadChannelMaterialize arguments");
+  return {
+    bufKind: meta[0],
+    markDtypeU8: meta[1] !== 0,
+    shipPalette: meta[2] !== 0,
+    setN: meta[3] !== 0,
+    len: meta[4],
+    bytes: out.subarray(0, nbytes),
+  };
+}
+
 const SCENE_FIGURE_SUPPORT_FIGURE_PLAN_BYTES = 4;
 const SCENE_FIGURE_SUPPORT_TRACE_DISPATCH_PLAN_BYTES = 32;
 const SCENE_XYCL_FIGURE_PLAN_BYTES = 4;
@@ -6190,6 +7321,10 @@ export function f32Ptr(view) {
 
 export function u32Ptr(view) {
   return pointer(view, "uint32_t *");
+}
+
+export function u64Ptr(view) {
+  return pointer(view, "uint64_t *");
 }
 
 export function u8Ptr(view) {

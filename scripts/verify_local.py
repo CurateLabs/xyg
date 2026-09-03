@@ -216,6 +216,12 @@ def _base_checks(
         ),
         Check("abi_smoke", "C ABI smoke", (py, "scripts/abi_smoke.py")),
         Check(
+            "host_parity",
+            "M2 host-parity landing gates (inventory + cross-host + ABI)",
+            (py, "scripts/audit_host_parity_landing.py"),
+            requires_modules=("pytest",),
+        ),
+        Check(
             "render_smoke_nonumpy",
             "stdlib payload render smoke in Chromium",
             (py, "scripts/render_smoke_nonumpy.py", chromium_arg),
@@ -303,6 +309,7 @@ FULL_EXTRA_CHECKS = (
     "rust_clippy",
     "rust_release_build",
     "abi_smoke",
+    "host_parity",
 )
 BROWSER_CHECKS = (
     "render_smoke_nonumpy",

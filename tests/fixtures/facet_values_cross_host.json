@@ -1,0 +1,20 @@
+{
+  "schema": "xyg.facet-values-cross-host/v1",
+  "cases": [
+    {
+      "name": "first_seen_unicode",
+      "kind": "unicode",
+      "values": ["b", "a", "b", "c", "a"]
+    },
+    {
+      "name": "object_column",
+      "kind": "object",
+      "values": ["b", null, 1, "b"]
+    },
+    {
+      "name": "float_nan",
+      "kind": "float64",
+      "values": [1.0, null, 2.0, null]
+    }
+  ]
+}

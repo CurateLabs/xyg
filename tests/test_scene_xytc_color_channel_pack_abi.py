@@ -15,19 +15,3 @@ def test_scene_xytc_color_channel_pack_mode_only() -> None:
 
 def test_scene_xytc_color_channel_pack_with_constant() -> None:
     assert kernels.scene_xytc_color_channel_pack(1, 1) == (1 << 11) | (1 << 12)
-
-
-def test_pack_xytc_color_channel_delegates_to_kernel() -> None:
-    from xyg import _scene_v3 as scene
-
-    class Channel:
-        mode = "constant"
-        constant = "#336699"
-
-    class Trace:
-        color_ch = Channel()
-
-    flags, mode, const = scene._pack_xytc_color_channel(Trace())
-    assert flags == (1 << 11) | (1 << 12)
-    assert mode == b"constant"
-    assert const == b"#336699"

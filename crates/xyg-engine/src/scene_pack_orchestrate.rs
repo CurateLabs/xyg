@@ -96,7 +96,7 @@ pub fn scene_xytc_trace_dispatch_plan(
 }
 
 /// Resolved per-trace XYTA attach dispatch from product kind and host facts.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct XytaTraceDispatchPlan {
     pub kind_class: i32,
     pub pack_heatmap: i32,

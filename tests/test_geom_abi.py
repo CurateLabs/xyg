@@ -67,12 +67,26 @@ def test_rounded_rect_zero_and_radii() -> None:
 def test_compatibility_raster_calls_abi_121_kernels_not_scene_wrappers() -> None:
     """#310: PNG compatibility emits through kernels; product Scene never imports `_scene.py`."""
     root = Path(__file__).resolve().parents[1]
-    raster = (root / "python/xyg/_raster.py").read_text()
+    raster_modules = (
+        "python/xyg/_raster.py",
+        "python/xyg/_export_axis_grid_raster.py",
+        "python/xyg/_export_marks_raster.py",
+        "python/xyg/_export_raster_cmd.py",
+        "python/xyg/_export_baseline_raster.py",
+        "python/xyg/_export_chrome_raster.py",
+        "python/xyg/_export_legend_raster.py",
+        "python/xyg/_export_polar_raster.py",
+    )
+    raster = "".join((root / rel).read_text() for rel in raster_modules)
+    paint = (root / "python/xyg/_paint.py").read_text()
     scene_v3 = (root / "python/xyg/_scene_v3.py").read_text()
     svg = (root / "python/xyg/_svg.py").read_text()
     assert "from . import _scene" not in raster
     assert "from . import _scene" not in scene_v3
     assert "from . import _scene" not in svg
     assert "kernels.ribbon_polygon" in raster
-    assert "kernels.rounded_rect_poly" in raster
-    assert "kernels.curve_flatten" in raster
+    # Rounded rects and curves may call kernels directly or via `_paint` helpers.
+    assert "kernels.rounded_rect_poly" in raster or "kernels.rounded_rect_poly" in paint
+    assert "kernels.curve_flatten" in raster or "kernels.curve_flatten" in paint
+    assert "_rounded_rect_vertices" in raster or "kernels.rounded_rect_poly" in raster
+    assert "_curve_points" in raster or "kernels.curve_flatten" in raster

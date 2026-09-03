@@ -73,9 +73,11 @@ import {
   xyEncodeWebp,
   xySceneVersion,
   polarAbiInputPointer,
+  xyFoldCodesU8,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
-import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
+import { clipQuantizeU8, cssColorRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
+import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -250,183 +252,224 @@ function annotationHasCustomTypography(annotation) {
   return false;
 }
 
-function packXyAf(annotation, index) {
-  // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
-  // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
-  // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
-  // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
-  // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
-  // Annotation markup is XYFS OBS_ANNOTATION_MARKUP (#308).
-  // Annotation custom typography is XYFS OBS_CUSTOM_FONT (#309).
-  // Text/marker style.rotation lifts onto ABI 187/188 top-level rotation.
-  annotation = { ...annotation };
-  const kind = annotation.kind;
-  const kindCode = XYAF_KIND_CODES[kind];
-  if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+function xyafDispatch(annotation) {
+  const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
-  if (["text", "marker"].includes(kind) && !Object.hasOwn(annotation, "rotation") && style.rotation != null) {
-    annotation.rotation = style.rotation;
-  }
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
   const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
-  const dispatch = sceneXyafAnnotationDispatchPlan({ kind, authoredWrap, layoutText });
-  const wrapped = dispatch.wrapped;
+  const dispatch = sceneXyafAnnotationDispatchPlan({
+    kind,
+    authored_wrap: authoredWrap,
+    layout_text: layoutText,
+  });
+  const wrapped = Boolean(dispatch.wrapped);
   const labelled = annotation.text != null && annotation.text !== "";
-  if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
-  let encoded = new Uint8Array();
-  if (labelled) {
-    if (typeof annotation.text !== "string" || annotation.text.includes("\0") || (wrapped && annotation.text.includes("\r"))) {
-      throw new RangeError(wrapped ? "Scene wrapped annotations require nonempty NUL-free LF text" : kind === "text" ? "Scene v16 text annotations require nonempty NUL-free text" : kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 annotation labels require nonempty NUL-free text");
-    }
-    encoded = new TextEncoder().encode(annotation.text);
-    if (encoded.length > 4096) throw new RangeError("Scene annotations are limited to 4,096 UTF-8 bytes");
-  } else if (kind === "text" || kind === "callout") {
-    throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
-  }
+  const kindLabel = wrapped ? "wrapped" : kind;
+  return { kind, style, wrapped, labelled, kindLabel };
+}
+
+function validateXyafAnnotationStyle(annotation) {
+  const { kind, style, wrapped, labelled } = xyafDispatch(annotation);
   const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
   if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
-  const unsupported = Object.keys(style).filter((key) => !skipStyle.has(key) && style[key] != null && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key)).sort();
+  const unsupported = Object.entries(style)
+    .filter(([key, value]) => value != null && !skipStyle.has(key) && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key))
+    .map(([key]) => key)
+    .sort();
   if (unsupported.length) {
-    if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
+    if (wrapped) throw new RangeError(`Scene wrapped annotations do not encode ${JSON.stringify(unsupported)}`);
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
     if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
     if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
     throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
   }
-  const nums = new Float64Array(18);
-  nums.fill(Number.NaN);
-  let facts = 0;
-  let styleBits = 0;
-  const zeros = new Uint8Array(4);
-  let color = zeros, stroke = zeros, labelColor = zeros, labelFill = zeros, labelBorder = zeros;
-  if (labelled) facts |= XYAF_FACT_HAS_TEXT;
-  if (wrapped) {
-    facts |= XYAF_FACT_HAS_WRAP;
-    nums[8] = Object.hasOwn(annotation, "wrap")
-      ? annotationNumber(annotation, "wrap", undefined, "wrapped width")
-      : 0;
+}
+
+function validateXyafAnnotationValues(annotation) {
+  const { kind, style, wrapped, labelled, kindLabel } = xyafDispatch(annotation);
+  if (kind === "arrow" && labelled) {
+    throw new RangeError("Scene arrows do not encode text or class_name");
   }
-  const required = wrapped
-    ? [["x", 0, XYAF_FACT_HAS_X, "wrapped x"], ["y", 1, XYAF_FACT_HAS_Y, "wrapped y"]]
-    : {
-      arrow: [["x0", 2, XYAF_FACT_HAS_X0, "arrow x0"], ["y0", 3, XYAF_FACT_HAS_Y0, "arrow y0"], ["x1", 4, XYAF_FACT_HAS_X1, "arrow x1"], ["y1", 5, XYAF_FACT_HAS_Y1, "arrow y1"]],
-      callout: [["x", 0, XYAF_FACT_HAS_X, "callout x"], ["y", 1, XYAF_FACT_HAS_Y, "callout y"]],
-      text: [["x", 0, XYAF_FACT_HAS_X, "text x"], ["y", 1, XYAF_FACT_HAS_Y, "text y"]],
-      rule: [["value", 9, XYAF_FACT_HAS_VALUE, "rule value"]],
-      band: [["start", 10, XYAF_FACT_HAS_START, "band start"], ["end", 11, XYAF_FACT_HAS_END, "band end"]],
-      marker: [["x", 0, XYAF_FACT_HAS_X, "marker x"], ["y", 1, XYAF_FACT_HAS_Y, "marker y"]],
-    }[kind];
-  for (const [key, slot, flag, label] of required) {
-    nums[slot] = annotationNumber(annotation, key, undefined, label);
-    facts |= flag;
+  const required = {
+    arrow: [
+      ["x0", "arrow x0"],
+      ["y0", "arrow y0"],
+      ["x1", "arrow x1"],
+      ["y1", "arrow y1"],
+    ],
+    callout: [["x", "callout x"], ["y", "callout y"]],
+    text: [["x", "text x"], ["y", "text y"]],
+    rule: [["value", "rule value"]],
+    band: [["start", "band start"], ["end", "band end"]],
+    marker: [["x", "marker x"], ["y", "marker y"]],
+  }[kind] ?? [];
+  for (const [key, label] of (wrapped ? [["x", "wrapped x"], ["y", "wrapped y"]] : required)) {
+    annotationNumber(annotation, key, null, label);
   }
-  for (const [key, slot, flag, label] of [["dx", 6, XYAF_FACT_HAS_DX, wrapped ? "wrapped dx" : "callout dx"], ["dy", 7, XYAF_FACT_HAS_DY, wrapped ? "wrapped dy" : "callout dy"], ["size", 12, XYAF_FACT_HAS_SIZE, "marker size"]]) {
+  for (const [key, label] of [
+    ["dx", wrapped ? "wrapped dx" : "callout dx"],
+    ["dy", wrapped ? "wrapped dy" : "callout dy"],
+    ["size", "marker size"],
+  ]) {
     if (Object.hasOwn(annotation, key)) {
-      nums[slot] = annotationNumber(annotation, key, undefined, label);
-      facts |= flag;
+      const value = annotationNumber(annotation, key, null, label);
+      if (kind === "marker" && key === "size" && (!Number.isFinite(value) || value <= 0)) {
+        throw new RangeError("Scene v12 marker annotation size must be finite and positive");
+      }
     }
   }
   if (kind === "text" && Object.hasOwn(annotation, "rotation")) {
-    nums[15] = annotationNumber(annotation, "rotation", undefined, "text rotation");
-    facts |= XYAF_FACT_HAS_ROTATION;
-    if (!Number.isFinite(nums[15])) throw new RangeError("Scene v16 text annotation rotation must be finite");
+    const rotation = annotationNumber(annotation, "rotation", null, "text rotation");
+    if (!Number.isFinite(rotation)) throw new RangeError("Scene v16 text annotation rotation must be finite");
   }
   if (kind === "marker" && Object.hasOwn(annotation, "rotation")) {
-    nums[8] = annotationNumber(annotation, "rotation", undefined, "marker rotation");
-    facts |= XYAF_FACT_HAS_ROTATION;
-    if (!Number.isFinite(nums[8])) throw new RangeError("Scene v16 marker annotation rotation must be finite");
+    const rotation = annotationNumber(annotation, "rotation", null, "marker rotation");
+    if (!Number.isFinite(rotation)) throw new RangeError("Scene v16 marker annotation rotation must be finite");
   }
-  let axisCode = 0;
   if (kind === "rule" || kind === "band") {
-    if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
-    axisCode = annotation.axis === "x" ? 1 : 2;
-    facts |= XYAF_FACT_HAS_AXIS;
-  }
-  let symbol = 0;
-  if (kind === "marker") {
-    symbol = annotationSymbolCode(annotation.symbol ?? "circle");
-    if (Object.hasOwn(annotation, "symbol")) facts |= XYAF_FACT_HAS_SYMBOL;
-    if (Object.hasOwn(annotation, "size") && (!Number.isFinite(nums[12]) || nums[12] <= 0)) throw new RangeError("Scene v12 marker annotation size must be finite and positive");
-  }
-  let anchor = 255;
-  if (Object.hasOwn(annotation, "anchor") || kind === "callout" || wrapped) {
-    const anchorCode = { start: 0, middle: 1, end: 2 }[annotation.anchor ?? "start"];
-    if (anchorCode == null) throw new RangeError(wrapped ? "Scene wrapped annotation anchor must be start, middle, or end" : "Scene callout anchor must be start, middle, or end");
-    anchor = anchorCode;
-    facts |= XYAF_FACT_HAS_ANCHOR;
-  }
-  const kindLabel = wrapped ? "wrapped" : kind;
-  if (Object.hasOwn(style, "opacity")) {
-    nums[13] = annotationNumber(style, "opacity", undefined, `${kindLabel} opacity`);
-    styleBits |= XYAF_STYLE_OPACITY;
-    if (!Number.isFinite(nums[13]) || nums[13] < 0 || nums[13] > 1) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : wrapped ? "Scene wrapped annotation values are invalid" : kind === "callout" ? "Scene callout opacity must be in [0, 1] and width must be positive" : `Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
-  }
-  if (Object.hasOwn(style, "width")) {
-    nums[14] = annotationNumber(style, "width", undefined, `${kindLabel} width`);
-    styleBits |= XYAF_STYLE_WIDTH;
-    if ((kind === "arrow" || kind === "callout") && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : "Scene callout opacity must be in [0, 1] and width must be positive");
-    if (kind === "rule" && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
-  }
-  if (Object.hasOwn(style, "stroke_width")) {
-    nums[15] = annotationNumber(style, "stroke_width", undefined, `${kind} width`);
-    styleBits |= XYAF_STYLE_STROKE_WIDTH;
-  }
-  if (Object.hasOwn(style, "label_opacity")) {
-    nums[16] = annotationNumber(style, "label_opacity", undefined, `${kind} label opacity`);
-    styleBits |= XYAF_STYLE_LABEL_OPACITY;
-  }
-  if (Object.hasOwn(style, "label_border_width")) {
-    nums[17] = annotationNumber(style, "label_border_width", undefined, `${kindLabel} label border width`);
-    styleBits |= XYAF_STYLE_LABEL_BORDER_WIDTH;
-    if (!Number.isFinite(nums[17]) || nums[17] <= 0) throw new RangeError("Scene v23 label border width must be positive and finite");
-  }
-  for (const [key, bit] of [["color", XYAF_STYLE_COLOR], ["stroke_color", XYAF_STYLE_STROKE_COLOR], ["label_color", XYAF_STYLE_LABEL_COLOR], ["label_background", XYAF_STYLE_LABEL_BACKGROUND], ["label_border_color", XYAF_STYLE_LABEL_BORDER_COLOR]]) {
-    if (Object.hasOwn(style, key)) {
-      const packed = rgba8(annotationColor(style, key, "", `${kindLabel} ${key.replaceAll("_", " ")}`), 1, kindLabel);
-      styleBits |= bit;
-      if (key === "color") color = packed;
-      else if (key === "stroke_color") stroke = packed;
-      else if (key === "label_color") labelColor = packed;
-      else if (key === "label_background") labelFill = packed;
-      else labelBorder = packed;
+    const axisName = annotation.axis;
+    if (axisName !== "x" && axisName !== "y") {
+      throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
     }
   }
-  if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError(wrapped ? "Scene wrapped label border requires color and width" : "Scene v23 label border requires color and width");
-  let parsedDash = null;
-  let parsedCap = null;
-  if (dispatch.packRuleDash || dispatch.packRuleLinecap) {
-    parsedDash = parseSceneDash(style.dash);
-    if (parsedDash === false) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
-    if (parsedDash) styleBits |= XYAF_STYLE_DASH;
-    parsedCap = packXyAfLinecap(style);
-    if (parsedCap === false) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
-    if (parsedCap != null) styleBits |= XYAF_STYLE_LINECAP;
+  if (kind === "marker" && Object.hasOwn(annotation, "symbol")) {
+    annotationSymbolCode(annotation.symbol);
   }
-  const out = new Uint8Array(232 + encoded.length);
-  const view = new DataView(out.buffer);
-  out[0] = 88; out[1] = 89; out[2] = 65; out[3] = 70; // XYAF
-  view.setUint32(4, 1, true);
-  view.setUint32(8, index >>> 0, true);
-  out[12] = kindCode;
-  out[13] = axisCode;
-  out[14] = symbol;
-  out[15] = anchor;
-  view.setUint32(16, facts >>> 0, true);
-  view.setUint32(20, styleBits >>> 0, true);
-  out[24] = parsedCap == null ? 255 : parsedCap;
-  out[25] = parsedDash ? parsedDash.length : 0;
-  view.setUint32(28, encoded.length, true);
-  for (let i = 0; i < 18; i += 1) view.setFloat64(32 + i * 8, nums[i], true);
-  out.set(color, 176);
-  out.set(stroke, 180);
-  out.set(labelColor, 184);
-  out.set(labelFill, 188);
-  out.set(labelBorder, 192);
-  if (parsedDash) {
-    for (let i = 0; i < parsedDash.length; i += 1) view.setFloat32(200 + i * 4, Number(parsedDash[i]), true);
+  if (Object.hasOwn(annotation, "anchor") || kind === "callout" || wrapped) {
+    const anchorName = annotation.anchor ?? "start";
+    if (!["start", "middle", "end"].includes(anchorName)) {
+      throw new RangeError(
+        wrapped
+          ? "Scene wrapped annotation anchor must be start, middle, or end"
+          : "Scene callout anchor must be start, middle, or end",
+      );
+    }
   }
-  out.set(encoded, 232);
-  return out;
+  for (const key of ["color", "stroke_color", "label_color", "label_background", "label_border_color"]) {
+    if (Object.hasOwn(style, key)) {
+      annotationColor(style, key, "", `${kindLabel} ${key.replaceAll("_", " ")}`);
+    }
+  }
+  if (Object.hasOwn(style, "opacity")) {
+    const opacity = annotationNumber(style, "opacity", null, `${kindLabel} opacity`);
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+      if (kind === "arrow") throw new RangeError("Scene arrow opacity must be in [0, 1] and width must be positive");
+      if (wrapped) throw new RangeError("Scene wrapped annotation opacity must be in [0, 1]");
+      if (kind === "callout") throw new RangeError("Scene callout opacity must be in [0, 1] and width must be positive");
+      throw new RangeError(`Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
+    }
+  }
+  if (Object.hasOwn(style, "width")) {
+    const width = annotationNumber(style, "width", null, `${kindLabel} width`);
+    if ((kind === "arrow" || kind === "callout") && (!Number.isFinite(width) || width <= 0)) {
+      throw new RangeError(
+        kind === "arrow"
+          ? "Scene arrow opacity must be in [0, 1] and width must be positive"
+          : "Scene callout opacity must be in [0, 1] and width must be positive",
+      );
+    }
+    if (kind === "rule" && (!Number.isFinite(width) || width <= 0)) {
+      throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
+    }
+  }
+  if (Object.hasOwn(style, "stroke_width")) {
+    const strokeWidth = annotationNumber(style, "stroke_width", null, `${kind} width`);
+    if (!Number.isFinite(strokeWidth) || strokeWidth < 0) {
+      throw new RangeError(`Scene v12 ${kind} annotation width must be finite and nonnegative`);
+    }
+  }
+  if (Object.hasOwn(style, "label_opacity")) {
+    const labelOpacity = annotationNumber(style, "label_opacity", null, `${kind} label opacity`);
+    if (!Number.isFinite(labelOpacity) || labelOpacity < 0 || labelOpacity > 1) {
+      throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
+    }
+  }
+  if (Object.hasOwn(style, "label_border_width")) {
+    const borderWidth = annotationNumber(style, "label_border_width", null, `${kindLabel} label border width`);
+    if (!Number.isFinite(borderWidth) || borderWidth <= 0) {
+      throw new RangeError("Scene v23 label border width must be positive and finite");
+    }
+  }
+}
+
+function raiseXyafBulkError(error, annotations) {
+  const code = Number(error.code ?? 0);
+  const index = Number(error.index ?? 0);
+  const annotation = annotations[index] ?? {};
+  const kind = String(annotation.kind ?? "");
+  const style = { ...(annotation.style ?? {}) };
+  if (code === -3) {
+    throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+  }
+  if (code === -7) {
+    throw new RangeError("Scene arrows do not encode text or class_name");
+  }
+  if (code === -5) {
+    if (kind === "callout") throw new RangeError("Scene callouts require nonempty NUL-free text");
+    if (kind === "text") throw new RangeError("Scene v16 text annotations require nonempty NUL-free text");
+    throw new RangeError("Scene v16 annotation labels require nonempty NUL-free text");
+  }
+  if (code === -4) {
+    if (kind === "text") {
+      throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
+    }
+    throw new RangeError(`Scene v12 ${kind} annotation style does not encode unsupported keys`);
+  }
+  if (code === -8) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
+  if (code === -9) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
+  if (code === -10) {
+    const symbolName = String(annotation.symbol ?? "circle");
+    throw new RangeError(`Scene v12 does not support marker symbol ${JSON.stringify(symbolName)}`);
+  }
+  if (code === -11) throw new RangeError("Scene callout anchor must be start, middle, or end");
+  if (code === -12) throw new RangeError("Scene v23 label border requires color and width");
+  if (code === -13) throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
+  if (code === -6) {
+    if (Object.hasOwn(style, "label_opacity")) {
+      throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
+    }
+    if (Object.hasOwn(style, "opacity")) {
+      throw new RangeError(`Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
+    }
+    if (Object.hasOwn(style, "label_border_width")) {
+      throw new RangeError("Scene v23 label border width must be positive and finite");
+    }
+    if (Object.hasOwn(style, "width") && kind === "rule") {
+      throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
+    }
+    throw new RangeError(`Scene v12 annotation values are invalid at index ${index}`);
+  }
+  throw error;
+}
+
+function packXyAfBulk(annotations) {
+  if (!annotations.length) return new Uint8Array();
+  const normalized = annotations.map((annotation) => {
+    const ann = { ...annotation };
+    const kind = ann.kind;
+    const style = { ...(ann.style ?? {}) };
+    if (["text", "marker"].includes(kind) && !Object.hasOwn(ann, "rotation") && style.rotation != null) {
+      ann.rotation = style.rotation;
+    }
+    validateXyafAnnotationStyle(ann);
+    validateXyafAnnotationValues(ann);
+    return ann;
+  });
+  try {
+    return sceneXyafBulkPack(normalized);
+  } catch (error) {
+    raiseXyafBulkError(error, normalized);
+  }
+}
+
+function packXyAf(annotation, index) {
+  annotation = { ...annotation };
+  const kind = annotation.kind;
+  const style = { ...(annotation.style ?? {}) };
+  if (["text", "marker"].includes(kind) && !Object.hasOwn(annotation, "rotation") && style.rotation != null) {
+    annotation.rotation = style.rotation;
+  }
+  return sceneXyafBulkPack([annotation], { indices: [Number(index)] });
 }
 
 function packAnnotationFacts(facts, styleRefBase, xDomain, yDomain) {
@@ -1363,40 +1406,40 @@ function polarRScale(axis = {}) {
 }
 
 export function packPolarSceneInput(figure) {
-  const figurePlan = scenePolarFigurePlan({ polar: (figure.coords ?? "cartesian") === "polar" });
-  if (!figurePlan.attachXypl) return new Uint8Array();
   const axes = figureAxisOptions(figure) ?? {};
-  const thetaAxis = axes.x ?? {};
-  const rAxis = axes.y ?? {};
-  const unit = polarAxisThetaUnit(thetaAxis);
+  const xa = axes.x ?? {};
+  const ya = axes.y ?? {};
+  const unit = polarAxisThetaUnit(xa);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
-  const sector = polarAxisSector(thetaAxis) ?? [0, turn];
-  const categories = thetaAxis.categories ?? [];
+  const sector = polarAxisSector(xa) ?? [0, turn];
   const [rLo, rHi] = figure._range("y");
-  const origin = polarAxisROrigin(rAxis);
-  const scale = polarRScale(rAxis);
-  const grid = polarGridShape(thetaAxis);
-  const out = new Uint8Array(92);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8("XYPL").slice(0, 4), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, polarThetaUnit(unit), true);
-  view.setUint32(12, polarThetaDirection(polarAxisThetaDirection(thetaAxis)), true);
-  view.setUint32(16, categories.length, true);
-  view.setUint32(20, scale.kind, true);
-  out[24] = grid === "linear" ? 1 : 0;
-  out[25] = scale.maskNonpositive ? 1 : 0;
-  view.setUint16(26, 0, true);
-  view.setFloat64(28, polarThetaZero(polarAxisThetaZero(thetaAxis)), true);
-  view.setFloat64(36, Number(sector[0]), true);
-  view.setFloat64(44, Number(sector[1]), true);
-  view.setFloat64(52, Number(rLo), true);
-  view.setFloat64(60, Number(rHi), true);
-  view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
-  view.setFloat64(76, Number(polarAxisHole(rAxis) || 0), true);
-  view.setFloat64(84, scale.constant, true);
-  return out;
+  const origin = polarAxisROrigin(ya);
+  const scale = polarRScale(ya);
+  const grid = polarGridShape(xa);
+  const thetaZero = polarAxisThetaZero(xa);
+  const thetaZeroIsLabel = typeof thetaZero === "string";
+  return scenePolarInputPack({
+    polar: (figure.coords ?? "cartesian") === "polar",
+    theta_unit: polarThetaUnit(unit),
+    theta_direction: polarThetaDirection(polarAxisThetaDirection(xa)),
+    n_categories: (xa.categories ?? []).length,
+    grid_shape: grid === "linear" ? 1 : 0,
+    r_scale_kind: scale.kind,
+    r_mask_nonpositive: scale.maskNonpositive,
+    sector_start: Number(sector[0]),
+    sector_end: Number(sector[1]),
+    r_lo: Number(rLo),
+    r_hi: Number(rHi),
+    r_origin_is_nan: origin == null,
+    r_origin: origin == null ? Number.NaN : Number(origin),
+    hole: Number(polarAxisHole(ya) || 0),
+    r_constant: scale.constant,
+    theta_zero_is_label: thetaZeroIsLabel,
+    theta_zero_label: thetaZeroIsLabel ? String(thetaZero) : "",
+    theta_zero_numeric: polarThetaZero(thetaZero),
+  });
 }
+
 
 function encodeUtf8Magic(text) {
   return encodeUtf8(text).slice(0, 4);
@@ -1538,7 +1581,7 @@ function normalizeFillSpec(fill) {
 export function constantMarkColor(trace) {
   const channel = trace.color_ch;
   if (classifyRibbonColor2(trace) === "fail") return null;
-  const hasChannel = channel != null;
+  const hasChannel = channel != null && typeof channel === "object";
   const constantOk =
     hasChannel
     && channel.mode === "constant"
@@ -1650,12 +1693,15 @@ export function channelEndRgba8(channel, n, fallback) {
         const codes = channel.codes;
         const paletteSrc = channel.palette;
         const palette = [...(paletteSrc != null && paletteSrc.length ? paletteSrc : DEFAULT_PALETTE)];
-        const css = [];
-        for (let i = 0; i < codes.length; i += 1) {
+        if (codes.length !== n) return null;
+        const lut = paletteRowsRgba8(palette, palette.length);
+        const out = new Uint8Array(n * 4);
+        for (let i = 0; i < n; i += 1) {
           const code = Number(codes[i]);
-          css.push(palette[((code % palette.length) + palette.length) % palette.length]);
+          const idx = ((code % palette.length) + palette.length) % palette.length;
+          out.set(lut.subarray(idx * 4, idx * 4 + 4), i * 4);
         }
-        return channelEndRgba8({ mode: "direct_rgba", rgba: cssColorsToRgba8(css) }, n, fallback);
+        return out;
       } catch {
         return null;
       }
@@ -1705,6 +1751,39 @@ function admitFillGradient(trace) {
     css.push(String(stop[1]));
   }
   const rgba = sceneFillGradientAdmit(spec.space, spec.dir, ts, css, markColor);
+  if (rgba == null) return null;
+  return { space: spec.space, dir: spec.dir, stops: ts.map((t, i) => [t, rgba[i]]) };
+}
+
+function admitFillGradientFromFill(fill, markColor) {
+  let spec = null;
+  if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+    spec = fill;
+  } else if (fill != null && typeof fill === "object") {
+    const extra = Object.keys(fill).filter((key) => key !== "gradient" && key !== "space");
+    if (extra.length) return null;
+    const gradient = fill.gradient;
+    if (typeof gradient !== "string") return null;
+    const space = fill.space == null ? "mark" : String(fill.space);
+    spec = sceneParseLinearGradient(gradient, space);
+  } else if (typeof fill === "string") {
+    spec = sceneParseLinearGradient(fill, "mark");
+  } else {
+    return null;
+  }
+  if (spec == null) return null;
+  const stops = spec.stops;
+  if (!Array.isArray(stops)) return null;
+  const ts = [];
+  const css = [];
+  for (const stop of stops) {
+    if (!Array.isArray(stop) || stop.length !== 2) return null;
+    const t = Number(stop[0]);
+    if (!Number.isFinite(t)) return null;
+    ts.push(t);
+    css.push(String(stop[1]));
+  }
+  const rgba = sceneFillGradientAdmit(String(spec.space), String(spec.dir), ts, css, markColor);
   if (rgba == null) return null;
   return { space: spec.space, dir: spec.dir, stops: ts.map((t, i) => [t, rgba[i]]) };
 }
@@ -2823,94 +2902,139 @@ function significantSceneAxisKeys(options, polar = false) {
   return keys;
 }
 
-function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
-  const chromeStyles = figureChromeStyles(figure) ?? {};
-  const annotations = [...(figure.annotations ?? [])];
-  const figurePlan = sceneFigureSupportFigurePlan({ polar: figure.coords === "polar" });
-  const polar = figurePlan.polar;
-  let flags = 0;
-  if (polar) flags |= 1 << 0;
-  if (
-    Object.values(chromeStyles).some((style) => chromeStyleHasFontFamily(style))
-    || annotations.some((annotation) => annotationHasCustomTypography(annotation))
-  ) flags |= 1 << 1;
-  // Scene static paint/measure is DejaVu Sans (#288). Custom font-family,
-  // chart/theme CSS, and class_name are XYFS observations; Rust reports
-  // CUSTOM_FONT / BROWSER_CSS. Live browser widgets still apply CSS.
-  if (
-    figureClassName(figure)
-    || Object.keys(figureClassNames(figure) ?? {}).length
-    || Object.keys(chromeStyles).length
-    || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
-    || annotations.some((annotation) => {
-      const name = annotationClassName(annotation);
-      return name != null && name !== "";
-    })
-  ) flags |= 1 << 2;
-  if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
-  if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
-  if (annotations.some((annotation) => annotationHasMarkup(annotation))) flags |= 1 << 9;
-  if ((figure.traces ?? []).some((trace) => (
-    classifyRibbonColor2(trace) === "fail"
-    || (
-      scatterHasNonConstantColor(trace)
-      && !scatterUsesDensity(trace)
+function optionalStr(value) {
+  if (value == null) return null;
+  const text = String(value);
+  return text ? text : null;
+}
+
+function marshalTraceSupportObs(trace, polar) {
+  const kind = String(trace.kind || "mark");
+  const style = trace.style ?? {};
+  const fill = style.fill;
+  let radiusValues;
+  let radiusSeq;
+  if (Array.isArray(style.corner_radius)) {
+    radiusValues = style.corner_radius.map(Number);
+    radiusSeq = true;
+  } else {
+    radiusValues = [Number(style.corner_radius ?? 0)];
+    radiusSeq = false;
+  }
+  const markerPath = style.marker_path;
+  let markerPathValid = false;
+  let markerPathFilledSmall = false;
+  if (markerPath != null && kind === "scatter") {
+    const validated = validateMarkerPath(markerPath);
+    if (validated != null) {
+      markerPathValid = true;
+      markerPathFilledSmall = validated.filled && validated.contours.some((contour) => contour.length < 6);
+    }
+  }
+  let dashPresent = style.dash != null;
+  let dashText = null;
+  let dashIsArray = false;
+  if (dashPresent) {
+    const parsed = parseSceneDash(style.dash);
+    if (parsed === false) {
+      dashText = "";
+    } else if (parsed == null) {
+      dashPresent = false;
+    } else if (Array.isArray(parsed)) {
+      dashText = parsed.map((part) => String(part)).join(",");
+    } else {
+      dashText = optionalStr(style.dash);
+    }
+  }
+  return {
+    kind,
+    x_axis: String(trace.x_axis ?? "x"),
+    y_axis: String(trace.y_axis ?? "y"),
+    hidden: Boolean(trace.hidden),
+    has_per_item_channels: perItemChannelNames(trace).length > 0,
+    density_aggregates_color: densityAggregatesColor(trace),
+    marker_glyph_present: style.marker_glyph != null,
+    marker_glyph: optionalStr(style.marker_glyph),
+    marker_path_present: markerPath != null,
+    marker_path_valid: markerPathValid,
+    marker_path_filled_small: markerPathFilledSmall,
+    curve_present: style.curve != null,
+    curve: optionalStr(style.curve),
+    linecap_present: style.linecap != null,
+    linecap: optionalStr(style.linecap),
+    dash_present: dashPresent,
+    dash_text: dashText,
+    dash_is_array: dashIsArray,
+    fill_present: Object.hasOwn(style, "fill"),
+    fill_is_string: typeof fill === "string",
+    fill_gradient_admitted: admitFillGradient(trace) != null,
+    hexbin_reduce: optionalStr(style.reduce),
+    heatmap_truecolor: Boolean(trace.truecolor),
+    heatmap_has_colormap: trace.colormap != null,
+    heatmap_has_rgba_grid: trace.rgba_grid != null,
+    heatmap_has_rgba: trace.rgba != null,
+    rect_gradient_fail: typeof fill === "object" && fill != null && admitFillGradientFromFill(fill, "#3987e5") == null,
+    corner_radius_values: radiusValues,
+    corner_radius_seq: radiusSeq,
+    wedge_gap: Number(style.wedge_gap ?? 0),
+    ribbon_color2_fail: classifyRibbonColor2(trace) === "fail",
+    color_channel_unsupported: (
+      trace.color_ch != null
+      && typeof trace.color_ch === "object"
+      && (trace.color_ch.mode !== "constant" || trace.color_ch.constant == null)
+      && !(kind === "scatter" && scatterUsesDensity(trace))
       && !hexbinPacksPaintPlane(trace)
       && !meshPacksPaintPlane(trace)
       && !scatterPacksPaintPlane(trace)
-      && !(figure.coords !== "polar" && ribbonPacksEndPaints(trace))
-    )
-    || (
-      fillIsGradientAuthoring(trace.style?.fill)
-      && admitFillGradient(trace) == null
-    )
-  ))) flags |= 1 << 3;
-  if (colorbarUnsupported) flags |= 1 << 4;
-  if ((figureExtraLegends(figure) ?? []).length) flags |= 1 << 5;
-  if (annotations.some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) flags |= 1 << 7;
-  const traces = [...(figure.traces ?? [])];
-  const axisEntries = [];
-  const seenAxes = new Set();
-  const addAxis = (axisId, options) => {
-    if (seenAxes.has(axisId)) return;
-    seenAxes.add(axisId);
-    axisEntries.push([axisId, options ?? {}]);
+      && !(!polar && ribbonPacksEndPaints(trace))
+    ),
   };
-  const axes = figureAxisOptions(figure) ?? {};
-  if (axes && typeof axes === "object") {
-    for (const [axisId, options] of Object.entries(axes)) addAxis(axisId, options);
-  }
-  addAxis("x", axes.x ?? {});
-  addAxis("y", axes.y ?? {});
-  const parts = [new Uint8Array(20)];
-  const header = new DataView(parts[0].buffer);
-  parts[0].set([88, 89, 70, 83]); // XYFS
-  header.setUint32(4, 2, true);
-  header.setUint32(8, flags, true);
-  header.setUint32(12, axisEntries.length, true);
-  header.setUint32(16, traces.length, true);
-  for (const [axisId, options] of axisEntries) {
-    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
-    const keys = significantSceneAxisKeys(options, polar);
-    const axis = new Uint8Array(8);
-    axis[0] = axisCode;
-    new DataView(axis.buffer).setUint32(4, keys.length, true);
-    parts.push(axis);
-    for (const key of keys) parts.push(encodeExportKey(key));
-  }
-  for (const trace of traces) {
-    const { flags: traceFlags, kind } = figureTraceSupport(figure, trace);
-    const kindBytes = new TextEncoder().encode(kind.slice(0, 32));
-    const row = new Uint8Array(8 + kindBytes.length);
-    const view = new DataView(row.buffer);
-    view.setUint16(0, traceFlags, true);
-    row[2] = kindBytes.length;
-    row.set(kindBytes, 8);
-    parts.push(row);
-  }
-  return concatBytes(parts);
 }
 
+function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
+  const chromeStyles = figureChromeStyles(figure) ?? {};
+  const annotations = [...(figure.annotations ?? [])];
+  const polar = (figure.coords ?? "cartesian") === "polar";
+  const annRows = annotations.map((annotation) => ({
+    has_html: annotation.html != null && annotation.html !== "",
+    has_collision: annotation.collision != null && annotation.collision !== "",
+    has_markup: annotationHasMarkup(annotation),
+    has_custom_typography: annotationHasCustomTypography(annotation),
+    has_class_name: annotation.class_name != null && annotation.class_name !== "",
+    kind_is_supported_text: ["callout", "arrow", "text"].includes(annotation.kind),
+    has_text: annotation.text != null && annotation.text !== "",
+  }));
+  const axes = [];
+  for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {
+    axes.push({
+      axis_code: axisId === "x" ? 0 : axisId === "y" ? 1 : 255,
+      keys: significantSceneAxisKeys(options, polar),
+      tick_label_strategy: optionalStr(options.tick_label_strategy),
+      collision: optionalStr(options.collision),
+    });
+  }
+  const traces = (figure.traces ?? []).map((trace) => marshalTraceSupportObs(trace, polar));
+  return sceneFigureSupportMaterialize({
+    polar,
+    colorbarUnsupported,
+    hasCustomFont: Object.values(chromeStyles).some((style) => Object.hasOwn(style ?? {}, "font-family"))
+      || annotations.some((annotation) => annotationHasCustomTypography(annotation)),
+    hasBrowserCss: Boolean(
+      figureClassName(figure)
+      || Object.keys(figureClassNames(figure) ?? {}).length
+      || Object.keys(chromeStyles).length
+      || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
+      || annotations.some((annotation) => {
+        const name = annotationClassName(annotation);
+        return name != null && name !== "";
+      }),
+    ),
+    hasExtraLegends: (figureExtraLegends(figure) ?? []).length > 0,
+    annotations: annRows,
+    axes,
+    traces,
+  });
+}
 function sceneFigureSupportReason(figure, { colorbarUnsupported = false } = {}) {
   const envelope = packFigureSupport(figure, { colorbarUnsupported });
   const requiredRaw = xySceneFigureSupportReason(
@@ -3560,174 +3684,228 @@ export function packXyTcStrokeWidth(style) {
   };
 }
 
+function xytcFillKind(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "fill")) return 0;
+  const fill = record.fill;
+  if (typeof fill === "string") return 1;
+  if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+    return 2;
+  }
+  if (fill != null && typeof fill === "object") return 3;
+  return 1;
+}
+
+export function marshalXyTcTraceObs(trace, showLegend) {
+  const style = trace.style ?? {};
+  const kindName = String(trace.kind ?? "");
+  const nan = Number.NaN;
+  const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
+  const symbolRaw = style.symbol ?? "circle";
+  let symbolIsInt = 0;
+  let symbolInt = 0;
+  let symbolText = String(symbolRaw || "circle");
+  if (typeof symbolRaw === "number" && typeof symbolRaw !== "boolean") {
+    symbolIsInt = 1;
+    symbolInt = Number(symbolRaw);
+    symbolText = null;
+  }
+  const sizeCh = trace.size_ch;
+  const sizeChConstant = sizeCh?.constant;
+  const rawDx = style.hex_dx ?? style.dx;
+  const rawDy = style.hex_dy ?? style.dy;
+  const dash = style.dash;
+  let dashText = null;
+  let dashValues = [];
+  let dashIsArray = 0;
+  if (typeof dash === "string") dashText = dash;
+  else if (Array.isArray(dash)) {
+    dashIsArray = 1;
+    try {
+      dashValues = dash.map((part) => {
+        const value = Number(part);
+        if (!Number.isFinite(value)) throw new RangeError("invalid dash part");
+        return value;
+      });
+    } catch {
+      dashValues = [];
+    }
+  }
+  const perimeterPresent = Object.hasOwn(style, "stroke_perimeter");
+  let perimeterIsBool = 0;
+  let perimeterTrue = 0;
+  if (perimeterPresent) {
+    const perimeter = style.stroke_perimeter;
+    perimeterIsBool = typeof perimeter === "boolean" ? 1 : 0;
+    perimeterTrue = perimeterIsBool && perimeter === true ? 1 : 0;
+  }
+  const radius = style.corner_radius ?? 0;
+  let radiusSeq = 1;
+  let r0 = Number(radius) || 0;
+  let r1 = 0;
+  if (Array.isArray(radius) && radius.length === 2) {
+    radiusSeq = 2;
+    r0 = Number(radius[0]);
+    r1 = Number(radius[1]);
+  }
+  const channel = trace.color_ch;
+  const colorChPresent = channel != null && typeof channel === "object" ? 1 : 0;
+  const colorChHasConstant = colorChPresent && channel.constant != null ? 1 : 0;
+  const color2 = trace.color2_ch;
+  const hasColor2 = color2 != null;
+  const kindIsRibbon = kindName === "ribbon";
+  const hasFill = Object.hasOwn(style, "fill");
+  const color2SourceConst = channelConstantCss(trace.color_ch);
+  const color2TargetConst = hasColor2 ? channelConstantCss(color2) : null;
+  let hasEndPair = false;
+  if (hasColor2 && kindIsRibbon) {
+    const bothConst = color2TargetConst != null && color2SourceConst != null;
+    if (!bothConst && !hasFill) hasEndPair = ribbonEndRgbaPair(trace) != null;
+  }
+  return {
+    show_legend: showLegend,
+    kind: kindName,
+    has_name: Boolean(name),
+    name,
+    marker_path_present: kindName === "scatter" && style.marker_path != null,
+    use_density: kindName === "scatter" && scatterUsesDensity(trace),
+    joined_fill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
+    symbol_is_int: symbolIsInt,
+    symbol_int: symbolInt,
+    symbol_text: symbolText,
+    opacity: Number(style.opacity ?? 1),
+    fill_opacity: Number(style.fill_opacity ?? 1),
+    stroke_opacity: Number(style.stroke_opacity ?? 1),
+    line_opacity: Number(style.line_opacity ?? 1),
+    has_stroke: Object.hasOwn(style, "stroke"),
+    stroke: style.stroke,
+    has_line_color: Object.hasOwn(style, "line_color"),
+    line_color: style.line_color,
+    has_color: Object.hasOwn(style, "color"),
+    color: style.color,
+    has_size: Object.hasOwn(style, "size"),
+    size: Object.hasOwn(style, "size") ? Number(style.size) : nan,
+    has_size_ch: sizeCh != null,
+    has_size_ch_constant: sizeChConstant != null,
+    size_ch_constant: sizeChConstant != null ? Number(sizeChConstant) : nan,
+    has_stroke_width: Object.hasOwn(style, "stroke_width"),
+    stroke_width: Object.hasOwn(style, "stroke_width") ? Number(style.stroke_width) : 0,
+    has_width: Object.hasOwn(style, "width"),
+    width: Object.hasOwn(style, "width") ? Number(style.width) : 0,
+    has_line_width: Object.hasOwn(style, "line_width"),
+    line_width: Object.hasOwn(style, "line_width") ? Number(style.line_width) : 0,
+    has_hex_dx: rawDx != null,
+    hex_dx: rawDx != null ? Number(rawDx) : nan,
+    has_hex_dy: rawDy != null,
+    hex_dy: rawDy != null ? Number(rawDy) : nan,
+    has_stroke_perimeter: perimeterPresent,
+    stroke_perimeter_is_bool: perimeterIsBool,
+    stroke_perimeter_true: perimeterTrue,
+    wedge_gap_raw: Number(style.wedge_gap ?? 0) || 0,
+    dash_is_array: dashIsArray,
+    dash_text: dashText,
+    dash_values: dashValues,
+    has_fill: hasFill,
+    fill: hasFill ? style.fill : null,
+    marker_path: style.marker_path,
+    marker_glyph: style.marker_glyph,
+    has_color2: hasColor2,
+    kind_is_ribbon: kindIsRibbon,
+    color2_source_const: color2SourceConst,
+    color2_target_const: color2TargetConst,
+    source_paint: sourceColorCss(trace),
+    has_end_pair: hasEndPair,
+    corner_radius_seq: radiusSeq,
+    corner_radius_r0: r0,
+    corner_radius_r1: r1,
+    color_ch_present: colorChPresent,
+    color_ch_has_constant: colorChHasConstant,
+    color_ch_mode: channel == null || typeof channel !== "object" ? null : String(channel.mode ?? ""),
+    color_ch_constant: colorChHasConstant ? String(channel.constant) : null,
+    linecap: style.linecap,
+    step: style.step,
+    curve: style.curve,
+  };
+}
+
+function marshalXyTcTraceRecord(trace, showLegend) {
+  const obs = marshalXyTcTraceObs(trace, showLegend);
+  const materialized = sceneXyTcTraceObservationsMaterialize(obs);
+  return sceneXytcTracePack({
+    showLegend: materialized.showLegend,
+    kind: materialized.kind,
+    hasName: materialized.hasName,
+    name: materialized.name,
+    markerPathPresent: materialized.markerPathPresent,
+    useDensity: materialized.useDensity,
+    joinedFill: materialized.joinedFill,
+    markerPacked: materialized.markerPacked,
+    glyphPacked: materialized.glyphPacked,
+    markerBlob: materialized.markerBlob,
+    color2Class: materialized.color2Class,
+    color2GradientBlob: materialized.color2GradientBlob,
+    color2GradientPacked: materialized.color2GradientPacked,
+    style: {
+      symbolIsInt: materialized.style.symbolIsInt,
+      symbolInt: materialized.style.symbolInt,
+      opacity: materialized.style.opacity,
+      fillOpacity: materialized.style.fillOpacity,
+      strokeOpacity: materialized.style.strokeOpacity,
+      lineOpacity: materialized.style.lineOpacity,
+      hasStroke: materialized.style.hasStroke,
+      hasLineColor: materialized.style.hasLineColor,
+      hasSize: materialized.style.hasSize,
+      size: materialized.style.size,
+      hasSizeCh: materialized.style.hasSizeCh,
+      hasSizeChConstant: materialized.style.hasSizeChConstant,
+      sizeChConstant: materialized.style.sizeChConstant,
+      hasStrokeWidth: materialized.style.hasStrokeWidth,
+      strokeWidth: materialized.style.strokeWidth,
+      hasWidth: materialized.style.hasWidth,
+      width: materialized.style.width,
+      hasLineWidth: materialized.style.hasLineWidth,
+      lineWidth: materialized.style.lineWidth,
+      hasHexDx: materialized.style.hasHexDx,
+      hexDx: materialized.style.hexDx,
+      hasHexDy: materialized.style.hasHexDy,
+      hexDy: materialized.style.hexDy,
+      hasStrokePerimeter: materialized.style.hasStrokePerimeter,
+      strokePerimeterIsBool: materialized.style.strokePerimeterIsBool,
+      strokePerimeterTrue: materialized.style.strokePerimeterTrue,
+      dashIsArray: materialized.style.dashIsArray,
+      hasFill: materialized.style.hasFill,
+      fillKind: materialized.style.fillKind,
+      colorChPresent: materialized.style.colorChPresent,
+      colorChHasConstant: materialized.style.colorChHasConstant,
+      radiusSeq: materialized.style.radiusSeq,
+      r0: materialized.style.r0,
+      r1: materialized.style.r1,
+      wedgeGapRaw: materialized.style.wedgeGapRaw,
+    },
+    symbolB: materialized.symbolB,
+    dashB: materialized.dashB,
+    dashPattern: materialized.dashPattern,
+    linecapB: materialized.linecapB,
+    stepB: materialized.stepB,
+    curveB: materialized.curveB,
+    fillCss: materialized.fillCss,
+    fillSpace: materialized.fillSpace,
+    fillGradientBlob: materialized.fillGradientBlob,
+    strokeCss: materialized.strokeCss,
+    lineColor: materialized.lineColor,
+    colorCss: materialized.colorCss,
+    colorMode: materialized.colorMode,
+    colorConst: materialized.colorConst,
+  });
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
   const figurePlan = sceneXytcFigurePlan({ showLegend: figureShowLegend(figure) !== false });
   const showLegend = figurePlan.showLegend;
   for (const trace of traces) {
-    const style = trace.style ?? {};
-    let flags = 0;
-    const kindName = String(trace.kind ?? "");
-    const kind = encodeUtf8(kindName);
-    const dispatch = sceneXytcTraceDispatchPlan({
-      kind: kindName,
-      markerPathPresent: kindName === "scatter" && style.marker_path != null,
-      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-      joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
-    });
-    const kindClass = dispatch.kindClass;
-    const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
-    const nameB = encodeUtf8(name);
-    const packedSymbol = packXyTcSymbol(style);
-    flags |= packedSymbol.flags;
-    const symbolB = packedSymbol.symbolB;
-    let symbolInt = packedSymbol.symbolInt;
-    const opacity = Number(style.opacity ?? 1);
-    const packedOpacity = sceneXytcOpacityPack(
-      dispatch.packOpacity ? 1 : 0,
-      kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
-      style,
-    );
-    const fillOpacity = packedOpacity.fillOpacity;
-    const strokeOpacity = packedOpacity.strokeOpacity;
-    const lineOpacity = packedOpacity.lineOpacity;
-    const packedNumeric = sceneXytcNumericStylePack(trace, style);
-    flags |= packedNumeric.flags;
-    const size = packedNumeric.size;
-    const sizeCh = packedNumeric.sizeCh;
-    let strokeWidth = packedNumeric.strokeWidth;
-    let width = packedNumeric.width;
-    let lineWidth = packedNumeric.lineWidth;
-    let hexDx = Number.NaN;
-    let hexDy = Number.NaN;
-    if (dispatch.packHexPitch) {
-      const packedHex = sceneXytcHexPitchPack(1, style);
-      flags |= packedHex.flags;
-      hexDx = packedHex.hexDx;
-      hexDy = packedHex.hexDy;
-    }
-    if (dispatch.packStrokePerimeter) {
-      flags |= packXyTcStrokePerimeter(style, kindClass);
-    }
-    const packedDash = packXyTcDash(style);
-    flags |= packedDash.flags;
-    const dashB = packedDash.dashB;
-    const dashPattern = packedDash.pattern;
-    const linecapB = packXyTcLinecap(style);
-    const stepB = style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array();
-    const curveB = style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array();
-    let fillCss = new Uint8Array();
-    let fillSpace = new Uint8Array();
-    let gradientBlob = new Uint8Array();
-    flags |= packXyTcPaintPresence(style);
-    if (Object.hasOwn(style, "fill")) {
-      const fill = style.fill;
-      if (typeof fill === "string") fillCss = encodeUtf8(fill);
-      else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
-        gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
-      } else if (fill != null && typeof fill === "object") {
-        fillCss = encodeUtf8(String(fill.gradient ?? ""));
-        fillSpace = encodeUtf8(String(fill.space ?? "mark"));
-      }
-    }
-    let strokeCss = new Uint8Array();
-    if (Object.hasOwn(style, "stroke")) {
-      strokeCss = encodeUtf8(style.stroke);
-    }
-    let lineColor = new Uint8Array();
-    const packedLineColor = packXyTcLineColor(style);
-    if (packedLineColor.flags) {
-      lineColor = packedLineColor.bytes;
-    }
-    const colorCss = encodeUtf8(style.color ?? "");
-    let colorMode = new Uint8Array();
-    let colorConst = new Uint8Array();
-    const packedChannel = packXyTcColorChannel(trace);
-    if (packedChannel.flags) {
-      flags |= packedChannel.flags;
-      colorMode = packedChannel.mode;
-      colorConst = packedChannel.constant;
-    }
-    if (dispatch.packColor2) {
-      const packedColor2 = packXyTcColor2(trace, flags, gradientBlob);
-      flags |= packedColor2.flags;
-      gradientBlob = packedColor2.gradientBlob;
-    }
-    let markerBlob = new Uint8Array();
-    let markerPathPresent = 0;
-    let markerPacked = 0;
-    let glyphPacked = 0;
-    if (dispatch.markerPathBranch) {
-      markerPathPresent = 1;
-      const packed = packMarkerBlob(style.marker_path);
-      if (packed) {
-        markerPacked = 1;
-        markerBlob = packed;
-      }
-    } else if (dispatch.markerGlyphBranch) {
-      const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
-      if (packedGlyph != null) {
-        glyphPacked = 1;
-        markerBlob = packedGlyph;
-      }
-    }
-    flags |= packXyTcMetaFlags(trace, showLegend, {
-      markerPathPresent,
-      markerPacked,
-      glyphPacked,
-    });
-    let rTip = 0;
-    let rBase = 0;
-    let wedgeGap = 0;
-    if (dispatch.packRadius) {
-      const packedRadius = sceneXytcRadiusPack(trace.kind, style);
-      flags |= packedRadius.flags;
-      rTip = packedRadius.rTip;
-      rBase = packedRadius.rBase;
-      wedgeGap = packedRadius.wedgeGap;
-    }
-    const prefix = new Uint8Array(160);
-    const view = new DataView(prefix.buffer);
-    prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
-    view.setUint16(4, 1, true);
-    view.setUint16(6, kind.length, true);
-    view.setUint32(8, flags >>> 0, true);
-    view.setUint16(12, nameB.length, true);
-    view.setUint16(14, symbolB.length, true);
-    view.setFloat64(16, opacity, true);
-    view.setFloat64(24, fillOpacity, true);
-    view.setFloat64(32, strokeOpacity, true);
-    view.setFloat64(40, lineOpacity, true);
-    view.setFloat64(48, size, true);
-    view.setFloat64(56, sizeCh, true);
-    view.setFloat64(64, strokeWidth, true);
-    view.setFloat64(72, width, true);
-    view.setFloat64(80, lineWidth, true);
-    view.setFloat64(88, hexDx, true);
-    view.setFloat64(96, hexDy, true);
-    view.setUint16(104, dashB.length, true);
-    view.setUint16(106, linecapB.length, true);
-    view.setUint16(108, stepB.length, true);
-    view.setUint16(110, curveB.length, true);
-    view.setUint16(112, fillCss.length, true);
-    view.setUint16(114, strokeCss.length, true);
-    view.setUint16(116, lineColor.length, true);
-    view.setUint16(118, colorCss.length, true);
-    view.setUint16(120, colorMode.length, true);
-    view.setUint16(122, colorConst.length, true);
-    view.setUint16(124, fillSpace.length, true);
-    view.setUint16(126, symbolInt, true);
-    view.setUint32(128, dashPattern.length, true);
-    view.setUint32(132, markerBlob.length, true);
-    view.setUint32(136, gradientBlob.length, true);
-    view.setFloat64(140, rTip, true);
-    view.setFloat64(148, rBase, true);
-    view.setFloat32(156, wedgeGap, true);
-    const pattern = new Uint8Array(dashPattern.length * 8);
-    const patternView = new DataView(pattern.buffer);
-    dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));
-    records.push(prefix, kind, nameB, symbolB, dashB, linecapB, stepB, curveB, fillCss, strokeCss, lineColor, colorCss, colorMode, colorConst, fillSpace, pattern, markerBlob, gradientBlob);
+    records.push(marshalXyTcTraceRecord(trace, showLegend));
   }
   const header = new Uint8Array(16);
   const headerView = new DataView(header.buffer);
@@ -3992,6 +4170,220 @@ function xytaHexbinPlaneObservations(trace) {
   return { hexbinColormapPlane, hexbinRgbaPlaneReady };
 }
 
+function marshalXytaColorChannel(channel) {
+  if (channel == null || typeof channel === "string") {
+    return {
+      present: false,
+      mode: "",
+      constant: null,
+      colormap: null,
+      has_domain: false,
+      domain_lo: 0,
+      domain_hi: 0,
+      values_f64: new Float64Array(),
+      rgba_u8: new Uint8Array(),
+      codes_u8: new Uint8Array(),
+      codes_i64: [],
+      palette: [],
+      n_categories: 0,
+    };
+  }
+  const mode = String(channel.mode ?? "");
+  const domain = channel.domain;
+  const hasDomain = domain != null && domain.length === 2;
+  let valuesF64 = new Float64Array();
+  let rgbaU8 = new Uint8Array();
+  if (channel.values != null) {
+    valuesF64 = Float64Array.from(channel.values, Number);
+  } else if (channel.rgba != null) {
+    const rgba = channel.rgba;
+    if (rgba instanceof Uint8Array) rgbaU8 = rgba;
+    else valuesF64 = Float64Array.from(rgba, Number);
+  }
+  let codesU8 = new Uint8Array();
+  let codesI64 = [];
+  if (channel.codes != null) {
+    const codes = channel.codes;
+    if (codes instanceof Uint8Array) codesU8 = codes;
+    else codesI64 = [...codes].map((value) => Number(value));
+  }
+  const palette = channel.palette?.length ? [...channel.palette] : (channel.colors ?? []);
+  return {
+    present: true,
+    mode,
+    constant: channel.constant ?? null,
+    colormap: typeof channel.colormap === "string" ? channel.colormap : null,
+    has_domain: hasDomain,
+    domain_lo: hasDomain ? Number(domain[0]) : 0,
+    domain_hi: hasDomain ? Number(domain[1]) : 0,
+    values_f64: valuesF64,
+    rgba_u8: rgbaU8,
+    codes_u8: codesU8,
+    codes_i64: codesI64,
+    palette: palette.map(String),
+    n_categories: channel.categories?.length ?? 0,
+  };
+}
+
+function marshalXytaStyleChannel(channel) {
+  if (channel?.values == null) {
+    return { present: false, values_f64: new Float64Array() };
+  }
+  return {
+    present: true,
+    values_f64: Float64Array.from(channel.values, Number),
+  };
+}
+
+export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
+  const style = trace.style ?? {};
+  const kindName = String(trace.kind ?? "");
+  const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
+  const dispatch = sceneXytaTraceDispatchPlan({
+    kind: kindName,
+    polar,
+    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+    hexbinColormapPlane,
+    hexbinRgbaPlaneReady,
+    ribbonColor2Class: COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4,
+    meshPaintPlane: meshPacksPaintPlane(trace),
+    scatterPaintPlane: scatterPacksPaintPlane(trace),
+  });
+  const nan = Number.NaN;
+  const domainX0 = dispatch.packDensity ? Number(xDomain[0]) : nan;
+  const domainX1 = dispatch.packDensity ? Number(xDomain[1]) : nan;
+  const domainY0 = dispatch.packDensity ? Number(yDomain[0]) : nan;
+  const domainY1 = dispatch.packDensity ? Number(yDomain[1]) : nan;
+  let pointCount = 0;
+  if (kindName === "hexbin") pointCount = trace.x?.length ?? trace.count ?? 0;
+  else if (kindName === "ribbon") pointCount = trace.count ?? trace.x0?.length ?? 0;
+  else if (kindName === "triangle_mesh") pointCount = trace.x0?.length ?? trace.count ?? 0;
+  else if (kindName === "scatter") pointCount = trace.x?.length ?? trace.count ?? 0;
+  const colormap = style.colormap;
+  let styleColormapMode = 0;
+  let styleColormapNamed = "";
+  let styleColormapStops = new Uint8Array();
+  if (typeof colormap === "string") {
+    styleColormapMode = 1;
+    styleColormapNamed = colormap;
+  } else if (colormap != null) {
+    styleColormapMode = 2;
+    try {
+      const stops = [];
+      for (const stop of colormap) {
+        stops.push(Number(stop[0]), Number(stop[1]), Number(stop[2]));
+      }
+      styleColormapStops = new Uint8Array(stops);
+    } catch {
+      styleColormapStops = new Uint8Array();
+    }
+  }
+  const shape = heatmapGridShape(trace);
+  const hasGridShape = shape != null && shape.length === 2;
+  const gridShapeRows = hasGridShape ? Number(shape[0]) : 0;
+  const gridShapeCols = hasGridShape ? Number(shape[1]) : 0;
+  const gridBytes = trace.grid == null ? new Uint8Array() : packXyTaGrid(trace.grid);
+  const gridValues = gridBytes.length
+    ? new Float64Array(gridBytes.buffer, gridBytes.byteOffset, gridBytes.length / 8)
+    : new Float64Array();
+  const rgbaU8 = trace.rgba == null ? new Uint8Array() : packXyTaRgba(trace.rgba);
+  const rgbaGridBytes = trace.rgba_grid == null ? new Uint8Array() : packXyTaRgbaGrid(trace.rgba_grid);
+  const rgbaGridF64 = rgbaGridBytes.length
+    ? new Float64Array(rgbaGridBytes.buffer, rgbaGridBytes.byteOffset, rgbaGridBytes.length / 8)
+    : new Float64Array();
+  const xValues = trace.x == null ? new Float64Array() : asF64Array(trace.x, "x");
+  const yValues = trace.y == null ? new Float64Array() : asF64Array(trace.y, "y");
+  const styleChannels = trace.style_channels ?? {};
+  const packedFill = packXyTaFillOpacity(style);
+  return {
+    trace_id: Number(trace.id ?? 0) >>> 0,
+    dispatch,
+    domain_x0: domainX0,
+    domain_x1: domainX1,
+    domain_y0: domainY0,
+    domain_y1: domainY1,
+    point_count: pointCount,
+    fallback_color: traceStyleColorDefault(trace),
+    style_color: style.color ?? null,
+    style_stroke: style.stroke ?? null,
+    style_stroke_width: Number(style.stroke_width ?? 0),
+    has_style_stroke_width: Object.hasOwn(style, "stroke_width"),
+    style_opacity: Object.hasOwn(style, "opacity") ? Number(style.opacity) : Number.NaN,
+    has_style_opacity: Object.hasOwn(style, "opacity"),
+    style_fill_opacity: packedFill.flags ? packedFill.value : Number.NaN,
+    has_style_fill_opacity: packedFill.flags !== 0,
+    style_truecolor: Boolean(style.truecolor),
+    style_domain: style.domain ?? null,
+    style_colormap_mode: styleColormapMode,
+    style_colormap_named: styleColormapNamed,
+    style_colormap_stops: styleColormapStops,
+    grid_shape_rows: gridShapeRows,
+    grid_shape_cols: gridShapeCols,
+    has_grid_shape: hasGridShape,
+    grid_values: gridValues,
+    rgba_u8: rgbaU8,
+    rgba_grid_f64: rgbaGridF64,
+    x_values: xValues,
+    y_values: yValues,
+    color_ch: marshalXytaColorChannel(trace.color_ch),
+    stroke_ch: marshalXytaColorChannel(trace.stroke_ch),
+    color2_ch: marshalXytaColorChannel(trace.color2_ch),
+    opacity_ch: marshalXytaStyleChannel(styleChannels.opacity),
+    artist_alpha_ch: marshalXytaStyleChannel(styleChannels.artist_alpha),
+    stroke_width_ch: marshalXytaStyleChannel(styleChannels.stroke_width),
+  };
+}
+
+function marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar) {
+  const obs = marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar);
+  const materialized = sceneXytaTraceObservationsMaterialize(obs);
+  return sceneXytaTracePack({
+    traceId: materialized.traceId,
+    packHeatmap: materialized.packHeatmap,
+    packHexbinColormap: materialized.packHexbinColormap,
+    packHexbinRgba: materialized.packHexbinRgba,
+    packRibbonEnds: materialized.packRibbonEnds,
+    packMeshFaces: materialized.packMeshFaces,
+    packScatterPaint: materialized.packScatterPaint,
+    packDensity: materialized.packDensity,
+    gridShapeRows: materialized.gridShapeRows,
+    gridShapeCols: materialized.gridShapeCols,
+    hasGridShape: materialized.hasGridShape,
+    hasGrid: materialized.hasGrid,
+    hasRgba: materialized.hasRgba,
+    hasRgbaGrid: materialized.hasRgbaGrid,
+    truecolor: materialized.truecolor,
+    hasCmapDomain: materialized.hasCmapDomain,
+    cmapLo: materialized.cmapLo,
+    cmapHi: materialized.cmapHi,
+    hasColorCh: materialized.hasColorCh,
+    hasStyleColor: materialized.hasStyleColor,
+    hasOpacity: materialized.hasOpacity,
+    hasFillOpacity: materialized.hasFillOpacity,
+    opacity: materialized.opacity,
+    fillOpacity: materialized.fillOpacity,
+    domainX0: materialized.domainX0,
+    domainX1: materialized.domainX1,
+    domainY0: materialized.domainY0,
+    domainY1: materialized.domainY1,
+    cmapFlags: materialized.cmapFlags,
+    rows: materialized.rows,
+    cols: materialized.cols,
+    grid: materialized.grid,
+    rgba: materialized.rgba,
+    rgbaGrid: materialized.rgbaGrid,
+    x: materialized.x,
+    y: materialized.y,
+    meanRgba: materialized.meanRgba,
+    idx: materialized.idx,
+    lut: materialized.lut,
+    cmap: materialized.cmap,
+    stops: materialized.stops,
+    colorCh: materialized.colorCh,
+    styleColor: materialized.styleColor,
+  });
+}
+
 function packXyTa(figure, xDomain, yDomain) {
   const traces = figure.traces ?? [];
   const records = [new Uint8Array(16)];
@@ -4002,200 +4394,7 @@ function packXyTa(figure, xDomain, yDomain) {
   const figurePlan = sceneXytaFigurePlan({ polar: figure.coords === "polar" });
   const polar = figurePlan.polar;
   for (const [traceIndex, trace] of traces.entries()) {
-    const style = trace.style ?? {};
-    const kindName = String(trace.kind ?? "");
-    const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
-    const dispatch = sceneXytaTraceDispatchPlan({
-      kind: kindName,
-      polar,
-      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-      hexbinColormapPlane,
-      hexbinRgbaPlaneReady,
-      ribbonColor2Class: COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4,
-      meshPaintPlane: meshPacksPaintPlane(trace),
-      scatterPaintPlane: scatterPacksPaintPlane(trace),
-    });
-    let flags = 0;
-    let rows = 0;
-    let cols = 0;
-    let grid = new Uint8Array();
-    let rgba = new Uint8Array();
-    let rgbaGrid = new Uint8Array();
-    let x = new Uint8Array();
-    let y = new Uint8Array();
-    let meanRgba = new Uint8Array();
-    let idx = new Uint8Array();
-    let lut = new Uint8Array();
-    let cmap = new Uint8Array();
-    let stops = new Uint8Array();
-    let colorCh = new Uint8Array();
-    let styleColor = new Uint8Array();
-    let domainX0 = Number.NaN;
-    let domainX1 = Number.NaN;
-    let domainY0 = Number.NaN;
-    let domainY1 = Number.NaN;
-    let cmapLo = Number.NaN;
-    let cmapHi = Number.NaN;
-    let opacity = Number.NaN;
-    let fillOpacity = Number.NaN;
-    if (dispatch.packHeatmap) {
-      flags |= XYTA_HEATMAP;
-      const shape = heatmapGridShape(trace);
-      if (shape != null && shape.length === 2) {
-        flags |= XYTA_SHAPE;
-        const rawRows = Number(shape[0]);
-        const rawCols = Number(shape[1]);
-        if (sceneHeatmapShapeAdmit(rawRows, rawCols)) {
-          rows = rawRows;
-          cols = rawCols;
-        }
-      }
-      if (trace.grid != null) {
-        flags |= XYTA_HAS_GRID;
-        grid = packXyTaGrid(trace.grid);
-      }
-      if (trace.rgba != null) {
-        flags |= XYTA_HAS_RGBA;
-        rgba = packXyTaRgba(trace.rgba);
-      }
-      if (trace.rgba_grid != null) {
-        flags |= XYTA_HAS_RGBA_GRID;
-        rgbaGrid = packXyTaRgbaGrid(trace.rgba_grid);
-      }
-      const packedCmap = packXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      if (style.truecolor) flags |= XYTA_TRUECOLOR;
-      const domain = style.domain;
-      if (domain != null && domain.length === 2) {
-        flags |= XYTA_HAS_DOMAIN;
-        cmapLo = Number(domain[0]);
-        cmapHi = Number(domain[1]);
-      }
-    } else if (dispatch.packHexbinColormap) {
-      flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
-      const channel = hexbinXyTaColorChannel(trace);
-      const values = channel?.values;
-      grid = packF64Le(values);
-      rows = 1;
-      cols = values.length;
-      const packedCmap = hexbinXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      const domain = channel?.domain;
-      if (domain != null && domain.length === 2) {
-        flags |= XYTA_HAS_DOMAIN;
-        cmapLo = Number(domain[0]);
-        cmapHi = Number(domain[1]);
-      }
-    } else if (dispatch.packHexbinRgba) {
-      const packed = hexbinCellRgba8(trace);
-      if (packed != null) {
-        flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.length / 4;
-        grid = packF64Le(new Float64Array(cols));
-        rgba = packed;
-      }
-    } else if (dispatch.packRibbonEnds) {
-      const ends = ribbonEndRgbaPair(trace);
-      if (ends != null) {
-        flags |= XYTA_RIBBON_ENDS | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = ends.source.length / 4;
-        rgba = ends.source;
-        meanRgba = ends.target;
-      }
-    } else if (dispatch.packMeshFaces) {
-      const packed = meshFacePaints(trace);
-      if (packed != null) {
-        flags |= XYTA_MESH_FACES | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.fills.length / 4;
-        rgba = packed.fills;
-        meanRgba = packed.strokes;
-        x = packed.widths;
-      }
-    } else if (dispatch.packScatterPaint) {
-      const packed = scatterPointPaints(trace);
-      if (packed != null) {
-        flags |= XYTA_SCATTER_PAINT | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.fills.length / 4;
-        rgba = packed.fills;
-        meanRgba = packed.strokes;
-        x = packed.widths;
-      }
-    } else if (dispatch.packDensity) {
-      flags |= XYTA_DENSITY;
-      if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
-      if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
-      domainX0 = Number(xDomain[0]);
-      domainX1 = Number(xDomain[1]);
-      domainY0 = Number(yDomain[0]);
-      domainY1 = Number(yDomain[1]);
-      const packedCmap = packXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      const packedColorCh = packXyTaDensityColorCh(trace);
-      flags |= packedColorCh.flags;
-      colorCh = packedColorCh.bytes;
-      if (style.color != null) {
-        flags |= XYTA_HAS_STYLE_COLOR;
-        styleColor = new TextEncoder().encode(String(style.color));
-      }
-      if (Object.hasOwn(style, "opacity")) {
-        flags |= XYTA_HAS_OPACITY;
-        opacity = Number(style.opacity);
-      }
-      const packedFill = packXyTaFillOpacity(style);
-      if (packedFill.flags) {
-        flags |= packedFill.flags;
-        fillOpacity = packedFill.value;
-      }
-      const source = resolveDensityBinColors(trace);
-      if (source?.rgba != null) {
-        meanRgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
-      } else if (source?.idx != null && source?.lut != null) {
-        idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
-        lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
-      }
-    }
-    const prefix = new Uint8Array(128);
-    const view = new DataView(prefix.buffer);
-    view.setUint32(0, flags, true);
-    view.setUint32(4, Number(trace.id ?? traceIndex) >>> 0, true);
-    view.setInt32(8, rows, true);
-    view.setInt32(12, cols, true);
-    view.setUint32(16, grid.length / 8, true);
-    view.setUint32(20, rgba.length, true);
-    view.setUint32(24, rgbaGrid.length / 8, true);
-    view.setUint32(28, x.length / 8, true);
-    view.setUint32(32, y.length / 8, true);
-    view.setUint32(36, meanRgba.length, true);
-    view.setUint32(40, idx.length, true);
-    view.setUint32(44, lut.length, true);
-    view.setUint16(48, Math.min(cmap.length, 65535), true);
-    view.setUint16(50, Math.min(stops.length, 65535), true);
-    view.setUint16(52, Math.min(colorCh.length, 65535), true);
-    view.setUint16(54, Math.min(styleColor.length, 65535), true);
-    view.setFloat64(56, domainX0, true);
-    view.setFloat64(64, domainX1, true);
-    view.setFloat64(72, domainY0, true);
-    view.setFloat64(80, domainY1, true);
-    view.setFloat64(88, cmapLo, true);
-    view.setFloat64(96, cmapHi, true);
-    view.setFloat32(104, opacity, true);
-    view.setFloat32(108, fillOpacity, true);
-    records.push(
-      prefix, grid, rgba, rgbaGrid,
-      cmap.subarray(0, 65535), stops.subarray(0, 65535),
-      colorCh.subarray(0, 65535), styleColor.subarray(0, 65535),
-      x, y, meanRgba, idx, lut,
-    );
+    records.push(marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar));
   }
   return concatBytes(records);
 }
@@ -4951,200 +5150,162 @@ export function figureYLabel(figure, yAxis) {
   return (figure ?? {}).y_label || (yAxis ?? {}).label;
 }
 
-function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
-  const figurePlan = sceneXycfFigurePlan({
-    showLegend: figureShowLegend(figure) !== false,
-    colorbarOk,
-    polar: (figure.coords ?? "cartesian") === "polar",
-  });
-  const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
-  const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
-  const LEGEND_AUTHORED_LOC = 1 << 0, LEGEND_AUTHORED_FONT = 1 << 1, LEGEND_AUTHORED_TITLE_FONT = 1 << 2;
-  const LEGEND_AUTHORED_COLOR = 1 << 3, LEGEND_AUTHORED_BACKGROUND = 1 << 4, LEGEND_UNSUPPORTED_KEYS = 1 << 5;
-  const LEGEND_TOGGLE = 1 << 6, LEGEND_HIGHLIGHT = 1 << 7, LEGEND_SHOW = 1 << 8, LEGEND_UNSUPPORTED_STYLE = 1 << 9;
-  const CB_HORIZONTAL = 1 << 1, CB_MINOR = 1 << 2, CB_INVALID_SIDE = 1 << 4;
-  let flags = FLAG_HAS_CHROME | FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO;
-  const axes = figureAxisOptions(figure) ?? {};
-  const xAxis = axes.x ?? {};
-  const yAxis = axes.y ?? {};
-  const xDomain = figure._range("x");
-  const yDomain = figure._range("y");
-  const kindCode = (kind) => kind === "log" ? 1 : kind === "symlog" ? 2 : 0;
-  const authoredMargins = [0, 0, 0, 0];
-  if (margins != null) {
-    flags |= FLAG_AUTHORED_MARGINS;
-    authoredMargins[0] = Number(margins[0]); authoredMargins[1] = Number(margins[1]);
-    authoredMargins[2] = Number(margins[2]); authoredMargins[3] = Number(margins[3]);
-  }
-  const padding = [0, 0, 0, 0];
-  const pad = figure.padding;
-  if (Array.isArray(pad) && pad.length === 4) {
-    flags |= FLAG_PADDING;
-    padding[0] = Number(pad[0]); padding[1] = Number(pad[1]); padding[2] = Number(pad[2]); padding[3] = Number(pad[3]);
-  }
-  const title = encodeUtf8(String(figure.title ?? ""));
-  const xLabel = encodeUtf8(String(figureXLabel(figure, xAxis) ?? ""));
-  const yLabel = encodeUtf8(String(figureYLabel(figure, yAxis) ?? ""));
-  const xFormat = xAxis.format == null ? new Uint8Array() : encodeUtf8(String(xAxis.format));
-  const yFormat = yAxis.format == null ? new Uint8Array() : encodeUtf8(String(yAxis.format));
-  let xMajor = [], yMajor = [];
-  const xTicks = axisTickValues(xAxis);
-  const yTicks = axisTickValues(yAxis);
-  // ABI 199: Rust pack_figure_chrome filters authored majors through the tick window.
-  if (xTicks != null) { flags &= ~FLAG_X_MAJOR_AUTO; xMajor = Array.from(xTicks, Number); }
-  if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
-  const xMinor = Array.from(axisMinorTickValues(xAxis) ?? [], Number);
-  const yMinor = Array.from(axisMinorTickValues(yAxis) ?? [], Number);
-  // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
-  // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
-  // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
-  // ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
-  const xLabels = axisTickLabels(xAxis) ?? null;
-  const yLabels = axisTickLabels(yAxis) ?? null;
-  if (xLabels != null) flags |= FLAG_X_TICK_LABELS;
-  if (yLabels != null) flags |= FLAG_Y_TICK_LABELS;
-  const chrome = packXyCh(figure);
-  let legendLoc = new Uint8Array(), legendTitle = new Uint8Array(), legendNcols = 1;
-  let legendFont = 0, legendTitleFont = 0, legendFlags = 0;
-  let legendTextRgba = new Uint8Array(4), legendFrameRgba = new Uint8Array(4);
-  let legendMeta = new Uint8Array(), legendLens = [], legendBlob = new Uint8Array();
-  let legendCount = 0;
-  if (figurePlan.attachLegend) {
-    flags |= FLAG_HAS_LEGEND;
-    legendFlags |= LEGEND_SHOW;
-    const options = figureLegendOptions(figure) ?? {};
-    const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
-    if (Object.keys(options).some((key) => !allowed.has(key))) legendFlags |= LEGEND_UNSUPPORTED_KEYS;
-    legendNcols = Number(options.ncols ?? 1);
-    if (Object.hasOwn(options, "toggle") && options.toggle !== false) legendFlags |= LEGEND_TOGGLE;
-    if (Object.hasOwn(options, "highlight") && options.highlight !== false) legendFlags |= LEGEND_HIGHLIGHT;
-    let loc = options.loc;
-    if (loc != null) {
-      legendFlags |= LEGEND_AUTHORED_LOC;
-      legendLoc = encodeUtf8(String(loc));
+function sceneSideMask(values, name, axisId, allowed, sideCode) {
+  if (values == null) return 1 << sideCode;
+  for (const value of values) {
+    if (!allowed.includes(value)) {
+      throw new RangeError(`Scene v12 ${axisId} axis ${name} must contain only ${JSON.stringify(allowed)}`);
     }
-    const style = options.style ?? {};
-    if (Object.keys(style).some((key) => !LEGEND_ALLOWED_STYLE.has(key))) legendFlags |= LEGEND_UNSUPPORTED_STYLE;
-    const { font_size: authoredFont, title_font_size: authoredTitleFont } = legendStyleFontSizes(style);
-    if (authoredFont != null) { legendFlags |= LEGEND_AUTHORED_FONT; legendFont = Number(authoredFont); }
-    if (authoredTitleFont != null) { legendFlags |= LEGEND_AUTHORED_TITLE_FONT; legendTitleFont = Number(authoredTitleFont); }
-    legendTitle = encodeUtf8(String(options.title ?? ""));
-    if (Object.hasOwn(style, "color")) { legendFlags |= LEGEND_AUTHORED_COLOR; legendTextRgba = rgba8(style.color, 1); }
-    if (Object.hasOwn(style, "background")) { legendFlags |= LEGEND_AUTHORED_BACKGROUND; legendFrameRgba = rgba8(style.background, 1); }
   }
-  let colorbarObs = 0, stopCount = 0, tickCount = 0, cbTitle = new Uint8Array();
-  let cbLo = 0, cbHi = 0, cbText = Uint8Array.of(32, 32, 32, 255);
-  let cbStops = [], cbTicks = [];
-  const colorbar = figureColorbarOptions(figure);
-  if (figurePlan.attachColorbar && colorbar) {
-    flags |= FLAG_HAS_COLORBAR;
-    cbLo = Number(colorbar.domain[0]); cbHi = Number(colorbar.domain[1]);
-    cbStops = colorbar.stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]);
-    stopCount = cbStops.length;
-    const side = colorbar.side ?? "right";
-    if (side === "bottom") colorbarObs |= CB_HORIZONTAL;
-    else if (side !== "right") colorbarObs |= CB_INVALID_SIDE;
-    if (colorbar.minor_ticks) colorbarObs |= CB_MINOR;
-    cbTitle = encodeUtf8(String(colorbar.title ?? ""));
-    if (colorbar.text_rgba) cbText = Uint8Array.from(colorbar.text_rgba);
-    if (colorbar.ticks != null) { cbTicks = Array.from(colorbar.ticks, Number); tickCount = cbTicks.length; }
+  return allowed.reduce((mask, candidate, index) => (
+    values.includes(candidate) ? mask | (1 << index) : mask
+  ), 0);
+}
+
+function marshalChromeAxis(axisId, options) {
+  const style = { ...(options.style ?? {}) };
+  const minor = { ...(options.minor_style ?? {}) };
+  for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
+    const unsupported = Object.keys(authored).filter((key) => !AXIS_STYLE_KEYS.has(key));
+    if (unsupported.length) {
+      throw new RangeError(`Scene v12 does not yet encode ${axisId} axis ${label} keys`);
+    }
   }
-  const header = new Uint8Array(288);
-  const view = new DataView(header.buffer);
-  header.set(encodeUtf8("XYCF").slice(0, 4), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, flags >>> 0, true);
-  view.setFloat64(16, Number(width), true);
-  view.setFloat64(24, Number(height), true);
-  authoredMargins.forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
-  padding.forEach((value, index) => view.setFloat64(64 + index * 8, value, true));
-  view.setUint32(96, kindCode(axisScaleName(xAxis)), true);
-  view.setUint32(100, kindCode(axisScaleName(yAxis)), true);
-  view.setFloat64(104, Number(xDomain[0]), true);
-  view.setFloat64(112, Number(xDomain[1]), true);
-  view.setFloat64(120, Number(xAxis.constant ?? 1), true);
-  view.setFloat64(128, Number(yDomain[0]), true);
-  view.setFloat64(136, Number(yDomain[1]), true);
-  view.setFloat64(144, Number(yAxis.constant ?? 1), true);
-  header[152] = (xAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  header[153] = (yAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  header[154] = chromeAxisTickKind(figure, "x");
-  header[155] = chromeAxisTickKind(figure, "y");
-  const strategyCode = (options) => ({ auto: 0, hide: 1, rotate: 2, stagger: 3, preserve: 4, none: 5, off: 6 }[sceneTickStrategy(options)] ?? 0);
-  const anchorCode = (options) => {
-    const raw = axisTickLabelAnchor(options);
-    if (raw == null) return null;
-    return sceneTickAnchor(raw);
+  const side = options.side ?? (axisId === "x" ? "bottom" : "left");
+  const allowed = axisId === "x" ? ["bottom", "top"] : ["left", "right"];
+  if (!allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
+  const sideCode = side === allowed[0] ? 0 : 1;
+  const marshalStyle = (src) => {
+    const out = {};
+    for (const key of [
+      "grid_color", "grid_width", "grid_opacity", "axis_color", "axis_width",
+      "tick_color", "tick_width", "tick_length", "tick_direction", "tick_label_color", "label_color",
+    ]) {
+      if (!Object.hasOwn(src, key)) continue;
+      if (["grid_width", "axis_width", "tick_width", "tick_length"].includes(key)) out[key] = Number(src[key]);
+      else if (key === "grid_opacity") out.grid_opacity = Number(src[key]);
+      else out[key] = String(src[key]);
+    }
+    return out;
   };
-  const xAnchor = anchorCode(xAxis);
-  const yAnchor = anchorCode(yAxis);
-  const xGap = axisTickLabelMinGap(xAxis);
-  const yGap = axisTickLabelMinGap(yAxis);
-  const xAngle = axisTickLabelAngle(xAxis);
-  const yAngle = axisTickLabelAngle(yAxis);
-  const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
-  let collisionFlags = extras ? 1 : 0;
-  if (figure._axisKind("x") === "category") collisionFlags |= 1 << 1;
-  if (figure._axisKind("y") === "category") collisionFlags |= 1 << 2;
-  if (xAnchor != null) collisionFlags |= 1 << 3;
-  if (yAnchor != null) collisionFlags |= 1 << 4;
-  header[12] = strategyCode(xAxis);
-  header[13] = strategyCode(yAxis);
-  header[14] = (xAnchor ?? 0) | ((yAnchor ?? 0) << 4);
-  header[15] = collisionFlags;
-  const collisionExtra = extras ? (() => {
-    const extra = new Uint8Array(32);
-    const extraView = new DataView(extra.buffer);
-    extraView.setFloat64(0, xGap == null ? 8 : Number(xGap), true);
-    extraView.setFloat64(8, yGap == null ? 4 : Number(yGap), true);
-    extraView.setFloat64(16, xAngle == null ? Number.NaN : Number(xAngle), true);
-    extraView.setFloat64(24, yAngle == null ? Number.NaN : Number(yAngle), true);
-    return extra;
-  })() : new Uint8Array();
-  view.setUint32(156, title.length, true);
-  view.setUint32(160, xLabel.length, true);
-  view.setUint32(164, yLabel.length, true);
-  view.setUint32(168, xFormat.length, true);
-  view.setUint32(172, yFormat.length, true);
-  view.setUint32(176, xMajor.length, true);
-  view.setUint32(180, xMinor.length, true);
-  view.setUint32(184, yMajor.length, true);
-  view.setUint32(188, yMinor.length, true);
-  view.setUint32(192, xLabels == null ? 0 : xLabels.length, true);
-  view.setUint32(196, yLabels == null ? 0 : yLabels.length, true);
-  view.setUint32(200, chrome.length, true);
-  view.setUint32(204, legendLoc.length, true);
-  view.setUint32(208, legendTitle.length, true);
-  view.setUint32(212, legendNcols, true);
-  view.setFloat64(216, legendFont, true);
-  view.setFloat64(224, legendTitleFont, true);
-  view.setUint32(232, legendFlags >>> 0, true);
-  view.setUint32(236, legendCount, true);
-  header.set(legendTextRgba, 240);
-  header.set(legendFrameRgba, 244);
-  view.setUint32(248, colorbarObs >>> 0, true);
-  view.setUint32(252, stopCount, true);
-  view.setUint32(256, tickCount, true);
-  view.setUint32(260, cbTitle.length, true);
-  view.setFloat64(264, cbLo, true);
-  view.setFloat64(272, cbHi, true);
-  header.set(cbText, 280);
-  const legendLensBytes = new Uint8Array(legendLens.length * 4);
-  const lensView = new DataView(legendLensBytes.buffer);
-  legendLens.forEach((len, index) => lensView.setUint32(index * 4, len, true));
-  const stopBytes = concatBytes(cbStops.map(([value, rgba]) => {
-    const row = new Uint8Array(12);
-    new DataView(row.buffer).setFloat64(0, value, true);
-    row.set(rgba, 8);
-    return row;
-  }));
-  return concatBytes([
-    header, title, xLabel, yLabel, xFormat, yFormat,
-    packF64s(xMajor), packF64s(xMinor), packF64s(yMajor), packF64s(yMinor),
-    packTickLabels(xLabels), packTickLabels(yLabels),
-    chrome, legendLoc, legendTitle, legendMeta, legendLensBytes, legendBlob,
-    stopBytes, packF64s(cbTicks), cbTitle, collisionExtra,
-  ]);
+  return {
+    side_code: sideCode,
+    tick_sides_mask: sceneSideMask(options.tick_sides, "tick_sides", axisId, allowed, sideCode),
+    label_sides_mask: sceneSideMask(options.tick_label_sides, "tick_label_sides", axisId, allowed, sideCode),
+    style: marshalStyle(style),
+    minor_style: marshalStyle(minor),
+  };
+}
+
+function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
+  const axes = figureAxisOptions(figure) ?? {};
+  const xa = axes.x ?? {};
+  const ya = axes.y ?? {};
+  const kindCodes = { linear: 0, log: 1, symlog: 2 };
+  const tickKindCode = { linear: 0, time: 1, category: 2 };
+  const [xLo, xHi] = figure._range("x");
+  const [yLo, yHi] = figure._range("y");
+  const pad = figure.padding;
+  const hasPadding = Array.isArray(pad) && pad.length === 4;
+  const figureStyle = figure.style ?? {};
+  const legendOptions = { ...(figureLegendOptions(figure) ?? {}) };
+  const legendStyle = { ...(legendOptions.style ?? {}) };
+  const allowedLegend = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
+  if (Object.keys(legendOptions).some((key) => !allowedLegend.has(key)) || Number(legendOptions.ncols ?? 1) !== 1) {
+    throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
+  }
+  if (["toggle", "highlight"].some((key) => Object.hasOwn(legendOptions, key) && legendOptions[key] !== false)) {
+    throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
+  }
+  if (Object.hasOwn(legendOptions, "loc") && !String(legendOptions.loc)) {
+    throw new RangeError(`Scene v12 does not support legend location ${JSON.stringify(String(legendOptions.loc))}`);
+  }
+  const colorbar = colorbarOk ? figureColorbarOptions(figure) : null;
+  let colorbarPayload = null;
+  if (colorbar) {
+    const domain = colorbar.domain ?? [0, 1];
+    const stops = colorbar.stops ?? [];
+    const side = colorbar.side ?? "right";
+    colorbarPayload = {
+      domain_lo: Number(domain[0]),
+      domain_hi: Number(domain[1]),
+      stops: stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]),
+      side_bottom: side === "bottom",
+      invalid_side: !["right", "bottom"].includes(side),
+      minor_ticks: Boolean(colorbar.minor_ticks),
+      title: optionalStr(colorbar.title),
+      text_rgba: Uint8Array.from(colorbar.text_rgba ?? [32, 32, 32, 255]),
+      ticks: colorbar.ticks == null ? null : Array.from(colorbar.ticks, Number),
+    };
+  }
+  return sceneChromePack({
+    width: Number(width),
+    height: Number(height),
+    show_legend: figureShowLegend(figure) !== false,
+    colorbar_ok: Boolean(colorbarOk && colorbarPayload),
+    polar: (figure.coords ?? "cartesian") === "polar",
+    has_margins: margins != null,
+    margins: margins == null ? [0, 0, 0, 0] : margins.map(Number),
+    has_padding: hasPadding,
+    padding: hasPadding ? pad.map(Number) : [0, 0, 0, 0],
+    title: String(figure.title ?? ""),
+    x_label: String(figureXLabel(figure, xa) ?? ""),
+    y_label: String(figureYLabel(figure, ya) ?? ""),
+    x_format: optionalStr(xa.format),
+    y_format: optionalStr(ya.format),
+    x_scale_kind: kindCodes[axisScaleName(xa)] ?? 0,
+    y_scale_kind: kindCodes[axisScaleName(ya)] ?? 0,
+    x_lo: Number(xLo),
+    x_hi: Number(xHi),
+    x_constant: Number(xa.constant ?? 1),
+    y_lo: Number(yLo),
+    y_hi: Number(yHi),
+    y_constant: Number(ya.constant ?? 1),
+    x_nonpositive_mask: (xa.nonpositive ?? "clip") === "mask" ? 1 : 0,
+    y_nonpositive_mask: (ya.nonpositive ?? "clip") === "mask" ? 1 : 0,
+    x_tick_kind: tickKindCode[figure._axisKind("x")] ?? 0,
+    y_tick_kind: tickKindCode[figure._axisKind("y")] ?? 0,
+    x_axis: marshalChromeAxis("x", xa),
+    y_axis: marshalChromeAxis("y", ya),
+    x_major: axisTickValues(xa) == null ? null : Array.from(axisTickValues(xa), Number),
+    y_major: axisTickValues(ya) == null ? null : Array.from(axisTickValues(ya), Number),
+    x_minor: Array.from(axisMinorTickValues(xa) ?? [], Number),
+    y_minor: Array.from(axisMinorTickValues(ya) ?? [], Number),
+    x_tick_labels: axisTickLabels(xa) == null ? null : Array.from(axisTickLabels(xa), String),
+    y_tick_labels: axisTickLabels(ya) == null ? null : Array.from(axisTickLabels(ya), String),
+    x_collision: {
+      strategy: optionalStr(xa.tick_label_strategy),
+      collision: optionalStr(xa.collision),
+      anchor: optionalStr(xa.tick_label_anchor),
+      min_gap: xa.tick_label_min_gap == null ? null : Number(xa.tick_label_min_gap),
+      angle: xa.tick_label_angle == null ? null : Number(xa.tick_label_angle),
+      tick_kind_category: figure._axisKind("x") === "category",
+    },
+    y_collision: {
+      strategy: optionalStr(ya.tick_label_strategy),
+      collision: optionalStr(ya.collision),
+      anchor: optionalStr(ya.tick_label_anchor),
+      min_gap: ya.tick_label_min_gap == null ? null : Number(ya.tick_label_min_gap),
+      angle: ya.tick_label_angle == null ? null : Number(ya.tick_label_angle),
+      tick_kind_category: figure._axisKind("y") === "category",
+    },
+    chart_background: optionalStr(figureStyle.background),
+    plot_background: optionalStr(figureStyle["--chart-bg"]),
+    legend: {
+      unsupported_keys: Object.keys(legendOptions).some((key) => !allowedLegend.has(key)),
+      toggle: Object.hasOwn(legendOptions, "toggle") && legendOptions.toggle !== false,
+      highlight: Object.hasOwn(legendOptions, "highlight") && legendOptions.highlight !== false,
+      loc: Object.hasOwn(legendOptions, "loc") ? String(legendOptions.loc) : null,
+      title: optionalStr(typeof legendOptions.title === "boolean" ? String(legendOptions.title).toLowerCase() : legendOptions.title),
+      ncols: Number(legendOptions.ncols ?? 1),
+      unsupported_style: Object.keys(legendStyle).some((key) => !LEGEND_ALLOWED_STYLE.has(key)),
+      font_size: legendStyle.font_size,
+      title_font_size: legendStyle.title_font_size,
+      color: optionalStr(legendStyle.color),
+      background: optionalStr(legendStyle.background),
+    },
+    colorbar: colorbarPayload,
+  });
 }
 
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
@@ -5761,27 +5922,16 @@ export function scatterUsesDensity(trace) {
   });
 }
 
-function paletteRowsRgba8(palette, rows) {
-  const src = palette?.length ? palette : DEFAULT_PALETTE;
-  const n = Math.max(1, Math.floor(Number(rows)));
-  const lut = new Uint8Array(n * 4);
-  for (let i = 0; i < n; i += 1) {
-    const entry = String(src[i % src.length]);
-    try {
-      lut.set(cssColorRgba8(entry, 1), i * 4);
-    } catch {
-      lut.set(cssColorRgba8(String(DEFAULT_PALETTE[i % DEFAULT_PALETTE.length]), 1), i * 4);
-    }
-  }
-  return lut;
-}
-
 function foldedCodesU8(codes, paletteLen) {
-  const out = new Uint8Array(codes.length);
-  const mod = Math.max(1, Math.floor(Number(paletteLen)));
-  for (let i = 0; i < codes.length; i += 1) {
-    const code = Number(codes[i]);
-    out[i] = ((code % mod) + mod) % mod;
+  const n = codes.length;
+  if (n === 0) {
+    return new Uint8Array(0);
+  }
+  const src = codes instanceof Uint32Array ? codes : Uint32Array.from(codes);
+  const out = new Uint8Array(n);
+  const ok = xyFoldCodesU8(u32Ptr(src), BigInt(n), BigInt(paletteLen), u8Ptr(out));
+  if (!ok) {
+    throw new RangeError("native fold_codes_u8 rejected the code array");
   }
   return out;
 }
@@ -6078,17 +6228,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const attachPlan = sceneEncodeProductAttachPlan({ polar: figure.coords === "polar" });
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
-  const annotationParts = [];
-  for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
-    annotationParts.push(packXyAf(annotation, annotationIndex));
-  }
+  const annotationFacts = packXyAfBulk(figure.annotations ?? []);
   try {
     return encodeProduct(
       packXyTc(figure),
       packXyTa(figure, xDomain, yDomain),
       packXyNm(figure.traces ?? [], figure),
       packXyCl(figure),
-      concatBytes(annotationParts),
+      concatBytes([annotationFacts]),
       (figure.traces ?? []).length,
       xDomain,
       yDomain,

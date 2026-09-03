@@ -22,7 +22,7 @@ import struct
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, ClassVar, Optional, cast
+from typing import Any, ClassVar, Optional, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -704,6 +704,14 @@ def _ptr_u32(arr: npt.NDArray[np.uint32]) -> int:
     return arr.ctypes.data
 
 
+def _null_u32() -> int:
+    return 0
+
+
+def _null_u8() -> int:
+    return 0
+
+
 def _ptr_i32(arr: npt.NDArray[np.int32]) -> int:
     return arr.ctypes.data
 
@@ -939,6 +947,22 @@ def transition_keys_fixed(
     raise RuntimeError(f"native transition-key encoder returned unknown status {status}")
 
 
+def fold_codes_u8(codes: npt.NDArray[np.uint32], n_palette: int) -> npt.NDArray[np.uint8]:
+    """Fold wide categorical codes onto repeating palette rows."""
+    arr = np.ascontiguousarray(codes, dtype=np.uint32)
+    if arr.ndim != 1:
+        raise ValueError("fold_codes_u8 codes must be a 1-D array")
+    n_palette = _bounded_positive_int(n_palette, "n_palette")
+    n = len(arr)
+    out = np.empty(n, dtype=np.uint8)
+    if n == 0:
+        return out
+    ok = _lib.xyg_fold_codes_u8(arr.ctypes.data, n, int(n_palette), out.ctypes.data)
+    if not ok:
+        raise ValueError("native fold_codes_u8 rejected the code array")
+    return out
+
+
 def remap_u8(values: npt.NDArray[np.uint8], mapping: npt.NDArray[np.uint8]) -> None:
     """Apply a compact categorical codebook permutation in place."""
     values = np.asarray(values)
@@ -959,6 +983,296 @@ def remap_u8(values: npt.NDArray[np.uint8], mapping: npt.NDArray[np.uint8]) -> N
     )
     if not ok:
         raise ValueError("remap_u8 encountered a code outside the mapping")
+
+
+def factorize_display_labels(
+    labels: list[str] | npt.NDArray[np.str_],
+) -> tuple[list[str], npt.NDArray[np.uint8] | npt.NDArray[np.uint32]]:
+    """Sorted unique categories plus per-row codes for the label-policy path."""
+    if isinstance(labels, np.ndarray):
+        if labels.dtype.kind not in ("U", "S") or labels.ndim != 1:
+            raise ValueError("factorize_display_labels expects a 1-D string array")
+        row_labels = [str(value) for value in labels]
+    else:
+        row_labels = [str(value) for value in labels]
+    n = len(row_labels)
+    if n == 0:
+        return [], np.empty(0, dtype=np.uint8)
+    label_lens = np.fromiter(
+        (len(label.encode("utf-8")) for label in row_labels),
+        dtype=np.uint32,
+        count=n,
+    )
+    label_texts = b"".join(label.encode("utf-8") for label in row_labels)
+    texts = np.frombuffer(label_texts, dtype=np.uint8)
+    out_codes_raw = np.empty(n * 4, dtype=np.uint8)
+    code_width = np.empty(1, dtype=np.uint32)
+    category_lens_cap = max(n, 256)
+    category_lens = np.empty(category_lens_cap, dtype=np.uint32)
+    category_texts_cap = max(256, len(label_texts) * 2)
+    category_texts = np.empty(category_texts_cap, dtype=np.uint8)
+    written = _lib.xyg_factorize_display_labels(
+        label_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        out_codes_raw.ctypes.data,
+        len(out_codes_raw),
+        code_width.ctypes.data,
+        category_lens.ctypes.data,
+        category_texts.ctypes.data,
+        len(category_texts),
+        category_lens_cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native factorize_display_labels rejected the label array")
+    n_categories = int(written)
+    cat_lens = category_lens[:n_categories]
+    cat_bytes = category_texts[: int(cat_lens.sum())].tobytes()
+    categories: list[str] = []
+    offset = 0
+    for length in cat_lens:
+        end = offset + int(length)
+        categories.append(cat_bytes[offset:end].decode("utf-8"))
+        offset = end
+    width = int(code_width[0])
+    if width == 1:
+        codes = out_codes_raw[:n].copy()
+    elif width == 4:
+        codes = np.frombuffer(out_codes_raw[: n * 4], dtype="<u4").copy()
+    else:
+        raise ValueError("native factorize_display_labels returned an unknown code width")
+    return categories, codes
+
+
+def label_codes_first_seen(
+    labels: list[str] | npt.NDArray[np.str_],
+) -> tuple[list[str], npt.NDArray[np.uint8] | npt.NDArray[np.uint32]]:
+    """First-seen unique categories plus per-row codes for facet panels."""
+    if isinstance(labels, np.ndarray):
+        if labels.dtype.kind not in ("U", "S") or labels.ndim != 1:
+            raise ValueError("label_codes_first_seen expects a 1-D string array")
+        row_labels = [str(value) for value in labels]
+    else:
+        row_labels = [str(value) for value in labels]
+    n = len(row_labels)
+    if n == 0:
+        return [], np.empty(0, dtype=np.uint8)
+    label_lens = np.fromiter(
+        (len(label.encode("utf-8")) for label in row_labels),
+        dtype=np.uint32,
+        count=n,
+    )
+    label_texts = b"".join(label.encode("utf-8") for label in row_labels)
+    texts = np.frombuffer(label_texts, dtype=np.uint8)
+    out_codes_raw = np.empty(n * 4, dtype=np.uint8)
+    code_width = np.empty(1, dtype=np.uint32)
+    category_lens_cap = max(n, 256)
+    category_lens = np.empty(category_lens_cap, dtype=np.uint32)
+    category_texts_cap = max(256, len(label_texts) * 2)
+    category_texts = np.empty(category_texts_cap, dtype=np.uint8)
+    written = _lib.xyg_label_codes_first_seen(
+        label_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        out_codes_raw.ctypes.data,
+        len(out_codes_raw),
+        code_width.ctypes.data,
+        category_lens.ctypes.data,
+        category_texts.ctypes.data,
+        len(category_texts),
+        category_lens_cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native label_codes_first_seen rejected the label array")
+    n_categories = int(written)
+    cat_lens = category_lens[:n_categories]
+    cat_bytes = category_texts[: int(cat_lens.sum())].tobytes()
+    categories: list[str] = []
+    offset = 0
+    for length in cat_lens:
+        end = offset + int(length)
+        categories.append(cat_bytes[offset:end].decode("utf-8"))
+        offset = end
+    width = int(code_width[0])
+    if width == 1:
+        codes = out_codes_raw[:n].copy()
+    elif width == 4:
+        codes = np.frombuffer(out_codes_raw[: n * 4], dtype="<u4").copy()
+    else:
+        raise ValueError("native label_codes_first_seen returned an unknown code width")
+    return categories, codes
+
+
+def sorted_display_label_remap(
+    labels: list[str] | npt.NDArray[np.str_],
+    counts: npt.NDArray[np.uint64] | None = None,
+) -> tuple[
+    list[str],
+    npt.NDArray[np.uint8] | npt.NDArray[np.uint32],
+    npt.NDArray[np.uint64] | None,
+]:
+    """Sorted categories plus remap for first-seen unique display labels."""
+    if isinstance(labels, np.ndarray):
+        if labels.dtype.kind not in ("U", "S") or labels.ndim != 1:
+            raise ValueError("sorted_display_label_remap expects a 1-D string array")
+        row_labels = [str(value) for value in labels]
+    else:
+        row_labels = [str(value) for value in labels]
+    n = len(row_labels)
+    if counts is not None and len(counts) != n:
+        raise ValueError("sorted_display_label_remap counts must match labels")
+    if n == 0:
+        return (
+            [],
+            np.empty(0, dtype=np.uint8),
+            None if counts is None else np.empty(0, dtype=np.uint64),
+        )
+    label_lens = np.fromiter(
+        (len(label.encode("utf-8")) for label in row_labels),
+        dtype=np.uint32,
+        count=n,
+    )
+    label_texts = b"".join(label.encode("utf-8") for label in row_labels)
+    texts = np.frombuffer(label_texts, dtype=np.uint8)
+    out_remap_raw = np.empty(n * 4, dtype=np.uint8)
+    code_width = np.empty(1, dtype=np.uint32)
+    category_lens_cap = max(n, 256)
+    category_lens = np.empty(category_lens_cap, dtype=np.uint32)
+    category_texts_cap = max(256, len(label_texts) * 2)
+    category_texts = np.empty(category_texts_cap, dtype=np.uint8)
+    category_counts_cap = category_lens_cap
+    category_counts = np.empty(category_counts_cap, dtype=np.uint64)
+    in_counts_ptr = counts.ctypes.data if counts is not None else None
+    written = _lib.xyg_sorted_display_label_remap(
+        label_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        in_counts_ptr,
+        out_remap_raw.ctypes.data,
+        len(out_remap_raw),
+        code_width.ctypes.data,
+        category_lens.ctypes.data,
+        category_texts.ctypes.data,
+        len(category_texts),
+        category_lens_cap,
+        category_counts.ctypes.data if counts is not None else None,
+        category_counts_cap if counts is not None else 0,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native sorted_display_label_remap rejected the label array")
+    n_categories = int(written)
+    cat_lens = category_lens[:n_categories]
+    cat_bytes = category_texts[: int(cat_lens.sum())].tobytes()
+    categories: list[str] = []
+    offset = 0
+    for length in cat_lens:
+        end = offset + int(length)
+        categories.append(cat_bytes[offset:end].decode("utf-8"))
+        offset = end
+    width = int(code_width[0])
+    if width == 1:
+        remap = out_remap_raw[:n].copy()
+    elif width == 4:
+        remap = np.frombuffer(out_remap_raw[: n * 4], dtype="<u4").copy()
+    else:
+        raise ValueError("native sorted_display_label_remap returned an unknown code width")
+    out_counts = None
+    if counts is not None:
+        out_counts = category_counts[:n_categories].copy()
+    return categories, remap, out_counts
+
+
+def factorize_use_native_probe(distinct: int, probe_len: int, record_width: int) -> bool:
+    """Whether the native fixed-record factorizer should run on a probe sample."""
+    if isinstance(distinct, (bool, np.bool_)) or isinstance(probe_len, (bool, np.bool_)):
+        raise ValueError("probe counts must be integers")
+    if isinstance(record_width, (bool, np.bool_)) or int(record_width) <= 0:
+        raise ValueError("record_width must be a positive integer")
+    ok = _lib.xyg_factorize_use_native_probe(int(distinct), int(probe_len), int(record_width))
+    if ok < 0:
+        raise ValueError("native factorize_use_native_probe rejected the probe")
+    return bool(ok)
+
+
+def factorize_use_native_fixed(values: np.ndarray) -> bool:
+    """Probe a fixed-width column and choose the native hash factorizer path."""
+    records, width = _fixed_records(values)
+    n = len(records)
+    if n == 0:
+        ok = _lib.xyg_factorize_use_native_fixed(None, 0, width)
+    else:
+        ok = _lib.xyg_factorize_use_native_fixed(records.ctypes.data, n, width)
+    if ok < 0:
+        raise ValueError("native factorize_use_native_fixed rejected the record array")
+    return bool(ok)
+
+
+def category_labels(
+    kinds: npt.NDArray[np.uint8] | list[int],
+    payloads: list[bytes],
+) -> list[str]:
+    """Canonical display labels from packed host encodings (ABI 332)."""
+    if len(kinds) != len(payloads):
+        raise ValueError("category_labels kinds and payloads must have equal length")
+    n = len(payloads)
+    if n == 0:
+        return []
+    kind_arr = np.asarray(kinds, dtype=np.uint8)
+    if kind_arr.shape != (n,):
+        raise ValueError("category_labels kinds must be one-dimensional")
+    in_lens = np.fromiter((len(payload) for payload in payloads), dtype=np.uint32, count=n)
+    in_texts = b"".join(payloads)
+    texts = np.frombuffer(in_texts, dtype=np.uint8)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_texts_cap = max(256, len(in_texts) * 2 + n * 16)
+    out_texts = np.empty(out_texts_cap, dtype=np.uint8)
+    written = _lib.xyg_category_labels_packed(
+        kind_arr.ctypes.data,
+        in_lens.ctypes.data,
+        texts.ctypes.data,
+        len(texts),
+        n,
+        out_lens.ctypes.data,
+        out_texts.ctypes.data,
+        out_texts_cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native category_labels rejected the packed encodings")
+    if int(written) != n:
+        raise ValueError("native category_labels returned an unexpected label count")
+    out_bytes = out_texts[: int(out_lens.sum())].tobytes()
+    labels: list[str] = []
+    offset = 0
+    for length in out_lens:
+        end = offset + int(length)
+        labels.append(out_bytes[offset:end].decode("utf-8"))
+        offset = end
+    return labels
+
+
+def object_rows_all_stringlike(row_tags: npt.NDArray[np.uint8] | list[int]) -> bool:
+    """True when every object-column row is missing or string/bytes typed."""
+    tags = np.asarray(row_tags, dtype=np.uint8)
+    if tags.ndim != 1:
+        raise ValueError("object_rows_all_stringlike expects a 1-D tag array")
+    ok = _lib.xyg_object_rows_all_stringlike(tags.ctypes.data, len(tags))
+    if ok < 0:
+        raise ValueError("native object_rows_all_stringlike rejected the row tags")
+    return bool(ok)
+
+
+def object_rows_all_real_numeric(row_tags: npt.NDArray[np.uint8] | list[int]) -> bool:
+    """True when the column is real numeric with at least one non-missing row."""
+    tags = np.asarray(row_tags, dtype=np.uint8)
+    if tags.ndim != 1:
+        raise ValueError("object_rows_all_real_numeric expects a 1-D tag array")
+    ok = _lib.xyg_object_rows_all_real_numeric(tags.ctypes.data, len(tags))
+    if ok < 0:
+        raise ValueError("native object_rows_all_real_numeric rejected the row tags")
+    return bool(ok)
 
 
 def _positive_int(value: int, label: str) -> int:
@@ -1190,6 +1504,110 @@ def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
     if ok != 1:
         raise RuntimeError("xyg native geometry_offset failed (output undefined)")
     return float(out.value)
+
+
+def aligned_window(
+    lo: float, hi: float, extent_lo: float, extent_hi: float, pad: float
+) -> tuple[float, float]:
+    """Snap a 1-D window outward to the power-of-two grid over its extent (ABI 326, LOD T13)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    ok = _lib.xyg_aligned_window(
+        float(lo),
+        float(hi),
+        float(extent_lo),
+        float(extent_hi),
+        float(pad),
+        ctypes.byref(out_lo),
+        ctypes.byref(out_hi),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native aligned_window failed (output undefined)")
+    return float(out_lo.value), float(out_hi.value)
+
+
+def sample_threshold(fraction: float) -> int:
+    """Keep-fraction threshold matching the former Python ``lod._sample_threshold`` (ABI 327)."""
+    return int(_lib.xyg_sample_threshold(float(fraction)))
+
+
+def sample_fraction(level: int, base_fraction: float, growth: float) -> float:
+    """Zoom/detail sampling fraction (ABI 328, §5/§17)."""
+    return float(_lib.xyg_sample_fraction(int(level), float(base_fraction), float(growth)))
+
+
+class StratifiedSampleRangePlan(TypedDict):
+    fraction: float
+    seed: int
+    min_count: int
+    capacity: int
+    keep_all: bool
+
+
+def stratified_sample_range_plan(
+    n_rows: int,
+    n_groups: int,
+    target: int,
+    level: int,
+    growth: float,
+    seed: int,
+    min_per_category: int,
+) -> StratifiedSampleRangePlan:
+    """Validate categorical sampling policy and size its bounded output (ABI 345)."""
+    fraction = ctypes.c_double()
+    seed_out = ctypes.c_uint64()
+    min_count = ctypes.c_uint32()
+    capacity = ctypes.c_size_t()
+    keep_all = ctypes.c_uint32()
+    code = int(
+        _lib.xyg_stratified_sample_range_plan(
+            int(n_rows),
+            int(n_groups),
+            int(target),
+            int(level),
+            float(growth),
+            int(seed),
+            int(min_per_category),
+            ctypes.byref(fraction),
+            ctypes.byref(seed_out),
+            ctypes.byref(min_count),
+            ctypes.byref(capacity),
+            ctypes.byref(keep_all),
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid stratified-sample-range-plan request")
+    return {
+        "fraction": float(fraction.value),
+        "seed": int(seed_out.value),
+        "min_count": int(min_count.value),
+        "capacity": int(capacity.value),
+        "keep_all": bool(keep_all.value),
+    }
+
+
+def hash_row_ids(
+    ids: npt.NDArray[np.uint64],
+    seed: int,
+) -> npt.NDArray[np.uint64]:
+    """SplitMix64 row-id hashes (ABI 327, §5/§17).
+
+    Bit-identical to the former Python ``lod.hash_row_ids`` NumPy reference.
+    """
+    ids = np.ascontiguousarray(ids, dtype=np.uint64)
+    if ids.ndim != 1:
+        raise ValueError("ids must be a one-dimensional uint64 array")
+    out = np.empty(len(ids), dtype=np.uint64)
+    if len(ids):
+        ok = _lib.xyg_hash_row_ids(
+            ids.ctypes.data,
+            len(ids),
+            ctypes.c_uint64(int(seed)),
+            out.ctypes.data,
+        )
+        if ok != 1:
+            raise RuntimeError("xyg native hash_row_ids failed (output undefined)")
+    return out
 
 
 def encoded_column_meta(
@@ -2198,6 +2616,903 @@ def scene_xyta_trace_dispatch_plan(
     if ok != 1:
         raise ValueError("invalid scene_xyta_trace_dispatch_plan arguments")
     return _scene_xyta_trace_dispatch_plan_dict(out)
+
+
+SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20
+SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22
+
+
+class _SceneXytcTraceStyleIn(ctypes.Structure):
+    _fields_ = [
+        ("symbol_is_int", ctypes.c_int32),
+        ("symbol_int", ctypes.c_uint16),
+        ("opacity", ctypes.c_double),
+        ("fill_opacity", ctypes.c_double),
+        ("stroke_opacity", ctypes.c_double),
+        ("line_opacity", ctypes.c_double),
+        ("has_stroke", ctypes.c_int32),
+        ("has_line_color", ctypes.c_int32),
+        ("has_size", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("has_size_ch", ctypes.c_int32),
+        ("has_size_ch_constant", ctypes.c_int32),
+        ("size_ch_constant", ctypes.c_double),
+        ("has_stroke_width", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("has_width", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("has_line_width", ctypes.c_int32),
+        ("line_width", ctypes.c_double),
+        ("has_hex_dx", ctypes.c_int32),
+        ("hex_dx", ctypes.c_double),
+        ("has_hex_dy", ctypes.c_int32),
+        ("hex_dy", ctypes.c_double),
+        ("has_stroke_perimeter", ctypes.c_int32),
+        ("stroke_perimeter_is_bool", ctypes.c_int32),
+        ("stroke_perimeter_true", ctypes.c_int32),
+        ("dash_is_array", ctypes.c_int32),
+        ("has_fill", ctypes.c_int32),
+        ("fill_kind", ctypes.c_int32),
+        ("color_ch_present", ctypes.c_int32),
+        ("color_ch_has_constant", ctypes.c_int32),
+        ("radius_seq", ctypes.c_int32),
+        ("r0", ctypes.c_double),
+        ("r1", ctypes.c_double),
+        ("wedge_gap_raw", ctypes.c_double),
+        ("symbol_len", ctypes.c_size_t),
+        ("dash_len", ctypes.c_size_t),
+        ("dash_pattern_len", ctypes.c_size_t),
+        ("linecap_len", ctypes.c_size_t),
+        ("step_len", ctypes.c_size_t),
+        ("curve_len", ctypes.c_size_t),
+        ("fill_css_len", ctypes.c_size_t),
+        ("fill_space_len", ctypes.c_size_t),
+        ("fill_gradient_len", ctypes.c_size_t),
+        ("stroke_css_len", ctypes.c_size_t),
+        ("line_color_len", ctypes.c_size_t),
+        ("color_css_len", ctypes.c_size_t),
+        ("color_mode_len", ctypes.c_size_t),
+        ("color_const_len", ctypes.c_size_t),
+    ]
+
+
+class _SceneXytcTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_int32),
+        ("has_name", ctypes.c_int32),
+        ("marker_path_present", ctypes.c_int32),
+        ("use_density", ctypes.c_int32),
+        ("joined_fill", ctypes.c_int32),
+        ("marker_packed", ctypes.c_int32),
+        ("glyph_packed", ctypes.c_int32),
+        ("color2_class", ctypes.c_int32),
+        ("color2_gradient_packed", ctypes.c_int32),
+        ("kind_len", ctypes.c_size_t),
+        ("name_len", ctypes.c_size_t),
+        ("marker_blob_len", ctypes.c_size_t),
+        ("color2_gradient_len", ctypes.c_size_t),
+        ("style", _SceneXytcTraceStyleIn),
+    ]
+
+
+class _SceneXytaTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("trace_id", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_int32),
+        ("pack_hexbin_colormap", ctypes.c_int32),
+        ("pack_hexbin_rgba", ctypes.c_int32),
+        ("pack_ribbon_ends", ctypes.c_int32),
+        ("pack_mesh_faces", ctypes.c_int32),
+        ("pack_scatter_paint", ctypes.c_int32),
+        ("pack_density", ctypes.c_int32),
+        ("grid_shape_rows", ctypes.c_double),
+        ("grid_shape_cols", ctypes.c_double),
+        ("has_grid_shape", ctypes.c_int32),
+        ("has_grid", ctypes.c_int32),
+        ("has_rgba", ctypes.c_int32),
+        ("has_rgba_grid", ctypes.c_int32),
+        ("truecolor", ctypes.c_int32),
+        ("has_cmap_domain", ctypes.c_int32),
+        ("cmap_lo", ctypes.c_double),
+        ("cmap_hi", ctypes.c_double),
+        ("has_color_ch", ctypes.c_int32),
+        ("has_style_color", ctypes.c_int32),
+        ("has_opacity", ctypes.c_int32),
+        ("has_fill_opacity", ctypes.c_int32),
+        ("opacity", ctypes.c_float),
+        ("fill_opacity", ctypes.c_float),
+        ("domain_x0", ctypes.c_double),
+        ("domain_x1", ctypes.c_double),
+        ("domain_y0", ctypes.c_double),
+        ("domain_y1", ctypes.c_double),
+        ("cmap_flags", ctypes.c_uint32),
+        ("rows", ctypes.c_int32),
+        ("cols", ctypes.c_int32),
+        ("grid_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("rgba_grid_len", ctypes.c_size_t),
+        ("x_len", ctypes.c_size_t),
+        ("y_len", ctypes.c_size_t),
+        ("mean_rgba_len", ctypes.c_size_t),
+        ("idx_len", ctypes.c_size_t),
+        ("lut_len", ctypes.c_size_t),
+        ("cmap_len", ctypes.c_size_t),
+        ("stops_len", ctypes.c_size_t),
+        ("color_ch_len", ctypes.c_size_t),
+        ("style_color_len", ctypes.c_size_t),
+    ]
+
+
+def _optional_u8_ptr(data: bytes) -> tuple[int, int]:
+    if not data:
+        return 0, 0
+    arr = np.frombuffer(data, dtype=np.uint8)
+    return _ptr_u8(arr), len(data)
+
+
+def _optional_f64_ptr(values: Sequence[float]) -> tuple[int, int]:
+    if not values:
+        return 0, 0
+    arr = np.ascontiguousarray(values, dtype=np.float64)
+    return _ptr_f64(arr), len(arr)
+
+
+def scene_xytc_trace_pack(
+    *,
+    show_legend: bool,
+    kind: bytes,
+    has_name: bool,
+    name: bytes,
+    marker_path_present: bool,
+    use_density: bool,
+    joined_fill: bool,
+    marker_packed: bool,
+    glyph_packed: bool,
+    marker_blob: bytes,
+    color2_class: int,
+    color2_gradient_blob: bytes,
+    color2_gradient_packed: bool,
+    style: Mapping[str, Any],
+    symbol_b: bytes,
+    dash_b: bytes,
+    dash_pattern: Sequence[float],
+    linecap_b: bytes,
+    step_b: bytes,
+    curve_b: bytes,
+    fill_css: bytes,
+    fill_space: bytes,
+    fill_gradient_blob: bytes,
+    stroke_css: bytes,
+    line_color: bytes,
+    color_css: bytes,
+    color_mode: bytes,
+    color_const: bytes,
+) -> bytes:
+    """Pack one authored trace into an XYTR v1 record via ``xyg_scene_xytc_trace_pack`` (ABI 317)."""
+    style_in = _SceneXytcTraceStyleIn(
+        int(style["symbol_is_int"]),
+        ctypes.c_uint16(int(style["symbol_int"]) & 0xFFFF),
+        float(style["opacity"]),
+        float(style["fill_opacity"]),
+        float(style["stroke_opacity"]),
+        float(style["line_opacity"]),
+        int(style["has_stroke"]),
+        int(style["has_line_color"]),
+        int(style["has_size"]),
+        float(style["size"]),
+        int(style["has_size_ch"]),
+        int(style["has_size_ch_constant"]),
+        float(style["size_ch_constant"]),
+        int(style["has_stroke_width"]),
+        float(style["stroke_width"]),
+        int(style["has_width"]),
+        float(style["width"]),
+        int(style["has_line_width"]),
+        float(style["line_width"]),
+        int(style["has_hex_dx"]),
+        float(style["hex_dx"]),
+        int(style["has_hex_dy"]),
+        float(style["hex_dy"]),
+        int(style["has_stroke_perimeter"]),
+        int(style["stroke_perimeter_is_bool"]),
+        int(style["stroke_perimeter_true"]),
+        int(style["dash_is_array"]),
+        int(style["has_fill"]),
+        int(style["fill_kind"]),
+        int(style["color_ch_present"]),
+        int(style["color_ch_has_constant"]),
+        int(style["radius_seq"]),
+        float(style["r0"]),
+        float(style["r1"]),
+        float(style["wedge_gap_raw"]),
+        len(symbol_b),
+        len(dash_b),
+        len(dash_pattern),
+        len(linecap_b),
+        len(step_b),
+        len(curve_b),
+        len(fill_css),
+        len(fill_space),
+        len(fill_gradient_blob),
+        len(stroke_css),
+        len(line_color),
+        len(color_css),
+        len(color_mode),
+        len(color_const),
+    )
+    pack_in = _SceneXytcTracePackIn(
+        int(show_legend),
+        int(has_name),
+        int(marker_path_present),
+        int(use_density),
+        int(joined_fill),
+        int(marker_packed),
+        int(glyph_packed),
+        int(color2_class),
+        int(color2_gradient_packed),
+        len(kind),
+        len(name),
+        len(marker_blob),
+        len(color2_gradient_blob),
+        style_in,
+    )
+    out = np.zeros(SCENE_XYTC_TRACE_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    kind_ptr, _ = _optional_u8_ptr(kind)
+    name_ptr, _ = _optional_u8_ptr(name)
+    symbol_ptr, _ = _optional_u8_ptr(symbol_b)
+    dash_ptr, _ = _optional_u8_ptr(dash_b)
+    dash_pat_ptr, _ = _optional_f64_ptr(dash_pattern)
+    linecap_ptr, _ = _optional_u8_ptr(linecap_b)
+    step_ptr, _ = _optional_u8_ptr(step_b)
+    curve_ptr, _ = _optional_u8_ptr(curve_b)
+    fill_css_ptr, _ = _optional_u8_ptr(fill_css)
+    fill_space_ptr, _ = _optional_u8_ptr(fill_space)
+    fill_grad_ptr, _ = _optional_u8_ptr(fill_gradient_blob)
+    stroke_ptr, _ = _optional_u8_ptr(stroke_css)
+    line_color_ptr, _ = _optional_u8_ptr(line_color)
+    color_css_ptr, _ = _optional_u8_ptr(color_css)
+    color_mode_ptr, _ = _optional_u8_ptr(color_mode)
+    color_const_ptr, _ = _optional_u8_ptr(color_const)
+    marker_ptr, _ = _optional_u8_ptr(marker_blob)
+    color2_grad_ptr, _ = _optional_u8_ptr(color2_gradient_blob)
+    code = int(
+        _lib.xyg_scene_xytc_trace_pack(
+            ctypes.byref(pack_in),
+            kind_ptr,
+            name_ptr,
+            symbol_ptr,
+            dash_ptr,
+            dash_pat_ptr,
+            linecap_ptr,
+            step_ptr,
+            curve_ptr,
+            fill_css_ptr,
+            fill_space_ptr,
+            fill_grad_ptr,
+            stroke_ptr,
+            line_color_ptr,
+            color_css_ptr,
+            color_mode_ptr,
+            color_const_ptr,
+            marker_ptr,
+            color2_grad_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xytc_trace_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xytc_trace_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_xyta_trace_pack(
+    *,
+    trace_id: int,
+    pack_heatmap: bool,
+    pack_hexbin_colormap: bool,
+    pack_hexbin_rgba: bool,
+    pack_ribbon_ends: bool,
+    pack_mesh_faces: bool,
+    pack_scatter_paint: bool,
+    pack_density: bool,
+    grid_shape_rows: float,
+    grid_shape_cols: float,
+    has_grid_shape: bool,
+    has_grid: bool,
+    has_rgba: bool,
+    has_rgba_grid: bool,
+    truecolor: bool,
+    has_cmap_domain: bool,
+    cmap_lo: float,
+    cmap_hi: float,
+    has_color_ch: bool,
+    has_style_color: bool,
+    has_opacity: bool,
+    has_fill_opacity: bool,
+    opacity: float,
+    fill_opacity: float,
+    domain_x0: float,
+    domain_x1: float,
+    domain_y0: float,
+    domain_y1: float,
+    cmap_flags: int,
+    rows: int,
+    cols: int,
+    grid: bytes,
+    rgba: bytes,
+    rgba_grid: bytes,
+    x: bytes,
+    y: bytes,
+    mean_rgba: bytes,
+    idx: bytes,
+    lut: bytes,
+    cmap: bytes,
+    stops: bytes,
+    color_ch: bytes,
+    style_color: bytes,
+) -> bytes:
+    """Pack one attach trace into an XYTA v1 record via ``xyg_scene_xyta_trace_pack`` (ABI 318)."""
+    pack_in = _SceneXytaTracePackIn(
+        int(trace_id) & 0xFFFFFFFF,
+        int(pack_heatmap),
+        int(pack_hexbin_colormap),
+        int(pack_hexbin_rgba),
+        int(pack_ribbon_ends),
+        int(pack_mesh_faces),
+        int(pack_scatter_paint),
+        int(pack_density),
+        float(grid_shape_rows),
+        float(grid_shape_cols),
+        int(has_grid_shape),
+        int(has_grid),
+        int(has_rgba),
+        int(has_rgba_grid),
+        int(truecolor),
+        int(has_cmap_domain),
+        float(cmap_lo),
+        float(cmap_hi),
+        int(has_color_ch),
+        int(has_style_color),
+        int(has_opacity),
+        int(has_fill_opacity),
+        ctypes.c_float(float(opacity)),
+        ctypes.c_float(float(fill_opacity)),
+        float(domain_x0),
+        float(domain_x1),
+        float(domain_y0),
+        float(domain_y1),
+        ctypes.c_uint32(int(cmap_flags) & 0xFFFFFFFF),
+        int(rows),
+        int(cols),
+        len(grid),
+        len(rgba),
+        len(rgba_grid),
+        len(x),
+        len(y),
+        len(mean_rgba),
+        len(idx),
+        len(lut),
+        len(cmap),
+        len(stops),
+        len(color_ch),
+        len(style_color),
+    )
+    out = np.zeros(SCENE_XYTA_TRACE_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    grid_ptr, _ = _optional_u8_ptr(grid)
+    rgba_ptr, _ = _optional_u8_ptr(rgba)
+    rgba_grid_ptr, _ = _optional_u8_ptr(rgba_grid)
+    x_ptr, _ = _optional_u8_ptr(x)
+    y_ptr, _ = _optional_u8_ptr(y)
+    mean_rgba_ptr, _ = _optional_u8_ptr(mean_rgba)
+    idx_ptr, _ = _optional_u8_ptr(idx)
+    lut_ptr, _ = _optional_u8_ptr(lut)
+    cmap_ptr, _ = _optional_u8_ptr(cmap)
+    stops_ptr, _ = _optional_u8_ptr(stops)
+    color_ch_ptr, _ = _optional_u8_ptr(color_ch)
+    style_color_ptr, _ = _optional_u8_ptr(style_color)
+    code = int(
+        _lib.xyg_scene_xyta_trace_pack(
+            ctypes.byref(pack_in),
+            grid_ptr,
+            rgba_ptr,
+            rgba_grid_ptr,
+            x_ptr,
+            y_ptr,
+            mean_rgba_ptr,
+            idx_ptr,
+            lut_ptr,
+            cmap_ptr,
+            stops_ptr,
+            color_ch_ptr,
+            style_color_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xyta_trace_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xyta_trace_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+SCENE_XYAF_PACK_MAX_RECORD = 1 << 16
+SCENE_XYCF_PACK_MAX = 1 << 20
+SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18
+PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX = 8
+PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES = 1 << 28
+PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES = 1 << 28
+
+
+class _SceneXyafPackIn(ctypes.Structure):
+    _fields_ = [
+        ("index", ctypes.c_uint32),
+        ("kind_code", ctypes.c_uint8),
+        ("axis_code", ctypes.c_uint8),
+        ("symbol", ctypes.c_uint8),
+        ("anchor", ctypes.c_uint8),
+        ("facts", ctypes.c_uint32),
+        ("style_bits", ctypes.c_uint32),
+        ("linecap", ctypes.c_uint8),
+        ("dash_count", ctypes.c_uint8),
+        ("text_len", ctypes.c_size_t),
+        ("nums", ctypes.c_double * 18),
+        ("color", ctypes.c_uint8 * 4),
+        ("stroke", ctypes.c_uint8 * 4),
+        ("label_color", ctypes.c_uint8 * 4),
+        ("label_fill", ctypes.c_uint8 * 4),
+        ("label_border", ctypes.c_uint8 * 4),
+        ("dash", ctypes.c_float * 8),
+    ]
+
+
+class _SceneXycfPackIn(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint32),
+        ("collision_header", ctypes.c_uint32),
+        ("width", ctypes.c_double),
+        ("height", ctypes.c_double),
+        ("margin_left", ctypes.c_double),
+        ("margin_right", ctypes.c_double),
+        ("margin_top", ctypes.c_double),
+        ("margin_bottom", ctypes.c_double),
+        ("pad_left", ctypes.c_double),
+        ("pad_right", ctypes.c_double),
+        ("pad_top", ctypes.c_double),
+        ("pad_bottom", ctypes.c_double),
+        ("x_scale_kind", ctypes.c_uint32),
+        ("y_scale_kind", ctypes.c_uint32),
+        ("x_lo", ctypes.c_double),
+        ("x_hi", ctypes.c_double),
+        ("x_constant", ctypes.c_double),
+        ("y_lo", ctypes.c_double),
+        ("y_hi", ctypes.c_double),
+        ("y_constant", ctypes.c_double),
+        ("x_nonpositive_mask", ctypes.c_uint8),
+        ("y_nonpositive_mask", ctypes.c_uint8),
+        ("tick_kinds", ctypes.c_uint16),
+        ("title_len", ctypes.c_size_t),
+        ("x_label_len", ctypes.c_size_t),
+        ("y_label_len", ctypes.c_size_t),
+        ("x_format_len", ctypes.c_size_t),
+        ("y_format_len", ctypes.c_size_t),
+        ("x_major_len", ctypes.c_size_t),
+        ("x_minor_len", ctypes.c_size_t),
+        ("y_major_len", ctypes.c_size_t),
+        ("y_minor_len", ctypes.c_size_t),
+        ("x_label_count", ctypes.c_uint32),
+        ("y_label_count", ctypes.c_uint32),
+        ("chrome_len", ctypes.c_size_t),
+        ("legend_loc_len", ctypes.c_size_t),
+        ("legend_title_len", ctypes.c_size_t),
+        ("legend_ncols", ctypes.c_uint32),
+        ("legend_font_size", ctypes.c_double),
+        ("legend_title_font_size", ctypes.c_double),
+        ("legend_flags", ctypes.c_uint32),
+        ("legend_count", ctypes.c_uint32),
+        ("legend_text_rgba", ctypes.c_uint8 * 4),
+        ("legend_frame_rgba", ctypes.c_uint8 * 4),
+        ("colorbar_obs", ctypes.c_uint32),
+        ("colorbar_stop_count", ctypes.c_uint32),
+        ("colorbar_tick_count", ctypes.c_size_t),
+        ("colorbar_title_len", ctypes.c_size_t),
+        ("colorbar_lo", ctypes.c_double),
+        ("colorbar_hi", ctypes.c_double),
+        ("colorbar_text_rgba", ctypes.c_uint8 * 4),
+        ("legend_meta_len", ctypes.c_size_t),
+        ("legend_lens_len", ctypes.c_size_t),
+        ("legend_blob_len", ctypes.c_size_t),
+        ("colorbar_stops_len", ctypes.c_size_t),
+        ("collision_extra_len", ctypes.c_size_t),
+    ]
+
+
+class _PayloadColumnMaterializeIn(ctypes.Structure):
+    _fields_ = [
+        ("ship_method", ctypes.c_int32),
+        ("ship_scale", ctypes.c_int32),
+        ("values_len", ctypes.c_size_t),
+        ("col_min", ctypes.c_double),
+        ("col_max", ctypes.c_double),
+        ("kind_len", ctypes.c_size_t),
+        ("sticky_offset", ctypes.c_double),
+        ("axis_scale_len", ctypes.c_size_t),
+    ]
+
+
+class _PayloadColumnMaterializeOut(ctypes.Structure):
+    _fields_ = [
+        ("dtype_code", ctypes.c_int32),
+        ("offset", ctypes.c_double),
+        ("scale", ctypes.c_double),
+        ("has_kind", ctypes.c_int32),
+        ("len", ctypes.c_uint32),
+        ("bytes_offset", ctypes.c_size_t),
+        ("bytes_len", ctypes.c_size_t),
+    ]
+
+
+def scene_xyaf_pack(
+    *,
+    index: int,
+    kind_code: int,
+    axis_code: int,
+    symbol: int,
+    anchor: int,
+    facts: int,
+    style_bits: int,
+    linecap: int,
+    dash_count: int,
+    nums: Sequence[float],
+    color: bytes,
+    stroke: bytes,
+    label_color: bytes,
+    label_fill: bytes,
+    label_border: bytes,
+    dash: Sequence[float],
+    text: bytes,
+) -> bytes:
+    """Pack one XYAF v1 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
+    pack_in = _SceneXyafPackIn(
+        int(index) & 0xFFFFFFFF,
+        int(kind_code) & 0xFF,
+        int(axis_code) & 0xFF,
+        int(symbol) & 0xFF,
+        int(anchor) & 0xFF,
+        int(facts) & 0xFFFFFFFF,
+        int(style_bits) & 0xFFFFFFFF,
+        int(linecap) & 0xFF,
+        int(dash_count) & 0xFF,
+        len(text),
+        (ctypes.c_double * 18)(*(float(v) for v in nums)),
+        (ctypes.c_uint8 * 4).from_buffer_copy(color[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(stroke[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_color[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_fill[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_border[:4].ljust(4, b"\0")),
+        (ctypes.c_float * 8)(*(float(v) for v in dash)),
+    )
+    out = np.zeros(SCENE_XYAF_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    text_ptr, _ = _optional_u8_ptr(text)
+    code = int(
+        _lib.xyg_scene_xyaf_pack(
+            ctypes.byref(pack_in),
+            text_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xyaf_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xyaf_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_xycf_pack(header: Mapping[str, Any], sidecars: Mapping[str, Any]) -> bytes:
+    """Pack XYCF v1 facts via ``xyg_scene_xycf_pack`` (ABI 319)."""
+    pack_in = _SceneXycfPackIn(
+        int(header["flags"]),
+        int(header["collision_header"]),
+        float(header["width"]),
+        float(header["height"]),
+        float(header["margin_left"]),
+        float(header["margin_right"]),
+        float(header["margin_top"]),
+        float(header["margin_bottom"]),
+        float(header["pad_left"]),
+        float(header["pad_right"]),
+        float(header["pad_top"]),
+        float(header["pad_bottom"]),
+        int(header["x_scale_kind"]),
+        int(header["y_scale_kind"]),
+        float(header["x_lo"]),
+        float(header["x_hi"]),
+        float(header["x_constant"]),
+        float(header["y_lo"]),
+        float(header["y_hi"]),
+        float(header["y_constant"]),
+        int(header["x_nonpositive_mask"]),
+        int(header["y_nonpositive_mask"]),
+        int(header["tick_kinds"]),
+        len(sidecars["title"]),
+        len(sidecars["x_label"]),
+        len(sidecars["y_label"]),
+        len(sidecars["x_format"]),
+        len(sidecars["y_format"]),
+        len(sidecars["x_major"]) // 8,
+        len(sidecars["x_minor"]) // 8,
+        len(sidecars["y_major"]) // 8,
+        len(sidecars["y_minor"]) // 8,
+        int(header["x_label_count"]),
+        int(header["y_label_count"]),
+        len(sidecars["chrome"]),
+        len(sidecars["legend_loc"]),
+        len(sidecars["legend_title"]),
+        int(header["legend_ncols"]),
+        float(header["legend_font_size"]),
+        float(header["legend_title_font_size"]),
+        int(header["legend_flags"]),
+        int(header["legend_count"]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["legend_text_rgba"][:4]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["legend_frame_rgba"][:4]),
+        int(header["colorbar_obs"]),
+        int(header["colorbar_stop_count"]),
+        len(sidecars["colorbar_ticks"]) // 8,
+        len(sidecars["colorbar_title"]),
+        float(header["colorbar_lo"]),
+        float(header["colorbar_hi"]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["colorbar_text_rgba"][:4]),
+        len(sidecars["legend_meta"]),
+        len(sidecars["legend_lens"]) // 4,
+        len(sidecars["legend_blob"]),
+        len(sidecars["colorbar_stops_blob"]),
+        len(sidecars["collision_extra"]),
+    )
+    out = np.zeros(SCENE_XYCF_PACK_MAX, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    x_major = (
+        np.frombuffer(sidecars["x_major"], dtype="<f8")
+        if sidecars["x_major"]
+        else np.empty(0, dtype=np.float64)
+    )
+    x_minor = (
+        np.frombuffer(sidecars["x_minor"], dtype="<f8")
+        if sidecars["x_minor"]
+        else np.empty(0, dtype=np.float64)
+    )
+    y_major = (
+        np.frombuffer(sidecars["y_major"], dtype="<f8")
+        if sidecars["y_major"]
+        else np.empty(0, dtype=np.float64)
+    )
+    y_minor = (
+        np.frombuffer(sidecars["y_minor"], dtype="<f8")
+        if sidecars["y_minor"]
+        else np.empty(0, dtype=np.float64)
+    )
+    colorbar_ticks = (
+        np.frombuffer(sidecars["colorbar_ticks"], dtype="<f8")
+        if sidecars["colorbar_ticks"]
+        else np.empty(0, dtype=np.float64)
+    )
+    legend_lens = (
+        np.frombuffer(sidecars["legend_lens"], dtype="<u4")
+        if sidecars["legend_lens"]
+        else np.empty(0, dtype=np.uint32)
+    )
+    code = int(
+        _lib.xyg_scene_xycf_pack(
+            ctypes.byref(pack_in),
+            *_optional_u8_ptr(sidecars["title"]),
+            *_optional_u8_ptr(sidecars["x_label"]),
+            *_optional_u8_ptr(sidecars["y_label"]),
+            *_optional_u8_ptr(sidecars["x_format"]),
+            *_optional_u8_ptr(sidecars["y_format"]),
+            _ptr_f64(x_major),
+            _ptr_f64(x_minor),
+            _ptr_f64(y_major),
+            _ptr_f64(y_minor),
+            *_optional_u8_ptr(sidecars["x_labels_blob"]),
+            *_optional_u8_ptr(sidecars["y_labels_blob"]),
+            *_optional_u8_ptr(sidecars["chrome"]),
+            *_optional_u8_ptr(sidecars["legend_loc"]),
+            *_optional_u8_ptr(sidecars["legend_title"]),
+            *_optional_u8_ptr(sidecars["legend_meta"]),
+            _ptr_u32(legend_lens) if len(legend_lens) else _null_u32(),
+            *_optional_u8_ptr(sidecars["legend_blob"]),
+            *_optional_u8_ptr(sidecars["colorbar_stops_blob"]),
+            _ptr_f64(colorbar_ticks),
+            *_optional_u8_ptr(sidecars["colorbar_title"]),
+            *_optional_u8_ptr(sidecars["collision_extra"]),
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xycf_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xycf_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_figure_support_pack(*, flags: int, axes_blob: bytes, traces_blob: bytes) -> bytes:
+    """Pack XYFS v2 support envelope via ``xyg_scene_figure_support_pack`` (ABI 319)."""
+    out = np.zeros(SCENE_FIGURE_SUPPORT_PACK_MAX, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    axes_ptr, _ = _optional_u8_ptr(axes_blob)
+    traces_ptr, _ = _optional_u8_ptr(traces_blob)
+    code = int(
+        _lib.xyg_scene_figure_support_pack(
+            int(flags) & 0xFFFFFFFF,
+            axes_ptr,
+            len(axes_blob),
+            traces_ptr,
+            len(traces_blob),
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_figure_support_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_figure_support_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def payload_column_gather_materialize(
+    *,
+    sel: npt.NDArray[np.uint32] | None,
+    columns: Sequence[dict[str, Any]],
+    values: Sequence[npt.NDArray[np.float64]],
+    kinds: Sequence[bytes],
+    axis_scales: Sequence[bytes],
+) -> list[dict[str, Any]]:
+    """Gather and offset-ship geometry columns via ``xyg_payload_column_gather_materialize`` (ABI 320)."""
+    n = len(columns)
+    if n == 0 or n > PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX:
+        raise ValueError("invalid payload_column_gather_materialize column count")
+    if not (len(values) == len(kinds) == len(axis_scales) == n):
+        raise ValueError("payload_column_gather_materialize descriptor length mismatch")
+    ship_method_by_name = {"offset": 0, "values": 1, "f64": 2}
+    ship_scale_by_name = {"x": 0, "y": 1}
+    ins = (_PayloadColumnMaterializeIn * n)()
+    value_ptrs = (ctypes.c_void_p * n)(*(arr.ctypes.data for arr in values))
+    kind_ptrs = (ctypes.c_void_p * n)(
+        *(np.frombuffer(kind_b, dtype=np.uint8).ctypes.data if kind_b else 0 for kind_b in kinds)
+    )
+    scale_ptrs = (ctypes.c_void_p * n)(
+        *(np.frombuffer(scale_b, dtype=np.uint8).ctypes.data for scale_b in axis_scales)
+    )
+    for idx, (col, arr, kind_b, scale_b) in enumerate(
+        zip(columns, values, kinds, axis_scales, strict=True)
+    ):
+        arr = np.ascontiguousarray(arr, dtype=np.float64).reshape(-1)
+        ins[idx] = _PayloadColumnMaterializeIn(
+            ship_method_by_name[col["ship_method"]],
+            ship_scale_by_name[col["ship_scale"]],
+            len(arr),
+            float(col["col_min"]),
+            float(col["col_max"]),
+            len(kind_b),
+            float(col["sticky_offset"]),
+            len(scale_b),
+        )
+    outs = (_PayloadColumnMaterializeOut * n)()
+    out_bytes = np.zeros(PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES, dtype=np.uint8)
+    out_bytes_len = ctypes.c_size_t(0)
+    sel_arr = np.ascontiguousarray(sel, dtype=np.uint32) if sel is not None else None
+    written = int(
+        _lib.xyg_payload_column_gather_materialize(
+            _ptr_u32(sel_arr) if sel_arr is not None and len(sel_arr) else _null_u32(),
+            len(sel_arr) if sel_arr is not None else 0,
+            ins,
+            n,
+            value_ptrs,
+            kind_ptrs,
+            scale_ptrs,
+            outs,
+            _ptr_u8(out_bytes),
+            len(out_bytes),
+            ctypes.byref(out_bytes_len),
+        )
+    )
+    if written < 0:
+        raise ValueError("invalid payload_column_gather_materialize arguments")
+    blob = bytes(out_bytes[: int(out_bytes_len.value)])
+    result: list[dict[str, Any]] = []
+    for idx in range(written):
+        out = outs[idx]
+        enc = blob[out.bytes_offset : out.bytes_offset + out.bytes_len]
+        meta: dict[str, Any] = {"len": int(out.len)}
+        if out.dtype_code == 1:
+            meta["dtype"] = "f64"
+        else:
+            meta["offset"] = float(out.offset)
+            meta["scale"] = float(out.scale)
+            if out.has_kind:
+                meta["kind"] = kinds[idx].decode("utf-8")
+        result.append({"bytes": enc, "meta": meta, "dtype_code": int(out.dtype_code)})
+    return result
+
+
+def payload_channel_materialize(
+    *,
+    role: str,
+    mode: str,
+    n_categories: int,
+    style_dtype_u8: bool,
+    quantize_continuous: bool,
+    domain: tuple[float, float],
+    n_palette: int,
+    sel: npt.NDArray[np.uint32] | None,
+    values_f64: npt.NDArray[np.float64] | None,
+    values_u8: npt.NDArray[np.uint8] | None,
+) -> dict[str, Any]:
+    """Materialize one channel wire buffer via ``xyg_payload_channel_materialize`` (ABI 320)."""
+    role_code = {"color": 0, "size": 1, "style": 2}[role]
+    mode_code = {
+        "constant": 0,
+        "continuous": 1,
+        "categorical": 2,
+        "direct_rgba": 3,
+        "match_fill": 4,
+        "direct": 5,
+    }[mode]
+    vals_f64 = (
+        np.ascontiguousarray(values_f64, dtype=np.float64).reshape(-1)
+        if values_f64 is not None
+        else np.empty(0, dtype=np.float64)
+    )
+    vals_u8 = (
+        np.ascontiguousarray(values_u8, dtype=np.uint8).reshape(-1)
+        if values_u8 is not None
+        else np.empty(0, dtype=np.uint8)
+    )
+    sel_arr = np.ascontiguousarray(sel, dtype=np.uint32) if sel is not None else None
+    out = np.zeros(PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES, dtype=np.uint8)
+    meta = (ctypes.c_int32 * 5)()
+    nbytes = int(
+        _lib.xyg_payload_channel_materialize(
+            role_code,
+            mode_code,
+            int(n_categories),
+            1 if style_dtype_u8 else 0,
+            1 if quantize_continuous else 0,
+            float(domain[0]),
+            float(domain[1]),
+            int(n_palette),
+            _ptr_u32(sel_arr) if sel_arr is not None and len(sel_arr) else _null_u32(),
+            len(sel_arr) if sel_arr is not None else 0,
+            _ptr_f64(vals_f64),
+            len(vals_f64),
+            _ptr_u8(vals_u8),
+            len(vals_u8),
+            _ptr_u8(out),
+            len(out),
+            meta,
+        )
+    )
+    if nbytes < 0:
+        raise ValueError("invalid payload_channel_materialize arguments")
+    return {
+        "buf_kind": int(meta[0]),
+        "mark_dtype_u8": bool(meta[1]),
+        "ship_palette": bool(meta[2]),
+        "set_n": bool(meta[3]),
+        "len": int(meta[4]),
+        "bytes": bytes(out[:nbytes]),
+    }
 
 
 def scene_figure_support_figure_plan(*, polar: bool) -> dict[str, bool]:
@@ -8075,6 +9390,146 @@ def continuous_domain(data: npt.NDArray[np.float64]) -> tuple[float, float]:
     return (float(lo.value), float(hi.value))
 
 
+def size_range_admit(lo: float, hi: float) -> tuple[float, float]:
+    """Admit scatter size pixel range endpoints via ``xyg_size_range_admit`` (ABI 350)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_size_range_admit(
+            float(lo),
+            float(hi),
+            ctypes.byref(out_lo),
+            ctypes.byref(out_hi),
+        )
+    )
+    if code == -1:
+        raise ValueError("size_range must contain exactly two finite pixel values")
+    if code in (-2, -3):
+        raise ValueError("size_range must be non-negative and ordered low-to-high")
+    if code != 0:
+        raise ValueError("invalid size-range-admit request")
+    return (float(out_lo.value), float(out_hi.value))
+
+
+def array_is_categorical(dtype_kind: int, object_real_numeric: int = -1) -> bool:
+    """Whether a column uses categorical color resolution (ABI 351)."""
+    code = int(_lib.xyg_array_is_categorical(int(dtype_kind) & 0xFF, int(object_real_numeric)))
+    if code < 0:
+        raise ValueError("invalid array-is-categorical request")
+    return code == 1
+
+
+def real_numeric_dtype_admit(dtype_kind: int) -> None:
+    """Reject boolean/complex dtype kinds before real f64 coercion (ABI 352)."""
+    code = int(_lib.xyg_real_numeric_dtype_admit(int(dtype_kind) & 0xFF))
+    if code == -1:
+        raise ValueError("values must be real numeric, not boolean")
+    if code == -2:
+        raise ValueError("values must be real numeric")
+    if code != 0:
+        raise ValueError("invalid real-numeric-dtype-admit request")
+
+
+def object_row_stringlike_tag_from_probe(probe: int) -> int:
+    """Map a host value probe to a stringlike object-row tag (ABI 353)."""
+    code = int(_lib.xyg_object_row_stringlike_tag_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid object-row-stringlike-tag request")
+    return code
+
+
+def object_row_real_numeric_tag_from_probe(probe: int) -> int:
+    """Map a host value probe to a real-numeric object-row tag (ABI 353)."""
+    code = int(_lib.xyg_object_row_real_numeric_tag_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid object-row-real-numeric-tag request")
+    return code
+
+
+def object_row_stringlike_tags_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to stringlike object-row tags (ABI 356)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_object_row_stringlike_tags_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid object-row-stringlike-tags request")
+    return out
+
+
+def object_row_real_numeric_tags_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to real-numeric object-row tags (ABI 356)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_object_row_real_numeric_tags_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid object-row-real-numeric-tags request")
+    return out
+
+
+def category_label_kind_from_probe(probe: int) -> int:
+    """Map a host value probe to a category-label kind byte (ABI 354)."""
+    code = int(_lib.xyg_category_label_kind_from_probe(int(probe) & 0xFF))
+    if code < 0:
+        raise ValueError("invalid category-label-kind request")
+    return code
+
+
+def category_label_kinds_from_probes(
+    probes: npt.NDArray[np.uint8] | list[int],
+) -> npt.NDArray[np.uint8]:
+    """Batch map value probes to category-label kind bytes (ABI 357)."""
+    probes_arr = np.asarray(probes, dtype=np.uint8)
+    if probes_arr.ndim != 1:
+        raise ValueError("value probes must be 1-D")
+    out = np.empty(len(probes_arr), dtype=np.uint8)
+    if len(out) == 0:
+        return out
+    code = int(
+        _lib.xyg_category_label_kinds_from_probes(
+            probes_arr.ctypes.data,
+            len(probes_arr),
+            out.ctypes.data,
+        )
+    )
+    if code != 1:
+        raise ValueError("invalid category-label-kinds request")
+    return out
+
+
+def category_code_width(n_categories: int) -> int:
+    """Categorical wire code width marker: 1 (u8) or 4 (u32) (ABI 355)."""
+    return int(_lib.xyg_category_code_width(int(n_categories)))
+
+
+def category_palette_rows(n_categories: int) -> int:
+    """Indexed palette row count capped at 256 (ABI 355)."""
+    return int(_lib.xyg_category_palette_rows(int(n_categories)))
+
+
 def direct_rgba_admit(
     values: npt.NDArray[np.float64],
     components: int,
@@ -8133,6 +9588,377 @@ def clip_quantize_u8(values: npt.ArrayLike) -> npt.NDArray[np.uint8]:
     if code != 1:
         raise ValueError("invalid clip-quantize-u8 request")
     return out
+
+
+def quantize_unit_u8(
+    values: npt.NDArray[np.float64],
+    domain: tuple[float, float],
+) -> npt.NDArray[np.uint8]:
+    """Normalize over ``domain`` and quantize to u8 (normalize + ABI 251)."""
+    arr = _as_f64(values, "quantize_unit_u8")
+    lo, hi = domain
+    out = np.empty(arr.size, dtype=np.uint8)
+    code = int(
+        _lib.xyg_quantize_unit_u8(
+            _ptr_f64(arr) if arr.size else 0,
+            int(arr.size),
+            float(lo),
+            float(hi),
+            _ptr_u8(out) if out.size else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid quantize-unit-u8 request")
+    if code != 1:
+        raise ValueError("invalid quantize-unit-u8 request")
+    return out
+
+
+def palette_rows_rgba8(
+    entries: Sequence[str],
+    rows: int,
+) -> tuple[npt.NDArray[np.uint8], int, npt.NDArray[np.uint8]]:
+    """Indexed palette rows as straight-alpha RGBA8 (ABI 342/346)."""
+    texts = [str(entry) for entry in entries]
+    if not texts:
+        raise ValueError("palette_rows_rgba8 requires at least one entry")
+    n = max(int(rows), 1)
+    lens, packed = _pack_utf8_strings(texts)
+    out = np.empty(n * 4, dtype=np.uint8)
+    unresolved = ctypes.c_uint32()
+    entry_flags = np.empty(len(texts), dtype=np.uint8)
+    written = _lib.xyg_palette_rows_rgba8(
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(texts),
+        n,
+        _ptr_u8(out),
+        out.size,
+        ctypes.byref(unresolved),
+        _ptr_u8(entry_flags),
+        entry_flags.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid palette-rows-rgba8 request")
+    return out.reshape(n, 4), int(unresolved.value), entry_flags
+
+
+def categorical_palette(entries: Sequence[str], n_categories: int) -> list[str]:
+    """Repeat base palette colors for categorical wire specs (ABI 347)."""
+    texts = [str(entry) for entry in entries]
+    if not texts:
+        raise ValueError("categorical_palette requires at least one entry")
+    n = int(n_categories)
+    if n <= 0:
+        raise ValueError("categorical_palette requires a positive category count")
+    lens, packed = _pack_utf8_strings(texts)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_cap = sum(len(text.encode("utf-8")) for text in texts) * n
+    out_texts = np.empty(max(out_cap, 1), dtype=np.uint8)
+    written = _lib.xyg_categorical_palette(
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(texts),
+        n,
+        out_lens.ctypes.data,
+        _ptr_u8(out_texts),
+        out_texts.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid categorical-palette request")
+    return _unpack_utf8_strings(out_lens, out_texts, n)
+
+
+class PaletteMapResolve(TypedDict):
+    colors: list[str]
+    unmapped_count: int
+    map_exhausted: bool
+
+
+def categorical_palette_map_resolve(
+    categories: Sequence[str],
+    palette_map: Mapping[str, str],
+    *,
+    default_palette: Sequence[str] | None = None,
+) -> PaletteMapResolve:
+    """Resolve one shipped color per category from a label→color map (ABI 347)."""
+    cat_texts = [str(category) for category in categories]
+    n = len(cat_texts)
+    if n == 0:
+        return {"colors": [], "unmapped_count": 0, "map_exhausted": False}
+    cat_lens, cat_packed = _pack_utf8_strings(cat_texts)
+    map_keys = [str(key) for key in palette_map]
+    map_values = [str(palette_map[key]) for key in palette_map]
+    key_lens, key_packed = _pack_utf8_strings(map_keys)
+    value_lens, value_packed = _pack_utf8_strings(map_values)
+    default = [str(entry) for entry in (default_palette or ())]
+    def_lens, def_packed = _pack_utf8_strings(default)
+    out_lens = np.empty(n, dtype=np.uint32)
+    out_cap = sum(len(text.encode("utf-8")) for text in cat_texts + map_values + default) + 64
+    out_texts = np.empty(max(out_cap, 1), dtype=np.uint8)
+    unmapped = ctypes.c_uint32()
+    exhausted = ctypes.c_uint32()
+    written = _lib.xyg_categorical_palette_map_resolve(
+        cat_lens.ctypes.data,
+        _ptr_u8(cat_packed) if cat_packed.size else 0,
+        int(cat_packed.size),
+        n,
+        key_lens.ctypes.data if map_keys else 0,
+        _ptr_u8(key_packed) if key_packed.size else 0,
+        int(key_packed.size),
+        value_lens.ctypes.data if map_values else 0,
+        _ptr_u8(value_packed) if value_packed.size else 0,
+        int(value_packed.size),
+        len(map_keys),
+        def_lens.ctypes.data if default else 0,
+        _ptr_u8(def_packed) if def_packed.size else 0,
+        int(def_packed.size),
+        len(default),
+        out_lens.ctypes.data,
+        _ptr_u8(out_texts),
+        out_texts.size,
+        ctypes.byref(unmapped),
+        ctypes.byref(exhausted),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid categorical-palette-map-resolve request")
+    return {
+        "colors": _unpack_utf8_strings(out_lens, out_texts, n),
+        "unmapped_count": int(unmapped.value),
+        "map_exhausted": bool(exhausted.value),
+    }
+
+
+def color_channel_direct_rgba_f64_continuous(
+    values: npt.NDArray[np.float64],
+    domain: tuple[float, float],
+    colormap: str | list[list[int]] | npt.NDArray[np.uint8],
+) -> npt.NDArray[np.float64]:
+    """Sample a continuous color channel to canonical f64 RGBA rows (ABI 348)."""
+    vals = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
+    if isinstance(colormap, str):
+        stops = np.asarray(colormap_stops(colormap), dtype=np.uint8)
+    else:
+        stops = np.ascontiguousarray(colormap, dtype=np.uint8).reshape(-1, 3)
+    out = np.empty(vals.size * 4, dtype=np.float64)
+    written = _lib.xyg_color_channel_direct_rgba_f64_continuous(
+        _ptr_f64(vals),
+        vals.size,
+        float(domain[0]),
+        float(domain[1]),
+        _ptr_u8(stops),
+        stops.shape[0],
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid color-channel-direct-rgba-f64-continuous request")
+    return out.reshape(vals.size, 4)
+
+
+def color_channel_direct_rgba_f64_categorical(
+    codes: np.ndarray,
+    palette: Sequence[str],
+) -> npt.NDArray[np.float64]:
+    """Sample a categorical color channel to canonical f64 RGBA rows (ABI 348)."""
+    entries = [str(entry) for entry in palette]
+    if not entries:
+        raise ValueError("color_channel_direct_rgba_f64_categorical requires a palette")
+    code_arr = np.ascontiguousarray(codes, dtype=np.uint32).reshape(-1)
+    lens, packed = _pack_utf8_strings(entries)
+    out = np.empty(code_arr.size * 4, dtype=np.float64)
+    written = _lib.xyg_color_channel_direct_rgba_f64_categorical(
+        code_arr.ctypes.data,
+        code_arr.size,
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(entries),
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid color-channel-direct-rgba-f64-categorical request")
+    return out.reshape(code_arr.size, 4)
+
+
+_COLORMAP_RESOLVE_ERRORS: dict[int, str] = {
+    -1: "cannot be resolved to fixed channels",
+    -2: "is translucent",
+    -3: "between 2 and 256 color stops",
+    -4: "has a direction keyword, but a colormap maps values to colors and has no direction",
+    -5: "position must be between 0 and 1",
+    -6: "must be a CSS 'linear-gradient(...)' value",
+    -7: "colormap stop output buffer is too small",
+}
+
+
+def _colormap_resolve_error(code: int, label: str) -> ValueError:
+    if code == -2:
+        return ValueError(
+            f"{label} is translucent; colormap stops are opaque RGB (a LUT carries "
+            "no alpha). Set the mark's opacity/fill-opacity instead, or use the color the "
+            "stop should blend to."
+        )
+    if code == -1:
+        return ValueError(
+            f"{label} cannot be resolved to fixed channels; colormap stops must be "
+            "hex, rgb()/rgba(), hsl()/hsla(), or a named color (var()/oklch()/color-mix() "
+            "resolve only in a browser, and XYG has to resolve this one itself for SVG, "
+            "native PNG, and aggregated density surfaces)"
+        )
+    if code == -3:
+        return ValueError(f"{label} must have between 2 and 256 color stops")
+    if code == -4:
+        return ValueError(
+            f"{label} gradient has a direction keyword, but a colormap maps values to "
+            "colors and has no direction; drop it, or reverse the stop order"
+        )
+    if code == -5:
+        return ValueError(f"{label} position must be between 0 and 1")
+    if code == -6:
+        return ValueError(f"{label} must be a CSS 'linear-gradient(...)' value")
+    return ValueError(f"{label} colormap resolve failed ({code})")
+
+
+def colormap_is_builtin(name: str) -> bool:
+    """True when `name` is a built-in colormap, including `_r` variants (ABI 349)."""
+    encoded = name.encode("utf-8")
+    ok = int(_lib.xyg_colormap_is_builtin(encoded if encoded else 0, len(encoded)))
+    if ok < 0:
+        raise ValueError("colormap_is_builtin requires a UTF-8 name")
+    return bool(ok)
+
+
+def colormap_resolved_stops_admit(stops: npt.NDArray[np.uint8]) -> int:
+    """Return stop count when `stops` is canonical wire RGB, else 0 (ABI 349)."""
+    flat = np.ascontiguousarray(stops, dtype=np.uint8).reshape(-1)
+    if flat.size == 0 or flat.size % 3 != 0:
+        return 0
+    return int(
+        _lib.xyg_colormap_resolved_stops_admit(
+            _ptr_u8(flat),
+            flat.size // 3,
+        )
+    )
+
+
+def colormap_custom_stops_resolve_gradient(css: str, *, label: str = "colormap") -> list[list[int]]:
+    """Resolve custom colormap stops from CSS linear-gradient (ABI 349)."""
+    encoded = css.encode("utf-8")
+    out = np.empty(256 * 3, dtype=np.uint8)
+    code = int(
+        _lib.xyg_colormap_custom_stops_resolve_gradient(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if code <= 0:
+        raise _colormap_resolve_error(code, label)
+    return _unpack_rgb_stops(out[: code * 3])
+
+
+def colormap_custom_stops_resolve_list(
+    colors: Sequence[str],
+    positions: Sequence[float | None],
+    *,
+    label: str = "colormap",
+) -> list[list[int]]:
+    """Resolve custom colormap stops from CSS color strings (ABI 349)."""
+    n = len(colors)
+    if len(positions) != n:
+        raise ValueError(f"{label} colors and positions must have equal length")
+    pos = np.asarray(
+        [np.nan if value is None else float(value) for value in positions],
+        dtype=np.float64,
+    )
+    pos_arr = np.ascontiguousarray(pos, dtype=np.float64)
+    lens, packed = _pack_utf8_strings([str(color) for color in colors])
+    out = np.empty(256 * 3, dtype=np.uint8)
+    code = int(
+        _lib.xyg_colormap_custom_stops_resolve_list(
+            lens.ctypes.data,
+            _ptr_u8(packed) if packed.size else 0,
+            int(packed.size),
+            _ptr_f64(pos_arr),
+            n,
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if code <= 0:
+        raise _colormap_resolve_error(code, label)
+    return _unpack_rgb_stops(out[: code * 3])
+
+
+def _unpack_rgb_stops(flat: npt.NDArray[np.uint8]) -> list[list[int]]:
+    rows = flat.reshape(-1, 3)
+    return [[int(r), int(g), int(b)] for r, g, b in rows]
+
+
+def colormap_lut_rgba8(
+    colormap: str | npt.NDArray[np.uint8],
+    *,
+    n_texels: int = 256,
+) -> npt.NDArray[np.uint8]:
+    """256-texel straight-alpha RGBA8 colormap LUT (ABI 343)."""
+    count = max(int(n_texels), 1)
+    out = np.empty(count * 4, dtype=np.uint8)
+    if isinstance(colormap, str):
+        encoded = colormap.encode("utf-8")
+        code = int(
+            _lib.xyg_colormap_lut_rgba8(
+                encoded if encoded else 0,
+                len(encoded),
+                0,
+                0,
+                count,
+                _ptr_u8(out),
+                out.size,
+            )
+        )
+    else:
+        stops = np.ascontiguousarray(colormap, dtype=np.uint8).reshape(-1)
+        if stops.size == 0 or stops.size % 3 != 0:
+            raise ValueError("colormap stops must be a non-empty multiple of 3")
+        code = int(
+            _lib.xyg_colormap_lut_rgba8(
+                0,
+                0,
+                _ptr_u8(stops),
+                stops.size // 3,
+                count,
+                _ptr_u8(out),
+                out.size,
+            )
+        )
+    if code != 1:
+        raise ValueError("invalid colormap-lut-rgba8 request")
+    return out.reshape(count, 4)
+
+
+def literal_color_rgba_f64(values: Sequence[str]) -> npt.NDArray[np.float64] | None:
+    """Functional CSS color column to canonical f64 RGBA rows (ABI 344)."""
+    texts = [str(v) for v in values]
+    if not texts:
+        return None
+    lens, packed = _pack_utf8_strings(texts)
+    out = np.empty(len(texts) * 4, dtype=np.float64)
+    written = _lib.xyg_literal_color_rgba_f64(
+        lens.ctypes.data,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        len(texts),
+        _ptr_f64(out),
+        out.size,
+    )
+    if written == _USIZE_MAX:
+        return None
+    return out.reshape(len(texts), 4)
 
 
 def histogram_uniform(
@@ -11647,6 +13473,87 @@ def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: flo
     return bool(out.value)
 
 
+def screen_shape(width: int, height: int) -> tuple[int, int]:
+    """Clamp screen dimensions to the product LOD grid bounds (ABI 329, §5)."""
+    if isinstance(width, (bool, np.bool_)) or isinstance(height, (bool, np.bool_)):
+        raise ValueError("screen dimensions must be integers")
+    # The C ABI uses i32; huge frontend pixel counts must not wrap before Rust
+    # clamps them to MAX_SCREEN_DIM.
+    _i32_max = 2_147_483_647
+    width = min(int(width), _i32_max)
+    height = min(int(height), _i32_max)
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok = _lib.xyg_screen_shape(
+        width,
+        height,
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native screen_shape failed (output undefined)")
+    return int(out_w.value), int(out_h.value)
+
+
+def normalize_window(
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    *,
+    require_area: bool = True,
+) -> tuple[float, float, float, float]:
+    """Order a possibly-flipped request window (ABI 334, §5)."""
+    out = (ctypes.c_double * 4)()
+    ok = _lib.xyg_normalize_window(
+        float(x0),
+        float(x1),
+        float(y0),
+        float(y1),
+        1 if require_area else 0,
+        out,
+    )
+    if ok == 0:
+        raise ValueError("view window bounds must be finite")
+    if ok < 0:
+        raise ValueError("view window must have non-zero width and height")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
+def view_visible_mask(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+) -> npt.NDArray[np.bool_]:
+    """Boolean mask of rows inside a Cartesian viewport window (ABI 335, §19)."""
+    xv = np.ascontiguousarray(x, dtype=np.float64)
+    yv = np.ascontiguousarray(y, dtype=np.float64)
+    if xv.shape != yv.shape or xv.ndim != 1:
+        raise ValueError("view_visible_mask expects equal-length 1-D x/y arrays")
+    n = len(xv)
+    if n == 0:
+        return np.empty(0, dtype=np.bool_)
+    out = np.empty(n, dtype=np.uint8)
+    written = _lib.xyg_view_visible_mask(
+        xv.ctypes.data,
+        yv.ctypes.data,
+        n,
+        float(lo_x),
+        float(hi_x),
+        float(lo_y),
+        float(hi_y),
+        out.ctypes.data,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("native view_visible_mask rejected the coordinate arrays")
+    if int(written) != n:
+        raise ValueError("native view_visible_mask returned an unexpected row count")
+    return out.astype(np.bool_, copy=False)
+
+
 def lod_grid_shape(
     width: int, height: int, visible: int, target_per_cell: float = 16.0
 ) -> tuple[int, int]:
@@ -12289,6 +14196,7 @@ _PAYLOAD_AXIS_TYPE_BY_SCALE: dict[str, int] = {
 }
 
 _PAYLOAD_SHIP_SCALE_BY_CODE: tuple[str, ...] = ("linear", "log", "symlog")
+_PAYLOAD_COL_AXIS_SLOT_BY_CODE: tuple[str, ...] = ("x", "y")
 
 
 def _payload_axis_type_code(scale: str) -> int:
@@ -12461,6 +14369,8 @@ def payload_bar_hist_emit_plan(
         raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
     if kind_i == PAYLOAD_BAR_HIST_KIND_HISTOGRAM:
         orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
+    if orientation_i is None:
+        raise ValueError(f"invalid payload_bar_hist_emit_plan orientation {orientation!r}")
     emit_bar = ctypes.c_int32(-1)
     tier_direct = ctypes.c_int32(-1)
     n_marks_out = ctypes.c_size_t(0)
@@ -12754,14 +14664,16 @@ def payload_column_ship_plan(
             raise ValueError("invalid payload_column_ship_plan trace slot")
         if not (0 <= method_code < len(_PAYLOAD_COL_SHIP_METHOD_BY_CODE)):
             raise ValueError("invalid payload_column_ship_plan ship method")
-        if not (0 <= scale_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        if not (0 <= scale_code < len(_PAYLOAD_COL_AXIS_SLOT_BY_CODE)):
             raise ValueError("invalid payload_column_ship_plan column ship scale")
         out_columns.append(
             {
                 "registry_key": _PAYLOAD_COL_REGISTRY_KEY_BY_CODE[key_code],
                 "trace_slot": _PAYLOAD_TRACE_SLOT_ATTR[slot_code],
                 "ship_method": _PAYLOAD_COL_SHIP_METHOD_BY_CODE[method_code],
-                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[scale_code],
+                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)]
+                if scale_code == 1
+                else _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
                 "gather": bool(entry.gather),
             }
         )
@@ -12875,6 +14787,326 @@ def payload_density_grid_ship_plan(
         "buffers": out_buffers,
         "n_attach": int(n_attach.value),
         "attach": out_attach,
+    }
+
+
+class _PayloadDensityGridMaterializeOut(ctypes.Structure):
+    _fields_ = [
+        ("gmax", ctypes.c_double),
+        ("visible", ctypes.c_uint64),
+        ("grid_from_pyramid", ctypes.c_uint32),
+        ("has_pyramid_rgba", ctypes.c_uint32),
+        ("pyramid_level", ctypes.c_int32),
+        ("from_tiles", ctypes.c_uint32),
+        ("encoded_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("sample_sel_len", ctypes.c_size_t),
+        ("visible_sel_len", ctypes.c_size_t),
+    ]
+
+
+class _PayloadDensityGridMaterializeIn(ctypes.Structure):
+    _fields_ = [
+        ("cartesian", ctypes.c_int32),
+        ("x_linear", ctypes.c_int32),
+        ("y_linear", ctypes.c_int32),
+        ("categorical", ctypes.c_int32),
+        ("compact_categorical", ctypes.c_int32),
+        ("stratified_counts", ctypes.c_int32),
+        ("x_has_nulls", ctypes.c_int32),
+        ("y_has_nulls", ctypes.c_int32),
+        ("point_overlay", ctypes.c_int32),
+        ("grid_from_pyramid", ctypes.c_int32),
+        ("x_memmapped", ctypes.c_int32),
+        ("y_memmapped", ctypes.c_int32),
+        ("has_pyramid_resource", ctypes.c_int32),
+        ("force_bin2d", ctypes.c_int32),
+        ("force_pyramid", ctypes.c_int32),
+        ("color_mode", ctypes.c_int32),
+        ("x_min", ctypes.c_double),
+        ("x_max", ctypes.c_double),
+        ("y_min", ctypes.c_double),
+        ("y_max", ctypes.c_double),
+        ("xr0", ctypes.c_double),
+        ("xr1", ctypes.c_double),
+        ("yr0", ctypes.c_double),
+        ("yr1", ctypes.c_double),
+        ("bx0", ctypes.c_double),
+        ("bx1", ctypes.c_double),
+        ("by0", ctypes.c_double),
+        ("by1", ctypes.c_double),
+        ("x_c0", ctypes.c_double),
+        ("x_c1", ctypes.c_double),
+        ("y_c0", ctypes.c_double),
+        ("y_c1", ctypes.c_double),
+        ("n_points", ctypes.c_uint64),
+        ("w", ctypes.c_size_t),
+        ("h", ctypes.c_size_t),
+        ("len", ctypes.c_size_t),
+        ("pyramid_attempt", ctypes.c_int32),
+        ("pyramid_resource", ctypes.c_int32),
+        ("pyramid_handle", ctypes.c_uint64),
+        ("pyr_colored", ctypes.c_int32),
+        ("max_upsample", ctypes.c_size_t),
+        ("tile_upsample", ctypes.c_size_t),
+        ("pyramid_no_rescan", ctypes.c_int32),
+        ("needs_pyramid_sample", ctypes.c_int32),
+        ("pyramid_sample_stratified", ctypes.c_int32),
+        ("n_color_counts", ctypes.c_size_t),
+        ("color_lut_len", ctypes.c_size_t),
+        ("ship_mean_color", ctypes.c_int32),
+        ("binning_cap", ctypes.c_size_t),
+        ("encoded_cap", ctypes.c_size_t),
+        ("rgba_cap", ctypes.c_size_t),
+        ("sample_sel_cap", ctypes.c_size_t),
+        ("visible_sel_cap", ctypes.c_size_t),
+    ]
+
+
+PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING = 64
+DENSITY_RESOURCE_NONE = 0
+DENSITY_RESOURCE_PYRAMID = 1
+DENSITY_RESOURCE_TILE_STORE = 2
+
+
+def _optional_color_source_args(
+    n: int,
+    bin_colors: dict | None,
+) -> tuple[int | None, int | None, int | None, int, tuple]:
+    if not bin_colors or n == 0:
+        return None, None, None, 0, ()
+    idx = bin_colors.get("idx")
+    rgba = bin_colors.get("rgba")
+    lut = bin_colors.get("lut")
+    if idx is None and rgba is None:
+        return None, None, None, 0, ()
+    return _color_source_args(n, idx, rgba, lut)
+
+
+def payload_density_grid_materialize(
+    *,
+    emit_plan: dict[str, int | bool | float] | None = None,
+    cartesian: bool | None = None,
+    x_linear: bool | None = None,
+    y_linear: bool | None = None,
+    categorical: bool | None = None,
+    compact_categorical: bool | None = None,
+    stratified_counts: bool | None = None,
+    x_has_nulls: bool | None = None,
+    y_has_nulls: bool | None = None,
+    point_overlay: bool | None = None,
+    grid_from_pyramid: bool | None = None,
+    x_memmapped: bool | None = None,
+    y_memmapped: bool | None = None,
+    has_pyramid_resource: bool | None = None,
+    color_mode: int | None = None,
+    x_min: float | None = None,
+    x_max: float | None = None,
+    y_min: float | None = None,
+    y_max: float | None = None,
+    n_points: int,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    x_c0: float = 0.0,
+    x_c1: float = 0.0,
+    y_c0: float = 0.0,
+    y_c1: float = 0.0,
+    w: int,
+    h: int,
+    x_raw: npt.NDArray[np.float64],
+    y_raw: npt.NDArray[np.float64],
+    bx: npt.NDArray[np.float64],
+    by: npt.NDArray[np.float64],
+    pyramid_attempt: bool = False,
+    pyramid_resource: int = DENSITY_RESOURCE_NONE,
+    pyramid_handle: int = 0,
+    pyr_colored: bool = False,
+    max_upsample: int = 2,
+    tile_upsample: int = 2,
+    pyramid_no_rescan: bool = False,
+    needs_pyramid_sample: bool = False,
+    pyramid_sample_stratified: bool = False,
+    ship_mean_color: bool = False,
+    color_codes: npt.NDArray[np.uint8] | None = None,
+    color_counts: npt.NDArray[np.uint64] | None = None,
+    bin_colors: dict | None = None,
+    force_bin2d: bool = False,
+    force_pyramid: bool = False,
+) -> dict[str, Any]:
+    """Materialize a density count grid via ``xyg_payload_density_grid_materialize`` (ABI 316)."""
+    if emit_plan is not None:
+        cartesian = True
+        x_linear = True
+        y_linear = True
+        categorical = False
+        compact_categorical = False
+        stratified_counts = False
+        x_has_nulls = False
+        y_has_nulls = False
+        point_overlay = True
+        grid_from_pyramid = False
+        x_memmapped = False
+        y_memmapped = False
+        has_pyramid_resource = bool(emit_plan["pyramid_eligible"])
+        color_mode = DENSITY_COLOR_MODE_NONE
+        x_min = 0.0
+        x_max = 1.0
+        y_min = 0.0
+        y_max = 1.0
+        x_c0 = float(emit_plan["bin_window_x0"])
+        x_c1 = float(emit_plan["bin_window_x1"])
+        y_c0 = float(emit_plan["bin_window_y0"])
+        y_c1 = float(emit_plan["bin_window_y1"])
+        pyramid_attempt = bool(emit_plan["pyramid_attempt"])
+        needs_pyramid_sample = bool(emit_plan["needs_pyramid_sample"])
+        pyramid_no_rescan = bool(emit_plan["pyramid_no_rescan"])
+        max_upsample = int(emit_plan["pyramid_max_upsample"])
+        tile_upsample = int(emit_plan["pyramid_tile_upsample"])
+        pyramid_sample_stratified = bool(emit_plan.get("pyramid_sample_stratified", False))
+    if cartesian is None or x_linear is None or y_linear is None:
+        raise ValueError("cartesian/x_linear/y_linear are required when emit_plan is omitted")
+    w = _bounded_positive_int(w, "w")
+    h = _bounded_positive_int(h, "h")
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    x_raw = _as_f64(x_raw, "x_raw")
+    y_raw = _as_f64(y_raw, "y_raw")
+    bx = _as_f64(bx, "bx")
+    by = _as_f64(by, "by")
+    length = len(x_raw)
+    if not (len(y_raw) == len(bx) == len(by) == length):
+        raise ValueError("x_raw, y_raw, bx, and by must have equal length")
+    cells = w * h
+    encoded = np.zeros(cells, dtype=np.uint8)
+    rgba = np.zeros(cells * 4, dtype=np.uint8)
+    sample_sel = np.zeros(max(length, 1), dtype=np.uint32)
+    visible_sel = np.zeros(max(length, 1), dtype=np.uint32)
+    binning_buf = np.zeros(PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING, dtype=np.uint8)
+    idx_ptr, rgba_ptr, lut_ptr, lut_len, _keepalive = _optional_color_source_args(
+        length, bin_colors if ship_mean_color else None
+    )
+    codes_ptr = None
+    counts_ptr = None
+    n_color_counts = 0
+    if color_codes is not None:
+        codes = np.ascontiguousarray(color_codes, dtype=np.uint8)
+        if len(codes) != length:
+            raise ValueError("color_codes length must match coordinate columns")
+        codes_ptr = codes.ctypes.data
+    if color_counts is not None:
+        counts = np.ascontiguousarray(color_counts, dtype=np.uint64)
+        n_color_counts = len(counts)
+        counts_ptr = counts.ctypes.data
+    request = _PayloadDensityGridMaterializeIn(
+        int(bool(cartesian)),
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        int(bool(categorical)),
+        int(bool(compact_categorical)),
+        int(bool(stratified_counts)),
+        int(bool(x_has_nulls)),
+        int(bool(y_has_nulls)),
+        int(bool(point_overlay)),
+        int(bool(grid_from_pyramid)),
+        int(bool(x_memmapped)),
+        int(bool(y_memmapped)),
+        int(bool(has_pyramid_resource)),
+        int(bool(force_bin2d)),
+        int(bool(force_pyramid)),
+        int(color_mode if color_mode is not None else 0),
+        float(x_min if x_min is not None else 0.0),
+        float(x_max if x_max is not None else 0.0),
+        float(y_min if y_min is not None else 0.0),
+        float(y_max if y_max is not None else 0.0),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(bx0),
+        float(bx1),
+        float(by0),
+        float(by1),
+        float(x_c0),
+        float(x_c1),
+        float(y_c0),
+        float(y_c1),
+        n,
+        w,
+        h,
+        length,
+        int(bool(pyramid_attempt)),
+        int(pyramid_resource),
+        ctypes.c_uint64(_pyramid_handle(pyramid_handle)),
+        int(bool(pyr_colored)),
+        int(max_upsample),
+        int(tile_upsample),
+        int(bool(pyramid_no_rescan)),
+        int(bool(needs_pyramid_sample)),
+        int(bool(pyramid_sample_stratified)),
+        n_color_counts,
+        lut_len,
+        int(bool(ship_mean_color)),
+        PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING,
+        cells,
+        len(rgba),
+        len(sample_sel),
+        len(visible_sel),
+    )
+    summary = _PayloadDensityGridMaterializeOut()
+    code = _lib.xyg_payload_density_grid_materialize(
+        ctypes.byref(request),
+        _ptr_f64(x_raw) if length else None,
+        _ptr_f64(y_raw) if length else None,
+        _ptr_f64(bx) if length else None,
+        _ptr_f64(by) if length else None,
+        codes_ptr,
+        counts_ptr,
+        idx_ptr,
+        rgba_ptr,
+        lut_ptr,
+        binning_buf.ctypes.data,
+        encoded.ctypes.data,
+        rgba.ctypes.data,
+        sample_sel.ctypes.data,
+        visible_sel.ctypes.data,
+        ctypes.byref(summary),
+    )
+    if code == -2:
+        raise RuntimeError("unexpected density grid materialize path")
+    if code == -3:
+        raise RuntimeError("density grid stratified sample failed")
+    if code != 0:
+        raise ValueError("invalid payload_density_grid_materialize arguments")
+    binning = bytes(binning_buf[: binning_buf.tobytes().index(0)]).decode("ascii")
+    out_rgba: np.ndarray | None = None
+    rgba_len = int(summary.rgba_len)
+    if rgba_len:
+        out_rgba = rgba[:rgba_len].reshape(-1)
+    sample_len = int(summary.sample_sel_len)
+    out_sample = sample_sel[:sample_len].copy() if sample_len else None
+    visible_len = int(summary.visible_sel_len)
+    out_visible = visible_sel[:visible_len].copy() if visible_len else np.empty(0, dtype=np.uint32)
+    return {
+        "encoded_grid": encoded[: int(summary.encoded_len)].copy(),
+        "gmax": float(summary.gmax),
+        "rgba_grid": out_rgba,
+        "sample_sel": out_sample,
+        "visible_sel": out_visible,
+        "visible": int(summary.visible),
+        "binning": binning,
+        "grid_from_pyramid": bool(summary.grid_from_pyramid),
+        "has_pyramid_rgba": bool(summary.has_pyramid_rgba),
+        "pyramid_level": int(summary.pyramid_level),
+        "from_tiles": bool(summary.from_tiles),
     }
 
 
@@ -15945,3 +18177,37 @@ def chunked_columns_read_page(
 
 def chunked_columns_free(handle: int) -> bool:
     return _lib.xyg_chunked_columns_free(ctypes.c_uint64(handle)) == 1
+
+
+from ._scene_bulk_native import (  # noqa: E402
+    SCENE_XYAF_BULK_PACK_MAX,
+    SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
+    SceneXyafBulkPackError,
+    scene_chrome_pack,
+    scene_figure_support_materialize,
+    scene_polar_input_pack,
+    scene_xyaf_bulk_pack,
+    scene_xyta_trace_observations_materialize,
+    scene_xytc_trace_observations_materialize,
+)
+from ._scene_bulk_native import (  # noqa: E402
+    init as _init_scene_bulk_native,
+)
+
+_init_scene_bulk_native(sys.modules[__name__])
+
+# Re-export anchors for host marshal modules (_scene_marshal, _scene_v3).
+_SCENE_BULK_REEXPORTS = (
+    SCENE_XYAF_BULK_PACK_MAX,
+    SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
+    SceneXyafBulkPackError,
+    scene_chrome_pack,
+    scene_figure_support_materialize,
+    scene_polar_input_pack,
+    scene_xyaf_bulk_pack,
+    scene_xyta_trace_observations_materialize,
+    scene_xytc_trace_observations_materialize,
+)
+del _SCENE_BULK_REEXPORTS

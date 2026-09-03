@@ -1,0 +1,140 @@
+{
+  "chrome": {
+    "width": 320,
+    "height": 240,
+    "show_legend": false,
+    "colorbar_ok": false,
+    "polar": false,
+    "has_margins": false,
+    "margins": [0, 0, 0, 0],
+    "has_padding": false,
+    "padding": [0, 0, 0, 0],
+    "title": "",
+    "x_label": "",
+    "y_label": "",
+    "x_format": null,
+    "y_format": null,
+    "x_scale_kind": 0,
+    "y_scale_kind": 0,
+    "x_lo": 0,
+    "x_hi": 1,
+    "x_constant": 1,
+    "y_lo": 0,
+    "y_hi": 1,
+    "y_constant": 1,
+    "x_nonpositive_mask": 0,
+    "y_nonpositive_mask": 0,
+    "x_tick_kind": 0,
+    "y_tick_kind": 0,
+    "x_axis": {
+      "side_code": 0,
+      "tick_sides_mask": 1,
+      "label_sides_mask": 1,
+      "style": {},
+      "minor_style": {}
+    },
+    "y_axis": {
+      "side_code": 0,
+      "tick_sides_mask": 1,
+      "label_sides_mask": 1,
+      "style": {},
+      "minor_style": {}
+    },
+    "x_major": null,
+    "y_major": null,
+    "x_minor": [],
+    "y_minor": [],
+    "x_tick_labels": null,
+    "y_tick_labels": null,
+    "x_collision": {
+      "strategy": null,
+      "collision": null,
+      "anchor": null,
+      "min_gap": null,
+      "angle": null,
+      "tick_kind_category": false
+    },
+    "y_collision": {
+      "strategy": null,
+      "collision": null,
+      "anchor": null,
+      "min_gap": null,
+      "angle": null,
+      "tick_kind_category": false
+    },
+    "chart_background": null,
+    "plot_background": null,
+    "legend": {
+      "unsupported_keys": false,
+      "toggle": false,
+      "highlight": false,
+      "loc": null,
+      "title": null,
+      "ncols": 1,
+      "unsupported_style": false,
+      "font_size": null,
+      "title_font_size": null,
+      "color": null,
+      "background": null
+    },
+    "colorbar": null
+  },
+  "figure_support": {
+    "polar": false,
+    "colorbar_unsupported": false,
+    "has_custom_font": false,
+    "has_browser_css": false,
+    "has_extra_legends": false,
+    "annotations": [],
+    "axes": [
+      {
+        "axis_code": 0,
+        "keys": ["domain", "side"],
+        "tick_label_strategy": null,
+        "collision": null
+      },
+      {
+        "axis_code": 1,
+        "keys": ["domain", "side"],
+        "tick_label_strategy": null,
+        "collision": null
+      }
+    ],
+    "traces": [
+      {
+        "kind": "scatter",
+        "x_axis": "x",
+        "y_axis": "y",
+        "hidden": false,
+        "has_per_item_channels": false,
+        "density_aggregates_color": false,
+        "marker_glyph_present": false,
+        "marker_glyph": null,
+        "marker_path_present": false,
+        "marker_path_valid": false,
+        "marker_path_filled_small": false,
+        "curve_present": false,
+        "curve": null,
+        "linecap_present": false,
+        "linecap": null,
+        "dash_present": false,
+        "dash_text": null,
+        "dash_is_array": false,
+        "fill_present": false,
+        "fill_is_string": false,
+        "fill_gradient_admitted": false,
+        "hexbin_reduce": null,
+        "heatmap_truecolor": false,
+        "heatmap_has_colormap": false,
+        "heatmap_has_rgba_grid": false,
+        "heatmap_has_rgba": false,
+        "rect_gradient_fail": false,
+        "corner_radius_values": [0],
+        "corner_radius_seq": false,
+        "wedge_gap": 0,
+        "ribbon_color2_fail": false,
+        "color_channel_unsupported": false
+      }
+    ]
+  }
+}

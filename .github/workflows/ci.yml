@@ -179,6 +179,11 @@ jobs:
         run: |
           .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xyg')"
 
+      - name: Host-parity landing gates (M2 close bar)
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          python3 scripts/audit_host_parity_landing.py
+
       - name: Regression gate (deterministic payloads = hard fail; timing = advisory)
         run: |
           .venv/bin/python benchmarks/bench_scatter_native.py \

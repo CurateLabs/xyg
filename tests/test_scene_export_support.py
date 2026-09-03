@@ -2065,6 +2065,7 @@ def test_public_ribbon_route_enforces_the_authored_band_ceiling() -> None:
 def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     root = Path(__file__).parents[1]
     python_packer = (root / "python/xyg/_scene_v3.py").read_text()
+    python_observations = (root / "python/xyg/_scene_observations.py").read_text()
     node_packer = (root / "packages/xy-node/src/scene.js").read_text()
     assert "def _step_arrays" not in python_packer
     assert "function stepArrays" not in node_packer
@@ -2090,7 +2091,7 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "def _heatmap_tessellates_cell_fills" not in python_packer
     assert "function hexbinTessellatesCellFills" not in node_packer
     assert "function heatmapTessellatesCellFills" not in node_packer
-    assert "def _ribbon_packs_end_paints" in python_packer
+    assert "def _ribbon_packs_end_paints" in python_observations
     assert "function ribbonPacksEndPaints" in node_packer
     assert "and _hexbin_tessellates_cell_fills(trace)" not in python_packer
     assert "and heatmapTessellatesCellFills(trace)" not in node_packer

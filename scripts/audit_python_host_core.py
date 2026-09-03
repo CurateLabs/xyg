@@ -6,6 +6,11 @@ production file is classified; this script measures how much algorithmic work
 remains in Python files tagged ``python-scene-migration`` — the §302 blockers
 from ``spec/design/ownership-audit.md``.
 
+When no ``python-scene-migration`` files remain, the script also audits
+documented keep-host compatibility/marshal surfaces (static export emitters,
+scene observation marshaling, payload density attach) and reports remaining
+Node ``node-scene-migration`` inventory for practical parity tracking.
+
 Exit 0 always; prints a human-readable report to stdout.
 """
 
@@ -14,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -29,7 +33,9 @@ DELEGATE_RE = re.compile(
     r"encoded_column_meta|arrow_style_pack|arrow_shapes|scene_channel_constant_css|"
     r"payload_.*_plan|scene_.*_plan|payload_segments_emit_gather|"
     r"payload_trace_channels_ship_attach|payload_transition_entry_attach|"
-    r"payload_column_ship_plan|payload_density_grid_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode)\b"
+    r"payload_column_ship_plan|payload_density_grid_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode|"
+    r"payload_trace_emit_materialize|payload_channel_materialize|scene_chrome_pack|"
+    r"scene_xytc_trace|scene_xyta_trace|scene_.*_materialize)\b"
 )
 
 # Heuristic: likely host-local orchestration (not exhaustive).
@@ -39,26 +45,105 @@ LOCAL_RE = re.compile(
     r"for .+ in range\(|np\.(where|argsort|concatenate|stack))\b"
 )
 
-BLOCKER_MAP: dict[str, str] = {
-    "python/xyg/_payload.py": "payload emit orchestration",
-    "python/xyg/_scene_v3.py": "scene_v3 pack / figure-to-record",
-    "_arrowgeom.py": "arrow style pack (ABI 254/257 shapes orchestration)",
-    "python/xyg/lod.py": "EncodedColumn meta + LOD host cache",
-    "python/xyg/marks.py": "marks composition / validation",
-    "python/xyg/facets.py": "facet grid orchestration",
-    "python/xyg/_figure.py": "Figure composition hub",
-    "python/xyg/_annotations.py": "annotation composition",
-    "python/xyg/_fontmetrics.py": "DejaVu metrics table (compat SVG gutters)",
-    "python/xyg/_paint.py": "paint dispatch (triangle_mesh_boundary stay-host)",
-    "python/xyg/_raster.py": "raster tessellation dispatch + host geometry",
-    "python/xyg/_svg.py": "SVG path assembly + host color sample",
-    "python/xyg/channels.py": "color channel resolve / LUT pack",
-}
+BLOCKER_MAP: dict[str, str] = {}
+
+# Keep-host surfaces that may still carry compatibility export / observation policy.
+# Zero ``python-scene-migration`` tags does not mean these are Rust-owned.
+KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
+    {
+        "python/xyg/_paint.py",
+        "python/xyg/_layout.py",
+        "python/xyg/_scene_marshal.py",
+        "python/xyg/_scene_observations.py",
+        "python/xyg/_payload_trace_materialize.py",
+        "python/xyg/_payload_density.py",
+        "python/xyg/_payload.py",
+        "python/xyg/_scene_v3.py",
+        "python/xyg/_channels_labels.py",
+        "python/xyg/_lod_sample.py",
+        "python/xyg/_svg_render.py",
+        "python/xyg/_raster_render.py",
+    }
+)
+
+KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = (
+    "python/xyg/_export_",
+    "python/xyg/_marks_",
+    "python/xyg/_figure_",
+    "python/xyg/_channels_",
+    "python/xyg/_lod_",
+    "python/xyg/_facets_",
+    "python/xyg/_annotations_",
+)
+
+# Node marshal/coerce surfaces (zero node-scene-migration does not retire these).
+NODE_KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
+    {
+        "packages/xy-node/src/charts.js",
+        "packages/xy-node/src/color.js",
+        "packages/xy-node/src/encode.js",
+        "packages/xy-node/src/figure.js",
+        "packages/xy-node/src/graph.js",
+        "packages/xy-node/src/scene.js",
+        "packages/xy-node/src/pyramid.js",
+        "packages/xy-node/src/sankey.js",
+        "packages/xy-node/src/payloadTraceMaterialize.js",
+    }
+)
+
+NODE_KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = ("packages/xy-node/src/marks/",)
+
+MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
+    ("#851", "316", "xyg_payload_density_grid_materialize"),
+    ("#851", "317", "xyg_scene_xytc_trace_pack"),
+    ("#851", "318", "xyg_scene_xyta_trace_pack"),
+    ("#853", "319", "xyg_scene_chrome_pack bulk XYCF/XYAF/XYFS"),
+    ("#853", "320", "xyg_payload_channel_materialize"),
+    ("#853", "321", "xyg_payload_trace_emit_materialize"),
+    ("#853", "323", "xyg_scene_xyta_trace_observations_materialize"),
+    ("#853", "325", "xyg_scene_xytc_trace_observations_materialize"),
+)
 
 MERGED_KERNEL_STACK: tuple[tuple[str, str, str, str], ...] = (
     ("#640", "254", "xyg_arrow_style_pack", "_arrowgeom._pack_style"),
     ("#641", "255", "xyg_encoded_column_meta", "lod.encode_f32_values meta"),
     ("#642", "256", "xyg_scene_channel_constant_css", "_scene_v3 channel CSS"),
+    ("—", "326", "xyg_aligned_window", "lod.aligned_window"),
+    ("—", "327", "xyg_sample_threshold", "lod._sample_threshold"),
+    ("—", "327", "xyg_hash_row_ids", "lod.hash_row_ids"),
+    ("—", "328", "xyg_sample_fraction", "lod._sample_fraction"),
+    ("—", "329", "xyg_screen_shape", "lod.screen_shape"),
+    ("—", "330", "xyg_factorize_display_labels", "channels label-policy"),
+    ("—", "331", "xyg_factorize_use_native_probe", "channels factorize probe"),
+    ("—", "332", "xyg_category_labels_packed", "channels category_label"),
+    ("—", "333", "xyg_object_rows_all_stringlike", "channels object stringlike probe"),
+    ("—", "334", "xyg_normalize_window", "lod.normalize_window"),
+    ("—", "335", "xyg_view_visible_mask", "lod.visible_mask"),
+    ("—", "336", "xyg_label_codes_first_seen", "facets._label_codes"),
+    ("—", "337", "xyg_object_rows_all_real_numeric", "channels real-numeric probe"),
+    ("—", "338", "xyg_sorted_display_label_remap", "channels sorted label remap"),
+    ("—", "339", "xyg_factorize_use_native_fixed", "channels native factorize probe"),
+    ("—", "340", "xyg_fold_codes_u8", "channels folded palette codes"),
+    ("—", "341", "xyg_quantize_unit_u8", "channels quantize unit u8"),
+    ("—", "342", "xyg_palette_rows_rgba8", "channels palette rows rgba8"),
+    ("—", "343", "xyg_colormap_lut_rgba8", "channels colormap lut rgba8"),
+    ("—", "344", "xyg_literal_color_rgba_f64", "channels literal color rgba f64"),
+    ("—", "345", "xyg_stratified_sample_range_plan", "lod stratified sample range plan"),
+    ("—", "346", "xyg_palette_rows_rgba8 entry flags", "channels palette unresolved flags"),
+    ("—", "347", "xyg_categorical_palette", "channels categorical palette repeat"),
+    ("—", "347", "xyg_categorical_palette_map_resolve", "channels palette map resolve"),
+    ("—", "348", "xyg_color_channel_direct_rgba_f64", "channels resolve_direct_rgba"),
+    ("—", "349", "xyg_colormap_is_builtin", "channels is_colormap"),
+    ("—", "349", "xyg_colormap_custom_stops_resolve", "channels resolve_colormap"),
+    ("—", "350", "xyg_size_range_admit", "channels _size_range"),
+    ("—", "351", "xyg_array_is_categorical", "channels _is_categorical"),
+    ("—", "352", "xyg_real_numeric_dtype_admit", "channels _as_real_array"),
+    ("—", "353", "xyg_object_row_*_tag_from_probe", "channels object-row tag map"),
+    ("—", "354", "xyg_category_label_kind_from_probe", "channels category_label kind"),
+    ("—", "355", "xyg_category_code_width", "channels categorical code width"),
+    ("—", "355", "xyg_category_palette_rows", "channels palette_rgba8 rows"),
+    ("—", "356", "xyg_object_row_*_tags_from_probes", "channels object-row tag batch"),
+    ("—", "357", "xyg_category_label_kinds_from_probes", "channels category_labels kind batch"),
 )
 
 MERGED_SCENE_LANE: tuple[tuple[str, str, str, str], ...] = (
@@ -148,30 +233,37 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
     ),
 )
 
-REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
-    (
-        "Cross-host proof",
-        "payload + Scene-byte differentials; Node scene hexbin colormap compose gap",
-    ),
-    (
-        "Residual host materialization",
-        "_payload bin2d/pyramid compose; _scene_v3 field-byte walks",
-    ),
-    (
-        "Secondary §302",
-        "_svg/_raster compat paths, marks/_figure composition, channels label factorization, lod cache wiring",
-    ),
-)
+REMAINING_CLOSE: tuple[tuple[str, str], ...] = ()
 
 M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#731 parent M2 kernelize _payload emit + _scene_v3 pack", "CLOSED — completed 2026-08-31"),
     ("#732 gather/ship + density grid ship (ABI 310-315)", "CLOSED"),
     ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
     ("Node stay-host TAP #644-#698 serial merge", "CLOSED — merged on main (#630-#698)"),
-    ("Cross-host payload + Scene-byte differential proof", "OPEN — follow-on, not #731 bar"),
-    ("Residual host materialization (_payload bin2d/pyramid; _scene_v3 field-byte walks)", "OPEN"),
-    ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
+    (
+        "Cross-host payload + Scene-byte differential proof",
+        "CLOSED — payload cross-host + hexbin colormap XYTA scene-byte goldens green",
+    ),
+    (
+        "Host materialization retirement (big pushes 1-3, ABI 316-325)",
+        "CLOSED — _payload.py / _scene_v3.py marshal-only; keep-host helpers "
+        "_payload_trace_materialize.py / _scene_marshal.py coerce and call Rust",
+    ),
+    (
+        "Secondary §302 composition hubs",
+        "CLOSED — marks/_figure/channels/lod/facets/_annotations/_svg/_raster split to keep-host modules",
+    ),
+    (
+        "Node marshal disposition parity",
+        "CLOSED — 0 node-scene-migration tags; node keep-host policy inventory in audit",
+    ),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
+)
+
+WASM_PARITY_CONTRACTS: tuple[str, ...] = (
+    "tests/test_wasm_ticks_chartview_contract.py",
+    "tests/test_*cross_host*.py",
+    "tests/browser/wasm_foundation_page.mjs",
 )
 
 
@@ -193,6 +285,166 @@ def _load_paths(manifest_path: Path) -> list[str]:
         if entry.get("policy") == "python-scene-migration":
             out.append(entry["path"])
     return sorted(out)
+
+
+def _load_manifest(manifest_path: Path) -> dict:
+    return json.loads(manifest_path.read_text(encoding="utf-8"))
+
+
+def _is_keep_host_policy_surface(path: str) -> bool:
+    if path in KEEP_HOST_POLICY_EXACT:
+        return True
+    return any(path.startswith(prefix) for prefix in KEEP_HOST_POLICY_PREFIXES)
+
+
+def _is_node_keep_host_policy_surface(path: str) -> bool:
+    if path in NODE_KEEP_HOST_POLICY_EXACT:
+        return True
+    return any(path.startswith(prefix) for prefix in NODE_KEEP_HOST_POLICY_PREFIXES)
+
+
+def _keep_host_policy_paths(manifest: dict) -> list[str]:
+    out: list[str] = []
+    for entry in manifest.get("files", []):
+        path = entry.get("path", "")
+        if entry.get("policy") != "python-host":
+            continue
+        if _is_keep_host_policy_surface(path):
+            out.append(path)
+    return sorted(out)
+
+
+def _node_keep_host_policy_paths(manifest: dict) -> list[str]:
+    out: list[str] = []
+    for entry in manifest.get("files", []):
+        path = entry.get("path", "")
+        if entry.get("policy") != "node-host":
+            continue
+        if _is_node_keep_host_policy_surface(path):
+            out.append(path)
+    return sorted(out)
+
+
+def _policy_paths_by_tag(manifest: dict, policy: str) -> list[str]:
+    return sorted(
+        entry["path"] for entry in manifest.get("files", []) if entry.get("policy") == policy
+    )
+
+
+def _print_policy_surface_block(
+    label: str,
+    paths: list[str],
+    *,
+    top_n: int = 15,
+) -> tuple[int, int, int]:
+    total_lines = 0
+    total_delegate = 0
+    total_local = 0
+    rows: list[tuple[int, int, int, str]] = []
+
+    for rel in paths:
+        full = ROOT / rel
+        n_lines, n_delegate, n_local = _analyze(full)
+        total_lines += n_lines
+        total_delegate += n_delegate
+        total_local += n_local
+        rows.append((n_lines, n_delegate, n_local, rel))
+
+    print(f"  {label}: {len(paths)}")
+    print(
+        f"  totals: {total_lines} lines, {total_delegate} delegate hooks, "
+        f"{total_local} local-orchestration hooks"
+    )
+    print("  top surfaces by line count:")
+    for n_lines, n_delegate, n_local, rel in sorted(rows, reverse=True)[:top_n]:
+        ratio = (100.0 * n_delegate / n_lines) if n_lines else 0.0
+        print(
+            f"    - {rel}: {n_lines} lines, {n_delegate} delegate ({ratio:.1f}%), {n_local} local"
+        )
+    return total_lines, total_delegate, total_local
+
+
+def _print_keep_host_policy_audit(manifest_path: Path) -> None:
+    manifest = _load_manifest(manifest_path)
+    py_paths = _keep_host_policy_paths(manifest)
+    node_paths = _node_keep_host_policy_paths(manifest)
+    node_migration = _policy_paths_by_tag(manifest, "node-scene-migration")
+    browser_paths = _policy_paths_by_tag(manifest, "browser-scene-migration")
+
+    print("Keep-host policy surface audit (compatibility export + marshal seams):")
+    print(
+        "  Zero scene-migration tags does not retire these surfaces; "
+        "see spec/design/ownership-audit.md post-M2 inventory."
+    )
+    _print_policy_surface_block("python keep-host policy files", py_paths)
+    print()
+    _print_policy_surface_block("node keep-host policy files", node_paths, top_n=10)
+    print()
+
+    print("Cross-host disposition parity:")
+    print(
+        f"  node-scene-migration files: {len(node_migration)} "
+        f"({sum(_analyze(ROOT / rel)[0] for rel in node_migration)} lines)"
+    )
+    if node_migration:
+        for rel in node_migration[:8]:
+            n_lines, n_delegate, n_local = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines, {n_delegate} delegate, {n_local} local")
+        if len(node_migration) > 8:
+            print(f"    - ... and {len(node_migration) - 8} more")
+    if browser_paths:
+        browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_paths)
+        print(f"  browser-scene-migration files: {len(browser_paths)} ({browser_lines} lines)")
+        for rel in browser_paths:
+            n_lines, _, _ = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines")
+    print(
+        "  practical Node/WASM parity requires migration tags at zero and "
+        "keep-host inventories to stay marshal/coerce only or documented debt."
+    )
+    print()
+    _print_wasm_parity_audit(manifest)
+
+
+def _print_wasm_parity_audit(manifest: dict) -> None:
+    adapter_paths = _policy_paths_by_tag(manifest, "browser-wasm-adapter")
+    generated_paths = _policy_paths_by_tag(manifest, "browser-wasm-generated")
+    wasm_migration_paths = _policy_paths_by_tag(manifest, "browser-wasm-migration")
+    browser_client_paths = _policy_paths_by_tag(manifest, "browser-client")
+    browser_migration = _policy_paths_by_tag(manifest, "browser-scene-migration")
+
+    print("WASM / browser host parity inventory:")
+    print(
+        "  ChartView primary Cartesian + colorbar ticks consume Rust/WASM via "
+        "js/src/49_wasm_ticks.ts; js/src/30_ticks.ts is the documented compatibility "
+        "fallback for uncovered axes until #59 completes the cutover."
+    )
+    print(f"  browser-client paint modules: {len(browser_client_paths)}")
+    print(
+        f"  browser-wasm-adapter modules: {len(adapter_paths)} "
+        f"({sum(_analyze(ROOT / rel)[0] for rel in adapter_paths)} lines)"
+    )
+    for rel in adapter_paths[:6]:
+        n_lines, _, _ = _analyze(ROOT / rel)
+        print(f"    - {rel}: {n_lines} lines")
+    if len(adapter_paths) > 6:
+        print(f"    - ... and {len(adapter_paths) - 6} more")
+    print(f"  browser-wasm-generated modules: {len(generated_paths)}")
+    if wasm_migration_paths:
+        print(f"  browser-wasm-migration modules: {len(wasm_migration_paths)}")
+    if browser_migration:
+        browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_migration)
+        print(
+            f"  browser-scene-migration compatibility generators: "
+            f"{len(browser_migration)} ({browser_lines} lines)"
+        )
+        for rel in browser_migration:
+            n_lines, _, _ = _analyze(ROOT / rel)
+            print(f"    - {rel}: {n_lines} lines")
+    print("  differential proof contracts:")
+    for contract in WASM_PARITY_CONTRACTS:
+        print(f"    - {contract}")
+    print()
 
 
 def _analyze(path: Path) -> tuple[int, int, int]:
@@ -235,10 +487,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     paths = _load_paths(args.manifest)
-    if not paths:
-        print("audit_python_host_core: no python-scene-migration entries", file=sys.stderr)
-        return 1
-
     abi_version = _read_abi_version()
 
     print("python-scene-migration core-logic re-audit")
@@ -247,6 +495,72 @@ def main(argv: list[str] | None = None) -> int:
     if abi_version is not None:
         print(f"abi_version: {abi_version}")
     print()
+
+    if not paths:
+        print("No python-scene-migration production files remain.")
+        print()
+        print("§302 blocker rollup: (none)")
+        print()
+        _print_stack(
+            "Merged kernel stack on main (#640 -> #642, ABI 254-256):", MERGED_KERNEL_STACK
+        )
+        _print_stack("Merged scene lane on main (#703 -> #718, ABI 257-272):", MERGED_SCENE_LANE)
+        _print_stack(
+            "Merged payload stack on main (#719 -> #741, ABI 273-291):", MERGED_PAYLOAD_STACK
+        )
+        _print_stack(
+            "Merged payload orchestration on main (#746 -> #758, ABI 292-304, #732):",
+            MERGED_PAYLOAD_ORCHESTRATION,
+        )
+        _print_stack(
+            "Merged scene orchestration on main (#759 -> #763, ABI 305-309, #733 CLOSED):",
+            MERGED_SCENE_ORCHESTRATION,
+        )
+        _print_stack(
+            "Merged payload gather/ship on main (#765 -> #770/#732, ABI 310-315, #732 CLOSED):",
+            MERGED_PAYLOAD_GATHER_SHIP,
+        )
+        _print_stack(
+            "Merged host materialization retirement (#851/#853, ABI 316-325):",
+            MERGED_MATERIALIZATION_RETIREMENT,
+        )
+        print("M2 close contract (#731 — CLOSED 2026-08-31):")
+        print("  - #731 CLOSED: kernelize _payload emit and _scene_v3 pack close contract met.")
+        print(
+            "  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309)."
+        )
+        print(
+            "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315)."
+        )
+        print(
+            "  - Host materialization retirement CLOSED (big pushes 1-3, ABI 316-325): "
+            "_payload.py / _scene_v3.py marshal-only."
+        )
+        print(
+            "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
+            "gather/ship registry (ABI 310-315), and materialization retirement (ABI 316-325) are done."
+        )
+        print("  - Node stay-host TAP (#630-#698) merged on main.")
+        print("  - Stay-host TAP extras are inventory, not an alternate close path.")
+        print()
+        print("Remaining close blockers:")
+        for issue, desc in REMAINING_CLOSE:
+            print(f"  - {issue}: {desc}")
+        print()
+        print("#731 close checklist:")
+        for gate, status in M731_CLOSE_CHECKLIST:
+            print(f"  - {gate}: {status}")
+        print()
+        print("Totals: 0 lines, 0 delegate hooks, 0 local-orchestration hooks")
+        print(
+            "Density grid materialization is kernel-owned (ABI 316). Payload trace emit "
+            "and Scene trace pack are marshal-only via ABI 321 and ABI 317-318/323/325. "
+            "Keep-host coercion lives in _payload_trace_materialize.py and _scene_marshal.py. "
+            "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
+            "Scene pack orchestration plans are kernel-owned (#733 closed)."
+        )
+        _print_keep_host_policy_audit(args.manifest)
+        return 0
 
     by_blocker: dict[str, list[str]] = defaultdict(list)
     total_lines = 0
@@ -288,22 +602,24 @@ def main(argv: list[str] | None = None) -> int:
         "Merged payload gather/ship on main (#765 -> #770/#732, ABI 310-315, #732 CLOSED):",
         MERGED_PAYLOAD_GATHER_SHIP,
     )
+    _print_stack(
+        "Merged host materialization retirement (#851/#853, ABI 316-325):",
+        MERGED_MATERIALIZATION_RETIREMENT,
+    )
 
     print("M2 close contract (#731 — CLOSED 2026-08-31):")
     print("  - #731 CLOSED: kernelize _payload emit and _scene_v3 pack close contract met.")
     print("  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309).")
+    print("  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315).")
     print(
-        "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315); "
-        "hosts still materialize grids and channel/style rows."
+        "  - Host materialization retirement CLOSED (big pushes 1-3, ABI 316-325): "
+        "_payload.py / _scene_v3.py marshal-only."
     )
     print(
         "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
-        "and gather/ship registry (ABI 310-315) are done."
+        "gather/ship registry (ABI 310-315), and materialization retirement (ABI 316-325) are done."
     )
-    print(
-        "  - Node stay-host TAP (#630-#698) merged on main; follow-on work is cross-host proof "
-        "and residual host materialization."
-    )
+    print("  - Node stay-host TAP (#630-#698) merged on main.")
     print("  - Stay-host TAP extras are inventory, not an alternate close path.")
     print()
 
@@ -322,9 +638,11 @@ def main(argv: list[str] | None = None) -> int:
         f"{total_local} local-orchestration hooks"
     )
     print(
-        "Python remains authoritative for bin2d/pyramid compose and residual row materialization; "
-        "gather/ship registry, density grid ship, and wire-encode policy are kernel-owned (ABI 310-315). "
-        "Scene pack orchestration is kernel-owned (#733 closed)."
+        "Density grid materialization is kernel-owned (ABI 316). Payload trace emit and "
+        "Scene trace pack are marshal-only via ABI 321 and ABI 317-318/323/325. "
+        "Keep-host coercion lives in _payload_trace_materialize.py and _scene_marshal.py. "
+        "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
+        "Scene pack orchestration plans are kernel-owned (#733 closed)."
     )
     return 0
 

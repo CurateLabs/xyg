@@ -3,8 +3,9 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8 } from "./native.js";
-import { DEFAULT_PALETTE, normalizeF32 } from "./encode.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
+import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
+import { factorizeCategories } from "./factorize.js";
 
 function u8Ptr(view) {
   return pointer(view, "uint8_t *");
@@ -128,6 +129,42 @@ export function continuousDomain(values) {
   return [lo[0], hi[0]];
 }
 
+/** Admit scatter size pixel range endpoints (ABI 350). */
+export function sizeRangeAdmit(lo, hi) {
+  const outLo = new Float64Array(1);
+  const outHi = new Float64Array(1);
+  const code = Number(
+    xySizeRangeAdmit(Number(lo), Number(hi), f64Ptr(outLo), f64Ptr(outHi)),
+  );
+  if (code === -1) {
+    throw new RangeError("size_range must contain exactly two finite pixel values");
+  }
+  if (code === -2 || code === -3) {
+    throw new RangeError("size_range must be non-negative and ordered low-to-high");
+  }
+  if (code !== 0) throw new RangeError("invalid size-range-admit request");
+  return [outLo[0], outHi[0]];
+}
+
+/** Whether a column uses categorical color resolution (ABI 351). */
+export function arrayIsCategorical(dtypeKind, objectRealNumeric = -1) {
+  const code = Number(xyArrayIsCategorical(Number(dtypeKind) & 0xff, Number(objectRealNumeric)));
+  if (code < 0) throw new RangeError("invalid array-is-categorical request");
+  return code === 1;
+}
+
+/** Reject boolean/complex dtype kinds before real f64 coercion (ABI 352). */
+export function realNumericDtypeAdmit(dtypeKind) {
+  const code = Number(xyRealNumericDtypeAdmit(Number(dtypeKind) & 0xff));
+  if (code === -1) {
+    throw new RangeError("values must be real numeric, not boolean");
+  }
+  if (code === -2) {
+    throw new RangeError("values must be real numeric");
+  }
+  if (code !== 0) throw new RangeError("invalid real-numeric-dtype-admit request");
+}
+
 /** Admit per-point RGB/RGBA in `[0, 1]` as contiguous Nx4 (ABI 213). */
 export function directRgbaAdmit(values, components) {
   const xv = values instanceof Float64Array ? values : Float64Array.from(values, Number);
@@ -177,37 +214,299 @@ export function clipQuantizeU8(values) {
   return out;
 }
 
-/** Normalize over `[lo, hi]` then ABI 251 clip-quantize (Python `quantize_unit_u8`). */
+/** Normalize over `[lo, hi]` then ABI 341 clip-quantize (Python `quantize_unit_u8`). */
 export function quantizeUnitU8(values, lo, hi) {
   const n = values == null ? 0 : values.length;
-  if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo) {
-    return new Uint8Array(n);
+  const out = new Uint8Array(n);
+  if (n === 0) {
+    return out;
   }
-  const unit = normalizeF32(values, lo, hi, { nanMode: "zero" });
-  return clipQuantizeU8(Float64Array.from(unit));
+  const src = values instanceof Float64Array ? values : Float64Array.from(values);
+  const code = xyQuantizeUnitU8(f64Ptr(src), BigInt(n), lo, hi, u8Ptr(out));
+  if (code === -2) throw new RangeError("invalid quantize-unit-u8 request");
+  if (code !== 1) throw new RangeError("invalid quantize-unit-u8 request");
+  return out;
 }
 
-function categoryLabel(value) {
-  if (value == null) return "(missing)";
-  if (typeof value === "number" && Number.isNaN(value)) return "(missing)";
-  return String(value);
+function packUtf8Strings(texts) {
+  const encoded = texts.map((text) => new TextEncoder().encode(String(text)));
+  const lens = Uint32Array.from(encoded.map((item) => item.length));
+  const total = lens.reduce((sum, len) => sum + len, 0);
+  const packed = new Uint8Array(total);
+  let at = 0;
+  for (const item of encoded) {
+    packed.set(item, at);
+    at += item.length;
+  }
+  return { lens, packed };
 }
 
-function factorizeCategories(raw) {
-  const labels = raw.map(categoryLabel);
-  const categories = [...new Set(labels)].sort();
-  const index = new Map(categories.map((label, i) => [label, i]));
-  const codes =
-    categories.length <= 256 ? new Uint8Array(labels.length) : new Uint32Array(labels.length);
-  for (let i = 0; i < labels.length; i += 1) {
-    codes[i] = index.get(labels[i]);
+function unpackUtf8Strings(lens, packed, count) {
+  const dec = new TextDecoder();
+  const out = [];
+  let at = 0;
+  for (let i = 0; i < count; i += 1) {
+    const length = Number(lens[i]);
+    out.push(dec.decode(packed.subarray(at, at + length)));
+    at += length;
+  }
+  return out;
+}
+
+function u32Ptr(view) {
+  return pointer(view, "uint32_t *");
+}
+
+/** Indexed palette rows as straight-alpha RGBA8 (ABI 342). */
+export function paletteRowsRgba8(palette, rows) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("paletteRowsRgba8 requires at least one entry");
+  }
+  const n = Math.max(1, Math.floor(Number(rows)));
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Uint8Array(n * 4);
+  const unresolved = new Uint32Array(1);
+  const entryFlags = new Uint8Array(src.length);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyPaletteRowsRgba8(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    BigInt(n),
+    u8Ptr(out),
+    BigInt(out.length),
+    u32Ptr(unresolved),
+    u8Ptr(entryFlags),
+    BigInt(entryFlags.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid palette-rows-rgba8 request");
+  }
+  return out;
+}
+
+/** Functional CSS color column to canonical f64 RGBA rows (ABI 344). */
+export function literalColorRgbaF64(colors) {
+  const src = colors?.length ? colors.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    return null;
+  }
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Float64Array(src.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyLiteralColorRgbaF64(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    return null;
+  }
+  return out;
+}
+
+/** Repeat base palette colors for categorical wire specs (ABI 347). */
+export function categoricalPalette(palette, nCategories) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("categoricalPalette requires at least one entry");
+  }
+  const n = Math.floor(Number(nCategories));
+  if (!(n > 0)) {
+    throw new RangeError("categoricalPalette requires a positive category count");
+  }
+  const { lens, packed } = packUtf8Strings(src);
+  const outLens = new Uint32Array(n);
+  const outCap = src.reduce((sum, entry) => sum + entry.length, 0) * n;
+  const outTexts = new Uint8Array(Math.max(outCap, 1));
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyCategoricalPalette(
+    lens.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    BigInt(n),
+    u32Ptr(outLens),
+    u8Ptr(outTexts),
+    BigInt(outTexts.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid categorical-palette request");
+  }
+  return unpackUtf8Strings(outLens, outTexts, n);
+}
+
+/** Resolve one shipped color per category from a label→color map (ABI 347). */
+export function categoricalPaletteMapResolve(categories, paletteMap, defaultPalette = DEFAULT_PALETTE) {
+  const catTexts = categories?.length ? categories.map((entry) => String(entry)) : [];
+  const n = catTexts.length;
+  if (n === 0) {
+    return { colors: [], unmappedCount: 0, mapExhausted: false };
+  }
+  const { lens: catLens, packed: catPacked } = packUtf8Strings(catTexts);
+  const mapKeys = paletteMap ? Object.keys(paletteMap) : [];
+  const mapValues = mapKeys.map((key) => String(paletteMap[key]));
+  const { lens: keyLens, packed: keyPacked } = packUtf8Strings(mapKeys);
+  const { lens: valueLens, packed: valuePacked } = packUtf8Strings(mapValues);
+  const defaults = defaultPalette?.length ? defaultPalette.map((entry) => String(entry)) : [];
+  const { lens: defLens, packed: defPacked } = packUtf8Strings(defaults);
+  const outLens = new Uint32Array(n);
+  const outCap = [...catTexts, ...mapValues, ...defaults].reduce((sum, entry) => sum + entry.length, 0) + 64;
+  const outTexts = new Uint8Array(Math.max(outCap, 1));
+  const unmapped = new Uint32Array(1);
+  const exhausted = new Uint32Array(1);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyCategoricalPaletteMapResolve(
+    u32Ptr(catLens),
+    catPacked.length ? u8Ptr(catPacked) : 0,
+    BigInt(catPacked.length),
+    BigInt(n),
+    mapKeys.length ? u32Ptr(keyLens) : 0,
+    keyPacked.length ? u8Ptr(keyPacked) : 0,
+    BigInt(keyPacked.length),
+    mapValues.length ? u32Ptr(valueLens) : 0,
+    valuePacked.length ? u8Ptr(valuePacked) : 0,
+    BigInt(valuePacked.length),
+    BigInt(mapKeys.length),
+    defaults.length ? u32Ptr(defLens) : 0,
+    defPacked.length ? u8Ptr(defPacked) : 0,
+    BigInt(defPacked.length),
+    BigInt(defaults.length),
+    u32Ptr(outLens),
+    u8Ptr(outTexts),
+    BigInt(outTexts.length),
+    u32Ptr(unmapped),
+    u32Ptr(exhausted),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid categorical-palette-map-resolve request");
   }
   return {
-    mode: "categorical",
-    codes,
-    categories,
-    palette: [...DEFAULT_PALETTE],
+    colors: unpackUtf8Strings(outLens, outTexts, n),
+    unmappedCount: Number(unmapped[0]),
+    mapExhausted: Boolean(exhausted[0]),
   };
+}
+
+/** Sample a continuous color channel to canonical f64 RGBA rows (ABI 348). */
+export function colorChannelDirectRgbaF64Continuous(values, domain, colormap) {
+  const vals = values instanceof Float64Array ? values : Float64Array.from(values, Number);
+  const lo = Number(domain[0]);
+  const hi = Number(domain[1]);
+  let stops;
+  if (typeof colormap === "string") {
+    stops = colormapNamedStops(colormap);
+  } else {
+    stops = Uint8Array.from(colormap);
+  }
+  const out = new Float64Array(vals.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyColorChannelDirectRgbaF64Continuous(
+    f64Ptr(vals),
+    BigInt(vals.length),
+    lo,
+    hi,
+    u8Ptr(stops),
+    BigInt(stops.length / 3),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid color-channel-direct-rgba-f64-continuous request");
+  }
+  return out;
+}
+
+/** Sample a categorical color channel to canonical f64 RGBA rows (ABI 348). */
+export function colorChannelDirectRgbaF64Categorical(codes, palette) {
+  const src = palette?.length ? palette.map((entry) => String(entry)) : [];
+  if (!src.length) {
+    throw new RangeError("colorChannelDirectRgbaF64Categorical requires a palette");
+  }
+  const codeArr = codes instanceof Uint32Array ? codes : Uint32Array.from(codes, Number);
+  const { lens, packed } = packUtf8Strings(src);
+  const out = new Float64Array(codeArr.length * 4);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  const written = xyColorChannelDirectRgbaF64Categorical(
+    u32Ptr(codeArr),
+    BigInt(codeArr.length),
+    u32Ptr(lens),
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(src.length),
+    f64Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) {
+    throw new RangeError("invalid color-channel-direct-rgba-f64-categorical request");
+  }
+  return out;
+}
+
+/** True when `name` is a built-in colormap, including `_r` variants (ABI 349). */
+export function colormapIsBuiltin(name) {
+  const encoded = new TextEncoder().encode(String(name ?? ""));
+  const ok = Number(xyColormapIsBuiltin(encoded.length ? u8Ptr(encoded) : null, BigInt(encoded.length)));
+  if (ok < 0) throw new RangeError("colormapIsBuiltin requires a UTF-8 name");
+  return ok === 1;
+}
+
+function unpackRgbStops(flat, count) {
+  const rows = [];
+  for (let i = 0; i < count; i += 1) {
+    const base = i * 3;
+    rows.push([flat[base], flat[base + 1], flat[base + 2]]);
+  }
+  return rows;
+}
+
+/** Resolve custom colormap stops from CSS linear-gradient (ABI 349). */
+export function colormapCustomStopsResolveGradient(css) {
+  const encoded = new TextEncoder().encode(String(css ?? ""));
+  const out = new Uint8Array(256 * 3);
+  const code = Number(
+    xyColormapCustomStopsResolveGradient(
+      encoded.length ? u8Ptr(encoded) : null,
+      BigInt(encoded.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    ),
+  );
+  if (code <= 0) throw new RangeError(`colormap gradient resolve failed (${code})`);
+  return unpackRgbStops(out, code);
+}
+
+/** Resolve custom colormap stops from CSS color strings (ABI 349). */
+export function colormapCustomStopsResolveList(colors, positions) {
+  const css = colors.map((color) => String(color));
+  const pos = Float64Array.from(positions, (value) => (value == null ? Number.NaN : Number(value)));
+  const { lens, packed } = packUtf8Strings(css);
+  const out = new Uint8Array(256 * 3);
+  const code = Number(
+    xyColormapCustomStopsResolveList(
+      u32Ptr(lens),
+      packed.length ? u8Ptr(packed) : null,
+      BigInt(packed.length),
+      f64Ptr(pos),
+      BigInt(css.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    ),
+  );
+  if (code <= 0) throw new RangeError(`colormap list resolve failed (${code})`);
+  return unpackRgbStops(out, code);
+}
+
+/** Return stop count when `stops` is canonical wire RGB, else 0 (ABI 349). */
+export function colormapResolvedStopsAdmit(stops) {
+  const flat = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (!flat.length || flat.length % 3 !== 0) return 0;
+  return Number(xyColormapResolvedStopsAdmit(u8Ptr(flat), BigInt(flat.length / 3)));
 }
 
 function flattenRgbRows(raw, n) {
@@ -273,7 +572,10 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
       };
     }
     if (raw.every((v) => typeof v === "string" && cssIsFunctional(v))) {
-      return { mode: "direct_rgba", rgba: cssColorsToRgba8(raw) };
+      const packed = literalColorRgbaF64(raw);
+      if (packed) {
+        return { mode: "direct_rgba", rgba: clipQuantizeU8(packed) };
+      }
     }
     return factorizeCategories(raw);
   }

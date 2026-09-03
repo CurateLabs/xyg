@@ -12,7 +12,7 @@
 //!   al., VLDB 2014). NaN-aware: buckets never span invalid values silently (§19).
 
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 const MAX_ROW_THREADS: usize = 18;
 
@@ -685,6 +685,469 @@ pub fn remap_u8_inplace(values: &mut [u8], mapping: &[u8]) -> bool {
         *value = mapped;
     }
     true
+}
+
+/// Fold wide categorical codes onto a repeating palette row index.
+///
+/// Matches Python `channels._folded_codes_u8` / Node `foldedCodesU8`.
+pub fn fold_codes_u32_into(codes: &[u32], n_palette: usize, out: &mut [u8]) -> bool {
+    if codes.len() != out.len() {
+        return false;
+    }
+    let modulus = n_palette.max(1) as u64;
+    for (code, slot) in codes.iter().zip(out.iter_mut()) {
+        *slot = (u64::from(*code) % modulus) as u8;
+    }
+    true
+}
+
+/// Fold gathered f64 categorical codes onto palette rows for wire materialize.
+pub fn fold_codes_f64_u8(codes: &[f64], n_palette: usize) -> Vec<u8> {
+    let modulus = n_palette.max(1) as i64;
+    codes
+        .iter()
+        .map(|&code| (code as i64).rem_euclid(modulus) as u8)
+        .collect()
+}
+
+/// Width marker for [`FactorizedDisplayLabels::codes_u8`].
+pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
+/// Width marker for [`FactorizedDisplayLabels::codes_u32`].
+pub const FACTORIZE_DISPLAY_LABELS_CODE_U32: u32 = 4;
+/// Maximum categories that ship as u8 wire codes (`channels.MAX_CATEGORIES`).
+pub const MAX_CATEGORY_CODES_U8: usize = 256;
+/// Probe row count matching `channels._FACTORIZE_PROBE_ROWS`.
+pub const FACTORIZE_PROBE_ROWS: usize = 4096;
+/// Distinct-probe ceiling matching `channels._FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES`.
+pub const FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES: usize = 512;
+/// Near-unique ratio for wide records (`channels._FACTORIZE_NEAR_UNIQUE_RATIO`).
+pub const FACTORIZE_NEAR_UNIQUE_RATIO: f64 = 0.95;
+/// Narrow record width matching `channels._FACTORIZE_NARROW_ITEMSIZE`.
+pub const FACTORIZE_NARROW_ITEMSIZE: usize = 32;
+
+/// Missing-category sentinel for [`category_label`].
+pub const CATEGORY_LABEL_MISSING: u8 = 0;
+/// Valid UTF-8 display text for [`category_label`].
+pub const CATEGORY_LABEL_UTF8: u8 = 1;
+/// Raw bytes decoded as UTF-8 with replacement for [`category_label`].
+pub const CATEGORY_LABEL_BYTES: u8 = 2;
+
+/// Canonical display label for one categorical value.
+///
+/// Matches Python `channels.category_label` / Node `categoryLabel`.
+pub fn category_label(kind: u8, payload: &[u8]) -> Option<String> {
+    match kind {
+        CATEGORY_LABEL_MISSING => Some("(missing)".to_owned()),
+        CATEGORY_LABEL_UTF8 => std::str::from_utf8(payload).ok().map(str::to_owned),
+        CATEGORY_LABEL_BYTES => Some(String::from_utf8_lossy(payload).into_owned()),
+        _ => None,
+    }
+}
+
+/// Batch canonical display labels from packed host encodings.
+pub fn category_labels_packed(
+    kinds: &[u8],
+    in_lens: &[u32],
+    in_texts: &[u8],
+    out_lens: &mut [u32],
+    out_texts: &mut [u8],
+) -> Option<usize> {
+    if kinds.len() != in_lens.len() || out_lens.len() < kinds.len() {
+        return None;
+    }
+    let mut in_offset = 0usize;
+    let mut labels = Vec::with_capacity(kinds.len());
+    for (&kind, &len) in kinds.iter().zip(in_lens.iter()) {
+        let len = len as usize;
+        let end = in_offset.checked_add(len)?;
+        if end > in_texts.len() {
+            return None;
+        }
+        let payload = &in_texts[in_offset..end];
+        in_offset = end;
+        labels.push(category_label(kind, payload)?);
+    }
+    if !kinds.is_empty() && in_offset != in_texts.len() {
+        return None;
+    }
+    let total: usize = labels.iter().map(|label| label.len()).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut out_offset = 0usize;
+    for (label, slot) in labels.iter().zip(out_lens.iter_mut()) {
+        let bytes = label.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[out_offset..out_offset + bytes.len()].copy_from_slice(bytes);
+        out_offset += bytes.len();
+    }
+    Some(labels.len())
+}
+
+/// Missing or string/bytes row in an object column stringlike probe.
+pub const OBJECT_ROW_MISSING: u8 = 0;
+/// UTF-8 text row in an object column stringlike probe.
+pub const OBJECT_ROW_TEXT: u8 = 1;
+/// Raw bytes row in an object column stringlike probe.
+pub const OBJECT_ROW_BYTES: u8 = 2;
+/// Non-stringlike row (numeric/object/etc.) in the probe.
+pub const OBJECT_ROW_OTHER: u8 = 3;
+
+/// True when every packed row tag is missing, text, or bytes.
+///
+/// Matches Python `channels._object_column_is_stringlike` /
+/// Node `objectColumnIsStringlike` after hosts classify each object row.
+pub fn object_rows_all_stringlike(row_tags: &[u8]) -> Option<bool> {
+    let mut ok = true;
+    for &tag in row_tags {
+        match tag {
+            OBJECT_ROW_MISSING | OBJECT_ROW_TEXT | OBJECT_ROW_BYTES => {}
+            OBJECT_ROW_OTHER => ok = false,
+            _ => return None,
+        }
+    }
+    Some(ok)
+}
+
+/// Missing row in an object-column real-numeric probe.
+pub const OBJECT_ROW_REAL_MISSING: u8 = 0;
+/// `numbers.Real` row excluding bool in the host probe.
+pub const OBJECT_ROW_REAL_NUMERIC: u8 = 1;
+/// Boolean row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_BOOL: u8 = 2;
+/// String/bytes row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_TEXT: u8 = 3;
+/// Host `float()`-coercible row that is not `numbers.Real`.
+pub const OBJECT_ROW_REAL_COERCIBLE: u8 = 4;
+/// Non-real row in the real-numeric probe.
+pub const OBJECT_ROW_REAL_OTHER: u8 = 5;
+
+/// True when the column contains at least one real numeric row and every
+/// non-missing row is real numeric.
+///
+/// Matches Python `channels._object_array_is_real_numeric` /
+/// Node `objectColumnIsRealNumeric` after hosts classify each object row.
+pub fn object_rows_all_real_numeric(row_tags: &[u8]) -> Option<bool> {
+    let mut seen = false;
+    for &tag in row_tags {
+        match tag {
+            OBJECT_ROW_REAL_MISSING => {}
+            OBJECT_ROW_REAL_NUMERIC | OBJECT_ROW_REAL_COERCIBLE => seen = true,
+            OBJECT_ROW_REAL_BOOL | OBJECT_ROW_REAL_TEXT | OBJECT_ROW_REAL_OTHER => return Some(false),
+            _ => return None,
+        }
+    }
+    Some(seen)
+}
+
+/// Distinct record count in the fixed-record factorizer probe sample.
+///
+/// Matches Python `np.unique(probe)` / Node `distinctProbeCount` after hosts
+/// choose the same evenly spaced row indices across the full column.
+pub fn distinct_probe_count(data: &[u8], n_rows: usize, record_width: usize) -> Option<usize> {
+    if record_width == 0 {
+        return None;
+    }
+    let expected = n_rows.checked_mul(record_width)?;
+    if data.len() != expected {
+        return None;
+    }
+    let probe_len = n_rows.min(FACTORIZE_PROBE_ROWS);
+    let mut seen: HashSet<&[u8]> = HashSet::new();
+    for i in 0..probe_len {
+        let idx = if n_rows <= FACTORIZE_PROBE_ROWS {
+            i
+        } else if probe_len <= 1 {
+            0
+        } else {
+            (i * (n_rows - 1)) / (probe_len - 1)
+        };
+        let start = idx * record_width;
+        let end = start + record_width;
+        seen.insert(&data[start..end]);
+    }
+    Some(seen.len())
+}
+
+/// Whether the native fixed-record factorizer should run on a probe sample.
+///
+/// Matches `channels._use_native_fixed_factorizer` / Node `useNativeFixedFactorizer`.
+pub fn factorize_use_native_probe(distinct: usize, probe_len: usize, record_width: usize) -> bool {
+    if probe_len == 0 {
+        return true;
+    }
+    if distinct <= FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES {
+        return true;
+    }
+    let near_unique = if record_width <= FACTORIZE_NARROW_ITEMSIZE {
+        1.0
+    } else {
+        FACTORIZE_NEAR_UNIQUE_RATIO
+    };
+    (distinct as f64) < near_unique * (probe_len as f64)
+}
+
+/// Probe a fixed-width column and decide whether the native hash path should run.
+///
+/// Matches Python `channels._use_native_fixed_factorizer` /
+/// Node `useNativeFixedFactorizer` after hosts pass the raw record bytes.
+pub fn factorize_use_native_fixed(data: &[u8], n_rows: usize, record_width: usize) -> Option<bool> {
+    let distinct = distinct_probe_count(data, n_rows, record_width)?;
+    let probe_len = n_rows.min(FACTORIZE_PROBE_ROWS);
+    Some(factorize_use_native_probe(distinct, probe_len, record_width))
+}
+
+/// Sorted unique categories plus per-row codes for the label-policy path.
+///
+/// Matches Python/Node `_factorize_categories` / `factorizeJsArray`: canonical
+/// display labels are sorted lexicographically, then each row maps to its code.
+pub struct FactorizedDisplayLabels {
+    pub categories: Vec<String>,
+    pub code_width: u32,
+    pub codes_u8: Option<Vec<u8>>,
+    pub codes_u32: Option<Vec<u32>>,
+}
+
+fn read_packed_row_labels(label_lens: &[u32], label_texts: &[u8]) -> Option<Vec<String>> {
+    let mut labels = Vec::with_capacity(label_lens.len());
+    let mut offset = 0usize;
+    for &len in label_lens {
+        let len = len as usize;
+        let end = offset.checked_add(len)?;
+        if end > label_texts.len() {
+            return None;
+        }
+        labels.push(std::str::from_utf8(&label_texts[offset..end]).ok()?.to_owned());
+        offset = end;
+    }
+    if !label_lens.is_empty() && offset != label_texts.len() {
+        return None;
+    }
+    Some(labels)
+}
+
+pub fn write_packed_utf8_labels(
+    labels: &[String],
+    out_lens: &mut [u32],
+    out_texts: &mut [u8],
+) -> Option<usize> {
+    if out_lens.len() < labels.len() {
+        return None;
+    }
+    let total: usize = labels.iter().map(|label| label.len()).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut offset = 0usize;
+    for (label, slot) in labels.iter().zip(out_lens.iter_mut()) {
+        let bytes = label.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[offset..offset + bytes.len()].copy_from_slice(bytes);
+        offset += bytes.len();
+    }
+    Some(total)
+}
+
+/// Factorize pre-canonicalized display labels (label-policy categorical path).
+pub fn factorize_display_labels(row_labels: &[&str]) -> Option<FactorizedDisplayLabels> {
+    if row_labels.is_empty() {
+        return Some(FactorizedDisplayLabels {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(Vec::new()),
+            codes_u32: None,
+        });
+    }
+    let categories: std::collections::BTreeSet<&str> =
+        row_labels.iter().copied().collect();
+    let categories: Vec<String> = categories.into_iter().map(str::to_owned).collect();
+    use std::collections::HashMap;
+    let index: HashMap<&str, usize> = categories
+        .iter()
+        .enumerate()
+        .map(|(i, label)| (label.as_str(), i))
+        .collect();
+    if categories.len() <= 256 {
+        let codes: Vec<u8> = row_labels
+            .iter()
+            .map(|label| {
+                u8::try_from(*index.get(label)?).ok()
+            })
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(codes),
+            codes_u32: None,
+        })
+    } else {
+        let codes: Vec<u32> = row_labels
+            .iter()
+            .map(|label| u32::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            codes_u8: None,
+            codes_u32: Some(codes),
+        })
+    }
+}
+
+/// Packed UTF-8 row labels → sorted categories + codes.
+pub fn factorize_display_labels_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+) -> Option<FactorizedDisplayLabels> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    factorize_display_labels(&refs)
+}
+
+/// Sorted unique categories plus remap for first-seen unique display labels.
+///
+/// Matches Python/Node `_factorize_categories` after native fixed-record
+/// factorization: each input label is one compact unique row's display label
+/// (duplicate display strings may appear), categories are sorted
+/// lexicographically, and `remap[i]` is the sorted code for input `i`.
+pub struct SortedDisplayLabelRemap {
+    pub categories: Vec<String>,
+    pub code_width: u32,
+    pub remap_u8: Option<Vec<u8>>,
+    pub remap_u32: Option<Vec<u32>>,
+    pub counts: Option<Vec<u64>>,
+}
+
+pub fn sorted_display_label_remap(
+    unique_labels: &[&str],
+    in_counts: Option<&[u64]>,
+) -> Option<SortedDisplayLabelRemap> {
+    if let Some(counts) = in_counts {
+        if counts.len() != unique_labels.len() {
+            return None;
+        }
+    }
+    if unique_labels.is_empty() {
+        return Some(SortedDisplayLabelRemap {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            remap_u8: Some(Vec::new()),
+            remap_u32: None,
+            counts: in_counts.map(|_| Vec::new()),
+        });
+    }
+    use std::collections::{BTreeSet, HashMap};
+    let categories: BTreeSet<&str> = unique_labels.iter().copied().collect();
+    let categories: Vec<String> = categories.into_iter().map(str::to_owned).collect();
+    let index: HashMap<&str, usize> = categories
+        .iter()
+        .enumerate()
+        .map(|(i, label)| (label.as_str(), i))
+        .collect();
+    let mut out_counts = in_counts.map(|_| vec![0u64; categories.len()]);
+    if let (Some(counts), Some(agg)) = (in_counts, out_counts.as_mut()) {
+        for (label, count) in unique_labels.iter().zip(counts.iter()) {
+            agg[*index.get(label)?] += *count;
+        }
+    }
+    if categories.len() <= 256 {
+        let remap: Vec<u8> = unique_labels
+            .iter()
+            .map(|label| u8::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(SortedDisplayLabelRemap {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            remap_u8: Some(remap),
+            remap_u32: None,
+            counts: out_counts,
+        })
+    } else {
+        let remap: Vec<u32> = unique_labels
+            .iter()
+            .map(|label| u32::try_from(*index.get(label)?).ok())
+            .collect::<Option<_>>()?;
+        Some(SortedDisplayLabelRemap {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            remap_u8: None,
+            remap_u32: Some(remap),
+            counts: out_counts,
+        })
+    }
+}
+
+/// Packed UTF-8 unique labels → sorted categories + remap (+ optional counts).
+pub fn sorted_display_label_remap_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+    in_counts: Option<&[u64]>,
+) -> Option<SortedDisplayLabelRemap> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    sorted_display_label_remap(&refs, in_counts)
+}
+
+/// Dedupe display labels in first-seen order; codes index the dedup list.
+///
+/// Matches Python `facets._label_codes`.
+pub fn label_codes_first_seen(row_labels: &[&str]) -> Option<FactorizedDisplayLabels> {
+    if row_labels.is_empty() {
+        return Some(FactorizedDisplayLabels {
+            categories: Vec::new(),
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(Vec::new()),
+            codes_u32: None,
+        });
+    }
+    use std::collections::HashMap;
+    let mut categories: Vec<String> = Vec::new();
+    let mut index: HashMap<&str, usize> = HashMap::new();
+    let mut codes_raw: Vec<usize> = Vec::with_capacity(row_labels.len());
+    for &label in row_labels {
+        let code = if let Some(&code) = index.get(label) {
+            code
+        } else {
+            let code = categories.len();
+            index.insert(label, code);
+            categories.push(label.to_owned());
+            code
+        };
+        codes_raw.push(code);
+    }
+    if categories.len() <= 256 {
+        let codes: Vec<u8> = codes_raw
+            .into_iter()
+            .map(|code| u8::try_from(code).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U8,
+            codes_u8: Some(codes),
+            codes_u32: None,
+        })
+    } else {
+        let codes: Vec<u32> = codes_raw
+            .into_iter()
+            .map(|code| u32::try_from(code).ok())
+            .collect::<Option<_>>()?;
+        Some(FactorizedDisplayLabels {
+            categories,
+            code_width: FACTORIZE_DISPLAY_LABELS_CODE_U32,
+            codes_u8: None,
+            codes_u32: Some(codes),
+        })
+    }
+}
+
+/// Packed UTF-8 row labels → first-seen categories + codes.
+pub fn label_codes_first_seen_packed(
+    label_lens: &[u32],
+    label_texts: &[u8],
+) -> Option<FactorizedDisplayLabels> {
+    let labels = read_packed_row_labels(label_lens, label_texts)?;
+    let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    label_codes_first_seen(&refs)
 }
 
 /// One-pass statistics for a chunk of a column (§22).
@@ -1377,6 +1840,192 @@ fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
         resolved[count - 1] = *last;
     }
     resolved
+}
+
+/// Colormap custom-stop resolve errors (ABI 349). Hosts map these to ValueError text.
+pub const COLORMAP_RESOLVE_UNRESOLVED_COLOR: i32 = -1;
+pub const COLORMAP_RESOLVE_TRANSLUCENT_STOP: i32 = -2;
+pub const COLORMAP_RESOLVE_STOP_COUNT: i32 = -3;
+pub const COLORMAP_RESOLVE_DIRECTION_KEYWORD: i32 = -4;
+pub const COLORMAP_RESOLVE_INVALID_POSITION: i32 = -5;
+pub const COLORMAP_RESOLVE_GRADIENT_PARSE: i32 = -6;
+pub const COLORMAP_RESOLVE_OUTPUT_TOO_SMALL: i32 = -7;
+
+const COLORMAP_LUT_TEXELS: usize = 256;
+
+fn resolve_opaque_colormap_stop_rgb(css: &str) -> Result<[u8; 3], i32> {
+    match crate::css::parse_color(css.trim()) {
+        Ok(crate::css::Checked::Parsed(Some(rgba))) => {
+            if rgba[3] < 1.0 {
+                return Err(COLORMAP_RESOLVE_TRANSLUCENT_STOP);
+            }
+            Ok([
+                bankers_round_u8(rgba[0] * 255.0),
+                bankers_round_u8(rgba[1] * 255.0),
+                bankers_round_u8(rgba[2] * 255.0),
+            ])
+        }
+        Ok(crate::css::Checked::Parsed(None) | crate::css::Checked::Passthrough) => {
+            Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR)
+        }
+        Err(_) => Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR),
+    }
+}
+
+fn bankers_round_u8(value: f32) -> u8 {
+    let clamped = value.clamp(0.0, 255.0);
+    let floor = clamped.floor();
+    let frac = clamped - floor;
+    let base = floor as u32;
+    let rounded = if frac > 0.5 {
+        base + 1
+    } else if frac < 0.5 {
+        base
+    } else if base % 2 == 0 {
+        base
+    } else {
+        base + 1
+    };
+    rounded.min(255) as u8
+}
+
+fn linear_interp(t: f64, xs: &[f64], ys: &[f64]) -> f64 {
+    debug_assert_eq!(xs.len(), ys.len());
+    if xs.is_empty() {
+        return 0.0;
+    }
+    if t <= xs[0] {
+        return ys[0];
+    }
+    if t >= xs[xs.len() - 1] {
+        return ys[ys.len() - 1];
+    }
+    for i in 0..xs.len() - 1 {
+        if t >= xs[i] && t <= xs[i + 1] {
+            let span = xs[i + 1] - xs[i];
+            if span == 0.0 {
+                return ys[i];
+            }
+            let frac = (t - xs[i]) / span;
+            return ys[i] + (ys[i + 1] - ys[i]) * frac;
+        }
+    }
+    ys[ys.len() - 1]
+}
+
+fn positions_are_uniform(positions: &[f64]) -> bool {
+    if positions.is_empty() {
+        return true;
+    }
+    if positions[0] != 0.0 || positions[positions.len() - 1] != 1.0 {
+        return false;
+    }
+    if positions.len() == 1 {
+        return true;
+    }
+    positions.iter().enumerate().all(|(index, value)| {
+        let expected = index as f64 / (positions.len() - 1) as f64;
+        (*value - expected).abs() <= 1e-9
+    })
+}
+
+fn resample_positioned_colormap_stops(positions: &[f64], rgb: &[[u8; 3]]) -> Vec<[u8; 3]> {
+    let mut out = vec![[0u8; 3]; COLORMAP_LUT_TEXELS];
+    for channel in 0..3 {
+        let values: Vec<f64> = rgb.iter().map(|row| row[channel] as f64).collect();
+        for (index, slot) in out.iter_mut().enumerate() {
+            let t = if COLORMAP_LUT_TEXELS == 1 {
+                0.0
+            } else {
+                index as f64 / (COLORMAP_LUT_TEXELS - 1) as f64
+            };
+            slot[channel] = bankers_round_u8(linear_interp(t, positions, &values) as f32);
+        }
+    }
+    out
+}
+
+fn finalize_colormap_custom_stops(
+    positions: &[f64],
+    rgb: &[[u8; 3]],
+    out: &mut [u8],
+) -> Result<usize, i32> {
+    if !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&rgb.len()) {
+        return Err(COLORMAP_RESOLVE_STOP_COUNT);
+    }
+    let stops: Vec<[u8; 3]> = if positions_are_uniform(positions) {
+        rgb.to_vec()
+    } else {
+        resample_positioned_colormap_stops(positions, rgb)
+    };
+    let needed = stops.len() * 3;
+    if out.len() < needed {
+        return Err(COLORMAP_RESOLVE_OUTPUT_TOO_SMALL);
+    }
+    for (index, stop) in stops.iter().enumerate() {
+        let start = index * 3;
+        out[start..start + 3].copy_from_slice(stop);
+    }
+    Ok(stops.len())
+}
+
+/// Resolve a custom colormap from CSS `linear-gradient(...)` (ABI 349).
+///
+/// Colormaps have no spatial direction; a direction keyword is rejected. Hosts
+/// still wrap authoring error text.
+pub fn colormap_custom_stops_resolve_gradient(css: &str, out: &mut [u8]) -> Result<usize, i32> {
+    let parsed = scene_parse_linear_gradient(css, "mark").map_err(|code| match code {
+        SCENE_PARSE_LINEAR_GRADIENT_DIRECTION
+        | SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS => COLORMAP_RESOLVE_DIRECTION_KEYWORD,
+        SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT => COLORMAP_RESOLVE_STOP_COUNT,
+        SCENE_PARSE_LINEAR_GRADIENT_STOP_POS => COLORMAP_RESOLVE_INVALID_POSITION,
+        _ => COLORMAP_RESOLVE_GRADIENT_PARSE,
+    })?;
+    if parsed.dir != 0 {
+        return Err(COLORMAP_RESOLVE_DIRECTION_KEYWORD);
+    }
+    let rgb: Result<Vec<[u8; 3]>, i32> = parsed
+        .css
+        .iter()
+        .map(|color| resolve_opaque_colormap_stop_rgb(color))
+        .collect();
+    finalize_colormap_custom_stops(&parsed.t, &rgb?, out)
+}
+
+/// Resolve a custom colormap from packed CSS color strings (ABI 349).
+///
+/// `positions` may be `None` per stop (uniform spacing). Positions must lie in
+/// `[0, 1]` and be non-decreasing when present.
+pub fn colormap_custom_stops_resolve_list(
+    css: &[&str],
+    positions: &[Option<f64>],
+    out: &mut [u8],
+) -> Result<usize, i32> {
+    if css.len() != positions.len() || !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&css.len())
+    {
+        return Err(COLORMAP_RESOLVE_STOP_COUNT);
+    }
+    for pos in positions.iter().flatten() {
+        if !pos.is_finite() || *pos < 0.0 || *pos > 1.0 {
+            return Err(COLORMAP_RESOLVE_INVALID_POSITION);
+        }
+    }
+    let rgb: Vec<[u8; 3]> = css
+        .iter()
+        .map(|color| resolve_opaque_colormap_stop_rgb(color))
+        .collect::<Result<_, _>>()?;
+    let resolved_positions = if positions.iter().all(|value| value.is_none()) {
+        if css.len() == 1 {
+            vec![0.0]
+        } else {
+            (0..css.len())
+                .map(|index| index as f64 / (css.len() - 1) as f64)
+                .collect()
+        }
+    } else {
+        resolve_host_stop_positions(positions)
+    };
+    finalize_colormap_custom_stops(&resolved_positions, &rgb, out)
 }
 
 /// Parse CSS `linear-gradient(...)` into space-relative dir + resolved stops.
@@ -2538,6 +3187,44 @@ pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
     } else {
         F32_SAFE_MAG / half
     }
+}
+
+/// Snap a 1-D window outward to the power-of-two grid over its extent (LOD T13).
+///
+/// The result always contains `[lo, hi]`. Degenerate inputs pass through unchanged.
+pub fn aligned_window(
+    lo: f64,
+    hi: f64,
+    extent_lo: f64,
+    extent_hi: f64,
+    pad: f64,
+) -> (f64, f64) {
+    let span = hi - lo;
+    let extent = extent_hi - extent_lo;
+    if !(span.is_finite()
+        && extent.is_finite()
+        && span > 0.0
+        && extent > 0.0
+        && pad >= 1.0)
+    {
+        return (lo, hi);
+    }
+    if pad * span >= extent {
+        return (extent_lo.min(lo), extent_hi.max(hi));
+    }
+    let level_f = (extent / (pad * span)).log2().ceil();
+    let level = if level_f.is_finite() {
+        (level_f.max(0.0) as u64).min(63)
+    } else {
+        0
+    };
+    let block = extent / (1u64 << level) as f64;
+    let b0 = ((lo - extent_lo) / block).floor();
+    let b1 = ((hi - extent_lo) / block).ceil();
+    (
+        lo.min(extent_lo + b0 * block),
+        hi.max(extent_lo + b1 * block),
+    )
 }
 
 /// Pack EncodedColumn wire metadata (ABI 255).
@@ -5262,6 +5949,39 @@ pub fn colormap_lut_into(t: &[f64], stops: &[[u8; 3]], out_rgb: &mut [u8]) -> bo
     true
 }
 
+/// Fixed-count unit-spaced colormap LUT as straight-alpha RGBA8.
+///
+/// Matches Python `channels.colormap_lut_rgba8` / Node `colormapLutRgba8`:
+/// `t[i] = i / (n_texels - 1)` for `n_texels > 1`, alpha 255 throughout.
+pub fn colormap_lut_rgba8_from_stops(stops: &[[u8; 3]], n_texels: usize) -> Option<Vec<u8>> {
+    if n_texels == 0 || stops.is_empty() {
+        return None;
+    }
+    let mut t = vec![0.0f64; n_texels];
+    for (i, slot) in t.iter_mut().enumerate().take(n_texels) {
+        *slot = if n_texels == 1 {
+            0.0
+        } else {
+            i as f64 / (n_texels - 1) as f64
+        };
+    }
+    let mut rgb = vec![0u8; n_texels * 3];
+    if !colormap_lut_into(&t, stops, &mut rgb) {
+        return None;
+    }
+    let mut out = vec![0u8; n_texels * 4];
+    for i in 0..n_texels {
+        out[i * 4..i * 4 + 3].copy_from_slice(&rgb[i * 3..i * 3 + 3]);
+        out[i * 4 + 3] = 255;
+    }
+    Some(out)
+}
+
+/// Named built-in/custom-stop-table LUT (256 texels).
+pub fn colormap_lut_rgba8_named(name: &str) -> Option<Vec<u8>> {
+    colormap_lut_rgba8_from_stops(&crate::colormap::colormap_named_stops(name), 256)
+}
+
 /// Legacy f64 count-grid density colormap (the remaining `_lut` density path).
 ///
 /// Same stop interpolation and `t * 1.35` alpha law as [`density_rgba_into`],
@@ -6434,6 +7154,15 @@ fn sample_expected_capacity(size: usize, threshold: u64) -> usize {
     ((size as f64 * fraction).ceil() as usize).saturating_add(16)
 }
 
+/// SplitMix64 row-id hashes for `(row_id, seed)`. Bit-identical to the former
+/// Python `lod.hash_row_ids` reference (ABI 327 delegates hosts here).
+pub fn hash_row_ids(ids: &[u64], seed: u64, out: &mut [u64]) {
+    assert_eq!(ids.len(), out.len());
+    for (&id, o) in ids.iter().zip(out.iter_mut()) {
+        *o = splitmix64(id, seed);
+    }
+}
+
 /// Deterministic sampling mask: `out[i] = splitmix64(ids[i], seed) <= threshold`.
 /// One fused pass — the NumPy expression allocates five full-width u64
 /// temporaries (~80 MB each at 10M rows) and dominated the density payload
@@ -6895,13 +7624,89 @@ fn sample_mask_impl<T: Copy + Sync + Into<u64>>(
 /// otherwise `fraction * (2^64 - 1)` in f64 (the constant rounds to 2^64),
 /// truncated with the same saturating clamp as Python's
 /// `max(0, min(u64_max, int(...)))`.
-pub(crate) fn sample_threshold(fraction: f64) -> u64 {
+pub fn sample_threshold(fraction: f64) -> u64 {
     if fraction >= 1.0 {
         u64::MAX
     } else {
         // `as` saturates: NaN/negative -> 0, overflow -> u64::MAX.
         (fraction * u64::MAX as f64) as u64
     }
+}
+
+/// Zoom/detail sampling fraction: `min(1, base * growth^level)` with the same
+/// early exits and non-finite overflow handling as Python `lod._sample_fraction`
+/// and Node `sampleFraction`.
+pub fn sample_fraction(level: i64, base_fraction: f64, growth: f64) -> f64 {
+    if base_fraction >= 1.0 || growth == 1.0 {
+        return base_fraction.min(1.0);
+    }
+    let fraction = base_fraction * growth.powf(level as f64);
+    if !fraction.is_finite() {
+        return 1.0;
+    }
+    fraction.min(1.0)
+}
+
+/// Validate categorical sampling policy and size its bounded output buffer.
+///
+/// Matches Python `lod._stratified_sample_range_plan` after host-side array
+/// validation. Returns `None` on invalid numeric policy.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StratifiedSampleRangePlan {
+    pub fraction: f64,
+    pub seed: u64,
+    pub min_count: u32,
+    pub capacity: usize,
+    pub keep_all: bool,
+}
+
+pub fn stratified_sample_range_plan(
+    n_rows: usize,
+    n_groups: u32,
+    target: u32,
+    level: i64,
+    growth: f64,
+    seed: u64,
+    min_per_category: u32,
+) -> Option<StratifiedSampleRangePlan> {
+    if n_groups == 0 || n_groups > 256 || target == 0 || level < 0 || !growth.is_finite() || growth < 1.0
+    {
+        return None;
+    }
+    if n_rows == 0 {
+        return Some(StratifiedSampleRangePlan {
+            fraction: 1.0,
+            seed: 0,
+            min_count: min_per_category,
+            capacity: 0,
+            keep_all: false,
+        });
+    }
+    let base_fraction = (target as f64 / n_rows as f64).min(1.0);
+    let fraction = sample_fraction(level, base_fraction, growth);
+    if fraction >= 1.0 {
+        return Some(StratifiedSampleRangePlan {
+            fraction,
+            seed: 0,
+            min_count: min_per_category,
+            capacity: n_rows,
+            keep_all: true,
+        });
+    }
+    let expectation_bound = fraction * (n_rows as f64) * f64::from(n_groups).sqrt();
+    let floor_bound = u64::from(min_per_category.saturating_mul(n_groups));
+    let capacity = n_rows.min(
+        64usize
+            .max((expectation_bound * 2.0).ceil() as usize)
+            .max(floor_bound as usize),
+    );
+    Some(StratifiedSampleRangePlan {
+        fraction,
+        seed,
+        min_count: min_per_category,
+        capacity,
+        keep_all: false,
+    })
 }
 
 /// Category-stratified deterministic sampling mask (§5/§17). Per-category keep
@@ -7775,6 +8580,171 @@ pub fn min_max(data: &[f64]) -> Option<(f64, f64)> {
     min_max_impl(data, par_threads(data.len()))
 }
 
+pub const SIZE_RANGE_NONFINITE: i32 = -1;
+pub const SIZE_RANGE_NEGATIVE: i32 = -2;
+pub const SIZE_RANGE_ORDER: i32 = -3;
+
+/// Admit scatter size pixel range endpoints (ABI 350).
+///
+/// Both endpoints must be finite and non-negative with `hi >= lo`, matching
+/// Python `channels._size_range` / Node `resolveSizeChannel` range validation.
+pub fn size_range_admit(lo: f64, hi: f64) -> Result<(f64, f64), i32> {
+    if !lo.is_finite() || !hi.is_finite() {
+        return Err(SIZE_RANGE_NONFINITE);
+    }
+    if lo < 0.0 || hi < 0.0 {
+        return Err(SIZE_RANGE_NEGATIVE);
+    }
+    if hi < lo {
+        return Err(SIZE_RANGE_ORDER);
+    }
+    Ok((lo, hi))
+}
+
+/// Classify whether a column uses categorical color resolution (ABI 351).
+///
+/// `dtype_kind` is the NumPy dtype.kind byte (`U`, `S`, `b`, `O`, ...).
+/// For object columns, `object_real_numeric` is `0` when the column is not
+/// all-real-numeric (categorical) and `1` when it is (continuous). Pass `-1`
+/// for non-object dtypes.
+pub fn array_is_categorical(dtype_kind: u8, object_real_numeric: i32) -> Option<bool> {
+    match dtype_kind as char {
+        'U' | 'S' | 'b' => Some(true),
+        'O' => match object_real_numeric {
+            0 => Some(true),
+            1 => Some(false),
+            _ => None,
+        },
+        _ => Some(false),
+    }
+}
+
+pub const REAL_NUMERIC_DTYPE_BOOL: i32 = -1;
+pub const REAL_NUMERIC_DTYPE_COMPLEX: i32 = -2;
+
+/// Reject boolean/complex NumPy dtype kinds before real f64 coercion (ABI 352).
+///
+/// Returns `0` when the dtype kind may proceed to real-numeric coercion.
+/// Object columns and per-row bool checks stay host-side.
+pub fn real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
+    match dtype_kind as char {
+        'b' => REAL_NUMERIC_DTYPE_BOOL,
+        'c' | 'C' => REAL_NUMERIC_DTYPE_COMPLEX,
+        _ => 0,
+    }
+}
+
+/// Host-side value probe before object-row tag mapping (ABI 353).
+pub const VALUE_PROBE_MISSING: u8 = 0;
+/// Boolean scalar (must be checked before real probes).
+pub const VALUE_PROBE_BOOL: u8 = 1;
+/// UTF-8 text scalar.
+pub const VALUE_PROBE_TEXT: u8 = 2;
+/// Raw bytes scalar.
+pub const VALUE_PROBE_BYTES: u8 = 3;
+/// Real numeric scalar (`numbers.Real` / finite number).
+pub const VALUE_PROBE_REAL: u8 = 4;
+/// Real numeric after host `float()` coercion succeeds.
+pub const VALUE_PROBE_COERCIBLE: u8 = 5;
+/// Non-numeric / non-stringlike scalar.
+pub const VALUE_PROBE_OTHER: u8 = 6;
+
+/// Map a host value probe to an object-column stringlike row tag (ABI 353).
+pub fn object_row_stringlike_tag_from_probe(probe: u8) -> Option<u8> {
+    Some(match probe {
+        VALUE_PROBE_MISSING => OBJECT_ROW_MISSING,
+        VALUE_PROBE_TEXT => OBJECT_ROW_TEXT,
+        VALUE_PROBE_BYTES => OBJECT_ROW_BYTES,
+        VALUE_PROBE_BOOL | VALUE_PROBE_REAL | VALUE_PROBE_COERCIBLE | VALUE_PROBE_OTHER => {
+            OBJECT_ROW_OTHER
+        }
+        _ => return None,
+    })
+}
+
+/// Map a host value probe to an object-column real-numeric row tag (ABI 353).
+pub fn object_row_real_numeric_tag_from_probe(probe: u8) -> Option<u8> {
+    match probe {
+        VALUE_PROBE_MISSING => Some(OBJECT_ROW_REAL_MISSING),
+        VALUE_PROBE_REAL => Some(OBJECT_ROW_REAL_NUMERIC),
+        VALUE_PROBE_BOOL => Some(OBJECT_ROW_REAL_BOOL),
+        VALUE_PROBE_TEXT | VALUE_PROBE_BYTES => Some(OBJECT_ROW_REAL_TEXT),
+        VALUE_PROBE_COERCIBLE => Some(OBJECT_ROW_REAL_COERCIBLE),
+        VALUE_PROBE_OTHER => Some(OBJECT_ROW_REAL_OTHER),
+        _ => None,
+    }
+}
+
+/// Batch map value probes to stringlike row tags (ABI 356).
+pub fn object_row_stringlike_tags_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match object_row_stringlike_tag_from_probe(*probe) {
+            Some(tag) => *slot = tag,
+            None => return false,
+        }
+    }
+    true
+}
+
+/// Batch map value probes to real-numeric row tags (ABI 356).
+pub fn object_row_real_numeric_tags_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match object_row_real_numeric_tag_from_probe(*probe) {
+            Some(tag) => *slot = tag,
+            None => return false,
+        }
+    }
+    true
+}
+
+/// Map a host value probe to a category-label kind byte (ABI 354).
+pub fn category_label_kind_from_probe(probe: u8) -> Option<u8> {
+    Some(match probe {
+        VALUE_PROBE_MISSING => CATEGORY_LABEL_MISSING,
+        VALUE_PROBE_BYTES => CATEGORY_LABEL_BYTES,
+        VALUE_PROBE_TEXT
+        | VALUE_PROBE_BOOL
+        | VALUE_PROBE_REAL
+        | VALUE_PROBE_COERCIBLE
+        | VALUE_PROBE_OTHER => CATEGORY_LABEL_UTF8,
+        _ => return None,
+    })
+}
+
+/// Batch map value probes to category-label kind bytes (ABI 357).
+pub fn category_label_kinds_from_probes(probes: &[u8], out: &mut [u8]) -> bool {
+    if probes.len() != out.len() {
+        return false;
+    }
+    for (probe, slot) in probes.iter().zip(out.iter_mut()) {
+        match category_label_kind_from_probe(*probe) {
+            Some(kind) => *slot = kind,
+            None => return false,
+        }
+    }
+    true
+}
+
+/// Categorical wire code width for `n_categories` (ABI 355).
+pub fn category_code_width(n_categories: usize) -> u32 {
+    if n_categories <= MAX_CATEGORY_CODES_U8 {
+        FACTORIZE_DISPLAY_LABELS_CODE_U8
+    } else {
+        FACTORIZE_DISPLAY_LABELS_CODE_U32
+    }
+}
+
+/// Indexed palette row count capped at [`MAX_CATEGORY_CODES_U8`] (ABI 355).
+pub fn category_palette_rows(n_categories: usize) -> usize {
+    n_categories.min(MAX_CATEGORY_CODES_U8)
+}
+
 /// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
 /// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
 /// matching Python `channels._continuous_domain`.
@@ -7855,6 +8825,278 @@ pub fn clip_quantize_u8(values: &[f64], out: &mut [u8]) -> i32 {
         };
     }
     1
+}
+
+fn domain_increasing_finite(lo: f64, hi: f64) -> bool {
+    lo.is_finite() && hi.is_finite() && hi > lo
+}
+
+/// Normalize over `[lo, hi]` then clip-quantize to u8 (ABI 251 compose).
+///
+/// Matches Python `channels.quantize_unit_u8` / Node `quantizeUnitU8`.
+/// Non-finite inputs map to `0` in the unit step; invalid domains write zeros.
+pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -> i32 {
+    if values.len() != out.len() {
+        return 0;
+    }
+    if values.is_empty() {
+        return 1;
+    }
+    if !domain_increasing_finite(lo, hi) {
+        out.fill(0);
+        return 1;
+    }
+    for (value, dest) in values.iter().zip(out.iter_mut()) {
+        let unit = normalize_one_f32(*value, lo, hi, 0.0);
+        let quantized = (f64::from(unit) * 255.0).round_ties_even();
+        *dest = if quantized.is_finite() {
+            quantized as u8
+        } else {
+            0
+        };
+    }
+    1
+}
+
+/// Built-in categorical palette matching `python/xyg/config.DEFAULT_PALETTE`.
+pub const DEFAULT_PALETTE: [&str; 8] = [
+    "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9",
+    "#e66767",
+];
+
+fn rgba_unit_f32_to_u8(rgba: [f32; 4]) -> [u8; 4] {
+    let channels = [
+        f64::from(rgba[0]),
+        f64::from(rgba[1]),
+        f64::from(rgba[2]),
+        f64::from(rgba[3]),
+    ];
+    let mut out = [0u8; 4];
+    let _ = clip_quantize_u8(&channels, &mut out);
+    out
+}
+
+/// Indexed palette rows as straight-alpha RGBA8.
+///
+/// Matches Python `channels.palette_rows_rgba8` / Node `paletteRowsRgba8`.
+/// Returns the unresolved-entry count when `entries` is non-empty.
+pub fn palette_rows_rgba8(
+    entries: &[&str],
+    rows: usize,
+    out: &mut [u8],
+    entry_unresolved: Option<&mut [u8]>,
+) -> Option<u32> {
+    let n = rows.max(1);
+    if entries.is_empty() || out.len() < n * 4 {
+        return None;
+    }
+    let palette_len = entries.len();
+    let mut entry_bad = vec![false; palette_len];
+    let mut resolved_rows: Vec<[u8; 4]> = Vec::with_capacity(palette_len);
+    for (i, entry) in entries.iter().enumerate() {
+        let row = match crate::css::parse_color(entry) {
+            Ok(crate::css::Checked::Parsed(Some(rgba))) => rgba_unit_f32_to_u8(rgba),
+            _ => {
+                entry_bad[i] = true;
+                crate::css::color_rgba8(DEFAULT_PALETTE[i % DEFAULT_PALETTE.len()], 1.0)
+            }
+        };
+        resolved_rows.push(row);
+    }
+    if let Some(flags) = entry_unresolved {
+        if flags.len() < palette_len {
+            return None;
+        }
+        for (i, bad) in entry_bad.iter().enumerate() {
+            flags[i] = u8::from(*bad);
+        }
+    }
+    let mut unresolved = 0u32;
+    for i in 0..n {
+        let entry_idx = i % palette_len;
+        out[i * 4..i * 4 + 4].copy_from_slice(&resolved_rows[entry_idx]);
+        if entry_bad[entry_idx] {
+            unresolved += 1;
+        }
+    }
+    Some(unresolved)
+}
+
+/// Pack functional CSS color strings into canonical straight-alpha f64 RGBA rows.
+///
+/// Returns `None` when any entry is not unambiguous paint syntax (`#`, `rgb()`,
+/// `hsl()`) or fails to parse as statically resolvable color.
+pub fn literal_color_rgba_f64_from_strs(entries: &[&str]) -> Option<Vec<f64>> {
+    if entries.is_empty() {
+        return None;
+    }
+    let mut out = Vec::with_capacity(entries.len().saturating_mul(4));
+    for entry in entries {
+        if !crate::css::is_functional_color(entry) {
+            return None;
+        }
+        match crate::css::parse_color(entry) {
+            Ok(crate::css::Checked::Parsed(Some(rgba))) => {
+                for c in rgba {
+                    out.push(f64::from(c));
+                }
+            }
+            _ => return None,
+        }
+    }
+    Some(out)
+}
+
+/// Repeat base palette colors for categorical wire specs.
+///
+/// Matches Python `channels.categorical_palette` / Node `categoricalPalette`.
+pub fn categorical_palette_repeat(entries: &[&str], n_categories: usize) -> Option<Vec<String>> {
+    if entries.is_empty() {
+        return None;
+    }
+    Some(
+        (0..n_categories)
+            .map(|i| entries[i % entries.len()].to_owned())
+            .collect(),
+    )
+}
+
+pub struct PaletteMapResolve {
+    pub colors: Vec<String>,
+    pub unmapped_count: u32,
+    pub map_exhausted: bool,
+}
+
+/// Resolve one shipped color per category from a label→color map.
+///
+/// Unmapped categories take the first unused built-in/default palette colors;
+/// when every default is already spent by the map, fall back to cycling the
+/// full default palette. Matches Python `resolve_color`'s `palette_map` branch.
+pub fn categorical_palette_map_resolve(
+    categories: &[&str],
+    map_keys: &[&str],
+    map_values: &[&str],
+    default_palette: &[&str],
+) -> Option<PaletteMapResolve> {
+    if map_keys.len() != map_values.len() {
+        return None;
+    }
+    let default: &[&str] = if default_palette.is_empty() {
+        DEFAULT_PALETTE.as_slice()
+    } else {
+        default_palette
+    };
+    if default.is_empty() {
+        return None;
+    }
+    let mut map = std::collections::HashMap::with_capacity(map_keys.len());
+    for (key, value) in map_keys.iter().zip(map_values.iter()) {
+        map.insert(*key, *value);
+    }
+    let spent: std::collections::HashSet<&str> = map_values.iter().copied().collect();
+    let mut spare: Vec<&str> = default
+        .iter()
+        .copied()
+        .filter(|color| !spent.contains(color))
+        .collect();
+    let map_exhausted = spare.is_empty();
+    if map_exhausted {
+        spare = default.to_vec();
+    }
+    let mut colors = Vec::with_capacity(categories.len());
+    let mut unmapped_count = 0u32;
+    for category in categories {
+        if let Some(color) = map.get(category) {
+            colors.push((*color).to_string());
+        } else {
+            let idx = unmapped_count as usize;
+            colors.push(spare[idx % spare.len()].to_string());
+            unmapped_count += 1;
+        }
+    }
+    Some(PaletteMapResolve {
+        colors,
+        unmapped_count,
+        map_exhausted,
+    })
+}
+
+/// Write UTF-8 strings into a packed `(lens, texts)` buffer.
+pub fn write_packed_strings(out_lens: &mut [u32], out_texts: &mut [u8], values: &[String]) -> Option<()> {
+    if out_lens.len() < values.len() {
+        return None;
+    }
+    let total: usize = values.iter().map(String::len).sum();
+    if out_texts.len() < total {
+        return None;
+    }
+    let mut offset = 0usize;
+    for (value, slot) in values.iter().zip(out_lens.iter_mut()) {
+        let bytes = value.as_bytes();
+        *slot = u32::try_from(bytes.len()).ok()?;
+        out_texts[offset..offset + bytes.len()].copy_from_slice(bytes);
+        offset += bytes.len();
+    }
+    Some(())
+}
+
+/// Sample a continuous color channel to canonical straight-alpha f64 RGBA rows.
+///
+/// Matches Python `channels.resolve_direct_rgba` / exporter LUT sampling.
+pub fn color_channel_direct_rgba_f64_continuous(
+    values: &[f64],
+    lo: f64,
+    hi: f64,
+    stops: &[[u8; 3]],
+) -> Option<Vec<f64>> {
+    if values.is_empty() {
+        return Some(Vec::new());
+    }
+    if stops.is_empty() || !domain_increasing_finite(lo, hi) {
+        return None;
+    }
+    let mut units = vec![0.0f64; values.len()];
+    for (unit, &value) in units.iter_mut().zip(values) {
+        *unit = f64::from(normalize_one_f32(value, lo, hi, 0.0));
+    }
+    let mut rgb = vec![0u8; values.len() * 3];
+    if !colormap_lut_into(&units, stops, &mut rgb) {
+        return None;
+    }
+    let mut out = Vec::with_capacity(values.len() * 4);
+    for i in 0..values.len() {
+        let base = i * 3;
+        out.push(rgb[base] as f64 / 255.0);
+        out.push(rgb[base + 1] as f64 / 255.0);
+        out.push(rgb[base + 2] as f64 / 255.0);
+        out.push(1.0);
+    }
+    Some(out)
+}
+
+/// Sample a categorical color channel to canonical straight-alpha f64 RGBA rows.
+pub fn color_channel_direct_rgba_f64_categorical(
+    codes: &[u32],
+    palette: &[&str],
+) -> Option<Vec<f64>> {
+    if palette.is_empty() {
+        return None;
+    }
+    if codes.is_empty() {
+        return Some(Vec::new());
+    }
+    let palette_len = palette.len();
+    let mut lut = vec![0u8; palette_len * 4];
+    palette_rows_rgba8(palette, palette_len, &mut lut, None)?;
+    let mut out = Vec::with_capacity(codes.len() * 4);
+    for &code in codes {
+        let idx = (code as usize) % palette_len;
+        let row = idx * 4;
+        for byte in &lut[row..row + 4] {
+            out.push(*byte as f64 / 255.0);
+        }
+    }
+    Some(out)
 }
 
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
@@ -8224,6 +9466,17 @@ mod tests {
     }
 
     #[test]
+    fn fold_codes_u32_matches_host_policy() {
+        let codes = [0_u32, 9, 10, 257, 300];
+        let mut out = [0_u8; 5];
+        assert!(fold_codes_u32_into(&codes, 10, &mut out));
+        assert_eq!(out, [0, 9, 0, 7, 0]);
+        assert!(fold_codes_u32_into(&codes, 0, &mut out));
+        assert_eq!(out[0], 0);
+        assert_eq!(fold_codes_f64_u8(&[0.0, 9.0, -1.0], 10), vec![0, 9, 9]);
+    }
+
+    #[test]
     fn factorize_fixed_u8_matches_general_across_record_widths() {
         for width in [1usize, 2, 3, 4, 8, 9, 16, 31] {
             let n_groups = if width == 1 { 200 } else { 256 };
@@ -8411,6 +9664,215 @@ mod tests {
             ),
             None,
         );
+    }
+
+    #[test]
+    fn label_codes_first_seen_preserves_order() {
+        let rows = ["b", "a", "b", "(missing)", "a"];
+        let first_seen = label_codes_first_seen(&rows).expect("first seen");
+        assert_eq!(
+            first_seen.categories,
+            vec!["b".to_owned(), "a".to_owned(), "(missing)".to_owned()]
+        );
+        assert_eq!(first_seen.codes_u8.as_deref(), Some([0, 1, 0, 2, 1].as_slice()));
+        let sorted = factorize_display_labels(&rows).expect("sorted");
+        assert_eq!(
+            sorted.categories,
+            vec!["(missing)".to_owned(), "a".to_owned(), "b".to_owned()]
+        );
+    }
+
+    #[test]
+    fn factorize_display_labels_matches_label_policy() {
+        let rows = ["b", "(missing)", "a", "(missing)", "1"];
+        let factored = factorize_display_labels(&rows).expect("mixed labels");
+        assert_eq!(
+            factored.categories,
+            ["(missing)", "1", "a", "b"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(factored.code_width, FACTORIZE_DISPLAY_LABELS_CODE_U8);
+        assert_eq!(factored.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+
+        let empty = factorize_display_labels(&[]).expect("empty");
+        assert!(empty.categories.is_empty());
+        assert_eq!(empty.codes_u8.as_deref(), Some(&[] as &[u8]));
+
+        let many: Vec<String> = (0..300).map(|i| format!("cat-{i:03}")).collect();
+        let refs: Vec<&str> = many.iter().map(String::as_str).collect();
+        let wide = factorize_display_labels(&refs).expect("wide");
+        assert_eq!(wide.categories.len(), 300);
+        assert_eq!(wide.code_width, FACTORIZE_DISPLAY_LABELS_CODE_U32);
+        assert_eq!(wide.codes_u32.as_ref().map(Vec::len), Some(300));
+
+        let lens = [1u32, 9, 1, 9, 1];
+        let texts = b"b(missing)a(missing)1";
+        let packed = factorize_display_labels_packed(&lens, texts).expect("packed");
+        assert_eq!(packed.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+    }
+
+    #[test]
+    fn object_rows_all_stringlike_matches_host_policy() {
+        assert_eq!(object_rows_all_stringlike(&[]), Some(true));
+        assert_eq!(
+            object_rows_all_stringlike(&[
+                OBJECT_ROW_TEXT,
+                OBJECT_ROW_MISSING,
+                OBJECT_ROW_BYTES,
+            ]),
+            Some(true)
+        );
+        assert_eq!(
+            object_rows_all_stringlike(&[OBJECT_ROW_TEXT, OBJECT_ROW_OTHER]),
+            Some(false)
+        );
+        assert!(object_rows_all_stringlike(&[99]).is_none());
+    }
+
+    #[test]
+    fn object_rows_all_real_numeric_matches_host_policy() {
+        assert_eq!(object_rows_all_real_numeric(&[]), Some(false));
+        assert_eq!(
+            object_rows_all_real_numeric(&[OBJECT_ROW_REAL_MISSING, OBJECT_ROW_REAL_MISSING]),
+            Some(false)
+        );
+        assert_eq!(
+            object_rows_all_real_numeric(&[
+                OBJECT_ROW_REAL_NUMERIC,
+                OBJECT_ROW_REAL_MISSING,
+                OBJECT_ROW_REAL_COERCIBLE,
+            ]),
+            Some(true)
+        );
+        assert_eq!(
+            object_rows_all_real_numeric(&[OBJECT_ROW_REAL_NUMERIC, OBJECT_ROW_REAL_TEXT]),
+            Some(false)
+        );
+        assert!(object_rows_all_real_numeric(&[99]).is_none());
+    }
+
+    #[test]
+    fn sorted_display_label_remap_matches_host_policy() {
+        let empty = sorted_display_label_remap(&[], None).expect("empty");
+        assert!(empty.categories.is_empty());
+        assert_eq!(empty.remap_u8.as_deref(), Some(&[] as &[u8]));
+
+        let remapped = sorted_display_label_remap(&["b", "a", "b"], None).expect("basic");
+        assert_eq!(remapped.categories, vec!["a".to_owned(), "b".to_owned()]);
+        assert_eq!(remapped.remap_u8.as_deref(), Some([1, 0, 1].as_slice()));
+
+        let with_counts = sorted_display_label_remap(&["b", "a", "b"], Some(&[2, 1, 3]))
+            .expect("counts");
+        assert_eq!(with_counts.counts.as_deref(), Some([1, 5].as_slice()));
+    }
+
+    #[test]
+    fn category_label_matches_host_policy() {
+        assert_eq!(
+            category_label(CATEGORY_LABEL_MISSING, b"").as_deref(),
+            Some("(missing)")
+        );
+        assert_eq!(
+            category_label(CATEGORY_LABEL_UTF8, b"\xce\xb2").as_deref(),
+            Some("\u{03b2}")
+        );
+        assert_eq!(
+            category_label(CATEGORY_LABEL_BYTES, b"\xff\xfe").as_deref(),
+            Some("\u{fffd}\u{fffd}")
+        );
+        assert!(category_label(CATEGORY_LABEL_UTF8, b"\xff").is_none());
+        assert!(category_label(99, b"x").is_none());
+
+        let kinds = [
+            CATEGORY_LABEL_UTF8,
+            CATEGORY_LABEL_MISSING,
+            CATEGORY_LABEL_UTF8,
+            CATEGORY_LABEL_MISSING,
+            CATEGORY_LABEL_UTF8,
+        ];
+        let in_lens = [1u32, 0, 1, 0, 1];
+        let in_texts = b"ba1";
+        let mut out_lens = [0u32; 5];
+        let mut out_texts = vec![0u8; 32];
+        let written = category_labels_packed(
+            &kinds,
+            &in_lens,
+            in_texts,
+            &mut out_lens,
+            &mut out_texts,
+        )
+        .expect("packed labels");
+        assert_eq!(written, 5);
+        let mut labels = Vec::new();
+        let mut offset = 0usize;
+        for len in &out_lens {
+            let end = offset + *len as usize;
+            labels.push(std::str::from_utf8(&out_texts[offset..end]).unwrap().to_owned());
+            offset = end;
+        }
+        assert_eq!(
+            labels,
+            vec![
+                "b".to_owned(),
+                "(missing)".to_owned(),
+                "a".to_owned(),
+                "(missing)".to_owned(),
+                "1".to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn factorize_use_native_probe_matches_host_policy() {
+        assert!(factorize_use_native_probe(100, 4096, 4));
+        assert!(factorize_use_native_probe(512, 4096, 4));
+        assert!(factorize_use_native_probe(513, 4096, 4));
+        assert!(factorize_use_native_probe(4095, 4096, 4));
+        assert!(!factorize_use_native_probe(4096, 4096, 4));
+        assert!(factorize_use_native_probe(3890, 4096, 64));
+        assert!(factorize_use_native_probe(3891, 4096, 64));
+        assert!(!factorize_use_native_probe(3892, 4096, 64));
+        assert!(factorize_use_native_probe(0, 0, 8));
+    }
+
+    #[test]
+    fn distinct_probe_count_matches_linspace_sampling() {
+        let mut data = Vec::new();
+        for i in 0..5000_u32 {
+            data.extend_from_slice(&i.to_le_bytes());
+        }
+        assert_eq!(distinct_probe_count(&data, 5000, 4), Some(4096));
+
+        let mut repetitive = Vec::new();
+        for row in 0..50_000_u32 {
+            repetitive.extend_from_slice(&(row % 100).to_le_bytes());
+        }
+        assert_eq!(distinct_probe_count(&repetitive, 50_000, 4), Some(100));
+        assert_eq!(distinct_probe_count(&[], 0, 4), Some(0));
+    }
+
+    #[test]
+    fn factorize_use_native_fixed_matches_host_policy() {
+        let mut repetitive = Vec::new();
+        for i in 0..50_000_u32 {
+            repetitive.extend_from_slice(&(i % 100).to_le_bytes());
+        }
+        assert_eq!(
+            factorize_use_native_fixed(&repetitive, 50_000, 4),
+            Some(true)
+        );
+
+        let mut near_unique = Vec::new();
+        for i in 0..5000_u32 {
+            near_unique.extend_from_slice(&i.to_le_bytes());
+        }
+        assert_eq!(
+            factorize_use_native_fixed(&near_unique, 5000, 4),
+            Some(false)
+        );
+        assert_eq!(factorize_use_native_fixed(&[], 0, 4), Some(true));
     }
 
     #[test]
@@ -9384,6 +10846,102 @@ mod tests {
     }
 
     #[test]
+    fn sample_fraction_matches_host_reference() {
+        assert_eq!(sample_fraction(0, 0.25, 2.0), 0.25);
+        assert_eq!(sample_fraction(2, 0.25, 2.0), 1.0);
+        assert_eq!(sample_fraction(3, 1.0, 2.0), 1.0);
+        assert_eq!(sample_fraction(5, 0.5, 1.0), 0.5);
+        assert!((sample_fraction(10, 0.001, 1.5) - 0.001 * 1.5_f64.powf(10.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn stratified_sample_range_plan_matches_host_policy() {
+        let plan = stratified_sample_range_plan(1000, 4, 500, 0, 2.0, 29, 1).expect("plan");
+        assert!((plan.fraction - 0.5).abs() < 1e-12);
+        assert_eq!(plan.seed, 29);
+        assert_eq!(plan.min_count, 1);
+        assert!(plan.capacity >= 64);
+        assert!(!plan.keep_all);
+        let all = stratified_sample_range_plan(10, 4, 100, 0, 2.0, 0, 1).expect("keep all");
+        assert!(all.keep_all);
+        assert_eq!(all.capacity, 10);
+        assert!(stratified_sample_range_plan(10, 0, 1, 0, 2.0, 0, 1).is_none());
+    }
+
+    #[test]
+    fn categorical_palette_repeat_cycles_base_palette() {
+        let out = categorical_palette_repeat(&["#ff0000", "#00ff00"], 5).expect("palette");
+        assert_eq!(
+            out,
+            vec![
+                "#ff0000".to_string(),
+                "#00ff00".to_string(),
+                "#ff0000".to_string(),
+                "#00ff00".to_string(),
+                "#ff0000".to_string(),
+            ]
+        );
+        assert!(categorical_palette_repeat(&[], 3).is_none());
+    }
+
+    #[test]
+    fn categorical_palette_map_resolve_uses_spare_defaults() {
+        let brand = [
+            ("setosa", "#4c72b0"),
+            ("versicolor", "#dd8452"),
+            ("virginica", "#55a868"),
+        ];
+        let keys: Vec<&str> = brand.iter().map(|(k, _)| *k).collect();
+        let values: Vec<&str> = brand.iter().map(|(_, v)| *v).collect();
+        let categories = ["setosa", "versicolor", "virginica"];
+        let resolved = categorical_palette_map_resolve(&categories, &keys, &values, &[])
+            .expect("resolve");
+        assert_eq!(
+            resolved.colors,
+            vec!["#4c72b0".to_string(), "#dd8452".to_string(), "#55a868".to_string()]
+        );
+        assert_eq!(resolved.unmapped_count, 0);
+        assert!(!resolved.map_exhausted);
+    }
+
+    #[test]
+    fn categorical_palette_map_resolve_assigns_unused_defaults_to_unmapped() {
+        let resolved = categorical_palette_map_resolve(
+            &["a", "b", "c"],
+            &["a"],
+            &["#ff0000"],
+            &["#111111", "#222222", "#333333"],
+        )
+        .expect("resolve");
+        assert_eq!(resolved.colors[0], "#ff0000");
+        assert_eq!(resolved.unmapped_count, 2);
+        assert_eq!(resolved.colors[1], "#111111");
+        assert_eq!(resolved.colors[2], "#222222");
+        assert_ne!(resolved.colors[1], resolved.colors[2]);
+    }
+
+    #[test]
+    fn color_channel_direct_rgba_f64_continuous_matches_lut_path() {
+        let values = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[255, 0, 0], [0, 255, 0]];
+        let rgba = color_channel_direct_rgba_f64_continuous(&values, 0.0, 1.0, &stops).expect("rgba");
+        assert_eq!(rgba.len(), 16);
+        assert!((rgba[0] - 1.0).abs() < 1e-12);
+        assert!((rgba[5] - 0.5019607843137255).abs() < 1e-6);
+        assert!((rgba[9] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn color_channel_direct_rgba_f64_categorical_indexes_palette() {
+        let rgba = color_channel_direct_rgba_f64_categorical(&[0, 1, 2], &["#ff0000", "#00ff00"])
+            .expect("rgba");
+        assert_eq!(rgba.len(), 12);
+        assert!((rgba[0] - 1.0).abs() < 1e-12);
+        assert!((rgba[5] - 1.0).abs() < 1e-12);
+        assert!((rgba[8] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
     fn zone_maps_basic() {
         let data: Vec<f64> = (0..10).map(|i| i as f64).collect();
         let zms = zone_maps(&data, 4);
@@ -9485,6 +11043,29 @@ mod tests {
         assert!(has_kind);
         let (_, _, empty_kind) = encoded_column_meta(1.0, 0.0, 2.0, Some(""));
         assert!(empty_kind);
+    }
+
+    #[test]
+    fn aligned_window_contains_input_and_is_pan_stable() {
+        let (lo, hi) = aligned_window(-3.0, 5.0, 0.0, 100.0, 2.0);
+        assert!(lo <= -3.0 && hi >= 5.0);
+        let a = aligned_window(10.0, 14.0, 0.0, 128.0, 2.0);
+        let b = aligned_window(10.5, 14.5, 0.0, 128.0, 2.0);
+        assert_eq!(a, b);
+        let span = 14.0 - 10.0;
+        let level = (128.0_f64 / (2.0 * span)).log2().ceil() as u32;
+        let block = 128.0 / (1u64 << level) as f64;
+        assert!((a.0 / block - (a.0 / block).round()).abs() < 1e-12);
+        assert!((a.1 / block - (a.1 / block).round()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn aligned_window_degenerate_inputs_pass_through() {
+        assert_eq!(aligned_window(3.0, 3.0, 0.0, 10.0, 2.0), (3.0, 3.0));
+        assert_eq!(aligned_window(1.0, 2.0, 5.0, 5.0, 2.0), (1.0, 2.0));
+        assert_eq!(aligned_window(1.0, 2.0, 0.0, f64::INFINITY, 2.0), (1.0, 2.0));
+        assert_eq!(aligned_window(1.0, 9.0, 0.0, 10.0, 4.0), (0.0, 10.0));
+        assert_eq!(aligned_window(-2.0, 9.0, 0.0, 10.0, 4.0), (-2.0, 10.0));
     }
 
     #[test]
@@ -9610,6 +11191,243 @@ mod tests {
         let mut half = [0u8; 1];
         assert_eq!(clip_quantize_u8(&[1.5 / 255.0], &mut half), 1);
         assert_eq!(half, [2]);
+    }
+
+    #[test]
+    fn quantize_unit_u8_matches_host_policy() {
+        let mut out = [0u8; 3];
+        assert_eq!(quantize_unit_u8_into(&[0.0, 5.0, 10.0], 0.0, 10.0, &mut out), 1);
+        assert_eq!(out, [0, 128, 255]);
+        assert_eq!(
+            quantize_unit_u8_into(&[f64::INFINITY], 0.0, 1.0, &mut out[..1]),
+            1
+        );
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[f64::NAN], 0.0, 1.0, &mut out[..1]), 1);
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
+        assert_eq!(out[0], 0);
+        assert_eq!(quantize_unit_u8_into(&[], 0.0, 1.0, &mut []), 1);
+    }
+
+    #[test]
+    fn size_range_admit_matches_host_policy() {
+        assert_eq!(size_range_admit(2.0, 18.0), Ok((2.0, 18.0)));
+        assert_eq!(size_range_admit(0.0, 0.0), Ok((0.0, 0.0)));
+        assert_eq!(size_range_admit(f64::NAN, 1.0), Err(SIZE_RANGE_NONFINITE));
+        assert_eq!(size_range_admit(-1.0, 2.0), Err(SIZE_RANGE_NEGATIVE));
+        assert_eq!(size_range_admit(3.0, 2.0), Err(SIZE_RANGE_ORDER));
+    }
+
+    #[test]
+    fn array_is_categorical_matches_host_policy() {
+        assert_eq!(array_is_categorical(b'U', -1), Some(true));
+        assert_eq!(array_is_categorical(b'S', -1), Some(true));
+        assert_eq!(array_is_categorical(b'b', -1), Some(true));
+        assert_eq!(array_is_categorical(b'f', -1), Some(false));
+        assert_eq!(array_is_categorical(b'O', 0), Some(true));
+        assert_eq!(array_is_categorical(b'O', 1), Some(false));
+        assert!(array_is_categorical(b'O', -1).is_none());
+        assert!(array_is_categorical(b'O', 2).is_none());
+    }
+
+    #[test]
+    fn real_numeric_dtype_admit_matches_host_policy() {
+        assert_eq!(real_numeric_dtype_admit(b'f'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'i'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'O'), 0);
+        assert_eq!(real_numeric_dtype_admit(b'b'), REAL_NUMERIC_DTYPE_BOOL);
+        assert_eq!(real_numeric_dtype_admit(b'c'), REAL_NUMERIC_DTYPE_COMPLEX);
+        assert_eq!(real_numeric_dtype_admit(b'C'), REAL_NUMERIC_DTYPE_COMPLEX);
+    }
+
+    #[test]
+    fn object_row_tag_from_probe_matches_host_policy() {
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_MISSING),
+            Some(OBJECT_ROW_MISSING)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_TEXT),
+            Some(OBJECT_ROW_TEXT)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_BYTES),
+            Some(OBJECT_ROW_BYTES)
+        );
+        assert_eq!(
+            object_row_stringlike_tag_from_probe(VALUE_PROBE_BOOL),
+            Some(OBJECT_ROW_OTHER)
+        );
+        assert!(object_row_stringlike_tag_from_probe(99).is_none());
+
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_REAL),
+            Some(OBJECT_ROW_REAL_NUMERIC)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_BOOL),
+            Some(OBJECT_ROW_REAL_BOOL)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_COERCIBLE),
+            Some(OBJECT_ROW_REAL_COERCIBLE)
+        );
+        assert_eq!(
+            object_row_real_numeric_tag_from_probe(VALUE_PROBE_OTHER),
+            Some(OBJECT_ROW_REAL_OTHER)
+        );
+        assert!(object_row_real_numeric_tag_from_probe(99).is_none());
+    }
+
+    #[test]
+    fn category_label_kind_from_probe_matches_host_policy() {
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_MISSING),
+            Some(CATEGORY_LABEL_MISSING)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_TEXT),
+            Some(CATEGORY_LABEL_UTF8)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_BYTES),
+            Some(CATEGORY_LABEL_BYTES)
+        );
+        assert_eq!(
+            category_label_kind_from_probe(VALUE_PROBE_BOOL),
+            Some(CATEGORY_LABEL_UTF8)
+        );
+        assert!(category_label_kind_from_probe(99).is_none());
+    }
+
+    #[test]
+    fn category_code_width_matches_host_policy() {
+        assert_eq!(category_code_width(256), FACTORIZE_DISPLAY_LABELS_CODE_U8);
+        assert_eq!(category_code_width(257), FACTORIZE_DISPLAY_LABELS_CODE_U32);
+        assert_eq!(category_palette_rows(300), MAX_CATEGORY_CODES_U8);
+        assert_eq!(category_palette_rows(8), 8);
+    }
+
+    #[test]
+    fn object_row_tags_from_probes_batch_matches_scalar() {
+        let probes = [
+            VALUE_PROBE_MISSING,
+            VALUE_PROBE_TEXT,
+            VALUE_PROBE_REAL,
+            VALUE_PROBE_BOOL,
+        ];
+        let mut out = [0u8; 4];
+        assert!(object_row_stringlike_tags_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                OBJECT_ROW_MISSING,
+                OBJECT_ROW_TEXT,
+                OBJECT_ROW_OTHER,
+                OBJECT_ROW_OTHER,
+            ]
+        );
+        assert!(object_row_real_numeric_tags_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                OBJECT_ROW_REAL_MISSING,
+                OBJECT_ROW_REAL_TEXT,
+                OBJECT_ROW_REAL_NUMERIC,
+                OBJECT_ROW_REAL_BOOL,
+            ]
+        );
+        assert!(!object_row_stringlike_tags_from_probes(&[99], &mut [0]));
+    }
+
+    #[test]
+    fn category_label_kinds_from_probes_batch_matches_scalar() {
+        let probes = [VALUE_PROBE_MISSING, VALUE_PROBE_TEXT, VALUE_PROBE_BYTES, VALUE_PROBE_BOOL];
+        let mut out = [0u8; 4];
+        assert!(category_label_kinds_from_probes(&probes, &mut out));
+        assert_eq!(
+            out,
+            [
+                CATEGORY_LABEL_MISSING,
+                CATEGORY_LABEL_UTF8,
+                CATEGORY_LABEL_BYTES,
+                CATEGORY_LABEL_UTF8,
+            ]
+        );
+    }
+
+    #[test]
+    fn literal_color_rgba_f64_rejects_named_and_malformed() {
+        let good = ["#ff0000", "#00ff00", "#0000ff"];
+        let packed = literal_color_rgba_f64_from_strs(&good).expect("paint");
+        assert_eq!(packed.len(), 12);
+        assert!((packed[0] - 1.0).abs() < 1e-6);
+        assert!(literal_color_rgba_f64_from_strs(&["#ff0000", "b"]).is_none());
+        assert!(literal_color_rgba_f64_from_strs(&["red", "green"]).is_none());
+    }
+
+    #[test]
+    fn colormap_lut_rgba8_matches_linspace_samples() {
+        let stops = [[0, 0, 0], [255, 255, 255]];
+        let lut = colormap_lut_rgba8_from_stops(&stops, 256).expect("lut");
+        assert_eq!(lut.len(), 256 * 4);
+        assert_eq!(&lut[..4], &[0, 0, 0, 255]);
+        assert_eq!(&lut[255 * 4..], &[255, 255, 255, 255]);
+        let mid = colormap_color(0.5, &stops, 255);
+        assert_eq!(&lut[128 * 4..128 * 4 + 4], &[mid[0], mid[1], mid[2], 255]);
+    }
+
+    #[test]
+    fn colormap_custom_stops_resolve_matches_host_policy() {
+        let mut out = vec![0u8; 256 * 3];
+        let count = colormap_custom_stops_resolve_list(
+            &["#0b1220", "#2563eb", "#22d3ee", "#fde68a"],
+            &[None, None, None, None],
+            &mut out,
+        )
+        .expect("uniform list");
+        assert_eq!(count, 4);
+        assert_eq!(&out[..3], &[11, 18, 32]);
+        assert_eq!(&out[9..12], &[253, 230, 138]);
+
+        let count = colormap_custom_stops_resolve_gradient(
+            "linear-gradient(#000000, #ffffff 25%, #000000)",
+            &mut out,
+        )
+        .expect("gradient");
+        assert_eq!(count, 256);
+        assert_eq!(&out[..3], &[0, 0, 0]);
+        assert_eq!(&out[(256 - 1) * 3..], &[0, 0, 0]);
+        assert_eq!(&out[64 * 3..64 * 3 + 3], &[255, 255, 255]);
+
+        assert_eq!(
+            colormap_custom_stops_resolve_list(&["var(--x)", "#fff"], &[None, None], &mut out),
+            Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR)
+        );
+        assert_eq!(
+            colormap_custom_stops_resolve_gradient(
+                "linear-gradient(to top, #000, #fff)",
+                &mut out
+            ),
+            Err(COLORMAP_RESOLVE_DIRECTION_KEYWORD)
+        );
+    }
+
+    #[test]
+    fn palette_rows_rgba8_matches_host_policy() {
+        let entries = ["#ff0000", "var(--x)"];
+        let mut out = vec![0u8; 8];
+        let unresolved = palette_rows_rgba8(&entries, 2, &mut out, None).expect("palette rows");
+        assert_eq!(unresolved, 1);
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#ff0000", 1.0));
+        assert_eq!(
+            &out[4..],
+            &crate::css::color_rgba8(DEFAULT_PALETTE[1], 1.0)
+        );
+        let mut flags = [0u8; 2];
+        let _ = palette_rows_rgba8(&entries, 2, &mut out, Some(&mut flags));
+        assert_eq!(flags, [0, 1]);
     }
 
     #[test]

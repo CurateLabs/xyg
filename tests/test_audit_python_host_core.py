@@ -17,15 +17,38 @@ def _load():
     return mod
 
 
-def test_audit_lists_thirteen_scene_migration_files():
+def test_audit_lists_no_scene_migration_files():
     mod = _load()
     paths = mod._load_paths(mod.MANIFEST)
-    assert len(paths) == 13
+    assert len(paths) == 0
+    assert "python/xyg/_payload.py" not in paths
+    assert "python/xyg/_scene_v3.py" not in paths
+    assert "python/xyg/_svg.py" not in paths
+
+
+def test_keep_host_policy_paths_cover_export_emitters():
+    mod = _load()
+    manifest = mod._load_manifest(mod.MANIFEST)
+    paths = mod._keep_host_policy_paths(manifest)
+    assert "python/xyg/_export_marks_svg.py" in paths
+    assert "python/xyg/_scene_marshal.py" in paths
     assert "python/xyg/_payload.py" in paths
-    assert "python/xyg/_scene_v3.py" in paths
+    assert "python/xyg/kernels.py" not in paths
+
+
+def test_node_keep_host_policy_paths_cover_marshal_surfaces():
+    mod = _load()
+    manifest = mod._load_manifest(mod.MANIFEST)
+    paths = mod._node_keep_host_policy_paths(manifest)
+    assert "packages/xy-node/src/scene.js" in paths
+    assert "packages/xy-node/src/marks/scatter.js" in paths
+    assert "packages/xy-node/src/encode.js" in paths
+    assert "packages/xy-node/src/abi.js" not in paths
 
 
 def test_audit_cli_exits_zero():
+    from xyg._abi_generated import ABI_VERSION
+
     root = Path(__file__).resolve().parents[1]
     proc = subprocess.run(
         [sys.executable, str(root / "scripts" / "audit_python_host_core.py")],
@@ -36,13 +59,15 @@ def test_audit_cli_exits_zero():
     )
     assert proc.returncode == 0
     assert "python-scene-migration core-logic re-audit" in proc.stdout
-    assert "§302 blocker rollup" in proc.stdout
-    assert "abi_version: 315" in proc.stdout
+    assert "No python-scene-migration production files remain." in proc.stdout
+    assert f"abi_version: {ABI_VERSION}" in proc.stdout
     assert "Merged scene lane on main" in proc.stdout
     assert "Merged payload stack on main" in proc.stdout
     assert "Merged payload orchestration on main" in proc.stdout
     assert "Merged scene orchestration on main" in proc.stdout
     assert "Merged payload gather/ship on main" in proc.stdout
+    assert "Merged host materialization retirement" in proc.stdout
+    assert "Host materialization retirement CLOSED" in proc.stdout
     assert "#768" in proc.stdout
     assert "xyg_payload_column_ship_plan" in proc.stdout
     assert "xyg_payload_channel_wire_encode" in proc.stdout
@@ -55,4 +80,12 @@ def test_audit_cli_exits_zero():
     assert "#731 close checklist" in proc.stdout
     assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
+    assert "Keep-host policy surface audit" in proc.stdout
+    assert "node keep-host policy files:" in proc.stdout
+    assert "Cross-host disposition parity" in proc.stdout
+    assert "node-scene-migration files: 0" in proc.stdout
+    assert "WASM / browser host parity inventory" in proc.stdout
+    assert "browser-wasm-adapter modules:" in proc.stdout
+    assert "tests/test_wasm_ticks_chartview_contract.py" in proc.stdout
+    assert "Residual host materialization" not in proc.stdout
     assert "do not mark M2 complete" not in proc.stdout

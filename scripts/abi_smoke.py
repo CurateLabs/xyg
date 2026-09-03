@@ -83,6 +83,127 @@ class PayloadDensityGridAttachEntry(ctypes.Structure):
     _fields_ = [("attach_kind", ctypes.c_int32)]
 
 
+class SceneXytcTraceStyleIn(ctypes.Structure):
+    _fields_ = [
+        ("symbol_is_int", ctypes.c_int32),
+        ("symbol_int", ctypes.c_uint16),
+        ("opacity", ctypes.c_double),
+        ("fill_opacity", ctypes.c_double),
+        ("stroke_opacity", ctypes.c_double),
+        ("line_opacity", ctypes.c_double),
+        ("has_stroke", ctypes.c_int32),
+        ("has_line_color", ctypes.c_int32),
+        ("has_size", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("has_size_ch", ctypes.c_int32),
+        ("has_size_ch_constant", ctypes.c_int32),
+        ("size_ch_constant", ctypes.c_double),
+        ("has_stroke_width", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("has_width", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("has_line_width", ctypes.c_int32),
+        ("line_width", ctypes.c_double),
+        ("has_hex_dx", ctypes.c_int32),
+        ("hex_dx", ctypes.c_double),
+        ("has_hex_dy", ctypes.c_int32),
+        ("hex_dy", ctypes.c_double),
+        ("has_stroke_perimeter", ctypes.c_int32),
+        ("stroke_perimeter_is_bool", ctypes.c_int32),
+        ("stroke_perimeter_true", ctypes.c_int32),
+        ("dash_is_array", ctypes.c_int32),
+        ("has_fill", ctypes.c_int32),
+        ("fill_kind", ctypes.c_int32),
+        ("color_ch_present", ctypes.c_int32),
+        ("color_ch_has_constant", ctypes.c_int32),
+        ("radius_seq", ctypes.c_int32),
+        ("r0", ctypes.c_double),
+        ("r1", ctypes.c_double),
+        ("wedge_gap_raw", ctypes.c_double),
+        ("symbol_len", ctypes.c_size_t),
+        ("dash_len", ctypes.c_size_t),
+        ("dash_pattern_len", ctypes.c_size_t),
+        ("linecap_len", ctypes.c_size_t),
+        ("step_len", ctypes.c_size_t),
+        ("curve_len", ctypes.c_size_t),
+        ("fill_css_len", ctypes.c_size_t),
+        ("fill_space_len", ctypes.c_size_t),
+        ("fill_gradient_len", ctypes.c_size_t),
+        ("stroke_css_len", ctypes.c_size_t),
+        ("line_color_len", ctypes.c_size_t),
+        ("color_css_len", ctypes.c_size_t),
+        ("color_mode_len", ctypes.c_size_t),
+        ("color_const_len", ctypes.c_size_t),
+    ]
+
+
+class SceneXytcTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_int32),
+        ("has_name", ctypes.c_int32),
+        ("marker_path_present", ctypes.c_int32),
+        ("use_density", ctypes.c_int32),
+        ("joined_fill", ctypes.c_int32),
+        ("marker_packed", ctypes.c_int32),
+        ("glyph_packed", ctypes.c_int32),
+        ("color2_class", ctypes.c_int32),
+        ("color2_gradient_packed", ctypes.c_int32),
+        ("kind_len", ctypes.c_size_t),
+        ("name_len", ctypes.c_size_t),
+        ("marker_blob_len", ctypes.c_size_t),
+        ("color2_gradient_len", ctypes.c_size_t),
+        ("style", SceneXytcTraceStyleIn),
+    ]
+
+
+class SceneXytaTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("trace_id", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_int32),
+        ("pack_hexbin_colormap", ctypes.c_int32),
+        ("pack_hexbin_rgba", ctypes.c_int32),
+        ("pack_ribbon_ends", ctypes.c_int32),
+        ("pack_mesh_faces", ctypes.c_int32),
+        ("pack_scatter_paint", ctypes.c_int32),
+        ("pack_density", ctypes.c_int32),
+        ("grid_shape_rows", ctypes.c_double),
+        ("grid_shape_cols", ctypes.c_double),
+        ("has_grid_shape", ctypes.c_int32),
+        ("has_grid", ctypes.c_int32),
+        ("has_rgba", ctypes.c_int32),
+        ("has_rgba_grid", ctypes.c_int32),
+        ("truecolor", ctypes.c_int32),
+        ("has_cmap_domain", ctypes.c_int32),
+        ("cmap_lo", ctypes.c_double),
+        ("cmap_hi", ctypes.c_double),
+        ("has_color_ch", ctypes.c_int32),
+        ("has_style_color", ctypes.c_int32),
+        ("has_opacity", ctypes.c_int32),
+        ("has_fill_opacity", ctypes.c_int32),
+        ("opacity", ctypes.c_float),
+        ("fill_opacity", ctypes.c_float),
+        ("domain_x0", ctypes.c_double),
+        ("domain_x1", ctypes.c_double),
+        ("domain_y0", ctypes.c_double),
+        ("domain_y1", ctypes.c_double),
+        ("cmap_flags", ctypes.c_uint32),
+        ("rows", ctypes.c_int32),
+        ("cols", ctypes.c_int32),
+        ("grid_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("rgba_grid_len", ctypes.c_size_t),
+        ("x_len", ctypes.c_size_t),
+        ("y_len", ctypes.c_size_t),
+        ("mean_rgba_len", ctypes.c_size_t),
+        ("idx_len", ctypes.c_size_t),
+        ("lut_len", ctypes.c_size_t),
+        ("cmap_len", ctypes.c_size_t),
+        ("stops_len", ctypes.c_size_t),
+        ("color_ch_len", ctypes.c_size_t),
+        ("style_color_len", ctypes.c_size_t),
+    ]
+
+
 def _lib_name() -> str:
     if sys.platform == "win32":
         return "xyg_core.dll"
@@ -167,6 +288,85 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_remap_u8.restype = ctypes.c_int32
     lib.xyg_remap_u8.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_fold_codes_u8.restype = ctypes.c_int32
+    lib.xyg_fold_codes_u8.argtypes = [
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        U8P,
+    ]
+    lib.xyg_factorize_display_labels.restype = ctypes.c_size_t
+    lib.xyg_factorize_display_labels.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_label_codes_first_seen.restype = ctypes.c_size_t
+    lib.xyg_label_codes_first_seen.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_sorted_display_label_remap.restype = ctypes.c_size_t
+    lib.xyg_sorted_display_label_remap.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U64P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_factorize_use_native_probe.restype = ctypes.c_int32
+    lib.xyg_factorize_use_native_probe.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+    ]
+    lib.xyg_factorize_use_native_fixed.restype = ctypes.c_int32
+    lib.xyg_factorize_use_native_fixed.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+    ]
+    lib.xyg_category_labels_packed.restype = ctypes.c_size_t
+    lib.xyg_category_labels_packed.argtypes = [
+        U8P,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_object_rows_all_stringlike.restype = ctypes.c_int32
+    lib.xyg_object_rows_all_stringlike.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_object_rows_all_real_numeric.restype = ctypes.c_int32
+    lib.xyg_object_rows_all_real_numeric.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
     lib.xyg_geometry_offset.restype = ctypes.c_int32
@@ -458,6 +658,50 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_scene_xytc_trace_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_trace_pack.argtypes = [
+        ctypes.POINTER(SceneXytcTracePackIn),
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        F64P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xyg_scene_xyta_trace_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xyta_trace_pack.argtypes = [
+        ctypes.POINTER(SceneXytaTracePackIn),
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
     lib.xyg_scene_figure_support_figure_plan.restype = ctypes.c_int32
     lib.xyg_scene_figure_support_figure_plan.argtypes = [
         ctypes.c_int32,
@@ -683,8 +927,167 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
     lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_quantize_unit_u8.restype = ctypes.c_int32
+    lib.xyg_quantize_unit_u8.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+    ]
+    lib.xyg_palette_rows_rgba8.restype = ctypes.c_size_t
+    lib.xyg_palette_rows_rgba8.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_colormap_lut_rgba8.restype = ctypes.c_int32
+    lib.xyg_colormap_lut_rgba8.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_colormap_is_builtin.restype = ctypes.c_int32
+    lib.xyg_colormap_is_builtin.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_colormap_resolved_stops_admit.restype = ctypes.c_int32
+    lib.xyg_colormap_resolved_stops_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_colormap_custom_stops_resolve_gradient.restype = ctypes.c_int32
+    lib.xyg_colormap_custom_stops_resolve_gradient.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_colormap_custom_stops_resolve_list.restype = ctypes.c_int32
+    lib.xyg_colormap_custom_stops_resolve_list.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_literal_color_rgba_f64.restype = ctypes.c_size_t
+    lib.xyg_literal_color_rgba_f64.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_categorical_palette.restype = ctypes.c_size_t
+    lib.xyg_categorical_palette.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_categorical_palette_map_resolve.restype = ctypes.c_size_t
+    lib.xyg_categorical_palette_map_resolve.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+    ]
+    lib.xyg_color_channel_direct_rgba_f64_continuous.restype = ctypes.c_size_t
+    lib.xyg_color_channel_direct_rgba_f64_continuous.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_color_channel_direct_rgba_f64_categorical.restype = ctypes.c_size_t
+    lib.xyg_color_channel_direct_rgba_f64_categorical.argtypes = [
+        U32P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
+    lib.xyg_size_range_admit.restype = ctypes.c_int32
+    lib.xyg_size_range_admit.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_array_is_categorical.restype = ctypes.c_int32
+    lib.xyg_array_is_categorical.argtypes = [
+        ctypes.c_uint8,
+        ctypes.c_int32,
+    ]
+    lib.xyg_real_numeric_dtype_admit.restype = ctypes.c_int32
+    lib.xyg_real_numeric_dtype_admit.argtypes = [ctypes.c_uint8]
+    lib.xyg_object_row_stringlike_tag_from_probe.restype = ctypes.c_int32
+    lib.xyg_object_row_stringlike_tag_from_probe.argtypes = [ctypes.c_uint8]
+    lib.xyg_object_row_real_numeric_tag_from_probe.restype = ctypes.c_int32
+    lib.xyg_object_row_real_numeric_tag_from_probe.argtypes = [ctypes.c_uint8]
+    lib.xyg_category_label_kind_from_probe.restype = ctypes.c_int32
+    lib.xyg_category_label_kind_from_probe.argtypes = [ctypes.c_uint8]
+    lib.xyg_category_code_width.restype = ctypes.c_uint32
+    lib.xyg_category_code_width.argtypes = [ctypes.c_uint64]
+    lib.xyg_category_palette_rows.restype = ctypes.c_uint64
+    lib.xyg_category_palette_rows.argtypes = [ctypes.c_uint64]
+    lib.xyg_object_row_stringlike_tags_from_probes.restype = ctypes.c_int32
+    lib.xyg_object_row_stringlike_tags_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_object_row_real_numeric_tags_from_probes.restype = ctypes.c_int32
+    lib.xyg_object_row_real_numeric_tags_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_category_label_kinds_from_probes.restype = ctypes.c_int32
+    lib.xyg_category_label_kinds_from_probes.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
     lib.xyg_direct_rgba_admit.argtypes = [
         F64P,
@@ -772,6 +1175,47 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.POINTER(ctypes.c_uint8),
+    ]
+    lib.xyg_sample_threshold.restype = ctypes.c_uint64
+    lib.xyg_sample_threshold.argtypes = [D]
+    lib.xyg_hash_row_ids.restype = ctypes.c_int32
+    lib.xyg_hash_row_ids.argtypes = [U64P, ctypes.c_size_t, ctypes.c_uint64, U64P]
+    lib.xyg_sample_fraction.restype = D
+    lib.xyg_sample_fraction.argtypes = [ctypes.c_int64, D, D]
+    lib.xyg_stratified_sample_range_plan.restype = ctypes.c_int32
+    lib.xyg_stratified_sample_range_plan.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int64,
+        D,
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        F64P,
+        U64P,
+        U32P,
+        ctypes.POINTER(ctypes.c_size_t),
+        U32P,
+    ]
+    lib.xyg_screen_shape.restype = ctypes.c_int32
+    lib.xyg_screen_shape.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
+    lib.xyg_normalize_window.restype = ctypes.c_int32
+    lib.xyg_normalize_window.argtypes = [D, D, D, D, ctypes.c_int32, F64P]
+    lib.xyg_view_visible_mask.restype = ctypes.c_size_t
+    lib.xyg_view_visible_mask.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        D,
+        D,
+        D,
+        D,
+        U8P,
     ]
     lib.xyg_sample_range_indices.restype = ctypes.c_size_t
     lib.xyg_sample_range_indices.argtypes = [
@@ -2571,6 +3015,100 @@ def main() -> None:
     ok(lib.xyg_abi_version() == ABI_VERSION, "abi version")
     ok(ctypes.sizeof(CZoneMap) == 64, "ZoneMap repr(C) size")
 
+    early_cmap_out = array("B", [0] * (256 * 4))
+    early_viridis = array("B", b"viridis")
+    ok(
+        lib.xyg_colormap_lut_rgba8(
+            _ptr(early_viridis, ctypes.c_uint8),
+            len(early_viridis),
+            None,
+            0,
+            256,
+            _ptr(early_cmap_out, ctypes.c_uint8),
+            len(early_cmap_out),
+        )
+        == 1
+        and early_cmap_out[3] == 255,
+        "colormap_lut_rgba8 named early",
+    )
+    custom_stops = array("B", [0, 0, 0, 255, 255, 255])
+    custom_cmap_out = array("B", [0] * (256 * 4))
+    ok(
+        lib.xyg_colormap_lut_rgba8(
+            None,
+            0,
+            _ptr(custom_stops, ctypes.c_uint8),
+            2,
+            256,
+            _ptr(custom_cmap_out, ctypes.c_uint8),
+            len(custom_cmap_out),
+        )
+        == 1
+        and custom_cmap_out[0] == 0
+        and custom_cmap_out[255 * 4] == 255,
+        "colormap_lut_rgba8 custom stops early",
+    )
+
+    magma = array("B", b"magma")
+    nope = array("B", b"nope")
+    ok(
+        lib.xyg_colormap_is_builtin(_ptr(magma, ctypes.c_uint8), len(magma)) == 1,
+        "colormap_is_builtin magma",
+    )
+    ok(
+        lib.xyg_colormap_is_builtin(_ptr(nope, ctypes.c_uint8), len(nope)) == 0,
+        "colormap_is_builtin unknown",
+    )
+    admit_stops = array("B", [0, 0, 0, 255, 255, 255])
+    ok(
+        lib.xyg_colormap_resolved_stops_admit(
+            _ptr(admit_stops, ctypes.c_uint8),
+            2,
+        )
+        == 2,
+        "colormap_resolved_stops_admit canonical",
+    )
+    cmap_out = array("B", [0] * (256 * 3))
+    gradient = array("B", b"linear-gradient(#000000, #ffffff 25%, #000000)")
+    cmap_count = lib.xyg_colormap_custom_stops_resolve_gradient(
+        _ptr(gradient, ctypes.c_uint8),
+        len(gradient),
+        _ptr(cmap_out, ctypes.c_uint8),
+        len(cmap_out),
+    )
+    ok(
+        cmap_count == 256
+        and cmap_out[0] == 0
+        and cmap_out[1] == 0
+        and cmap_out[2] == 0
+        and cmap_out[64 * 3] == 255
+        and cmap_out[64 * 3 + 1] == 255
+        and cmap_out[64 * 3 + 2] == 255,
+        "colormap_custom_stops_resolve_gradient positioned",
+    )
+    list_lens = array("I", [7, 7])
+    list_texts = array("B", b"#0b1220#2563eb")
+    list_pos = array("d", [float("nan"), float("nan")])
+    list_count = lib.xyg_colormap_custom_stops_resolve_list(
+        _ptr(list_lens, ctypes.c_uint32),
+        _ptr(list_texts, ctypes.c_uint8),
+        len(list_texts),
+        _ptr(list_pos, ctypes.c_double),
+        2,
+        _ptr(cmap_out, ctypes.c_uint8),
+        len(cmap_out),
+    )
+    ok(
+        list_count == 2
+        and cmap_out[0] == 11
+        and cmap_out[1] == 18
+        and cmap_out[2] == 32
+        and cmap_out[3] == 37
+        and cmap_out[4] == 99
+        and cmap_out[5] == 235,
+        "colormap_custom_stops_resolve_list uniform",
+    )
+
     graph_x = array("d", [0.0]) * 4
     graph_y = array("d", [0.0]) * 4
     ok(
@@ -2857,6 +3395,191 @@ def main() -> None:
         swapped_count == 4 and list(unicode_codes) == [0, 1, 0, 2, 3],
         "factorize_unicode1_u8_counts swapped endian",
     )
+    display_lens = array("I", [1, 9, 1, 9, 1])
+    display_texts = array("B", b"b(missing)a(missing)1")
+    display_codes = array("B", [99] * 20)
+    display_width = array("I", [99])
+    display_category_lens = array("I", [99] * 8)
+    display_category_texts = array("B", [0] * 32)
+    display_count = lib.xyg_factorize_display_labels(
+        _ptr(display_lens, ctypes.c_uint32),
+        _ptr(display_texts, ctypes.c_uint8),
+        len(display_texts),
+        5,
+        _ptr(display_codes, ctypes.c_uint8),
+        len(display_codes),
+        _ptr(display_width, ctypes.c_uint32),
+        _ptr(display_category_lens, ctypes.c_uint32),
+        _ptr(display_category_texts, ctypes.c_uint8),
+        len(display_category_texts),
+        8,
+    )
+    ok(display_count == 4 and display_width[0] == 1, "factorize_display_labels mixed-object width")
+    ok(list(display_codes[:5]) == [3, 0, 2, 0, 1], "factorize_display_labels mixed-object codes")
+    cat_blob = bytes(display_category_texts[: sum(display_category_lens[:4])])
+    ok(
+        cat_blob == b"(missing)1ab",
+        "factorize_display_labels sorted categories",
+    )
+    first_seen_lens = array("I", [1, 1, 1, 9, 1])
+    first_seen_texts = array("B", b"bab(missing)a")
+    first_seen_codes = array("B", [99] * 20)
+    first_seen_width = array("I", [99])
+    first_seen_category_lens = array("I", [99] * 8)
+    first_seen_category_texts = array("B", [0] * 32)
+    first_seen_count = lib.xyg_label_codes_first_seen(
+        _ptr(first_seen_lens, ctypes.c_uint32),
+        _ptr(first_seen_texts, ctypes.c_uint8),
+        len(first_seen_texts),
+        5,
+        _ptr(first_seen_codes, ctypes.c_uint8),
+        len(first_seen_codes),
+        _ptr(first_seen_width, ctypes.c_uint32),
+        _ptr(first_seen_category_lens, ctypes.c_uint32),
+        _ptr(first_seen_category_texts, ctypes.c_uint8),
+        len(first_seen_category_texts),
+        8,
+    )
+    ok(
+        first_seen_count == 3 and first_seen_width[0] == 1,
+        "label_codes_first_seen mixed-object width",
+    )
+    ok(
+        list(first_seen_codes[:5]) == [0, 1, 0, 2, 1],
+        "label_codes_first_seen mixed-object codes",
+    )
+    first_seen_blob = bytes(first_seen_category_texts[: sum(first_seen_category_lens[:3])])
+    ok(
+        first_seen_blob == b"ba(missing)",
+        "label_codes_first_seen first-seen categories",
+    )
+    sorted_remap_lens = array("I", [1, 1, 1])
+    sorted_remap_texts = array("B", b"bab")
+    sorted_remap_out = array("B", [99] * 12)
+    sorted_remap_width = array("I", [99])
+    sorted_remap_category_lens = array("I", [99] * 4)
+    sorted_remap_category_texts = array("B", [0] * 16)
+    sorted_remap_in_counts = array("Q", [2, 1, 3])
+    sorted_remap_out_counts = array("Q", [0] * 4)
+    sorted_remap_count = lib.xyg_sorted_display_label_remap(
+        _ptr(sorted_remap_lens, ctypes.c_uint32),
+        _ptr(sorted_remap_texts, ctypes.c_uint8),
+        len(sorted_remap_texts),
+        3,
+        _ptr(sorted_remap_in_counts, ctypes.c_uint64),
+        _ptr(sorted_remap_out, ctypes.c_uint8),
+        len(sorted_remap_out),
+        _ptr(sorted_remap_width, ctypes.c_uint32),
+        _ptr(sorted_remap_category_lens, ctypes.c_uint32),
+        _ptr(sorted_remap_category_texts, ctypes.c_uint8),
+        len(sorted_remap_category_texts),
+        4,
+        _ptr(sorted_remap_out_counts, ctypes.c_uint64),
+        4,
+    )
+    ok(
+        sorted_remap_count == 2 and sorted_remap_width[0] == 1,
+        "sorted_display_label_remap width",
+    )
+    ok(
+        list(sorted_remap_out[:3]) == [1, 0, 1],
+        "sorted_display_label_remap remap",
+    )
+    ok(
+        list(sorted_remap_out_counts[:2]) == [1, 5],
+        "sorted_display_label_remap counts",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(100, 4096, 4) == 1,
+        "factorize_use_native_probe low distinct",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(4096, 4096, 4) == 0,
+        "factorize_use_native_probe near-unique narrow",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(3890, 4096, 64) == 1,
+        "factorize_use_native_probe wide below ratio",
+    )
+    ok(
+        lib.xyg_factorize_use_native_probe(512, 4096, 0) == -1,
+        "factorize_use_native_probe invalid width",
+    )
+    repetitive = (ctypes.c_uint32 * 50_000)(*[(i % 100) for i in range(50_000)])
+    repetitive_u8 = ctypes.cast(repetitive, ctypes.POINTER(ctypes.c_uint8))
+    ok(
+        lib.xyg_factorize_use_native_fixed(
+            repetitive_u8,
+            len(repetitive),
+            4,
+        )
+        == 1,
+        "factorize_use_native_fixed repetitive column",
+    )
+    near_unique = (ctypes.c_uint32 * 5000)(*range(5000))
+    near_unique_u8 = ctypes.cast(near_unique, ctypes.POINTER(ctypes.c_uint8))
+    ok(
+        lib.xyg_factorize_use_native_fixed(
+            near_unique_u8,
+            len(near_unique),
+            4,
+        )
+        == 0,
+        "factorize_use_native_fixed near-unique column",
+    )
+    ok(
+        lib.xyg_factorize_use_native_fixed(None, 0, 4) == 1,
+        "factorize_use_native_fixed empty column",
+    )
+    ok(
+        lib.xyg_factorize_use_native_fixed(None, 0, 0) == -1,
+        "factorize_use_native_fixed invalid width",
+    )
+    category_kinds = array("B", [1, 0, 1, 0, 1])
+    category_in_lens = array("I", [1, 0, 1, 0, 1])
+    category_in_texts = array("B", b"ba1")
+    category_out_lens = array("I", [0, 0, 0, 0, 0])
+    category_out_texts = array("B", [0] * 32)
+    category_written = lib.xyg_category_labels_packed(
+        _ptr(category_kinds, ctypes.c_uint8),
+        _ptr(category_in_lens, ctypes.c_uint32),
+        _ptr(category_in_texts, ctypes.c_uint8),
+        len(category_in_texts),
+        5,
+        _ptr(category_out_lens, ctypes.c_uint32),
+        _ptr(category_out_texts, ctypes.c_uint8),
+        len(category_out_texts),
+    )
+    ok(category_written == 5, "category_labels_packed row count")
+    category_blob = bytes(category_out_texts[: sum(category_out_lens)])
+    ok(category_blob == b"b(missing)a(missing)1", "category_labels_packed labels")
+    stringlike_tags = array("B", [1, 0, 2, 3])
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 3) == 1,
+        "object_rows_all_stringlike accepts missing/text/bytes",
+    )
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 4) == 0,
+        "object_rows_all_stringlike rejects other rows",
+    )
+    ok(
+        lib.xyg_object_rows_all_stringlike(_ptr(stringlike_tags, ctypes.c_uint8), 0) == 1,
+        "object_rows_all_stringlike empty column",
+    )
+    real_numeric_tags = array("B", [1, 0, 4])
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_tags, ctypes.c_uint8), 3) == 1,
+        "object_rows_all_real_numeric accepts numeric/coercible rows",
+    )
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_tags, ctypes.c_uint8), 0) == 0,
+        "object_rows_all_real_numeric empty column",
+    )
+    real_numeric_mixed = array("B", [1, 3])
+    ok(
+        lib.xyg_object_rows_all_real_numeric(_ptr(real_numeric_mixed, ctypes.c_uint8), 2) == 0,
+        "object_rows_all_real_numeric rejects text rows",
+    )
     transition_low = array("I", [99, 99])
     transition_high = array("I", [99, 99])
     transition_first = ctypes.c_size_t(size_max)
@@ -2987,6 +3710,17 @@ def main() -> None:
         == 1
         and list(compact_codes) == [2, 0, 2, 1, 0],
         "remap_u8 in-place codebook",
+    )
+    fold_in = (ctypes.c_uint32 * 5)(0, 9, 10, 257, 300)
+    fold_out = array("B", [0] * 5)
+    ok(
+        lib.xyg_fold_codes_u8(fold_in, 5, 10, _ptr(fold_out, ctypes.c_uint8)) == 1
+        and list(fold_out) == [0, 9, 0, 7, 0],
+        "fold_codes_u8 wide categorical fold",
+    )
+    ok(
+        lib.xyg_fold_codes_u8(None, 0, 10, None) == 1,
+        "fold_codes_u8 empty column",
     )
 
     # Boundary guardrails: empty inputs may carry null pointers; invalid
@@ -3942,6 +4676,227 @@ def main() -> None:
         and nan_out[0] == 0,
         "clip_quantize_u8 nan",
     )
+    unit_in = array("d", [0.0, 5.0, 10.0])
+    unit_out = array("B", [0] * 3)
+    ok(
+        lib.xyg_quantize_unit_u8(
+            _ptr(unit_in, ctypes.c_double),
+            len(unit_in),
+            0.0,
+            10.0,
+            _ptr(unit_out, ctypes.c_uint8),
+        )
+        == 1
+        and list(unit_out) == [0, 128, 255],
+        "quantize_unit_u8 basic",
+    )
+    ok(
+        lib.xyg_quantize_unit_u8(null_f64, 0, 0.0, 1.0, null_u8) == 1,
+        "quantize_unit_u8 empty",
+    )
+    bad_domain_out = array("B", [99])
+    ok(
+        lib.xyg_quantize_unit_u8(
+            _ptr(array("d", [1.0]), ctypes.c_double),
+            1,
+            5.0,
+            5.0,
+            _ptr(bad_domain_out, ctypes.c_uint8),
+        )
+        == 1
+        and list(bad_domain_out) == [0],
+        "quantize_unit_u8 bad domain",
+    )
+    palette_entries = [b"#ff0000", b"var(--x)"]
+    palette_lens = array("I", [len(item) for item in palette_entries])
+    palette_packed = array("B")
+    for item in palette_entries:
+        palette_packed.extend(item)
+    palette_out = array("B", [0] * 8)
+    palette_unresolved = array("I", [0])
+    palette_entry_flags = array("B", [0, 0])
+    palette_written = lib.xyg_palette_rows_rgba8(
+        _ptr(palette_lens, ctypes.c_uint32),
+        _ptr(palette_packed, ctypes.c_uint8),
+        len(palette_packed),
+        len(palette_entries),
+        2,
+        _ptr(palette_out, ctypes.c_uint8),
+        len(palette_out),
+        _ptr(palette_unresolved, ctypes.c_uint32),
+        _ptr(palette_entry_flags, ctypes.c_uint8),
+        len(palette_entry_flags),
+    )
+    ok(
+        palette_written == 2
+        and palette_unresolved[0] == 1
+        and palette_out[0] == 255
+        and list(palette_entry_flags) == [0, 1],
+        "palette_rows_rgba8 basic",
+    )
+    ok(
+        lib.xyg_palette_rows_rgba8(
+            _ptr(palette_lens, ctypes.c_uint32),
+            _ptr(palette_packed, ctypes.c_uint8),
+            len(palette_packed),
+            0,
+            2,
+            _ptr(palette_out, ctypes.c_uint8),
+            len(palette_out),
+            _ptr(palette_unresolved, ctypes.c_uint32),
+            null_u8,
+            0,
+        )
+        == ctypes.c_size_t(-1).value,
+        "palette_rows_rgba8 empty entries",
+    )
+    cat_palette_entries = [b"#ff0000", b"#00ff00"]
+    cat_palette_lens = array("I", [len(item) for item in cat_palette_entries])
+    cat_palette_packed = array("B")
+    for item in cat_palette_entries:
+        cat_palette_packed.extend(item)
+    cat_palette_out_lens = array("I", [0, 0, 0])
+    cat_palette_out = array("B", [0] * 64)
+    cat_palette_written = lib.xyg_categorical_palette(
+        _ptr(cat_palette_lens, ctypes.c_uint32),
+        _ptr(cat_palette_packed, ctypes.c_uint8),
+        len(cat_palette_packed),
+        len(cat_palette_entries),
+        3,
+        _ptr(cat_palette_out_lens, ctypes.c_uint32),
+        _ptr(cat_palette_out, ctypes.c_uint8),
+        len(cat_palette_out),
+    )
+    ok(
+        cat_palette_written == 3
+        and cat_palette_out_lens[0] == 7
+        and bytes(cat_palette_out[: cat_palette_out_lens[0]]) == b"#ff0000",
+        "categorical_palette basic",
+    )
+    map_categories = [b"a", b"b", b"c"]
+    map_keys = [b"a"]
+    map_values = [b"#ff0000"]
+    map_cat_lens = array("I", [1, 1, 1])
+    map_key_lens = array("I", [1])
+    map_value_lens = array("I", [7])
+    map_cat_packed = array("B")
+    for item in map_categories:
+        map_cat_packed.extend(item)
+    map_key_packed = array("B")
+    for item in map_keys:
+        map_key_packed.extend(item)
+    map_value_packed = array("B")
+    for item in map_values:
+        map_value_packed.extend(item)
+    map_out_lens = array("I", [0, 0, 0])
+    map_out = array("B", [0] * 64)
+    map_unmapped = array("I", [0])
+    map_exhausted = array("I", [0])
+    map_written = lib.xyg_categorical_palette_map_resolve(
+        _ptr(map_cat_lens, ctypes.c_uint32),
+        _ptr(map_cat_packed, ctypes.c_uint8),
+        len(map_cat_packed),
+        3,
+        _ptr(map_key_lens, ctypes.c_uint32),
+        _ptr(map_key_packed, ctypes.c_uint8),
+        len(map_key_packed),
+        _ptr(map_value_lens, ctypes.c_uint32),
+        _ptr(map_value_packed, ctypes.c_uint8),
+        len(map_value_packed),
+        1,
+        null_u32,
+        null_u8,
+        0,
+        0,
+        _ptr(map_out_lens, ctypes.c_uint32),
+        _ptr(map_out, ctypes.c_uint8),
+        len(map_out),
+        _ptr(map_unmapped, ctypes.c_uint32),
+        _ptr(map_exhausted, ctypes.c_uint32),
+    )
+    ok(
+        map_written == 3 and map_unmapped[0] == 2 and map_exhausted[0] == 0,
+        "categorical_palette_map_resolve basic",
+    )
+    direct_values = array("d", [0.0, 0.5, 1.0])
+    direct_stops = array("B", [255, 0, 0, 0, 255, 0])
+    direct_out = array("d", [0.0] * 12)
+    direct_written = lib.xyg_color_channel_direct_rgba_f64_continuous(
+        _ptr(direct_values, ctypes.c_double),
+        3,
+        0.0,
+        1.0,
+        _ptr(direct_stops, ctypes.c_uint8),
+        2,
+        _ptr(direct_out, ctypes.c_double),
+        len(direct_out),
+    )
+    ok(
+        direct_written == 3
+        and abs(direct_out[0] - 1.0) < 1e-12
+        and abs(direct_out[9] - 1.0) < 1e-12,
+        "color_channel_direct_rgba_f64_continuous basic",
+    )
+    direct_codes = array("I", [0, 1])
+    direct_palette = [b"#ff0000", b"#00ff00"]
+    direct_palette_lens = array("I", [len(item) for item in direct_palette])
+    direct_palette_packed = array("B")
+    for item in direct_palette:
+        direct_palette_packed.extend(item)
+    direct_cat_out = array("d", [0.0] * 8)
+    direct_cat_written = lib.xyg_color_channel_direct_rgba_f64_categorical(
+        _ptr(direct_codes, ctypes.c_uint32),
+        2,
+        _ptr(direct_palette_lens, ctypes.c_uint32),
+        _ptr(direct_palette_packed, ctypes.c_uint8),
+        len(direct_palette_packed),
+        2,
+        _ptr(direct_cat_out, ctypes.c_double),
+        len(direct_cat_out),
+    )
+    ok(
+        direct_cat_written == 2
+        and abs(direct_cat_out[0] - 1.0) < 1e-12
+        and abs(direct_cat_out[5] - 1.0) < 1e-12,
+        "color_channel_direct_rgba_f64_categorical basic",
+    )
+    literal_entries = [b"#ff0000", b"#00ff00"]
+    literal_lens = array("I", [len(item) for item in literal_entries])
+    literal_packed = array("B")
+    for item in literal_entries:
+        literal_packed.extend(item)
+    literal_out = array("d", [0.0] * 8)
+    literal_written = lib.xyg_literal_color_rgba_f64(
+        _ptr(literal_lens, ctypes.c_uint32),
+        _ptr(literal_packed, ctypes.c_uint8),
+        len(literal_packed),
+        len(literal_entries),
+        _ptr(literal_out, ctypes.c_double),
+        len(literal_out),
+    )
+    ok(
+        literal_written == 2
+        and abs(literal_out[0] - 1.0) < 1e-12
+        and abs(literal_out[4] - 0.0) < 1e-12
+        and abs(literal_out[5] - 1.0) < 1e-12,
+        "literal_color_rgba_f64 basic",
+    )
+    bad_literal = [b"red"]
+    bad_lens = array("I", [len(bad_literal[0])])
+    bad_packed = array("B")
+    bad_packed.extend(bad_literal[0])
+    ok(
+        lib.xyg_literal_color_rgba_f64(
+            _ptr(bad_lens, ctypes.c_uint32),
+            _ptr(bad_packed, ctypes.c_uint8),
+            len(bad_packed),
+            1,
+            _ptr(literal_out, ctypes.c_double),
+            len(literal_out),
+        )
+        == ctypes.c_size_t(-1).value,
+        "literal_color_rgba_f64 named reject",
+    )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0
@@ -4603,6 +5558,137 @@ def main() -> None:
         == 1,
         "sample_mask empty/null ok status",
     )
+    ok(
+        lib.xyg_sample_threshold(0.5) == 9_223_372_036_854_775_808,
+        "sample_threshold half fraction reference",
+    )
+    ok(
+        lib.xyg_sample_threshold(1.0) == 2**64 - 1,
+        "sample_threshold unity keeps all rows",
+    )
+    hashes = array("Q", [0, 0, 0])
+    lib.xyg_hash_row_ids(
+        _ptr(ids, ctypes.c_uint64),
+        2,
+        ctypes.c_uint64(0),
+        _ptr(hashes, ctypes.c_uint64),
+    )
+    ok(
+        list(hashes[:2]) == [0xE220A8397B1DCDAF, 0x910A2DEC89025CC1],
+        "hash_row_ids splitmix64 reference vectors",
+    )
+    hashes_null = array("Q", [7])
+    status = lib.xyg_hash_row_ids(
+        null_u64, 1, ctypes.c_uint64(0), _ptr(hashes_null, ctypes.c_uint64)
+    )
+    ok(
+        status == 0 and hashes_null[0] == 7,
+        "hash_row_ids rejects null input with 0 status, without writing",
+    )
+    ok(
+        lib.xyg_hash_row_ids(null_u64, 0, ctypes.c_uint64(0), ctypes.POINTER(ctypes.c_uint64)())
+        == 1,
+        "hash_row_ids empty/null ok status",
+    )
+    ok(
+        abs(lib.xyg_sample_fraction(2, 0.25, 2.0) - 1.0) < 1e-12,
+        "sample_fraction level-2 reference",
+    )
+    ok(
+        abs(lib.xyg_sample_fraction(0, 1.0, 2.0) - 1.0) < 1e-12,
+        "sample_fraction saturated base",
+    )
+    plan_fraction = array("d", [0.0])
+    plan_seed = array("Q", [0])
+    plan_min = array("I", [0])
+    plan_capacity = array("Q", [0])
+    plan_keep = array("I", [0])
+    ok(
+        lib.xyg_stratified_sample_range_plan(
+            1000,
+            4,
+            500,
+            0,
+            2.0,
+            29,
+            1,
+            _ptr(plan_fraction, ctypes.c_double),
+            _ptr(plan_seed, ctypes.c_uint64),
+            _ptr(plan_min, ctypes.c_uint32),
+            _ptr(plan_capacity, ctypes.c_size_t),
+            _ptr(plan_keep, ctypes.c_uint32),
+        )
+        == 1
+        and abs(plan_fraction[0] - 0.5) < 1e-12
+        and plan_seed[0] == 29
+        and plan_keep[0] == 0,
+        "stratified_sample_range_plan basic",
+    )
+    ok(
+        lib.xyg_stratified_sample_range_plan(
+            10,
+            0,
+            1,
+            0,
+            2.0,
+            0,
+            1,
+            _ptr(plan_fraction, ctypes.c_double),
+            _ptr(plan_seed, ctypes.c_uint64),
+            _ptr(plan_min, ctypes.c_uint32),
+            _ptr(plan_capacity, ctypes.c_size_t),
+            _ptr(plan_keep, ctypes.c_uint32),
+        )
+        == 0,
+        "stratified_sample_range_plan invalid n_groups",
+    )
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok(
+        lib.xyg_screen_shape(640, 360, ctypes.byref(out_w), ctypes.byref(out_h)) == 1,
+        "screen_shape default dimensions",
+    )
+    ok(out_w.value == 640 and out_h.value == 360, "screen_shape default output")
+    ok(
+        lib.xyg_screen_shape(8, 10, ctypes.byref(out_w), ctypes.byref(out_h)) == 1,
+        "screen_shape low clamp",
+    )
+    ok(out_w.value == 16 and out_h.value == 16, "screen_shape low clamp output")
+    norm_out = array("d", [0.0, 0.0, 0.0, 0.0])
+    ok(
+        lib.xyg_normalize_window(5.0, 1.0, 4.0, 2.0, 1, _ptr(norm_out, ctypes.c_double)) == 1,
+        "normalize_window ordered",
+    )
+    ok(
+        tuple(norm_out) == (1.0, 5.0, 2.0, 4.0),
+        "normalize_window ordered output",
+    )
+    ok(
+        lib.xyg_normalize_window(1.0, 1.0, 2.0, 3.0, 0, _ptr(norm_out, ctypes.c_double)) == 1,
+        "normalize_window degenerate allowed",
+    )
+    ok(
+        lib.xyg_normalize_window(1.0, 1.0, 2.0, 3.0, 1, _ptr(norm_out, ctypes.c_double)) == -1,
+        "normalize_window zero area rejected",
+    )
+    view_x = array("d", [0.0, 1.0, 2.0, float("nan"), 5.0])
+    view_y = array("d", [0.0, 1.0, 2.0, 3.0, 5.0])
+    view_mask = array("B", [9, 9, 9, 9, 9])
+    ok(
+        lib.xyg_view_visible_mask(
+            _ptr(view_x, ctypes.c_double),
+            _ptr(view_y, ctypes.c_double),
+            5,
+            0.5,
+            4.5,
+            0.5,
+            4.5,
+            _ptr(view_mask, ctypes.c_uint8),
+        )
+        == 5,
+        "view_visible_mask row count",
+    )
+    ok(list(view_mask) == [0, 1, 1, 0, 0], "view_visible_mask values")
     ids32 = array("I", [0, 1, 2, 3])
     mask32 = array("B", [9, 9, 9, 9])
     lib.xyg_sample_mask_u32(
@@ -4994,6 +6080,74 @@ def main() -> None:
         and abs(dlo.value + 0.5) < 1e-15
         and abs(dhi.value - 0.5) < 1e-15,
         "continuous domain zero pad",
+    )
+    s_lo = ctypes.c_double()
+    s_hi = ctypes.c_double()
+    ok(
+        lib.xyg_size_range_admit(2.0, 18.0, ctypes.byref(s_lo), ctypes.byref(s_hi)) == 0
+        and s_lo.value == 2.0
+        and s_hi.value == 18.0,
+        "size_range_admit basic",
+    )
+    ok(
+        lib.xyg_size_range_admit(4.0, 2.0, ctypes.byref(s_lo), ctypes.byref(s_hi)) == -3,
+        "size_range_admit rejects reversed range",
+    )
+    ok(
+        lib.xyg_array_is_categorical(ord("U"), -1) == 1
+        and lib.xyg_array_is_categorical(ord("f"), -1) == 0
+        and lib.xyg_array_is_categorical(ord("O"), 0) == 1
+        and lib.xyg_array_is_categorical(ord("O"), 1) == 0,
+        "array_is_categorical dtype and object probe",
+    )
+    ok(
+        lib.xyg_real_numeric_dtype_admit(ord("f")) == 0
+        and lib.xyg_real_numeric_dtype_admit(ord("b")) == -1
+        and lib.xyg_real_numeric_dtype_admit(ord("c")) == -2,
+        "real_numeric_dtype_admit bool complex reject",
+    )
+    ok(
+        lib.xyg_object_row_stringlike_tag_from_probe(2) == 1
+        and lib.xyg_object_row_real_numeric_tag_from_probe(4) == 1
+        and lib.xyg_object_row_real_numeric_tag_from_probe(1) == 2,
+        "object_row_tag_from_probe stringlike and real numeric",
+    )
+    ok(
+        lib.xyg_category_label_kind_from_probe(0) == 0
+        and lib.xyg_category_label_kind_from_probe(2) == 1
+        and lib.xyg_category_label_kind_from_probe(3) == 2,
+        "category_label_kind_from_probe missing text bytes",
+    )
+    ok(
+        lib.xyg_category_code_width(256) == 1 and lib.xyg_category_code_width(257) == 4,
+        "category_code_width u8 u32 boundary",
+    )
+    ok(
+        lib.xyg_category_palette_rows(300) == 256 and lib.xyg_category_palette_rows(8) == 8,
+        "category_palette_rows cap",
+    )
+    probes = array("B", [0, 2, 3, 1])
+    tags = array("B", [0, 0, 0, 0])
+    ok(
+        lib.xyg_object_row_stringlike_tags_from_probes(
+            _ptr(probes, ctypes.c_uint8),
+            len(probes),
+            _ptr(tags, ctypes.c_uint8),
+        )
+        == 1
+        and list(tags) == [0, 1, 2, 3],
+        "object_row_stringlike_tags_from_probes batch",
+    )
+    kinds = array("B", [0, 0, 0, 0])
+    ok(
+        lib.xyg_category_label_kinds_from_probes(
+            _ptr(probes, ctypes.c_uint8),
+            len(probes),
+            _ptr(kinds, ctypes.c_uint8),
+        )
+        == 1
+        and list(kinds) == [0, 1, 2, 1],
+        "category_label_kinds_from_probes batch",
     )
     hex_css = array("B", b"#ff0000")
     ok(
@@ -5705,7 +6859,7 @@ def main() -> None:
         and col_y_scale.value == 2
         and col_entries[4].registry_key == 9
         and col_entries[4].trace_slot == 0
-        and col_entries[4].ship_scale == 2,
+        and col_entries[4].ship_scale == 1,
         "payload_column_ship_plan ribbon registry",
     )
     ok(
@@ -6255,6 +7409,177 @@ def main() -> None:
         and xyta_dispatch[7] == 1
         and xyta_dispatch[6] == 0,
         "scene_xyta_trace_dispatch_plan scatter density",
+    )
+    scatter_kind_pack = array("B", b"scatter")
+    symbol_b = array("B", b"circle")
+    xytc_style = SceneXytcTraceStyleIn(
+        0,
+        0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0,
+        0,
+        0,
+        float("nan"),
+        0,
+        0,
+        float("nan"),
+        0,
+        0.0,
+        0,
+        0.0,
+        0,
+        0.0,
+        0,
+        float("nan"),
+        0,
+        float("nan"),
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.0,
+        0.0,
+        0.0,
+        len(symbol_b),
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+    xytc_pack = SceneXytcTracePackIn(
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        len(scatter_kind_pack),
+        0,
+        0,
+        0,
+        xytc_style,
+    )
+    xytc_out = (ctypes.c_uint8 * 512)()
+    xytc_out_len = ctypes.c_size_t(0)
+    ok(
+        lib.xyg_scene_xytc_trace_pack(
+            ctypes.byref(xytc_pack),
+            _ptr(scatter_kind_pack, ctypes.c_uint8),
+            None,
+            _ptr(symbol_b, ctypes.c_uint8),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            xytc_out,
+            len(xytc_out),
+            ctypes.byref(xytc_out_len),
+        )
+        == 0
+        and xytc_out_len.value >= 4
+        and bytes(xytc_out[:4]) == b"XYTR",
+        "scene_xytc_trace_pack scatter default",
+    )
+    xyta_pack = SceneXytaTracePackIn(
+        7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        1.0,
+        0,
+        0,
+        0,
+        0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+    xyta_out = (ctypes.c_uint8 * 256)()
+    xyta_out_len = ctypes.c_size_t(0)
+    ok(
+        lib.xyg_scene_xyta_trace_pack(
+            ctypes.byref(xyta_pack),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            xyta_out,
+            len(xyta_out),
+            ctypes.byref(xyta_out_len),
+        )
+        == 0
+        and xyta_out_len.value >= 4
+        and int.from_bytes(bytes(xyta_out[:4]), "little") & (1 << 1) != 0,
+        "scene_xyta_trace_pack density branch",
     )
     xyfs_figure = (ctypes.c_uint32 * 1)()
     ok(
