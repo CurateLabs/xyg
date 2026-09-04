@@ -2425,6 +2425,7 @@ export function heatmapRgba(raw, w, h, stops, alpha = 255) {
     BigInt(stopCount),
     Number(alpha),
     u8Ptr(out),
+    BigInt(out.byteLength),
   );
   if (ok !== 1) {
     throw new Error("xy_heatmap_rgba failed");
@@ -2454,6 +2455,7 @@ export function colormapRgba(raw, w, h, stops, alpha = 255) {
     BigInt(stopCount),
     Number(alpha),
     u8Ptr(out),
+    BigInt(out.byteLength),
   );
   if (ok !== 1) {
     throw new Error("xy_colormap_rgba failed");
@@ -2485,6 +2487,7 @@ export function colormapRgbaCanonical(raw, w, h, domain, stops, alpha = 255) {
     BigInt(stopCount),
     Number(alpha),
     u8Ptr(out),
+    BigInt(out.byteLength),
   );
   if (ok !== 1) {
     throw new Error("xy_colormap_rgba_canonical failed");
@@ -2577,6 +2580,7 @@ export function densityRgbaLinear(counts, w, h, maximum, stops, opacity) {
     BigInt(stopArr.length / 3),
     Number(opacity),
     u8Ptr(out),
+    BigInt(out.byteLength),
   );
   if (ok !== 1) {
     throw new Error("xy_density_rgba_linear failed");
@@ -3182,6 +3186,7 @@ export function bin2dMeanColor(x, y, x0, x1, y0, y1, w, h, source) {
     BigInt(ww),
     BigInt(hh),
     u8Ptr(out),
+    BigInt(out.byteLength),
   );
   if (ok !== 1) {
     throw new Error("xyg_bin_2d_mean_color failed");

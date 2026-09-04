@@ -286,18 +286,138 @@ def test_manifest_preserves_order_width_and_pointer_direction() -> None:
     assert symbol["returns"]["bits"] == 32
 
 
-def test_manifest_documents_rasterize_rgb_output_contract() -> None:
+def test_manifest_documents_capacity_aware_raster_framebuffers() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    symbol = next(item for item in manifest["symbols"] if item["name"] == "xyg_rasterize_rgb")
-    out = next(item for item in symbol["arguments"] if item["name"] == "out")
-    contract = out["type"]["buffer_contract"]
+    outputs = {
+        **{
+            (name, "out"): ("out_capacity", channels, "bytes", 0, 1)
+            for name, channels in {
+                "xyg_bin_2d_mean_color": 4,
+                "xyg_colormap_rgba": 4,
+                "xyg_colormap_rgba_canonical": 4,
+                "xyg_density_rgba": 4,
+                "xyg_density_rgba_linear": 4,
+                "xyg_heatmap_rgba": 4,
+                "xyg_rasterize": 4,
+                "xyg_rasterize_data": 4,
+                "xyg_rasterize_rgb": 3,
+                "xyg_rasterize_spans": 4,
+            }.items()
+        },
+        ("xyg_pyramid_compose_color", "out"): (
+            "out_capacity",
+            1,
+            "elements",
+            -1,
+            "nonnegative_level",
+        ),
+        ("xyg_pyramid_compose_color", "out_rgba"): (
+            "out_rgba_capacity",
+            4,
+            "bytes",
+            -1,
+            "nonnegative_level",
+        ),
+        ("xyg_tile_store_compose_color", "out"): (
+            "out_capacity",
+            1,
+            "elements",
+            -1,
+            "nonnegative_level",
+        ),
+        ("xyg_tile_store_compose_color", "out_rgba"): (
+            "out_rgba_capacity",
+            4,
+            "bytes",
+            -1,
+            "nonnegative_level",
+        ),
+    }
+    for (name, output_name), (
+        capacity_name,
+        channels,
+        unit,
+        failure_status,
+        success_status,
+    ) in outputs.items():
+        symbol = next(item for item in manifest["symbols"] if item["name"] == name)
+        arguments = {item["name"]: item for item in symbol["arguments"]}
+        assert list(arguments).index(capacity_name) == list(arguments).index(output_name) + 1
 
-    assert "must be non-null" in contract
-    assert "3 * w * h bytes" in contract
-    assert "RGB8 row-major" in contract
-    assert "3 * w row stride" in contract
-    assert "w and h must be non-zero" in contract
-    assert "checked-size overflow returns 0" in contract
+        contract = arguments[output_name]["type"]["buffer_contract"]
+        assert "must be non-null" in contract
+        expected_size = "w * h elements" if unit == "elements" else f"{channels} * w * h bytes"
+        assert expected_size in contract
+        assert "w and h must be non-zero" in contract
+        assert "total byte size must not exceed isize::MAX" in contract
+        assert f"insufficient capacity returns {failure_status} before any write" in contract
+
+        factors = [{"argument": "w"}, {"argument": "h"}]
+        if channels != 1:
+            factors.append({"constant": channels})
+        length_contract = arguments[output_name]["type"]["length_contract"]
+        assert length_contract == {
+            "unit": unit,
+            "capacity_argument": capacity_name,
+            "required_checked_product": factors,
+            "maximum_total_bytes": "isize::MAX",
+            "pixel_format": (
+                "f32 count grid"
+                if unit == "elements"
+                else ("RGB8" if channels == 3 else "straight-alpha RGBA8")
+            ),
+            "layout": "packed_row_major",
+            "row_stride_checked_product": [
+                {"argument": "w"},
+                {"constant": channels},
+            ],
+            "null_output": "reject_before_write",
+            "zero_dimensions": "reject_before_write",
+            "short_capacity": "reject_before_write",
+            "success_status": success_status,
+            "failure_status": failure_status,
+        }
+
+        product = "w * h" if channels == 1 else f"w * h * {channels}"
+        required = f"{capacity_name} >= checked({product}) {unit}"
+        assert required in gen_abi_manifest.render_python_bindings(manifest)
+        assert required in gen_abi_manifest.render_node_bindings(manifest)
+        assert required in gen_abi_manifest.render_c_header(manifest)
+
+
+def test_manifest_documents_fused_png_output_slice_bounds() -> None:
+    manifest = gen_abi_manifest.generate_manifest()
+    rendered_contracts = (
+        gen_abi_manifest.render_python_bindings(manifest),
+        gen_abi_manifest.render_node_bindings(manifest),
+        gen_abi_manifest.render_c_header(manifest),
+    )
+    for name in (
+        "xyg_rasterize_png",
+        "xyg_rasterize_png_data",
+        "xyg_rasterize_png_spans",
+    ):
+        symbol = next(item for item in manifest["symbols"] if item["name"] == name)
+        out = next(item for item in symbol["arguments"] if item["name"] == "out")
+        assert out["type"]["length_contract"] == {
+            "unit": "bytes",
+            "capacity_argument": "out_capacity",
+            "minimum_capacity": 1,
+            "maximum_total_bytes": "isize::MAX",
+            "payload_format": "PNG byte stream",
+            "layout": "encoded",
+            "null_output": "reject_before_access",
+            "zero_capacity": "reject_before_access",
+            "oversized_capacity": "reject_before_access",
+            "success_status": "encoded_byte_count",
+            "failure_status": "usize::MAX",
+        }
+        assert (
+            "out_capacity is measured in bytes and must be in 1..=isize::MAX"
+            in out["type"]["buffer_contract"]
+        )
+    for rendered in rendered_contracts:
+        assert rendered.count("out_capacity must be 1..=isize::MAX bytes") == 3
 
 
 def test_unsupported_rust_ffi_type_is_rejected() -> None:

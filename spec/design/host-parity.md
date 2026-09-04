@@ -918,8 +918,18 @@ probes through ABI 357 `xyg_category_label_kinds_from_probes`; UTF-8 payload
 encoding stays host-side.
 Python optimized Scene PNG export consumes ABI 358 `xyg_rasterize_rgb`, the
 same opaque-white Rust display-list painter as the fused PNG consumer, before
-calling Rust's indexed encoder. `optimize=True` therefore changes encoding
-without reintroducing Python geometry or paint policy.
+calling Rust's indexed encoder. ABI 359 adds explicit output capacity to it and
+the RGBA, data-arena, and multi-span framebuffer entries. ABI 359 applies the
+same contract to every other caller-owned 2-D RGBA product output: mean-color
+binning, normalized/canonical colormaps, heatmap, log/linear density, and both
+colored compose backends (whose f32 count planes are capacity-aware too). Each
+validates checked `w*h*channels`, the Rust `isize::MAX` slice ceiling, and the
+actual allocation capacity before constructing a mutable slice. Python and
+Node pass their NumPy/TypedArray element or byte counts; generated declarations
+record each unit explicitly. `optimize=True` therefore
+changes encoding without reintroducing Python geometry or paint policy. The
+three fused PNG consumers also reject encoded-output capacities above
+`isize::MAX` before constructing their caller-owned destination slice.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

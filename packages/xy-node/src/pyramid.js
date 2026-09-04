@@ -253,7 +253,9 @@ export function pyramidComposeColor(
     BigInt(hh),
     BigInt(up),
     f32Ptr(out),
+    BigInt(out.length),
     u8Ptr(rgba),
+    BigInt(rgba.byteLength),
   );
   if (level < 0) return null;
   const upsampled = Boolean(noRescan && level === 0);
@@ -332,7 +334,9 @@ export function tileStoreComposeColor(
     BigInt(hh),
     BigInt(up),
     f32Ptr(out),
+    BigInt(out.length),
     u8Ptr(rgba),
+    BigInt(rgba.byteLength),
   );
   if (level < 0) return null;
   const upsampled = Boolean(noRescan && level === 0);

@@ -1271,7 +1271,23 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_uint8),
     ]
     lib.xyg_rasterize.restype = ctypes.c_int32
-    lib.xyg_rasterize.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t, ctypes.c_size_t]
+    lib.xyg_rasterize.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_rasterize_rgb.restype = ctypes.c_int32
+    lib.xyg_rasterize_rgb.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+    ]
     lib.xyg_rasterize_png.restype = ctypes.c_size_t
     lib.xyg_rasterize_png.argtypes = [
         U8P,
@@ -1288,6 +1304,7 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
         U8P,
+        ctypes.c_size_t,
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
@@ -1312,6 +1329,7 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
         ctypes.c_size_t,
+        ctypes.c_size_t,
     ]
     lib.xyg_rasterize_png_spans.restype = ctypes.c_size_t
     lib.xyg_rasterize_png_spans.argtypes = [
@@ -1334,6 +1352,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_uint8,
         U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_colormap_rgba.restype = ctypes.c_int32
     lib.xyg_colormap_rgba.argtypes = [
@@ -1344,6 +1363,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_uint8,
         U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_colormap_rgba_canonical.restype = ctypes.c_int32
     lib.xyg_colormap_rgba_canonical.argtypes = [
@@ -1356,6 +1376,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_uint8,
         U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_density_rgba.restype = ctypes.c_int32
     lib.xyg_density_rgba.argtypes = [
@@ -1367,6 +1388,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_double,
         U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_colormap_lut.restype = ctypes.c_int32
     lib.xyg_colormap_lut.argtypes = [
@@ -1386,6 +1408,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_double,
         U8P,
+        ctypes.c_size_t,
     ]
     lib.xyg_paint_effective_rgba.restype = ctypes.c_int32
     lib.xyg_paint_effective_rgba.argtypes = [
@@ -9113,6 +9136,7 @@ def main() -> None:
         ZZ,
         ZZ,
         U8P,
+        ZZ,
     ]
     mc_x = array("d", [0.25, 0.75])
     mc_y = array("d", [0.5, 0.5])
@@ -9135,6 +9159,7 @@ def main() -> None:
             2,
             1,
             _ptr(mc_out, ctypes.c_uint8),
+            len(mc_out),
         )
         == 1,
         "bin_2d_mean_color ok flag",
@@ -9160,6 +9185,7 @@ def main() -> None:
             1,
             1,
             _ptr(mc_one, ctypes.c_uint8),
+            len(mc_one),
         )
         == 1
         and list(mc_one) == [188, 0, 188, 255],
@@ -9181,6 +9207,7 @@ def main() -> None:
             1,
             1,
             _ptr(mc_one, ctypes.c_uint8),
+            len(mc_one),
         )
         == 0,
         "mean color rejects ambiguous color source",
@@ -9214,7 +9241,9 @@ def main() -> None:
         ZZ,
         ZZ,  # max_upsample
         F32P,
+        ZZ,
         U8P,
+        ZZ,
     ]
     pc_idx = array("B", [1 if px[i] >= 4.0 else 0 for i in range(n_p)])
     chandle = lib.xyg_pyramid_build_color(
@@ -9245,7 +9274,9 @@ def main() -> None:
             8,
             2,
             _ptr(cgrid, ctypes.c_float),
+            len(cgrid),
             _ptr(crgba, ctypes.c_uint8),
+            len(crgba),
         )
         == 0,
         "colored compose full window uses level 0",
@@ -9262,6 +9293,48 @@ def main() -> None:
         for c in range(4, 8)
     )
     ok(left_ok and right_ok, "colored compose keeps per-side colors exact")
+    short_grid = array("f", [123.0]) * len(cgrid)
+    guarded_rgba = array("B", [0xA5]) * len(crgba)
+    ok(
+        lib.xyg_pyramid_compose_color(
+            ctypes.c_uint64(chandle),
+            0.0,
+            8.0,
+            0.0,
+            8.0,
+            8,
+            8,
+            2,
+            _ptr(short_grid, ctypes.c_float),
+            len(short_grid) - 1,
+            _ptr(guarded_rgba, ctypes.c_uint8),
+            len(guarded_rgba),
+        )
+        == -1
+        and all(value == 123.0 for value in short_grid)
+        and all(value == 0xA5 for value in guarded_rgba),
+        "colored compose rejects a short count plane before writing either output",
+    )
+    ok(
+        lib.xyg_pyramid_compose_color(
+            ctypes.c_uint64(chandle),
+            0.0,
+            8.0,
+            0.0,
+            8.0,
+            8,
+            8,
+            2,
+            _ptr(short_grid, ctypes.c_float),
+            len(short_grid),
+            _ptr(guarded_rgba, ctypes.c_uint8),
+            len(guarded_rgba) - 1,
+        )
+        == -1
+        and all(value == 123.0 for value in short_grid)
+        and all(value == 0xA5 for value in guarded_rgba),
+        "colored compose rejects a short RGBA plane before writing either output",
+    )
     ok(
         lib.xyg_pyramid_append(
             ctypes.c_uint64(chandle),
@@ -9286,16 +9359,41 @@ def main() -> None:
     null_u8 = U8P()
     fb = array("B", [9]) * (2 * 2 * 4)
     ok(
-        lib.xyg_rasterize(null_u8, 0, _ptr(fb, ctypes.c_uint8), 2, 2) == 1
+        lib.xyg_rasterize(null_u8, 0, _ptr(fb, ctypes.c_uint8), len(fb), 2, 2) == 1
         and all(v == 0 for v in fb),
         "rasterize empty buffer clears framebuffer",
     )
     bad = array("B", [1, 9, 9, 9, 9])  # FILL_POLY claiming a huge point count
     ok(
-        lib.xyg_rasterize(_ptr(bad, ctypes.c_uint8), len(bad), _ptr(fb, ctypes.c_uint8), 2, 2) == 0,
+        lib.xyg_rasterize(
+            _ptr(bad, ctypes.c_uint8), len(bad), _ptr(fb, ctypes.c_uint8), len(fb), 2, 2
+        )
+        == 0,
         "rasterize rejects a malformed command buffer",
     )
-    ok(lib.xyg_rasterize(null_u8, 0, null_u8, 2, 2) == 0, "rasterize refuses a null framebuffer")
+    ok(
+        lib.xyg_rasterize(null_u8, 0, null_u8, len(fb), 2, 2) == 0,
+        "rasterize refuses a null framebuffer",
+    )
+    short = array("B", [0xA5]) * len(fb)
+    ok(
+        lib.xyg_rasterize(null_u8, 0, _ptr(short, ctypes.c_uint8), len(short) - 1, 2, 2) == 0
+        and all(value == 0xA5 for value in short),
+        "rasterize rejects a short framebuffer without writing",
+    )
+    rgb = array("B", [0xA5]) * (2 * 2 * 3)
+    ok(
+        lib.xyg_rasterize_rgb(null_u8, 0, _ptr(rgb, ctypes.c_uint8), len(rgb), 2, 2) == 1
+        and all(value == 0xFF for value in rgb),
+        "opaque rasterize accepts an exact RGB framebuffer",
+    )
+    rgb_short = array("B", [0xA5]) * len(rgb)
+    ok(
+        lib.xyg_rasterize_rgb(null_u8, 0, _ptr(rgb_short, ctypes.c_uint8), len(rgb_short) - 1, 2, 2)
+        == 0
+        and all(value == 0xA5 for value in rgb_short),
+        "opaque rasterize rejects a short framebuffer without writing",
+    )
 
     png = array("B", [0]) * 1024
     png_len = lib.xyg_rasterize_png(null_u8, 0, _ptr(png, ctypes.c_uint8), len(png), 2, 2)
@@ -9304,11 +9402,13 @@ def main() -> None:
         "fused raster-to-PNG emits a valid signature",
     )
     ok(
-        lib.xyg_rasterize_data(null_u8, 0, null_u8, 0, _ptr(fb, ctypes.c_uint8), 2, 2) == 1,
+        lib.xyg_rasterize_data(null_u8, 0, null_u8, 0, _ptr(fb, ctypes.c_uint8), len(fb), 2, 2)
+        == 1,
         "external-arena rasterizer accepts an empty arena",
     )
     ok(
-        lib.xyg_rasterize_data(null_u8, 0, null_u8, 1, _ptr(fb, ctypes.c_uint8), 2, 2) == 0,
+        lib.xyg_rasterize_data(null_u8, 0, null_u8, 1, _ptr(fb, ctypes.c_uint8), len(fb), 2, 2)
+        == 0,
         "external-arena rasterizer rejects a non-empty null arena",
     )
     png_len = lib.xyg_rasterize_png_data(
@@ -9319,13 +9419,76 @@ def main() -> None:
         "external-arena raster-to-PNG emits a valid signature",
     )
     ok(
-        lib.xyg_rasterize_spans(null_u8, 0, None, None, 0, _ptr(fb, ctypes.c_uint8), 2, 2) == 1,
+        lib.xyg_rasterize_spans(null_u8, 0, None, None, 0, _ptr(fb, ctypes.c_uint8), len(fb), 2, 2)
+        == 1,
         "multi-span rasterizer accepts zero spans",
     )
     ok(
-        lib.xyg_rasterize_spans(null_u8, 0, None, None, 1, _ptr(fb, ctypes.c_uint8), 2, 2) == 0,
+        lib.xyg_rasterize_spans(null_u8, 0, None, None, 1, _ptr(fb, ctypes.c_uint8), len(fb), 2, 2)
+        == 0,
         "multi-span rasterizer rejects missing descriptor arrays",
     )
+    size_max = ctypes.c_size_t(-1).value
+    slice_max = (1 << (ctypes.sizeof(ctypes.c_size_t) * 8 - 1)) - 1
+    framebuffer_calls = [
+        (
+            "rgba",
+            4,
+            lambda out, cap, width, height: lib.xyg_rasterize(null_u8, 0, out, cap, width, height),
+        ),
+        (
+            "rgb",
+            3,
+            lambda out, cap, width, height: lib.xyg_rasterize_rgb(
+                null_u8, 0, out, cap, width, height
+            ),
+        ),
+        (
+            "data rgba",
+            4,
+            lambda out, cap, width, height: lib.xyg_rasterize_data(
+                null_u8, 0, null_u8, 0, out, cap, width, height
+            ),
+        ),
+        (
+            "span rgba",
+            4,
+            lambda out, cap, width, height: lib.xyg_rasterize_spans(
+                null_u8, 0, None, None, 0, out, cap, width, height
+            ),
+        ),
+    ]
+    for label, channels, call in framebuffer_calls:
+        required = 2 * 2 * channels
+        oversized = array("B", [0xA5]) * (required + 1)
+        ok(
+            call(_ptr(oversized, ctypes.c_uint8), len(oversized), 2, 2) == 1
+            and oversized[-1] == 0xA5,
+            f"{label} framebuffer accepts oversized capacity without touching the tail",
+        )
+        short = array("B", [0xA5]) * required
+        ok(
+            call(_ptr(short, ctypes.c_uint8), required - 1, 2, 2) == 0
+            and all(value == 0xA5 for value in short),
+            f"{label} framebuffer rejects one-byte-short capacity without writing",
+        )
+        ok(call(U8P(), required, 2, 2) == 0, f"{label} framebuffer rejects null output")
+        ok(
+            call(_ptr(short, ctypes.c_uint8), required, 0, 2) == 0,
+            f"{label} framebuffer rejects zero dimensions",
+        )
+        ok(
+            call(_ptr(short, ctypes.c_uint8), size_max, size_max // channels + 1, 1) == 0,
+            f"{label} framebuffer rejects channel multiplication overflow",
+        )
+        ok(
+            call(_ptr(short, ctypes.c_uint8), size_max, slice_max // channels + 1, 1) == 0,
+            f"{label} framebuffer rejects impossible Rust slice size",
+        )
+        ok(
+            all(value == 0xA5 for value in short),
+            f"{label} invalid capacities leave the canary allocation untouched",
+        )
     png_len = lib.xyg_rasterize_png_spans(
         null_u8, 0, None, None, 0, _ptr(png, ctypes.c_uint8), len(png), 2, 2
     )
@@ -9333,6 +9496,27 @@ def main() -> None:
         png_len < len(png) and bytes(png[:8]) == b"\x89PNG\r\n\x1a\n",
         "multi-span raster-to-PNG emits a valid signature",
     )
+    encoded_png_calls = [
+        (
+            "fused PNG",
+            lambda out, cap: lib.xyg_rasterize_png(null_u8, 0, out, cap, 1, 1),
+        ),
+        (
+            "external-arena fused PNG",
+            lambda out, cap: lib.xyg_rasterize_png_data(null_u8, 0, null_u8, 0, out, cap, 1, 1),
+        ),
+        (
+            "multi-span fused PNG",
+            lambda out, cap: lib.xyg_rasterize_png_spans(null_u8, 0, None, None, 0, out, cap, 1, 1),
+        ),
+    ]
+    for label, call in encoded_png_calls:
+        encoded_canary = array("B", [0xA5])
+        ok(
+            call(_ptr(encoded_canary, ctypes.c_uint8), slice_max + 1) == size_max
+            and encoded_canary[0] == 0xA5,
+            f"{label} rejects output capacity above isize::MAX before access",
+        )
 
     # NaN marks a missing cell; a real 0.0 now paints the colormap floor
     # (matplotlib semantics — see the visual-parity changelog entry).
@@ -9348,6 +9532,7 @@ def main() -> None:
             2,
             200,
             _ptr(heat_rgba, ctypes.c_uint8),
+            len(heat_rgba),
         )
         == 1
         and list(heat_rgba[:4]) == [100, 110, 120, 200]
@@ -9366,6 +9551,7 @@ def main() -> None:
             2,
             200,
             _ptr(cmap_rgba, ctypes.c_uint8),
+            len(cmap_rgba),
         )
         == 1
         and list(cmap_rgba[:4]) == [100, 110, 120, 200]
@@ -9386,6 +9572,7 @@ def main() -> None:
             2,
             255,
             _ptr(colormap_pixel, ctypes.c_uint8),
+            len(colormap_pixel),
         )
         == 1
         and lib.xyg_heatmap_rgba(
@@ -9396,6 +9583,7 @@ def main() -> None:
             2,
             255,
             _ptr(heatmap_pixel, ctypes.c_uint8),
+            len(heatmap_pixel),
         )
         == 1
         and colormap_pixel[0] == 127
@@ -9414,6 +9602,7 @@ def main() -> None:
             2,
             0.85,
             _ptr(density_rgba, ctypes.c_uint8),
+            len(density_rgba),
         )
         == 1
         and density_rgba[3] > 0
@@ -9448,12 +9637,134 @@ def main() -> None:
             2,
             0.85,
             _ptr(lin_rgba, ctypes.c_uint8),
+            len(lin_rgba),
         )
         == 1
         and lin_rgba[11] == 0
         and lin_rgba[12:16] == array("B", [100, 110, 120, 216]),
         "density_rgba_linear maps, flips, and preserves empty alpha",
     )
+    rgba_grid_calls = [
+        (
+            "mean-color",
+            lambda out, cap, width, height: lib.xyg_bin_2d_mean_color(
+                _ptr(mc_x, ctypes.c_double),
+                _ptr(mc_y, ctypes.c_double),
+                len(mc_x),
+                _ptr(mc_idx, ctypes.c_uint8),
+                U8P(),
+                _ptr(mc_lut, ctypes.c_uint8),
+                2,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                width,
+                height,
+                out,
+                cap,
+            ),
+        ),
+        (
+            "colormap",
+            lambda out, cap, width, height: lib.xyg_colormap_rgba(
+                _ptr(cmap_values, ctypes.c_double),
+                width,
+                height,
+                _ptr(cmap_stops, ctypes.c_uint8),
+                2,
+                200,
+                out,
+                cap,
+            ),
+        ),
+        (
+            "canonical colormap",
+            lambda out, cap, width, height: lib.xyg_colormap_rgba_canonical(
+                _ptr(cmap_values, ctypes.c_double),
+                width,
+                height,
+                0.0,
+                1.0,
+                _ptr(cmap_stops, ctypes.c_uint8),
+                2,
+                200,
+                out,
+                cap,
+            ),
+        ),
+        (
+            "heatmap",
+            lambda out, cap, width, height: lib.xyg_heatmap_rgba(
+                _ptr(heat_values, ctypes.c_double),
+                width,
+                height,
+                _ptr(heat_stops, ctypes.c_uint8),
+                2,
+                200,
+                out,
+                cap,
+            ),
+        ),
+        (
+            "density",
+            lambda out, cap, width, height: lib.xyg_density_rgba(
+                _ptr(density_codes, ctypes.c_uint8),
+                width,
+                height,
+                100.0,
+                _ptr(heat_stops, ctypes.c_uint8),
+                2,
+                0.85,
+                out,
+                cap,
+            ),
+        ),
+        (
+            "linear density",
+            lambda out, cap, width, height: lib.xyg_density_rgba_linear(
+                _ptr(lin_counts, ctypes.c_double),
+                width,
+                height,
+                100.0,
+                _ptr(heat_stops, ctypes.c_uint8),
+                2,
+                0.85,
+                out,
+                cap,
+            ),
+        ),
+    ]
+    for label, call in rgba_grid_calls:
+        oversized = array("B", [0xA5]) * 17
+        ok(
+            call(_ptr(oversized, ctypes.c_uint8), len(oversized), 2, 2) == 1
+            and oversized[-1] == 0xA5,
+            f"{label} RGBA output accepts oversized capacity without touching the tail",
+        )
+        short = array("B", [0xA5]) * 16
+        ok(
+            call(_ptr(short, ctypes.c_uint8), 15, 2, 2) == 0
+            and all(value == 0xA5 for value in short),
+            f"{label} RGBA output rejects one-byte-short capacity without writing",
+        )
+        ok(call(U8P(), 16, 2, 2) == 0, f"{label} RGBA output rejects null output")
+        ok(
+            call(_ptr(short, ctypes.c_uint8), 16, 0, 2) == 0,
+            f"{label} RGBA output rejects zero dimensions",
+        )
+        ok(
+            call(_ptr(short, ctypes.c_uint8), size_max, size_max // 4 + 1, 1) == 0,
+            f"{label} RGBA output rejects channel multiplication overflow",
+        )
+        ok(
+            call(_ptr(short, ctypes.c_uint8), size_max, slice_max // 4 + 1, 1) == 0,
+            f"{label} RGBA output rejects impossible Rust slice size",
+        )
+        ok(
+            all(value == 0xA5 for value in short),
+            f"{label} invalid capacities leave the canary allocation untouched",
+        )
     paint_in = array("d", [0.2, 0.3, 0.4, 0.8])
     paint_artist = array("d", [-1.0])
     paint_op = array("d", [0.5])

@@ -3,7 +3,9 @@
 **Tracker:** [#862](https://github.com/CurateLabs/xyg/issues/862). Stage 0 is
 the stop-the-line prerequisite for the 0.6.0 train. Its children are
 [#863](https://github.com/CurateLabs/xyg/issues/863) through
-[#867](https://github.com/CurateLabs/xyg/issues/867). The tracker closes only
+[#867](https://github.com/CurateLabs/xyg/issues/867), plus the later safety
+findings [#876](https://github.com/CurateLabs/xyg/issues/876) and
+[#877](https://github.com/CurateLabs/xyg/issues/877). The tracker closes only
 after those children close and the same product state completes the required
 matrix three consecutive times.
 
@@ -16,6 +18,8 @@ matrix three consecutive times.
 | #865 | Node authored Scene | Node mirrors Python's bounded ABI 323 density observation marshal. The four-tier 100/10k/100k/1M authored workload explicitly selects the direct tier with the shared density tri-state, produces byte-identical Scenes, and is consumed by Rust SVG, raster-command, and browser-painter paths before merge. |
 | #866 | CodSpeed and dependency audit | Benchmarks construct and assert their routing boundary without importing movable private constants. A structural test rejects private module-constant references. Root npm dependencies are build/test-only: the production audit (`npm audit --omit=dev`) is zero, the prior high report therefore has no shipped-runtime exposure, and the generated browser client remains runtime-dependency-free. Full development audit endpoint availability does not weaken correctness, tier, payload, or buffer-shape assertions. |
 | #867 | merge protection and governance | One required **Release surfaces** aggregate accepts baseline test/WASM/Python-floor jobs and, for classifier-positive changes, wheel, sdist, no-Rust, host-parity, Node authored-Scene, and browser evidence only when each succeeds. An applicable skip fails. Independent approving-review/CODEOWNER capacity is deferred to backlog #871 rather than blocking M2. Milestone mutations require recorded human approval and have no autonomous repository workflow. |
+| #876 | measured 100M density journey | PR checks validate only the small-scale harness and versioned report contract. The authoritative scheduled/manual main run ingests 100M canonical f64 rows from bounded chunks or a memory map and records source admission, Rust aggregation, first-paint buffer classes, peak RSS, browser upload/first-render/refine latency, cancellation, and teardown without hosted PR CodSpeed. |
+| #877 | capacity-aware raster framebuffer ABI | ABI 359 removes every capacity-blind 2-D RGB/RGBA output signature: framebuffer RGB/RGBA/data/span, mean-color, colormap/canonical, heatmap, density/linear, and in-memory/tile-store colored compose. Each receives actual capacities, computes `w*h*channels` with checked arithmetic, rejects totals above `isize::MAX`, and rejects null, zero-sized, overflowing, or short outputs before constructing any mutable slice. The already-capacity-aware fused PNG/data/span destinations also reject capacities above `isize::MAX`. Generated C, Python, and Node contracts record each byte/element unit. |
 
 ## Release-surface classifier
 

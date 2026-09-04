@@ -9147,6 +9147,7 @@ def bin_2d_mean_color(
             w,
             h,
             out.ctypes.data,
+            out.size,
         )
         if not ok:
             raise ValueError("invalid bin_2d_mean_color arguments")
@@ -10794,7 +10795,9 @@ def pyramid_compose_color(
         h,
         max_upsample,
         out.ctypes.data,
+        out.size,
         out_rgba.ctypes.data,
+        out_rgba.size,
     )
     if level < 0:
         return None
@@ -10878,7 +10881,9 @@ def tile_store_compose_color(
         h,
         max_upsample,
         out.ctypes.data,
+        out.size,
         out_rgba.ctypes.data,
+        out_rgba.size,
     )
     if level < 0:
         return None
@@ -13046,7 +13051,7 @@ def rasterize(cmds: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
     buf = np.frombuffer(cmds, dtype=np.uint8)
     out = np.zeros((h, w, 4), dtype=np.uint8)
     cmd_ptr = _ptr_u8(buf) if buf.size else None
-    ok = _lib.xyg_rasterize(cmd_ptr, buf.size, _ptr_u8(out), w, h)
+    ok = _lib.xyg_rasterize(cmd_ptr, buf.size, _ptr_u8(out), out.size, w, h)
     if not ok:
         raise ValueError("native rasterizer rejected the command buffer")
     return out
@@ -13059,7 +13064,7 @@ def rasterize_rgb(cmds: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
     buf = np.frombuffer(cmds, dtype=np.uint8)
     out = np.zeros((h, w, 3), dtype=np.uint8)
     cmd_ptr = _ptr_u8(buf) if buf.size else None
-    ok = _lib.xyg_rasterize_rgb(cmd_ptr, buf.size, _ptr_u8(out), w, h)
+    ok = _lib.xyg_rasterize_rgb(cmd_ptr, buf.size, _ptr_u8(out), out.size, w, h)
     if not ok:
         raise ValueError("native opaque rasterizer rejected the command buffer")
     return out
@@ -13119,6 +13124,7 @@ def rasterize_data(cmds: bytes, data: bytes, w: int, h: int) -> npt.NDArray[np.u
         _ptr_u8(arena) if arena.size else None,
         arena.size,
         _ptr_u8(out),
+        out.size,
         w,
         h,
     )
@@ -13160,6 +13166,7 @@ def rasterize_spans(cmds: Any, spans, w: int, h: int) -> npt.NDArray[np.uint8]: 
         lengths if arenas else None,
         len(arenas),
         _ptr_u8(out),
+        out.size,
         w,
         h,
     )
@@ -13222,6 +13229,7 @@ def colormap_rgba(
         stop_array.shape[0],
         alpha,
         _ptr_u8(out),
+        out.size,
     )
     if not ok:
         raise ValueError("native colormap rejected the inputs")
@@ -13261,6 +13269,7 @@ def colormap_rgba_canonical(
         stop_array.shape[0],
         alpha,
         _ptr_u8(out),
+        out.size,
     )
     if not ok:
         raise ValueError("native canonical colormap rejected the inputs")
@@ -13312,6 +13321,7 @@ def heatmap_rgba(
         stop_array.shape[0],
         alpha,
         _ptr_u8(out),
+        out.size,
     )
     if not ok:
         raise ValueError("native heatmap colormap rejected the inputs")
@@ -13351,6 +13361,7 @@ def density_rgba(
         stop_array.shape[0],
         opacity,
         _ptr_u8(out),
+        out.size,
     )
     if not ok:
         raise ValueError("native density colormap rejected the inputs")
@@ -13410,6 +13421,7 @@ def density_rgba_linear(
         stop_array.shape[0],
         opacity,
         _ptr_u8(out),
+        out.size,
     )
     if not ok:
         raise ValueError("native linear density colormap rejected the inputs")
