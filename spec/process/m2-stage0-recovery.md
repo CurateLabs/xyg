@@ -20,14 +20,16 @@ matrix three consecutive times.
 ## Release-surface classifier
 
 `scripts/classify_release_surface.py` is deliberately conservative. Rust,
-Python, Node, browser, scripts, tests, benchmarks/CodSpeed configuration, ABI
-declarations, build hooks, package manifests, and workflow changes require the
-complete release matrix. The classifier, aggregate verifier, workflow verifier,
-and CODEOWNERS file are themselves CODEOWNERS-protected. Prose-only
-`docs/` and non-ABI `spec/` changes may skip the expensive artifact jobs, but
-the aggregate itself still runs and rejects failures. Classifier and aggregate
-behavior are executable contracts in `tests/test_release_surface_gate.py` and
-workflow structure is protected by `scripts/verify_ci_workflow.py`.
+Python, Node, browser, scripts, tests, benchmarks/CodSpeed configuration,
+native and WASM ABI declarations, build hooks, package manifests, and workflow
+changes require the complete release matrix. Both ABI implementations and
+their `spec/abi/` / `spec/wasm/` manifests are CODEOWNERS-protected, as are the
+classifier, aggregate verifier, workflow verifier, and CODEOWNERS file itself.
+Prose-only `docs/` and non-ABI `spec/` changes may skip the expensive artifact
+jobs, but the aggregate itself still runs and rejects failures. Classifier and
+aggregate behavior are executable contracts in
+`tests/test_release_surface_gate.py` and workflow structure is protected by
+`scripts/verify_ci_workflow.py`.
 
 ## Human control boundary
 

@@ -17,6 +17,7 @@ RELEASE_PREFIXES = (
     "python/",
     "scripts/",
     "spec/abi/",
+    "spec/wasm/",
     "tests/",
 )
 RELEASE_FILES = {

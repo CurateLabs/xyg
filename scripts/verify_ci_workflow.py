@@ -116,7 +116,9 @@ def validate_milestone_governance(
         for protected in (
             "/.github/CODEOWNERS",
             "/crates/xyg-core/",
+            "/crates/xyg-wasm/",
             "/spec/abi/",
+            "/spec/wasm/",
             "/.github/workflows/",
             "/scripts/classify_release_surface.py",
             "/scripts/verify_release_surface_results.py",

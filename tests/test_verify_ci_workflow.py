@@ -93,6 +93,20 @@ def test_milestone_governance_protects_the_release_gate_itself(tmp_path: Path) -
     assert any("classify_release_surface.py" in error for error in errors)
 
 
+def test_milestone_governance_protects_native_and_wasm_abi_surfaces(tmp_path: Path) -> None:
+    owners = tmp_path / "CODEOWNERS"
+    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
+    owners.write_text(
+        current.replace("/crates/xyg-wasm/", "/crates/unrelated/").replace(
+            "/spec/wasm/", "/spec/unrelated/"
+        ),
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
+    assert any("/crates/xyg-wasm/" in error for error in errors)
+    assert any("/spec/wasm/" in error for error in errors)
+
+
 def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
     path = tmp_path / "bazel.yml"

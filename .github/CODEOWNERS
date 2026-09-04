@@ -1,7 +1,9 @@
 # ABI, security, packaging, and release-gate changes require an owner review.
 /.github/CODEOWNERS @CurateLabs/curate-labs-tech
 /crates/xyg-core/ @CurateLabs/curate-labs-tech
+/crates/xyg-wasm/ @CurateLabs/curate-labs-tech
 /spec/abi/ @CurateLabs/curate-labs-tech
+/spec/wasm/ @CurateLabs/curate-labs-tech
 /.github/workflows/ @CurateLabs/curate-labs-tech
 /scripts/classify_release_surface.py @CurateLabs/curate-labs-tech
 /scripts/verify_release_surface_results.py @CurateLabs/curate-labs-tech
