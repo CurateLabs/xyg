@@ -25,8 +25,8 @@ move into Rust with **both hosts calling the same kernel**. That bar is
 PR #853, stacked on PR #852's head branch; PR #852 then merged the combined
 work to `main` on 2026-09-02). Python `_payload.py` and `_scene_v3.py` are
 **marshal-only**: coerce host objects, call generated ABI 292–325, ship returned
-buffers. Recorded Node stay-host TAP extras are inventory, not an alternate
-close path.
+buffers. Recorded Node stay-host TAP extras are inventory,
+not an alternate close path.
 
 **Remaining M2 work (secondary §302 under [#58](https://github.com/CurateLabs/xyg/issues/58)) is closed** (2026-09-01): `_svg`/`_raster` compat paths, marks/_figure composition, channels label factorization, and `lod.py` cache wiring are keep-host re-export hubs. Reproduce inventory with `python3 scripts/audit_python_host_core.py`.
 
