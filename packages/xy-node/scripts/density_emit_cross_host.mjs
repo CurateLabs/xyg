@@ -9,9 +9,43 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const { PROTOCOL_VERSION, abiVersion, figure } = await import(
+const { PROTOCOL_VERSION, abiVersion, figure, payloadTier } = await import(
   path.join(root, "packages/xy-node/src/index.js"),
 );
+const { DENSITY_SAMPLE_TARGET, payloadDensityTraceEmitPlan } = await import(
+  path.join(root, "packages/xy-node/src/encode.js"),
+);
+
+const MASSIVE_GRID_W = 512;
+const MASSIVE_GRID_H = 384;
+
+function massivePolicyEntry(pointCount) {
+  const plan = payloadDensityTraceEmitPlan({
+    pointOverlay: true,
+    splitPayload: false,
+    gridW: MASSIVE_GRID_W,
+    gridH: MASSIVE_GRID_H,
+    nPoints: pointCount,
+  });
+  const tierCode = payloadTier({ kind: 1, nPoints: pointCount });
+  const densityGridBytesMax = plan.nMarks;
+  const sampleGeometryBytesMax = 2 * 4 * (DENSITY_SAMPLE_TARGET + MASSIVE_GRID_W);
+  const canonicalF64Bytes = plan.shipWasmSource ? pointCount * 16 : 0;
+  return {
+    point_count: pointCount,
+    tier: ["direct", "decimated", "density"][tierCode] ?? "invalid",
+    n_marks: plan.nMarks,
+    pyramid_eligible: plan.pyramidEligible,
+    wasm_eligible: plan.wasmEligible,
+    attach_sample: plan.attachSample,
+    ship_wasm_source: plan.shipWasmSource,
+    density_grid_bytes_max: densityGridBytesMax,
+    sample_geometry_bytes_max: sampleGeometryBytesMax,
+    canonical_f64_bytes: canonicalF64Bytes,
+    other_bytes: 0,
+    total_bytes_max: densityGridBytesMax + sampleGeometryBytesMax + canonicalF64Bytes,
+  };
+}
 
 function stripWireBuffers(obj) {
   if (obj == null || typeof obj !== "object") return obj;
@@ -205,6 +239,7 @@ const out = {
   protocol: PROTOCOL_VERSION,
   abi_version: abiVersion(),
   cases,
+  massive_policy: [1_000_000, 100_000_000].map(massivePolicyEntry),
 };
 
 process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
