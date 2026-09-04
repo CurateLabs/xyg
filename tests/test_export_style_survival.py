@@ -155,12 +155,12 @@ def test_an_explicit_legend_background_is_opaque_like_the_browser() -> None:
 
 
 def test_unstyled_output_is_untouched() -> None:
-    # The per-slot path must be inert when nobody uses it: a chart with no
-    # `styles=` renders exactly the bytes it rendered before the feature.
+    # The ordinary autoranged path now uses the canonical Rust Scene. Its
+    # normal title weight must preserve the published typography contract.
     plain = xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0], name="series"), title="t").figure()
     svg = plain.to_svg()
     # 400 is Matplotlib's `axes.titleweight: normal`, the chrome-text default.
-    assert '<text x="450" y="28" text-anchor="middle" font-size="14" font-weight="400"' in svg
+    assert 'font-size="14" font-weight="400" text-anchor="middle">t</text>' in svg
 
 
 def test_custom_css_is_refused_by_every_native_path() -> None:

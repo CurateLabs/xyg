@@ -140,14 +140,14 @@
     "light": {
       "scene_sha256": "c5eacd48aa47a2efdde99265da1a4d44aefb3d8ed3fa4b36f0ff7ad096c848ce",
       "painter_sha256": "6f26825b0a20b58fb4265e9642c3d8793258ea8aec7ebcdce712860abae8d0dc",
-      "svg_sha256": "285ceda146bac53d32e4901c5e9d8b934713331e113333083fa6d059acb2a4e6",
+      "svg_sha256": "97ddb95804603755b336bb4accc40f2b119f5a9b26780f110a7d39a78e82b4dd",
       "raster_sha256": "d1e1ae5ae5bbf900adf91e9072fe17e4d1af148c5fc839781ab3aef3b8f1ab4b",
       "png_sha256": "64f1dd32a1ee4fbf30d284ddd4c46c4bda9b66ca3fa956b9e956a38a13c41dd6"
     },
     "dark": {
       "scene_sha256": "8aad612abafb91faec9470c3d2c12178040f5c78cfe75c1c5183b8e11fe74f20",
       "painter_sha256": "f1a3e130b4f89f97174f4d10d4045e3e830b2577e25f7e48d3ce893aab71e26b",
-      "svg_sha256": "088cdea00787658fdde3d055dc2b4b9758ff6af147fa75301d927831649e27ff",
+      "svg_sha256": "aa9b34bf80219fc12552bb67ba0ed793a35073860f88f7ff35563ebf1287d925",
       "raster_sha256": "57bb4f5738283e45b3d34ebeed369a0442ab8aaac1bf0d80d1da451820e899b1",
       "png_sha256": "86674338c47aa604c889b0e108e7a1b1d15ac7f8257aa3e2113b3606c5bb5eec"
     }

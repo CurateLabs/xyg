@@ -985,10 +985,13 @@ def to_png(
             raise ValueError("custom_css requires engine=Engine.chromium")
         from . import _raster, _scene_v3
 
-        data = (
-            _scene_v3.public_static_export(fig, "png", width=w, height=h, scale=scale)
-            if not optimize
-            else None
+        data = _scene_v3.public_static_export(
+            fig,
+            "png",
+            width=w,
+            height=h,
+            scale=scale,
+            optimize=optimize,
         )
         if data is None:
             data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
@@ -1237,9 +1240,17 @@ def _native_image(
     # the single Rust support predicate for SVG, PNG, PDF, JPEG, and WebP.
     scene_data = (
         _scene_v3.public_static_export(
-            fig, fmt, width=width, height=height, scale=scale, quality=quality
+            fig,
+            fmt,
+            width=width,
+            height=height,
+            scale=scale,
+            quality=quality,
+            optimize=optimize,
         )
-        if not optimize and background is None and fmt in {"png", "svg", "pdf", "jpeg", "webp"}
+        if background is None
+        and fmt in {"png", "svg", "pdf", "jpeg", "webp"}
+        and (not optimize or fmt == "png")
         else None
     )
 

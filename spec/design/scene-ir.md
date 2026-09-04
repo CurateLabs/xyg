@@ -435,13 +435,22 @@ Python/Node line+bar, disconnected-segment, and `public_triangle_mesh_sha256`
 fixtures, with separate exact cross-host fixtures for step expansion, histogram
 bins, and Python
 `column`/Node `bar` Rect equivalence. Newly selected line, Rect, Band,
-endpoint-pair, mesh, ribbon, heatmap, and contour figures use Rust-resolved
-autorange domains when the author does not provide explicit Cartesian domains.
-They still require the primary axes on their default sides and must remain
-inside the bounded host-input and expanded-record budgets. This is a semantic
-widening of the existing ABI 105 support predicate; its C signature and XYEP v1
-envelope are unchanged, so `ABI_VERSION` remains 357. For
-segment-family traces, one row is
+endpoint-pair, mesh, and ribbon figures retain the authored-domain requirement.
+The bounded ordinary autorange exception is the single-trace line/step,
+bar/column, histogram, area, errorbar, violin, or hexbin shape, plus the exact
+whisker/box/median triple emitted by `box_chart`, with the default Cartesian
+axis/figure/legend/colorbar/annotation shell. Heatmap and contour lattices carry
+their own extents. Rich layered, annotated, polar, advanced-style, mesh, and
+ribbon figures stay on the compatibility renderer until Scene represents their
+complete public contract. The exception still requires primary axes on their
+default sides and the bounded host-input and expanded-record budgets. This is a
+semantic widening of the existing ABI 105 support predicate; its C signature
+and XYEP v1 envelope are unchanged. ABI 358 adds the opaque-RGB display-list
+consumer used by the optimized PNG route. For PNG,
+`optimize=True` consumes Rust Scene raster commands and applies only the
+Rust indexed/deflate encoder selection; it does not return to Python geometry
+or paint policy, so optimized and default output share identical pixels.
+For segment-family traces, one row is
 one emitted endpoint pair, so generated error-bar cap pairs count toward that
 limit independently of their source observation. Chart/plot backgrounds, title, authored
 axis labels/sides/major-minor ticks, the independent public

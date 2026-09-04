@@ -296,6 +296,7 @@ def public_static_export(
     height: int | None = None,
     scale: float = 1.0,
     quality: int | None = None,
+    optimize: bool = False,
 ) -> bytes | None:
     """Render one supported public static format from the canonical Scene.
 
@@ -315,6 +316,13 @@ def public_static_export(
     h = int(height if height is not None else figure.height)
     width_px = max(1, int(round(w * float(scale))))
     height_px = max(1, int(round(h * float(scale))))
+    if format == "png" and optimize:
+        # Keep size-oriented PNG encoding on the same Rust Scene geometry as
+        # the default fused export. Python selects the encoder only; it never
+        # rebuilds the display list or paints a second rendering policy.
+        commands = _native.scene_raster_commands(scene, scale)
+        pixels = _native.rasterize_rgb(commands, width_px, height_px)
+        return _native.encode_png(pixels, mode=0, compression=9)
     return _native.scene_static_export(
         scene,
         format,

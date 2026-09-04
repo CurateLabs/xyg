@@ -1412,12 +1412,12 @@ def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
     assert scene_export_support_reason(figure) is not None
 
 
-def test_public_triangle_mesh_admits_autorange() -> None:
+def test_public_triangle_mesh_keeps_autorange_on_compatibility() -> None:
     figure = _public_triangle_mesh()
     figure.axis_options["x"]["domain"] = None
     figure.axis_options["y"]["domain"] = None
-    assert scene_export_support_reason(figure) is None
-    assert public_static_export(figure, "svg") is not None
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    assert public_static_export(figure, "svg") is None
 
 
 @pytest.mark.parametrize("reduce", ["count", "mean", "sum"])
@@ -2499,12 +2499,12 @@ def test_public_disconnected_segments_require_default_side_cartesian_axes(
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
 
 
-def test_public_disconnected_segments_admit_autorange() -> None:
+def test_public_disconnected_segments_keep_autorange_on_compatibility() -> None:
     figure = _public_disconnected_segments()
     figure.axis_options["x"]["domain"] = None
     figure.axis_options["y"]["domain"] = None
-    assert scene_export_support_reason(figure) is None
-    assert public_static_export(figure, "svg") is not None
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    assert public_static_export(figure, "svg") is None
 
 
 def test_public_disconnected_segments_reject_more_than_ten_thousand_endpoint_pairs() -> None:
@@ -2696,10 +2696,12 @@ def test_ordinary_autorange_figures_route_every_static_export_through_rust(
         scene = figure_scene(figure)
         svg = public_static_export(figure, "svg")
         png = public_static_export(figure, "png")
+        optimized_png = figure.to_png(scale=1, optimize=True)
         assert svg is not None and svg == figure.to_svg().encode(), label
         assert png is not None and png == figure.to_png(scale=1), label
         assert svg == _native.scene_svg(scene).encode(), label
         assert png.startswith(b"\x89PNG\r\n\x1a\n"), label
+        assert optimized_png.startswith(b"\x89PNG\r\n\x1a\n"), label
 
 
 def _public_mark_figures() -> list[tuple[str, Figure]]:
