@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 # Actions are pinned to full commit SHAs (`@<40-hex> # vX`) per the org policy,
 # so fixtures strip a step by its action *path*, not a version tag — a SHA bump
 # must not silently turn these negative tests into no-ops.
@@ -80,6 +82,49 @@ def test_milestone_governance_requires_recorded_human_approval(tmp_path: Path) -
     spec.write_text("Agents may reorganize milestones automatically.\n", encoding="utf-8")
     errors = verify_ci_workflow.validate_milestone_governance(spec)
     assert any("explicit human approval" in error for error in errors)
+
+
+def test_milestone_governance_rejects_legacy_autonomous_closers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    scripts = tmp_path / "scripts"
+    workflows.mkdir(parents=True)
+    scripts.mkdir()
+    workflow = workflows / "m2-wave-c-close.yml"
+    script = scripts / "m2_wave_c_close.sh"
+    workflow.write_text("permissions:\n  issues: write\n", encoding="utf-8")
+    script.write_text("gh api -X PATCH milestones/2 -f state=closed\n", encoding="utf-8")
+    contributor_spec = tmp_path / "contributing.md"
+    contributor_spec.write_text(
+        "Creating, renaming, closing, or deleting a milestone requires "
+        "explicit human approval recorded in a GitHub issue or pull request; "
+        "automation must not execute it before that approval. Repository automation "
+        "must not reopen, close, rename, create, or reassign milestones.\n",
+        encoding="utf-8",
+    )
+    codeowners = tmp_path / "CODEOWNERS"
+    codeowners.write_text(
+        "\n".join(
+            (
+                "/.github/CODEOWNERS @owners",
+                "/crates/xyg-core/ @owners",
+                "/crates/xyg-wasm/ @owners",
+                "/spec/abi/ @owners",
+                "/spec/wasm/ @owners",
+                "/.github/workflows/ @owners",
+                "/scripts/classify_release_surface.py @owners",
+                "/scripts/verify_release_surface_results.py @owners",
+                "/scripts/verify_ci_workflow.py @owners",
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(verify_ci_workflow, "ROOT", tmp_path)
+    errors = verify_ci_workflow.validate_milestone_governance(contributor_spec, codeowners)
+    assert any("m2-wave-c-close.yml" in error for error in errors)
+    assert any("m2_wave_c_close.sh" in error for error in errors)
 
 
 def test_milestone_governance_protects_the_release_gate_itself(tmp_path: Path) -> None:

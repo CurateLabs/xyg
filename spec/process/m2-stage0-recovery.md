@@ -36,9 +36,11 @@ aggregate behavior are executable contracts in
 Creating, renaming, closing, or deleting a milestone, or moving an issue into
 or out of a milestone, requires explicit human approval recorded in an issue
 or pull request. Agents and automation may draft the exact mutation but may not
-execute it before that approval. The retired one-shot M2 assignment workflow is
-not an exception. Branch protection must require **Release surfaces**, one
-approving review, and CODEOWNERS review for owned release/security paths.
+execute it before that approval. The retired one-shot M2 assignment and Wave C
+closure workflows are not exceptions; neither an issue-assignment nor a
+milestone-closing Actions path remains. Branch protection must require
+**Release surfaces**, one approving review, and CODEOWNERS review for owned
+release/security paths.
 
 ## Evidence and close
 
