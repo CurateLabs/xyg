@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import importlib.util
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -105,6 +106,27 @@ def _load_verify_module():
 
 
 verify_wheel = _load_verify_module()
+
+
+def test_installed_export_probe_is_isolated_and_version_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(args: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(verify_wheel.subprocess, "run", fake_run)
+
+    verify_wheel.verify_installed_export_surface(Path("/venv/python"), "1.2.3")
+
+    assert len(calls) == 1
+    assert calls[0][:3] == ["/venv/python", "-I", "-c"]
+    assert calls[0][-1] == "1.2.3"
+    probe = calls[0][3]
+    assert 'importlib.metadata.version("xyg")' in probe
+    assert probe.index('importlib.metadata.version("xyg")') < probe.index("import xyg")
 
 
 def _record_hash(data: bytes) -> str:

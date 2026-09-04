@@ -84,6 +84,57 @@ ALLOWED_BLACKSMITH_RUNNERS = {
 CODSPEED_HOSTED_RUNNER = "codspeed-macro"
 
 
+def _codeowners_pattern_matches(pattern: str, path: str) -> bool:
+    """Match the CODEOWNERS glob subset GitHub supports for repository paths."""
+    anchored = pattern.startswith("/")
+    normalized = pattern.removeprefix("/")
+    if normalized.endswith("/"):
+        normalized += "**"
+    if not normalized or normalized.startswith("!") or "[" in normalized:
+        return False
+    body: list[str] = []
+    index = 0
+    while index < len(normalized):
+        char = normalized[index]
+        if char == "*" and index + 1 < len(normalized) and normalized[index + 1] == "*":
+            index += 2
+            if index < len(normalized) and normalized[index] == "/":
+                body.append("(?:.*/)?")
+                index += 1
+            else:
+                body.append(".*")
+            continue
+        if char == "*":
+            body.append("[^/]*")
+        elif char == "?":
+            body.append("[^/]")
+        else:
+            body.append(re.escape(char))
+        index += 1
+    expression = "".join(body)
+    if not anchored and "/" not in normalized:
+        expression = rf"(?:^|.*/){expression}(?:$|/.*)"
+    elif anchored:
+        expression = rf"^{expression}$"
+    else:
+        expression = rf"(?:^|.*/){expression}$"
+    return re.fullmatch(expression, path) is not None
+
+
+def _effective_codeowners(text: str, path: str) -> tuple[str, tuple[str, ...]] | None:
+    """Return the last matching CODEOWNERS rule, as GitHub does."""
+    effective: tuple[str, tuple[str, ...]] | None = None
+    for raw in text.splitlines():
+        content = raw.split("#", 1)[0].strip()
+        if not content:
+            continue
+        fields = content.split()
+        pattern, owners = fields[0], tuple(fields[1:])
+        if _codeowners_pattern_matches(pattern, path):
+            effective = pattern, owners
+    return effective
+
+
 def validate_milestone_governance(
     contributor_spec: Path = DEFAULT_CONTRIBUTOR_SPEC,
     codeowners: Path = DEFAULT_CODEOWNERS,
@@ -115,18 +166,23 @@ def validate_milestone_governance(
     except OSError as exc:
         errors.append(f"cannot read CODEOWNERS {codeowners}: {exc}")
     else:
-        for protected in (
-            "/.github/CODEOWNERS",
-            "/crates/xyg-core/",
-            "/crates/xyg-wasm/",
-            "/spec/abi/",
-            "/spec/wasm/",
-            "/.github/workflows/",
-            "/scripts/classify_release_surface.py",
-            "/scripts/verify_release_surface_results.py",
-            "/scripts/verify_ci_workflow.py",
+        for protected, probe in (
+            ("/.github/", ".github/__codeowners_probe__"),
+            ("/.github/CODEOWNERS", ".github/CODEOWNERS"),
+            ("/crates/xyg-core/", "crates/xyg-core/__codeowners_probe__"),
+            ("/crates/xyg-wasm/", "crates/xyg-wasm/__codeowners_probe__"),
+            ("/spec/abi/", "spec/abi/__codeowners_probe__"),
+            ("/spec/wasm/", "spec/wasm/__codeowners_probe__"),
+            ("/.github/workflows/", ".github/workflows/__codeowners_probe__.yml"),
+            ("/scripts/classify_release_surface.py", "scripts/classify_release_surface.py"),
+            (
+                "/scripts/verify_release_surface_results.py",
+                "scripts/verify_release_surface_results.py",
+            ),
+            ("/scripts/verify_ci_workflow.py", "scripts/verify_ci_workflow.py"),
         ):
-            if protected not in owners:
+            effective = _effective_codeowners(owners, probe)
+            if effective is None or not effective[1]:
                 errors.append(f"CODEOWNERS missing protected release surface {protected!r}")
     return errors
 
@@ -1110,6 +1166,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "release-surface change classifier",
         "scripts/classify_release_surface.py",
         "github.event.pull_request.base.sha",
+        "github.event.pull_request.head.sha",
+        'git show "$base:scripts/classify_release_surface.py"',
+        'python3 "$classifier"',
         "GITHUB_OUTPUT",
     )
     _require_job_contains(

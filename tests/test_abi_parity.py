@@ -286,6 +286,20 @@ def test_manifest_preserves_order_width_and_pointer_direction() -> None:
     assert symbol["returns"]["bits"] == 32
 
 
+def test_manifest_documents_rasterize_rgb_output_contract() -> None:
+    manifest = gen_abi_manifest.generate_manifest()
+    symbol = next(item for item in manifest["symbols"] if item["name"] == "xyg_rasterize_rgb")
+    out = next(item for item in symbol["arguments"] if item["name"] == "out")
+    contract = out["type"]["buffer_contract"]
+
+    assert "must be non-null" in contract
+    assert "3 * w * h bytes" in contract
+    assert "RGB8 row-major" in contract
+    assert "3 * w row stride" in contract
+    assert "w and h must be non-zero" in contract
+    assert "checked-size overflow returns 0" in contract
+
+
 def test_unsupported_rust_ffi_type_is_rejected() -> None:
     source = """
 pub const ABI_VERSION: u32 = 1;

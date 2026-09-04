@@ -309,7 +309,9 @@ foundation, and Python 3.11 floor. The required aggregate **Release surfaces**
 status also runs on every head. For a release-surface change it admits only a
 green wheel matrix, sdist, no-Rust wheel, host-parity suite, four-tier Node /
 Python authored-Scene differential, and required browser evidence; an
-applicable skipped job is a failure. The checked-in classifier treats Rust,
+applicable skipped job is a failure. Pull requests execute the classifier from
+the trusted base revision against the exact base/head path diff, failing safe to
+the complete matrix if that classifier is unavailable. The checked-in classifier treats Rust,
 generated ABI declarations, Figure/export/payload/Scene modules, Node bindings,
 browser/WASM code, build hooks, package manifests, tests/scripts, and release
 workflows as release surfaces. Cross-library competitive breadth remains

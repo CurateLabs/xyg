@@ -274,6 +274,18 @@ def _c_signature(name: str, returns: dict[str, Any], arguments: list[dict[str, A
     return f"{returns['c']} {name}({args})"
 
 
+_BUFFER_CONTRACT_OVERRIDES = {
+    (
+        "xyg_rasterize_rgb",
+        "out",
+    ): (
+        "caller-owned writable storage; must be non-null and contain at least "
+        "3 * w * h bytes in packed RGB8 row-major order with a 3 * w row stride; "
+        "w and h must be non-zero; checked-size overflow returns 0"
+    ),
+}
+
+
 def parse_rust_abi(text: str) -> dict[str, Any]:
     version_match = _ABI_CONST_RS.search(text)
     if version_match is None:
@@ -294,7 +306,11 @@ def parse_rust_abi(text: str) -> dict[str, Any]:
             arg_name = arg_name.strip().removeprefix("mut ")
             if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", arg_name):
                 raise ValueError(f"{name}: unsupported argument name {arg_name!r}")
-            arguments.append({"name": arg_name, "type": _type_contract(rust_type, argument=True)})
+            contract = _type_contract(rust_type, argument=True)
+            override = _BUFFER_CONTRACT_OVERRIDES.get((name, arg_name))
+            if override is not None:
+                contract["buffer_contract"] = override
+            arguments.append({"name": arg_name, "type": contract})
         rest = text[end:].lstrip()
         rust_return = "void"
         if rest.startswith("->"):

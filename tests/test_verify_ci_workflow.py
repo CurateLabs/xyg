@@ -77,6 +77,23 @@ def test_ci_workflow_rejects_skippable_release_surface_job(tmp_path: Path) -> No
     assert any("classifier condition" in error for error in errors)
 
 
+def test_ci_workflow_requires_classifier_from_trusted_base(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            'git show "$base:scripts/classify_release_surface.py" > "$classifier"',
+            'cp scripts/classify_release_surface.py "$classifier"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("release-surface change classifier" in error for error in errors)
+
+
 def test_milestone_governance_requires_recorded_human_approval(tmp_path: Path) -> None:
     spec = tmp_path / "contributing.md"
     spec.write_text("Agents may reorganize milestones automatically.\n", encoding="utf-8")
@@ -150,6 +167,32 @@ def test_milestone_governance_protects_native_and_wasm_abi_surfaces(tmp_path: Pa
     errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
     assert any("/crates/xyg-wasm/" in error for error in errors)
     assert any("/spec/wasm/" in error for error in errors)
+
+
+def test_milestone_governance_rejects_later_ownerless_override(tmp_path: Path) -> None:
+    owners = tmp_path / "CODEOWNERS"
+    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
+    owners.write_text(current + "\n/.github/workflows/**\n", encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
+
+    assert any("/.github/workflows/" in error for error in errors)
+
+
+def test_milestone_governance_ignores_comment_decoys(tmp_path: Path) -> None:
+    owners = tmp_path / "CODEOWNERS"
+    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
+    owners.write_text(
+        current.replace(
+            "/scripts/classify_release_surface.py @CurateLabs/curate-labs-tech",
+            "# /scripts/classify_release_surface.py @CurateLabs/curate-labs-tech",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
+
+    assert any("/scripts/classify_release_surface.py" in error for error in errors)
 
 
 def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
