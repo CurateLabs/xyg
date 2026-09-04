@@ -739,6 +739,155 @@ pub fn payload_density_trace_emit_plan(
     1
 }
 
+/// Compact view of the ordinary count-only density first-paint policy.
+///
+/// This is the shared policy query used by the direct-browser WASM boundary
+/// to prove the same massive-data decision as the native Python/Node hosts
+/// without allocating an N-sized source fixture (dossier sections 27-29).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DefaultDensityFirstPaintPlan {
+    pub tier: i32,
+    pub n_marks: usize,
+    pub pyramid_eligible: bool,
+    pub wasm_eligible: bool,
+    pub attach_sample: bool,
+    pub ship_wasm_source: bool,
+}
+
+/// Resolve the default Cartesian linear count-density plan for one source
+/// size and grid. The full density orchestrator remains the sole policy body;
+/// this helper only supplies the ordinary-host defaults and selects the
+/// fields needed by the bounded direct-browser diagnostic.
+pub fn default_density_first_paint_plan(
+    n_points: u64,
+    grid_w: u32,
+    grid_h: u32,
+) -> Option<DefaultDensityFirstPaintPlan> {
+    let tier = payload_tier(PAYLOAD_KIND_SCATTER, n_points, false, -1, false, false)?;
+    if tier != PAYLOAD_TIER_DENSITY {
+        return None;
+    }
+
+    let mut color_mode = 0;
+    let mut categorical = 0;
+    let mut compact_categorical = 0;
+    let mut stratified_counts = 0;
+    let mut x_c0 = 0.0;
+    let mut x_c1 = 0.0;
+    let mut y_c0 = 0.0;
+    let mut y_c1 = 0.0;
+    let mut grid_path = 0;
+    let mut pyramid_eligible = 0;
+    let mut pyramid_attempt = 0;
+    let mut pyramid_no_rescan = 0;
+    let mut pyramid_max_upsample = 0;
+    let mut pyramid_tile_upsample = 0;
+    let mut wasm_eligible = 0;
+    let mut needs_pyramid_sample = 0;
+    let mut overlay_omitted = 0;
+    let mut visible_is_n_points = 0;
+    let mut use_raw_range_bin2d = 0;
+    let mut attach_transition = 0;
+    let mut n_marks = 0;
+    let mut visible_init_n_points = 0;
+    let mut attach_sample = 0;
+    let mut pyramid_sample_stratified = 0;
+    let mut use_channel_colormap = 0;
+    let mut ship_wasm_source = 0;
+    let mut ship_mean_color_rgba = 0;
+    let mut ship_constant_color = 0;
+    let mut ship_categorical_entry_color = 0;
+    let mut mean_color_aggregates = 0;
+    let mut overlay_wire_static_raster = 0;
+    let mut overlay_wire_rows_exceed = 0;
+    let mut channels_dropped_compat = 0;
+
+    let ok = payload_density_trace_emit_plan(
+        0,
+        "",
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        grid_w,
+        grid_h,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        n_points,
+        0,
+        0,
+        0,
+        &mut color_mode,
+        &mut categorical,
+        &mut compact_categorical,
+        &mut stratified_counts,
+        &mut x_c0,
+        &mut x_c1,
+        &mut y_c0,
+        &mut y_c1,
+        &mut grid_path,
+        &mut pyramid_eligible,
+        &mut pyramid_attempt,
+        &mut pyramid_no_rescan,
+        &mut pyramid_max_upsample,
+        &mut pyramid_tile_upsample,
+        &mut wasm_eligible,
+        &mut needs_pyramid_sample,
+        &mut overlay_omitted,
+        &mut visible_is_n_points,
+        &mut use_raw_range_bin2d,
+        &mut attach_transition,
+        &mut n_marks,
+        &mut visible_init_n_points,
+        &mut attach_sample,
+        &mut pyramid_sample_stratified,
+        &mut use_channel_colormap,
+        &mut ship_wasm_source,
+        &mut ship_mean_color_rgba,
+        &mut ship_constant_color,
+        &mut ship_categorical_entry_color,
+        &mut mean_color_aggregates,
+        &mut overlay_wire_static_raster,
+        &mut overlay_wire_rows_exceed,
+        &mut channels_dropped_compat,
+    );
+    if ok == 0 {
+        return None;
+    }
+    Some(DefaultDensityFirstPaintPlan {
+        tier,
+        n_marks,
+        pyramid_eligible: pyramid_eligible != 0,
+        wasm_eligible: wasm_eligible != 0,
+        attach_sample: attach_sample != 0,
+        ship_wasm_source: ship_wasm_source != 0,
+    })
+}
+
 /// Transition-entry / tooltip-row attach orchestration from
 /// ``_transition_entry`` and ``_attach_tooltip_rows``.
 ///

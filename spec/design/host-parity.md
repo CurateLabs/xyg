@@ -615,6 +615,11 @@ Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
 `xyg_density_wasm_eligible` so path/binning/WASM/overlay decisions cannot
 drift. Hosts still transform axis-scale coordinates, invoke `bin_2d` /
 pyramid compose kernels, ship buffers, and assemble the wire spec.
+WASM ABI 24 calls the same `payload_density_trace_emit_plan` body through
+`xyg_wasm_density_first_paint_plan`; its packed allocation-free result records
+tier, bounded mark count, pyramid/WASM eligibility, sample attachment, and
+canonical-source shipment. The direct-browser foundation asserts the same
+1M/100M decisions as the live Python/Node cross-host fixture.
 ABI 316 `xyg_payload_density_grid_materialize` owns the execution half of
 that grid body (bin2d / pyramid compose, log-u8 encode, optional mean-color
 RGBA, overlay sample selection) after emit-plan policy is resolved. Hosts

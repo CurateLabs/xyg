@@ -19,8 +19,8 @@ const xyag=()=>{const bytes=new Uint8Array(96),view=new DataView(bytes.buffer);b
 const url=URL.createObjectURL(new Blob([globalThis.__xygInlineWasm.classicWorkerSource],{type:"application/javascript"}));
 const worker=new Worker(url);
 try {
-  worker.postMessage({type:"init",requestId:1,base64:globalThis.__xygInlineWasm.base64,expectedAbiVersion:23,expectedSceneVersion:31,maxArenaBytes:1048576});
-  const ready=await wait(worker,1);if(!ready.ok||ready.value?.abiVersion!==23)fail("classic worker init/diagnostics failed");
+  worker.postMessage({type:"init",requestId:1,base64:globalThis.__xygInlineWasm.base64,expectedAbiVersion:24,expectedSceneVersion:31,maxArenaBytes:1048576});
+  const ready=await wait(worker,1);if(!ready.ok||ready.value?.abiVersion!==24)fail("classic worker init/diagnostics failed");
   const request=xyag();worker.postMessage({type:"aggregate.bin2d",requestId:2,sequence:1,request},[request]);
   const aggregate=await wait(worker,2);if(!aggregate.ok||!(aggregate.value?.aggregate instanceof ArrayBuffer))fail("classic worker aggregate failed");
   const output=new Uint8Array(aggregate.value.aggregate);if(output[0]!==88||output[1]!==89||output[2]!==65||output[3]!==79)fail("classic worker did not return XYAO");

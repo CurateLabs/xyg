@@ -78,6 +78,16 @@ production and release-matrix conformance continue under
 is related to [#59](https://github.com/CurateLabs/xyg/issues/59).
 Canonical scene dependency: [Scene IR](scene-ir.md).
 
+WASM ABI 24 also exposes `xyg_wasm_density_first_paint_plan`, an
+allocation-free policy diagnostic over the shared Rust payload orchestrator.
+It accepts a split-u64 source count plus grid dimensions and packs the tier,
+screen-bounded mark count, pyramid/WASM eligibility, sample attachment, and
+source-shipment flags into one u32. `0xffffffff` is the fail-closed result;
+the exact bit layout is generated from `spec/wasm/abi.json`. This is not an
+alternate aggregator or permission to ship canonical f64: the strict-CSP
+browser gate queries it at 1M and 100M and requires source shipment to remain
+false at both sizes.
+
 ### Supported ChartView density refinement
 
 `attachWasmDensity(view, { worker, input })` is the first supported product

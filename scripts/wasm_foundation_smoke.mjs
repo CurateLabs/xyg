@@ -128,6 +128,10 @@ try {
   ]);
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
+  if (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2) {
+    throw new Error("browser foundation smoke omitted massive density policy evidence");
+  }
+  console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);

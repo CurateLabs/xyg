@@ -362,6 +362,7 @@ async function fixtureModule({
     "xyg_wasm_dashboard_plan",
     "xyg_wasm_compound_transition",
     "xyg_wasm_ticks_resolve",
+    "xyg_wasm_density_first_paint_plan",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -375,7 +376,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -386,7 +387,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    23, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    24, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -397,7 +398,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
   if (names.length !== functionTypes.length || names.length !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
@@ -495,7 +496,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 23,
+    expectedAbiVersion: 24,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -528,6 +529,44 @@ async function run() {
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
+
+  foundationStage = "Rust-owned massive density first-paint policy";
+  const policyInstance = await WebAssembly.instantiate(wasmModule);
+  const policyExport = policyInstance.exports.xyg_wasm_density_first_paint_plan;
+  if (typeof policyExport !== "function" || policyExport.length !== 4) {
+    throw new Error("massive density policy export is missing or has the wrong signature");
+  }
+  const densityPolicy = [1_000_000, 100_000_000].map((pointCount) => {
+    const packed = policyExport(
+      pointCount >>> 0,
+      Math.floor(pointCount / 0x1_0000_0000) >>> 0,
+      512,
+      384,
+    ) >>> 0;
+    return {
+      point_count: pointCount,
+      tier: ["direct", "decimated", "density"][packed & 3] ?? "invalid",
+      n_marks: packed >>> 8,
+      pyramid_eligible: (packed & 4) !== 0,
+      wasm_eligible: (packed & 8) !== 0,
+      attach_sample: (packed & 16) !== 0,
+      ship_wasm_source: (packed & 32) !== 0,
+      canonical_f64_bytes: (packed & 32) !== 0 ? pointCount * 16 : 0,
+      total_bytes_max: (packed >>> 8) + 2 * 4 * (8192 + 512),
+    };
+  });
+  const [millionPolicy, hundredMillionPolicy] = densityPolicy;
+  if (millionPolicy.tier !== "density" || millionPolicy.n_marks !== 512 * 384
+      || millionPolicy.pyramid_eligible || !millionPolicy.wasm_eligible
+      || !millionPolicy.attach_sample || millionPolicy.ship_wasm_source
+      || millionPolicy.canonical_f64_bytes !== 0 || millionPolicy.total_bytes_max !== 266240
+      || hundredMillionPolicy.tier !== "density" || hundredMillionPolicy.n_marks !== 512 * 384
+      || !hundredMillionPolicy.pyramid_eligible || hundredMillionPolicy.wasm_eligible
+      || !hundredMillionPolicy.attach_sample || hundredMillionPolicy.ship_wasm_source
+      || hundredMillionPolicy.canonical_f64_bytes !== 0
+      || hundredMillionPolicy.total_bytes_max !== 266240) {
+    throw new Error(`massive density policy drifted: ${JSON.stringify(densityPolicy)}`);
+  }
 
   foundationStage = "Rust-owned viewport tick codec and Worker lifecycle";
   const tickWorker = createXygWasmWorker({
@@ -1839,7 +1878,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 23 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== 24 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -4038,7 +4077,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true };
+  return { ok: true, densityPolicy };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

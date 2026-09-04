@@ -20,7 +20,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 23;
+pub const WASM_ABI_VERSION: u32 = 24;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -33,6 +33,21 @@ pub const STATUS_PENDING: i32 = 8;
 pub const STATUS_DISPOSED: i32 = 9;
 pub const STATUS_STALE_REVISION: i32 = 10;
 pub const STATUS_SELF_ECHO: i32 = 11;
+
+/// Invalid packed result for `xyg_wasm_density_first_paint_plan`.
+pub const DENSITY_FIRST_PAINT_INVALID: u32 = 4_294_967_295;
+/// Low-bit mask for the shared payload tier code.
+pub const DENSITY_FIRST_PAINT_TIER_MASK: u32 = 3;
+/// Bit indicating that the default plan may compose a native pyramid.
+pub const DENSITY_FIRST_PAINT_PYRAMID_ELIGIBLE: u32 = 4;
+/// Bit indicating that a browser-local source fits the WASM aggregate seam.
+pub const DENSITY_FIRST_PAINT_WASM_ELIGIBLE: u32 = 8;
+/// Bit indicating that the bounded point overlay sample is attached.
+pub const DENSITY_FIRST_PAINT_ATTACH_SAMPLE: u32 = 16;
+/// Bit indicating canonical f64 replay columns would enter the paint payload.
+pub const DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE: u32 = 32;
+/// Shift of the screen-bounded density mark count in the packed result.
+pub const DENSITY_FIRST_PAINT_MARKS_SHIFT: u32 = 8;
 
 /// Resolve one atomic packed batch of viewport ticks. Tick request sequences
 /// are deliberately independent of long-running compile/aggregate scheduling.
@@ -263,6 +278,65 @@ pub extern "C" fn xyg_wasm_scene_version() -> u32 {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_max_arena_bytes() -> usize {
     MAX_ARENA_BYTES
+}
+
+/// Query the ordinary Cartesian count-density first-paint plan without
+/// allocating source rows. The low/high words preserve source sizes above
+/// JavaScript's u32 boundary, while the packed result records the Rust-owned
+/// tier, eligibility/transport flags, and screen-bounded mark count.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_density_first_paint_plan(
+    point_count_lo: u32,
+    point_count_hi: u32,
+    grid_w: u32,
+    grid_h: u32,
+) -> u32 {
+    let point_count = (u64::from(point_count_hi) << 32) | u64::from(point_count_lo);
+    let Some(cells) = grid_w.checked_mul(grid_h) else {
+        return DENSITY_FIRST_PAINT_INVALID;
+    };
+    if point_count == 0 || cells == 0 || cells > aggregate::MAX_GRID_CELLS as u32 {
+        return DENSITY_FIRST_PAINT_INVALID;
+    }
+    let Some(plan) =
+        xyg_engine::payload_emit::default_density_first_paint_plan(point_count, grid_w, grid_h)
+    else {
+        return DENSITY_FIRST_PAINT_INVALID;
+    };
+    let Ok(n_marks) = u32::try_from(plan.n_marks) else {
+        return DENSITY_FIRST_PAINT_INVALID;
+    };
+    if n_marks > (u32::MAX >> DENSITY_FIRST_PAINT_MARKS_SHIFT) {
+        return DENSITY_FIRST_PAINT_INVALID;
+    }
+    let Ok(tier) = u32::try_from(plan.tier) else {
+        return DENSITY_FIRST_PAINT_INVALID;
+    };
+    if tier & !DENSITY_FIRST_PAINT_TIER_MASK != 0 {
+        return DENSITY_FIRST_PAINT_INVALID;
+    }
+    (n_marks << DENSITY_FIRST_PAINT_MARKS_SHIFT)
+        | tier
+        | if plan.pyramid_eligible {
+            DENSITY_FIRST_PAINT_PYRAMID_ELIGIBLE
+        } else {
+            0
+        }
+        | if plan.wasm_eligible {
+            DENSITY_FIRST_PAINT_WASM_ELIGIBLE
+        } else {
+            0
+        }
+        | if plan.attach_sample {
+            DENSITY_FIRST_PAINT_ATTACH_SAMPLE
+        } else {
+            0
+        }
+        | if plan.ship_wasm_source {
+            DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE
+        } else {
+            0
+        }
 }
 
 #[no_mangle]
@@ -1418,6 +1492,40 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
 mod tests {
     use super::*;
     use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch};
+
+    fn decode_density_first_paint(value: u32) -> (u32, u32, bool, bool, bool, bool) {
+        (
+            value & DENSITY_FIRST_PAINT_TIER_MASK,
+            value >> DENSITY_FIRST_PAINT_MARKS_SHIFT,
+            value & DENSITY_FIRST_PAINT_PYRAMID_ELIGIBLE != 0,
+            value & DENSITY_FIRST_PAINT_WASM_ELIGIBLE != 0,
+            value & DENSITY_FIRST_PAINT_ATTACH_SAMPLE != 0,
+            value & DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE != 0,
+        )
+    }
+
+    #[test]
+    fn massive_density_policy_matches_native_hosts_without_source_allocation() {
+        let million = xyg_wasm_density_first_paint_plan(1_000_000, 0, 512, 384);
+        assert_eq!(
+            decode_density_first_paint(million),
+            (2, 512 * 384, false, true, true, false)
+        );
+
+        let hundred_million = xyg_wasm_density_first_paint_plan(100_000_000, 0, 512, 384);
+        assert_eq!(
+            decode_density_first_paint(hundred_million),
+            (2, 512 * 384, true, false, true, false)
+        );
+        assert_eq!(
+            xyg_wasm_density_first_paint_plan(0, 0, 512, 384),
+            DENSITY_FIRST_PAINT_INVALID
+        );
+        assert_eq!(
+            xyg_wasm_density_first_paint_plan(1_000_000, 0, 4096, 4096),
+            DENSITY_FIRST_PAINT_INVALID
+        );
+    }
 
     fn valid_scene() -> Vec<u8> {
         let layout = PlotLayout::new(100.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap();

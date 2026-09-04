@@ -340,7 +340,10 @@ This replay report is not the ordinary first-paint payload-size row. CodSpeed
 canonical-f64, and other buffer classes; it requires canonical-f64 and other
 bytes to be zero, grid/sample ceilings to remain screen-bounded, and total
 bytes to stay below one tenth of source x/y. The native admission plan also
-keeps ordinary host payloads bounded at both 1M and 100M policy sizes.
+keeps ordinary host payloads bounded at both 1M and 100M policy sizes. The
+direct-browser foundation independently queries that same Rust plan through
+WASM ABI 24 and records the decoded 1M/100M tier, mark ceiling, eligibility,
+sample, and source-shipment fields in its CI log.
 
 The latest interpreted hosted extract is
 `spec/benchmarks/hosted-evidence-95adb9de.json` (Actions run `32945396133`,

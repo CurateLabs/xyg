@@ -239,6 +239,23 @@ def validate_compound_transition(manifest: dict[str, object]) -> None:
         raise SystemExit("compound_transition differs from the exact XYGC/XYCO v1 contract")
 
 
+def validate_density_first_paint(manifest: dict[str, object]) -> None:
+    expected = {
+        "invalid": 0xFFFFFFFF,
+        "marks_shift": 8,
+        "tier_mask": 3,
+        "tiers": {"direct": 0, "decimated": 1, "density": 2},
+        "flags": {
+            "pyramid_eligible": 4,
+            "wasm_eligible": 8,
+            "attach_sample": 16,
+            "ship_wasm_source": 32,
+        },
+    }
+    if manifest.get("density_first_paint") != expected:
+        raise SystemExit("density_first_paint differs from the exact packed policy contract")
+
+
 def render(manifest: dict[str, object]) -> str:
     abi_version = int(manifest["abi_version"])
     scene_version = int(manifest["scene_version"])
@@ -263,6 +280,7 @@ def render(manifest: dict[str, object]) -> str:
     max_arena_bytes = int(manifest["max_arena_bytes"])
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     aggregate = manifest["aggregate"]
+    density_first_paint = manifest["density_first_paint"]
     graph = manifest["graph"]
     temporal_graph = manifest["temporal_graph"]
     semantic_graph = manifest["semantic_graph"]
@@ -273,6 +291,7 @@ def render(manifest: dict[str, object]) -> str:
         not isinstance(statuses, dict)
         or not isinstance(exports, list)
         or not isinstance(aggregate, dict)
+        or not isinstance(density_first_paint, dict)
         or not isinstance(typed_series, dict)
         or not isinstance(ticks, dict)
         or not isinstance(graph, dict)
@@ -386,6 +405,11 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_POINTS = {int(aggregate['stream_chunk_points'])} as const;",
         f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_BYTES = {int(aggregate['stream_chunk_bytes'])} as const;",
         f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_COPY_FACTOR = {int(aggregate['stream_chunk_copy_factor'])} as const;",
+        f"export const XYG_WASM_DENSITY_FIRST_PAINT_INVALID = {int(density_first_paint['invalid'])} as const;",
+        f"export const XYG_WASM_DENSITY_FIRST_PAINT_MARKS_SHIFT = {int(density_first_paint['marks_shift'])} as const;",
+        f"export const XYG_WASM_DENSITY_FIRST_PAINT_TIER_MASK = {int(density_first_paint['tier_mask'])} as const;",
+        f"export const XYG_WASM_DENSITY_FIRST_PAINT_TIERS = {json.dumps(density_first_paint['tiers'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_DENSITY_FIRST_PAINT_FLAGS = {json.dumps(density_first_paint['flags'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_GRAPH_VERSION = {int(graph['version'])} as const;",
         f"export const XYG_WASM_GRAPH_MAGIC = {json.dumps(graph['request_magic'])} as const;",
         f"export const XYG_WASM_GRAPH_HEADER_BYTES = {int(graph['header_bytes'])} as const;",
@@ -683,6 +707,21 @@ def verify_rust(manifest: dict[str, object]) -> None:
         raise SystemExit("xyg-wasm MAX_ARENA_BYTES differs from spec/wasm/abi.json")
     if int(manifest["aggregate"]["total_memory_bytes"]) > arena_value:
         raise SystemExit("aggregate total_memory_bytes exceeds xyg-wasm MAX_ARENA_BYTES")
+    density_first_paint = manifest["density_first_paint"]
+    assert isinstance(density_first_paint, dict)
+    density_constant_map = {
+        "DENSITY_FIRST_PAINT_INVALID": density_first_paint["invalid"],
+        "DENSITY_FIRST_PAINT_MARKS_SHIFT": density_first_paint["marks_shift"],
+        "DENSITY_FIRST_PAINT_TIER_MASK": density_first_paint["tier_mask"],
+        "DENSITY_FIRST_PAINT_PYRAMID_ELIGIBLE": density_first_paint["flags"]["pyramid_eligible"],
+        "DENSITY_FIRST_PAINT_WASM_ELIGIBLE": density_first_paint["flags"]["wasm_eligible"],
+        "DENSITY_FIRST_PAINT_ATTACH_SAMPLE": density_first_paint["flags"]["attach_sample"],
+        "DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE": density_first_paint["flags"]["ship_wasm_source"],
+    }
+    for rust_name, expected in density_constant_map.items():
+        match = re.search(rf"pub const {rust_name}: u32 = ([0-9_]+);", source)
+        if not match or int(match.group(1).replace("_", "")) != int(expected):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from density_first_paint manifest")
     ticks_source = TICKS_RUST.read_text(encoding="utf-8")
     for rust_name, manifest_name in (
         ("REQUEST_MAGIC", "request_magic"),
@@ -850,6 +889,7 @@ def main() -> int:
     validate_typed_series(manifest)
     validate_semantic_graph(manifest)
     validate_compound_transition(manifest)
+    validate_density_first_paint(manifest)
     verify_rust(manifest)
     expected = render(manifest)
     expected_rust = render_typed_series_rust(manifest)

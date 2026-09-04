@@ -140,6 +140,27 @@ def test_dashboard_planner_export_is_generated_and_signature_checked() -> None:
     assert "raw.xyg_wasm_dashboard_plan" in generated
 
 
+def test_massive_density_policy_export_is_generated_and_packed_contract_is_exact() -> None:
+    value = manifest()
+    GEN.validate_density_first_paint(value)
+    export = next(
+        item for item in value["exports"] if item["name"] == "xyg_wasm_density_first_paint_plan"
+    )
+    assert export == {
+        "name": "xyg_wasm_density_first_paint_plan",
+        "params": ["u32", "u32", "u32", "u32"],
+        "result": "u32",
+    }
+    generated = (ROOT / "js/src/wasm_abi_generated.ts").read_text()
+    assert "XYG_WASM_DENSITY_FIRST_PAINT_MARKS_SHIFT = 8" in generated
+    assert "XYG_WASM_DENSITY_FIRST_PAINT_TIER_MASK = 3" in generated
+    assert (
+        "xyg_wasm_density_first_paint_plan(arg0: number, arg1: number, arg2: number, arg3: number): number;"
+        in generated
+    )
+    assert "raw.xyg_wasm_density_first_paint_plan" in generated
+
+
 def test_streaming_aggregate_manifest_is_count_only_and_generated() -> None:
     value = manifest()
     aggregate = value["aggregate"]

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 23,
+  "abi_version": 24,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -80,6 +80,18 @@
     "stream_chunk_points": 32768,
     "stream_chunk_bytes": 524288,
     "stream_chunk_copy_factor": 2
+  },
+  "density_first_paint": {
+    "invalid": 4294967295,
+    "marks_shift": 8,
+    "tier_mask": 3,
+    "tiers": {"direct": 0, "decimated": 1, "density": 2},
+    "flags": {
+      "pyramid_eligible": 4,
+      "wasm_eligible": 8,
+      "attach_sample": 16,
+      "ship_wasm_source": 32
+    }
   },
   "statuses": {
     "OK": 0,
@@ -399,6 +411,16 @@
         "u32"
       ],
       "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_density_first_paint_plan",
+      "params": [
+        "u32",
+        "u32",
+        "u32",
+        "u32"
+      ],
+      "result": "u32"
     }
   ],
   "graph": {
