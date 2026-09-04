@@ -997,6 +997,20 @@ def test_final_coderabbit_policy_rejects_missing_idempotency_marker(tmp_path: Pa
     assert any("exact-head idempotent" in error for error in errors)
 
 
+def test_final_coderabbit_policy_requires_release_surface_aggregate(tmp_path: Path) -> None:
+    workflow_path = Path(".github/workflows/final-coderabbit.yml")
+    config_path = Path(".coderabbit.yaml")
+    source = Path("scripts/request_final_coderabbit.py").read_text(encoding="utf-8")
+    script_path = tmp_path / "request_final_coderabbit.py"
+    script_path.write_text(source.replace('    "Release surfaces",\n', "", 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_final_review_policy(
+        workflow_path, config_path, script_path
+    )
+
+    assert any("Release surfaces aggregate" in error for error in errors)
+
+
 def test_final_coderabbit_policy_rejects_idempotency_before_validation(tmp_path: Path) -> None:
     workflow_path = Path(".github/workflows/final-coderabbit.yml")
     config_path = Path(".coderabbit.yaml")

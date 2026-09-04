@@ -15,6 +15,7 @@ _REQUIRED_CHECKS = {
     "Test (Rust + Python + JS)",
     "Direct browser Rust/WASM foundation (wasm32-unknown-unknown)",
     "Python 3.11 floor",
+    "Release surfaces",
 }
 
 
