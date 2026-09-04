@@ -11,8 +11,8 @@ These rows isolate the *Python* cost, which is what simulation mode measures:
 
 - payload build for the three shapes with materially different validation and
   emit paths (a plain polar line, a stacked wind rose, an unequal-width pie);
-- static SVG and native-PNG export of wedges, where the canonical Scene
-  geometry flattens each arc before either exporter. These rows track the
+- static SVG and native-PNG export of wedges, where SVG keeps exact arcs while
+  the native raster display list flattens them. These rows track the
   span-proportional subdivision in `config.polar_bar_segments`: a
   16-sector rose flattens six segments per wedge rather than the full-turn
   worst case of 96, and a regression back to a flat count shows up here as
@@ -178,18 +178,18 @@ def test_first_payload_pie(benchmark, polar_data):
 
 
 def test_svg_export_polar_wedges(benchmark, polar_data):
-    """Static SVG export of a dense rose: Scene-flattened wedge polygons."""
+    """Static SVG export of a dense rose: exact compatibility arc paths."""
     directions = polar_data["directions"]
     speeds = polar_data["speeds"]
     figure = xyg.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
     document = benchmark(figure.to_svg, width=720, height=720)
     assert document.startswith("<svg")
     # Four stacked speed bands across sixteen sectors produce 64 closed wedge
-    # paths.  Each 22.5-degree outer boundary has six subdivisions, so every
-    # path contains at least the centre/inner corner plus seven outer points.
+    # paths.  This figure is outside #856's Cartesian autorange slice, so SVG
+    # remains the exact-arc control for the raster row's polygon flattening.
     paths = document.split("<path d=")[1:]
     assert len(paths) == ROSE_SECTORS * 4
-    assert all(path.count(" L ") >= 7 and " Z" in path for path in paths)
+    assert all(" A " in path and " L " in path and " Z" in path for path in paths)
 
 
 def test_native_png_export_polar_wedges(benchmark, polar_data):
