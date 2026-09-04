@@ -15,7 +15,7 @@ matrix three consecutive times.
 | #864 | density first paint | Ordinary packed and split Python/Node payloads contain only a screen-bounded u8 grid and offset-f32 sample geometry. Canonical f64 remains host-side. The separately measured replay journey must opt in with `wasm_source=True` / `wasmSource: true`. CodSpeed reports named grid, sample, canonical-f64, other, and total byte classes. The live cross-host differential compares the complete Rust emission plan at 1M and 100M rows, and the strict-CSP direct-browser foundation queries the same plan through WASM ABI 24: fixed grid/sample ceilings, tier/pyramid/WASM decisions, and zero canonical-f64 shipment must agree without allocating a data-sized fixture. |
 | #865 | Node authored Scene | Node mirrors Python's bounded ABI 323 density observation marshal. The four-tier 100/10k/100k/1M authored workload explicitly selects the direct tier with the shared density tri-state, produces byte-identical Scenes, and is consumed by Rust SVG, raster-command, and browser-painter paths before merge. |
 | #866 | CodSpeed and dependency audit | Benchmarks construct and assert their routing boundary without importing movable private constants. A structural test rejects private module-constant references. Root npm dependencies are build/test-only: the production audit (`npm audit --omit=dev`) is zero, the prior high report therefore has no shipped-runtime exposure, and the generated browser client remains runtime-dependency-free. Full development audit endpoint availability does not weaken correctness, tier, payload, or buffer-shape assertions. |
-| #867 | merge protection and governance | One required **Release surfaces** aggregate accepts baseline test/WASM/Python-floor jobs and, for classifier-positive changes, wheel, sdist, no-Rust, host-parity, Node authored-Scene, and browser evidence only when each succeeds. An applicable skip fails. ABI/security/release changes require CODEOWNERS review. Milestone mutations require recorded human approval and have no autonomous repository workflow. |
+| #867 | merge protection and governance | One required **Release surfaces** aggregate accepts baseline test/WASM/Python-floor jobs and, for classifier-positive changes, wheel, sdist, no-Rust, host-parity, Node authored-Scene, and browser evidence only when each succeeds. An applicable skip fails. Independent approving-review/CODEOWNER capacity is deferred to backlog #871 rather than blocking M2. Milestone mutations require recorded human approval and have no autonomous repository workflow. |
 
 ## Release-surface classifier
 
@@ -25,12 +25,15 @@ trusted base revision; if that revision predates the classifier, the complete
 matrix is required. Rust,
 Python, Node, browser, scripts, tests, benchmarks/CodSpeed configuration,
 native and WASM ABI declarations, build hooks, package manifests, and workflow
-changes require the complete release matrix. Both ABI implementations and
-their `spec/abi/` / `spec/wasm/` manifests are CODEOWNERS-protected, as are the
-classifier, aggregate verifier, workflow verifier, and CODEOWNERS file itself.
-The governance verifier evaluates the final matching CODEOWNERS rule for each
-protected probe and rejects comments, missing rules, or later ownerless
-overrides.
+changes require the complete release matrix.
+The workflow verifier parses the classifier step's exact active Bash command
+sequence and binds its unique `classify` step ID to the job output. That job
+contains only the pinned checkout and classifier steps, permits no inherited
+workflow, job, or step environment override, runs the trusted-base classifier
+with isolated Python, and fails safe to the complete matrix when Git quotes any
+unusual changed path. A comment
+decoy, extra step, detached output, or PR-head copy cannot substitute for the
+trusted-base `git show` before execution.
 Prose-only `docs/` and non-ABI `spec/` changes may skip the expensive artifact
 jobs, but the aggregate itself still runs and rejects failures. Classifier and
 aggregate behavior are executable contracts in
@@ -44,9 +47,10 @@ or out of a milestone, requires explicit human approval recorded in an issue
 or pull request. Agents and automation may draft the exact mutation but may not
 execute it before that approval. The retired one-shot M2 assignment and Wave C
 closure workflows are not exceptions; neither an issue-assignment nor a
-milestone-closing Actions path remains. Branch protection must require
-**Release surfaces**, one approving review, and CODEOWNERS review for owned
-release/security paths.
+milestone-closing Actions path remains. Branch protection requires only the
+lean **Release surfaces** aggregate. Independent approving-review/CODEOWNER
+capacity is deferred to unmilestoned backlog #871 under the scope decision
+recorded in #855; it is not an M2 close requirement.
 
 ## Evidence and close
 
@@ -54,4 +58,4 @@ Local or feature-branch success is necessary but does not satisfy #862's close
 bar. Record three consecutive complete workflow runs for the identical commit,
 including SHA-keyed authored/browser artifacts, then link those runs from the
 children and tracker. A skipped applicable job, changed commit, rerun with
-weakened assertions, or missing owner review resets the sequence.
+weakened assertions, or incomplete applicable evidence resets the sequence.

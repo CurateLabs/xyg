@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -94,6 +95,163 @@ def test_ci_workflow_requires_classifier_from_trusted_base(tmp_path: Path) -> No
     assert any("release-surface change classifier" in error for error in errors)
 
 
+def test_ci_workflow_rejects_commented_trusted_base_fetch(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            'if git show "$base:scripts/classify_release_surface.py" > "$classifier"; then',
+            'if cp scripts/classify_release_surface.py "$classifier"; then\n'
+            '              # git show "$base:scripts/classify_release_surface.py" '
+            '> "$classifier"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("trusted-base release-surface classifier execution" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    (
+        (
+            "      required: ${{ steps.classify.outputs.required }}",
+            "      required: ${{ 'false' }}",
+        ),
+        ("        id: classify", "        id: detached"),
+        (
+            "        shell: bash",
+            "        env:\n          PYTHONPATH: ${{ github.workspace }}\n        shell: bash",
+        ),
+    ),
+)
+def test_ci_workflow_binds_classifier_output_and_environment(
+    tmp_path: Path, old: str, new: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow.replace(old, new, 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("release-surface classifier" in error for error in errors)
+
+
+def test_ci_workflow_rejects_extra_classifier_job_step(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Classify changed paths\n",
+            "      - name: Poison classifier path\n"
+            '        run: echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"\n'
+            "      - name: Classify changed paths\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("only the pinned checkout" in error for error in errors)
+
+
+def test_ci_workflow_requires_quoted_path_fail_safe(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            '            if grep -q \'^"\' "$changed"; then\n'
+            '              echo "required=true" >> "$GITHUB_OUTPUT"\n'
+            "            elif git show",
+            "            if git show",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("trusted-base release-surface classifier execution" in error for error in errors)
+
+
+def test_classifier_git_diff_quotes_unusual_paths_for_fail_safe(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "README.md").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=XYG Test",
+            "-c",
+            "user.email=xyg@example.invalid",
+            "commit",
+            "-qm",
+            "base",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    source = tmp_path / "python"
+    source.mkdir()
+    (source / "mañana.py").write_text("release_surface = True\n", encoding="utf-8")
+    subprocess.run(["git", "add", "python/mañana.py"], cwd=tmp_path, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=XYG Test",
+            "-c",
+            "user.email=xyg@example.invalid",
+            "commit",
+            "-qm",
+            "unicode",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+    changed = subprocess.run(
+        ["git", "-c", "core.quotePath=true", "diff", "--name-only", base, head],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+
+    assert changed and all(path.startswith('"') for path in changed)
+
+
+def test_ci_workflow_rejects_top_level_classifier_function_override(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "jobs:\n",
+            "env:\n"
+            '  "BASH_FUNC_python3%%": \'() { echo "required=false" >> '
+            '"$GITHUB_OUTPUT"; }\'\n'
+            "jobs:\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("top-level environment" in error for error in errors)
+
+
 def test_milestone_governance_requires_recorded_human_approval(tmp_path: Path) -> None:
     spec = tmp_path / "contributing.md"
     spec.write_text("Agents may reorganize milestones automatically.\n", encoding="utf-8")
@@ -120,79 +278,10 @@ def test_milestone_governance_rejects_legacy_autonomous_closers(
         "must not reopen, close, rename, create, or reassign milestones.\n",
         encoding="utf-8",
     )
-    codeowners = tmp_path / "CODEOWNERS"
-    codeowners.write_text(
-        "\n".join(
-            (
-                "/.github/CODEOWNERS @owners",
-                "/crates/xyg-core/ @owners",
-                "/crates/xyg-wasm/ @owners",
-                "/spec/abi/ @owners",
-                "/spec/wasm/ @owners",
-                "/.github/workflows/ @owners",
-                "/scripts/classify_release_surface.py @owners",
-                "/scripts/verify_release_surface_results.py @owners",
-                "/scripts/verify_ci_workflow.py @owners",
-            )
-        )
-        + "\n",
-        encoding="utf-8",
-    )
     monkeypatch.setattr(verify_ci_workflow, "ROOT", tmp_path)
-    errors = verify_ci_workflow.validate_milestone_governance(contributor_spec, codeowners)
+    errors = verify_ci_workflow.validate_milestone_governance(contributor_spec)
     assert any("m2-wave-c-close.yml" in error for error in errors)
     assert any("m2_wave_c_close.sh" in error for error in errors)
-
-
-def test_milestone_governance_protects_the_release_gate_itself(tmp_path: Path) -> None:
-    owners = tmp_path / "CODEOWNERS"
-    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
-    owners.write_text(
-        current.replace("/scripts/classify_release_surface.py", "/scripts/unrelated.py"),
-        encoding="utf-8",
-    )
-    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
-    assert any("classify_release_surface.py" in error for error in errors)
-
-
-def test_milestone_governance_protects_native_and_wasm_abi_surfaces(tmp_path: Path) -> None:
-    owners = tmp_path / "CODEOWNERS"
-    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
-    owners.write_text(
-        current.replace("/crates/xyg-wasm/", "/crates/unrelated/").replace(
-            "/spec/wasm/", "/spec/unrelated/"
-        ),
-        encoding="utf-8",
-    )
-    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
-    assert any("/crates/xyg-wasm/" in error for error in errors)
-    assert any("/spec/wasm/" in error for error in errors)
-
-
-def test_milestone_governance_rejects_later_ownerless_override(tmp_path: Path) -> None:
-    owners = tmp_path / "CODEOWNERS"
-    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
-    owners.write_text(current + "\n/.github/workflows/**\n", encoding="utf-8")
-
-    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
-
-    assert any("/.github/workflows/" in error for error in errors)
-
-
-def test_milestone_governance_ignores_comment_decoys(tmp_path: Path) -> None:
-    owners = tmp_path / "CODEOWNERS"
-    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
-    owners.write_text(
-        current.replace(
-            "/scripts/classify_release_surface.py @CurateLabs/curate-labs-tech",
-            "# /scripts/classify_release_surface.py @CurateLabs/curate-labs-tech",
-        ),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
-
-    assert any("/scripts/classify_release_surface.py" in error for error in errors)
 
 
 def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
