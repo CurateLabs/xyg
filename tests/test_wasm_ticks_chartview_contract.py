@@ -25,18 +25,20 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "const wasmTicks = this._wasmTicks?.ticks?.(axisId)" in chartview
     assert "this._wasmTicks?.label?.(axisId, Number(value))" in chartview
     assert "this._wasmTicks?.covers?.(axisId)" in chartview
-    assert chartview.index("const wasmTicks = this._wasmTicks?.ticks?.(axisId)") < chartview.index(
-        "if (Array.isArray(axis.tick_values))"
-    )
-    assert chartview.index("this._wasmTicks?.covers?.(axisId)") < chartview.index(
-        "if (Array.isArray(axis.tick_values))"
-    )
+    assert 'source: "failed-closed"' in chartview
+    assert "linearTicks(" not in chartview
+    assert "logTicks(" not in chartview
+    assert "angularTicks(" not in chartview
+    assert "fmtAxis(" not in chartview
     assert "ownedSlot" in ticks
     assert "slotEligible" in ticks
+    assert 'axis.tick_resolution === "rust_scene"' in ticks
     assert "eligible(axisId: unknown)" in ticks
-    assert "colorbar: 3" in ticks
+    assert 'const MINOR_SUFFIX = "::minor"' in ticks
     assert "frameColorbar" in ticks
-    assert "_colorbarCompatibilityTicks()" in chartview
+    assert "_colorbarResolvedTicks(minor)" in chartview
+    assert 'axisId.endsWith("::minor")' in chartview
+    assert "axis?.minor_tick_values" in chartview
     assert 'this._wasmTicks?.covers?.("colorbar")' in chartview
     assert "this._syncColorbarWasmTicks()" in chartview
     assert 'source: "wasm"' in ticks
@@ -64,6 +66,8 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
         "frame.key === this.admittedKey || (frame.key === this.requestedKey && this.task)" in ticks
     )
     assert "this.view._layout()" not in ticks
+    assert "this.view._resize(this.view.size?.w, this.view.size?.h, true)" in ticks
+    assert "view._resize(view.size?.w, view.size?.h, true)" in ticks
     assert "this.view.draw()" in ticks
     assert '"wasm_ticks_error"' in ticks
     assert "this.view._wasmTicks === this" in ticks
@@ -75,7 +79,8 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert 'retainedXTicks.source !== "wasm"' in browser
     assert "uncovered after attach does not emit" in browser
     assert "sequential ChartView tick re-attach replaces the previous handle" in browser
-    assert "secondary ChartView axes stay on the compatibility tick path" in browser
+    assert "secondary ChartView axes use Rust/WASM" in browser
+    assert "secondary ChartView axis identity replacement uses a fresh Rust request" in browser
     assert "newly eligible axis after attach does not paint empty wasm" in browser
     assert "primary Cartesian ChartView category and UTC-time ticks use Rust/WASM" in browser
     assert "primary Cartesian ChartView authored and authored-empty ticks use Rust/WASM" in browser
@@ -87,6 +92,10 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "authored ChartView colorbar ticks use Rust/WASM" in browser
     assert "newly eligible colorbar after attach does not paint empty wasm" in browser
     assert "scene-placed ChartView colorbar stays off the XYTK lane" in browser
+    assert "Rust Scene major/minor axes remain ineligible for XYTK replacement" in browser
+    assert "polar angular and radial ChartView ticks use Rust/WASM" in browser
+    assert "polarMinorPaint" in browser
+    assert "unattached and invalid host tick assets fail closed with stable diagnostics" in browser
 
 
 def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
@@ -106,7 +115,7 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "and ChartView may admit" in api
     assert "GL lifecycle" not in api
     assert "this.view._glLost" not in ticks
-    assert "Angular/polar and secondary-axis" in api
+    assert "secondary" in api and "polar" in api
     assert "authored-value, and authored-empty" in api
     assert "authored-value, and authored-empty" in design
     assert '"utc_time"' in ticks
@@ -115,14 +124,32 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "this.cache.get(slot)?.identity === this.slotIdentity(slot)" in ticks
     assert "Hosted `to_html(" in api
     assert "xyg/static/" in api
-    assert "Blob-worker HTML remains" in design
-    assert "M2 #59 disposition and follow-up work" in design
-    assert "frozen deferred" in design
-    assert "claimed M2 subset" in design
+    assert "fail closed" in design
+    assert "#869" in design
     assert "attachHostWasmTicks" in entries
     assert "axis.theta_unit" in ticks
-    assert 'if (eligible) throw new TypeError("tick range must be finite")' in ticks
+    assert 'throw new TypeError("tick range must be finite")' in ticks
     assert "return null;" in ticks
     assert "lastErrorKey" in api
     assert "`_layout()`" in api
     assert "eligible" in design
+
+
+def test_tick_module_is_presentation_only_and_ownership_is_closed() -> None:
+    source = (ROOT / "js" / "src" / "30_ticks.ts").read_text(encoding="utf-8")
+    ledger = (ROOT / "spec" / "design" / "ownership-audit.json").read_text(encoding="utf-8")
+    for forbidden in (
+        "linearTicks",
+        "logTicks",
+        "categoryTicks",
+        "timeTicks",
+        "calendarTicks",
+        "angularTicks",
+        "niceStep",
+        "fmtAxis",
+        "TIME_STEPS",
+    ):
+        assert forbidden not in source
+    assert "export function fmtValue" in source
+    assert '"policy": "browser-tick-presentation"' in ledger
+    assert '"browser-scene-migration"' not in ledger

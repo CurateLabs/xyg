@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import xyg
-from conftest import run_browser_probe
+from conftest import probe_document, run_browser_probe
 from xyg.export import find_chromium
 
 
@@ -304,12 +304,11 @@ def test_svg_explicit_colorbar_ticks_preserve_authored_precision() -> None:
     assert ">2.987<" in svg
 
 
-def _browser_colorbar_probe(chromium: str, document: str, page: Path) -> dict:
-    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
-    assert render_call in document
-    probe = """
-  const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);
+def _browser_colorbar_probe(chromium: str, chart: xyg.Chart, page: Path) -> dict:
+    probe = """<script>
+(() => {
   try {
+    const view = window.__fcProbeView;
     // Bare rAF may not tick under --virtual-time-budget --dump-dom. Drain the
     // initial scheduled draw synchronously before inspecting browser chrome.
     view._drawNow();
@@ -330,10 +329,11 @@ def _browser_colorbar_probe(chromium: str, document: str, page: Path) -> dict:
       String((err && err.stack) || err)
     );
   }
-"""
+})();
+</script>"""
     return run_browser_probe(
         chromium,
-        document.replace(render_call, probe),
+        probe_document(chart, probe),
         page,
         "data-xy-colorbar-probe",
         label="colorbar chrome probe",
@@ -351,7 +351,7 @@ def test_declarative_colorbar_reaches_browser_chrome(tmp_path: Path) -> None:
         height=300,
     )
 
-    result = _browser_colorbar_probe(chromium, chart.to_html(), tmp_path / "colorbar.html")
+    result = _browser_colorbar_probe(chromium, chart, tmp_path / "colorbar.html")
 
     assert result["exists"] is True
     assert result["title"] == "Intensity"

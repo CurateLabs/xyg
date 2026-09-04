@@ -82,9 +82,10 @@ merged at `8752bd95a` (includes host-parity landing gate in CI). Post-merge
 verification: `make check-host-parity` green on `main`.
 Disposition parity: 0 `python-scene-migration`, 0 `node-scene-migration`; honest
 keep-host inventories for Python (~80 files) and Node (~30 files) in
-`audit_python_host_core.py`. Browser: `49_wasm_ticks.ts` adapter + `30_ticks.ts`
-documented compatibility fallback (follow-up #869; #59 covered the narrower
-cutover). Reproduce with `make check-host-parity` (or
+`audit_python_host_core.py`. Browser issue #869 removes the final
+`browser-scene-migration` entry: `49_wasm_ticks.ts` is a thin all-axis
+Rust/WASM adapter, while `30_ticks.ts` is presentation-only. Reproduce with
+`make check-host-parity` (or
 `python3 scripts/audit_host_parity_landing.py`); CI runs the same orchestrator in
 the `test` job after `uv sync`.
 
@@ -117,15 +118,19 @@ parity; blocked by #856), [#858](https://github.com/CurateLabs/xyg/issues/858)
 
 #860 kept the remaining copies visible. Follow-up
 [#868](https://github.com/CurateLabs/xyg/issues/868) closes the palette residual
-with one Rust-owned versioned contract (native ABI 360 / WASM ABI 25), while
-`js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
-[#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
-closed a narrower delivered subset. The host-only close bar does not claim
-that secondary/polar/unattached browser tick policy is closed. The executable
+with one Rust-owned versioned contract (native ABI 360 / WASM ABI 25). Follow-up
+[#869](https://github.com/CurateLabs/xyg/issues/869) closes the second residual
+by moving packed resolution into the shared engine, covering secondary/polar/
+minor/colorbar slots, and making unattached/invalid paths fail closed.
+Historical parent #59 closed the narrower Worker foundation. The executable
 `default-palette` journey runs both dedicated host tests against
 `tests/fixtures/default_palette_contract.json` and requires traces for the
 version, row-count, UTF-8, and RGBA8 ABI entries on each host; removing either
 host's Rust consumption therefore fails `make check-host-parity`.
+The executable `ticks` journey likewise runs the Python and Node packed-tick
+fixtures and requires both traces to include `xyg_tick_resolve_packed`; its
+malformed cases pin embedded-NUL and request-irrelevant-plane rejection across
+native and real-browser WASM hosts.
 
 The #856/#857 implementation admits Rust-resolved autorange for primary-axis
 geometry and proves exact Python/Node Scene, SVG, and raster-command identity

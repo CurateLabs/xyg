@@ -664,16 +664,20 @@ F3, still pending (above).
   explicit-label precedence and default-label fallback, then emits existing
   explicit-major plus `XYTL` records. Scene stays v25, legacy raw `XYAD`
   remains valid, and the envelope keeps the batch function below Koffi's
-  64-parameter ceiling. WASM ABI 23 exposes the same Rust-owned f64 ladders and
-  labels through an atomic, bounded Worker request. `attachWasmTicks` now
-  schedules attached automatic, authored-value, and authored-empty primary
-  Cartesian linear/log/symlog/category/UTC-time ChartView
-  axes and eligible ChartView colorbars onto that lane. Hosted `to_html()`,
+  64-parameter ceiling. The tick seam introduced in WASM ABI 23 is carried by
+  current WASM ABI 26 and exposes the same Rust-owned f64 ladders and labels
+  through an atomic, bounded Worker request. Native ABI 360 moved packed XYTK/
+  XYTO into `xyg-engine`; current ABI 361 carries the same capacity-aware proof seam.
+  `attachWasmTicks` schedules attached automatic, authored-value, and
+  authored-empty primary/secondary Cartesian, polar angular/radial, authored
+  minor, and eligible colorbar slots onto that lane. Hosted `to_html()`,
   notebook widgets, and Reflex `XYChart` attach via packaged Worker/WASM URLs;
   real-browser Reflex packaged-attach proof is tracked by
-  the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Polar/secondary families are frozen deferred
-  compatibility keepers outside the claimed M2 subset, and srcdoc notebooks
-  retain their documented JavaScript tick path.
+  the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Missing, invalid, pending, or unattached dynamic tick slots fail closed; Rust Scene-resolved descriptors remain paintable. `30_ticks.ts` has no canonical ladder or axis formatter.
+  Once Rust labels arrive, ChartView remeasures the actual host font and runs
+  its complete resize path so gutters, mark canvas, chrome, titles, and
+  interaction geometry move atomically; direct-browser proofs require the
+  formatted/title, category/time, and authored-label revisions to settle.
   ABI 97 generalizes the parallel step-mode column to `expansion_modes` and
   removes static ribbon tessellation from the hosts. Python and Node pack two
   adjacent endpoint rows per finite literal solid ribbon; Rust applies the

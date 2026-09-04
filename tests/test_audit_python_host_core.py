@@ -145,8 +145,9 @@ def test_audit_cli_exits_zero():
     assert "Cross-host disposition parity" in proc.stdout
     assert "node-scene-migration files: 0" in proc.stdout
     assert "WASM / browser host parity inventory" in proc.stdout
-    assert "Browser tick policy remains OPEN under #869" in proc.stdout
-    assert "browser-scene-migration compatibility generators: 1" in proc.stdout
+    assert "Browser tick policy is closed by #869" in proc.stdout
+    assert "browser-scene-migration files: 0" in proc.stdout
+    assert "browser-scene-migration compatibility generators:" not in proc.stdout
     assert "browser-wasm-adapter modules:" in proc.stdout
     differential = proc.stdout.split("differential proof contracts:", 1)[1].split(
         "structural adapter contracts", 1

@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import run_browser_probe
+from conftest import probe_document, run_browser_probe
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
@@ -542,17 +542,7 @@ def test_narrow_fluid_resize_stays_painted_and_preserves_plot_space() -> None:
         padding=[72, 106, 70, 92],
     )
 
-    document = chart.to_html()
-    render_call = next((call for call in _RENDER_CALLS if call in document), None)
-    assert render_call is not None
-    document = document.replace(
-        render_call,
-        render_call.replace(
-            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
-        ),
-        1,
-    )
-    document = document.replace("</body>", _ATOMIC_RESIZE_PROBE + "\n</body>", 1)
+    document = probe_document(chart, _ATOMIC_RESIZE_PROBE)
 
     with tempfile.TemporaryDirectory() as td:
         payload = _probe_atomic_resize(chromium, document, Path(td) / "atomic_resize.html")
@@ -569,7 +559,7 @@ def test_narrow_fluid_resize_stays_painted_and_preserves_plot_space() -> None:
     # width and plot-space assertions above are what keep the fix free: restacking
     # the endpoints costs no side gutter, so the collapse still hands the plot the
     # room it was collapsing for.
-    assert payload["compactState"]["visibleTicks"] == ["0", "1"], payload
+    assert payload["compactState"]["visibleTicks"] == ["0.00", "1.00"], payload
     assert payload["compactState"]["titleHidden"] is True, payload
     hidden = payload["compactState"]["hiddenChrome"]
     assert hidden == payload["compactState"]["chromeCount"] - 2, payload
@@ -775,17 +765,7 @@ def test_browser_named_axis_category_state_and_tick_chrome_are_independent(
             },
         }
 
-    document = chart.to_html()
-    render_call = next((call for call in _RENDER_CALLS if call in document), None)
-    assert render_call is not None
-    document = document.replace(
-        render_call,
-        render_call.replace(
-            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
-        ),
-        1,
-    )
-    document = document.replace("</body>", _AXIS_CATEGORY_PROBE + "\n</body>", 1)
+    document = probe_document(chart, _AXIS_CATEGORY_PROBE)
 
     with tempfile.TemporaryDirectory() as td:
         payload = _probe_axis_categories(chromium, document, Path(td) / "axis_categories.html")

@@ -14,7 +14,7 @@ MANIFEST = ROOT / "spec" / "wasm" / "abi.json"
 RUST = ROOT / "crates" / "xyg-wasm" / "src" / "lib.rs"
 AGGREGATE_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "aggregate.rs"
 GRAPH_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "graph.rs"
-TICKS_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "ticks.rs"
+TICKS_RUST = ROOT / "crates" / "xyg-engine" / "src" / "packed_ticks.rs"
 OUTPUT = ROOT / "js" / "src" / "wasm_abi_generated.ts"
 RUST_TYPED_SERIES_OUTPUT = ROOT / "crates" / "xyg-wasm" / "src" / "typed_series_abi_generated.rs"
 PYTHON_AGGREGATE_OUTPUT = ROOT / "python" / "xyg" / "_wasm_aggregate_generated.py"
@@ -342,6 +342,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TICKS_REQUEST_DESCRIPTOR_BYTES = {int(ticks['request_descriptor_bytes'])} as const;",
         f"export const XYG_WASM_TICKS_REQUEST_HEADER_OFFSETS = {json.dumps(ticks['request_header_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TICKS_REQUEST_DESCRIPTOR_OFFSETS = {json.dumps(ticks['request_descriptor_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_REQUEST_FLAGS = {json.dumps(ticks['request_flags'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TICKS_FAMILIES = {json.dumps(ticks['families'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TICKS_PROVENANCE = {json.dumps(ticks['provenance'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TICKS_OUTPUT_HEADER_BYTES = {int(ticks['output_header_bytes'])} as const;",
@@ -748,6 +749,15 @@ def verify_rust(manifest: dict[str, object]) -> None:
             not in ticks_source
         ):
             raise SystemExit(f"xyg-wasm ticks {rust_name} differs from spec/wasm/abi.json")
+    for rust_name, manifest_name in (
+        ("FLAG_MASK_NONPOSITIVE", "mask_nonpositive"),
+        ("FLAG_MINOR", "minor"),
+    ):
+        match = re.search(rf"pub const {rust_name}: u32 = ([0-9_]+);", ticks_source)
+        if not match or int(match.group(1).replace("_", "")) != int(
+            manifest["ticks"]["request_flags"][manifest_name]
+        ):
+            raise SystemExit(f"xyg-engine packed ticks {rust_name} differs from manifest")
     for rust_name, manifest_name in (
         ("VERSION", "version"),
         ("HEADER_BYTES", "request_header_bytes"),

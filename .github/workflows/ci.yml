@@ -97,6 +97,9 @@ jobs:
           # from the latest `xyg-v*` tag, and a shallow clone has none.
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: false
@@ -136,7 +139,11 @@ jobs:
           node --test packages/xy-node/test/xyts-conformance.test.mjs
 
       - name: Build JS client
-        run: node js/build.mjs
+        run: |
+          # Browser probes exercise the real fail-closed Rust tick attachment;
+          # the Worker without its paired WASM payload is deliberately invalid.
+          node js/build.mjs
+          npm run build:wasm
 
       - name: JS parses (ESM + IIFE)
         run: |
@@ -458,6 +465,9 @@ jobs:
           # from the latest `xyg-v*` tag, and a shallow clone has none.
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
@@ -481,7 +491,10 @@ jobs:
         run: |
           npm ci
           npm ci --prefix packages/xy-node
+          # The Python-floor browser corpus must exercise the same real Rust
+          # tick asset pair shipped in wheels, not an absent/fallback payload.
           node js/build.mjs
+          npm run build:wasm
 
       - name: Install package for Python 3.11
         run: |

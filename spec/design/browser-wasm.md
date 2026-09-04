@@ -2,7 +2,8 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-WASM ABI 23 makes tick resolution one bounded Rust-owned Worker operation.
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 26
+and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
 UTC-time semantics, category tables, and bounded formats are versioned input,
@@ -17,40 +18,59 @@ so a cancelled or disposed request cannot publish a result.
 Tick work is independent and therefore does not cancel compile, density,
 graph, or temporal work. Each axis is capped
 at 200 output positions and 65,536 source categories; label/category text is
-capped at 65,536 UTF-8 bytes per axis, and malformed
-or nonfinite input fails before output.
+capped at 65,536 UTF-8 bytes per axis. Embedded NUL, nonfinite input, and
+category/label/format planes irrelevant to the declared family or request
+provenance are rejected before output across every host.
 
-`attachWasmTicks(view, { worker })` now installs the bounded ChartView
-product cutover: automatic, authored-value, and authored-empty primary
-Cartesian linear, log, symlog, category, and UTC-time axes, plus eligible
-ChartView colorbar axes. The attachment frames every currently eligible x/y
-and colorbar slot, but Rust exclusively chooses positions and labels.
-Eligibility excludes polar, `theta_unit` axes, category axes without a
-non-empty NUL-free string table, Scene-placed colorbars (already Rust-owned
-via `XYCB`), and log colorbars whose domain is not strictly positive. An axis
+`attachWasmTicks(view, { worker })` installs the bounded ChartView product
+cutover for automatic, authored-value, and authored-empty primary and secondary
+Cartesian axes; angular/radial polar axes; authored minor-axis slots; and
+eligible major/minor colorbar slots. Linear, log, symlog, category, UTC-time,
+angular-radian, and angular-degree families are explicit `XYTK` input. Rust
+exclusively chooses positions and labels. Eligibility excludes category axes
+without a non-empty NUL-free string table, Scene-placed axes/colorbars (already
+Rust-owned via painter tick descriptors/`XYCB`), and log domains that are not
+strictly positive. An axis
 is *covered* only after an admitted Rust cache exists for that eligible slot
 and still matches its current family, category table, format, and provenance;
-newly eligible slots or family/provenance switches after mount stay on
-`30_ticks.ts` until that cache arrives and are never painted as empty WASM
-ticks. An admitted `authored_empty` cache is a real empty result, not that
-synthetic pre-admission placeholder. The first current `XYTO` result is
+newly eligible slots or family/provenance switches after mount paint no tick
+positions or labels until that cache arrives. An admitted `authored_empty`
+cache is a real empty result, not that pre-admission fail-close. The first
+current `XYTO` result is
 admitted before the attachment becomes authoritative; later pan/zoom/resize
 requests cancel older work and retain only the last admitted Rust cache until
-a matching sequence and axis revision returns. Admission paints with `draw()`
-only (no `_layout()`). A stale, cancelled, destroyed, or replaced attachment
-cannot publish. Once attached, a covered axis never calls `30_ticks.ts`, even
+a matching sequence and axis revision returns. Admission reconciles the
+Rust-produced label metrics through ChartView's complete forced resize path so
+plot, mark canvas, chrome, titles, and interaction geometry move atomically;
+it never calls `_layout()` alone. An unchanged screen-bounded target
+deduplicates, while a changed target may schedule one current follow-up batch.
+The browser foundation proves formatted/title, category/time, and authored-label
+attachments settle without revision churn. A stale, cancelled, destroyed, or
+replaced attachment cannot publish. No ChartView tick slot calls a TypeScript ladder or axis
+formatter, even
 after a Worker failure. Failed snapshots emit one coalesced
 `xy:wasm_ticks_error` and remain eligible to retry.
 
-This cutover is deliberately explicit and bounded. Angular/polar and secondary
-axes retain their existing compatibility paths. Self-contained
+This cutover is deliberately explicit and bounded. Missing, malformed,
+unattached, or not-yet-admitted WASM fails closed with a stable diagnostic and
+paints no synthetic ticks. A canonical Rust Scene may instead carry tagged
+resolved tick descriptors, which ChartView consumes without recomputation.
+Self-contained
 Blob-worker HTML remains ineligible. Hosted `to_html()`, notebook widgets, and
 Reflex `XYChart` auto-attach when they serve the packaged `wasm-worker.js` and
 `xyg-wasm.wasm` files at explicit same-origin URLs (`workerUrl` stays required;
 there is no path guessing or CDN). The srcdoc notebook iframe cannot load those
-siblings and stays on the JavaScript tick path. The M2-claimed delivery and its
+siblings and fails closed for dynamic ticks. The M2-claimed delivery and its
 deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
+
+M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
+current WASM ABI 26 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+was introduced in WASM ABI 23/native ABI 360. The native function
+uses the capacity-aware probe/write contract and returns `usize::MAX` for an
+invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
+positions, labels, provenance, angular filtering, minor ticks, and failure
+behavior through Python/native, Node/native, and a real browser/WASM Worker.
 
 ## Tier-2 aggregate seam (`XYAG` to `XYAO`)
 
@@ -272,8 +292,10 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 23. ABI 23 adds the bounded `XYTK`/`XYTO` tick resolver
-and its independent Worker sequence lane. ABI 22 retains the bounded `XYSA` v1 envelope and
+`WASM_ABI_VERSION` is 26. ABI 23 introduced the bounded `XYTK`/`XYTO` tick
+resolver and its independent Worker sequence lane; ABI 26 is the current
+contract after the default-palette and stricter packed-tick validation cuts.
+ABI 22 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical
 `XYGS` Scene first, then validates and projects raw Cartesian anchors through
@@ -613,6 +635,27 @@ node scripts/wasm_foundation_smoke.mjs
 node scripts/wasm_html_ticks_smoke.mjs
 node benchmarks/bench_wasm_scene.mjs
 ```
+
+Both the primary full-suite job and the Python 3.11 floor build that real WASM
+payload before running browser probes. The generated Worker alone is not a
+valid fixture: its missing paired payload must retain the production
+fail-closed diagnostic instead of silently selecting a JavaScript tick path.
+The polar phase 6/7 live-example smoke copies that exact packaged pair, serves
+it beside each page over same-origin HTTP under a strict CSP, and captures only
+after `ticks_ready`; categorical polar labels therefore prove Rust admission
+instead of passing through a timing-dependent or canonical JavaScript ladder.
+The interaction-stress benchmark uses the same hosted packaged pair and waits
+for admitted primary axes before timing gestures or auditing label overlap;
+its measurements use real time rather than a Worker-incompatible virtual-time
+controller.
+The dashboard reliability benchmark likewise waits for one admitted primary
+axis pair per successfully created chart before measuring the complete page;
+its 10/20/50/60-chart rows cannot pass with blank fail-closed chrome.
+The direct-browser foundation independently exercises natural asynchronous
+attachment and resize reconciliation without the legacy probe helper's manual
+layout boundary. HTTP-backed browser probes preserve an explicit Chromium
+device-scale-factor request in their Playwright page context, so moving those
+probes off `file:` URLs does not silently reduce high-DPI coverage to DPR 1.
 
 The opt-in Chromium benchmark reports 10k/100k/1M mixed scatter/line/rect
 worker preparation, hydration/upload, two-frame first paint, Scene/painter

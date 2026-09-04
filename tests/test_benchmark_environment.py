@@ -344,7 +344,9 @@ def test_context_governor_reserves_pending_restores() -> None:
 
     visibility_start = client.index("  _armContextVisibilityWatch() {")
     visibility_watch = client[
-        visibility_start : client.index("  _resize(cssW, cssH)", visibility_start)
+        visibility_start : client.index(
+            "  _resize(cssW, cssH, forceLayout = false)", visibility_start
+        )
     ]
     assert 'this._listen(document, "visibilitychange"' in visibility_watch
     assert 'document.visibilityState === "hidden"' in visibility_watch

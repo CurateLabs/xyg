@@ -18,6 +18,7 @@ PALETTE_SYMBOLS = {
     "xyg_default_palette_utf8",
     "xyg_default_palette_rgba8",
 }
+TICK_SYMBOLS = {"xyg_tick_resolve_packed"}
 
 
 def _native_library() -> Path:
@@ -228,6 +229,28 @@ def test_default_palette_journey_is_a_cross_host_versioned_byte_proof() -> None:
     ]
     assert "tests/fixtures/default_palette_contract.json" in journey["output_oracle"]
     assert "xyg.default-palette/v1" in journey["output_oracle"]
+
+
+def test_ticks_journey_is_a_cross_host_executable_delegation_proof() -> None:
+    corpus = json.loads((ROOT / "spec" / "design" / "host-delegation-corpus.json").read_text())
+    journeys = [item for item in corpus["journeys"] if item["id"] == "ticks"]
+    assert len(journeys) == 1
+    journey = journeys[0]
+    assert set(journey["hosts"]) == {"python", "node"}
+    assert set(journey["required_shared_symbols"]) == TICK_SYMBOLS
+    assert journey["commands"] == [
+        [
+            "uv",
+            "run",
+            "pytest",
+            "tests/test_packed_ticks_cross_host.py::test_python_native_packed_ticks_match_exact_fixture",
+            "-q",
+            "--tb=short",
+        ],
+        ["node", "packages/xy-node/scripts/packed_ticks_cross_host.mjs"],
+    ]
+    assert "tests/fixtures/packed_ticks_cross_host.json" in journey["output_oracle"]
+    assert not any(item.get("owner") == "#869" for item in corpus["uncovered"])
 
 
 @pytest.mark.parametrize("host", ["python", "node"])

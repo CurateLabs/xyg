@@ -64,6 +64,7 @@ pub mod legend_fit;
 pub mod legend_layout;
 pub mod lod_plan;
 pub mod payload_emit;
+pub mod packed_ticks;
 #[cfg(feature = "raster")]
 pub mod pdf;
 #[cfg(feature = "raster")]

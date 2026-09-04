@@ -205,7 +205,7 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
     # numeric grammar carries literal prefix/suffix text through to labels.
     import pytest
 
-    from conftest import run_browser_probe
+    from conftest import probe_document, run_browser_probe
     from xyg.export import find_chromium
 
     chromium = find_chromium()
@@ -213,31 +213,39 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
         pytest.skip("Chromium unavailable")
     chart = xyg.scatter_chart(
         xyg.scatter(x=[0.0, 1.0], y=[0.0, 200.0]),
-        xyg.y_axis(domain=(0, 200), format="$.0f"),
+        xyg.y_axis(domain=(0, 200), tick_values=[0, 100, 200], format="$.0f"),
         width=480,
         height=360,
     )
-    html = chart.to_html()
-    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
-    assert render_call in html
-    probe = """
-  const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);
+    probe = """<script type="module">
+const finish = async () => {
   try {
+    const view = window.__fcProbeView;
+    const errors = [];
+    view.root.addEventListener("xy:wasm_ticks_error", (event) => errors.push(event.detail));
+    await window.__xygTickReady;
     view._drawNow();
     const axis = view._axis("y");
     document.body.setAttribute("data-xy-format-affix", JSON.stringify({
       label: view._axisTickText(axis, 100, 50),
+      covers: view._wasmTicks?.covers?.("y") ?? false,
+      ticks: view._axisTicks("y", 6),
+      failure: view._tickFailure ?? null,
+      errors,
     }));
   } catch (error) {
     document.body.setAttribute(
       "data-xy-format-affix-error", String((error && error.stack) || error));
   }
-"""
+};
+finish();
+</script>"""
     result = run_browser_probe(
         chromium,
-        html.replace(render_call, probe),
+        probe_document(chart, probe),
         tmp_path / "format_affix.html",
         "data-xy-format-affix",
         label="format affix probe",
     )
-    assert result["label"] == "$100"
+    assert result["errors"] == [], result
+    assert result["label"] == "$100", result

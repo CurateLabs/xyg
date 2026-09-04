@@ -73,6 +73,17 @@ counters unchanged on success and attaches them to public `XygWasmError`
 failures after initialization; TypeScript neither reconstructs byte counts nor
 estimates retained Rust resources.
 
+Dynamic tick resolution is likewise one shared implementation. Packed `XYTK`
+parsing, linear/log/symlog/category/time/angular generation, modular authored
+filtering, minor subdivision, formatting, and packed `XYTO` output live in
+`xyg-engine::packed_ticks`. The seam was introduced in WASM ABI 23 and native
+ABI 360; current WASM ABI 26 re-exports that module and current native ABI 361
+provides the capacity-aware `xyg_tick_resolve_packed` twin used by Python and
+Node. `tests/fixtures/packed_ticks_cross_host.json` is byte-exact across those
+two native hosts and the real-browser Worker proof. TypeScript owns viewport
+framing/admission and DOM paint only; absent or invalid Rust output fails
+closed.
+
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
 exact Scene v23 output under a local-only strict CSP. Native Python and Node
@@ -1178,15 +1189,14 @@ labels and gutters, and emits existing explicit-major plus `XYTL` bytes. Shared
 fixtures pin exact Python/Node formatted Scene bytes and the Node forwarding of
 scale kind, symlog constant, and log nonpositive policy. Explicit authored
 labels win, invalid grammar retains default labels, and legacy raw `XYAD`
-annotation input remains accepted. WASM ABI 23 adds a bounded, atomic Worker
-foundation for Rust-owned f64 linear/log/symlog/category/angular/UTC-time
-values, steps, and formatting. Attached automatic, authored-value, and
-authored-empty primary Cartesian linear/log/symlog/category/UTC-time ChartView
-axes and eligible ChartView colorbars already use that lifecycle via
-`attachWasmTicks`. Hosted `to_html()`, notebook widgets, and Reflex `XYChart`
-attach when they pass explicit Worker/WASM URLs; srcdoc notebooks and
-secondary/polar paths remain frozen deferred compatibility keepers outside the
-claimed M2 subset.
+annotation input remains accepted. The bounded, atomic Worker seam introduced
+in WASM ABI 23 is carried by current WASM ABI 26 for Rust-owned f64
+linear/log/symlog/category/angular/UTC-time
+values, steps, and formatting. M2 #869 generalizes `attachWasmTicks` to
+primary/secondary Cartesian, polar angular/radial, authored minor, and eligible
+colorbar slots. Hosted `to_html()`, notebook widgets, and Reflex `XYChart`
+attach when they pass explicit Worker/WASM URLs; srcdoc and other unattached
+paths fail closed instead of running a canonical TypeScript fallback.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust
 Scene consumers and public PDF consumes their Rust SVG. The shared predicate

@@ -94,7 +94,7 @@ def test_reversed_polar_radial_axis_keeps_bar_and_area_visible(tmp_path: Path) -
     )
     probe = """
 <script>
-setTimeout(() => {
+    setTimeout(() => {
   try {
     const view = window.__fcProbeView;
     view._drawNow();
@@ -895,7 +895,7 @@ def test_client_keeps_explicit_theta_ticks_across_the_seam(tmp_path: Path) -> No
     )
     probe = """
 <script>
-setTimeout(() => {
+setTimeout(async () => {
   try {
     const view = window.__fcProbeView;
     view._drawNow();
@@ -906,6 +906,10 @@ setTimeout(() => {
     const realSector = axis.sector;
     axis.sector = [0, 180];
     axis.tick_values = [0, 45, 90, 200, -10];
+    view._wasmTicks.schedule();
+    for (let attempt = 0; attempt < 100 && !view._wasmTicks.covers("x"); attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
     const bounded = view._axisTicks("x", 6).ticks.slice();
     axis.sector = realSector;
     const radial = view._axisTicks("y", 6).ticks.slice();

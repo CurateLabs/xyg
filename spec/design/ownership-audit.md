@@ -294,14 +294,16 @@ final labels (including invalid-format
 fallback, log sub-unit collapse protection, and explicit-label precedence),
 and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
-UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
-the compatibility path for unattached charts and frozen deferred tick families.
-WASM ABI
-23 plus `attachWasmTicks` now cut explicitly attached automatic, authored-value,
-and authored-empty primary Cartesian linear/log/symlog/category/UTC-time
-ChartView axes and eligible ChartView colorbars to the Rust resolver and
-independent Worker lane. Polar, secondary axes, unattached charts, Blob-worker
-HTML, and the srcdoc notebook iframe remain on the frozen compatibility path.
+UTF-8 through the versioned ABI envelope. M2 #869 removes canonical axis
+policy from `js/src/30_ticks.ts`; it retains only presentation-oriented tooltip
+formatting. The tick seam introduced in WASM ABI 23, now WASM ABI 26, plus
+`attachWasmTicks` cuts attached primary/secondary
+Cartesian, polar angular/radial, authored minor, and eligible colorbar slots to
+the Rust resolver and independent Worker lane. Native ABI 360 introduced the
+packed proof seam; current native ABI 361 carries it for Python/Node parity.
+Unattached, invalid, pending,
+Blob-worker HTML, and srcdoc notebook paths fail closed instead of generating
+ticks in TypeScript.
 Hosted `to_html()`,
 notebook widgets, and Reflex can attach when they serve the packaged
 Worker/WASM files at explicit URLs; this is not the all-host ChartView cutover.
@@ -350,13 +352,11 @@ Secondary §302 composition hubs are closed: marks, `_figure`, channels, lod, fa
 
 Practical parity is proven by the executable delegation corpus, cross-host
 differential tests (`tests/test_*cross_host*.py`), and ABI smoke—not by
-migration tags, source counts, or native-looking call expressions. Remaining
-browser debt is **open**, not part of the closed host-only bar:
-`js/src/30_ticks.ts` stays `browser-scene-migration` with follow-up
-[#869](https://github.com/CurateLabs/xyg/issues/869) until
-secondary/polar/unattached ChartView tick generation and formatting move to
-Rust/WASM. Historical parent #59 closed a narrower delivered subset and is not
-an actionable open owner for this residual.
+migration tags, source counts, or native-looking call expressions. Follow-up
+[#869](https://github.com/CurateLabs/xyg/issues/869) removes the final browser
+migration tag: `30_ticks.ts` is presentation-only, shared Rust owns XYTK/XYTO
+resolution, and every uncovered ChartView tick slot fails closed. Historical
+parent #59 closed the narrower Worker foundation.
 
 The default eight-color categorical palette and first mark color are now one
 versioned Rust-engine contract ([#868](https://github.com/CurateLabs/xyg/issues/868),
@@ -469,7 +469,7 @@ eligibility uses the existing LINE|BAND bits (no new ABI). ABI 237 `xyg_scene_he
 
 | Policy | Files | Disposition | Destination |
 | --- | ---: | --- | --- |
-| `rust-engine` | 16 | `keep-rust` | current owner |
+| `rust-engine` | generated inventory | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
 | `rust-wasm-abi` | 1 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
 | `python-host` | 168 | `keep-host` | current owner |
@@ -478,8 +478,8 @@ eligibility uses the existing LINE|BAND bits (no new ABI). ABI 237 `xyg_scene_he
 | `node-host` | 42 | `keep-host` | current owner |
 | `node-scene-migration` | 0 | — | [#58](https://github.com/CurateLabs/xyg/issues/58) closed for §302 Node marshal parity |
 | `node-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
-| `browser-client` | 16 | `keep-shared-client` | current owner |
-| `browser-scene-migration` | 1 | `move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `browser-client` | generated inventory | `keep-shared-client` | current owner |
+| `browser-tick-presentation` | 1 | `keep-shared-client` | current owner |
 | `browser-wasm-migration` | 1 | `replace-with-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
 | `browser-wasm-adapter` | 2 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
 | `browser-wasm-generated` | 1 | `generate` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
@@ -619,22 +619,17 @@ Forbidden:
 - Canonical layout, tick generation, data aggregation, encoding, or full-data row scans.
 - Node-only modules, Koffi, filesystem access, or a second renderer.
 
-### `browser-scene-migration`
+### `browser-tick-presentation`
 
-Owner: Shared TypeScript client with canonical-policy debt. Disposition: `move-rust` under [#58](https://github.com/CurateLabs/xyg/issues/58).
+Owner: shared TypeScript browser presentation. Disposition:
+`keep-shared-client` after #869.
 
-Allowed:
+Allowed: tooltip and general value display formatting that does not choose
+axis tick positions or labels.
 
-- Temporary tick consumption and browser-specific label presentation during scene migration.
-- The existing TypeScript generator stays frozen for unattached charts and the
-  angular/polar/secondary compatibility paths.
-  An explicitly attached automatic, authored-value, or authored-empty primary
-  Cartesian linear/log/symlog/category/UTC-time axis or eligible colorbar
-  consumes only Rust-produced positions and labels for each view and resize.
-
-Forbidden:
-
-- Expanding canonical tick generation or layout policy in TypeScript.
+Forbidden: canonical axis/colorbar ladders, authored-window filtering, minor
+interpolation, or axis-label formatting. Machine guards reject the historical
+generator/formatter names and the UTC-time step table.
 
 ### `browser-wasm-migration`
 
@@ -725,6 +720,7 @@ Forbidden:
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 122 compile-time payload tier + visible mask; ABI 204 line M4 emit indices; ABI 205 emit visible/even/sample indices | — |
+| `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 26/native ABI 361 | — |
 | `crates/xyg-engine/src/density_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 132 first-paint density emit policy | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/png_encode.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -790,7 +786,7 @@ Forbidden:
 | `js/src/00_header.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/10_colormaps.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/20_theme.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
-| `js/src/30_ticks.ts` | Shared TypeScript client with canonical-policy debt | `browser-scene-migration` | `move-rust` | #869 |
+| `js/src/30_ticks.ts` | Shared TypeScript browser presentation | `browser-tick-presentation` | `keep-shared-client`; tooltip/presentation formatting only | — |
 | `js/src/40_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |

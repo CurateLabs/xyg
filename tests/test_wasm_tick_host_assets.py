@@ -91,6 +91,32 @@ def test_copy_wasm_tick_assets_writes_exact_packaged_bytes(tmp_path: Path) -> No
     assert written["wasm"].read_bytes() == (STATIC / export.WASM_TICK_WASM).read_bytes()
 
 
+def test_polar_live_smoke_requires_real_same_origin_wasm_ticks() -> None:
+    source = (ROOT / "scripts" / "polar_phase7_smoke.py").read_text(encoding="utf-8")
+    interaction = (ROOT / "benchmarks" / "bench_interaction.py").read_text(encoding="utf-8")
+    dashboard = (ROOT / "benchmarks" / "bench_dashboard.py").read_text(encoding="utf-8")
+
+    assert "copy_wasm_tick_assets(output_dir)" in source
+    assert '"workerUrl": "./wasm-worker.js"' in source
+    assert '"wasm": "./xyg-wasm.wasm"' in source
+    assert "http.server.ThreadingHTTPServer" in source
+    assert "globalThis.__xygStandaloneObserver" in source
+    assert 'event.phase === "ticks_error"' in source
+    assert '"ticks_ready", "ticks_error"' in source
+    assert "data-xy-polar-smoke" in source
+    assert '"workerUrl": "./wasm-worker.js"' in interaction
+    assert '"wasm": "./xyg-wasm.wasm"' in interaction
+    assert "const tickEvent = await ticksReady" in interaction
+    assert "hosted=True" in interaction
+    assert "wasm_ticks=True" in interaction
+    assert '"workerUrl": "./wasm-worker.js"' in dashboard
+    assert '"wasm": "./xyg-wasm.wasm"' in dashboard
+    assert 'event.phase !== "ticks_ready"' in dashboard
+    assert "tick_ready_charts" in dashboard
+    assert "hosted=True" in dashboard
+    assert "wasm_ticks=True" in dashboard
+
+
 def test_bundled_wasm_tick_assets_fail_closed_when_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

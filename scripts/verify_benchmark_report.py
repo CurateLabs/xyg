@@ -1572,6 +1572,7 @@ def _validate_dashboard_browser(report: dict[str, Any], errors: list[str]) -> No
                     "startup_unique_shader_sources",
                     "startup_program_create_calls",
                     "startup_program_link_calls",
+                    "tick_ready_charts",
                     "pick_probe_charts",
                     "pick_probe_chart_ids",
                     "post_pick_shader_compile_calls",
@@ -1632,6 +1633,7 @@ def _validate_dashboard_browser(report: dict[str, Any], errors: list[str]) -> No
                 "steady_redraw_active_charts",
                 "created_charts",
                 "creation_failed_charts",
+                "tick_ready_charts",
                 "nonblank_charts",
                 "initial_nonblank_charts",
                 "scroll_nonblank_charts",
@@ -1890,6 +1892,7 @@ def _validate_dashboard_telemetry(row: dict[str, Any], path: str, errors: list[s
         "steady_redraw_active_charts",
         "created_charts",
         "creation_failed_charts",
+        "tick_ready_charts",
         "nonblank_charts",
         "initial_nonblank_charts",
         "scroll_nonblank_charts",
@@ -1912,6 +1915,8 @@ def _validate_dashboard_telemetry(row: dict[str, Any], path: str, errors: list[s
         errors.append(f"{path}.nonblank_charts must equal initial_nonblank_charts")
     if row.get("created_charts") != chart_count - len(ids["creation_failure_ids"]):
         errors.append(f"{path}.created_charts must equal chart_count minus creation failures")
+    if row.get("tick_ready_charts") != row.get("created_charts"):
+        errors.append(f"{path}.tick_ready_charts must equal created_charts")
     if row.get("steady_redraw_active_charts") != row.get("created_charts", 0) - len(
         ids["currently_lost_chart_ids"]
     ):

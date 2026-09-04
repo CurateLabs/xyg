@@ -1113,12 +1113,17 @@ documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
 slice above and ABI 202 Scene product-path time/angular formatting
 and ABI 203 Scene cartesian ABI 123 collision emit.
-WASM ABI 23 plus `attachWasmTicks` cut
-explicitly attached automatic, authored-value, and authored-empty primary
-Cartesian linear/log/symlog/category/UTC-time ChartView
-axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`
-stays the compatibility generator for unattached charts and the frozen
-deferred polar/secondary families.
+The tick seam introduced in WASM ABI 23, now WASM ABI 26, plus
+`attachWasmTicks` cuts explicitly attached automatic,
+authored-value, and authored-empty primary/secondary Cartesian, polar
+angular/radial, authored minor, and eligible colorbar slots to the shared
+`xyg-engine::packed_ticks` resolver. Native ABI 360 introduced the same packed
+capacity-aware `xyg_tick_resolve_packed` proof seam; current ABI 361 carries it.
+Canonical Scene painter axes carry `tick_resolution: "rust_scene"` and their
+resolved descriptors remain consumable without a Worker. Every other
+unattached, pending, invalid, or failed ChartView slot paints no ticks and
+reports a stable diagnostic; `js/src/30_ticks.ts` contains presentation-only
+tooltip value formatting, not a tick ladder or axis formatter.
 
 ## Version 25 Band outline topology
 

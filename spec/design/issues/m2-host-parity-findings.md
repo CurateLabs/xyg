@@ -19,11 +19,11 @@
 
 #860 bounded two residuals. Default-palette copies are closed by
 [#868](https://github.com/CurateLabs/xyg/issues/868) through native ABI 360 and
-direct WASM ABI 25; Python/Node now consume the single Rust-owned contract. The
-`js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
-[#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
-closed a narrower subset. The tick residual is not described as a closed
-browser-policy cutover.
+direct WASM ABI 25; Python/Node consume the single Rust-owned contract.
+Follow-up [#869](https://github.com/CurateLabs/xyg/issues/869) removes the
+`js/src/30_ticks.ts` migration classification by moving packed tick policy to
+Rust and making uncovered browser slots fail closed; historical parent #59
+closed the narrower Worker foundation.
 
 Canonical write-up: [`m2-close.md`](../../process/m2-close.md) (post-landing
 follow-on section). Prior emit/pack contract stays [#731](https://github.com/CurateLabs/xyg/issues/731)

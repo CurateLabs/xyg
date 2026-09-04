@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 import pytest
 
 import xyg
-from conftest import run_browser_probe
+from conftest import probe_document, run_browser_probe
 from xyg import _svg
 from xyg.export import find_chromium
 
@@ -73,11 +73,7 @@ def _probe(chart: xyg.Chart, script: str, tmp_path: Path, name: str) -> dict:
     chromium = find_chromium()
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    document = chart.to_html()
-    render_call = document.rfind("xy.renderStandalone(")
-    assert render_call >= 0
-    document = document[:render_call] + "window.__xyIssueView = " + document[render_call:]
-    document = document.replace("</body>", f"<script>{script}</script>\n</body>", 1)
+    document = probe_document(chart, f"<script>{script}</script>")
     return run_browser_probe(
         chromium,
         document,
@@ -90,8 +86,9 @@ def _probe(chart: xyg.Chart, script: str, tmp_path: Path, name: str) -> dict:
 _PRELUDE = """
 (async () => {
   try {
-    const view = window.__xyIssueView;
+    const view = window.__fcProbeView;
     if (!view) throw new Error("chart view was not captured");
+    view._layout();
     view._drawNow();
     view._raf = null;
 """

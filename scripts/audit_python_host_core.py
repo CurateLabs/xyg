@@ -495,9 +495,9 @@ def _print_keep_host_policy_audit(manifest_path: Path) -> None:
             print(f"    - {rel}: {n_lines} lines, {n_delegate} delegate, {n_local} local")
         if len(node_migration) > 8:
             print(f"    - ... and {len(node_migration) - 8} more")
+    browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_paths)
+    print(f"  browser-scene-migration files: {len(browser_paths)} ({browser_lines} lines)")
     if browser_paths:
-        browser_lines = sum(_analyze(ROOT / rel)[0] for rel in browser_paths)
-        print(f"  browser-scene-migration files: {len(browser_paths)} ({browser_lines} lines)")
         for rel in browser_paths:
             n_lines, _, _ = _analyze(ROOT / rel)
             print(f"    - {rel}: {n_lines} lines")
@@ -518,10 +518,10 @@ def _print_wasm_parity_audit(manifest: dict) -> None:
 
     print("WASM / browser host parity inventory:")
     print(
-        "  ChartView primary Cartesian + colorbar ticks consume Rust/WASM via "
-        "js/src/49_wasm_ticks.ts; js/src/30_ticks.ts is the documented compatibility "
-        "fallback for uncovered axes. Browser tick policy remains OPEN under #869; "
-        "this inventory does not count the fallback as parity proof."
+        "  ChartView primary/secondary Cartesian, polar, minor, and colorbar ticks "
+        "consume Rust/WASM via js/src/49_wasm_ticks.ts; js/src/30_ticks.ts is "
+        "presentation-only. Browser tick policy is closed by #869; uncovered slots "
+        "fail closed and exact cross-host fixtures provide parity proof."
     )
     print(f"  browser-client paint modules: {len(browser_client_paths)}")
     print(

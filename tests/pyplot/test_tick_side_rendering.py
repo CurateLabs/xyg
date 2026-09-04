@@ -291,7 +291,8 @@ def test_browser_source_consumes_tick_sides_for_every_axis_path() -> None:
     source = (ROOT / "js" / "src" / "50_chartview.ts").read_text(encoding="utf-8")
     assert "_axisTickSides(axis)" in source
     assert "Array.isArray(axis && axis.tick_sides)" in source
-    assert source.count("for (const side of this._axisTickSides(") == 4
+    # Four major paths plus dedicated minor Cartesian/polar chrome paths.
+    assert source.count("for (const side of this._axisTickSides(") >= 4
     assert "_axisTickLabelSides(axis)" in source
     assert "Array.isArray(axis && axis.tick_label_sides)" in source
     assert source.count("for (const side of this._axisTickLabelSides(") == 4

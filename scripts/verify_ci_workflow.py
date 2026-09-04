@@ -1380,6 +1380,24 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_job_contains(
         errors,
         jobs,
+        "test",
+        "CI",
+        "real packaged Rust/WASM tick assets for the full browser corpus",
+        "toolchain: 1.96.0",
+        "targets: wasm32-unknown-unknown",
+        "npm run build:wasm",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Build JS client",
+        "ordered JS Worker then Rust/WASM payload build for the full browser corpus",
+        "node js/build.mjs",
+        "npm run build:wasm",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
         "wasm_foundation",
         "CI",
         "direct-browser Rust/WASM foundation",
@@ -1528,6 +1546,19 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_python_floor.py",
         "scripts/check_public_api.py",
         "npm ci --prefix packages/xy-node",
+        "toolchain: 1.96.0",
+        "targets: wasm32-unknown-unknown",
+        "npm run build:wasm",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("python_floor", ""),
+        "Build render client",
+        "ordered JS Worker then Rust/WASM payload build on the Python floor",
+        "npm ci",
+        "npm ci --prefix packages/xy-node",
+        "node js/build.mjs",
+        "npm run build:wasm",
     )
     _require_job_contains(
         errors,

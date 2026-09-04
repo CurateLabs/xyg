@@ -6,6 +6,7 @@ import {
   xyTickWindow,
   xyTickWindowFilter,
   xyTickFormat,
+  xyTickResolvePacked,
   xyLegendBoxLayout,
   xyTextBlockMeasure,
   xyTextBlockRotatedExtent,
@@ -711,6 +712,37 @@ export function axisTicks({
     throw new RangeError("canonical axis ticks exceeded host output limits");
   }
   return { ticks: Array.from(ticks.subarray(0, written)), labeled: Array.from(labeled.subarray(0, labels)), step: step[0] };
+}
+
+/** Resolve canonical packed XYTK bytes through the native Rust twin. */
+export function tickResolvePacked(request) {
+  const input = request instanceof Uint8Array
+    ? request
+    : request instanceof ArrayBuffer
+      ? new Uint8Array(request)
+      : null;
+  if (!input || input.byteLength === 0) {
+    throw new TypeError("packed tick request must be a nonempty Uint8Array or ArrayBuffer");
+  }
+  const rawRequired = xyTickResolvePacked(
+    pointer(input, "const uint8_t *"), BigInt(input.byteLength), null, 0n,
+  );
+  if (rawRequired === USIZE_MAX_64) {
+    throw new RangeError("native packed tick resolver rejected the request");
+  }
+  const required = Number(rawRequired);
+  if (!Number.isSafeInteger(required) || required < 0) {
+    throw new RangeError("native packed tick output exceeds host limits");
+  }
+  const output = new Uint8Array(required);
+  const rawWritten = xyTickResolvePacked(
+    pointer(input, "const uint8_t *"), BigInt(input.byteLength),
+    pointer(output, "uint8_t *"), BigInt(required),
+  );
+  if (rawWritten !== rawRequired) {
+    throw new RangeError("native packed tick resolver returned an unstable size");
+  }
+  return output;
 }
 
 const TICK_LAYOUT_KIND = new Map([

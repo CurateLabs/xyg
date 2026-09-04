@@ -272,10 +272,14 @@ def test_authored_theta_format_wins_over_the_angular_default() -> None:
     assert _svg._fmt_axis(axis, 90.0, 45.0) == "90°"
     # Without a format the angular default still applies.
     assert "deg" not in _svg._fmt_axis({"theta_unit": "degrees", "kind": "linear"}, 90.0, 45.0)
-    # And the client checks the authored spec before the angular branch.
+    # The client keeps the same presentation-only tooltip rule without owning
+    # any canonical tick-generation or label-admission policy.
     ticks = (ROOT / "js/src/30_ticks.ts").read_text(encoding="utf-8")
-    assert "const authored = fmtNumberSpec(v, axis.format);" in ticks
-    assert "return authored || fmtAngle(v, axis.theta_unit, tickStep);" in ticks
+    tooltip = (ROOT / "js/src/52_tooltip.ts").read_text(encoding="utf-8")
+    assert "export function fmtAngle(v, unit, format?: any)" in ticks
+    assert "const authored = fmtNumberSpec(v, format);" in ticks
+    assert "fmtAngle(value, axis.theta_unit, axis.format)" in tooltip
+    assert "fmtAxis(" not in ticks
 
 
 # -- zero-size wedges -------------------------------------------------------

@@ -23,6 +23,7 @@ import {
   XYG_WASM_TICKS_REQUEST_DESCRIPTOR_OFFSETS,
   XYG_WASM_TICKS_REQUEST_HEADER_BYTES,
   XYG_WASM_TICKS_REQUEST_HEADER_OFFSETS,
+  XYG_WASM_TICKS_REQUEST_FLAGS,
   XYG_WASM_TICKS_VERSION,
 } from "./wasm_abi_generated";
 
@@ -41,6 +42,7 @@ const FAMILIES = XYG_WASM_TICKS_FAMILIES;
 const PROVENANCE = XYG_WASM_TICKS_PROVENANCE;
 const H = XYG_WASM_TICKS_REQUEST_HEADER_OFFSETS;
 const D = XYG_WASM_TICKS_REQUEST_DESCRIPTOR_OFFSETS;
+const RF = XYG_WASM_TICKS_REQUEST_FLAGS;
 const OH = XYG_WASM_TICKS_OUTPUT_HEADER_OFFSETS;
 const OD = XYG_WASM_TICKS_OUTPUT_DESCRIPTOR_OFFSETS;
 
@@ -57,6 +59,8 @@ export interface XygWasmTickAxisRequest {
   target: number;
   constant?: number;
   maskNonpositive?: boolean;
+  /** Resolve unlabeled minor positions in Rust. */
+  minor?: boolean;
   authoredValues?: readonly number[];
   authoredLabels?: readonly string[];
   categories?: readonly string[];
@@ -166,6 +170,9 @@ function frameAxis(axis: XygWasmTickAxisRequest): FramedAxis {
   if (axis.maskNonpositive && axis.family !== "log") {
     throw new TypeError("maskNonpositive is only valid for log ticks");
   }
+  if (axis.minor !== undefined && typeof axis.minor !== "boolean") {
+    throw new TypeError("minor must be boolean");
+  }
   const authored = axis.authoredValues === undefined
     ? []
     : Array.from(axis.authoredValues, (value) => finite(value, "authored tick value"));
@@ -182,6 +189,9 @@ function frameAxis(axis: XygWasmTickAxisRequest): FramedAxis {
   }
   if (axis.provenance === "authored_empty" && (authored.length || authoredLabels.values.length)) {
     throw new TypeError("authored_empty provenance requires empty authored planes");
+  }
+  if (axis.minor && authoredLabels.values.length) {
+    throw new TypeError("minor tick requests cannot contain authored labels");
   }
   const categories = strings(axis.categories, "tick categories");
   u32(categories.values.length, "tick category count");
@@ -200,6 +210,15 @@ function frameAxis(axis: XygWasmTickAxisRequest): FramedAxis {
   }
   const format = encoder.encode(formatText);
   if (format.byteLength > MAX_FORMAT_BYTES) throw new RangeError("tick format exceeds the Rust bound");
+  if (axis.family === "category" && format.byteLength) {
+    throw new TypeError("category tick requests cannot contain a numeric format");
+  }
+  if (axis.minor && format.byteLength) {
+    throw new TypeError("minor tick requests cannot contain a format");
+  }
+  if (authoredLabels.values.length && format.byteLength) {
+    throw new TypeError("explicit authored labels cannot also contain a format");
+  }
   if (authoredLabels.bytes + categories.bytes > MAX_TEXT_BYTES) {
     throw new RangeError("tick text exceeds the Rust batch bound");
   }
@@ -212,7 +231,7 @@ function frameAxis(axis: XygWasmTickAxisRequest): FramedAxis {
     lo,
     hi,
     constant,
-    flags: axis.maskNonpositive ? 1 : 0,
+    flags: (axis.maskNonpositive ? RF.mask_nonpositive : 0) | (axis.minor ? RF.minor : 0),
     authored,
     authoredLabels,
     categories,
@@ -418,8 +437,7 @@ export interface XygWasmTicksDiagnostics {
   cancellations: number;
 }
 
-type PrimaryAxisId = "x" | "y";
-type TickSlotId = PrimaryAxisId | "colorbar";
+type TickSlotId = string;
 
 interface ChartTickFrame {
   key: string;
@@ -436,12 +454,7 @@ interface ChartTickCache {
   labelByValue: ReadonlyMap<number, string>;
 }
 
-/** XYTK axis ids for this adapter. Secondary/polar remain unclaimed. */
-const TICK_SLOT_CODES: Readonly<Record<TickSlotId, number>> = Object.freeze({
-  x: 1,
-  y: 2,
-  colorbar: 3,
-});
+const MINOR_SUFFIX = "::minor";
 
 function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
   if (cause instanceof XygWasmError) return cause;
@@ -456,7 +469,7 @@ function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
 }
 
 /**
- * Latest-wins ChartView adapter for the bounded Cartesian + colorbar slice.
+ * Latest-wins ChartView adapter for every bounded live axis and colorbar slot.
  *
  * Rust owns generation and formatting. TypeScript only snapshots the viewport,
  * frames XYTK, admits a matching XYTO revision, and paints the last admitted
@@ -481,24 +494,29 @@ export class XygWasmTicksHandle {
     private readonly ownWorker: boolean,
   ) {}
 
-  /** Map a ChartView axis or colorbar key/object onto a slot this handle owns. */
+  private minorSlot(axisId: string): TickSlotId {
+    return `${axisId}${MINOR_SUFFIX}`;
+  }
+
+  private splitSlot(slot: TickSlotId): { axisId: string; minor: boolean } {
+    return slot.endsWith(MINOR_SUFFIX)
+      ? { axisId: slot.slice(0, -MINOR_SUFFIX.length), minor: true }
+      : { axisId: slot, minor: false };
+  }
+
+  /** Map any ChartView axis, minor-axis slot, or colorbar onto a stable key. */
   private ownedSlot(axisId: unknown): TickSlotId | null {
-    if (axisId === "x" || axisId === "y" || axisId === "colorbar") return axisId;
+    if (typeof axisId === "string") {
+      if (axisId === "colorbar" || axisId === this.minorSlot("colorbar")) return axisId;
+      const split = this.splitSlot(axisId);
+      if (this.view.axes?.[split.axisId]) return axisId;
+    }
     const colorbar = this.view.spec?.colorbar;
     if (axisId && typeof axisId === "object" && colorbar && axisId === colorbar) {
       return "colorbar";
     }
-    const axes = this.view.axes;
     if (axisId && typeof axisId === "object") {
-      if (axisId === axes?.x) return "x";
-      if (axisId === axes?.y) return "y";
       return this.ownedSlot((axisId as { id?: unknown }).id);
-    }
-    if (axes?.x && axisId === axes.x.id && (axes[axisId as string] == null || axes[axisId as string] === axes.x)) {
-      return "x";
-    }
-    if (axes?.y && axisId === axes.y.id && (axes[axisId as string] == null || axes[axisId as string] === axes.y)) {
-      return "y";
     }
     return null;
   }
@@ -515,9 +533,12 @@ export class XygWasmTicksHandle {
   private axisFamily(axis: {
     kind?: unknown;
     scale?: unknown;
+    theta_unit?: unknown;
   }): XygWasmTickFamily | null {
     const kind = axis.kind ?? "linear";
     if (kind === "category") return "category";
+    if (axis.theta_unit === "degrees") return "angular_degrees";
+    if (axis.theta_unit === "radians") return "angular_radians";
     if (kind === "time") return "utc_time";
     if (kind !== "linear") return null;
     const scale = axis.scale ?? "linear";
@@ -540,7 +561,8 @@ export class XygWasmTicksHandle {
     values: readonly number[];
     labels: readonly string[];
   } | "invalid" | null {
-    if (!Array.isArray(axis.tick_values)) return null;
+    if (axis.tick_values == null) return axis.tick_labels == null ? null : "invalid";
+    if (!Array.isArray(axis.tick_values)) return "invalid";
     if (axis.tick_values.length > MAX_TICKS) return "invalid";
     const values: number[] = [];
     for (const value of axis.tick_values) {
@@ -580,6 +602,7 @@ export class XygWasmTicksHandle {
     orientation?: unknown;
     shrink?: unknown;
     placement?: unknown;
+    minor_ticks?: unknown;
   } | null {
     const colorbar = this.view.spec?.colorbar;
     return colorbar && typeof colorbar === "object" && !Array.isArray(colorbar)
@@ -616,36 +639,60 @@ export class XygWasmTicksHandle {
     return Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : null;
   }
 
+  private axisAuthoredPlane(axis: any, minor: boolean) {
+    return minor
+      ? this.authoredPlane({ tick_values: axis.minor_tick_values })
+      : this.authoredPlane(axis);
+  }
+
+  private axisRange(axisId: string, axis: any): [number, number] | null {
+    let [lo, hi] = this.view._axisRange(axisId).map(Number);
+    if (this.view.spec?.coords === "polar" && this.view._axisDim(axisId) === "x") {
+      if (axis.kind === "category") {
+        lo = 0;
+        hi = Math.max(0, (axis.categories ?? []).length - 1);
+      } else if (Array.isArray(axis.sector) && axis.sector.length === 2) {
+        lo = Number(axis.sector[0]);
+        hi = Number(axis.sector[1]);
+      }
+    }
+    return Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : null;
+  }
+
   private slotIdentity(slot: TickSlotId): string | null {
     if (!this.slotEligible(slot)) return null;
-    if (slot === "colorbar") {
+    const { axisId, minor } = this.splitSlot(slot);
+    if (axisId === "colorbar") {
       const colorbar = this.colorbarSpec();
       if (!colorbar) return null;
       const family = this.colorbarFamily(colorbar);
       if (!family) return null;
-      const authored = this.colorbarAuthoredPlane(colorbar);
+      const authored = minor ? null : this.colorbarAuthoredPlane(colorbar);
       if (authored === "invalid") return null;
       return JSON.stringify({
         family,
-        format: typeof colorbar.format === "string" ? colorbar.format : "",
-        categories: [],
-        constant: 0,
-        mask: false,
+        minor,
+        format: minor || authored?.labels.length
+          ? ""
+          : typeof colorbar.format === "string" ? colorbar.format : "",
         provenance: authored?.provenance ?? "automatic",
         authoredValues: authored?.values ?? [],
         authoredLabels: authored?.labels ?? [],
       });
     }
-    const axis = this.view._axis(slot);
+    const axis = this.view._axis(axisId);
     const family = this.axisFamily(axis);
     if (!family) return null;
-    const authored = this.authoredPlane(axis);
+    const authored = this.axisAuthoredPlane(axis, minor);
     if (authored === "invalid") return null;
     return JSON.stringify({
       family,
-      format: typeof axis.format === "string" ? axis.format : "",
+      minor,
+      format: minor || authored?.labels.length
+        ? ""
+        : typeof axis.format === "string" ? axis.format : "",
       categories: family === "category" ? [...(this.categoryTable(axis) ?? [])] : [],
-      constant: family === "symlog" ? Number(this.view._axisConstant(slot)) : 0,
+      constant: family === "symlog" ? Number(this.view._axisConstant(axisId)) : 0,
       mask: family === "log" && axis.nonpositive === "mask",
       provenance: authored?.provenance ?? "automatic",
       authoredValues: authored?.values ?? [],
@@ -654,25 +701,25 @@ export class XygWasmTicksHandle {
   }
 
   private slotEligible(slot: TickSlotId): boolean {
-    if (this.view.spec?.coords === "polar") return false;
-    if (slot === "colorbar") {
+    const { axisId, minor } = this.splitSlot(slot);
+    if (axisId === "colorbar") {
       const colorbar = this.colorbarSpec();
-      if (!colorbar || colorbar.placement === "scene") return false;
+      if (!colorbar || colorbar.placement === "scene" || (minor && !colorbar.minor_ticks)) return false;
       const family = this.colorbarFamily(colorbar);
-      if (family == null) return false;
       const domain = this.colorbarDomain(colorbar);
-      if (!domain) return false;
-      if (family === "log" && !(domain[0] > 0 && domain[1] > 0)) return false;
-      return this.colorbarAuthoredPlane(colorbar) !== "invalid";
+      if (!family || !domain || (family === "log" && !(domain[0] > 0 && domain[1] > 0))) return false;
+      return minor || this.colorbarAuthoredPlane(colorbar) !== "invalid";
     }
-    const axis = this.view._axis(slot);
-    if (!axis || typeof axis !== "object" || axis.theta_unit) {
-      return false;
-    }
-    if (this.authoredPlane(axis) === "invalid") return false;
+    const axis = this.view._axis(axisId);
+    // A Scene descriptor already carries Rust-resolved major/minor planes.
+    // Never replace either plane with a viewport XYTK cache: doing so could
+    // mix Scene positions with dynamic labels (or vice versa) during attach.
+    if (!axis || typeof axis !== "object" || axis.tick_resolution === "rust_scene"
+        || (minor && !Array.isArray(axis.minor_tick_values))) return false;
+    const authored = this.axisAuthoredPlane(axis, minor);
+    if (authored === "invalid" || (minor && authored == null)) return false;
     const family = this.axisFamily(axis);
-    if (family == null) return false;
-    return family !== "category" || this.categoryTable(axis) != null;
+    return family != null && (family !== "category" || this.categoryTable(axis) != null);
   }
 
   /** Policy: this slice can request this Cartesian axis or colorbar. */
@@ -720,7 +767,8 @@ export class XygWasmTicksHandle {
       : null;
   }
 
-  private target(axisId: TickSlotId, family: XygWasmTickFamily): number {
+  private target(slot: TickSlotId, family: XygWasmTickFamily): number {
+    const { axisId } = this.splitSlot(slot);
     if (axisId === "colorbar") {
       const colorbar = this.colorbarSpec() ?? {};
       const shrink = Math.max(0.01, Math.min(1, Number(colorbar.shrink) || 1));
@@ -730,15 +778,21 @@ export class XygWasmTicksHandle {
       const target = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
       return Math.max(1, Math.min(MAX_TICKS, target));
     }
-    const fallback = axisId === "x"
+    const fallback = this.view._axisDim(axisId) === "x"
       ? Math.max(3, Number(this.view.plot?.w) / (family === "utc_time" ? 90 : 80))
       : Math.max(3, Number(this.view.plot?.h) / 45);
+    const axis = this.view._axis(axisId);
+    if (this.view.spec?.coords === "polar" && this.view._axisDim(axisId) === "x"
+        && family === "category" && !(Number(axis?.tick_count) > 0)) {
+      return Math.max(1, Math.min(MAX_TICKS, this.categoryTable(axis)?.length ?? 1));
+    }
     const target = Number(this.view._axisTickTarget(axisId, fallback));
     return Math.max(1, Math.min(MAX_TICKS, Math.floor(Number.isFinite(target) ? target : 6)));
   }
 
-  private frameColorbar(): Omit<XygWasmTickAxisRequest, "revision"> | null {
-    if (!this.slotEligible("colorbar")) return null;
+  private frameColorbar(slot: TickSlotId, axisCode: number): Omit<XygWasmTickAxisRequest, "revision"> | null {
+    if (!this.slotEligible(slot)) return null;
+    const minor = this.splitSlot(slot).minor;
     const colorbar = this.colorbarSpec();
     if (!colorbar) return null;
     const domain = this.colorbarDomain(colorbar);
@@ -746,69 +800,88 @@ export class XygWasmTicksHandle {
     const [lo, hi] = domain;
     const family = this.colorbarFamily(colorbar);
     if (!family) return null;
-    const authored = this.colorbarAuthoredPlane(colorbar);
+    const authored = minor ? null : this.colorbarAuthoredPlane(colorbar);
     if (authored === "invalid") return null;
     return {
-      axisId: TICK_SLOT_CODES.colorbar,
+      axisId: axisCode,
       family,
       provenance: authored?.provenance ?? "automatic",
       lo,
       hi,
-      target: this.target("colorbar", family),
+      target: this.target(slot, family),
+      ...(minor ? { minor: true } : {}),
       ...(authored?.values.length ? { authoredValues: authored.values } : {}),
       ...(authored?.labels.length ? { authoredLabels: authored.labels } : {}),
-      ...(typeof colorbar.format === "string" ? { format: colorbar.format } : {}),
+      ...(!minor && !authored?.labels.length && typeof colorbar.format === "string"
+        ? { format: colorbar.format }
+        : {}),
     };
   }
 
   private frame(): ChartTickFrame | null {
     const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
     const axisIds: TickSlotId[] = [];
-    let eligible = 0;
-    for (const axisId of ["x", "y"] as const) {
-      if (!this.slotEligible(axisId)) continue;
-      eligible += 1;
+    const seen = new Set<string>();
+    const axisSlots: TickSlotId[] = [];
+    for (const axis of Object.values<any>(this.view.axes ?? {})) {
+      const axisId = typeof axis?.id === "string" ? axis.id : null;
+      if (!axisId || seen.has(axisId)) continue;
+      seen.add(axisId);
+      axisSlots.push(axisId);
+      const minorSlot = this.minorSlot(axisId);
+      if (this.slotEligible(minorSlot)) axisSlots.push(minorSlot);
+    }
+    if (this.slotEligible("colorbar")) axisSlots.push("colorbar");
+    if (this.slotEligible(this.minorSlot("colorbar"))) axisSlots.push(this.minorSlot("colorbar"));
+    if (axisSlots.length > MAX_AXES) throw new RangeError(`ChartView exposes more than ${MAX_AXES} tick slots`);
+    for (const slot of axisSlots) {
+      const axisCode = axes.length + 1;
+      const { axisId, minor } = this.splitSlot(slot);
+      if (axisId === "colorbar") {
+        const colorbar = this.frameColorbar(slot, axisCode);
+        if (colorbar) {
+          axes.push(colorbar);
+          axisIds.push(slot);
+        }
+        continue;
+      }
+      if (!this.slotEligible(slot)) continue;
       const axis = this.view._axis(axisId);
-      const [loRaw, hiRaw] = this.view._axisRange(axisId);
-      const lo = Number(loRaw), hi = Number(hiRaw);
-      // A sibling axis with a torn range must not block the finite axis.
-      if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+      const range = this.axisRange(axisId, axis);
+      if (!range) throw new TypeError("tick range must be finite");
+      const [lo, hi] = range;
       const family = this.axisFamily(axis);
       if (!family) continue;
-      const authored = this.authoredPlane(axis);
+      const authored = this.axisAuthoredPlane(axis, minor);
       if (authored === "invalid") continue;
       axes.push({
-        axisId: TICK_SLOT_CODES[axisId],
+        axisId: axisCode,
         family,
         provenance: authored?.provenance ?? "automatic",
         lo,
         hi,
-        target: this.target(axisId, family),
+        target: this.target(slot, family),
+        ...(minor ? { minor: true } : {}),
         ...(family === "symlog" ? { constant: this.view._axisConstant(axisId) } : {}),
         ...(family === "log" ? { maskNonpositive: axis.nonpositive === "mask" } : {}),
         ...(family === "category" ? { categories: this.categoryTable(axis) ?? [] } : {}),
         ...(authored?.values.length ? { authoredValues: authored.values } : {}),
         ...(authored?.labels.length ? { authoredLabels: authored.labels } : {}),
-        ...(typeof axis.format === "string" ? { format: axis.format } : {}),
+        ...(!minor && !authored?.labels.length && typeof axis.format === "string"
+          ? { format: axis.format }
+          : {}),
       });
-      axisIds.push(axisId);
+      axisIds.push(slot);
     }
-    if (this.slotEligible("colorbar")) {
-      eligible += 1;
-      const colorbar = this.frameColorbar();
-      if (colorbar) {
-        axes.push(colorbar);
-        axisIds.push("colorbar");
-      }
-    }
-    if (!axes.length) {
-      if (eligible) throw new TypeError("tick range must be finite");
-      return null;
-    }
+    if (!axes.length) return null;
     return {
       // This is request identity, not policy: every field is explicit XYTK
       // ingress or the current screen-bounded target.
-      key: JSON.stringify(axes),
+      // Slot identity is part of request identity even though the packed Rust
+      // batch uses dense numeric axis codes. A host may replace `x2` with an
+      // otherwise identical `x3`; reusing the old admitted key would leave the
+      // new slot uncovered and suppress the request that can populate it.
+      key: JSON.stringify({ axisIds, axes }),
       axes,
       axisIds,
     };
@@ -845,6 +918,7 @@ export class XygWasmTicksHandle {
     if (this.view._destroyed) return;
     if (key != null && this.lastErrorKey === key) return;
     if (key != null) this.lastErrorKey = key;
+    this.view._recordTickFailure?.(error.code, error.message);
     this.view._dispatchChartEvent?.("wasm_ticks_error", {
       code: error.code,
       message: error.message,
@@ -919,12 +993,21 @@ export class XygWasmTicksHandle {
         axisIds: Object.freeze([...frame.axisIds]),
         cancellations: this.cancellations,
       });
+      this.view._tickFailure = null;
+      this.view._tickFailurePublished = false;
+      if (this.view.root) this.view.root.dataset.xyTickState = "rust-wasm";
       if (this.active && !this.disposed && !this.view._destroyed && this.view._wasmTicks === this) {
-        // Paint the admitted Rust cache only. Do not `_layout()` here: that
-        // rewrites `plot` without moving the marks canvas (geometry lives in
-        // `_resize`), and label-driven gutter changes can flip `target` and
-        // oscillate with chrome `schedule()`. Gutter feedback is a follow-up.
-        this.view.draw();
+        // Rust labels are unavailable to the constructor's first layout pass.
+        // Reconcile them through the complete resize path so plot, mark canvas,
+        // chrome, titles, and interaction geometry move atomically. Calling
+        // `_layout()` alone would desynchronise those layers. A changed
+        // screen-bounded target schedules one follow-up batch; an unchanged
+        // frame deduplicates against admittedKey.
+        if (typeof this.view._resize === "function") {
+          this.view._resize(this.view.size?.w, this.view.size?.h, true);
+        } else {
+          this.view.draw();
+        }
       }
       return true;
     } catch (cause) {
@@ -1003,11 +1086,10 @@ export class XygWasmTicksHandle {
 
 /**
  * Attach Rust-owned automatic, authored-value, and authored-empty ticks to
- * supported primary Cartesian axes and ChartView colorbars.
+ * all supported ChartView axes, their authored minor slots, and colorbars.
  *
- * Eligible families are linear, log, symlog, category, and UTC-time.
- * Colorbar slots admit linear and log only. Polar, secondary, and angular
- * remain frozen on the compatibility path.
+ * Eligible families are linear, log, symlog, category, UTC-time, and angular
+ * radians/degrees. Colorbar slots admit linear and log only.
  *
  * The first XYTO batch is admitted before the adapter is installed, so an
  * asset/version failure emits one stable event and rejects without a partial
@@ -1035,11 +1117,14 @@ export async function attachWasmTicks(
     await handle.initialize();
   } catch (cause) {
     const error = asTickError(cause);
-    if (!view._destroyed) view._dispatchChartEvent?.("wasm_ticks_error", {
-      code: error.code,
-      message: error.message,
-      diagnostics: error.diagnostics ?? null,
-    });
+    if (!view._destroyed) {
+      view._recordTickFailure?.(error.code, error.message);
+      view._dispatchChartEvent?.("wasm_ticks_error", {
+        code: error.code,
+        message: error.message,
+        diagnostics: error.diagnostics ?? null,
+      });
+    }
     await handle.dispose();
     throw error;
   }
@@ -1053,9 +1138,14 @@ export async function attachWasmTicks(
   const previous = view._wasmTicks;
   handle.activate();
   view._wasmTicks = handle;
+  view._tickFailure = null;
+  view._tickFailurePublished = false;
+  if (view.root) view.root.dataset.xyTickState = "rust-wasm";
   previous?.destroy?.();
-  // Atomic cutover: paint the admitted Rust cache. Skip `_layout()` here so
-  // gutters do not desync the marks canvas or oscillate tick targets.
-  view.draw();
+  // Atomic cutover: the constructor could not measure Rust labels before this
+  // first cache existed. Reconcile through the complete resize path so the
+  // plot, mark canvas, chrome, titles, and interaction geometry move together.
+  if (typeof view._resize === "function") view._resize(view.size?.w, view.size?.h, true);
+  else view.draw();
   return handle;
 }

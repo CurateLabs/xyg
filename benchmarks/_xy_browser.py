@@ -9,12 +9,16 @@ headless Chromium.
 from __future__ import annotations
 
 import html as html_lib
+import http.server
 import json
 import re
 import subprocess
 import tempfile
+import threading
+from functools import partial
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from _browser import chromium_gl_flags, find_chromium
 from xyg import export as _xy_export
@@ -75,10 +79,12 @@ function xyBytesFromPayload(payload) {{
   return xyDecodeB64(payload.chunks, payload.n);
 }}
 function xyReport(marker, payload) {{
+  document.body.setAttribute("data-xy-benchmark-probe", "ok");
   document.title = marker + " " + JSON.stringify(payload);
 }}
 function xyFail(marker, err) {{
   const msg = (err && (err.stack || err.message)) ? (err.stack || err.message) : String(err);
+  document.body.setAttribute("data-xy-benchmark-probe-error", msg.slice(0, 480));
   document.title = "XY_ERROR " + marker + " " + msg.slice(0, 480);
 }}
 function xyRaf() {{
@@ -128,6 +134,8 @@ def run_json_probe(
     chromium: str | None,
     virtual_time_ms: int | None = 15_000,
     timeout_s: int = 180,
+    hosted: bool = False,
+    wasm_ticks: bool = False,
 ) -> dict[str, Any]:
     exe = find_chromium(chromium)
     if not exe:
@@ -136,27 +144,73 @@ def run_json_probe(
     with tempfile.TemporaryDirectory() as td:
         page = Path(td) / "probe.html"
         page.write_text(html, encoding="utf-8")
+        server: http.server.ThreadingHTTPServer | None = None
+        thread: threading.Thread | None = None
         try:
-            command = [
-                exe,
-                "--headless=new",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                *chromium_gl_flags(),
-                "--hide-scrollbars",
-                "--enable-precise-memory-info",
-            ]
-            if virtual_time_ms is not None:
-                command.append(f"--virtual-time-budget={virtual_time_ms}")
-            command.extend(["--dump-dom", page.as_uri()])
+            if wasm_ticks:
+                _xy_export.copy_wasm_tick_assets(page.parent)
+                hosted = True
+            if hosted:
+
+                class QuietHandler(http.server.SimpleHTTPRequestHandler):
+                    def log_message(self, format: str, *args: object) -> None:
+                        del format, args
+
+                    def end_headers(self) -> None:
+                        self.send_header(
+                            "Content-Security-Policy",
+                            "default-src 'none'; script-src 'unsafe-inline' "
+                            "'wasm-unsafe-eval'; style-src 'unsafe-inline'; "
+                            "worker-src 'self'; connect-src 'self'; object-src 'none'; "
+                            "base-uri 'none'",
+                        )
+                        self.send_header("Cache-Control", "no-store")
+                        super().end_headers()
+
+                handler = partial(QuietHandler, directory=str(page.parent))
+                server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                url = f"http://127.0.0.1:{server.server_port}/{quote(page.name)}"
+                command = [
+                    "node",
+                    str(Path(__file__).resolve().parents[1] / "scripts" / "browser_probe_dump.mjs"),
+                    exe,
+                    url,
+                    "data-xy-benchmark-probe",
+                    f"--xyg-probe-timeout-ms={timeout_s * 1000}",
+                    *chromium_gl_flags(),
+                    "--hide-scrollbars",
+                    "--enable-precise-memory-info",
+                    "--window-size=900,420",
+                ]
+            else:
+                command = [
+                    exe,
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    *chromium_gl_flags(),
+                    "--hide-scrollbars",
+                    "--enable-precise-memory-info",
+                ]
+                if virtual_time_ms is not None:
+                    command.append(f"--virtual-time-budget={virtual_time_ms}")
+                command.extend(["--dump-dom", page.as_uri()])
             completed = subprocess.run(
                 command,
                 capture_output=True,
                 text=True,
-                timeout=timeout_s,
+                timeout=timeout_s + (15 if hosted else 0),
             )
         except subprocess.TimeoutExpired:
             return {"status": "failed(timeout)"}
+        finally:
+            if server is not None:
+                server.shutdown()
+                server.server_close()
+            if thread is not None:
+                thread.join(timeout=5)
 
     match = re.search(r"<title>(.*?)</title>", completed.stdout, flags=re.IGNORECASE | re.S)
     title_text = html_lib.unescape(match.group(1).strip()) if match else ""

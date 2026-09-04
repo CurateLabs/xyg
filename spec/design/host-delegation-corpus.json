@@ -12,12 +12,23 @@
       "modules": ["python/xyg/_export_*", "python/xyg/_svg_*", "python/xyg/_raster_*"]
     },
     {
-      "owner": "#869",
-      "journey": "direct-browser secondary/polar/unattached tick routes",
-      "modules": ["js/src/30_ticks.ts"]
+      "owner": "#875",
+      "journey": "exhaustive admitted-shape Scene/static matrix",
+      "modules": ["cross-host shape registry"]
     }
   ],
   "journeys": [
+    {
+      "id": "ticks",
+      "surfaces": ["dynamic axis and colorbar tick positions", "tick labels", "tick provenance"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_packed_ticks_cross_host.py::test_python_native_packed_ticks_match_exact_fixture", "-q", "--tb=short"],
+        ["node", "packages/xy-node/scripts/packed_ticks_cross_host.mjs"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": ["xyg_tick_resolve_packed"],
+      "output_oracle": "tests/fixtures/packed_ticks_cross_host.json: Python/native, Node/native, and browser/WASM assert byte-exact XYTO plus decoded positions, labels, provenance, and malformed failure behavior."
+    },
     {
       "id": "default-palette",
       "surfaces": ["default categorical palette", "default mark color"],

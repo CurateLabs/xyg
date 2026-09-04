@@ -227,16 +227,30 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
 
 def _probe_js(reps: int) -> str:
     return f"""
-(() => {{
+(async () => {{
   try {{
     const payload = XY_CHARTS[0];
     const el = document.createElement("div");
     document.getElementById("root").appendChild(el);
+    let resolveTicks;
+    const ticksReady = new Promise((resolve) => {{ resolveTicks = resolve; }});
+    globalThis.__xygStandaloneObserver = (event) => {{
+      if (["ticks_ready", "ticks_error"].includes(event?.phase)) resolveTicks(event);
+    }};
     const mountT0 = performance.now();
     const view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
     view._drawNow();
     settlePixels();
     const firstPaintMs = performance.now() - mountT0;
+    const tickEvent = await ticksReady;
+    if (tickEvent?.phase !== "ticks_ready") {{
+      throw new Error(`Rust/WASM ticks failed: ${{tickEvent?.code || "unknown"}}`);
+    }}
+    const tickAxisIds = tickEvent?.diagnostics?.axisIds || [];
+    if (!tickAxisIds.includes("x") || !tickAxisIds.includes("y")) {{
+      throw new Error(`Rust/WASM tick admission is incomplete: ${{tickAxisIds.join(",")}}`);
+    }}
+    await xyRaf();
     const before = {{...view.view}};
     const canvasRect = () => view.canvas.getBoundingClientRect();
     view.canvas.setPointerCapture = () => {{}};
@@ -660,16 +674,10 @@ def _flatten_probe_metrics(row: dict[str, Any], result: dict[str, Any]) -> None:
         row[f"{name}_reps"] = stats.get("reps")
 
 
-# Virtual-time budget for the interaction probe pages. The default 15s is
-# plenty on developer hardware, but CI runs WebGL through SwiftShader on
-# shared runners, where the density scenario's reps can outlive it — the
-# probe then never writes its marker title and the row reports
-# "failed(no probe title)". Virtual time advances instantly once the page
-# goes idle, so a large budget costs nothing when the probe finishes early.
-# The wall-clock ceiling has the same failure mode — CI has produced
-# "failed(timeout)" for the density scenario at the default 180s — so it
-# gets matching headroom; a healthy probe never comes near either limit.
-PROBE_VIRTUAL_TIME_MS = 120_000
+# The hosted interaction probe uses real time because its canonical tick
+# authority is an asynchronous same-origin Worker. Keep generous wall-clock
+# headroom for SwiftShader on shared runners; a healthy smoke finishes far
+# below this ceiling and every relaunch remains reported.
 PROBE_TIMEOUT_S = 600
 
 
@@ -686,8 +694,10 @@ def _probe_with_retries(
         html,
         marker="XY_INTERACTION",
         chromium=chromium,
-        virtual_time_ms=PROBE_VIRTUAL_TIME_MS,
+        virtual_time_ms=None,
         timeout_s=PROBE_TIMEOUT_S,
+        hosted=True,
+        wasm_ticks=True,
     )
     attempts = 1
     while result.get("status") != "ok" and attempts <= retries:
@@ -699,8 +709,10 @@ def _probe_with_retries(
             html,
             marker="XY_INTERACTION",
             chromium=chromium,
-            virtual_time_ms=PROBE_VIRTUAL_TIME_MS,
+            virtual_time_ms=None,
             timeout_s=PROBE_TIMEOUT_S,
+            hosted=True,
+            wasm_ticks=True,
         )
         attempts += 1
     return result
@@ -713,6 +725,10 @@ def run(
     for n in sizes:
         fig = _scatter_figure(n)
         spec, blob = fig.build_payload()
+        spec["wasm_ticks"] = {
+            "workerUrl": "./wasm-worker.js",
+            "wasm": "./xyg-wasm.wasm",
+        }
         tier = spec["traces"][0]["tier"]
         category_ids = (
             ("medium_direct_scatter", "interaction_smoothness")
@@ -740,6 +756,10 @@ def run(
 
     for case in _core_interaction_figures():
         spec, blob = case["figure"].build_payload()
+        spec["wasm_ticks"] = {
+            "workerUrl": "./wasm-worker.js",
+            "wasm": "./xyg-wasm.wasm",
+        }
         tier = spec["traces"][0]["tier"]
         row = {
             "scenario": case["scenario"],

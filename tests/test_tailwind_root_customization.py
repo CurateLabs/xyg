@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import xyg
-from conftest import run_browser_probe
+from conftest import probe_document, run_browser_probe
 from xyg.export import find_chromium
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -211,10 +211,11 @@ def test_every_granular_chrome_slot_receives_tailwind_and_yields_visual_defaults
         width=560,
         height=360,
     )
-    document = chart.to_html(custom_css=_GRANULAR_SLOT_LAYERS)
-    assert _RENDER_CALL in document
     slots_json = repr(list(_GRANULAR_CHROME_SLOTS)).replace("'", '"')
-    probe = f"""
+    probe = f"""<script>
+  (async () => {{
+  const original = window.__fcProbeView;
+  original.destroy();
   const host = document.getElementById("chart");
   const probeSpec = {{
     ...spec,
@@ -228,6 +229,12 @@ def test_every_granular_chrome_slot_receives_tailwind_and_yields_visual_defaults
   }};
   const view = xy.renderStandalone(host, probeSpec, buf);
   try {{
+    await xy.attachWasmTicks(view, {{
+      worker: xy.createXygWasmWorker({{
+        workerUrl: "./wasm-worker.js", wasm: "./xyg-wasm.wasm",
+      }}),
+      workerOwnership: "own",
+    }});
     view._drawNow();
     view._raf = null;
     // A vertical colorbar paints its contour line and minor ticks with
@@ -242,6 +249,12 @@ def test_every_granular_chrome_slot_receives_tailwind_and_yields_visual_defaults
       ...probeSpec,
       colorbar: {{ ...probeSpec.colorbar, orientation: "horizontal" }},
     }}, buf);
+    await xy.attachWasmTicks(wideView, {{
+      worker: xy.createXygWasmWorker({{
+        workerUrl: "./wasm-worker.js", wasm: "./xyg-wasm.wasm",
+      }}),
+      workerOwnership: "own",
+    }});
     wideView._drawNow();
     wideView._raf = null;
     const borderProbe = (root, side) => {{
@@ -315,8 +328,13 @@ def test_every_granular_chrome_slot_receives_tailwind_and_yields_visual_defaults
       String((err && err.stack) || err),
     );
   }}
-"""
-    document = document.replace(_RENDER_CALL, probe, 1)
+  }})();
+</script>"""
+    document = probe_document(
+        chart,
+        probe,
+        to_html_kwargs={"custom_css": _GRANULAR_SLOT_LAYERS},
+    )
 
     result = run_browser_probe(
         chromium,

@@ -25,9 +25,9 @@
 use xyg_engine::arrow_geom;
 use xyg_engine::auto_domain;
 use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
-use xyg_engine::colormap;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::chunked_columns;
+use xyg_engine::colormap;
 use xyg_engine::compat_layout;
 use xyg_engine::css;
 use xyg_engine::density_emit;
@@ -44,6 +44,9 @@ use xyg_engine::layout_rooms;
 use xyg_engine::legend_fit;
 use xyg_engine::legend_layout;
 use xyg_engine::lod_plan;
+use xyg_engine::packed_ticks;
+use xyg_engine::payload_channel_materialize;
+use xyg_engine::payload_column_gather_materialize;
 use xyg_engine::payload_emit;
 use xyg_engine::pdf;
 use xyg_engine::png_encode;
@@ -53,60 +56,38 @@ use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
-use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
-use xyg_engine::scene_xytc_trace_pack;
-use xyg_engine::scene_xyta_trace_pack;
+use xyg_engine::scene_figure_support_pack;
+use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_xyaf_pack;
 use xyg_engine::scene_xycf_pack;
-use xyg_engine::scene_figure_support_pack;
-use xyg_engine::payload_column_gather_materialize;
-use xyg_engine::payload_channel_materialize;
+use xyg_engine::scene_xyta_trace_pack;
+use xyg_engine::scene_xytc_trace_pack;
 include!("scene_bulk_pack_ffi.rs");
 include!("payload_trace_emit_ffi.rs");
 include!("scene_xyta_trace_observations_ffi.rs");
 include!("scene_xytc_trace_observations_ffi.rs");
-use xyg_engine::scene_pack_orchestrate;
-use xyg_engine::scene_density::{self, DensityGridError};
-use xyg_engine::scene_colorbar::{self, ColorbarError};
+use xyg_engine::encode_assembled;
+use xyg_engine::encode_assembled_from_sidecars;
+use xyg_engine::encode_product;
 use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_figure_chrome_from_sidecars;
 use xyg_engine::pack_public_export;
 use xyg_engine::pack_style_sidecars;
-use xyg_engine::splice_annotations;
-use xyg_engine::encode_assembled;
-use xyg_engine::encode_assembled_from_sidecars;
-use xyg_engine::encode_product;
-use xyg_engine::PRODUCT_SUPPORT_UNSUPPORTED;
-use xyg_engine::scene_static_export;
-use xyg_engine::SceneStaticFormat;
-use xyg_engine::EncodeAssembledAxis;
-use xyg_engine::EncodeAssembledCode;
-use xyg_engine::EncodeAssembledError;
-use xyg_engine::EncodeSidecarsCode;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::pack_trace_rows;
 use xyg_engine::pack_trace_sidecars;
-use xyg_engine::ChromePackError;
-use xyg_engine::AnnotationSpliceCode;
-use xyg_engine::AnnotationSpliceError;
-use xyg_engine::StyleSidecarsCode;
-use xyg_engine::StyleSidecarsError;
-use xyg_engine::TraceAttachCode;
-use xyg_engine::TraceAttachError;
-use xyg_engine::TraceCompileCode;
-use xyg_engine::TraceCompileError;
-use xyg_engine::TraceRowsCode;
-use xyg_engine::TraceRowsError;
-use xyg_engine::TraceSidecarsCode;
-use xyg_engine::TraceSidecarsError;
+use xyg_engine::scene_colorbar::{self, ColorbarError};
+use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
+use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_public_export_reason;
-use xyg_engine::ExportPackError;
+use xyg_engine::scene_static_export;
 use xyg_engine::scene_style::{self, MarkStyleError};
+use xyg_engine::splice_annotations;
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
@@ -120,6 +101,26 @@ use xyg_engine::tile_store;
 use xyg_engine::tiles;
 use xyg_engine::transition;
 use xyg_engine::webp;
+use xyg_engine::AnnotationSpliceCode;
+use xyg_engine::AnnotationSpliceError;
+use xyg_engine::ChromePackError;
+use xyg_engine::EncodeAssembledAxis;
+use xyg_engine::EncodeAssembledCode;
+use xyg_engine::EncodeAssembledError;
+use xyg_engine::EncodeSidecarsCode;
+use xyg_engine::ExportPackError;
+use xyg_engine::SceneStaticFormat;
+use xyg_engine::StyleSidecarsCode;
+use xyg_engine::StyleSidecarsError;
+use xyg_engine::TraceAttachCode;
+use xyg_engine::TraceAttachError;
+use xyg_engine::TraceCompileCode;
+use xyg_engine::TraceCompileError;
+use xyg_engine::TraceRowsCode;
+use xyg_engine::TraceRowsError;
+use xyg_engine::TraceSidecarsCode;
+use xyg_engine::TraceSidecarsError;
+use xyg_engine::PRODUCT_SUPPORT_UNSUPPORTED;
 
 fn finite_gt(lo: f64, hi: f64) -> bool {
     lo.is_finite() && hi.is_finite() && hi > lo
@@ -190,7 +191,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 360;
+pub const ABI_VERSION: u32 = 361;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2847,6 +2848,46 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
     required
 }
 
+/// Resolve one canonical packed `XYTK` v1 request into `XYTO` v1.
+///
+/// This capacity-aware proof seam is the native twin of
+/// `xyg_wasm_ticks_resolve`: callers probe with a null output and zero
+/// capacity, allocate the returned byte count, then retry. Rust owns request
+/// validation, tick positions, label formatting, provenance, and output
+/// framing on both boundaries.
+///
+/// Returns `usize::MAX` for malformed, non-finite, or over-limit input.
+///
+/// # Safety
+/// `input` addresses `input_len` readable bytes. When `out_cap` is sufficient,
+/// `out` addresses `out_cap` writable bytes and does not overlap `input`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tick_resolve_packed(
+    input: *const u8,
+    input_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if input_len == 0 || input.is_null() {
+        return usize::MAX;
+    }
+    let result = ffi_guard(None, || {
+        packed_ticks::execute(std::slice::from_raw_parts(input, input_len)).ok()
+    });
+    let Some(bytes) = result else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if required > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
 /// Apply a canonical scene scale to a typed f64 buffer. `kind` is 0 linear,
 /// 1 log, or 2 symlog. `operation` is 0 domain-to-scale coordinate, 1
 /// domain-to-pixel, or 2 scale-coordinate-to-domain. Returns zero on success.
@@ -4405,7 +4446,8 @@ pub unsafe extern "C" fn xyg_factorize_display_labels(
         } else {
             std::slice::from_raw_parts(label_texts, label_texts_len)
         };
-        let Some(factored) = kernels::factorize_display_labels_packed(label_lens, label_texts) else {
+        let Some(factored) = kernels::factorize_display_labels_packed(label_lens, label_texts)
+        else {
             return usize::MAX;
         };
         let n_categories = factored.categories.len();
@@ -4712,10 +4754,12 @@ pub unsafe extern "C" fn xyg_factorize_use_native_fixed(
         return -1;
     }
     if n_rows == 0 {
-        return ffi_guard(-1, || match kernels::factorize_use_native_fixed(&[], 0, record_width as usize) {
-            Some(true) => 1,
-            Some(false) => 0,
-            None => -1,
+        return ffi_guard(-1, || {
+            match kernels::factorize_use_native_fixed(&[], 0, record_width as usize) {
+                Some(true) => 1,
+                Some(false) => 0,
+                None => -1,
+            }
         });
     }
     if data.is_null() {
@@ -4797,10 +4841,7 @@ pub unsafe extern "C" fn xyg_category_labels_packed(
 /// # Safety
 /// When `n > 0`, `row_tags` must address `n` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_object_rows_all_stringlike(
-    row_tags: *const u8,
-    n: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_object_rows_all_stringlike(row_tags: *const u8, n: usize) -> i32 {
     if n == 0 {
         return 1;
     }
@@ -4825,10 +4866,7 @@ pub unsafe extern "C" fn xyg_object_rows_all_stringlike(
 /// # Safety
 /// When `n > 0`, `row_tags` must address `n` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_object_rows_all_real_numeric(
-    row_tags: *const u8,
-    n: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_object_rows_all_real_numeric(row_tags: *const u8, n: usize) -> i32 {
     if row_tags.is_null() && n > 0 {
         return -1;
     }
@@ -5427,8 +5465,16 @@ pub unsafe extern "C" fn xyg_scene_ribbon_color2_classify(
         kernels::scene_ribbon_color2_classify(
             has_color2 != 0,
             kind_is_ribbon != 0,
-            if has_source_css != 0 { Some(source) } else { None },
-            if has_target_css != 0 { Some(target) } else { None },
+            if has_source_css != 0 {
+                Some(source)
+            } else {
+                None
+            },
+            if has_target_css != 0 {
+                Some(target)
+            } else {
+                None
+            },
             paint,
             has_fill != 0,
             has_end_pair != 0,
@@ -5447,10 +5493,7 @@ pub unsafe extern "C" fn xyg_scene_ribbon_color2_classify(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_tick_label_strategy(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_tick_label_strategy(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5479,10 +5522,7 @@ pub unsafe extern "C" fn xyg_scene_tick_label_strategy(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_tick_anchor(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_tick_anchor(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5775,10 +5815,7 @@ pub unsafe extern "C" fn xyg_scene_rect_extra_flags(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_gradient_dir(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_gradient_dir(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5805,10 +5842,7 @@ pub unsafe extern "C" fn xyg_scene_gradient_dir(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_linear_gradient_prefix(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_linear_gradient_prefix(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5835,10 +5869,7 @@ pub unsafe extern "C" fn xyg_scene_linear_gradient_prefix(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_gradient_space(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_gradient_space(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5866,10 +5897,7 @@ pub unsafe extern "C" fn xyg_scene_gradient_space(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_hexbin_reduce_admit(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_hexbin_reduce_admit(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5897,10 +5925,7 @@ pub unsafe extern "C" fn xyg_scene_hexbin_reduce_admit(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_curve_classify(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_curve_classify(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5928,10 +5953,7 @@ pub unsafe extern "C" fn xyg_scene_curve_classify(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_marker_glyph_admit(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_marker_glyph_admit(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5958,10 +5980,7 @@ pub unsafe extern "C" fn xyg_scene_marker_glyph_admit(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_kind_admit(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_kind_admit(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -5988,10 +6007,7 @@ pub unsafe extern "C" fn xyg_scene_kind_admit(
 /// `text` must address `text_len` readable bytes when `text_len` is
 /// nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_scene_kind_class(
-    text: *const u8,
-    text_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_scene_kind_class(text: *const u8, text_len: usize) -> i32 {
     if text_len > 0 && text.is_null() {
         return -2;
     }
@@ -7562,10 +7578,7 @@ pub unsafe extern "C" fn xyg_scene_xytc_radius_pack(
     out_r_base: *mut f64,
     out_wedge_gap: *mut f64,
 ) -> i32 {
-    if out_flags.is_null()
-        || out_r_tip.is_null()
-        || out_r_base.is_null()
-        || out_wedge_gap.is_null()
+    if out_flags.is_null() || out_r_tip.is_null() || out_r_base.is_null() || out_wedge_gap.is_null()
     {
         return 0;
     }
@@ -7656,8 +7669,7 @@ pub unsafe extern "C" fn xyg_aligned_window(
         return 0;
     }
     ffi_guard(0, || {
-        let (aligned_lo, aligned_hi) =
-            kernels::aligned_window(lo, hi, extent_lo, extent_hi, pad);
+        let (aligned_lo, aligned_hi) = kernels::aligned_window(lo, hi, extent_lo, extent_hi, pad);
         *out_lo = aligned_lo;
         *out_hi = aligned_hi;
         1
@@ -9778,13 +9790,7 @@ pub unsafe extern "C" fn xyg_colormap_custom_stops_resolve_list(
         let css_refs: Vec<&str> = css.iter().map(String::as_str).collect();
         let pos_opts: Vec<Option<f64>> = pos_slice
             .iter()
-            .map(|value| {
-                if value.is_nan() {
-                    None
-                } else {
-                    Some(*value)
-                }
-            })
+            .map(|value| if value.is_nan() { None } else { Some(*value) })
             .collect();
         match kernels::colormap_custom_stops_resolve_list(
             &css_refs,
@@ -9982,7 +9988,8 @@ pub unsafe extern "C" fn xyg_paint_effective_rgba(
     let Some(rgba_len) = n.checked_mul(4) else {
         return 0;
     };
-    if n > 0 && (intrinsic.is_null() || artist_alpha.is_null() || opacity.is_null() || out.is_null())
+    if n > 0
+        && (intrinsic.is_null() || artist_alpha.is_null() || opacity.is_null() || out.is_null())
     {
         return 0;
     }
@@ -10396,19 +10403,24 @@ pub unsafe extern "C" fn xyg_real_numeric_dtype_admit(dtype_kind: u8) -> i32 {
 /// Map a host value probe to an object-column stringlike row tag (ABI 353).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_object_row_stringlike_tag_from_probe(probe: u8) -> i32 {
-    ffi_guard(-1, || match kernels::object_row_stringlike_tag_from_probe(probe) {
-        Some(tag) => i32::from(tag),
-        None => -1,
+    ffi_guard(-1, || {
+        match kernels::object_row_stringlike_tag_from_probe(probe) {
+            Some(tag) => i32::from(tag),
+            None => -1,
+        }
     })
 }
 
 /// Map a host value probe to an object-column real-numeric row tag (ABI 353).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_object_row_real_numeric_tag_from_probe(probe: u8) -> i32 {
-    ffi_guard(-1, || match kernels::object_row_real_numeric_tag_from_probe(probe) {
-        Some(tag) => i32::from(tag),
-        None => -1,
-    })
+    ffi_guard(
+        -1,
+        || match kernels::object_row_real_numeric_tag_from_probe(probe) {
+            Some(tag) => i32::from(tag),
+            None => -1,
+        },
+    )
 }
 
 /// Batch map value probes to stringlike row tags (ABI 356).
@@ -10462,9 +10474,11 @@ pub unsafe extern "C" fn xyg_object_row_real_numeric_tags_from_probes(
 /// Map a host value probe to a category-label kind byte (ABI 354).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_category_label_kind_from_probe(probe: u8) -> i32 {
-    ffi_guard(-1, || match kernels::category_label_kind_from_probe(probe) {
-        Some(kind) => i32::from(kind),
-        None => -1,
+    ffi_guard(-1, || {
+        match kernels::category_label_kind_from_probe(probe) {
+            Some(kind) => i32::from(kind),
+            None => -1,
+        }
     })
 }
 
@@ -10515,14 +10529,13 @@ pub unsafe extern "C" fn xyg_category_palette_rows(n_categories: u64) -> u64 {
 /// Returns `1` categorical, `0` continuous, or `-1` when the object probe is
 /// invalid. For non-object dtypes, pass `object_real_numeric = -1`.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_array_is_categorical(
-    dtype_kind: u8,
-    object_real_numeric: i32,
-) -> i32 {
-    ffi_guard(-1, || match kernels::array_is_categorical(dtype_kind, object_real_numeric) {
-        Some(true) => 1,
-        Some(false) => 0,
-        None => -1,
+pub unsafe extern "C" fn xyg_array_is_categorical(dtype_kind: u8, object_real_numeric: i32) -> i32 {
+    ffi_guard(-1, || {
+        match kernels::array_is_categorical(dtype_kind, object_real_numeric) {
+            Some(true) => 1,
+            Some(false) => 0,
+            None => -1,
+        }
     })
 }
 
@@ -10805,7 +10818,8 @@ pub unsafe extern "C" fn xyg_categorical_palette(
     if entry_lens.is_null() || out_lens.is_null() {
         return usize::MAX;
     }
-    if (entry_texts_len > 0 && entry_texts.is_null()) || (out_texts_cap > 0 && out_texts.is_null()) {
+    if (entry_texts_len > 0 && entry_texts.is_null()) || (out_texts_cap > 0 && out_texts.is_null())
+    {
         return usize::MAX;
     }
     ffi_guard(usize::MAX, || {
@@ -10926,9 +10940,12 @@ pub unsafe extern "C" fn xyg_categorical_palette_map_resolve(
         let key_refs: Vec<&str> = map_keys.iter().map(String::as_str).collect();
         let value_refs: Vec<&str> = map_values.iter().map(String::as_str).collect();
         let default_refs: Vec<&str> = default_palette.iter().map(String::as_str).collect();
-        let Some(resolved) =
-            kernels::categorical_palette_map_resolve(&cat_refs, &key_refs, &value_refs, &default_refs)
-        else {
+        let Some(resolved) = kernels::categorical_palette_map_resolve(
+            &cat_refs,
+            &key_refs,
+            &value_refs,
+            &default_refs,
+        ) else {
             return usize::MAX;
         };
         let out_lens_slice = std::slice::from_raw_parts_mut(out_lens, n_categories);
@@ -10937,7 +10954,9 @@ pub unsafe extern "C" fn xyg_categorical_palette_map_resolve(
         } else {
             std::slice::from_raw_parts_mut(out_texts, out_texts_cap)
         };
-        if kernels::write_packed_strings(out_lens_slice, out_texts_slice, &resolved.colors).is_none() {
+        if kernels::write_packed_strings(out_lens_slice, out_texts_slice, &resolved.colors)
+            .is_none()
+        {
             return usize::MAX;
         }
         if !out_unmapped.is_null() {
@@ -11030,7 +11049,8 @@ pub unsafe extern "C" fn xyg_color_channel_direct_rgba_f64_categorical(
             return usize::MAX;
         };
         let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
-        let Some(rgba) = kernels::color_channel_direct_rgba_f64_categorical(codes_slice, &refs) else {
+        let Some(rgba) = kernels::color_channel_direct_rgba_f64_categorical(codes_slice, &refs)
+        else {
             return usize::MAX;
         };
         if rgba.len() != need {
@@ -18209,7 +18229,9 @@ pub unsafe extern "C" fn xyg_payload_density_grid_materialize(
         ) {
             Ok(v) => v,
             Err(density_grid_materialize::DensityGridMaterializeError::InvalidArgs) => return -1,
-            Err(density_grid_materialize::DensityGridMaterializeError::UnexpectedPath) => return -2,
+            Err(density_grid_materialize::DensityGridMaterializeError::UnexpectedPath) => {
+                return -2
+            }
             Err(density_grid_materialize::DensityGridMaterializeError::StratifiedFailed) => {
                 return -3;
             }
@@ -18221,17 +18243,11 @@ pub unsafe extern "C" fn xyg_payload_density_grid_materialize(
         if binning_bytes.len() >= input.binning_cap {
             return -1;
         }
-        let rgba_len = materialized
-            .rgba_grid
-            .as_ref()
-            .map_or(0, |rgba| rgba.len());
+        let rgba_len = materialized.rgba_grid.as_ref().map_or(0, |rgba| rgba.len());
         if rgba_len > input.rgba_cap || (rgba_len > 0 && out_rgba.is_null()) {
             return -1;
         }
-        let sample_len = materialized
-            .sample_sel
-            .as_ref()
-            .map_or(0, |sel| sel.len());
+        let sample_len = materialized.sample_sel.as_ref().map_or(0, |sel| sel.len());
         if sample_len > input.sample_sel_cap || (sample_len > 0 && out_sample_sel.is_null()) {
             return -1;
         }
@@ -19710,7 +19726,8 @@ pub unsafe extern "C" fn xyg_scene_xytc_trace_pack(
     let Some(marker_blob) = optional_bytes(marker_blob, input.marker_blob_len) else {
         return -1;
     };
-    let Some(color2_gradient_blob) = optional_bytes(color2_gradient_blob, input.color2_gradient_len)
+    let Some(color2_gradient_blob) =
+        optional_bytes(color2_gradient_blob, input.color2_gradient_len)
     else {
         return -1;
     };
@@ -20310,7 +20327,9 @@ pub unsafe extern "C" fn xyg_scene_xycf_pack(
     }
 }
 
-fn parse_figure_support_axes(blob: &[u8]) -> Result<Vec<scene_figure_support_pack::FigureSupportAxisInput>, i32> {
+fn parse_figure_support_axes(
+    blob: &[u8],
+) -> Result<Vec<scene_figure_support_pack::FigureSupportAxisInput>, i32> {
     let mut axes = Vec::new();
     let mut at = 0usize;
     while at < blob.len() {
@@ -20359,10 +20378,7 @@ fn parse_figure_support_traces(
         let kind = std::str::from_utf8(&blob[at..at + kind_len])
             .map_err(|_| -1)?
             .to_string();
-        traces.push(scene_figure_support_pack::FigureSupportTraceInput {
-            trace_flags,
-            kind,
-        });
+        traces.push(scene_figure_support_pack::FigureSupportTraceInput { trace_flags, kind });
         at += kind_len;
     }
     Ok(traces)
@@ -20400,11 +20416,7 @@ pub unsafe extern "C" fn xyg_scene_figure_support_pack(
         Ok(v) => v,
         Err(code) => return code,
     };
-    match scene_figure_support_pack::scene_figure_support_pack(
-        flags,
-        &axis_inputs,
-        &trace_inputs,
-    ) {
+    match scene_figure_support_pack::scene_figure_support_pack(flags, &axis_inputs, &trace_inputs) {
         Ok(packed) => {
             if packed.len() > out_cap {
                 return -2;
@@ -20499,10 +20511,7 @@ pub unsafe extern "C" fn xyg_payload_column_gather_materialize(
         if col.axis_scale_len == 0 || axis_scale_ptrs[idx].is_null() {
             return -1;
         }
-        let axis_scale = match read_utf8(
-            axis_scale_ptrs[idx],
-            col.axis_scale_len,
-        ) {
+        let axis_scale = match read_utf8(axis_scale_ptrs[idx], col.axis_scale_len) {
             Some(v) => v,
             None => return -1,
         };
@@ -20518,16 +20527,18 @@ pub unsafe extern "C" fn xyg_payload_column_gather_materialize(
             });
             kind_ptr
         };
-        materialize_in.push(payload_column_gather_materialize::PayloadColumnMaterializeIn {
-            ship_method: col.ship_method,
-            ship_scale: col.ship_scale,
-            values: values_slice,
-            col_min: col.col_min,
-            col_max: col.col_max,
-            kind,
-            sticky_offset: col.sticky_offset,
-            axis_scale,
-        });
+        materialize_in.push(
+            payload_column_gather_materialize::PayloadColumnMaterializeIn {
+                ship_method: col.ship_method,
+                ship_scale: col.ship_scale,
+                values: values_slice,
+                col_min: col.col_min,
+                col_max: col.col_max,
+                kind,
+                sticky_offset: col.sticky_offset,
+                axis_scale,
+            },
+        );
     }
     let materialized = match payload_column_gather_materialize::payload_column_gather_materialize(
         sel_slice,
@@ -21580,10 +21591,7 @@ pub unsafe extern "C" fn xyg_density_uses_channel_colormap(
 /// # Safety
 /// When ``binning_len > 0``, ``binning`` must address readable UTF-8 bytes.
 #[no_mangle]
-pub unsafe extern "C" fn xyg_density_reduction_kind(
-    binning: *const u8,
-    binning_len: usize,
-) -> i32 {
+pub unsafe extern "C" fn xyg_density_reduction_kind(binning: *const u8, binning_len: usize) -> i32 {
     ffi_guard(density_emit::DENSITY_REDUCTION_BIN2D, || {
         if binning_len > 0 && binning.is_null() {
             return density_emit::DENSITY_REDUCTION_BIN2D;
@@ -21628,11 +21636,9 @@ pub unsafe extern "C" fn xyg_density_overlay_omitted_wire(
         } else {
             &mut scratch[..]
         };
-        let Some(written) = density_emit::density_overlay_omitted_wire(
-            overlay_omitted,
-            point_overlay != 0,
-            slice,
-        ) else {
+        let Some(written) =
+            density_emit::density_overlay_omitted_wire(overlay_omitted, point_overlay != 0, slice)
+        else {
             return usize::MAX;
         };
         if out_cap >= written && written > 0 {
@@ -21649,7 +21655,9 @@ pub unsafe extern "C" fn xyg_density_overlay_omitted_wire(
 /// ``grid_path`` is unknown.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_grid_path_identity_state(grid_path: i32) -> i32 {
-    ffi_guard(-1, || density_emit::density_grid_path_identity_state(grid_path))
+    ffi_guard(-1, || {
+        density_emit::density_grid_path_identity_state(grid_path)
+    })
 }
 
 /// Whether density spec should ship ``density["color"]`` from a constant channel (ABI 268).
@@ -21766,7 +21774,9 @@ pub unsafe extern "C" fn xyg_density_mean_color_wire_admit(
 /// Compatibility boolean for ``density["channels_dropped"]`` (ABI 273).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_channels_dropped_compat(dropped_count: i32) -> i32 {
-    ffi_guard(0, || density_emit::density_channels_dropped_compat(dropped_count))
+    ffi_guard(0, || {
+        density_emit::density_channels_dropped_compat(dropped_count)
+    })
 }
 
 /// Whether a per-item channel name stays in ``dropped_channels`` (ABI 274).
@@ -26040,22 +26050,17 @@ mod tests {
     #[test]
     fn colormap_stops_resolves_names_and_reversal() {
         let mut out = [0u8; 768];
-        let n = unsafe {
-            xyg_colormap_stops(b"binary".as_ptr(), 6, out.as_mut_ptr(), out.len())
-        };
+        let n = unsafe { xyg_colormap_stops(b"binary".as_ptr(), 6, out.as_mut_ptr(), out.len()) };
         assert_eq!(n, 2);
         assert_eq!(&out[..6], &[255, 255, 255, 0, 0, 0]);
-        let reversed = unsafe {
-            xyg_colormap_stops(b"binary_r".as_ptr(), 8, out.as_mut_ptr(), out.len())
-        };
+        let reversed =
+            unsafe { xyg_colormap_stops(b"binary_r".as_ptr(), 8, out.as_mut_ptr(), out.len()) };
         assert_eq!(reversed, 2);
         assert_eq!(&out[..6], &[0, 0, 0, 255, 255, 255]);
-        let unknown = unsafe {
-            xyg_colormap_stops(b"nope".as_ptr(), 4, out.as_mut_ptr(), out.len())
-        };
-        let viridis = unsafe {
-            xyg_colormap_stops(b"viridis".as_ptr(), 7, out.as_mut_ptr(), out.len())
-        };
+        let unknown =
+            unsafe { xyg_colormap_stops(b"nope".as_ptr(), 4, out.as_mut_ptr(), out.len()) };
+        let viridis =
+            unsafe { xyg_colormap_stops(b"viridis".as_ptr(), 7, out.as_mut_ptr(), out.len()) };
         assert_eq!(unknown, viridis);
         assert!(unknown > 0);
     }
@@ -26065,9 +26070,7 @@ mod tests {
         let t = [0.0f64, 1.0];
         let stops = [0u8, 10, 20, 100, 110, 120];
         let mut rgb = [0u8; 6];
-        let ok = unsafe {
-            xyg_colormap_lut(t.as_ptr(), 2, stops.as_ptr(), 2, rgb.as_mut_ptr())
-        };
+        let ok = unsafe { xyg_colormap_lut(t.as_ptr(), 2, stops.as_ptr(), 2, rgb.as_mut_ptr()) };
         assert_eq!(ok, 1);
         assert_eq!(&rgb[..3], &[0, 10, 20]);
         assert_eq!(&rgb[3..], &[100, 110, 120]);
@@ -26324,10 +26327,7 @@ mod tests {
         };
         assert!(extras_code > 16);
         assert_eq!(&extras_out[..4], b"XYDS");
-        assert_eq!(
-            u32::from_le_bytes(extras_out[8..12].try_into().unwrap()),
-            1
-        );
+        assert_eq!(u32::from_le_bytes(extras_out[8..12].try_into().unwrap()), 1);
         let dx = [0.25_f64, 0.75];
         let dy = [0.25_f64, 0.75];
         let mut density_out = vec![0u8; 32 + 512 * 384];

@@ -84,6 +84,17 @@ currently pending charts. Client removal cancels its queued callback, and the
 final client cancels the shared animation frame before releasing the context.
 The strict-CSP direct-WASM evidence schedules two real views in one batch and
 proves that destroying a queued view executes no GPU work.
+Child-frame governance evidence runs as a hosted Playwright page with its
+explicit Rust/WASM tick sidecars on the same origin. Its two complete srcdoc
+charts must reach their own governed/shared-host states in real time; the gate
+does not depend on Chromium's dump-DOM virtual-time controller for workers.
+
+Grow-only presentation evidence compares every alpha byte exactly before and
+after host-buffer capacity changes and permits at most one least-significant
+bit of per-channel RGB rasterization variance at high device-pixel ratios.
+This is the measured Chromium GPU rounding boundary; arbitrary hue, opacity,
+or geometry drift still fails. Once capacity is fixed, forward and reverse
+client draw orders must reproduce the complete RGBA framebuffer byte-for-byte.
 
 ## Automatic admission coordination
 
