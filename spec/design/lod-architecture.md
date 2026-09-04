@@ -640,7 +640,9 @@ invariants so future kinds don't regress them:
   - **Source-clamped grids:** the transition-band replies that do go out
     stay cheap — a pyramid-served reply never composes more cells than the
     finest level resolves under the window
-    (`interaction._pyramid_source_shape`, `ceil(base·frac)+1` per axis); a
+    (`interaction._pyramid_source_shape`, the exact count from Rust compose's
+    cell-center `[lo, hi)` `center_range` per axis, including its upper-domain
+    epsilon); a
     full-screen grid of upsampled base cells is the same picture at several
     times the bytes, and the client's texture filtering reproduces the
     upscale. Exact/spatial grids (true full-detail bins) keep screen
@@ -742,9 +744,15 @@ cache and dedicated 100M latency gate still open)**
    render resolution. Its `max_upsample` bound is 2× for in-RAM traces (so
    below-floor and near-drill windows fall through to the exact
    `range_indices` + `bin_2d` path), but unbounded for out-of-core / huge
-   traces, which are served upsampled from an adaptively finer finest level
+   traces, which may be served from an adaptively finer finest level
    (`~sqrt(N/target)`, capped `PYRAMID_MAX_DIM`) rather than rescanned. Level
-   and mode are recorded per update as `binning: "pyramid-L<l>[-upsampled]"`.
+   and mode are recorded per update as `binning: "pyramid-L<l>[-upsampled]"`;
+   `-upsampled` is present only when the selected L0 cells under the viewport
+   are fewer than the requested output pixels on either axis. Hosts use the
+   same cell-center-inclusive `[lo, hi)` ceil/floor range as Rust compose
+   (including the pyramid's upper-edge epsilon), rather than approximating
+   this from span fractions. No-rescan is a cost policy, not itself evidence
+   that a sufficiently fine L0 is blurry.
    When *downsampling* (the coarsest adequate level packs 1–2 source cells per
    output bin), `compose` **area-weights** each source cell across the bins its
    extent overlaps rather than assigning it to the bin under its center;

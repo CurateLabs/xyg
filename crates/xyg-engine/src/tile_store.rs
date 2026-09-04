@@ -180,6 +180,33 @@ pub struct TileStore {
 pub type Stats = (u64, u64, u64, u64, u64, bool);
 
 impl TileStore {
+    /// Whether the chosen level must be enlarged to fill this output grid.
+    /// Metadata uses this geometry fact rather than the caller's no-rescan
+    /// policy so an adequate level 0 is never mislabeled as upsampled.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn level_is_upsampled(
+        &self,
+        level: usize,
+        lo_x: f64,
+        hi_x: f64,
+        lo_y: f64,
+        hi_y: f64,
+        w: usize,
+        h: usize,
+    ) -> bool {
+        tiles::level_is_upsampled_dims(
+            &self.dims,
+            (self.x0, self.x1, self.y0, self.y1),
+            level,
+            lo_x,
+            hi_x,
+            lo_y,
+            hi_y,
+            w,
+            h,
+        )
+    }
+
     /// Snapshot a built pyramid into a spill file. Nothing is resident
     /// afterwards; tiles fault in on demand. The pyramid handle stays live
     /// and independent — the host frees it to actually reclaim the RAM.

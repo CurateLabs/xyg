@@ -19,6 +19,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
+DEFAULT_DENSITY_WORKFLOW = ROOT / ".github" / "workflows" / "density-100m.yml"
 DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_FINAL_REVIEW_WORKFLOW = ROOT / ".github" / "workflows" / "final-coderabbit.yml"
 DEFAULT_CODERABBIT_CONFIG = ROOT / ".coderabbit.yaml"
@@ -443,6 +444,21 @@ def _step_direct_key_values(step: str, key: str) -> tuple[list[str], bool]:
         elif candidate == key:
             values.append(value.strip())
     return values, unsafe
+
+
+def _step_direct_keys(step: str) -> tuple[list[str], bool]:
+    """Return direct step keys, including the key carried by ``- key:``."""
+    keys: list[str] = []
+    unsafe = False
+    for index, line in enumerate(_yaml_code_lines(step)):
+        parsed = _sequence_item_yaml_mapping(line) if index == 0 else _direct_yaml_mapping(line)
+        if parsed is None or parsed[0] != 8:
+            continue
+        _indent, key, key_unsafe, _value = parsed
+        unsafe = unsafe or key_unsafe or key is None
+        if key is not None:
+            keys.append(key)
+    return keys, unsafe
 
 
 def _environment_block_is_unsafe(lines: list[str], index: int, env_indent: int) -> bool:
@@ -1400,6 +1416,30 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "timeout-minutes: 10",
     )
     test_job = jobs.get("test", "")
+    density_pr_steps = [
+        step
+        for step in _step_sequence_blocks(test_job)
+        if _step_direct_key_values(step, "name")[0]
+        == ["Density end-to-end harness contract (small scale only)"]
+    ]
+    if len(density_pr_steps) != 1:
+        errors.append("CI test job must contain exactly one small-scale density contract step")
+    elif _step_direct_keys(density_pr_steps[0]) != (["name", "run"], False):
+        errors.append("CI small-scale density contract step must use only name and run")
+    _require_step_runs_exactly(
+        errors,
+        test_job,
+        "Density end-to-end harness contract (small scale only)",
+        "exact PR-only 250k density journey and report verification",
+        "CHROME=$(node -e 'process.stdout.write(require(\"playwright\").chromium.executablePath())')",
+        ".venv/bin/python benchmarks/bench_density_e2e.py \\",
+        '--points 250000 --chrome "$CHROME" \\',
+        "--timeout 180 --max-rss-gib 4 --max-disk-gib 1 \\",
+        '--output "$RUNNER_TEMP/density-e2e-pr.json"',
+        "python3 scripts/verify_density_e2e_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-pr.json" --sha "$GITHUB_SHA"',
+        forbid_environment=True,
+    )
     _require_step_runs_exactly(
         errors,
         test_job,
@@ -2108,6 +2148,274 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     return errors
 
 
+def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str]:
+    """Keep the expensive #876 authority off PRs and non-main refs."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read density authority workflow {path}: {exc}"]
+
+    errors: list[str] = []
+    _require_unique_workflow_structure(errors, text, "density authority", {"density"})
+    top_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(text) if indent == 0 and not unsafe
+    ]
+    if top_keys != ["name", "on", "permissions", "concurrency", "jobs"]:
+        errors.append("density authority must use only the exact reviewed top-level keys")
+    permissions = _unique_mapping_block(text, "permissions", indent=0) or ""
+    permission_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(permissions) if indent == 2 and not unsafe
+    ]
+    contents, contents_unsafe = _direct_yaml_key_values(permissions, "contents", indent=2)
+    if permission_keys != ["contents"] or contents_unsafe or contents != ["read"]:
+        errors.append("density authority permissions must be exactly contents: read")
+    concurrency = _unique_mapping_block(text, "concurrency", indent=0) or ""
+    concurrency_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(concurrency) if indent == 2 and not unsafe
+    ]
+    group, group_unsafe = _direct_yaml_key_values(concurrency, "group", indent=2)
+    cancel, cancel_unsafe = _direct_yaml_key_values(concurrency, "cancel-in-progress", indent=2)
+    if (
+        concurrency_keys != ["group", "cancel-in-progress"]
+        or group_unsafe
+        or group != ["density-e2e-main"]
+        or cancel_unsafe
+        or cancel != ["false"]
+    ):
+        errors.append("density authority concurrency must serialize runs without cancellation")
+    if _has_shell_init_environment(text) or re.search(r"\bGITHUB_(?:ENV|PATH)\b", text):
+        errors.append("density authority must not use shell-init environment state")
+    on_block = _unique_mapping_block(text, "on", indent=0) or ""
+    triggers = [
+        key for indent, key, unsafe in _yaml_mapping_keys(on_block) if indent == 2 and not unsafe
+    ]
+    if triggers != ["schedule", "workflow_dispatch"]:
+        errors.append("density authority must have only schedule and workflow_dispatch triggers")
+    crons = [
+        line.strip()
+        for line in _yaml_code_lines(on_block)
+        if re.fullmatch(r'\s*- cron: "(?:31 6 \* \* \*|43 5 \* \* 0)"\s*', line)
+    ]
+    if crons != ['- cron: "31 6 * * *"', '- cron: "43 5 * * 0"']:
+        errors.append(
+            "density authority must keep the exact daily-control and weekly-authority crons"
+        )
+    jobs = _job_blocks(text)
+    if set(jobs) != {"density"}:
+        errors.append("density authority workflow must contain exactly the density job")
+    density = jobs.get("density", "")
+    job_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(density) if indent == 4 and not unsafe
+    ]
+    if job_keys != ["name", "if", "runs-on", "timeout-minutes", "steps"]:
+        errors.append("density authority job must use only the reviewed direct job keys")
+    runner, runner_unsafe = _direct_yaml_key_values(density, "runs-on", indent=4)
+    condition, condition_unsafe = _direct_yaml_key_values(density, "if", indent=4)
+    timeout, timeout_unsafe = _direct_yaml_key_values(density, "timeout-minutes", indent=4)
+    if runner_unsafe or runner != ["blacksmith-4vcpu-ubuntu-2404"]:
+        errors.append("density authority must use the bounded approved Blacksmith runner")
+    if condition_unsafe or condition != ["github.ref == 'refs/heads/main'"]:
+        errors.append("density authority job must be locked directly to refs/heads/main")
+    if timeout_unsafe or timeout != ["90"]:
+        errors.append("density authority job must have timeout-minutes: 90")
+
+    steps = _step_sequence_blocks(density)
+    expected_steps = [
+        (None, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"),
+        (None, "dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30"),
+        (None, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020"),
+        (None, "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"),
+        (None, "astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990"),
+        ("Cache Playwright Chromium", "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9"),
+        ("Build bounded native and browser product paths", None),
+        ("Record runner capacity", None),
+        ("Run daily 1M end-to-end control", None),
+        ("Run weekly/manual 100M end-to-end authority", None),
+        (
+            "Upload exact-SHA raw reports",
+            "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        ),
+    ]
+    actual_steps: list[tuple[str | None, str | None]] = []
+    for step in steps:
+        names, names_unsafe = _step_direct_key_values(step, "name")
+        uses, uses_unsafe = _step_direct_key_values(step, "uses")
+        clean_uses = [value.split(" #", 1)[0] for value in uses]
+        actual_steps.append(
+            (
+                names[0] if len(names) == 1 and not names_unsafe else None,
+                clean_uses[0] if len(clean_uses) == 1 and not uses_unsafe else None,
+            )
+        )
+    if actual_steps != expected_steps:
+        errors.append("density authority must contain only the exact reviewed step sequence")
+
+    expected_step_keys = [
+        ["uses", "with"],
+        ["uses", "with"],
+        ["uses", "with"],
+        ["uses", "with"],
+        ["uses", "with"],
+        ["name", "uses", "with"],
+        ["name", "run"],
+        ["name", "run"],
+        ["name", "run"],
+        ["name", "if", "env", "run"],
+        ["name", "if", "uses", "with"],
+    ]
+    if len(steps) == len(expected_step_keys) and any(
+        unsafe or keys != expected
+        for step, expected in zip(steps, expected_step_keys, strict=True)
+        for keys, unsafe in [_step_direct_keys(step)]
+    ):
+        errors.append("density authority steps must use only their exact reviewed direct keys")
+
+    action_with_contracts = [
+        (
+            0,
+            ["fetch-depth", "persist-credentials"],
+            {"fetch-depth": ["0"], "persist-credentials": ["false"]},
+        ),
+        (1, ["toolchain"], {"toolchain": ["1.96.0"]}),
+        (2, ["node-version"], {"node-version": ['"22"']}),
+        (3, ["python-version"], {"python-version": ['"3.11"']}),
+        (4, ["enable-cache"], {"enable-cache": ["false"]}),
+        (
+            5,
+            ["path", "key"],
+            {
+                "path": ["~/.cache/ms-playwright"],
+                "key": [
+                    "density-e2e-playwright-${{ runner.os }}-${{ runner.arch }}-"
+                    "${{ hashFiles('package-lock.json') }}"
+                ],
+            },
+        ),
+    ]
+    for index, expected_keys, expected_values in action_with_contracts:
+        if index >= len(steps):
+            continue
+        with_block = _unique_mapping_block(steps[index], "with", indent=8) or ""
+        with_keys = [
+            key
+            for indent, key, unsafe in _yaml_mapping_keys(with_block)
+            if indent == 10 and not unsafe
+        ]
+        values_ok = all(
+            _direct_yaml_key_values(with_block, key, indent=10) == (values, False)
+            for key, values in expected_values.items()
+        )
+        if with_keys != expected_keys or not values_ok:
+            errors.append(
+                f"density authority setup step {index + 1} must keep exact reviewed inputs"
+            )
+
+    _require_step_runs_exactly(
+        errors,
+        density,
+        "Build bounded native and browser product paths",
+        "exact bounded build commands",
+        "cargo build --release",
+        "npm ci",
+        "node js/build.mjs",
+        "uv sync --locked --group dev",
+        "npx playwright install chromium",
+        allow_job_gate=True,
+        forbid_environment=True,
+    )
+    _require_step_runs_exactly(
+        errors,
+        density,
+        "Record runner capacity",
+        "exact capacity commands",
+        "getconf _NPROCESSORS_ONLN",
+        "grep -E 'MemTotal|MemAvailable' /proc/meminfo",
+        'df -h "$GITHUB_WORKSPACE"',
+        allow_job_gate=True,
+        forbid_environment=True,
+    )
+    chrome_command = "CHROME=$(node -e 'process.stdout.write(require(\"playwright\").chromium.executablePath())')"
+    _require_step_runs_exactly(
+        errors,
+        density,
+        "Run daily 1M end-to-end control",
+        "exact 1M control and verification commands",
+        chrome_command,
+        ".venv/bin/python benchmarks/bench_density_e2e.py \\",
+        '--points 1000000 --chrome "$CHROME" \\',
+        "--timeout 600 --max-rss-gib 8 --max-disk-gib 2 \\",
+        '--output "$RUNNER_TEMP/density-e2e-control-${GITHUB_SHA}.json"',
+        "python3 scripts/verify_density_e2e_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-control-${GITHUB_SHA}.json" --sha "$GITHUB_SHA"',
+        allow_job_gate=True,
+        forbid_environment=True,
+    )
+    authority_step = _named_step_blocks(density).get(
+        "Run weekly/manual 100M end-to-end authority", ""
+    )
+    authority_if, authority_if_unsafe = _step_direct_key_values(authority_step, "if")
+    authority_env = _unique_mapping_block(authority_step, "env", indent=8) or ""
+    authority_env_keys = [
+        key
+        for indent, key, unsafe in _yaml_mapping_keys(authority_env)
+        if indent == 10 and not unsafe
+    ]
+    authority_capability, authority_capability_unsafe = _direct_yaml_key_values(
+        authority_env, "XYG_DENSITY_100M_AUTHORITY", indent=10
+    )
+    authority_commands = [
+        chrome_command,
+        ".venv/bin/python benchmarks/bench_density_e2e.py \\",
+        '--points 100000000 --authority --chrome "$CHROME" \\',
+        "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \\",
+        '--output "$RUNNER_TEMP/density-e2e-100m-${GITHUB_SHA}.json"',
+        "python3 scripts/verify_density_e2e_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA"',
+    ]
+    if (
+        authority_if_unsafe
+        or authority_if
+        != ["github.event_name == 'workflow_dispatch' || github.event.schedule == '43 5 * * 0'"]
+        or authority_capability_unsafe
+        or authority_capability != ['"1"']
+        or authority_env_keys != ["XYG_DENSITY_100M_AUTHORITY"]
+        or _step_run_lines(authority_step) != authority_commands
+        or _direct_yaml_key_count(authority_step, "run", indent=8) != 1
+    ):
+        errors.append(
+            "density 100M authority step must keep its exact guard, capability, and commands"
+        )
+    upload = _named_step_blocks(density).get("Upload exact-SHA raw reports", "")
+    upload_if, upload_if_unsafe = _step_direct_key_values(upload, "if")
+    upload_with = _unique_mapping_block(upload, "with", indent=8) or ""
+    upload_values = {
+        key: _direct_yaml_key_values(upload_with, key, indent=10)
+        for key in ("name", "if-no-files-found", "retention-days", "path")
+    }
+    if (
+        upload_if_unsafe
+        or upload_if != ["always()"]
+        or upload_values
+        != {
+            "name": (["density-e2e-${{ github.sha }}"], False),
+            "if-no-files-found": (["error"], False),
+            "retention-days": (["30"], False),
+            "path": (["${{ runner.temp }}/density-e2e-*-${{ github.sha }}.json"], False),
+        }
+    ):
+        errors.append("density raw-report upload must keep exact SHA paths and always-run policy")
+    upload_keys = [
+        key
+        for indent, key, unsafe in _yaml_mapping_keys(upload_with)
+        if indent == 10 and not unsafe
+    ]
+    if upload_keys != ["name", "if-no-files-found", "retention-days", "path"]:
+        errors.append("density raw-report upload must use only the exact reviewed inputs")
+    if "CodSpeedHQ/action@" in density or "--codspeed" in density:
+        errors.append("density end-to-end evidence must remain outside hosted CodSpeed")
+    return errors
+
+
 def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -2497,11 +2805,13 @@ def validate_all_workflows(
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
     final_review_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
     coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
+    density_path: Path = DEFAULT_DENSITY_WORKFLOW,
 ) -> list[str]:
     return [
         *validate_workflow_hosting_policy(),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
+        *validate_density_workflow(density_path),
         *validate_bazel_workflow(bazel_path),
         *validate_final_review_policy(final_review_path, coderabbit_config_path),
         *validate_release_workflow(release_path),

@@ -241,6 +241,30 @@ artifacts above prove refinement lifecycle (attach / zoom / trap / recover),
 not this degradation boundary. Hosted visual evidence of no-refinement is
 tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the claimed M2 subset.
 
+### 100M policy versus end-to-end authority
+
+The existing WASM ABI 24 100M row proves only the allocation-free first-paint
+decision. It does not claim that 100M f64 rows were created, admitted,
+aggregated, uploaded, rendered, refined, or torn down. Likewise, the hosted
+strict-CSP browser ladders above stop at 1M and must not be cited as 100M
+execution evidence.
+
+`benchmarks/bench_density_e2e.py` is now the distinct end-to-end authority. PR
+CI executes its complete native/browser contract at 250k, the main-only daily
+lane retains a 1M control, and the weekly/manual main lane produces the real
+100M SHA-keyed raw artifact `density-e2e-100m-<git-sha>.json`. No 100M result is
+checked in or claimed here yet: publication requires a successful raw artifact
+that passes `scripts/verify_density_e2e_report.py`, including measured
+process-tree peak RSS, zero default f64 paint bytes, bounded initial/refine
+transport-body bytes (with raw buffers reported separately), exact native
+count-grid conservation, scale-appropriate Rust-owned density semantics,
+byte-for-byte native-oracle linkage to the emitted initial density grid,
+browser-matched refine hashes, a browser-observed strict-CSP block,
+positive bounded normal-transition refine uploads (including repeated
+same-texture frame uploads), distinct nonblank first/refined plot
+rasters, and clean source/browser/process teardown.
+Timing from that artifact remains environment-scoped and advisory.
+
 ## Competitive product goal
 
 XYG's product goal is to outperform every competing charting library across

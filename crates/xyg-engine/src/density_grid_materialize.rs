@@ -158,7 +158,7 @@ fn try_pyramid_compose(
     w: usize,
     h: usize,
     max_upsample: usize,
-) -> Option<(Vec<f32>, Option<Vec<u8>>, usize, bool)> {
+) -> Option<(Vec<f32>, Option<Vec<u8>>, usize, bool, bool)> {
     let cells = w.checked_mul(h)?;
     let mut grid = vec![0.0f32; cells];
     match resource {
@@ -166,17 +166,37 @@ fn try_pyramid_compose(
             #[cfg(not(target_family = "wasm"))]
             {
                 let mut rgba = pyr_colored.then(|| vec![0u8; cells * 4]);
-                let level = tile_store::reg_with(handle, |store| {
+                let (level, upsampled) = tile_store::reg_with(handle, |store| {
                     if pyr_colored {
                         let rgba_buf = rgba.as_mut()?;
-                        store
-                            .compose_color(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid, rgba_buf)
-                            .ok()?
+                        let level = store
+                            .compose_color(
+                                bx0,
+                                bx1,
+                                by0,
+                                by1,
+                                w,
+                                h,
+                                max_upsample,
+                                &mut grid,
+                                rgba_buf,
+                            )
+                            .ok()??;
+                        Some((
+                            level,
+                            store.level_is_upsampled(level, bx0, bx1, by0, by1, w, h),
+                        ))
                     } else {
-                        store.compose(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid).ok()?
+                        let level = store
+                            .compose(bx0, bx1, by0, by1, w, h, max_upsample, &mut grid)
+                            .ok()??;
+                        Some((
+                            level,
+                            store.level_is_upsampled(level, bx0, bx1, by0, by1, w, h),
+                        ))
                     }
                 })??;
-                Some((grid, rgba, level, true))
+                Some((grid, rgba, level, true, upsampled))
             }
             #[cfg(target_family = "wasm")]
             {
@@ -186,15 +206,35 @@ fn try_pyramid_compose(
         DENSITY_RESOURCE_PYRAMID => {
             if pyr_colored {
                 let mut rgba = vec![0u8; cells * 4];
-                let level = tiles::reg_with(handle, |pyr| {
-                    tiles::compose_color(pyr, bx0, bx1, by0, by1, w, h, max_upsample, &mut grid, &mut rgba)
+                let (level, upsampled) = tiles::reg_with(handle, |pyr| {
+                    let level = tiles::compose_color(
+                        pyr,
+                        bx0,
+                        bx1,
+                        by0,
+                        by1,
+                        w,
+                        h,
+                        max_upsample,
+                        &mut grid,
+                        &mut rgba,
+                    )?;
+                    Some((
+                        level,
+                        tiles::level_is_upsampled(pyr, level, bx0, bx1, by0, by1, w, h),
+                    ))
                 })??;
-                Some((grid, Some(rgba), level, false))
+                Some((grid, Some(rgba), level, false, upsampled))
             } else {
-                let level = tiles::reg_with(handle, |pyr| {
-                    tiles::compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample, &mut grid)
+                let (level, upsampled) = tiles::reg_with(handle, |pyr| {
+                    let level =
+                        tiles::compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample, &mut grid)?;
+                    Some((
+                        level,
+                        tiles::level_is_upsampled(pyr, level, bx0, bx1, by0, by1, w, h),
+                    ))
                 })??;
-                Some((grid, None, level, false))
+                Some((grid, None, level, false, upsampled))
             }
         }
         _ => None,
@@ -238,7 +278,7 @@ pub fn payload_density_grid_materialize(
     pyr_colored: bool,
     max_upsample: usize,
     tile_upsample: usize,
-    pyramid_no_rescan: bool,
+    _pyramid_no_rescan: bool,
     needs_pyramid_sample: bool,
     pyramid_sample_stratified: bool,
     color_codes: Option<&[u8]>,
@@ -272,7 +312,7 @@ pub fn payload_density_grid_materialize(
         } else {
             max_upsample.max(1)
         };
-        if let Some((g, rgba, level, tiles_flag)) = try_pyramid_compose(
+        if let Some((g, rgba, level, tiles_flag, upsampled)) = try_pyramid_compose(
             pyramid_resource,
             pyramid_handle,
             pyr_colored,
@@ -289,7 +329,6 @@ pub fn payload_density_grid_materialize(
             pyramid_level = level as i32;
             rgba_from_pyramid = rgba;
             grid = Some(g);
-            let upsampled = pyramid_no_rescan && level == 0;
             binning = binning_pyramid(level, from_tiles, upsampled);
         }
     }
@@ -449,11 +488,8 @@ mod tests {
     use super::*;
     use crate::density_emit::emit_meta;
 
-    #[test]
-    fn materialize_identity_grid_only() {
-        let x = [0.25, 0.75];
-        let y = [0.25, 0.75];
-        let meta = emit_meta(
+    fn identity_meta(n: u64) -> DensityEmitMeta {
+        emit_meta(
             true,
             true,
             true,
@@ -482,9 +518,16 @@ mod tests {
             1.0,
             0.0,
             1.0,
-            2,
+            n,
         )
-        .expect("identity meta");
+        .expect("identity meta")
+    }
+
+    #[test]
+    fn materialize_identity_grid_only() {
+        let x = [0.25, 0.75];
+        let y = [0.25, 0.75];
+        let meta = identity_meta(2);
         let out = payload_density_grid_materialize(
             &meta,
             2,
@@ -521,6 +564,65 @@ mod tests {
         assert!(out.gmax >= 0.0);
         assert_eq!(out.binning, "exact");
         assert!(!out.grid_from_pyramid);
+    }
+
+    #[test]
+    fn materialize_labels_resident_and_tiled_l0_from_actual_resolution() {
+        let x = [0.1, 0.9];
+        let y = [0.1, 0.9];
+        let pyramid = tiles::build(&x, &y, 0.0, 1.0, 0.0, 1.0, 32).expect("pyramid");
+        let store = tile_store::TileStore::spill(&pyramid).expect("spill");
+        let resident = tiles::reg_insert(pyramid);
+        let tiled = tile_store::reg_insert(store);
+        let meta = identity_meta(20_000_000);
+
+        for (resource, handle, suffix) in [
+            (DENSITY_RESOURCE_PYRAMID, resident, ""),
+            (DENSITY_RESOURCE_TILE_STORE, tiled, "-tiles"),
+        ] {
+            let compose = |w| {
+                payload_density_grid_materialize(
+                    &meta,
+                    20_000_000,
+                    0.25,
+                    0.5,
+                    0.0,
+                    1.0,
+                    0.25,
+                    0.5,
+                    0.0,
+                    1.0,
+                    w,
+                    4,
+                    &x,
+                    &y,
+                    &x,
+                    &y,
+                    true,
+                    resource,
+                    handle,
+                    false,
+                    1 << 20,
+                    1 << 20,
+                    true,
+                    false,
+                    false,
+                    None,
+                    None,
+                    None,
+                    false,
+                )
+                .expect("pyramid materialize")
+            };
+
+            // A quarter of a 32-cell base supplies eight source cells. Six
+            // requested pixels are served natively; twelve truly enlarge L0.
+            assert_eq!(compose(6).binning, format!("pyramid-L0{suffix}"));
+            assert_eq!(compose(12).binning, format!("pyramid-L0{suffix}-upsampled"));
+        }
+
+        assert!(tiles::reg_remove(resident));
+        assert!(tile_store::reg_remove(tiled));
     }
 
     #[test]

@@ -484,12 +484,55 @@ def test_no_rescan_traces_resolve_without_retention(monkeypatch):
     upd, _ = fig.density_view(0, 0.0, 100.0, 0.0, 100.0, 256, 192)
     tr = upd["traces"][0]
     assert tr["binning"] == "bin2d-oversized"  # the no-rescan correctness net
+    assert tr["reduction"] == "bin2d-oversized"
     assert tr["density"].get("color_agg") == "mean"  # the plane still ships
     assert calls["n"] == 1
     assert fig.traces[0]._bin_colors is None  # resolved, not retained
     fig.density_view(0, 0.0, 100.0, 0.0, 100.0, 256, 192)
     assert calls["n"] == 2  # re-resolved (chunk-bounded), by design
     assert fig.memory_report()["bin_color_bytes"] == 0
+
+
+def test_no_rescan_exact_grid_reports_in_window_visible_count(monkeypatch):
+    from xyg import interaction
+
+    n = SCATTER_DENSITY_THRESHOLD * 3
+    monkeypatch.setattr(interaction, "PYRAMID_NO_RESCAN_ROWS", n - 1)
+    x = np.linspace(0.0, 100.0, n, endpoint=False)
+    y = np.linspace(0.0, 100.0, n, endpoint=False)
+    fig = Figure().scatter(x, y, density=True)
+
+    update, _ = fig.density_view(0, 20.0, 80.0, 0.0, 100.0, 256, 192)
+    trace = update["traces"][0]
+    expected = int(((x >= 20.0) & (x < 80.0)).sum())
+
+    assert trace["binning"] == "bin2d-oversized"
+    assert trace["reduction"] == "bin2d-oversized"
+    assert trace["visible"] == expected
+
+
+def test_l0_upsample_label_tracks_source_cells_not_no_rescan_flag():
+    from types import SimpleNamespace
+
+    from xyg.interaction import _pyramid_grid_is_upsampled, _pyramid_source_shape
+
+    # A 20M-shaped 2048-base pyramid exposes only ~512 finest cells across a
+    # quarter-width request, so a 564 px client view really enlarges L0.
+    assert _pyramid_grid_is_upsampled(0, 564, 348, (512, 2048)) is True
+    # The 100M authority's 4096-base resident pyramid exposes ~1024 cells over
+    # the same window.  L0 already outresolves the viewport: no blur suffix.
+    assert _pyramid_grid_is_upsampled(0, 564, 348, (1024, 4096)) is False
+    # Coarser selected levels are never described as an L0 upscale.
+    assert _pyramid_grid_is_upsampled(1, 564, 348, (128, 512)) is False
+
+    # Exact cell-center geometry is decisive at a boundary: the old
+    # ceil(span*base)+1 approximation claimed nine cells here, while Rust
+    # compose sees exactly eight and therefore upsamples a 9 px request.
+    axis = SimpleNamespace(min=0.0, max=1.0)
+    trace = SimpleNamespace(x=axis, y=axis, _pyr_base_dim=32)
+    source = _pyramid_source_shape(trace, 0.25, 0.5, 0.0, 1.0)
+    assert source == (8, 32)
+    assert _pyramid_grid_is_upsampled(0, 9, 32, source) is True
 
 
 def test_categorical_cache_counts_only_owned_arrays():

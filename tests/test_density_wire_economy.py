@@ -13,8 +13,6 @@ can elide requests a cached texture already answers.
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from xyg import interaction
@@ -35,13 +33,14 @@ def test_pyramid_source_shape_math() -> None:
             self.y = _Col(0.0, 50.0)
 
     t = _T()
-    # A quarter-extent window resolves ~256 (+1 straddle) source cells.
+    # Exact cell-center geometry matches the Rust compose path: this aligned
+    # quarter-extent window contains exactly 256 finest-level cells per axis.
     cells_x, cells_y = interaction._pyramid_source_shape(t, 10.0, 35.0, 5.0, 17.5)
-    assert cells_x == math.ceil(1024 * 0.25) + 1
-    assert cells_y == math.ceil(1024 * 0.25) + 1
+    assert cells_x == 256
+    assert cells_y == 256
     # Windows wider than the extent clamp to the full base.
     cells_x, _ = interaction._pyramid_source_shape(t, -50.0, 250.0, 0.0, 50.0)
-    assert cells_x == 1024 + 1
+    assert cells_x == 1024
     # Degenerate extents refuse rather than divide by zero.
     t.y = _Col(5.0, 5.0)
     assert interaction._pyramid_source_shape(t, 0.0, 1.0, 0.0, 1.0) is None
@@ -62,9 +61,12 @@ def test_pyramid_reply_grid_bounded_by_source_cells() -> None:
     assert tr["binning"].startswith("pyramid")
     d = tr["density"]
     base = getattr(t, "_pyr_base_dim", 0) or PYRAMID_BASE_DIM
-    # The grid never exceeds the source cells under the window (+1 straddle).
-    assert d["w"] <= math.ceil(base * 0.5) + 1 + 1
-    assert d["h"] <= math.ceil(base * 0.5) + 1 + 1
+    source = interaction._pyramid_source_shape(t, 25.0, 75.0, 25.0, 75.0)
+    assert source is not None
+    source_w, source_h = source
+    # The grid never exceeds the exact source-cell budget under the window.
+    assert d["w"] <= source_w <= base
+    assert d["h"] <= source_h <= base
     # The reply carries the window's count — the fact the client's
     # points-band gate (lodAggregateStands, T13) scales for later zooms.
     assert tr["visible"] > 0
@@ -95,10 +97,12 @@ def test_pyramid_grid_clamped_to_source_resolution() -> None:
     assert tr["binning"].startswith("pyramid")
     d = tr["density"]
     base = getattr(t, "_pyr_base_dim", 0) or PYRAMID_BASE_DIM
-    source_x = math.ceil(base * frac) + 1
+    source = interaction._pyramid_source_shape(t, 20.0, 20.0 + 100.0 * frac, 20.0, 80.0)
+    assert source is not None
+    source_x, _ = source
     # x is clamped to source cells; y stays screen/plan-bounded — the grid's
     # aspect visibly departs from the requested screen aspect.
-    assert d["w"] <= source_x + 1
+    assert d["w"] <= source_x <= base
     assert d["h"] >= 200
     assert d["w"] / d["h"] < (2000 / 348) * 0.9
     # One byte per cell on the count plane (§29 log-u8 wire).

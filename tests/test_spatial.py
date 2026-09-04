@@ -117,4 +117,30 @@ def test_density_view_drills_to_crisp_points_then_grids(tmp_path):
     spec2, _ = fig.density_view(0, -10.0, 10.0, -10.0, 10.0, 1000, 800)
     tr2 = spec2["traces"][0]
     assert tr2["mode"] == "density" and tr2["binning"] == "spatial-exact"
+    assert tr2["reduction"] == "bin2d"
     assert tr2["visible"] > 200_000
+
+
+def test_density_view_channelled_spatial_grid_keeps_density_tier_below_threshold(tmp_path):
+    """A point channel prevents a spatial-index point drill, but it must not
+    make the exact replacement grid advertise direct/none semantics."""
+    g, extent = 64, (-10.0, 10.0, -10.0, 10.0)
+    rng = np.random.default_rng(23)
+    n = 400_000
+    lon = np.clip(rng.normal(0, 3, n), -10, 9.999)
+    lat = np.clip(rng.normal(0, 3, n), -10, 9.999)
+    idx = SpatialIndex.load(_write_index(tmp_path, g, extent, lon, lat))
+    fig = xyg.chart(xyg.scatter(x=lon, y=lat, size=np.ones(n), density=True)).figure()
+    fig.traces[0]._spatial_index = idx
+
+    wx0, wx1, wy0, wy1 = -0.1, 0.1, -0.1, 0.1
+    spec, _ = fig.density_view(0, wx0, wx1, wy0, wy1, 1000, 800)
+    trace = spec["traces"][0]
+    in_window = int(((lon >= wx0) & (lon <= wx1) & (lat >= wy0) & (lat <= wy1)).sum())
+
+    assert 0 < in_window <= 200_000
+    assert trace["mode"] == "density"
+    assert trace["tier"] == "density"
+    assert trace["binning"] == "spatial-exact"
+    assert trace["reduction"] == "bin2d"
+    assert trace["visible"] == in_window

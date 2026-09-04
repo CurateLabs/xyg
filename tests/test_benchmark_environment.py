@@ -58,6 +58,29 @@ def test_collect_environment_metadata_is_machine_readable(tmp_path: Path) -> Non
     assert metadata["git"] == {"commit": "abc123", "branch": "main", "dirty": True}
 
 
+def test_git_dirty_distinguishes_clean_dirty_and_command_failure(tmp_path: Path) -> None:
+    def runner_for(status_output: str | None):
+        def runner(command: Sequence[str], cwd: Path | None, timeout_s: float) -> str | None:
+            del timeout_s
+            if tuple(command) == ("git", "status", "--porcelain") and cwd == tmp_path:
+                return status_output
+            if tuple(command) == ("git", "rev-parse", "HEAD"):
+                return "a" * 40
+            if tuple(command) == ("git", "rev-parse", "--abbrev-ref", "HEAD"):
+                return "main"
+            return None
+
+        return runner
+
+    for status_output, expected in (("", False), (" M tracked.py\n?? new.py", True), (None, None)):
+        metadata = collect_environment_metadata(
+            root=tmp_path,
+            package_names=(),
+            command_runner=runner_for(status_output),
+        )
+        assert metadata["git"]["dirty"] is expected
+
+
 def test_ux_hosts_use_atomic_server_port_binding() -> None:
     webagg = (ROOT / "benchmarks" / "_ux_webagg_host.py").read_text(encoding="utf-8")
     datashader = (ROOT / "benchmarks" / "_ux_datashader_host.py").read_text(encoding="utf-8")

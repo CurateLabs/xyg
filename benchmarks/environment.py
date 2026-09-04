@@ -112,12 +112,39 @@ def _xy_backend() -> str | None:
 def _git_metadata(root: Path, runner: CommandRunner | None) -> dict[str, Any]:
     commit = _run_text(("git", "rev-parse", "HEAD"), cwd=root, runner=runner)
     branch = _run_text(("git", "rev-parse", "--abbrev-ref", "HEAD"), cwd=root, runner=runner)
-    dirty_text = _run_text(("git", "status", "--porcelain"), cwd=root, runner=runner)
     return {
         "commit": commit,
         "branch": branch,
-        "dirty": None if dirty_text is None else bool(dirty_text.strip()),
+        "dirty": _git_dirty(root, runner),
     }
+
+
+def _git_dirty(root: Path, runner: CommandRunner | None, timeout_s: float = 2.0) -> bool | None:
+    """Return clean/dirty/unknown without collapsing empty successful output.
+
+    `_run_text` intentionally maps commands with no useful text to ``None``.
+    That is appropriate for generic version probes but ambiguous for
+    `git status --porcelain`, where empty stdout is the successful clean-tree
+    result. Keep the exit-status-sensitive probe local to git metadata.
+    """
+    command = ("git", "status", "--porcelain")
+    if runner is not None:
+        text = runner(command, root, timeout_s)
+        return None if text is None else bool(text.strip())
+    try:
+        completed = subprocess.run(
+            list(command),
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    return bool(completed.stdout.strip())
 
 
 def _run_text(

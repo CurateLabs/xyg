@@ -1,0 +1,87 @@
+name: End-to-end density authority
+
+# The 1M control runs daily.  The real 100M authority shares its prepared
+# environment only on the weekly cron or an explicit manual main dispatch.
+# Neither measurement is CodSpeed instrumentation and neither runs on PRs.
+on:
+  schedule:
+    - cron: "31 6 * * *"
+    - cron: "43 5 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: density-e2e-main
+  cancel-in-progress: false
+
+jobs:
+  density:
+    name: Bounded 1M control / 100M authority
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: false
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: density-e2e-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Build bounded native and browser product paths
+        run: |
+          cargo build --release
+          npm ci
+          node js/build.mjs
+          uv sync --locked --group dev
+          npx playwright install chromium
+      - name: Record runner capacity
+        run: |
+          getconf _NPROCESSORS_ONLN
+          grep -E 'MemTotal|MemAvailable' /proc/meminfo
+          df -h "$GITHUB_WORKSPACE"
+      - name: Run daily 1M end-to-end control
+        run: |
+          CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
+          .venv/bin/python benchmarks/bench_density_e2e.py \
+            --points 1000000 --chrome "$CHROME" \
+            --timeout 600 --max-rss-gib 8 --max-disk-gib 2 \
+            --output "$RUNNER_TEMP/density-e2e-control-${GITHUB_SHA}.json"
+          python3 scripts/verify_density_e2e_report.py \
+            "$RUNNER_TEMP/density-e2e-control-${GITHUB_SHA}.json" --sha "$GITHUB_SHA"
+      - name: Run weekly/manual 100M end-to-end authority
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '43 5 * * 0'
+        env:
+          XYG_DENSITY_100M_AUTHORITY: "1"
+        run: |
+          CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
+          .venv/bin/python benchmarks/bench_density_e2e.py \
+            --points 100000000 --authority --chrome "$CHROME" \
+            --timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \
+            --output "$RUNNER_TEMP/density-e2e-100m-${GITHUB_SHA}.json"
+          python3 scripts/verify_density_e2e_report.py \
+            "$RUNNER_TEMP/density-e2e-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA"
+      - name: Upload exact-SHA raw reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: density-e2e-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: ${{ runner.temp }}/density-e2e-*-${{ github.sha }}.json
