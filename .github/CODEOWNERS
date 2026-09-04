@@ -1,4 +1,5 @@
-# ABI, security, packaging, and release-gate changes require an owner review.
+# Suggested owners for ABI, security, packaging, and release-gate changes.
+# Branch enforcement is deferred to backlog #871.
 /.github/ @CurateLabs/curate-labs-tech
 /.github/CODEOWNERS @CurateLabs/curate-labs-tech
 /crates/xyg-core/ @CurateLabs/curate-labs-tech

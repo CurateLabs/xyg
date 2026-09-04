@@ -36,14 +36,12 @@ def test_final_candidate_accepts_exact_green_merge_ready_head() -> None:
     )
 
 
-def test_final_candidate_accepts_protection_blocked_green_head() -> None:
+def test_final_candidate_rejects_protection_blocked_green_head() -> None:
     pull, checks, statuses, threads = _candidate()
     pull["mergeable_state"] = "blocked"
 
-    assert (
+    with pytest.raises(ValueError, match="merge-ready"):
         validate_candidate(pull, checks, statuses, threads, expected_head=SHA, current_run_id=99)
-        == SHA
-    )
 
 
 def test_final_candidate_rejects_missing_release_surface_aggregate() -> None:

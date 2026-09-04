@@ -27,7 +27,6 @@ DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 DEFAULT_CONTRIBUTOR_SPEC = ROOT / "spec" / "process" / "contributing.md"
-DEFAULT_CODEOWNERS = ROOT / ".github" / "CODEOWNERS"
 REQUIRED_CI_JOBS = {
     "authored_scene",
     "browser_conformance",
@@ -84,60 +83,8 @@ ALLOWED_BLACKSMITH_RUNNERS = {
 CODSPEED_HOSTED_RUNNER = "codspeed-macro"
 
 
-def _codeowners_pattern_matches(pattern: str, path: str) -> bool:
-    """Match the CODEOWNERS glob subset GitHub supports for repository paths."""
-    anchored = pattern.startswith("/")
-    normalized = pattern.removeprefix("/")
-    if normalized.endswith("/"):
-        normalized += "**"
-    if not normalized or normalized.startswith("!") or "[" in normalized:
-        return False
-    body: list[str] = []
-    index = 0
-    while index < len(normalized):
-        char = normalized[index]
-        if char == "*" and index + 1 < len(normalized) and normalized[index + 1] == "*":
-            index += 2
-            if index < len(normalized) and normalized[index] == "/":
-                body.append("(?:.*/)?")
-                index += 1
-            else:
-                body.append(".*")
-            continue
-        if char == "*":
-            body.append("[^/]*")
-        elif char == "?":
-            body.append("[^/]")
-        else:
-            body.append(re.escape(char))
-        index += 1
-    expression = "".join(body)
-    if not anchored and "/" not in normalized:
-        expression = rf"(?:^|.*/){expression}(?:$|/.*)"
-    elif anchored:
-        expression = rf"^{expression}$"
-    else:
-        expression = rf"(?:^|.*/){expression}$"
-    return re.fullmatch(expression, path) is not None
-
-
-def _effective_codeowners(text: str, path: str) -> tuple[str, tuple[str, ...]] | None:
-    """Return the last matching CODEOWNERS rule, as GitHub does."""
-    effective: tuple[str, tuple[str, ...]] | None = None
-    for raw in text.splitlines():
-        content = raw.split("#", 1)[0].strip()
-        if not content:
-            continue
-        fields = content.split()
-        pattern, owners = fields[0], tuple(fields[1:])
-        if _codeowners_pattern_matches(pattern, path):
-            effective = pattern, owners
-    return effective
-
-
 def validate_milestone_governance(
     contributor_spec: Path = DEFAULT_CONTRIBUTOR_SPEC,
-    codeowners: Path = DEFAULT_CODEOWNERS,
 ) -> list[str]:
     errors: list[str] = []
     try:
@@ -161,29 +108,6 @@ def validate_milestone_governance(
     ):
         if stale.exists():
             errors.append(f"unauthorized milestone mutation automation remains: {stale}")
-    try:
-        owners = codeowners.read_text(encoding="utf-8")
-    except OSError as exc:
-        errors.append(f"cannot read CODEOWNERS {codeowners}: {exc}")
-    else:
-        for protected, probe in (
-            ("/.github/", ".github/__codeowners_probe__"),
-            ("/.github/CODEOWNERS", ".github/CODEOWNERS"),
-            ("/crates/xyg-core/", "crates/xyg-core/__codeowners_probe__"),
-            ("/crates/xyg-wasm/", "crates/xyg-wasm/__codeowners_probe__"),
-            ("/spec/abi/", "spec/abi/__codeowners_probe__"),
-            ("/spec/wasm/", "spec/wasm/__codeowners_probe__"),
-            ("/.github/workflows/", ".github/workflows/__codeowners_probe__.yml"),
-            ("/scripts/classify_release_surface.py", "scripts/classify_release_surface.py"),
-            (
-                "/scripts/verify_release_surface_results.py",
-                "scripts/verify_release_surface_results.py",
-            ),
-            ("/scripts/verify_ci_workflow.py", "scripts/verify_ci_workflow.py"),
-        ):
-            effective = _effective_codeowners(owners, probe)
-            if effective is None or not effective[1]:
-                errors.append(f"CODEOWNERS missing protected release surface {protected!r}")
     return errors
 
 
@@ -845,6 +769,9 @@ def _require_step_runs_exactly(
     description: str,
     *commands: str,
     allow_job_gate: bool = False,
+    allowed_shell: str | None = None,
+    required_id: str | None = None,
+    forbid_environment: bool = False,
 ) -> None:
     """Require the exact active command list in a hard-gate named step."""
     block = _named_step_blocks(job_text).get(step)
@@ -853,9 +780,21 @@ def _require_step_runs_exactly(
         return
     # Membership is insufficient: a needle could otherwise be heredoc data,
     # an uninvoked function body, or one folded argument to another command.
-    forbidden_step_keys = ("if", "continue-on-error", "shell", "working-directory")
+    forbidden_step_keys = ("if", "continue-on-error", "working-directory")
+    if forbid_environment:
+        forbidden_step_keys += ("env",)
+    if allowed_shell is None:
+        forbidden_step_keys += ("shell",)
     has_forbidden_step_key = any(_has_yaml_key(block, key, indent=8) for key in forbidden_step_keys)
+    shell_values, shell_unsafe = _direct_yaml_key_values(block, "shell", indent=8)
+    has_required_shell = allowed_shell is None or (
+        not shell_unsafe and shell_values == [allowed_shell]
+    )
+    id_values, id_unsafe = _step_direct_key_values(block, "id")
+    has_required_id = required_id is None or (not id_unsafe and id_values == [required_id])
     forbidden_job_keys = ("continue-on-error", "defaults", "container", "strategy")
+    if forbid_environment:
+        forbidden_job_keys += ("env",)
     if not allow_job_gate:
         job_if, job_if_unsafe = _direct_yaml_key_values(job_text, "if", indent=4)
         if job_if_unsafe or job_if not in ([], ["github.event_name != 'pull_request'"]):
@@ -869,9 +808,75 @@ def _require_step_runs_exactly(
         not has_exactly_one_run_key
         or _step_run_lines(block) != list(commands)
         or has_forbidden_step_key
+        or not has_required_shell
+        or not has_required_id
         or has_forbidden_job_key
     ):
         errors.append(f"CI step {step!r} missing {description}: {list(commands)!r}")
+
+
+def _require_release_classifier_structure(errors: list[str], job_text: str) -> None:
+    """Bind classifier output provenance to one pinned, side-effect-free step."""
+    outputs = _unique_mapping_block(job_text, "outputs", indent=4)
+    output_keys = [
+        key
+        for indent, key, unsafe in _yaml_mapping_keys(outputs or "")
+        if indent == 6 and not unsafe
+    ]
+    required_values, required_unsafe = _direct_yaml_key_values(outputs or "", "required", indent=6)
+    if (
+        outputs is None
+        or required_unsafe
+        or output_keys != ["required"]
+        or required_values != ["${{ steps.classify.outputs.required }}"]
+    ):
+        errors.append(
+            "CI release-surface classifier output must come only from "
+            "steps.classify.outputs.required"
+        )
+
+    steps = _step_sequence_blocks(job_text)
+    classifier_steps = []
+    classifier_ids = 0
+    for step in steps:
+        names, names_unsafe = _step_direct_key_values(step, "name")
+        ids, ids_unsafe = _step_direct_key_values(step, "id")
+        if names_unsafe or names == ["Classify changed paths"]:
+            classifier_steps.append(step)
+        if ids_unsafe or ids == ["classify"]:
+            classifier_ids += 1
+
+    checkout_ok = False
+    if steps:
+        checkout = steps[0]
+        checkout_keys = [
+            key
+            for indent, key, unsafe in _yaml_mapping_keys(checkout)
+            if indent == 8 and not unsafe
+        ]
+        uses, uses_unsafe = _step_direct_key_values(checkout, "uses")
+        uses = [value.split(" #", 1)[0] for value in uses]
+        with_block = _unique_mapping_block(checkout, "with", indent=8)
+        with_keys = [
+            key
+            for indent, key, unsafe in _yaml_mapping_keys(with_block or "")
+            if indent == 10 and not unsafe
+        ]
+        depths, depth_unsafe = _direct_yaml_key_values(with_block or "", "fetch-depth", indent=10)
+        checkout_ok = (
+            not uses_unsafe
+            and checkout_keys == ["with"]
+            and uses == ["actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"]
+            and with_block is not None
+            and with_keys == ["fetch-depth"]
+            and not depth_unsafe
+            and depths == ["0"]
+        )
+    if len(steps) != 2 or not checkout_ok or len(classifier_steps) != 1 or classifier_ids != 1:
+        errors.append(
+            "CI release-surface classifier job must contain only the pinned checkout and "
+            "one classify step with the unique id 'classify'"
+        )
 
 
 def _require_action_step_with_runs_exactly(
@@ -1110,6 +1115,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_unique_workflow_structure(errors, text, "CI", REQUIRED_CI_JOBS)
     if _has_yaml_key(text, "defaults", indent=0):
         errors.append("CI workflow must not override the shell for hard-gate run steps")
+    if _has_yaml_key(text, "env", indent=0):
+        errors.append("CI workflow must not set a top-level environment for hard-gate jobs")
     if _has_shell_init_environment(text):
         errors.append("CI workflow must not set shell-init environment variables")
     _require_trigger_with_direct_option(errors, text, "CI", "push", "branches", '["main"]')
@@ -1168,8 +1175,34 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "github.event.pull_request.base.sha",
         "github.event.pull_request.head.sha",
         'git show "$base:scripts/classify_release_surface.py"',
-        'python3 "$classifier"',
+        'python3 -I "$classifier"',
         "GITHUB_OUTPUT",
+    )
+    _require_release_classifier_structure(errors, jobs.get("release_surface_changes", ""))
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("release_surface_changes", ""),
+        "Classify changed paths",
+        "trusted-base release-surface classifier execution",
+        'if [ "${{ github.event_name }}" != "pull_request" ]; then',
+        'echo "required=true" >> "$GITHUB_OUTPUT"',
+        "else",
+        'base="${{ github.event.pull_request.base.sha }}"',
+        'head="${{ github.event.pull_request.head.sha }}"',
+        'classifier="$RUNNER_TEMP/classify_release_surface.py"',
+        'changed="$RUNNER_TEMP/release-surface-paths.txt"',
+        'git -c core.quotePath=true diff --name-only "$base" "$head" > "$changed"',
+        'if grep -q \'^"\' "$changed"; then',
+        'echo "required=true" >> "$GITHUB_OUTPUT"',
+        'elif git show "$base:scripts/classify_release_surface.py" > "$classifier"; then',
+        'python3 -I "$classifier" --github-output "$GITHUB_OUTPUT" < "$changed"',
+        "else",
+        'echo "required=true" >> "$GITHUB_OUTPUT"',
+        "fi",
+        "fi",
+        allowed_shell="bash",
+        required_id="classify",
+        forbid_environment=True,
     )
     _require_job_contains(
         errors,

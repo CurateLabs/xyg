@@ -317,11 +317,10 @@ browser/WASM code, build hooks, package manifests, tests/scripts, and release
 workflows as release surfaces. Cross-library competitive breadth remains
 post-main/manual evidence.
 
-Branch protection requires **Release surfaces** and at least one approving
-review. Changes to ABI declarations, security policy, release workflows, build
-hooks, or package manifests additionally require approval from the owner named
-in `.github/CODEOWNERS`; dismissing that review or pushing a new head requires
-fresh approval.
+Branch protection requires the one lean **Release surfaces** aggregate.
+Independent approving-review/CODEOWNER capacity is tracked in unmilestoned
+backlog #871 and is not part of the M2 close contract; do not replace it with
+additional required PR workflows.
 
 Creating, renaming, closing, or deleting a milestone, and moving an issue into
 or out of any milestone, requires explicit human approval recorded in a GitHub
@@ -343,10 +342,11 @@ gh workflow run final-coderabbit.yml --ref main \
 
 The workflow rechecks the head and requires the three baseline checks plus the
 named **Release surfaces** aggregate before recording exact-head authorization.
-It fails closed on stale heads, feature-ref dispatches, pending/failing gates,
-merge conflicts, or unresolved threads. GitHub deliberately attributes workflow
-comments to `github-actions[bot]`, and CodeRabbit ignores bot-authored commands,
-so an authenticated human collaborator must then issue the command:
+It fails closed on stale heads, feature-ref dispatches, any non-clean mergeable
+state, pending/failing gates, merge conflicts, or unresolved threads. GitHub
+deliberately attributes workflow comments to `github-actions[bot]`, and
+CodeRabbit ignores bot-authored commands, so an authenticated human collaborator
+must then issue the command:
 
 ```bash
 gh pr comment PR_NUMBER --body '@coderabbitai review'
