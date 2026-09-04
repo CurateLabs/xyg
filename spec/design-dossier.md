@@ -561,6 +561,19 @@ F3, still pending (above).
   larger batches, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
+  owns the exhaustive static-proof vocabulary in
+  `static_export_registry.rs`: all 19 kinds admitted by the public predicate
+  are exercised through 21 Python/Node authoring shapes, including step,
+  stairs, ECDF, both violin orientations, the Python-column/Node-bar alias, and
+  box/stem companion traces. The #875 corpus
+  compares exact Scene, SVG, raster-command, and PNG bytes, plus decoded PNG
+  metadata/pixel hashes; a bounded pairwise matrix covers domain mode,
+  empty/single/nonfinite inputs, categorical/time axes, style, and scale, while
+  unsupported CSS/font/layer/axis/mark families require reason-identical
+  fail-close. `make check-host-parity` checks the generated registry projection
+  before running the differential, so an admitted-kind addition without a live
+  host pair fails CI. #873 expansions append to this Rust registry and reuse the
+  same runner. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
   the bounded linear/log/symlog/category/angular/time tick ladders exposed to

@@ -132,9 +132,40 @@ geometry and proves exact Python/Node Scene, SVG, and raster-command identity
 for ordinary line, scatter, bar, and histogram figures in
 `tests/test_static_export_cross_host.py`. The same proof pins browser CSS as an
 explicit compatibility miss instead of widening the public route silently.
+Issue [#875](https://github.com/CurateLabs/xyg/issues/875) replaces that
+four-case sample with the checked Rust registry in
+`crates/xyg-engine/src/static_export_registry.rs`. Its live matrix covers all
+19 kinds admitted by `scene_public_export_reason` through 21 public authoring
+shapes: scatter, line, step, stairs, ECDF, bar, the Python-column/Node-bar alias, histogram,
+area, errorbar, box (including whisker and median companions), violin, hexbin,
+segments, stem, error band, ribbon, triangle mesh, heatmap, and contour. It
+has separate vertical and horizontal violin rows. It
+compares canonical Scene, SVG, raster-command, and PNG bytes; separately checks
+decoded PNG dimensions/mode/pixel hashes; and exercises a bounded nine-row
+pairwise matrix across authored/autorange domains, empty/single/nonfinite data,
+categorical/time axes, styles, and linear/log scales. Rust pins those nine
+concerns and requires distinct shapes and axis-mode configurations for each
+concern pair. Nineteen unsupported
+families remain exact cross-host fail-closes: fluid viewport, browser CSS,
+custom font, title, legend, alternate axis, symbol, mark, violin orientation
+metadata, layered autorange,
+annotation HTML/collision/markup/schema, colorbar schema, LOD, band shape,
+segment shape, and triangle-mesh budget. Reproduce registry drift and the
+complete differential with:
+
+```bash
+python3 scripts/static_export_support_registry.py
+uv run pytest tests/test_static_export_cross_host.py -q
+```
+
+This dependency-independent current-Scene slice does not close #875. After
+#873 lands, its `StaticDocument`/XYST journeys and retained formats must append
+to the same Rust registry and pass the same host-pair runner before #875 closes.
+
 `scripts/audit_host_parity_landing.py` enumerates the Scene trace/chrome ABI
 tests alongside the `test_*cross_host*.py` differentials, which now include
-the static-export proof. The ChartView source-structure assertion runs under a
+the static-export proof and checks the Rust registry before running them. The
+ChartView source-structure assertion runs under a
 separate non-differential label; practical WASM evidence comes from the XYTS
 cross-host fixture and browser foundation contract.
 

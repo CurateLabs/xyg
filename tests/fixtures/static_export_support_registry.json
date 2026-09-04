@@ -1,0 +1,336 @@
+{
+  "schema": "xyg.static-export-support-registry/v1",
+  "required_edge_concerns": [
+    "authored-domain",
+    "style",
+    "single",
+    "log-scale",
+    "nonfinite",
+    "categorical-axis",
+    "temporal-axis",
+    "empty",
+    "linear-scale"
+  ],
+  "shapes": [
+    {
+      "name": "scatter",
+      "trace_kinds": [
+        "scatter"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "line",
+      "trace_kinds": [
+        "line"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "step",
+      "trace_kinds": [
+        "line"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "stairs",
+      "trace_kinds": [
+        "line"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "ecdf",
+      "trace_kinds": [
+        "line"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "bar",
+      "trace_kinds": [
+        "bar"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "column_bar",
+      "trace_kinds": [
+        "column"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "histogram",
+      "trace_kinds": [
+        "histogram"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "area",
+      "trace_kinds": [
+        "area"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "errorbar",
+      "trace_kinds": [
+        "errorbar"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "box",
+      "trace_kinds": [
+        "box_whisker",
+        "box",
+        "box_median"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "violin",
+      "trace_kinds": [
+        "violin"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "violin_horizontal",
+      "trace_kinds": [
+        "violin"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "hexbin",
+      "trace_kinds": [
+        "hexbin"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "segments",
+      "trace_kinds": [
+        "segments"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "stem",
+      "trace_kinds": [
+        "stem",
+        "scatter"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "error_band",
+      "trace_kinds": [
+        "error_band"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "ribbon",
+      "trace_kinds": [
+        "ribbon"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "triangle_mesh",
+      "trace_kinds": [
+        "triangle_mesh"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "heatmap",
+      "trace_kinds": [
+        "heatmap"
+      ],
+      "autorange": false
+    },
+    {
+      "name": "contour",
+      "trace_kinds": [
+        "contour"
+      ],
+      "autorange": false
+    }
+  ],
+  "edge_cases": [
+    {
+      "name": "line_authored_style",
+      "shape": "line",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "authored-domain",
+        "style"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "scatter_single_log",
+      "shape": "scatter",
+      "axis_mode": "log-x-linear-y",
+      "concerns": [
+        "single",
+        "log-scale"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "step_nonfinite_authored",
+      "shape": "step",
+      "axis_mode": "authored-linear-x-log-y",
+      "concerns": [
+        "nonfinite",
+        "authored-domain"
+      ],
+      "reason_prefix": "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+    },
+    {
+      "name": "bar_categorical_style",
+      "shape": "bar",
+      "axis_mode": "categorical-x-linear-y",
+      "concerns": [
+        "categorical-axis",
+        "style"
+      ],
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "line_temporal_single",
+      "shape": "line",
+      "axis_mode": "temporal-x-linear-y",
+      "concerns": [
+        "temporal-axis",
+        "single"
+      ],
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "scatter_empty_linear",
+      "shape": "scatter",
+      "axis_mode": "linear-x-linear-y",
+      "concerns": [
+        "empty",
+        "linear-scale"
+      ],
+      "reason_prefix": "invalid scene trace packing"
+    },
+    {
+      "name": "area_nonfinite_linear",
+      "shape": "area",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "nonfinite",
+        "linear-scale"
+      ],
+      "reason_prefix": "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+    },
+    {
+      "name": "histogram_empty_categorical",
+      "shape": "histogram",
+      "axis_mode": "linear-x-categorical-y",
+      "concerns": [
+        "empty",
+        "categorical-axis"
+      ],
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "step_temporal_log",
+      "shape": "step",
+      "axis_mode": "temporal-x-log-y",
+      "concerns": [
+        "temporal-axis",
+        "log-scale"
+      ],
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    }
+  ],
+  "fail_close": [
+    {
+      "name": "fluid_viewport",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
+    },
+    {
+      "name": "browser_css",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"
+    },
+    {
+      "name": "custom_font",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    },
+    {
+      "name": "title_options",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
+    },
+    {
+      "name": "extra_legend",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
+    },
+    {
+      "name": "alternate_axis",
+      "reason_prefix": "Scene v12 currently supports only the primary x/y axes"
+    },
+    {
+      "name": "unsupported_symbol",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
+    },
+    {
+      "name": "unsupported_mark",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+    },
+    {
+      "name": "violin_orientation_metadata",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    },
+    {
+      "name": "layered_autorange",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "annotation_html",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML"
+    },
+    {
+      "name": "annotation_collision",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION"
+    },
+    {
+      "name": "annotation_markup",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP"
+    },
+    {
+      "name": "invalid_annotation",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    },
+    {
+      "name": "colorbar_option",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
+    },
+    {
+      "name": "lod_limit",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    },
+    {
+      "name": "band_shape",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
+    },
+    {
+      "name": "segment_shape",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
+    },
+    {
+      "name": "triangle_mesh_limit",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+    }
+  ]
+}

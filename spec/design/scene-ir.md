@@ -568,8 +568,9 @@ allowlist includes `curve` for `KIND_LINE`. ABI 141 / Scene v31 admits flattened
 cartesian `area(curve="smooth")` bands: hosts pack the same compact Band knots
 with pack `step_mode=4`, which Rust maps to expansion `BandFlatten=12` and
 densifies top and base through `geom::curve_flatten`. The public-export style
-allowlist includes `curve` for `KIND_AREA` and `role` so Node-composed areas
-match Python on the public Scene route. ABI 144 admits cartesian
+allowlist includes `curve` for `KIND_AREA`; Node omits its redundant area
+`role` metadata before preflight so it matches Python on the public Scene
+route. ABI 144 admits cartesian
 `error_band(curve="smooth")` on that same `BandFlatten=12` mapping (public
 allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;

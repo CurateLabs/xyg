@@ -27,6 +27,10 @@ CROSS_HOST_TESTS = sorted(
 STEPS: tuple[tuple[list[str], str], ...] = (
     (["python3", "scripts/verify_ownership.py"], "ownership ledger"),
     (["python3", "scripts/audit_python_host_core.py"], "host inventory audit"),
+    (
+        ["python3", "scripts/static_export_support_registry.py"],
+        "Rust-owned static-export fixture registry",
+    ),
     (["python3", "scripts/abi_smoke.py"], "ABI smoke"),
     (
         [

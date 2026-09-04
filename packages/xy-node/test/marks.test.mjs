@@ -16,6 +16,7 @@ import {
   composeHistogram,
   composeLine,
   composeSegments,
+  composeStairs,
   composeViolin,
   computeEcdf,
   encodeScatterPositions,
@@ -210,6 +211,7 @@ test("area stable sort matches Python fixture when present", () => {
   const areaY = fixture == null ? new Float64Array([3, 1, 2]) : fromF64Hex(fixture.area.y_f64_hex);
   const prepared = prepareLineSeries(areaX, areaY);
   const composed = composeArea(areaX, areaY, { base: fixture?.area?.base ?? 0.5 });
+  assert.equal("role" in composed.traces[0].style, false);
   if (fixture != null) {
     assert.equal(f64Hex(prepared.x), fixture.area.x_sorted_f64_hex);
     assert.equal(f64Hex(prepared.y), fixture.area.y_sorted_f64_hex);
@@ -348,6 +350,7 @@ test("multi-group box / violin", () => {
   const violin = composeViolin(groups, { bins: 8 });
   assert.equal(violin.groups, 2);
   assert.equal(violin.traces[0].x0.length, 16);
+  assert.equal("orientation" in violin.traces[0].style, false);
   const fig = violinChart(groups, { bins: 8 });
   assert.equal(fig.buildPayload().spec.traces[0].kind, "violin");
 });
@@ -417,13 +420,23 @@ test("ecdf weighted kernel matches Python fixture when present", () => {
   const composed = composeEcdf(values);
   assert.equal(composed.traces[0].kind, "line");
   assert.equal(composed.traces[0].style.step, "post");
-  assert.equal(composed.traces[0].style.role, "ecdf");
+  assert.equal("role" in composed.traces[0].style, false);
   assert.equal(composed.traces[0].x.length, step.x.length);
   const fig = ecdfChart(values);
+  assert.equal("mode" in fig.traces[0].style, false);
+  assert.equal(fig.traces[0].mode, "exact");
   const trace = fig.buildPayload().spec.traces[0];
   assert.equal(trace.kind, "line");
   assert.equal(trace.style.step, "post");
-  assert.equal(trace.style.role, "ecdf");
+  assert.equal("role" in trace.style, false);
+  assert.equal("mode" in trace.style, false);
+});
+
+test("stairs keeps the step contract without redundant role metadata", () => {
+  const composed = composeStairs([0, 1, 2, 3], [1, 3, 2], { where: "post" });
+  assert.equal(composed.traces[0].kind, "line");
+  assert.equal(composed.traces[0].style.step, "post");
+  assert.equal("role" in composed.traces[0].style, false);
 });
 
 test("binned ecdf is Rust-owned, compact, bounded, and range-stable", () => {

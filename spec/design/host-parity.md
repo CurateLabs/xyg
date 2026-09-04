@@ -119,6 +119,57 @@ Band samples. Two-ended gradients, polar projection, LOD/density, and
 direct-browser ribbon authoring remain explicit boundaries; broader
 direct-browser production paths are tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Every
 unmodeled output contract remains an explicit compatibility route.
+
+### Exhaustive admitted-shape static proof (#875)
+
+The public static differential is enumerated by the Rust-owned registry in
+`crates/xyg-engine/src/static_export_registry.rs`, not by independent Python
+and Node case lists. `PUBLIC_EXPORT_KINDS` is also the kind membership authority
+used by `scene_public_export_reason`; a Rust unit test requires the fixture
+shapes' trace-kind union to equal that admitted set. The generated, reviewed
+projection is `tests/fixtures/static_export_support_registry.json`; adding an
+admitted kind or shape without regenerating the projection and implementing
+both host builders fails `make check-host-parity`.
+
+The current registry has all 19 admitted trace kinds represented by 21 public
+shapes: scatter, line, step, stairs, ECDF, bar, column/bar host alias,
+histogram, area, errorbar, box/whisker/median, violin, hexbin, segments,
+stem/marker, error band, ribbon, triangle mesh, heatmap, and contour; violin
+has separate vertical and horizontal rows. Every admitted case compares exact
+Scene bytes, SVG bytes, raster-command bytes, and PNG bytes across Python and
+Node. PNG is additionally decoded and checked for `(320, 240)` RGB metadata
+and an exact RGBA pixel hash, keeping the encoded-format and visible-pixel
+contracts separate.
+
+Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
+inputs, categorical/time axes, style, and linear/log scale. Rust pins that exact
+concern vocabulary and requires each concern's two rows to use distinct public
+shapes and distinct axis-mode configurations. Admitted rows use
+the same byte-exact matrix; deliberately unsupported rows require identical
+fail-close reasons. The 19-row fail-close registry separately pins fluid
+viewport, browser CSS/classes, custom font, title options, extra legend layout,
+alternate axes, unsupported symbol/mark, user-authored violin orientation
+metadata, layered autorange, annotation HTML/collision/markup/schema, colorbar
+schema, LOD, malformed band/segment geometry, and triangle-mesh budget. This
+is designed to grow by appending Rust registry rows when #873 expands
+`StaticDocument`; the corpus runner and CI wiring do not need another
+hand-maintained allowlist. This current-Scene slice does not close #875: final
+closure requires rebasing the #873
+`StaticDocument`/XYST vocabulary into this registry and running it through the
+same two-host proof.
+
+The exhaustive run exposed redundant Node-only metadata on public step, stairs,
+ECDF, area, and violin traces. Node no longer emits the geometry-neutral roles;
+it also omits violin `orientation` after that value has been validated and
+resolved into bounded rectangle coordinates. XYEF v1 carries style keys but not
+the orientation value, so broadly admitting that ignored key would be
+unverifiable. User-authored unknown role/orientation style remains fail-closed.
+
+Reproduce with `python3 scripts/static_export_support_registry.py` and
+`uv run pytest tests/test_static_export_cross_host.py -q`. The first command is
+an explicit `make check-host-parity` step, and the second is included by that
+gate's `test_*cross_host*.py` discovery. Neither invokes hosted CodSpeed.
+
 ABI 98 additionally gives both composition hosts one compact grouped violin
 ingress. Hosts pack values, group offsets/centers, bins, width, orientation,
 and literal style; Rust owns finite filtering, density normalization,
