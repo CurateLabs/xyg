@@ -866,18 +866,55 @@ def _pyramid_source_shape(
     full screen resolution upsamples blocky base cells into a grid several
     times larger than the information it carries — a ~2.7 MB reply whose
     content is a few hundred KB of source cells. Clamping the composed grid
-    to `(cells under the window at the finest level) + 1` per axis ships the
-    same detail (the client's own texture filtering reproduces the upscale)
-    at a fraction of the bytes.
+    to the exact count of finest-level cell centers under the window per axis
+    ships the same detail (the client's own texture filtering reproduces the
+    upscale) at a fraction of the bytes.
     """
+
+    def center_range(
+        lo: float, hi: float, full_lo: float, full_hi: float, dim: int
+    ) -> tuple[int, int]:
+        # Exact Python twin of `tiles::center_range`: compose operates on
+        # level cells whose CENTERS are inside [lo, hi), not on a rounded
+        # span fraction. Keeping the ceil/floor order identical matters at
+        # cell-aligned boundaries (a quarter of a 32-cell base is 8, not 9).
+        cell = (full_hi - full_lo) / dim
+        first = max(0, math.ceil((lo - full_lo) / cell - 0.5))
+        last = max(0, math.floor((hi - full_lo) / cell - 0.5) + 1)
+        return min(dim, first), min(dim, last)
+
     base = int(getattr(t, "_pyr_base_dim", 0) or PYRAMID_BASE_DIM)
-    ex0, ex1, ey0, ey1 = t.x.min, t.x.max, t.y.min, t.y.max
-    span_x, span_y = ex1 - ex0, ey1 - ey0
-    if not all(np.isfinite(v) for v in (ex0, ex1, ey0, ey1)) or span_x <= 0 or span_y <= 0:
+    ex0, raw_ex1, ey0, raw_ey1 = t.x.min, t.x.max, t.y.min, t.y.max
+    span_x, span_y = raw_ex1 - ex0, raw_ey1 - ey0
+    if not all(np.isfinite(v) for v in (ex0, raw_ex1, ey0, raw_ey1)) or span_x <= 0 or span_y <= 0:
         return None
-    frac_x = min(1.0, max(0.0, (hi_x - lo_x) / span_x))
-    frac_y = min(1.0, max(0.0, (hi_y - lo_y) / span_y))
-    return max(1, math.ceil(base * frac_x) + 1), max(1, math.ceil(base * frac_y) + 1)
+    # `_ensure_pyramid` nudges each upper domain edge by this exact epsilon so
+    # raw maxima land in the final half-open cell. Mirror that domain too.
+    ex1 = raw_ex1 + span_x * 1e-9
+    ey1 = raw_ey1 + span_y * 1e-9
+    cx0, cx1 = center_range(lo_x, hi_x, ex0, ex1, base)
+    cy0, cy1 = center_range(lo_y, hi_y, ey0, ey1, base)
+    return cx1 - cx0, cy1 - cy0
+
+
+def _pyramid_grid_is_upsampled(
+    level: int,
+    requested_w: int,
+    requested_h: int,
+    source: tuple[int, int] | None,
+) -> bool:
+    """Whether the client must enlarge an L0 grid to fill the request.
+
+    The wire-economy clamp deliberately composes no more cells than level 0
+    contains under the viewport.  ``-upsampled`` therefore describes the
+    relationship between that source-cell budget and the *unclamped* request,
+    not merely the facts that a no-rescan trace selected level 0.  A large
+    resident pyramid can serve level 0 at or above screen resolution and must
+    not be mislabeled as blurry.
+    """
+    return bool(
+        level == 0 and source is not None and (requested_w > source[0] or requested_h > source[1])
+    )
 
 
 def _padded_drill_window(
@@ -1095,7 +1132,8 @@ def density_view(
             False,
             aggregate_reduction="pyramid-count",
         )
-        gw, gh = plan.grid_w, plan.grid_h
+        requested_gw, requested_gh = plan.grid_w, plan.grid_h
+        gw, gh = requested_gw, requested_gh
         source = _pyramid_source_shape(t, lo_x, hi_x, lo_y, hi_y)
         if source is not None:
             gw = max(16, min(gw, source[0]))
@@ -1113,7 +1151,7 @@ def density_view(
             grid, level = res
             visible = plan.visible
             w, h = gw, gh
-            upsampled = no_rescan and level == 0
+            upsampled = _pyramid_grid_is_upsampled(level, requested_gw, requested_gh, source)
             binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
             tiles_meta = _tiles_stats_dict(store)
             lod.exit_drill(t)
@@ -1136,7 +1174,8 @@ def density_view(
             # level resolves under this window — a full-screen grid of
             # upsampled base cells is the same picture at several times the
             # bytes (the client's texture filtering does the upscale).
-            gw, gh = plan.grid_w, plan.grid_h
+            requested_gw, requested_gh = plan.grid_w, plan.grid_h
+            gw, gh = requested_gw, requested_gh
             source = _pyramid_source_shape(t, lo_x, hi_x, lo_y, hi_y)
             if source is not None:
                 gw = max(16, min(gw, source[0]))
@@ -1156,7 +1195,8 @@ def density_view(
                 grid, level = res
                 visible = plan.visible
                 w, h = gw, gh
-                binning = f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                upsampled = _pyramid_grid_is_upsampled(level, requested_gw, requested_gh, source)
+                binning = f"pyramid-L{level}{'-upsampled' if upsampled else ''}"
                 lod.exit_drill(t)
     # Tier-3 spatial index: when the pyramid can only serve this window blurry
     # (upsampled), re-bin it *exactly* from just its in-window points — as long
@@ -1216,6 +1256,10 @@ def density_view(
         visible = plan.visible
         w, h = plan.grid_w, plan.grid_h
         grid = kernels.bin_2d(xv, yv, lo_x, hi_x, lo_y, hi_y, w, h)
+        # The no-rescan plan only knows the full mmap length. The completed
+        # exact grid cheaply carries the truthful in-window count; publish it
+        # instead of claiming every source row remained visible after a zoom.
+        visible = int(np.asarray(grid).sum(dtype=np.float64))
         bin_colors = _view_bin_colors(t, vis_rows) if mean_colors else None
         if bin_colors is not None:
             # This branch is already the O(N) correctness net; the mean-color
@@ -1261,7 +1305,18 @@ def density_view(
             # Mean point color per cell (LOD doc §2): same window, same
             # binning space, occupied cells match the count grid exactly.
             rgba_grid = kernels.bin_2d_mean_color(bx, by, bx0, bx1, by0, by1, w, h, **bin_colors)
-    else:
+    elif binning == "spatial-exact":
+        # The spatial index supplied an exact in-window point set and the
+        # grid above was produced by bin_2d_f32.  Do not inherit a pyramid
+        # reduction merely because a pyramid was consulted first.
+        plan = lod.plan_view_lod(
+            request,
+            max(visible, SCATTER_DENSITY_THRESHOLD + 1),
+            SCATTER_DENSITY_THRESHOLD,
+            False,
+            aggregate_reduction="bin2d",
+        )
+    elif binning.startswith("pyramid-L"):
         plan = lod.plan_view_lod(
             request,
             visible,
@@ -1269,6 +1324,9 @@ def density_view(
             False,
             aggregate_reduction="pyramid-count",
         )
+    # The mmap/no-rescan correctness net already created a truthful
+    # bin2d-oversized plan when it built the grid.  Preserve it here instead
+    # of overwriting the reduction with pyramid-count.
     writer = lod.BufferWriter()
     density_wire, gmax = _encode_log_u8(grid)
     density_buf = writer.add_raw(density_wire)

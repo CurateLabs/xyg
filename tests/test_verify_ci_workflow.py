@@ -1201,6 +1201,94 @@ def test_all_workflows_accept_current_gates() -> None:
     assert verify_ci_workflow.validate_all_workflows() == []
 
 
+def test_density_authority_workflow_is_main_only_and_cost_bounded() -> None:
+    assert verify_ci_workflow.validate_density_workflow() == []
+
+
+def test_density_authority_rejects_pull_request_and_unguarded_100m(tmp_path: Path) -> None:
+    source = verify_ci_workflow.DEFAULT_DENSITY_WORKFLOW.read_text(encoding="utf-8")
+    source = source.replace("  workflow_dispatch:\n", "  pull_request:\n  workflow_dispatch:\n")
+    source = source.replace("    if: github.ref == 'refs/heads/main'\n", "")
+    path = tmp_path / "density.yml"
+    path.write_text(source, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_density_workflow(path)
+
+    assert any("only schedule and workflow_dispatch" in error for error in errors)
+    assert any("refs/heads/main" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda source: source.replace(
+            "permissions:\n  contents: read", "permissions: write-all", 1
+        ),
+        lambda source: source.replace(
+            "  cancel-in-progress: false", "  cancel-in-progress: true", 1
+        ),
+        lambda source: source.replace(
+            "      - name: Run weekly/manual 100M end-to-end authority\n",
+            "      - name: Run weekly/manual 100M end-to-end authority\n"
+            "        continue-on-error: true\n",
+            1,
+        ),
+        lambda source: source.replace(
+            "      - name: Upload exact-SHA raw reports\n",
+            "      - name: Upload exact-SHA raw reports\n        continue-on-error: true\n",
+            1,
+        ),
+        lambda source: source.replace(
+            "          persist-credentials: false", "          persist-credentials: true", 1
+        ),
+        lambda source: source.replace(
+            "      - name: Upload exact-SHA raw reports\n",
+            "      - name: Unreviewed command\n        run: echo bypass\n"
+            "      - name: Upload exact-SHA raw reports\n",
+            1,
+        ),
+        lambda source: source + "\n  bypass:\n    runs-on: ubuntu-latest\n    steps: []\n",
+    ],
+)
+def test_density_authority_rejects_structural_and_policy_bypasses(tmp_path: Path, mutation) -> None:
+    source = verify_ci_workflow.DEFAULT_DENSITY_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "density.yml"
+    path.write_text(mutation(source), encoding="utf-8")
+
+    assert verify_ci_workflow.validate_density_workflow(path)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda source: source.replace("--points 250000", "--points 100000000 --authority", 1),
+        lambda source: source.replace(
+            "--timeout 180 --max-rss-gib 4 --max-disk-gib 1",
+            "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4",
+            1,
+        ),
+        lambda source: source.replace(
+            "          python3 scripts/verify_density_e2e_report.py \\\n"
+            '            "$RUNNER_TEMP/density-e2e-pr.json" --sha "$GITHUB_SHA"\n',
+            "",
+            1,
+        ),
+        lambda source: source.replace(
+            "      - name: Density end-to-end harness contract (small scale only)\n",
+            "      - name: Density end-to-end harness contract (small scale only)\n"
+            "        continue-on-error: true\n",
+            1,
+        ),
+    ],
+)
+def test_ci_rejects_weakened_or_unverified_pr_density_contract(tmp_path: Path, mutation) -> None:
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(mutation(source), encoding="utf-8")
+
+    assert verify_ci_workflow.validate_ci_workflow(path)
+
+
 def test_workflows_reject_normalized_top_level_overrides(tmp_path: Path) -> None:
     cases = (
         ("ci", Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),

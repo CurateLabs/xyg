@@ -350,11 +350,14 @@ addressing — the C ABI is `xy_pyramid_build` / `_append` / `_count` / `_compos
 `max_upsample` bound: in-RAM traces cap it at 2× so a below-floor window falls back to
 the exact `range_indices` + `bin_2d` re-bin, but **out-of-core / huge traces**
 (disk-backed `np.memmap`, or > `PYRAMID_NO_RESCAN_ROWS`) pass it unbounded and are
-served upsampled from the finest level — an O(N) rescan of a 100 GB+ mmap is not
+served from the finest level — an O(N) rescan of a 100 GB+ mmap is not
 interactive, and past 2³²−1 rows the per-row index kernels would overflow u32 anyway.
 Those traces also get a finer finest level (adaptive `~sqrt(N/target)`, capped
 `PYRAMID_MAX_DIM` = 16384²) so the upsampled floor stays as sharp as memory allows.
-Level and mode are recorded per update (`binning: "pyramid-L<l>[-upsampled]"`).
+Level and mode are recorded per update (`binning: "pyramid-L<l>[-upsampled]"`):
+the suffix is emitted only when the selected L0 source-cell span is smaller
+than the requested output on either axis, using compose's exact cell-center
+range and upper-domain epsilon, not merely because no-rescan policy was active.
 Channel-bearing traces build mean-color planes alongside the counts
 (`xy_pyramid_build_color` / `_compose_color`, LOD doc §2/§4.1 — same level, same
 `max_upsample`, both compose regimes; colored pyramids refuse `_append` and rebuild
@@ -2349,6 +2352,37 @@ bounded grid it returns the same Rust-owned tier, pyramid/WASM eligibility,
 sample/source-ship flags, and mark ceiling queried by the native hosts. The
 1M/100M browser gate therefore proves this policy directly without creating a
 data-sized JavaScript fixture.
+
+That planner gate is deliberately not called a real 100M journey. The #876
+authority (`benchmarks/bench_density_e2e.py`) chunk-generates actual f64 mmap
+columns, admits and aggregates them in the native host, sends only the ordinary
+bounded grid/sample paint buffers to `ChartView`, then measures one host
+`density_view` refine. Its supervisor accounts for the complete worker plus
+browser process-tree RSS and owns timeout/cancellation/malformed-result
+teardown. The hard payload gate counts the serialized spec plus raw initial
+buffers and the base64 JSON refine envelope, while reporting decoded paint
+bytes separately. A second bounded native count grid must sum exactly to the
+source row count and reproduce the actual emitted log-u8 density buffer and
+maximum. At pyramid scale the same proof counts and recomposes the emitted
+range through the live resident pyramid, binding its level and encoded grid to
+the payload; the full-range initial f32 compose sum must remain within 0.5
+point of the exact integer pyramid count. The refine proof separately binds
+the requested-window native count and recomposed encoding to the actual
+`density_view` reply; partial-window area weighting makes its f32 grid sum
+diagnostic rather than equal to the whole-cell-center pyramid count.
+The applied 100M view uses a 0.20 x-span inside home so it is safely beyond
+the 4x ladder boundary; the emitted request must be the aligned 0.25-span
+window containing it and must replace the texture. The 250k/1M control reply
+is intentionally T13 facts-only and records zero texture upload plus positive
+facts-cache evidence.
+Initial/refine metadata must carry the route required by the actual Rust
+thresholds: the 250k/1M mmap lanes use exact first paint and a
+truthfully labelled `bin2d-oversized` refine, while 100M uses the resident
+4096-base `pyramid-L*` / `pyramid-count` path (89,478,484 bytes, below the
+512 MiB spill threshold, therefore neither `-tiles` nor `-upsampled`, and the
+recorded level must exist in that base). PRs exercise
+the same seams at 250k; real 100M execution is restricted to scheduled/manual
+`main` and remains separate from CodSpeed.
 
 ## 30. Compatibility subset — v1 is a list, not an aspiration
 

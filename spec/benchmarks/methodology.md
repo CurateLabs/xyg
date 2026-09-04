@@ -105,7 +105,10 @@ reported).
   (`bench_vs.to_markdown`). Library versions, executables, CPU count, xy
   backend, and browser renderer are recorded in the JSON `environment` block
   (`benchmarks/environment.py`) but are not yet rendered into the markdown
-  header. `benchmark.json` (emitted by the CI `benchmark` job) is the canonical
+  header. Git dirty state is tri-state and exit-status aware: empty successful
+  `git status --porcelain` is `false`, non-empty success is `true`, and command
+  failure is `null`; publication gates require the unambiguous `false` value.
+  `benchmark.json` (emitted by the CI `benchmark` job) is the canonical
   artifact; `docs/benchmark_ci.md` is rendered from it and
   `spec/benchmarks/metrics.md` is emitted by `scripts/check_regressions.py
   --emit-md`. `spec/benchmarks/results.md` is hand-maintained and must only quote rows
@@ -344,6 +347,140 @@ keeps ordinary host payloads bounded at both 1M and 100M policy sizes. The
 direct-browser foundation independently queries that same Rust plan through
 WASM ABI 24 and records the decoded 1M/100M tier, mark ceiling, eligibility,
 sample, and source-shipment fields in its CI log.
+
+### Real 100M density journey (#876)
+
+The allocation-free 100M planner probe above is policy evidence, not evidence
+that a real 100M source completed the product journey. The separate
+`benchmarks/bench_density_e2e.py` harness provides that authority. It creates
+two deterministic f64 columns as mmap files in bounded chunks, admits those
+columns through the public composition API, builds the native density payload,
+and hands the ordinary (no `wasm_source`) split buffers to a real `ChartView`
+under a strict same-origin CSP. The browser then makes one real `density_view`
+request through `xyg.channel.handle_message`; the report keeps host
+re-aggregation time and bytes separate from browser reply/apply/paint.
+
+The JSON schema is `density-e2e` version 1. It records an exact clean git SHA;
+UTC timestamp; Python and host platform; xyg, Chromium, Node, Rust, and Cargo
+versions; software-GL mode plus the browser-observed renderer; deterministic
+source, spec, buffer, and combined payload SHA-256 hashes; source creation,
+admission, native build, browser first paint, upload, refine, and cleanup
+phases; `Figure.memory_report` buffer classes; and sampled peak RSS for the
+complete worker/Chromium process group. Unrelated package versions may be null
+when absent and `platform.processor` may be the empty string on Linux; the
+named authority toolchain fields may not be null. Timing fields are advisory.
+Native backend selection, exact two-f64-column mmap accounting, zero default
+canonical-f64 paint buffers, the 4 MiB/10%-of-source transport-body ceilings,
+deterministic rebuild, process-tree RSS ceiling, bounded loopback routes, a
+browser-observed blocked inline-script CSP sentinel, a 10%-of-source live
+derived-cache ceiling, and orphan-free teardown are hard failures checked by
+`scripts/verify_density_e2e_report.py`. For first paint, transport-body bytes
+mean the serialized `/spec.json` manifest plus the raw split-buffer response
+bodies; raw paint-buffer bytes remain a separate inventory. For refine, they
+mean the actual serialized JSON envelope including base64 buffer expansion;
+decoded reply-buffer bytes remain separate. The ratio and 4 MiB hard gates use
+those larger transport-body counts, not the raw buffer counts.
+
+The initial semantic oracle requires a density-tier scatter, native
+binning/reduction labels, and `n_points`, `visible`, and sample-visible metadata
+equal to the source row count. Those metadata are policy evidence, not proof
+that the grid conserved counts. A separate bounded `native-bin2d` oracle scans
+the canonical mmap columns, records its bounded grid digest and dimensions,
+and hard-fails unless the sum of its count cells equals `point_count` exactly.
+It is not accepted as a detached second computation: below the pyramid
+threshold the oracle grid is passed through native `density_log_u8`, and its
+encoded bytes, digest, and maximum must equal the actual density buffer and
+`max` in the emitted split payload. On the resident-pyramid route the live
+pyramid must count the full emitted range to `point_count` exactly, recompose
+that same range at the emitted dimensions and recorded level, and reproduce
+the same encoded buffer and maximum. Because area-weighted compose accumulates
+fractional counts in f32, its recorded f64 sum must be within 0.5 point of the
+exact pyramid count rather than being truncated to an integer. The report
+binds the emitted buffer index and digest back to the payload inventory; every
+comparison stays bounded by the screen-sized grid.
+The accepted native route is scale-exact for this mmap journey. Below
+`PYRAMID_MIN_POINTS = 2,000,000`, first paint must be `exact` / `bin2d` and
+the fixed in-domain zoom/pan must be the `bin2d-oversized` /
+`bin2d-oversized` correctness
+net. At and above the threshold, both must use a resident `pyramid-L*` /
+`pyramid-count` route. The 100M generator selects a 4096-cell base; its
+count-only pyramid is exactly 89,478,484 bytes, below the 512 MiB spill
+threshold, so a `-tiles` label or nonzero spilled bytes is not authority
+evidence. This fixed in-domain 0.20-span x zoom is safely past the floating
+ladder boundary; at 100M its request is the aligned 0.25-span ladder window
+that contains the applied view. It cannot outresolve the 4096 base: labels
+must be plain `pyramid-LN` (no `-upsampled`) with `N` within the
+levels of the recorded base. JavaScript fallback or any inconsistent
+binning/reduction pair is also rejected.
+
+The browser evidence inventories the first payload and host refine by class
+and digest, proves that the browser received the same refine bytes, and records
+overload-aware WebGL buffer/texture traffic in separate initial/refine phase
+snapshots. The refine has its own product-link oracle: below 2M the native
+requested-window `bin_2d` sum must equal `visible` exactly and its native
+log-u8 bytes/max must equal the reply; at pyramid scale `pyramid_count` must
+equal `visible`, while native recomposition must reproduce the reply bytes,
+max, and level. A partial-window area-weighted f32 compose sum is diagnostic
+and need not equal the whole-cell-center pyramid count. The HTTP handler keeps
+only immutable request/response bytes, raw reply buffers, and product timing,
+then returns after delivery. The controlling thread waits for browser
+`state.done` — after reply parsing, normal-transition apply, refined pixel
+capture, timing, and `ChartView.destroy()` — before running the benchmark-only
+oracle, reply inventory/digests, or host RSS audit. `oracle_seconds` records
+that separate proof and the harness still fails if it disagrees. Thus the
+measured path contains only product `density_view`, actual base64-envelope
+construction, HTTP transfer, and browser product work, with no concurrent
+audit accounting.
+A real in-domain
+`ChartView` zoom/pan scheduling request must produce exactly one
+`density_view`. The 250k/1M points-band reply intentionally lands as
+facts-only under T13 (zero texture upload, positive facts-cache evidence);
+100M must land the aligned ladder reply as a changed texture with positive
+bounded upload work. The normal exposure crossfade may upload the same density
+texture once per animation frame; the verifier permits at most 64 observed
+texture calls, requires the aggregate bytes to be an exact positive multiple
+of the reply paint buffer, and caps that multiple by the observed call count.
+The textured reply must also add its window to the density cache; facts-only
+is distinguished by an unchanged texture and zero upload, not by cache growth.
+Both require a nonblank decoded plot-region RGBA raster
+and a changed refined plot digest after the normal product transition settles.
+The source generator is
+fixed to `diagonal-band-v1`, and its working chunk is hard-capped at 1M rows;
+the source's deterministic diagonal-band distribution makes that pan
+observably different.
+All mmap, spill, and Chromium profile/cache files inherit a supervisor-owned
+temporary root; cancellation kills the worker process group and removes that
+entire root, not merely the two source files. On Linux the raw report also
+records the union of sampled worker/browser descendant PIDs and names, the
+maximum simultaneous process count, and the worker's `VmHWM`; verification
+requires a sampled Chromium descendant and treats that worker high-water mark
+as a floor for the aggregate process-tree peak.
+
+Cost policy lives in `.github/workflows/density-100m.yml`: the full journey at
+1M is the daily control; exactly 100M runs only on the weekly cron or manual
+dispatch, and the whole job is locked to `refs/heads/main`. The harness also
+requires an explicit authority capability and refuses 100M elsewhere. PR CI
+runs the same browser/native route at 250k, sufficient to validate routing,
+buffer classes, payload ceilings, determinism, schema, limits, and teardown;
+it never runs 100M and never invokes hosted CodSpeed. Reproduce a control
+after building the native core and client with:
+
+```bash
+CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
+uv run python benchmarks/bench_density_e2e.py --points 1000000 \
+  --chrome "$CHROME" --output density-e2e-control.json
+python3 scripts/verify_density_e2e_report.py density-e2e-control.json \
+  --sha "$(git rev-parse HEAD)"
+```
+
+The 100M command adds `--points 100000000 --authority` and is intentionally
+valid only in the scheduled/manual main environment. A failed, timed-out, or
+cancelled worker is killed as one process group; the supervisor still removes
+the mmap/cache tree and emits a failed raw report when it remains able to do
+so. Worker reports are atomically replaced; the outer supervisor owns temp-tree
+removal in `finally` and synthesizes a failed publication report if a worker
+result is absent, truncated, malformed, or not a JSON object. Workflow upload
+uses `if: always()` so such teardown evidence is retained.
 
 The latest interpreted hosted extract is
 `spec/benchmarks/hosted-evidence-95adb9de.json` (Actions run `32945396133`,

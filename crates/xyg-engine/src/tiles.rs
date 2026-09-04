@@ -677,6 +677,55 @@ pub(crate) fn choose_level_dims(
     None
 }
 
+/// Whether `level` has fewer source cells under the viewport than requested
+/// output cells on either axis. This is the exact branch condition used by
+/// [`compose_level`] to pull (enlarge) source cells instead of area-weighting
+/// them down. Kept separate from no-rescan policy so metadata describes the
+/// pixels actually produced, not why a caller allowed level 0.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn level_is_upsampled_dims(
+    dims: &[usize],
+    (x0, x1, y0, y1): (f64, f64, f64, f64),
+    level: usize,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+) -> bool {
+    let Some(&dim) = dims.get(level) else {
+        return false;
+    };
+    let (cx0, cx1) = center_range(lo_x, hi_x, x0, x1, dim);
+    let (cy0, cy1) = center_range(lo_y, hi_y, y0, y1, dim);
+    cx1 - cx0 < w || cy1 - cy0 < h
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn level_is_upsampled(
+    p: &Pyramid,
+    level: usize,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+) -> bool {
+    level_is_upsampled_dims(
+        &p.dims,
+        (p.x0, p.x1, p.y0, p.y1),
+        level,
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+    )
+}
+
 /// Fill `out` (w×h, row-major, row 0 = bottom, same contract as bin_2d) for
 /// the window from the coarsest adequate level. Returns the level used, or
 /// None when even level 0 cannot meet the resolution (window too small).
