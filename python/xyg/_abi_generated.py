@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 357
-SIGNATURE_SHA256 = "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b"
+ABI_VERSION = 358
+SIGNATURE_SHA256 = "587dc970714d5d9ea5fa60b58bea4f6547439e03fd05cec633e51a72f374a8ed"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -998,6 +998,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rasterize_png_spans
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t]
+    # int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h)
+    function = lib.xyg_rasterize_rgb
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
     # int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)
     function = lib.xyg_rasterize_spans
     function.restype = ctypes.c_int32

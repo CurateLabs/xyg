@@ -109,6 +109,8 @@ callers already own their typed source locally and stage it through the same
 XYAG/XYAO adapter. This does not apply TypeScript aggregation. Unsupported
 kernel-less sources retain their overview and dispatch an explicit
 no-refinement diagnostic.
+This is automatic source provisioning only after that explicit opt-in; the
+default split payload never retains replay columns.
 
 The first full host vertical is deliberately one Cartesian linear count-only
 trace. An explicitly replay-enabled split payload retains canonical f64 x/y

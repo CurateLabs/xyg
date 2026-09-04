@@ -13052,6 +13052,19 @@ def rasterize(cmds: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
     return out
 
 
+def rasterize_rgb(cmds: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
+    """Paint a display list onto Rust's opaque-white RGB8 framebuffer."""
+    w = _positive_int(w, "raster width")
+    h = _positive_int(h, "raster height")
+    buf = np.frombuffer(cmds, dtype=np.uint8)
+    out = np.zeros((h, w, 3), dtype=np.uint8)
+    cmd_ptr = _ptr_u8(buf) if buf.size else None
+    ok = _lib.xyg_rasterize_rgb(cmd_ptr, buf.size, _ptr_u8(out), w, h)
+    if not ok:
+        raise ValueError("native opaque rasterizer rejected the command buffer")
+    return out
+
+
 def rasterize_png(cmds: bytes, w: int, h: int) -> bytes:
     """Paint a display list and encode it as PNG wholly inside the Rust core."""
     w = _positive_int(w, "raster width")

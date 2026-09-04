@@ -9675,7 +9675,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str(&rgba_css(chrome.label_rgba));
         out.push_str("\" font-size=\"");
         push_num(out, chrome.label_font_size + 2.0);
-        out.push_str("\" text-anchor=\"middle\">");
+        out.push_str("\" font-weight=\"400\" text-anchor=\"middle\">");
         push_escaped_attribute(out, &text.title);
         out.push_str("</text></g>");
     }

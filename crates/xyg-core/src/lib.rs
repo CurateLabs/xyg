@@ -174,7 +174,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 357;
+pub const ABI_VERSION: u32 = 358;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -9275,6 +9275,40 @@ pub unsafe extern "C" fn xyg_rasterize(
     };
     let out = std::slice::from_raw_parts_mut(out, out_len);
     ffi_guard(0, || raster::rasterize_into(cmds, w, h, out) as i32)
+}
+
+/// Paint a display list into a caller-owned opaque-white RGB8 framebuffer.
+/// This is the exact framebuffer used by `xyg_rasterize_png`; it lets a host
+/// apply the size-oriented PNG encoder without rebuilding geometry or changing
+/// blend quantization.
+///
+/// # Safety
+/// `cmd` must point to `cmd_len` readable bytes (or be null iff `cmd_len == 0`);
+/// `out` must point to `w*h*3` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_rasterize_rgb(
+    cmd: *const u8,
+    cmd_len: usize,
+    out: *mut u8,
+    w: usize,
+    h: usize,
+) -> i32 {
+    if out.is_null() || w == 0 || h == 0 {
+        return 0;
+    }
+    let out_len = match w.checked_mul(h).and_then(|n| n.checked_mul(3)) {
+        Some(n) => n,
+        None => return 0,
+    };
+    let cmds = if cmd_len == 0 {
+        &[][..]
+    } else if cmd.is_null() {
+        return 0;
+    } else {
+        std::slice::from_raw_parts(cmd, cmd_len)
+    };
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    ffi_guard(0, || raster::rasterize_rgb_into(cmds, w, h, out) as i32)
 }
 
 /// Rasterize a display list that may reference an immutable external byte

@@ -969,6 +969,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         axis_id: u8,
         resolved_kind: u8,
         authored_type: u8,
+        domain_present: bool,
         side: u8,
         keys: Vec<&'a str>,
     }
@@ -981,10 +982,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             axis_id: cursor.u8()?,
             resolved_kind: cursor.u8()?,
             authored_type: cursor.u8()?,
-            side: {
-                let _domain_present = cursor.u8()?;
-                cursor.u8()?
-            },
+            domain_present: cursor.u8()? != 0,
+            side: cursor.u8()?,
             keys: {
                 let _reserved = cursor.u8()?;
                 let count = cursor.u16()? as u32;
@@ -1159,13 +1158,74 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     if extra_key(&colorbar_keys, PUBLIC_COLORBAR_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR");
     }
-    // Geometry is anchored to the primary Cartesian x/y viewport. The Scene
-    // compiler consumes Rust-resolved autorange domains, so an authored domain
-    // is not a public-export prerequisite. Keep requiring the primary axes and
-    // their canonical sides; alternate-axis geometry remains fail-closed.
-    let needs_primary_axes = traces
-        .iter()
-        .any(|trace| kind_literal_geometry(trace.kind) || kind_extent_geometry(trace.kind));
+    // Geometry is anchored to the primary Cartesian x/y viewport. Only the
+    // nine ordinary, default-shell chart shapes covered by #856 may consume
+    // Rust-resolved autorange domains. Richer layered, polar, annotated, or
+    // styled figures retain the compatibility renderer until their complete
+    // public contract is represented by Scene; admitting all literal kinds
+    // here silently changed established SVG/PNG semantics.
+    let needs_authored_domain = traces.iter().any(|trace| kind_literal_geometry(trace.kind));
+    let needs_primary_axes =
+        needs_authored_domain || traces.iter().any(|trace| kind_extent_geometry(trace.kind));
+    let conservative_autorange_style = |trace: &TraceRec<'_>| -> bool {
+        let allowed: &[&str] = match trace.kind {
+            KIND_LINE => &["color", "opacity", "width", "step"],
+            KIND_BAR | KIND_COLUMN => &["color", "opacity", "role", "orientation"],
+            KIND_HISTOGRAM => &["color", "opacity", "role", "cumulative", "density"],
+            KIND_AREA => &[
+                "color",
+                "opacity",
+                "line_width",
+                "line_opacity",
+                "stroke_perimeter",
+                "step",
+            ],
+            KIND_ERRORBAR | KIND_BOX_WHISKER | KIND_BOX_MEDIAN => {
+                &["color", "opacity", "width", "role"]
+            }
+            KIND_BOX => &[
+                "color",
+                "opacity",
+                "role",
+                "stroke_width",
+                "box_orientation",
+            ],
+            KIND_VIOLIN => &["color", "opacity", "role"],
+            KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
+            _ => &[],
+        };
+        !allowed.is_empty() && !extra_key(&trace.style_keys, allowed)
+    };
+    let ordinary_autorange_shape = if flags & FLAG_POLAR != 0
+        || n_annotations != 0
+        || !style_keys.is_empty()
+        || !legend_keys.is_empty()
+        || !colorbar_keys.is_empty()
+        || axes.iter().any(|axis| extra_key(&axis.keys, &["side"]))
+        || traces.iter().any(|trace| !conservative_autorange_style(trace))
+    {
+        false
+    } else {
+        match traces.as_slice() {
+            [trace] => matches!(
+                trace.kind,
+                KIND_LINE
+                    | KIND_BAR
+                    | KIND_COLUMN
+                    | KIND_HISTOGRAM
+                    | KIND_AREA
+                    | KIND_ERRORBAR
+                    | KIND_VIOLIN
+                    | KIND_HEXBIN
+            ),
+            [whisker, box_trace, median] => {
+                whisker.kind == KIND_BOX_WHISKER
+                    && box_trace.kind == KIND_BOX
+                    && median.kind == KIND_BOX_MEDIAN
+            }
+            _ => false,
+        }
+    };
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
@@ -1173,6 +1233,9 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             };
             let default_side = if wanted == 0 { 1 } else { 2 };
             if axis.side != 0 && axis.side != default_side {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+            }
+            if needs_authored_domain && !axis.domain_present && !ordinary_autorange_shape {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             }
         }

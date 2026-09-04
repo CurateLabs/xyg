@@ -80,7 +80,9 @@ def test_the_component_spelling_still_wins_over_the_token() -> None:
 
 def test_an_unset_token_leaves_the_default_frame_untouched() -> None:
     svg = xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0], name="series")).to_svg()
-    assert 'fill="rgba(128,128,128,0.08)"' in svg
+    # The canonical Scene owns the ordinary autoranged path and its default
+    # white legend card; an unset token must not author a different paint.
+    assert 'fill="rgba(255,255,255,0.901961)"' in svg
 
 
 @pytest.mark.parametrize("spelling", ["__grid_colour", "__chart_bg", "__anything"])

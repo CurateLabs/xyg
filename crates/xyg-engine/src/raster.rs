@@ -3089,6 +3089,17 @@ pub fn rasterize_into(cmds: &[u8], w: usize, h: usize, out: &mut [u8]) -> bool {
     rasterize_spans_into(cmds, &[], w, h, out)
 }
 
+/// Parse and paint the display list onto an opaque-white RGB8 framebuffer.
+/// This is the pixel-identical source used by the fused PNG path, exposed so
+/// callers can select the slower indexed encoder without repainting through a
+/// host implementation.
+pub fn rasterize_rgb_into(cmds: &[u8], w: usize, h: usize, out: &mut [u8]) -> bool {
+    if out.len() != w.checked_mul(h).and_then(|n| n.checked_mul(3)).unwrap_or(0) {
+        return false;
+    }
+    rasterize_with_spans(cmds, &[], w, h, true, out).is_some()
+}
+
 /// Parse and paint a display list whose commands may reference `data` for the
 /// duration of this synchronous call.
 pub fn rasterize_data_into(cmds: &[u8], data: &[u8], w: usize, h: usize, out: &mut [u8]) -> bool {

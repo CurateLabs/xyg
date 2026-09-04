@@ -911,6 +911,10 @@ JS type inspection stays host-side.
 Python `channels._category_labels` and Node `categoryLabels` batch map host value
 probes through ABI 357 `xyg_category_label_kinds_from_probes`; UTF-8 payload
 encoding stays host-side.
+Python optimized Scene PNG export consumes ABI 358 `xyg_rasterize_rgb`, the
+same opaque-white Rust display-list painter as the fused PNG consumer, before
+calling Rust's indexed encoder. `optimize=True` therefore changes encoding
+without reintroducing Python geometry or paint policy.
 Python `_literal_color_rgba` and Node `resolveColorChannel` literal CSS columns
 pack through ABI 344 `xyg_literal_color_rgba_f64`. The first-entry functional
 syntax probe stays host-side so categorical columns are rejected without

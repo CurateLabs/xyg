@@ -87,8 +87,8 @@ the `test` job after `uv sync`.
 
 The #858 inventory now parses calls through imported Python `_native` /
 `kernels` boundaries and Node `native.js` / `sceneBulkNative.js` boundaries.
-On this product state the 80 Python policy surfaces contain 265 native call
-sites across 205 distinct ABI entries (11.2 calls/KLOC); the 30 Node surfaces
+On this product state the 80 Python policy surfaces contain 268 native call
+sites across 207 distinct ABI entries (11.3 calls/KLOC); the 30 Node surfaces
 contain 968 call sites across 420 entries (40.8 calls/KLOC). Imports alone do
 not count. Tests pin conservative floors to expose accidental measurement
 regressions, while `verify_ownership.py` applies non-empty Python/Node

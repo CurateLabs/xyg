@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 357;
-export const SIGNATURE_SHA256 = "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b";
+export const ABI_VERSION = 358;
+export const SIGNATURE_SHA256 = "587dc970714d5d9ea5fa60b58bea4f6547439e03fd05cec633e51a72f374a8ed";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -252,6 +252,7 @@ export let xyRasterizeData;
 export let xyRasterizePng;
 export let xyRasterizePngData;
 export let xyRasterizePngSpans;
+export let xyRasterizeRgb;
 export let xyRasterizeSpans;
 export let xyRealNumericDtypeAdmit;
 export let xyRectZeroBaselineFlags;
@@ -725,6 +726,7 @@ export function bindGeneratedAbi(lib) {
   xyRasterizePng = lib.func("size_t xyg_rasterize_png(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
   xyRasterizePngData = lib.func("size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
   xyRasterizePngSpans = lib.func("size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
+  xyRasterizeRgb = lib.func("int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h)");
   xyRasterizeSpans = lib.func("int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)");
   xyRealNumericDtypeAdmit = lib.func("int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind)");
   xyRectZeroBaselineFlags = lib.func("uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)");

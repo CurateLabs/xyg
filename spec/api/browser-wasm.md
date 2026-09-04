@@ -217,6 +217,8 @@ direct-browser caller already owns the typed source locally. Stale-result,
 revision, error, and ChartView-destroy semantics remain the same for that
 explicit handle. Kernel-backed journeys without the optional browser source
 retain their kernel route.
+This automatic source provisioning means provisioning after this explicit
+opt-in, never implicit retention by the default first-paint payload.
 
 `cartesian-count-f64-stream-v1` is the explicit replay split-payload contract
 for one linear Cartesian count-only density trace. Its x/y f64 buffers remain

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 357
-#define XYG_ABI_SIGNATURE_SHA256 "7c9d0656b605eade70053ec1736792881ac4f9e309d1940054b333141a59e64b"
+#define XYG_ABI_VERSION 358
+#define XYG_ABI_SIGNATURE_SHA256 "587dc970714d5d9ea5fa60b58bea4f6547439e03fd05cec633e51a72f374a8ed"
 
 #ifdef __cplusplus
 extern "C" {
@@ -258,6 +258,7 @@ int32_t xyg_rasterize_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * 
 size_t xyg_rasterize_png(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h);
 int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h);
 int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind);
 uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n);
