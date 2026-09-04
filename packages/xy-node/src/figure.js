@@ -29,6 +29,7 @@ import {
   PROTOCOL_VERSION,
   densityOverlayOpacity,
   encodeF32Values,
+  DEFAULT_MARK_COLOR,
   DEFAULT_PALETTE,
   geometryOffset,
   payloadEvenIndices,
@@ -3237,7 +3238,7 @@ export class Figure {
     }
     let cmap = t.style?.colormap;
     if (plan.useConstantColormapFallback) {
-      const [red, green, blue] = cssColorRgba8(String(t.style?.color ?? "#3987e5"), 1.0);
+      const [red, green, blue] = cssColorRgba8(String(t.style?.color ?? DEFAULT_MARK_COLOR), 1.0);
       cmap = [[red, green, blue], [red, green, blue]];
     }
     const heatmapSpec = {

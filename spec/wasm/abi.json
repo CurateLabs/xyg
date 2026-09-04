@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 24,
+  "abi_version": 25,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -48,6 +48,11 @@
   },
   "max_arena_bytes": 402653184,
   "painter_max_legend_bytes": 57424,
+  "default_palette": {
+    "version": 1,
+    "rows": 8,
+    "invalid_rgba8": 4294967295
+  },
   "aggregate": {
     "request_magic": "XYAG",
     "version": 1,
@@ -131,6 +136,23 @@
     {
       "name": "xyg_wasm_scene_version",
       "params": [],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_default_palette_version",
+      "params": [],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_default_palette_rows",
+      "params": [],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_default_palette_rgba8",
+      "params": [
+        "u32"
+      ],
       "result": "u32"
     },
     {

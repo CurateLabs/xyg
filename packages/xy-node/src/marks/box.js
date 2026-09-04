@@ -2,7 +2,7 @@
  * Box plot mark — packed Rust-owned grouped geometry, with host-only style packing.
  */
 
-import { boxGeometry } from "../encode.js";
+import { boxGeometry, DEFAULT_MARK_COLOR } from "../encode.js";
 import { distributionGroups } from "./distribution.js";
 
 /**
@@ -34,7 +34,7 @@ export function composeBox(values, opts = {}) {
   const outlierStyle = opts.outlierStyle ?? opts.outlier_style ?? {};
   const width = Number(opts.width ?? 0.6);
   const orientation = opts.orientation ?? "vertical";
-  const color = boxStyle.color ?? opts.color ?? "#3987e5";
+  const color = boxStyle.color ?? opts.color ?? DEFAULT_MARK_COLOR;
   const opacity = boxStyle.opacity ?? opts.opacity ?? 0.85;
   const showOutliers = opts.showOutliers ?? opts.show_outliers ?? true;
   const geometry = boxGeometry(groups, positions, width, orientation, showOutliers);

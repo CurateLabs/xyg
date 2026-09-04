@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import math
 import warnings
+from collections.abc import Iterator, Sequence
+from typing import overload
 
 # Wire protocol version: the client refuses a mismatched spec loudly (§33).
 # v5: streaming append ships split-layout buffers and, on the widget host,
@@ -185,34 +187,57 @@ DRILL_PAD_SPAN_CAP = 64.0
 # wrong row (§16 exact-or-nothing).
 DRILL_HISTORY_KEEP = 8
 
-# CVD-safe default categorical palette (§20/§36 default theme). Eight slots in
-# a fixed order; charts render on unknown host surfaces, so every step sits in
-# the OKLCH lightness band both light and dark modes share (L 0.48–0.67) and is
-# validated against both reference surfaces (#fcfcfb / #1a1a19) with
-# .claude/skills/xy-dataviz/scripts/validate_palette.py: chroma ≥ 0.10, worst
-# adjacent-pair CVD ΔE 8.5 (Machado–Oliveira–Fernandes protan/deutan, ≥8
-# target), worst adjacent normal-vision ΔE 19.1 (≥15 floor), all slots ≥3:1 on
-# both surfaces. The ORDER is the CVD-safety mechanism — adjacency drives the
-# ΔE gate — so never re-order or extend without re-running the validator.
-# (Replaced Tableau10, whose adjacent red/green collapsed to ΔE 1.2 under
-# deuteranopia and whose slots 1/5/7/9/10 sat below the chroma floor.)
-DEFAULT_PALETTE = [
-    "#3987e5",  # blue
-    "#008300",  # green
-    "#d55181",  # magenta
-    "#c48300",  # amber
-    "#199e70",  # aqua
-    "#d95926",  # orange
-    "#9085e9",  # violet
-    "#e66767",  # red
-]
 
-_PALETTE_WRAP_MESSAGE = (
-    f"more than {len(DEFAULT_PALETTE)} series use default colors; the default "
-    f"palette repeats every {len(DEFAULT_PALETTE)} (series 9 wears series 1's "
-    "color). Pass explicit color= per series, or group series, to keep "
-    "identities distinct."
-)
+class _NativeDefaultPalette(Sequence[str]):
+    """Lazy immutable proxy for the versioned Rust-owned palette (ABI 360).
+
+    ``config`` is imported while the native binding itself initializes, so the
+    ABI read must wait until a caller actually needs a row. This preserves the
+    historic sequence surface without keeping a host-side product copy.
+    """
+
+    __slots__ = ("_resolved",)
+
+    def __init__(self) -> None:
+        self._resolved: tuple[str, ...] | None = None
+
+    def _value(self) -> tuple[str, ...]:
+        if self._resolved is None:
+            from . import _native
+
+            _version, entries, _rgba = _native.default_palette_contract()
+            self._resolved = entries
+        return self._resolved
+
+    @overload
+    def __getitem__(self, index: int) -> str: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> tuple[str, ...]: ...
+
+    def __getitem__(self, index: int | slice) -> str | tuple[str, ...]:
+        return self._value()[index]
+
+    def __len__(self) -> int:
+        return len(self._value())
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value())
+
+    def __repr__(self) -> str:
+        return repr(self._value())
+
+
+# CVD-safe default categorical palette (§20/§36 default theme). Rust is the
+# sole executable source; this lazy sequence reads its fixed-order rows through
+# ABI 360. Never re-order or extend the engine contract without re-running the
+# palette validator documented in §20.
+DEFAULT_PALETTE: Sequence[str] = _NativeDefaultPalette()
+
+
+def default_mark_color() -> str:
+    """First color in the Rust-owned default palette."""
+    return DEFAULT_PALETTE[0]
 
 
 def default_palette_color(index: int, *, stacklevel: int = 3) -> str:
@@ -223,9 +248,17 @@ def default_palette_color(index: int, *, stacklevel: int = 3) -> str:
     validator — which means assignment wraps modulo eight. The wrap is allowed
     but never silent (§28): the first wrapped assignment warns.
     """
-    if index >= len(DEFAULT_PALETTE):
-        warnings.warn(_PALETTE_WRAP_MESSAGE, RuntimeWarning, stacklevel=stacklevel)
-    return DEFAULT_PALETTE[index % len(DEFAULT_PALETTE)]
+    n_palette = len(DEFAULT_PALETTE)
+    if index >= n_palette:
+        warnings.warn(
+            f"more than {n_palette} series use default colors; the default "
+            f"palette repeats every {n_palette} (series {n_palette + 1} wears "
+            "series 1's color). Pass explicit color= per series, or group "
+            "series, to keep identities distinct.",
+            RuntimeWarning,
+            stacklevel=stacklevel,
+        )
+    return DEFAULT_PALETTE[index % n_palette]
 
 
 # Tile pyramid (§5 Tier 3): built lazily per density trace at/above this size;

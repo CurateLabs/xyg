@@ -2,7 +2,7 @@
  * Error / confidence band — filled strip between lower and upper (area geometry).
  */
 
-import { asF64Array, argsortStable, isSorted } from "../encode.js";
+import { asF64Array, argsortStable, DEFAULT_MARK_COLOR, isSorted } from "../encode.js";
 
 function gather(arr, idx) {
   const out = new Float64Array(idx.length);
@@ -40,7 +40,7 @@ export function composeErrorBand(x, lower, upper, opts = {}) {
     hi = gather(hi, order);
   }
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     opacity: opts.opacity ?? 0.22,
     line_width: opts.lineWidth ?? 0.0,
     line_opacity: opts.lineOpacity ?? 0.0,

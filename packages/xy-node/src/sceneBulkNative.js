@@ -1,7 +1,7 @@
 /** ctypes-compatible scene bulk packers (ABI 321-324). Mirrors python/xyg/_scene_bulk_native.py. */
 import koffi from "koffi";
 import { pointer } from "./native.js";
-import { u8Ptr, f64Ptr, u32Ptr } from "./encode.js";
+import { DEFAULT_MARK_COLOR, u8Ptr, f64Ptr, u32Ptr } from "./encode.js";
 import {
   xySceneChromePack,
   xySceneFigureSupportMaterialize,
@@ -1200,7 +1200,7 @@ export function sceneXyTcTraceObservationsMaterialize(obs) {
   }
   const marker = xytcMarkerPathSide(obs.marker_path);
   const markerGlyph = obs.marker_glyph == null ? new Uint8Array() : enc.encode(String(obs.marker_glyph));
-  const sourcePaint = enc.encode(String(obs.source_paint ?? "#3987e5"));
+  const sourcePaint = enc.encode(String(obs.source_paint ?? DEFAULT_MARK_COLOR));
   const color2Source = obs.color2_source_const == null ? new Uint8Array() : enc.encode(String(obs.color2_source_const));
   const color2Target = obs.color2_target_const == null ? new Uint8Array() : enc.encode(String(obs.color2_target_const));
   const colorMode = obs.color_ch_mode == null ? new Uint8Array() : enc.encode(String(obs.color_ch_mode));

@@ -8858,11 +8858,25 @@ pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -
     1
 }
 
-/// Built-in categorical palette matching `python/xyg/config.DEFAULT_PALETTE`.
+/// Versioned built-in categorical palette (design dossier §20/§36).
+///
+/// This is the sole product definition. Native and direct-WASM hosts read it
+/// through bounded ABI contracts; host packages must not mirror these values.
+pub const DEFAULT_PALETTE_VERSION: u32 = 1;
 pub const DEFAULT_PALETTE: [&str; 8] = [
     "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9",
     "#e66767",
 ];
+pub const DEFAULT_MARK_COLOR: &str = DEFAULT_PALETTE[0];
+
+/// Canonical straight-alpha rows for the built-in palette.
+pub fn default_palette_rgba8() -> [[u8; 4]; DEFAULT_PALETTE.len()] {
+    DEFAULT_PALETTE.map(|color| crate::css::color_rgba8(color, 1.0))
+}
+
+pub fn default_mark_rgba8() -> [u8; 4] {
+    default_palette_rgba8()[0]
+}
 
 fn rgba_unit_f32_to_u8(rgba: [f32; 4]) -> [u8; 4] {
     let channels = [
@@ -11428,6 +11442,23 @@ mod tests {
         let mut flags = [0u8; 2];
         let _ = palette_rows_rgba8(&entries, 2, &mut out, Some(&mut flags));
         assert_eq!(flags, [0, 1]);
+    }
+
+    #[test]
+    fn default_palette_contract_has_canonical_text_and_rows() {
+        assert_eq!(DEFAULT_PALETTE_VERSION, 1);
+        assert_eq!(DEFAULT_PALETTE.len(), 8);
+        assert_eq!(DEFAULT_MARK_COLOR, DEFAULT_PALETTE[0]);
+        assert!(DEFAULT_PALETTE.iter().all(|entry| {
+            entry.len() == 7
+                && entry.starts_with('#')
+                && entry[1..].bytes().all(|byte| byte.is_ascii_hexdigit())
+        }));
+        let rows = default_palette_rgba8();
+        for (entry, row) in DEFAULT_PALETTE.iter().zip(rows) {
+            assert_eq!(row, crate::css::color_rgba8(entry, 1.0));
+        }
+        assert_eq!(default_mark_rgba8(), rows[0]);
     }
 
     #[test]

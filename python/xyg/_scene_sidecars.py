@@ -19,6 +19,7 @@ from ._scene_observations import (
     _colormap_stop_bytes,
     _trace_column,
 )
+from .config import default_mark_color
 
 _XYCL_HEADER = struct.Struct("<4sIII")
 _XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
@@ -161,7 +162,8 @@ def rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
     fill = style.get("fill")
     gradient_fail = (
-        isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None
+        isinstance(fill, dict)
+        and _admitted_fill_gradient_from_fill(fill, default_mark_color()) is None
     )
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)):

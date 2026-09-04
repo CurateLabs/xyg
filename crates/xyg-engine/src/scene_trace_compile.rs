@@ -42,6 +42,7 @@
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
+use crate::kernels::DEFAULT_MARK_COLOR;
 use crate::scene::marker_glyph_text;
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};
 
@@ -91,7 +92,6 @@ const MAX_TRACES: usize = 4_096;
 const MAX_TEXT: usize = 4_096;
 const MAX_PATTERN: usize = 8;
 const PLUS_LINE_CODE: u16 = 15;
-const DEFAULT_COLOR: &str = "#3987e5";
 const DEFAULT_DIAMETER: f64 = 4.0;
 const MS_LINE_ONLY: u8 = 1 << 0;
 const MS_HAS_FILL: u8 = 1 << 1;
@@ -411,7 +411,7 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
     }
     if input.flags & FLAG_COLOR_CH == 0 {
         return Ok(if input.color_css.is_empty() {
-            DEFAULT_COLOR
+            DEFAULT_MARK_COLOR
         } else {
             input.color_css
         });
@@ -424,28 +424,28 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
     }
     if input.kind == "scatter" {
         return Ok(if input.color_css.is_empty() {
-            DEFAULT_COLOR
+            DEFAULT_MARK_COLOR
         } else {
             input.color_css
         });
     }
     if input.kind == "hexbin" {
         return Ok(if input.color_css.is_empty() {
-            DEFAULT_COLOR
+            DEFAULT_MARK_COLOR
         } else {
             input.color_css
         });
     }
     if input.kind == "ribbon" {
         return Ok(if input.color_css.is_empty() {
-            DEFAULT_COLOR
+            DEFAULT_MARK_COLOR
         } else {
             input.color_css
         });
     }
     if input.kind == "triangle_mesh" {
         return Ok(if input.color_css.is_empty() {
-            DEFAULT_COLOR
+            DEFAULT_MARK_COLOR
         } else {
             input.color_css
         });

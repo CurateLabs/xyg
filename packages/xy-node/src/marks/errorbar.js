@@ -2,7 +2,7 @@
  * Error bars — vertical/horizontal segments with optional caps (Python parity).
  */
 
-import { asF64Array } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR } from "../encode.js";
 
 /**
  * Auto cap half-width in data units: 0.25 × median adjacent spacing of distinct
@@ -139,7 +139,7 @@ function segmentTrace(kind, x0, x1, y0, y1, { name, color, width, opacity, role,
     y0,
     y1,
     style: {
-      color: color ?? "#3987e5",
+      color: color ?? DEFAULT_MARK_COLOR,
       width: width ?? 1.2,
       opacity: opacity ?? 1.0,
       role,

@@ -4,7 +4,7 @@
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
 import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
-import { DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
+import { DEFAULT_MARK_COLOR, DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
 function u8Ptr(view) {
@@ -532,7 +532,7 @@ function flattenRgbRows(raw, n) {
  * @param {string} [fallback]
  * @returns {{mode: string, constant?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string, codes?: Uint8Array|Uint32Array, categories?: string[], palette?: string[]}|null}
  */
-export function resolveColorChannel(color, n, fallback = "#3987e5") {
+export function resolveColorChannel(color, n, fallback = DEFAULT_MARK_COLOR) {
   if (color == null) {
     return { mode: "constant", constant: fallback };
   }

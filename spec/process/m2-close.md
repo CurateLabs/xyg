@@ -95,8 +95,9 @@ expressions, not executed calls or a call graph, and dead calls can inflate the
 numbers. Count floors were removed. `verify_ownership.py` keeps the cheap
 forbidden-pattern tripwires, while the versioned
 [`host-delegation-corpus.json`](../design/host-delegation-corpus.json) now runs
-all admitted public marks and the payload/Scene/static/LOD/density/append
-journeys through generated ctypes and Koffi trace hooks. Existing differential
+the versioned default-palette byte contract, all admitted public marks, and the
+payload/Scene/static/LOD/density/append journeys through generated ctypes and
+Koffi trace hooks. Existing differential
 assertions remain the output oracle; the deterministic exact-commit report is
 written to `target/host-delegation-report.json` and uploaded by CI. New
 keep-host tags still require file-specific code/spec evidence under the
@@ -114,13 +115,17 @@ parity; blocked by #856), [#858](https://github.com/CurateLabs/xyg/issues/858)
 (P1 landing-gate proof; blocked by #857 for SVG/PNG),
 [#860](https://github.com/CurateLabs/xyg/issues/860) (P2 spec/ledger leftovers).
 
-#860 keeps the remaining copies visible: the default categorical palette is
-bounded host-ergonomics debt with follow-up
-[#868](https://github.com/CurateLabs/xyg/issues/868), while
+#860 kept the remaining copies visible. Follow-up
+[#868](https://github.com/CurateLabs/xyg/issues/868) closes the palette residual
+with one Rust-owned versioned contract (native ABI 360 / WASM ABI 25), while
 `js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
 [#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
 closed a narrower delivered subset. The host-only close bar does not claim
-that secondary/polar/unattached browser tick policy is closed.
+that secondary/polar/unattached browser tick policy is closed. The executable
+`default-palette` journey runs both dedicated host tests against
+`tests/fixtures/default_palette_contract.json` and requires traces for the
+version, row-count, UTF-8, and RGBA8 ABI entries on each host; removing either
+host's Rust consumption therefore fails `make check-host-parity`.
 
 The #856/#857 implementation admits Rust-resolved autorange for primary-axis
 geometry and proves exact Python/Node Scene, SVG, and raster-command identity

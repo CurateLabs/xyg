@@ -329,6 +329,19 @@ _ENCODED_OUTPUT_CONTRACTS = {
     )
 }
 
+_DEFAULT_PALETTE_OUTPUT_CONTRACTS = {
+    ("xyg_default_palette_utf8", "out"): (
+        "out_cap",
+        7,
+        "concatenated fixed-width lowercase #rrggbb rows",
+    ),
+    ("xyg_default_palette_rgba8", "out"): (
+        "out_cap",
+        4,
+        "packed straight-alpha RGBA8 rows",
+    ),
+}
+
 
 def parse_rust_abi(text: str) -> dict[str, Any]:
     version_match = _ABI_CONST_RS.search(text)
@@ -412,6 +425,29 @@ def parse_rust_abi(text: str) -> dict[str, Any]:
                     "zero_capacity": "reject_before_access",
                     "oversized_capacity": "reject_before_access",
                     "success_status": "encoded_byte_count",
+                    "failure_status": "usize::MAX",
+                }
+            palette_contract = _DEFAULT_PALETTE_OUTPUT_CONTRACTS.get((name, arg_name))
+            if palette_contract is not None:
+                capacity_argument, row_bytes, payload_format = palette_contract
+                contract["buffer_contract"] = (
+                    f"query-first caller-owned {payload_format}; {capacity_argument} is measured "
+                    "in bytes; null with zero capacity returns the required byte count, short "
+                    "capacity returns the required count without mutation, and null with nonzero "
+                    "capacity returns usize::MAX"
+                )
+                contract["length_contract"] = {
+                    "unit": "bytes",
+                    "capacity_argument": capacity_argument,
+                    "required_checked_product": [
+                        {"symbol": "xyg_default_palette_rows"},
+                        {"constant": row_bytes},
+                    ],
+                    "payload_format": payload_format,
+                    "null_output_zero_capacity": "size_query",
+                    "null_output_nonzero_capacity": "usize::MAX",
+                    "short_capacity": "required_byte_count_without_write",
+                    "success_status": "required_byte_count",
                     "failure_status": "usize::MAX",
                 }
             arguments.append({"name": arg_name, "type": contract})
@@ -502,6 +538,18 @@ def _length_contract_comments(symbol: dict[str, Any]) -> list[str]:
     for argument in symbol["arguments"]:
         contract = argument["type"].get("length_contract")
         if contract is None:
+            continue
+        if contract.get("null_output_zero_capacity") == "size_query":
+            factors = " * ".join(
+                str(factor.get("argument", factor.get("symbol", factor.get("constant"))))
+                for factor in contract["required_checked_product"]
+            )
+            comments.append(
+                f"{argument['name']}: query-first {contract['payload_format']}; "
+                f"{contract['capacity_argument']} >= checked({factors}) {contract['unit']}; "
+                "null with zero capacity queries the required count; short capacity returns "
+                f"that count without writing; null with nonzero capacity returns {contract['failure_status']}"
+            )
             continue
         if "required_checked_product" not in contract:
             comments.append(

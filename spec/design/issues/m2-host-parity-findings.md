@@ -17,12 +17,13 @@
 | [#874](https://github.com/CurateLabs/xyg/issues/874) | P1 | Replace source counts with executable delegation evidence |
 | [#875](https://github.com/CurateLabs/xyg/issues/875) | P1 | Exhaustive admitted-shape static-export cross-host proof (blocked by #873) |
 
-#860 bounds rather than erases two residuals: default-palette copies have
-follow-up [#868](https://github.com/CurateLabs/xyg/issues/868), and
+#860 bounded two residuals. Default-palette copies are closed by
+[#868](https://github.com/CurateLabs/xyg/issues/868) through native ABI 360 and
+direct WASM ABI 25; Python/Node now consume the single Rust-owned contract. The
 `js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
 [#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
-closed a narrower subset. Neither is described as a closed browser-policy
-cutover.
+closed a narrower subset. The tick residual is not described as a closed
+browser-policy cutover.
 
 Canonical write-up: [`m2-close.md`](../../process/m2-close.md) (post-landing
 follow-on section). Prior emit/pack contract stays [#731](https://github.com/CurateLabs/xyg/issues/731)

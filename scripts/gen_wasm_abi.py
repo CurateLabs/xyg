@@ -279,6 +279,7 @@ def render(manifest: dict[str, object]) -> str:
     ticks = manifest["ticks"]
     max_arena_bytes = int(manifest["max_arena_bytes"])
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
+    default_palette = manifest["default_palette"]
     aggregate = manifest["aggregate"]
     density_first_paint = manifest["density_first_paint"]
     graph = manifest["graph"]
@@ -297,6 +298,7 @@ def render(manifest: dict[str, object]) -> str:
         or not isinstance(graph, dict)
         or not isinstance(temporal_graph, dict)
         or not isinstance(semantic_graph, dict)
+        or not isinstance(default_palette, dict)
     ):
         raise ValueError("aggregate, statuses, and exports must be structured values")
 
@@ -369,6 +371,9 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_COMPOUND_TRANSITION_LOD_TIERS = {json.dumps(compound_transition['lod_tiers'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
+        f"export const XYG_WASM_DEFAULT_PALETTE_VERSION = {int(default_palette['version'])} as const;",
+        f"export const XYG_WASM_DEFAULT_PALETTE_ROWS = {int(default_palette['rows'])} as const;",
+        f"export const XYG_WASM_DEFAULT_PALETTE_INVALID_RGBA8 = {int(default_palette['invalid_rgba8'])} as const;",
         f"export const XYG_WASM_AGGREGATE_VERSION = {int(aggregate['version'])} as const;",
         f"export const XYG_WASM_AGGREGATE_MAGIC = {json.dumps(aggregate['request_magic'])} as const;",
         f"export const XYG_WASM_AGGREGATE_HEADER_BYTES = {int(aggregate['header_bytes'])} as const;",
@@ -600,6 +605,17 @@ def verify_rust(manifest: dict[str, object]) -> None:
     scene_match = re.search(r"pub const SCENE_VERSION: u32 = (\d+);", engine)
     if not scene_match or int(scene_match.group(1)) != constants["SCENE_VERSION"]:
         raise SystemExit("xyg-engine SCENE_VERSION differs from spec/wasm/abi.json")
+    palette_manifest = manifest["default_palette"]
+    assert isinstance(palette_manifest, dict)
+    palette_source = (ROOT / "crates" / "xyg-engine" / "src" / "kernels.rs").read_text(
+        encoding="utf-8"
+    )
+    palette_version = re.search(r"pub const DEFAULT_PALETTE_VERSION: u32 = (\d+);", palette_source)
+    if not palette_version or int(palette_version.group(1)) != int(palette_manifest["version"]):
+        raise SystemExit("xyg-engine default palette version differs from spec/wasm/abi.json")
+    palette_rows = re.search(r"pub const DEFAULT_PALETTE: \[&str; (\d+)\]", palette_source)
+    if not palette_rows or int(palette_rows.group(1)) != int(palette_manifest["rows"]):
+        raise SystemExit("xyg-engine default palette row count differs from spec/wasm/abi.json")
     semantic = manifest["semantic_graph"]
     assert isinstance(semantic, dict)
     graph_style = (ROOT / "crates" / "xyg-engine" / "src" / "graph_style.rs").read_text(

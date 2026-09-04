@@ -12,7 +12,7 @@ from ._payload_helpers import binning_coords, transition_entry, visible_sel
 from ._trace import Trace
 from .channels import MAX_CATEGORIES
 from .columns import Column
-from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS
+from .config import DENSITY_GRID, MAX_ANIMATION_MATCH_ROWS, default_mark_color
 
 if TYPE_CHECKING:
     from ._payload_writer import PayloadWriter
@@ -609,7 +609,9 @@ def emit_trace_materialized(
         if summary.heatmap_attach_color and cmap is None:
             from ._raster import _parse_color
 
-            red, green, blue, _alpha = _parse_color(str(t.style.get("color", "#3987e5")), 1.0)
+            red, green, blue, _alpha = _parse_color(
+                str(t.style.get("color", default_mark_color())), 1.0
+            )
             cmap = [[red, green, blue], [red, green, blue]]
         entry["heatmap"] = {
             "buf": buf_idx,

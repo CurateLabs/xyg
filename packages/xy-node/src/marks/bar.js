@@ -2,7 +2,7 @@
  * Bar/column mark — grouped / stacked / normalized rects via xyg_bar_stack.
  */
 
-import { asF64Array, barStack } from "../encode.js";
+import { asF64Array, barStack, DEFAULT_MARK_COLOR } from "../encode.js";
 import { resolveColorChannel } from "../color.js";
 import { resolveStrokeChannel } from "./scatter.js";
 
@@ -101,7 +101,7 @@ export function composeBar(x, y, opts = {}) {
         ));
   const colors = Array.isArray(opts.color)
     ? opts.color
-    : Array.from({ length: nSeries }, () => opts.color ?? "#3987e5");
+    : Array.from({ length: nSeries }, () => opts.color ?? DEFAULT_MARK_COLOR);
   const kind = opts.kind ?? "bar";
   const strokeInput = opts.stroke ?? opts.style?.stroke ?? null;
   const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, nItems);
@@ -121,7 +121,7 @@ export function composeBar(x, y, opts = {}) {
       role = `${kind}-${mode}`;
     }
     const style = {
-      color: colors[s] ?? "#3987e5",
+      color: colors[s] ?? DEFAULT_MARK_COLOR,
       opacity: opts.opacity ?? 0.85,
       role,
       orientation,

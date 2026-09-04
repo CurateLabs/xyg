@@ -9,17 +9,14 @@ use crate::css;
 use crate::density_emit::density_mean_color_wire_admit;
 use crate::kernels::{
     clip_quantize_u8, quantize_unit_u8_into, scene_heatmap_shape_admit, scene_item_apply_opacity,
-    scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack,
+    scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack, DEFAULT_MARK_COLOR,
+    DEFAULT_PALETTE,
 };
 use crate::scene_pack_orchestrate::XytaTraceDispatchPlan;
 use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
 
 pub const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES: usize = 1 << 22;
 
-const DEFAULT_COLOR: &str = "#3987e5";
-const DEFAULT_PALETTE: [&str; 8] = [
-    "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9", "#e66767",
-];
 
 /// Authored colormap: named string or explicit RGB stop bytes (len % 3 == 0).
 #[derive(Clone, Debug)]
@@ -450,7 +447,7 @@ pub fn scene_xyta_trace_observations_materialize(
         ..Default::default()
     };
     let fallback = if input.fallback_color.is_empty() {
-        DEFAULT_COLOR
+        DEFAULT_MARK_COLOR
     } else {
         input.fallback_color
     };
@@ -697,7 +694,7 @@ mod tests {
             domain_y0: 0.0,
             domain_y1: 1.0,
             point_count: x_values.len(),
-            fallback_color: DEFAULT_COLOR,
+            fallback_color: DEFAULT_MARK_COLOR,
             style_color: None,
             style_stroke: None,
             style_stroke_width: 0.0,

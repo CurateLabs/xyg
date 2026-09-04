@@ -6,6 +6,7 @@
 
 pub use crate::typed_series_abi_generated::*;
 use xyg_engine::auto_domain;
+use xyg_engine::kernels::default_mark_rgba8;
 use xyg_engine::graph_style::{
     encode_compound_graph_scene, CompoundGraphSceneInput, SemanticGraphSceneInput,
     MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
@@ -930,7 +931,7 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else if kind == KIND_LINE {
             fill_rgba.extend_from_slice(&[0, 0, 0, 0]);
         } else {
-            fill_rgba.extend_from_slice(&[37, 99, 235, 255]);
+            fill_rgba.extend_from_slice(&default_mark_rgba8());
         }
         if flags & DESCRIPTOR_FLAG_STROKE_RGBA != 0 {
             stroke_rgba.extend_from_slice(
@@ -939,7 +940,7 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
                     .ok_or(SceneError::Length)?,
             );
         } else if kind == KIND_LINE {
-            stroke_rgba.extend_from_slice(&[37, 99, 235, 255]);
+            stroke_rgba.extend_from_slice(&default_mark_rgba8());
         } else {
             stroke_rgba.extend_from_slice(&[0, 0, 0, 0]);
         }
@@ -1774,7 +1775,9 @@ mod tests {
             .to_browser_painter(1024 * 1024)
             .unwrap();
         assert_eq!(&painter[..4], b"XYPB");
-        assert!(painter.windows(4).any(|rgba| rgba == [37, 99, 235, 255]));
+        assert!(painter
+            .windows(4)
+            .any(|rgba| rgba == default_mark_rgba8()));
 
         let mut malformed = pack_typed_series();
         malformed[COMPILE_HEADER_BYTES + 48..COMPILE_HEADER_BYTES + 52]

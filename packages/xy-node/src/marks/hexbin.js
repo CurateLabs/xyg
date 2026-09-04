@@ -3,7 +3,7 @@
  * (finite-pair filter, automatic domain, default grid aspect, lattice).
  */
 
-import { asF64Array, hexbin } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR, hexbin } from "../encode.js";
 
 /**
  * @param {ArrayLike|TypedArray} x
@@ -38,7 +38,7 @@ export function composeHexbin(x, y, opts = {}) {
   const constantColor = opts.color;
   const colormap = opts.colormap ?? "viridis";
   const style = {
-    color: constantColor ?? "#3987e5",
+    color: constantColor ?? DEFAULT_MARK_COLOR,
     opacity: opts.opacity ?? 0.9,
     role: "hexbin",
     hex_dx: result.dx,

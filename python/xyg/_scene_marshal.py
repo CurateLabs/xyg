@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from xyg import _native
+from xyg.config import default_mark_color
 
 
 def xych_from_xycf(xycf: bytes) -> bytes:
@@ -339,7 +340,7 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
         "heatmap_has_rgba_grid": getattr(trace, "rgba_grid", None) is not None,
         "heatmap_has_rgba": getattr(trace, "rgba", None) is not None,
         "rect_gradient_fail": isinstance(fill, dict)
-        and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None,
+        and _admitted_fill_gradient_from_fill(fill, default_mark_color()) is None,
         "corner_radius_values": radius_values,
         "corner_radius_seq": radius_seq,
         "wedge_gap": float(style.get("wedge_gap", 0.0) or 0.0),
@@ -531,7 +532,7 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         else np.empty(0, dtype=np.float64)
     )
     style_channels = getattr(trace, "style_channels", None) or {}
-    fallback_color = str(style.get("color", "#3987e5"))
+    fallback_color = str(style.get("color", default_mark_color()))
     return {
         "trace_id": int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
         "dispatch": dispatch,

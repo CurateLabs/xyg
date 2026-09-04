@@ -190,7 +190,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 359;
+pub const ABI_VERSION: u32 = 360;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10635,6 +10635,75 @@ pub unsafe extern "C" fn xyg_quantize_unit_u8(
             std::slice::from_raw_parts_mut(out, values_len)
         };
         kernels::quantize_unit_u8_into(values, lo, hi, out)
+    })
+}
+
+/// Version of the Rust-owned default categorical palette contract (ABI 360).
+#[no_mangle]
+pub extern "C" fn xyg_default_palette_version() -> u32 {
+    kernels::DEFAULT_PALETTE_VERSION
+}
+
+/// Number of rows in the Rust-owned default categorical palette (ABI 360).
+#[no_mangle]
+pub extern "C" fn xyg_default_palette_rows() -> usize {
+    kernels::DEFAULT_PALETTE.len()
+}
+
+/// Copy concatenated fixed-width ``#rrggbb`` palette rows (ABI 360).
+///
+/// A null output with zero capacity is a size query. The return is always the
+/// required byte count; an undersized destination is not written. A null
+/// destination with nonzero capacity returns ``usize::MAX``.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_default_palette_utf8(out: *mut u8, out_cap: usize) -> usize {
+    let required = kernels::DEFAULT_PALETTE
+        .iter()
+        .map(|entry| entry.len())
+        .sum::<usize>();
+    if out_cap == 0 {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    if out_cap < required {
+        return required;
+    }
+    ffi_guard(usize::MAX, || {
+        let dest = std::slice::from_raw_parts_mut(out, required);
+        let mut offset = 0usize;
+        for entry in kernels::DEFAULT_PALETTE {
+            let end = offset + entry.len();
+            dest[offset..end].copy_from_slice(entry.as_bytes());
+            offset = end;
+        }
+        required
+    })
+}
+
+/// Copy straight-alpha RGBA8 rows for the default palette (ABI 360).
+///
+/// Capacity and return semantics match ``xyg_default_palette_utf8``.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_default_palette_rgba8(out: *mut u8, out_cap: usize) -> usize {
+    let rows = kernels::default_palette_rgba8();
+    let required = rows.len() * 4;
+    if out_cap == 0 {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    if out_cap < required {
+        return required;
+    }
+    ffi_guard(usize::MAX, || {
+        let dest = std::slice::from_raw_parts_mut(out, required);
+        for (index, row) in rows.iter().enumerate() {
+            dest[index * 4..index * 4 + 4].copy_from_slice(row);
+        }
+        required
     })
 }
 
@@ -25409,6 +25478,46 @@ pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_palette_abi_is_versioned_bounded_and_atomic() {
+        let text_need = unsafe { xyg_default_palette_utf8(std::ptr::null_mut(), 0) };
+        let rgba_need = unsafe { xyg_default_palette_rgba8(std::ptr::null_mut(), 0) };
+        assert_eq!(xyg_default_palette_version(), 1);
+        assert_eq!(xyg_default_palette_rows(), 8);
+        assert_eq!(text_need, xyg_default_palette_rows() * 7);
+        assert_eq!(rgba_need, xyg_default_palette_rows() * 4);
+
+        let mut short_text = vec![0xa5; text_need - 1];
+        let mut short_rgba = vec![0xa5; rgba_need - 1];
+        assert_eq!(
+            unsafe { xyg_default_palette_utf8(short_text.as_mut_ptr(), short_text.len()) },
+            text_need
+        );
+        assert_eq!(
+            unsafe { xyg_default_palette_rgba8(short_rgba.as_mut_ptr(), short_rgba.len()) },
+            rgba_need
+        );
+        assert!(short_text.iter().all(|byte| *byte == 0xa5));
+        assert!(short_rgba.iter().all(|byte| *byte == 0xa5));
+        assert_eq!(
+            unsafe { xyg_default_palette_utf8(std::ptr::null_mut(), text_need) },
+            usize::MAX
+        );
+
+        let mut text = vec![0; text_need];
+        let mut rgba = vec![0; rgba_need];
+        assert_eq!(
+            unsafe { xyg_default_palette_utf8(text.as_mut_ptr(), text.len()) },
+            text_need
+        );
+        assert_eq!(
+            unsafe { xyg_default_palette_rgba8(rgba.as_mut_ptr(), rgba.len()) },
+            rgba_need
+        );
+        assert_eq!(&text[..7], b"#3987e5");
+        assert_eq!(&rgba[..4], &[57, 135, 229, 255]);
+    }
 
     #[test]
     fn required_grid_len_enforces_all_slice_bounds() {

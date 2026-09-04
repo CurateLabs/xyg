@@ -2,7 +2,7 @@
  * Violin mark — `xy_violin_density` → instanced rectangle bands (multi-group).
  */
 
-import { violinRects } from "../encode.js";
+import { DEFAULT_MARK_COLOR, violinRects } from "../encode.js";
 import { distributionGroups } from "./distribution.js";
 
 /**
@@ -33,7 +33,7 @@ export function composeViolin(values, opts = {}) {
   const orientation = opts.orientation ?? "vertical";
   if (!Number.isFinite(width) || width <= 0) throw new RangeError("violin width must be positive and finite");
   if (orientation !== "vertical" && orientation !== "horizontal") throw new RangeError("violin orientation must be 'vertical' or 'horizontal'");
-  const color = opts.color ?? "#3987e5";
+  const color = opts.color ?? DEFAULT_MARK_COLOR;
   const opacity = opts.opacity ?? 0.55;
 
   const compiled = violinRects(groups.map((group) => Float64Array.from(group)), positions, nBins, width, orientation);

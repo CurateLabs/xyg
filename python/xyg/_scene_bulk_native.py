@@ -1363,7 +1363,9 @@ def scene_xytc_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
         obs.get("marker_path")
     )
     marker_glyph_b = _xytc_optional_str(obs.get("marker_glyph"))
-    source_paint_b = str(obs.get("source_paint", "#3987e5")).encode("utf-8")
+    from .config import default_mark_color
+
+    source_paint_b = str(obs.get("source_paint", default_mark_color())).encode("utf-8")
     color2_source_b = _xytc_optional_str(obs.get("color2_source_const"))
     color2_target_b = _xytc_optional_str(obs.get("color2_target_const"))
     color_mode_b = _xytc_optional_str(obs.get("color_ch_mode"))

@@ -479,7 +479,7 @@ re-exports several of them as a historic import path and is not listed for those
 | `LOD_POINT_CACHE_WINDOWS` | `3` | Retired exact point windows kept per trace client-side beyond the live drill; LRU-bounded VRAM, swept by the T11 outgrown rule. | `js/src/45_lod.ts` (`lodRetireDrill`, `lodPromoteCachedDrill`) |
 | `LOD_POINTS_REQUEST_BAND` | `4` | The aggregate tier never refines per view (T13, revised): a raw-view `density_view` goes out only when the estimated in-view count sits within `budget × 4` of points territory — the LOWER of an area-scaled cached-window count and the retained sample counted in-view (`lodSampleViewCount`, distribution-true where area-scaling over-estimates sparse tails). | `js/src/45_lod.ts` (`lodAggregateStands`) |
 | `LOD_AGG_STEP_FACTOR` / `LOD_AGG_STEP_MAX` / `LOD_AGG_STEP_SLACK` | `4` / `2` / `1.5` | The stepped aggregate ladder (T13): while standing, the only density request is the view snapped outward to a power-of-4 block grid over the extent (per axis), at most 2 steps below home, and only when every covering texture is coarser than the step by more than the slack. Quantized windows are pan-stable and dedupable — at most 2 smooth-to-smooth swaps before points, worst-case softness ≈ 4× stretch per axis. | `js/src/45_lod.ts` (`lodAggregateStepWindow`) |
-| `DEFAULT_PALETTE` | 8 CVD-safe hex entries | Per-trace default color cycle and the fallback categorical palette, used when the chart sets no `theme(palette=...)` (§20/§36). Its ORDER is the CVD-safety mechanism — never re-order or extend without re-running the validator. | `_figure.py`, `channels.py`, `_svg.py`, `_raster.py` |
+| `DEFAULT_PALETTE` | 8 CVD-safe hex entries | Rust-owned, versioned per-trace default color cycle and fallback categorical palette, used when the chart sets no `theme(palette=...)` (§20/§36). ABI 360 exposes bounded fixed-width `#rrggbb` bytes and RGBA8 rows; Python keeps a lazy immutable sequence proxy, Node initializes from the native contract, and direct WASM exports the same engine rows. Its ORDER is the CVD-safety mechanism — never re-order or extend without re-running the validator and bumping the palette-contract version. | `xyg-engine::kernels`; native/WASM ABI adapters; host palette proxies |
 | `PYRAMID_MIN_POINTS` | `2_000_000` | Trace size at/above which a Tier-3 tile pyramid is built lazily; smaller traces never pay for one. | `interaction.py` |
 | `PYRAMID_BASE_DIM` | `2048` | Edge of the pyramid's base level in cells (`dim²` u32 counts, ~1/3 overhead for the coarser levels); sets resident pyramid bytes. | `interaction.py` |
 
@@ -2800,6 +2800,14 @@ author expects.
   place a palette becomes LUT rows — shared by the density plane and both static
   exporters — and it substitutes the built-in color *at the same index*, never one shared
   fallback, and warns (§28).
+  The built-in cycle itself is versioned product policy in
+  `xyg_engine::kernels::DEFAULT_PALETTE`. ABI 360 copies its concatenated
+  fixed-width `#rrggbb` rows and straight-alpha RGBA8 rows with query-first,
+  atomic short-capacity semantics. Python resolves its public sequence lazily
+  (avoiding the native-binding import cycle); Node reads it synchronously from
+  the same cdylib. Direct WASM ABI 25 exports the engine version/row count/rows,
+  rejects a mismatched palette version or row count at worker initialization, and uses the
+  same first row whenever XYTS omits fill/stroke paint.
   `colormap=` likewise accepts a **custom ramp**: a sequence of 2–256 CSS colors,
   optionally `(position, color)` pairs, or a CSS `linear-gradient(...)`.
   `channels.resolve_colormap` normalizes every form to *evenly spaced 8-bit RGB stops* —
