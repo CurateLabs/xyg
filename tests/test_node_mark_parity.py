@@ -305,7 +305,7 @@ const out = {
     hx.buildPayload().spec.traces[0].kind,
     v.buildPayload().spec.traces[0].kind,
   ],
-  ecdfRole: eTrace.style.role,
+  ecdfHasRole: Object.hasOwn(eTrace.style, "role"),
   ecdfStep: eTrace.style.step,
 };
 process.stdout.write(JSON.stringify(out));
@@ -336,7 +336,7 @@ process.stdout.write(JSON.stringify(out));
         "hexbin",
         "violin",
     ]
-    assert payload["ecdfRole"] == "ecdf"
+    assert payload["ecdfHasRole"] is False
     assert payload["ecdfStep"] == "post"
 
 

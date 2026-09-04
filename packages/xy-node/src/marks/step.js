@@ -29,7 +29,6 @@ export function composeStep(x, y, opts = {}) {
     width: opts.width ?? 1.5,
     opacity: opts.opacity ?? 1.0,
     step: where,
-    role: "step",
     ...(opts.dash != null ? { dash: opts.dash } : {}),
     ...(opts.style ?? {}),
   };
@@ -107,7 +106,7 @@ export function composeStairs(edges, values, opts = {}) {
     width: opts.width,
     opacity: opts.opacity,
     dash: opts.dash,
-    style: { role: "stairs", ...(opts.style ?? {}) },
+    style: opts.style,
     xAxis: opts.xAxis,
     yAxis: opts.yAxis,
     id: opts.id,

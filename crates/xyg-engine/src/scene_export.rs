@@ -32,6 +32,10 @@
 //! ABI 195 admits custom `role` and per-item fill/stroke/width on those faces).
 //! ABI 196 admits scatter per-item fill/stroke/width/opacity interned onto
 //! Scatter records from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
+//! #875 removes Node-only redundant step/area/ECDF/stairs `role` and violin
+//! `orientation` metadata before Scene packing. Orientation is already resolved
+//! into bounded violin rectangles; keeping the ignored string would create a
+//! value the public preflight cannot validate from XYEF v1.
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). ABI 190 intern
 //! per-item two-ended paint from packed XYHP kind 5. Polar ribbon, and `role` other than `ribbon` stay fail-closed.
@@ -61,6 +65,7 @@
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
 use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS};
+use crate::static_export_registry::PUBLIC_EXPORT_KINDS;
 
 const XYEP_MAGIC: &[u8; 4] = b"XYEP";
 const XYEP_VERSION: u32 = 1;
@@ -324,7 +329,7 @@ impl<'a> Cursor<'a> {
 }
 
 fn kind_public(kind: u8) -> bool {
-    kind <= KIND_CONTOUR
+    PUBLIC_EXPORT_KINDS.iter().any(|entry| entry.code == kind)
 }
 
 fn kind_extent_geometry(kind: u8) -> bool {
@@ -498,7 +503,6 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "linecap",
             "curve",
             "step",
-            "role",
         ],
         KIND_ERROR_BAND => &[
             "color",
@@ -606,28 +610,11 @@ fn take_utf8<'a>(cursor: &mut Cursor<'a>, len: usize) -> Result<&'a str, ExportP
 }
 
 fn export_kind_code(name: &str) -> u8 {
-    match name {
-        "scatter" => KIND_SCATTER,
-        "line" => KIND_LINE,
-        "bar" => KIND_BAR,
-        "column" => KIND_COLUMN,
-        "histogram" => KIND_HISTOGRAM,
-        "violin" => KIND_VIOLIN,
-        "box" => KIND_BOX,
-        "box_whisker" => KIND_BOX_WHISKER,
-        "box_median" => KIND_BOX_MEDIAN,
-        "segments" => KIND_SEGMENTS,
-        "errorbar" => KIND_ERRORBAR,
-        "stem" => KIND_STEM,
-        "area" => KIND_AREA,
-        "error_band" => KIND_ERROR_BAND,
-        "ribbon" => KIND_RIBBON,
-        "triangle_mesh" => KIND_TRIANGLE_MESH,
-        "hexbin" => KIND_HEXBIN,
-        "heatmap" => KIND_HEATMAP,
-        "contour" => KIND_CONTOUR,
-        _ => 255,
-    }
+    PUBLIC_EXPORT_KINDS
+        .iter()
+        .find(|entry| entry.name == name)
+        .map(|entry| entry.code)
+        .unwrap_or(255)
 }
 
 fn export_step_code(name: &str) -> u8 {

@@ -39,7 +39,6 @@ export function composeArea(x, y, opts = {}) {
     line_width: opts.lineWidth ?? 1.2,
     line_opacity: opts.lineOpacity ?? 1.0,
     stroke_perimeter: opts.strokePerimeter ?? false,
-    role: "area",
     ...(opts.style ?? {}),
   };
   if (opts.lineColor != null && !("line_color" in (opts.style ?? {}))) {

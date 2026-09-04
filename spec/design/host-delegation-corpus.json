@@ -12,11 +12,6 @@
       "modules": ["python/xyg/_export_*", "python/xyg/_svg_*", "python/xyg/_raster_*"]
     },
     {
-      "owner": "#875",
-      "journey": "exhaustive admitted-shape Scene/static matrix",
-      "modules": ["cross-host shape registry"]
-    },
-    {
       "owner": "#869",
       "journey": "direct-browser secondary/polar/unattached tick routes",
       "modules": ["js/src/30_ticks.ts"]
@@ -104,9 +99,9 @@
     {
       "id": "static-export",
       "surfaces": ["Scene", "SVG", "raster commands", "PNG"],
-      "scope_note": "This independent #874 journey covers the admitted line/scatter/bar/histogram slice. #875 expands the registry exhaustively after #873 fixes the final static-document boundary.",
+      "scope_note": "The Rust-owned registry exhausts every currently admitted Scene trace kind and public authoring shape. #873's compatibility static-document routes will append journeys to that registry rather than create a second authority.",
       "commands": [
-        ["uv", "run", "pytest", "tests/test_static_export_cross_host.py::test_python_and_node_static_scene_svg_and_raster_commands_are_identical", "-q", "--tb=short"]
+        ["uv", "run", "pytest", "tests/test_static_export_cross_host.py", "-q", "--tb=short"]
       ],
       "hosts": ["python", "node"],
       "required_shared_symbols": [
@@ -115,7 +110,7 @@
         "xyg_scene_raster_commands",
         "xyg_scene_xytc_trace_pack"
       ],
-      "output_oracle": "Canonical Scene, SVG, and raster-command bytes are identical; Python PNG is also exercised."
+      "output_oracle": "For every admitted registry row, canonical Scene, SVG, raster-command, encoded PNG, and decoded RGBA bytes are identical. Bounded pairwise edges and named unsupported families prove exact cross-host fail-close reasons."
     },
     {
       "id": "lod",

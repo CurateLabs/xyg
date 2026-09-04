@@ -75,6 +75,7 @@ pub mod raster;
 pub mod sankey;
 pub mod scene;
 mod scene_export;
+pub mod static_export_registry;
 #[cfg(feature = "raster")]
 pub mod webp;
 pub use scene_export::{

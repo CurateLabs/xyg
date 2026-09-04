@@ -44,7 +44,6 @@ export function composeViolin(values, opts = {}) {
     color,
     opacity,
     role: "violin",
-    orientation,
     ...(opts.style ?? {}),
   };
   return {

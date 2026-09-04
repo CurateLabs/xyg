@@ -320,7 +320,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 | Check | Result |
 | --- | --- |
-| `verify_ownership.py` | 340 tracked production files classified |
+| `verify_ownership.py` | 341 tracked production files classified |
 | `abi_smoke.py` | 557 ABI checks passed |
 | `audit_python_host_core.py` | 0 `python-scene-migration` / 0 `node-scene-migration` files; keep-host policy inventories for Python + Node |
 
@@ -774,6 +774,7 @@ Forbidden:
 | `crates/xyg-engine/src/scene_trace_rows.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 156 XYCL product-row packing | — |
 | `crates/xyg-engine/src/scene_trace_sidecars.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 157 XYSD trace-sidecar packing | — |
 | `crates/xyg-engine/src/simd.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/static_export_registry.rs` | Rust safe engine | `rust-engine` | `keep-rust`; admitted static-export vocabulary and exhaustive host-pair evidence contract | — |
 | `crates/xyg-engine/src/stats.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/stream.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/svg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
