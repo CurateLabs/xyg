@@ -28,7 +28,7 @@ import pytest
 from xyg import _native
 from xyg._figure import Figure
 from xyg.channels import StyleChannel
-from xyg.config import PROTOCOL_VERSION
+from xyg.config import DENSITY_SAMPLE_TARGET, PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "density_emit_cross_host.mjs"
@@ -96,6 +96,10 @@ CASE_NAMES = (
     "density_sample_nan_oov_filter",
     "scatter_density_log_y_grid",
 )
+
+MASSIVE_GRID_W = 512
+MASSIVE_GRID_H = 384
+MASSIVE_POLICY_COUNTS = (1_000_000, 100_000_000)
 
 
 def _native_lib() -> Path:
@@ -321,6 +325,68 @@ def _build_case_payload(name: str, fig: Figure) -> dict:
     return _density_wire_meta(spec, case_name=name)
 
 
+def _massive_policy_entry(point_count: int) -> dict[str, int | bool | str]:
+    """Record the complete N-sensitive Rust plan without allocating N rows."""
+    plan = _native.payload_density_trace_emit_plan(
+        has_channel=False,
+        mode="",
+        codes_present=False,
+        codes_u8=False,
+        has_counts=False,
+        has_constant=False,
+        cartesian=True,
+        x_linear=True,
+        y_linear=True,
+        x_has_nulls=False,
+        y_has_nulls=False,
+        point_overlay=True,
+        split_payload=False,
+        grid_w=MASSIVE_GRID_W,
+        grid_h=MASSIVE_GRID_H,
+        grid_from_pyramid=False,
+        has_pyramid_resource=False,
+        grid_present=False,
+        force_bin2d=False,
+        force_pyramid=False,
+        x_memmapped=False,
+        y_memmapped=False,
+        x_min=0.0,
+        x_max=1.0,
+        y_min=0.0,
+        y_max=1.0,
+        xr0=0.0,
+        xr1=1.0,
+        yr0=0.0,
+        yr1=1.0,
+        bx0=0.0,
+        bx1=1.0,
+        by0=0.0,
+        by1=1.0,
+        n_points=point_count,
+        has_pyramid_rgba=False,
+        has_bin_colors=False,
+        dropped_count=0,
+    )
+    tier_code = _native.payload_tier(1, point_count)
+    density_grid_bytes_max = int(plan["n_marks"])
+    sample_geometry_bytes_max = 2 * 4 * (DENSITY_SAMPLE_TARGET + MASSIVE_GRID_W)
+    canonical_f64_bytes = point_count * 16 if plan["ship_wasm_source"] else 0
+    return {
+        "point_count": point_count,
+        "tier": ("direct", "decimated", "density")[tier_code],
+        "n_marks": int(plan["n_marks"]),
+        "pyramid_eligible": bool(plan["pyramid_eligible"]),
+        "wasm_eligible": bool(plan["wasm_eligible"]),
+        "attach_sample": bool(plan["attach_sample"]),
+        "ship_wasm_source": bool(plan["ship_wasm_source"]),
+        "density_grid_bytes_max": density_grid_bytes_max,
+        "sample_geometry_bytes_max": sample_geometry_bytes_max,
+        "canonical_f64_bytes": canonical_f64_bytes,
+        "other_bytes": 0,
+        "total_bytes_max": density_grid_bytes_max + sample_geometry_bytes_max + canonical_f64_bytes,
+    }
+
+
 @pytest.fixture(scope="module")
 def fixture() -> dict:
     return json.loads(FIXTURE_JSON.read_text(encoding="utf-8"))
@@ -374,3 +440,17 @@ def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
     meta = _build_case_payload(case_name, _build_case(case_name))
     for key in _case_keys(case_name, node_case):
         assert meta[key] == node_case[key], (key, meta[key], node_case[key])
+
+
+def test_python_and_node_massive_density_policy_is_screen_bounded(node_golden: dict) -> None:
+    node_entries = {entry["point_count"]: entry for entry in node_golden["massive_policy"]}
+    assert set(node_entries) == set(MASSIVE_POLICY_COUNTS)
+    for point_count in MASSIVE_POLICY_COUNTS:
+        python_entry = _massive_policy_entry(point_count)
+        assert node_entries[point_count] == python_entry
+        assert python_entry["n_marks"] == MASSIVE_GRID_W * MASSIVE_GRID_H
+        assert python_entry["attach_sample"] is True
+        assert python_entry["ship_wasm_source"] is False
+        assert python_entry["canonical_f64_bytes"] == 0
+        assert python_entry["other_bytes"] == 0
+        assert python_entry["total_bytes_max"] < point_count * 16 // 10
