@@ -169,7 +169,7 @@ def _build_case(name: str) -> Figure:
 def _build_case_payload(name: str) -> dict[str, Any]:
     fig = _build_case(name)
     if name.startswith("wasm_density_"):
-        spec, _ = fig.build_payload_split()
+        spec, _ = fig.build_payload_split(wasm_source=name == "wasm_density_automatic_split")
     else:
         spec, _ = fig.build_payload()
     return _attach_entry(spec)

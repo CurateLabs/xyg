@@ -37,7 +37,8 @@ function authoredScene(count) {
   figure.colorbar_options = authoring.colorbar;
   // Match Python's explicit ``density=False``: the evidence exercises the
   // supported direct Scene transport at every tier, not Node's interactive
-  // density heuristic.
+  // density heuristic. `force_direct` is intentionally ignored above the
+  // density threshold; `force_density: false` is the shared tri-state policy.
   // Node's public Figure keeps paint options under ``style``.  Preserve the
   // fixture's declarative values explicitly rather than relying on Node's
   // matching defaults: Python's public authoring makes the diamond literal.
@@ -50,7 +51,7 @@ function authoredScene(count) {
       opacity: authoring.scatter.opacity,
       symbol: authoring.scatter.symbol,
     },
-    force_direct: true,
+    force_density: false,
   });
   // Preserve the fixture's bounded reference series as independently authored
   // data. Python includes the same three literal circle records and legend row
@@ -64,7 +65,7 @@ function authoredScene(count) {
       opacity: authoring.circle_scatter.opacity,
       symbol: authoring.circle_scatter.symbol,
     },
-    force_direct: true,
+    force_density: false,
   });
   return figure.toScene();
 }

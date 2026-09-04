@@ -240,7 +240,10 @@ class PayloadDensityMixin(_Host):
             x_has_nulls=bool(t.x.zone.null_count),
             y_has_nulls=bool(t.y.zone.null_count),
             point_overlay=bool(pw.point_overlay),
-            split_payload=bool(pw._split),
+            # ABI 269's historical name is retained, but this flag now means
+            # an explicit replay-source request rather than physical split
+            # painter buffers (#864).
+            split_payload=bool(pw.wasm_source),
             grid_w=int(w),
             grid_h=int(h),
             grid_from_pyramid=grid_from_pyramid,

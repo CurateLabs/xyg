@@ -4291,6 +4291,8 @@ export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
   const rgbaGridF64 = rgbaGridBytes.length
     ? new Float64Array(rgbaGridBytes.buffer, rgbaGridBytes.byteOffset, rgbaGridBytes.length / 8)
     : new Float64Array();
+  // Rust owns ABI 323's complete-record capacity admission. Both hosts marshal
+  // the same observations without duplicating its source-plane cutoff.
   const xValues = trace.x == null ? new Float64Array() : asF64Array(trace.x, "x");
   const yValues = trace.y == null ? new Float64Array() : asF64Array(trace.y, "y");
   const styleChannels = trace.style_channels ?? {};

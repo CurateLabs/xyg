@@ -493,14 +493,30 @@ test("buildPayload ships show_legend via payload build plan", () => {
   assert.equal(spec.show_legend, false);
 });
 
-test("buildPayload ships wasm_density automatic on split density with wasm_source", () => {
+test("buildPayload keeps canonical f64 out of split density painter payload", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
   const { spec } = fig.buildPayload({ split: true });
   assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.wasm_source, undefined);
+  assert.equal(spec.wasm_density.automatic, false);
+  assert.equal(spec.wasm_density.unsupported.code, "XYG_WASM_SOURCE_UNSUPPORTED");
+  assert.equal(spec.columns.some((column) => column.dtype === "f64"), false);
+});
+
+test("buildPayload ships canonical density source only on explicit wasmSource opt-in", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  const { spec } = fig.buildPayload({ split: true, wasmSource: true });
   assert.notEqual(spec.traces[0].density.wasm_source, undefined);
   assert.equal(spec.wasm_density.automatic, true);
-  assert.equal(spec.wasm_density.source, spec.traces[0].density.wasm_source);
+  assert.equal(spec.columns.filter((column) => column.dtype === "f64").length, 2);
+});
+
+test("buildPayload rejects wasmSource without split payload buffers", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  assert.throws(() => fig.buildPayload({ wasmSource: true }), /requires split payload/);
 });
 
 test("buildPayload ships ABI 303 attach flags like Python build_payload", () => {
@@ -562,10 +578,10 @@ test("buildPayload ships non-linear axis scale like Python _axis_spec", () => {
   assert.equal(spec.y_axis.scale, undefined);
 });
 
-test("_emitScatterDensity ships wasm_source on split via registry plan", () => {
+test("_emitScatterDensity ships wasm_source on explicit replay via registry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
-  const { spec } = fig.buildPayload({ split: true });
+  const { spec } = fig.buildPayload({ split: true, wasmSource: true });
   assert.equal(spec.traces[0].tier, "density");
   const wasmSource = spec.traces[0].density.wasm_source;
   assert.notEqual(wasmSource, undefined);
@@ -2132,4 +2148,3 @@ test("composeScatter sets match_fill stroke_ch when stroke_width lacks stroke", 
   assert.equal(traces[0].stroke_ch?.mode, "match_fill");
   assert.equal(traces[0].style.stroke_width, 2);
 });
-

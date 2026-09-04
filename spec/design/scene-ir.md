@@ -435,12 +435,12 @@ Python/Node line+bar, disconnected-segment, and `public_triangle_mesh_sha256`
 fixtures, with separate exact cross-host fixtures for step expansion, histogram
 bins, and Python
 `column`/Node `bar` Rect equivalence. Newly selected line, Rect, Band,
-endpoint-pair, mesh, and ribbon figures require explicit Cartesian domains on the
-default axis sides
-and must remain inside the bounded host-input and expanded-record budgets.
-Heatmap and contour lattices carry their own cell extent, so public export
-autoranges them like scatter and does not require an authored axis domain; mixed
-figures that also contain literal geometry still need explicit x/y domains. For
+endpoint-pair, mesh, ribbon, heatmap, and contour figures use Rust-resolved
+autorange domains when the author does not provide explicit Cartesian domains.
+They still require the primary axes on their default sides and must remain
+inside the bounded host-input and expanded-record budgets. This is a semantic
+widening of the existing ABI 105 support predicate; its C signature and XYEP v1
+envelope are unchanged, so `ABI_VERSION` remains 357. For
 segment-family traces, one row is
 one emitted endpoint pair, so generated error-bar cap pairs count toward that
 limit independently of their source observation. Chart/plot backgrounds, title, authored

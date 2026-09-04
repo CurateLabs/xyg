@@ -12,9 +12,22 @@
 | [#859](https://github.com/CurateLabs/xyg/issues/859) | P1 | Expand `check-host-parity` proof (blocked by #857 for SVG/PNG) |
 | [#860](https://github.com/CurateLabs/xyg/issues/860) | P2 | Spec/ledger leftovers (palette copies, `30_ticks.ts`) |
 
+#860 bounds rather than erases two residuals: default-palette copies have
+follow-up [#868](https://github.com/CurateLabs/xyg/issues/868), and
+`js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
+[#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
+closed a narrower subset. Neither is described as a closed browser-policy
+cutover.
+
 Canonical write-up: [`m2-close.md`](../../process/m2-close.md) (post-landing
 follow-on section). Prior emit/pack contract stays [#731](https://github.com/CurateLabs/xyg/issues/731)
 (closed; do not reopen).
 
 This file remains a stable in-repo pointer so specs can cite a path even if
 GitHub issue numbers move; prefer linking `#855` / child `#N` in commits and PRs.
+
+Release-train failures found after this review are owned by Stage 0 tracker
+[#862](https://github.com/CurateLabs/xyg/issues/862), children #863–#867, with
+the executable close matrix in
+[`m2-stage0-recovery.md`](../../process/m2-stage0-recovery.md). Closing #855
+does not bypass that stop-line gate.

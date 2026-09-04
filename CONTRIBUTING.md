@@ -29,3 +29,9 @@ with remediation instead of silently degrading.
 Design questions are settled by [`spec/design-dossier.md`](spec/design-dossier.md)
 — code comments cite its §-numbers. Read the relevant section before changing
 behavior, and don't regress the invariants listed in `CLAUDE.md`.
+
+Milestone creation, renaming, closing, deletion, and moving an issue between
+milestones require explicit human approval recorded in a GitHub issue or pull
+request. Agents and automation may propose the exact operation but must not
+perform it before that approval. See the full contributor guide for the
+release-surface and owner-review gates.

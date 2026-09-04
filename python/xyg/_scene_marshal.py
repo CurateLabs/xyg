@@ -520,23 +520,16 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         rgba_grid_f64 = np.empty(0, dtype=np.float64)
     xv = _trace_column(trace, "x")
     yv = _trace_column(trace, "y")
-    from ._scene_bulk_native import SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES
-
-    max_density_points = SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES // 16
-    if dispatch["pack_density"] and point_count > max_density_points:
-        x_values = np.empty(0, dtype=np.float64)
-        y_values = np.empty(0, dtype=np.float64)
-    else:
-        x_values = (
-            np.ascontiguousarray(xv, dtype=np.float64)
-            if xv is not None
-            else np.empty(0, dtype=np.float64)
-        )
-        y_values = (
-            np.ascontiguousarray(yv, dtype=np.float64)
-            if yv is not None
-            else np.empty(0, dtype=np.float64)
-        )
+    x_values = (
+        np.ascontiguousarray(xv, dtype=np.float64)
+        if xv is not None
+        else np.empty(0, dtype=np.float64)
+    )
+    y_values = (
+        np.ascontiguousarray(yv, dtype=np.float64)
+        if yv is not None
+        else np.empty(0, dtype=np.float64)
+    )
     style_channels = getattr(trace, "style_channels", None) or {}
     fallback_color = str(style.get("color", "#3987e5"))
     return {

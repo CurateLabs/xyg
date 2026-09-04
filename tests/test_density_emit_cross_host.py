@@ -315,7 +315,7 @@ def _density_wire_meta(spec: dict, *, case_name: str = "", split: bool = False) 
 
 def _build_case_payload(name: str, fig: Figure) -> dict:
     if name == "scatter_density_wasm_source_split":
-        spec, _buffers = fig.build_payload_split()
+        spec, _buffers = fig.build_payload_split(wasm_source=True)
         return _density_wire_meta(spec, case_name=name, split=True)
     spec, _blob = fig.build_payload()
     return _density_wire_meta(spec, case_name=name)

@@ -354,13 +354,9 @@ def test_factorize_many_categories_routing(benchmark):
     """
     labels = np.asarray([f"{i:08d}" for i in range(600)])
     values = np.resize(labels, N)
-    # `np.resize` tiles with period 600 and the router samples on a fixed
-    # stride, so the probe's distinct count is an aliasing accident of N and
-    # the probe width. Pin it: if either constant drifts so the probe falls
-    # back inside the early-out, this row silently stops covering the regime
-    # its docstring claims.
-    probe = values[np.linspace(0, N - 1, ch._FACTORIZE_PROBE_ROWS, dtype=np.intp)]
-    assert len(np.unique(probe)) > ch._FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES
+    # The router assertion is the boundary: constructing enough repeating
+    # categories and requiring the native route avoids coupling release
+    # evidence to private constants that may move between implementation hubs.
     assert ch._use_native_fixed_factorizer(values)
     categories, codes, _ = benchmark(ch._factorize_categories, values)
     assert len(categories) == len(labels) and len(codes) == N
@@ -678,6 +674,39 @@ def _scatter_payload(x: np.ndarray, y: np.ndarray, *, density: bool | None = Non
     return sum(b.nbytes for b in buffers)
 
 
+def _density_payload_report(x: np.ndarray, y: np.ndarray) -> dict[str, int]:
+    """Name every first-paint buffer class; canonical f64 is never one."""
+    fig = xyg.chart(xyg.scatter(x=x, y=y, density=True)).figure()
+    spec, buffers = fig.build_payload_split(N_BUCKETS)
+    trace = spec["traces"][0]
+    density = trace["density"]
+    columns = spec["columns"]
+    grid_refs = {density["buf"]}
+    if "rgba" in density:
+        grid_refs.add(density["rgba"])
+    sample = density.get("sample") or {}
+    sample_refs = {sample[key]["col"] for key in ("x", "y") if key in sample}
+    totals = {
+        "density_grid_bytes": 0,
+        "sample_geometry_bytes": 0,
+        "canonical_f64_bytes": 0,
+        "other_bytes": 0,
+    }
+    for index, buffer in enumerate(buffers):
+        refs = {i for i, column in enumerate(columns) if column["buf"] == index}
+        if any(columns[ref].get("dtype") == "f64" for ref in refs):
+            key = "canonical_f64_bytes"
+        elif refs & grid_refs:
+            key = "density_grid_bytes"
+        elif refs & sample_refs:
+            key = "sample_geometry_bytes"
+        else:
+            key = "other_bytes"
+        totals[key] += buffer.nbytes
+    totals["total_bytes"] = sum(buffer.nbytes for buffer in buffers)
+    return totals
+
+
 def _line_payload(x: np.ndarray, y: np.ndarray) -> int:
     fig = xyg.chart(xyg.line(x=x, y=y)).figure()
     _spec, buffers = fig.build_payload_split(N_BUCKETS)
@@ -893,8 +922,12 @@ def test_first_payload_line_large(benchmark, data):
 def test_first_payload_density_large(benchmark, data):
     """Large scatter overview first payload through the density tier."""
     x, y = data
-    payload_bytes = benchmark(_scatter_payload, x, y, density=True)
-    assert 0 < payload_bytes < x.nbytes + y.nbytes
+    report = benchmark(_density_payload_report, x, y)
+    assert report["canonical_f64_bytes"] == 0
+    assert 0 < report["density_grid_bytes"] <= GRID_W * GRID_H
+    assert 0 < report["sample_geometry_bytes"] <= 2 * 4 * (8_192 + GRID_W)
+    assert report["other_bytes"] == 0
+    assert report["total_bytes"] < (x.nbytes + y.nbytes) // 10
 
 
 def test_memory_report_density_medium(benchmark, medium_data):

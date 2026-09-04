@@ -12,6 +12,7 @@ use crate::kernels::{
     scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack,
 };
 use crate::scene_pack_orchestrate::XytaTraceDispatchPlan;
+use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
 
 pub const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES: usize = 1 << 22;
 
@@ -597,12 +598,6 @@ pub fn scene_xyta_trace_observations_materialize(
             out.x = widths;
         }
     } else if input.dispatch.pack_density != 0 {
-        if !input.x_values.is_empty() {
-            out.x = f64_bytes(input.x_values);
-        }
-        if !input.y_values.is_empty() {
-            out.y = f64_bytes(input.y_values);
-        }
         let (cmap_flags, cmap, stops) = pack_colormap(&input.style_colormap);
         out.cmap_flags = cmap_flags;
         out.cmap = cmap;
@@ -637,20 +632,40 @@ pub fn scene_xyta_trace_observations_materialize(
             }
         }
     }
-    let total = out.grid.len()
-        + out.rgba.len()
-        + out.rgba_grid.len()
-        + out.x.len()
-        + out.y.len()
-        + out.mean_rgba.len()
-        + out.idx.len()
-        + out.lut.len()
-        + out.cmap.len()
-        + out.stops.len()
-        + out.color_ch.len()
-        + out.style_color.len();
-    if total > SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES {
+    // Capacity belongs to the complete ABI 318 record, not merely its ABI 323
+    // sidecars. Density x/y can consume almost the whole 4 MiB allowance, so
+    // decide admission here in Rust after every other sidecar is known. Hosts
+    // always marshal their observations and never duplicate this cutoff.
+    let fixed_total = [
+        out.grid.len(),
+        out.rgba.len(),
+        out.rgba_grid.len(),
+        out.mean_rgba.len(),
+        out.idx.len(),
+        out.lut.len(),
+        out.cmap.len(),
+        out.stops.len(),
+        out.color_ch.len(),
+        out.style_color.len(),
+    ]
+    .into_iter()
+    .try_fold(XYTA_PREFIX_BYTES, |total, len| total.checked_add(len))
+    .ok_or(-1)?;
+    if fixed_total > SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES {
         return Err(-1);
+    }
+    if input.dispatch.pack_density != 0 {
+        let source_total = input
+            .x_values
+            .len()
+            .checked_add(input.y_values.len())
+            .and_then(|len| len.checked_mul(std::mem::size_of::<f64>()))
+            .and_then(|len| fixed_total.checked_add(len))
+            .ok_or(-1)?;
+        if source_total <= SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES {
+            out.x = f64_bytes(input.x_values);
+            out.y = f64_bytes(input.y_values);
+        }
     }
     Ok(out)
 }
@@ -762,5 +777,38 @@ mod tests {
         assert_eq!(out.pack_density, 1);
         assert!(!out.idx.is_empty());
         assert_eq!(out.lut.len(), 256 * 4);
+    }
+
+    #[test]
+    fn density_source_admission_budgets_the_complete_xyta_record() {
+        let count = SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES / 16;
+        let x = vec![0.0; count];
+        let y = vec![1.0; count];
+        let input = minimal_input(
+            XytaTraceDispatchPlan {
+                pack_density: 1,
+                ..Default::default()
+            },
+            empty_color_ch(),
+            &x,
+            &y,
+        );
+        let out = scene_xyta_trace_observations_materialize(&input).unwrap();
+        assert!(out.x.is_empty());
+        assert!(out.y.is_empty());
+
+        let short = count - (XYTA_PREFIX_BYTES / 16) - 1;
+        let input = minimal_input(
+            XytaTraceDispatchPlan {
+                pack_density: 1,
+                ..Default::default()
+            },
+            empty_color_ch(),
+            &x[..short],
+            &y[..short],
+        );
+        let out = scene_xyta_trace_observations_materialize(&input).unwrap();
+        assert_eq!(out.x.len(), short * 8);
+        assert_eq!(out.y.len(), short * 8);
     }
 }

@@ -513,7 +513,8 @@ test("Node packs public-export eligibility through the shared Rust predicate", (
 
   const lineNoDomain = new Figure({ width: 320, height: 240 });
   lineNoDomain.line([0, 1], [0, 1]);
-  assert.equal(sceneExportSupportReason(lineNoDomain), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+  assert.equal(sceneExportSupportReason(lineNoDomain), null);
+  assert.ok(lineNoDomain.toSceneSvg().startsWith("<svg"));
 
   const heatmapNoDomain = new Figure({ width: 320, height: 240 });
   heatmapNoDomain.heatmap([[0, 1, 2], [3, 4, 5]], { color: "#3987e5" });
@@ -1112,6 +1113,17 @@ test("Node matches Python XYTA bytes for constant-style Cartesian density", () =
     crypto.createHash("sha256").update(packed).digest("hex"),
     figureSceneFixture.public_constant_density_xyta_sha256,
   );
+});
+
+test("Node bounds ABI 323 density observations at its source-plane ceiling", () => {
+  const count = 262_144;
+  const x = Float64Array.from({ length: count }, (_, index) => index);
+  const y = Float64Array.from({ length: count }, (_, index) => index % 997);
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.scatter(x, y);
+  const packed = packFigureXyTa(figure);
+  assert.equal(Buffer.from(packed.subarray(0, 4)).toString(), "XYTA");
+  assert.ok(packed.byteLength < 1 << 22);
 });
 
 test("Node matches Python XYTC bytes for the bounded public literal triangle mesh", () => {

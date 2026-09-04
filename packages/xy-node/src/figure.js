@@ -1154,8 +1154,14 @@ function attachTooltipRows(entry, t, sel) {
 }
 
 export class PayloadWriter {
-  constructor({ split = false, borrowHeatmaps = false } = {}) {
+  constructor({ split = false, wasmSource = false, borrowHeatmaps = false } = {}) {
+    if (wasmSource && !split) {
+      throw new RangeError("wasmSource requires split payload buffers");
+    }
     this.split = split;
+    // Explicit Worker/WASM replay transport; ordinary split painter payloads
+    // remain screen-bounded (#864, dossier §27/§29).
+    this.wasmSource = Boolean(wasmSource);
     this.borrowHeatmaps = borrowHeatmaps;
     this.columns = [];
     this._chunks = [];
@@ -2331,7 +2337,7 @@ export class Figure {
       xHasNulls: xCol.nullCount > 0,
       yHasNulls: yCol.nullCount > 0,
       pointOverlay: true,
-      splitPayload: pw.split,
+      splitPayload: pw.wasmSource,
       gridW: w,
       gridH: h,
       gridFromPyramid: false,
@@ -2419,7 +2425,7 @@ export class Figure {
       xHasNulls: xCol.nullCount > 0,
       yHasNulls: yCol.nullCount > 0,
       pointOverlay: true,
-      splitPayload: pw.split,
+      splitPayload: pw.wasmSource,
       gridW: w,
       gridH: h,
       gridFromPyramid: materialized.gridFromPyramid,
@@ -3531,8 +3537,8 @@ export class Figure {
   /**
    * @returns {{spec: object, buffers: Buffer|Float32Array[]}}
    */
-  buildPayload({ split = false, pxWidth = null } = {}) {
-    const pw = new PayloadWriter({ split });
+  buildPayload({ split = false, wasmSource = false, pxWidth = null } = {}) {
+    const pw = new PayloadWriter({ split, wasmSource });
     const xr = this._range("x");
     const yr = this._range("y");
     const widthPx = pxWidth ?? Math.max(16, Math.floor(this.width));

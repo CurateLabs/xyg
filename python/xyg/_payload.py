@@ -40,10 +40,15 @@ class PayloadMixin(PayloadDensityMixin, _Host):
         return spec, pw.blob()
 
     def build_payload_split(
-        self, px_width: Optional[int] = None
+        self, px_width: Optional[int] = None, *, wasm_source: bool = False
     ) -> tuple[dict[str, Any], list[memoryview]]:
-        """`build_payload` with per-column wire buffers instead of one blob."""
-        pw = PayloadWriter(split=True)
+        """`build_payload` with per-column wire buffers instead of one blob.
+
+        ``wasm_source=True`` explicitly adds bounded canonical f64 replay
+        columns for the Worker/WASM density adapter. The ordinary first-paint
+        path stays screen-bounded and never implies replay from ``split``.
+        """
+        pw = PayloadWriter(split=True, wasm_source=wasm_source)
         spec = self._payload_spec(pw, self._resolve_px_width(px_width))
         spec["buffer_layout"] = "split"
         return spec, pw.buffers()

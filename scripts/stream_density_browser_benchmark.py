@@ -181,7 +181,9 @@ def main() -> int:
         spec, buffers = (
             xyg.scatter_chart(xyg.scatter(x, y, density=True), width=480, height=320)
             .figure()
-            .build_payload_split()
+            # This harness explicitly measures Worker/WASM replay. Ordinary
+            # live first paint leaves the source opt-in false (#864).
+            .build_payload_split(wasm_source=True)
         )
         if (
             spec.get("buffer_layout") != "split"

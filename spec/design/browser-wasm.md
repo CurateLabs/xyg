@@ -100,16 +100,20 @@ match. `destroy()` cancels any request; an explicitly owned Worker is then
 disposed. Worker failures emit the `wasm_density_error` chart event with the
 stable error code, corrective message, and resource/copy diagnostics, never
 user data. Its event detail includes the failed `traceId` for a multi-trace
-attachment. Normal kernel-backed ChartViews with exactly one retained typed
-density source use automatic source provisioning to own a packaged same-origin
-WASM worker and pass
-decoded canonical f64 source values through the same XYAG/XYAO adapter; this
-does not apply TypeScript aggregation. Unsupported kernel-less sources retain
-their overview and dispatch an explicit no-refinement diagnostic.
+attachment. Normal Python/Node kernel-backed ChartViews do not include
+canonical f64 in the ordinary split first-paint payload. They retain the
+screen-bounded overview and use the host kernel route for later views. A
+dedicated Worker/WASM replay journey must explicitly request the replay source
+(`wasm_source=True` in Python, `wasmSource: true` in Node); true direct-browser
+callers already own their typed source locally and stage it through the same
+XYAG/XYAO adapter. This does not apply TypeScript aggregation. Unsupported
+kernel-less sources retain their overview and dispatch an explicit
+no-refinement diagnostic.
 
 The first full host vertical is deliberately one Cartesian linear count-only
-trace. A split payload retains its canonical f64 x/y columns in ChartView so a
-later pan can replay them. Each viewport sends an `XYAS` declaration followed
+trace. An explicitly replay-enabled split payload retains canonical f64 x/y
+columns in ChartView so a later pan can replay them; ordinary split first paint
+does not. Each viewport sends an `XYAS` declaration followed
 by transferable raw chunks of at most 32,768 points; no Worker retains a whole
 source and no TypeScript scans, bins, grids, derives domains, or chooses LOD.
 Rust owns `XYAS`-to-`XYAO` aggregation. The capacity is the generated ABI

@@ -5,7 +5,7 @@ from __future__ import annotations
 from xyg import kernels
 
 
-def test_density_wasm_source_admit_both() -> None:
+def test_density_wasm_source_admit_explicit_request() -> None:
     assert kernels.density_wasm_source_admit(split_payload=True, wasm_eligible=True) is True
 
 

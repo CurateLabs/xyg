@@ -8,6 +8,10 @@
 Post-landing host-parity follow-on (adversarial review): tracker
 [#855](https://github.com/CurateLabs/xyg/issues/855). In-repo pointer:
 [`issues/m2-host-parity-findings.md`](../design/issues/m2-host-parity-findings.md).
+The later stop-the-line release recovery is tracker
+[#862](https://github.com/CurateLabs/xyg/issues/862), specified in
+[`m2-stage0-recovery.md`](m2-stage0-recovery.md). While it is open, completion
+claims are limited to #855 and #862 recovery work.
 
 In-repo pointer for the emit/pack contract: [`issues/m2-close.md`](../design/issues/m2-close.md).
 Reproduce remaining Python core surfaces with
@@ -76,9 +80,21 @@ verification: `make check-host-parity` green on `main`.
 Disposition parity: 0 `python-scene-migration`, 0 `node-scene-migration`; honest
 keep-host inventories for Python (~80 files) and Node (~30 files) in
 `audit_python_host_core.py`. Browser: `49_wasm_ticks.ts` adapter + `30_ticks.ts`
-documented compatibility fallback (#59). Reproduce with `make check-host-parity` (or
+documented compatibility fallback (follow-up #869; #59 covered the narrower
+cutover). Reproduce with `make check-host-parity` (or
 `python3 scripts/audit_host_parity_landing.py`); CI runs the same orchestrator in
 the `test` job after `uv sync`.
+
+The #858 inventory now parses calls through imported Python `_native` /
+`kernels` boundaries and Node `native.js` / `sceneBulkNative.js` boundaries.
+On this product state the 80 Python policy surfaces contain 265 native call
+sites across 205 distinct ABI entries (11.2 calls/KLOC); the 30 Node surfaces
+contain 968 call sites across 420 entries (40.8 calls/KLOC). Imports alone do
+not count. Tests pin conservative floors to expose accidental measurement
+regressions, while `verify_ownership.py` applies non-empty Python/Node
+keep-host forbidden-pattern gates. New keep-host tags require file-specific
+code/spec evidence under the ownership contributor rule; the policy's canned
+rationale is not evidence.
 
 **Post-landing follow-on ([#855](https://github.com/CurateLabs/xyg/issues/855)).**
 Adversarial review after #852 showed the live payload/Scene compile seam is
@@ -91,6 +107,25 @@ parity; blocked by #856), [#858](https://github.com/CurateLabs/xyg/issues/858)
 (P1 inventory gates), [#859](https://github.com/CurateLabs/xyg/issues/859)
 (P1 landing-gate proof; blocked by #857 for SVG/PNG),
 [#860](https://github.com/CurateLabs/xyg/issues/860) (P2 spec/ledger leftovers).
+
+#860 keeps the remaining copies visible: the default categorical palette is
+bounded host-ergonomics debt with follow-up
+[#868](https://github.com/CurateLabs/xyg/issues/868), while
+`js/src/30_ticks.ts` remains `browser-scene-migration` under open follow-up
+[#869](https://github.com/CurateLabs/xyg/issues/869); historical parent #59
+closed a narrower delivered subset. The host-only close bar does not claim
+that secondary/polar/unattached browser tick policy is closed.
+
+The #856/#857 implementation admits Rust-resolved autorange for primary-axis
+geometry and proves exact Python/Node Scene, SVG, and raster-command identity
+for ordinary line, scatter, bar, and histogram figures in
+`tests/test_static_export_cross_host.py`. The same proof pins browser CSS as an
+explicit compatibility miss instead of widening the public route silently.
+`scripts/audit_host_parity_landing.py` enumerates the Scene trace/chrome ABI
+tests alongside the `test_*cross_host*.py` differentials, which now include
+the static-export proof. The ChartView source-structure assertion runs under a
+separate non-differential label; practical WASM evidence comes from the XYTS
+cross-host fixture and browser foundation contract.
 
 - Bump `ABI_VERSION` and run `python3 scripts/gen_abi_manifest.py --write` on
   signature change; never edit generated ABI declarations by hand.

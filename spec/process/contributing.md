@@ -294,7 +294,7 @@ gather/ship) and [#733](https://github.com/CurateLabs/xyg/issues/733)
 
 Stay-host TAP extras and leftover cluster titles #287–#313 are inventory, not
 an alternate close path. Land **one kernel twin per pull request** versus
-`main`. Wait until the exact PR head's three required checks are green before
+`main`. Wait until the exact PR head's required checks are green before
 the next push on that ref — CI cancels superseded runs. Do not delete
 `_payload.py` or `_scene_v3.py` until Rust owns the path **and** differentials
 are green. Do not route pyplot through Scene.
@@ -304,16 +304,32 @@ Historical leftover-cluster table:
 
 ## Pull-request gates and final review
 
-Every pull request runs three required, authoritative lanes: the complete
-Rust/Python/JS test and ABI/naming suite, the direct-browser WASM foundation,
-and the Python 3.11 floor. Cross-library benchmarks, packaging matrices,
-Matplotlib-reference breadth, Firefox/WebKit conformance, Bazel, and Binder run
-after changes reach `main` or by explicit manual dispatch; they are valuable
-breadth evidence but duplicate too much work to gate every candidate head.
-Docs retain their separate path-scoped workflow.
+Every pull request runs the complete Rust/Python/JS suite, direct-browser WASM
+foundation, and Python 3.11 floor. The required aggregate **Release surfaces**
+status also runs on every head. For a release-surface change it admits only a
+green wheel matrix, sdist, no-Rust wheel, host-parity suite, four-tier Node /
+Python authored-Scene differential, and required browser evidence; an
+applicable skipped job is a failure. The checked-in classifier treats Rust,
+generated ABI declarations, Figure/export/payload/Scene modules, Node bindings,
+browser/WASM code, build hooks, package manifests, tests/scripts, and release
+workflows as release surfaces. Cross-library competitive breadth remains
+post-main/manual evidence.
+
+Branch protection requires **Release surfaces** and at least one approving
+review. Changes to ABI declarations, security policy, release workflows, build
+hooks, or package manifests additionally require approval from the owner named
+in `.github/CODEOWNERS`; dismissing that review or pushing a new head requires
+fresh approval.
+
+Creating, renaming, closing, or deleting a milestone, and moving an issue into
+or out of any milestone, requires explicit human approval recorded in a GitHub
+issue or pull request. Agents and automation may propose the exact mutation,
+but must not execute it before that approval. A general implementation request
+is not milestone-governance approval. Repository automation must not reopen,
+close, rename, create, or reassign milestones.
 
 CodeRabbit automatic and incremental reviews are disabled. Once the exact PR
-head is merge-ready, all three required checks are successful, every other
+head is merge-ready, all required checks are successful, every other
 reported check/status is successful or intentionally skipped, and all review
 threads are resolved, request the one final review from `main`:
 

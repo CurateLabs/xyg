@@ -26,9 +26,12 @@ class PayloadWriter:
         self,
         *,
         split: bool = False,
+        wasm_source: bool = False,
         borrow_heatmaps: bool = False,
         point_overlay: bool = True,
     ) -> None:
+        if wasm_source and not split:
+            raise ValueError("wasm_source requires split payload buffers")
         # split=True: every column ships as its own wire buffer — spec entries
         # carry `buf` (the wire-buffer index) with byte_offset 0, and
         # `buffers()` returns per-column views with no join copy. Packed mode
@@ -38,6 +41,9 @@ class PayloadWriter:
         self._chunks: list[bytes | np.ndarray] = []
         self._pos = 0
         self._split = split
+        # Canonical replay columns are an explicit Worker/WASM transport, not
+        # part of the ordinary split painter payload (§27/§29; #864).
+        self.wasm_source = bool(wasm_source)
         self.borrow_heatmaps = borrow_heatmaps
         self.borrowed: list[np.ndarray] = []
         # point_overlay=False: skip the density tier's sampled point overlay.

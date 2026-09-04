@@ -542,7 +542,8 @@ F3, still pending (above).
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports route the proven
-  literal Cartesian subset through those consumers: all 19 constant built-in scatter symbols
+  literal Cartesian subset, including autoranged ordinary charts, through those
+  consumers: all 19 constant built-in scatter symbols
   either without authored stroke or with an authored literal constant CSS
   stroke and optional finite non-negative scalar width (default 1px),
   constant-style polyline, ordinary area/error-band Bands,
@@ -2322,6 +2323,13 @@ Rust alone lowers them to that painter format; (b) the copies that do happen are
 number-parse-shaped; (c) every binding reports its actual copy count at ingest in debug
 mode, so "zero-copy" regressions are observable rather than folklore; (d) the Jupyter
 live path still has no text encoding of numbers, DOM payload, or main-thread data parse.
+For density scatter specifically, the ordinary Python/Node split first paint is
+the screen-bounded u8 grid plus offset-f32 sample geometry; canonical f64 source
+stays at the host and is not part of the paint payload. The optional
+`wasm_source=True` / `wasmSource: true` replay journey is a separately measured,
+explicit exception. A direct-browser caller already owns its canonical typed
+source and stages bounded chunks into Rust/WASM without routing that source
+through a host paint payload.
 
 ## 30. Compatibility subset — v1 is a list, not an aspiration
 

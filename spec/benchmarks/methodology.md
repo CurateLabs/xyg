@@ -322,8 +322,8 @@ scripts/verify_inline_density_benchmark.py hosted-density-browser-local.json`.
 
 The same main-only/manual lane emits
 `hosted-stream-density-browser-<git-sha>.json`: strict-CSP loopback-hosted
-evidence for the live split-payload ChartView route. The Python host emits
-`build_payload_split()`, ChartView retains canonical f64 source, and the
+evidence for the explicit replay-enabled ChartView route. The Python harness
+emits `build_payload_split(wasm_source=True)`, ChartView retains canonical f64 source, and the
 packaged module Worker streams bounded `XYAS` chunks before returning typed
 `XYAO`. Its 100/10k/100k/1M ladder proves multi-chunk 1M replay,
 cancellation/supersession, resource refusal, trap recovery, disposal, no
@@ -334,6 +334,13 @@ scripts/stream_density_browser_benchmark.py --output
 hosted-stream-density-browser-local.json`, then `python3
 scripts/verify_stream_density_browser_benchmark.py
 hosted-stream-density-browser-local.json`.
+
+This replay report is not the ordinary first-paint payload-size row. CodSpeed
+`test_first_payload_density_large` names density-grid, sample-geometry,
+canonical-f64, and other buffer classes; it requires canonical-f64 and other
+bytes to be zero, grid/sample ceilings to remain screen-bounded, and total
+bytes to stay below one tenth of source x/y. The native admission plan also
+keeps ordinary host payloads bounded at both 1M and 100M policy sizes.
 
 The latest interpreted hosted extract is
 `spec/benchmarks/hosted-evidence-95adb9de.json` (Actions run `32945396133`,

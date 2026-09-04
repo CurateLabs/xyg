@@ -85,6 +85,9 @@ pub struct XygSceneXytaTraceObservationsIn {
 }
 
 /// Materialized XYTA pack inputs returned by ABI 323.
+///
+/// Rust admits density source planes only when the complete downstream ABI 318
+/// record, including its prefix and all other sidecars, fits the 4 MiB cap.
 #[repr(C)]
 pub struct XygSceneXytaTraceObservationsOut {
     pub trace_id: u32,

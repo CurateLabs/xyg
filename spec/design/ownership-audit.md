@@ -6,6 +6,15 @@
 
 This ledger answers ownership file by file without treating language percentages as a quality target. Rust owns row scans and every parity-affecting decision. Python and Node own host ergonomics. TypeScript owns browser painting and interaction. Files marked for migration remain supported, but must not gain new canonical policy while their named issue is open.
 
+The keep-host inventory is behavioral evidence, not a line-count claim.
+`scripts/audit_python_host_core.py` parses Python imports/calls and Node ESM
+imports/calls to report actual call sites and distinct entries on the generated
+native boundary, plus calls per KLOC. Imports alone do not count. The
+`python-host` and `node-host` manifest policies also reject hand-authored ABI
+signatures and known host-local aggregation/domain/tick implementations. These
+checks are tripwires rather than proof that every loop is harmless; cross-host
+byte differentials remain the authoritative parity evidence.
+
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
 Migration status: Scene v25 now moves canonical viewport/plot bounds, numeric
@@ -310,10 +319,10 @@ Top remaining line counts (static-export emitters, not §302 blockers): `_channe
 | Scene lane | [#703](https://github.com/CurateLabs/xyg/pull/703)–[#718](https://github.com/CurateLabs/xyg/pull/718) | 257–272 | arrow shapes orchestration; XYTA/XYHF colormap; gradient/marker blob; XYTC field packs |
 | Payload stack | [#719](https://github.com/CurateLabs/xyg/pull/719)–[#741](https://github.com/CurateLabs/xyg/pull/741) | 273–291 | errorbar/bar/transition admit; density trace classify/bin/colormap/wire admit |
 | Payload orchestration | [#746](https://github.com/CurateLabs/xyg/pull/746)–[#758](https://github.com/CurateLabs/xyg/pull/758) | 292–304 | segment gather; channel/transition attach; per-trace emit skeleton plans; density/build/axis attach orchestration |
-| Payload gather/ship | [#765](https://github.com/CurateLabs/xyg/pull/765)–[#769](https://github.com/CurateLabs/xyg/pull/769), [#732](https://github.com/CurateLabs/xyg/issues/732) | 310–315 | column registry / gather policy (`xyg_payload_column_ship_plan`, orientation + bar-compact nested keys ABI 313, density wasm_source f64 + density_sample registry ABI 314); density grid buffer registry + attach order (`xyg_payload_density_grid_ship_plan` ABI 315); channel attach-order registry (`xyg_payload_channel_ship_plan`) + `channels.ship_registry_attach` row materialization; channel wire encode policy (`xyg_payload_channel_wire_encode`) — [#732](https://github.com/CurateLabs/xyg/issues/732) **closed** |
+| Payload gather/ship | [#765](https://github.com/CurateLabs/xyg/pull/765)–[#769](https://github.com/CurateLabs/xyg/pull/769), [#732](https://github.com/CurateLabs/xyg/issues/732) | 310–315 | column registry / gather policy (`xyg_payload_column_ship_plan`, orientation + bar-compact nested keys ABI 313, explicit replay-only density wasm_source f64 + ordinary density_sample registry ABI 314); density grid buffer registry + attach order (`xyg_payload_density_grid_ship_plan` ABI 315); channel attach-order registry (`xyg_payload_channel_ship_plan`) + `channels.ship_registry_attach` row materialization; channel wire encode policy (`xyg_payload_channel_wire_encode`) — [#732](https://github.com/CurateLabs/xyg/issues/732) **closed** |
 | Scene orchestration | [#759](https://github.com/CurateLabs/xyg/pull/759)–[#763](https://github.com/CurateLabs/xyg/pull/763) | 305–309 | XYTC/XYTA/XYFS/XYCF/XYAF/XYEF pack dispatch; polar + encode-product attach ([#733](https://github.com/CurateLabs/xyg/issues/733) **closed**) |
 
-Secondary §302 composition hubs are closed: marks, `_figure`, channels, lod, facets, `_annotations`, `_svg`, and `_raster` are keep-host re-export modules. `marks.py`, `_figure.py`, `channels.py`, and `lod.py` are keep-host re-export hubs over `_marks_*.py`, `_figure_*.py`, `_channels_*.py`, and `_lod_*.py`. Payload emit and Scene pack product paths are marshal-only on the #853 branch.
+Secondary §302 composition hubs are closed: marks, `_figure`, channels, lod, facets, `_annotations`, `_svg`, and `_raster` are keep-host re-export modules. `marks.py`, `_figure.py`, `channels.py`, and `lod.py` are keep-host re-export hubs over `_marks_*.py`, `_figure_*.py`, `_channels_*.py`, and `_lod_*.py`. Payload emit and Scene pack product paths are marshal-only on `main` after PR #852.
 
 **Post-M2 host-only completion bar (2026-09-02).** Zero `python-scene-migration` and zero `node-scene-migration` tags means hosts are classified as marshal/coerce shells, not that compatibility debt is retired. `audit_python_host_core.py` reports two keep-host policy inventories:
 
@@ -322,7 +331,14 @@ Secondary §302 composition hubs are closed: marks, `_figure`, channels, lod, fa
 | Python | ~80 (~23.6k lines) | static-export emitters (`_export_*`), scene observation marshal (`_scene_marshal.py`, `_scene_observations.py`), payload materialize (`_payload_trace_materialize.py`) |
 | Node | ~30 (~23.7k lines) | Koffi ABI wrappers (`encode.js`), figure/scene marshal (`figure.js`, `scene.js`, `payloadTraceMaterialize.js`), mark composition (`marks/*`) |
 
-Practical parity is proven by cross-host differential tests (`tests/test_*cross_host*.py`) and ABI smoke, not by migration-tag counts alone. Remaining browser debt: `js/src/30_ticks.ts` (`browser-scene-migration`) until ChartView tick math moves to WASM ([#59](https://github.com/CurateLabs/xyg/issues/59)).
+Practical parity is proven by cross-host differential tests (`tests/test_*cross_host*.py`) and ABI smoke, not by migration-tag counts alone. Remaining browser debt is **open**, not part of the closed host-only bar: `js/src/30_ticks.ts` stays `browser-scene-migration` with follow-up [#869](https://github.com/CurateLabs/xyg/issues/869) until secondary/polar/unattached ChartView tick generation and formatting move to Rust/WASM. Historical parent #59 closed a narrower delivered subset and is not an actionable open owner for this residual.
+
+The default eight-color categorical palette and first mark color remain copied
+across Rust, Python, and Node production paths. This is bounded host-ergonomics
+debt, not evidence of Rust ownership: authored palettes remain host input, but
+the default order must not change in one host independently. Follow-up
+[#868](https://github.com/CurateLabs/xyg/issues/868) moves the default bytes to
+one versioned Rust/ABI source and adds cross-host equality proof.
 
 **#731 close checklist.**
 
@@ -330,7 +346,7 @@ Practical parity is proven by cross-host differential tests (`tests/test_*cross_
 | --- | --- |
 | [#732](https://github.com/CurateLabs/xyg/issues/732) gather/ship + density grid ship (ABI 310–315) | **Closed** — kernel owns registry/attach policy |
 | [#733](https://github.com/CurateLabs/xyg/issues/733) scene orchestration plans (ABI 305–309) | **Closed** — kernel owns pack dispatch |
-| Host materialization retirement (ABI 316–325, big pushes 1–3) | **Closed on #853 branch** — `_payload.py` / `_scene_v3.py` marshal-only |
+| Host materialization retirement (ABI 316–325, big pushes 1–3) | **Closed on main via #852** — `_payload.py` / `_scene_v3.py` marshal-only |
 | Node stay-host TAP [#644](https://github.com/CurateLabs/xyg/pull/644)–[#698](https://github.com/CurateLabs/xyg/pull/698) serial merge | **Closed** — merged on main (#630–#698) |
 | Cross-host payload + Scene-byte differential proof | **Closed** — payload cross-host + hexbin colormap XYTA scene-byte goldens green |
 | Secondary §302 (_svg/_raster, marks, channels labels, lod cache) | **Closed** — composition hubs split to keep-host modules (2026-09-01) |
@@ -743,7 +759,7 @@ Forbidden:
 | `js/src/00_header.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/10_colormaps.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/20_theme.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
-| `js/src/30_ticks.ts` | Shared TypeScript client with canonical-policy debt | `browser-scene-migration` | `move-rust` | #58 |
+| `js/src/30_ticks.ts` | Shared TypeScript client with canonical-policy debt | `browser-scene-migration` | `move-rust` | #869 |
 | `js/src/40_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
@@ -989,3 +1005,11 @@ Forbidden:
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
+
+A new or changed `python-host` / `node-host` classification must cite the exact
+code path that only marshals/coerces into a native call, or the exact spec
+section that authorizes host ownership. Repeating the policy's generic
+"host shell" rationale is not classification evidence. A ledger-only
+reclassification is valid only when that evidence shows the product code was
+already marshal/coerce-only; otherwise the same change must move the policy to
+Rust or carry a numbered migration issue.

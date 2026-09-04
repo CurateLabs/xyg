@@ -17,6 +17,7 @@ Exit 0 always; prints a human-readable report to stdout.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 from collections import defaultdict
@@ -26,7 +27,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "spec" / "design" / "ownership-audit.json"
 ABI_GENERATED = ROOT / "python" / "xyg" / "_abi_generated.py"
 
-# Heuristic: calls that delegate numeric/policy work to Rust.
+# Legacy scene-migration heuristics.  Keep these for any still-tagged migration
+# file, but never present them as keep-host parity evidence.
 DELEGATE_RE = re.compile(
     r"\b(kernels\.|_native\.|scene_encode_product|figure_autorange|"
     r"payload_m4_indices|payload_visible_|valid_indices_f64|"
@@ -92,6 +94,96 @@ NODE_KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
 )
 
 NODE_KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = ("packages/xy-node/src/marks/",)
+
+NODE_NATIVE_MODULES: frozenset[str] = frozenset({"./native.js", "./sceneBulkNative.js"})
+
+
+class NativeCallMetrics:
+    """Static, source-backed native call-site inventory for one host file."""
+
+    def __init__(self, lines: int, calls: int, entries: frozenset[str]) -> None:
+        self.lines = lines
+        self.calls = calls
+        self.entries = entries
+
+    @property
+    def calls_per_kloc(self) -> float:
+        return 1000.0 * self.calls / self.lines if self.lines else 0.0
+
+
+def _python_native_call_metrics(path: Path) -> NativeCallMetrics:
+    """Count calls through imported ``_native``/``kernels`` ABI surfaces."""
+    try:
+        text = path.read_text(encoding="utf-8")
+        tree = ast.parse(text)
+    except (OSError, SyntaxError):
+        return NativeCallMetrics(0, 0, frozenset())
+
+    modules: set[str] = set()
+    direct: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.endswith(("_native", "kernels")):
+                    modules.add(alias.asname or alias.name.rsplit(".", 1)[-1])
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module.endswith(("_native", "kernels")):
+                direct.update(
+                    alias.asname or alias.name for alias in node.names if alias.name != "*"
+                )
+            elif module in {"", "xyg"}:
+                modules.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name in {"_native", "kernels"}
+                )
+
+    entries: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        if isinstance(function, ast.Name) and function.id in direct:
+            entries.append(function.id)
+        elif (
+            isinstance(function, ast.Attribute)
+            and isinstance(function.value, ast.Name)
+            and function.value.id in modules
+        ):
+            entries.append(f"{function.value.id}.{function.attr}")
+    return NativeCallMetrics(len(text.splitlines()), len(entries), frozenset(entries))
+
+
+_NODE_IMPORT_RE = re.compile(
+    r'import\s*\{(?P<body>.*?)\}\s*from\s*["\'](?P<module>\./(?:native|sceneBulkNative)\.js)["\']\s*;',
+    re.DOTALL,
+)
+
+
+def _node_native_call_metrics(path: Path) -> NativeCallMetrics:
+    """Count calls to names imported from the handwritten Node ABI adapters."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return NativeCallMetrics(0, 0, frozenset())
+
+    imports: set[str] = set()
+    for match in _NODE_IMPORT_RE.finditer(text):
+        if match.group("module") not in NODE_NATIVE_MODULES:
+            continue
+        for item in match.group("body").split(","):
+            parts = item.strip().split()
+            if not parts:
+                continue
+            imports.add(parts[-1] if len(parts) >= 3 and parts[-2] == "as" else parts[0])
+
+    entries: list[str] = []
+    for name in imports:
+        count = len(re.findall(rf"(?<![.$\w]){re.escape(name)}\s*\(", text))
+        entries.extend([name] * count)
+    return NativeCallMetrics(len(text.splitlines()), len(entries), frozenset(entries))
+
 
 MERGED_MATERIALIZATION_RETIREMENT: tuple[tuple[str, str, str], ...] = (
     ("#851", "316", "xyg_payload_density_grid_materialize"),
@@ -260,11 +352,14 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
 )
 
-WASM_PARITY_CONTRACTS: tuple[str, ...] = (
-    "tests/test_wasm_ticks_chartview_contract.py",
+WASM_DIFFERENTIAL_CONTRACTS: tuple[str, ...] = (
     "tests/test_*cross_host*.py",
+    "tests/test_scene_trace_pack_abi.py",
+    "tests/test_scene_chrome_pack_abi.py",
     "tests/browser/wasm_foundation_page.mjs",
 )
+
+WASM_STRUCTURAL_CONTRACTS: tuple[str, ...] = ("tests/test_wasm_ticks_chartview_contract.py",)
 
 
 def _read_abi_version() -> int | None:
@@ -335,33 +430,37 @@ def _print_policy_surface_block(
     label: str,
     paths: list[str],
     *,
+    host: str,
     top_n: int = 15,
-) -> tuple[int, int, int]:
+) -> NativeCallMetrics:
     total_lines = 0
-    total_delegate = 0
-    total_local = 0
+    total_calls = 0
+    total_entries: set[str] = set()
     rows: list[tuple[int, int, int, str]] = []
 
+    analyze = _python_native_call_metrics if host == "python" else _node_native_call_metrics
+
     for rel in paths:
-        full = ROOT / rel
-        n_lines, n_delegate, n_local = _analyze(full)
-        total_lines += n_lines
-        total_delegate += n_delegate
-        total_local += n_local
-        rows.append((n_lines, n_delegate, n_local, rel))
+        metrics = analyze(ROOT / rel)
+        total_lines += metrics.lines
+        total_calls += metrics.calls
+        total_entries.update(metrics.entries)
+        rows.append((metrics.lines, metrics.calls, len(metrics.entries), rel))
 
     print(f"  {label}: {len(paths)}")
+    density = 1000.0 * total_calls / total_lines if total_lines else 0.0
     print(
-        f"  totals: {total_lines} lines, {total_delegate} delegate hooks, "
-        f"{total_local} local-orchestration hooks"
+        f"  totals: {total_lines} lines, {total_calls} native call sites, "
+        f"{len(total_entries)} distinct ABI entries, {density:.1f} calls/KLOC"
     )
     print("  top surfaces by line count:")
-    for n_lines, n_delegate, n_local, rel in sorted(rows, reverse=True)[:top_n]:
-        ratio = (100.0 * n_delegate / n_lines) if n_lines else 0.0
+    for n_lines, n_calls, n_entries, rel in sorted(rows, reverse=True)[:top_n]:
+        row_density = 1000.0 * n_calls / n_lines if n_lines else 0.0
         print(
-            f"    - {rel}: {n_lines} lines, {n_delegate} delegate ({ratio:.1f}%), {n_local} local"
+            f"    - {rel}: {n_lines} lines, {n_calls} native calls, "
+            f"{n_entries} ABI entries, {row_density:.1f} calls/KLOC"
         )
-    return total_lines, total_delegate, total_local
+    return NativeCallMetrics(total_lines, total_calls, frozenset(total_entries))
 
 
 def _print_keep_host_policy_audit(manifest_path: Path) -> None:
@@ -376,9 +475,9 @@ def _print_keep_host_policy_audit(manifest_path: Path) -> None:
         "  Zero scene-migration tags does not retire these surfaces; "
         "see spec/design/ownership-audit.md post-M2 inventory."
     )
-    _print_policy_surface_block("python keep-host policy files", py_paths)
+    _print_policy_surface_block("python keep-host policy files", py_paths, host="python")
     print()
-    _print_policy_surface_block("node keep-host policy files", node_paths, top_n=10)
+    _print_policy_surface_block("node keep-host policy files", node_paths, host="node", top_n=10)
     print()
 
     print("Cross-host disposition parity:")
@@ -417,7 +516,8 @@ def _print_wasm_parity_audit(manifest: dict) -> None:
     print(
         "  ChartView primary Cartesian + colorbar ticks consume Rust/WASM via "
         "js/src/49_wasm_ticks.ts; js/src/30_ticks.ts is the documented compatibility "
-        "fallback for uncovered axes until #59 completes the cutover."
+        "fallback for uncovered axes. Browser tick policy remains OPEN under #869; "
+        "this inventory does not count the fallback as parity proof."
     )
     print(f"  browser-client paint modules: {len(browser_client_paths)}")
     print(
@@ -442,7 +542,10 @@ def _print_wasm_parity_audit(manifest: dict) -> None:
             n_lines, _, _ = _analyze(ROOT / rel)
             print(f"    - {rel}: {n_lines} lines")
     print("  differential proof contracts:")
-    for contract in WASM_PARITY_CONTRACTS:
+    for contract in WASM_DIFFERENTIAL_CONTRACTS:
+        print(f"    - {contract}")
+    print("  structural adapter contracts (not parity differentials):")
+    for contract in WASM_STRUCTURAL_CONTRACTS:
         print(f"    - {contract}")
     print()
 

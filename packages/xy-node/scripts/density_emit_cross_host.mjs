@@ -66,10 +66,10 @@ function wasmSourceMeta(spec) {
   };
 }
 
-function caseEntry(name, build, { split = false, gridMeta = false } = {}) {
+function caseEntry(name, build, { split = false, wasmSource = false, gridMeta = false } = {}) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
-  const { spec } = fig.buildPayload(split ? { split: true } : {});
+  const { spec } = fig.buildPayload(split ? { split: true, wasmSource } : {});
   const trace = spec.traces[0];
   const density = trace.density ?? {};
   const entry = {
@@ -133,7 +133,7 @@ const cases = [
       fig.scatter([1, 10], [1, 10], { forceDensity: true });
       fig.traces[0].id = 41;
     },
-    { split: true },
+    { split: true, wasmSource: true },
   ),
   caseEntry("density_sample_color_size", (fig) => {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {

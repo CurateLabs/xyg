@@ -969,7 +969,6 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         axis_id: u8,
         resolved_kind: u8,
         authored_type: u8,
-        domain_present: bool,
         side: u8,
         keys: Vec<&'a str>,
     }
@@ -982,8 +981,10 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             axis_id: cursor.u8()?,
             resolved_kind: cursor.u8()?,
             authored_type: cursor.u8()?,
-            domain_present: cursor.u8()? != 0,
-            side: cursor.u8()?,
+            side: {
+                let _domain_present = cursor.u8()?;
+                cursor.u8()?
+            },
             keys: {
                 let _reserved = cursor.u8()?;
                 let count = cursor.u16()? as u32;
@@ -1158,13 +1159,13 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     if extra_key(&colorbar_keys, PUBLIC_COLORBAR_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR");
     }
-    // Literal geometry is anchored to the primary Cartesian x/y viewport.
-    // Missing x or y is the same as an empty options dict: no domain.
-    // Heatmap/contour lattices carry their own cell extent, so they autorange
-    // like scatter and do not require an authored axis domain.
-    let needs_authored_domain = traces.iter().any(|trace| kind_literal_geometry(trace.kind));
-    let needs_primary_axes =
-        needs_authored_domain || traces.iter().any(|trace| kind_extent_geometry(trace.kind));
+    // Geometry is anchored to the primary Cartesian x/y viewport. The Scene
+    // compiler consumes Rust-resolved autorange domains, so an authored domain
+    // is not a public-export prerequisite. Keep requiring the primary axes and
+    // their canonical sides; alternate-axis geometry remains fail-closed.
+    let needs_primary_axes = traces
+        .iter()
+        .any(|trace| kind_literal_geometry(trace.kind) || kind_extent_geometry(trace.kind));
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
@@ -1172,9 +1173,6 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             };
             let default_side = if wanted == 0 { 1 } else { 2 };
             if axis.side != 0 && axis.side != default_side {
-                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
-            }
-            if needs_authored_domain && !axis.domain_present {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             }
         }
@@ -1699,7 +1697,7 @@ mod tests {
     }
 
     #[test]
-    fn heatmap_and_contour_autorange_without_authored_axis_domain() {
+    fn public_geometry_autoranges_without_authored_axis_domain() {
         fn put_axis(buf: &mut Vec<u8>, axis_id: u8, domain_present: bool) {
             buf.extend_from_slice(&[axis_id, 0, 0, u8::from(domain_present), 0, 0, 0, 0]);
         }
@@ -1740,10 +1738,7 @@ mod tests {
         line.extend_from_slice(&0u16.to_le_bytes());
         line.extend_from_slice(&f64::NAN.to_le_bytes());
         line.extend_from_slice(&f64::NAN.to_le_bytes());
-        assert_eq!(
-            scene_public_export_reason(&line),
-            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
-        );
+        assert_eq!(scene_public_export_reason(&line), Ok(""));
     }
 
     #[test]
@@ -2153,7 +2148,7 @@ mod tests {
     }
 
     #[test]
-    fn pack_public_export_maps_kind_and_rejects_line_without_domain() {
+    fn pack_public_export_maps_kind_and_accepts_line_without_domain() {
         let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
         facts.extend_from_slice(&xyef_axis(0, false));
         facts.extend_from_slice(&xyef_axis(1, false));
@@ -2168,10 +2163,7 @@ mod tests {
         ));
         let envelope = pack_public_export(&facts).unwrap();
         assert_eq!(envelope[XYEP_HEADER_BYTES + 16], KIND_LINE);
-        assert_eq!(
-            scene_public_export_reason(&envelope),
-            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
-        );
+        assert_eq!(scene_public_export_reason(&envelope), Ok(""));
     }
 
     #[test]

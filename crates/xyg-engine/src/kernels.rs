@@ -716,7 +716,7 @@ pub const FACTORIZE_DISPLAY_LABELS_CODE_U8: u32 = 1;
 pub const FACTORIZE_DISPLAY_LABELS_CODE_U32: u32 = 4;
 /// Maximum categories that ship as u8 wire codes (`channels.MAX_CATEGORIES`).
 pub const MAX_CATEGORY_CODES_U8: usize = 256;
-/// Probe row count matching `channels._FACTORIZE_PROBE_ROWS`.
+/// Probe row count for the Rust-owned factorization routing contract.
 pub const FACTORIZE_PROBE_ROWS: usize = 4096;
 /// Distinct-probe ceiling matching `channels._FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES`.
 pub const FACTORIZE_NATIVE_MAX_PROBE_CATEGORIES: usize = 512;

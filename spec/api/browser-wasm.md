@@ -208,17 +208,17 @@ in order: each remains a separate Rust-owned request and therefore retains its
 own axis scale without TypeScript aggregation. A newer viewport cancels the
 active request and prevents the remaining old viewport inputs from publishing.
 `diagnostics()` identifies the trace that produced its latest snapshot.
-For the normal kernel-backed Cartesian `ChartView` journey, automatic source provisioning
-decodes retained typed samples to canonical f64 source values and provisions them
-to an owned packaged same-origin module Worker. No application attachment is
-required: normal viewport scheduling waits for that bounded Rust `XYAG` →
-`XYAO` route, then stale-result, revision, error, and ChartView-destroy
-semantics are the same as an explicit handle. The support predicate is retained
-typed x/y source for every density trace; supported multi-trace journeys are
-serialized through the same Rust Worker. Kernel-backed journeys without that
-optional browser source retain their kernel route.
+For normal Python/Node kernel-backed Cartesian `ChartView` journeys, the split
+first-paint payload contains only the screen-bounded density grid and sampled
+overlay. Canonical f64 stays at the host and later views retain the host kernel
+route. Worker/WASM replay is explicit (`build_payload_split(wasm_source=True)`
+or Node `buildPayload({ split: true, wasmSource: true })`), while a true
+direct-browser caller already owns the typed source locally. Stale-result,
+revision, error, and ChartView-destroy semantics remain the same for that
+explicit handle. Kernel-backed journeys without the optional browser source
+retain their kernel route.
 
-`cartesian-count-f64-stream-v1` is the automatic public split-payload contract
+`cartesian-count-f64-stream-v1` is the explicit replay split-payload contract
 for one linear Cartesian count-only density trace. Its x/y f64 buffers remain
 in ChartView payload state for future views. Each viewport sends an `XYAS`
 header and at most 32,768 raw f64 pairs per transferable chunk; Rust owns every

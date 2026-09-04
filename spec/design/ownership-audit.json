@@ -140,7 +140,16 @@
         "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
         "Hand-maintained low-level C signatures."
       ],
-      "forbidden_patterns": [],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bnp\\.(?:histogram2d|digitize)\\s*\\(",
+          "instruction": "Canonical bin assignment and 2-D aggregation belongs in xyg-engine; call the generated native wrapper instead."
+        },
+        {
+          "pattern": "\\.(?:argtypes|restype)\\s*=",
+          "instruction": "Low-level ctypes signatures must come from _abi_generated.py."
+        }
+      ],
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     "python-scene-migration": {
@@ -154,7 +163,16 @@
         "New canonical scene, layout, tick, geometry, colormap, or static-export behavior.",
         "Expanding an implementation that must match Node and direct-browser hosts."
       ],
-      "forbidden_patterns": [],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bnp\\.(?:histogram2d|digitize)\\s*\\(",
+          "instruction": "Canonical bin assignment and 2-D aggregation belongs in xyg-engine; call the generated native wrapper instead."
+        },
+        {
+          "pattern": "\\.(?:argtypes|restype)\\s*=",
+          "instruction": "Low-level ctypes signatures must come from _abi_generated.py."
+        }
+      ],
       "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
     },
     "python-abi-generated": {
@@ -182,7 +200,16 @@
         "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
         "Hand-maintained Koffi C signatures."
       ],
-      "forbidden_patterns": [],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bd3\\.(?:bin|histogram|extent|ticks)\\s*\\(",
+          "instruction": "Canonical aggregation, domain, and tick policy belongs in xyg-engine; call the generated native wrapper instead."
+        },
+        {
+          "pattern": "\\blib\\.func\\s*\\(",
+          "instruction": "Low-level Koffi signatures must come from _abi_generated.js."
+        }
+      ],
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     "node-scene-migration": {
@@ -239,7 +266,7 @@
     "browser-scene-migration": {
       "current_owner": "Shared TypeScript client with canonical-policy debt",
       "disposition": "move-rust",
-      "follow_up_issue": 58,
+      "follow_up_issue": 869,
       "allowed_responsibilities": [
         "Temporary tick consumption and browser-specific label presentation during scene migration.",
         "The existing TypeScript generator stays frozen for unattached charts and angular/polar/secondary compatibility paths; explicitly attached automatic, authored-value, and authored-empty primary Cartesian linear/log/symlog/category/UTC-time axes and eligible colorbars consume only Rust-produced positions and labels."
@@ -248,7 +275,7 @@
         "Expanding canonical tick generation or layout policy in TypeScript."
       ],
       "forbidden_patterns": [],
-      "rationale": "Issue #58 makes tick and layout decisions part of the Rust-produced canonical scene."
+      "rationale": "Issue #869 moves the remaining ChartView tick decisions onto the Rust/WASM boundary after #59 closed a narrower subset."
     },
     "browser-wasm-migration": {
       "current_owner": "Shared TypeScript fallback compute",
@@ -1082,8 +1109,8 @@
       "current_owner": "Shared TypeScript client with canonical-policy debt",
       "policy": "browser-scene-migration",
       "disposition": "move-rust",
-      "follow_up_issue": 58,
-      "rationale": "Issue #58 makes tick and layout decisions part of the Rust-produced canonical scene."
+      "follow_up_issue": 869,
+      "rationale": "Issue #869 moves the remaining ChartView tick decisions onto the Rust/WASM boundary after #59 closed a narrower subset."
     },
     {
       "path": "js/src/40_gl.ts",
