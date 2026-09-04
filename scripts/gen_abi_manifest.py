@@ -526,6 +526,44 @@ def _length_contract_comments(symbol: dict[str, Any]) -> list[str]:
     return comments
 
 
+_TRACE_SIZE_ARGUMENT_RE = re.compile(
+    r"(?:^n$|(?:^|_)(?:len|count|capacity|cap|bytes|width|height|rows|cols|"
+    r"points|items|series|groups|marks|styles|w|h)(?:$|_))"
+)
+_TRACE_INTEGER_TYPES = frozenset(
+    {"size_t", "uint64_t", "uint32_t", "uint16_t", "uint8_t", "int64_t", "int32_t"}
+)
+
+
+def _trace_metadata(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Build privacy-bounded metadata for generated test tracing.
+
+    Pointer arguments are recorded only as present/absent. Scalar values are
+    recorded only when their ABI names identify sizes or capacities, so an
+    execution trace cannot accidentally retain user data.
+    """
+
+    metadata: dict[str, dict[str, Any]] = {}
+    for symbol in manifest["symbols"]:
+        if symbol["name"] == "xyg_abi_version":
+            continue
+        arguments = []
+        for index, argument in enumerate(symbol["arguments"]):
+            contract = argument["type"]
+            if contract["pointer_depth"]:
+                arguments.append((index, argument["name"], "pointer"))
+            elif contract["c"] in _TRACE_INTEGER_TYPES and _TRACE_SIZE_ARGUMENT_RE.search(
+                argument["name"]
+            ):
+                arguments.append((index, argument["name"], "size"))
+        metadata[symbol["name"]] = {
+            "node_name": symbol["node_name"],
+            "arguments": arguments,
+            "returns_size": symbol["returns"]["c"] == "size_t",
+        }
+    return metadata
+
+
 def render_python_bindings(manifest: dict[str, Any]) -> str:
     symbols = manifest["symbols"]
     version = next(item for item in symbols if item["name"] == "xyg_abi_version")
@@ -535,11 +573,116 @@ def render_python_bindings(manifest: dict[str, Any]) -> str:
         "from __future__ import annotations",
         "",
         "import ctypes",
+        "import json",
+        "import os",
+        "from typing import Any, TypedDict",
         "",
         "# fmt: off",
         "",
+        "class _AbiTraceMetadata(TypedDict):",
+        "    node_name: str",
+        "    arguments: list[tuple[int, str, str]]",
+        "    returns_size: bool",
+        "",
+        "",
         f"ABI_VERSION = {manifest['abi_version']}",
         f'SIGNATURE_SHA256 = "{manifest["signature_sha256"]}"',
+        f"ABI_TRACE_METADATA: dict[str, _AbiTraceMetadata] = {_trace_metadata(manifest)!r}",
+        "",
+        "",
+        "class GeneratedAbiTraceFault(RuntimeError):",
+        '    """Sentinel raised only by the generated test trace proxy."""',
+        "",
+        "",
+        "def _trace_pointer_present(value: Any) -> bool:",
+        "    if value is None:",
+        "        return False",
+        "    scalar = getattr(value, 'value', value)",
+        "    return scalar is not None and scalar != 0",
+        "",
+        "",
+        "def _trace_size_value(value: Any) -> str:",
+        "    return str(int(getattr(value, 'value', value)))",
+        "",
+        "",
+        "class _GeneratedAbiTraceProxy:",
+        "    def __init__(self, lib: Any, observer: Any, fault_symbols: Any) -> None:",
+        "        self._lib = lib",
+        "        self._observer = observer",
+        "        self._fault_symbols = frozenset(fault_symbols)",
+        "        self._call_index = 0",
+        "",
+        "    def __getattr__(self, name: str) -> Any:",
+        "        target = getattr(self._lib, name)",
+        "        metadata = ABI_TRACE_METADATA.get(name)",
+        "        if metadata is None:",
+        "            return target",
+        "",
+        "        def traced(*args: Any) -> Any:",
+        "            self._call_index += 1",
+        "            shaped = {}",
+        "            for index, argument_name, kind in metadata['arguments']:",
+        "                value = args[index]",
+        "                if kind == 'pointer':",
+        "                    shaped[argument_name] = {",
+        "                        'kind': 'pointer',",
+        "                        'present': _trace_pointer_present(value),",
+        "                    }",
+        "                else:",
+        "                    shaped[argument_name] = {",
+        "                        'kind': 'size',",
+        "                        'value': _trace_size_value(value),",
+        "                    }",
+        "            event = {",
+        "                'call_index': self._call_index,",
+        "                'symbol': name,",
+        "                'arguments': shaped,",
+        "            }",
+        "            if name in self._fault_symbols:",
+        "                event['outcome'] = 'injected_fault'",
+        "                self._observer(event)",
+        "                raise GeneratedAbiTraceFault(f'XYG_ABI_TRACE_FAULT:{name}')",
+        "            try:",
+        "                result = target(*args)",
+        "            except BaseException as exc:",
+        "                event['outcome'] = 'error'",
+        "                event['error_type'] = type(exc).__name__",
+        "                self._observer(event)",
+        "                raise",
+        "            event['outcome'] = 'ok'",
+        "            if metadata['returns_size']:",
+        "                event['returned_size'] = str(int(result))",
+        "            self._observer(event)",
+        "            return result",
+        "",
+        "        return traced",
+        "",
+        "",
+        "def trace_generated_abi(lib: Any, observer: Any, fault_symbols: Any = ()) -> Any:",
+        '    """Wrap a bound library for privacy-bounded test-only ABI tracing."""',
+        "",
+        "    return _GeneratedAbiTraceProxy(lib, observer, fault_symbols)",
+        "",
+        "",
+        "def trace_generated_abi_from_env(lib: Any) -> Any:",
+        '    """Enable JSONL tracing only when the executable-proof env is set."""',
+        "",
+        "    path = os.environ.get('XYG_ABI_TRACE_FILE')",
+        "    if not path:",
+        "        return lib",
+        "    journey = os.environ.get('XYG_ABI_TRACE_JOURNEY', 'unclassified')",
+        "    faults = filter(None, os.environ.get('XYG_ABI_TRACE_FAULT', '').split(','))",
+        "",
+        "    def observe(event: dict[str, Any]) -> None:",
+        "        record = {'host': 'python', 'journey': journey, **event}",
+        "        payload = (json.dumps(record, sort_keys=True, separators=(',', ':')) + '\\n').encode()",
+        "        fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)",
+        "        try:",
+        "            os.write(fd, payload)",
+        "        finally:",
+        "            os.close(fd)",
+        "",
+        "    return trace_generated_abi(lib, observe, faults)",
         "",
         "",
         "def bind_abi_version(lib: ctypes.CDLL):",
@@ -575,8 +718,21 @@ def render_node_bindings(manifest: dict[str, Any]) -> str:
     lines = [
         "// Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.",
         "",
+        'import { appendFileSync } from "node:fs";',
+        "",
         f"export const ABI_VERSION = {manifest['abi_version']};",
         f'export const SIGNATURE_SHA256 = "{manifest["signature_sha256"]}";',
+        f"export const ABI_TRACE_METADATA = {json.dumps(_trace_metadata(manifest), separators=(',', ':'))};",
+        "",
+        "export class GeneratedAbiTraceFault extends Error {",
+        "  constructor(symbol) {",
+        "    super(`XYG_ABI_TRACE_FAULT:${symbol}`);",
+        '    this.name = "GeneratedAbiTraceFault";',
+        "  }",
+        "}",
+        "",
+        "const _rawGeneratedAbi = new Map();",
+        "let _generatedAbiTraceIndex = 0;",
         "",
         "export function bindAbiVersion(lib) {",
         f'  return lib.func("{version["c_signature"]}");',
@@ -587,13 +743,92 @@ def render_node_bindings(manifest: dict[str, Any]) -> str:
         if symbol["name"] == "xyg_abi_version":
             continue
         lines.append(f"export let {symbol['node_name']};")
+    lines.extend(["", "function _setGeneratedAbiBinding(name, value) {", "  switch (name) {"])
+    for symbol in symbols:
+        if symbol["name"] == "xyg_abi_version":
+            continue
+        lines.append(f'    case "{symbol["node_name"]}": {symbol["node_name"]} = value; return;')
+    lines.extend(
+        [
+            "    default: throw new Error(`unknown generated ABI binding: ${name}`);",
+            "  }",
+            "}",
+            "",
+            "function _tracePointerPresent(value) {",
+            "  return value !== null && value !== undefined && value !== 0 && value !== 0n;",
+            "}",
+            "",
+            "function _traceGeneratedCall(symbol, raw, metadata, observer, faultSymbols) {",
+            "  return (...args) => {",
+            "    _generatedAbiTraceIndex += 1;",
+            "    const shaped = {};",
+            "    for (const [index, argumentName, kind] of metadata.arguments) {",
+            "      const value = args[index];",
+            '      shaped[argumentName] = kind === "pointer"',
+            '        ? { kind: "pointer", present: _tracePointerPresent(value) }',
+            '        : { kind: "size", value: String(value) };',
+            "    }",
+            "    const event = { call_index: _generatedAbiTraceIndex, symbol, arguments: shaped };",
+            "    if (faultSymbols.has(symbol)) {",
+            '      event.outcome = "injected_fault";',
+            "      observer(event);",
+            "      throw new GeneratedAbiTraceFault(symbol);",
+            "    }",
+            "    try {",
+            "      const result = raw(...args);",
+            '      event.outcome = "ok";',
+            "      if (metadata.returns_size) event.returned_size = String(result);",
+            "      observer(event);",
+            "      return result;",
+            "    } catch (error) {",
+            '      event.outcome = "error";',
+            '      event.error_type = error?.constructor?.name ?? "Error";',
+            "      observer(event);",
+            "      throw error;",
+            "    }",
+            "  };",
+            "}",
+            "",
+            "export function _testConfigureGeneratedAbiTrace(observer, faultSymbols = []) {",
+            "  const faults = new Set(faultSymbols);",
+            "  _generatedAbiTraceIndex = 0;",
+            "  for (const [symbol, metadata] of Object.entries(ABI_TRACE_METADATA)) {",
+            "    const nodeName = metadata.node_name;",
+            "    const raw = _rawGeneratedAbi.get(nodeName);",
+            "    if (!raw) continue;",
+            "    _setGeneratedAbiBinding(",
+            "      nodeName,",
+            "      observer == null && faults.size === 0",
+            "        ? raw",
+            "        : _traceGeneratedCall(symbol, raw, metadata, observer ?? (() => {}), faults),",
+            "    );",
+            "  }",
+            "}",
+            "",
+            "export function _configureGeneratedAbiTraceFromEnv() {",
+            "  const path = process.env.XYG_ABI_TRACE_FILE;",
+            "  if (!path) return;",
+            '  const journey = process.env.XYG_ABI_TRACE_JOURNEY ?? "unclassified";',
+            '  const faults = (process.env.XYG_ABI_TRACE_FAULT ?? "").split(",").filter(Boolean);',
+            "  _testConfigureGeneratedAbiTrace((event) => {",
+            '    const record = { host: "node", journey, ...event };',
+            "    appendFileSync(path, `${JSON.stringify(record)}\\n`, { mode: 0o600 });",
+            "  }, faults);",
+            "}",
+        ]
+    )
     lines.extend(["", "export function bindGeneratedAbi(lib) {"])
     for symbol in symbols:
         if symbol["name"] == "xyg_abi_version":
             continue
         for contract_comment in _length_contract_comments(symbol):
             lines.append(f"  // Buffer contract: {contract_comment}")
-        lines.append(f'  {symbol["node_name"]} = lib.func("{symbol["c_signature"]}");')
+        lines.extend(
+            [
+                f'  {symbol["node_name"]} = lib.func("{symbol["c_signature"]}");',
+                f'  _rawGeneratedAbi.set("{symbol["node_name"]}", {symbol["node_name"]});',
+            ]
+        )
     lines.extend(["}", ""])
     return "\n".join(lines)
 

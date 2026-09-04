@@ -1,0 +1,159 @@
+{
+  "schema": "xyg.host-delegation-corpus/v1",
+  "version": 1,
+  "description": "Executable Python/Node journeys proving that canonical product policy reaches the generated Rust ABI boundary. Test assertions remain the output-parity oracle; traces prove execution, not correctness by themselves.",
+  "control_commands": [
+    ["uv", "run", "pytest", "tests/test_generated_abi_trace.py", "-q", "--tb=short"]
+  ],
+  "uncovered": [
+    {
+      "owner": "#873",
+      "journey": "compatibility static-document routes",
+      "modules": ["python/xyg/_export_*", "python/xyg/_svg_*", "python/xyg/_raster_*"]
+    },
+    {
+      "owner": "#875",
+      "journey": "exhaustive admitted-shape Scene/static matrix",
+      "modules": ["cross-host shape registry"]
+    },
+    {
+      "owner": "#869",
+      "journey": "direct-browser secondary/polar/unattached tick routes",
+      "modules": ["js/src/30_ticks.ts"]
+    }
+  ],
+  "journeys": [
+    {
+      "id": "public-marks",
+      "surfaces": [
+        "graph", "sankey", "scatter", "line", "histogram", "area", "bar",
+        "column", "box", "ecdf", "segments", "heatmap", "hexbin", "violin",
+        "polar", "pie", "wind_rose", "facet", "contour", "errorbar",
+        "error_band", "stem", "step", "stairs", "triangle_mesh", "radar",
+        "ribbon"
+      ],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_host_delegation_public_marks.py", "-q", "--tb=short"],
+        ["node", "--test", "packages/xy-node/test/marks.test.mjs", "packages/xy-node/test/coverage.test.mjs"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_bar_stack",
+        "xyg_box_geometry",
+        "xyg_figure_autorange",
+        "xyg_graph_build_render",
+        "xyg_graph_layout",
+        "xyg_hexbin",
+        "xyg_histogram_mark_edges",
+        "xyg_marching_squares",
+        "xyg_payload_build_plan",
+        "xyg_payload_trace_emit_materialize",
+        "xyg_sankey_layout",
+        "xyg_violin_rects",
+        "xyg_weighted_ecdf",
+        "xyg_wind_rose_bins"
+      ],
+      "output_oracle": "The 27-kind Python corpus requires a canonical payload for every public matrix kind; Node mark and coverage suites exercise the twin constructors and emitted roles. Exact cross-host mark buffers are proved by mark-kernels."
+    },
+    {
+      "id": "mark-kernels",
+      "surfaces": ["scatter", "line", "histogram", "area", "bar", "box", "ecdf", "segments", "heatmap", "hexbin", "violin"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_node_mark_parity.py", "-q", "--tb=short"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_encode_f32",
+        "xyg_heatmap_rgba",
+        "xyg_hexbin",
+        "xyg_weighted_ecdf"
+      ],
+      "output_oracle": "Exact f32/f64/u8 buffers, index counts, and mark geometry are asserted by the cross-host tests."
+    },
+    {
+      "id": "payload",
+      "surfaces": ["payload", "Scene input"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_payload_cross_host.py", "-q", "--tb=short"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_payload_axis_spec_attach_plan",
+        "xyg_payload_build_plan",
+        "xyg_payload_channel_wire_encode",
+        "xyg_payload_trace_emit_materialize"
+      ],
+      "output_oracle": "Checked-in payload fixtures and live Node output are byte-compared with Python."
+    },
+    {
+      "id": "static-export",
+      "surfaces": ["Scene", "SVG", "raster commands", "PNG"],
+      "scope_note": "This independent #874 journey covers the admitted line/scatter/bar/histogram slice. #875 expands the registry exhaustively after #873 fixes the final static-document boundary.",
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_static_export_cross_host.py::test_python_and_node_static_scene_svg_and_raster_commands_are_identical", "-q", "--tb=short"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_scene_encode_product",
+        "xyg_scene_pack_public_export",
+        "xyg_scene_raster_commands",
+        "xyg_scene_xytc_trace_pack"
+      ],
+      "output_oracle": "Canonical Scene, SVG, and raster-command bytes are identical; Python PNG is also exercised."
+    },
+    {
+      "id": "lod",
+      "surfaces": ["direct", "decimated", "density planning", "drill windows"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_lod_cross_host.py", "-q", "--tb=short"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_aligned_window",
+        "xyg_drill_decision",
+        "xyg_encode_f32",
+        "xyg_hash_row_ids",
+        "xyg_lod_plan",
+        "xyg_normalize_window",
+        "xyg_sample_fraction",
+        "xyg_sample_threshold",
+        "xyg_screen_shape",
+        "xyg_view_visible_mask"
+      ],
+      "output_oracle": "All versioned LOD fixture cases compare exact decisions, values, and buffer hashes."
+    },
+    {
+      "id": "density",
+      "surfaces": ["density", "categorical density", "mean-color density"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_density_emit_cross_host.py", "-q", "--tb=short"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_payload_build_plan",
+        "xyg_payload_density_grid_materialize",
+        "xyg_payload_density_trace_emit_plan",
+        "xyg_payload_trace_emit_materialize"
+      ],
+      "output_oracle": "Density wire metadata and bounded massive-data policy are compared with versioned fixtures."
+    },
+    {
+      "id": "append",
+      "surfaces": ["stream", "append", "payload refresh"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_streaming.py::test_append_direct_scatter_reships_and_repicks", "-q", "--tb=short"],
+        ["node", "--test", "packages/xy-node/test/stream.test.mjs"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_payload_build_plan",
+        "xyg_payload_trace_emit_materialize",
+        "xyg_stream_append",
+        "xyg_stream_free",
+        "xyg_stream_len",
+        "xyg_stream_new"
+      ],
+      "output_oracle": "Both host suites assert canonical stream lifecycle and stable payload-prefix behavior."
+    }
+  ]
+}

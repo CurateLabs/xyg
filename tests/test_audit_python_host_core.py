@@ -84,7 +84,7 @@ def test_node_native_call_metrics_count_real_calls_not_imports(tmp_path):
     assert metrics.calls_per_kloc == 500.0
 
 
-def test_real_keep_host_native_call_density_is_pinned():
+def test_real_keep_host_inventory_is_nonempty_without_semantic_floors():
     mod = _load()
     manifest = mod._load_manifest(mod.MANIFEST)
     python_metrics = [
@@ -95,10 +95,10 @@ def test_real_keep_host_native_call_density_is_pinned():
         mod._node_native_call_metrics(mod.ROOT / path)
         for path in mod._node_keep_host_policy_paths(manifest)
     ]
-    assert sum(item.calls for item in python_metrics) >= 250
-    assert len(set().union(*(item.entries for item in python_metrics))) >= 190
-    assert sum(item.calls for item in node_metrics) >= 900
-    assert len(set().union(*(item.entries for item in node_metrics))) >= 400
+    assert python_metrics
+    assert node_metrics
+    assert all(item.lines > 0 for item in python_metrics)
+    assert all(item.lines > 0 for item in node_metrics)
 
 
 def test_audit_cli_exits_zero():
@@ -135,12 +135,13 @@ def test_audit_cli_exits_zero():
     assert "#731 close checklist" in proc.stdout
     assert "Node stay-host TAP" in proc.stdout
     assert "Secondary §302" in proc.stdout
-    assert "Keep-host policy surface audit" in proc.stdout
+    assert "Advisory keep-host source inventory" in proc.stdout
     assert "node keep-host policy files:" in proc.stdout
-    assert "native call sites" in proc.stdout
-    assert "distinct ABI entries" in proc.stdout
-    assert "calls/KLOC" in proc.stdout
-    assert "delegate hooks" not in proc.stdout.split("Keep-host policy surface audit", 1)[1]
+    assert "syntactic native call expressions" in proc.stdout
+    assert "referenced ABI entries" in proc.stdout
+    assert "references/KLOC" in proc.stdout
+    assert "not execution or ownership proof" in proc.stdout
+    assert "delegate hooks" not in proc.stdout.split("Advisory keep-host source inventory", 1)[1]
     assert "Cross-host disposition parity" in proc.stdout
     assert "node-scene-migration files: 0" in proc.stdout
     assert "WASM / browser host parity inventory" in proc.stdout

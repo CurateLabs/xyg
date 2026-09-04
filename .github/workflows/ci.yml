@@ -225,6 +225,14 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           python3 scripts/audit_host_parity_landing.py
 
+      - name: Upload executable host-delegation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: host-delegation-${{ github.sha }}
+          if-no-files-found: error
+          path: target/host-delegation-report.json
+
       - name: Regression gate (deterministic payloads = hard fail; timing = advisory)
         run: |
           .venv/bin/python benchmarks/bench_scatter_native.py \
