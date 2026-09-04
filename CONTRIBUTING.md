@@ -34,4 +34,4 @@ Milestone creation, renaming, closing, deletion, and moving an issue between
 milestones require explicit human approval recorded in a GitHub issue or pull
 request. Agents and automation may propose the exact operation but must not
 perform it before that approval. See the full contributor guide for the
-release-surface and owner-review gates.
+release-surface gate and milestone-governance rules.
