@@ -331,7 +331,7 @@ close, rename, create, or reassign milestones.
 CodeRabbit automatic and incremental reviews are disabled. Once the exact PR
 head is merge-ready, all required checks are successful, every other
 reported check/status is successful or intentionally skipped, and all review
-threads are resolved, request the one final review from `main`:
+threads are resolved, authorize the one final review from `main`:
 
 ```bash
 head=$(gh pr view PR_NUMBER --json headRefOid --jq .headRefOid)
@@ -340,7 +340,17 @@ gh workflow run final-coderabbit.yml --ref main \
 ```
 
 The workflow rechecks the head and requires the three baseline checks plus the
-named **Release surfaces** aggregate before commenting `@coderabbitai review`.
+named **Release surfaces** aggregate before recording exact-head authorization.
 It fails closed on stale heads, feature-ref dispatches, pending/failing gates,
-merge conflicts, or unresolved threads. CodeRabbit itself is not a prerequisite
-for requesting that final review, avoiding a circular gate.
+merge conflicts, or unresolved threads. GitHub deliberately attributes workflow
+comments to `github-actions[bot]`, and CodeRabbit ignores bot-authored commands,
+so an authenticated human collaborator must then issue the command:
+
+```bash
+gh pr comment PR_NUMBER --body '@coderabbitai review'
+```
+
+CodeRabbit itself is not a prerequisite for authorization, avoiding a circular
+gate. Treat the human-authored acknowledgement (`Review triggered`) as proof
+that the command was accepted; a successful authorization workflow alone is
+not proof that review began.

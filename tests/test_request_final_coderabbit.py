@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 import scripts.request_final_coderabbit as request_final_coderabbit
-from scripts.request_final_coderabbit import has_existing_request, validate_candidate
+from scripts.request_final_coderabbit import (
+    authorization_comment,
+    has_existing_request,
+    validate_candidate,
+)
 
 SHA = "a" * 40
 REQUIRED = (
@@ -75,12 +79,20 @@ def test_exact_head_request_marker_is_idempotent() -> None:
     comments = [
         {
             "author": {"login": "github-actions[bot]"},
-            "body": f"@coderabbitai review\n\n<!-- xyg-final-review:{SHA} -->",
+            "body": authorization_comment(SHA),
         }
     ]
 
     assert has_existing_request(comments, SHA)
     assert not has_existing_request(comments, "b" * 40)
+
+
+def test_authorization_comment_cannot_be_mistaken_for_a_review_command() -> None:
+    body = authorization_comment(SHA)
+
+    assert SHA in body
+    assert "authenticated human" in body
+    assert "@coderabbitai review" not in body
 
 
 def test_spoofed_request_marker_is_not_accepted() -> None:
@@ -148,9 +160,9 @@ def test_existing_marker_only_skips_after_full_exact_head_validation(
     assert request_final_coderabbit.main() == expected_result
     output = capsys.readouterr()
     if invalid is None:
-        assert "already requested" in output.out
+        assert "already authorized" in output.out
     else:
-        assert "already requested" not in output.out
+        assert "already authorized" not in output.out
     assert not any(url.endswith("/issues/121/comments") for url, _body in calls)
 
 

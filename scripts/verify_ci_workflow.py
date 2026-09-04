@@ -1724,6 +1724,8 @@ def validate_final_review_policy(
         errors.append("final CodeRabbit request must require the Release surfaces aggregate")
     if 'status.get("context") != "CodeRabbit"' not in script:
         errors.append("final CodeRabbit request must not depend on its own status context")
+    if "@coderabbitai review" in script:
+        errors.append("final CodeRabbit authorization must not emit a bot-authored command")
     validation_index = script.find("head = validate_candidate(")
     refresh_index = script.find('refreshed = _request(f"{api}/pulls/{number}"')
     idempotency_index = script.find("if has_existing_request(comments, head):")
@@ -1787,7 +1789,7 @@ def validate_final_review_policy(
     _require_step_runs_exactly(
         errors,
         request,
-        "Verify final candidate and request review",
+        "Verify final candidate and record authorization",
         "exact final-review request command",
         "python3 scripts/request_final_coderabbit.py",
     )
