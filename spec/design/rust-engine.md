@@ -143,7 +143,10 @@ crates/
                         #   computation. Consumes a tagged display-list command
                         #   stream (optionally borrowing f32/u8 payload or
                         #   canonical spans) and paints into a straight-alpha
-                        #   RGBA8 framebuffer the caller owns:
+                        #   RGBA8 framebuffer the caller owns. ABI 359 gives
+                        #   every caller-owned 2-D RGB/RGBA write an explicit
+                        #   capacity and rejects totals above isize::MAX before
+                        #   Rust constructs the mutable slice:
                         #     · scanline polygon fill, flat + linear gradient,
                         #       with a rectangle fast path
                         #     · SDF/distance-based stroke and point-symbol paint
@@ -554,7 +557,11 @@ int32_t xyg_pyramid_compose(uint64_t handle, double lo_x, double hi_x,
 int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x,
                                  double lo_y, double hi_y, size_t w, size_t h,
                                  size_t max_upsample,
-                                 float* out, uint8_t* out_rgba);
+                                 float* out, size_t out_capacity,
+                                 uint8_t* out_rgba,
+                                 size_t out_rgba_capacity);
+/* out_capacity is measured in f32 elements; out_rgba_capacity is measured
+   in bytes. Both are checked before either output is accessed. */
 /* free: 1 if it existed, 0 for stale/unknown */
 int32_t xyg_pyramid_free(uint64_t handle);
 /* stream store (introduced in ABI 59): Rust-owned canonical f64. 0 handle / 0 status on

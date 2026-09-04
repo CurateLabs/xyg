@@ -274,15 +274,59 @@ def _c_signature(name: str, returns: dict[str, Any], arguments: list[dict[str, A
     return f"{returns['c']} {name}({args})"
 
 
-_BUFFER_CONTRACT_OVERRIDES = {
-    (
-        "xyg_rasterize_rgb",
-        "out",
-    ): (
-        "caller-owned writable storage; must be non-null and contain at least "
-        "3 * w * h bytes in packed RGB8 row-major order with a 3 * w row stride; "
-        "w and h must be non-zero; checked-size overflow returns 0"
+_GRID_OUTPUT_CONTRACTS = {
+    **{
+        (name, "out"): ("out_capacity", channels, "bytes", 0, 1)
+        for name, channels in {
+            "xyg_bin_2d_mean_color": 4,
+            "xyg_colormap_rgba": 4,
+            "xyg_colormap_rgba_canonical": 4,
+            "xyg_density_rgba": 4,
+            "xyg_density_rgba_linear": 4,
+            "xyg_heatmap_rgba": 4,
+            "xyg_rasterize": 4,
+            "xyg_rasterize_data": 4,
+            "xyg_rasterize_rgb": 3,
+            "xyg_rasterize_spans": 4,
+        }.items()
+    },
+    ("xyg_pyramid_compose_color", "out"): (
+        "out_capacity",
+        1,
+        "elements",
+        -1,
+        "nonnegative_level",
     ),
+    ("xyg_pyramid_compose_color", "out_rgba"): (
+        "out_rgba_capacity",
+        4,
+        "bytes",
+        -1,
+        "nonnegative_level",
+    ),
+    ("xyg_tile_store_compose_color", "out"): (
+        "out_capacity",
+        1,
+        "elements",
+        -1,
+        "nonnegative_level",
+    ),
+    ("xyg_tile_store_compose_color", "out_rgba"): (
+        "out_rgba_capacity",
+        4,
+        "bytes",
+        -1,
+        "nonnegative_level",
+    ),
+}
+
+_ENCODED_OUTPUT_CONTRACTS = {
+    (name, "out"): "out_capacity"
+    for name in (
+        "xyg_rasterize_png",
+        "xyg_rasterize_png_data",
+        "xyg_rasterize_png_spans",
+    )
 }
 
 
@@ -307,9 +351,69 @@ def parse_rust_abi(text: str) -> dict[str, Any]:
             if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", arg_name):
                 raise ValueError(f"{name}: unsupported argument name {arg_name!r}")
             contract = _type_contract(rust_type, argument=True)
-            override = _BUFFER_CONTRACT_OVERRIDES.get((name, arg_name))
-            if override is not None:
-                contract["buffer_contract"] = override
+            grid_contract = _GRID_OUTPUT_CONTRACTS.get((name, arg_name))
+            if grid_contract is not None:
+                capacity_argument, channels, unit, failure_status, success_status = grid_contract
+                pixel_format = (
+                    "f32 count grid"
+                    if unit == "elements"
+                    else ("RGB8" if channels == 3 else "straight-alpha RGBA8")
+                )
+                factors = [{"argument": "w"}, {"argument": "h"}]
+                if channels != 1:
+                    factors.append({"constant": channels})
+                contract["buffer_contract"] = (
+                    f"caller-owned writable packed {pixel_format} row-major storage; must be "
+                    f"non-null and contain at least {channels} * w * h bytes with a "
+                    f"{channels} * w row stride; w and h must be non-zero; total byte size must "
+                    f"not exceed isize::MAX; checked-size overflow or insufficient capacity "
+                    f"returns {failure_status} before any write"
+                )
+                if unit == "elements":
+                    contract["buffer_contract"] = (
+                        "caller-owned writable packed f32 count-grid storage; must be non-null "
+                        "and contain at least w * h elements; w and h must be non-zero; total "
+                        "byte size must not exceed isize::MAX; checked-size overflow or "
+                        f"insufficient capacity returns {failure_status} before any write"
+                    )
+                contract["length_contract"] = {
+                    "unit": unit,
+                    "capacity_argument": capacity_argument,
+                    "required_checked_product": factors,
+                    "maximum_total_bytes": "isize::MAX",
+                    "pixel_format": pixel_format,
+                    "layout": "packed_row_major",
+                    "row_stride_checked_product": [
+                        {"argument": "w"},
+                        {"constant": channels},
+                    ],
+                    "null_output": "reject_before_write",
+                    "zero_dimensions": "reject_before_write",
+                    "short_capacity": "reject_before_write",
+                    "success_status": success_status,
+                    "failure_status": failure_status,
+                }
+            encoded_capacity = _ENCODED_OUTPUT_CONTRACTS.get((name, arg_name))
+            if encoded_capacity is not None:
+                contract["buffer_contract"] = (
+                    "caller-owned writable encoded PNG byte storage; must be non-null; "
+                    f"{encoded_capacity} is measured in bytes and must be in 1..=isize::MAX; "
+                    "zero or impossible Rust slice capacity returns usize::MAX before output "
+                    "access"
+                )
+                contract["length_contract"] = {
+                    "unit": "bytes",
+                    "capacity_argument": encoded_capacity,
+                    "minimum_capacity": 1,
+                    "maximum_total_bytes": "isize::MAX",
+                    "payload_format": "PNG byte stream",
+                    "layout": "encoded",
+                    "null_output": "reject_before_access",
+                    "zero_capacity": "reject_before_access",
+                    "oversized_capacity": "reject_before_access",
+                    "success_status": "encoded_byte_count",
+                    "failure_status": "usize::MAX",
+                }
             arguments.append({"name": arg_name, "type": contract})
         rest = text[end:].lstrip()
         rust_return = "void"
@@ -393,6 +497,35 @@ def render_manifest(manifest: dict[str, Any]) -> str:
     return json.dumps(manifest, indent=2, sort_keys=False) + "\n"
 
 
+def _length_contract_comments(symbol: dict[str, Any]) -> list[str]:
+    comments = []
+    for argument in symbol["arguments"]:
+        contract = argument["type"].get("length_contract")
+        if contract is None:
+            continue
+        if "required_checked_product" not in contract:
+            comments.append(
+                f"{argument['name']}: {contract['capacity_argument']} must be "
+                f"{contract['minimum_capacity']}..={contract['maximum_total_bytes']} "
+                f"{contract['unit']}; null output, zero capacity, or impossible slice size "
+                f"returns {contract['failure_status']} before output access; success returns "
+                f"{contract['success_status']}"
+            )
+            continue
+        factors = " * ".join(
+            str(factor.get("argument", factor.get("constant")))
+            for factor in contract["required_checked_product"]
+        )
+        comments.append(
+            f"{argument['name']}: {contract['capacity_argument']} >= checked({factors}) "
+            f"{contract['unit']} and total bytes <= {contract['maximum_total_bytes']}; null "
+            f"output, zero dimensions, arithmetic overflow, impossible slice size, or short "
+            f"capacity returns {contract['failure_status']} before output access; success "
+            f"returns {contract['success_status']}"
+        )
+    return comments
+
+
 def render_python_bindings(manifest: dict[str, Any]) -> str:
     symbols = manifest["symbols"]
     version = next(item for item in symbols if item["name"] == "xyg_abi_version")
@@ -422,6 +555,8 @@ def render_python_bindings(manifest: dict[str, Any]) -> str:
         if symbol["name"] == "xyg_abi_version":
             continue
         argtypes = ", ".join(item["type"]["ctypes"] for item in symbol["arguments"])
+        for contract_comment in _length_contract_comments(symbol):
+            lines.append(f"    # Buffer contract: {contract_comment}")
         lines.extend(
             [
                 f"    # {symbol['c_signature']}",
@@ -456,6 +591,8 @@ def render_node_bindings(manifest: dict[str, Any]) -> str:
     for symbol in symbols:
         if symbol["name"] == "xyg_abi_version":
             continue
+        for contract_comment in _length_contract_comments(symbol):
+            lines.append(f"  // Buffer contract: {contract_comment}")
         lines.append(f'  {symbol["node_name"]} = lib.func("{symbol["c_signature"]}");')
     lines.extend(["}", ""])
     return "\n".join(lines)
@@ -478,7 +615,10 @@ def render_c_header(manifest: dict[str, Any]) -> str:
         "#endif",
         "",
     ]
-    lines.extend(f"{symbol['c_signature']};" for symbol in manifest["symbols"])
+    for symbol in manifest["symbols"]:
+        for contract_comment in _length_contract_comments(symbol):
+            lines.append(f"/* Buffer contract: {contract_comment}. */")
+        lines.append(f"{symbol['c_signature']};")
     lines.extend(
         [
             "",

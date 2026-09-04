@@ -149,7 +149,7 @@ def native_smoke() -> None:
 
     out = (ctypes.c_uint8 * (w * h * 4))()
     cbuf = (ctypes.c_uint8 * len(cmd)).from_buffer_copy(bytes(cmd))
-    ok = lib.xyg_rasterize(cbuf, len(cmd), out, w, h)
+    ok = lib.xyg_rasterize(cbuf, len(cmd), out, len(out), w, h)
     if ok != 1:
         raise SystemExit("xyg_rasterize rejected a valid command buffer")
     png = _encode_truecolor(w, h, bytes(out))

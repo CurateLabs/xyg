@@ -63,7 +63,7 @@ usize_max = (1 << (8 * __import__("ctypes").sizeof(__import__("ctypes").c_size_t
 assert lib.xyg_pyramid_spill(0) == 0
 assert lib.xyg_tile_store_fetch(0, 0, 0, 0, None, None) == 0
 assert lib.xyg_tile_store_compose(0, 0, 1, 0, 1, 1, 1, 1, None) == -1
-assert lib.xyg_tile_store_compose_color(0, 0, 1, 0, 1, 1, 1, 1, None, None) == -1
+assert lib.xyg_tile_store_compose_color(0, 0, 1, 0, 1, 1, 1, 1, None, 0, None, 0) == -1
 assert lib.xyg_tile_store_append(0, None, None, 0) == 0
 assert lib.xyg_tile_store_stats(0, None) == 0
 assert lib.xyg_tile_budget_set(0) == 0

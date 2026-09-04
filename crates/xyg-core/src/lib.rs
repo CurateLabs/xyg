@@ -129,6 +129,22 @@ fn finite_ordered(lo: f64, hi: f64) -> bool {
     lo.is_finite() && hi.is_finite() && hi >= lo
 }
 
+/// Checked element length for a dense 2-D caller-owned output buffer.
+///
+/// Rust slices additionally require their total byte size to fit in `isize`,
+/// even when every multiplication fits in `usize`. Keep that invariant at the
+/// FFI boundary so impossible dimensions fail before pointer access.
+fn required_grid_len(
+    w: usize,
+    h: usize,
+    elements_per_cell: usize,
+    element_size: usize,
+) -> Option<usize> {
+    let elements = w.checked_mul(h)?.checked_mul(elements_per_cell)?;
+    let bytes = elements.checked_mul(element_size)?;
+    (elements > 0 && bytes <= isize::MAX as usize).then_some(elements)
+}
+
 /// Panic backstop for the C ABI: a Rust panic must never unwind across
 /// `extern "C"` into the host interpreter — that is undefined behavior and in
 /// practice aborts the embedding CPython process. Any panic (an internal
@@ -174,7 +190,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 358;
+pub const ABI_VERSION: u32 = 359;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -9199,7 +9215,8 @@ unsafe fn color_source_from_raw<'a>(
 ///
 /// # Safety
 /// `x`/`y` must point to `len` readable f64s; the color source pointers must
-/// satisfy `color_source_from_raw`; `out` must address `w*h*4` writable bytes.
+/// satisfy `color_source_from_raw`; `out` must address `out_capacity` writable
+/// bytes and `out_capacity >= w*h*4`.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_bin_2d_mean_color(
@@ -9217,13 +9234,17 @@ pub unsafe extern "C" fn xyg_bin_2d_mean_color(
     w: usize,
     h: usize,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
     if w == 0 || h == 0 || !finite_gt(x0, x1) || !finite_gt(y0, y1) || out.is_null() {
         return 0;
     }
-    let Some(grid_len) = w.checked_mul(h).and_then(|n| n.checked_mul(4)) else {
+    let Some(grid_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < grid_len {
+        return 0;
+    }
     let out = std::slice::from_raw_parts_mut(out, grid_len);
     if len == 0 {
         out.fill(0);
@@ -9246,26 +9267,28 @@ pub unsafe extern "C" fn xyg_bin_2d_mean_color(
 /// Native PNG rasterizer (dossier Phase 3). Paints a Python-built display list
 /// (`cmd[0..cmd_len]`, see `raster.rs`/`_raster.py`) into a caller-owned
 /// straight-alpha RGBA8 framebuffer `out` of `w*h*4` bytes. Returns 1 on
-/// success, 0 on a malformed command buffer or size mismatch (output undefined).
+/// success, 0 on malformed input, checked-size overflow, or insufficient
+/// output capacity. A capacity failure is detected before `out` is accessed.
 ///
 /// # Safety
 /// `cmd` must point to `cmd_len` readable bytes (or be null iff `cmd_len == 0`);
-/// `out` must point to `w*h*4` writable bytes.
+/// `out` must point to `out_capacity` writable bytes. `out_capacity` must be
+/// at least the checked product `w*h*4`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize(
     cmd: *const u8,
     cmd_len: usize,
     out: *mut u8,
+    out_capacity: usize,
     w: usize,
     h: usize,
 ) -> i32 {
-    if out.is_null() || w == 0 || h == 0 {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
+        return 0;
+    };
+    if out.is_null() || out_capacity < out_len {
         return 0;
     }
-    let out_len = match w.checked_mul(h).and_then(|n| n.checked_mul(4)) {
-        Some(n) => n,
-        None => return 0,
-    };
     let cmds = if cmd_len == 0 {
         &[][..]
     } else if cmd.is_null() {
@@ -9286,22 +9309,24 @@ pub unsafe extern "C" fn xyg_rasterize(
 /// `cmd` must point to `cmd_len` readable bytes (or be null iff `cmd_len == 0`);
 /// `out` must be non-null and point to at least `3 * w * h` writable bytes in
 /// packed RGB8 row-major order with a `3 * w` row stride. `w` and `h` must be
-/// non-zero; checked-size overflow returns `0`.
+/// non-zero. `out_capacity` must be at least the checked product `3 * w * h`;
+/// checked-size overflow or insufficient capacity returns `0` before `out` is
+/// accessed.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize_rgb(
     cmd: *const u8,
     cmd_len: usize,
     out: *mut u8,
+    out_capacity: usize,
     w: usize,
     h: usize,
 ) -> i32 {
-    if out.is_null() || w == 0 || h == 0 {
+    let Some(out_len) = required_grid_len(w, h, 3, std::mem::size_of::<u8>()) else {
+        return 0;
+    };
+    if out.is_null() || out_capacity < out_len {
         return 0;
     }
-    let out_len = match w.checked_mul(h).and_then(|n| n.checked_mul(3)) {
-        Some(n) => n,
-        None => return 0,
-    };
     let cmds = if cmd_len == 0 {
         &[][..]
     } else if cmd.is_null() {
@@ -9328,16 +9353,16 @@ pub unsafe extern "C" fn xyg_rasterize_data(
     data: *const u8,
     data_len: usize,
     out: *mut u8,
+    out_capacity: usize,
     w: usize,
     h: usize,
 ) -> i32 {
-    if out.is_null() || w == 0 || h == 0 {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
+        return 0;
+    };
+    if out.is_null() || out_capacity < out_len {
         return 0;
     }
-    let out_len = match w.checked_mul(h).and_then(|n| n.checked_mul(4)) {
-        Some(n) => n,
-        None => return 0,
-    };
     let cmds = if cmd_len == 0 {
         &[][..]
     } else if cmd.is_null() {
@@ -9373,16 +9398,16 @@ pub unsafe extern "C" fn xyg_rasterize_spans(
     span_lens: *const usize,
     span_count: usize,
     out: *mut u8,
+    out_capacity: usize,
     w: usize,
     h: usize,
 ) -> i32 {
-    if out.is_null() || w == 0 || h == 0 {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
+        return 0;
+    };
+    if out.is_null() || out_capacity < out_len {
         return 0;
     }
-    let out_len = match w.checked_mul(h).and_then(|n| n.checked_mul(4)) {
-        Some(n) => n,
-        None => return 0,
-    };
     let cmds = if cmd_len == 0 {
         &[][..]
     } else if cmd.is_null() {
@@ -9401,11 +9426,13 @@ pub unsafe extern "C" fn xyg_rasterize_spans(
 
 /// Fused native raster + fast PNG encoder. Returns the PNG byte count written
 /// to `out`, or `usize::MAX` when the command stream is malformed, dimensions
-/// overflow, or `out_capacity` is insufficient.
+/// overflow, `out_capacity` is zero or above Rust's `isize::MAX` slice limit,
+/// or `out_capacity` is insufficient.
 ///
 /// # Safety
-/// Pointer contracts match `xyg_rasterize`; `out` must point to
-/// `out_capacity` writable bytes.
+/// The command and dimension contracts match `xyg_rasterize`; `out` must point
+/// to `out_capacity` writable bytes for the encoded PNG output;
+/// `out_capacity` must be in `1..=isize::MAX`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize_png(
     cmd: *const u8,
@@ -9415,7 +9442,8 @@ pub unsafe extern "C" fn xyg_rasterize_png(
     w: usize,
     h: usize,
 ) -> usize {
-    if out.is_null() || out_capacity == 0 || w == 0 || h == 0 {
+    if out.is_null() || out_capacity == 0 || out_capacity > isize::MAX as usize || w == 0 || h == 0
+    {
         return usize::MAX;
     }
     let cmds = if cmd_len == 0 {
@@ -9435,8 +9463,9 @@ pub unsafe extern "C" fn xyg_rasterize_png(
 /// `xyg_rasterize_data`.
 ///
 /// # Safety
-/// Pointer contracts match `xyg_rasterize_data`; `out` must point to
-/// `out_capacity` writable bytes.
+/// The command, arena, and dimension contracts match `xyg_rasterize_data`;
+/// `out` must point to `out_capacity` writable bytes for the encoded PNG
+/// output, with `out_capacity` in `1..=isize::MAX`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize_png_data(
     cmd: *const u8,
@@ -9448,7 +9477,8 @@ pub unsafe extern "C" fn xyg_rasterize_png_data(
     w: usize,
     h: usize,
 ) -> usize {
-    if out.is_null() || out_capacity == 0 || w == 0 || h == 0 {
+    if out.is_null() || out_capacity == 0 || out_capacity > isize::MAX as usize || w == 0 || h == 0
+    {
         return usize::MAX;
     }
     let cmds = if cmd_len == 0 {
@@ -9474,8 +9504,8 @@ pub unsafe extern "C" fn xyg_rasterize_png_data(
 /// Fused PNG rasterizer backed by multiple synchronous immutable arenas.
 ///
 /// # Safety
-/// Span contracts match `xyg_rasterize_spans`; output contracts match
-/// `xyg_rasterize_png`.
+/// The command, span, and dimension contracts match `xyg_rasterize_spans`;
+/// output contracts match `xyg_rasterize_png`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize_png_spans(
     cmd: *const u8,
@@ -9488,7 +9518,8 @@ pub unsafe extern "C" fn xyg_rasterize_png_spans(
     w: usize,
     h: usize,
 ) -> usize {
-    if out.is_null() || out_capacity == 0 || w == 0 || h == 0 {
+    if out.is_null() || out_capacity == 0 || out_capacity > isize::MAX as usize || w == 0 || h == 0
+    {
         return usize::MAX;
     }
     let cmds = if cmd_len == 0 {
@@ -9513,7 +9544,8 @@ pub unsafe extern "C" fn xyg_rasterize_png_spans(
 ///
 /// # Safety
 /// `raw` contains `w*h` readable f64 values, `stops` contains
-/// `stop_count*3` readable bytes, and `out` contains `w*h*4` writable bytes.
+/// `stop_count*3` readable bytes, and `out` contains `out_capacity` writable
+/// bytes with `out_capacity >= w*h*4`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_colormap_rgba(
     raw: *const f64,
@@ -9523,16 +9555,20 @@ pub unsafe extern "C" fn xyg_colormap_rgba(
     stop_count: usize,
     alpha: u8,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
-    let Some(len) = w.checked_mul(h) else {
+    let Some(len) = required_grid_len(w, h, 1, std::mem::size_of::<f64>()) else {
         return 0;
     };
     if len == 0 || stop_count == 0 || raw.is_null() || stops.is_null() || out.is_null() {
         return 0;
     }
-    let Some(out_len) = len.checked_mul(4) else {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < out_len {
+        return 0;
+    }
     let Some(stop_len) = stop_count.checked_mul(3) else {
         return 0;
     };
@@ -9561,16 +9597,20 @@ pub unsafe extern "C" fn xyg_colormap_rgba_canonical(
     stop_count: usize,
     alpha: u8,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
-    let Some(len) = w.checked_mul(h) else {
+    let Some(len) = required_grid_len(w, h, 1, std::mem::size_of::<f64>()) else {
         return 0;
     };
     if len == 0 || stop_count == 0 || raw.is_null() || stops.is_null() || out.is_null() {
         return 0;
     }
-    let Some(out_len) = len.checked_mul(4) else {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < out_len {
+        return 0;
+    }
     let Some(stop_len) = stop_count.checked_mul(3) else {
         return 0;
     };
@@ -9762,7 +9802,8 @@ pub unsafe extern "C" fn xyg_colormap_custom_stops_resolve_list(
 ///
 /// # Safety
 /// `raw` contains `w*h` readable f64 values, `stops` contains
-/// `stop_count*3` readable bytes, and `out` contains `w*h*4` writable bytes.
+/// `stop_count*3` readable bytes, and `out` contains `out_capacity` writable
+/// bytes with `out_capacity >= w*h*4`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_heatmap_rgba(
     raw: *const f64,
@@ -9772,16 +9813,20 @@ pub unsafe extern "C" fn xyg_heatmap_rgba(
     stop_count: usize,
     alpha: u8,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
-    let Some(len) = w.checked_mul(h) else {
+    let Some(len) = required_grid_len(w, h, 1, std::mem::size_of::<f64>()) else {
         return 0;
     };
     if len == 0 || stop_count == 0 || raw.is_null() || stops.is_null() || out.is_null() {
         return 0;
     }
-    let Some(out_len) = len.checked_mul(4) else {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < out_len {
+        return 0;
+    }
     let Some(stop_len) = stop_count.checked_mul(3) else {
         return 0;
     };
@@ -9799,7 +9844,8 @@ pub unsafe extern "C" fn xyg_heatmap_rgba(
 ///
 /// # Safety
 /// `encoded` contains `w*h` readable bytes, `stops` contains `stop_count*3`
-/// readable bytes, and `out` contains `w*h*4` writable bytes.
+/// readable bytes, and `out` contains `out_capacity` writable bytes with
+/// `out_capacity >= w*h*4`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_rgba(
     encoded: *const u8,
@@ -9810,13 +9856,17 @@ pub unsafe extern "C" fn xyg_density_rgba(
     stop_count: usize,
     opacity: f64,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
-    let Some(len) = w.checked_mul(h) else {
+    let Some(len) = required_grid_len(w, h, 1, std::mem::size_of::<u8>()) else {
         return 0;
     };
-    let Some(out_len) = len.checked_mul(4) else {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < out_len {
+        return 0;
+    }
     let Some(stop_len) = stop_count.checked_mul(3) else {
         return 0;
     };
@@ -9877,7 +9927,8 @@ pub unsafe extern "C" fn xyg_colormap_lut(
 ///
 /// # Safety
 /// When `w*h > 0`, `counts` is that many readable f64s, `stops` is
-/// `stop_count*3` bytes, and `out` is `w*h*4` writable bytes.
+/// `stop_count*3` bytes, and `out` contains `out_capacity` writable bytes with
+/// `out_capacity >= w*h*4`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_rgba_linear(
     counts: *const f64,
@@ -9888,13 +9939,17 @@ pub unsafe extern "C" fn xyg_density_rgba_linear(
     stop_count: usize,
     opacity: f64,
     out: *mut u8,
+    out_capacity: usize,
 ) -> i32 {
-    let Some(len) = w.checked_mul(h) else {
+    let Some(len) = required_grid_len(w, h, 1, std::mem::size_of::<f64>()) else {
         return 0;
     };
-    let Some(out_len) = len.checked_mul(4) else {
+    let Some(out_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
         return 0;
     };
+    if out_capacity < out_len {
+        return 0;
+    }
     let Some(stop_len) = stop_count.checked_mul(3) else {
         return 0;
     };
@@ -11782,7 +11837,9 @@ pub unsafe extern "C" fn xyg_pyramid_compose(
 /// the pyramid carries no color planes — the caller re-bins exactly either way.
 ///
 /// # Safety
-/// `out` must address `w*h` writable f32s and `out_rgba` `w*h*4` writable bytes.
+/// `out` must address `out_capacity` writable f32s and `out_rgba`
+/// `out_rgba_capacity` writable bytes. The capacities must be at least `w*h`
+/// and `w*h*4`, respectively.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_pyramid_compose_color(
@@ -11795,7 +11852,9 @@ pub unsafe extern "C" fn xyg_pyramid_compose_color(
     h: usize,
     max_upsample: usize,
     out: *mut f32,
+    out_capacity: usize,
     out_rgba: *mut u8,
+    out_rgba_capacity: usize,
 ) -> i32 {
     if out.is_null()
         || out_rgba.is_null()
@@ -11806,14 +11865,20 @@ pub unsafe extern "C" fn xyg_pyramid_compose_color(
     {
         return -1;
     }
-    let Some(out_len) = w.checked_mul(h) else {
+    let Some(out_len) = required_grid_len(w, h, 1, std::mem::size_of::<f32>()) else {
         return -1;
     };
+    let Some(out_rgba_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
+        return -1;
+    };
+    if out_capacity < out_len || out_rgba_capacity < out_rgba_len {
+        return -1;
+    }
     // Zero forgives a caller that forgot the knob; the count-only entry point
     // applies the same floor.
     let max_upsample = max_upsample.max(1);
     let out = std::slice::from_raw_parts_mut(out, out_len);
-    let out_rgba = std::slice::from_raw_parts_mut(out_rgba, out_len * 4);
+    let out_rgba = std::slice::from_raw_parts_mut(out_rgba, out_rgba_len);
     ffi_guard(-1, || {
         match tiles::reg_with(handle, |p| {
             tiles::compose_color(p, lo_x, hi_x, lo_y, hi_y, w, h, max_upsample, out, out_rgba)
@@ -11986,7 +12051,9 @@ pub unsafe extern "C" fn xyg_tile_store_compose(
 /// when the window outresolves the store OR the store carries no color
 /// planes — the caller re-bins exactly either way.
 /// # Safety
-/// `out` must address `w*h` writable f32s and `out_rgba` `w*h*4` writable bytes.
+/// `out` must address `out_capacity` writable f32s and `out_rgba`
+/// `out_rgba_capacity` writable bytes. The capacities must be at least `w*h`
+/// and `w*h*4`, respectively.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 #[cfg(not(target_os = "emscripten"))]
@@ -12000,7 +12067,9 @@ pub unsafe extern "C" fn xyg_tile_store_compose_color(
     h: usize,
     max_upsample: usize,
     out: *mut f32,
+    out_capacity: usize,
     out_rgba: *mut u8,
+    out_rgba_capacity: usize,
 ) -> i32 {
     if out.is_null()
         || out_rgba.is_null()
@@ -12011,12 +12080,18 @@ pub unsafe extern "C" fn xyg_tile_store_compose_color(
     {
         return -1;
     }
-    let Some(out_len) = w.checked_mul(h) else {
+    let Some(out_len) = required_grid_len(w, h, 1, std::mem::size_of::<f32>()) else {
         return -1;
     };
+    let Some(out_rgba_len) = required_grid_len(w, h, 4, std::mem::size_of::<u8>()) else {
+        return -1;
+    };
+    if out_capacity < out_len || out_rgba_capacity < out_rgba_len {
+        return -1;
+    }
     let max_upsample = max_upsample.max(1);
     let out = std::slice::from_raw_parts_mut(out, out_len);
-    let out_rgba = std::slice::from_raw_parts_mut(out_rgba, out_len * 4);
+    let out_rgba = std::slice::from_raw_parts_mut(out_rgba, out_rgba_len);
     ffi_guard(-1, || {
         match tile_store::reg_with(store, |s| {
             s.compose_color(lo_x, hi_x, lo_y, hi_y, w, h, max_upsample, out, out_rgba)
@@ -25336,6 +25411,524 @@ mod tests {
     use super::*;
 
     #[test]
+    fn required_grid_len_enforces_all_slice_bounds() {
+        assert_eq!(required_grid_len(2, 3, 4, 1), Some(24));
+        assert_eq!(required_grid_len(0, 3, 4, 1), None);
+        assert_eq!(required_grid_len(usize::MAX, 2, 1, 1), None);
+        assert_eq!(required_grid_len(usize::MAX / 4 + 1, 1, 4, 1), None);
+        assert_eq!(
+            required_grid_len(isize::MAX as usize, 1, 1, 1),
+            Some(isize::MAX as usize)
+        );
+        assert_eq!(
+            required_grid_len(isize::MAX as usize / 4 + 1, 1, 1, 4),
+            None
+        );
+    }
+
+    #[test]
+    fn raster_framebuffer_abis_validate_capacity_before_writing() {
+        const W: usize = 2;
+        const H: usize = 2;
+        const RGBA_LEN: usize = W * H * 4;
+        const RGB_LEN: usize = W * H * 3;
+        const CANARY: u8 = 0xa5;
+        let huge = usize::MAX / 2 + 1;
+        let rgba_channel_overflow = usize::MAX / 4 + 1;
+        let rgb_channel_overflow = usize::MAX / 3 + 1;
+        let rgba_slice_too_large = isize::MAX as usize / 4 + 1;
+        let rgb_slice_too_large = isize::MAX as usize / 3 + 1;
+
+        unsafe {
+            let mut rgba = [CANARY; RGBA_LEN + 2];
+            assert_eq!(
+                xyg_rasterize(
+                    std::ptr::null(),
+                    0,
+                    rgba.as_mut_ptr().add(1),
+                    RGBA_LEN,
+                    W,
+                    H,
+                ),
+                1
+            );
+            assert_eq!(rgba[0], CANARY);
+            assert_eq!(rgba[RGBA_LEN + 1], CANARY);
+            assert!(rgba[1..=RGBA_LEN].iter().all(|&byte| byte == 0));
+
+            let mut rgba_oversized = [CANARY; RGBA_LEN + 3];
+            assert_eq!(
+                xyg_rasterize(
+                    std::ptr::null(),
+                    0,
+                    rgba_oversized.as_mut_ptr().add(1),
+                    RGBA_LEN + 1,
+                    W,
+                    H,
+                ),
+                1
+            );
+            assert_eq!(rgba_oversized[0], CANARY);
+            assert_eq!(rgba_oversized[RGBA_LEN + 1], CANARY);
+            assert_eq!(rgba_oversized[RGBA_LEN + 2], CANARY);
+
+            let mut rgba_short = [CANARY; RGBA_LEN + 2];
+            assert_eq!(
+                xyg_rasterize(
+                    std::ptr::null(),
+                    0,
+                    rgba_short.as_mut_ptr().add(1),
+                    RGBA_LEN - 1,
+                    W,
+                    H,
+                ),
+                0
+            );
+            assert!(rgba_short.iter().all(|&byte| byte == CANARY));
+
+            let mut rgb = [CANARY; RGB_LEN + 2];
+            assert_eq!(
+                xyg_rasterize_rgb(std::ptr::null(), 0, rgb.as_mut_ptr().add(1), RGB_LEN, W, H,),
+                1
+            );
+            assert_eq!(rgb[0], CANARY);
+            assert_eq!(rgb[RGB_LEN + 1], CANARY);
+            assert!(rgb[1..=RGB_LEN].iter().all(|&byte| byte == 255));
+
+            let mut rgb_oversized = [CANARY; RGB_LEN + 3];
+            assert_eq!(
+                xyg_rasterize_rgb(
+                    std::ptr::null(),
+                    0,
+                    rgb_oversized.as_mut_ptr().add(1),
+                    RGB_LEN + 1,
+                    W,
+                    H,
+                ),
+                1
+            );
+            assert_eq!(rgb_oversized[0], CANARY);
+            assert_eq!(rgb_oversized[RGB_LEN + 1], CANARY);
+            assert_eq!(rgb_oversized[RGB_LEN + 2], CANARY);
+
+            let mut rgb_short = [CANARY; RGB_LEN + 2];
+            assert_eq!(
+                xyg_rasterize_rgb(
+                    std::ptr::null(),
+                    0,
+                    rgb_short.as_mut_ptr().add(1),
+                    RGB_LEN - 1,
+                    W,
+                    H,
+                ),
+                0
+            );
+            assert!(rgb_short.iter().all(|&byte| byte == CANARY));
+
+            let mut data_short = [CANARY; RGBA_LEN + 2];
+            assert_eq!(
+                xyg_rasterize_data(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    data_short.as_mut_ptr().add(1),
+                    RGBA_LEN - 1,
+                    W,
+                    H,
+                ),
+                0
+            );
+            assert!(data_short.iter().all(|&byte| byte == CANARY));
+
+            for capacity in [RGBA_LEN, RGBA_LEN + 1] {
+                let mut data = [CANARY; RGBA_LEN + 3];
+                assert_eq!(
+                    xyg_rasterize_data(
+                        std::ptr::null(),
+                        0,
+                        std::ptr::null(),
+                        0,
+                        data.as_mut_ptr().add(1),
+                        capacity,
+                        W,
+                        H,
+                    ),
+                    1
+                );
+                assert_eq!(data[0], CANARY);
+                assert_eq!(data[RGBA_LEN + 1], CANARY);
+                assert_eq!(data[RGBA_LEN + 2], CANARY);
+            }
+
+            let mut spans_short = [CANARY; RGBA_LEN + 2];
+            assert_eq!(
+                xyg_rasterize_spans(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    spans_short.as_mut_ptr().add(1),
+                    RGBA_LEN - 1,
+                    W,
+                    H,
+                ),
+                0
+            );
+            assert!(spans_short.iter().all(|&byte| byte == CANARY));
+
+            for capacity in [RGBA_LEN, RGBA_LEN + 1] {
+                let mut spans = [CANARY; RGBA_LEN + 3];
+                assert_eq!(
+                    xyg_rasterize_spans(
+                        std::ptr::null(),
+                        0,
+                        std::ptr::null(),
+                        std::ptr::null(),
+                        0,
+                        spans.as_mut_ptr().add(1),
+                        capacity,
+                        W,
+                        H,
+                    ),
+                    1
+                );
+                assert_eq!(spans[0], CANARY);
+                assert_eq!(spans[RGBA_LEN + 1], CANARY);
+                assert_eq!(spans[RGBA_LEN + 2], CANARY);
+            }
+
+            assert_eq!(
+                xyg_rasterize(std::ptr::null(), 0, std::ptr::null_mut(), RGBA_LEN, W, H),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_rgb(std::ptr::null(), 0, std::ptr::null_mut(), RGB_LEN, W, H),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_data(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null_mut(),
+                    RGBA_LEN,
+                    W,
+                    H,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_spans(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null_mut(),
+                    RGBA_LEN,
+                    W,
+                    H,
+                ),
+                0
+            );
+
+            let mut byte = CANARY;
+            assert_eq!(xyg_rasterize(std::ptr::null(), 0, &mut byte, 1, 0, H), 0);
+            assert_eq!(
+                xyg_rasterize_rgb(std::ptr::null(), 0, &mut byte, 1, W, 0),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_data(std::ptr::null(), 0, std::ptr::null(), 0, &mut byte, 1, 0, H,),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_spans(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    1,
+                    W,
+                    0,
+                ),
+                0
+            );
+
+            assert_eq!(
+                xyg_rasterize(std::ptr::null(), 0, &mut byte, usize::MAX, huge, 2),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_rgb(std::ptr::null(), 0, &mut byte, usize::MAX, huge, 2),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_data(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    usize::MAX,
+                    huge,
+                    2,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_rasterize_spans(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    usize::MAX,
+                    huge,
+                    2,
+                ),
+                0
+            );
+            assert_eq!(byte, CANARY);
+
+            for width in [rgba_channel_overflow, rgba_slice_too_large] {
+                assert_eq!(
+                    xyg_rasterize(std::ptr::null(), 0, &mut byte, usize::MAX, width, 1),
+                    0
+                );
+                assert_eq!(
+                    xyg_rasterize_data(
+                        std::ptr::null(),
+                        0,
+                        std::ptr::null(),
+                        0,
+                        &mut byte,
+                        usize::MAX,
+                        width,
+                        1,
+                    ),
+                    0
+                );
+                assert_eq!(
+                    xyg_rasterize_spans(
+                        std::ptr::null(),
+                        0,
+                        std::ptr::null(),
+                        std::ptr::null(),
+                        0,
+                        &mut byte,
+                        usize::MAX,
+                        width,
+                        1,
+                    ),
+                    0
+                );
+            }
+            for width in [rgb_channel_overflow, rgb_slice_too_large] {
+                assert_eq!(
+                    xyg_rasterize_rgb(std::ptr::null(), 0, &mut byte, usize::MAX, width, 1,),
+                    0
+                );
+            }
+            let impossible_encoded_capacity = isize::MAX as usize + 1;
+            assert_eq!(
+                xyg_rasterize_png(
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    impossible_encoded_capacity,
+                    1,
+                    1,
+                ),
+                usize::MAX
+            );
+            assert_eq!(
+                xyg_rasterize_png_data(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    impossible_encoded_capacity,
+                    1,
+                    1,
+                ),
+                usize::MAX
+            );
+            assert_eq!(
+                xyg_rasterize_png_spans(
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    &mut byte,
+                    impossible_encoded_capacity,
+                    1,
+                    1,
+                ),
+                usize::MAX
+            );
+            assert_eq!(byte, CANARY);
+        }
+    }
+
+    #[test]
+    fn rgba_grid_abis_reject_short_capacity_without_writing() {
+        const W: usize = 2;
+        const H: usize = 2;
+        const CELLS: usize = W * H;
+        const RGBA_LEN: usize = CELLS * 4;
+        const CANARY: u8 = 0xa5;
+        let raw = [0.0f64; CELLS];
+        let encoded = [0u8; CELLS];
+        let stops = [0u8, 0, 0, 255, 255, 255];
+
+        unsafe {
+            let mut guarded = [CANARY; RGBA_LEN + 2];
+            let out = guarded.as_mut_ptr().add(1);
+            assert_eq!(
+                xyg_bin_2d_mean_color(
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    W,
+                    H,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_colormap_rgba(
+                    raw.as_ptr(),
+                    W,
+                    H,
+                    stops.as_ptr(),
+                    2,
+                    255,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_colormap_rgba_canonical(
+                    raw.as_ptr(),
+                    W,
+                    H,
+                    0.0,
+                    1.0,
+                    stops.as_ptr(),
+                    2,
+                    255,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_heatmap_rgba(
+                    raw.as_ptr(),
+                    W,
+                    H,
+                    stops.as_ptr(),
+                    2,
+                    255,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_density_rgba(
+                    encoded.as_ptr(),
+                    W,
+                    H,
+                    1.0,
+                    stops.as_ptr(),
+                    2,
+                    1.0,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert_eq!(
+                xyg_density_rgba_linear(
+                    raw.as_ptr(),
+                    W,
+                    H,
+                    1.0,
+                    stops.as_ptr(),
+                    2,
+                    1.0,
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                0
+            );
+            assert!(guarded.iter().all(|&byte| byte == CANARY));
+
+            let mut counts = [0.0f32; CELLS];
+            assert_eq!(
+                xyg_pyramid_compose_color(
+                    0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    W,
+                    H,
+                    1,
+                    counts.as_mut_ptr(),
+                    counts.len(),
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                -1
+            );
+            assert_eq!(counts, [0.0; CELLS]);
+            assert!(guarded.iter().all(|&byte| byte == CANARY));
+
+            #[cfg(not(target_os = "emscripten"))]
+            assert_eq!(
+                xyg_tile_store_compose_color(
+                    0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    W,
+                    H,
+                    1,
+                    counts.as_mut_ptr(),
+                    counts.len(),
+                    out,
+                    RGBA_LEN - 1,
+                ),
+                -1
+            );
+            assert_eq!(counts, [0.0; CELLS]);
+            assert!(guarded.iter().all(|&byte| byte == CANARY));
+        }
+    }
+
+    #[test]
     fn colormap_stops_resolves_names_and_reversal() {
         let mut out = [0u8; 768];
         let n = unsafe {
@@ -25381,6 +25974,7 @@ mod tests {
                 2,
                 0.85,
                 rgba.as_mut_ptr(),
+                rgba.len(),
             )
         };
         assert_eq!(ok, 1);

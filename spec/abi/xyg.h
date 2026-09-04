@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 358
-#define XYG_ABI_SIGNATURE_SHA256 "587dc970714d5d9ea5fa60b58bea4f6547439e03fd05cec633e51a72f374a8ed"
+#define XYG_ABI_VERSION 359
+#define XYG_ABI_SIGNATURE_SHA256 "afd9781af88531ae7ec157cc0889c018ccd62443584aad985b22c655fa5a1807"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +28,8 @@ int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values,
 int32_t xyg_bin_2d(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out);
 int32_t xyg_bin_2d_f32(const float * x, const float * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out);
 size_t xyg_bin_2d_indices(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * grid, uint32_t * idx);
-int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint8_t * out);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint8_t * out, size_t out_capacity);
 size_t xyg_bin_2d_sample_range(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, uint64_t threshold, float * grid, uint32_t * out, size_t capacity);
 size_t xyg_bin_2d_stratified_sample_range_u8_counted(const double * x, const double * y, const uint8_t * groups, size_t len, const uint64_t * counts, size_t n_groups, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, double fraction, uint64_t min_count, float * grid, uint32_t * out, size_t capacity);
 size_t xyg_binned_ecdf(const double * values, size_t len, size_t n_bins, double lo, double hi, int32_t use_range, double * out_x, double * out_cumulative, size_t capacity);
@@ -57,8 +58,10 @@ int32_t xyg_colormap_is_builtin(const uint8_t * name, size_t name_len);
 int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out);
 int32_t xyg_colormap_lut_rgba8(const uint8_t * name, size_t name_len, const uint8_t * custom_stops, size_t custom_stop_count, size_t n_texels, uint8_t * out_rgba, size_t out_cap);
 int32_t xyg_colormap_resolved_stops_admit(const uint8_t * stops, size_t stop_count);
-int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
-int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity);
 uint32_t xyg_colormap_stops(const uint8_t * name, size_t name_len, uint8_t * out, size_t cap);
 size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom);
 size_t xyg_compat_combine_plot(double width, double height, const double * authored_padding, double title_room, double x_top_room, double x_bottom_room, double x_measured_bottom, uint32_t colorbar_kind, int32_t colorbar_has_label, int32_t colorbar_pad_zero, int32_t has_right_y, double y_left_room, double edge_left, double edge_right, const double * x_rooms_final, int32_t polar, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding_flag, int32_t y_titled, int32_t keeps_bottom, double * out);
@@ -97,8 +100,10 @@ size_t xyg_density_overlay_omitted_wire(uint32_t overlay_omitted, int32_t point_
 int32_t xyg_density_overlay_opacity(double authored, double * out);
 size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out);
 int32_t xyg_density_reduction_kind(const uint8_t * binning, size_t binning_len);
-int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
-int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out, size_t out_capacity);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out, size_t out_capacity);
 int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts);
 int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len);
 int32_t xyg_density_wasm_density_wire_kind(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier);
@@ -154,7 +159,8 @@ int32_t xyg_graph_semantic_legend(uint32_t version, uint32_t theme, uint64_t n, 
 int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi);
 int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out);
 int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out);
-int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity);
 size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy);
 size_t xyg_hexbin_groups(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, double * out_cx, double * out_cy, double * out_counts, uint32_t * out_starts, uint32_t * out_lens, size_t cell_capacity, uint32_t * out_indices, size_t index_capacity, size_t * out_n_indices, double * out_dx, double * out_dy);
 int32_t xyg_hexbin_ingress(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t * out_grid_w, size_t * out_grid_h);
@@ -244,7 +250,9 @@ uint64_t xyg_pyramid_build(const double * x, const double * y, size_t len, doubl
 uint64_t xyg_pyramid_build_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, uint32_t base_dim);
 uint64_t xyg_pyramid_build_from_stream(uint64_t x_handle, uint64_t y_handle, double x0, double x1, double y0, double y1, uint32_t base_dim);
 int32_t xyg_pyramid_compose(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out);
-int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba);
+/* Buffer contract: out: out_capacity >= checked(w * h) elements and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns -1 before output access; success returns nonnegative_level. */
+/* Buffer contract: out_rgba: out_rgba_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns -1 before output access; success returns nonnegative_level. */
+int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, size_t out_capacity, uint8_t * out_rgba, size_t out_rgba_capacity);
 int32_t xyg_pyramid_count(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, double * out_count);
 int32_t xyg_pyramid_free(uint64_t handle);
 uint64_t xyg_pyramid_spill(uint64_t handle);
@@ -253,13 +261,20 @@ size_t xyg_quantiles(const double * data, size_t len, const double * probs, size
 int32_t xyg_quantize_unit_u8(const double * values, size_t values_len, double lo, double hi, uint8_t * out);
 size_t xyg_range_indices(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out);
 size_t xyg_range_indices_rows(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out);
-int32_t xyg_rasterize(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h);
-int32_t xyg_rasterize_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t w, size_t h);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_rasterize(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_rasterize_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+/* Buffer contract: out: out_capacity must be 1..=isize::MAX bytes; null output, zero capacity, or impossible slice size returns usize::MAX before output access; success returns encoded_byte_count. */
 size_t xyg_rasterize_png(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+/* Buffer contract: out: out_capacity must be 1..=isize::MAX bytes; null output, zero capacity, or impossible slice size returns usize::MAX before output access; success returns encoded_byte_count. */
 size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+/* Buffer contract: out: out_capacity must be 1..=isize::MAX bytes; null output, zero capacity, or impossible slice size returns usize::MAX before output access; success returns encoded_byte_count. */
 size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h);
-int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h);
-int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h);
+/* Buffer contract: out: out_capacity >= checked(w * h * 3) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
+/* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
+int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 int32_t xyg_real_numeric_dtype_admit(uint8_t dtype_kind);
 uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n);
 size_t xyg_recut_polar_plot(const double * in_plot, double width, double height, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding, int32_t y_titled, int32_t keeps_bottom, double * out_plot);
@@ -464,7 +479,9 @@ size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, 
 int32_t xyg_tile_budget_set(uint64_t bytes);
 int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len);
 int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out);
-int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba);
+/* Buffer contract: out: out_capacity >= checked(w * h) elements and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns -1 before output access; success returns nonnegative_level. */
+/* Buffer contract: out_rgba: out_rgba_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns -1 before output access; success returns nonnegative_level. */
+int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, size_t out_capacity, uint8_t * out_rgba, size_t out_rgba_capacity);
 int32_t xyg_tile_store_fetch(uint64_t store, uint32_t level, uint32_t tx, uint32_t ty, uint32_t * out_counts, uint16_t * out_color);
 int32_t xyg_tile_store_free(uint64_t store);
 int32_t xyg_tile_store_stats(uint64_t store, uint64_t * out);

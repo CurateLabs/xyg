@@ -27,7 +27,8 @@ This file remains a stable in-repo pointer so specs can cite a path even if
 GitHub issue numbers move; prefer linking `#855` / child `#N` in commits and PRs.
 
 Release-train failures found after this review are owned by Stage 0 tracker
-[#862](https://github.com/CurateLabs/xyg/issues/862), children #863–#867, with
-the executable close matrix in
+[#862](https://github.com/CurateLabs/xyg/issues/862), children #863–#867 plus
+later findings [#876](https://github.com/CurateLabs/xyg/issues/876) and
+[#877](https://github.com/CurateLabs/xyg/issues/877), with the executable close matrix in
 [`m2-stage0-recovery.md`](../../process/m2-stage0-recovery.md). Closing #855
 does not bypass that stop-line gate.

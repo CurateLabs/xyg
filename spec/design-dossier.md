@@ -601,6 +601,20 @@ F3, still pending (above).
   ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
   ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
   ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
+  ABI 359 makes every caller-owned 2-D RGB/RGBA output explicitly
+  capacity-aware: the four display-list framebuffer consumers; mean-color
+  binning; normalized/canonical colormap, heatmap, and log/linear density image
+  materializers; and the in-memory/tile-store colored compose pairs. The ABI
+  receives each output's actual capacity, computes `w*h*channels` with checked
+  arithmetic, rejects totals above Rust's `isize::MAX` slice limit, and returns
+  the symbol's stable error status before touching any output on zero
+  dimensions, overflow, null output, or short capacity. Colored compose also
+  validates its `w*h` f32 count plane before constructing either output slice.
+  The three fused PNG consumers keep their existing encoded-output capacity
+  signatures but likewise reject capacities outside `1..=isize::MAX` before
+  constructing the destination byte slice.
+  The ABI-version break removes the old capacity-blind signatures; generated
+  Python and Node declarations cannot call them against a mismatched core.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share

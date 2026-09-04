@@ -446,7 +446,16 @@ complete public contract. The exception still requires primary axes on their
 default sides and the bounded host-input and expanded-record budgets. This is a
 semantic widening of the existing ABI 105 support predicate; its C signature
 and XYEP v1 envelope are unchanged. ABI 358 adds the opaque-RGB display-list
-consumer used by the optimized PNG route. For PNG,
+consumer used by the optimized PNG route. ABI 359 makes that RGB consumer and
+the existing RGBA/data/span framebuffer consumers capacity-aware. The same ABI
+break covers all 2-D RGBA materializers used by public static and density
+paths—mean-color, colormap/canonical, heatmap, density/linear, and colored
+in-memory/tile-store compose. Hosts pass actual element/byte capacities; Rust
+rejects null, short, zero-sized, overflowing, and greater-than-`isize::MAX`
+buffers before constructing either output slice, and no legacy capacity-blind
+signature remains. The fused PNG/data/span consumers retain their existing
+encoded-output capacity signature and additionally reject capacities above
+`isize::MAX` before output access. For PNG,
 `optimize=True` consumes Rust Scene raster commands and applies only the
 Rust indexed/deflate encoder selection; it does not return to Python geometry
 or paint policy, so optimized and default output share identical pixels.

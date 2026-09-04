@@ -1,9 +1,9 @@
 {
-  "abi_version": 358,
+  "abi_version": 359,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "587dc970714d5d9ea5fa60b58bea4f6547439e03fd05cec633e51a72f374a8ed",
+  "signature_sha256": "afd9781af88531ae7ec157cc0889c018ccd62443584aad985b22c655fa5a1807",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -2476,7 +2476,7 @@
     {
       "name": "xyg_bin_2d_mean_color",
       "node_name": "xyBin2dMeanColor",
-      "nargs": 14,
+      "nargs": 15,
       "arguments": [
         {
           "name": "x",
@@ -2691,7 +2691,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -2707,7 +2753,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint8_t * out)"
+      "c_signature": "int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_bin_2d_sample_range",
@@ -6189,7 +6235,7 @@
     {
       "name": "xyg_colormap_rgba",
       "node_name": "xyColormapRgba",
-      "nargs": 7,
+      "nargs": 8,
       "arguments": [
         {
           "name": "raw",
@@ -6296,7 +6342,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -6312,12 +6404,12 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)"
+      "c_signature": "int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_colormap_rgba_canonical",
       "node_name": "xyColormapRgbaCanonical",
-      "nargs": 9,
+      "nargs": 10,
       "arguments": [
         {
           "name": "raw",
@@ -6454,7 +6546,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -6470,7 +6608,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)"
+      "c_signature": "int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_colormap_stops",
@@ -10985,7 +11123,7 @@
     {
       "name": "xyg_density_rgba",
       "node_name": "xyDensityRgba",
-      "nargs": 8,
+      "nargs": 9,
       "arguments": [
         {
           "name": "encoded",
@@ -11107,7 +11245,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -11123,12 +11307,12 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)"
+      "c_signature": "int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_density_rgba_linear",
       "node_name": "xyDensityRgbaLinear",
-      "nargs": 8,
+      "nargs": 9,
       "arguments": [
         {
           "name": "counts",
@@ -11250,7 +11434,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -11266,7 +11496,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)"
+      "c_signature": "int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_density_trace_color_classify",
@@ -17674,7 +17904,7 @@
     {
       "name": "xyg_heatmap_rgba",
       "node_name": "xyHeatmapRgba",
-      "nargs": 7,
+      "nargs": 8,
       "arguments": [
         {
           "name": "raw",
@@ -17781,7 +18011,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -17797,7 +18073,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)"
+      "c_signature": "int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity)"
     },
     {
       "name": "xyg_hexbin",
@@ -33917,7 +34193,7 @@
     {
       "name": "xyg_pyramid_compose_color",
       "node_name": "xyPyramidComposeColor",
-      "nargs": 10,
+      "nargs": 12,
       "arguments": [
         {
           "name": "handle",
@@ -34052,7 +34328,50 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed f32 count-grid storage; must be non-null and contain at least w * h elements; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns -1 before any write",
+            "length_contract": {
+              "unit": "elements",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "f32 count grid",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 1
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": "nonnegative_level",
+              "failure_status": -1
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -34068,7 +34387,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns -1 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_rgba_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": "nonnegative_level",
+              "failure_status": -1
+            }
+          }
+        },
+        {
+          "name": "out_rgba_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -34084,7 +34449,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba)"
+      "c_signature": "int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, size_t out_capacity, uint8_t * out_rgba, size_t out_rgba_capacity)"
     },
     {
       "name": "xyg_pyramid_count",
@@ -35037,7 +35402,7 @@
     {
       "name": "xyg_rasterize",
       "node_name": "xyRasterize",
-      "nargs": 5,
+      "nargs": 6,
       "arguments": [
         {
           "name": "cmd",
@@ -35083,7 +35448,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -35129,12 +35540,12 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_rasterize(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h)"
+      "c_signature": "int32_t xyg_rasterize(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)"
     },
     {
       "name": "xyg_rasterize_data",
       "node_name": "xyRasterizeData",
-      "nargs": 7,
+      "nargs": 8,
       "arguments": [
         {
           "name": "cmd",
@@ -35211,7 +35622,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -35257,7 +35714,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_rasterize_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t w, size_t h)"
+      "c_signature": "int32_t xyg_rasterize_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)"
     },
     {
       "name": "xyg_rasterize_png",
@@ -35308,7 +35765,20 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable encoded PNG byte storage; must be non-null; out_capacity is measured in bytes and must be in 1..=isize::MAX; zero or impossible Rust slice capacity returns usize::MAX before output access",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "minimum_capacity": 1,
+              "maximum_total_bytes": "isize::MAX",
+              "payload_format": "PNG byte stream",
+              "layout": "encoded",
+              "null_output": "reject_before_access",
+              "zero_capacity": "reject_before_access",
+              "oversized_capacity": "reject_before_access",
+              "success_status": "encoded_byte_count",
+              "failure_status": "usize::MAX"
+            }
           }
         },
         {
@@ -35451,7 +35921,20 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable encoded PNG byte storage; must be non-null; out_capacity is measured in bytes and must be in 1..=isize::MAX; zero or impossible Rust slice capacity returns usize::MAX before output access",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "minimum_capacity": 1,
+              "maximum_total_bytes": "isize::MAX",
+              "payload_format": "PNG byte stream",
+              "layout": "encoded",
+              "null_output": "reject_before_access",
+              "zero_capacity": "reject_before_access",
+              "oversized_capacity": "reject_before_access",
+              "success_status": "encoded_byte_count",
+              "failure_status": "usize::MAX"
+            }
           }
         },
         {
@@ -35610,7 +36093,20 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable encoded PNG byte storage; must be non-null; out_capacity is measured in bytes and must be in 1..=isize::MAX; zero or impossible Rust slice capacity returns usize::MAX before output access",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "minimum_capacity": 1,
+              "maximum_total_bytes": "isize::MAX",
+              "payload_format": "PNG byte stream",
+              "layout": "encoded",
+              "null_output": "reject_before_access",
+              "zero_capacity": "reject_before_access",
+              "oversized_capacity": "reject_before_access",
+              "success_status": "encoded_byte_count",
+              "failure_status": "usize::MAX"
+            }
           }
         },
         {
@@ -35676,7 +36172,7 @@
     {
       "name": "xyg_rasterize_rgb",
       "node_name": "xyRasterizeRgb",
-      "nargs": 5,
+      "nargs": 6,
       "arguments": [
         {
           "name": "cmd",
@@ -35722,7 +36218,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; must be non-null and contain at least 3 * w * h bytes in packed RGB8 row-major order with a 3 * w row stride; w and h must be non-zero; checked-size overflow returns 0"
+            "buffer_contract": "caller-owned writable packed RGB8 row-major storage; must be non-null and contain at least 3 * w * h bytes with a 3 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 3
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "RGB8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 3
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -35768,12 +36310,12 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t w, size_t h)"
+      "c_signature": "int32_t xyg_rasterize_rgb(const uint8_t * cmd, size_t cmd_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)"
     },
     {
       "name": "xyg_rasterize_spans",
       "node_name": "xyRasterizeSpans",
-      "nargs": 8,
+      "nargs": 9,
       "arguments": [
         {
           "name": "cmd",
@@ -35866,7 +36408,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns 0 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": 1,
+              "failure_status": 0
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -35912,7 +36500,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)"
+      "c_signature": "int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h)"
     },
     {
       "name": "xyg_real_numeric_dtype_admit",
@@ -62698,7 +63286,7 @@
     {
       "name": "xyg_tile_store_compose_color",
       "node_name": "xyTileStoreComposeColor",
-      "nargs": 10,
+      "nargs": 12,
       "arguments": [
         {
           "name": "store",
@@ -62833,7 +63421,50 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed f32 count-grid storage; must be non-null and contain at least w * h elements; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns -1 before any write",
+            "length_contract": {
+              "unit": "elements",
+              "capacity_argument": "out_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "f32 count grid",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 1
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": "nonnegative_level",
+              "failure_status": -1
+            }
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         },
         {
@@ -62849,7 +63480,53 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable packed straight-alpha RGBA8 row-major storage; must be non-null and contain at least 4 * w * h bytes with a 4 * w row stride; w and h must be non-zero; total byte size must not exceed isize::MAX; checked-size overflow or insufficient capacity returns -1 before any write",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_rgba_capacity",
+              "required_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "argument": "h"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "maximum_total_bytes": "isize::MAX",
+              "pixel_format": "straight-alpha RGBA8",
+              "layout": "packed_row_major",
+              "row_stride_checked_product": [
+                {
+                  "argument": "w"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "null_output": "reject_before_write",
+              "zero_dimensions": "reject_before_write",
+              "short_capacity": "reject_before_write",
+              "success_status": "nonnegative_level",
+              "failure_status": -1
+            }
+          }
+        },
+        {
+          "name": "out_rgba_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
           }
         }
       ],
@@ -62865,7 +63542,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba)"
+      "c_signature": "int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, size_t out_capacity, uint8_t * out_rgba, size_t out_rgba_capacity)"
     },
     {
       "name": "xyg_tile_store_fetch",
