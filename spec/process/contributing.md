@@ -339,7 +339,8 @@ gh workflow run final-coderabbit.yml --ref main \
   -f pull_request=PR_NUMBER -f head_sha="$head"
 ```
 
-The workflow rechecks the head before commenting `@coderabbitai review` and
-fails closed on stale heads, feature-ref dispatches, pending/failing gates,
+The workflow rechecks the head and requires the three baseline checks plus the
+named **Release surfaces** aggregate before commenting `@coderabbitai review`.
+It fails closed on stale heads, feature-ref dispatches, pending/failing gates,
 merge conflicts, or unresolved threads. CodeRabbit itself is not a prerequisite
 for requesting that final review, avoiding a circular gate.

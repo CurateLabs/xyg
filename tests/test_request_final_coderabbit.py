@@ -9,6 +9,7 @@ REQUIRED = (
     "Test (Rust + Python + JS)",
     "Direct browser Rust/WASM foundation (wasm32-unknown-unknown)",
     "Python 3.11 floor",
+    "Release surfaces",
 )
 
 
@@ -39,6 +40,17 @@ def test_final_candidate_accepts_protection_blocked_green_head() -> None:
         validate_candidate(pull, checks, statuses, threads, expected_head=SHA, current_run_id=99)
         == SHA
     )
+
+
+def test_final_candidate_rejects_missing_release_surface_aggregate() -> None:
+    pull, checks, statuses, threads = _candidate()
+    checks["check_runs"] = [
+        check for check in checks["check_runs"] if check["name"] != "Release surfaces"
+    ]
+    checks["total_count"] -= 1
+
+    with pytest.raises(ValueError, match="Release surfaces"):
+        validate_candidate(pull, checks, statuses, threads, expected_head=SHA, current_run_id=99)
 
 
 def test_exact_head_request_marker_is_idempotent() -> None:

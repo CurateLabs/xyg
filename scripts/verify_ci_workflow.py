@@ -1720,6 +1720,8 @@ def validate_final_review_policy(
             "final CodeRabbit request must be exact-head idempotent via trusted comments: "
             f"{missing_idempotency}"
         )
+    if '"Release surfaces"' not in script:
+        errors.append("final CodeRabbit request must require the Release surfaces aggregate")
     validation_index = script.find("head = validate_candidate(")
     refresh_index = script.find('refreshed = _request(f"{api}/pulls/{number}"')
     idempotency_index = script.find("if has_existing_request(comments, head):")
