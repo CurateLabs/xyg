@@ -9284,7 +9284,9 @@ pub unsafe extern "C" fn xyg_rasterize(
 ///
 /// # Safety
 /// `cmd` must point to `cmd_len` readable bytes (or be null iff `cmd_len == 0`);
-/// `out` must point to `w*h*3` writable bytes.
+/// `out` must be non-null and point to at least `3 * w * h` writable bytes in
+/// packed RGB8 row-major order with a `3 * w` row stride. `w` and `h` must be
+/// non-zero; checked-size overflow returns `0`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_rasterize_rgb(
     cmd: *const u8,

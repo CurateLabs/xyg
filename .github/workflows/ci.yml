@@ -34,8 +34,17 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "required=true" >> "$GITHUB_OUTPUT"
           else
-            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" | \
-              python3 scripts/classify_release_surface.py --github-output "$GITHUB_OUTPUT"
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            classifier="$RUNNER_TEMP/classify_release_surface.py"
+            changed="$RUNNER_TEMP/release-surface-paths.txt"
+            git diff --name-only "$base" "$head" > "$changed"
+            if git show "$base:scripts/classify_release_surface.py" > "$classifier"; then
+              python3 "$classifier" --github-output "$GITHUB_OUTPUT" < "$changed"
+            else
+              # First introduction of the gate has no trusted base classifier.
+              echo "required=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
   matplotlib_reference:

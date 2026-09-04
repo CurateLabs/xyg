@@ -271,9 +271,16 @@ def _require_module_surface(name: str, data: bytes, required: set[str]) -> None:
         raise AssertionError(f"{name} missing installed surface: {missing}")
 
 
-def verify_installed_export_surface(python_executable: Path) -> None:
+def verify_installed_export_surface(python_executable: Path, expected_version: str) -> None:
     """Exercise the installed native wheel's public Chart and Figure exports."""
     probe = r"""
+import importlib.metadata
+import sys
+
+expected_version = sys.argv[1]
+actual_version = importlib.metadata.version("xyg")
+assert actual_version == expected_version, (actual_version, expected_version)
+
 import xyg
 from xyg._figure import Figure
 from xyg.components import Chart
@@ -294,7 +301,7 @@ for owner in (chart, figure):
     assert png.startswith(b"\x89PNG\r\n\x1a\n")
 """
     proc = subprocess.run(
-        [str(python_executable), "-c", probe],
+        [str(python_executable), "-I", "-c", probe, expected_version],
         check=False,
         capture_output=True,
         text=True,
@@ -511,7 +518,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         if args.installed_python is not None:
             if expect_native is not True:
                 raise AssertionError("--installed-python requires --expect-native")
-            verify_installed_export_surface(args.installed_python)
+            verify_installed_export_surface(args.installed_python, _filename_version(args.wheel))
     except (AssertionError, KeyError, zipfile.BadZipFile) as e:
         print(f"wheel verification failed for {args.wheel}: {e}", file=sys.stderr)
         return 1

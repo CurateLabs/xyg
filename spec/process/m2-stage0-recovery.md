@@ -11,7 +11,7 @@ matrix three consecutive times.
 
 | Issue | Release surface | Required product contract |
 | --- | --- | --- |
-| #863 | wheel, sdist, no-Rust installation | `verify_wheel.py` checks the current split Figure/export modules structurally, then a freshly installed native wheel must execute public `Chart` and internal `Figure` HTML/SVG/PNG exports. Missing methods remain negative failures. |
+| #863 | wheel, sdist, no-Rust installation | `verify_wheel.py` checks the current split Figure/export modules structurally, then a freshly installed native wheel must execute public `Chart` and internal `Figure` HTML/SVG/PNG exports from an isolated interpreter whose installed distribution version matches the wheel filename. Missing methods and stale installations remain negative failures. |
 | #864 | density first paint | Ordinary packed and split Python/Node payloads contain only a screen-bounded u8 grid and offset-f32 sample geometry. Canonical f64 remains host-side. The separately measured replay journey must opt in with `wasm_source=True` / `wasmSource: true`. CodSpeed reports named grid, sample, canonical-f64, other, and total byte classes. The live cross-host differential compares the complete Rust emission plan at 1M and 100M rows, and the strict-CSP direct-browser foundation queries the same plan through WASM ABI 24: fixed grid/sample ceilings, tier/pyramid/WASM decisions, and zero canonical-f64 shipment must agree without allocating a data-sized fixture. |
 | #865 | Node authored Scene | Node mirrors Python's bounded ABI 323 density observation marshal. The four-tier 100/10k/100k/1M authored workload explicitly selects the direct tier with the shared density tri-state, produces byte-identical Scenes, and is consumed by Rust SVG, raster-command, and browser-painter paths before merge. |
 | #866 | CodSpeed and dependency audit | Benchmarks construct and assert their routing boundary without importing movable private constants. A structural test rejects private module-constant references. Root npm dependencies are build/test-only: the production audit (`npm audit --omit=dev`) is zero, the prior high report therefore has no shipped-runtime exposure, and the generated browser client remains runtime-dependency-free. Full development audit endpoint availability does not weaken correctness, tier, payload, or buffer-shape assertions. |
@@ -19,12 +19,18 @@ matrix three consecutive times.
 
 ## Release-surface classifier
 
-`scripts/classify_release_surface.py` is deliberately conservative. Rust,
+`scripts/classify_release_surface.py` is deliberately conservative. For pull
+requests, CI feeds the base/head path diff to the classifier loaded from the
+trusted base revision; if that revision predates the classifier, the complete
+matrix is required. Rust,
 Python, Node, browser, scripts, tests, benchmarks/CodSpeed configuration,
 native and WASM ABI declarations, build hooks, package manifests, and workflow
 changes require the complete release matrix. Both ABI implementations and
 their `spec/abi/` / `spec/wasm/` manifests are CODEOWNERS-protected, as are the
 classifier, aggregate verifier, workflow verifier, and CODEOWNERS file itself.
+The governance verifier evaluates the final matching CODEOWNERS rule for each
+protected probe and rejects comments, missing rules, or later ownerless
+overrides.
 Prose-only `docs/` and non-ABI `spec/` changes may skip the expensive artifact
 jobs, but the aggregate itself still runs and rejects failures. Classifier and
 aggregate behavior are executable contracts in

@@ -35722,7 +35722,7 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable storage; must be non-null and contain at least 3 * w * h bytes in packed RGB8 row-major order with a 3 * w row stride; w and h must be non-zero; checked-size overflow returns 0"
           }
         },
         {

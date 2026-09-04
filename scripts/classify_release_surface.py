@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 RELEASE_PREFIXES = (
-    ".github/workflows/",
+    ".github/",
     ".codspeed/",
     "benchmarks/",
     "crates/",

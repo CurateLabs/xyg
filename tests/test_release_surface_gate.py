@@ -35,6 +35,7 @@ def test_release_classifier_covers_every_contract_family() -> None:
         "package.json",
         "pyproject.toml",
         ".github/workflows/ci.yml",
+        ".github/dependabot.yml",
     ):
         assert classify([path]), path
 
