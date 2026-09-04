@@ -2329,7 +2329,12 @@ stays at the host and is not part of the paint payload. The optional
 `wasm_source=True` / `wasmSource: true` replay journey is a separately measured,
 explicit exception. A direct-browser caller already owns its canonical typed
 source and stages bounded chunks into Rust/WASM without routing that source
-through a host paint payload.
+through a host paint payload. WASM ABI 24 exposes the allocation-free
+`xyg_wasm_density_first_paint_plan` diagnostic: for a source row count and
+bounded grid it returns the same Rust-owned tier, pyramid/WASM eligibility,
+sample/source-ship flags, and mark ceiling queried by the native hosts. The
+1M/100M browser gate therefore proves this policy directly without creating a
+data-sized JavaScript fixture.
 
 ## 30. Compatibility subset — v1 is a list, not an aspiration
 
