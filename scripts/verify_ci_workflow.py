@@ -1722,6 +1722,8 @@ def validate_final_review_policy(
         )
     if '"Release surfaces"' not in script:
         errors.append("final CodeRabbit request must require the Release surfaces aggregate")
+    if 'status.get("context") != "CodeRabbit"' not in script:
+        errors.append("final CodeRabbit request must not depend on its own status context")
     validation_index = script.find("head = validate_candidate(")
     refresh_index = script.find('refreshed = _request(f"{api}/pulls/{number}"')
     idempotency_index = script.find("if has_existing_request(comments, head):")

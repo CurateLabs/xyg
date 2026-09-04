@@ -115,7 +115,8 @@ def validate_candidate(
     bad_statuses = [
         status.get("context")
         for status in statuses["statuses"]
-        if not isinstance(status, dict) or status.get("state") != "success"
+        if not isinstance(status, dict)
+        or (status.get("context") != "CodeRabbit" and status.get("state") != "success")
     ]
     if bad_statuses:
         raise ValueError(f"commit statuses are not green: {bad_statuses}")
