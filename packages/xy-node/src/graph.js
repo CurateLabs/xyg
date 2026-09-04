@@ -23,7 +23,7 @@ import {
   graphVisualStates,
 } from "./abi.js";
 import { resolveColorChannel } from "./color.js";
-import { minMax } from "./encode.js";
+import { DEFAULT_MARK_COLOR, minMax } from "./encode.js";
 import { resolveSizeChannel } from "./marks/scatter.js";
 
 /** Default layout name — matches Python `_graph.DEFAULT_LAYOUT`. */
@@ -832,12 +832,12 @@ export function composeGraph(nodes, edges, opts = {}) {
       x: nodePositions.x,
       y: nodePositions.y,
       style: {
-        color: typeof nodeColor === "string" ? nodeColor : "#3987e5",
+        color: typeof nodeColor === "string" ? nodeColor : DEFAULT_MARK_COLOR,
         symbol: resolvedOpts.symbol ?? "circle",
         ...(resolvedOpts.style ?? {}),
       },
       ...(nodeColor != null && typeof nodeColor !== "string"
-        ? { color_ch: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
+        ? { color_ch: resolveColorChannel(nodeColor, nNodes, DEFAULT_MARK_COLOR) }
         : {}),
       size_ch,
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),

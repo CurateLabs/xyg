@@ -10,6 +10,8 @@ import {
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
   XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
   XYG_WASM_STATUS,
+  XYG_WASM_DEFAULT_PALETTE_ROWS,
+  XYG_WASM_DEFAULT_PALETTE_VERSION,
   type XygWasmExports,
 } from "./wasm_abi_generated";
 
@@ -29,6 +31,9 @@ function snapshot() {
   return {
     abiVersion: exports.xyg_wasm_abi_version() >>> 0,
     sceneVersion: exports.xyg_wasm_scene_version() >>> 0,
+    defaultPaletteVersion: exports.xyg_wasm_default_palette_version() >>> 0,
+    defaultPaletteRows: exports.xyg_wasm_default_palette_rows() >>> 0,
+    defaultPaletteFirstRgba8: exports.xyg_wasm_default_palette_rgba8(0) >>> 0,
     arenaBytes: exports.xyg_wasm_arena_len(handle) >>> 0,
     arenaHighWaterBytes: exports.xyg_wasm_arena_high_water(handle) >>> 0,
     memoryBytes, memoryHighWaterBytes: memoryBytes,
@@ -68,7 +73,9 @@ async function initialize(message: any) {
     const bound = bindXygWasmExports(await WebAssembly.instantiate(module, {}));
     const budget = Number(message.maxArenaBytes);
     if (bound.xyg_wasm_abi_version() !== Number(message.expectedAbiVersion)
-      || bound.xyg_wasm_scene_version() !== Number(message.expectedSceneVersion)) throw new Error("XYG WASM or canonical scene version is incompatible");
+      || bound.xyg_wasm_scene_version() !== Number(message.expectedSceneVersion)
+      || bound.xyg_wasm_default_palette_version() !== XYG_WASM_DEFAULT_PALETTE_VERSION
+      || bound.xyg_wasm_default_palette_rows() !== XYG_WASM_DEFAULT_PALETTE_ROWS) throw new Error("XYG WASM, canonical scene, or default palette contract is incompatible");
     if (!Number.isInteger(budget) || budget <= 0 || budget > bound.xyg_wasm_max_arena_bytes()) throw new Error("maxArenaBytes exceeds the Rust adapter bound");
     const created = bound.xyg_wasm_instance_new(budget) >>> 0;
     if (!created) throw new Error("XYG WASM instance budget is exhausted");

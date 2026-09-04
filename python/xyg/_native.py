@@ -9620,6 +9620,32 @@ def quantize_unit_u8(
     return out
 
 
+def default_palette_contract() -> tuple[int, tuple[str, ...], npt.NDArray[np.uint8]]:
+    """Versioned Rust-owned default palette text and RGBA8 rows (ABI 360)."""
+    version = int(_lib.xyg_default_palette_version())
+    rows = int(_lib.xyg_default_palette_rows())
+    text_need = int(_lib.xyg_default_palette_utf8(0, 0))
+    rgba_need = int(_lib.xyg_default_palette_rgba8(0, 0))
+    if rows <= 0 or text_need != rows * 7 or rgba_need != rows * 4:
+        raise RuntimeError("native default palette contract is malformed")
+    text = np.empty(text_need, dtype=np.uint8)
+    rgba = np.empty(rgba_need, dtype=np.uint8)
+    text_written = int(_lib.xyg_default_palette_utf8(_ptr_u8(text), text.size))
+    rgba_written = int(_lib.xyg_default_palette_rgba8(_ptr_u8(rgba), rgba.size))
+    if text_written != text_need or rgba_written != rgba_need:
+        raise RuntimeError("native default palette contract copy failed")
+    packed = bytes(text)
+    entries = tuple(packed[index * 7 : index * 7 + 7].decode("ascii") for index in range(rows))
+    if any(len(entry) != 7 or not entry.startswith("#") for entry in entries):
+        raise RuntimeError("native default palette text rows are malformed")
+    rgba_rows = rgba.reshape(rows, 4)
+    for index, entry in enumerate(entries):
+        expected = bytes.fromhex(entry[1:]) + b"\xff"
+        if bytes(rgba_rows[index]) != expected:
+            raise RuntimeError("native default palette text/RGBA rows disagree")
+    return version, entries, rgba_rows
+
+
 def palette_rows_rgba8(
     entries: Sequence[str],
     rows: int,

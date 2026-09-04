@@ -6,6 +6,7 @@
 import {
   asF64Array,
   argsortStable,
+  DEFAULT_MARK_COLOR,
   isSorted,
   minMax,
   payloadM4Indices,
@@ -99,7 +100,7 @@ export function m4DecimateLine(x, y, opts = {}) {
 export function composeLine(x, y, opts = {}) {
   const { x: xa, y: ya } = prepareLineSeries(x, y);
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     width: opts.width ?? 1.5,
     opacity: 1.0,
     ...(opts.style ?? {}),

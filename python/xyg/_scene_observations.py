@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 
 from . import _native, channels
+from .config import default_mark_color
 
 _SCENE_KIND_CLASS_HEXBIN = 1 << 5
 
@@ -108,7 +109,7 @@ def _trace_source_color_css(trace: Any) -> str:
     css = _channel_constant_css(getattr(trace, "color_ch", None))
     if css is not None:
         return css
-    return str((getattr(trace, "style", None) or {}).get("color") or "#3987e5")
+    return str((getattr(trace, "style", None) or {}).get("color") or default_mark_color())
 
 
 def _channel_end_rgba8(channel: Any, n: int, fallback: str) -> bytes | None:
@@ -165,7 +166,7 @@ def _item_apply_opacity(trace: Any, packed: bytes, n: int) -> bytes | None:
 
 
 def _item_fill_rgba8(trace: Any, n: int) -> bytes | None:
-    fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
+    fallback = str((getattr(trace, "style", None) or {}).get("color", default_mark_color()))
     channel = getattr(trace, "color_ch", None)
     packed = _channel_end_rgba8(channel, n, fallback)
     if packed is None and channel is not None and getattr(channel, "mode", None) == "continuous":
@@ -228,7 +229,7 @@ def _hexbin_packs_colormap_plane(trace: Any) -> bool:
 def _hexbin_cell_rgba8(trace: Any) -> bytes | None:
     """Pack one RGBA8 pixel per occupied hex cell."""
     n = _hexbin_count(trace)
-    fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
+    fallback = str((getattr(trace, "style", None) or {}).get("color", default_mark_color()))
     return _channel_end_rgba8(getattr(trace, "color_ch", None), n, fallback)
 
 
@@ -441,7 +442,7 @@ def _admitted_fill_gradient(trace: Any) -> dict[str, Any] | None:
     if fill is None or not _fill_is_gradient_authoring(fill):
         return None
     try:
-        mark_color = _constant_color(trace, "#3987e5")
+        mark_color = _constant_color(trace, default_mark_color())
     except UnsupportedSceneV3:
         return None
     return _admitted_fill_gradient_from_fill(fill, mark_color)

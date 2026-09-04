@@ -1,9 +1,9 @@
 {
-  "abi_version": 359,
+  "abi_version": 360,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "afd9781af88531ae7ec157cc0889c018ccd62443584aad985b22c655fa5a1807",
+  "signature_sha256": "9ab4cec3823938e163c1156677d8ceeac242cea52ab3c3e77be97642143a4827",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8775,6 +8775,182 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity)"
+    },
+    {
+      "name": "xyg_default_palette_rgba8",
+      "node_name": "xyDefaultPaletteRgba8",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "query-first caller-owned packed straight-alpha RGBA8 rows; out_cap is measured in bytes; null with zero capacity returns the required byte count, short capacity returns the required count without mutation, and null with nonzero capacity returns usize::MAX",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_cap",
+              "required_checked_product": [
+                {
+                  "symbol": "xyg_default_palette_rows"
+                },
+                {
+                  "constant": 4
+                }
+              ],
+              "payload_format": "packed straight-alpha RGBA8 rows",
+              "null_output_zero_capacity": "size_query",
+              "null_output_nonzero_capacity": "usize::MAX",
+              "short_capacity": "required_byte_count_without_write",
+              "success_status": "required_byte_count",
+              "failure_status": "usize::MAX"
+            }
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_default_palette_rgba8(uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_default_palette_rows",
+      "node_name": "xyDefaultPaletteRows",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_default_palette_rows()"
+    },
+    {
+      "name": "xyg_default_palette_utf8",
+      "node_name": "xyDefaultPaletteUtf8",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "query-first caller-owned concatenated fixed-width lowercase #rrggbb rows; out_cap is measured in bytes; null with zero capacity returns the required byte count, short capacity returns the required count without mutation, and null with nonzero capacity returns usize::MAX",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_cap",
+              "required_checked_product": [
+                {
+                  "symbol": "xyg_default_palette_rows"
+                },
+                {
+                  "constant": 7
+                }
+              ],
+              "payload_format": "concatenated fixed-width lowercase #rrggbb rows",
+              "null_output_zero_capacity": "size_query",
+              "null_output_nonzero_capacity": "usize::MAX",
+              "short_capacity": "required_byte_count_without_write",
+              "success_status": "required_byte_count",
+              "failure_status": "usize::MAX"
+            }
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_default_palette_utf8(uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_default_palette_version",
+      "node_name": "xyDefaultPaletteVersion",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "u32",
+        "c": "uint32_t",
+        "ctypes": "ctypes.c_uint32",
+        "koffi": "uint32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "uint32_t xyg_default_palette_version()"
     },
     {
       "name": "xyg_delaunay_triangles",

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 359
-#define XYG_ABI_SIGNATURE_SHA256 "afd9781af88531ae7ec157cc0889c018ccd62443584aad985b22c655fa5a1807"
+#define XYG_ABI_VERSION 360
+#define XYG_ABI_SIGNATURE_SHA256 "9ab4cec3823938e163c1156677d8ceeac242cea52ab3c3e77be97642143a4827"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +80,12 @@ int32_t xyg_css_check(uint32_t kind, const uint8_t * prop, size_t prop_len, cons
 int32_t xyg_css_color_rgba(const uint8_t * css, size_t len, float opacity, uint8_t * out_rgba);
 int32_t xyg_css_is_functional(const uint8_t * css, size_t len);
 size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity);
+/* Buffer contract: out: query-first packed straight-alpha RGBA8 rows; out_cap >= checked(xyg_default_palette_rows * 4) bytes; null with zero capacity queries the required count; short capacity returns that count without writing; null with nonzero capacity returns usize::MAX. */
+size_t xyg_default_palette_rgba8(uint8_t * out, size_t out_cap);
+size_t xyg_default_palette_rows();
+/* Buffer contract: out: query-first concatenated fixed-width lowercase #rrggbb rows; out_cap >= checked(xyg_default_palette_rows * 7) bytes; null with zero capacity queries the required count; short capacity returns that count without writing; null with nonzero capacity returns usize::MAX. */
+size_t xyg_default_palette_utf8(uint8_t * out, size_t out_cap);
+uint32_t xyg_default_palette_version();
 size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1);
 size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out);

@@ -36,6 +36,7 @@ css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
+default_palette_contract = _impl.default_palette_contract
 palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8
 colormap_is_builtin = _impl.colormap_is_builtin
@@ -400,6 +401,7 @@ __all__ = [
     "css_color_rgba",
     "css_is_functional",
     "curve_flatten",
+    "default_palette_contract",
     "delaunay_triangles",
     "density_bin_coord_endpoints",
     "density_bin_window",

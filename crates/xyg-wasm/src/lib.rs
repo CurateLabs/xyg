@@ -20,7 +20,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 24;
+pub const WASM_ABI_VERSION: u32 = 25;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -48,6 +48,28 @@ pub const DENSITY_FIRST_PAINT_ATTACH_SAMPLE: u32 = 16;
 pub const DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE: u32 = 32;
 /// Shift of the screen-bounded density mark count in the packed result.
 pub const DENSITY_FIRST_PAINT_MARKS_SHIFT: u32 = 8;
+
+/// Version of the shared Rust-engine default palette consumed by this module.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_default_palette_version() -> u32 {
+    xyg_engine::kernels::DEFAULT_PALETTE_VERSION
+}
+
+/// Number of rows in the shared Rust-engine default palette.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_default_palette_rows() -> u32 {
+    xyg_engine::kernels::DEFAULT_PALETTE.len() as u32
+}
+
+/// One straight-alpha RGBA8 row packed little-endian, or ``u32::MAX``.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_default_palette_rgba8(index: u32) -> u32 {
+    let rows = xyg_engine::kernels::default_palette_rgba8();
+    let Some(row) = rows.get(index as usize) else {
+        return u32::MAX;
+    };
+    u32::from_le_bytes(*row)
+}
 
 /// Resolve one atomic packed batch of viewport ticks. Tick request sequences
 /// are deliberately independent of long-running compile/aggregate scheduling.
@@ -1491,6 +1513,31 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_palette_exports_are_engine_owned_and_fail_closed() {
+        assert_eq!(
+            xyg_wasm_default_palette_version(),
+            xyg_engine::kernels::DEFAULT_PALETTE_VERSION
+        );
+        assert_eq!(
+            xyg_wasm_default_palette_rows() as usize,
+            xyg_engine::kernels::DEFAULT_PALETTE.len()
+        );
+        for (index, expected) in xyg_engine::kernels::default_palette_rgba8()
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(
+                xyg_wasm_default_palette_rgba8(index as u32),
+                u32::from_le_bytes(*expected)
+            );
+        }
+        assert_eq!(
+            xyg_wasm_default_palette_rgba8(xyg_wasm_default_palette_rows()),
+            u32::MAX
+        );
+    }
     use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch};
 
     fn decode_density_first_paint(value: u32) -> (u32, u32, bool, bool, bool, bool) {

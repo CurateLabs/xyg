@@ -885,6 +885,17 @@ Python `categorical_palette` and Node `categoricalPalette` repeat base palette
 colors through ABI 347 `xyg_categorical_palette`. Python `resolve_color`
 palette-map resolution and Node `categoricalPaletteMapResolve` share ABI 347
 `xyg_categorical_palette_map_resolve`; browser-only warnings stay host-side.
+ABI 360 removes the last host-owned built-in palette copy.
+`xyg_default_palette_version`, `xyg_default_palette_rows`,
+`xyg_default_palette_utf8`, and `xyg_default_palette_rgba8` expose query-first,
+capacity-aware fixed-width text and RGBA8 rows from the sole
+`xyg-engine::kernels::DEFAULT_PALETTE` definition. Short buffers return the
+required byte count without mutation; nonzero capacity with a null destination
+returns `usize::MAX`. Python's `config.DEFAULT_PALETTE` is a lazy immutable
+sequence over that contract, while Node's exported frozen palette is populated
+from it during native module initialization. WASM ABI 25 exposes the same
+engine version/rows, fails worker initialization on a version or row-count mismatch, and
+uses the shared first RGBA8 row for omitted XYTS series paint.
 Python `resolve_direct_rgba` and Node `colorChannelDirectRgbaF64*` sample LUT
 channels through ABI 348 `xyg_color_channel_direct_rgba_f64_*`.
 Python `is_colormap`, `_is_resolved_stops`, and `_validate.colormap_stops` /

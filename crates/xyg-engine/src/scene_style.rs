@@ -13,6 +13,7 @@
 //! cannot drift on named colors or defaults.
 
 use crate::css;
+use crate::kernels::DEFAULT_MARK_COLOR;
 use crate::scene::{SceneChromeStyle, SCENE_CHROME_STYLE_INPUT_BYTES};
 
 const XYMS_MAGIC: &[u8; 4] = b"XYMS";
@@ -44,7 +45,6 @@ const KIND_RIBBON: u8 = 14;
 const KIND_TRIANGLE_MESH: u8 = 15;
 const KIND_CONTOUR: u8 = 18;
 
-const DEFAULT_COLOR: &str = "#3987e5";
 const TRANSPARENT: &str = "transparent";
 
 const XYCH_MAGIC: &[u8; 4] = b"XYCH";
@@ -236,7 +236,7 @@ fn resolve_one(
     color_css: &str,
 ) -> ResolvedMarkStyle {
     let color = if color_css.is_empty() {
-        DEFAULT_COLOR
+        DEFAULT_MARK_COLOR
     } else {
         color_css
     };
@@ -626,7 +626,7 @@ mod tests {
             "",
         );
         let styles = resolve_mark_styles(&bytes).unwrap();
-        assert_eq!(styles[0].fill, css::color_rgba8(DEFAULT_COLOR, 1.0));
+        assert_eq!(styles[0].fill, css::color_rgba8(DEFAULT_MARK_COLOR, 1.0));
         assert_eq!(styles[0].stroke, css::color_rgba8(TRANSPARENT, 1.0));
         assert_eq!(styles[0].stroke_width, 0.0);
     }
@@ -677,7 +677,7 @@ mod tests {
         );
         let styles = resolve_mark_styles(&bytes).unwrap();
         assert_eq!(styles[0].fill, [0, 0, 0, 0]);
-        assert_eq!(styles[0].stroke, css::color_rgba8(DEFAULT_COLOR, 1.0));
+        assert_eq!(styles[0].stroke, css::color_rgba8(DEFAULT_MARK_COLOR, 1.0));
         assert_eq!(styles[0].stroke_width, 1.5);
     }
 

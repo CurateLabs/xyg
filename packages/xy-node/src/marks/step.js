@@ -2,7 +2,7 @@
  * Step / stairs marks — ship as `line` + `style.step` (browser draws steps).
  */
 
-import { asF64Array } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR } from "../encode.js";
 import { prepareLineSeries } from "./line.js";
 
 /**
@@ -25,7 +25,7 @@ export function composeStep(x, y, opts = {}) {
   }
   const { x: xa, y: ya } = prepareLineSeries(x, y);
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     width: opts.width ?? 1.5,
     opacity: opts.opacity ?? 1.0,
     step: where,

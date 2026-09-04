@@ -37,6 +37,9 @@ export interface XygInlineWasmWorkerOptions {
 export interface XygWasmDiagnostics {
   abiVersion: number;
   sceneVersion: number;
+  defaultPaletteVersion: number;
+  defaultPaletteRows: number;
+  defaultPaletteFirstRgba8: number;
   arenaBytes: number;
   arenaHighWaterBytes: number;
   memoryBytes: number;
@@ -50,7 +53,8 @@ export interface XygWasmDiagnostics {
 }
 
 const DIAGNOSTIC_FIELDS = [
-  "abiVersion", "sceneVersion", "arenaBytes", "arenaHighWaterBytes", "memoryBytes",
+  "abiVersion", "sceneVersion", "defaultPaletteVersion", "defaultPaletteRows",
+  "defaultPaletteFirstRgba8", "arenaBytes", "arenaHighWaterBytes", "memoryBytes",
   "memoryHighWaterBytes", "copyCount", "copyBytesLo", "copyBytesHi", "records", "styles",
 ] as const satisfies readonly (keyof XygWasmDiagnostics)[];
 

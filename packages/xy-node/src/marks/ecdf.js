@@ -3,7 +3,7 @@
  * `xyg_binned_ecdf`.
  */
 
-import { asF64Array, binnedEcdf, weightedEcdf } from "../encode.js";
+import { asF64Array, binnedEcdf, DEFAULT_MARK_COLOR, weightedEcdf } from "../encode.js";
 
 function finiteValues(values) {
   const arr = asF64Array(values, "values");
@@ -62,7 +62,7 @@ export function computeEcdf(values, opts = {}) {
 export function composeEcdf(values, opts = {}) {
   const { x, y, mode } = computeEcdf(values, opts);
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     width: opts.width ?? 1.5,
     opacity: opts.opacity ?? 1.0,
     role: "ecdf",

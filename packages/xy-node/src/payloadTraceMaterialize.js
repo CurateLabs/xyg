@@ -6,6 +6,7 @@ import {
 } from "./native.js";
 import {
   Column,
+  DEFAULT_MARK_COLOR,
   DEFAULT_PALETTE,
   f64Ptr,
   payloadChannelWireEncode,
@@ -76,7 +77,7 @@ function traceChannelSpec(ch, role = "color") {
   if (typeof ch.spec === "function") return ch.spec();
   if (ch.mode === "constant") {
     if (role === "color") {
-      return { mode: "constant", color: ch.constant ?? ch.color ?? "#3987e5" };
+      return { mode: "constant", color: ch.constant ?? ch.color ?? DEFAULT_MARK_COLOR };
     }
     if (role === "size") {
       return { mode: "constant", size: ch.constant ?? ch.size ?? 4.0 };

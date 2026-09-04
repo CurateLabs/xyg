@@ -12,6 +12,12 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+PALETTE_SYMBOLS = {
+    "xyg_default_palette_version",
+    "xyg_default_palette_rows",
+    "xyg_default_palette_utf8",
+    "xyg_default_palette_rgba8",
+}
 
 
 def _native_library() -> Path:
@@ -200,6 +206,28 @@ def test_generator_emits_private_trace_hooks_without_changing_abi_version() -> N
     from xyg._abi_generated import ABI_VERSION
 
     assert manifest["abi_version"] == ABI_VERSION
+
+
+def test_default_palette_journey_is_a_cross_host_versioned_byte_proof() -> None:
+    corpus = json.loads((ROOT / "spec" / "design" / "host-delegation-corpus.json").read_text())
+    journeys = [item for item in corpus["journeys"] if item["id"] == "default-palette"]
+    assert len(journeys) == 1
+    journey = journeys[0]
+    assert set(journey["hosts"]) == {"python", "node"}
+    assert set(journey["required_shared_symbols"]) == PALETTE_SYMBOLS
+    assert journey["commands"] == [
+        [
+            "uv",
+            "run",
+            "pytest",
+            "tests/test_default_palette_contract.py",
+            "-q",
+            "--tb=short",
+        ],
+        ["node", "--test", "packages/xy-node/test/default-palette-contract.test.mjs"],
+    ]
+    assert "tests/fixtures/default_palette_contract.json" in journey["output_oracle"]
+    assert "xyg.default-palette/v1" in journey["output_oracle"]
 
 
 @pytest.mark.parametrize("host", ["python", "node"])

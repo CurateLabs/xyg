@@ -1594,7 +1594,7 @@ export function constantMarkColor(trace) {
     || scatterPacksPaintPlane(trace);
   const code = sceneConstantColorAdmit(hasChannel, constantOk, scatterDensity, packsPaint);
   if (code === 2) return String(channel.constant);
-  if (code === 1) return String(trace.style?.color ?? "#3987e5");
+  if (code === 1) return String(trace.style?.color ?? DEFAULT_PALETTE[0]);
   return null;
 }
 
@@ -1608,7 +1608,7 @@ export function color2Channel(trace) {
 }
 
 /** Python `(trace.style or {}).get("color", default)` for item/hexbin fallbacks. */
-function traceStyleColorDefault(trace, defaultCss = "#3987e5") {
+function traceStyleColorDefault(trace, defaultCss = DEFAULT_PALETTE[0]) {
   const style = trace.style ?? {};
   if (!Object.hasOwn(style, "color")) return defaultCss;
   return String(style.color ?? defaultCss);
@@ -1617,7 +1617,7 @@ function traceStyleColorDefault(trace, defaultCss = "#3987e5") {
 export function sourceColorCss(trace) {
   const css = channelConstantCss(trace.color_ch);
   if (css != null) return css;
-  return String((trace.style ?? {}).color || "#3987e5");
+  return String((trace.style ?? {}).color || DEFAULT_PALETTE[0]);
 }
 
 export function classifyRibbonColor2(trace) {
@@ -2973,7 +2973,7 @@ function marshalTraceSupportObs(trace, polar) {
     heatmap_has_colormap: trace.colormap != null,
     heatmap_has_rgba_grid: trace.rgba_grid != null,
     heatmap_has_rgba: trace.rgba != null,
-    rect_gradient_fail: typeof fill === "object" && fill != null && admitFillGradientFromFill(fill, "#3987e5") == null,
+    rect_gradient_fail: typeof fill === "object" && fill != null && admitFillGradientFromFill(fill, DEFAULT_PALETTE[0]) == null,
     corner_radius_values: radiusValues,
     corner_radius_seq: radiusSeq,
     wedge_gap: Number(style.wedge_gap ?? 0),

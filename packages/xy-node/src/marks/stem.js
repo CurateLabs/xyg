@@ -2,7 +2,7 @@
  * Stem mark — vertical segments from base to y, optional scatter markers.
  */
 
-import { asF64Array } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR } from "../encode.js";
 
 /**
  * @param {ArrayLike|TypedArray} x
@@ -35,7 +35,7 @@ export function composeStem(x, y, opts = {}) {
       throw new RangeError(`stem base must have length ${n}, got ${base.length}`);
     }
   }
-  const color = opts.color ?? "#3987e5";
+  const color = opts.color ?? DEFAULT_MARK_COLOR;
   const opacity = opts.opacity ?? 1.0;
   const width = opts.width ?? 1.2;
   const marker = opts.marker !== false;

@@ -3,7 +3,7 @@
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 
-import { asF64Array, histogramBins, histogramMarkEdges } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR, histogramBins, histogramMarkEdges } from "../encode.js";
 
 function isAuthoredEdges(bins) {
   return Array.isArray(bins) || ArrayBuffer.isView(bins);
@@ -69,7 +69,7 @@ export function composeHistogram(values, opts = {}) {
   const y0 = new Float64Array(nBins);
   const y1 = Float64Array.from(counts);
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     opacity: 0.85,
     role: "histogram",
     cumulative,

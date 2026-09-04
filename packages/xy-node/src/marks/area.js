@@ -2,7 +2,7 @@
  * Area mark — line ingest + optional base; M4 at emit (same path as line).
  */
 
-import { asF64Array } from "../encode.js";
+import { asF64Array, DEFAULT_MARK_COLOR } from "../encode.js";
 import { composeLine, prepareLineSeries } from "./line.js";
 
 /**
@@ -34,7 +34,7 @@ export function composeArea(x, y, opts = {}) {
     }
   }
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     opacity: opts.opacity ?? 0.35,
     line_width: opts.lineWidth ?? 1.2,
     line_opacity: opts.lineOpacity ?? 1.0,

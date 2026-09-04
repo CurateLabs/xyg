@@ -5,6 +5,8 @@ import {
   readXygWasmError,
   XYG_WASM_STATUS,
   XYG_WASM_ABI_VERSION,
+  XYG_WASM_DEFAULT_PALETTE_ROWS,
+  XYG_WASM_DEFAULT_PALETTE_VERSION,
   XYG_WASM_SCENE_VERSION,
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
   XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
@@ -138,8 +140,10 @@ async function initialize(message: any) {
     if (isDisposed()) return;
     bound = bindXygWasmExports(instance);
     if (bound.xyg_wasm_abi_version() !== message.expectedAbiVersion
-        || bound.xyg_wasm_scene_version() !== message.expectedSceneVersion) {
-      throw new Error("XYG WASM or canonical scene version is incompatible");
+      || bound.xyg_wasm_scene_version() !== message.expectedSceneVersion
+      || bound.xyg_wasm_default_palette_version() !== XYG_WASM_DEFAULT_PALETTE_VERSION
+      || bound.xyg_wasm_default_palette_rows() !== XYG_WASM_DEFAULT_PALETTE_ROWS) {
+      throw new Error("XYG WASM, canonical scene, or default palette contract is incompatible");
     }
     const max = Number(message.maxArenaBytes);
     if (!Number.isInteger(max) || max <= 0 || max > bound.xyg_wasm_max_arena_bytes()) {
@@ -178,6 +182,9 @@ function diagnostics() {
   return {
     abiVersion: exports.xyg_wasm_abi_version() >>> 0,
     sceneVersion: exports.xyg_wasm_scene_version() >>> 0,
+    defaultPaletteVersion: exports.xyg_wasm_default_palette_version() >>> 0,
+    defaultPaletteRows: exports.xyg_wasm_default_palette_rows() >>> 0,
+    defaultPaletteFirstRgba8: exports.xyg_wasm_default_palette_rgba8(0) >>> 0,
     arenaBytes: exports.xyg_wasm_arena_len(handle) >>> 0,
     arenaHighWaterBytes: exports.xyg_wasm_arena_high_water(handle) >>> 0,
     memoryBytes,

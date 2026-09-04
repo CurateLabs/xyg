@@ -2,7 +2,7 @@
  * Contour isolines — marching-squares segments matching Python `marks.contour`.
  */
 
-import { asF64Array, contourLevels, marchingSquares } from "../encode.js";
+import { asF64Array, contourLevels, DEFAULT_MARK_COLOR, marchingSquares } from "../encode.js";
 
 const MAX_CONTOUR_WORK = 4_000_000;
 
@@ -117,7 +117,7 @@ export function composeContour(z, opts = {}) {
     throw new RangeError("contour levels do not intersect the finite grid");
   }
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: opts.color ?? DEFAULT_MARK_COLOR,
     width: opts.width ?? 1.1,
     opacity: opts.opacity ?? 0.9,
     role: "contour",

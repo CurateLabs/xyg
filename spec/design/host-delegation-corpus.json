@@ -24,6 +24,22 @@
   ],
   "journeys": [
     {
+      "id": "default-palette",
+      "surfaces": ["default categorical palette", "default mark color"],
+      "commands": [
+        ["uv", "run", "pytest", "tests/test_default_palette_contract.py", "-q", "--tb=short"],
+        ["node", "--test", "packages/xy-node/test/default-palette-contract.test.mjs"]
+      ],
+      "hosts": ["python", "node"],
+      "required_shared_symbols": [
+        "xyg_default_palette_version",
+        "xyg_default_palette_rows",
+        "xyg_default_palette_utf8",
+        "xyg_default_palette_rgba8"
+      ],
+      "output_oracle": "tests/fixtures/default_palette_contract.json (xyg.default-palette/v1): both hosts assert the exact version, ordered lowercase #rrggbb rows, packed straight-alpha RGBA8 bytes, and first-row default mark color."
+    },
+    {
       "id": "public-marks",
       "surfaces": [
         "graph", "sankey", "scatter", "line", "histogram", "area", "bar",

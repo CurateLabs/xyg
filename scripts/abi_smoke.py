@@ -935,6 +935,14 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         U8P,
     ]
+    lib.xyg_default_palette_version.restype = ctypes.c_uint32
+    lib.xyg_default_palette_version.argtypes = []
+    lib.xyg_default_palette_rows.restype = ctypes.c_size_t
+    lib.xyg_default_palette_rows.argtypes = []
+    lib.xyg_default_palette_utf8.restype = ctypes.c_size_t
+    lib.xyg_default_palette_utf8.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_default_palette_rgba8.restype = ctypes.c_size_t
+    lib.xyg_default_palette_rgba8.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_palette_rows_rgba8.restype = ctypes.c_size_t
     lib.xyg_palette_rows_rgba8.argtypes = [
         U32P,
@@ -4729,6 +4737,31 @@ def main() -> None:
         == 1
         and list(bad_domain_out) == [0],
         "quantize_unit_u8 bad domain",
+    )
+    default_rows = lib.xyg_default_palette_rows()
+    default_text_need = lib.xyg_default_palette_utf8(null_u8, 0)
+    default_rgba_need = lib.xyg_default_palette_rgba8(null_u8, 0)
+    default_text = array("B", [0] * default_text_need)
+    default_rgba = array("B", [0] * default_rgba_need)
+    ok(
+        lib.xyg_default_palette_version() == 1
+        and default_rows == 8
+        and default_text_need == default_rows * 7
+        and default_rgba_need == default_rows * 4
+        and lib.xyg_default_palette_utf8(_ptr(default_text, ctypes.c_uint8), len(default_text))
+        == default_text_need
+        and lib.xyg_default_palette_rgba8(_ptr(default_rgba, ctypes.c_uint8), len(default_rgba))
+        == default_rgba_need
+        and bytes(default_text[:7]) == b"#3987e5"
+        and list(default_rgba[:4]) == [57, 135, 229, 255],
+        "default palette version/text/rgba contract",
+    )
+    short_default = array("B", [0xA5] * (default_text_need - 1))
+    ok(
+        lib.xyg_default_palette_utf8(_ptr(short_default, ctypes.c_uint8), len(short_default))
+        == default_text_need
+        and all(byte == 0xA5 for byte in short_default),
+        "default palette short capacity is atomic",
     )
     palette_entries = [b"#ff0000", b"var(--x)"]
     palette_lens = array("I", [len(item) for item in palette_entries])

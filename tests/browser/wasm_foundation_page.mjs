@@ -320,6 +320,7 @@ async function fixtureModule({
   aggregateOutputOutOfRange = false,
   cancelTrap = false,
   graphStepTrap = false,
+  paletteVersion = 1,
 } = {}) {
   const names = [
     "xyg_wasm_abi_version",
@@ -363,6 +364,9 @@ async function fixtureModule({
     "xyg_wasm_compound_transition",
     "xyg_wasm_ticks_resolve",
     "xyg_wasm_density_first_paint_plan",
+    "xyg_wasm_default_palette_version",
+    "xyg_wasm_default_palette_rows",
+    "xyg_wasm_default_palette_rgba8",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -376,7 +380,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -387,7 +391,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    24, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    25, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -398,7 +402,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0,
   ];
   if (names.length !== functionTypes.length || names.length !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
@@ -496,7 +500,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 24,
+    expectedAbiVersion: 25,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -505,7 +509,9 @@ let foundationStage = "startup";
 async function run() {
   foundationStage = "failure diagnostics snapshot contract";
   const diagnosticInput = {
-    abiVersion: 11, sceneVersion: 11, arenaBytes: 8, arenaHighWaterBytes: 16,
+    abiVersion: 11, sceneVersion: 11, defaultPaletteVersion: 1,
+    defaultPaletteRows: 8, defaultPaletteFirstRgba8: 0xffe58739,
+    arenaBytes: 8, arenaHighWaterBytes: 16,
     memoryBytes: 32, memoryHighWaterBytes: 64, copyCount: 1, copyBytesLo: 8,
     copyBytesHi: 0, records: 2, styles: 1,
   };
@@ -1709,7 +1715,11 @@ async function run() {
     wasm: wasmModule,
     maxArenaBytes: 16 * 1024 * 1024,
   });
-  await fixtureWorker.ready;
+  const fixtureReady = await fixtureWorker.ready;
+  if (fixtureReady.defaultPaletteVersion !== 1 || fixtureReady.defaultPaletteRows !== 8
+      || fixtureReady.defaultPaletteFirstRgba8 !== 0xffe58739) {
+    throw new Error(`direct WASM default palette contract drifted: ${JSON.stringify(fixtureReady)}`);
+  }
   let fixtureSequence = 1;
   for (const fixture of xytsFixture.successful) {
     const compiled = await fixtureWorker.compileScene(fromHex(fixture.request_hex), {
@@ -1878,7 +1888,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 24 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== 25 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -2187,6 +2197,8 @@ async function run() {
         // the fixture WASM module a second aggregate implementation.
         result: Promise.resolve({
           sequence, aggregate: new ArrayBuffer(0), abiVersion: 22, sceneVersion: 20,
+          defaultPaletteVersion: 1, defaultPaletteRows: 8,
+          defaultPaletteFirstRgba8: 0xffe58739,
           records: 0, styles: 0, copyCount: 1,
           copyBytesLo: 48, copyBytesHi: 0, arenaBytes: 0,
           arenaHighWaterBytes: 48, memoryBytes: 65536,
@@ -3459,7 +3471,7 @@ async function run() {
     throw new Error("arbitrary line/area row identities split Rust trace geometry or drifted through picking");
   }
   const defaultLine = chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "line")?.trace;
-  if (defaultLine?.style?.color !== "rgba(37 99 235 / 1)" || defaultLine.style.width !== 1.5) {
+  if (defaultLine?.style?.color !== "rgba(57 135 229 / 1)" || defaultLine.style.width !== 1.5) {
     throw new Error(`Rust line defaults drifted from the shared fixture: ${JSON.stringify(defaultLine?.style)}`);
   }
   const renderedKinds = new Set(chartView.gpuTraces.map((gpu) => gpu.trace?.kind));
@@ -4056,6 +4068,14 @@ async function run() {
     throw new Error(`split-u64 copy accounting was corrupted: ${combinedCopyBytes}`);
   }
   await unsigned.dispose();
+
+  const stalePalette = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await fixtureModule({ paletteVersion: 99 }),
+    maxArenaBytes: 1024,
+  });
+  await rejected(stalePalette.ready, "XYG_WASM_INIT_FAILED");
+  await stalePalette.dispose();
 
   const malformedModule = await WebAssembly.compile(
     new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]),
