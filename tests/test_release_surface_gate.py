@@ -23,6 +23,7 @@ def test_release_classifier_covers_every_contract_family() -> None:
         "benchmarks/test_codspeed_kernels.py",
         "crates/xyg-core/src/lib.rs",
         "spec/abi/xyg.h",
+        "spec/wasm/abi.json",
         "python/xyg/_figure.py",
         "python/xyg/_figure_export.py",
         "python/xyg/_payload.py",
