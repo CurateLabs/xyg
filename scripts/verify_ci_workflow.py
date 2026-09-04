@@ -104,7 +104,9 @@ def validate_milestone_governance(
             errors.append(f"milestone governance specification missing {phrase!r}")
     for stale in (
         ROOT / ".github" / "workflows" / "m2-assign-milestone.yml",
+        ROOT / ".github" / "workflows" / "m2-wave-c-close.yml",
         ROOT / "scripts" / "m2_assign_milestone.sh",
+        ROOT / "scripts" / "m2_wave_c_close.sh",
     ):
         if stale.exists():
             errors.append(f"unauthorized milestone mutation automation remains: {stale}")
