@@ -1,0 +1,15 @@
+# ABI, security, packaging, and release-gate changes require an owner review.
+/.github/CODEOWNERS @CurateLabs/curate-labs-tech
+/crates/xyg-core/ @CurateLabs/curate-labs-tech
+/spec/abi/ @CurateLabs/curate-labs-tech
+/.github/workflows/ @CurateLabs/curate-labs-tech
+/scripts/classify_release_surface.py @CurateLabs/curate-labs-tech
+/scripts/verify_release_surface_results.py @CurateLabs/curate-labs-tech
+/scripts/verify_ci_workflow.py @CurateLabs/curate-labs-tech
+/SECURITY.md @CurateLabs/curate-labs-tech
+/hatch_build.py @CurateLabs/curate-labs-tech
+/pyproject.toml @CurateLabs/curate-labs-tech
+/package.json @CurateLabs/curate-labs-tech
+/package-lock.json @CurateLabs/curate-labs-tech
+/Cargo.toml @CurateLabs/curate-labs-tech
+/Cargo.lock @CurateLabs/curate-labs-tech

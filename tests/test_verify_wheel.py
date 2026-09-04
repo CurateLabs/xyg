@@ -23,6 +23,7 @@ class Figure:
     line = _marks.line
     scatter = _marks.scatter
     def to_html(self): ...
+    def to_svg(self): ...
     def to_png(self): ...
 """
 MARKS_PY = """
@@ -34,7 +35,9 @@ COMPONENTS_PY = """
 from typing import Any
 class Chart:
     props: dict[str, Any]
+    def figure(self): ...
     def to_html(self): ...
+    def to_svg(self): ...
     def to_png(self): ...
 """
 EXPORT_PY = """
@@ -440,6 +443,7 @@ class Figure:
     line = _marks.line
     scatter = _marks.scatter
     def to_html(self): ...
+    def to_svg(self): ...
 """
         },
     )
@@ -472,13 +476,41 @@ def test_verify_wheel_rejects_stale_component_export_surface(tmp_path: Path) -> 
 from typing import Any
 class Chart:
     props: dict[str, Any]
+    def figure(self): ...
     def to_html(self): ...
+    def to_svg(self): ...
 """
         },
     )
 
     with pytest.raises(AssertionError, match=r"components\.py.*to_png"):
         verify_wheel.verify_wheel(whl, expect_native=True)
+
+
+def test_verify_wheel_accepts_export_methods_bound_from_internal_module(tmp_path: Path) -> None:
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    _write_wheel(
+        whl,
+        replacements={
+            "xyg/_figure.py": """
+from . import marks as _marks
+from . import _figure_export as _export
+class Figure:
+    line = _marks.line
+    scatter = _marks.scatter
+    to_html = _export.to_html
+    to_svg = _export.to_svg
+    to_png = _export.to_png
+""",
+            "xyg/_figure_export.py": """
+def to_html(self): ...
+def to_svg(self): ...
+def to_png(self): ...
+""",
+        },
+    )
+
+    verify_wheel.verify_wheel(whl, expect_native=True)
 
 
 def test_verify_wheel_rejects_stale_html_export_safety_surface(tmp_path: Path) -> None:

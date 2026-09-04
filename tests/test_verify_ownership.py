@@ -77,6 +77,29 @@ def test_real_repository_ownership_audit_is_complete() -> None:
     assert VERIFY.validate(root, root / "spec/design/ownership-audit.json") == []
 
 
+def test_keep_host_policies_have_executable_product_boundary_rules() -> None:
+    root = Path(__file__).resolve().parents[1]
+    manifest = json.loads((root / "spec/design/ownership-audit.json").read_text())
+    for name in ("python-host", "node-host"):
+        patterns = manifest["policies"][name]["forbidden_patterns"]
+        assert patterns, f"{name} must enforce behavior, not only classification"
+        assert any("Canonical" in item["instruction"] for item in patterns)
+
+
+def test_python_product_policy_pattern_fails_keep_host_validation(tmp_path: Path) -> None:
+    manifest_path, tracked = _fixture(tmp_path, source="np.histogram(values)\n")
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    data["policies"]["host"]["forbidden_patterns"] = [
+        {
+            "pattern": r"\bnp\.(?:histogram|quantile)\s*\(",
+            "instruction": "Canonical aggregation belongs in Rust.",
+        }
+    ]
+    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+    errors = _errors(tmp_path, tracked)
+    assert any("Canonical aggregation belongs in Rust" in error for error in errors)
+
+
 def test_missing_production_file_is_named(tmp_path: Path) -> None:
     _fixture(tmp_path)
     tracked = {"python/xyg/example.py", "python/xyg/new_algorithm.py"}

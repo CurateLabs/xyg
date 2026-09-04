@@ -18,6 +18,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release_surface_changes:
+    name: Classify release-surface changes
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      required: ${{ steps.classify.outputs.required }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" | \
+              python3 scripts/classify_release_surface.py --github-output "$GITHUB_OUTPUT"
+          fi
+
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
     if: github.event_name != 'pull_request'
@@ -363,7 +383,8 @@ jobs:
 
   browser_conformance:
     name: Accessibility + cross-browser conformance
-    if: github.event_name != 'pull_request'
+    needs: release_surface_changes
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -752,9 +773,42 @@ jobs:
             benchmark-methodology/interaction.json
             benchmark-methodology/dashboard.json
 
+  authored_scene:
+    name: Authored Scene cross-host evidence
+    needs: release_surface_changes
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Build native hosts
+        run: |
+          npm ci
+          npm ci --prefix packages/xy-node
+          cargo build --release
+          uv venv .venv
+          uv pip install -p .venv/bin/python -e .
+      - name: Verify four-tier Python and Node authored Scenes
+        env:
+          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so
+        run: |
+          .venv/bin/python scripts/generate_authored_scene_benchmark.py --output-dir authored-scenes-python
+          node packages/xy-node/scripts/generate_authored_scene_benchmark.mjs --output-dir authored-scenes-node
+          .venv/bin/python scripts/verify_authored_scene_artifacts.py authored-scenes-python authored-scenes-node
+
   sdist:
     name: Source distribution
-    if: github.event_name != 'pull_request'
+    needs: release_surface_changes
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -833,13 +887,44 @@ jobs:
               raise SystemExit("expected ImportError without the native core")
           PY
 
+  release_surfaces:
+    name: Release surfaces
+    if: always()
+    needs:
+      - release_surface_changes
+      - test
+      - wasm_foundation
+      - python_floor
+      - browser_conformance
+      - authored_scene
+      - sdist
+      - wheels
+      - install_without_rust
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Require every applicable release surface
+        run: |
+          python3 scripts/verify_release_surface_results.py \
+            --required "${{ needs.release_surface_changes.outputs.required }}" \
+            --job "test=${{ needs.test.result }}" \
+            --job "wasm_foundation=${{ needs.wasm_foundation.result }}" \
+            --job "python_floor=${{ needs.python_floor.result }}" \
+            --job "browser_conformance=${{ needs.browser_conformance.result }}" \
+            --job "authored_scene=${{ needs.authored_scene.result }}" \
+            --job "sdist=${{ needs.sdist.result }}" \
+            --job "wheels=${{ needs.wheels.result }}" \
+            --job "install_without_rust=${{ needs.install_without_rust.result }}"
+
   # Linux and Windows wheel smoke matrix (§33). macOS wheels are built only by
   # publish.yaml so pull requests do not consume macOS runners; release coverage
   # still includes both Intel and Apple Silicon macOS wheels.
   wheels:
     name: Wheel ${{ matrix.os }}
-    if: github.event_name != 'pull_request'
-    needs: test
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
+    needs: [release_surface_changes, test]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -907,8 +992,14 @@ jobs:
         run: |
           uv venv smoke
           uv pip install -p smoke dist/*.whl numpy anywidget
-          ./smoke/bin/python -c "import xyg, xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')" \
-            || ./smoke/Scripts/python.exe -c "import xyg, xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')"
+          if [ -x smoke/bin/python ]; then
+            python_exe=smoke/bin/python
+          else
+            python_exe=smoke/Scripts/python.exe
+          fi
+          "$python_exe" -c "import xyg, xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')"
+          whl=$(ls dist/*.whl)
+          python scripts/verify_wheel.py "$whl" --expect-native --installed-python "$python_exe"
 
       - name: Typecheck installed-wheel public surface
         shell: bash
@@ -935,7 +1026,8 @@ jobs:
   # fallback and never an opaque crash.
   install_without_rust:
     name: Install without Rust (clear error)
-    if: github.event_name != 'pull_request'
+    needs: release_surface_changes
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

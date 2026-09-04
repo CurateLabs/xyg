@@ -3681,6 +3681,7 @@ mod tests {
         assert_eq!(attach_transition, 1);
         assert_eq!(visible_init, 1);
         assert_eq!(attach_sample, 1);
+        assert_eq!(ship_wasm, 0);
         assert_eq!(ship_categorical, 1);
         assert_eq!(use_channel_colormap, 0);
         assert_eq!(channels_dropped, 1);

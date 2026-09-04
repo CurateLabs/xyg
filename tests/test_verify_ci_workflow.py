@@ -48,6 +48,51 @@ def test_ci_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_bazel_workflow() == []
 
 
+def test_ci_workflow_rejects_missing_release_surface_aggregate(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace("  release_surfaces:\n", "  release_surfaces_removed:\n"),
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("release_surfaces" in error for error in errors)
+
+
+def test_ci_workflow_rejects_skippable_release_surface_job(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "    if: github.event_name != 'pull_request' || "
+            "needs.release_surface_changes.outputs.required == 'true'\n",
+            "    if: github.event_name != 'pull_request'\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("classifier condition" in error for error in errors)
+
+
+def test_milestone_governance_requires_recorded_human_approval(tmp_path: Path) -> None:
+    spec = tmp_path / "contributing.md"
+    spec.write_text("Agents may reorganize milestones automatically.\n", encoding="utf-8")
+    errors = verify_ci_workflow.validate_milestone_governance(spec)
+    assert any("explicit human approval" in error for error in errors)
+
+
+def test_milestone_governance_protects_the_release_gate_itself(tmp_path: Path) -> None:
+    owners = tmp_path / "CODEOWNERS"
+    current = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
+    owners.write_text(
+        current.replace("/scripts/classify_release_surface.py", "/scripts/unrelated.py"),
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_milestone_governance(codeowners=owners)
+    assert any("classify_release_surface.py" in error for error in errors)
+
+
 def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
     path = tmp_path / "bazel.yml"

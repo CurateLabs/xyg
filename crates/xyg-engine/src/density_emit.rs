@@ -226,10 +226,11 @@ pub fn density_mean_color_rgba_wire_admit(has_pyramid_rgba: i32, has_bin_colors:
     i32::from(has_pyramid_rgba == 1 || has_bin_colors == 1)
 }
 
-/// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
+/// Whether an explicitly requested split density payload should ship replay columns (ABI 269).
 ///
-/// Returns ``1`` when the split payload writer is active and the emit plan
-/// reports WASM aggregate replay eligibility.
+/// Hosts pass `split_payload=1` here only for an explicit Worker/WASM replay
+/// request. Ordinary live painter payloads pass zero even though their physical
+/// buffer layout is split, preserving the screen-bounded default (§27/§29).
 pub fn density_wasm_source_admit(split_payload: i32, wasm_eligible: i32) -> i32 {
     i32::from(split_payload == 1 && wasm_eligible == 1)
 }
@@ -905,7 +906,7 @@ mod tests {
     }
 
     #[test]
-    fn density_wasm_source_admit_matches_host_and() {
+    fn density_wasm_source_admit_matches_explicit_host_request() {
         assert_eq!(density_wasm_source_admit(1, 1), 1);
         assert_eq!(density_wasm_source_admit(0, 1), 0);
         assert_eq!(density_wasm_source_admit(1, 0), 0);

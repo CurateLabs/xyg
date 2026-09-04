@@ -63,14 +63,14 @@ function attachEntry(spec) {
   };
 }
 
-function caseEntry(name, build, { split = false, skipScatter = false } = {}) {
+function caseEntry(name, build, { split = false, wasmSource = false, skipScatter = false } = {}) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
   if (!skipScatter) {
     fig.scatter([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 7;
   }
-  const { spec } = fig.buildPayload(split ? { split: true } : {});
+  const { spec } = fig.buildPayload(split ? { split: true, wasmSource } : {});
   return { name, ...attachEntry(spec) };
 }
 
@@ -81,7 +81,7 @@ const cases = [
       fig.scatter([1, 10], [1, 10], { forceDensity: true });
       fig.traces[0].id = 41;
     },
-    { split: true, skipScatter: true },
+    { split: true, wasmSource: true, skipScatter: true },
   ),
   caseEntry(
     "wasm_density_unsupported_split",

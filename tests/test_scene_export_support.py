@@ -470,6 +470,52 @@ def _public_literal_geometry_variant(kind: str) -> Figure:
     return figure
 
 
+def _ordinary_autorange_figures() -> list[tuple[str, Figure]]:
+    """Ordinary composition figures covered by the #856 public route."""
+    charts = [
+        ("line", xyg.line_chart(xyg.line([0, 1, 2], [1, 3, 2]), width=320, height=240)),
+        ("bar", xyg.bar_chart(xyg.bar([0, 1], [1, 2]), width=320, height=240)),
+        (
+            "histogram",
+            xyg.histogram_chart(xyg.histogram([0, 1, 1, 2], bins=2), width=320, height=240),
+        ),
+        ("area", xyg.area_chart(xyg.area([0, 1, 2], [1, 3, 2]), width=320, height=240)),
+        ("step", xyg.step_chart(xyg.step([0, 1, 2], [1, 3, 2]), width=320, height=240)),
+        (
+            "errorbar",
+            xyg.errorbar_chart(
+                xyg.errorbar([0, 1], [1, 2], yerr=[0.1, 0.2]), width=320, height=240
+            ),
+        ),
+        (
+            "box",
+            xyg.box_chart(xyg.box([[1, 2, 3, 4], [2, 3, 4, 5]]), width=320, height=240),
+        ),
+        (
+            "violin",
+            xyg.violin_chart(
+                xyg.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], bins=8),
+                width=320,
+                height=240,
+            ),
+        ),
+        (
+            "hexbin",
+            xyg.hexbin_chart(
+                xyg.hexbin(
+                    [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+                    [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+                    gridsize=(4, 4),
+                    color="#3987e5",
+                ),
+                width=320,
+                height=240,
+            ),
+        ),
+    ]
+    return [(label, chart.figure()) for label, chart in charts]
+
+
 def _public_step_mode(where: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
@@ -1353,8 +1399,6 @@ def test_public_triangle_mesh_keeps_joined_fill_per_item_fail_closed() -> None:
     [
         lambda figure: setattr(figure, "coords", "polar"),
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
-        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
-        lambda figure: figure.axis_options["y"].__setitem__("domain", None),
         lambda figure: setattr(figure.traces[0], "hidden", True),
         lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan),
         lambda figure: setattr(figure.traces[0].x0, "values", np.asarray([0.0])),
@@ -1366,6 +1410,14 @@ def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
     figure = _public_triangle_mesh()
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
+
+
+def test_public_triangle_mesh_admits_autorange() -> None:
+    figure = _public_triangle_mesh()
+    figure.axis_options["x"]["domain"] = None
+    figure.axis_options["y"]["domain"] = None
+    assert scene_export_support_reason(figure) is None
+    assert public_static_export(figure, "svg") is not None
 
 
 @pytest.mark.parametrize("reduce", ["count", "mean", "sum"])
@@ -1512,6 +1564,16 @@ def test_public_constant_density_matches_exact_cross_host_scene_bytes() -> None:
     assert hashlib.sha256(scene).hexdigest() == fixture["public_constant_density_sha256"]
 
 
+def test_density_scene_bounds_observations_at_the_abi323_source_ceiling() -> None:
+    count = 262_144
+    values = np.arange(count, dtype=np.float64)
+    figure = Figure(width=320, height=240)
+    figure.scatter(values, values % 997)
+    assert figure.traces[0].use_density()
+    scene = figure.to_scene()
+    assert scene.startswith(b"XYGS")
+
+
 @pytest.mark.parametrize(
     ("builder", "fixture_key"),
     [
@@ -1564,18 +1626,9 @@ def test_public_hexbin_compiler_rejects_secondary_axis_and_nonfinite(
     assert _public_pdf(figure) is None
 
 
-@pytest.mark.parametrize(
-    "mutate",
-    [
-        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
-        lambda figure: figure.traces[0].style.__setitem__("role", "hex-density"),
-    ],
-)
-def test_public_hexbin_predicate_keeps_rich_style_on_compatibility(
-    mutate: Callable[[Figure], None],
-) -> None:
+def test_public_hexbin_predicate_keeps_rich_style_on_compatibility() -> None:
     figure = _public_hexbin()
-    mutate(figure)
+    figure.traces[0].style["role"] = "hex-density"
     assert scene_export_support_reason(figure) is not None
     assert figure.to_svg()
 
@@ -2437,21 +2490,21 @@ def test_public_disconnected_segments_admit_constant_linecap() -> None:
     assert 'stroke-linecap="butt"' in _public_svg(figure)
 
 
-@pytest.mark.parametrize(
-    "axis_id,key,value",
-    [
-        ("x", "domain", None),
-        ("y", "domain", None),
-        ("x", "side", "top"),
-        ("y", "side", "right"),
-    ],
-)
-def test_public_disconnected_segments_require_explicit_default_side_cartesian_axes(
-    axis_id: str, key: str, value: object
+@pytest.mark.parametrize("axis_id,side", [("x", "top"), ("y", "right")])
+def test_public_disconnected_segments_require_default_side_cartesian_axes(
+    axis_id: str, side: str
 ) -> None:
     figure = _public_disconnected_segments()
-    figure.axis_options[axis_id][key] = value
+    figure.axis_options[axis_id]["side"] = side
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+
+def test_public_disconnected_segments_admit_autorange() -> None:
+    figure = _public_disconnected_segments()
+    figure.axis_options["x"]["domain"] = None
+    figure.axis_options["y"]["domain"] = None
+    assert scene_export_support_reason(figure) is None
+    assert public_static_export(figure, "svg") is not None
 
 
 def test_public_disconnected_segments_reject_more_than_ten_thousand_endpoint_pairs() -> None:
@@ -2624,6 +2677,29 @@ def test_axis_visibility_stays_bounded_before_the_public_scene_route() -> None:
     figure.axis_options["x"]["tick_values"] = list(range(201))
     with pytest.raises(ValueError, match="axis tick lists are limited"):
         scene_export_support_reason(figure)
+
+
+def test_ordinary_autorange_figures_route_every_static_export_through_rust(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#856: ordinary default charts must not enter Python's second renderer."""
+    from xyg import _native, _raster, _svg
+
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("ordinary autoranged chart entered a Python compatibility renderer")
+
+    monkeypatch.setattr(_svg, "to_svg", boom)
+    monkeypatch.setattr(_raster, "to_png", boom)
+
+    for label, figure in _ordinary_autorange_figures():
+        assert scene_export_support_reason(figure) is None, label
+        scene = figure_scene(figure)
+        svg = public_static_export(figure, "svg")
+        png = public_static_export(figure, "png")
+        assert svg is not None and svg == figure.to_svg().encode(), label
+        assert png is not None and png == figure.to_png(scale=1), label
+        assert svg == _native.scene_svg(scene).encode(), label
+        assert png.startswith(b"\x89PNG\r\n\x1a\n"), label
 
 
 def _public_mark_figures() -> list[tuple[str, Figure]]:

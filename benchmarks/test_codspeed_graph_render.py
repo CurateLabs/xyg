@@ -212,7 +212,11 @@ def test_graph_static_export_small(benchmark, graph_data, kind):
         assert output.startswith("<svg")
         assert 'width="640" height="480"' in output
         assert output.count("<circle") == SMALL_N
-        assert output.count("<line") >= SMALL_N
+        # Directed Scene geometry lowers each edge to a shaft and two arrow
+        # wings.  Static SVG preserves those three routed segments as
+        # polylines; asserting the exact product contract keeps this row from
+        # silently benchmarking a node-only export.
+        assert output.count("<polyline") == SMALL_N * 3
     else:
         output = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
         assert output.startswith(b"\x89PNG")

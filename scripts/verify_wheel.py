@@ -10,10 +10,12 @@ installing the package.
 from __future__ import annotations
 
 import argparse
+import ast
 import base64
 import csv
 import hashlib
 import re
+import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -58,6 +60,7 @@ REQUIRED_FILES = {
     "xyg/config.py",
     "xyg/export.py",
     "xyg/_figure.py",
+    "xyg/_figure_export.py",
     "xyg/marks.py",
     "xyg/interaction.py",
     "xyg/kernels.py",
@@ -225,6 +228,82 @@ def _require_text_markers(name: str, data: bytes, needles: set[str]) -> None:
         raise AssertionError(f"{name} missing expected markers: {missing}")
 
 
+def _require_class_surface(name: str, data: bytes, class_name: str, required: set[str]) -> None:
+    """Validate class bindings without assuming where method bodies live."""
+    try:
+        tree = ast.parse(data.decode("utf-8"), filename=name)
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise AssertionError(f"{name} is not valid Python source: {exc}") from exc
+    classes = [
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name
+    ]
+    if len(classes) != 1:
+        raise AssertionError(f"{name} must define exactly one {class_name} class")
+    exposed: set[str] = set()
+    for node in classes[0].body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            exposed.add(node.name)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            exposed.update(target.id for target in targets if isinstance(target, ast.Name))
+    missing = sorted(required - exposed)
+    if missing:
+        raise AssertionError(f"{name} {class_name} missing installed surface: {missing}")
+
+
+def _require_module_surface(name: str, data: bytes, required: set[str]) -> None:
+    """Validate definitions or explicit imports without pinning implementation hubs."""
+    try:
+        tree = ast.parse(data.decode("utf-8"), filename=name)
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise AssertionError(f"{name} is not valid Python source: {exc}") from exc
+    exposed: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            exposed.add(node.name)
+        elif isinstance(node, ast.ImportFrom):
+            exposed.update(alias.asname or alias.name for alias in node.names if alias.name != "*")
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            exposed.update(target.id for target in targets if isinstance(target, ast.Name))
+    missing = sorted(required - exposed)
+    if missing:
+        raise AssertionError(f"{name} missing installed surface: {missing}")
+
+
+def verify_installed_export_surface(python_executable: Path) -> None:
+    """Exercise the installed native wheel's public Chart and Figure exports."""
+    probe = r"""
+import xyg
+from xyg._figure import Figure
+from xyg.components import Chart
+
+for owner in (Figure, Chart):
+    for name in ("to_html", "to_svg", "to_png"):
+        assert callable(getattr(owner, name, None)), (owner.__name__, name)
+
+chart = xyg.line_chart(xyg.line([0.0, 1.0], [1.0, 2.0]), width=320, height=240)
+figure = chart.figure()
+assert isinstance(figure, Figure)
+for owner in (chart, figure):
+    html = owner.to_html()
+    svg = owner.to_svg()
+    png = owner.to_png(scale=1.0)
+    assert "<html" in html.lower()
+    assert svg.startswith("<svg")
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+"""
+    proc = subprocess.run(
+        [str(python_executable), "-c", probe],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise AssertionError(f"installed export surface failed: {detail}")
+
+
 def _require_py_typed_marker(data: bytes, name: str = "xyg/py.typed") -> None:
     if data != b"":
         raise AssertionError(f"{name} must be an empty full-package PEP 561 marker")
@@ -323,26 +402,22 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
             zf.read("reflex_xy/assets/XYChart.jsx"),
             {"XYChart", "xy_client.js"},
         )
-        _require_text_markers(
+        _require_class_surface(
             "xyg/_figure.py",
             zf.read("xyg/_figure.py"),
-            {
-                "class Figure",
-                "scatter = _marks.scatter",
-                "line = _marks.line",
-                "def to_html(",
-                "def to_png(",
-            },
+            "Figure",
+            {"scatter", "line", "to_html", "to_svg", "to_png"},
         )
-        _require_text_markers(
+        _require_module_surface(
             "xyg/marks.py",
             zf.read("xyg/marks.py"),
-            {"def scatter(", "def line(", "def heatmap("},
+            {"scatter", "line", "heatmap"},
         )
-        _require_text_markers(
+        _require_class_surface(
             "xyg/components.py",
             zf.read("xyg/components.py"),
-            {"class Chart", "def to_html(", "def to_png(", "dict[str, Any]"},
+            "Chart",
+            {"figure", "to_html", "to_svg", "to_png"},
         )
         _require_text_markers(
             "xyg/export.py",
@@ -423,11 +498,20 @@ def main(argv: Optional[list[str]] = None) -> int:
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--expect-native", action="store_true")
     group.add_argument("--expect-pure", action="store_true")
+    parser.add_argument(
+        "--installed-python",
+        type=Path,
+        help="Python from an environment where this native wheel is installed; executes Chart/Figure exports",
+    )
     args = parser.parse_args(argv)
 
     expect_native = True if args.expect_native else False if args.expect_pure else None
     try:
         verify_wheel(args.wheel, expect_native=expect_native)
+        if args.installed_python is not None:
+            if expect_native is not True:
+                raise AssertionError("--installed-python requires --expect-native")
+            verify_installed_export_surface(args.installed_python)
     except (AssertionError, KeyError, zipfile.BadZipFile) as e:
         print(f"wheel verification failed for {args.wheel}: {e}", file=sys.stderr)
         return 1

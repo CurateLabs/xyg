@@ -215,7 +215,9 @@ pub unsafe extern "C" fn xyg_scene_support_reason(
 /// envelope. Returns the required UTF-8 byte count (zero means supported), or
 /// `usize::MAX` for a malformed or version-mismatched envelope. When `out_cap`
 /// is sufficient, writes the diagnostic without a trailing NUL. Hosts only
-/// pack literal figure metadata; allowlists and wording stay in Rust.
+/// pack literal figure metadata; allowlists and wording stay in Rust. ABI 105's
+/// current contract admits Rust-resolved autorange for primary-axis geometry;
+/// the XYEP v1 envelope and this C signature are unchanged.
 ///
 /// # Safety
 /// `input` must address `len` readable bytes when `len` is non-zero. When
@@ -21501,7 +21503,10 @@ pub unsafe extern "C" fn xyg_density_constant_color_wire_admit(
     })
 }
 
-/// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
+/// Explicit density replay-source admission seam (ABI 269).
+///
+/// The first flag means the host explicitly requested Worker/WASM replay; it
+/// no longer merely mirrors the ordinary painter's split buffer layout.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_density_wasm_source_admit(
     split_payload: i32,

@@ -26,8 +26,13 @@ DEFAULT_FINAL_REVIEW_SCRIPT = ROOT / "scripts" / "request_final_coderabbit.py"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
+DEFAULT_CONTRIBUTOR_SPEC = ROOT / "spec" / "process" / "contributing.md"
+DEFAULT_CODEOWNERS = ROOT / ".github" / "CODEOWNERS"
 REQUIRED_CI_JOBS = {
+    "authored_scene",
     "browser_conformance",
+    "release_surface_changes",
+    "release_surfaces",
     "matplotlib_reference",
     "test",
     "python_floor",
@@ -40,7 +45,22 @@ REQUIRED_CI_JOBS = {
     "wasm_foundation",
 }
 PR_REQUIRED_CI_JOBS = {"test", "wasm_foundation", "python_floor"}
-MAIN_ONLY_CI_JOBS = REQUIRED_CI_JOBS - PR_REQUIRED_CI_JOBS
+RELEASE_SURFACE_CONDITIONAL_JOBS = {
+    "authored_scene",
+    "browser_conformance",
+    "install_without_rust",
+    "sdist",
+    "wheels",
+}
+MAIN_ONLY_CI_JOBS = (
+    REQUIRED_CI_JOBS
+    - PR_REQUIRED_CI_JOBS
+    - RELEASE_SURFACE_CONDITIONAL_JOBS
+    - {
+        "release_surface_changes",
+        "release_surfaces",
+    }
+)
 REQUIRED_CODSPEED_JOBS = {"detect", "benchmarks"}
 REQUIRED_RELEASE_JOBS = {
     "wheels",
@@ -62,6 +82,49 @@ ALLOWED_BLACKSMITH_RUNNERS = {
     "blacksmith-12vcpu-macos-15",
 }
 CODSPEED_HOSTED_RUNNER = "codspeed-macro"
+
+
+def validate_milestone_governance(
+    contributor_spec: Path = DEFAULT_CONTRIBUTOR_SPEC,
+    codeowners: Path = DEFAULT_CODEOWNERS,
+) -> list[str]:
+    errors: list[str] = []
+    try:
+        governance = contributor_spec.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read milestone governance specification {contributor_spec}: {exc}"]
+    normalized_governance = " ".join(governance.split())
+    for phrase in (
+        "Creating, renaming, closing, or deleting a milestone",
+        "explicit human approval recorded in a GitHub issue or pull request",
+        "must not execute it before that approval",
+        "Repository automation must not reopen, close, rename, create, or reassign milestones",
+    ):
+        if phrase not in normalized_governance:
+            errors.append(f"milestone governance specification missing {phrase!r}")
+    for stale in (
+        ROOT / ".github" / "workflows" / "m2-assign-milestone.yml",
+        ROOT / "scripts" / "m2_assign_milestone.sh",
+    ):
+        if stale.exists():
+            errors.append(f"unauthorized milestone mutation automation remains: {stale}")
+    try:
+        owners = codeowners.read_text(encoding="utf-8")
+    except OSError as exc:
+        errors.append(f"cannot read CODEOWNERS {codeowners}: {exc}")
+    else:
+        for protected in (
+            "/.github/CODEOWNERS",
+            "/crates/xyg-core/",
+            "/spec/abi/",
+            "/.github/workflows/",
+            "/scripts/classify_release_surface.py",
+            "/scripts/verify_release_surface_results.py",
+            "/scripts/verify_ci_workflow.py",
+        ):
+            if protected not in owners:
+                errors.append(f"CODEOWNERS missing protected release surface {protected!r}")
+    return errors
 
 
 def _is_structural_npm_trusted_job(block: str, runner: str) -> bool:
@@ -983,7 +1046,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         return [f"cannot read CI workflow {path}: {exc}"]
 
     jobs = _job_blocks(text)
-    errors: list[str] = []
+    errors: list[str] = validate_milestone_governance()
     _require_unique_workflow_structure(errors, text, "CI", REQUIRED_CI_JOBS)
     if _has_yaml_key(text, "defaults", indent=0):
         errors.append("CI workflow must not override the shell for hard-gate run steps")
@@ -1005,6 +1068,26 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
         if unsafe or values:
             errors.append(f"CI PR-required job {job_name!r} must run unconditionally")
+    classifier_if, classifier_if_unsafe = _direct_yaml_key_values(
+        jobs.get("release_surface_changes", ""), "if", indent=4
+    )
+    if classifier_if_unsafe or classifier_if:
+        errors.append("CI release-surface classifier must run unconditionally")
+    aggregate_if, aggregate_if_unsafe = _direct_yaml_key_values(
+        jobs.get("release_surfaces", ""), "if", indent=4
+    )
+    if aggregate_if_unsafe or aggregate_if != ["always()"]:
+        errors.append("CI Release surfaces aggregate must use if: always()")
+    release_condition = (
+        "github.event_name != 'pull_request' || "
+        "needs.release_surface_changes.outputs.required == 'true'"
+    )
+    for job_name in sorted(RELEASE_SURFACE_CONDITIONAL_JOBS):
+        values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
+        if unsafe or values != [release_condition]:
+            errors.append(f"CI release-surface job {job_name!r} must use the classifier condition")
+        if "release_surface_changes" not in jobs.get(job_name, ""):
+            errors.append(f"CI release-surface job {job_name!r} must depend on the classifier")
     for job_name in sorted(MAIN_ONLY_CI_JOBS):
         values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
         expected = (
@@ -1014,6 +1097,43 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         )
         if unsafe or values != [expected]:
             errors.append(f"CI breadth job {job_name!r} must run only outside pull_request events")
+
+    _require_job_contains(
+        errors,
+        jobs,
+        "release_surface_changes",
+        "CI",
+        "release-surface change classifier",
+        "scripts/classify_release_surface.py",
+        "github.event.pull_request.base.sha",
+        "GITHUB_OUTPUT",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "authored_scene",
+        "CI",
+        "pre-merge four-tier authored Scene parity",
+        "packages/xy-node/scripts/generate_authored_scene_benchmark.mjs",
+        "scripts/generate_authored_scene_benchmark.py",
+        "scripts/verify_authored_scene_artifacts.py",
+        "XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "release_surfaces",
+        "CI",
+        "non-skippable aggregate Release surfaces status",
+        "name: Release surfaces",
+        "if: always()",
+        "scripts/verify_release_surface_results.py",
+        "needs.wheels.result",
+        "needs.sdist.result",
+        "needs.install_without_rust.result",
+        "needs.authored_scene.result",
+        "needs.browser_conformance.result",
+    )
 
     _require_job_contains(
         errors,

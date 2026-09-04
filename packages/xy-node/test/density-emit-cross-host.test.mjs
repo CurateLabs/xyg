@@ -175,6 +175,7 @@ function caseKeys(caseName, entry) {
 function buildCase(name) {
   const fig = figure({ width: 240, height: 160 });
   let split = false;
+  let wasmSource = false;
   if (name === "scatter_density_colormap") {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, colormap: "plasma" });
     fig.traces[0].id = 21;
@@ -205,6 +206,7 @@ function buildCase(name) {
     fig.scatter([1, 10], [1, 10], { forceDensity: true });
     fig.traces[0].id = 41;
     split = true;
+    wasmSource = true;
   } else if (name === "density_sample_color_size") {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
       forceDensity: true,
@@ -259,7 +261,7 @@ function buildCase(name) {
   } else {
     throw new Error(`unknown case ${name}`);
   }
-  return { spec: fig.buildPayload(split ? { split: true } : {}).spec, split };
+  return { spec: fig.buildPayload(split ? { split: true, wasmSource } : {}).spec, split };
 }
 
 test("density emit cross-host fixture contract", () => {
