@@ -40,6 +40,10 @@ STEPS: tuple[tuple[list[str], str], ...] = (
         "audit contract tests",
     ),
     (
+        ["python3", "scripts/host_delegation_corpus.py"],
+        "executable Python/Node delegation corpus",
+    ),
+    (
         [
             "uv",
             "run",

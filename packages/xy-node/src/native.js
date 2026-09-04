@@ -2,6 +2,7 @@ import koffi from "koffi";
 
 import {
   ABI_VERSION,
+  _configureGeneratedAbiTraceFromEnv,
   bindAbiVersion,
   bindGeneratedAbi,
 } from "./_abi_generated.js";
@@ -30,6 +31,7 @@ assertAbiVersion(xygAbiVersion(), ABI_VERSION);
 export const xyAbiVersion = xygAbiVersion;
 
 bindGeneratedAbi(lib);
+_configureGeneratedAbiTraceFromEnv();
 
 export function pointer(view, cType) {
   if (view == null) {

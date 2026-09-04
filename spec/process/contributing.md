@@ -246,8 +246,11 @@ the `<CHROMIUM>` placeholder, name it explicitly, for example
 - New, removed, or renamed production Rust/Python/Node/browser files are
   reflected in `spec/design/ownership-audit.{json,md}`; run
   `make check-ownership`. For M2 host-parity landing readiness, also run
-  `make check-host-parity` (ownership + inventory audit + ABI smoke +
-  cross-host differential tests). Do not weaken a host boundary merely to classify a
+  `make check-host-parity` (ownership + advisory source inventory + ABI smoke +
+  versioned executable delegation corpus + cross-host differential tests). The
+  generated trace artifact records only pointer presence and size metadata and
+  must never be expanded to user values. Do not use source call counts as
+  semantic ownership evidence or weaken a host boundary merely to classify a
   new algorithm.
 - Public errors are actionable and name the bad parameter.
 - Failed public builder calls leave the internal `_figure.Figure` traces,

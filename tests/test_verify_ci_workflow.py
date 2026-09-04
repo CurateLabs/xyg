@@ -2815,6 +2815,24 @@ def test_ci_workflow_rejects_regression_upload_that_skips_after_failures(
     assert any("test job" in error and "if: always()" in error for error in errors)
 
 
+def test_ci_workflow_rejects_delegation_upload_that_skips_after_failures(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Upload executable host-delegation evidence\n        if: always()\n",
+            "      - name: Upload executable host-delegation evidence\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow(path)
+
+    assert any("host-delegation evidence" in error and "if: always()" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_wheel_upload(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

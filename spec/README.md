@@ -85,6 +85,9 @@ Internal architecture: how the engine is built and why.
   XY-vs-XYG usage policy, and the identity-migration order.
 - [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns
   decisions; Python and Node stay thin loaders over one C ABI.
+- [`host-delegation-corpus.json`](design/host-delegation-corpus.json) —
+  versioned executable Python/Node journeys and required shared Rust entry
+  points for the semantic ownership gate.
 - [`host-neutral-architecture.md`](design/host-neutral-architecture.md) —
   sequenced plan so Python exists only when the user is using Python: crate
   split (#18), `stream.rs` (#22), paint client `@curatelabs/xyg` (#23), Node

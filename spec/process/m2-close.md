@@ -10,8 +10,9 @@ Post-landing host-parity follow-on (adversarial review): tracker
 [`issues/m2-host-parity-findings.md`](../design/issues/m2-host-parity-findings.md).
 The later stop-the-line release recovery is tracker
 [#862](https://github.com/CurateLabs/xyg/issues/862), specified in
-[`m2-stage0-recovery.md`](m2-stage0-recovery.md). While it is open, completion
-claims are limited to #855 and #862 recovery work.
+[`m2-stage0-recovery.md`](m2-stage0-recovery.md). Stage 0, including the
+capacity-aware raster seam and cost-bounded density authority (#876/#877), is
+closed on `main`; the remaining close work is tracked under #855.
 
 In-repo pointer for the emit/pack contract: [`issues/m2-close.md`](../design/issues/m2-close.md).
 Reproduce remaining Python core surfaces with
@@ -87,16 +88,19 @@ cutover). Reproduce with `make check-host-parity` (or
 `python3 scripts/audit_host_parity_landing.py`); CI runs the same orchestrator in
 the `test` job after `uv sync`.
 
-The #858 inventory now parses calls through imported Python `_native` /
-`kernels` boundaries and Node `native.js` / `sceneBulkNative.js` boundaries.
-On this product state the 80 Python policy surfaces contain 268 native call
-sites across 207 distinct ABI entries (11.3 calls/KLOC); the 30 Node surfaces
-contain 968 call sites across 420 entries (40.8 calls/KLOC). Imports alone do
-not count. Tests pin conservative floors to expose accidental measurement
-regressions, while `verify_ownership.py` applies non-empty Python/Node
-keep-host forbidden-pattern gates. New keep-host tags require file-specific
-code/spec evidence under the ownership contributor rule; the policy's canned
-rationale is not evidence.
+The #858 inventory parses calls through imported Python `_native` / `kernels`
+boundaries and Node `native.js` / `sceneBulkNative.js` boundaries, but #874's
+adversarial review makes its limitation explicit: those are syntactic call
+expressions, not executed calls or a call graph, and dead calls can inflate the
+numbers. Count floors were removed. `verify_ownership.py` keeps the cheap
+forbidden-pattern tripwires, while the versioned
+[`host-delegation-corpus.json`](../design/host-delegation-corpus.json) now runs
+all admitted public marks and the payload/Scene/static/LOD/density/append
+journeys through generated ctypes and Koffi trace hooks. Existing differential
+assertions remain the output oracle; the deterministic exact-commit report is
+written to `target/host-delegation-report.json` and uploaded by CI. New
+keep-host tags still require file-specific code/spec evidence under the
+ownership contributor rule; the policy's canned rationale is not evidence.
 
 **Post-landing follow-on ([#855](https://github.com/CurateLabs/xyg/issues/855)).**
 Adversarial review after #852 showed the live payload/Scene compile seam is

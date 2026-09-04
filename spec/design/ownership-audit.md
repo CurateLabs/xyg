@@ -6,14 +6,30 @@
 
 This ledger answers ownership file by file without treating language percentages as a quality target. Rust owns row scans and every parity-affecting decision. Python and Node own host ergonomics. TypeScript owns browser painting and interaction. Files marked for migration remain supported, but must not gain new canonical policy while their named issue is open.
 
-The keep-host inventory is behavioral evidence, not a line-count claim.
+The keep-host inventory is an advisory source map, not behavioral evidence.
 `scripts/audit_python_host_core.py` parses Python imports/calls and Node ESM
-imports/calls to report actual call sites and distinct entries on the generated
-native boundary, plus calls per KLOC. Imports alone do not count. The
+imports/calls to report syntactic call expressions and referenced entries on the generated
+native boundary, plus references per KLOC. Imports alone do not count, but dead
+calls do; host policy can also run before a counted call. The
 `python-host` and `node-host` manifest policies also reject hand-authored ABI
 signatures and known host-local aggregation/domain/tick implementations. These
-checks are tripwires rather than proof that every loop is harmless; cross-host
-byte differentials remain the authoritative parity evidence.
+checks are structural tripwires rather than semantic ownership proof.
+
+The executable layer is `scripts/host_delegation_corpus.py`, whose versioned
+contract is [`host-delegation-corpus.json`](host-delegation-corpus.json). It
+runs all 27 admitted public mark kinds plus payload, Scene/static export, LOD,
+density, append, and failure controls through generated ctypes/Koffi test hooks.
+Hooks record canonical ABI symbol names, pointer presence, size/capacity
+metadata, outcomes, and returned lengths, never pointer addresses or user
+values. The gate requires both hosts to execute the reviewed product-level Rust
+entries while existing differential assertions remain the output oracle. It
+writes `target/host-delegation-report.json`, keyed by ABI signature/version and
+commit; CI uploads that exact-SHA artifact. The report also carries the
+versioned uncovered-route/module inventory, with #869/#873/#875 as current
+owners rather than silently converting missing coverage to zero. Dead calls produce no events,
+injected native faults propagate before output, and a host-local fallback event
+fails the verifier. Dynamic traces prove execution, not absence of every
+possible duplicate algorithm, so the structural tripwires remain complementary.
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
@@ -331,7 +347,15 @@ Secondary §302 composition hubs are closed: marks, `_figure`, channels, lod, fa
 | Python | ~80 (~23.6k lines) | static-export emitters (`_export_*`), scene observation marshal (`_scene_marshal.py`, `_scene_observations.py`), payload materialize (`_payload_trace_materialize.py`) |
 | Node | ~30 (~23.7k lines) | Koffi ABI wrappers (`encode.js`), figure/scene marshal (`figure.js`, `scene.js`, `payloadTraceMaterialize.js`), mark composition (`marks/*`) |
 
-Practical parity is proven by cross-host differential tests (`tests/test_*cross_host*.py`) and ABI smoke, not by migration-tag counts alone. Remaining browser debt is **open**, not part of the closed host-only bar: `js/src/30_ticks.ts` stays `browser-scene-migration` with follow-up [#869](https://github.com/CurateLabs/xyg/issues/869) until secondary/polar/unattached ChartView tick generation and formatting move to Rust/WASM. Historical parent #59 closed a narrower delivered subset and is not an actionable open owner for this residual.
+Practical parity is proven by the executable delegation corpus, cross-host
+differential tests (`tests/test_*cross_host*.py`), and ABI smoke—not by
+migration tags, source counts, or native-looking call expressions. Remaining
+browser debt is **open**, not part of the closed host-only bar:
+`js/src/30_ticks.ts` stays `browser-scene-migration` with follow-up
+[#869](https://github.com/CurateLabs/xyg/issues/869) until
+secondary/polar/unattached ChartView tick generation and formatting move to
+Rust/WASM. Historical parent #59 closed a narrower delivered subset and is not
+an actionable open owner for this residual.
 
 The default eight-color categorical palette and first mark color remain copied
 across Rust, Python, and Node production paths. This is bounded host-ergonomics

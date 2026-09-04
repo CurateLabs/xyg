@@ -27,7 +27,12 @@ from typing import Any, ClassVar, Optional, TypedDict, cast
 import numpy as np
 import numpy.typing as npt
 
-from ._abi_generated import ABI_VERSION, bind_abi_version, bind_generated_abi
+from ._abi_generated import (
+    ABI_VERSION,
+    bind_abi_version,
+    bind_generated_abi,
+    trace_generated_abi_from_env,
+)
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
 _MAX_SCENE_MARKS = 2_000_000
@@ -632,7 +637,7 @@ def _load() -> ctypes.CDLL:
         )
 
     bind_generated_abi(lib)
-    return lib
+    return trace_generated_abi_from_env(lib)
 
 
 _lib = _load()

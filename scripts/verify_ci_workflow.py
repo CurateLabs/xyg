@@ -1344,6 +1344,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "spec/benchmarks/metrics.md",
         "transport.json",
     )
+    test_steps = _named_step_blocks(jobs.get("test", ""))
+    regression_upload = test_steps.get("Upload regression benchmark report", "")
+    regression_upload_if, regression_upload_if_unsafe = _step_direct_key_values(
+        regression_upload, "if"
+    )
+    if regression_upload_if_unsafe or regression_upload_if != ["always()"]:
+        errors.append("CI test job Upload regression benchmark report step must use if: always()")
+    delegation_upload = test_steps.get("Upload executable host-delegation evidence", "")
+    delegation_upload_if, delegation_upload_if_unsafe = _step_direct_key_values(
+        delegation_upload, "if"
+    )
+    if delegation_upload_if_unsafe or delegation_upload_if != ["always()"]:
+        errors.append(
+            "CI test job Upload executable host-delegation evidence step must use if: always()"
+        )
+    _require_step_contains(
+        errors,
+        jobs.get("test", ""),
+        "Upload executable host-delegation evidence",
+        "deterministic delegation evidence artifact",
+        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        "host-delegation-${{ github.sha }}",
+        "if-no-files-found: error",
+        "target/host-delegation-report.json",
+    )
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),

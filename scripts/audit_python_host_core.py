@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report core-logic surface in python-scene-migration modules (M2 re-audit).
+"""Report an advisory source inventory for M2 ownership review.
 
 Stdlib-only companion to ``verify_ownership.py``.  The gate proves every
 production file is classified; this script measures how much algorithmic work
@@ -11,7 +11,10 @@ documented keep-host compatibility/marshal surfaces (static export emitters,
 scene observation marshaling, payload density attach) and reports remaining
 Node ``node-scene-migration`` inventory for practical parity tracking.
 
-Exit 0 always; prints a human-readable report to stdout.
+This source scan is deliberately not an execution, call-graph, or ownership
+proof: dead calls and host work before a native call are indistinguishable.
+``host_delegation_corpus.py`` provides the executable evidence. Exit 0 always;
+this command prints review context only.
 """
 
 from __future__ import annotations
@@ -99,7 +102,7 @@ NODE_NATIVE_MODULES: frozenset[str] = frozenset({"./native.js", "./sceneBulkNati
 
 
 class NativeCallMetrics:
-    """Static, source-backed native call-site inventory for one host file."""
+    """Static, source-backed native call-expression inventory for one host file."""
 
     def __init__(self, lines: int, calls: int, entries: frozenset[str]) -> None:
         self.lines = lines
@@ -450,15 +453,15 @@ def _print_policy_surface_block(
     print(f"  {label}: {len(paths)}")
     density = 1000.0 * total_calls / total_lines if total_lines else 0.0
     print(
-        f"  totals: {total_lines} lines, {total_calls} native call sites, "
-        f"{len(total_entries)} distinct ABI entries, {density:.1f} calls/KLOC"
+        f"  totals: {total_lines} lines, {total_calls} syntactic native call expressions, "
+        f"{len(total_entries)} referenced ABI entries, {density:.1f} references/KLOC"
     )
     print("  top surfaces by line count:")
     for n_lines, n_calls, n_entries, rel in sorted(rows, reverse=True)[:top_n]:
         row_density = 1000.0 * n_calls / n_lines if n_lines else 0.0
         print(
-            f"    - {rel}: {n_lines} lines, {n_calls} native calls, "
-            f"{n_entries} ABI entries, {row_density:.1f} calls/KLOC"
+            f"    - {rel}: {n_lines} lines, {n_calls} native call expressions, "
+            f"{n_entries} referenced ABI entries, {row_density:.1f} references/KLOC"
         )
     return NativeCallMetrics(total_lines, total_calls, frozenset(total_entries))
 
@@ -470,10 +473,11 @@ def _print_keep_host_policy_audit(manifest_path: Path) -> None:
     node_migration = _policy_paths_by_tag(manifest, "node-scene-migration")
     browser_paths = _policy_paths_by_tag(manifest, "browser-scene-migration")
 
-    print("Keep-host policy surface audit (compatibility export + marshal seams):")
+    print("Advisory keep-host source inventory (not execution or ownership proof):")
     print(
         "  Zero scene-migration tags does not retire these surfaces; "
-        "see spec/design/ownership-audit.md post-M2 inventory."
+        "dead calls can inflate every metric below. Executable evidence: "
+        "scripts/host_delegation_corpus.py."
     )
     _print_policy_surface_block("python keep-host policy files", py_paths, host="python")
     print()
