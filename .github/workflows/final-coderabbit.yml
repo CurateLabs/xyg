@@ -1,4 +1,4 @@
-name: Final CodeRabbit review
+name: Authorize final CodeRabbit review
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   request:
-    name: Request final CodeRabbit review
+    name: Authorize final CodeRabbit review
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       checks: read
@@ -32,7 +32,7 @@ jobs:
         with:
           fetch-depth: 1
           ref: main
-      - name: Verify final candidate and request review
+      - name: Verify final candidate and record authorization
         env:
           GH_TOKEN: ${{ github.token }}
           XYG_CURRENT_RUN_ID: ${{ github.run_id }}

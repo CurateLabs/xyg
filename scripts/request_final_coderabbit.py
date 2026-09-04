@@ -1,4 +1,4 @@
-"""Request one final CodeRabbit review only for a fully green PR candidate."""
+"""Authorize a human-triggered CodeRabbit review for a fully green PR candidate."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ _REQUIRED_CHECKS = {
 
 
 def has_existing_request(comments: Any, head: str) -> bool:
-    """Recognize only this workflow's exact-head marker from GitHub Actions."""
+    """Recognize only this workflow's exact-head authorization marker."""
     if not isinstance(comments, list):
         raise ValueError("pull-request comment response is malformed")
     marker = f"<!-- xyg-final-review:{head} -->"
@@ -38,6 +38,16 @@ def has_existing_request(comments: Any, head: str) -> bool:
         ):
             return True
     return False
+
+
+def authorization_comment(head: str) -> str:
+    """Build the bot-safe authorization; GitHub bot comments cannot invoke CodeRabbit."""
+    return (
+        f"Final CodeRabbit review is authorized for exact head `{head}`. "
+        "An authenticated human collaborator must now issue the CodeRabbit review command; "
+        "bot-authored commands are ignored.\n\n"
+        f"<!-- xyg-final-review:{head} -->"
+    )
 
 
 def _required_env(name: str) -> str:
@@ -184,17 +194,17 @@ query($owner:String!,$name:String!,$number:Int!){
         if refreshed.get("head", {}).get("sha") != head:
             raise ValueError("pull request head changed during final-review verification")
         if has_existing_request(comments, head):
-            print(f"final CodeRabbit review already requested for PR #{number} at {head}")
+            print(f"final CodeRabbit review already authorized for PR #{number} at {head}")
             return 0
         _request(
             f"{api}/issues/{number}/comments",
             token,
-            body={"body": f"@coderabbitai review\n\n<!-- xyg-final-review:{head} -->"},
+            body={"body": authorization_comment(head)},
         )
-        print(f"requested final CodeRabbit review for PR #{number} at {head}")
+        print(f"authorized final CodeRabbit review for PR #{number} at {head}")
         return 0
     except (OSError, ValueError, TypeError, AttributeError, json.JSONDecodeError) as exc:
-        print(f"Final CodeRabbit request failed closed: {exc}", file=sys.stderr)
+        print(f"Final CodeRabbit authorization failed closed: {exc}", file=sys.stderr)
         return 1
 
 
