@@ -18,6 +18,13 @@ from xyg._scene_v3 import scene_export_support_reason
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "binned_ecdf_scene.json").read_text())
+
+
+def public_png(figure):
+    """The raw-Scene public PNG route (the XYST route composites RGBA)."""
+    from xyg._scene_v3 import public_static_export
+
+    return public_static_export(figure, "png", scale=1)
 CASES = {
     "mixed": ([3.0, np.nan, 1.0, 3.0, 2.0, np.inf], 4),
     "constant": ([7.0, 7.0, 7.0], 4),
@@ -101,10 +108,10 @@ def test_binned_ecdf_routes_every_static_and_browser_consumer() -> None:
         figure, "svg", width=int(figure.width), height=int(figure.height)
     ).decode("utf-8")
     assert _native.scene_svg(figure.to_scene()) == svg
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert public_png(figure) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), 320, 240
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(figure.to_svg())
     assert _native.scene_browser_painter(scene).startswith(b"XYPB")
 
 
