@@ -185,6 +185,11 @@ explicit fail-closes tracked in
 [#889](https://github.com/CurateLabs/xyg/issues/889) with reason-carrying
 xfails; they do not reintroduce a host renderer.
 
+**Milestone closed (2026-09-05).** With #873/#875 landed and #855 closed after
+its adversarial close-when review, the `M2: Rust-Owned Cross-Host Core`
+milestone has no open issues (406 closed). Post-M2 admission work continues in
+#889 and the packaging/RC tracks (#884, #885, #886, #54).
+
 **#875 registry complete.** The same Rust registry now carries the full XYST
 document vocabulary: 40 runtime cases (panel flags 0–14 including grid dash,
 document flags, annotation/label/legend/colorbar families, scale and quality
