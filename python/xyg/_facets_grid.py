@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Sequence
 from os import PathLike
 from pathlib import Path
@@ -143,7 +142,7 @@ for(const p of panels){{
         optimize_png: bool = False,
     ) -> bytes:
         """Marshal facet placement; Rust owns validation and composition."""
-        from . import _scene_v3, _static_document
+        from . import _static_document
 
         layout = _static_document.resolve_facet_layout(
             len(self.figures),
