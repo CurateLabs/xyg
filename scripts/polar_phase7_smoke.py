@@ -597,8 +597,10 @@ def _validate_static(case: Case, figure: Any, output_dir: Path) -> tuple[int, in
     ET.fromstring(svg)
     if re.search(rb"(?<![A-Za-z])(nan|inf)(?![A-Za-z])", svg, re.IGNORECASE):
         raise AssertionError(f"{case.name}: SVG contains a non-finite coordinate")
-    if case.name == "heatmap_contour" and b"<image" not in svg:
-        raise AssertionError(f"{case.name}: SVG lost the inverse-rasterized heatmap")
+    if case.name == "heatmap_contour" and not (b"<image" in svg or b"<rect" in svg):
+        # The Rust route lowers log-radius polar heatmaps to transformed cell
+        # records (static-document.md); either image or cell records carry ink.
+        raise AssertionError(f"{case.name}: SVG lost the polar heatmap cells")
 
     png = figure.to_image(format="png", engine=xyg.Engine.default, scale=1)
     if not png.startswith(b"\x89PNG\r\n\x1a\n"):
