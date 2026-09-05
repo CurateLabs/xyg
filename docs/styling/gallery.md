@@ -474,14 +474,9 @@ styled_facets = xyg.facet_chart(
     xyg.area(
         x="x",
         y="y",
-        color="var(--facet-line, #d97706)",
-        fill=(
-            "linear-gradient("
-            "var(--facet-fill-strong, #d977064d) 5%, "
-            "var(--facet-fill-soft, #d9770600) 95%"
-            ")"
-        ),
-        line_color="var(--facet-line, #d97706)",
+        color="#d97706",
+        fill="linear-gradient(#d977064d 5%, #d9770600 95%)",
+        line_color="#d97706",
         line_width=2,
     ),
     xyg.x_axis(

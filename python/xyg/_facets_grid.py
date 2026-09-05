@@ -158,25 +158,28 @@ for(const p of panels){{
             zip(self.figures, layout.offsets, layout.panel_sizes, strict=True)
         ):
             panel_width, panel_height = panel_size
-            projected = copy.deepcopy(figure)
-            if not getattr(projected, "show_legend", False):
-                projected.legend_options = {}
-            reason, scene = _scene_v3._public_scene_or_reason(
-                projected,
-                width=panel_width,
-                height=panel_height,
-            )
-            if reason is not None or scene is None:
-                raise _static_document.UnsupportedStaticExport(
-                    f"facet panel {index}: {reason or 'XYG_STATIC_UNSUPPORTED_PANEL'}"
+            try:
+                panel, _legend = _static_document.project_figure(
+                    figure, width=panel_width, height=panel_height
                 )
+            except _static_document.UnsupportedStaticExport as error:
+                raise _static_document.UnsupportedStaticExport(
+                    f"facet panel {index}: {error}"
+                ) from None
             panels.append(
                 _static_document.Panel(
-                    scene,
+                    panel.scene,
                     offset[0],
                     offset[1],
                     panel_width,
                     panel_height,
+                    chrome_metrics=panel.chrome_metrics,
+                    axis_sides=panel.axis_sides,
+                    annotation_text_flags=panel.annotation_text_flags,
+                    annotation_padding=panel.annotation_padding,
+                    title_style=panel.title_style,
+                    annotation_vertical_align=panel.annotation_vertical_align,
+                    grid_dash=panel.grid_dash,
                 )
             )
         return _static_document.encode(

@@ -1008,15 +1008,20 @@ def encode(
     return header + records + title_bytes + decorations + scenes
 
 
-def figure_document(
+def project_figure(
     figure: Any,
     *,
     width: int,
     height: int,
     background: Optional[str] = None,
     optimize_png: bool = False,
-) -> bytes:
-    """Compile one public Figure Scene or fail closed with its stable reason."""
+) -> tuple[Panel, Optional[dict[str, Any]]]:
+    """Project one public Figure onto panel facts plus its canonical Scene.
+
+    Shared by the single-panel document route and the facet grid: validates
+    authored styles, extracts chrome metrics and grid dash codes, resolves
+    annotation styles, lifts the document legend, and compiles the Scene.
+    """
     from . import _scene_v3
 
     projected = copy.deepcopy(figure)
@@ -1145,27 +1150,41 @@ def figure_document(
             float(raw_size[:-2]),
             str(authored.get("color", root_style.get("--chart-text", "#262626"))),
         )
+    panel = Panel(
+        scene,
+        0,
+        0,
+        width,
+        height,
+        chrome_metrics=(*chrome_metrics["x"], *chrome_metrics["y"]),
+        annotation_font_size=annotation_style.font_size,
+        axis_sides=(
+            (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),
+            (1 if "left" in frame_sides else 0) | (2 if "right" in frame_sides else 0),
+        ),
+        annotation_text_flags=annotation_style.text_flags,
+        annotation_padding=annotation_style.padding,
+        title_style=title_style,
+        annotation_vertical_align=annotation_style.vertical_align,
+        grid_dash=_grid_dash_fact(grid_dash, grid_dash_minor),
+    )
+    return panel, legend
+
+
+def figure_document(
+    figure: Any,
+    *,
+    width: int,
+    height: int,
+    background: Optional[str] = None,
+    optimize_png: bool = False,
+) -> bytes:
+    """Compile one public Figure into its single-panel XYST document."""
+    panel, legend = project_figure(
+        figure, width=width, height=height, background=background, optimize_png=optimize_png
+    )
     return encode(
-        [
-            Panel(
-                scene,
-                0,
-                0,
-                width,
-                height,
-                chrome_metrics=(*chrome_metrics["x"], *chrome_metrics["y"]),
-                annotation_font_size=annotation_style.font_size,
-                axis_sides=(
-                    (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),
-                    (1 if "left" in frame_sides else 0) | (2 if "right" in frame_sides else 0),
-                ),
-                annotation_text_flags=annotation_style.text_flags,
-                annotation_padding=annotation_style.padding,
-                title_style=title_style,
-                annotation_vertical_align=annotation_style.vertical_align,
-                grid_dash=_grid_dash_fact(grid_dash, grid_dash_minor),
-            )
-        ],
+        [panel],
         width=width,
         height=height,
         background=background,
