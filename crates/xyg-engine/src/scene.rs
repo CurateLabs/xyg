@@ -3617,6 +3617,10 @@ fn resolved_colorbar_ticks(
 }
 
 /// Shared SVG/raster title geometry; XYST's pyplot label convention is opt-in.
+/// Anchor bit marking a quarter-turned label; mirrors `raster::TEXT_ROTATED`
+/// and stays available in non-raster (WASM) builds that consume the SVG path.
+const TEXT_ROTATED_BIT: u8 = 0x80;
+
 fn resolved_colorbar_title(
     colorbar: &SceneColorbar,
     bounds: (f64, f64, f64, f64),
@@ -3629,7 +3633,7 @@ fn resolved_colorbar_title(
             (
                 x + width + 38.0,
                 y + height / 2.0,
-                1 | crate::raster::TEXT_ROTATED,
+                1 | TEXT_ROTATED_BIT,
                 10.0,
             )
         }
@@ -11759,7 +11763,7 @@ impl SceneDocument {
             push_num(out, ty);
             if colorbar.static_pyplot_label {
                 out.push_str("\" text-anchor=\"middle");
-                if anchor & crate::raster::TEXT_ROTATED != 0 {
+                if anchor & TEXT_ROTATED_BIT != 0 {
                     out.push_str("\" transform=\"rotate(-90 ");
                     push_num(out, tx);
                     out.push(' ');
