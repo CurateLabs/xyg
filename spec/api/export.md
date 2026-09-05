@@ -89,11 +89,16 @@ both apply. The public
 (`js/src/50_chartview.ts`) and the SVG renderer's payload path both go through
 them, and the client *does* draw it (T9).
 
-`_pdf.py` accepts only the SVG that `_svg.py` emits and raises
+The Rust PDF converter (called by the bounded `_pdf.py` ABI wrapper and native
+Scene/StaticDocument exports) accepts the closed generated SVG vocabulary and raises
 `ValueError("unsupported SVG feature: ...")` on anything else, so generator
 drift fails loudly rather than rendering wrong. Text stays text (base-14
-Helvetica, WinAnsiEncoding, `?` for out-of-range characters); density and
+Helvetica family, WinAnsiEncoding, `?` for out-of-range characters); density and
 heatmap layers embed as bounded rasters.
+Text-level `font-style="italic"` or `"oblique"` selects Helvetica-Oblique,
+or Helvetica-BoldOblique together with bold weight. Normal/default styles
+retain the existing regular/bold font and byte output. Arbitrary font families,
+oblique angles, and CSS font resolution are not enabled by this static subset.
 
 `quality` (1–100, default 90) applies to JPEG and to **Chromium** WebP.
 Requesting `quality` for native WebP is an error, not a silent no-op — the

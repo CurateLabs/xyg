@@ -187,17 +187,30 @@ const KIND_CONTOUR: u8 = 18;
 
 const PUBLIC_FIGURE_STYLE_KEYS: &[&str] = &["background", "--chart-bg"];
 const PUBLIC_LEGEND_KEYS: &[&str] = &["loc", "title", "highlight", "toggle"];
-const PUBLIC_COLORBAR_KEYS: &[&str] = &["domain", "stops", "ticks", "minor_ticks", "title"];
+const PUBLIC_COLORBAR_KEYS: &[&str] = &[
+    "domain",
+    "stops",
+    "ticks",
+    "minor_ticks",
+    "title",
+    "side",
+    "colormap",
+    "orientation",
+    "label",
+];
 const PUBLIC_AXIS_KEYS: &[&str] = &[
     "type",
     "constant",
     "nonpositive",
     "domain",
+    "margin",
+    "reverse",
     "label",
     "side",
     "tick_sides",
     "tick_label_sides",
     "tick_values",
+    "tick_count",
     "tick_labels",
     "minor_tick_values",
     "style",
@@ -1185,11 +1198,12 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     };
     let ordinary_autorange_shape = if flags & FLAG_POLAR != 0
         || n_annotations != 0
-        || !style_keys.is_empty()
         || !legend_keys.is_empty()
         || !colorbar_keys.is_empty()
         || axes.iter().any(|axis| extra_key(&axis.keys, &["side"]))
-        || traces.iter().any(|trace| !conservative_autorange_style(trace))
+        || traces
+            .iter()
+            .any(|trace| !conservative_autorange_style(trace))
     {
         false
     } else {
@@ -1328,13 +1342,15 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             let cells = (trace.heatmap_rows as usize)
                 .checked_mul(trace.heatmap_cols as usize)
                 .ok_or(SceneError::Limit)?;
-            let polar_painted = flags & FLAG_POLAR != 0
-                && (trace.style_keys.contains(&"colormap")
-                    || trace.style_keys.contains(&"truecolor"));
-            let polar_painted_stroke = polar_painted
+            let painted = trace.style_keys.contains(&"colormap")
+                || trace.style_keys.contains(&"truecolor");
+            let painted_stroke = painted
                 && trace.style_keys.contains(&"stroke")
                 && trace.style_keys.contains(&"stroke_width");
-            let cell_cap = if polar_painted && !polar_painted_stroke {
+            // Unoutlined painted grids lower to one bounded RGBA Image in
+            // Rust, for both Cartesian and polar axes. Per-cell outlines still
+            // require explicit records and retain the smaller mark budget.
+            let cell_cap = if painted && !painted_stroke {
                 MAX_SCENE_IMAGE_PIXELS
             } else {
                 MAX_PUBLIC_HEATMAP_CELLS

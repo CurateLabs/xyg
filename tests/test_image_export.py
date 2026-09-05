@@ -453,7 +453,11 @@ def test_facet_grid_supports_the_native_format_matrix(tmp_path):
 
 def test_facet_background_reaches_gap_pixels():
     grid = _grid().figure()
-    canvas = grid._compose_rgba(1.0, "#112233")
+    canvas = np.asarray(
+        _pil()
+        .open(io.BytesIO(grid.to_image("png", scale=1.0, background="#112233")))
+        .convert("RGBA")
+    )
     # The inter-panel gap column shows the backdrop, not panel pixels.
     gap_x = grid.panel_width + grid.gap // 2
     assert tuple(canvas[0, gap_x]) == (0x11, 0x22, 0x33, 255)

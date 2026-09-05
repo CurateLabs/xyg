@@ -120,12 +120,14 @@ import { validateDomSlots } from "./dom.js";
 import {
   figureChromeStyles,
   figureSceneV3,
+  figureStaticDocument,
   resolveDensityBinColors,
   resolveLegendBestLoc,
   scatterPaintChannelNames,
   scaleMap,
   sceneRasterCommands,
   sceneSvg,
+  staticDocumentExport,
   svgToPdf,
 } from "./scene.js";
 
@@ -3700,6 +3702,22 @@ export class Figure {
   toSceneRasterCommands(opts = {}) {
     return sceneRasterCommands(this.toScene(opts), opts.scale ?? 1);
   }
+
+  /** One-panel XYST document projected from this Figure onto the shared kernel. */
+  toStaticDocument(opts = {}) {
+    return figureStaticDocument(this, opts);
+  }
+
+  /** Export SVG, PNG, PDF, JPEG, or WebP through Rust StaticDocument. */
+  toImage(format = "png", opts = {}) {
+    return staticDocumentExport(this.toStaticDocument(opts), format, opts);
+  }
+
+  toSvg(opts = {}) { return this.toImage("svg", opts); }
+  toPng(opts = {}) { return this.toImage("png", opts); }
+  toPdf(opts = {}) { return this.toImage("pdf", opts); }
+  toJpeg(opts = {}) { return this.toImage("jpeg", opts); }
+  toWebp(opts = {}) { return this.toImage("webp", opts); }
 }
 
 export function figure(opts) {

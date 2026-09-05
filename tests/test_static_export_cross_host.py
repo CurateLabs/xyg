@@ -401,12 +401,17 @@ def test_python_and_node_scene_svg_raster_and_decoded_png_are_identical(
     node_svg = base64.b64decode(node_case["svg_b64"])
     node_raster = base64.b64decode(node_case["raster_b64"])
     node_png = base64.b64decode(node_case["png_b64"])
+    node_document_svg = base64.b64decode(node_case["document_svg_b64"])
+    node_document_png = base64.b64decode(node_case["document_png_b64"])
     assert node_scene == scene
-    assert node_svg == svg == figure.to_svg().encode()
+    assert node_svg == svg
+    assert node_document_svg == figure.to_svg().encode()
     assert node_raster == _native.scene_raster_commands(scene)
-    assert node_png == png == figure.to_png(scale=1)
+    assert node_png == png
+    assert node_document_png == figure.to_png(scale=1)
     assert _png_contract(node_png) == _png_contract(png)
     assert _png_contract(png)[:2] == ((320, 240), "RGB")
+    assert _png_contract(node_document_png)[:2] == ((320, 240), "RGBA")
 
 
 def test_pairwise_edge_fail_close_reasons_match(

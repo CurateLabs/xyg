@@ -38,7 +38,7 @@ from xyg._native import (
     scene_resolve_pack_kind,
     scene_splice_annotations,
 )
-from xyg._raster import _parse_color
+from xyg._paint import paint_rgba8 as _parse_color
 from xyg._scene_v3 import UnsupportedSceneV3, figure_scene
 
 

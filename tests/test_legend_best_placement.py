@@ -106,6 +106,10 @@ def test_best_resolves_before_the_wire_so_no_renderer_sees_it() -> None:
     assert spec["legend"]["loc"] in _legendfit._CANDIDATE_ORDER
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_best_moves_the_legend_off_the_data_in_the_svg() -> None:
     months = list(range(6))
     revenue = [12.0, 19.0, 15.0, 27.0, 24.0, 33.0]

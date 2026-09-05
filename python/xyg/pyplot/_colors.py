@@ -144,7 +144,7 @@ class Cmap:
         self._over = color if alpha is None else (color, alpha)
 
     def __call__(self, values: object) -> object:
-        from xyg._svg import _lut
+        from xyg._paint import colormap_lut as _lut
 
         source = np.asarray(values)
         array = np.asarray(values, dtype=np.float64)
@@ -635,7 +635,7 @@ def scalar_grid_rgba(values: object, cmap: object) -> np.ndarray:
     is truecolor RGBA so every renderer sees the same non-linear mapping.
     """
 
-    from xyg._svg import _lut
+    from xyg._paint import colormap_lut as _lut
 
     normalized = np.asarray(values, dtype=np.float64)
     cmap_name = resolve_cmap(cmap)

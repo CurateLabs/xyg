@@ -738,7 +738,7 @@ class AxesImage(Artist):
             # texture, where NaN cannot carry alpha reliably.  Convert the
             # transformed result to RGBA so pixels outside the transformed
             # image are genuinely transparent rather than a black rectangle.
-            from xyg._svg import _lut
+            from xyg._paint import colormap_lut as _lut
 
             finite = warped[np.isfinite(warped)]
             domain = self._entry["kwargs"].get("domain")

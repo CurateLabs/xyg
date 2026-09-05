@@ -92,22 +92,21 @@ def to_svg(
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> str:
-    """Return static SVG, routing the supported subset through Rust Scene.
+    """Return Rust-owned StaticDocument SVG or fail closed."""
+    from . import _static_document
 
-    Unsupported features take the documented compatibility renderer before
-    compilation.  Invalid input and Rust-consumer failures propagate; they
-    are never converted into a fallback.
-    """
-    from . import _scene_v3, _svg
-
-    data = _scene_v3.public_static_export(self, "svg", width=width, height=height)
-    if data is not None:
-        svg = data.decode("utf-8")
-        if path is not None:
-            export._atomic_write_text(path, svg)
-        return svg
-
-    return _svg.to_svg(self, path, width=width, height=height)
+    w = export._positive_pixel_count(
+        width if width is not None else (self.width if isinstance(self.width, int) else 800),
+        "SVG width",
+    )
+    h = export._positive_pixel_count(
+        height if height is not None else (self.height if isinstance(self.height, int) else 500),
+        "SVG height",
+    )
+    svg = _static_document.export_figure(self, "svg", width=w, height=h).decode("utf-8")
+    if path is not None:
+        export._atomic_write_text(path, svg)
+    return svg
 
 
 def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:

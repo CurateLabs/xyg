@@ -136,6 +136,8 @@ function encodedCase(name, figure) {
     svg_b64: Buffer.from(figure.toSceneSvg(), "utf8").toString("base64"),
     raster_b64: Buffer.from(figure.toSceneRasterCommands({ scale: 1 })).toString("base64"),
     png_b64: Buffer.from(png).toString("base64"),
+    document_svg_b64: Buffer.from(figure.toSvg(), "utf8").toString("base64"),
+    document_png_b64: Buffer.from(figure.toPng({ scale: 1 })).toString("base64"),
   };
 }
 

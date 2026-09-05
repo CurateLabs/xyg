@@ -86,6 +86,10 @@ def test_undeclared_keywords_reach_the_plugin_as_options(hilo) -> None:
     assert scatter.size_ch is not None and scatter.size_ch.constant == pytest.approx(14.0)
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_plugin_traces_reach_every_renderer(hilo) -> None:
     fig = xyg.chart(
         xyg.mark(

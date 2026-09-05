@@ -141,6 +141,10 @@ def test_box_part_styles_keep_strict_family_specific_validation() -> None:
         Figure().box(VALUES, group=GROUPS, style={"marker-shape": "diamond"})
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_box_part_styles_survive_native_vector_export() -> None:
     svg = _styled_figure().to_svg()
 

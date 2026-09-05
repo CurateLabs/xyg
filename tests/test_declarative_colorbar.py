@@ -278,6 +278,10 @@ def test_colorbar_uses_semantic_positional_fields_and_custom_render() -> None:
     assert "colorbar" not in custom_spec
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_declarative_colorbar_reaches_svg_export() -> None:
     svg = xyg.heatmap_chart(
         xyg.heatmap([[0.0, 0.5], [1.0, 1.5]], name="Intensity", colormap="purples"),

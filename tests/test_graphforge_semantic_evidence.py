@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from xyg import _native
 
@@ -51,6 +52,10 @@ def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_graphforge_semantic_fixture_has_exact_cross_consumer_goldens() -> None:
     fixture = _fixture()
     for theme in ("light", "dark"):

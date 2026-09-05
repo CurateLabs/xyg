@@ -163,9 +163,43 @@ python3 scripts/static_export_support_registry.py
 uv run pytest tests/test_static_export_cross_host.py -q
 ```
 
-This dependency-independent current-Scene slice does not close #875. After
-#873 lands, its `StaticDocument`/XYST journeys and retained formats must append
-to the same Rust registry and pass the same host-pair runner before #875 closes.
+**#873 landed (2026-09-05).** The Python compatibility static renderer is
+retired: `_export_*`, `_svg_render.py`, `_raster_render.py`, `_raster.py`,
+`_svg_figure.py`, and `_raster_figure.py` are deleted. Every native
+SVG/PNG/PDF/JPEG/WebP journey — public Figure/Chart, batch export, FacetGrid,
+and pyplot `savefig`/`compose` — compiles the canonical Scene and consumes a
+versioned XYST document through `_static_document.py` (Python) and the mirrored
+Node `figureStaticDocument` projection; the runtime gate
+`tests/test_static_document_ownership.py` traps any legacy `_export_*`/renderer
+execution on ordinary, styled, facet, pyplot, legend, and custom-font-failure
+journeys. Node exposes the same XYST product seam (`Figure.toSvg/toPng/...`)
+and pins byte-identical XYST/SVG/PNG output per admitted registry shape.
+Pyplot grid dashes (`ax.grid(linestyle=...)`) ride XYST panel fact bit 14
+(panel record 108 bytes; Rust owns the dash table, mirrored in
+`js/src/50_chartview.ts`); horizontal y tick labels anchor end/start per side
+and the y-axis title clears the widest label by 0.4 em, matching matplotlib
+3.11.1 measurements. Remaining pyplot static-route admissions (gradients,
+contour colorbars, callout/rule annotation styles, wrapped
+`coordinate_space`, rc text weights, multi-panel composition blends) are
+explicit fail-closes tracked in
+[#889](https://github.com/CurateLabs/xyg/issues/889) with reason-carrying
+xfails; they do not reintroduce a host renderer.
+
+**#875 registry complete.** The same Rust registry now carries the full XYST
+document vocabulary: 40 runtime cases (panel flags 0–14 including grid dash,
+document flags, annotation/label/legend/colorbar families, scale and quality
+variants), 21 byte-exact rejection mutations verified at both host boundaries,
+and six independent public-authoring witnesses compared across Scene, XYST,
+and all five formats. `scene_cases_requiring_recheck` (`title_options`,
+`extra_legend`, `colorbar_option`) were resolved against the integrated
+product — all three remain exact cross-host fail-closes. Reproduce with:
+
+```bash
+python3 scripts/static_export_support_registry.py
+uv run pytest tests/test_static_export_cross_host.py -q
+uv run pytest tests/test_static_document_registry_cross_host.py -q
+uv run pytest tests/test_static_document_ownership.py -q
+```
 
 `scripts/audit_host_parity_landing.py` enumerates the Scene trace/chrome ABI
 tests alongside the `test_*cross_host*.py` differentials, which now include

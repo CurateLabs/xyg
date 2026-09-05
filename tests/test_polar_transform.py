@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from xyg._svg import THETA_ZERO, _PolarProjection
+from xyg._layout import THETA_ZERO, _PolarProjection
 
 FIXTURES = json.loads(
     (Path(__file__).parent / "fixtures" / "polar_transform.json").read_text(encoding="utf-8")

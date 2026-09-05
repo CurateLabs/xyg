@@ -607,9 +607,9 @@ def emit_trace_materialized(
             encoding = None
         cmap = t.style.get("colormap")
         if summary.heatmap_attach_color and cmap is None:
-            from ._raster import _parse_color
+            from ._paint import paint_rgba8
 
-            red, green, blue, _alpha = _parse_color(
+            red, green, blue, _alpha = paint_rgba8(
                 str(t.style.get("color", default_mark_color())), 1.0
             )
             cmap = [[red, green, blue], [red, green, blue]]

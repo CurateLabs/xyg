@@ -983,18 +983,16 @@ def to_png(
     if resolved_engine == "native":
         if custom_css is not None:
             raise ValueError("custom_css requires engine=Engine.chromium")
-        from . import _raster, _scene_v3
+        from . import _static_document
 
-        data = _scene_v3.public_static_export(
+        data = _static_document.export_figure(
             fig,
             "png",
             width=w,
             height=h,
             scale=scale,
-            optimize=optimize,
+            optimize_png=optimize,
         )
-        if data is None:
-            data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
 
     else:
         doc = to_html(fig, custom_css=custom_css, animation_progress=1.0)
@@ -1233,65 +1231,18 @@ def _native_image(
     quality: Optional[int],
     optimize: bool,
 ) -> bytes:
-    from . import _raster, _scene_v3
+    from . import _static_document
 
-    # An export-only backdrop is not yet an authored Scene field, so it remains
-    # an explicit compatibility exception.  The normal public path below uses
-    # the single Rust support predicate for SVG, PNG, PDF, JPEG, and WebP.
-    scene_data = (
-        _scene_v3.public_static_export(
-            fig,
-            fmt,
-            width=width,
-            height=height,
-            scale=scale,
-            quality=quality,
-            optimize=optimize,
-        )
-        if background is None
-        and fmt in {"png", "svg", "pdf", "jpeg", "webp"}
-        and (not optimize or fmt == "png")
-        else None
+    return _static_document.export_figure(
+        fig,
+        fmt,
+        width=width,
+        height=height,
+        scale=scale,
+        background=background,
+        quality=quality or _DEFAULT_QUALITY,
+        optimize_png=optimize and fmt == "png",
     )
-
-    if fmt == "png":
-        if scene_data is not None:
-            return scene_data
-        return _raster.to_png(
-            fig,
-            None,
-            width=width,
-            height=height,
-            scale=scale,
-            fast=not optimize,
-            background=background,
-        )
-    if fmt == "svg":
-        if scene_data is not None:
-            return scene_data
-        from . import _svg
-
-        svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
-        return svg.encode("utf-8")
-    if fmt == "pdf":
-        if scene_data is not None:
-            return scene_data
-        from . import _pdf, _svg
-
-        svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
-        return _pdf.svg_to_pdf(svg)
-    if scene_data is not None:
-        return scene_data
-    rgba = _raster.to_rgba(fig, width=width, height=height, scale=scale, background=background)
-    if fmt == "jpeg":
-        from . import _native
-
-        return _native.encode_jpeg(_flatten_alpha(rgba), quality=quality or _DEFAULT_QUALITY)
-    if fmt == "webp":
-        from . import _native
-
-        return _native.encode_webp(rgba)
-    raise AssertionError(f"unreachable native format {fmt!r}")
 
 
 def _browser_image(

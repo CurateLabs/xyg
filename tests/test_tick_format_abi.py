@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from xyg import _native
-from xyg._svg import _fmt_axis, _fmt_log, _tick_text
+from xyg._layout import _fmt_axis, _fmt_log, _tick_text
 
 
 def test_native_linear_log_time_and_number_spec() -> None:

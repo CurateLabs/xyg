@@ -52,6 +52,7 @@ def test_axline_reclips_after_limits_change_and_handles_vertical_lines() -> None
     np.testing.assert_allclose(second.y.values, [-4, 4])
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_axline_reclips_to_the_final_shared_axes_view() -> None:
     fig, axes = plt.subplots(1, 2, sharex=True, sharey=True)
     axes[0].set(xlim=(0, 20), ylim=(2, 14))

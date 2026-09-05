@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 361
-#define XYG_ABI_SIGNATURE_SHA256 "c897e37cef383de38273836d89cf30b3c3cee5077285f7249ed5e5299bc1279c"
+#define XYG_ABI_VERSION 365
+#define XYG_ABI_SIGNATURE_SHA256 "3a78c0691d0ec79209d08b6c6aa2cddea008739a9c394ed5062ff1e87c677118"
 
 #ifdef __cplusplus
 extern "C" {
@@ -349,6 +349,7 @@ int32_t xyg_scene_pack_figure_chrome(const uint8_t * facts, size_t facts_len, ui
 int32_t xyg_scene_pack_figure_chrome_from_sidecars(const uint8_t * facts, size_t facts_len, const uint8_t * xysd, size_t xysd_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_heatmap_facts(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_legend(uint8_t loc, uint8_t flags, double font_size, double title_font_size, const uint8_t * text_rgba, const uint8_t * frame_fill_rgba, const uint8_t * title, size_t title_len, uint32_t n_entries, const uint8_t * entry_meta, size_t entry_meta_len, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint8_t * out, size_t out_cap);
+int32_t xyg_scene_pack_named_colorbar(uint8_t flags, double lo, double hi, const uint8_t * text_rgba, const uint8_t * title, size_t title_len, const uint8_t * name, size_t name_len, uint32_t n_ticks, const double * ticks, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_product(const uint8_t * kind, size_t kind_len, uint8_t flags, uint8_t step_mode, uint8_t symbol, uint32_t style_ref, uint64_t trace_id, double diameter, double extra0, double extra1, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, const double * col6, size_t n6, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_product_facts(const uint8_t * facts, size_t facts_len, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, const double * col6, size_t n6, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_public_export(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
@@ -362,6 +363,7 @@ int32_t xyg_scene_pack_trace_rows(const uint8_t * attached, size_t attached_len,
 int32_t xyg_scene_pack_trace_sidecars(const uint8_t * attached, size_t attached_len, const uint8_t * names, size_t names_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_parse_linear_gradient(const uint8_t * css, size_t css_len, const uint8_t * space, size_t space_len, uint8_t * out_dir, double * out_t, size_t out_t_cap, uint8_t * out_css, size_t out_css_cap, uint32_t * out_css_lens, size_t out_lens_cap, size_t * out_n);
 size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins);
+size_t xyg_scene_plot_rect(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_rect);
 int32_t xyg_scene_polar_figure_plan(int32_t polar, void * out);
 int32_t xyg_scene_polar_input_pack(const void * input, uint8_t * out, size_t out_cap, size_t * out_len);
 int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out);
@@ -418,6 +420,13 @@ int32_t xyg_size_range_admit(double lo, double hi, double * out_lo, double * out
 size_t xyg_sorted_display_label_remap(const uint32_t * label_lens, const uint8_t * label_texts, size_t label_texts_len, size_t n, const uint64_t * in_counts, uint8_t * out_remap, size_t out_remap_cap, uint32_t * out_code_width, uint32_t * out_category_lens, uint8_t * out_category_texts, size_t out_category_texts_cap, size_t category_lens_cap, uint64_t * out_category_counts, size_t out_category_counts_cap);
 int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power);
 int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper);
+size_t xyg_static_annotation_style(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap);
+size_t xyg_static_document_labels(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_document_layout(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_document_legend(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_legend_fit(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_panel_chrome(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
 size_t xyg_step_arrays(const double * x, const double * y, size_t n, uint8_t mode, double * out_x, double * out_y, size_t capacity);
 int32_t xyg_stratified_sample_mask(const uint64_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out);
 int32_t xyg_stratified_sample_mask_u32(const uint32_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out);

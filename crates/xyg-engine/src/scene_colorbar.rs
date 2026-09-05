@@ -5,6 +5,7 @@
 //! v2 header, stop/tick tables, domain-span checks, and bounded-text
 //! rejection so Python and Node cannot drift on the colorbar envelope.
 
+use crate::colormap;
 use crate::scene::{
     MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_COLORBAR_STOPS, MAX_SCENE_COLORBAR_TEXT_BYTES,
     MAX_SCENE_COLORBAR_TICKS,
@@ -152,6 +153,52 @@ pub fn pack_colorbar(input: ColorbarFrameInput<'_>) -> Result<Vec<u8>, ColorbarE
     Ok(out)
 }
 
+/// Resolve one named colormap and frame its canonical stops without host-side
+/// stop interpolation. `flags` uses the same horizontal/minor input bits as
+/// [`pack_colorbar`].
+pub fn pack_named_colorbar(
+    flags: u8,
+    lo: f64,
+    hi: f64,
+    text_rgba: [u8; 4],
+    title: &[u8],
+    name: &str,
+    ticks: &[f64],
+) -> Result<Vec<u8>, ColorbarError> {
+    if name.is_empty() || name.as_bytes().contains(&0) {
+        return Err(ColorbarError::Length);
+    }
+    let colors = colormap::colormap_named_stops(name);
+    if !(2..=MAX_SCENE_COLORBAR_STOPS).contains(&colors.len()) {
+        return Err(ColorbarError::Limit);
+    }
+    let color_count = colors.len();
+    let denominator = color_count.saturating_sub(1).max(1) as f64;
+    let stops: Vec<ColorbarStop> = colors
+        .into_iter()
+        .enumerate()
+        .map(|(index, rgb)| ColorbarStop {
+            value: if index == 0 {
+                lo
+            } else if index + 1 == color_count {
+                hi
+            } else {
+                lo + (hi - lo) * index as f64 / denominator
+            },
+            rgba: [rgb[0], rgb[1], rgb[2], 255],
+        })
+        .collect();
+    pack_colorbar(ColorbarFrameInput {
+        flags,
+        lo,
+        hi,
+        text_rgba,
+        title,
+        stops: &stops,
+        ticks,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,5 +296,48 @@ mod tests {
         assert_eq!(framed[8] & FLAG_HORIZONTAL, FLAG_HORIZONTAL);
         assert_eq!(framed[8] & FLAG_AUTHORED_TICKS, 0);
         assert_eq!(&framed[framed.len() - 5..], b"scale");
+    }
+
+    #[test]
+    fn named_colorbar_owns_stop_positions_and_rgba() {
+        let framed = pack_named_colorbar(
+            FLAG_HORIZONTAL | FLAG_MINOR_TICKS,
+            -2.0,
+            2.0,
+            [1, 2, 3, 255],
+            b"Intensity",
+            "viridis",
+            &[-2.0, 0.0, 2.0],
+        )
+        .unwrap();
+        assert_eq!(&framed[..4], b"XYCB");
+        let count = u32::from_le_bytes(framed[12..16].try_into().unwrap()) as usize;
+        assert!(count >= 2);
+        assert_eq!(
+            f64::from_le_bytes(framed[COLORBAR_HEADER_BYTES..][..8].try_into().unwrap()),
+            -2.0
+        );
+        let last = COLORBAR_HEADER_BYTES + (count - 1) * COLORBAR_STOP_BYTES;
+        assert_eq!(
+            f64::from_le_bytes(framed[last..last + 8].try_into().unwrap()),
+            2.0
+        );
+    }
+
+    #[test]
+    fn named_colorbar_pins_non_unit_domain_endpoints_bit_exact() {
+        let lo = -1.994_459_384_630_593_8;
+        let hi = -0.000_799_789_190_698_674_3;
+        let framed = pack_named_colorbar(0, lo, hi, [32, 32, 32, 255], b"", "blues", &[]).unwrap();
+        let count = u32::from_le_bytes(framed[12..16].try_into().unwrap()) as usize;
+        let last = COLORBAR_HEADER_BYTES + (count - 1) * COLORBAR_STOP_BYTES;
+        assert_eq!(
+            f64::from_le_bytes(framed[COLORBAR_HEADER_BYTES..][..8].try_into().unwrap()),
+            lo
+        );
+        assert_eq!(
+            f64::from_le_bytes(framed[last..last + 8].try_into().unwrap()),
+            hi
+        );
     }
 }

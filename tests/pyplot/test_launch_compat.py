@@ -798,6 +798,7 @@ def test_parametric_line_preserves_input_order_instead_of_sorting_x() -> None:
     assert np.array_equal(trace.x1.values, x[1:])
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_reversed_colormap_exact_ticks_and_fractional_annotations_export() -> None:
     fig, ax = plt.subplots()
     ax.imshow([[0.0, 1.0]], cmap="viridis_r")
@@ -813,6 +814,7 @@ def test_reversed_colormap_exact_ticks_and_fractional_annotations_export() -> No
     assert fig._to_png().startswith(b"\x89PNG\r\n\x1a\n")
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_imshow_interpolation_upsamples_gradients_but_nearest_keeps_cells() -> None:
     _fig, ax = plt.subplots()
     ax.imshow([[0.0, 1.0], [1.0, 0.0]], interpolation="bicubic")

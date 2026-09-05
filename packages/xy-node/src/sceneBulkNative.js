@@ -1330,8 +1330,16 @@ export function sceneXyTcTraceObservationsMaterialize(obs) {
   const blob = out.subarray(0, Number(outLen[0]));
   const f64Slice = (off, count) => {
     if (!count) return [];
-    const chunk = blob.subarray(Number(off), Number(off) + count * 8);
-    return [...new Float64Array(chunk.buffer, chunk.byteOffset, count)];
+    const start = Number(off);
+    const end = start + count * 8;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(count) ||
+        start < 0 || count < 0 || !Number.isSafeInteger(end) || end > blob.length) {
+      throw new RangeError("invalid scene trace f64 output slice");
+    }
+    // Native blobs concatenate UTF-8 and raw LE f64 sections without typed-
+    // array alignment padding. DataView preserves that packed ABI contract.
+    const view = new DataView(blob.buffer, blob.byteOffset + start, count * 8);
+    return Array.from({ length: count }, (_, index) => view.getFloat64(index * 8, true));
   };
   const style = {
     symbolIsInt: summary.symbol_is_int,

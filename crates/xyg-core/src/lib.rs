@@ -88,6 +88,13 @@ use xyg_engine::scene_public_export_reason;
 use xyg_engine::scene_static_export;
 use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::splice_annotations;
+use xyg_engine::static_annotation_style;
+use xyg_engine::static_document_export;
+use xyg_engine::static_document_labels;
+use xyg_engine::static_document_layout;
+use xyg_engine::static_document_legend;
+use xyg_engine::static_legend_fit;
+use xyg_engine::static_panel_chrome;
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
@@ -191,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 361;
+pub const ABI_VERSION: u32 = 365;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2034,6 +2041,65 @@ pub unsafe extern "C" fn xyg_scene_pack_colorbar(
     })
 }
 
+/// Resolve a named colormap and frame one primary Scene colorbar as XYCB v2.
+/// Rust owns named-stop lookup and evenly spaced domain positions.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_pack_colorbar`; `name` must address
+/// `name_len` readable UTF-8 bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_pack_named_colorbar(
+    flags: u8,
+    lo: f64,
+    hi: f64,
+    text_rgba: *const u8,
+    title: *const u8,
+    title_len: usize,
+    name: *const u8,
+    name_len: usize,
+    n_ticks: u32,
+    ticks: *const f64,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if text_rgba.is_null() || name.is_null() || name_len == 0 || (out_cap > 0 && out.is_null()) {
+        return -(ColorbarError::Length as i32);
+    }
+    ffi_guard(-(ColorbarError::Length as i32), || {
+        let title = if title_len == 0 {
+            &[][..]
+        } else if title.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(title, title_len)
+        };
+        let name_bytes = std::slice::from_raw_parts(name, name_len);
+        let Ok(name) = std::str::from_utf8(name_bytes) else {
+            return -(ColorbarError::Length as i32);
+        };
+        let n_ticks = n_ticks as usize;
+        let tick_values = if n_ticks == 0 {
+            &[][..]
+        } else if ticks.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(ticks, n_ticks)
+        };
+        let rgba = std::slice::from_raw_parts(text_rgba, 4).try_into().unwrap();
+        match scene_colorbar::pack_named_colorbar(flags, lo, hi, rgba, title, name, tick_values) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ColorbarError::Output as i32);
+                }
+                std::slice::from_raw_parts_mut(out, out_cap)[..bytes.len()].copy_from_slice(&bytes);
+                i32::try_from(bytes.len()).unwrap_or(-(ColorbarError::Limit as i32))
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Frame primary Scene annotations as XYAD bytes.
 ///
 /// Hosts pass compact per-family row meta plus concatenated UTF-8 labels.
@@ -2776,6 +2842,85 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
     out[1] = margins.1;
     out[2] = margins.2;
     out[3] = margins.3;
+    4
+}
+
+/// Resolve the same Cartesian layout request as `xyg_scene_plot_layout`, but
+/// return the native plot rectangle `(x, y, width, height)` directly so hosts
+/// never reconstruct layout geometry from gutter outputs.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_plot_layout`.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_plot_rect(
+    viewport_width: f64,
+    viewport_height: f64,
+    authored_padding: *const f64,
+    x_kind: u32,
+    x_lo: f64,
+    x_hi: f64,
+    x_constant: f64,
+    x_mask_nonpositive: i32,
+    y_kind: u32,
+    y_lo: f64,
+    y_hi: f64,
+    y_constant: f64,
+    y_mask_nonpositive: i32,
+    title: *const u8,
+    title_len: usize,
+    x_label: *const u8,
+    x_label_len: usize,
+    y_label: *const u8,
+    y_label_len: usize,
+    x_format: *const u8,
+    x_format_len: usize,
+    y_format: *const u8,
+    y_format_len: usize,
+    colorbar_side: u32,
+    out_rect: *mut f64,
+) -> usize {
+    if out_rect.is_null() {
+        return usize::MAX;
+    }
+    let mut margins = [0.0; 4];
+    let written = xyg_scene_plot_layout(
+        viewport_width,
+        viewport_height,
+        authored_padding,
+        x_kind,
+        x_lo,
+        x_hi,
+        x_constant,
+        x_mask_nonpositive,
+        y_kind,
+        y_lo,
+        y_hi,
+        y_constant,
+        y_mask_nonpositive,
+        title,
+        title_len,
+        x_label,
+        x_label_len,
+        y_label,
+        y_label_len,
+        x_format,
+        x_format_len,
+        y_format,
+        y_format_len,
+        colorbar_side,
+        margins.as_mut_ptr(),
+    );
+    if written != 4 {
+        return usize::MAX;
+    }
+    let width = viewport_width - margins[0] - margins[1];
+    let height = viewport_height - margins[2] - margins[3];
+    if !width.is_finite() || !height.is_finite() || width <= 0.0 || height <= 0.0 {
+        return usize::MAX;
+    }
+    let out = std::slice::from_raw_parts_mut(out_rect, 4);
+    out.copy_from_slice(&[margins[0], margins[2], width, height]);
     4
 }
 
@@ -3876,6 +4021,284 @@ pub unsafe extern "C" fn xyg_scene_static_export(
             quality,
         )
         .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Render one versioned bounded XYST StaticDocument through the shared public
+/// SVG/PNG/PDF/JPEG/WebP kernel. `format` uses the Scene static format codes;
+/// raster formats honor positive finite `scale`, and JPEG honors `quality`.
+/// Returns required bytes or `usize::MAX` on malformed documents or consumer
+/// failure. A short output buffer is never written.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_document_export(
+    encoded: *const u8,
+    encoded_len: usize,
+    format: u32,
+    scale: f64,
+    quality: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(kind) = SceneStaticFormat::from_code(format) else {
+        return usize::MAX;
+    };
+    let Some(bytes) = ffi_guard(None, || {
+        static_document_export(
+            std::slice::from_raw_parts(encoded, encoded_len),
+            kind,
+            scale,
+            quality,
+        )
+        .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYSL v1 static-layout request into XYLO v1. Returns
+/// the required byte count, or `usize::MAX` on malformed input. Short output
+/// buffers are never written.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_document_layout(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        static_document_layout::resolve_packed(std::slice::from_raw_parts(encoded, encoded_len))
+            .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYAS v1 annotation-style frame into Rust-owned XYAO
+/// patches and uniform panel facts. Stable parser and unsupported reasons are
+/// returned as ASCII so every host observes the same failure classification.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_annotation_style(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_annotation_style::resolve_packed(std::slice::from_raw_parts(
+            encoded,
+            encoded_len,
+        )) {
+            Ok(bytes) => Some(bytes),
+            Err(error) => Some(error.reason().as_bytes().to_vec()),
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYDA v1 authored label frame into the canonical XYDD
+/// label records. Stable parser and unsupported reasons are returned as ASCII.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_document_labels(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_document_labels::resolve_packed(std::slice::from_raw_parts(
+            encoded,
+            encoded_len,
+        )) {
+            Ok(bytes) => Some(bytes),
+            Err(error) => Some(error.reason().as_bytes().to_vec()),
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if required == 0 {
+        return 0;
+    }
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYDL v1 authored document legend into the canonical
+/// XYDD legend block. Stable parser and unsupported reasons are returned as
+/// ASCII bytes so every host observes the same failure classification.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_document_legend(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_document_legend::resolve_packed(std::slice::from_raw_parts(
+            encoded,
+            encoded_len,
+        )) {
+            Ok(bytes) => Some(bytes),
+            Err(error) => Some(error.reason().as_bytes().to_vec()),
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if required == 0 {
+        return 0;
+    }
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYPC v1 pyplot panel-chrome request into XYPO v1.
+/// Returns required bytes, or `usize::MAX` on malformed/unsupported input.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_panel_chrome(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_panel_chrome::resolve_packed(std::slice::from_raw_parts(encoded, encoded_len))
+        {
+            Ok(bytes) => Some(bytes),
+            Err(
+                error @ (static_panel_chrome::PanelChromeError::BrowserCss
+                | static_panel_chrome::PanelChromeError::CustomFont),
+            ) => Some(error.reason().as_bytes().to_vec()),
+            Err(_) => None,
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYLF v1 pyplot best-legend request into XYLR v1.
+/// Unsupported footprint kinds return their stable ASCII reason bytes;
+/// malformed requests return `usize::MAX`.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_legend_fit(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_legend_fit::resolve_packed(std::slice::from_raw_parts(encoded, encoded_len)) {
+            Ok(bytes) => Some(bytes),
+            Err(static_legend_fit::LegendFitError::Entry) => Some(
+                static_legend_fit::LegendFitError::Entry
+                    .reason()
+                    .as_bytes()
+                    .to_vec(),
+            ),
+            Err(_) => None,
+        }
     }) else {
         return usize::MAX;
     };

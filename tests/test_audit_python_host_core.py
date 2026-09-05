@@ -30,10 +30,16 @@ def test_keep_host_policy_paths_cover_export_emitters():
     mod = _load()
     manifest = mod._load_manifest(mod.MANIFEST)
     paths = mod._keep_host_policy_paths(manifest)
-    assert "python/xyg/_export_marks_svg.py" in paths
+    # The compatibility emitters are retired; `_static_document.py` is the
+    # bounded marshal adapter and `_layout.py` the compat measurement surface.
+    assert "python/xyg/_static_document.py" in paths
+    assert "python/xyg/_layout.py" in paths
     assert "python/xyg/_scene_marshal.py" in paths
     assert "python/xyg/_payload.py" in paths
     assert "python/xyg/kernels.py" not in paths
+    assert not any(path.startswith("python/xyg/_export_") for path in paths)
+    assert "python/xyg/_svg_render.py" not in paths
+    assert "python/xyg/_raster_render.py" not in paths
 
 
 def test_node_keep_host_policy_paths_cover_marshal_surfaces():

@@ -99,12 +99,19 @@ _MPL_GRID_COLOR = "#b0b0b0"
 # gridspec resolution; this is the last-resort answer for a detached axes.
 _DEFAULT_AXES_RECT = (0.125, 0.11, 0.775, 0.77)
 
-# Matplotlib's candidate order for ``loc="best"``: `Legend.codes` 1..10, scored
-# in order, first zero-badness box wins, lower code wins a tie. Code 5
-# ("right") anchors identically to code 7 ("center right") — offsetbox resolves
-# both to its 'E' corner — so the pair is folded onto the single canonical name
-# at code 5's position. The order `min()` observes is unchanged and no redundant
-# box is scored. Do not reorder: this *is* the tie-break contract.
+# Matplotlib-compatible fixed legend locations accepted by the shim. Native
+# static-legend fitting owns the ordered candidate geometry for ``loc="best"``.
+_BEST_LOC_ORDER = (
+    "upper right",
+    "upper left",
+    "lower left",
+    "lower right",
+    "right",
+    "center left",
+    "lower center",
+    "upper center",
+    "center",
+)
 _LEGEND_LOC_ANCHORS = {
     "upper right": (1.0, 1.0),
     "upper left": (0.0, 1.0),
@@ -117,92 +124,9 @@ _LEGEND_LOC_ANCHORS = {
     "upper center": (0.5, 1.0),
     "center": (0.5, 0.5),
 }
-_BEST_LOC_ORDER = (
-    "upper right",
-    "upper left",
-    "lower left",
-    "lower right",
-    "right",
-    "center left",
-    "lower center",
-    "upper center",
-    "center",
-)
-# Per-series path-vertex budget for occupancy scoring (§28: decimation is
-# specified, never silent). Path scoring also tests segment/box intersections,
-# so 512 vertices preserve the gallery parity without restoring the old cost.
-_BEST_LOC_SAMPLE = 512
-# Scatter offsets have no connecting segments to recover a skipped excursion.
-# Retain #274's 4,096-offset coverage for that one mark family while keeping
-# the lower path budget that restored the compatibility benchmark performance.
-_BEST_LOC_SCATTER_SAMPLE = 4096
 # Plot box of the default 640x480 figure, for direct `_best_legend_loc` callers
 # that have no chart geometry to hand.
 _DEFAULT_BEST_PLOT_SIZE = (564.0, 428.0)
-
-
-def _path_intersects_boxes(
-    x: np.ndarray,
-    y: np.ndarray,
-    boxes: Sequence[tuple[float, float, float, float]],
-) -> list[bool]:
-    """Whether a polyline touches each box, including edge-only crossings.
-
-    Matplotlib adds one badness point per artist path intersecting the
-    candidate legend rectangle, independently of the number of contained
-    vertices. Liang-Barsky clipping gives the same segment/rectangle question
-    without materializing a Matplotlib ``Path``. Segment coordinates and deltas
-    are shared across all nine legend candidates; a bounding-box rejection
-    keeps the exact clipping solve off segments that cannot touch a candidate.
-    """
-    boxes = tuple(boxes)
-    if x.size < 2 or y.size < 2:
-        return [False] * len(boxes)
-    x0, y0, x1, y1 = x[:-1], y[:-1], x[1:], y[1:]
-    finite = np.isfinite(x0) & np.isfinite(y0) & np.isfinite(x1) & np.isfinite(y1)
-    if not finite.any():
-        return [False] * len(boxes)
-    x0, y0, x1, y1 = x0[finite], y0[finite], x1[finite], y1[finite]
-    segment_x_lo, segment_x_hi = np.minimum(x0, x1), np.maximum(x0, x1)
-    segment_y_lo, segment_y_hi = np.minimum(y0, y1), np.maximum(y0, y1)
-    result: list[bool] = []
-    for x_lo, x_hi, y_lo, y_hi in boxes:
-        possible = (
-            (segment_x_hi >= x_lo)
-            & (segment_x_lo <= x_hi)
-            & (segment_y_hi >= y_lo)
-            & (segment_y_lo <= y_hi)
-        )
-        if not possible.any():
-            result.append(False)
-            continue
-        hit = False
-        for index in np.flatnonzero(possible):
-            ax0, ay0, ax1, ay1 = x0[index], y0[index], x1[index], y1[index]
-            if (x_lo <= ax0 <= x_hi and y_lo <= ay0 <= y_hi) or (
-                x_lo <= ax1 <= x_hi and y_lo <= ay1 <= y_hi
-            ):
-                hit = True
-                break
-            adx, ady = ax1 - ax0, ay1 - ay0
-            if adx:
-                for boundary in (x_lo, x_hi):
-                    ratio = (boundary - ax0) / adx
-                    if 0.0 <= ratio <= 1.0 and y_lo <= ay0 + ratio * ady <= y_hi:
-                        hit = True
-                        break
-            if hit:
-                break
-            if ady:
-                for boundary in (y_lo, y_hi):
-                    ratio = (boundary - ay0) / ady
-                    if 0.0 <= ratio <= 1.0 and x_lo <= ax0 + ratio * adx <= x_hi:
-                        hit = True
-                        break
-                if hit:
-                    break
-        result.append(hit)
-    return result
 
 
 # Theme/axis children are immutable declarative specs, so identical ones are
@@ -1344,6 +1268,7 @@ class Axes(PlotTypeMixin):
         self._owned_artists: list[Any] = []
         self._containers: list[Any] = []
         self._axis: dict[str, dict[str, Any]] = {"x": {}, "y": {}, "y2": {}}
+        self._static_mathtext: dict[str, bool] = {}
         self._title: Optional[str] = None
         self._title_style: dict[str, Any] = {}
         self._titles: dict[str, dict[str, Any]] = {}
@@ -3970,6 +3895,7 @@ class Axes(PlotTypeMixin):
         else raises loudly. Basic mathtext (``$...$``) is rendered.
         """
         props = self._axis_props("x")
+        self._static_mathtext["xlabel"] = _source_uses_mathtext(label)
         props["label"] = _plain_text(label)
         _apply_axis_label_kwargs(props, kwargs, "set_xlabel()", point_scale=self._point_scale())
         self._invalidate()
@@ -3980,6 +3906,7 @@ class Axes(PlotTypeMixin):
         ``loc`` takes ``"bottom"``/``"center"``/``"top"`` for this axis.
         """
         props = self._axis_props("y")
+        self._static_mathtext["ylabel"] = _source_uses_mathtext(label)
         props["label"] = _plain_text(label)
         _apply_axis_label_kwargs(props, kwargs, "set_ylabel()", point_scale=self._point_scale())
         self._invalidate()
@@ -4009,6 +3936,7 @@ class Axes(PlotTypeMixin):
             point_scale=self._point_scale(),
         )
         text = _plain_text(title)
+        self._static_mathtext[f"title:{loc}"] = _source_uses_mathtext(title)
         if text:
             host._titles[loc] = {
                 "text": text,
@@ -6557,6 +6485,7 @@ class Axes(PlotTypeMixin):
                 else:
                     props.pop("tick_labels", None)
         if labels is not None:
+            host._static_mathtext["xticks"] = any(_source_uses_mathtext(value) for value in labels)
             props["tick_labels"] = [_plain_text(value) for value in labels]
             if len(props["tick_labels"]) != len(props.get("tick_values", [])):
                 raise ValueError("labels must have the same length as ticks")
@@ -6598,6 +6527,7 @@ class Axes(PlotTypeMixin):
                 else:
                     props.pop("tick_labels", None)
         if labels is not None:
+            host._static_mathtext["yticks"] = any(_source_uses_mathtext(value) for value in labels)
             props["tick_labels"] = [_plain_text(value) for value in labels]
             if len(props["tick_labels"]) != len(props.get("tick_values", [])):
                 raise ValueError("labels must have the same length as ticks")
@@ -6870,7 +6800,10 @@ class Axes(PlotTypeMixin):
         reverse = bool(kwargs.pop("reverse", False))
         if len(args) >= 2:
             handles = list(args[0])
-            labels = [_plain_text(label) for label in args[1]]
+            raw_labels = list(args[1])
+            if any(_source_uses_mathtext(label) for label in raw_labels):
+                host._static_mathtext["legend"] = True
+            labels = [_plain_text(label) for label in raw_labels]
             if reverse:
                 handles.reverse()
                 labels.reverse()
@@ -6897,6 +6830,8 @@ class Axes(PlotTypeMixin):
             labels = args[0]
             eligible = [entry for entry in host._entries if not entry.get("_legend_skip")]
             for entry, label in zip(eligible, labels, strict=False):
+                if _source_uses_mathtext(label):
+                    host._static_mathtext["legend"] = True
                 entry.setdefault("kwargs", {})["name"] = _plain_text(label)
             host._legend_artist = None
             host._legend_items = None
@@ -7338,6 +7273,8 @@ class Axes(PlotTypeMixin):
             axis_kw = {"y_axis": e["y_axis"]} if e["y_axis"] != "y" else {}
             kw = e.get("kwargs", {})
             name = kw.get("name")
+            if _source_uses_mathtext(name):
+                self._static_mathtext[f"trace:{id(e)}"] = True
             if isinstance(name, str) and "$" in name:  # legend text carries mathtext
                 kw["name"] = _plain_text(name)
             if kind == "line":
@@ -7782,7 +7719,6 @@ class Axes(PlotTypeMixin):
         width: int,
         height: int,
         padding: Optional[Sequence[float]] = None,
-        x_side: Optional[str] = None,
     ) -> tuple[float, float]:
         """Estimated ``(w, h)`` of the plot box in pixels.
 
@@ -7797,9 +7733,10 @@ class Axes(PlotTypeMixin):
             )
         else:
             top, right, bottom, left = map(float, padding)
-        top += self._title_room(compact)
-        if x_side == "top":
-            top += 26.0 if compact else 32.0
+        outside_top, outside_right, outside_bottom = self._outside_padding(compact)
+        top += outside_top
+        right += outside_right
+        bottom += outside_bottom
         return (
             max(40.0, float(width) - left - right),
             max(40.0, float(height) - top - bottom),
@@ -7840,8 +7777,6 @@ class Axes(PlotTypeMixin):
         static exporters instead. The browser consumes the same resolved
         ``spec.padding`` contract.
         """
-        from .._svg import layout
-
         known_ranges = {"x": displayed_ranges[0], "y": displayed_ranges[1]}
         axis_specs = {
             axis_id: figure._axis_spec(
@@ -7863,52 +7798,14 @@ class Axes(PlotTypeMixin):
             spec["padding"] = list(figure.padding)
         if figure.colorbar_options:
             spec["colorbar"] = figure.colorbar_options
-        *_, plot = layout(spec)
-        return float(plot["w"]), float(plot["h"])
+        from ._mplfig import _native_scene_layout_rooms
 
-    def _legend_footprint(
-        self,
-        legend_options: Optional[dict[str, Any]],
-        items: Optional[list[dict[str, Any]]],
-        plot_size: tuple[float, float],
-    ) -> tuple[float, float, float, float]:
-        """Measured legend box and border inset, as fractions of the plot box.
+        plot = _native_scene_layout_rooms(spec, rect=True)
+        if plot is None:
+            from .._static_document import UnsupportedStaticExport
 
-        Returns ``(box_w, box_h, pad_x, pad_y)``. The box comes from
-        ``_svg._legend_layout`` — the *same* geometry the SVG and raster
-        exporters lay the legend out with, derived from the legend font size and
-        the real label extents — so ``best`` scores the box that actually gets
-        drawn. ``pad_*`` is Matplotlib's ``borderaxespad``, which insets the
-        container every candidate is anchored inside.
-        """
-        from .._svg import _legend_layout
-
-        options = dict(legend_options or {})
-        # Size is independent of placement, and placement is exactly what has
-        # not been decided yet — drop both keys so the layout's own resolver is
-        # never handed the unresolved "best" we are here to replace.
-        options.pop("loc", None)
-        options.pop("anchor", None)
-        if items is None:
-            items = [
-                {"name": str((entry.get("kwargs") or {}).get("name"))}
-                for entry in self._entries
-                if (entry.get("kwargs") or {}).get("name")
-            ]
-        # A legend with no labelled entry still has a frame; measure it as one
-        # empty row rather than dividing by zero inside the layout.
-        measured = _legend_layout(
-            items or [{"name": ""}],
-            {"x": 0.0, "y": 0.0, "w": plot_size[0], "h": plot_size[1]},
-            options,
-        )
-        border_pad = max(0.0, float(options.get("border_pad") or 0.0))
-        return (
-            measured["box_w"] / plot_size[0],
-            measured["box_h"] / plot_size[1],
-            border_pad / plot_size[0],
-            border_pad / plot_size[1],
-        )
+            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_LEGEND_LAYOUT")
+        return float(plot[2]), float(plot[3])
 
     def _best_legend_loc(
         self,
@@ -7935,373 +7832,202 @@ class Axes(PlotTypeMixin):
         in are the *displayed* limits (after equal-aspect expansion), which is
         what decides whether the data actually reaches a corner.
         """
+        from .. import _static_document
+
         try:
-            xlo, xhi = sorted(
+            native_x_domain = tuple(
                 map(float, x_domain or self._axis["x"].get("domain") or self._auto_domain("x"))
             )
-            ylo, yhi = sorted(
+            native_y_domain = tuple(
                 map(float, y_domain or self._axis["y"].get("domain") or self._auto_domain("y"))
             )
         except (TypeError, ValueError):
             return "upper right"
-        if xhi <= xlo or yhi <= ylo:
+        if len(native_x_domain) != 2 or len(native_y_domain) != 2:
             return "upper right"
-        box_w, box_h, pad_x, pad_y = self._legend_footprint(legend_options, items, plot_size)
-        # Matplotlib anchors every candidate inside the plot box inset by
-        # borderaxespad on all four sides (offsetbox._get_anchored_bbox), so the
-        # travel available to the box is the inset span minus the box itself.
-        span_x = max(0.0, 1.0 - 2.0 * pad_x - box_w)
-        span_y = max(0.0, 1.0 - 2.0 * pad_y - box_h)
-        candidates = []
-        for name in _BEST_LOC_ORDER:
-            hx, vy = _LEGEND_LOC_ANCHORS[name]
-            x_lo = pad_x + hx * span_x
-            y_lo = pad_y + vy * span_y
-            candidates.append((name, x_lo, x_lo + box_w, y_lo, y_lo + box_h))
-        scores = {name: 0.0 for name, *_ in candidates}
-        entries_used = 0
-        x_reverse = bool(self._axis["x"].get("reverse"))
-        y_reverse = bool(self._axis["y"].get("reverse"))
 
         category_maps: dict[str, dict[str, float]] = {}
 
-        def axis_values(values: Any, axis: str) -> np.ndarray:
-            """Entry coordinates in the engine's numeric data space."""
+        def authored_values(values: Any, axis: str) -> np.ndarray:
             try:
-                return np.asarray(unit_converted_values(values), dtype=np.float64).reshape(-1)
+                return np.ascontiguousarray(
+                    np.asarray(unit_converted_values(values), dtype=np.float64).reshape(-1)
+                )
             except (TypeError, ValueError):
                 array = np.asanyarray(values).reshape(-1)
                 if self._axis_holds_datetimes(axis):
                     converted = [self._data_coordinate(value, axis) for value in array]
                     if not all(value is not None for value in converted):
                         raise
-                    return np.asarray(converted, dtype=np.float64)
+                    return np.ascontiguousarray(
+                        np.asarray(
+                            [value for value in converted if value is not None],
+                            dtype=np.float64,
+                        )
+                    )
                 if not all(isinstance(value, str) for value in array):
                     raise
                 mapping = category_maps.setdefault(axis, {})
-                for entry in self._entries:
-                    key = "x" if axis == "x" else "y"
-                    source = entry.get(key)
+                for source_entry in self._entries:
+                    source = source_entry.get(axis)
                     if source is None:
                         continue
                     for value in np.asanyarray(source).reshape(-1):
                         if isinstance(value, str) and value not in mapping:
                             mapping[value] = float(len(mapping))
-                return np.asarray([mapping[value] for value in array], dtype=np.float64)
+                return np.ascontiguousarray(
+                    np.asarray([mapping[value] for value in array], dtype=np.float64)
+                )
 
-        def normalize(values: Any, axis: str) -> np.ndarray:
-            array = axis_values(values, axis)
-            lo, hi = (xlo, xhi) if axis == "x" else (ylo, yhi)
-            result = (array - lo) / (hi - lo)
-            if x_reverse if axis == "x" else y_reverse:
-                result = 1.0 - result
-            return result
-
+        packed_entries: list[_static_document.LegendFitEntry] = []
         for entry in self._entries:
             kind = entry.get("kind")
             kwargs = entry.get("kwargs") or {}
-
-            # Matplotlib treats each bar as a Rectangle and counts overlapping
-            # rectangle bboxes, not the four corner vertices. Preserve the
-            # same distinction: a legend covering the middle of a wide bar
-            # must be disqualified even when no rectangle corner lies inside.
-            if kind == "bar":
-                try:
-                    categories = axis_values(
-                        entry["x"], "x" if kwargs.get("orientation") != "horizontal" else "y"
-                    )
-                    values = axis_values(
-                        entry["y"], "y" if kwargs.get("orientation") != "horizontal" else "x"
-                    )
-                    categories, values = np.broadcast_arrays(categories, values)
-                    base = np.broadcast_to(
-                        np.asarray(kwargs.get("base", 0.0), dtype=np.float64),
-                        values.shape,
-                    )
-                    thickness = np.broadcast_to(
-                        np.asarray(kwargs.get("width", 0.8), dtype=np.float64),
-                        values.shape,
-                    )
-                except (KeyError, TypeError, ValueError):
-                    continue
-                if kwargs.get("orientation") == "horizontal":
-                    bx0 = normalize(base, "x")
-                    bx1 = normalize(base + values, "x")
-                    by0 = normalize(categories - thickness / 2.0, "y")
-                    by1 = normalize(categories + thickness / 2.0, "y")
-                else:
-                    bx0 = normalize(categories - thickness / 2.0, "x")
-                    bx1 = normalize(categories + thickness / 2.0, "x")
-                    by0 = normalize(base, "y")
-                    by1 = normalize(base + values, "y")
-                rect_x0, rect_x1 = np.minimum(bx0, bx1), np.maximum(bx0, bx1)
-                rect_y0, rect_y1 = np.minimum(by0, by1), np.maximum(by0, by1)
-                finite = (
-                    np.isfinite(rect_x0)
-                    & np.isfinite(rect_x1)
-                    & np.isfinite(rect_y0)
-                    & np.isfinite(rect_y1)
-                )
-                if not finite.any():
-                    continue
-                entries_used += 1
-                for name, xl, xh, yl, yh in candidates:
-                    overlaps = (
-                        (rect_x0[finite] < xh)
-                        & (rect_x1[finite] > xl)
-                        & (rect_y0[finite] < yh)
-                        & (rect_y1[finite] > yl)
-                    )
-                    scores[name] += float(np.count_nonzero(overlaps))
-                continue
-
-            x_values, y_values = entry.get("x"), entry.get("y")
-            if kind == "@arrow":
-                args: tuple[Any, ...] = tuple(entry.get("args") or ())
-                if len(args) >= 4:
-                    x_values, y_values = (args[0], args[2]), (args[1], args[3])
-            elif kind == "@mark" and entry.get("factory") == "stairs":
-                # ``xyg.stairs`` stores ``(values, edges)``, while Matplotlib's
-                # StepPatch contributes the expanded edge/value path to
-                # Legend._auto_legend_data(). Feeding the compact arguments to
-                # the generic (x, y) path reverses the axes and makes the
-                # histogram effectively invisible to ``loc="best"``.
-                args = tuple(entry.get("args") or ())
-                if len(args) >= 2:
-                    try:
-                        values = axis_values(args[0], "y")
-                        edges = axis_values(args[1], "x")
-                    except (TypeError, ValueError):
-                        continue
-                    if len(edges) != len(values) + 1:
-                        continue
-                    x_values = np.repeat(edges, 2)[1:-1]
-                    y_values = np.repeat(values, 2)
-            elif kind == "@mark" and entry.get("factory") == "ecdf":
-                # The compact ECDF mark owns only the source observations; the
-                # renderer materializes its sorted post-step path. Score that
-                # same path so a rising CDF occupies the upper-right region
-                # instead of disappearing from best-placement input.
-                args = entry.get("args") or ()
-                if args:
-                    try:
-                        values = axis_values(args[0], "x")
-                    except (TypeError, ValueError):
-                        continue
-                    values = np.sort(values[np.isfinite(values)])
-                    if not len(values):
-                        continue
-                    x_values = np.concatenate((values[:1], values))
-                    y_values = np.arange(len(values) + 1, dtype=np.float64) / len(values)
-            elif kind == "area" and x_values is not None and y_values is not None:
-                # PolyCollection contributes the complete closed polygon path:
-                # top edge followed by the reversed baseline.
-                try:
-                    top_x = axis_values(x_values, "x")
-                    top_y = axis_values(y_values, "y")
-                    top_x, top_y = np.broadcast_arrays(top_x, top_y)
-                    base = np.broadcast_to(
-                        np.asarray(kwargs.get("base", 0.0), dtype=np.float64),
-                        top_y.shape,
-                    )
-                    x_values = np.concatenate((top_x, top_x[::-1], top_x[:1]))
-                    y_values = np.concatenate((top_y, base[::-1], top_y[:1]))
-                except (TypeError, ValueError):
-                    continue
-            if x_values is None or y_values is None:
-                args: Any = entry.get("args")
-                if args is not None and len(args) >= 2:
-                    x_values, y_values = args[0], args[1]
-            if x_values is None or y_values is None:
-                continue
             try:
-                xv, yv = np.broadcast_arrays(
-                    axis_values(x_values, "x"),
-                    axis_values(y_values, "y"),
-                )
-            except (TypeError, ValueError):
-                continue
-            xv, yv = xv.reshape(-1), yv.reshape(-1)
-            total = len(xv)
-            sampled = total
-            sample_budget = _BEST_LOC_SCATTER_SAMPLE if kind == "scatter" else _BEST_LOC_SAMPLE
-            if total > sample_budget:
-                # Stride down before the finite scan: occupancy scoring is
-                # already sampled, so the full-array isfinite pass was pure
-                # O(n) per-build cost on large legended series. Sparse finite
-                # points can slip between strides on a mostly-NaN series, so
-                # a sample with no finite pair falls back to the full array —
-                # a series the old full-array pass scored still scores instead
-                # of vanishing from placement.
-                strided = np.linspace(0, total - 1, sample_budget, dtype=np.intp)
-                sampled_x, sampled_y = xv[strided], yv[strided]
-                if (np.isfinite(sampled_x) & np.isfinite(sampled_y)).any():
-                    xv, yv = sampled_x, sampled_y
-                    sampled = sample_budget
-            path_xn = (xv - xlo) / (xhi - xlo)
-            path_yn = (yv - ylo) / (yhi - ylo)
-            if x_reverse:
-                path_xn = 1.0 - path_xn
-            if y_reverse:
-                path_yn = 1.0 - path_yn
-            finite = np.flatnonzero(np.isfinite(path_xn) & np.isfinite(path_yn))
-            if not len(finite):
-                continue
-            # Unclipped: a point outside the view is outside every candidate
-            # box, exactly as Matplotlib sees it in display space. Clipping used
-            # to pin such points onto the nearest edge and count them there.
-            xn = path_xn[finite]
-            yn = path_yn[finite]
-            # Matplotlib's badness is a raw vertex count summed over artists, so
-            # a long series legitimately outweighs a short one. Scale a strided
-            # series back to its true length to preserve that weighting.
-            weight = total / float(sampled)
-            entries_used += 1
-            inside_counts = [
-                int(np.count_nonzero((xn > xl) & (xn < xh) & (yn > yl) & (yn < yh)))
-                for _, xl, xh, yl, yh in candidates
-            ]
-            path_hits = [False] * len(candidates)
-            if kind != "scatter":
-                # A contained vertex proves the path intersects the box. Run
-                # the exact segment test only for edge-only crossings, which
-                # keeps dense oscillating lines from solving the same question
-                # twice for most candidates.
-                unresolved = [index for index, count in enumerate(inside_counts) if not count]
-                unresolved_hits = _path_intersects_boxes(
-                    path_xn,
-                    path_yn,
-                    [
-                        (
-                            candidates[index][1],
-                            candidates[index][2],
-                            candidates[index][3],
-                            candidates[index][4],
+                if kind == "bar":
+                    horizontal = kwargs.get("orientation") == "horizontal"
+                    packed_entries.append(
+                        _static_document.LegendFitEntry(
+                            3 if horizontal else 2,
+                            list(authored_values(entry["x"], "y" if horizontal else "x")),
+                            list(authored_values(entry["y"], "x" if horizontal else "y")),
+                            np.ascontiguousarray(
+                                np.asarray(kwargs.get("base", ()), dtype=np.float64).reshape(-1)
+                            ),
+                            np.ascontiguousarray(
+                                np.asarray(kwargs.get("width", ()), dtype=np.float64).reshape(-1)
+                            ),
                         )
-                        for index in unresolved
-                    ],
+                    )
+                    continue
+                if kind == "@mark" and entry.get("factory") == "stairs":
+                    args = tuple(entry.get("args") or ())
+                    if len(args) >= 2:
+                        packed_entries.append(
+                            _static_document.LegendFitEntry(
+                                4,
+                                list(authored_values(args[1], "x")),
+                                list(authored_values(args[0], "y")),
+                            )
+                        )
+                    continue
+                if kind == "@mark" and entry.get("factory") == "ecdf":
+                    args = tuple(entry.get("args") or ())
+                    if args:
+                        packed_entries.append(
+                            _static_document.LegendFitEntry(
+                                5, list(authored_values(args[0], "x")), []
+                            )
+                        )
+                    continue
+                x_values, y_values = entry.get("x"), entry.get("y")
+                if kind == "@arrow":
+                    args = tuple(entry.get("args") or ())
+                    if len(args) >= 4:
+                        x_values, y_values = (args[0], args[2]), (args[1], args[3])
+                if x_values is None or y_values is None:
+                    args = tuple(entry.get("args") or ())
+                    if len(args) >= 2:
+                        x_values, y_values = args[:2]
+                if x_values is None or y_values is None:
+                    continue
+                packed_entries.append(
+                    _static_document.LegendFitEntry(
+                        1 if kind == "scatter" else 6 if kind == "area" else 0,
+                        list(authored_values(x_values, "x")),
+                        list(authored_values(y_values, "y")),
+                        (
+                            np.ascontiguousarray(
+                                np.asarray(kwargs.get("base", ()), dtype=np.float64).reshape(-1)
+                            )
+                            if kind == "area"
+                            else ()
+                        ),
+                    )
                 )
-                for index, hit in zip(unresolved, unresolved_hits, strict=True):
-                    path_hits[index] = hit
-                for index, count in enumerate(inside_counts):
-                    if count:
-                        path_hits[index] = True
-            for (name, *_), inside_count, path_hit in zip(
-                candidates,
-                inside_counts,
-                path_hits,
-                strict=True,
-            ):
-                # Strict, mirroring Bbox.count_contains.
-                scores[name] += float(inside_count) * weight
-                # ``Line2D``, Patch paths, and PolyCollection paths contribute
-                # one additional badness point when a segment crosses the
-                # legend even if neither endpoint is contained. Scatter is a
-                # Collection and contributes offsets only.
-                if path_hit:
-                    scores[name] += 1.0
-        if not entries_used:
-            return "upper right"
-        # Matplotlib compares exact integer badness and prefers the lower code
-        # on a tie; dict order here *is* that code order, so the first minimum
-        # wins. The only slack absorbs the float stride weight above — an
-        # unsampled series scores whole numbers and ties exactly, as it must.
-        best = min(scores.values())
-        return next(name for name, score in scores.items() if score <= best * (1.0 + 1e-9))
+            except (KeyError, TypeError, ValueError):
+                continue
+        options = dict(legend_options or {})
+        style = dict(options.get("style") or {})
+        resolved_items = items
+        if resolved_items is None:
+            resolved_items = [
+                {"name": str((entry.get("kwargs") or {}).get("name"))}
+                for entry in self._entries
+                if (entry.get("kwargs") or {}).get("name")
+            ]
+        return _static_document.resolve_legend_fit(
+            plot=(0.0, 0.0, float(plot_size[0]), float(plot_size[1])),
+            x_domain=(native_x_domain[0], native_x_domain[1]),
+            y_domain=(native_y_domain[0], native_y_domain[1]),
+            reverse_x=bool(self._axis["x"].get("reverse")),
+            reverse_y=bool(self._axis["y"].get("reverse")),
+            names=[str(item.get("name") or "") for item in (resolved_items or ())],
+            entries=packed_entries,
+            title=str(options.get("title") or ""),
+            ncols=int(options.get("ncols") or 1),
+            font_size_css=str(style.get("fontSize") or ""),
+            padding_css=str(style.get("padding") or ""),
+            row_gap_css=str(style.get("rowGap") or ""),
+            handlelength=options.get("handlelength"),
+            handletextpad=options.get("handletextpad"),
+            handleheight=options.get("handleheight"),
+            border_pad=float(options.get("border_pad") or 0.0),
+        ).location
+
+    def _legend_footprint(
+        self,
+        legend_options: Optional[dict[str, Any]],
+        items: Optional[list[dict[str, Any]]],
+        plot_size: tuple[float, float],
+    ) -> tuple[float, float, float, float]:
+        """Compatibility probe backed entirely by Rust legend measurement."""
+        from .. import _static_document
+
+        options = dict(legend_options or {})
+        style = dict(options.get("style") or {})
+        if items is None:
+            items = [
+                {"name": str((entry.get("kwargs") or {}).get("name"))}
+                for entry in self._entries
+                if (entry.get("kwargs") or {}).get("name")
+            ]
+        resolved = _static_document.resolve_legend_fit(
+            plot=(0.0, 0.0, float(plot_size[0]), float(plot_size[1])),
+            x_domain=(0.0, 1.0),
+            y_domain=(0.0, 1.0),
+            reverse_x=False,
+            reverse_y=False,
+            names=[str(item.get("name") or "") for item in (items or ())],
+            entries=(),
+            title=str(options.get("title") or ""),
+            ncols=int(options.get("ncols") or 1),
+            font_size_css=str(style.get("fontSize") or ""),
+            padding_css=str(style.get("padding") or ""),
+            row_gap_css=str(style.get("rowGap") or ""),
+            handlelength=options.get("handlelength"),
+            handletextpad=options.get("handletextpad"),
+            handleheight=options.get("handleheight"),
+            border_pad=float(options.get("border_pad") or 0.0),
+        )
+        return (
+            resolved.box_width / float(plot_size[0]),
+            resolved.box_height / float(plot_size[1]),
+            resolved.pad_x_fraction,
+            resolved.pad_y_fraction,
+        )
 
     def _outside_padding(self, compact: bool) -> tuple[float, float, float]:
-        """The top/right/bottom gutters the renderers reserve *outside* the
-        chart's ``padding``.
+        """Native top/right/bottom reservations outside chart padding."""
+        from ._mplfig import _panel_chrome_outside
 
-        `_svg.layout()` and the browser's ``ChartView._layout()`` both add the
-        title band, a top-side x axis, the colorbar strip, and the shared
-        right-side gutter for a secondary y axis on top of whatever padding the
-        spec carries. This is the shim's single mirror of that rule:
-        `_frame_padding()` subtracts it so an explicit padding still lands the
-        plot rect where Matplotlib puts the axes, the grid compositor adds it to
-        the panel it allocates so that subtraction always fits, and the
-        equal-aspect solve measures the real plot rect with it.
-        """
-        top = self._title_room(compact)
-        if self._axis["x"].get("side") == "top":
-            top += (26.0 if compact else 32.0) + self._x_multiline_extra()
-        right = 0.0
-        bottom = self._x_multiline_extra() if self._axis["x"].get("side") != "top" else 0.0
-        if self._colorbar is not None:
-            colorbar_right, colorbar_bottom = self._colorbar_outside_room(compact)
-            right += colorbar_right
-            bottom += colorbar_bottom
-        if self._twin is not None or any(
-            secondary._axis == "y" and secondary._side == "right"
-            for secondary in self._secondary_axes
-        ):
-            right += 42.0 if compact else 54.0
-        return top, right, bottom
-
-    def _title_room(self, compact: bool) -> float:
-        """Maximum top gutter required by the three independent title slots."""
-        room = 0.0
-        base_style = self._chrome_styles.get("title", {})
-        for title in self._titles.values():
-            style = {**base_style, **(title.get("style") or {})}
-            raw_size = style.get("font-size", 14.0)
-            try:
-                size = float(str(raw_size).removesuffix("px"))
-            except (TypeError, ValueError):
-                size = 14.0
-            measured = _textblock.measure(title["text"], size).height
-            if title.get("automatic_y", True):
-                candidate = max(26.0 if compact else 30.0, measured + float(title["pad"]))
-            else:
-                # Explicit y is an axes-fraction placement. Only reserve the
-                # ordinary title block when its anchor is at/above the top.
-                # The renderers use the final plot height for the exact
-                # fractional offset.
-                candidate = max(
-                    0.0,
-                    measured + float(title["pad"]) if float(title["y"]) >= 1.0 else 0.0,
-                )
-            room = max(room, candidate)
-        return room
-
-    def _x_multiline_extra(self) -> float:
-        """Extra cross-axis room beyond the single-line matplotlib gutter."""
-        props = self._axis["x"]
-        style = props.get("style") or {}
-        size = float(style.get("tick_label_size", style.get("tick_size", 11.0)))
-        labels = props.get("tick_labels") or ()
-        angle = float(props.get("tick_label_angle", 0.0))
-        extra = 0.0
-        for label in labels:
-            lines = _textblock.split_lines(label)
-            if len(lines) == 1:
-                continue
-            block = _textblock.measure(label, size)
-            first = _textblock.measure(lines[0], size)
-            extra = max(
-                extra,
-                _textblock.rotated_extent(block, angle)[1]
-                - _textblock.rotated_extent(first, angle)[1],
-            )
-        if props.get("label") and len(_textblock.split_lines(props["label"])) > 1:
-            label_size = float(style.get("label_size", 12.0))
-            label_lines = _textblock.measure(props["label"], label_size).line_count
-            extra = max(extra, max(0, label_lines - 1) * label_size * _textblock.LINE_HEIGHT)
-        return extra
+        return _panel_chrome_outside(self, compact)
 
     def _colorbar_outside_room(self, compact: bool) -> tuple[float, float]:
-        """Renderer room consumed by this axes' colorbar, in CSS pixels."""
-        del compact  # colorbars keep their physical chrome on fixed pyplot canvases
-        options = self._colorbar
-        if options is None:
-            return 0.0, 0.0
-        label = bool(options.get("label"))
-        explicit_axes = options.get("placement") == "axes"
-        if options.get("orientation") == "horizontal":
-            room = 24.0 if explicit_axes else (18.0 if options.get("pad") == 0 else 38.0)
-            return 0.0, room + (16.0 if label else 0.0)
-        room = 44.0 if explicit_axes else (62.0 if options.get("pad") == 0 else 86.0)
-        return room + (18.0 if label else 0.0), 0.0
+        """Native renderer room consumed by this axes' colorbar."""
+        from ._mplfig import _panel_colorbar_outside
+
+        return _panel_colorbar_outside(self, compact)
 
     def _aspect_anchor(self) -> tuple[float, float]:
         """Normalized anchor of an aspect-shrunk box within its allocation."""
@@ -8322,10 +8048,18 @@ class Axes(PlotTypeMixin):
         expressed as non-negative padding, leaving the defaults in charge.
         """
         if self._colorbar is not None and self._plot_box_px is None:
-            # Matplotlib's colorbar() steals its strip from the parent axes
-            # rectangle, while the renderers reserve it outside the padding.
-            # Reconciling the two is colorbar-placement work, not framing work.
-            return None
+            # The native panel-chrome query owns the complete default frame,
+            # including enough right/bottom room for pyplot's colorbar label.
+            # Supplying its resolved gutters as authored padding makes Scene
+            # compile marks against the final plot rectangle; XYST therefore
+            # never has to move already-projected mark records after decoding.
+            from .. import _static_document
+            from ._mplfig import _panel_chrome_facts
+
+            resolved = _static_document.resolve_panel_chrome(
+                **_panel_chrome_facts(self, float(width))
+            )
+            return [resolved.top, resolved.right, resolved.bottom, resolved.left]
         if self._plot_box_px is not None:
             left, top, plot_width, plot_height = self._plot_box_px
         else:
@@ -8468,7 +8202,7 @@ class Axes(PlotTypeMixin):
             if legend_spec.get("anchor") and legend_spec.get("items"):
                 anchored_legends.append((legend_spec, list(legend_spec["items"])))
         if anchored_legends:
-            from .._svg import _legend_layout
+            from .. import _static_document
 
             compact = width < 520
             if chart_padding is None:
@@ -8479,19 +8213,34 @@ class Axes(PlotTypeMixin):
                 loc = str(legend_options.get("loc") or "upper right")
                 ax, ay = float(anchor[0]), float(anchor[1])
                 aw, ah = (0.0, 0.0) if len(anchor) == 2 else (float(anchor[2]), float(anchor[3]))
-                # Ask the shared static geometry for the legend's natural
-                # bounded size. A very tall provisional plot prevents entry
-                # truncation from hiding the amount of outside room required.
-                provisional_plot = {
-                    "x": left,
-                    "y": top,
-                    "w": max(40.0, width - left - right),
-                    "h": max(10_000.0, height - top - bottom),
-                }
-                legend_box = _legend_layout(legend_items, provisional_plot, legend_options)
+                # Rust measures the natural bounded box. A very tall plot
+                # prevents entry truncation from hiding required outside room.
+                resolved_legend = _static_document.resolve_legend_fit(
+                    plot=(
+                        left,
+                        top,
+                        max(40.0, width - left - right),
+                        max(10_000.0, height - top - bottom),
+                    ),
+                    x_domain=(0.0, 1.0),
+                    y_domain=(0.0, 1.0),
+                    reverse_x=False,
+                    reverse_y=False,
+                    names=[str(item.get("name") or "") for item in legend_items],
+                    entries=(),
+                    title=str(legend_options.get("title") or ""),
+                    ncols=int(legend_options.get("ncols") or 1),
+                    font_size_css=str((legend_options.get("style") or {}).get("fontSize") or ""),
+                    padding_css=str((legend_options.get("style") or {}).get("padding") or ""),
+                    row_gap_css=str((legend_options.get("style") or {}).get("rowGap") or ""),
+                    handlelength=legend_options.get("handlelength"),
+                    handletextpad=legend_options.get("handletextpad"),
+                    handleheight=legend_options.get("handleheight"),
+                    border_pad=float(legend_options.get("border_pad") or 0.0),
+                )
                 border_axes_pad = max(0.0, float(legend_options.get("border_pad", 0.0)))
-                vertical_room = legend_box["box_h"] + border_axes_pad + 6.0
-                horizontal_room = legend_box["box_w"] + border_axes_pad + 6.0
+                vertical_room = resolved_legend.box_height + border_axes_pad + 6.0
+                horizontal_room = resolved_legend.box_width + border_axes_pad + 6.0
                 if ay >= 1.0 and "lower" in loc:
                     top = max(top, vertical_room)
                 if ay + ah <= 0.0 and "upper" in loc:
@@ -8718,6 +8467,27 @@ class Axes(PlotTypeMixin):
             coords=self._projection,
         )
         core_figure = self._chart.figure()
+        named_sources = [
+            entry.get("kwargs", {}).get("name")
+            for entry in self._entries
+            if entry.get("kwargs", {}).get("name")
+        ]
+        static_mathtext = any(self._static_mathtext.values()) or any(
+            _source_uses_mathtext(value) for value in named_sources
+        )
+        if self._twin is not None:
+            static_mathtext = (
+                static_mathtext
+                or any(self._twin._static_mathtext.values())
+                or any(
+                    _source_uses_mathtext(entry.get("kwargs", {}).get("name"))
+                    for entry in self._twin._entries
+                    if entry.get("kwargs", {}).get("name")
+                )
+            )
+        if static_mathtext:
+            # Declared on the internal Figure for the static-export projection.
+            core_figure.__dict__["_pyplot_static_mathtext"] = True
         core_figure.title_options = [
             {
                 **title,
@@ -8815,9 +8585,7 @@ class Axes(PlotTypeMixin):
     ) -> dict[str, int]:
         """Matplotlib's ``Axis.get_tick_space()`` per axis: how many tick
         intervals fit the estimated plot rect at the tick-label font size."""
-        plot_width, plot_height = self._plot_rect_px(
-            width, height, self._padding, x_props.get("side")
-        )
+        plot_width, plot_height = self._plot_rect_px(width, height, self._padding)
         dpi = float(self.figure._dpi if self.figure._dpi is not None else rcParams["figure.dpi"])
         base = float(rcParams["font.size"])
         x_font = _font_size_points(rcParams["xtick.labelsize"], base)
@@ -9491,6 +9259,11 @@ def _plain_text(value: Any) -> str:
     for source, target in replacements.items():
         text = text.replace(source, target)
     return text.replace("_{", "").replace("^{", "^").replace("}", "")
+
+
+def _source_uses_mathtext(value: Any) -> bool:
+    text = str(value)
+    return "\\" in text or (text.count("$") >= 2 and text.count("$") % 2 == 0)
 
 
 def _plain_text_with_math_italic_ranges(value: Any) -> tuple[str, list[tuple[int, int]]]:

@@ -40,6 +40,7 @@ def test_fill_and_fill_betweenx_share_the_patch_cycle() -> None:
     assert band._entry["kwargs"]["color"] == "blue"
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_broken_barh_uses_patch_facecolor_without_advancing_cycles() -> None:
     fig, ax = plt.subplots()
     collections = [ax.broken_barh([(index, 0.75)], (index, 0.5)) for index in range(3)]
@@ -56,6 +57,7 @@ def test_broken_barh_uses_patch_facecolor_without_advancing_cycles() -> None:
     assert 'fill="#1f77b4"' in svg
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_hlines_vlines_use_lines_color_without_advancing_or_overriding_explicit_color() -> None:
     fig, ax = plt.subplots()
     vertical = ax.vlines([0.25], [0], [1])

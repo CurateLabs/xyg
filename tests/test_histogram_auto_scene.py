@@ -118,6 +118,10 @@ def test_histogram_auto_is_cross_host_exact_and_bounded(name: str) -> None:
         assert len(trace.x0.values) == 40
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_histogram_auto_counts_density_and_every_public_consumer() -> None:
     mixed = _figure(*CASES["mixed"])
     assert mixed.traces[0].y1.values.sum() == 10

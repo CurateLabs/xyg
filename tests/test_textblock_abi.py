@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from xyg import _native, _textblock
-from xyg._svg import _x_axis_title_room, _y_axis_left_room
+from xyg._layout import _x_axis_title_room, _y_axis_left_room
 
 
 def test_text_block_measure_normalizes_crlf() -> None:

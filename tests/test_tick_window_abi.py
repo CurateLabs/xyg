@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from xyg import _native
-from xyg._svg import _tick_window, _tick_window_filter, axis_ticks, minor_axis_ticks
+from xyg._layout import _tick_window, _tick_window_filter, axis_ticks, minor_axis_ticks
 
 
 def test_native_seam_crossing_degree_sector() -> None:
