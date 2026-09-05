@@ -44,6 +44,12 @@ class UnsupportedStaticExport(RuntimeError):
     """A native static journey rejected by the Rust product predicate."""
 
 
+#: Live-only legend toggles: they gate interactive hover behavior in the
+#: browser client and carry no static-render meaning, so both hosts drop them
+#: before marshaling the document legend.
+_INTERACTIVE_LEGEND_KEYS = frozenset({"highlight", "toggle"})
+
+
 #: Pyplot grid dash spellings -> XYST fact codes; the pattern table is Rust's.
 _GRID_DASH_CODES = {"solid": 0, "dashed": 1, "dotted": 2, "dashdot": 3}
 
@@ -764,9 +770,12 @@ def _legend_bytes(legend: Optional[dict[str, Any]]) -> bytes:
         item_style = dict(item.get("style") or {})
         item_flags = sum(
             bit
-            for key, bit in (("width", 1), ("stroke_width", 2), ("size", 4), ("opacity", 8))
+            for key, bit in (("width", 1), ("stroke_width", 2), ("opacity", 8))
             if item_style.get(key) is not None
         )
+        # XYDL requires a positive marker size for every item; absent authored
+        # sizes default to the scatter marker size of 8 px.
+        item_flags |= 4
         if item_style.get("dash"):
             item_flags |= 16
         out.extend(
@@ -775,7 +784,7 @@ def _legend_bytes(legend: Optional[dict[str, Any]]) -> bytes:
                 0,
                 float(item_style["width"]) if item_flags & 1 else 0.0,
                 float(item_style["stroke_width"]) if item_flags & 2 else 0.0,
-                float(item_style["size"]) if item_flags & 4 else 0.0,
+                float(item_style.get("size") or 8.0),
                 float(item_style["opacity"]) if item_flags & 8 else 0.0,
             )
         )
@@ -1113,7 +1122,12 @@ def figure_document(
                 item_style.setdefault("size", size_channel.constant)
             items.append({"kind": trace.kind, "name": trace.name, "style": item_style})
         if items:
-            legend = {**copy.deepcopy(projected.legend_options), "items": items}
+            legend_options = {
+                key: value
+                for key, value in copy.deepcopy(projected.legend_options).items()
+                if key not in _INTERACTIVE_LEGEND_KEYS
+            }
+            legend = {**legend_options, "items": items}
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []

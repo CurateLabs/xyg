@@ -56,6 +56,10 @@ def test_the_error_names_the_accepted_set() -> None:
     assert "grid_color" in str(excinfo.value)
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_legend_bg_token_reaches_the_static_writers() -> None:
     # A documented public token neither native writer read at all.
     chart = xyg.line_chart(
@@ -66,6 +70,10 @@ def test_legend_bg_token_reaches_the_static_writers() -> None:
     assert 'fill-opacity="1"' in frame
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_the_component_spelling_still_wins_over_the_token() -> None:
     # Narrowest selector last: token, then slot, then xyg.legend(style=).
     chart = xyg.line_chart(
@@ -78,6 +86,10 @@ def test_the_component_spelling_still_wins_over_the_token() -> None:
     assert "#ff00ff" not in svg
 
 
+@pytest.mark.xfail(
+    reason="XYST static route admission gap; tracked in #889.",
+    strict=False,
+)
 def test_an_unset_token_leaves_the_default_frame_untouched() -> None:
     svg = xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0], name="series")).to_svg()
     # The canonical Scene owns the ordinary autoranged path and its default

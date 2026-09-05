@@ -119,7 +119,10 @@ def test_step_stairs_and_stem_share_expected_wire_shapes() -> None:
 
 
 def test_generic_segments_share_instanced_renderers() -> None:
-    fig = Figure().segments([0, 1], [0, 1], [1, 2], [1, 0], color="#336699")
+    fig = Figure(width=320, height=240)
+    fig.axis_options["x"]["domain"] = (0.0, 2.0)
+    fig.axis_options["y"]["domain"] = (0.0, 2.0)
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 0], color="#336699")
     spec, _ = fig.build_payload()
     assert spec["traces"][0]["kind"] == "segments"
     assert spec["traces"][0]["n_marks"] == 2
@@ -219,7 +222,7 @@ def _step_value(sx: np.ndarray, sy: np.ndarray, q: float) -> float:
 
 
 def test_stairs_ships_compact_form_and_renders_correct_bins() -> None:
-    from xyg._svg import _step_arrays
+    from xyg._paint import step_arrays as _step_arrays
 
     edges = np.array([0.0, 1.0, 3.0, 6.0])
     vals = np.array([2.0, 5.0, 1.0])
@@ -252,7 +255,7 @@ def test_stairs_ships_compact_form_and_renders_correct_bins() -> None:
 
 
 def test_step_arrays_native_kernel_matches_pre_mid_post() -> None:
-    from xyg._svg import _step_arrays
+    from xyg._paint import step_arrays as _step_arrays
 
     xv = np.array([0.0, 1.0, 2.0])
     yv = np.array([10.0, 20.0, 30.0])
@@ -271,7 +274,7 @@ def test_step_arrays_native_kernel_matches_pre_mid_post() -> None:
 
 
 def test_authored_marker_path_scale_native_kernel() -> None:
-    from xyg._svg import _authored_marker_path_d, _authored_marker_points
+    from xyg._paint import authored_marker_points as _authored_marker_points
 
     px, py = _authored_marker_points(
         np.array([0.0, 0.5, 0.0, -0.5]),
@@ -286,12 +289,15 @@ def test_authored_marker_path_scale_native_kernel() -> None:
         np.array([], dtype=np.float64), np.array([], dtype=np.float64), 10.0, 20.0, 8.0
     )
     assert len(empty_x) == 0 and len(empty_y) == 0
-    d = _authored_marker_path_d(
-        {"contours": [[[0.0, 0.5], [0.5, 0.0], [0.0, -0.5], [-0.5, 0.0]]], "filled": True},
+    contours = [[[0.0, 0.5], [0.5, 0.0], [0.0, -0.5], [-0.5, 0.0]]]
+    points = _authored_marker_points(
+        np.array([x for contour in contours for x, _ in contour]),
+        np.array([y for contour in contours for _, y in contour]),
         10.0,
         20.0,
         8.0,
     )
+    d = "M " + " L ".join(f"{px:g} {py:g}" for px, py in zip(points[0], points[1])) + " Z"
     assert d.startswith("M 10 16")
     assert "L 14 20" in d
     assert "L 10 24" in d

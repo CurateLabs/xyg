@@ -2913,7 +2913,8 @@ function staticLegendBytes(legend, encoder) {
     let itemFlags = 0;
     if (hasNumeric(itemStyle, "width")) itemFlags |= 1;
     if (hasNumeric(itemStyle, "stroke_width")) itemFlags |= 2;
-    if (hasNumeric(itemStyle, "size")) itemFlags |= 4;
+    // XYDL requires a positive marker size for every item; default 8 px.
+    itemFlags |= 4;
     if (hasNumeric(itemStyle, "opacity")) itemFlags |= 8;
     if (itemStyle.dash) itemFlags |= 16;
     const packed = new Uint8Array(40);
@@ -2921,7 +2922,7 @@ function staticLegendBytes(legend, encoder) {
     view.setUint32(0, itemFlags, true);
     view.setFloat64(8, itemFlags & 1 ? Number(itemStyle.width) : 0, true);
     view.setFloat64(16, itemFlags & 2 ? Number(itemStyle.stroke_width) : 0, true);
-    view.setFloat64(24, itemFlags & 4 ? Number(itemStyle.size) : 0, true);
+    view.setFloat64(24, Number(itemStyle.size ?? 8), true);
     view.setFloat64(32, itemFlags & 8 ? Number(itemStyle.opacity) : 0, true);
     chunks.push(
       packed,
