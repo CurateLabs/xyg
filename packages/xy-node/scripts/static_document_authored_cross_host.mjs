@@ -112,6 +112,8 @@ function facets() {
       width: 332, height: 184, title: "Panels & grid", titleX: 166, titleY: 16,
       panels: scenes.map((scene, index) => ({
         scene, x: index === 0 ? 0 : 172, y: 24, width: 160, height: 160,
+        chromeMetrics: [12, 12, 4, 12, 12, 4], axisSides: [1, 1],
+        titleStyle: [14, "#262626"],
       })),
     }),
   };
