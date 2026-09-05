@@ -292,8 +292,8 @@ def _native_scene_layout_rooms(spec: dict[str, Any], *, rect: bool = False) -> O
         rect=rect,
     )
     if rect:
-        left, right, top, bottom = (float(v) for v in resolved)
-        return left, top, right, bottom
+        r_left, r_right, r_top, r_bottom = (float(v) for v in resolved)
+        return r_left, r_right, r_top, r_bottom
     left, right, top, bottom = resolved
     return float(left), float(top), float(right), float(bottom)
 

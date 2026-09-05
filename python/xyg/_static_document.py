@@ -397,28 +397,10 @@ def resolve_panel_chrome(
     values = _PANEL_CHROME_OUTPUT.unpack(resolved)[4:]
     if magic != b"XYPO" or version != 1 or compact_flag not in {0, 1} or reserved != 0:
         raise RuntimeError("invalid native static panel chrome result")
-    (
-        left,
-        top,
-        right,
-        bottom,
-        outside_top,
-        outside_right,
-        outside_bottom,
-        probe_width,
-        probe_height,
-    ) = values
+    left, top, right, bottom, outside_top, outside_right, outside_bottom, probe_width, probe_height = values
     return ResolvedPanelChrome(
-        left,
-        top,
-        right,
-        bottom,
-        outside_top,
-        outside_right,
-        outside_bottom,
-        probe_width,
-        probe_height,
-        bool(compact_flag),
+        left, top, right, bottom, outside_top, outside_right, outside_bottom,
+        probe_width, probe_height, bool(compact_flag),
     )
 
 
