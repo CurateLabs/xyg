@@ -297,7 +297,7 @@ def test_authored_marker_path_scale_native_kernel() -> None:
         20.0,
         8.0,
     )
-    d = "M " + " L ".join(f"{px:g} {py:g}" for px, py in zip(points[0], points[1])) + " Z"
+    d = "M " + " L ".join(f"{px:g} {py:g}" for px, py in zip(points[0], points[1], strict=True)) + " Z"
     assert d.startswith("M 10 16")
     assert "L 14 20" in d
     assert "L 10 24" in d
