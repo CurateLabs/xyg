@@ -26,8 +26,8 @@ Image = pytest.importorskip("PIL.Image")  # noqa: E402
 
 import xyg  # noqa: E402
 from xyg import _native  # noqa: E402
-from xyg import _static_document as sd
-from xyg._scene_v3 import figure_scene
+from xyg import _static_document as sd  # noqa: E402
+from xyg._scene_v3 import figure_scene  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = Path(
