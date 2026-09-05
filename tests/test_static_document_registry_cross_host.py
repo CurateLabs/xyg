@@ -22,10 +22,10 @@ from typing import Any
 
 import pytest
 
-Image = pytest.importorskip("PIL.Image")
+Image = pytest.importorskip("PIL.Image")  # noqa: E402
 
-import xyg
-from xyg import _native
+import xyg  # noqa: E402
+from xyg import _native  # noqa: E402
 from xyg import _static_document as sd
 from xyg._scene_v3 import figure_scene
 
