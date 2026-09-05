@@ -69,6 +69,7 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_axis_sides_low": ({"axis_sides": (1, 1)}, {}),
     "document_axis_sides_high": ({"axis_sides": (2, 2)}, {}),
     "document_axis_sides_both": ({"axis_sides": (3, 3)}, {}),
+    "document_grid_dash": ({"grid_dash": (1, 0, 0, 2)}, {}),
     "document_defaults": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
@@ -264,7 +265,7 @@ def _reject(name: str) -> bytes:
     )
     data = bytearray(_build(seed)[0])
     count, title_len = struct.unpack_from("<2I", data, 20)
-    decorations = 64 + count * 104 + title_len
+    decorations = 64 + count * 108 + title_len
     scene_at = decorations + struct.unpack_from("<I", data, 52)[0]
     if name == "header_truncated":
         return bytes(data[:63])
@@ -274,9 +275,9 @@ def _reject(name: str) -> bytes:
         "header_reserved_nonzero": (60, 1),
         "panels_empty": (20, 0),
         "dimensions_zero": (8, 0),
-        "panel_flags_unknown": (88, 1 << 14),
+        "panel_flags_unknown": (88, 1 << 15),
         "panel_inactive_nonzero": (96, 1),
-        "panel_ranges_overlap": (64 + 104 + 16, 0),
+        "panel_ranges_overlap": (64 + 108 + 16, 0),
     }
     if name in offsets:
         struct.pack_into("<I", data, *offsets[name])
@@ -286,7 +287,7 @@ def _reject(name: str) -> bytes:
     elif name == "panel_scene_corrupt":
         data[scene_at] = 0
     elif name in {"title_invalid_utf8", "title_nul"}:
-        data[64 + count * 104] = 255 if name.endswith("utf8") else 0
+        data[64 + count * 108] = 255 if name.endswith("utf8") else 0
     elif name == "title_anchor_unknown":
         data[48] = 3
     elif name == "text_flags_unknown":

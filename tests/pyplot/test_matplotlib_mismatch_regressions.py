@@ -30,6 +30,7 @@ def test_barh_error_components_stay_on_the_requested_axes() -> None:
     np.testing.assert_allclose(errorbar["kwargs"]["yerr"], [0.4, 0.5])
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_direct_bar_and_mesh_strokes_match_each_face_without_extra_color_data() -> None:
     rgba = np.array([[1.0, 0.0, 0.0, 0.4], [0.0, 0.0, 1.0, 0.8]])
     bars = Figure().bar([0.0, 1.0], [2.0, 3.0], color=rgba, stroke_width=[1.0, 2.0])

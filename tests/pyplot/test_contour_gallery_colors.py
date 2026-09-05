@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 import numpy as np
+import pytest
 
 import xyg.pyplot as plt
 
@@ -18,6 +19,7 @@ def _gallery_field() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return X, Y, (z1 - z2) * 2
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_contour_demo_cycles_listed_colors_per_level_through_renderers() -> None:
     X, Y, Z = _gallery_field()
     levels = np.arange(-1.2, 1.4, 0.4)

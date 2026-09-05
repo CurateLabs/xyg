@@ -35,7 +35,7 @@ CASES = (
 )
 FORMATS = ("svg", "png", "pdf", "jpeg", "webp")
 # Decode only: v1 XYST header/panel geometry, independently checked against output.
-PANEL = struct.Struct("<2i6I12fII2f4BI")
+PANEL = struct.Struct("<2i6I12fII2f4B2I")
 
 
 def _axes() -> tuple[xyg.Axis, xyg.Axis]:

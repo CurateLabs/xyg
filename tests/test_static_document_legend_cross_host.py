@@ -279,7 +279,7 @@ def test_raw_legend_query_stable_errors(name, node_results):
 
 def _legend_block(document: bytes) -> bytes:
     panels, title = struct.unpack_from("<2I", document, 20)
-    at = 64 + panels * 104 + title
+    at = 64 + panels * 108 + title
     assert document[at : at + 4] == b"XYDD"
     assert struct.unpack_from("<I", document, at + 8)[0] == 0
     length = struct.unpack_from("<I", document, at + 12)[0]

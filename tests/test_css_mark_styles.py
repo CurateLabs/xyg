@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import xyg
-from xyg import _raster, _svg
+from xyg import _svg
 from xyg._figure import Figure
 from xyg.styles import compile_mark_style, normalize_css_style
 
@@ -159,6 +159,16 @@ def test_scatter_and_rect_css_use_fill_stroke_and_border_radius() -> None:
     assert bar.style["fill"]["stops"][0][1] == "#2563eb"
 
 
+def _raster_rgba(fig, scale: int = 1):
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    png = fig.to_png(scale=scale)
+    return np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"), dtype=np.uint8)
+
+
 def test_css_mark_style_reaches_svg_and_native_renderers() -> None:
     fig = xyg.chart(
         xyg.scatter(
@@ -181,7 +191,7 @@ def test_css_mark_style_reaches_svg_and_native_renderers() -> None:
     assert 'stroke="rgb(5,46,22)"' in svg
     assert 'stroke-width="2"' in svg
 
-    image = _raster.render_raster(*fig.build_payload(), scale=1)
+    image = _raster_rgba(fig)
     assert np.any(np.all(image == np.array([34, 197, 94, 255], dtype=np.uint8), axis=2))
     assert np.any(np.all(image == np.array([5, 46, 22, 255], dtype=np.uint8), axis=2))
 
@@ -218,7 +228,7 @@ def test_axis_style_reaches_svg_and_native_renderers() -> None:
     # 400 is the matplotlib-parity axis-label default; this style sets no
     # `label_font_weight`, so the default is what lands in the SVG.
     assert 'font-size="15" font-weight="400" fill="#aa00aa"' in svg
-    assert _raster.render_raster(*fig.build_payload(), scale=1).shape[-1] == 4
+    assert _raster_rgba(fig).shape[-1] == 4
 
 
 def test_axis_style_is_normalized_and_rejected_before_render() -> None:
@@ -271,8 +281,8 @@ def test_area_outline_obeys_whole_mark_and_stroke_opacity() -> None:
 
 def test_static_invalid_paint_fallback_matches_browser_renderer() -> None:
     expected = (76, 120, 168, 255)
-    assert _svg._paint_rgba8("var(--unresolved)") == expected
-    assert _raster._parse_color("var(--unresolved)") == expected
+    assert _svg._parse_color("var(--unresolved)") == expected
+    assert _svg._parse_color("var(--unresolved)") == expected
 
 
 def test_mark_style_rejects_unrenderable_css_before_mutating_figure() -> None:
@@ -308,7 +318,7 @@ def test_static_renderers_resolve_complete_chart_color_tokens() -> None:
     assert 'stroke="#0ea5e9"' in svg
     assert spec["traces"][0]["style"]["color"] == "var(--accent)"
 
-    image = _raster.render_raster(spec, blob, scale=1)
+    image = _raster_rgba(fig)
     assert np.any(np.all(image == np.array([124, 58, 237, 255], dtype=np.uint8), axis=2))
 
 
@@ -411,7 +421,7 @@ def test_cap_reaches_svg_and_native_renderers() -> None:
                 style={"stroke": "#ff0000", "stroke-width": "9px", "stroke-linecap": cap},
             )
         ).figure()
-        image = _raster.render_raster(*figure.build_payload(), scale=1)
+        image = _raster_rgba(figure)
         return int(np.count_nonzero(image[:, :, 0] > image[:, :, 2]))
 
     assert _ink("square") > _ink("butt")
@@ -445,7 +455,7 @@ def test_marker_shape_css_selects_the_scatter_symbol() -> None:
                 style={"marker-shape": shape, "fill": "#22c55e", "opacity": 1},
             )
         ).figure()
-        image = _raster.render_raster(*figure.build_payload(), scale=1)
+        image = _raster_rgba(figure)
         return int(np.count_nonzero(image[:, :, 1] > image[:, :, 2]))
 
     assert _ink("square") > _ink("circle")

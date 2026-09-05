@@ -227,7 +227,7 @@ def test_label_query_stable_errors(name, node_results):
 
 def _label_block(document: bytes) -> bytes:
     count, title_length = struct.unpack_from("<2I", document, 20)
-    at = 64 + count * 104 + title_length
+    at = 64 + count * 108 + title_length
     assert document[at : at + 4] == b"XYDD"
     labels = struct.unpack_from("<I", document, at + 8)[0]
     start = at + 32

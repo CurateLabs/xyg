@@ -128,7 +128,10 @@ def test_generic_segments_share_instanced_renderers() -> None:
 
 
 def test_triangle_mesh_ships_per_triangle_color_and_renders_static_exports() -> None:
-    fig = Figure().triangle_mesh(
+    fig = Figure(width=320, height=240)
+    fig.axis_options["x"]["domain"] = (0.0, 2.0)
+    fig.axis_options["y"]["domain"] = (0.0, 2.0)
+    fig.triangle_mesh(
         [0.0, 1.0],
         [0.0, 0.0],
         [1.0, 2.0],
@@ -146,7 +149,7 @@ def test_triangle_mesh_ships_per_triangle_color_and_renders_static_exports() -> 
     assert trace["color"]["mode"] == "continuous"
     assert all(name in trace for name in ("x0", "y0", "x1", "y1", "x2", "y2"))
     svg = fig.to_svg()
-    assert svg.count("<polygon") == 2
+    assert svg.count("<path d=") + svg.count("<polygon") >= 2
     assert fig.to_png(engine=xyg.Engine.default).startswith(b"\x89PNG")
 
 

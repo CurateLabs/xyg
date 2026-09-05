@@ -392,6 +392,606 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
     },
 ];
 
+/// StaticDocument vocabulary extends this same registry; it is not a second
+/// host-maintained support list. Runtime proof consumers must cover every row.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StaticDocumentVocabulary {
+    pub name: &'static str,
+    pub family: &'static str,
+    pub code: u32,
+}
+
+/// These masks are consumed by the XYST decoder after the #873 integration.
+pub const STATIC_DOCUMENT_HEADER_FLAGS: u32 = 15;
+pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = 0x7fff;
+pub const STATIC_DOCUMENT_FORMATS: &[&str] = &["svg", "png", "pdf", "jpeg", "webp"];
+
+pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-log-scale",
+        family: "panel-flag",
+        code: 1024,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-extend-min",
+        family: "panel-flag",
+        code: 2048,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-extend-max",
+        family: "panel-flag",
+        code: 4096,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-pyplot-label",
+        family: "panel-flag",
+        code: 8192,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.grid-dash",
+        family: "panel-flag",
+        code: 1 << 14,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.baseline",
+        family: "annotation-vertical-align",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.top",
+        family: "annotation-vertical-align",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.bottom",
+        family: "annotation-vertical-align",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.center",
+        family: "annotation-vertical-align",
+        code: 3,
+    },
+    StaticDocumentVocabulary {
+        name: "axis-sides.none",
+        family: "axis-sides",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "axis-sides.low",
+        family: "axis-sides",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "axis-sides.high",
+        family: "axis-sides",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "axis-sides.both",
+        family: "axis-sides",
+        code: 3,
+    },
+    StaticDocumentVocabulary {
+        name: "document.background",
+        family: "document-flag",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "document.optimize-png",
+        family: "document-flag",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "document.tight-crop",
+        family: "document-flag",
+        code: 4,
+    },
+    StaticDocumentVocabulary {
+        name: "document.title-x-center",
+        family: "document-flag",
+        code: 8,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.x-chrome-metrics",
+        family: "panel-flag",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.y-chrome-metrics",
+        family: "panel-flag",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-layout",
+        family: "panel-flag",
+        code: 4,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.annotation-font-size",
+        family: "panel-flag",
+        code: 8,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.arrow-metrics",
+        family: "panel-flag",
+        code: 16,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.axis-sides",
+        family: "panel-flag",
+        code: 32,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.annotation-text-flags",
+        family: "panel-flag",
+        code: 64,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.annotation-padding",
+        family: "panel-flag",
+        code: 128,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.title-style",
+        family: "panel-flag",
+        code: 256,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.annotation-vertical-align",
+        family: "panel-flag",
+        code: 512,
+    },
+    StaticDocumentVocabulary {
+        name: "title.anchor-start",
+        family: "title-anchor",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "title.anchor-middle",
+        family: "title-anchor",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "title.anchor-end",
+        family: "title-anchor",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "text.regular",
+        family: "text-flags",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "text.italic",
+        family: "text-flags",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "text.bold",
+        family: "text-flags",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "text.bold-italic",
+        family: "text-flags",
+        code: 3,
+    },
+    StaticDocumentVocabulary {
+        name: "label.anchor-start",
+        family: "label-anchor",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "label.anchor-middle",
+        family: "label-anchor",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "label.anchor-end",
+        family: "label-anchor",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "label.baseline",
+        family: "label-vertical-align",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "label.top",
+        family: "label-vertical-align",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "label.center",
+        family: "label-vertical-align",
+        code: 3,
+    },
+    StaticDocumentVocabulary {
+        name: "label.bottom",
+        family: "label-vertical-align",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "legend.line",
+        family: "legend-item",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "legend.scatter",
+        family: "legend-item",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "legend.patch",
+        family: "legend-item",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "legend.anchored",
+        family: "envelope",
+        code: 0,
+    },
+    StaticDocumentVocabulary {
+        name: "legend.multicolumn",
+        family: "envelope",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "label.rotated-opacity",
+        family: "envelope",
+        code: 2,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.signed-placement",
+        family: "envelope",
+        code: 3,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.overlap",
+        family: "envelope",
+        code: 4,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.multiple",
+        family: "envelope",
+        code: 5,
+    },
+    StaticDocumentVocabulary {
+        name: "colorbar.shared",
+        family: "envelope",
+        code: 6,
+    },
+    StaticDocumentVocabulary {
+        name: "colorbar.vertical",
+        family: "envelope",
+        code: 7,
+    },
+    StaticDocumentVocabulary {
+        name: "colorbar.horizontal",
+        family: "envelope",
+        code: 8,
+    },
+    StaticDocumentVocabulary {
+        name: "document.title",
+        family: "envelope",
+        code: 9,
+    },
+];
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StaticDocumentCase {
+    pub name: &'static str,
+    pub vocabulary: &'static [&'static str],
+    pub formats: &'static [&'static str],
+}
+
+/// Exhaustive sidecar witnesses; the runtime test must implement these exact
+/// case names and run every declared format. These are explicit XYST authoring,
+/// not a claim that Node automatically projects Figure/facet objects to XYST.
+pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
+    StaticDocumentCase {
+        name: "document_title_x_center",
+        vocabulary: &[
+            "document.title-x-center",
+            "document.title",
+            "title.anchor-middle",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_colorbar_log_scale",
+        vocabulary: &["panel.colorbar-log-scale"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_colorbar_extend_min",
+        vocabulary: &["panel.colorbar-extend-min"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_colorbar_extend_max",
+        vocabulary: &["panel.colorbar-extend-max"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_colorbar_pyplot_label",
+        vocabulary: &["panel.colorbar-pyplot-label"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_colorbar_extend_both",
+        vocabulary: &["panel.colorbar-extend-min", "panel.colorbar-extend-max"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_annotation_baseline",
+        vocabulary: &["annotation.baseline"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_annotation_top",
+        vocabulary: &["annotation.top"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_annotation_bottom",
+        vocabulary: &["annotation.bottom"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_annotation_center",
+        vocabulary: &["annotation.center"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_axis_sides_none",
+        vocabulary: &["axis-sides.none"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_axis_sides_low",
+        vocabulary: &["axis-sides.low"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_axis_sides_high",
+        vocabulary: &["axis-sides.high"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_axis_sides_both",
+        vocabulary: &["axis-sides.both"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_grid_dash",
+        vocabulary: &["panel.grid-dash"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_defaults",
+        vocabulary: &[],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_background",
+        vocabulary: &["document.background"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_optimized_png",
+        vocabulary: &["document.optimize-png"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_tight_crop",
+        vocabulary: &["document.tight-crop"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_chrome",
+        vocabulary: &[
+            "panel.x-chrome-metrics",
+            "panel.y-chrome-metrics",
+            "panel.axis-sides",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_annotation_style",
+        vocabulary: &[
+            "panel.annotation-font-size",
+            "panel.annotation-text-flags",
+            "panel.annotation-padding",
+            "panel.annotation-vertical-align",
+            "panel.arrow-metrics",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_panel_title",
+        vocabulary: &["panel.title-style"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_title_start",
+        vocabulary: &["document.title", "title.anchor-start", "text.regular"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_title_middle",
+        vocabulary: &["title.anchor-middle", "text.italic"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_title_end",
+        vocabulary: &["title.anchor-end", "text.bold"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_title_bold_italic",
+        vocabulary: &["text.bold-italic"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_labels_start_top",
+        vocabulary: &["label.anchor-start", "label.top"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_labels_middle_center",
+        vocabulary: &["label.anchor-middle", "label.center"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_labels_end_bottom",
+        vocabulary: &["label.anchor-end", "label.bottom"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_labels_baseline_rotated",
+        vocabulary: &["label.baseline", "label.rotated-opacity"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_legend",
+        vocabulary: &[
+            "legend.line",
+            "legend.scatter",
+            "legend.patch",
+            "legend.anchored",
+            "legend.multicolumn",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_signed_panels",
+        vocabulary: &["panel.signed-placement", "panel.multiple"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_overlap",
+        vocabulary: &["panel.overlap"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_colorbar_vertical",
+        vocabulary: &["panel.colorbar-layout", "colorbar.vertical"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_colorbar_horizontal",
+        vocabulary: &["colorbar.horizontal"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_shared_colorbar",
+        vocabulary: &["colorbar.shared"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_half_scale",
+        vocabulary: &[],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_double_scale",
+        vocabulary: &[],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_jpeg_quality_low",
+        vocabulary: &[],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_jpeg_quality_high",
+        vocabulary: &[],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+];
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StaticDocumentAuthoredWitness {
+    pub name: &'static str,
+    pub vocabulary: &'static [&'static str],
+}
+
+/// Independently public-authored Python/Node fixtures in
+/// test_static_document_authored_cross_host.py. The Node side authors explicit
+/// envelope facts using public staticDocumentEncode; no Python bytes are sent.
+pub const STATIC_DOCUMENT_AUTHORED_WITNESSES: &[StaticDocumentAuthoredWitness] = &[
+    StaticDocumentAuthoredWitness {
+        name: "styled_line",
+        vocabulary: &[
+            "panel.x-chrome-metrics",
+            "panel.y-chrome-metrics",
+            "panel.axis-sides",
+        ],
+    },
+    StaticDocumentAuthoredWitness {
+        name: "styled_scatter",
+        vocabulary: &[
+            "panel.x-chrome-metrics",
+            "panel.y-chrome-metrics",
+            "panel.axis-sides",
+        ],
+    },
+    StaticDocumentAuthoredWitness {
+        name: "text_annotation",
+        vocabulary: &[
+            "panel.annotation-font-size",
+            "panel.annotation-text-flags",
+            "panel.annotation-vertical-align",
+        ],
+    },
+    StaticDocumentAuthoredWitness {
+        name: "anchored_legend",
+        vocabulary: &["legend.line", "legend.scatter", "legend.anchored"],
+    },
+    StaticDocumentAuthoredWitness {
+        name: "continuous_colorbar",
+        vocabulary: &["colorbar.vertical"],
+    },
+    StaticDocumentAuthoredWitness {
+        name: "facet_panels",
+        vocabulary: &["panel.multiple", "document.title", "title.anchor-middle"],
+    },
+];
+
+/// Existing Scene fail-close fixtures whose exact public admission changed
+/// during #873. Keep the fixtures; resolve each against the integrated product
+/// before reporting the combined registry green.
+pub const STATIC_DOCUMENT_RECHECK_SCENE_CASES: &[&str] =
+    &["title_options", "extra_legend", "colorbar_option"];
+
+/// Corrupt envelopes must fail at both host boundaries without renderer retry.
+/// Rows refer to exact mutation builders in the integrated runtime corpus.
+pub const STATIC_DOCUMENT_REJECTIONS: &[&str] = &[
+    "centered_title_x_nonzero",
+    "header_truncated",
+    "version_unknown",
+    "header_flags_unknown",
+    "header_reserved_nonzero",
+    "panels_empty",
+    "dimensions_zero",
+    "panel_flags_unknown",
+    "panel_inactive_nonzero",
+    "panel_ranges_overlap",
+    "panel_scene_corrupt",
+    "title_invalid_utf8",
+    "title_nul",
+    "title_anchor_unknown",
+    "text_flags_unknown",
+    "label_alignment_unknown",
+    "label_opacity_invalid",
+    "legend_kind_unknown",
+    "legend_reserved_nonzero",
+    "decoration_trailing_bytes",
+    "document_trailing_bytes",
+];
+
 /// Deterministic JSON consumed by the fixture generator; no serde dependency is
 /// added to the minimal engine crate.
 pub fn static_export_registry_json() -> String {
@@ -438,9 +1038,35 @@ pub fn static_export_registry_json() -> String {
         })
         .collect::<Vec<_>>()
         .join(",");
+    let vocabulary = STATIC_DOCUMENT_VOCABULARY
+        .iter()
+        .map(|row| {
+            format!(
+                "{{\"name\":\"{}\",\"family\":\"{}\",\"code\":{}}}",
+                row.name, row.family, row.code
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let documents = STATIC_DOCUMENT_CASES
+        .iter()
+        .map(|row| {
+            format!(
+                "{{\"name\":\"{}\",\"vocabulary\":[{}],\"formats\":[{}]}}",
+                row.name,
+                strings(row.vocabulary),
+                strings(row.formats)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let witnesses = STATIC_DOCUMENT_AUTHORED_WITNESSES.iter().map(|row| format!(
+        "{{\"name\":\"{}\",\"vocabulary\":[{}],\"formats\":[{}],\"python\":\"public-composition-export\",\"node\":\"public-figure-explicit-xyst\"}}",
+        row.name, strings(row.vocabulary), strings(STATIC_DOCUMENT_FORMATS)
+    )).collect::<Vec<_>>().join(",");
     format!(
-        "{{\"schema\":\"xyg.static-export-support-registry/v1\",\"required_edge_concerns\":[{}],\"shapes\":[{shapes}],\"edge_cases\":[{edges}],\"fail_close\":[{misses}]}}\n",
-        strings(REQUIRED_EDGE_CONCERNS)
+        "{{\"schema\":\"xyg.static-export-support-registry/v1\",\"required_edge_concerns\":[{}],\"shapes\":[{shapes}],\"edge_cases\":[{edges}],\"fail_close\":[{misses}],\"document\":{{\"version\":1,\"formats\":[{}],\"vocabulary\":[{vocabulary}],\"cases\":[{documents}],\"authored_witnesses\":[{witnesses}],\"rejections\":[{}],\"scene_cases_requiring_recheck\":[{}]}}}}\n",
+        strings(REQUIRED_EDGE_CONCERNS), strings(STATIC_DOCUMENT_FORMATS), strings(STATIC_DOCUMENT_REJECTIONS), strings(STATIC_DOCUMENT_RECHECK_SCENE_CASES)
     )
 }
 
@@ -448,6 +1074,66 @@ pub fn static_export_registry_json() -> String {
 mod tests {
     use super::*;
     use std::collections::{BTreeMap, BTreeSet};
+
+    #[test]
+    fn every_document_vocabulary_row_has_all_format_witnesses() {
+        assert_eq!(
+            STATIC_DOCUMENT_FORMATS,
+            &["svg", "png", "pdf", "jpeg", "webp"]
+        );
+        let rejection_names: BTreeSet<_> = STATIC_DOCUMENT_REJECTIONS.iter().copied().collect();
+        assert_eq!(rejection_names.len(), STATIC_DOCUMENT_REJECTIONS.len());
+        let family_codes: BTreeSet<_> = STATIC_DOCUMENT_VOCABULARY
+            .iter()
+            .map(|row| (row.family, row.code))
+            .collect();
+        assert_eq!(family_codes.len(), STATIC_DOCUMENT_VOCABULARY.len());
+        let vocabulary: BTreeSet<_> = STATIC_DOCUMENT_VOCABULARY
+            .iter()
+            .map(|row| row.name)
+            .collect();
+        assert_eq!(vocabulary.len(), STATIC_DOCUMENT_VOCABULARY.len());
+        let covered: BTreeSet<_> = STATIC_DOCUMENT_CASES
+            .iter()
+            .flat_map(|row| row.vocabulary.iter().copied())
+            .collect();
+        assert_eq!(vocabulary, covered);
+        let names: BTreeSet<_> = STATIC_DOCUMENT_CASES.iter().map(|row| row.name).collect();
+        assert_eq!(names.len(), STATIC_DOCUMENT_CASES.len());
+        for row in STATIC_DOCUMENT_CASES {
+            assert_eq!(row.formats, STATIC_DOCUMENT_FORMATS, "{}", row.name);
+        }
+        for (family, mask) in [
+            ("document-flag", STATIC_DOCUMENT_HEADER_FLAGS),
+            ("panel-flag", STATIC_DOCUMENT_PANEL_FLAGS),
+        ] {
+            let mut actual = 0;
+            for row in STATIC_DOCUMENT_VOCABULARY
+                .iter()
+                .filter(|row| row.family == family)
+            {
+                assert!(row.code.is_power_of_two());
+                assert_eq!(actual & row.code, 0);
+                actual |= row.code;
+            }
+            assert_eq!(actual, mask);
+        }
+        let witness_names: BTreeSet<_> = STATIC_DOCUMENT_AUTHORED_WITNESSES
+            .iter()
+            .map(|row| row.name)
+            .collect();
+        assert_eq!(
+            witness_names.len(),
+            STATIC_DOCUMENT_AUTHORED_WITNESSES.len()
+        );
+        for witness in STATIC_DOCUMENT_AUTHORED_WITNESSES {
+            assert!(!witness.vocabulary.is_empty());
+            assert!(witness
+                .vocabulary
+                .iter()
+                .all(|name| vocabulary.contains(name)));
+        }
+    }
 
     #[test]
     fn every_admitted_kind_has_a_cross_host_shape() {

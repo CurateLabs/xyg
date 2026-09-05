@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import xyg
+from xyg import _native, _static_document
 from xyg._figure import Figure
 from xyg._scene_v3 import (
     UnsupportedSceneV3,
@@ -31,8 +32,27 @@ from xyg._scene_v3 import (
     public_static_export,
     scene_export_support_reason,
 )
+from xyg._static_document import UnsupportedStaticExport
 from xyg.channels import ColorChannel
 from xyg.marks import _SYMBOL_CODES
+
+
+def document_svg(figure, *, width=None, height=None):
+    """The XYST product route for one figure at its authored size."""
+    return _static_document.export_figure(
+        figure,
+        "svg",
+        width=int(width if width is not None else figure.width),
+        height=int(height if height is not None else figure.height),
+    ).decode("utf-8")
+
+
+def document_png(figure):
+    """The XYST product PNG for one figure at its authored size."""
+    return _static_document.export_figure(
+        figure, "png", width=int(figure.width), height=int(figure.height)
+    )
+
 
 BUILTIN_SYMBOLS = tuple(_SYMBOL_CODES)
 
@@ -330,7 +350,6 @@ def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> Non
 def test_primary_numeric_axis_format_routes_through_rust_scene(
     kind: str, domain: tuple[float, float], constant: float | None
 ) -> None:
-    from xyg import _native
 
     figure = _supported()
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
@@ -348,7 +367,6 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
 
 
 def test_authored_numeric_tick_labels_override_format_and_invalid_format_falls_back() -> None:
-    from xyg import _native
 
     authored = _authored_tick_labels()
     authored.axis_options["x"]["format"] = "$,.1f USD"
@@ -620,7 +638,7 @@ def test_smooth_line_is_public_scene_supported() -> None:
     svg = exported.decode("utf-8")
     counts = [len(points.split()) for points in re.findall(r'<polyline points="([^"]+)"', svg)]
     assert max(counts) == 1 + (3 - 1) * 16
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
 
 
 def test_smooth_area_is_public_scene_supported() -> None:
@@ -636,7 +654,7 @@ def test_smooth_area_is_public_scene_supported() -> None:
         tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
         counts.append(len(tokens) // 2)
     assert max(counts) == (1 + (3 - 1) * 16) * 2
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
 
 
 def test_smooth_error_band_is_public_scene_supported() -> None:
@@ -652,7 +670,7 @@ def test_smooth_error_band_is_public_scene_supported() -> None:
         tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
         counts.append(len(tokens) // 2)
     assert max(counts) == (1 + (3 - 1) * 16) * 2
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
 
 
 def test_polar_smooth_line_is_scene_supported() -> None:
@@ -940,7 +958,7 @@ def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice
 def test_primary_annotation_family_routes_all_public_static_exports_and_matches_scene_bytes() -> (
     None
 ):
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_annotation_family()
@@ -950,16 +968,16 @@ def test_primary_annotation_family_routes_all_public_static_exports_and_matches_
     svg = _native.scene_svg(scene)
     for text in ("plain", "rule", "band", "marker", "callout", "wrapped", "text"):
         assert text in svg
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
 
 
 def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_bytes() -> None:
     """Lines and Rects consume one Rust-owned public Scene."""
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_literal_geometry()
@@ -969,16 +987,16 @@ def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_byt
     svg = _native.scene_svg(scene)
     assert "<polyline " in svg
     assert "<rect " in svg
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
 
 
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 def test_public_violin_is_rust_owned_and_routes_every_static_consumer(orientation: str) -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_violin(orientation)
@@ -987,17 +1005,17 @@ def test_public_violin_is_rust_owned_and_routes_every_static_consumer(orientatio
     assert hashlib.sha256(scene).hexdigest() == fixture["public_violin_sha256"][orientation]
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 8
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), 320, 240
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
     assert _native.scene_browser_painter(scene).startswith(b"XYPB")
 
 
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 def test_public_box_is_rust_owned_and_routes_every_static_consumer(orientation: str) -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_box(orientation)
@@ -1006,11 +1024,11 @@ def test_public_box_is_rust_owned_and_routes_every_static_consumer(orientation: 
     assert hashlib.sha256(scene).hexdigest() == fixture["public_box_sha256"][orientation]
     svg = _native.scene_svg(scene)
     assert "<rect " in svg and "<polyline " in svg
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), 320, 240
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
     assert _native.scene_browser_painter(scene).startswith(b"XYPB")
 
 
@@ -1100,7 +1118,7 @@ def test_literal_geometry_cross_host_variants_match_exact_scene_bytes(kind: str)
 def test_rust_step_modes_match_exact_cross_host_bytes_and_every_static_consumer(
     where: str,
 ) -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_step_mode(where)
@@ -1109,18 +1127,17 @@ def test_rust_step_modes_match_exact_cross_host_bytes_and_every_static_consumer(
     assert hashlib.sha256(scene).hexdigest() == fixture["rust_step_modes_sha256"][where]
     svg = _native.scene_svg(scene)
     assert svg.count("<polyline ") == 1
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
     painter = _native.scene_browser_painter(scene)
     assert painter.startswith(b"XYPB") and len(painter) > 300
 
 
 @pytest.mark.parametrize("scale", ["linear", "log", "symlog"])
 def test_rust_ribbon_expansion_matches_exact_cross_host_bytes(scale: str) -> None:
-    from xyg import _native
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_ribbon(scale)
@@ -1140,21 +1157,21 @@ def test_rust_ribbon_expansion_matches_exact_cross_host_bytes(scale: str) -> Non
 
 
 def test_public_solid_ribbon_routes_svg_png_pdf_through_the_exact_scene() -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     figure = _public_ribbon("linear")
     scene = figure_scene(figure)
     svg = _native.scene_svg(scene)
-    assert figure.to_svg() == svg
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
 
 
 def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers() -> None:
     """The full fixed marker vocabulary leaves no Python static-policy fork."""
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_builtin_symbols()
@@ -1166,11 +1183,12 @@ def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers()
     assert svg.count('role="listitem"') == 19
     assert all(f">{symbol}</text>" in svg for symbol in BUILTIN_SYMBOLS)
     assert svg.count('fill="none" stroke="rgb(57,135,229)" stroke-width="1"') >= 8
-    assert figure.to_svg() == svg
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
+    figure.show_legend = False  # styled legend items are #889 family 7
+    assert figure.to_svg() == document_svg(figure)
 
     painter = _native.scene_browser_painter(scene)
     assert int.from_bytes(painter[20:24], "little") == 19
@@ -1187,7 +1205,7 @@ def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers()
 
 def test_public_triangle_mesh_matches_exact_cross_host_scene_and_consumers() -> None:
     """Two clipped literal triangles keep one canonical run per face."""
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_triangle_mesh()
@@ -1200,11 +1218,11 @@ def test_public_triangle_mesh_matches_exact_cross_host_scene_and_consumers() -> 
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert svg.count('role="listitem"') == 1
     assert ">literal mesh</text>" in svg
-    assert figure.to_svg() == svg
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
 
     painter = _native.scene_browser_painter(scene)
     header_bytes = int.from_bytes(painter[12:16], "little")
@@ -1222,7 +1240,6 @@ def test_public_triangle_mesh_matches_exact_cross_host_scene_and_consumers() -> 
 
 
 def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
-    from xyg import _native
 
     boundary = _public_triangle_mesh(1024)
     assert scene_export_support_reason(boundary) is None
@@ -1422,7 +1439,7 @@ def test_public_triangle_mesh_keeps_autorange_on_compatibility() -> None:
 
 @pytest.mark.parametrize("reduce", ["count", "mean", "sum"])
 def test_public_hexbin_matches_exact_cross_host_scene_and_consumers(reduce: str) -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_hexbin(reduce)
@@ -1438,14 +1455,15 @@ def test_public_hexbin_matches_exact_cross_host_scene_and_consumers(reduce: str)
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert ">hex</text>" in svg
     assert _public_svg(figure) == svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     png = _public_png(figure, scale=1)
-    assert png == figure.to_png(scale=1)
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert document_png(figure) == figure.to_png(scale=1)
     assert png == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
     pdf = _public_pdf(figure)
-    assert pdf == figure.to_image(format="pdf")
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(document_svg(figure))
     assert pdf == _pdf.svg_to_pdf(svg)
 
     painter = _native.scene_browser_painter(scene)
@@ -1473,7 +1491,8 @@ def test_public_hexbin_honors_the_painter_group_boundary() -> None:
     )
     assert len(figure.traces[0].x.values) > 1024
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-    assert figure.to_svg()
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
+        document_svg(figure)
 
 
 def test_colormap_hexbin_is_scene_supported() -> None:
@@ -1491,7 +1510,7 @@ def test_colormap_hexbin_is_scene_supported() -> None:
     assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
     fills = {part.split('fill="', 1)[1].split('"', 1)[0] for part in svg.split("<path ")[1:]}
     assert len(fills) > 1
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     png = public_static_export(figure, "png")
     assert png is not None
 
@@ -1626,11 +1645,12 @@ def test_public_hexbin_compiler_rejects_secondary_axis_and_nonfinite(
     assert _public_pdf(figure) is None
 
 
-def test_public_hexbin_predicate_keeps_rich_style_on_compatibility() -> None:
+def test_public_hexbin_predicate_rejects_rich_style_without_renderer_fallback() -> None:
     figure = _public_hexbin()
     figure.traces[0].style["role"] = "hex-density"
     assert scene_export_support_reason(figure) is not None
-    assert figure.to_svg()
+    with pytest.raises(UnsupportedStaticExport):
+        document_svg(figure)
 
 
 def test_public_hexbin_fill_opacity_is_scene_supported() -> None:
@@ -1655,7 +1675,7 @@ def test_public_hexbin_stroke_opacity_is_scene_supported() -> None:
 
 
 def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     figure = _public_heatmap()
@@ -1672,14 +1692,15 @@ def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert ">heat</text>" in svg
     assert _public_svg(figure) == svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     png = _public_png(figure, scale=1)
-    assert png == figure.to_png(scale=1)
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert document_png(figure) == figure.to_png(scale=1)
     assert png == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
     pdf = _public_pdf(figure)
-    assert pdf == figure.to_image(format="pdf")
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(document_svg(figure))
     assert pdf == _pdf.svg_to_pdf(svg)
 
     painter = _native.scene_browser_painter(scene)
@@ -1698,7 +1719,8 @@ def test_public_heatmap_honors_the_rect_budget() -> None:
     figure.heatmap(np.zeros((101, 100)), color="#3987e5")
     assert figure.traces[0].count == 10_100
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-    assert figure.to_svg()
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
+        document_svg(figure)
 
 
 def test_colormap_heatmap_is_scene_supported() -> None:
@@ -1801,7 +1823,8 @@ def test_public_heatmap_predicate_keeps_rich_style_on_compatibility(
     figure = _public_heatmap()
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
-    assert figure.to_svg()
+    with pytest.raises(UnsupportedStaticExport):
+        document_svg(figure)
 
 
 def test_public_heatmap_autoranges_without_authored_axis_domain() -> None:
@@ -1843,7 +1866,8 @@ def test_custom_hexbin_reducer_is_scene_supported() -> None:
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.count(b'<path d="M ') == len(figure.traces[0].x.values)
-    assert figure.to_svg() == exported.decode()
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "svg").decode() == exported.decode()
 
 
 def test_polar_hexbin_is_scene_supported() -> None:
@@ -1912,7 +1936,6 @@ def test_authored_constant_scatter_stroke_uses_public_scene(stroke: str) -> None
 
 
 def test_width_only_scatter_stroke_uses_public_scene() -> None:
-    from xyg import _native
 
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -1921,7 +1944,7 @@ def test_width_only_scatter_stroke_uses_public_scene() -> None:
     assert scene_export_support_reason(figure) is None
     svg = _native.scene_svg(figure.to_scene())
     assert 'stroke-width="2"' in svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
 
 
 @pytest.mark.parametrize(
@@ -1959,7 +1982,6 @@ def test_width_only_scatter_stroke_uses_public_scene() -> None:
     ],
 )
 def test_public_scatter_admits_per_item_paint(factory) -> None:
-    from xyg import _native
 
     figure = factory()
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
@@ -1967,7 +1989,7 @@ def test_public_scatter_admits_per_item_paint(factory) -> None:
     assert scene_export_support_reason(figure) is None
     svg = _native.scene_svg(figure_scene(figure))
     assert "<circle" in svg or "<path" in svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.decode() == svg
@@ -1977,7 +1999,6 @@ def test_public_scatter_admits_per_item_paint(factory) -> None:
 
 
 def test_public_scatter_per_item_stroke_interns_distinct_paints() -> None:
-    from xyg import _native
 
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
@@ -1993,7 +2014,7 @@ def test_public_scatter_per_item_stroke_interns_distinct_paints() -> None:
     svg = _native.scene_svg(figure_scene(figure))
     strokes = re.findall(r'stroke="([^"]+)"', svg)
     assert len(set(strokes)) > 1
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.decode() == svg
@@ -2012,7 +2033,6 @@ def test_public_scatter_keeps_per_item_size_fail_closed() -> None:
 
 @pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)
 def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
-    from xyg import _native
 
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -2020,7 +2040,8 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
     figure.stem([1.0], [1.5], base=0.25, symbol=symbol)
     assert figure.traces[-1].style.get("role") == "stem-marker"
     assert scene_export_support_reason(figure) is None
-    assert figure.to_svg() == _native.scene_svg(figure_scene(figure))
+    assert public_static_export(figure, "svg").decode() == _native.scene_svg(figure_scene(figure))
+    assert document_svg(figure) == figure.to_svg()
 
 
 @pytest.mark.parametrize(
@@ -2059,7 +2080,6 @@ def test_public_ribbon_route_fails_closed_for_unmodeled_behavior(
 
 
 def test_public_ribbon_per_item_color2_routes_through_scene() -> None:
-    from xyg import _native
 
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
@@ -2078,7 +2098,7 @@ def test_public_ribbon_per_item_color2_routes_through_scene() -> None:
     svg = _native.scene_svg(figure_scene(figure))
     assert svg.count("<linearGradient") == 2
     assert 'id="xy-scene-g1"' in svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.count(b"<linearGradient") == 2
@@ -2089,18 +2109,18 @@ def test_public_ribbon_per_item_color2_routes_through_scene() -> None:
     assert scene_export_support_reason(one) is None
     one_svg = _native.scene_svg(figure_scene(one))
     assert "<linearGradient" in one_svg
-    assert one.to_svg() == one_svg
+    assert public_static_export(one, "svg").decode() == one_svg
+    assert one.to_svg() == document_svg(one)
 
 
 def test_public_ribbon_constant_color2_routes_through_scene() -> None:
-    from xyg import _native
 
     figure = _public_ribbon("linear")
     figure.traces[0].color2_ch = ColorChannel(mode="constant", constant="#34d399")
     assert scene_export_support_reason(figure) is None
     svg = _native.scene_svg(figure_scene(figure))
     assert "<linearGradient" in svg
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert b"<linearGradient" in exported
@@ -2197,7 +2217,6 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     ],
 )
 def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
-    from xyg import _native
 
     figure = _supported()
     figure.annotations = [annotation]
@@ -2205,7 +2224,7 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
     scene = figure_scene(figure)
     assert str(annotation["text"]).encode() in scene
     svg = _native.scene_svg(scene)
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert str(annotation["text"]).encode() in exported
@@ -2230,7 +2249,6 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
 def test_public_labelled_marker_layout_routes_through_scene(
     annotation: dict[str, object],
 ) -> None:
-    from xyg import _native
 
     figure = _supported()
     figure.annotations = [annotation]
@@ -2238,7 +2256,7 @@ def test_public_labelled_marker_layout_routes_through_scene(
     scene = figure_scene(figure)
     assert str(annotation["text"]).encode() in scene
     svg = _native.scene_svg(scene)
-    assert figure.to_svg() == svg
+    assert figure.to_svg() == document_svg(figure)
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert str(annotation["text"]).encode() in exported
@@ -2279,18 +2297,15 @@ def test_scene_static_css_and_custom_font_are_fail_closed_product_contract() -> 
     static measure and paint are DejaVu Sans; live browser widgets still apply
     CSS outside this encoder.
     """
-    from xyg import _native, _svg
 
     default = _supported()
     assert scene_export_support_reason(default) is None
     scene = figure_scene(default)
-    svg = default.to_svg()
-    assert svg == _native.scene_svg(scene)
-    assert public_static_export(default, "svg") == svg.encode()
+    assert public_static_export(default, "svg") == _native.scene_svg(scene).encode()
     png = public_static_export(default, "png")
     assert png is not None
     assert png.startswith(b"\x89PNG")
-    assert png == default.to_png(scale=1)
+    assert document_png(default) == default.to_png(scale=1)
 
     font = _custom_font()
     reason = scene_export_support_reason(font) or ""
@@ -2302,7 +2317,8 @@ def test_scene_static_css_and_custom_font_are_fail_closed_product_contract() -> 
         figure_scene(font)
     assert public_static_export(font, "svg") is None
     assert public_static_export(font, "png") is None
-    assert font.to_svg() == _svg.to_svg(font)
+    with pytest.raises(UnsupportedStaticExport):
+        document_svg(font)
 
     css = _browser_css()
     reason = scene_export_support_reason(css) or ""
@@ -2311,7 +2327,8 @@ def test_scene_static_css_and_custom_font_are_fail_closed_product_contract() -> 
         figure_scene(css)
     assert public_static_export(css, "svg") is None
     assert public_static_export(css, "png") is None
-    assert css.to_svg().startswith("<svg")
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
+        document_svg(css)
 
 
 def test_input_errors_are_not_support_decisions() -> None:
@@ -2323,11 +2340,13 @@ def test_input_errors_are_not_support_decisions() -> None:
         scene_export_support_reason(figure)
 
 
-def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> None:
+def test_too_small_valid_export_viewport_keeps_one_plot_pixel() -> None:
+    """The consumer squeezes gutters for tiny exports instead of failing."""
     figure = _supported()
-    assert scene_export_support_reason(figure, width=64, height=32) == (
-        "XYG_SCENE_UNSUPPORTED_VIEWPORT"
-    )
+    assert scene_export_support_reason(figure, width=64, height=32) is None
+    svg = document_svg(figure, width=64, height=32)
+    assert svg.startswith("<svg")
+    assert 'width="64"' in svg and 'height="32"' in svg
 
 
 @pytest.mark.parametrize(
@@ -2382,14 +2401,15 @@ def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(fa
 def test_public_literal_linear_gradient_fills_route_through_scene(factory) -> None:
     figure = factory()
     assert scene_export_support_reason(figure) is None
-    svg = figure.to_svg()
+
+    svg = _native.scene_svg(figure_scene(figure))
     assert "<linearGradient" in svg
     assert 'fill="url(#xy-scene-g' in svg
+    assert "<linearGradient" in document_svg(figure)
 
 
 def test_var_and_theme_css_gradients_are_fail_closed_product_contract() -> None:
     """#289: unresolved `var()` / theme CSS stay compatibility; literal gradients stay Scene."""
-    from xyg import _svg
 
     literal = _supported().bar([0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)")
     assert scene_export_support_reason(literal) is None
@@ -2403,20 +2423,14 @@ def test_var_and_theme_css_gradients_are_fail_closed_product_contract() -> None:
     with pytest.raises(UnsupportedSceneV3, match=r"solid literal paints|gradient fills|non-CSS"):
         figure_scene(unresolved)
     assert public_static_export(unresolved, "svg") is None
-    compat = unresolved.to_svg()
-    assert compat.startswith("<svg")
-    assert compat == _svg.to_svg(unresolved)
-    assert "xy-scene-g" not in compat
+    with pytest.raises(UnsupportedStaticExport):
+        document_svg(unresolved)
 
 
 @pytest.mark.parametrize(
     "kind,count", [("area", 0), ("area", 1), ("error_band", 0), ("error_band", 1)]
 )
-def test_public_band_with_fewer_than_two_samples_retains_compatibility_export(
-    kind: str, count: int
-) -> None:
-    from xyg import _svg
-
+def test_public_band_with_fewer_than_two_samples_fails_closed(kind: str, count: int) -> None:
     figure = _supported()
     values = list(range(count))
     if kind == "area":
@@ -2425,13 +2439,13 @@ def test_public_band_with_fewer_than_two_samples_retains_compatibility_export(
         figure.error_band(values, [0.5] * count, [1.5] * count)
 
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
-    assert figure.to_svg() == _svg.to_svg(figure)
-    if kind == "area" and count == 1:
-        assert figure.to_svg().count('<path d="') == 2
+    assert public_static_export(figure, "svg") is None
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"):
+        document_svg(figure)
 
 
 def test_public_router_routes_literal_disconnected_segments_through_all_static_consumers() -> None:
-    from xyg import _native, _pdf, kernels
+    from xyg import _pdf, kernels
 
     figure = _public_disconnected_segments()
     assert scene_export_support_reason(figure) is None
@@ -2453,11 +2467,11 @@ def test_public_router_routes_literal_disconnected_segments_through_all_static_c
     assert svg.count("<polyline ") == 14
     assert svg.count("<path ") == 2  # two diamond endpoint markers
     assert svg.rfind("<polyline ") < svg.rfind("<path ")  # endpoint markers paint last
-    assert figure.to_svg().encode() == svg.encode()
-    assert figure.to_png(scale=1) == kernels.rasterize_png(
+    assert figure.to_svg() == document_svg(figure)
+    assert public_static_export(figure, "png", scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert public_static_export(figure, "pdf") == _pdf.svg_to_pdf(svg)
 
 
 @pytest.mark.parametrize(
@@ -2583,16 +2597,14 @@ def test_axis_visibility_switches_route_all_public_static_exports_through_scene(
     figure = _axis_visibility_figure(axis_name, ticks=ticks, text=text)
     assert scene_export_support_reason(figure) is None
 
-    from xyg import _native
-
-    scene_static_export = _native.scene_static_export
+    static_document_export = _native.static_document_export
     calls = {"n": 0}
 
-    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+    def observed_document_export(*args: object, **kwargs: object) -> bytes:
         calls["n"] += 1
-        return scene_static_export(*args, **kwargs)
+        return static_document_export(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
+    monkeypatch.setattr(_native, "static_document_export", observed_document_export)
     svg = figure.to_svg()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -2611,36 +2623,26 @@ def test_axis_visibility_switches_route_all_public_static_exports_through_scene(
 def test_axis_visibility_scene_public_route_matches_compatibility_structure_and_pixels(
     axis_name: str, ticks: bool, text: bool
 ) -> None:
-    """Pin the migration against the established static-renderer contract."""
-    from xyg import _raster, _svg
-
+    """Pin the XYST route against the established visibility contract."""
     Image = pytest.importorskip(
         "PIL.Image", reason="Pillow is required only for the raster pixel differential"
     )
 
     figure = _axis_visibility_figure(axis_name, ticks=ticks, text=text)
-    compatibility_svg = _svg.to_svg(figure)
-    public_svg = figure.to_svg()
-    # Compatibility leaves invisible SVG elements in its structure. Scene
-    # omits zero-paint primitives, so compare their visible contract instead.
+    public_svg = document_svg(figure)
+    # The Rust consumer omits zero-paint primitives entirely.
     assert public_svg.count("<text ") == 6 - (0 if text else 3)
     assert public_svg.count("<line ") == 14 - (0 if ticks else 3)
-    if not text:
-        assert compatibility_svg.count('fill="#00000000"') == 3
-    if not ticks:
-        assert compatibility_svg.count('stroke-width="0"') == 3
 
-    compatibility = np.asarray(
-        Image.open(BytesIO(_raster.to_png(figure, scale=1))).convert("RGBA"), dtype=np.int16
+    reference = np.asarray(
+        Image.open(BytesIO(document_png(figure))).convert("RGBA"), dtype=np.int16
     )
     public = np.asarray(Image.open(BytesIO(figure.to_png(scale=1))).convert("RGBA"), dtype=np.int16)
-    delta = np.abs(compatibility - public)
-    # The two raster consumers have distinct antialiasing, so this is a visual
-    # differential rather than byte identity. Visibility-only variants are
-    # exact today; the all-visible reference bounds their established paint
-    # spelling difference without concealing a missing chrome element.
-    assert float(delta.mean()) <= 0.11
-    assert float(np.mean(delta.max(axis=2) > 24)) <= 0.0018
+    # Raster and vector consumers share one Scene; visibility-only variants
+    # must hide the same elements in both.
+    delta = np.abs(reference - public)
+    assert float(delta.mean()) == 0.0
+    assert float(np.mean(delta.max(axis=2) > 24)) == 0.0
 
 
 def test_axis_visibility_keeps_ticks_and_text_semantics_independent() -> None:
@@ -2654,7 +2656,6 @@ def test_axis_visibility_keeps_ticks_and_text_semantics_independent() -> None:
 
 def test_axis_visibility_python_fixture_and_browser_painter_are_exact() -> None:
     """The public switches stay one canonical Scene across Python and browser use."""
-    from xyg import _native
 
     fixture = json.loads(
         (Path(__file__).parent / "fixtures" / "public_axis_visibility_scene.json").read_text()
@@ -2679,17 +2680,13 @@ def test_axis_visibility_stays_bounded_before_the_public_scene_route() -> None:
         scene_export_support_reason(figure)
 
 
-def test_ordinary_autorange_figures_route_every_static_export_through_rust(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_ordinary_autorange_figures_route_every_static_export_through_rust() -> None:
     """#856: ordinary default charts must not enter Python's second renderer."""
-    from xyg import _native, _raster, _svg
+    import importlib.util
 
-    def boom(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("ordinary autoranged chart entered a Python compatibility renderer")
-
-    monkeypatch.setattr(_svg, "to_svg", boom)
-    monkeypatch.setattr(_raster, "to_png", boom)
+    # The compatibility renderer is deleted; the import machinery is the trap.
+    assert importlib.util.find_spec("xyg._raster") is None
+    assert importlib.util.find_spec("xyg._svg_render") is None
 
     for label, figure in _ordinary_autorange_figures():
         assert scene_export_support_reason(figure) is None, label
@@ -2697,9 +2694,10 @@ def test_ordinary_autorange_figures_route_every_static_export_through_rust(
         svg = public_static_export(figure, "svg")
         png = public_static_export(figure, "png")
         optimized_png = figure.to_png(scale=1, optimize=True)
-        assert svg is not None and svg == figure.to_svg().encode(), label
-        assert png is not None and png == figure.to_png(scale=1), label
-        assert svg == _native.scene_svg(scene).encode(), label
+        assert svg is not None and svg == _native.scene_svg(scene).encode(), label
+        assert png is not None and png.startswith(b"\x89PNG"), label
+        assert document_png(figure) == figure.to_png(scale=1), label
+        assert document_svg(figure) == figure.to_svg(), label
         assert png.startswith(b"\x89PNG\r\n\x1a\n"), label
         assert optimized_png.startswith(b"\x89PNG\r\n\x1a\n"), label
 
@@ -2719,24 +2717,12 @@ def _public_mark_figures() -> list[tuple[str, Figure]]:
     ]
 
 
-def test_public_mark_figures_never_call_python_svg_mark_emitters(monkeypatch) -> None:
-    """#272: Scene-eligible to_svg must not fall back to `_svg.py` mark paths."""
-    from xyg import _svg
+def test_public_mark_figures_never_call_python_svg_mark_emitters() -> None:
+    """#272: the Python SVG mark emitters are deleted; imports are the trap."""
+    import importlib.util
 
-    def boom(*_args, **_kwargs):
-        raise AssertionError("Python SVG mark emitter used for a Scene-eligible figure")
-
-    for name in (
-        "_segment_marks",
-        "_scatter_marks",
-        "_hexbin_marks",
-        "_ribbon_marks",
-        "_triangle_mesh_marks",
-        "_bar_marks",
-        "_rect_marks",
-    ):
-        monkeypatch.setattr(_svg, name, boom)
-    monkeypatch.setattr(_svg, "to_svg", boom)
+    for module in ("xyg._svg_render", "xyg._export_marks_svg", "xyg._export_path_svg"):
+        assert importlib.util.find_spec(module) is None
 
     for label, figure in _public_mark_figures():
         assert scene_export_support_reason(figure) is None, label
@@ -2745,27 +2731,12 @@ def test_public_mark_figures_never_call_python_svg_mark_emitters(monkeypatch) ->
         assert "polyline" in svg or "path" in svg or "<rect" in svg, label
 
 
-def test_public_mark_figures_never_call_python_raster_mark_emitters(monkeypatch) -> None:
-    """#273: Scene-eligible PNG must not fall back to `_raster.py` mark emitters."""
-    from xyg import _raster
+def test_public_mark_figures_never_call_python_raster_mark_emitters() -> None:
+    """#273: the Python raster mark emitters are deleted; imports are the trap."""
+    import importlib.util
 
-    def boom(*_args, **_kwargs):
-        raise AssertionError("Python raster mark emitter used for a Scene-eligible figure")
-
-    for name in (
-        "_emit_scatter",
-        "_emit_authored_scatter",
-        "_emit_segments",
-        "_emit_hexbin",
-        "_emit_ribbon",
-        "_emit_triangle_mesh",
-        "_emit_bars",
-        "_emit_rects",
-        "to_png",
-        "to_rgba",
-        "render_raster",
-    ):
-        monkeypatch.setattr(_raster, name, boom)
+    for module in ("xyg._raster", "xyg._raster_render", "xyg._export_marks_raster"):
+        assert importlib.util.find_spec(module) is None
 
     for label, figure in _public_mark_figures():
         png = figure.to_png(scale=1)
@@ -2774,7 +2745,6 @@ def test_public_mark_figures_never_call_python_raster_mark_emitters(monkeypatch)
 
 def test_public_mark_figures_encode_pdf_through_rust() -> None:
     """#274: Scene-eligible PDF uses the native closed-subset converter."""
-    from xyg import _native
 
     for label, figure in _public_mark_figures():
         svg = figure.to_svg()
@@ -2799,5 +2769,13 @@ def test_public_mark_figures_encode_jpeg_and_webp_through_rust(monkeypatch) -> N
         webp = figure.to_image(format="webp", scale=1)
         assert jpeg[:3] == b"\xff\xd8\xff", label
         assert webp[:4] == b"RIFF" and webp[8:12] == b"WEBP", label
-        assert public_static_export(figure, "jpeg") == jpeg, label
-        assert public_static_export(figure, "webp") == webp, label
+        from xyg import _static_document as _sd
+
+        assert (
+            _sd.export_figure(figure, "jpeg", width=int(figure.width), height=int(figure.height))
+            == jpeg
+        ), label
+        assert (
+            _sd.export_figure(figure, "webp", width=int(figure.width), height=int(figure.height))
+            == webp
+        ), label

@@ -332,5 +332,952 @@
       "name": "triangle_mesh_limit",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
     }
-  ]
+  ],
+  "document": {
+    "version": 1,
+    "formats": [
+      "svg",
+      "png",
+      "pdf",
+      "jpeg",
+      "webp"
+    ],
+    "vocabulary": [
+      {
+        "name": "panel.colorbar-log-scale",
+        "family": "panel-flag",
+        "code": 1024
+      },
+      {
+        "name": "panel.colorbar-extend-min",
+        "family": "panel-flag",
+        "code": 2048
+      },
+      {
+        "name": "panel.colorbar-extend-max",
+        "family": "panel-flag",
+        "code": 4096
+      },
+      {
+        "name": "panel.colorbar-pyplot-label",
+        "family": "panel-flag",
+        "code": 8192
+      },
+      {
+        "name": "panel.grid-dash",
+        "family": "panel-flag",
+        "code": 16384
+      },
+      {
+        "name": "annotation.baseline",
+        "family": "annotation-vertical-align",
+        "code": 0
+      },
+      {
+        "name": "annotation.top",
+        "family": "annotation-vertical-align",
+        "code": 1
+      },
+      {
+        "name": "annotation.bottom",
+        "family": "annotation-vertical-align",
+        "code": 2
+      },
+      {
+        "name": "annotation.center",
+        "family": "annotation-vertical-align",
+        "code": 3
+      },
+      {
+        "name": "axis-sides.none",
+        "family": "axis-sides",
+        "code": 0
+      },
+      {
+        "name": "axis-sides.low",
+        "family": "axis-sides",
+        "code": 1
+      },
+      {
+        "name": "axis-sides.high",
+        "family": "axis-sides",
+        "code": 2
+      },
+      {
+        "name": "axis-sides.both",
+        "family": "axis-sides",
+        "code": 3
+      },
+      {
+        "name": "document.background",
+        "family": "document-flag",
+        "code": 1
+      },
+      {
+        "name": "document.optimize-png",
+        "family": "document-flag",
+        "code": 2
+      },
+      {
+        "name": "document.tight-crop",
+        "family": "document-flag",
+        "code": 4
+      },
+      {
+        "name": "document.title-x-center",
+        "family": "document-flag",
+        "code": 8
+      },
+      {
+        "name": "panel.x-chrome-metrics",
+        "family": "panel-flag",
+        "code": 1
+      },
+      {
+        "name": "panel.y-chrome-metrics",
+        "family": "panel-flag",
+        "code": 2
+      },
+      {
+        "name": "panel.colorbar-layout",
+        "family": "panel-flag",
+        "code": 4
+      },
+      {
+        "name": "panel.annotation-font-size",
+        "family": "panel-flag",
+        "code": 8
+      },
+      {
+        "name": "panel.arrow-metrics",
+        "family": "panel-flag",
+        "code": 16
+      },
+      {
+        "name": "panel.axis-sides",
+        "family": "panel-flag",
+        "code": 32
+      },
+      {
+        "name": "panel.annotation-text-flags",
+        "family": "panel-flag",
+        "code": 64
+      },
+      {
+        "name": "panel.annotation-padding",
+        "family": "panel-flag",
+        "code": 128
+      },
+      {
+        "name": "panel.title-style",
+        "family": "panel-flag",
+        "code": 256
+      },
+      {
+        "name": "panel.annotation-vertical-align",
+        "family": "panel-flag",
+        "code": 512
+      },
+      {
+        "name": "title.anchor-start",
+        "family": "title-anchor",
+        "code": 0
+      },
+      {
+        "name": "title.anchor-middle",
+        "family": "title-anchor",
+        "code": 1
+      },
+      {
+        "name": "title.anchor-end",
+        "family": "title-anchor",
+        "code": 2
+      },
+      {
+        "name": "text.regular",
+        "family": "text-flags",
+        "code": 0
+      },
+      {
+        "name": "text.italic",
+        "family": "text-flags",
+        "code": 1
+      },
+      {
+        "name": "text.bold",
+        "family": "text-flags",
+        "code": 2
+      },
+      {
+        "name": "text.bold-italic",
+        "family": "text-flags",
+        "code": 3
+      },
+      {
+        "name": "label.anchor-start",
+        "family": "label-anchor",
+        "code": 0
+      },
+      {
+        "name": "label.anchor-middle",
+        "family": "label-anchor",
+        "code": 1
+      },
+      {
+        "name": "label.anchor-end",
+        "family": "label-anchor",
+        "code": 2
+      },
+      {
+        "name": "label.baseline",
+        "family": "label-vertical-align",
+        "code": 1
+      },
+      {
+        "name": "label.top",
+        "family": "label-vertical-align",
+        "code": 0
+      },
+      {
+        "name": "label.center",
+        "family": "label-vertical-align",
+        "code": 3
+      },
+      {
+        "name": "label.bottom",
+        "family": "label-vertical-align",
+        "code": 2
+      },
+      {
+        "name": "legend.line",
+        "family": "legend-item",
+        "code": 0
+      },
+      {
+        "name": "legend.scatter",
+        "family": "legend-item",
+        "code": 1
+      },
+      {
+        "name": "legend.patch",
+        "family": "legend-item",
+        "code": 2
+      },
+      {
+        "name": "legend.anchored",
+        "family": "envelope",
+        "code": 0
+      },
+      {
+        "name": "legend.multicolumn",
+        "family": "envelope",
+        "code": 1
+      },
+      {
+        "name": "label.rotated-opacity",
+        "family": "envelope",
+        "code": 2
+      },
+      {
+        "name": "panel.signed-placement",
+        "family": "envelope",
+        "code": 3
+      },
+      {
+        "name": "panel.overlap",
+        "family": "envelope",
+        "code": 4
+      },
+      {
+        "name": "panel.multiple",
+        "family": "envelope",
+        "code": 5
+      },
+      {
+        "name": "colorbar.shared",
+        "family": "envelope",
+        "code": 6
+      },
+      {
+        "name": "colorbar.vertical",
+        "family": "envelope",
+        "code": 7
+      },
+      {
+        "name": "colorbar.horizontal",
+        "family": "envelope",
+        "code": 8
+      },
+      {
+        "name": "document.title",
+        "family": "envelope",
+        "code": 9
+      }
+    ],
+    "cases": [
+      {
+        "name": "document_title_x_center",
+        "vocabulary": [
+          "document.title-x-center",
+          "document.title",
+          "title.anchor-middle"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_colorbar_log_scale",
+        "vocabulary": [
+          "panel.colorbar-log-scale"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_colorbar_extend_min",
+        "vocabulary": [
+          "panel.colorbar-extend-min"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_colorbar_extend_max",
+        "vocabulary": [
+          "panel.colorbar-extend-max"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_colorbar_pyplot_label",
+        "vocabulary": [
+          "panel.colorbar-pyplot-label"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_colorbar_extend_both",
+        "vocabulary": [
+          "panel.colorbar-extend-min",
+          "panel.colorbar-extend-max"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_annotation_baseline",
+        "vocabulary": [
+          "annotation.baseline"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_annotation_top",
+        "vocabulary": [
+          "annotation.top"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_annotation_bottom",
+        "vocabulary": [
+          "annotation.bottom"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_annotation_center",
+        "vocabulary": [
+          "annotation.center"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_axis_sides_none",
+        "vocabulary": [
+          "axis-sides.none"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_axis_sides_low",
+        "vocabulary": [
+          "axis-sides.low"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_axis_sides_high",
+        "vocabulary": [
+          "axis-sides.high"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_axis_sides_both",
+        "vocabulary": [
+          "axis-sides.both"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_grid_dash",
+        "vocabulary": [
+          "panel.grid-dash"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_defaults",
+        "vocabulary": [],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_background",
+        "vocabulary": [
+          "document.background"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_optimized_png",
+        "vocabulary": [
+          "document.optimize-png"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_tight_crop",
+        "vocabulary": [
+          "document.tight-crop"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_chrome",
+        "vocabulary": [
+          "panel.x-chrome-metrics",
+          "panel.y-chrome-metrics",
+          "panel.axis-sides"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_annotation_style",
+        "vocabulary": [
+          "panel.annotation-font-size",
+          "panel.annotation-text-flags",
+          "panel.annotation-padding",
+          "panel.annotation-vertical-align",
+          "panel.arrow-metrics"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_panel_title",
+        "vocabulary": [
+          "panel.title-style"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_title_start",
+        "vocabulary": [
+          "document.title",
+          "title.anchor-start",
+          "text.regular"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_title_middle",
+        "vocabulary": [
+          "title.anchor-middle",
+          "text.italic"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_title_end",
+        "vocabulary": [
+          "title.anchor-end",
+          "text.bold"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_title_bold_italic",
+        "vocabulary": [
+          "text.bold-italic"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_labels_start_top",
+        "vocabulary": [
+          "label.anchor-start",
+          "label.top"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_labels_middle_center",
+        "vocabulary": [
+          "label.anchor-middle",
+          "label.center"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_labels_end_bottom",
+        "vocabulary": [
+          "label.anchor-end",
+          "label.bottom"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_labels_baseline_rotated",
+        "vocabulary": [
+          "label.baseline",
+          "label.rotated-opacity"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_legend",
+        "vocabulary": [
+          "legend.line",
+          "legend.scatter",
+          "legend.patch",
+          "legend.anchored",
+          "legend.multicolumn"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_signed_panels",
+        "vocabulary": [
+          "panel.signed-placement",
+          "panel.multiple"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_overlap",
+        "vocabulary": [
+          "panel.overlap"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_colorbar_vertical",
+        "vocabulary": [
+          "panel.colorbar-layout",
+          "colorbar.vertical"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_colorbar_horizontal",
+        "vocabulary": [
+          "colorbar.horizontal"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_shared_colorbar",
+        "vocabulary": [
+          "colorbar.shared"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_half_scale",
+        "vocabulary": [],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_double_scale",
+        "vocabulary": [],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_jpeg_quality_low",
+        "vocabulary": [],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_jpeg_quality_high",
+        "vocabulary": [],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      }
+    ],
+    "authored_witnesses": [
+      {
+        "name": "styled_line",
+        "vocabulary": [
+          "panel.x-chrome-metrics",
+          "panel.y-chrome-metrics",
+          "panel.axis-sides"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      },
+      {
+        "name": "styled_scatter",
+        "vocabulary": [
+          "panel.x-chrome-metrics",
+          "panel.y-chrome-metrics",
+          "panel.axis-sides"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      },
+      {
+        "name": "text_annotation",
+        "vocabulary": [
+          "panel.annotation-font-size",
+          "panel.annotation-text-flags",
+          "panel.annotation-vertical-align"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      },
+      {
+        "name": "anchored_legend",
+        "vocabulary": [
+          "legend.line",
+          "legend.scatter",
+          "legend.anchored"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      },
+      {
+        "name": "continuous_colorbar",
+        "vocabulary": [
+          "colorbar.vertical"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      },
+      {
+        "name": "facet_panels",
+        "vocabulary": [
+          "panel.multiple",
+          "document.title",
+          "title.anchor-middle"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ],
+        "python": "public-composition-export",
+        "node": "public-figure-explicit-xyst"
+      }
+    ],
+    "rejections": [
+      "centered_title_x_nonzero",
+      "header_truncated",
+      "version_unknown",
+      "header_flags_unknown",
+      "header_reserved_nonzero",
+      "panels_empty",
+      "dimensions_zero",
+      "panel_flags_unknown",
+      "panel_inactive_nonzero",
+      "panel_ranges_overlap",
+      "panel_scene_corrupt",
+      "title_invalid_utf8",
+      "title_nul",
+      "title_anchor_unknown",
+      "text_flags_unknown",
+      "label_alignment_unknown",
+      "label_opacity_invalid",
+      "legend_kind_unknown",
+      "legend_reserved_nonzero",
+      "decoration_trailing_bytes",
+      "document_trailing_bytes"
+    ],
+    "scene_cases_requiring_recheck": [
+      "title_options",
+      "extra_legend",
+      "colorbar_option"
+    ]
+  }
 }

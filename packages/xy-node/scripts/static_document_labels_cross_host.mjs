@@ -21,7 +21,7 @@ for (const [name, labels] of Object.entries(labelsByCase)) {
   figure.line([0, 1, 2], [1, 3, 2], { color: "#ef4444", width: 2 });
   const scene = figure.toScene();
   const document = Buffer.from(staticDocumentEncode({ panels: [{ scene, x: 0, y: 0, width: 320, height: 240 }], width: 320, height: 240, labels }));
-  const at = 64 + document.readUInt32LE(20) * 104 + document.readUInt32LE(24);
+  const at = 64 + document.readUInt32LE(20) * 108 + document.readUInt32LE(24);
   const count = document.readUInt32LE(at + 8), start = at + 32;
   let end = start;
   for (let i = 0; i < count; i += 1) end += 40 + document.readUInt32LE(end + 28);

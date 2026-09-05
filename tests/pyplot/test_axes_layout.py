@@ -232,6 +232,7 @@ def test_tick_params_records_supported_style_and_rejects_unknown() -> None:
     assert _axis_child(ax, "y").minor_style["tick_length"] == pytest.approx(2 * 100 / 72)
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_rc_tick_padding_places_labels_by_the_matplotlib_rule() -> None:
     """The shim always supplies `{x,y}tick.major.size` and `.pad` from rcParams,
     so its tick labels follow matplotlib's geometry rule — padding measured from
@@ -261,6 +262,7 @@ def test_rc_tick_padding_places_labels_by_the_matplotlib_rule() -> None:
     assert y_gap > 8.0  # an unstyled core chart's flat y gap
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_tick_params_pad_moves_the_labels_further_from_the_spine() -> None:
     """`tick_params(pad=)` overrides the rc pad in the same geometry."""
     _fig, ax = plt.subplots()

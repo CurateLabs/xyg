@@ -976,6 +976,25 @@ pub struct SceneAxisChromeStyle {
     /// Optional XYST-only visible spine mask. Bit 0 is bottom/left and bit 1
     /// is top/right; ticks and tick labels retain their canonical sides.
     pub static_axis_sides: Option<u8>,
+    /// Optional XYST-only grid dash codes (0=solid, 1=dashed, 2=dotted,
+    /// 3=dashdot) for the major grid; the minor grid carries its own code.
+    /// Applied after the canonical Scene is decoded, so the wire stays
+    /// host-neutral and the raw-Scene route keeps its solid contract.
+    pub static_grid_dash: Option<u8>,
+    /// Minor-grid counterpart of `static_grid_dash`.
+    pub static_minor_grid_dash: Option<u8>,
+}
+
+/// Dash on/off lengths, in px, for the XYST-only pyplot grid compatibility
+/// fact. Mirrors the browser's `GRID_DASH_PATTERNS` in `js/src/50_chartview.ts`
+/// and the historical Python `_AXIS_GRID_DASHES` table.
+pub fn grid_dash_pattern(code: u8) -> &'static [f32] {
+    match code {
+        1 => &[6.0, 4.0],
+        2 => &[1.0, 3.0],
+        3 => &[6.0, 3.0, 1.0, 3.0],
+        _ => &[],
+    }
 }
 
 impl SceneAxisChromeStyle {
@@ -1056,6 +1075,8 @@ impl SceneAxisChromeStyle {
             static_label_size: None,
             static_tick_padding: None,
             static_axis_sides: None,
+            static_grid_dash: None,
+            static_minor_grid_dash: None,
         }
     }
 
@@ -1349,6 +1370,8 @@ fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChrome
         static_label_size: None,
         static_tick_padding: None,
         static_axis_sides: None,
+        static_grid_dash: None,
+        static_minor_grid_dash: None,
     }
     .validated()
 }
@@ -1430,6 +1453,18 @@ fn push_raster_polyline(
     scale: f64,
     closed: bool,
 ) -> Result<(), SceneError> {
+    push_raster_polyline_dash(out, points, width, rgba, scale, closed, &[])
+}
+
+fn push_raster_polyline_dash(
+    out: &mut Vec<u8>,
+    points: &[(f64, f64)],
+    width: f64,
+    rgba: [u8; 4],
+    scale: f64,
+    closed: bool,
+    dash: &[f32],
+) -> Result<(), SceneError> {
     if points.len() < 2 {
         return Ok(());
     }
@@ -1447,7 +1482,7 @@ fn push_raster_polyline(
     push_raster_f32(out, width, scale)?;
     out.extend_from_slice(&rgba);
     out.push(u8::from(closed));
-    out.extend_from_slice(&0u32.to_le_bytes());
+    push_raster_dash(out, dash, scale)?;
     out.push(1);
     Ok(())
 }
@@ -2853,6 +2888,8 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
             static_label_size: None,
             static_tick_padding: None,
             static_axis_sides: None,
+            static_grid_dash: None,
+            static_minor_grid_dash: None,
         }
         .validated()
     };
@@ -10052,7 +10089,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
     }
     if !text.y_label.is_empty() {
         let label_size = chrome.y_axis.label_size(chrome.label_font_size);
-        let x = (layout.left * 0.35).max(label_size);
+        let x = document.y_title_baseline();
         let y = 0.5 * (layout.top + layout.bottom);
         out.push_str("<g data-xy-chrome=\"y-label\"><text x=\"");
         push_num(out, x);
@@ -10109,6 +10146,53 @@ impl SceneDocument {
         self.chrome.plot_background_rgba = [0; 4];
     }
 
+    /// Matplotlib-parity y-axis-title baseline (M2 #873): the title sits
+    /// outside the widest y tick label with a 0.4 em gap, mirroring the
+    /// retired compatibility exporter's rule and matplotlib 3.11.1's
+    /// measured geometry. Returns the rotation pivot x for the quarter-turned
+    /// title block, floored so the ink cannot leave the canvas.
+    fn y_title_baseline(&self) -> f64 {
+        let label_size = self.chrome.y_axis.label_size(self.chrome.label_font_size);
+        let tick_label_size = self
+            .chrome
+            .y_axis
+            .tick_label_size(self.chrome.label_font_size);
+        let tick_left = self.resolved_axis_ticks(false).ok().map(|ticks| {
+            let extent = ticks
+                .labeled
+                .iter()
+                .enumerate()
+                .map(|(index, value)| {
+                    let label = self.axis_tick_label(false, index, *value, &ticks);
+                    textblock::measure(&label, tick_label_size, 1.25, None)
+                        .map(|block| block.width)
+                        .unwrap_or(0.0)
+                })
+                .fold(0.0f64, f64::max);
+            let (major_in, major_out) = tick_span(
+                self.chrome.y_axis.major_direction,
+                self.chrome.y_axis.tick_length,
+            );
+            let _ = major_in;
+            let offset =
+                self.chrome
+                    .y_axis
+                    .tick_label_offset(false, 0, major_out, self.chrome.label_font_size);
+            self.layout.left - offset - extent
+        });
+        let gap = 0.4 * label_size;
+        match tick_left {
+            Some(tick_left) => {
+                let depth = textblock::measure(&self.text.y_label, label_size, 1.25, None)
+                    .map(|block| block.descent + (block.line_count() - 1) as f64 * block.line_step)
+                    .unwrap_or(label_size * 0.2);
+                (tick_left - gap - depth).max(label_size)
+            }
+            // Axis labels are hidden: keep the historical fractional gutter.
+            None => (self.layout.left * 0.35).max(label_size),
+        }
+    }
+
     /// Apply bounded static-document text metrics to one decoded Scene.
     /// Placement remains a Rust consumer decision; XYST only transports the
     /// pyplot-authored literal sizes and gaps needed for compatibility.
@@ -10156,6 +10240,37 @@ impl SceneDocument {
                 return Err(SceneError::Length);
             }
             axis.static_axis_sides = Some(sides);
+        }
+        Ok(())
+    }
+
+    /// Apply the XYST-only pyplot grid dash facts at the document seam.
+    /// Codes: 0=solid, 1=dashed, 2=dotted, 3=dashdot. Grid color, width, and
+    /// opacity stay canonical Scene data; only the dash pattern differs from
+    /// the raw-Scene solid contract.
+    pub(crate) fn apply_static_grid_dash(
+        &mut self,
+        x_major: Option<u8>,
+        y_major: Option<u8>,
+        x_minor: Option<u8>,
+        y_minor: Option<u8>,
+    ) -> Result<(), SceneError> {
+        for (axis, (major, minor)) in [
+            (&mut self.chrome.x_axis, (x_major, x_minor)),
+            (&mut self.chrome.y_axis, (y_major, y_minor)),
+        ] {
+            if let Some(code) = major {
+                if code > 3 {
+                    return Err(SceneError::Length);
+                }
+                axis.static_grid_dash = Some(code);
+            }
+            if let Some(code) = minor {
+                if code > 3 {
+                    return Err(SceneError::Length);
+                }
+                axis.static_minor_grid_dash = Some(code);
+            }
         }
         Ok(())
     }
@@ -11933,6 +12048,7 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
+                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
                     out.push_str("\"/>");
                 } else if polar.full_sector() {
                     out.push_str("<circle data-xy-grid=\"ring\" cx=\"");
@@ -11945,6 +12061,7 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
+                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
                     out.push_str("\"/>");
                 } else {
                     let a0 = polar.sector_a0();
@@ -11975,6 +12092,7 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
+                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
                     out.push_str("\"/>");
                 }
             }
@@ -11996,6 +12114,7 @@ impl SceneDocument {
                     out.push_str(&rgba_css(t_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, t_style.grid_width);
+                    push_svg_dasharray(out, grid_dash_pattern(t_style.static_grid_dash.unwrap_or(0)));
                     out.push_str("\"/>");
                 }
             }
@@ -12157,6 +12276,7 @@ impl SceneDocument {
             if !self.axis_hides_chrome(is_x)
                 && SceneAxisChromeStyle::visible_stroke(style.grid_rgba, style.grid_width)
             {
+                let dash = grid_dash_pattern(style.static_grid_dash.unwrap_or(0));
                 for value in &ticks.labeled {
                     let p = scale.pixel(*value);
                     let (x1, y1, x2, y2) = if is_x {
@@ -12164,7 +12284,7 @@ impl SceneDocument {
                     } else {
                         (self.layout.left, p, self.layout.right, p)
                     };
-                    push_svg_line(
+                    push_svg_line_dash(
                         out,
                         x1,
                         y1,
@@ -12172,6 +12292,8 @@ impl SceneDocument {
                         y2,
                         &rgba_css(style.grid_rgba),
                         style.grid_width,
+                        dash,
+                        LINECAP_ROUND,
                     );
                 }
             }
@@ -12181,6 +12303,7 @@ impl SceneDocument {
                     style.minor_grid_width,
                 )
             {
+                let minor_dash = grid_dash_pattern(style.static_minor_grid_dash.unwrap_or(0));
                 for value in Self::minor_ticks(ticks) {
                     let p = scale.pixel(value);
                     let (x1, y1, x2, y2) = if is_x {
@@ -12188,7 +12311,7 @@ impl SceneDocument {
                     } else {
                         (self.layout.left, p, self.layout.right, p)
                     };
-                    push_svg_line(
+                    push_svg_line_dash(
                         out,
                         x1,
                         y1,
@@ -12196,6 +12319,8 @@ impl SceneDocument {
                         y2,
                         &rgba_css(style.minor_grid_rgba),
                         style.minor_grid_width,
+                        minor_dash,
+                        LINECAP_ROUND,
                     );
                 }
             }
@@ -12586,7 +12711,16 @@ impl SceneDocument {
                             out.push_str("\" font-size=\"");
                             push_num(&mut out, font_size);
                             out.push_str("\" text-anchor=\"");
-                            out.push_str(svg_text_anchor(item.anchor));
+                            // Matplotlib right-aligns horizontal y tick
+                            // labels against the spine; rotated keep center.
+                            let y_aligned = if is_x || item.angle != 0.0 {
+                                item.anchor
+                            } else if side_code == 0 {
+                                tick_layout::ANCHOR_END as u8
+                            } else {
+                                tick_layout::ANCHOR_START as u8
+                            };
+                            out.push_str(svg_text_anchor(y_aligned));
                             if item.angle != 0.0 {
                                 out.push_str("\" transform=\"rotate(");
                                 push_num(&mut out, item.angle);
@@ -12706,27 +12840,31 @@ impl SceneDocument {
                 if points.len() < 2 {
                     continue;
                 }
-                push_raster_polyline(
+                push_raster_polyline_dash(
                     out,
                     &points,
                     r_style.grid_width,
                     r_style.grid_rgba,
                     scale,
                     polar.full_sector(),
+                    grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)),
                 )?;
             }
         }
         if !self.axis_hides_chrome(true)
             && SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width)
         {
+            let dash = grid_dash_pattern(t_style.static_grid_dash.unwrap_or(0));
             for value in &x_ticks.labeled {
                 if let Some((start, end)) = polar.spoke_ends(*value) {
-                    push_raster_stroke(
+                    push_raster_stroke_dash(
                         out,
                         [start, end],
                         t_style.grid_width,
                         t_style.grid_rgba,
                         scale,
+                        dash,
+                        LINECAP_ROUND,
                     )?;
                 }
             }
@@ -12842,14 +12980,17 @@ impl SceneDocument {
                 self.chrome.x_axis.grid_width,
             )
         {
+            let dash = grid_dash_pattern(self.chrome.x_axis.static_grid_dash.unwrap_or(0));
             for value in &x_ticks.labeled {
                 let x = self.x_scale.pixel(*value);
-                push_raster_stroke(
+                push_raster_stroke_dash(
                     out,
                     [(x, self.layout.top), (x, self.layout.bottom)],
                     self.chrome.x_axis.grid_width,
                     self.chrome.x_axis.grid_rgba,
                     scale,
+                    dash,
+                    LINECAP_ROUND,
                 )?;
             }
         }
@@ -12859,14 +13000,18 @@ impl SceneDocument {
                 self.chrome.x_axis.minor_grid_width,
             )
         {
+            let minor_dash =
+                grid_dash_pattern(self.chrome.x_axis.static_minor_grid_dash.unwrap_or(0));
             for value in Self::minor_ticks(x_ticks) {
                 let x = self.x_scale.pixel(value);
-                push_raster_stroke(
+                push_raster_stroke_dash(
                     out,
                     [(x, self.layout.top), (x, self.layout.bottom)],
                     self.chrome.x_axis.minor_grid_width,
                     self.chrome.x_axis.minor_grid_rgba,
                     scale,
+                    minor_dash,
+                    LINECAP_ROUND,
                 )?;
             }
         }
@@ -12876,14 +13021,17 @@ impl SceneDocument {
                 self.chrome.y_axis.grid_width,
             )
         {
+            let dash = grid_dash_pattern(self.chrome.y_axis.static_grid_dash.unwrap_or(0));
             for value in &y_ticks.labeled {
                 let y = self.y_scale.pixel(*value);
-                push_raster_stroke(
+                push_raster_stroke_dash(
                     out,
                     [(self.layout.left, y), (self.layout.right, y)],
                     self.chrome.y_axis.grid_width,
                     self.chrome.y_axis.grid_rgba,
                     scale,
+                    dash,
+                    LINECAP_ROUND,
                 )?;
             }
         }
@@ -12893,14 +13041,18 @@ impl SceneDocument {
                 self.chrome.y_axis.minor_grid_width,
             )
         {
+            let minor_dash =
+                grid_dash_pattern(self.chrome.y_axis.static_minor_grid_dash.unwrap_or(0));
             for value in Self::minor_ticks(y_ticks) {
                 let y = self.y_scale.pixel(value);
-                push_raster_stroke(
+                push_raster_stroke_dash(
                     out,
                     [(self.layout.left, y), (self.layout.right, y)],
                     self.chrome.y_axis.minor_grid_width,
                     self.chrome.y_axis.minor_grid_rgba,
                     scale,
+                    minor_dash,
+                    LINECAP_ROUND,
                 )?;
             }
         }
@@ -13092,7 +13244,14 @@ impl SceneDocument {
                         out.push(6);
                         push_raster_f32(out, x, scale)?;
                         push_raster_f32(out, y, scale)?;
-                        out.push(item.anchor);
+                        let y_aligned = if is_x || item.angle != 0.0 {
+                            item.anchor
+                        } else if side_code == 0 {
+                            tick_layout::ANCHOR_END as u8
+                        } else {
+                            tick_layout::ANCHOR_START as u8
+                        };
+                        out.push(y_aligned);
                         push_raster_f32(out, font_size, scale)?;
                         out.extend_from_slice(&style.label_rgba);
                         out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());

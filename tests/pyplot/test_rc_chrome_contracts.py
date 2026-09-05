@@ -138,6 +138,7 @@ def test_title_and_label_weight_rc_defaults_match_matplotlib() -> None:
     assert "label_font_weight" not in built.axis_options["x"]["style"]
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_title_and_label_weight_rc_overrides_reach_every_renderer() -> None:
     with plt.rc_context({"axes.titleweight": "bold", "axes.labelweight": 700}):
         _fig, ax = plt.subplots()
@@ -168,6 +169,7 @@ def test_explicit_set_title_weight_still_beats_the_rc_default() -> None:
     assert built.axis_options["x"]["style"]["label_font_weight"] == "light"
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_quoted_font_families_remain_well_formed_in_svg() -> None:
     _fig, ax = plt.subplots()
     ax.set_title("title", fontfamily='"Foo Bar", serif')

@@ -42,7 +42,8 @@ bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
 italic/bold flags, bytes 52–59 are decoration byte count and crop padding, and
 all reserved bytes must be zero.
 
-Each panel record is 104 bytes (`<2i6I12fII2f4BI>`). The first 24 bytes carry
+Each panel record is 108 bytes (`<2i6I12fII2f4B2I>`; the trailing `u32`
+carries the grid dash nibbles). The first 24 bytes carry
 signed x/y, width/height, Scene offset/length; byte offset 24 is the panel flag
 mask. Optional floats and integers are canonical zero when their flag is
 inactive. The admitted flags are:
@@ -61,9 +62,13 @@ inactive. The admitted flags are:
 | 10 | pyplot colorbar logarithmic projection |
 | 11–12 | pyplot colorbar minimum/maximum endpoint extends |
 | 13 | pyplot colorbar label/orientation compatibility |
+| 14 | uniform grid dash codes for (x major, y major, x minor, y minor) |
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
 
-Bits 10–13 and 24 are non-serialized `SceneColorbar` overrides applied only while
+Bit 14 packs four nibble codes (`0=solid, 1=dashed, 2=dotted, 3=dashdot`)
+into the panel's trailing fact `u32`; the pattern table is Rust-owned and
+mirrored by `js/src/50_chartview.ts`. Bits 10–13 and 24 are non-serialized
+`SceneColorbar` overrides applied only while
 Rust consumes XYST. They do not mutate the canonical Scene wire. Extend uses
 `0=neither`, bit 11=`min`, bit 12=`max`, and both bits=`both`; log colorbars
 require a positive ordered domain and ticks. The pyplot label flag rotates a
@@ -133,14 +138,15 @@ is a hard error and never requests a compatibility retry.
 
 ## 4. Ownership and evidence
 
-Acceptance requires Python `_export_*`, `_svg_render.py`, and
-`_raster_render.py` policy to be deleted or reduced to bounded marshal-only
-wrappers. Merely excluding those modules from the final native call graph is
-not retirement. The migration remains incomplete while legacy layout/tick or
-renderer policy is transitively reachable from a supported static journey.
-The ownership gate must arm before public chart construction and cover ordinary,
-styled, polar, extra-axis, automatic-tick, notebook-sizing, and custom-font
-failure journeys. Independently authored Python and Node tests pin identical
-Scene and `XYST` bytes and outputs for the shared low-level document vocabulary;
-missing high-level Node authored-plan parity is an open acceptance item, not an
-exception. Format goldens cover SVG, PNG, PDF, JPEG, and WebP.
+Acceptance state (2026-09-05): the Python compatibility renderer is deleted
+(`_export_*`, `_svg_render.py`, `_raster_render.py`, `_raster.py`,
+`_svg_figure.py`, `_raster_figure.py`). `python/xyg/_svg.py` is a bounded
+facade over the `_layout` measurement surface and slot metadata;
+`_static_document.py` is the marshal-only XYST adapter. The runtime gate
+`tests/test_static_document_ownership.py` arms before public chart
+construction and covers ordinary, styled, facet, pyplot, legend, and
+custom-font failure journeys; no legacy `_export_*`/renderer module remains
+importable. Node authored-plan parity is complete: `figureStaticDocument`
+mirrors the projection, and the registry corpus pins byte-identical XYST,
+SVG, PNG, PDF, JPEG, and WebP output per admitted shape. Remaining pyplot
+static-route admissions are explicit fail-closes tracked in #889.

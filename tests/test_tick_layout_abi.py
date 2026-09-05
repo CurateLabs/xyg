@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from xyg import _native
-from xyg._svg import _axis_tick_label_layout, _Scale
+from xyg._layout import _axis_tick_label_layout, _Scale
 
 
 def _category_positions(n: int = 9) -> list[float]:

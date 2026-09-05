@@ -340,6 +340,7 @@ def _pyplot_static_document(
                 figure._static_document_colorbar_extend,
                 figure._static_document_colorbar_pyplot_label,
                 figure._static_document_colorbar_fill_plot,
+                grid_dash=getattr(figure, "_static_document_grid_dash", None),
             )
         )
     panel_legends = [
@@ -385,6 +386,10 @@ def _pyplot_static_document(
         colorbar=None if colorbar is None else str(colorbar.get("colormap", "viridis")),
         legend=figure_legend,
     )
+
+
+#: Pyplot grid dash spellings -> XYST fact codes; the pattern table is Rust's.
+_GRID_DASH_CODES = {"solid": 0, "dashed": 1, "dotted": 2, "dashdot": 3}
 
 
 def _pyplot_scene_figure(figure: Any) -> Any:
@@ -458,6 +463,8 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ARROW_METRICS"
         )
     metrics: dict[str, tuple[float, float, float]] = {}
+    grid_dash: dict[str, Optional[int]] = {"x": None, "y": None}
+    grid_dash_minor: dict[str, Optional[int]] = {"x": None, "y": None}
     root = dict(getattr(figure, "style", None) or {})
     if getattr(figure, "_pyplot_static_mathtext", False):
         raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE")
@@ -512,6 +519,20 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                 float(style.pop("label_size", 12.0)),
                 float(style.pop("tick_padding", 4.0)),
             )
+            raw_dash = style.pop("grid_dash", None)
+            if raw_dash is not None:
+                if raw_dash not in _GRID_DASH_CODES:
+                    raise _static_document.UnsupportedStaticExport(
+                        "XYG_STATIC_UNSUPPORTED_GRID_DASH"
+                    )
+                grid_dash[axis_id] = _GRID_DASH_CODES[raw_dash]
+            raw_minor_dash = minor.pop("grid_dash", None)
+            if raw_minor_dash is not None:
+                if raw_minor_dash not in _GRID_DASH_CODES:
+                    raise _static_document.UnsupportedStaticExport(
+                        "XYG_STATIC_UNSUPPORTED_GRID_DASH"
+                    )
+                grid_dash_minor[axis_id] = _GRID_DASH_CODES[raw_minor_dash]
         for key in ("tick_label_size", "tick_size", "label_size", "tick_padding"):
             minor.pop(key, None)
         if grid is not None:
@@ -628,6 +649,17 @@ def _pyplot_scene_figure(figure: Any) -> Any:
         projected._static_document_colorbar_pyplot_label = True
         projected._static_document_colorbar_fill_plot = colorbar.get("placement") == "axes"
     projected._static_document_chrome_metrics = (*metrics["x"], *metrics["y"])
+    projected._static_document_grid_dash = (
+        None
+        if all(value is None for value in grid_dash.values())
+        and all(value is None for value in grid_dash_minor.values())
+        else (
+            grid_dash["x"] or 0,
+            grid_dash["y"] or 0,
+            grid_dash_minor["x"] or 0,
+            grid_dash_minor["y"] or 0,
+        )
+    )
     projected._static_document_annotation_font_size = resolved_annotations.font_size
     projected._static_document_arrow_metrics = next(iter(arrow_metrics), None)
     projected._static_document_panel_legend = panel_legend

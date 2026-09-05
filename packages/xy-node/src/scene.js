@@ -3059,6 +3059,7 @@ export function staticDocumentEncode({
       colorbarExtend: panel.colorbarExtend == null ? null : String(panel.colorbarExtend),
       colorbarPyplotLabel: Boolean(panel.colorbarPyplotLabel),
       colorbarFillPlot: Boolean(panel.colorbarFillPlot),
+      gridDash: panel.gridDash == null ? null : Array.from(panel.gridDash, Number),
     };
     if (record.chromeMetrics != null && record.chromeMetrics.length !== 6) {
       throw new RangeError(`StaticDocument panel ${index} chrome metrics must contain six numbers`);
@@ -3089,6 +3090,11 @@ export function staticDocumentEncode({
     if (record.colorbarScale != null && !["linear", "log"].includes(record.colorbarScale)) {
       throw new RangeError(`StaticDocument panel ${index} colorbar scale must be linear or log`);
     }
+    if (record.gridDash != null
+      && (record.gridDash.length !== 4
+        || record.gridDash.some((code) => !Number.isInteger(code) || code < 0 || code > 3))) {
+      throw new RangeError(`StaticDocument panel ${index} grid dash codes must be 0..3`);
+    }
     if (record.colorbarExtend != null
       && !["neither", "min", "max", "both"].includes(record.colorbarExtend)) {
       throw new RangeError(`StaticDocument panel ${index} colorbar extend must be neither/min/max/both`);
@@ -3098,7 +3104,7 @@ export function staticDocumentEncode({
     normalized.push(record);
   }
   if (!Array.isArray(labels) || labels.length > 64) {
-    throw new RangeError("StaticDocument supports at most 64 document labels");
+    throw new RangeError("StaticDocument supports at most 64 XYDA labels");
   }
   const colorbarBytes = encoder.encode(colorbar == null ? "" : String(colorbar));
   if (colorbarBytes.length > 256 || colorbarBytes.includes(0)) {
@@ -3124,7 +3130,7 @@ export function staticDocumentEncode({
     decorationAt += legendBytes.length;
     decorations.set(colorbarBytes, decorationAt);
   }
-  const out = new Uint8Array(64 + panels.length * 104 + titleBytes.length + decorations.length + sceneBytes);
+  const out = new Uint8Array(64 + panels.length * 108 + titleBytes.length + decorations.length + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
   out.set([88, 89, 83, 84], 0);
   view.setUint32(4, 1, true);
@@ -3165,6 +3171,7 @@ export function staticDocumentEncode({
       | (["min", "both"].includes(panel.colorbarExtend) ? 1 << 11 : 0)
       | (["max", "both"].includes(panel.colorbarExtend) ? 1 << 12 : 0)
       | (panel.colorbarPyplotLabel ? 1 << 13 : 0)
+      | (panel.gridDash == null ? 0 : 1 << 14)
       | (panel.colorbarFillPlot ? 1 << 24 : 0), true);
     view.setFloat32(at + 4, panel.annotationFontSize ?? 0, true);
     at += 8;
@@ -3192,6 +3199,13 @@ export function staticDocumentEncode({
     at += 4;
     view.setUint32(at, panel.annotationVerticalAlign ?? 0, true);
     at += 4;
+    const gridDash = panel.gridDash ?? null;
+    view.setUint32(
+      at,
+      gridDash == null ? 0 : (gridDash[0] | (gridDash[1] << 4) | (gridDash[2] << 16) | (gridDash[3] << 24)) >>> 0,
+      true,
+    );
+    at += 4;
   }
   out.set(titleBytes, at);
   at += titleBytes.length;
@@ -3204,6 +3218,302 @@ export function staticDocumentEncode({
   return out;
 }
 
+const STATIC_ROOT_STYLE_KEYS = new Set([
+  "background",
+  "--chart-bg",
+  "--chart-grid",
+  "--chart-axis",
+  "--chart-text",
+  "font-family",
+  "font-size",
+]);
+const STATIC_CHROME_SLOTS = new Set(["title", "axis_title", "tick_label"]);
+const STATIC_CHROME_STYLE_KEYS = new Set(["font-size", "color", "font-weight", "font-family"]);
+const STATIC_ROOT_FAMILIES = new Set([
+  "dejavusans,sans-serif",
+  "system-ui,sans-serif",
+  "sans-serif",
+]);
+const STATIC_CHROME_FAMILIES = new Set(["dejavu sans", "dejavusans", "sans-serif"]);
+
+const GRID_DASH_CODES = { solid: 0, dashed: 1, dotted: 2, dashdot: 3 };
+
+function staticGridDashFact(major, minor) {
+  if (major.x == null && major.y == null && minor.x == null && minor.y == null) return null;
+  return [major.x ?? 0, major.y ?? 0, minor.x ?? 0, minor.y ?? 0];
+}
+
+/**
+ * Project one public Figure onto the shared XYST product boundary (M2 #873).
+ * Mirrors the Python adapter's literal facts: validate authored styles, extract
+ * per-axis chrome metrics, resolve annotation styles through Rust, lift the
+ * document legend, compile the canonical Scene, and encode one panel. Rust owns
+ * every layout/tick/render decision; this projection only marshals authored
+ * state into the versioned envelope.
+ */
+export function figureStaticDocument(figure, {
+  width = null,
+  height = null,
+  background = null,
+  optimizePng = false,
+} = {}) {
+  const documentWidth = width == null ? figure.width : width;
+  const documentHeight = height == null ? figure.height : height;
+  for (const [label, value] of [["StaticDocument width", documentWidth], ["StaticDocument height", documentHeight]]) {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new RangeError(`${label} must be a positive integer pixel count`);
+    }
+  }
+  const rootStyle = { ...(figure.style ?? {}) };
+  for (const key of Object.keys(rootStyle)) {
+    if (!STATIC_ROOT_STYLE_KEYS.has(key)) throw new RangeError("XYG_STATIC_UNSUPPORTED_BROWSER_CSS");
+  }
+  const rootFamily = String(rootStyle["font-family"] ?? "DejaVu Sans, sans-serif").toLowerCase().replaceAll(" ", "");
+  if (!STATIC_ROOT_FAMILIES.has(rootFamily)) throw new RangeError("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT");
+  const chromeStyles = {};
+  for (const [slot, chromeStyle] of Object.entries(figure.chrome_styles ?? {})) {
+    const keys = Object.keys(chromeStyle ?? {});
+    if (!STATIC_CHROME_SLOTS.has(slot) || keys.some((key) => !STATIC_CHROME_STYLE_KEYS.has(key))) {
+      throw new RangeError("XYG_STATIC_UNSUPPORTED_CHROME_STYLE");
+    }
+    const chromeFamily = String(chromeStyle["font-family"] ?? "DejaVu Sans").toLowerCase();
+    if (!STATIC_CHROME_FAMILIES.has(chromeFamily)) throw new RangeError("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT");
+    chromeStyles[slot] = { ...chromeStyle };
+  }
+  const projectedStyle = {};
+  for (const key of ["background", "--chart-bg"]) {
+    if (key in rootStyle) projectedStyle[key] = rootStyle[key];
+  }
+  const axisOptions = {};
+  const chromeMetrics = {};
+  const gridDash = { x: null, y: null };
+  const gridDashMinor = { x: null, y: null };
+  for (const [axisId, options] of Object.entries(figure.axis_options ?? {})) {
+    const next = { ...options };
+    const style = { ...(options.style ?? {}) };
+    const minor = { ...(options.minor_style ?? {}) };
+    if (axisId === "x" || axisId === "y") {
+      const tickLabel = "tick_label_size" in style ? style["tick_label_size"] : ("tick_size" in style ? style["tick_size"] : 12.0);
+      delete style["tick_label_size"];
+      delete style["tick_size"];
+      const labelSize = "label_size" in style ? style["label_size"] : 12.0;
+      delete style["label_size"];
+      const tickPadding = "tick_padding" in style ? style["tick_padding"] : 4.0;
+      delete style["tick_padding"];
+      chromeMetrics[axisId] = [Number(tickLabel), Number(labelSize), Number(tickPadding)];
+      const rawDash = "grid_dash" in style ? style["grid_dash"] : null;
+      delete style["grid_dash"];
+      if (rawDash != null) {
+        if (!(rawDash in GRID_DASH_CODES)) throw new RangeError("XYG_STATIC_UNSUPPORTED_GRID_DASH");
+        gridDash[axisId] = GRID_DASH_CODES[rawDash];
+      }
+      const rawMinorDash = "grid_dash" in minor ? minor["grid_dash"] : null;
+      delete minor["grid_dash"];
+      if (rawMinorDash != null) {
+        if (!(rawMinorDash in GRID_DASH_CODES)) throw new RangeError("XYG_STATIC_UNSUPPORTED_GRID_DASH");
+        gridDashMinor[axisId] = GRID_DASH_CODES[rawMinorDash];
+      }
+      for (const key of ["tick_label_size", "tick_size", "label_size", "tick_padding"]) delete minor[key];
+    }
+    if (rootStyle["--chart-grid"] != null) {
+      style.grid_color = rootStyle["--chart-grid"];
+      minor.grid_color = rootStyle["--chart-grid"];
+    }
+    if (rootStyle["--chart-axis"] != null) {
+      style.axis_color = rootStyle["--chart-axis"];
+      style.tick_color = rootStyle["--chart-axis"];
+      minor.tick_color = rootStyle["--chart-axis"];
+    }
+    if (rootStyle["--chart-text"] != null) {
+      if (style.label_color == null) style.label_color = rootStyle["--chart-text"];
+      if (style.tick_label_color == null) style.tick_label_color = rootStyle["--chart-text"];
+    }
+    if (Object.keys(style).length) next.style = style;
+    else delete next.style;
+    if (Object.keys(minor).length) next.minor_style = minor;
+    else delete next.minor_style;
+    axisOptions[axisId] = next;
+  }
+  const traces = (figure.traces ?? []).map((trace) => {
+    const style = {};
+    for (const [key, value] of Object.entries(trace.style ?? {})) {
+      if (!String(key).startsWith("_legend_")) style[key] = value;
+    }
+    return { ...trace, style };
+  });
+  const annotationFacts = staticAnnotationStyleFacts(figure.annotations ?? []);
+  const showLegend = Boolean(figure.show_legend);
+  let legend = null;
+  if (showLegend) {
+    if (figure.extra_legends && (!Array.isArray(figure.extra_legends) || figure.extra_legends.length > 0)) {
+      throw new RangeError("XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS");
+    }
+    const items = [];
+    for (const trace of traces) {
+      if (!trace.name) continue;
+      items.push({ kind: trace.kind, name: trace.name, style: { ...trace.style } });
+    }
+    if (items.length) legend = { ...(figure.legend_options ?? {}), items };
+  }
+  const projected = Object.create(Object.getPrototypeOf(figure));
+  Object.assign(projected, figure);
+  projected.width = documentWidth;
+  projected.height = documentHeight;
+  projected.style = projectedStyle;
+  projected.chrome_styles = {};
+  projected.axis_options = axisOptions;
+  projected.traces = traces;
+  projected.annotations = annotationFacts.annotations;
+  projected.show_legend = false;
+  projected.legend_options = {};
+  projected.extra_legends = Array.isArray(figure.extra_legends) ? [] : null;
+  const reason = sceneExportSupportReason(projected);
+  if (reason) throw new RangeError(reason);
+  const scene = figureSceneV3(projected);
+  const frameSides = figure.frame_sides == null ? ["left", "bottom"] : figure.frame_sides;
+  const sides = new Set(frameSides);
+  const axisSides = [
+    (sides.has("bottom") ? 1 : 0) | (sides.has("top") ? 2 : 0),
+    (sides.has("left") ? 1 : 0) | (sides.has("right") ? 2 : 0),
+  ];
+  let titleStyle = null;
+  if (figure.title) {
+    const authored = chromeStyles.title ?? {};
+    const rawSize = String(authored["font-size"] ?? "14px");
+    if (!rawSize.endsWith("px")) throw new RangeError("XYG_STATIC_UNSUPPORTED_TITLE_STYLE");
+    titleStyle = [
+      Number(rawSize.slice(0, -2)),
+      String(authored["color"] ?? rootStyle["--chart-text"] ?? "#262626"),
+    ];
+  }
+  return staticDocumentEncode({
+    panels: [{
+      scene,
+      x: 0,
+      y: 0,
+      width: documentWidth,
+      height: documentHeight,
+      chromeMetrics: [...chromeMetrics.x, ...chromeMetrics.y],
+      annotationFontSize: annotationFacts.fontSize,
+      axisSides,
+      annotationTextFlags: annotationFacts.textFlags,
+      annotationPadding: annotationFacts.padding,
+      titleStyle,
+      annotationVerticalAlign: annotationFacts.verticalAlign,
+      gridDash: staticGridDashFact(gridDash, gridDashMinor),
+    }],
+    width: documentWidth,
+    height: documentHeight,
+    background,
+    optimizePng: Boolean(optimizePng),
+    legend,
+  });
+}
+
+/** Marshal authored annotations through the Rust XYAS/XYAO style contract. */
+function staticAnnotationStyleFacts(sources) {
+  const encoder = new TextEncoder();
+  const chunks = [];
+  const pushU32 = (value) => {
+    const out = new Uint8Array(4);
+    new DataView(out.buffer).setUint32(0, value >>> 0, true);
+    chunks.push(out);
+  };
+  const pushF64 = (value) => {
+    const out = new Uint8Array(8);
+    new DataView(out.buffer).setFloat64(0, value, true);
+    chunks.push(out);
+  };
+  const pushText = (value) => {
+    const bytes = encoder.encode(String(value));
+    pushU32(bytes.length);
+    chunks.push(bytes);
+  };
+  const pushOptionalText = (value) => {
+    if (value == null) pushU32(0xffffffff);
+    else pushText(value);
+  };
+  pushU32(1);
+  pushU32(sources.length);
+  pushU32(0);
+  for (const source of sources) {
+    const annotation = typeof source === "object" && source != null ? source : {};
+    const style = annotation.style ?? {};
+    const keys = Object.keys(style).sort();
+    pushU32(keys.length);
+    pushU32(0);
+    pushOptionalText(annotation.text);
+    pushOptionalText(annotation.kind);
+    for (const key of keys) {
+      pushText(key);
+      const value = style[key];
+      if (value == null) pushU32(0);
+      else if (typeof value === "string") { pushU32(1); pushText(value); }
+      else if (typeof value === "boolean") { pushU32(3); pushU32(value ? 1 : 0); }
+      else if (typeof value === "number" && Number.isFinite(value)) { pushU32(2); pushF64(value); }
+      else pushU32(4);
+    }
+  }
+  const request = concatBytes([new Uint8Array([88, 89, 65, 83]), ...chunks]);
+  const output = staticAnnotationStyle(request);
+  if (output.length < 32) throw new Error("invalid XYAO output");
+  const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
+  const magic = String.fromCharCode(output[0], output[1], output[2], output[3]);
+  const version = view.getUint32(4, true);
+  const count = view.getUint32(8, true);
+  const presence = view.getUint32(12, true);
+  if (magic !== "XYAO" || version !== 1 || count !== sources.length || presence & ~0xf) {
+    throw new Error("invalid XYAO output");
+  }
+  const size = view.getFloat32(16, true);
+  const padding = view.getFloat32(20, true);
+  const textFlags = view.getUint32(24, true);
+  const vertical = view.getUint32(28, true);
+  let at = 32;
+  const takeU32 = () => {
+    if (at + 4 > output.length) throw new Error("invalid XYAO output");
+    const value = view.getUint32(at, true);
+    at += 4;
+    return value;
+  };
+  const takeText = () => {
+    const length = takeU32();
+    const end = at + length;
+    if (end > output.length) throw new Error("invalid XYAO output");
+    const value = new TextDecoder("utf-8", { fatal: true }).decode(output.subarray(at, end));
+    at = end;
+    return value;
+  };
+  const retained = [];
+  for (const source of sources) {
+    const drop = takeU32();
+    const patchCount = takeU32();
+    if (drop !== 0 && drop !== 1) throw new Error("invalid XYAO output");
+    if (drop && patchCount) throw new Error("invalid XYAO output");
+    const annotation = { ...source, style: { ...(source.style ?? {}) } };
+    for (let index = 0; index < patchCount; index += 1) {
+      const key = takeText();
+      const operation = takeU32();
+      if (operation === 0) delete annotation.style[key];
+      else if (operation === 1) annotation.style[key] = takeText();
+      else if (operation === 2) {
+        if (at + 8 > output.length) throw new Error("invalid XYAO output");
+        annotation.style[key] = view.getFloat64(at, true);
+        at += 8;
+      } else throw new Error("invalid XYAO output");
+    }
+    if (!drop) retained.push(annotation);
+  }
+  if (at !== output.length) throw new Error("invalid XYAO output");
+  return {
+    annotations: retained,
+    fontSize: presence & 1 ? size : null,
+    textFlags: presence & 2 ? textFlags : null,
+    padding: presence & 4 ? padding : null,
+    verticalAlign: presence & 8 ? vertical : null,
+  };
+}
+
 export function staticDocumentExport(encoded, format, { scale = 1, quality = 90 } = {}) {
   const code = SCENE_STATIC_FORMATS[format];
   if (code == null) {
@@ -3211,7 +3521,7 @@ export function staticDocumentExport(encoded, format, { scale = 1, quality = 90 
   }
   let factor = Number(scale);
   if (format === "png" || format === "jpeg" || format === "webp") {
-    if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("static document raster scale must be positive and finite");
+    if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("static XYST raster scale must be positive and finite");
   } else if (!Number.isFinite(factor)) {
     factor = 1;
   }

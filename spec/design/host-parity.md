@@ -164,10 +164,42 @@ metadata, layered autorange, annotation HTML/collision/markup/schema, colorbar
 schema, LOD, malformed band/segment geometry, and triangle-mesh budget. This
 is designed to grow by appending Rust registry rows when #873 expands
 `StaticDocument`; the corpus runner and CI wiring do not need another
-hand-maintained allowlist. This current-Scene slice does not close #875: final
-closure requires rebasing the #873
-`StaticDocument`/XYST vocabulary into this registry and running it through the
-same two-host proof.
+hand-maintained allowlist.
+
+The landed #873 integration extends this **same Rust registry** with a
+`document` subtree in the generated projection. It records XYST header/panel
+flag bits, text/anchor/alignment enum values, document decoration and placement
+families, explicit case-to-vocabulary links, all five static formats, malformed
+envelope mutations, and six independent public-authoring witness links. The
+header vocabulary includes Rust-resolved title centering (bit 3), including an
+odd-width positive witness and rejection of a nonzero inactive title-x slot. The
+panel vocabulary includes the #873 colorbar log-scale, minimum/maximum extend,
+pyplot label-placement bits (10 through 13), and the grid-dash fact
+(bit 14; full panel mask `0x7fff`); minimum, maximum, and combined extension
+have distinct runtime case rows, and `document_grid_dash` drives both hosts'
+dashed-grid output through the shared Rust pattern table. Rust tests require
+complete vocabulary coverage, unique rows, all-format case coverage, valid
+witness references, and masks matching their registered bits. The integrated
+decoder validates every registered mask, the runtime Python/Node builders match
+every case/mutation name exactly, and each output is compared through the
+actual native consumer — 40 cases, 21 rejection mutations, and all five formats
+run green under `tests/test_static_document_registry_cross_host.py`.
+
+The six public-authoring witnesses are styled line, outlined scatter, text
+annotation, anchored legend, continuous colorbar, and titled two-panel facets.
+They author their own data in each host and compare Scene, XYST, and
+SVG/PNG/PDF/JPEG/WebP outputs. Node additionally has the automatic
+Figure→XYST projection (`figureStaticDocument`, mirrored from the Python
+adapter), so `Figure.toSvg/toPng/toImage` produce byte-identical output to the
+Python public route for every admitted registry shape.
+
+The `title_options`, `extra_legend`, and `colorbar_option` Scene fail-close
+fixtures flagged for post-rebase rechecking were resolved against the
+integrated product: all three remain exact cross-host fail-closes with their
+registered reasons. Existing trace cases remain intact.
+Format-option witnesses include half/double scale and JPEG quality 1/100;
+PNG optimization and tight cropping remain explicit document facts whose
+effect is checked according to each format's documented consumer contract.
 
 The exhaustive run exposed redundant Node-only metadata on public step, stairs,
 ECDF, area, and violin traces. Node no longer emits the geometry-neutral roles;
@@ -176,10 +208,12 @@ resolved into bounded rectangle coordinates. XYEF v1 carries style keys but not
 the orientation value, so broadly admitting that ignored key would be
 unverifiable. User-authored unknown role/orientation style remains fail-closed.
 
-Reproduce with `python3 scripts/static_export_support_registry.py` and
-`uv run pytest tests/test_static_export_cross_host.py -q`. The first command is
-an explicit `make check-host-parity` step, and the second is included by that
-gate's `test_*cross_host*.py` discovery. Neither invokes hosted CodSpeed.
+Reproduce with `python3 scripts/static_export_support_registry.py`,
+`uv run pytest tests/test_static_export_cross_host.py -q`, and
+`uv run pytest tests/test_static_document_registry_cross_host.py -q`. The
+first command is an explicit `make check-host-parity` step and the other two
+are included by that gate's `test_*cross_host*.py` discovery. None invokes
+hosted CodSpeed.
 
 ABI 98 additionally gives both composition hosts one compact grouped violin
 ingress. Hosts pack values, group offsets/centers, bins, width, orientation,

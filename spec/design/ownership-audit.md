@@ -771,6 +771,9 @@ Forbidden:
 | `crates/xyg-engine/src/scene_trace_sidecars.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 157 XYSD trace-sidecar packing | — |
 | `crates/xyg-engine/src/static_document.rs` | Rust safe engine | `rust-engine` | `keep-rust`; versioned bounded XYST decode, composition, compatibility overrides, and SVG/PNG/PDF/JPEG/WebP consumers | — |
 | `crates/xyg-engine/src/static_document_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYSL/XYLO normalized, grid, and facet panel placement plus title reservation | — |
+| `crates/xyg-engine/src/static_annotation_style.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYAS/XYAO annotation-style admission, mechanical patches, and uniform XYST facts | — |
+| `crates/xyg-engine/src/static_document_labels.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYDA document-label decode, validation, and SVG/raster emission | — |
+| `crates/xyg-engine/src/static_document_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYDL document-legend decode, normalization, and SVG/raster emission | — |
 | `crates/xyg-engine/src/static_legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYLF/XYLR pyplot legend measurement, footprint expansion, sampling, candidate geometry, and scoring | — |
 | `crates/xyg-engine/src/static_panel_chrome.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYPC/XYPO pyplot panel gutters, outside padding, title/colorbar room, and measured-gutter reconciliation | — |
 | `crates/xyg-engine/src/simd.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -908,32 +911,6 @@ Forbidden:
 | `python/xyg/_graph.py` | Python host | `python-host` | `keep-host`; ingest/id maps; layout is `xyg_graph_layout` | — |
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
-| `python/xyg/_export_chrome.py` | Python host | `python-host` | `keep-host`; shared static-export chrome slots, theme tokens, CSS token resolution, and colorbar tick budget for `_svg`/`_raster` | — |
-| `python/xyg/_export_svg_util.py` | Python host | `python-host` | `keep-host`; shared static-export SVG escape, text metrics, stroke attrs, and text boxes for `_svg` | — |
-| `python/xyg/_export_svg_state.py` | Python host | `python-host` | `keep-host`; shared static-export mutable SVG document state for `_svg` | — |
-| `python/xyg/_export_polar_svg.py` | Python host | `python-host` | `keep-host`; shared static-export polar SVG grid, wedge paths, and tick labels for `_svg` | — |
-| `python/xyg/_export_annotations.py` | Python host | `python-host` | `keep-host`; shared static-export annotation placement and axis-title geometry for `_svg`/`_raster` | — |
-| `python/xyg/_export_axis_grid_svg.py` | Python host | `python-host` | `keep-host`; shared static-export axis grid lines and tick labels for `_svg` | — |
-| `python/xyg/_export_axis_grid_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster axis grid lines for `_raster` | — |
-| `python/xyg/_export_baseline_svg.py` | Python host | `python-host` | `keep-host`; shared static-export axis frames and tick marks for `_svg` | — |
-| `python/xyg/_export_chrome_svg.py` | Python host | `python-host` | `keep-host`; shared static-export title/legend/colorbar chrome for `_svg` | — |
-| `python/xyg/_export_annotations_svg.py` | Python host | `python-host` | `keep-host`; shared static-export annotation SVG emit for `_svg` | — |
-| `python/xyg/_export_marker_svg.py` | Python host | `python-host` | `keep-host`; shared static-export SVG marker glyph path builders for `_svg` | — |
-| `python/xyg/_export_path_svg.py` | Python host | `python-host` | `keep-host`; shared static-export SVG line/area path builders for `_svg` | — |
-| `python/xyg/_export_marks_svg.py` | Python host | `python-host` | `keep-host`; shared static-export SVG mark emit for `_svg` | — |
-| `python/xyg/_export_legend.py` | Python host | `python-host` | `keep-host`; shared static-export legend row expansion and box layout for `_svg`/`_raster` | — |
-| `python/xyg/_export_legend_svg.py` | Python host | `python-host` | `keep-host`; shared static-export legend SVG emit for `_svg` | — |
-| `python/xyg/_export_legend_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster legend and colorbar emit for `_raster` | — |
-| `python/xyg/_export_baseline_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster axis frames and tick marks for `_raster` | — |
-| `python/xyg/_export_chrome_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster tick labels, titles, legends, and colorbar chrome for `_raster` | — |
-| `python/xyg/_export_marks_raster.py` | Python host | `python-host` | `keep-host`; shared static-export raster mark emit for `_raster` | — |
-| `python/xyg/_export_polar_raster.py` | Python host | `python-host` | `keep-host`; shared static-export polar raster grid and tick labels for `_raster` | — |
-| `python/xyg/_export_raster_cmd.py` | Python host | `python-host` | `keep-host`; shared static-export native display-list command buffer for `_raster` | — |
-| `python/xyg/_export_colorbar_svg.py` | Python host | `python-host` | `keep-host`; shared static-export colorbar SVG emit for `_svg` | — |
-| `python/xyg/_export_colormap.py` | Python host | `python-host` | `keep-host`; shared static-export colormap stop tables for JS-sync tests | — |
-| `python/xyg/_export_layout.py` | Python host | `python-host` | `keep-host`; shared static-export layout, gutter rooms, title bands, and polar recut for `_svg`/`_raster` | — |
-| `python/xyg/_export_ticks.py` | Python host | `python-host` | `keep-host`; shared static-export tick ladders, label layout, and polar tick placement for `_svg`/`_raster` | — |
-| `python/xyg/_export_heatmap.py` | Python host | `python-host` | `keep-host`; shared static-export polar heatmap inverse-raster sampling for `_svg`/`_raster` | — |
 | `python/xyg/_facets_data.py` | Python host | `python-host` | `keep-host`; facet row subsetting and column factorization | — |
 | `python/xyg/_facets_grid.py` | Python host | `python-host` | `keep-host`; FacetGrid layout and static export composition | — |
 | `python/xyg/_layout.py` | Python host | `python-host` | `keep-host`; shared static-export scale, polar projection, axis scales, wedge flatten, and grid warp for `_svg`/`_raster` | — |
@@ -957,9 +934,6 @@ Forbidden:
 | `python/xyg/_payload_density.py` | Python host | `python-payload-migration` | `keep-host`; density tier payload helpers: grid ship (ABI 315/316), sample overlay, wasm source attach | — |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
-| `python/xyg/_raster.py` | Python host | `python-host` | `keep-host`; re-export hub for `_raster_*` static export modules | — |
-| `python/xyg/_raster_figure.py` | Python host | `python-host` | `keep-host`; figure-level native raster export entry points | — |
-| `python/xyg/_raster_render.py` | Python host | `python-host` | `keep-host`; native raster display-list rendering | — |
 | `python/xyg/_sankey.py` | Python host | `python-host` | `keep-host`; ABI `xyg_sankey_layout`; this module resolves names and error text | — |
 | `python/xyg/_marks_distribution.py` | Python host | `python-host` | `keep-host`; box/violin marks and shared multi-group helpers; mirrors Node `marks/distribution.js` | — |
 | `python/xyg/_marks_style.py` | Python host | `python-host` | `keep-host`; cross-cutting mark style coercion and segment trace assembly | — |
@@ -987,10 +961,8 @@ Forbidden:
 | `python/xyg/_scene_bulk_native.py` | Python host | `python-scene-migration` | `keep-host`; ctypes bindings for scene bulk packers (ABI 321-324) | — |
 | `python/xyg/_scene_v3.py` | Python host | `python-host` | `keep-host`; marshal-only `figure_scene` entry delegating to `_scene_marshal.py` + Rust encode | — |
 | `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_svg.py` | Python compat facade | `python-host` | `keep-host`; re-exports the pyplot measurement surface (`_layout` tick/layout helpers), `_paint` LUT alias, and static slot metadata; no renderer or layout policy remains in the module | — |
 | `python/xyg/_static_document.py` | Python static-product adapter | `python-host` | `keep-host`; coerces public Figure/facet/pyplot facts, packs bounded XYST/XYSL/XYPC/XYLF/XYDA/XYDL frames, invokes generated native calls, and translates stable errors; no renderer/layout/scoring/glyph/style-default policy | — |
-| `python/xyg/_svg.py` | Python host | `python-host` | `keep-host`; re-export hub for `_svg_*` static export modules | — |
-| `python/xyg/_svg_figure.py` | Python host | `python-host` | `keep-host`; figure-level SVG export entry points | — |
-| `python/xyg/_svg_render.py` | Python host | `python-host` | `keep-host`; SVG payload rendering (layout + mark assembly) | — |
 | `python/xyg/_textblock.py` | Python host | `python-host` | `keep-host`; ABI 125 packer plus a pass-scoped measurement cache | — |
 | `python/xyg/_trace.py` | Python host | `python-host` | `keep-host`; ABI 122 owns the density/M4 threshold decision; this module packs kind/force/per-item onto `payload_tier` | — |
 | `python/xyg/_typing.py` | Python host | `python-host` | `keep-host` | — |

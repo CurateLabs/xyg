@@ -66,13 +66,12 @@ KEEP_HOST_POLICY_EXACT: frozenset[str] = frozenset(
         "python/xyg/_scene_v3.py",
         "python/xyg/_channels_labels.py",
         "python/xyg/_lod_sample.py",
-        "python/xyg/_svg_render.py",
-        "python/xyg/_raster_render.py",
+        "python/xyg/_static_document.py",
+        "python/xyg/_svg.py",
     }
 )
 
 KEEP_HOST_POLICY_PREFIXES: tuple[str, ...] = (
-    "python/xyg/_export_",
     "python/xyg/_marks_",
     "python/xyg/_figure_",
     "python/xyg/_channels_",

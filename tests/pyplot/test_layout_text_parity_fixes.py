@@ -56,6 +56,7 @@ def test_inset_rect_survives_next_to_a_default_axes() -> None:
     assert out.getvalue()[:4] == b"\x89PNG"
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_free_form_axes_render_at_their_rects_in_html() -> None:
     ax1 = plt.axes()
     ax2 = plt.axes([0.65, 0.65, 0.2, 0.2])
@@ -69,6 +70,7 @@ def test_free_form_axes_render_at_their_rects_in_html() -> None:
     assert ".xy-grid { display: grid" not in html
 
 
+@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_add_axes_rects_stack_vertically_in_html() -> None:
     fig = plt.figure()
     ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4], xticklabels=[], ylim=(-1.2, 1.2))

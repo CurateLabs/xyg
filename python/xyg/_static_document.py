@@ -14,7 +14,7 @@ import numpy as np
 from . import _native
 
 _HEADER = struct.Struct("<4s6I4B4BfffBB2xII4x")
-_PANEL = struct.Struct("<2i6I12fII2f4BI")
+_PANEL = struct.Struct("<2i6I12fII2f4B2I")
 _DECORATION_HEADER = struct.Struct("<4s7I")
 _DOCUMENT_LABELS_HEADER = struct.Struct("<4s3I")
 _DOCUMENT_LABEL = struct.Struct("<2I5d")
@@ -42,6 +42,25 @@ _FLAG_TITLE_X_CENTER = 8
 
 class UnsupportedStaticExport(RuntimeError):
     """A native static journey rejected by the Rust product predicate."""
+
+
+#: Pyplot grid dash spellings -> XYST fact codes; the pattern table is Rust's.
+_GRID_DASH_CODES = {"solid": 0, "dashed": 1, "dotted": 2, "dashdot": 3}
+
+
+def _grid_dash_fact(
+    major: dict[str, "Optional[int]"], minor: dict[str, "Optional[int]"]
+) -> "Optional[tuple[int, int, int, int]]":
+    if all(value is None for value in major.values()) and all(
+        value is None for value in minor.values()
+    ):
+        return None
+    return (
+        major["x"] or 0,
+        major["y"] or 0,
+        minor["x"] or 0,
+        minor["y"] or 0,
+    )
 
 
 @dataclass(frozen=True)
@@ -76,6 +95,10 @@ class Panel:
     colorbar_pyplot_label: bool = False
     # Explicit pyplot cax consumes the Scene plot rectangle itself.
     colorbar_fill_plot: bool = False
+    # XYST-only pyplot grid dash codes (0=solid, 1=dashed, 2=dotted,
+    # 3=dashdot) for (x major, y major, x minor, y minor). Rust owns the
+    # pattern table; the canonical Scene wire keeps its solid contract.
+    grid_dash: Optional[tuple[int, int, int, int]] = None
 
 
 @dataclass(frozen=True)
@@ -919,6 +942,16 @@ def encode(
                 metric_flags |= 1 << 12
         if panel.colorbar_pyplot_label:
             metric_flags |= 1 << 13
+        grid_dash = 0
+        if panel.grid_dash is not None:
+            if len(panel.grid_dash) != 4:
+                raise ValueError(f"StaticDocument panel {index} grid dash needs four axis codes")
+            for code in panel.grid_dash:
+                if isinstance(code, bool) or not isinstance(code, int) or not 0 <= code <= 3:
+                    raise ValueError(f"StaticDocument panel {index} grid dash codes must be 0..3")
+            x_major, y_major, x_minor, y_minor = panel.grid_dash
+            grid_dash = x_major | (y_major << 4) | (x_minor << 16) | (y_minor << 24)
+            metric_flags |= 1 << 14
         if panel.colorbar_fill_plot:
             metric_flags |= 1 << 24
         values = (
@@ -939,6 +972,7 @@ def encode(
             panel_title_size,
             *panel_title_rgba,
             annotation_vertical_align,
+            grid_dash,
         )
         records.extend(_PANEL.pack(*values))
         scenes.extend(scene)
@@ -1011,6 +1045,8 @@ def figure_document(
     }
     projected.chrome_styles = {}
     chrome_metrics: dict[str, tuple[float, float, float]] = {}
+    grid_dash: dict[str, Optional[int]] = {"x": None, "y": None}
+    grid_dash_minor: dict[str, Optional[int]] = {"x": None, "y": None}
     for axis_id, options in projected.axis_options.items():
         style = dict(options.get("style") or {})
         minor = dict(options.get("minor_style") or {})
@@ -1020,6 +1056,16 @@ def figure_document(
                 float(style.pop("label_size", 12.0)),
                 float(style.pop("tick_padding", 4.0)),
             )
+            raw_dash = style.pop("grid_dash", None)
+            if raw_dash is not None:
+                if raw_dash not in _GRID_DASH_CODES:
+                    raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_GRID_DASH")
+                grid_dash[axis_id] = _GRID_DASH_CODES[raw_dash]
+            raw_minor_dash = minor.pop("grid_dash", None)
+            if raw_minor_dash is not None:
+                if raw_minor_dash not in _GRID_DASH_CODES:
+                    raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_GRID_DASH")
+                grid_dash_minor[axis_id] = _GRID_DASH_CODES[raw_minor_dash]
         for key in ("tick_label_size", "tick_size", "label_size", "tick_padding"):
             minor.pop(key, None)
         if root_style.get("--chart-grid") is not None:
@@ -1103,6 +1149,7 @@ def figure_document(
                 annotation_padding=annotation_style.padding,
                 title_style=title_style,
                 annotation_vertical_align=annotation_style.vertical_align,
+                grid_dash=_grid_dash_fact(grid_dash, grid_dash_minor),
             )
         ],
         width=width,

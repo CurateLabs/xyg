@@ -629,14 +629,14 @@ def test_two_ordinary_callouts_route_all_public_static_exports_through_scene(
 ) -> None:
     """The two-callout bound is proven through every public static consumer."""
     figure = public_two_callout_figure()
-    scene_static_export = _native.scene_static_export
+    static_document_export = _native.static_document_export
     calls = {"n": 0}
 
-    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+    def observed_document_export(*args: object, **kwargs: object) -> bytes:
         calls["n"] += 1
-        return scene_static_export(*args, **kwargs)
+        return static_document_export(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
+    monkeypatch.setattr(_native, "static_document_export", observed_document_export)
     svg = figure.to_svg()
     assert "Public Rust" in svg
     assert "Second public Rust callout" in svg

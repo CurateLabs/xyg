@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 
 from xyg import _scene, kernels
-from xyg._svg import _monotone_tangents
 
 
 def test_ribbon_edge_midpoint() -> None:
@@ -30,11 +27,10 @@ def test_ribbon_polygon_closes_upper_then_lower() -> None:
     np.testing.assert_allclose(poly[-1], (0.0, 0.0))
 
 
-def test_monotone_tangents_match_svg_and_kernels() -> None:
+def test_monotone_tangents_match_kernels() -> None:
     x = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
     y = np.array([0.0, 1.0, 0.5, 2.0, 1.5])
     expected = np.array([1.0, 0.0, 0.0, 0.0, -0.5])
-    np.testing.assert_allclose(_monotone_tangents(x, y), expected)
     np.testing.assert_allclose(kernels.monotone_tangents(x, y), expected)
 
 
@@ -62,31 +58,3 @@ def test_rounded_rect_zero_and_radii() -> None:
     assert len(pts) == 20
     np.testing.assert_allclose(pts[0], (1.0, 4.0), atol=1e-12)
     np.testing.assert_allclose(pts[-1], (1.0, 7.0), atol=1e-12)
-
-
-def test_compatibility_raster_calls_abi_121_kernels_not_scene_wrappers() -> None:
-    """#310: PNG compatibility emits through kernels; product Scene never imports `_scene.py`."""
-    root = Path(__file__).resolve().parents[1]
-    raster_modules = (
-        "python/xyg/_raster.py",
-        "python/xyg/_export_axis_grid_raster.py",
-        "python/xyg/_export_marks_raster.py",
-        "python/xyg/_export_raster_cmd.py",
-        "python/xyg/_export_baseline_raster.py",
-        "python/xyg/_export_chrome_raster.py",
-        "python/xyg/_export_legend_raster.py",
-        "python/xyg/_export_polar_raster.py",
-    )
-    raster = "".join((root / rel).read_text() for rel in raster_modules)
-    paint = (root / "python/xyg/_paint.py").read_text()
-    scene_v3 = (root / "python/xyg/_scene_v3.py").read_text()
-    svg = (root / "python/xyg/_svg.py").read_text()
-    assert "from . import _scene" not in raster
-    assert "from . import _scene" not in scene_v3
-    assert "from . import _scene" not in svg
-    assert "kernels.ribbon_polygon" in raster
-    # Rounded rects and curves may call kernels directly or via `_paint` helpers.
-    assert "kernels.rounded_rect_poly" in raster or "kernels.rounded_rect_poly" in paint
-    assert "kernels.curve_flatten" in raster or "kernels.curve_flatten" in paint
-    assert "_rounded_rect_vertices" in raster or "kernels.rounded_rect_poly" in raster
-    assert "_curve_points" in raster or "kernels.curve_flatten" in raster

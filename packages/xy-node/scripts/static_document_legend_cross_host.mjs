@@ -26,7 +26,7 @@ for (const [name, legend] of Object.entries(legends)) {
   figure.line([0, 1, 2], [1, 3, 2], { color: "#ef4444", width: 2 });
   const scene = figure.toScene();
   const document = Buffer.from(staticDocumentEncode({ panels: [{ scene, x: 0, y: 0, width: 320, height: 240 }], width: 320, height: 240, legend }));
-  const at = 64 + document.readUInt32LE(20) * 104 + document.readUInt32LE(24);
+  const at = 64 + document.readUInt32LE(20) * 108 + document.readUInt32LE(24);
   const length = document.readUInt32LE(at + 12);
   authored[name] = { scene: Buffer.from(scene).toString("base64"), document: document.toString("base64"),
     legend: document.subarray(at + 32, at + 32 + length).toString("base64"),

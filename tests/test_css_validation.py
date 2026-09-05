@@ -15,7 +15,7 @@ import pytest
 import xyg
 from xyg import kernels
 from xyg._figure import Figure
-from xyg._raster import _parse_color
+from xyg._paint import paint_rgba8 as _parse_color
 
 X = np.arange(8.0)
 Y = X * 0.5

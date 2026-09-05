@@ -3,40 +3,89 @@
   "version": 1,
   "description": "Executable Python/Node journeys proving that canonical product policy reaches the generated Rust ABI boundary. Test assertions remain the output-parity oracle; traces prove execution, not correctness by themselves.",
   "control_commands": [
-    ["uv", "run", "pytest", "tests/test_generated_abi_trace.py", "-q", "--tb=short"]
+    [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_generated_abi_trace.py",
+      "-q",
+      "--tb=short"
+    ]
   ],
   "uncovered": [
     {
       "owner": "#873",
       "journey": "compatibility static-document routes",
-      "modules": ["python/xyg/_export_*", "python/xyg/_svg_*", "python/xyg/_raster_*"]
+      "modules": [
+        "python/xyg/_export_*",
+        "python/xyg/_svg_*",
+        "python/xyg/_raster_*"
+      ]
     },
     {
       "owner": "#875",
       "journey": "exhaustive admitted-shape Scene/static matrix",
-      "modules": ["cross-host shape registry"]
+      "modules": [
+        "cross-host shape registry"
+      ]
     }
   ],
   "journeys": [
     {
       "id": "ticks",
-      "surfaces": ["dynamic axis and colorbar tick positions", "tick labels", "tick provenance"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_packed_ticks_cross_host.py::test_python_native_packed_ticks_match_exact_fixture", "-q", "--tb=short"],
-        ["node", "packages/xy-node/scripts/packed_ticks_cross_host.mjs"]
+      "surfaces": [
+        "dynamic axis and colorbar tick positions",
+        "tick labels",
+        "tick provenance"
       ],
-      "hosts": ["python", "node"],
-      "required_shared_symbols": ["xyg_tick_resolve_packed"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_packed_ticks_cross_host.py::test_python_native_packed_ticks_match_exact_fixture",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "node",
+          "packages/xy-node/scripts/packed_ticks_cross_host.mjs"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
+      "required_shared_symbols": [
+        "xyg_tick_resolve_packed"
+      ],
       "output_oracle": "tests/fixtures/packed_ticks_cross_host.json: Python/native, Node/native, and browser/WASM assert byte-exact XYTO plus decoded positions, labels, provenance, and malformed failure behavior."
     },
     {
       "id": "default-palette",
-      "surfaces": ["default categorical palette", "default mark color"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_default_palette_contract.py", "-q", "--tb=short"],
-        ["node", "--test", "packages/xy-node/test/default-palette-contract.test.mjs"]
+      "surfaces": [
+        "default categorical palette",
+        "default mark color"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_default_palette_contract.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "node",
+          "--test",
+          "packages/xy-node/test/default-palette-contract.test.mjs"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_default_palette_version",
         "xyg_default_palette_rows",
@@ -48,17 +97,54 @@
     {
       "id": "public-marks",
       "surfaces": [
-        "graph", "sankey", "scatter", "line", "histogram", "area", "bar",
-        "column", "box", "ecdf", "segments", "heatmap", "hexbin", "violin",
-        "polar", "pie", "wind_rose", "facet", "contour", "errorbar",
-        "error_band", "stem", "step", "stairs", "triangle_mesh", "radar",
+        "graph",
+        "sankey",
+        "scatter",
+        "line",
+        "histogram",
+        "area",
+        "bar",
+        "column",
+        "box",
+        "ecdf",
+        "segments",
+        "heatmap",
+        "hexbin",
+        "violin",
+        "polar",
+        "pie",
+        "wind_rose",
+        "facet",
+        "contour",
+        "errorbar",
+        "error_band",
+        "stem",
+        "step",
+        "stairs",
+        "triangle_mesh",
+        "radar",
         "ribbon"
       ],
       "commands": [
-        ["uv", "run", "pytest", "tests/test_host_delegation_public_marks.py", "-q", "--tb=short"],
-        ["node", "--test", "packages/xy-node/test/marks.test.mjs", "packages/xy-node/test/coverage.test.mjs"]
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_host_delegation_public_marks.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "node",
+          "--test",
+          "packages/xy-node/test/marks.test.mjs",
+          "packages/xy-node/test/coverage.test.mjs"
+        ]
       ],
-      "hosts": ["python", "node"],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_bar_stack",
         "xyg_box_geometry",
@@ -79,11 +165,33 @@
     },
     {
       "id": "mark-kernels",
-      "surfaces": ["scatter", "line", "histogram", "area", "bar", "box", "ecdf", "segments", "heatmap", "hexbin", "violin"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_node_mark_parity.py", "-q", "--tb=short"]
+      "surfaces": [
+        "scatter",
+        "line",
+        "histogram",
+        "area",
+        "bar",
+        "box",
+        "ecdf",
+        "segments",
+        "heatmap",
+        "hexbin",
+        "violin"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_node_mark_parity.py",
+          "-q",
+          "--tb=short"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_encode_f32",
         "xyg_heatmap_rgba",
@@ -94,11 +202,24 @@
     },
     {
       "id": "payload",
-      "surfaces": ["payload", "Scene input"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_payload_cross_host.py", "-q", "--tb=short"]
+      "surfaces": [
+        "payload",
+        "Scene input"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_payload_cross_host.py",
+          "-q",
+          "--tb=short"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_payload_axis_spec_attach_plan",
         "xyg_payload_build_plan",
@@ -109,27 +230,129 @@
     },
     {
       "id": "static-export",
-      "surfaces": ["Scene", "SVG", "raster commands", "PNG"],
-      "scope_note": "The Rust-owned registry exhausts every currently admitted Scene trace kind and public authoring shape. #873's compatibility static-document routes will append journeys to that registry rather than create a second authority.",
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_static_export_cross_host.py", "-q", "--tb=short"]
+      "surfaces": [
+        "Scene",
+        "XYST document",
+        "SVG",
+        "raster commands",
+        "PNG",
+        "PDF",
+        "JPEG",
+        "WebP"
       ],
-      "hosts": ["python", "node"],
+      "scope_note": "The Rust-owned registry exhausts every currently admitted Scene trace kind, public authoring shape, and the complete XYST StaticDocument vocabulary (document/panel flags, annotation/label/legend/colorbar facts, rejections). #873's compatibility renderer is retired; both hosts consume one XYST kernel.",
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_export_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_document_registry_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_document_authored_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_document_layout_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_document_legend_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_legend_fit_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_panel_chrome_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_annotation_style_cross_host.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_document_ownership.py",
+          "-q",
+          "--tb=short"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_scene_encode_product",
         "xyg_scene_pack_public_export",
         "xyg_scene_raster_commands",
-        "xyg_scene_xytc_trace_pack"
+        "xyg_scene_xytc_trace_pack",
+        "xyg_static_document_export",
+        "xyg_static_annotation_style",
+        "xyg_static_legend_fit",
+        "xyg_static_document_layout"
       ],
-      "output_oracle": "For every admitted registry row, canonical Scene, SVG, raster-command, encoded PNG, and decoded RGBA bytes are identical. Bounded pairwise edges and named unsupported families prove exact cross-host fail-close reasons."
+      "output_oracle": "For every admitted registry row and XYST document case, canonical Scene, XYST envelope, SVG, raster-command, encoded PNG, and decoded RGBA bytes are identical across hosts; rejection mutations fail closed identically; and no legacy Python static policy executes on any supported journey."
     },
     {
       "id": "lod",
-      "surfaces": ["direct", "decimated", "density planning", "drill windows"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_lod_cross_host.py", "-q", "--tb=short"]
+      "surfaces": [
+        "direct",
+        "decimated",
+        "density planning",
+        "drill windows"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_lod_cross_host.py",
+          "-q",
+          "--tb=short"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_aligned_window",
         "xyg_drill_decision",
@@ -146,11 +369,25 @@
     },
     {
       "id": "density",
-      "surfaces": ["density", "categorical density", "mean-color density"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_density_emit_cross_host.py", "-q", "--tb=short"]
+      "surfaces": [
+        "density",
+        "categorical density",
+        "mean-color density"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_density_emit_cross_host.py",
+          "-q",
+          "--tb=short"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_payload_build_plan",
         "xyg_payload_density_grid_materialize",
@@ -161,12 +398,30 @@
     },
     {
       "id": "append",
-      "surfaces": ["stream", "append", "payload refresh"],
-      "commands": [
-        ["uv", "run", "pytest", "tests/test_streaming.py::test_append_direct_scatter_reships_and_repicks", "-q", "--tb=short"],
-        ["node", "--test", "packages/xy-node/test/stream.test.mjs"]
+      "surfaces": [
+        "stream",
+        "append",
+        "payload refresh"
       ],
-      "hosts": ["python", "node"],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_streaming.py::test_append_direct_scatter_reships_and_repicks",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "node",
+          "--test",
+          "packages/xy-node/test/stream.test.mjs"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
       "required_shared_symbols": [
         "xyg_payload_build_plan",
         "xyg_payload_trace_emit_materialize",
