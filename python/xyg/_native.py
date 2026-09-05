@@ -6782,6 +6782,47 @@ def scene_pack_colorbar(
     return bytes(out[:code])
 
 
+def scene_pack_named_colorbar(
+    *,
+    flags: int,
+    lo: float,
+    hi: float,
+    text_rgba: bytes,
+    title: bytes,
+    name: str,
+    ticks: npt.NDArray[np.float64] | list[float],
+) -> bytes:
+    """Resolve a named colormap and frame XYCB entirely in Rust."""
+    title_arr = np.frombuffer(title, dtype=np.uint8) if title else np.empty(0, dtype=np.uint8)
+    color_arr = np.frombuffer(bytes(text_rgba), dtype=np.uint8)
+    name_arr = np.frombuffer(str(name).encode("utf-8"), dtype=np.uint8)
+    tick_arr = np.ascontiguousarray(np.asarray(ticks, dtype=np.float64).reshape(-1))
+    if len(color_arr) != 4:
+        raise ValueError("colorbar text_rgba must be RGBA8")
+    out = np.zeros(MAX_SCENE_COLORBAR_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_named_colorbar(
+            int(flags),
+            float(lo),
+            float(hi),
+            _ptr_u8(color_arr),
+            _ptr_u8(title_arr) if len(title_arr) else 0,
+            len(title_arr),
+            _ptr_u8(name_arr) if len(name_arr) else 0,
+            len(name_arr),
+            int(tick_arr.size),
+            _ptr_f64(tick_arr) if tick_arr.size else 0,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code in {-3, -5, -6, -7}:
+        raise ValueError("Scene named colorbar facts are outside the bounded static contract")
+    if code < 0:
+        raise ValueError("invalid named scene colorbar packing")
+    return bytes(out[:code])
+
+
 def scene_pack_annotations(
     *,
     text_meta: bytes,
@@ -8330,10 +8371,12 @@ def scene_plot_layout(
     y_format: str | None = None,
     padding: tuple[float, float, float, float] | None = None,
     colorbar_side: str | None = None,
+    rect: bool = False,
 ) -> tuple[float, float, float, float]:
     """Rust-owned Cartesian gutters for the Scene-eligible export subset.
 
-    Returns ``(left, right, top, bottom)``. ``padding`` is optional authored
+    Returns ``(left, right, top, bottom)``. With ``rect=True``, returns native
+    ``(x, y, width, height)`` directly. ``padding`` is optional authored
     ``(top, right, bottom, left)``; omit it for compact/regular defaults.
     """
     title_b = title.encode("utf-8")
@@ -8361,7 +8404,8 @@ def scene_plot_layout(
     side = {None: 0, "right": 1, "bottom": 2}.get(colorbar_side)
     if side is None:
         raise ValueError("colorbar side must be right, bottom, or omitted")
-    written = _lib.xyg_scene_plot_layout(
+    function = _lib.xyg_scene_plot_rect if rect else _lib.xyg_scene_plot_layout
+    written = function(
         float(viewport[0]),
         float(viewport[1]),
         pad_ptr,
@@ -8842,6 +8886,105 @@ def scene_static_export(
         height_px,
         int(quality),
     )
+
+
+def static_document_export(
+    encoded: bytes,
+    format: str,
+    *,
+    scale: float = 1.0,
+    quality: int = 90,
+) -> bytes:
+    """Render one versioned XYST StaticDocument through Rust (ABI 362)."""
+    code = _SCENE_STATIC_FORMATS.get(format)
+    if code is None:
+        raise ValueError(
+            f"StaticDocument format must be svg, png, pdf, jpeg, or webp, got {format!r}"
+        )
+    factor = float(scale)
+    if format in {"png", "jpeg", "webp"} and (not math.isfinite(factor) or factor <= 0.0):
+        raise ValueError("static document raster scale must be positive and finite")
+    if format in {"svg", "pdf"} and not math.isfinite(factor):
+        factor = 1.0
+    if isinstance(quality, bool) or not isinstance(quality, int) or not 1 <= quality <= 100:
+        raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    return _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_document_export,
+        "StaticDocument export",
+        int(code),
+        factor,
+        int(quality),
+    )
+
+
+def static_document_layout(encoded: bytes) -> bytes:
+    """Resolve XYSL v1 panel/title facts into Rust-owned XYLO v1 (ABI 362)."""
+    return _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_document_layout,
+        "StaticDocument layout",
+    )
+
+
+def static_annotation_style(encoded: bytes) -> bytes:
+    """Resolve XYAS v1 annotation facts into Rust-owned XYAO v1 patches."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_annotation_style,
+        "StaticDocument annotation style",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
+
+
+def static_document_labels(encoded: bytes) -> bytes:
+    """Resolve XYDA v1 authored facts into Rust-owned XYDD label records."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_document_labels,
+        "StaticDocument labels",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
+
+
+def static_document_legend(encoded: bytes) -> bytes:
+    """Resolve XYDL v1 authored facts into a Rust-owned XYDD legend block."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_document_legend,
+        "StaticDocument legend",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
+
+
+def static_panel_chrome(encoded: bytes) -> bytes:
+    """Resolve XYPC v1 facts into Rust-owned XYPO v1 panel gutters."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_panel_chrome,
+        "static panel chrome",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
+
+
+def static_legend_fit(encoded: bytes) -> bytes:
+    """Resolve XYLF v1 facts into Rust-owned XYLR v1 best-legend geometry."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_legend_fit,
+        "static legend fit",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
 
 
 def scene_browser_painter(encoded: bytes, max_bytes: int = 64 * 1024 * 1024) -> bytes:

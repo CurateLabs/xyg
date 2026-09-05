@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "statuses": ["RETAIN", "BROWSER_RETAIN", "FAIL_CLOSED"],
+  "journeys": [
+    {"surface": "figure_chart", "route": "native_svg_png_pdf_jpeg_webp", "status": "RETAIN", "reason": null},
+    {"surface": "figure_chart", "route": "native_scene_rejected", "status": "FAIL_CLOSED", "reason": "XYG_SCENE_UNSUPPORTED_*"},
+    {"surface": "figure_chart", "route": "html", "status": "BROWSER_RETAIN", "reason": null},
+    {"surface": "figure_chart", "route": "chromium_static", "status": "BROWSER_RETAIN", "reason": null},
+    {"surface": "batch", "route": "native_mixed_formats", "status": "RETAIN", "reason": null},
+    {"surface": "batch", "route": "html_or_chromium", "status": "BROWSER_RETAIN", "reason": null},
+    {"surface": "facets", "route": "native_all_panels_admitted", "status": "RETAIN", "reason": null},
+    {"surface": "facets", "route": "native_rejected_panel", "status": "FAIL_CLOSED", "reason": "XYG_SCENE_UNSUPPORTED_*"},
+    {"surface": "facets", "route": "html_or_chromium", "status": "BROWSER_RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "native_png_svg", "status": "RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "native_colorbar_linear_log_extend_labels", "status": "RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "native_hexbin_group_budget", "status": "FAIL_CLOSED", "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"},
+    {"surface": "pyplot", "route": "native_best_legend", "status": "RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "native_tight_bbox", "status": "RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "html", "status": "BROWSER_RETAIN", "reason": null},
+    {"surface": "pyplot", "route": "custom_font_or_mathtext_native", "status": "FAIL_CLOSED", "reason": "XYG_STATIC_UNSUPPORTED_*"},
+    {"surface": "pyplot", "route": "unsupported_format_option", "status": "FAIL_CLOSED", "reason": "NotImplementedError"}
+  ]
+}

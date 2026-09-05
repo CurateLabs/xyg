@@ -17,7 +17,7 @@ from typing import Any, Literal, Optional, cast, overload
 
 import numpy as np
 
-from .. import _native, _textblock
+from .. import _native, _static_document, _textblock
 from ._artists import Legend, Text, _PatchFacade
 from ._axes import _DEFAULT_AXES_RECT, Axes, _font_size_points, _plain_text, _scale_values
 from ._colors import resolve_color, resolve_rgba
@@ -71,65 +71,221 @@ def _panel_chrome(
     changing its position.
     """
     figure = ax.figure
-    probe_h = 0
     cache_key: Optional[tuple[int, int, int]] = None
-    if figure is not None:
-        _canvas_w, canvas_h = rc_figsize_px(figure._figsize, figure._dpi)
-        probe_h = max(120, round(canvas_h / max(1, figure._nrows)))
-        cache_key = (id(ax), int(plot_w), probe_h)
-        if cache is not None and cache_key in cache:
-            return cache[cache_key]
-    compact = plot_w + 54 < 520
-    left, top = (46.0, 6.0) if compact else (62.0, 10.0)
-    right, bottom = (8.0, 36.0) if compact else (14.0, 42.0)
-    y_props = ax._axis["y"]
-    y_style = y_props.get("style") or {}
-    y_labels = y_props.get("tick_labels") or ()
-    if y_labels and y_props.get("tick_label_strategy") not in {"none", "off"}:
-        tick_size = float(y_style.get("tick_label_size", y_style.get("tick_size", 11.0)))
-        tick_angle = float(y_props.get("tick_label_angle", 0.0))
-        tick_width = max(
-            _textblock.rotated_extent(_textblock.measure(label, tick_size), tick_angle)[0]
-            for label in y_labels
-        )
-        tick_length = max(0.0, float(y_style.get("tick_length", 0.0)))
-        direction = str(y_style.get("tick_direction", "out"))
-        outward = (
-            0.0 if direction == "in" else tick_length / 2.0 if direction == "inout" else tick_length
-        )
-        tick_offset = outward + max(0.0, float(y_style.get("tick_padding", 4.0)))
-        needed = 4.0 + tick_offset + tick_width
-        if y_props.get("label"):
-            label_size = float(y_style.get("label_size", 12.0))
-            needed += (
-                float(y_props.get("label_offset", 0.4 * label_size))
-                + _textblock.measure(y_props["label"], label_size).height
-            )
-        left = max(left, needed)
-    extra_top, extra_right, extra_bottom = ax._outside_padding(compact)
-    table_bottom = ax._table_bottom_points * ax._point_scale()
-    defaults = (
-        left,
-        top + extra_top,
-        right + extra_right,
-        max(bottom + extra_bottom, table_bottom),
-    )
+    facts = _panel_chrome_facts(ax, float(plot_w))
+    initial = _static_document.resolve_panel_chrome(**facts)
+    cache_key = (id(ax), int(plot_w), round(initial.probe_height))
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
     if figure is None:
-        return defaults
+        return initial.gutters
     measured = _measured_axis_chrome(
         ax,
-        max(120, round(plot_w + defaults[0] + defaults[2])),
-        probe_h,
+        round(initial.probe_width),
+        round(initial.probe_height),
     )
-    resolved: _Chrome = (
-        max(defaults[0], measured[0]),
-        max(defaults[1], measured[1]),
-        max(defaults[2], measured[2]),
-        max(defaults[3], measured[3]),
-    )
+    resolved = _static_document.resolve_panel_chrome(**facts, measured_gutters=measured).gutters
     if cache is not None and cache_key is not None:
         cache[cache_key] = resolved
     return resolved
+
+
+def _panel_chrome_facts(
+    ax: Axes, plot_width: float, *, compact: Optional[bool] = None
+) -> dict[str, Any]:
+    """Copy authored axes facts into the bounded native chrome envelope."""
+    figure = ax.figure
+    canvas_h = 0
+    rows = 0
+    dpi = 100.0
+    if figure is not None:
+        _canvas_w, canvas_h = rc_figsize_px(figure._figsize, figure._dpi)
+        rows = figure._nrows
+        dpi = figure.get_dpi()
+    y_props = ax._axis["y"]
+    x_props = ax._axis["x"]
+    y_style = y_props.get("style") or {}
+    x_style = x_props.get("style") or {}
+    unsupported = _panel_chrome_unsupported(ax)
+    title_style = ax._chrome_styles.get("title", {})
+    titles: list[_static_document.PanelChromeTitle] = []
+    for title in ax._titles.values():
+        style = {**title_style, **(title.get("style") or {})}
+        size, invalid = _panel_chrome_number(style.get("font-size", 14.0), 14.0)
+        unsupported = max(unsupported, int(invalid))
+        titles.append(
+            _static_document.PanelChromeTitle(
+                str(title.get("text") or ""),
+                size,
+                float(title.get("pad", 0.0)),
+                float(title.get("y", 1.0)),
+                bool(title.get("automatic_y", True)),
+            )
+        )
+    colorbar = ax._colorbar
+    colorbar_code = 0
+    if colorbar is not None:
+        placement = str(colorbar.get("placement") or "figure")
+        horizontal = colorbar.get("orientation") == "horizontal"
+        colorbar_code = (
+            (1 if horizontal else 2) if placement == "axes" else (3 if horizontal else 4)
+        )
+    return dict(
+        plot_width=float(plot_width),
+        canvas_height=float(canvas_h),
+        rows=int(rows),
+        dpi=float(dpi),
+        table_bottom_points=float(ax._table_bottom_points),
+        x_tick_labels=tuple(map(str, x_props.get("tick_labels") or ())),
+        y_tick_labels=tuple(map(str, y_props.get("tick_labels") or ())),
+        x_label=str(x_props.get("label") or ""),
+        y_label=str(y_props.get("label") or ""),
+        titles=titles,
+        x_tick_size=float(x_style.get("tick_label_size", x_style.get("tick_size", 11.0))),
+        x_tick_angle=float(x_props.get("tick_label_angle", 0.0)),
+        x_label_size=float(x_style.get("label_size", 12.0)),
+        y_tick_size=float(y_style.get("tick_label_size", y_style.get("tick_size", 11.0))),
+        y_tick_angle=float(y_props.get("tick_label_angle", 0.0)),
+        y_label_size=float(y_style.get("label_size", 12.0)),
+        y_tick_length=float(y_style.get("tick_length", 0.0)),
+        y_tick_padding=float(y_style.get("tick_padding", 4.0)),
+        y_label_offset=(float(y_props["label_offset"]) if "label_offset" in y_props else None),
+        y_tick_labels_visible=(
+            bool(y_props.get("tick_labels"))
+            and y_props.get("tick_label_strategy") not in {"none", "off"}
+        ),
+        x_axis_top=x_props.get("side") == "top",
+        right_secondary=(
+            ax._twin is not None
+            or any(
+                secondary._axis == "y" and secondary._side == "right"
+                for secondary in ax._secondary_axes
+            )
+        ),
+        y_tick_direction=str(y_style.get("tick_direction", "out")),
+        colorbar=colorbar_code,
+        colorbar_has_label=bool(colorbar and colorbar.get("label")),
+        colorbar_zero_pad=bool(colorbar and colorbar.get("pad") == 0),
+        compact=compact,
+        unsupported=unsupported,
+    )
+
+
+def _panel_chrome_outside(ax: Axes, compact: bool) -> tuple[float, float, float]:
+    """Resolve top/right/bottom renderer reservations entirely in Rust."""
+    facts = _panel_chrome_facts(ax, 465.0 if compact else 466.0, compact=compact)
+    facts["unsupported"] = 0  # HTML/browser builds retain custom CSS and fonts.
+    return _static_document.resolve_panel_chrome(**facts).outside
+
+
+def _panel_colorbar_outside(ax: Axes, compact: bool) -> tuple[float, float]:
+    """Resolve only a panel's colorbar reservation through the native policy."""
+    facts = _panel_chrome_facts(ax, 465.0 if compact else 466.0, compact=compact)
+    facts.update(
+        titles=(),
+        x_tick_labels=(),
+        x_label="",
+        x_axis_top=False,
+        right_secondary=False,
+        unsupported=0,
+    )
+    resolved = _static_document.resolve_panel_chrome(**facts)
+    return resolved.outside_right, resolved.outside_bottom
+
+
+def _panel_chrome_number(value: object, fallback: float) -> tuple[float, bool]:
+    """Parse a marshalable px value and mark browser-only CSS expressions."""
+    try:
+        parsed = float(str(value).removesuffix("px"))
+    except (TypeError, ValueError):
+        return fallback, True
+    return parsed, False
+
+
+def _panel_chrome_unsupported(ax: Axes) -> int:
+    """Classify CSS/custom-font facts for Rust's shared stable rejection."""
+    allowed_families = {"", "dejavusans", "dejavusans,sans-serif", "sans-serif"}
+    families = [ax._theme_style.get("font-family")]
+    for style in ax._chrome_styles.values():
+        if isinstance(style, dict):
+            families.append(style.get("font-family"))
+    for props in ax._axis.values():
+        style = props.get("style") or {}
+        families.extend((style.get("label_font_family"), style.get("tick_font_family")))
+    for title in ax._titles.values():
+        families.append((title.get("style") or {}).get("font-family"))
+    for family in families:
+        if family is None:
+            continue
+        normalized = str(family).lower().replace(" ", "")
+        if normalized not in allowed_families:
+            return 2
+    for style in ax._chrome_styles.values():
+        if not isinstance(style, dict):
+            continue
+        for key in ("font-size", "padding", "rowGap", "borderWidth"):
+            if key in style and _panel_chrome_number(style[key], 0.0)[1]:
+                return 1
+    return 0
+
+
+def _native_scene_layout_rooms(spec: dict[str, Any], *, rect: bool = False) -> Optional[_Chrome]:
+    """Marshal a primary pyplot panel into Rust's canonical Scene layout."""
+    if spec.get("coords") not in (None, "cartesian"):
+        return None
+    axes = spec.get("axes")
+    if not isinstance(axes, dict) or set(axes) != {"x", "y"}:
+        return None
+    x_axis = axes["x"]
+    y_axis = axes["y"]
+    if x_axis.get("side", "bottom") != "bottom" or y_axis.get("side", "left") != "left":
+        return None
+    for style in (spec.get("dom") or {}).get("styles", {}).values():
+        if style.get("font-family") not in (None, "", "DejaVu Sans"):
+            return None
+
+    def axis_pack(axis: dict[str, Any]) -> Optional[tuple[int, float, float, float, bool]]:
+        code = {"linear": 0, "time": 0, "category": 0, "log": 1, "symlog": 2}.get(
+            str(axis.get("scale") or axis.get("kind") or "linear")
+        )
+        domain = axis.get("domain") or axis.get("range")
+        if code is None or domain is None or len(domain) != 2:
+            return None
+        return (
+            code,
+            float(domain[0]),
+            float(domain[1]),
+            float(axis.get("linthresh") or axis.get("constant") or 1.0),
+            str(axis.get("nonpositive") or "") == "mask",
+        )
+
+    x_pack = axis_pack(x_axis)
+    y_pack = axis_pack(y_axis)
+    if x_pack is None or y_pack is None:
+        return None
+    colorbar = spec.get("colorbar") or {}
+    if colorbar.get("placement") == "axes":
+        return None
+    side = None
+    if colorbar:
+        side = "bottom" if colorbar.get("orientation") == "horizontal" else "right"
+    resolved = _native.scene_plot_layout(
+        viewport=(float(spec.get("width", 900)), float(spec.get("height", 420))),
+        x_axis=x_pack,
+        y_axis=y_pack,
+        title=str(spec.get("title") or ""),
+        x_label=str(x_axis.get("label") or ""),
+        y_label=str(y_axis.get("label") or ""),
+        x_format=str(x_axis.get("format")) if x_axis.get("format") else None,
+        y_format=str(y_axis.get("format")) if y_axis.get("format") else None,
+        padding=(tuple(map(float, spec["padding"])) if spec.get("padding") is not None else None),
+        colorbar_side=side,
+        rect=rect,
+    )
+    if rect:
+        return tuple(map(float, resolved))  # type: ignore[return-value]
+    left, right, top, bottom = resolved
+    return float(left), float(top), float(right), float(bottom)
 
 
 def _measured_left_gutter(ax: Axes, width: int, height: int) -> float:
@@ -139,12 +295,12 @@ def _measured_left_gutter(ax: Axes, width: int, height: int) -> float:
     (#297). Compatibility `_svg._*room` stays for polar, extra axes, and custom
     fonts so those figures are not measured as a silent DejaVu substitute.
     """
-    from .. import _svg
-
     spec = _probe_axis_spec(ax, width, height)
-    rooms = _svg.scene_layout_rooms(spec)
+    rooms = _native_scene_layout_rooms(spec)
     if rooms is not None:
         return float(rooms[0])
+    from .. import _svg
+
     return float(_svg.layout(spec)[3]["x"])
 
 
@@ -197,9 +353,12 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     specs can still ask `scene_layout_rooms` for Scene gutters (#297) without
     substituting DejaVu for custom fonts.
     """
+    spec = _probe_axis_spec(ax, width, height)
+    rooms = _native_scene_layout_rooms(spec)
+    if rooms is not None:
+        return rooms
     from .. import _svg
 
-    spec = _probe_axis_spec(ax, width, height)
     intrinsic = dict(spec)
     intrinsic.pop("padding", None)
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
@@ -1019,17 +1178,34 @@ class Figure:
                 and self._figure_legend.get("items")
                 and self._figure_legend.get("figure_loc") == "outside right upper"
             ):
-                from .._svg import _legend_layout
+                from .. import _static_document
 
-                measured = _legend_layout(
-                    list(self._figure_legend.get("items") or []),
-                    {"x": 0.0, "y": 0.0, "w": float(canvas_w), "h": float(canvas_h)},
-                    {**self._figure_legend, "loc": "upper left"},
+                legend_style = dict(self._figure_legend.get("style") or {})
+                measured = _static_document.resolve_legend_fit(
+                    plot=(0.0, 0.0, float(canvas_w), float(canvas_h)),
+                    x_domain=(0.0, 1.0),
+                    y_domain=(0.0, 1.0),
+                    reverse_x=False,
+                    reverse_y=False,
+                    names=[
+                        str(item.get("name") or "")
+                        for item in self._figure_legend.get("items") or ()
+                    ],
+                    entries=(),
+                    title=str(self._figure_legend.get("title") or ""),
+                    ncols=int(self._figure_legend.get("ncols") or 1),
+                    font_size_css=str(legend_style.get("fontSize") or ""),
+                    padding_css=str(legend_style.get("padding") or ""),
+                    row_gap_css=str(legend_style.get("rowGap") or ""),
+                    handlelength=self._figure_legend.get("handlelength"),
+                    handletextpad=self._figure_legend.get("handletextpad"),
+                    handleheight=self._figure_legend.get("handleheight"),
+                    border_pad=float(self._figure_legend.get("border_pad") or 0.0),
                 )
                 more_left, more_right, more_bottom, more_top = _native.tight_layout_figure_extra(
                     canvas_w,
                     canvas_h,
-                    legend_box_w=float(measured["box_w"]),
+                    legend_box_w=measured.box_width,
                 )
                 extra_left += more_left
                 extra_right += more_right
@@ -2068,36 +2244,26 @@ class Figure:
                     data = _png_with_metadata(data, metadata)
             elif suffix == "svg":
                 chrome_cache: _ChromeCache = {}
-                single = self._single(chrome_cache)
-                if single is None or self._suptitle is not None:
-                    from ._grid import compose_svg
+                from ._grid import compose_svg
 
-                    canvas_size = rc_figsize_px(self._figsize, self._dpi)
-                    rects = self._effective_rects(chrome_cache)
-                    data = compose_svg(
-                        self._charts(chrome_cache),
-                        self._nrows,
-                        self._ncols,
-                        self._suptitle,
-                        self._resolved_suptitle_style(),
-                        figure_labels=self._resolved_figure_labels(),
-                        figure_legend=self._figure_legend,
-                        positions=(
-                            None
-                            if rects is None
-                            else self._panel_positions(rects, canvas_size, chrome_cache)
-                        ),
-                        canvas_size=None if rects is None else canvas_size,
-                    ).encode()
-                else:
-                    data = single.to_svg().encode()
-                if self._facecolor not in ("none", "white"):
-                    import html
-
-                    fill = html.escape(self._facecolor, quote=True)
-                    start = data.find(b">") + 1
-                    rect = f'<rect width="100%" height="100%" fill="{fill}"/>'.encode()
-                    data = data[:start] + rect + data[start:]
+                canvas_size = rc_figsize_px(self._figsize, self._dpi)
+                rects = self._effective_rects(chrome_cache)
+                data = compose_svg(
+                    self._charts(chrome_cache),
+                    self._nrows,
+                    self._ncols,
+                    self._suptitle,
+                    self._resolved_suptitle_style(),
+                    figure_labels=self._resolved_figure_labels(),
+                    figure_legend=self._figure_legend,
+                    positions=(
+                        None
+                        if rects is None
+                        else self._panel_positions(rects, canvas_size, chrome_cache)
+                    ),
+                    canvas_size=None if rects is None else canvas_size,
+                    facecolor=self._facecolor,
+                ).encode()
                 if metadata:
                     import html
 

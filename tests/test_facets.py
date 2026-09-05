@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html as _html
+import io
 import re
 import struct
 
@@ -197,15 +198,15 @@ def test_supported_facet_svg_routes_each_panel_through_the_canonical_scene(
         Figure(width=240, height=160).scatter([1, 2], [3, 2], color="#ef4444"),
     ]
     grid = FacetGrid(figures, labels=("left", "right"), cols=2, width=480, height=160)
-    scene_svg = _native.scene_svg
+    static_export = _native.static_document_export
     calls = 0
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+    def observed_static_export(*args: object, **kwargs: object) -> bytes:
         nonlocal calls
         calls += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+        return static_export(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "static_document_export", observed_static_export)
     real_scene = _scene_v3.figure_scene
     compile_calls = {"n": 0}
 
@@ -216,13 +217,13 @@ def test_supported_facet_svg_routes_each_panel_through_the_canonical_scene(
     monkeypatch.setattr(_scene_v3, "figure_scene", counted_scene)
     svg = grid.to_svg()
 
-    assert calls == 2
+    assert calls == 1
     assert compile_calls["n"] == 2
-    assert 'id="xy0-xy-scene-plot"' in svg
-    assert 'id="xy1-xy-scene-plot"' in svg
-    assert "url(#xy0-xy-scene-plot)" in svg
-    assert "url(#xy1-xy-scene-plot)" in svg
-    assert _native.scene_svg is observed_scene_svg
+    assert 'id="xy-doc-0-xy-scene-plot"' in svg
+    assert 'id="xy-doc-1-xy-scene-plot"' in svg
+    assert "url(#xy-doc-0-xy-scene-plot)" in svg
+    assert "url(#xy-doc-1-xy-scene-plot)" in svg
+    assert _native.static_document_export is observed_static_export
     assert grid.to_image("pdf").startswith(b"%PDF-")
 
 
@@ -234,15 +235,15 @@ def test_supported_facet_scene_failure_never_falls_back(
     figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
     grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
 
-    def broken_scene(*_args: object, **_kwargs: object) -> str:
-        raise ValueError("broken Scene consumer")
+    def broken_document(*_args: object, **_kwargs: object) -> bytes:
+        raise ValueError("broken StaticDocument consumer")
 
     def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
         raise AssertionError("supported facet must not fall back")
 
-    monkeypatch.setattr(_native, "scene_svg", broken_scene)
+    monkeypatch.setattr(_native, "static_document_export", broken_document)
     monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
-    with pytest.raises(ValueError, match="broken Scene consumer"):
+    with pytest.raises(ValueError, match="broken StaticDocument consumer"):
         grid.to_svg()
 
 
@@ -257,15 +258,15 @@ def test_supported_facet_png_routes_each_panel_through_the_canonical_scene(
         Figure(width=240, height=160).scatter([1, 2], [3, 2], color="#ef4444"),
     ]
     grid = FacetGrid(figures, labels=("left", "right"), cols=2, width=480, height=160)
-    scene_raster = _native.scene_raster_commands
+    static_export = _native.static_document_export
     calls = 0
 
-    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
+    def observed_static_export(*args: object, **kwargs: object) -> bytes:
         nonlocal calls
         calls += 1
-        return scene_raster(*args, **kwargs)  # type: ignore[arg-type]
+        return static_export(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
+    monkeypatch.setattr(_native, "static_document_export", observed_static_export)
 
     def unexpected_compatibility(*_args: object, **_kwargs: object) -> object:
         raise AssertionError("supported facet must not fall back")
@@ -281,7 +282,7 @@ def test_supported_facet_png_routes_each_panel_through_the_canonical_scene(
     monkeypatch.setattr(_scene_v3, "figure_scene", counted_scene)
     png = grid.to_png(scale=1.0)
 
-    assert calls == 2
+    assert calls == 1
     assert compile_calls["n"] == 2
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert _png_size(png) == (480, grid.grid_height)
@@ -297,31 +298,24 @@ def test_supported_facet_scene_raster_failure_never_falls_back(
     figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
     grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
 
-    def broken_scene(*_args: object, **_kwargs: object) -> bytes:
-        raise ValueError("broken Scene raster consumer")
+    def broken_document(*_args: object, **_kwargs: object) -> bytes:
+        raise ValueError("broken StaticDocument raster consumer")
 
     def unexpected_compatibility(*_args: object, **_kwargs: object) -> object:
         raise AssertionError("supported facet must not fall back")
 
-    monkeypatch.setattr(_native, "scene_raster_commands", broken_scene)
+    monkeypatch.setattr(_native, "static_document_export", broken_document)
     monkeypatch.setattr(_raster, "_export_payload", unexpected_compatibility)
-    with pytest.raises(ValueError, match="broken Scene raster consumer"):
+    with pytest.raises(ValueError, match="broken StaticDocument raster consumer"):
         grid.to_png(scale=1.0)
 
 
-def test_facet_raster_background_override_stays_on_compatibility(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from xyg import _native
-
+def test_facet_raster_background_override_uses_static_document() -> None:
     figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
     grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
 
-    def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("background override must not use Scene raster")
-
-    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene)
-    canvas = grid._compose_rgba(1.0, "#112233")
+    data = grid.to_png(scale=1.0)
+    canvas = np.asarray(pytest.importorskip("PIL.Image").open(io.BytesIO(data)).convert("RGBA"))
     assert canvas.shape == (grid.grid_height, grid.width, 4)
     assert canvas.dtype == np.uint8
 

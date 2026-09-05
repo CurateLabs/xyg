@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import xyg.pyplot as plt
+from xyg._static_document import UnsupportedStaticExport
 
 
 class LogNorm:
@@ -99,7 +100,12 @@ def test_time_series_histogram_log_mesh_and_pad_zero_render_statically() -> None
     svg_target = BytesIO()
     fig.savefig(svg_target, format="svg")
     svg = svg_target.getvalue().decode()
-    assert "xy-colorbar-plasma" in svg
+    root = ElementTree.fromstring(svg)
+    bands = [node for node in root.iter() if node.get("data-xy-slot") == "colorbar_band"]
+    # StaticDocument retains named palettes as the canonical bounded literal
+    # bands shared by SVG and raster rather than the retired host SVG gradient.
+    assert len(bands) >= 20
+    assert len({node.get("fill") for node in bands}) >= 10
     assert ">1</text>" in svg and ">10</text>" in svg and ">100</text>" in svg
 
     png_target = BytesIO()
@@ -132,15 +138,30 @@ def test_hexbin_demo_log_colorbar_keeps_counts_and_covers_svg_cell_seams() -> No
         "scale": "log",
     }
 
-    target = BytesIO()
-    fig.savefig(target, format="svg")
-    svg = target.getvalue().decode()
-    colorbar = svg[svg.rfind('<defs><linearGradient id="xy-colorbar-inferno"') :]
-    assert re.findall(r">([^<>]+)</text>", colorbar) == ["1", "10", "100", "counts"]
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
+        fig.savefig(BytesIO(), format="svg")
 
+    # The bounded positive witness keeps the same log/colorbar journey below
+    # Scene's independently specified 1,024 PolyFill-group ceiling.
+    bounded, bounded_ax = plt.subplots(figsize=(4.5, 4))
+    bounded_hexagons = bounded_ax.hexbin(x, y, gridsize=25, bins="log", cmap="inferno")
+    bounded.colorbar(bounded_hexagons, ax=bounded_ax, label="counts")
+    target = BytesIO()
+    bounded.savefig(target, format="svg")
+    svg = target.getvalue().decode()
     root = ElementTree.fromstring(svg)
-    cells = [node for node in root.iter() if node.tag.endswith("polygon")]
-    assert len(cells) > 1_000
+    assert {node.text for node in root.iter() if node.get("data-xy-slot") == "colorbar_tick"} >= {
+        "1",
+        "10",
+        "100",
+    }
+    assert any(node.text == "counts" for node in root.iter())
+    cells = [
+        node
+        for node in root.iter()
+        if node.tag.endswith("path") and node.get("fill-opacity") == "0.9"
+    ]
+    assert 100 < len(cells) <= 1_024
     assert all(node.get("fill") == node.get("stroke") for node in cells)
     assert all(node.get("stroke-width") == "0.5" for node in cells)
 
@@ -168,7 +189,10 @@ def test_subplots_adjust_explicit_cax_fills_requested_axes_in_static_exports() -
     fig.savefig(svg_target, format="svg")
     svg = svg_target.getvalue().decode()
     assert re.search(r'<svg[^>]+width="640"[^>]+height="480"', svg)
-    assert "xy-colorbar-viridis" in svg
+    root = ElementTree.fromstring(svg)
+    bands = [node for node in root.iter() if node.get("data-xy-slot") == "colorbar_band"]
+    assert len(bands) >= 20
+    assert len({node.get("fill") for node in bands}) >= 10
 
     png_target = BytesIO()
     fig.savefig(png_target, format="png")

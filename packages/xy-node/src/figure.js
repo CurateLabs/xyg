@@ -126,6 +126,8 @@ import {
   scaleMap,
   sceneRasterCommands,
   sceneSvg,
+  staticDocumentEncode,
+  staticDocumentExport,
   svgToPdf,
 } from "./scene.js";
 
@@ -3700,6 +3702,29 @@ export class Figure {
   toSceneRasterCommands(opts = {}) {
     return sceneRasterCommands(this.toScene(opts), opts.scale ?? 1);
   }
+
+  /** One-panel XYST document consumed by the shared Rust static product kernel. */
+  toStaticDocument(opts = {}) {
+    const scene = this.toScene(opts);
+    return staticDocumentEncode({
+      panels: [{ scene, x: 0, y: 0, width: this.width, height: this.height }],
+      width: this.width,
+      height: this.height,
+      background: opts.background ?? null,
+      optimizePng: Boolean(opts.optimizePng),
+    });
+  }
+
+  /** Export SVG, PNG, PDF, JPEG, or WebP through Rust StaticDocument. */
+  toImage(format = "png", opts = {}) {
+    return staticDocumentExport(this.toStaticDocument(opts), format, opts);
+  }
+
+  toSvg(opts = {}) { return this.toImage("svg", opts); }
+  toPng(opts = {}) { return this.toImage("png", opts); }
+  toPdf(opts = {}) { return this.toImage("pdf", opts); }
+  toJpeg(opts = {}) { return this.toImage("jpeg", opts); }
+  toWebp(opts = {}) { return this.toImage("webp", opts); }
 }
 
 export function figure(opts) {

@@ -37,6 +37,7 @@ import {
   xySceneBrowserPainter,
   xyScenePackAnnotations,
   xyScenePackColorbar,
+  xyScenePackNamedColorbar,
   xyScenePackLegend,
   xyScenePlotLayout,
   xyScenePublicExportReason,
@@ -62,6 +63,13 @@ import {
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneStaticExport,
+  xyStaticAnnotationStyle,
+  xyStaticDocumentExport,
+  xyStaticDocumentLabels,
+  xyStaticDocumentLayout,
+  xyStaticDocumentLegend,
+  xyStaticLegendFit,
+  xyStaticPanelChrome,
   xySceneResolveChromeStyle,
   xySceneResolveMarkStyles,
   xySceneScaleMap,
@@ -2828,6 +2836,434 @@ export function sceneStaticExport(encoded, format, { scale = 1, width = 1, heigh
   return sceneOutput(encoded, xySceneStaticExport, "static export", [code, factor, BigInt(w), BigInt(h), q]);
 }
 
+function staticU32(value, label, positive = false) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < (positive ? 1 : 0) || number > 0xffff_ffff) {
+    throw new RangeError(`${label} must be a ${positive ? "positive " : "non-negative "}u32 integer`);
+  }
+  return number;
+}
+
+function staticI32(value, label) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < -0x8000_0000 || number > 0x7fff_ffff) {
+    throw new RangeError(`${label} must be a signed i32 integer`);
+  }
+  return number;
+}
+
+function staticLegendBytes(legend, encoder) {
+  const items = Array.from(legend?.items ?? []);
+  if (items.length === 0) return new Uint8Array();
+  const style = legend?.style ?? {};
+  const hasNumeric = (object, key) => Object.hasOwn(object, key) && object[key] != null;
+  let flags = 0;
+  if (hasNumeric(legend, "ncols")) flags |= 1;
+  if (hasNumeric(legend, "handlelength")) flags |= 2;
+  if (hasNumeric(legend, "handletextpad")) flags |= 4;
+  if (hasNumeric(legend, "border_pad")) flags |= 8;
+  const anchor = legend?.anchor == null ? null : Array.from(legend.anchor, Number);
+  if (anchor != null) flags |= 16;
+  const header = new Uint8Array(64);
+  const headerView = new DataView(header.buffer);
+  header.set([88, 89, 68, 76], 0); // XYDL
+  headerView.setUint32(4, 1, true);
+  headerView.setUint32(8, flags, true);
+  headerView.setUint32(12, items.length, true);
+  headerView.setInt32(16, flags & 1 ? staticI32(legend.ncols, "StaticDocument legend ncols") : 0, true);
+  headerView.setFloat64(24, flags & 2 ? Number(legend.handlelength) : 0, true);
+  headerView.setFloat64(32, flags & 4 ? Number(legend.handletextpad) : 0, true);
+  headerView.setFloat64(40, flags & 8 ? Number(legend.border_pad) : 0, true);
+  if (anchor != null && anchor.length === 2) {
+    headerView.setFloat64(48, anchor[0], true);
+    headerView.setFloat64(56, anchor[1], true);
+  } else if (anchor != null) {
+    throw new RangeError("XYG_STATIC_UNSUPPORTED_PANEL_LEGEND_ANCHOR");
+  }
+  const optionalText = (value) => {
+    if (value == null) {
+      const absent = new Uint8Array(4);
+      new DataView(absent.buffer).setUint32(0, 0xffff_ffff, true);
+      return absent;
+    }
+    const encoded = encoder.encode(String(value));
+    const packed = new Uint8Array(4 + encoded.length);
+    new DataView(packed.buffer).setUint32(0, encoded.length, true);
+    packed.set(encoded, 4);
+    return packed;
+  };
+  const chunks = [
+    header,
+    ...[
+      legend?.title,
+      legend?.loc,
+      legend?.figure_loc,
+      style.fontSize,
+      style.padding,
+      style.rowGap,
+      style.color,
+      style.background,
+      style.borderColor,
+      style["--xy-legend-frame-alpha"],
+      style.fontFamily,
+    ].map(optionalText),
+  ];
+  items.forEach((item) => {
+    const itemStyle = item?.style ?? {};
+    let itemFlags = 0;
+    if (hasNumeric(itemStyle, "width")) itemFlags |= 1;
+    if (hasNumeric(itemStyle, "stroke_width")) itemFlags |= 2;
+    if (hasNumeric(itemStyle, "size")) itemFlags |= 4;
+    if (hasNumeric(itemStyle, "opacity")) itemFlags |= 8;
+    if (itemStyle.dash) itemFlags |= 16;
+    const packed = new Uint8Array(40);
+    const view = new DataView(packed.buffer);
+    view.setUint32(0, itemFlags, true);
+    view.setFloat64(8, itemFlags & 1 ? Number(itemStyle.width) : 0, true);
+    view.setFloat64(16, itemFlags & 2 ? Number(itemStyle.stroke_width) : 0, true);
+    view.setFloat64(24, itemFlags & 4 ? Number(itemStyle.size) : 0, true);
+    view.setFloat64(32, itemFlags & 8 ? Number(itemStyle.opacity) : 0, true);
+    chunks.push(
+      packed,
+      optionalText(item?.kind),
+      optionalText(item?.name),
+      optionalText(itemStyle.color),
+      optionalText(itemStyle.symbol),
+    );
+  });
+  const request = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+  let at = 0;
+  chunks.forEach((chunk) => {
+    request.set(chunk, at);
+    at += chunk.length;
+  });
+  return staticDocumentLegend(request);
+}
+
+function staticLabelBytes(labels, encoder) {
+  const hasNumeric = (object, key) => Object.hasOwn(object, key) && object[key] != null;
+  const header = new Uint8Array(16);
+  const headerView = new DataView(header.buffer);
+  header.set([88, 89, 68, 65], 0); // XYDA
+  headerView.setUint32(4, 1, true);
+  headerView.setUint32(8, labels.length, true);
+  const optionalText = (value) => {
+    if (value == null) {
+      const absent = new Uint8Array(4);
+      new DataView(absent.buffer).setUint32(0, 0xffff_ffff, true);
+      return absent;
+    }
+    const encoded = encoder.encode(String(value));
+    const packed = new Uint8Array(4 + encoded.length);
+    new DataView(packed.buffer).setUint32(0, encoded.length, true);
+    packed.set(encoded, 4);
+    return packed;
+  };
+  const chunks = [header];
+  labels.forEach((label) => {
+    let flags = 0;
+    if (hasNumeric(label, "x")) flags |= 1;
+    if (hasNumeric(label, "y")) flags |= 2;
+    if (hasNumeric(label, "size")) flags |= 4;
+    if (hasNumeric(label, "rotation")) flags |= 8;
+    if (hasNumeric(label, "opacity")) flags |= 16;
+    const packed = new Uint8Array(48);
+    const view = new DataView(packed.buffer);
+    view.setUint32(0, flags, true);
+    view.setFloat64(8, flags & 1 ? Number(label.x) : 0, true);
+    view.setFloat64(16, flags & 2 ? Number(label.y) : 0, true);
+    view.setFloat64(24, flags & 4 ? Number(label.size) : 0, true);
+    view.setFloat64(32, flags & 8 ? Number(label.rotation) : 0, true);
+    view.setFloat64(40, flags & 16 ? Number(label.opacity) : 0, true);
+    chunks.push(
+      packed,
+      optionalText(label?.text),
+      optionalText(label?.family),
+      optionalText(label?.anchor),
+      optionalText(label?.vertical_align),
+      optionalText(label?.font_style),
+      optionalText(label?.weight),
+      optionalText(label?.color),
+    );
+  });
+  const request = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+  let at = 0;
+  chunks.forEach((chunk) => {
+    request.set(chunk, at);
+    at += chunk.length;
+  });
+  return staticDocumentLabels(request);
+}
+
+export function staticDocumentEncode({
+  panels,
+  width,
+  height,
+  background = null,
+  title = null,
+  titleColor = "#262626",
+  titleSize = 14,
+  titleX = null,
+  titleY = 16,
+  titleAnchor = 1,
+  titleFlags = 0,
+  optimizePng = false,
+  labels = [],
+  tightCrop = false,
+  cropPadding = 0,
+  colorbar = null,
+  legend = null,
+}) {
+  const documentWidth = staticU32(width, "StaticDocument width", true);
+  const documentHeight = staticU32(height, "StaticDocument height", true);
+  if (!Array.isArray(panels) || panels.length < 1 || panels.length > 256) {
+    throw new RangeError("StaticDocument needs 1..256 panels");
+  }
+  const encoder = new TextEncoder();
+  const titleBytes = encoder.encode(title == null ? "" : String(title));
+  if (titleBytes.length > 4096 || titleBytes.includes(0)) {
+    throw new RangeError("StaticDocument title must be NUL-free UTF-8 within 4096 bytes");
+  }
+  const anchor = staticU32(titleAnchor, "StaticDocument title anchor");
+  if (anchor > 2) throw new RangeError("StaticDocument title anchor must be 0, 1, or 2");
+  const normalizedTitleFlags = staticU32(titleFlags, "StaticDocument title flags");
+  if (normalizedTitleFlags > 3) throw new RangeError("StaticDocument title flags must contain only italic/bold bits");
+  const normalized = [];
+  let sceneBytes = 0;
+  for (let index = 0; index < panels.length; index += 1) {
+    const panel = panels[index];
+    const scene = panel?.scene instanceof Uint8Array ? panel.scene : new Uint8Array(panel?.scene ?? []);
+    if (scene.length === 0) throw new RangeError(`StaticDocument panel ${index} has an empty Scene`);
+    const record = {
+      scene,
+      x: staticI32(panel.x, `StaticDocument panel ${index} x`),
+      y: staticI32(panel.y, `StaticDocument panel ${index} y`),
+      width: staticU32(panel.width, `StaticDocument panel ${index} width`, true),
+      height: staticU32(panel.height, `StaticDocument panel ${index} height`, true),
+      offset: staticU32(sceneBytes, `StaticDocument panel ${index} offset`),
+      chromeMetrics: panel.chromeMetrics == null
+        ? null
+        : Array.from(panel.chromeMetrics, Number),
+      colorbarLayout: panel.colorbarLayout == null
+        ? null
+        : Array.from(panel.colorbarLayout, Number),
+      annotationFontSize: panel.annotationFontSize == null ? null : Number(panel.annotationFontSize),
+      arrowMetrics: panel.arrowMetrics == null ? null : Array.from(panel.arrowMetrics, Number),
+      axisSides: panel.axisSides == null ? null : Array.from(panel.axisSides, Number),
+      annotationTextFlags: panel.annotationTextFlags == null ? null : Number(panel.annotationTextFlags),
+      annotationPadding: panel.annotationPadding == null ? null : Number(panel.annotationPadding),
+      titleStyle: panel.titleStyle == null ? null : Array.from(panel.titleStyle),
+      annotationVerticalAlign: panel.annotationVerticalAlign == null
+        ? null : Number(panel.annotationVerticalAlign),
+      colorbarScale: panel.colorbarScale == null ? null : String(panel.colorbarScale),
+      colorbarExtend: panel.colorbarExtend == null ? null : String(panel.colorbarExtend),
+      colorbarPyplotLabel: Boolean(panel.colorbarPyplotLabel),
+      colorbarFillPlot: Boolean(panel.colorbarFillPlot),
+    };
+    if (record.chromeMetrics != null && record.chromeMetrics.length !== 6) {
+      throw new RangeError(`StaticDocument panel ${index} chrome metrics must contain six numbers`);
+    }
+    if (record.colorbarLayout != null && record.colorbarLayout.length !== 3) {
+      throw new RangeError(`StaticDocument panel ${index} colorbar layout must contain three numbers`);
+    }
+    if (record.arrowMetrics != null && record.arrowMetrics.length !== 3) {
+      throw new RangeError(`StaticDocument panel ${index} arrow metrics must contain three numbers`);
+    }
+    if (record.axisSides != null && (record.axisSides.length !== 2
+      || record.axisSides.some((value) => !Number.isInteger(value) || value < 0 || value > 3))) {
+      throw new RangeError(`StaticDocument panel ${index} axis sides must contain two low/high masks`);
+    }
+    if (record.annotationTextFlags != null
+      && (!Number.isInteger(record.annotationTextFlags) || record.annotationTextFlags < 0
+        || record.annotationTextFlags > 3)) {
+      throw new RangeError(`StaticDocument panel ${index} annotation text flags use only italic/bold bits`);
+    }
+    if (record.titleStyle != null && record.titleStyle.length !== 2) {
+      throw new RangeError(`StaticDocument panel ${index} title style needs size/color`);
+    }
+    if (record.annotationVerticalAlign != null
+      && (!Number.isInteger(record.annotationVerticalAlign)
+        || record.annotationVerticalAlign < 0 || record.annotationVerticalAlign > 3)) {
+      throw new RangeError(`StaticDocument panel ${index} annotation vertical align must be 0..3`);
+    }
+    if (record.colorbarScale != null && !["linear", "log"].includes(record.colorbarScale)) {
+      throw new RangeError(`StaticDocument panel ${index} colorbar scale must be linear or log`);
+    }
+    if (record.colorbarExtend != null
+      && !["neither", "min", "max", "both"].includes(record.colorbarExtend)) {
+      throw new RangeError(`StaticDocument panel ${index} colorbar extend must be neither/min/max/both`);
+    }
+    staticU32(scene.length, `StaticDocument panel ${index} Scene length`, true);
+    sceneBytes += scene.length;
+    normalized.push(record);
+  }
+  if (!Array.isArray(labels) || labels.length > 64) {
+    throw new RangeError("StaticDocument supports at most 64 document labels");
+  }
+  const colorbarBytes = encoder.encode(colorbar == null ? "" : String(colorbar));
+  if (colorbarBytes.length > 256 || colorbarBytes.includes(0)) {
+    throw new RangeError("StaticDocument colorbar name is invalid");
+  }
+  const legendBytes = staticLegendBytes(legend, encoder);
+  const labelBytes = staticLabelBytes(labels, encoder);
+  const decorationLength = labels.length || legendBytes.length || colorbarBytes.length
+    ? 32 + labelBytes.length + legendBytes.length + colorbarBytes.length
+    : 0;
+  const decorations = new Uint8Array(decorationLength);
+  if (decorationLength) {
+    const decorationView = new DataView(decorations.buffer);
+    decorations.set([88, 89, 68, 68], 0);
+    decorationView.setUint32(4, 1, true);
+    decorationView.setUint32(8, labels.length, true);
+    decorationView.setUint32(12, legendBytes.length, true);
+    decorationView.setUint32(16, colorbarBytes.length, true);
+    let decorationAt = 32;
+    decorations.set(labelBytes, decorationAt);
+    decorationAt += labelBytes.length;
+    decorations.set(legendBytes, decorationAt);
+    decorationAt += legendBytes.length;
+    decorations.set(colorbarBytes, decorationAt);
+  }
+  const out = new Uint8Array(64 + panels.length * 104 + titleBytes.length + decorations.length + sceneBytes);
+  const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
+  out.set([88, 89, 83, 84], 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, documentWidth, true);
+  view.setUint32(12, documentHeight, true);
+  view.setUint32(16, (background != null ? 1 : 0) | (optimizePng ? 2 : 0)
+    | (tightCrop ? 4 : 0) | (titleX == null ? 8 : 0), true);
+  view.setUint32(20, panels.length, true);
+  view.setUint32(24, titleBytes.length, true);
+  out.set(background == null ? [0, 0, 0, 0] : cssColorRgba8(background === "transparent" ? "transparent" : String(background)), 28);
+  out.set(cssColorRgba8(String(titleColor)), 32);
+  view.setFloat32(36, Number(titleSize), true);
+  view.setFloat32(40, Number(titleX == null ? 0 : titleX), true);
+  view.setFloat32(44, Number(titleY), true);
+  out[48] = anchor;
+  out[49] = normalizedTitleFlags;
+  view.setUint32(52, decorations.length, true);
+  view.setUint32(56, staticU32(cropPadding, "StaticDocument crop padding"), true);
+  let at = 64;
+  for (const panel of normalized) {
+    view.setInt32(at, panel.x, true);
+    view.setInt32(at + 4, panel.y, true);
+    at += 8;
+    for (const value of [panel.width, panel.height, panel.offset, panel.scene.length]) {
+      view.setUint32(at, value, true);
+      at += 4;
+    }
+    view.setUint32(at, (panel.chromeMetrics == null ? 0 : 3)
+      | (panel.colorbarLayout == null ? 0 : 4)
+      | (panel.annotationFontSize == null ? 0 : 8)
+      | (panel.arrowMetrics == null ? 0 : 16)
+      | (panel.axisSides == null ? 0 : 32)
+      | (panel.annotationTextFlags == null ? 0 : 64)
+      | (panel.annotationPadding == null ? 0 : 128)
+      | (panel.titleStyle == null ? 0 : 256)
+      | (panel.annotationVerticalAlign == null ? 0 : 512)
+      | (panel.colorbarScale === "log" ? 1 << 10 : 0)
+      | (["min", "both"].includes(panel.colorbarExtend) ? 1 << 11 : 0)
+      | (["max", "both"].includes(panel.colorbarExtend) ? 1 << 12 : 0)
+      | (panel.colorbarPyplotLabel ? 1 << 13 : 0)
+      | (panel.colorbarFillPlot ? 1 << 24 : 0), true);
+    view.setFloat32(at + 4, panel.annotationFontSize ?? 0, true);
+    at += 8;
+    for (const value of panel.chromeMetrics ?? [0, 0, 0, 0, 0, 0]) {
+      view.setFloat32(at, value, true);
+      at += 4;
+    }
+    for (const value of panel.colorbarLayout ?? [0, 0, 0]) {
+      view.setFloat32(at, value, true);
+      at += 4;
+    }
+    for (const value of panel.arrowMetrics ?? [0, 0, 0]) {
+      view.setFloat32(at, value, true);
+      at += 4;
+    }
+    view.setUint32(at, panel.axisSides == null ? 0 : panel.axisSides[0] | (panel.axisSides[1] << 8), true);
+    at += 4;
+    view.setUint32(at, panel.annotationTextFlags ?? 0, true);
+    at += 4;
+    view.setFloat32(at, panel.annotationPadding ?? 0, true);
+    at += 4;
+    view.setFloat32(at, Number(panel.titleStyle?.[0] ?? 0), true);
+    at += 4;
+    out.set(panel.titleStyle == null ? [0, 0, 0, 0] : cssColorRgba8(String(panel.titleStyle[1])), at);
+    at += 4;
+    view.setUint32(at, panel.annotationVerticalAlign ?? 0, true);
+    at += 4;
+  }
+  out.set(titleBytes, at);
+  at += titleBytes.length;
+  out.set(decorations, at);
+  at += decorations.length;
+  for (const panel of normalized) {
+    out.set(panel.scene, at);
+    at += panel.scene.length;
+  }
+  return out;
+}
+
+export function staticDocumentExport(encoded, format, { scale = 1, quality = 90 } = {}) {
+  const code = SCENE_STATIC_FORMATS[format];
+  if (code == null) {
+    throw new RangeError(`StaticDocument format must be svg, png, pdf, jpeg, or webp, got ${String(format)}`);
+  }
+  let factor = Number(scale);
+  if (format === "png" || format === "jpeg" || format === "webp") {
+    if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("static document raster scale must be positive and finite");
+  } else if (!Number.isFinite(factor)) {
+    factor = 1;
+  }
+  const q = Number(quality);
+  if (!Number.isInteger(q) || q < 1 || q > 100) throw new RangeError("quality must be an int in 1..100");
+  return sceneOutput(encoded, xyStaticDocumentExport, "StaticDocument export", [code, factor, q]);
+}
+
+export function staticDocumentLayout(encoded) {
+  return sceneOutput(encoded, xyStaticDocumentLayout, "StaticDocument layout");
+}
+
+export function staticAnnotationStyle(encoded) {
+  const output = sceneOutput(encoded, xyStaticAnnotationStyle, "StaticDocument annotation style");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
+export function staticDocumentLabels(encoded) {
+  const output = sceneOutput(encoded, xyStaticDocumentLabels, "StaticDocument labels");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
+export function staticDocumentLegend(encoded) {
+  const output = sceneOutput(encoded, xyStaticDocumentLegend, "StaticDocument legend");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
+export function staticPanelChrome(encoded) {
+  const output = sceneOutput(encoded, xyStaticPanelChrome, "static panel chrome");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
+export function staticLegendFit(encoded) {
+  const output = sceneOutput(encoded, xyStaticLegendFit, "static legend fit");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
 export function sceneBrowserPainter(encoded, maxBytes = 64 * 1024 * 1024) {
   const limit = Number(maxBytes);
   if (!Number.isSafeInteger(limit) || limit <= 0) throw new RangeError("scene painter byte limit must be a positive safe integer");
@@ -5257,19 +5693,35 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const colorbar = colorbarOk ? figureColorbarOptions(figure) : null;
   let colorbarPayload = null;
   if (colorbar) {
-    const domain = colorbar.domain ?? [0, 1];
-    const stops = colorbar.stops ?? [];
-    const side = colorbar.side ?? "right";
+    const packed = colorbarInput(figure);
+    const view = new DataView(packed.buffer, packed.byteOffset, packed.byteLength);
+    const flags = packed[8];
+    const stopCount = view.getUint32(12, true);
+    const tickCount = view.getUint32(16, true);
+    const titleLength = view.getUint32(20, true);
+    const stopsAt = 56;
+    const ticksAt = stopsAt + stopCount * 12;
+    const titleAt = ticksAt + tickCount * 8;
+    const stops = Array.from({ length: stopCount }, (_, index) => {
+      const at = stopsAt + index * 12;
+      return [view.getFloat64(at, true), packed.slice(at + 8, at + 12)];
+    });
+    const ticks = Array.from(
+      { length: tickCount },
+      (_, index) => view.getFloat64(ticksAt + index * 8, true),
+    );
     colorbarPayload = {
-      domain_lo: Number(domain[0]),
-      domain_hi: Number(domain[1]),
-      stops: stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]),
-      side_bottom: side === "bottom",
-      invalid_side: !["right", "bottom"].includes(side),
-      minor_ticks: Boolean(colorbar.minor_ticks),
-      title: optionalStr(colorbar.title),
-      text_rgba: Uint8Array.from(colorbar.text_rgba ?? [32, 32, 32, 255]),
-      ticks: colorbar.ticks == null ? null : Array.from(colorbar.ticks, Number),
+      domain_lo: view.getFloat64(24, true),
+      domain_hi: view.getFloat64(32, true),
+      stops,
+      side_bottom: Boolean(flags & 1),
+      invalid_side: false,
+      minor_ticks: Boolean(flags & 4),
+      title: optionalStr(new TextDecoder("utf-8", { fatal: true }).decode(
+        packed.subarray(titleAt, titleAt + titleLength),
+      )),
+      text_rgba: packed.slice(40, 44),
+      ticks: tickCount ? ticks : null,
     };
   }
   return sceneChromePack({
@@ -5754,6 +6206,56 @@ function colorbarInput(figure) {
   const options = figureColorbarOptions(figure);
   if (options == null) return new Uint8Array();
   if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v19 colorbar requires literal RGBA stops");
+  const namedAllowed = new Set(["domain", "colormap", "orientation", "label", "ticks", "minor_ticks"]);
+  if (Object.keys(options).every((key) => namedAllowed.has(key))) {
+    const domain = options.domain;
+    if (!Array.isArray(domain) || domain.length !== 2) {
+      throw new RangeError("Scene named colorbars require a two-value domain");
+    }
+    const lo = Number(domain[0]);
+    const hi = Number(domain[1]);
+    const orientation = String(options.orientation ?? "vertical");
+    if (orientation !== "vertical" && orientation !== "horizontal") {
+      throw new RangeError("Scene named colorbars support vertical or horizontal");
+    }
+    const title = options.label ?? "";
+    if (typeof title !== "string") throw new TypeError("Scene named colorbar label must be a string");
+    const titleBytes = new TextEncoder().encode(title);
+    if (titleBytes.length > 4096) {
+      throw new RangeError("Scene v19 colorbar title is limited to 4,096 UTF-8 bytes");
+    }
+    const nameBytes = new TextEncoder().encode(String(options.colormap ?? "viridis"));
+    if (!nameBytes.length || nameBytes.includes(0)) {
+      throw new RangeError("Scene named colorbar colormap must be nonempty and NUL-free");
+    }
+    const rawTicks = options.ticks;
+    if (rawTicks != null && (!Array.isArray(rawTicks) || rawTicks.length > 32)) {
+      throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
+    }
+    const tickValues = Float64Array.from(rawTicks ?? [], Number);
+    const minorTicks = options.minor_ticks ?? false;
+    if (typeof minorTicks !== "boolean") throw new TypeError("Scene v19 colorbar minor_ticks must be a boolean");
+    const text = Uint8Array.from([32, 32, 32, 255]);
+    const out = new Uint8Array(56 + 16 * 12 + tickValues.length * 8 + titleBytes.length);
+    const code = xyScenePackNamedColorbar(
+      Number(orientation === "horizontal") | (Number(minorTicks) << 2),
+      lo,
+      hi,
+      u8Ptr(text),
+      titleBytes.length ? u8Ptr(titleBytes) : 0,
+      BigInt(titleBytes.length),
+      u8Ptr(nameBytes),
+      BigInt(nameBytes.length),
+      tickValues.length,
+      tickValues.length ? f64Ptr(tickValues) : 0,
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -5) throw new RangeError("Scene named colorbar domain/ticks must be finite");
+    if (code === -7) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
+    if (code < 0) throw new RangeError("invalid named scene colorbar packing");
+    return out.subarray(0, code);
+  }
   const allowed = new Set(["domain", "stops", "side", "title", "text_rgba", "ticks", "minor_ticks"]);
   if (Object.keys(options).some((key) => !allowed.has(key))) throw new RangeError("Scene v19 colorbar requires bounded literal RGBA stops");
   const domain = options.domain, stops = options.stops;

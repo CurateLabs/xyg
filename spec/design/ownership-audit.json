@@ -905,6 +905,54 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/static_document.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/static_document_labels.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/static_document_layout.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/static_document_legend.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/static_legend_fit.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/static_panel_chrome.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/simd.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -2698,6 +2746,14 @@
     },
     {
       "path": "python/xyg/_spatial.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_static_document.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",

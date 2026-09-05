@@ -631,6 +631,19 @@ F3, still pending (above).
   constructing the destination byte slice.
   The ABI-version break removes the old capacity-blind signatures; generated
   Python and Node declarations cannot call them against a mismatched core.
+  ABI 362 adds the versioned bounded `XYST` StaticDocument product boundary
+  for shared SVG/PNG/PDF/JPEG/WebP document export. ABI 363 adds the `XYDL`
+  authored document-legend query; ABI 364 adds the `XYDA` document-label
+  query; ABI 365 adds the `XYAS` annotation-style projection query. Rust owns
+  multi-panel composition, document decorations, label and legend
+  defaults/glyph/style/paint framing, annotation typography/bbox/default
+  projection, and stable rejection; Python and Node remain literal-fact
+  packers and mechanical patch consumers. The normative framing and migration matrix
+  live in [static-document.md](design/static-document.md),
+  with decoration details in
+  [static-document-labels.md](design/static-document-labels.md) and
+  [static-document-legend.md](design/static-document-legend.md), with annotation
+  projection in [static-annotation-style.md](design/static-annotation-style.md).
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share

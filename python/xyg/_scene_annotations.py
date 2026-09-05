@@ -24,6 +24,41 @@ def colorbar_input(figure: Any) -> bytes:
     options = getattr(figure, "colorbar_options", None)
     if not options:
         return b""
+    if isinstance(options, dict) and set(options) <= {
+        "domain",
+        "colormap",
+        "orientation",
+        "label",
+        "ticks",
+        "minor_ticks",
+    }:
+        domain = options.get("domain")
+        if not isinstance(domain, (list, tuple)) or len(domain) != 2:
+            raise UnsupportedSceneV3("Scene named colorbars require a two-value domain")
+        try:
+            lo, hi = float(domain[0]), float(domain[1])
+            ticks = [float(value) for value in options.get("ticks") or ()]
+        except (TypeError, ValueError):
+            raise UnsupportedSceneV3("Scene named colorbar domain/ticks must be finite") from None
+        orientation = str(options.get("orientation", "vertical"))
+        if orientation not in {"vertical", "horizontal"}:
+            raise UnsupportedSceneV3("Scene named colorbars support vertical or horizontal")
+        title = options.get("label", "")
+        if not isinstance(title, str):
+            raise UnsupportedSceneV3("Scene named colorbar label must be a string")
+        flags = int(orientation == "horizontal") | (int(bool(options.get("minor_ticks"))) << 2)
+        try:
+            return _native.scene_pack_named_colorbar(
+                flags=flags,
+                lo=lo,
+                hi=hi,
+                text_rgba=bytes((32, 32, 32, 255)),
+                title=title.encode("utf-8"),
+                name=str(options.get("colormap", "viridis")),
+                ticks=ticks,
+            )
+        except ValueError as error:
+            raise UnsupportedSceneV3(str(error)) from error
     if not isinstance(options, dict) or set(options) - {
         "domain",
         "stops",

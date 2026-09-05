@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import xyg.pyplot as plt
-from xyg.pyplot import _grid
+from xyg._static_document import UnsupportedStaticExport
 from xyg.pyplot._mathtext import mathtext_italic_ranges
 
 
@@ -53,24 +53,20 @@ def test_positioned_png_keeps_figure_suptitle() -> None:
 
 
 def test_raster_suptitle_composites_as_straight_alpha() -> None:
-    canvas = np.zeros((48, 320, 4), dtype=np.uint8)
-
-    _grid._blend_raster_suptitle(
-        canvas,
-        "visible figure title",
-        None,
-        scale=1.0,
-        title_h=48,
-    )
-
-    ink = canvas[:, :, 3] > 0
+    fig, ax = plt.subplots(figsize=(3.2, 2.4), dpi=100)
+    ax.set_axis_off()
+    fig.suptitle("visible figure title")
+    output = BytesIO()
+    fig.savefig(output, format="png", transparent=True)
+    canvas = np.asarray(plt.imread(BytesIO(output.getvalue())))
+    ink = (canvas[:, :, 3] > 0) & (canvas[:, :, 3] < 255)
     assert np.any(ink)
-    # The native text overlay is straight-alpha RGBA: antialiasing belongs in
-    # alpha, while every covered pixel retains the authored #262626 RGB.
     np.testing.assert_array_equal(
-        np.unique(canvas[:, :, :3][ink], axis=0),
-        np.array([[38, 38, 38]], dtype=np.uint8),
+        np.unique(canvas[:, :, :3][canvas[:, :, 3] > 0], axis=0),
+        np.array([[0, 0, 0]], dtype=np.uint8),
     )
+    # Native XYST title antialiasing stays straight-alpha rather than baking
+    # coverage into pyplot's authored black RGB channels.
 
 
 @pytest.mark.parametrize("absolute", [False, True])
@@ -229,7 +225,7 @@ def test_text_accepts_matplotlib_style_alias_and_bbox_properties() -> None:
     assert annotation.style["padding"] == "13.9px"
     svg = chart.figure().to_svg()
     assert 'fill="rgba(255,0,0,0.5)"' in svg
-    assert 'stroke="black"' in svg
+    assert 'stroke="rgba(0,0,0,0.5)"' in svg
     assert 'font-style="italic"' in svg
     target = BytesIO()
     fig.savefig(target, format="png")
@@ -244,13 +240,14 @@ def test_text_preserves_mathtext_italic_span_across_all_exporters() -> None:
 
     assert label.get_text() == "an equation: E=mc²"
     assert label._entry["kwargs"]["style"]["math_italic_ranges"] == "13:14,15:17"
-    svg = ax._build_chart(*fig._panel_px()).figure().to_svg()
-    assert '<tspan font-style="italic">E</tspan>=' in svg
-    assert '<tspan font-style="italic">mc</tspan>²' in svg
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE"):
+        ax._build_chart(*fig._panel_px()).figure().to_svg()
     target = BytesIO()
-    fig.savefig(target, format="png")
-    rgba = np.asarray(plt.imread(BytesIO(target.getvalue())))
-    assert np.any(rgba[..., :3] < 0.5)
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE"):
+        fig.savefig(target, format="png")
+    html = fig._to_html()
+    assert "an equation: E=mc" in html
+    assert '"math_italic_ranges":"13:14,15:17"' in html
 
 
 @pytest.mark.parametrize(
@@ -277,9 +274,11 @@ def test_mathtext_operator_stays_upright_next_to_italic_variable_in_svg() -> Non
 
     assert label.get_text() == "Σx"
     assert label._entry["kwargs"]["style"]["math_italic_ranges"] == "1:2"
-    svg = ax._build_chart(*fig._panel_px()).figure().to_svg()
-    assert ">Σ<tspan" in svg
-    assert '<tspan font-style="italic">x</tspan>' in svg
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE"):
+        ax._build_chart(*fig._panel_px()).figure().to_svg()
+    html = fig._to_html()
+    assert "\\u03a3x" in html
+    assert '"math_italic_ranges":"1:2"' in html
 
 
 def test_text_fontdict_styles_title_labels_and_named_math_functions() -> None:
@@ -306,12 +305,24 @@ def test_text_fontdict_styles_title_labels_and_named_math_functions() -> None:
         assert style["label_color"] == "darkred"
         assert style["label_font_weight"] == "normal"
         assert style["label_font_family"] == "serif"
-    svg = ax._build_chart(*fig._panel_px()).figure().to_svg()
-    assert 'font-family="serif"' in svg
-    assert 'font-weight="normal"' in svg
-    assert 'fill="darkred"' in svg
-    assert ">cos(" in svg
-    assert "\\cos" not in svg and "\\exp" not in svg
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_CUSTOM_FONT"):
+        ax._build_chart(*fig._panel_px()).figure().to_svg()
+    html = fig._to_html()
+    assert "font-family" in html
+    assert "darkred" in html
+    assert "cos(2" in html and "exp(" in html
+    assert '"math_italic_ranges":"5:7,13:14"' in html
+
+
+def test_custom_annotation_font_fails_closed_but_browser_retains_it() -> None:
+    fig, ax = plt.subplots()
+    ax.text(0.5, 0.5, "external font", family="serif")
+
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_CUSTOM_FONT"):
+        ax._build_chart(*fig._panel_px()).figure().to_svg()
+    with pytest.raises(UnsupportedStaticExport, match="XYG_STATIC_UNSUPPORTED_CUSTOM_FONT"):
+        fig.savefig(BytesIO(), format="png")
+    assert "serif" in fig._to_html()
 
 
 def test_text_commands_umlauts_render_in_native_png_and_survive_svg() -> None:

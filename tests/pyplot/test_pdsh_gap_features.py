@@ -309,37 +309,30 @@ def test_colorbar_returns_handle_and_set_label_lands():
     assert ax._colorbar["label"] == "counts in bin"
 
 
-def test_colorbar_set_label_renders_rotated_beside_the_bar_in_both_exports(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_colorbar_set_label_renders_rotated_beside_the_bar_in_both_exports():
     """PDSH ch. 4.05 (`hist2d`/`hexbin`/`imshow` + `set_label`) expects
     Matplotlib's rotated label alongside a vertical colorbar. It used to render
     horizontally above the bar, clipped off the top of the native PNG canvas."""
-    from xyg import _raster
-
     plt.subplots()
     plt.hist2d(*np.random.default_rng(0).normal(size=(2, 200)), bins=10)
     plt.colorbar().set_label("counts in bin")
 
     svg = _svg()
-    label = re.search(r'<text x="([\d.]+)" y="([\d.]+)"[^>]*rotate\(-90 [^>]*>counts in bin<', svg)
-    assert label is not None, "vertical colorbar label must be rotated -90 in SVG"
-
-    recorded: list[tuple[float, float, int, str]] = []
-    original_text = _raster._Cmd.text
-
-    def record_text(self, x, y, anchor, size, color, value, *args, **kwargs):
-        recorded.append((float(x), float(y), int(anchor), str(value)))
-        return original_text(self, x, y, anchor, size, color, value, *args, **kwargs)
-
-    monkeypatch.setattr(_raster._Cmd, "text", record_text)
-    _png()
-
-    native_x, native_y, anchor, _text = next(
-        entry for entry in recorded if entry[3] == "counts in bin"
+    label = re.search(
+        r'<text[^>]*data-xy-slot="colorbar_title"[^>]*x="([\d.]+)" y="([\d.]+)"'
+        r"[^>]*rotate\(-90 [^>]*>counts in bin<",
+        svg,
     )
-    assert anchor == 1 | _raster._TEXT_ROT_CCW
-    assert (native_x, native_y) == (float(label.group(1)), float(label.group(2)))
+    assert label is not None, "vertical colorbar label must be rotated -90 in SVG"
+    native_x, native_y = round(float(label.group(1))), round(float(label.group(2)))
+    pixels = np.asarray(plt.imread(io.BytesIO(_png())))
+    assert 0 < native_x < pixels.shape[1] and 0 < native_y < pixels.shape[0]
+    label_pixels = pixels[
+        max(0, native_y - 50) : min(pixels.shape[0], native_y + 50),
+        max(0, native_x - 8) : min(pixels.shape[1], native_x + 8),
+        :3,
+    ]
+    assert np.count_nonzero(np.any(label_pixels < 200, axis=2)) > 50
 
 
 def test_colorbar_ticks_and_extend_reach_both_exports():

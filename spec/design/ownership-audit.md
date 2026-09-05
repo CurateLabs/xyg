@@ -273,7 +273,7 @@ select compatibility before compilation. `python/xyg/_scene_v3.py` is the single
 preflight/orchestration seam for that subset: `public_static_export` owns the
 Scene-format selection and reuses the predicate's compiled batch, while Python
 entry points only retain host options and the documented compatibility
-exceptions. `FacetGrid.to_svg` and `FacetGrid._compose_rgba` reuse that compiled
+exceptions. `FacetGrid.to_svg` and every native facet image format reuse the compiled
 panel Scene. `_svg.py` and
 `_raster.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including
@@ -769,6 +769,10 @@ Forbidden:
 | `crates/xyg-engine/src/scene_trace_compile.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 154 XYTC per-trace compile packing; ABI 221 Scene marker-path admit | — |
 | `crates/xyg-engine/src/scene_trace_rows.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 156 XYCL product-row packing | — |
 | `crates/xyg-engine/src/scene_trace_sidecars.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 157 XYSD trace-sidecar packing | — |
+| `crates/xyg-engine/src/static_document.rs` | Rust safe engine | `rust-engine` | `keep-rust`; versioned bounded XYST decode, composition, compatibility overrides, and SVG/PNG/PDF/JPEG/WebP consumers | — |
+| `crates/xyg-engine/src/static_document_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYSL/XYLO normalized, grid, and facet panel placement plus title reservation | — |
+| `crates/xyg-engine/src/static_legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYLF/XYLR pyplot legend measurement, footprint expansion, sampling, candidate geometry, and scoring | — |
+| `crates/xyg-engine/src/static_panel_chrome.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYPC/XYPO pyplot panel gutters, outside padding, title/colorbar room, and measured-gutter reconciliation | — |
 | `crates/xyg-engine/src/simd.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/static_export_registry.rs` | Rust safe engine | `rust-engine` | `keep-rust`; admitted static-export vocabulary and exhaustive host-pair evidence contract | — |
 | `crates/xyg-engine/src/stats.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -983,6 +987,7 @@ Forbidden:
 | `python/xyg/_scene_bulk_native.py` | Python host | `python-scene-migration` | `keep-host`; ctypes bindings for scene bulk packers (ABI 321-324) | — |
 | `python/xyg/_scene_v3.py` | Python host | `python-host` | `keep-host`; marshal-only `figure_scene` entry delegating to `_scene_marshal.py` + Rust encode | — |
 | `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_static_document.py` | Python static-product adapter | `python-host` | `keep-host`; coerces public Figure/facet/pyplot facts, packs bounded XYST/XYSL/XYPC/XYLF/XYDA/XYDL frames, invokes generated native calls, and translates stable errors; no renderer/layout/scoring/glyph/style-default policy | — |
 | `python/xyg/_svg.py` | Python host | `python-host` | `keep-host`; re-export hub for `_svg_*` static export modules | — |
 | `python/xyg/_svg_figure.py` | Python host | `python-host` | `keep-host`; figure-level SVG export entry points | — |
 | `python/xyg/_svg_render.py` | Python host | `python-host` | `keep-host`; SVG payload rendering (layout + mark assembly) | — |

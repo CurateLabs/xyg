@@ -3,10 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xyg import _textblock
 from xyg import pyplot as plt
 from xyg._svg import _decode_title_geometry, render_svg
-from xyg.pyplot._grid import _figure_label_baseline, _html_figure_labels
+from xyg.pyplot._grid import _html_figure_labels
 from xyg.pyplot._mplfig import Figure
 
 
@@ -79,14 +78,11 @@ def test_figure_supylabel_defaults_to_center_and_honors_alignment_aliases() -> N
     assert fig._resolved_figure_labels()[0]["vertical_align"] == "bottom"
 
 
-def test_figure_label_baseline_and_html_honor_vertical_alignment() -> None:
-    block = _textblock.measure("shared label", 12)
+def test_figure_label_html_honors_vertical_alignment() -> None:
     label = {"text": "shared label", "y": 0.25, "vertical_align": "baseline"}
 
-    assert _figure_label_baseline(200, label, block) == 150
     assert "translate(-50%,-100%)" in _html_figure_labels([label])
     label["vertical_align"] = "top"
-    assert _figure_label_baseline(200, label, block) == 150 + block.ascent
     assert "translate(-50%,0%)" in _html_figure_labels([label])
 
 

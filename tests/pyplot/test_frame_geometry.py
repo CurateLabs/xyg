@@ -345,18 +345,6 @@ def test_subplots_adjust_restores_a_set_position_axes_to_its_grid_cell():
     assert right.get_position(original=True).bounds == pytest.approx((0.5, 0.11, 0.3, 0.77))
 
 
-def test_rgba_composition_preserves_straight_alpha_on_transparent_figures():
-    from xyg.pyplot._grid import _composite_rgba
-
-    destination = np.asarray([[[0, 0, 255, 128]]], dtype=np.uint8)
-    source = np.asarray([[[255, 0, 0, 128]]], dtype=np.uint8)
-
-    _composite_rgba(destination, source)
-
-    # Source-over in straight alpha: A=0.75, RGB=(2/3 red, 1/3 blue).
-    assert destination[0, 0] == pytest.approx((170, 0, 85, 192), abs=1)
-
-
 def test_get_position_follows_subplots_adjust_and_ratios():
     fig, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), width_ratios=[1, 3])
     fig.subplots_adjust(left=0.2, right=0.95, wspace=0.0)

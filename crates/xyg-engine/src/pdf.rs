@@ -378,6 +378,7 @@ fn allowed_attrs(tag: &str) -> &'static [&'static str] {
             "text-anchor",
             "font-size",
             "font-weight",
+            "font-style",
             "fill",
             "fill-opacity",
         ],
@@ -1085,8 +1086,13 @@ impl Converter {
         self.set("d", dash_key, dash_op);
     }
 
-    fn font(&mut self, bold: bool) -> String {
-        let base = if bold { "Helvetica-Bold" } else { "Helvetica" };
+    fn font(&mut self, bold: bool, italic: bool) -> String {
+        let base = match (bold, italic) {
+            (false, false) => "Helvetica",
+            (true, false) => "Helvetica-Bold",
+            (false, true) => "Helvetica-Oblique",
+            (true, true) => "Helvetica-BoldOblique",
+        };
         if let Some((_, name, _)) = self.fonts.iter().find(|(b, _, _)| b == base) {
             return name.clone();
         }
@@ -1662,6 +1668,11 @@ impl Converter {
         check_attrs(el, "text", allowed_attrs("text"))?;
         let font_size = parse_float(el.attr("font-size"), state.font_size, "font-size")?;
         let bold = weight(el.attr("font-weight"), state.font_weight)? >= 600.0;
+        let italic = match el.attr("font-style") {
+            None | Some("normal") => false,
+            Some("italic" | "oblique") => true,
+            Some(raw) => return fail(format!("font-style {raw:?}")),
+        };
         let anchor = el.attr("text-anchor").unwrap_or("start");
         if !matches!(anchor, "start" | "middle" | "end") {
             return fail(format!("text-anchor {anchor:?}"));
@@ -1714,7 +1725,7 @@ impl Converter {
                 el.text.clone(),
             ));
         }
-        let font_name = self.font(bold);
+        let font_name = self.font(bold, italic);
         let theta = angle.to_radians();
         let (cos_t, sin_t) = (theta.cos(), theta.sin());
         for (mut x, mut y, s) in runs {
@@ -2065,7 +2076,10 @@ fn unescape(raw: &str) -> PdfResult<String> {
         if ch == '&' {
             let (decoded, eaten) = decode_entity(&raw[i + 1..])?;
             out.push(decoded);
-            for _ in 0..eaten.saturating_sub(1) {
+            // decode_entity sees the bytes *after* '&'; the iterator has
+            // consumed only '&', so the full ASCII entity (including ';')
+            // still needs to be consumed.
+            for _ in 0..eaten {
                 chars.next();
             }
         } else {
@@ -2291,6 +2305,86 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.contains("unsupported SVG feature"));
+    }
+
+    #[test]
+    fn text_font_style_selects_vector_oblique_and_bold_oblique() {
+        for (style, weight, expected) in [
+            ("normal", "normal", "Helvetica"),
+            ("normal", "bold", "Helvetica-Bold"),
+            ("italic", "normal", "Helvetica-Oblique"),
+            ("italic", "bold", "Helvetica-BoldOblique"),
+            ("oblique", "bold", "Helvetica-BoldOblique"),
+        ] {
+            let svg = format!(
+                "<svg width=\"100\" height=\"50\"><text x=\"50\" y=\"20\" text-anchor=\"middle\" font-style=\"{style}\" font-weight=\"{weight}\">Vector</text></svg>"
+            );
+            let pdf = svg_to_pdf(&svg).unwrap();
+            let font = format!("/BaseFont /{expected} /Encoding /WinAnsiEncoding");
+            assert!(pdf
+                .windows(font.len())
+                .any(|bytes| bytes == font.as_bytes()));
+            assert!(!pdf.windows(15).any(|bytes| bytes == b"/Subtype /Image"));
+        }
+        let mut converter = Converter::new();
+        assert_eq!(converter.font(false, true), converter.font(false, true));
+        assert_ne!(converter.font(false, true), converter.font(true, true));
+        assert_eq!(converter.fonts.len(), 2);
+    }
+
+    #[test]
+    fn xml_entities_preserve_exact_text_without_spurious_semicolons() {
+        assert_eq!(unescape("&amp;&lt;&gt;&quot;&apos;").unwrap(), "&<>\"'");
+        assert_eq!(unescape("a&#65;&#x42;&#X43;b").unwrap(), "aABCb");
+        assert_eq!(unescape("雪&amp;é&#x1f642;!").unwrap(), "雪&é🙂!");
+        assert_eq!(unescape("&amp;;").unwrap(), "&;");
+        assert_eq!(unescape("&amp;lt;").unwrap(), "&lt;");
+        let root = parse_xml(r#"<svg width="100" height="50"><text x="2" y="12" data-xy-label="A &amp; B">Document &lt; &amp; &gt;</text></svg>"#).unwrap();
+        assert_eq!(root.children[0].text, "Document < & >");
+        assert_eq!(root.children[0].attr("data-xy-label"), Some("A & B"));
+        for malformed in ["&amp", "&unknown;", "&#xzz;", "&#1114112;"] {
+            assert!(unescape(malformed).is_err());
+        }
+    }
+
+    #[test]
+    fn mixed_text_faces_preserve_anchors_rotation_and_resource_reuse() {
+        use flate2::read::ZlibDecoder;
+        use std::io::Read;
+        let svg = r#"<svg width="100" height="100">
+<text x="10" y="20" font-size="10">HI</text>
+<text x="10" y="20" font-size="10" font-style="italic" text-anchor="middle">HI</text>
+<text x="10" y="20" font-size="10" font-weight="bold" text-anchor="end">HI</text>
+<text x="10" y="20" font-size="10" font-weight="bold" font-style="italic" text-anchor="middle" transform="rotate(90 10 20)">HI</text>
+<text x="10" y="20" font-size="10" font-weight="bold" font-style="italic">HI</text>
+</svg>"#;
+        let pdf = svg_to_pdf(svg).unwrap();
+        let resources = String::from_utf8_lossy(&pdf);
+        assert_eq!(resources.matches("/Subtype /Type1 ").count(), 4);
+        let start = pdf.windows(7).position(|w| w == b"stream\n").unwrap() + 7;
+        let end = pdf.windows(10).position(|w| w == b"\nendstream").unwrap();
+        let mut content = String::new();
+        ZlibDecoder::new(&pdf[start..end])
+            .read_to_string(&mut content)
+            .unwrap();
+        for matrix in [
+            "1 0 0 -1 10 20 Tm",
+            "1 0 0 -1 5 20 Tm",
+            "1 0 0 -1 0 20 Tm",
+            "0 1 1 0 10 15 Tm",
+        ] {
+            assert!(content.contains(matrix), "{content}");
+        }
+        assert_eq!(content.matches("/F4 10 Tf").count(), 2);
+        assert_eq!(content.matches("(HI) Tj").count(), 5);
+    }
+
+    #[test]
+    fn unsupported_text_font_style_remains_fail_closed() {
+        let err = svg_to_pdf(
+            r#"<svg width="100" height="50"><text x="2" y="12" font-style="oblique 20deg">word</text></svg>"#,
+        ).unwrap_err();
+        assert_eq!(err, "unsupported SVG feature: font-style \"oblique 20deg\"");
     }
 
     #[test]

@@ -110,9 +110,9 @@ pub use scene_xyta_trace_pack::{
 };
 pub mod scene_xyta_trace_observations_materialize;
 pub use scene_xyta_trace_observations_materialize::{
-    scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn,
-    SceneXytaColormapInput, SceneXytaStyleChannelIn, SceneXytaTraceObservationsIn,
-    SceneXytaTraceObservationsOut, SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn, SceneXytaColormapInput,
+    SceneXytaStyleChannelIn, SceneXytaTraceObservationsIn, SceneXytaTraceObservationsOut,
+    SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
 };
 pub mod scene_xyaf_pack;
 pub use scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput, SCENE_XYAF_PACK_MAX_RECORD};
@@ -148,7 +148,8 @@ pub use payload_column_gather_materialize::{
 };
 pub mod payload_channel_materialize;
 pub use payload_channel_materialize::{
-    payload_channel_materialize, PayloadChannelMaterializeOut, PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES,
+    payload_channel_materialize, PayloadChannelMaterializeOut,
+    PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES,
 };
 pub mod payload_trace_emit_materialize;
 pub use payload_trace_emit_materialize::{
@@ -165,7 +166,7 @@ pub use scene_pack_orchestrate::{
     scene_encode_product_attach_plan, scene_figure_support_figure_plan,
     scene_figure_support_trace_dispatch_plan, scene_polar_figure_plan,
     scene_public_export_figure_plan, scene_public_export_trace_dispatch_plan,
-    scene_xycf_figure_plan, scene_xyaf_annotation_dispatch_plan, scene_xycl_figure_plan,
+    scene_xyaf_annotation_dispatch_plan, scene_xycf_figure_plan, scene_xycl_figure_plan,
     scene_xynm_figure_plan, scene_xyta_figure_plan, scene_xyta_trace_dispatch_plan,
     scene_xytc_figure_plan, scene_xytc_trace_dispatch_plan, EncodeProductAttachPlan,
     FigureSupportTraceDispatchPlan, PolarFigurePlan, PublicExportFigurePlan,
@@ -206,6 +207,16 @@ pub mod scene_static;
 pub use scene_static::{
     flatten_rgba_over_white, scene_static_export, SceneStaticExportError, SceneStaticFormat,
 };
+#[cfg(feature = "raster")]
+pub mod static_document;
+#[cfg(feature = "raster")]
+pub use static_document::{static_document_export, StaticDocument, StaticDocumentError};
+pub mod static_document_labels;
+pub mod static_annotation_style;
+pub mod static_document_layout;
+pub mod static_document_legend;
+pub mod static_legend_fit;
+pub mod static_panel_chrome;
 pub mod stats;
 pub mod stream;
 pub mod svg;

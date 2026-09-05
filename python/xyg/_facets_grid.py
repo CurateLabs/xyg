@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Sequence
 from os import PathLike
 from pathlib import Path
 from typing import Any, Optional
 
-import numpy as np
-
 from . import export
-from ._png import encode as encode_png
-from ._png import png_truecolor
-from ._raster import render_raster
 
 
 class FacetGrid:
@@ -129,118 +125,70 @@ for(const p of panels){{
         *,
         background: Optional[str] = None,
     ) -> str:
-        """Compose panel SVGs into one nested-SVG document."""
-        from . import _svg
+        """Compose every admitted panel through Rust StaticDocument."""
+        from . import _native
 
-        # Per-panel id prefixes keep clipPath/gradient ids unique in the
-        # composed document; each panel's title is its facet label, and the
-        # grid title is drawn exactly once below. The export background flows
-        # into every panel too, so panel theme paints cannot bury the grid
-        # backdrop (each panel then paints backdrop-colored/transparent).
-        panel_svgs = []
-        for i, fig in enumerate(self.figures):
-            # A facet's public vector output is still a public static-export
-            # journey.  Route an independently supported panel through its
-            # canonical Scene consumer rather than bypassing it merely because
-            # the outer grid owns placement.  The current Scene SVG has one
-            # stable clip id; namespace just that closed vocabulary before
-            # nesting so sibling panels cannot cross-clip.  Background
-            # overrides remain on the documented compatibility path: the
-            # Scene public subset has not yet modeled that whole-grid contract.
-            if background is None:
-                from . import _native, _scene_v3
-
-                reason, scene = _scene_v3._public_scene_or_reason(fig)
-                if reason is None and scene is not None:
-                    svg = _native.scene_svg(scene)
-                    # Scene SVG owns a closed id vocabulary (`xy-scene-plot`
-                    # clips plus `xy-scene-gN` linearGradient ids). Prefix the
-                    # whole vocabulary so sibling panels cannot cross-clip or
-                    # share gradient paints.
-                    svg = svg.replace('id="xy-scene-', f'id="xy{i}-xy-scene-')
-                    svg = svg.replace("url(#xy-scene-", f"url(#xy{i}-xy-scene-")
-                    if 'id="xy-scene-' in svg or "url(#xy-scene-" in svg:
-                        raise RuntimeError("unexpected un-namespaced Scene SVG id")
-                    panel_svgs.append(svg)
-                    continue
-            panel_svgs.append(_svg.to_svg(fig, id_prefix=f"xy{i}-", background=background))
-        total_h = self.grid_height + self._title_height
-        body: list[str] = []
-        for i, svg in enumerate(panel_svgs):
-            row, col = divmod(i, self.cols)
-            x = col * (self.panel_width + self.gap)
-            y = row * (self.panel_height + self.gap) + self._title_height
-            inner = svg[svg.find(">") + 1 : svg.rfind("</svg>")]
-            body.append(
-                f'<svg x="{x}" y="{y}" width="{self.panel_width}" height="{self.panel_height}" '
-                f'viewBox="0 0 {self.panel_width} {self.panel_height}">{inner}</svg>'
-            )
-        backdrop = (
-            f'<rect width="{self.width}" height="{total_h}" fill="{export._html.escape(background)}"/>'
-            if background and background not in ("transparent", "none")
-            else ""
-        )
-        title = (
-            f'<text x="{self.width / 2:g}" y="16" text-anchor="middle" font-size="14">{export._html.escape(self.title)}</text>'
-            if self.title
-            else ""
-        )
-        doc = f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.width}" height="{total_h}" viewBox="0 0 {self.width} {total_h}">{backdrop}{title}{"".join(body)}</svg>'
+        doc = _native.static_document_export(
+            self._static_document(background=background),
+            "svg",
+        ).decode("utf-8")
         if path is not None:
             export._atomic_write_text(path, doc)
         return doc
 
-    def _compose_rgba(self, scale: float, background: Optional[str] = None) -> np.ndarray:
-        """Native panel renders composed into one grid RGBA canvas.
+    def _static_document(
+        self,
+        *,
+        background: Optional[str] = None,
+        optimize_png: bool = False,
+    ) -> bytes:
+        """Marshal facet placement; Rust owns validation and composition."""
+        from . import _scene_v3, _static_document
 
-        The shared pixel source for the raster formats. No grid title strip:
-        the native rasterizer has no free-standing text path, so the composed
-        canvas is exactly panels + gaps. Independently supported panels with
-        no export-background override reuse the compiled public Scene raster
-        display list; background overrides and unsupported panels stay on the
-        compatibility payload path. Scene consumer errors never fall back.
-        """
-        from . import _raster
-
-        if scale <= 0 or not np.isfinite(scale):
-            raise ValueError("facet export scale must be finite and positive")
-        panel_images: list[np.ndarray] = []
-        for fig in self.figures:
-            # A facet's public raster output is still a public static-export
-            # journey. Route an independently supported panel through its
-            # canonical Scene consumer rather than bypassing it merely because
-            # the outer grid owns placement. Background overrides remain on
-            # the documented compatibility path: the Scene public subset has
-            # not yet modeled that whole-grid contract.
-            if background is None:
-                from . import _native, _scene_v3
-
-                reason, scene = _scene_v3._public_scene_or_reason(fig)
-                if reason is None and scene is not None:
-                    commands = _native.scene_raster_commands(scene, scale)
-                    width_px = max(1, int(round(int(fig.width) * float(scale))))
-                    height_px = max(1, int(round(int(fig.height) * float(scale))))
-                    panel_images.append(_native.rasterize(commands, width_px, height_px))
-                    continue
-            spec, blob, borrowed = _raster._export_payload(fig, None, None, background)
-            image = render_raster(spec, blob, scale=scale, borrowed=borrowed)
-            if isinstance(image, bytes):
-                raise RuntimeError("facet rasterizer unexpectedly returned encoded PNG bytes")
-            panel_images.append(image)
-        panel_h, panel_w = panel_images[0].shape[:2]
-        width = int(round(self.width * scale))
-        height = int(round(self.grid_height * scale))
-        gap_fill = (255, 255, 255, 255) if background is None else _raster._parse_color(background)
-        canvas = np.empty((height, width, 4), dtype=np.uint8)
-        canvas[:] = np.asarray(gap_fill, dtype=np.uint8)
-        for i, image in enumerate(panel_images):
-            row, col = divmod(i, self.cols)
-            x = int(round(col * (self.panel_width + self.gap) * scale))
-            y = int(round(row * (self.panel_height + self.gap) * scale))
-            h, w = min(panel_h, height - y), min(panel_w, width - x)
-            if h > 0 and w > 0:
-                canvas[y : y + h, x : x + w] = image[:h, :w]
-        return canvas
+        layout = _static_document.resolve_facet_layout(
+            len(self.figures),
+            columns=self.cols,
+            width=self.width,
+            panel_height=self.height,
+            gap=self.gap,
+            title=self.title,
+        )
+        panels = []
+        for index, (figure, offset, panel_size) in enumerate(
+            zip(self.figures, layout.offsets, layout.panel_sizes, strict=True)
+        ):
+            panel_width, panel_height = panel_size
+            projected = copy.deepcopy(figure)
+            if not getattr(projected, "show_legend", False):
+                projected.legend_options = {}
+            reason, scene = _scene_v3._public_scene_or_reason(
+                projected,
+                width=panel_width,
+                height=panel_height,
+            )
+            if reason is not None or scene is None:
+                raise _static_document.UnsupportedStaticExport(
+                    f"facet panel {index}: {reason or 'XYG_STATIC_UNSUPPORTED_PANEL'}"
+                )
+            panels.append(
+                _static_document.Panel(
+                    scene,
+                    offset[0],
+                    offset[1],
+                    panel_width,
+                    panel_height,
+                )
+            )
+        return _static_document.encode(
+            panels,
+            width=layout.width,
+            height=layout.height,
+            background=background,
+            title=self.title,
+            title_x=layout.title_x,
+            title_y=layout.title_baseline,
+            optimize_png=optimize_png,
+        )
 
     def to_png(
         self,
@@ -274,18 +222,12 @@ for(const p of panels){{
         elif resolved_engine == "native":
             if custom_css is not None:
                 raise ValueError("custom_css requires engine=Engine.chromium")
-            canvas = self._compose_rgba(scale)
-            data = (
-                encode_png(canvas)
-                if optimize
-                # The encoder borrows the frame buffer; `tobytes` would add a
-                # whole extra canvas to peak RSS at every export scale.
-                else png_truecolor(
-                    canvas.shape[1],
-                    canvas.shape[0],
-                    np.ascontiguousarray(canvas),
-                    compression_level=1,
-                )
+            from . import _native
+
+            data = _native.static_document_export(
+                self._static_document(optimize_png=optimize),
+                "png",
+                scale=scale,
             )
         else:  # `_png_engine` returns only these two internal values.
             raise AssertionError(f"unreachable PNG engine {resolved_engine!r}")
@@ -324,30 +266,17 @@ for(const p of panels){{
         sandbox = export._bool_option(sandbox, "export sandbox")
         gl = export._gl_option(gl)
         if resolved_engine == "native":
-            if fmt == "svg":
-                return self.to_svg(background=background).encode("utf-8")
-            if fmt == "pdf":
-                from . import _pdf
-
-                return _pdf.svg_to_pdf(self.to_svg(background=background))
-            if fmt == "png":
-                if background is None:
-                    return self.to_png(scale=scale, optimize=optimize)
-                canvas = self._compose_rgba(scale, background)
-                if optimize:
-                    return encode_png(canvas)
-                return png_truecolor(
-                    canvas.shape[1],
-                    canvas.shape[0],
-                    np.ascontiguousarray(canvas),
-                    compression_level=1,
-                )
-            canvas = self._compose_rgba(scale, background)
             from . import _native
 
-            if fmt == "jpeg":
-                return _native.encode_jpeg(export._flatten_alpha(canvas), quality=quality or 90)
-            return _native.encode_webp(canvas)
+            return _native.static_document_export(
+                self._static_document(
+                    background=background,
+                    optimize_png=optimize and fmt == "png",
+                ),
+                fmt,
+                scale=scale,
+                quality=quality or 90,
+            )
         # The background override must actually reach the captured document,
         # exactly as in the single-chart browser path — the CDP transparency
         # flag below only clears Chromium's default white page backdrop.

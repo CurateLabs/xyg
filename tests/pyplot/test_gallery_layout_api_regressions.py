@@ -10,7 +10,6 @@ import pytest
 
 import xyg.pyplot as plt
 from xyg import _textblock
-from xyg.pyplot._grid import _composite_rgba
 from xyg.pyplot._mplfig import _measured_axis_chrome
 
 
@@ -379,19 +378,3 @@ def test_subplot_mosaic_png_contains_only_materialized_spanning_axes() -> None:
     threshold = 0.65 if np.issubdtype(pixels.dtype, np.floating) else 0.65 * 255
     spine = np.all(pixels[max(0, y - 1) : y + 2, x0:x1, :3] < threshold, axis=2)
     assert spine.sum(axis=1).max() > 0.9 * (x1 - x0)
-
-
-def test_rgba_compositor_preserves_transparent_chrome() -> None:
-    destination = np.array(
-        [[[255, 255, 255, 255], [0, 0, 255, 255]]],
-        dtype=np.uint8,
-    )
-    source = np.array(
-        [[[0, 0, 0, 0], [255, 0, 0, 128]]],
-        dtype=np.uint8,
-    )
-
-    _composite_rgba(destination, source)
-
-    np.testing.assert_array_equal(destination[0, 0], [255, 255, 255, 255])
-    np.testing.assert_array_equal(destination[0, 1], [128, 0, 127, 255])

@@ -98,21 +98,36 @@ def pack_chrome_facts(
     colorbar = getattr(figure, "colorbar_options", None) if colorbar_ok else None
     colorbar_payload = None
     if colorbar:
-        domain = colorbar.get("domain")
-        stops = colorbar.get("stops") or []
-        side = colorbar.get("side", "right")
+        from xyg._scene_annotations import colorbar_input
+
+        packed = colorbar_input(figure)
+        flags = packed[8]
+        stop_count = int.from_bytes(packed[12:16], "little")
+        tick_count = int.from_bytes(packed[16:20], "little")
+        title_len = int.from_bytes(packed[20:24], "little")
+        domain_lo, domain_hi = struct.unpack_from("<2d", packed, 24)
+        stops_at = 56
+        ticks_at = stops_at + stop_count * 12
+        title_at = ticks_at + tick_count * 8
+        stops = [
+            (
+                struct.unpack_from("<d", packed, stops_at + index * 12)[0],
+                packed[stops_at + index * 12 + 8 : stops_at + index * 12 + 12],
+            )
+            for index in range(stop_count)
+        ]
         colorbar_payload = {
-            "domain_lo": float(domain[0]),
-            "domain_hi": float(domain[1]),
-            "stops": [(float(s[0]), bytes(s[1])) for s in stops],
-            "side_bottom": side == "bottom",
-            "invalid_side": side not in {"right", "bottom"},
-            "minor_ticks": bool(colorbar.get("minor_ticks")),
-            "title": _optional_str(colorbar.get("title")),
-            "text_rgba": bytes(colorbar.get("text_rgba", (32, 32, 32, 255))),
-            "ticks": None
-            if colorbar.get("ticks") is None
-            else [float(v) for v in colorbar["ticks"]],
+            "domain_lo": domain_lo,
+            "domain_hi": domain_hi,
+            "stops": stops,
+            "side_bottom": bool(flags & 1),
+            "invalid_side": False,
+            "minor_ticks": bool(flags & 4),
+            "title": _optional_str(packed[title_at : title_at + title_len].decode("utf-8")),
+            "text_rgba": bytes(packed[40:44]),
+            "ticks": list(struct.unpack_from(f"<{tick_count}d", packed, ticks_at))
+            if tick_count
+            else None,
         }
 
     def marshal_axis_style(style: dict[str, Any]) -> dict[str, Any]:

@@ -22,77 +22,9 @@ modules); everything else goes through `xy`' public surface.
 
 from __future__ import annotations
 
+import copy
 import html as _html
 from typing import Any, Optional
-
-import numpy as np
-
-from .. import _textblock
-
-
-def _svg_text_lines(text: object, x: float, line_step: float) -> str:
-    lines = []
-    for index, line in enumerate(_textblock.split_lines(text)):
-        dy = f' dy="{line_step:g}"' if index else ""
-        lines.append(f'<tspan x="{x:g}"{dy}>{_html.escape(line)}</tspan>')
-    return "".join(lines)
-
-
-def _suptitle_baseline(
-    canvas_height: float,
-    title_band_height: float,
-    style: dict[str, Any],
-    block: Optional[_textblock.TextBlock],
-    size: float,
-) -> float:
-    """First baseline at the authored figure fraction, contained by its band."""
-    ascent = block.ascent if block is not None else 0.75 * size
-    descent = block.descent if block is not None else 0.25 * size
-    trailing = (block.line_count - 1) * block.line_step if block is not None else 0.0
-    desired = (1.0 - float(style.get("y", 0.98))) * canvas_height + ascent
-    # The reserved band owns the complete text block, not only its first
-    # baseline. Clamp both the leading ascent and final descender inside it.
-    maximum = max(ascent, title_band_height - trailing - descent - 2.0)
-    return min(max(ascent, desired), maximum)
-
-
-def _figure_label_baseline(
-    canvas_height: float,
-    label: dict[str, Any],
-    block: _textblock.TextBlock,
-) -> float:
-    desired = (1.0 - float(label.get("y", 0.5))) * canvas_height
-    trailing = (block.line_count - 1) * block.line_step
-    alignment = str(label.get("vertical_align", "center"))
-    if alignment == "top":
-        return desired + block.ascent
-    if alignment == "baseline":
-        return desired
-    if alignment == "bottom":
-        return desired - trailing - block.descent
-    return desired + (block.ascent - trailing - block.descent) / 2.0
-
-
-def _svg_figure_labels(labels: list[dict[str, Any]], width: float, height: float) -> str:
-    body = []
-    for label in labels:
-        size = float(label.get("size", 12.0))
-        block = _textblock.measure(label.get("text", ""), size)
-        x = width * float(label.get("x", 0.5))
-        y = _figure_label_baseline(height, label, block)
-        anchor = str(label.get("anchor", "middle"))
-        angle = -float(label.get("rotation", 0.0))
-        transform = f' transform="rotate({angle:g} {x:g} {y:g})"' if angle else ""
-        body.append(
-            f'<text x="{x:g}" y="{y:g}" text-anchor="{_html.escape(anchor)}"'
-            f'{transform} font-family="{_html.escape(str(label.get("family", "system-ui,sans-serif")))}"'
-            f' font-size="{size:g}" font-style="{_html.escape(str(label.get("font_style", "normal")))}"'
-            f' font-weight="{_html.escape(str(label.get("weight", "normal")))}"'
-            f' fill="{_html.escape(str(label.get("color", "#262626")))}"'
-            f' fill-opacity="{float(label.get("opacity", 1.0)):g}">'
-            f"{_svg_text_lines(label.get('text', ''), x, block.line_step)}</text>"
-        )
-    return "".join(body)
 
 
 def _html_figure_labels(labels: list[dict[str, Any]]) -> str:
@@ -184,72 +116,6 @@ def _html_figure_legend(legend: Optional[dict[str, Any]]) -> str:
         f"border-color:{_html.escape(str(options.get('borderColor', '#cccccc')))}'>"
         f"{title_html}{''.join(rows)}</div>"
     )
-
-
-def _composite_rgba(destination: np.ndarray, source: np.ndarray) -> None:
-    """Composite a straight-alpha RGBA tile over ``destination`` in place.
-
-    Matplotlib draws every axes onto one canvas, so a panel's chrome may hang
-    over a neighbour's without erasing it. Alpha compositing is the equivalent
-    for panel-per-render composition; an opaque paste is not.
-    """
-    source_alpha = source[:, :, 3]
-    opaque = source_alpha == 255
-    destination[opaque] = source[opaque]
-    partial = (source_alpha != 0) & ~opaque
-    if not np.any(partial):
-        return
-    src = source[partial].astype(np.float32)
-    dst = destination[partial].astype(np.float32)
-    src_alpha_f = src[:, 3:4] / 255.0
-    dst_alpha_f = dst[:, 3:4] / 255.0
-    out_alpha = src_alpha_f + dst_alpha_f * (1.0 - src_alpha_f)
-    out_rgb = np.divide(
-        src[:, :3] * src_alpha_f + dst[:, :3] * dst_alpha_f * (1.0 - src_alpha_f),
-        out_alpha,
-        out=np.zeros_like(src[:, :3]),
-        where=out_alpha != 0,
-    )
-    destination[partial, :3] = np.rint(out_rgb).astype(np.uint8)
-    destination[partial, 3] = np.rint(out_alpha[:, 0] * 255.0).astype(np.uint8)
-
-
-def _compose_canvas(
-    tiles: list[np.ndarray],
-    positions: list[tuple[float, float, float, float]],
-    canvas_size: tuple[int, int],
-    facecolor: str,
-    scale: float,
-) -> np.ndarray:
-    """Alpha-composite absolutely placed panel tiles onto one RGBA figure canvas.
-
-    `positions` are whole-panel [left, bottom, width, height] figure fractions,
-    bottom-origin like matplotlib; document order stacks later axes above
-    earlier ones, as matplotlib draws.
-    """
-    from xyg import _raster
-
-    background = np.asarray(_raster._parse_color(facecolor), dtype=np.uint8)
-    canvas = np.empty(
-        (round(canvas_size[1] * scale), round(canvas_size[0] * scale), 4), dtype=np.uint8
-    )
-    canvas[...] = background
-    for tile, (left, bottom, _width, height) in zip(tiles, positions, strict=True):
-        x = round(left * canvas.shape[1])
-        y = round((1.0 - bottom - height) * canvas.shape[0])
-        dest_x0, dest_y0 = max(0, x), max(0, y)
-        src_x0, src_y0 = max(0, -x), max(0, -y)
-        dest_x1 = min(canvas.shape[1], x + tile.shape[1])
-        dest_y1 = min(canvas.shape[0], y + tile.shape[0])
-        if dest_x1 > dest_x0 and dest_y1 > dest_y0:
-            _composite_rgba(
-                canvas[dest_y0:dest_y1, dest_x0:dest_x1],
-                tile[
-                    src_y0 : src_y0 + dest_y1 - dest_y0,
-                    src_x0 : src_x0 + dest_x1 - dest_x0,
-                ],
-            )
-    return canvas
 
 
 def compose_html(
@@ -387,102 +253,393 @@ def compose_svg(
     figure_legend: Optional[dict[str, Any]] = None,
     positions: Optional[list[tuple[float, float, float, float]]] = None,
     canvas_size: Optional[tuple[int, int]] = None,
+    facecolor: Optional[str] = None,
 ) -> str:
-    """Compose subplot SVGs with isolated ids into one portable SVG document.
+    """Compose subplot Scenes through the Rust StaticDocument kernel."""
+    from xyg import _native
 
-    Panels tile a uniform grid by default; with ``positions`` (whole-panel
-    figure fractions, bottom-origin) and ``canvas_size`` px they are placed
-    absolutely on a fixed canvas — the add_axes/subplots_adjust layout path.
-    """
-    from xyg import _svg
+    document = _pyplot_static_document(
+        charts,
+        nrows,
+        ncols,
+        suptitle,
+        suptitle_style,
+        figure_labels=figure_labels,
+        figure_legend=figure_legend,
+        positions=positions,
+        canvas_size=canvas_size,
+        facecolor=facecolor,
+    )
+    return _native.static_document_export(document, "svg").decode("utf-8")
 
-    figures = [chart.figure() for chart in charts]
+
+def _pyplot_static_document(
+    charts: list[Any],
+    nrows: int,
+    ncols: int,
+    suptitle: Optional[str],
+    suptitle_style: Optional[dict[str, Any]] = None,
+    *,
+    figure_labels: Optional[list[dict[str, Any]]] = None,
+    figure_legend: Optional[dict[str, Any]] = None,
+    positions: Optional[list[tuple[float, float, float, float]]] = None,
+    canvas_size: Optional[tuple[int, int]] = None,
+    facecolor: Optional[str] = None,
+    optimize_png: bool = False,
+    tight_crop: bool = False,
+    crop_padding: int = 0,
+    colorbar: Optional[dict[str, Any]] = None,
+) -> bytes:
+    """Marshal pyplot panels; Rust owns document rendering and composition."""
+    from xyg import _scene_v3, _static_document
+
+    figures = [_pyplot_scene_figure(chart.figure()) for chart in charts]
     if not figures:
         raise ValueError("figure has no axes to save")
-    if positions is not None and canvas_size is not None:
-        title_h = 0
-        offsets = [
-            (
-                round(position[0] * canvas_size[0]),
-                round((1.0 - position[1] - position[3]) * canvas_size[1]),
-            )
-            for position in positions
-        ]
-        total_size: tuple[int, int] = (int(canvas_size[0]), int(canvas_size[1]))
-    else:
-        col_widths = [
-            max(int(figures[index].width) for index in range(col, len(figures), ncols))
-            for col in range(ncols)
-        ]
-        row_heights = [
-            max(
-                int(figures[index].height)
-                for index in range(row * ncols, min((row + 1) * ncols, len(figures)))
-            )
-            for row in range(nrows)
-        ]
-        style = suptitle_style or {}
-        size = float(style.get("size", 16))
-        title_h = round(_textblock.measure(suptitle, size).height + 12) if suptitle else 0
-        offsets = []
-        for index in range(len(figures)):
-            row, col = divmod(index, ncols)
-            offsets.append((sum(col_widths[:col]), title_h + sum(row_heights[:row])))
-        total_size = (sum(col_widths), title_h + sum(row_heights))
-    body: list[str] = []
-    for index, figure in enumerate(figures):
-        svg = _svg.to_svg(figure, id_prefix=f"xy-panel-{index}-")
-        inner = svg[svg.find(">") + 1 : svg.rfind("</svg>")]
-        body.append(
-            f'<svg x="{offsets[index][0]}" y="{offsets[index][1]}" '
-            f'width="{int(figure.width)}" height="{int(figure.height)}" '
-            f'viewBox="0 0 {int(figure.width)} {int(figure.height)}">{inner}</svg>'
-        )
     style = suptitle_style or {}
-    anchor = {"left": "start", "center": "middle", "right": "end"}.get(
-        str(style.get("ha", "center")), "middle"
-    )
-    width, height = total_size
     size = float(style.get("size", 16))
-    block = _textblock.measure(suptitle, size) if suptitle else None
-    # y is a figure fraction measured from the bottom, like matplotlib. Grid
-    # composition reserves ``title_h``; absolute composition overlays the full
-    # canvas and therefore uses that as the available title band.
-    baseline = _suptitle_baseline(
-        height,
-        float(title_h or height),
-        style,
-        block,
-        size,
+    layout = _static_document.resolve_layout(
+        [(int(figure.width), int(figure.height)) for figure in figures],
+        nrows=nrows,
+        ncols=ncols,
+        title=suptitle,
+        title_size=size,
+        title_x_fraction=float(style.get("x", 0.5)),
+        title_y_fraction=float(style.get("y", 0.98)),
+        positions=positions,
+        canvas_size=canvas_size,
+        shared_colorbar=colorbar is not None,
     )
-    if suptitle:
-        assert block is not None
-        title = (
-            f'<text x="{width * float(style.get("x", 0.5)):g}" y="{baseline:g}" text-anchor="{anchor}" '
-            f'font-family="{_html.escape(str(style.get("family", "system-ui,sans-serif")))}" font-size="{size:g}" font-weight="{_html.escape(str(style.get("weight", "normal")))}" fill="{_html.escape(str(style.get("color", "#262626")))}">'
-            f"{_svg_text_lines(suptitle, width * float(style.get('x', 0.5)), block.line_step)}</text>"
+    offsets = layout.offsets
+    total_size = (layout.width, layout.height)
+    panels = []
+    for index, (figure, offset) in enumerate(zip(figures, offsets, strict=True)):
+        width, height = int(figure.width), int(figure.height)
+        reason, scene = _scene_v3._public_scene_or_reason(figure, width=width, height=height)
+        if reason is not None or scene is None:
+            raise _static_document.UnsupportedStaticExport(
+                f"pyplot panel {index}: {reason or 'XYG_STATIC_UNSUPPORTED_PANEL'}"
+            )
+        panels.append(
+            _static_document.Panel(
+                scene,
+                offset[0],
+                offset[1],
+                width,
+                height,
+                figure._static_document_chrome_metrics,
+                figure._static_document_colorbar_layout,
+                figure._static_document_annotation_font_size,
+                figure._static_document_arrow_metrics,
+                figure._static_document_axis_sides,
+                figure._static_document_annotation_text_flags,
+                figure._static_document_annotation_padding,
+                figure._static_document_title_style,
+                figure._static_document_annotation_vertical_align,
+                figure._static_document_colorbar_scale,
+                figure._static_document_colorbar_extend,
+                figure._static_document_colorbar_pyplot_label,
+                figure._static_document_colorbar_fill_plot,
+            )
         )
-    else:
-        title = ""
-    labels = _svg_figure_labels(figure_labels or [], width, height)
-    legend = ""
-    if figure_legend and figure_legend.get("items"):
-        loc = (
-            "upper right"
-            if figure_legend.get("figure_loc") == "outside right upper"
-            else figure_legend.get("loc", "upper right")
-        )
-        options = {**figure_legend, "loc": loc}
-        legend = _svg._legend(
-            list(figure_legend["items"]),
-            {"x": 0.0, "y": 0.0, "w": float(width), "h": float(height)},
-            options,
-            "xy-figure-legend",
-        )
-    return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
-        f'viewBox="0 0 {width} {height}">{title}{"".join(body)}{labels}{legend}</svg>'
+    panel_legends = [
+        figure._static_document_panel_legend
+        for figure in figures
+        if figure._static_document_panel_legend is not None
+    ]
+    if panel_legends:
+        if len(figures) != 1 or len(panel_legends) != 1 or figure_legend is not None:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS"
+            )
+        figure_legend = panel_legends[0]
+    anchor = {"left": 0, "center": 1, "right": 2}.get(str(style.get("ha", "center")), 1)
+    family = str(style.get("family", "system-ui,sans-serif")).lower().replace(" ", "")
+    if suptitle and family not in {"system-ui,sans-serif", "dejavusans", "sans-serif"}:
+        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_TITLE_STYLE")
+    font_style = str(style.get("font_style", "normal")).lower()
+    weight = str(style.get("weight", "normal")).lower()
+    bold_weights = {"bold", "semibold", "demibold", "heavy", "black", "600", "700", "800", "900"}
+    if suptitle and (
+        font_style not in {"normal", "italic", "oblique"}
+        or weight not in {"normal", "regular", "book", "400"} | bold_weights
+    ):
+        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_TITLE_STYLE")
+    title_flags = (1 if font_style != "normal" else 0) | (2 if weight in bold_weights else 0)
+    return _static_document.encode(
+        panels,
+        width=total_size[0],
+        height=total_size[1],
+        background=facecolor,
+        title=suptitle,
+        title_color=str(style.get("color", "#262626")),
+        title_size=size,
+        title_x=layout.title_x,
+        title_y=layout.title_baseline,
+        title_anchor=anchor,
+        title_flags=title_flags,
+        optimize_png=optimize_png,
+        labels=figure_labels,
+        tight_crop=tight_crop,
+        crop_padding=crop_padding,
+        colorbar=None if colorbar is None else str(colorbar.get("colormap", "viridis")),
+        legend=figure_legend,
     )
+
+
+def _pyplot_scene_figure(figure: Any) -> Any:
+    """Translate pyplot's fixed CSS theme into literal Scene chrome facts.
+
+    This is API coercion, not a renderer: output geometry/ticks/paint remain
+    owned by the same Rust Scene compiler used by Node.
+    """
+    from xyg import _native, _static_document
+
+    projected = copy.copy(figure)
+    projected.traces = []
+    for trace in figure.traces:
+        cloned = copy.copy(trace)
+        cloned.style = {
+            key: value
+            for key, value in (trace.style or {}).items()
+            if not str(key).startswith("_legend_")
+        }
+        if (
+            trace.kind == "heatmap"
+            and trace.grid is not None
+            and trace.grid_shape is not None
+            and not _native.scene_finite_all(trace.grid.values)
+        ):
+            rows, cols = trace.grid_shape
+            stops = _native.colormap_stops(str(cloned.style.get("colormap", "viridis")))
+            domain = tuple(float(value) for value in cloned.style.get("domain", (0.0, 1.0)))
+            alpha = round(255.0 * float(cloned.style.get("opacity", 1.0)))
+            rgba = _native.colormap_rgba_canonical(
+                trace.grid.values,
+                cols,
+                rows,
+                domain,
+                stops,
+                alpha,
+            )
+            planes = tuple(
+                projected.store.ingest(rgba[..., channel].reshape(-1).astype("float64") / 255.0)
+                for channel in range(4)
+            )
+            cloned.grid = planes[0]
+            cloned.rgba_grid = planes
+            cloned.style.pop("colormap", None)
+            cloned.style["truecolor"] = True
+        projected.traces.append(cloned)
+    projected.axis_options = copy.deepcopy(figure.axis_options)
+    projected._axis_categories = copy.deepcopy(figure._axis_categories)
+
+    resolved_annotations = _static_document.resolve_annotation_styles(figure.annotations)
+    projected.annotations = resolved_annotations.annotations
+    arrow_metrics = set()
+    for annotation in projected.annotations:
+        annotation_style = annotation.get("style") or {}
+        if annotation.get("kind") == "arrow" and any(
+            key in annotation_style for key in ("head_size", "shaft_width_start", "shaft_width_end")
+        ):
+            head = float(annotation_style.pop("head_size", 8.0))
+            start = float(
+                annotation_style.pop("shaft_width_start", annotation_style.get("width", 1.5))
+            )
+            end = float(annotation_style.pop("shaft_width_end", start))
+            if start != end:
+                raise _static_document.UnsupportedStaticExport(
+                    "XYG_STATIC_UNSUPPORTED_TAPERED_ANNOTATION_ARROW"
+                )
+            annotation_style["width"] = start
+            arrow_metrics.add((head, start, end))
+    if len(arrow_metrics) > 1:
+        raise _static_document.UnsupportedStaticExport(
+            "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ARROW_METRICS"
+        )
+    metrics: dict[str, tuple[float, float, float]] = {}
+    root = dict(getattr(figure, "style", None) or {})
+    if getattr(figure, "_pyplot_static_mathtext", False):
+        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE")
+    allowed_root = {
+        "background",
+        "--chart-bg",
+        "--chart-grid",
+        "--chart-axis",
+        "--chart-text",
+        "font-family",
+        "font-size",
+    }
+    if set(root) - allowed_root:
+        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_BROWSER_CSS")
+    family = str(root.get("font-family", "DejaVu Sans, sans-serif")).lower().replace(" ", "")
+    if family not in {"dejavusans,sans-serif", "system-ui,sans-serif", "sans-serif"}:
+        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
+    title_style = dict((getattr(figure, "chrome_styles", None) or {}).get("title") or {})
+    for slot, chrome_style in (getattr(figure, "chrome_styles", None) or {}).items():
+        allowed = (
+            {
+                "fontSize",
+                "background",
+                "borderColor",
+                "borderStyle",
+                "borderWidth",
+                "--xy-legend-frame-alpha",
+                "padding",
+                "rowGap",
+            }
+            if slot == "legend"
+            else {"font-size", "color", "font-weight", "font-family"}
+            if slot in {"title", "axis_title", "tick_label"}
+            else set()
+        )
+        if not allowed or set(chrome_style) - allowed:
+            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CHROME_STYLE")
+        if slot == "legend":
+            continue
+        chrome_family = str(chrome_style.get("font-family", "DejaVu Sans")).lower()
+        if chrome_family not in {"dejavu sans", "dejavusans", "sans-serif"}:
+            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
+    grid = root.get("--chart-grid")
+    axis = root.get("--chart-axis")
+    text = root.get("--chart-text")
+    for axis_id, options in projected.axis_options.items():
+        style = dict(options.get("style") or {})
+        minor = dict(options.get("minor_style") or {})
+        if axis_id in {"x", "y"}:
+            metrics[axis_id] = (
+                float(style.pop("tick_label_size", style.pop("tick_size", 12.0))),
+                float(style.pop("label_size", 12.0)),
+                float(style.pop("tick_padding", 4.0)),
+            )
+        for key in ("tick_label_size", "tick_size", "label_size", "tick_padding"):
+            minor.pop(key, None)
+        if grid is not None:
+            style["grid_color"] = grid
+            minor["grid_color"] = grid
+        if axis is not None:
+            style["axis_color"] = axis
+            style["tick_color"] = axis
+            minor["tick_color"] = axis
+        if text is not None:
+            style.setdefault("label_color", text)
+            style.setdefault("tick_label_color", text)
+        if style:
+            options["style"] = style
+        else:
+            options.pop("style", None)
+        if minor:
+            options["minor_style"] = minor
+        else:
+            options.pop("minor_style", None)
+        categories = projected._axis_categories.pop(axis_id, None)
+        if categories is not None and options.get("tick_labels") is None:
+            options["tick_labels"] = [str(value) for value in categories]
+        if options.get("domain") is None:
+            options["domain"] = tuple(float(value) for value in figure._range(axis_id))
+    projected.style = {
+        key: value for key, value in root.items() if key in {"background", "--chart-bg"}
+    }
+    projected.chrome_styles = {}
+    projected._static_document_title_style = None
+    if getattr(figure, "title", None):
+        raw_size = str(title_style.get("font-size", "14px"))
+        if not raw_size.endswith("px"):
+            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_TITLE_STYLE")
+        projected._static_document_title_style = (
+            float(raw_size[:-2]),
+            str(title_style.get("color", text or "#262626")),
+        )
+    projected.title_options = []
+    panel_legend = None
+    if projected.show_legend:
+        if projected.extra_legends:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS"
+            )
+        legend_items = [
+            {"kind": trace.kind, "name": trace.name, "style": dict(trace.style or {})}
+            for trace in projected.traces
+            if trace.name
+        ]
+        if legend_items:
+            panel_legend = {**copy.deepcopy(projected.legend_options), "items": legend_items}
+    projected.show_legend = False
+    projected.legend_options = {}
+    projected.extra_legends = []
+    colorbar = dict(getattr(figure, "colorbar_options", None) or {})
+    projected._static_document_colorbar_layout = None
+    projected._static_document_colorbar_scale = None
+    projected._static_document_colorbar_extend = None
+    projected._static_document_colorbar_pyplot_label = False
+    projected._static_document_colorbar_fill_plot = False
+    if colorbar:
+        supported = {
+            "colormap",
+            "domain",
+            "label",
+            "orientation",
+            "shrink",
+            "anchor",
+            "minor_ticks",
+            "ticks",
+            "scale",
+            "extend",
+            "pad",
+            "levels",
+            "boundaries",
+            "placement",
+        }
+        if set(colorbar) - supported:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"
+            )
+        domain = tuple(float(value) for value in colorbar.get("domain", (0.0, 1.0)))
+        if len(domain) != 2 or not domain[0] < domain[1]:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_DOMAIN"
+            )
+        orientation = str(colorbar.get("orientation", "vertical"))
+        if orientation not in {"vertical", "horizontal"}:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_LAYOUT"
+            )
+        projected.colorbar_options = {
+            "domain": list(domain),
+            "colormap": str(colorbar.get("colormap", "viridis")),
+            "orientation": orientation,
+            "minor_ticks": bool(colorbar.get("minor_ticks")),
+            "label": str(colorbar.get("label", "")),
+        }
+        if colorbar.get("ticks") is not None:
+            projected.colorbar_options["ticks"] = [float(value) for value in colorbar["ticks"]]
+        anchor = tuple(float(value) for value in colorbar.get("anchor", (0.5, 0.5)))
+        if len(anchor) != 2:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_LAYOUT"
+            )
+        projected._static_document_colorbar_layout = (
+            float(colorbar.get("shrink", 1.0)),
+            anchor[0],
+            anchor[1],
+        )
+        projected._static_document_colorbar_scale = str(colorbar.get("scale", "linear"))
+        projected._static_document_colorbar_extend = str(colorbar.get("extend", "neither"))
+        projected._static_document_colorbar_pyplot_label = True
+        projected._static_document_colorbar_fill_plot = colorbar.get("placement") == "axes"
+    projected._static_document_chrome_metrics = (*metrics["x"], *metrics["y"])
+    projected._static_document_annotation_font_size = resolved_annotations.font_size
+    projected._static_document_arrow_metrics = next(iter(arrow_metrics), None)
+    projected._static_document_panel_legend = panel_legend
+    projected._static_document_annotation_text_flags = resolved_annotations.text_flags
+    projected._static_document_annotation_padding = resolved_annotations.padding
+    projected._static_document_annotation_vertical_align = resolved_annotations.vertical_align
+    frame_sides = set(getattr(figure, "frame_sides", ("left", "bottom")))
+    projected._static_document_axis_sides = (
+        (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),
+        (1 if "left" in frame_sides else 0) | (2 if "right" in frame_sides else 0),
+    )
+    return projected
 
 
 def stitch_png(
@@ -501,7 +658,7 @@ def stitch_png(
     bbox_tight: bool = False,
     pad_pixels: int = 0,
 ) -> bytes:
-    from xyg import _png, _raster  # sanctioned escape hatch (see module doc)
+    from xyg import _native
 
     # pyplot charts are already built at ``figsize * dpi`` logical pixels.
     # Rasterizing those pixels at the core exporter's 2x quality default made
@@ -510,220 +667,19 @@ def stitch_png(
     # physical pixels, so keep its raster scale at one; callers that use the
     # native Figure API directly retain that API's explicit 2x default.
     scale = 1.0
-    if (
-        len(charts) == 1
-        and positions is None
-        and not suptitle
-        and not colorbar
-        and not figure_labels
-        and not figure_legend
-        and not bbox_tight
-        and facecolor in ("white", "#ffffff")
-    ):
-        # A single panel with no chrome to compose is exactly one native
-        # render, so fuse rasterization with the Rust PNG encoder (the
-        # latency-first default of Figure.to_png) instead of round-tripping
-        # RGBA through the Python size-oriented encoder — ~17x on a
-        # 100k-point savefig. The fused canvas initializes white, which is
-        # why the fast path is gated on the default facecolor.
-        fig = charts[0].figure()
-        spec, blob, borrowed = fig._build_raster_payload(px_width=max(256, int(fig.width)))
-        spec["canvas_background"] = facecolor
-        rendered = _raster.render_raster(spec, blob, scale, fast_png=True, borrowed=borrowed)
-        if isinstance(rendered, bytes):
-            return rendered
-        return _png.encode(rendered)
-
-    absolute = positions is not None and canvas_size is not None
-    tiles: list[np.ndarray] = []
-    for chart in charts:
-        fig = chart.figure()
-        spec, blob, borrowed = fig._build_raster_payload(px_width=max(256, int(fig.width)))
-        # Absolute panels include their own surrounding chrome and therefore
-        # overlap in the gutters.  Keep only that outer canvas transparent so
-        # a later panel cannot erase an earlier panel's right/bottom spine or
-        # terminal tick label.  The axes patch (--chart-bg) remains opaque.
-        spec["canvas_background"] = "none" if absolute else facecolor
-        img = _raster.render_raster(spec, blob, scale, borrowed=borrowed)
-        if isinstance(img, bytes):
-            raise RuntimeError("pyplot grid rasterizer unexpectedly returned encoded PNG bytes")
-        tiles.append(img)
-    if not tiles:
-        raise ValueError("figure has no axes to save")
-
-    if absolute:
-        assert positions is not None and canvas_size is not None
-        canvas = _compose_canvas(tiles, positions, canvas_size, facecolor, scale)
-        if suptitle:
-            _blend_raster_suptitle(
-                canvas,
-                suptitle,
-                suptitle_style,
-                scale=scale,
-                title_h=canvas.shape[0],
-                absolute=True,
-            )
-        _blend_raster_figure_decorations(
-            canvas,
-            figure_labels or [],
-            figure_legend,
-            scale=scale,
-        )
-        return _png.encode(canvas)
-
-    col_widths = [
-        max(tiles[index].shape[1] for index in range(col, len(tiles), ncols))
-        for col in range(ncols)
-    ]
-    row_heights = [
-        max(
-            tiles[index].shape[0]
-            for index in range(row * ncols, min((row + 1) * ncols, len(tiles)))
-        )
-        for row in range(nrows)
-    ]
-    suptitle_size = float((suptitle_style or {}).get("size", 14))
-    title_h = round(_textblock.measure(suptitle, suptitle_size).height + 16) if suptitle else 0
-    colorbar_h = 52 if colorbar else 0
-    background = np.asarray(_raster._parse_color(facecolor), dtype=np.uint8)
-    canvas = np.empty((title_h + sum(row_heights) + colorbar_h, sum(col_widths), 4), dtype=np.uint8)
-    canvas[...] = background
-    for i, tile in enumerate(tiles):
-        r, c = divmod(i, ncols)
-        y = title_h + sum(row_heights[:r])
-        x = sum(col_widths[:c])
-        canvas[y : y + tile.shape[0], x : x + tile.shape[1]] = tile
-    if suptitle:
-        _blend_raster_suptitle(
-            canvas,
-            suptitle,
-            suptitle_style,
-            scale=scale,
-            title_h=title_h,
-        )
-    if colorbar:
-        from xyg._svg import _lut
-
-        x0, x1 = int(canvas.shape[1] * 0.15), int(canvas.shape[1] * 0.85)
-        y0 = title_h + sum(row_heights) + 12
-        gradient = _lut(colorbar.get("colormap", "viridis"), np.linspace(0.0, 1.0, max(2, x1 - x0)))
-        canvas[y0 : y0 + 16, x0:x1, :3] = gradient[None, :, :]
-        canvas[y0 : y0 + 16, x0:x1, 3] = 255
-    _blend_raster_figure_decorations(
-        canvas,
-        figure_labels or [],
-        figure_legend,
-        scale=scale,
+    document = _pyplot_static_document(
+        charts,
+        nrows,
+        ncols,
+        suptitle,
+        suptitle_style,
+        figure_labels=figure_labels,
+        figure_legend=figure_legend,
+        positions=positions,
+        canvas_size=canvas_size,
+        facecolor=facecolor,
+        tight_crop=bbox_tight,
+        crop_padding=pad_pixels,
+        colorbar=None if positions is not None else colorbar,
     )
-    if bbox_tight:
-        # Crop the figure-colored margin, retaining a Matplotlib-like pad.  Do
-        # this on the composed RGBA buffer so it works for subplot grids and
-        # absolute axes without asking each renderer for a separate bbox.
-        delta = np.any(canvas != background, axis=2)
-        ys, xs = np.nonzero(delta)
-        if len(xs):
-            x0 = max(0, int(xs.min()) - pad_pixels)
-            x1 = min(canvas.shape[1], int(xs.max()) + pad_pixels + 1)
-            y0 = max(0, int(ys.min()) - pad_pixels)
-            y1 = min(canvas.shape[0], int(ys.max()) + pad_pixels + 1)
-            canvas = canvas[y0:y1, x0:x1]
-    return _png.encode(canvas)
-
-
-def _blend_raster_suptitle(
-    canvas: np.ndarray,
-    suptitle: str,
-    style: Optional[dict[str, Any]],
-    *,
-    scale: float,
-    title_h: int,
-    absolute: bool = False,
-) -> None:
-    """Draw a figure suptitle onto either grid or absolute-position PNGs."""
-    from xyg import _raster, kernels
-
-    resolved = style or {}
-    cmd = _raster._Cmd(scale)
-    size = float(resolved.get("size", 14))
-    block = _textblock.measure(suptitle, size)
-    x = canvas.shape[1] * float(resolved.get("x", 0.5)) / scale
-    baseline = _suptitle_baseline(
-        canvas.shape[0] / scale,
-        (canvas.shape[0] if absolute else title_h) / scale,
-        resolved,
-        block,
-        size,
-    )
-    color = _raster._parse_color(str(resolved.get("color", "#262626")))
-    bold = str(resolved.get("weight", "normal")).lower() in {
-        "bold",
-        "semibold",
-        "demibold",
-        "heavy",
-        "black",
-    }
-    for index, line in enumerate(block.lines):
-        cmd.text(x, baseline + index * block.line_step, 1, size, color, line, bold=bold)
-    overlay = kernels.rasterize(bytes(cmd.buf), canvas.shape[1], title_h)
-    _composite_rgba(canvas[:title_h], overlay)
-
-
-def _blend_raster_figure_decorations(
-    canvas: np.ndarray,
-    labels: list[dict[str, Any]],
-    legend: Optional[dict[str, Any]],
-    *,
-    scale: float,
-) -> None:
-    """Paint figure-fraction labels and the figure legend on one overlay."""
-    if not labels and not legend:
-        return
-    from xyg import _raster, kernels
-
-    cmd = _raster._Cmd(scale)
-    logical_w = canvas.shape[1] / scale
-    logical_h = canvas.shape[0] / scale
-    for label in labels:
-        size = float(label.get("size", 12.0))
-        block = _textblock.measure(label.get("text", ""), size)
-        x = logical_w * float(label.get("x", 0.5))
-        baseline = _figure_label_baseline(logical_h, label, block)
-        anchor = {"start": 0, "middle": 1, "end": 2}.get(str(label.get("anchor", "middle")), 1)
-        color = _raster._parse_color(str(label.get("color", "#262626")))
-        opacity = min(1.0, max(0.0, float(label.get("opacity", 1.0))))
-        color = (*color[:3], round(color[3] * opacity))
-        italic = str(label.get("font_style", "normal")) in {"italic", "oblique"}
-        bold = str(label.get("weight", "normal")).lower() in {
-            "bold",
-            "semibold",
-            "demibold",
-            "heavy",
-            "black",
-        }
-        for index, line in enumerate(block.lines):
-            cmd.text(
-                x,
-                baseline + index * block.line_step,
-                anchor,
-                size,
-                color,
-                line,
-                angle=-float(label.get("rotation", 0.0)),
-                italic=italic,
-                bold=bold,
-            )
-    if legend and legend.get("items"):
-        loc = (
-            "upper right"
-            if legend.get("figure_loc") == "outside right upper"
-            else legend.get("loc", "upper right")
-        )
-        _raster._emit_legend(
-            cmd,
-            list(legend["items"]),
-            {"x": 0.0, "y": 0.0, "w": logical_w, "h": logical_h},
-            {**legend, "loc": loc},
-            "#262626",
-        )
-    overlay = kernels.rasterize(bytes(cmd.buf), canvas.shape[1], canvas.shape[0])
-    _composite_rgba(canvas, overlay)
+    return _native.static_document_export(document, "png", scale=scale)
