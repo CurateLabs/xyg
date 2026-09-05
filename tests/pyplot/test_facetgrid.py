@@ -108,7 +108,8 @@ def test_margin_title_ink_lands_right_of_the_plot() -> None:
     the plot clip, and rasterizes rotated — ink must land in the margin."""
 
     import numpy as np
-    from PIL import Image
+
+    Image = pytest.importorskip("PIL.Image")
 
     from xyg._svg import layout
 

@@ -8,6 +8,7 @@ encoder unit tests keep pinning `_png.py`'s palette/compression policy.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from xyg import _native, _png
 from xyg._figure import Figure
@@ -24,7 +25,7 @@ def _ihdr(png: bytes) -> tuple[int, int, int]:
 def _decode_rgba(png: bytes) -> np.ndarray:
     from io import BytesIO
 
-    from PIL import Image
+    Image = pytest.importorskip("PIL.Image")
 
     return np.asarray(Image.open(BytesIO(png)).convert("RGBA"))
 

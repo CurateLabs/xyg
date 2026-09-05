@@ -395,7 +395,7 @@ def test_dense_grid_composite_draws_every_panel():
 
     output = io.BytesIO()
     fig.savefig(output, format="png", dpi=100)
-    from PIL import Image
+    Image = pytest.importorskip("PIL.Image")
 
     canvas = np.asarray(Image.open(output).convert("RGBA"))
     assert canvas.shape[:2] == (600, 600)

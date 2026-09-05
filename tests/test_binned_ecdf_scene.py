@@ -95,7 +95,12 @@ def test_binned_ecdf_routes_every_static_and_browser_consumer() -> None:
     figure = _figure(*CASES["mixed"])
     scene = figure.to_scene()
     svg = _native.scene_svg(scene)
-    assert figure.to_svg() == svg
+    from xyg import _static_document
+
+    assert figure.to_svg() == _static_document.export_figure(
+        figure, "svg", width=int(figure.width), height=int(figure.height)
+    ).decode("utf-8")
+    assert _native.scene_svg(figure.to_scene()) == svg
     assert figure.to_png(scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), 320, 240
     )

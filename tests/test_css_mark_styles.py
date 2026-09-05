@@ -163,7 +163,8 @@ def _raster_rgba(fig, scale: int = 1):
     import io
 
     import numpy as np
-    from PIL import Image
+
+    Image = pytest.importorskip("PIL.Image")
 
     png = fig.to_png(scale=scale)
     return np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"), dtype=np.uint8)
