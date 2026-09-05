@@ -25,6 +25,8 @@ def public_png(figure):
     from xyg._scene_v3 import public_static_export
 
     return public_static_export(figure, "png", scale=1)
+
+
 CASES = {
     "mixed": ([3.0, np.nan, 1.0, 3.0, 2.0, np.inf], 4),
     "constant": ([7.0, 7.0, 7.0], 4),
