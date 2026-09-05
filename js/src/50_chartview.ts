@@ -1,7 +1,7 @@
 import { PROTOCOL, TRACE_GPU_BUFFERS, xyByteSpan } from "./00_header";
 import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
-import { angularTicks, categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
+import { fmtValue } from "./30_ticks";
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { acquireGLHost } from "./42_glhost";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
@@ -822,7 +822,11 @@ export class ChartView {
     const labels = (axis && axis.tick_labels)
       || (axis && axis.kind === "category" ? axis.categories : null);
     if (!Array.isArray(labels) || !labels.length) return POLAR_LABEL_ROOM;
-    const size = this._axisStyleNumber(axis, "tick_label_size", 11);
+    const size = this._axisStyleNumber(
+      axis,
+      "tick_label_size",
+      this._slotFontSize("tick_label", 11),
+    );
     let widest = 0;
     for (const text of labels) widest = Math.max(widest, xyTextAdvance(String(text), size));
     return Math.min(
@@ -976,7 +980,7 @@ export class ChartView {
         this._axisStyleNumber(
           axis,
           "tick_label_size",
-          this._axisStyleNumber(axis, "tick_size", 11),
+          this._axisStyleNumber(axis, "tick_size", this._slotFontSize("tick_label", 11)),
         ),
       );
       const angle = Math.abs(Number(this._axisTickLabelAngle(axis) || 0)) * Math.PI / 180;
@@ -1005,7 +1009,10 @@ export class ChartView {
       const rawPosition = axis.label_position;
       const position = typeof rawPosition === "string" ? rawPosition.replace(/-/g, "_") : "";
       if (titleOnLeft && axis.label && !position.startsWith("inside_")) {
-        const labelSize = Math.max(8, this._axisStyleNumber(axis, "label_size", 12));
+        const labelSize = Math.max(
+          8,
+          this._axisStyleNumber(axis, "label_size", this._slotFontSize("axis_title", 12)),
+        );
         const gap = Number.isFinite(Number(axis.label_offset))
           ? Number(axis.label_offset)
           : 0.4 * labelSize;
@@ -1031,7 +1038,16 @@ export class ChartView {
     const styles = this.spec.dom && this.spec.dom.styles;
     const value = styles && styles[slot] && styles[slot]["font-size"];
     const parsed = parseFloat(String(value ?? ""));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    // A strict host CSP can reject the zero-specificity injected stylesheet,
+    // while an application stylesheet may deliberately override it. Once the
+    // root exists, use the browser's actual inherited/slot font for the async
+    // Rust-label reflow instead of assuming the nominal theme default.
+    const element = this.root?.querySelector?.(`[data-xy-slot="${slot}"]`) || this.root;
+    const computed = element && typeof getComputedStyle === "function"
+      ? parseFloat(getComputedStyle(element).fontSize)
+      : NaN;
+    return Number.isFinite(computed) && computed > 0 ? computed : fallback;
   }
 
   _xAxisRoom(side, plotWidth) {
@@ -1049,7 +1065,7 @@ export class ChartView {
         this._axisStyleNumber(
           axis,
           "tick_label_size",
-          this._axisStyleNumber(axis, "tick_size", 11),
+          this._axisStyleNumber(axis, "tick_size", this._slotFontSize("tick_label", 11)),
         ),
       );
       const ticks = this._axisTicks(
@@ -1072,9 +1088,15 @@ export class ChartView {
       );
       const position = typeof axis.label_position === "string"
         ? axis.label_position.replace(/-/g, "_") : "center";
-      const labelSize = Math.max(8, this._axisStyleNumber(axis, "label_size", 12));
+      const labelSize = Math.max(
+        8,
+        this._axisStyleNumber(axis, "label_size", this._slotFontSize("axis_title", 12)),
+      );
       const labelBlock = titleSide === side && axis.label && !position.startsWith("inside_")
         ? this._estimateTickLabel(axis.label, labelSize) : null;
+      const titleRoom = labelBlock
+        ? (side === "top" ? 34 : 24 + labelBlock.h)
+        : 0;
       const labelExtra = labelBlock
         ? Math.max(0, labelBlock.h - labelSize * 1.2) : 0;
       if (
@@ -1084,6 +1106,7 @@ export class ChartView {
         && strategy === "auto"
         && this._axisTickLabelAngle(axis) === null
       ) {
+        room = Math.max(room, titleRoom);
         continue;
       }
       let extent = 0;
@@ -1111,7 +1134,11 @@ export class ChartView {
         offset = outward + this._axisStyleNumber(axis, "tick_padding", 4)
           + (side === "top" ? size * 0.2 : size * 0.8);
       }
-      room = Math.max(room, 4 + offset + rows * (size + 4) + extent + labelExtra);
+      room = Math.max(
+        room,
+        titleRoom,
+        4 + offset + rows * (size + 4) + extent + labelExtra,
+      );
     }
     return room;
   }
@@ -1301,14 +1328,6 @@ export class ChartView {
     return thinned;
   }
 
-  // One full turn in the axis's own angular unit, or 0 when the axis is not a
-  // continuous angular one — mirrors _tick_window_filter in _svg.py.
-  _polarAngularTurn(axisId): number {
-    const axis = this._axis(axisId);
-    if (!axis || !axis.theta_unit || axis.kind === "category") return 0;
-    return axis.theta_unit === "degrees" ? 360 : 2 * Math.PI;
-  }
-
   _wasmTickAxisId(axisOrId) {
     if (axisOrId === "x" || axisOrId === "y" || axisOrId === "colorbar") return axisOrId;
     if (axisOrId && typeof axisOrId === "object" && axisOrId === this.spec?.colorbar) {
@@ -1329,124 +1348,83 @@ export class ChartView {
     return axisOrId;
   }
 
-  _colorbarCompatibilityTicks() {
+  _colorbarResolvedTicks(minor = false) {
     const cb = this.spec?.colorbar;
     if (!cb) return { ticks: [], labels: [], step: 1 };
-    if (cb.placement === "scene" && Array.isArray(cb.resolved?.major_ticks)) {
-      const ticks = cb.resolved.major_ticks.map((tick) => Number(tick.value)).filter(Number.isFinite);
+    const resolved = minor ? cb.resolved?.minor_ticks : cb.resolved?.major_ticks;
+    if (cb.placement === "scene" && Array.isArray(resolved)) {
+      const ticks = resolved.map((tick) => Number(tick.value)).filter(Number.isFinite);
       return {
         ticks,
-        labels: ticks,
+        labels: minor ? [] : ticks,
         step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1,
+        source: "rust-scene",
       };
     }
-    const domain = cb.domain || [0, 1];
-    const lo = Number(domain[0]), hi = Number(domain[1]);
-    if (Array.isArray(cb.ticks)) {
-      const loBound = Math.min(lo, hi), hiBound = Math.max(lo, hi);
-      const ticks = cb.ticks.map(Number).filter((value) => (
-        Number.isFinite(value) && value >= loBound && value <= hiBound
-      ));
-      return {
-        ticks,
-        labels: ticks,
-        step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1,
-      };
+    return { ticks: [], labels: [], step: 1 };
+  }
+
+  _recordTickFailure(code = "XYG_WASM_UNAVAILABLE", message = "Rust/WASM tick resolver is not attached") {
+    if (!this._tickFailure) this._tickFailure = Object.freeze({ code, message, diagnostics: null });
+    if (this.root) this.root.dataset.xyTickState = "failed-closed";
+  }
+
+  _publishTickFailure() {
+    this._recordTickFailure();
+    if (this.root && !this._tickFailurePublished) {
+      this._tickFailurePublished = true;
+      this._dispatchChartEvent?.("wasm_ticks_error", this._tickFailure);
     }
-    const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
-    const barLength = (cb.orientation === "horizontal" ? this.plot.w : this.plot.h) * shrink;
-    const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
-    return cb.scale === "log" ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget);
   }
 
   _axisTicks(axisId, target): any {
-    // ABI 23 ChartView cutover: once an explicit attachment is active, covered
-    // primary Cartesian linear/log/symlog/category/UTC-time axes and eligible
-    // colorbars consume only the last admitted Rust cache that still matches
-    // that slot's identity, including automatic, authored_values, and
-    // authored_empty provenance. A pending/failed newer request never falls
-    // through to 30_ticks.ts. Colorbar is not an `axes` key — `_axis()` would
-    // silently resolve it to x — so the compatibility path stays dedicated.
+    // M2 #869: every live tick slot is Rust-owned. An absent, pending, invalid,
+    // or failed resolver paints no positions; TypeScript never revives a local
+    // ladder or formatter.
     axisId = this._wasmTickAxisId(axisId);
+    const minor = typeof axisId === "string" && axisId.endsWith("::minor");
+    const baseAxisId = minor ? axisId.slice(0, -"::minor".length) : axisId;
     const wasmTicks = this._wasmTicks?.ticks?.(axisId);
     if (wasmTicks || this._wasmTicks?.covers?.(axisId)) return wasmTicks;
-    if (axisId === "colorbar") return this._colorbarCompatibilityTicks();
-    const axis = this._axis(axisId);
-    let [lo, hi] = this._axisRange(axisId);
-    if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
-      if (axis.kind === "category") {
-        lo = 0;
-        hi = Math.max(0, (axis.categories || []).length - 1);
-      } else if (Array.isArray(axis.sector) && axis.sector.length === 2) {
-        lo = Number(axis.sector[0]);
-        hi = Number(axis.sector[1]);
-      }
+    if (baseAxisId === "colorbar") {
+      if (this.spec?.colorbar?.placement === "scene") return this._colorbarResolvedTicks(minor);
+      this._recordTickFailure(
+        this._wasmTicks ? "XYG_WASM_TICKS_PENDING" : "XYG_WASM_UNAVAILABLE",
+        this._wasmTicks ? "Rust/WASM tick result is not admitted for this slot" : "Rust/WASM tick resolver is not attached",
+      );
+      return { ticks: [], labels: [], step: 1, source: "failed-closed" };
     }
-    if (Array.isArray(axis.tick_values)) {
-      const a = Math.min(lo, hi), b = Math.max(lo, hi);
-      // An angular window can cross the 0/turn seam (sector 300..420, or the
-      // compass-natural -30..30). The plain range test drops every tick spelled
-      // on the far side of the seam while a data point at that same angle still
-      // plots inside the sector, because mark culling is modular. Match it —
-      // mirrored by _tick_window_filter in _svg.py.
-      const turn = this._polarAngularTurn(axisId);
-      const span = b - a;
-      const inside = turn
-        ? (v) => ((v - a) % turn + turn) % turn <= span + turn * 1e-9
-        : (v) => v >= a && v <= b;
-      const ticks = axis.tick_values.map(Number).filter((v) => Number.isFinite(v) && inside(v));
-      return { ticks, labels: ticks, step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1 };
+    const axis = this._axis(baseAxisId);
+    const values = minor ? axis?.minor_tick_values : axis?.tick_values;
+    if (axis?.tick_resolution === "rust_scene" && Array.isArray(values)) {
+      const ticks = values.map(Number).filter(Number.isFinite);
+      return {
+        ticks,
+        labels: !minor && Array.isArray(axis.tick_labels) ? ticks : [],
+        step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1,
+        source: "rust-scene",
+      };
     }
-    // Placed after the authored-tick_values return so explicit ticks still
-    // win, and before every kind branch — mirrored by axis_ticks in _svg.py.
-    if (axis.kind === "category") {
-      const categories = axis.categories || [];
-      // Every categorical-theta value defines a spoke (and, for
-      // grid_shape="linear", one polygon vertex). Cartesian categories may be
-      // thinned for legibility, but silently thinning polar categories changes
-      // the grid geometry itself. An explicit tick_count remains the opt-in
-      // control for authors who want fewer spokes.
-      const authoredTarget = Number(axis.tick_count);
-      const categoryTarget = this.spec?.coords === "polar"
-        && this._axisDim(axisId) === "x"
-        && !(Number.isFinite(authoredTarget) && authoredTarget > 0)
-        ? categories.length
-        : target;
-      return categoryTicks(lo, hi, categories, categoryTarget);
-    }
-    if (axis.theta_unit) return angularTicks(lo, hi, axis.theta_unit, target);
-    if (axis.kind === "time") return timeTicks(lo, hi, target);
-    if (axis.scale === "log") return logTicks(lo, hi, target);
-    if (axis.scale === "symlog") {
-      const c0 = this._axisCoord(axis, lo), c1 = this._axisCoord(axis, hi);
-      const made = linearTicks(c0, c1, target);
-      const ticks = made.ticks.map((v) => this._axisValue(axis, v));
-      if (Math.min(lo, hi) <= 0 && Math.max(lo, hi) >= 0 && !ticks.some((v) => Math.abs(v) < 1e-12)) ticks.push(0);
-      ticks.sort((a, b) => lo <= hi ? a - b : b - a);
-      return { ticks, labels: ticks, step: Math.abs(this._axisValue(axis, made.step)) };
-    }
-    return linearTicks(lo, hi, target);
+    this._recordTickFailure(
+      this._wasmTicks ? "XYG_WASM_TICKS_PENDING" : "XYG_WASM_UNAVAILABLE",
+      this._wasmTicks ? "Rust/WASM tick result is not admitted for this slot" : "Rust/WASM tick resolver is not attached",
+    );
+    return { ticks: [], labels: [], step: 1, source: "failed-closed" };
   }
 
   _axisTickText(axis, value, step) {
     const axisId = this._wasmTickAxisId(axis);
     const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
     if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
-    if (this._wasmTicks?.covers?.(axisId)) return "";
-    if (axisId === "colorbar") {
-      const cb = this.spec?.colorbar || {};
-      if (Array.isArray(cb.ticks) && Array.isArray(cb.tick_labels)) {
-        const index = cb.ticks.findIndex((candidate) => Number(candidate) === Number(value));
-        if (index >= 0 && index < cb.tick_labels.length) return String(cb.tick_labels[index]);
+    if (axis?.tick_resolution === "rust_scene" && Array.isArray(axis.tick_values)) {
+      const index = axis.tick_values.findIndex((item) => Number(item) === Number(value));
+      if (index >= 0 && Array.isArray(axis.tick_labels) && index < axis.tick_labels.length) {
+        return String(axis.tick_labels[index]);
       }
-      if (Array.isArray(cb.ticks)) return fmtGeneral(value);
-      return cb.scale === "log" ? fmtLog(value) : fmtLinear(value, step);
+      return "";
     }
-    if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
-      const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));
-      if (index >= 0 && index < axis.tick_labels.length) return String(axis.tick_labels[index]);
-    }
-    return fmtAxis(axis, value, step);
+    this._recordTickFailure();
+    return "";
   }
 
   _axisTickTarget(axisId, fallback) {
@@ -2424,13 +2402,13 @@ export class ChartView {
   // FBO realloc is deferred to the next actual pick (_renderPick checks dims).
   // The view request re-decimates/re-bins at the new pixel size (§28), so a
   // bigger chart gains real detail, not just stretched pixels.
-  _resize(cssW, cssH) {
+  _resize(cssW, cssH, forceLayout = false) {
     const w = this.fluid && cssW ? Math.max(120, Math.round(cssW)) : this.size.w;
     const h = this.fluidH && cssH ? Math.max(120, Math.round(cssH)) : this.size.h;
     // Browser zoom changes devicePixelRatio with no container resize (R7);
     // re-read it so backing stores stay crisp on a pure-DPR change too.
     const dpr = window.devicePixelRatio || 1;
-    if (w === this.size.w && h === this.size.h && dpr === this.dpr) return;
+    if (!forceLayout && w === this.size.w && h === this.size.h && dpr === this.dpr) return;
     this.dpr = dpr;
     this.size.w = w;
     this.size.h = h;
@@ -3639,16 +3617,8 @@ export class ChartView {
       this._applySlot(marker, "colorbar_line");
       bar.appendChild(marker);
     }
-    const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
-    const barLength = (horizontal ? this.plot.w : this.plot.h) * shrink;
-    const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
     const wasmCovered = !scenePlacement && this._wasmTicks?.covers?.("colorbar");
     const wasmTicks = wasmCovered ? this._wasmTicks.ticks("colorbar") : null;
-    // Fail-closed: a covered colorbar never calls 30_ticks.ts, even when the
-    // admitted cache is empty or a later Worker request is pending/failed.
-    const tickResult = wasmCovered || scenePlacement || Array.isArray(cb.ticks)
-      ? { ticks: wasmTicks?.ticks ?? [], labels: wasmTicks?.labels ?? [], step: wasmTicks?.step ?? 1 }
-      : (logScale ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget));
     const sceneMajorTicks = scenePlacement && Array.isArray(cb.resolved?.major_ticks)
       ? cb.resolved.major_ticks
       : null;
@@ -3656,15 +3626,11 @@ export class ChartView {
       ? cb.resolved.bounds.map(Number)
       : null;
     const hasSceneBounds = sceneBounds?.length === 4 && sceneBounds.every(Number.isFinite);
-    const hasExplicitTicks = Array.isArray(cb.ticks);
     const tickValues = wasmCovered
       ? (wasmTicks?.labels?.length ? wasmTicks.labels : wasmTicks?.ticks ?? [])
       : sceneMajorTicks
       ? sceneMajorTicks.map((tick) => tick.value)
-      : hasExplicitTicks
-      ? cb.ticks
-      : (logScale ? (tickResult as any).labels : tickResult.ticks);
-    const tickStep = tickResult.step;
+      : [];
     const fractionFor = (value) => logScale
       ? (hi === lo ? 0 : Math.log(value / lo) / Math.log(hi / lo))
       : (value - lo) / span;
@@ -3679,15 +3645,7 @@ export class ChartView {
           ? (this._wasmTicks.label("colorbar", value) ?? "")
           : sceneMajorTicks
           ? String(sceneMajorTicks[tickIndex].label)
-          : hasExplicitTicks &&
-          Array.isArray(cb.tick_labels) &&
-          cb.tick_labels.length === tickValues.length
-          ? String(cb.tick_labels[tickIndex])
-          : hasExplicitTicks
-            ? fmtGeneral(value)
-            : logScale
-              ? fmtLog(value)
-              : fmtLinear(value, tickStep);
+          : "";
       const fraction = fractionFor(value);
       // The compact vertical form keeps only the two extreme ticks (see
       // `_positionColorbar`), so record each tick's position on the node and let
@@ -3711,7 +3669,10 @@ export class ChartView {
     const sceneMinorTicks = scenePlacement && Array.isArray(cb.resolved?.minor_ticks)
       ? cb.resolved.minor_ticks
       : null;
-    if (sceneMinorTicks || cb.minor_ticks) {
+    const wasmMinorCovered = !scenePlacement && this._wasmTicks?.covers?.("colorbar::minor");
+    const wasmMinorTicks = wasmMinorCovered
+      ? this._wasmTicks.ticks("colorbar::minor")?.ticks ?? [] : [];
+    if (sceneMinorTicks || wasmMinorCovered) {
       if (sceneMinorTicks) {
         for (const resolved of sceneMinorTicks) {
           const value = Number(resolved.value);
@@ -3732,16 +3693,7 @@ export class ChartView {
           box.appendChild(tick);
         }
       } else {
-      const orderedTicks = [...tickValues]
-        .map(Number)
-        .filter(Number.isFinite)
-        .sort((a, b) => a - b);
-      for (let index = 0; index + 1 < orderedTicks.length; index++) {
-        const left = orderedTicks[index], right = orderedTicks[index + 1];
-        for (let step = 1; step < 5; step++) {
-          const value = logScale
-            ? Math.pow(10, Math.log10(left) + (Math.log10(right) - Math.log10(left)) * step / 5)
-            : left + (right - left) * step / 5;
+        for (const value of wasmMinorTicks) {
           const fraction = fractionFor(value);
           const tick = document.createElement("i");
           tick.dataset.xyColorbarMinor = "true";
@@ -3752,7 +3704,6 @@ export class ChartView {
           this._applySlot(tick, "colorbar_minor_tick");
           box.appendChild(tick);
         }
-      }
       }
     }
     if (cb.label) {
@@ -5644,7 +5595,18 @@ export class ChartView {
   // Concentric rings for radial ticks and spokes for angular ticks. Partial
   // sectors get radial edges; `grid_shape="linear"` connects spoke
   // intersections into polygon rings instead of drawing circular arcs.
-  _drawPolarGrid(ctx, geom, thetaTicks, rTicks, thetaAxis, rAxis, hideTheta, hideR) {
+  _drawPolarGrid(
+    ctx,
+    geom,
+    thetaTicks,
+    rTicks,
+    thetaAxis,
+    rAxis,
+    hideTheta,
+    hideR,
+    thetaMinorTicks = [],
+    rMinorTicks = [],
+  ) {
     const sweep = geom.thetaEnd - geom.thetaStart;
     const full = sweep >= geom.turn * (1 - 1e-10);
     const angularOffset = (value) => this._polarPositiveMod(
@@ -5690,6 +5652,90 @@ export class ChartView {
         ctx.arc(geom.cx, geom.cy, radius, -start, -end, geom.dir > 0);
       }
     };
+    const minorAxis = (axis) => ({ ...axis, style: axis.minor_style || {} });
+    const thetaMinorAxis = minorAxis(thetaAxis);
+    const rMinorAxis = minorAxis(rAxis);
+    const minorThetaValues = thetaMinorTicks
+      .filter((value) => Number.isFinite(value) && this._polarThetaVisible(geom, value));
+    const minorAngles = minorThetaValues.map((value) => this._polarThetaAngle(geom, value));
+    if (!hideR && rMinorTicks.length) {
+      ctx.strokeStyle = this._axisStylePaint(rMinorAxis, "grid_color", "transparent");
+      ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(rMinorAxis, "grid_width", 1));
+      ctx.globalAlpha = this._axisStyleNumber(rMinorAxis, "grid_opacity", 1);
+      ctx.setLineDash(this._axisGridDash(rMinorAxis));
+      ctx.beginPath();
+      for (const value of rMinorTicks) ringPath(this._polarRadius(geom, value));
+      ctx.stroke();
+    }
+    const innerRadius = Math.max(
+      0,
+      Math.min(geom.radius, this._polarRadius(geom, geom.rLo, { coord: true })),
+    );
+    if (!hideTheta && minorAngles.length) {
+      ctx.strokeStyle = this._axisStylePaint(thetaMinorAxis, "grid_color", "transparent");
+      ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(thetaMinorAxis, "grid_width", 1));
+      ctx.globalAlpha = this._axisStyleNumber(thetaMinorAxis, "grid_opacity", 1);
+      ctx.setLineDash(this._axisGridDash(thetaMinorAxis));
+      ctx.beginPath();
+      for (const angle of minorAngles) {
+        const [x0, y0] = point(angle, innerRadius);
+        const [x1, y1] = point(angle, geom.radius);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+      }
+      ctx.stroke();
+    }
+    const tickExtents = (axis) => {
+      const length = Math.max(0, this._axisStyleNumber(axis, "tick_length", 0));
+      const direction = String(this._axisStyleValue(axis, "tick_direction") || "out");
+      if (direction === "in") return { inward: length, outward: 0 };
+      if (direction === "inout") return { inward: length / 2, outward: length / 2 };
+      return { inward: 0, outward: length };
+    };
+    const thetaMinorTick = tickExtents(thetaMinorAxis);
+    if (!hideTheta && minorAngles.length
+        && thetaMinorTick.inward + thetaMinorTick.outward > 0) {
+      ctx.strokeStyle = this._axisStylePaint(thetaMinorAxis, "tick_color", this.theme.axis);
+      ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(thetaMinorAxis, "tick_width", 1));
+      ctx.globalAlpha = this._axisStyleNumber(thetaMinorAxis, "tick_opacity", 1);
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      for (const angle of minorAngles) {
+        const [x0, y0] = point(angle, geom.radius - thetaMinorTick.inward);
+        const [x1, y1] = point(angle, geom.radius + thetaMinorTick.outward);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+      }
+      ctx.stroke();
+    }
+    const radialMinorTick = tickExtents(rMinorAxis);
+    if (!hideR && rMinorTicks.length
+        && radialMinorTick.inward + radialMinorTick.outward > 0) {
+      const sectorSweep = Math.abs(geom.dirUnit) * Math.max(0, sweep);
+      const labelAngle = this._polarThetaAngle(geom, geom.thetaStart)
+        + Math.sign(geom.dirUnit || 1)
+          * Math.min(POLAR_RLABEL_DEG * Math.PI / 180, sectorSweep / 2);
+      const tangent = [-Math.sin(labelAngle), -Math.cos(labelAngle)];
+      ctx.strokeStyle = this._axisStylePaint(rMinorAxis, "tick_color", this.theme.axis);
+      ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(rMinorAxis, "tick_width", 1));
+      ctx.globalAlpha = this._axisStyleNumber(rMinorAxis, "tick_opacity", 1);
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      for (const value of rMinorTicks) {
+        const radius = this._polarRadius(geom, value);
+        if (!(radius > 0) || radius > geom.radius + 1e-6) continue;
+        const [x, y] = point(labelAngle, radius);
+        ctx.moveTo(
+          x - tangent[0] * radialMinorTick.inward,
+          y - tangent[1] * radialMinorTick.inward,
+        );
+        ctx.lineTo(
+          x + tangent[0] * radialMinorTick.outward,
+          y + tangent[1] * radialMinorTick.outward,
+        );
+      }
+      ctx.stroke();
+    }
     if (!hideR) {
       ctx.strokeStyle = this._axisStylePaint(rAxis, "grid_color", this.theme.grid);
       ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(rAxis, "grid_width", 1));
@@ -5707,10 +5753,6 @@ export class ChartView {
     ctx.globalAlpha = this._axisStyleNumber(thetaAxis, "grid_opacity", 1);
     ctx.setLineDash(this._axisGridDash(thetaAxis));
     ctx.beginPath();
-    const innerRadius = Math.max(
-      0,
-      Math.min(geom.radius, this._polarRadius(geom, geom.rLo, { coord: true })),
-    );
     for (const a of angles) {
       const [x0, y0] = point(a, innerRadius);
       const [x1, y1] = point(a, geom.radius);
@@ -6976,7 +7018,11 @@ export class ChartView {
     }
     const fontSize = Math.max(
       8,
-      this._axisStyleNumber(axis, "tick_label_size", this._axisStyleNumber(axis, "tick_size", 11)),
+      this._axisStyleNumber(
+        axis,
+        "tick_label_size",
+        this._axisStyleNumber(axis, "tick_size", this._slotFontSize("tick_label", 11)),
+      ),
     );
     const minGap = this._axisTickLabelMinGap(axis, dim);
     // y collision keeps the centered extent model: every label on an axis
@@ -7148,15 +7194,10 @@ export class ChartView {
       this._axisTickTarget("x", Math.max(3, p.w / (xAxis.kind === "time" ? 90 : 80))),
     );
     const yt = this._axisTicks("y", this._axisTickTarget("y", Math.max(3, p.h / 45)));
-    const minorTicks = (axis, axisId) => {
-      if (!Array.isArray(axis.minor_tick_values)) return [];
-      const [lo, hi] = this._axisRange(axisId);
-      const a = Math.min(lo, hi), b = Math.max(lo, hi);
-      return axis.minor_tick_values.map(Number)
-        .filter((v) => Number.isFinite(v) && v >= a && v <= b);
-    };
-    const xmt = minorTicks(xAxis, "x");
-    const ymt = minorTicks(yAxis, "y");
+    const xmt = Array.isArray(xAxis.minor_tick_values)
+      ? this._axisTicks("x::minor", this._axisTickTarget("x", 6)).ticks : [];
+    const ymt = Array.isArray(yAxis.minor_tick_values)
+      ? this._axisTicks("y::minor", this._axisTickTarget("y", 6)).ticks : [];
     const minorAxis = (axis) => ({ ...axis, style: axis.minor_style || {} });
     const xmAxis = minorAxis(xAxis);
     const ymAxis = minorAxis(yAxis);
@@ -7165,7 +7206,18 @@ export class ChartView {
 
     const polarGeom = this._polarGeometry();
     if (polarGeom) {
-      this._drawPolarGrid(ctx, polarGeom, xt.ticks, yt.ticks, xAxis, yAxis, hideX, hideY);
+      this._drawPolarGrid(
+        ctx,
+        polarGeom,
+        xt.ticks,
+        yt.ticks,
+        xAxis,
+        yAxis,
+        hideX,
+        hideY,
+        xmt,
+        ymt,
+      );
     }
     ctx.strokeStyle = this._axisStylePaint(xmAxis, "grid_color", "transparent");
     ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(xmAxis, "grid_width", 1));
@@ -7410,6 +7462,21 @@ export class ChartView {
       }
       for (const axis of extraXAxes) {
         if (this._axisTickLabelStrategy(axis) === "none") continue;
+        if (Array.isArray(axis.minor_tick_values)) {
+          const minor = this._axisTicks(`${axis.id}::minor`, this._axisTickTarget(axis.id, 6));
+          const minorStyled = { ...axis, style: axis.minor_style || {} };
+          const part = tickParts(minorStyled);
+          for (const side of this._axisTickSides(axis)) {
+            const edge = side === "top" ? p.y : p.y + p.h;
+            for (const value of minor.ticks) {
+              const x = this._dataPx(axis.id, value);
+              if (!Number.isFinite(x) || x < p.x - 1 || x > p.x + p.w + 1) continue;
+              const top = side === "top" ? edge - part.outward : edge - part.inward;
+              rule(minorStyled, x - part.width / 2, top, part.width,
+                part.inward + part.outward, "tick_color", "tick_mark", "minor", side);
+            }
+          }
+        }
         const ticks = this._axisTicks(
           axis.id,
           this._axisTickTarget(axis.id, Math.max(3, p.w / (axis.kind === "time" ? 90 : 80))),
@@ -7437,6 +7504,21 @@ export class ChartView {
       }
       for (const axis of extraYAxes) {
         if (this._axisTickLabelStrategy(axis) === "none") continue;
+        if (Array.isArray(axis.minor_tick_values)) {
+          const minor = this._axisTicks(`${axis.id}::minor`, this._axisTickTarget(axis.id, 6));
+          const minorStyled = { ...axis, style: axis.minor_style || {} };
+          const part = tickParts(minorStyled);
+          for (const side of this._axisTickSides(axis)) {
+            const edge = side === "right" ? p.x + p.w : p.x;
+            for (const value of minor.ticks) {
+              const y = this._dataPx(axis.id, value);
+              if (!Number.isFinite(y) || y < p.y - 1 || y > p.y + p.h + 1) continue;
+              const left = side === "right" ? edge - part.inward : edge - part.outward;
+              rule(minorStyled, left, y - part.width / 2, part.inward + part.outward,
+                part.width, "tick_color", "tick_mark", "minor", side);
+            }
+          }
+        }
         const ticks = this._axisTicks(
           axis.id,
           this._axisTickTarget(axis.id, Math.max(3, p.h / 45)),
@@ -7491,7 +7573,8 @@ export class ChartView {
         size = `font-size:${Math.max(8, this._axisStyleNumber(axis, sizeKey, 11))}px;`;
       }
       d.style.cssText =
-        `position:absolute;line-height:1.2;white-space:pre-line;text-align:center;` +
+        `position:absolute;line-height:1.2;white-space:${kind === "label" ? "pre" : "pre-line"};` +
+        `text-align:center;` +
         `${color}${size}${css}`;
       // Categorical y labels can exceed the space between their pinned anchor
       // and the chart edge. Placement owns side/anchor/angle; consume that

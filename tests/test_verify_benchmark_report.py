@@ -589,6 +589,7 @@ def _dashboard_browser_report(counts: tuple[int, ...] = (10, 20, 50, 60)) -> dic
             "created_charts": count,
             "creation_failed_charts": 0,
             "creation_failure_ids": [],
+            "tick_ready_charts": count,
             "nonblank_charts": count,
             "initial_nonblank_charts": count,
             "initial_nonblank_chart_ids": chart_ids,
@@ -904,6 +905,18 @@ def test_dashboard_report_accepts_partial_rows_with_context_telemetry(tmp_path: 
     assert errors == []
 
 
+def test_dashboard_report_requires_every_created_chart_to_admit_rust_ticks(
+    tmp_path: Path,
+) -> None:
+    payload = _dashboard_browser_report()
+    payload["rows"][1]["tick_ready_charts"] -= 1
+    path = _write_report(tmp_path, payload)
+
+    errors = verify_benchmark_report.validate_report(path, kind="dashboard-browser")
+
+    assert any("tick_ready_charts must equal created_charts" in error for error in errors)
+
+
 def test_dashboard_report_accepts_zero_shader_counters_when_no_charts_created(
     tmp_path: Path,
 ) -> None:
@@ -938,6 +951,7 @@ def test_dashboard_report_accepts_zero_shader_counters_when_no_charts_created(
             "created_charts": 0,
             "creation_failed_charts": row["chart_count"],
             "creation_failure_ids": chart_ids,
+            "tick_ready_charts": 0,
             "nonblank_charts": 0,
             "initial_nonblank_charts": 0,
             "initial_nonblank_chart_ids": [],

@@ -443,7 +443,8 @@ value so short probes cannot masquerade as the configured budget run. The report
 also declares `tooltip_sample_count`, and eligible rows must report that exact
 `tooltip_visible_samples` count so a tooltip that appears once and then flickers
 away fails verification.
-`bench_dashboard.py` attempts 10/20/50/60 mixed dashboards in CI and reports payload
+`bench_dashboard.py` attempts 10/20/50/60 mixed dashboards in CI, admits each
+chart's primary ticks through the hosted packaged Rust/WASM pair, and reports payload
 prep, navigation readiness, per-chart setup/first-draw p50/p95/max, load/first-pick/final
 shader compile and program-link counts, advisory startup long tasks, JS heap,
 redraw-submission p95, per-chart context loss and restore events (governed releases

@@ -256,6 +256,26 @@ _DENSITY_TOGGLE_PROBE = """
     if (!view) throw new Error("no probe view captured");
     view._drawNow();
     view._raf = null;
+    // to_html density starts its direct Rust/WASM refinement concurrently
+    // with tick attachment. Let that lifecycle settle, then dispose it before
+    // installing the mock Python-kernel transport this regression targets.
+    let densitySettled = false;
+    for (let i = 0; i < 200; i++) {
+      if (view._wasmDensity || window.__xygTickEvents.some((e) =>
+          e?.phase === "density_no_refinement")) {
+        densitySettled = true;
+        break;
+      }
+      await sleep(25);
+    }
+    if (!densitySettled) throw new Error("standalone density authority did not settle");
+    const directDensity = view._wasmDensity;
+    directDensity?.schedule?.(view.view0, { delay: 0 });
+    await directDensity?.dispose?.();
+    // This regression exercises the live Python-kernel request path. The
+    // packaged direct-WASM density migration is covered independently and
+    // must not divert requests after this test attaches its mock comm.
+    view.spec.wasm_density = null;
     const sent = [];
     view.comm = { send: (m) => sent.push(m) };
     let rows = [];

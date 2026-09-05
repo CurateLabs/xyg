@@ -334,140 +334,35 @@ subset:
 6. R11 interaction/module contracts — done (interaction.md, wire-protocol.md);
    the ARIA/DOM accessibility contract is the residue, doc-only, no trigger.
 
-## 6. Axis ticks and label formatting (`30_ticks.ts`)
 
-Ticks are computed on the CPU in f64 and never round-trip through the f32
-render path (§16). An explicit `attachWasmTicks` handle intercepts automatic,
-authored-value, and authored-empty primary Cartesian
-linear/log/symlog/category/UTC-time axes and eligible ChartView colorbars
-before this module: Rust owns those positions and labels, and a covered
-attached axis (eligible plus an admitted cache that still matches the current
-family, category table, format, and provenance) never falls through to the
-generators below. A newly eligible axis or family/provenance switch after
-mount is requested on the next frame and stays on this module until that
-cache arrives. Unattached charts and angular/polar/secondary paths still use
-`ChartView._axisTicks`,
-which checks in this order: WASM cover → authored `tick_values` →
-`kind === "category"` → `theta_unit` → `kind === "time"` → `scale === "log"` /
-`symlog` → `linearTicks`. Colorbar slots resolve through the same cover gate,
-then a dedicated compatibility helper that must not run while covered. Every
-generator takes `(lo, hi, target)` with
-`target = 6` by default and returns `{ ticks, step }`; `logTicks` adds
-`labels` and `log: true`.
+## 6. Rust-owned axis ticks and browser presentation
 
-### 6.1 Generators
+Axis tick positions and labels stay CPU-side f64 and never round-trip through
+the offset-f32 paint wire (§16). The canonical linear, log, symlog, category,
+UTC-time, angular-radian, and angular-degree ladders, modular authored-window
+filter, minor subdivisions, format grammar, and packed output live in
+`xyg-engine::packed_ticks`. The tick boundary introduced in WASM ABI 23 and
+native ABI 360 is carried by current WASM ABI 26 and native ABI 361; both call
+that same implementation.
 
-**Linear.** `niceStep` takes the rough step `(hi − lo) / target`, drops to the
-decade below it (`10^floor(log10(rough))`), and scales that decade by the first
-of `1, 2, 2.5, 5, 10` that reaches the rough step (compared with a `1 + 1e-12`
-slack so a step landing exactly on a candidate is not pushed to the next one).
-`linearTicks` then emits multiples of that step from `ceil(lo / step) * step`
-upward, with a `step * 1e-9` tolerance on the upper bound so the last tick is
-not lost to float error, and snaps near-zero values to exactly `0` under the
-same tolerance. Degenerate inputs return early: non-finite bounds give no
-ticks, `lo === hi` gives a single tick.
+`49_wasm_ticks.ts` is a bounded lifecycle adapter. It enumerates every current
+primary/secondary Cartesian or polar axis, authored minor slot, and eligible
+major/minor colorbar slot; frames one atomic `XYTK`; admits only a matching
+sequence/revision/identity `XYTO`; and exposes the admitted f64 positions and
+labels to `ChartView`. TypeScript may choose a screen-bounded target and paint
+DOM/canvas chrome, but it does not generate, filter, interpolate, or format
+axis ticks.
 
-**Log.** `logTicks` requires strictly positive bounds — a domain touching zero
-or negative values yields no ticks at all, it does not fall back to linear. It
-walks integer decades from `floor(log10(lo))` to `ceil(log10(hi))`. When the
-decade span is at most `max(2, target)` each decade emits mantissas `1, 2, 5`;
-beyond that only `1`. Ticks outside the domain are dropped (again with a
-relative `1e-12` slack). Labels are thinned separately from ticks: only
-mantissa-1 ticks are labelled, and only every `labelEvery` decade where
-`labelEvery = ceil((decades + 1) / target)` — so minor ticks draw unlabelled.
-If thinning produces nothing, every tick is labelled.
+A canonical Rust Scene painter carries tagged `rust_scene` tick descriptors,
+which ChartView consumes directly. Every other missing, malformed, unattached,
+pending, or failed resolver state paints no tick positions or labels and emits
+a stable diagnostic. The last matching Rust cache may remain visible while a
+new viewport request is pending; a newly eligible or identity-changed slot has
+no matching cache and therefore fails closed.
 
-An authored `tick_values` array is the labelled major tier. An optional
-`minor_tick_values` array is drawn separately with `minor_style`; it never
-participates in label formatting or collision handling. Pyplot uses this
-second tier for the automatic log subdivisions from `LogLocator`, so minor
-grid/tick density and paint are identical in the live canvas, SVG, and native
-raster renderers.
-
-**Category.** Positions are integer category indices. `categoryTicks` clamps
-the visible index range to `[0, categories.length − 1]`, then strides it by
-`max(1, ceil(visible / target))`, so labels thin out as more categories come
-into view rather than overlapping.
-
-**Time.** Time axes carry epoch milliseconds. `timeTicks` picks the first
-member of `TIME_STEPS` — a fixed ladder of 1/2/5/10/20/50/100/200/500 ms, then
-second, minute, hour, day multiples up to 14 days — that is at least the rough
-step, and emits multiples of it from `ceil(lo / step) * step`. This ladder is
-uniform-duration only. Once the rough step exceeds 14 days, `timeTicks` hands
-off to `calendarTicks`, which switches to calendar arithmetic: it picks a month
-stride from `1, 2, 3, 6, 12, 24, 60, 120` months and emits UTC month starts via
-`Date.UTC`, so ticks land on real month and year boundaries rather than drifting
-by a fixed 30-day approximation. `calendarTicks` reports `step` back as
-`stepM * 30 * MS.d`, an approximation used only to choose a label format.
-
-**Bounds.** Every generator caps output at 200 ticks (`calendarTicks` at 1000)
-so a pathological domain cannot produce an unbounded loop or DOM label count.
-
-### 6.2 Automatic label formats
-
-With no `format=` on the axis, labels come from the step:
-
-- `fmtLinear` switches to one-decimal exponential (with `e+` normalized to `e`)
-  when `|v| ≥ 1e6` or `0 < |v| < 1e-4`. Otherwise it derives the decimal count
-  from the tick step — `ceil(−log10(step))`, then increments while the step is
-  not representable at that precision to within a thousandth of itself — and
-  caps at 8 decimals. Ticks on one axis therefore share a decimal count.
-- `fmtTime` picks the unit from the step: year alone for January on
-  month-or-coarser steps, otherwise `Mon YYYY`; `Mon DD` at day steps; `HH:MM`
-  at minute steps; `HH:MM:SS` at second steps; `MM:SS.mmm` below. All fields
-  are read in UTC.
-- `fmtCategory` rounds the position to an index and returns that category, or
-  the empty string when the index is out of range.
-- `fmtGeneral` reproduces Python's `:g` (default 6 significant digits) and is
-  used for *explicit* colorbar ticks, whose precision is authored and must not
-  be inferred from an unrelated automatic step. The colorbar itself ticks with
-  `linearTicks(lo, hi, 8)` (`50_chartview.ts:1467`).
-
-### 6.3 The `format=` mini-language
-
-`fmtAxis` consults the axis's `format` string before falling back to the
-automatic formatter. The two accepted grammars are narrow.
-
-**Primary Cartesian numeric axes.** The public Rust Scene static slice accepts
-exactly
-
-```text
-<prefix>(,).N[f|%]<suffix>
-```
-
-That is: a literal prefix, optional comma grouping immediately before the
-decimal point, one or more ASCII precision digits whose parsed value is from 0
-through 100, optional `f` or percent scaling and sign, then a literal suffix.
-Examples include `.2f`, `,.0f`, `.1%`,
-`$,.0f`, and `€,.1f EUR`. Rust uses deterministic ASCII comma grouping rather
-than a host locale. There is no sign flag, `e`/`g`/`s` type, explicit width, or
-fill. Formats are bounded to 256 NUL-free UTF-8 bytes. Python and Node only
-frame the string; Rust owns parsing, final label selection, and gutter
-measurement. The dynamic TypeScript `fmtNumberSpec` remains a compatibility
-implementation for unattached charts and frozen deferred tick families and is
-intentionally not extended by this slice.
-
-**Time axes** (`fmtTimeSpec`). A strftime *subset* substituted by
-`/%[YmdHMSbB]/g`: `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%b` (short month name),
-`%B` (long month name). All fields are UTC — there is no timezone support and
-no `%j`, `%p`, `%I`, `%Z` or literal-`%%` escape. Any other text in the string
-passes through verbatim, which means an unrecognized token such as `%y` renders
-literally as `%y` rather than falling back.
-
-**Log-axis carve-out.** On a log axis, a value in `(0, 1)` that a numeric
-format renders as the string `"0"` is re-rendered with `fmtLinear` instead, so
-a low decade is not labelled as a row of zeros.
-
-### 6.4 Sharp edge: silent fallback on unmatched formats
-
-The Rust parser and compatibility `fmtNumberSpec` both treat unmatched syntax
-as "no format" and silently use the automatic formatter. No warning is raised:
-the Python side stores `format` as free text so an unsupported spec survives
-the pipeline and deliberately yields default labels. Explicit authored tick
-labels take precedence over a valid format.
-
-Two consequences to keep in mind when extending this: the failure mode for a
-typo'd numeric format is a *plausible-looking wrong label*, not an error; and
-the two grammars fail differently, since an unrecognized `%`-token on a time
-axis is echoed literally instead of triggering the fallback. Making either loud
-is a behavior change, not a doc fix, and is not proposed here.
+`30_ticks.ts` is presentation-only. `fmtValue` formats tooltip/general values
+that are not axis tick policy; it must not grow an axis ladder, category/time/
+angular generator, authored-window filter, colorbar interpolation, or axis
+format fallback. Ownership guards and the exact
+`packed_ticks_cross_host.json` Python/native, Node/native, and real-browser
+WASM fixture enforce that boundary.

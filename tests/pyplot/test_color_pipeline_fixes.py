@@ -119,9 +119,9 @@ def test_default_colorbar_ticks_are_dense_for_small_decimal_domains():
 
     assert _colorbar_tick_target(360) == 8
     assert _colorbar_tick_target(140) == 3
-    # The client-side colorbar uses the same 48 px spacing budget; the embedded
-    # bundle is minified, so assert against the client source instead of HTML.
-    client = ROOT / "js" / "src" / "50_chartview.ts"
+    # The Rust tick attachment frames the same 48 px colorbar spacing budget;
+    # ChartView only paints the returned positions and labels.
+    client = ROOT / "js" / "src" / "49_wasm_ticks.ts"
     assert "barLength) / 48" in client.read_text(encoding="utf-8")
 
 

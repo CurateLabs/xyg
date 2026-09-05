@@ -1,6 +1,7 @@
 import {
   aggregateWasmBin2d,
   attachStandaloneWasmDensity,
+  attachHostWasmTicks,
   attachWasmDensity,
   attachWasmTicks,
   ChartView,
@@ -92,6 +93,17 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
 }
 
 const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+async function assertTickRevisionSettles(handle, label) {
+  for (let attempt = 0; attempt < 8; attempt++) await nextTask();
+  const before = handle.diagnostics()?.revision;
+  handle.schedule();
+  for (let attempt = 0; attempt < 8; attempt++) await nextTask();
+  const after = handle.diagnostics()?.revision;
+  if (!(before >= 1) || after !== before) {
+    throw new Error(`${label} tick attachment did not settle: ${JSON.stringify({ before, after })}`);
+  }
+}
 
 function dashboardPlanResponse(retained = true) {
   const bytes = new Uint8Array(25), view = new DataView(bytes.buffer);
@@ -391,7 +403,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    25, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    26, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -500,7 +512,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 25,
+    expectedAbiVersion: 26,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -581,6 +593,22 @@ async function run() {
     maxArenaBytes: 1024 * 1024,
   });
   await tickWorker.ready;
+  foundationStage = "byte-exact native/WASM packed tick fixture";
+  const packedFixture = await fetch("/tests/fixtures/packed_ticks_cross_host.json").then((response) => {
+    if (!response.ok) throw new Error(`packed tick fixture fetch failed: ${response.status}`);
+    return response.json();
+  });
+  const packedRequest = Uint8Array.from(packedFixture.request_hex.match(/../g), (byte) => parseInt(byte, 16));
+  const packedOutput = await tickWorker.resolveTicks(packedRequest.slice().buffer, { sequence: 4242 }).result;
+  const packedOutputHex = [...new Uint8Array(packedOutput)]
+    .map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  if (packedOutputHex !== packedFixture.output_hex) {
+    throw new Error("browser/WASM packed tick output differs from Python/Node native fixture");
+  }
+  const packedDecoded = decodeWasmTickBatch(packedOutput, 4242);
+  if (JSON.stringify(packedDecoded) !== JSON.stringify(packedFixture.expected)) {
+    throw new Error(`browser/WASM packed tick semantics drifted: ${JSON.stringify(packedDecoded)}`);
+  }
   const automaticAxes = [
     { axisId: 101, revision: 9, family: "linear", provenance: "automatic", lo: 0, hi: 1000, target: 6, format: "$,.1f" },
     { axisId: 102, revision: 9, family: "log", provenance: "automatic", lo: 0.1, hi: 100, target: 6, maskNonpositive: true },
@@ -632,7 +660,7 @@ async function run() {
       {
         axisId: 201, revision: 3, family: "linear", provenance: "authored_values",
         lo: 0, hi: 2, target: 5, authoredValues: [-1, 0, 1, 3],
-        authoredLabels: ["minus", "zero", "one", "three"], format: "$,.1f",
+        authoredLabels: ["minus", "zero", "one", "three"],
       },
       { axisId: 202, revision: 4, family: "linear", provenance: "authored_empty", lo: 0, hi: 1, target: 5 },
     ],
@@ -666,6 +694,10 @@ async function run() {
     sequence: 1,
     axes: [{ ...automaticAxes[0], provenance: "authored_values", authoredValues: [0, 1], authoredLabels: ["zero"] }],
   }), RangeError, "authored label cardinality mismatch");
+  expectTickCodecFailure(() => encodeWasmTickBatch({
+    sequence: 1,
+    axes: [{ ...automaticAxes[0], provenance: "authored_values", authoredValues: [0, 1], authoredLabels: ["zero", "one"] }],
+  }), TypeError, "authored labels with irrelevant format plane");
   expectTickCodecFailure(() => decodeWasmTickBatch(new ArrayBuffer(31)), TypeError, "truncated tick output");
   expectTickCodecFailure(() => tickWorker.resolveTicks(
     new ArrayBuffer(1024 * 1024 + 1),
@@ -693,6 +725,31 @@ async function run() {
     "XYG_WASM_INVALID_ARGUMENT",
     2,
   );
+
+  foundationStage = "raw malformed tick text-plane parity";
+  const malformedPacked = [];
+  const embeddedNul = packedRequest.slice();
+  const embeddedNulView = new DataView(embeddedNul.buffer);
+  embeddedNul[embeddedNulView.getUint32(32 + 92, true)] = 0;
+  malformedPacked.push(embeddedNul);
+  const irrelevantCategory = packedRequest.slice();
+  new DataView(irrelevantCategory.buffer).setUint32(32 + 4 * 96 + 8, 0, true);
+  malformedPacked.push(irrelevantCategory);
+  const irrelevantLabels = packedRequest.slice();
+  new DataView(irrelevantLabels.buffer).setUint32(32 + 96 + 12, 2, true);
+  malformedPacked.push(irrelevantLabels);
+  const irrelevantFormat = packedRequest.slice();
+  new DataView(irrelevantFormat.buffer).setUint32(32 + 12, 2, true);
+  malformedPacked.push(irrelevantFormat);
+  for (const malformed of malformedPacked) {
+    const sequence = tickWorker.allocateTickSequence();
+    new DataView(malformed.buffer).setUint32(12, sequence, true);
+    await rejected(
+      tickWorker.resolveTicks(malformed.buffer, { sequence }).result,
+      "XYG_WASM_INVALID_ARGUMENT",
+      2,
+    );
+  }
 
   foundationStage = "independent tick cancellation lane";
   const cancelledSequence = tickWorker.allocateTickSequence();
@@ -734,12 +791,14 @@ async function run() {
   const chartTickView = directDensityFixture(chartTickHost);
   Object.assign(chartTickView.axes.x, {
     scale: "log", nonpositive: "mask", range: [0.1, 100], format: "$,.1f",
+    minor_tick_values: [0.2, 0.5, 2, 5, 20, 50], label: "Horizontal title",
   });
   Object.assign(chartTickView.axes.y, {
-    scale: "symlog", constant: 1, range: [-10, 10],
+    scale: "symlog", constant: 1, range: [100000, 900000], format: "$,.2f",
+    minor_tick_values: [200000, 500000, 800000], label: "Vertical title",
   });
   chartTickView.view0 = chartTickView._copyView({
-    ranges: { x: [0.1, 100], y: [-10, 10] },
+    ranges: { x: [0.1, 100], y: [100000, 900000] },
   });
   chartTickView.view = chartTickView._copyView(chartTickView.view0);
   const chartTickWorker = createXygWasmWorker({
@@ -751,24 +810,85 @@ async function run() {
     worker: chartTickWorker,
     workerOwnership: "own",
   });
-  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(() => resolve())));
   const chartTickDiagnostics = chartTickHandle.diagnostics();
   const chartX = chartTickView._axisTicks("x", 6);
   const chartY = chartTickView._axisTicks("y", 6);
-  const chartTickLabels = [...chartTickView.root.querySelectorAll(
+  const chartXMinor = chartTickView._axisTicks("x::minor", 6);
+  const chartYMinor = chartTickView._axisTicks("y::minor", 6);
+  const chartTickLabelNodes = [...chartTickView.root.querySelectorAll(
     '[data-xy-label-kind="tick"]',
-  )].map((node) => node.textContent);
+  )];
+  const chartTickLabels = chartTickLabelNodes.map((node) => node.textContent);
+  const chartTickRootBounds = chartTickView.root.getBoundingClientRect();
+  const chartTickLabelBounds = chartTickLabelNodes.map((node) => {
+    const bounds = node.getBoundingClientRect();
+    return {
+      axis: node.dataset.xyAxis,
+      text: node.textContent,
+      left: bounds.left,
+      right: bounds.right,
+      top: bounds.top,
+      bottom: bounds.bottom,
+    };
+  });
+  const chartTickLabelsInside = chartTickLabelNodes.every((node) => {
+    const bounds = node.getBoundingClientRect();
+    return bounds.left >= chartTickRootBounds.left - 1
+      && bounds.right <= chartTickRootBounds.right + 1
+      && bounds.top >= chartTickRootBounds.top - 1
+      && bounds.bottom <= chartTickRootBounds.bottom + 1;
+  });
+  const chartAxisTitleNodes = [...chartTickView.root.querySelectorAll(
+    '[data-xy-label-kind="label"]',
+  )];
+  const chartAxisTitleBounds = chartAxisTitleNodes.map((node) => {
+    const bounds = node.getBoundingClientRect();
+    return {
+      axis: node.dataset.xyAxis,
+      text: node.textContent,
+      left: bounds.left,
+      right: bounds.right,
+      top: bounds.top,
+      bottom: bounds.bottom,
+    };
+  });
+  const chartAxisTitlesInside = chartAxisTitleBounds.length === 2
+    && chartAxisTitleBounds.every((bounds) =>
+      bounds.left >= chartTickRootBounds.left - 1
+      && bounds.right <= chartTickRootBounds.right + 1
+      && bounds.top >= chartTickRootBounds.top - 1
+      && bounds.bottom <= chartTickRootBounds.bottom + 1);
+  const yTitleBounds = chartAxisTitleBounds.find((bounds) => bounds.axis === "y");
+  const yTickLeft = Math.min(
+    ...chartTickLabelBounds.filter((bounds) => bounds.axis === "y").map((bounds) => bounds.left),
+  );
+  const yTitleClearsTicks = yTitleBounds && yTitleBounds.right <= yTickLeft - 1;
   if (chartX.source !== "wasm" || chartY.source !== "wasm"
-      || chartTickDiagnostics?.axisIds.join(",") !== "x,y"
+      || chartTickDiagnostics?.axisIds.join(",") !== "x,x::minor,y,y::minor"
       || !chartX.ticks.length || !chartY.ticks.length
-      || !chartTickLabels.some((label) => label?.startsWith("$"))) {
+      || chartXMinor.source !== "wasm" || chartYMinor.source !== "wasm"
+      || chartXMinor.ticks.join(",") !== "0.2,0.5,2,5,20,50"
+      || chartYMinor.ticks.join(",") !== "200000,500000,800000"
+      || !chartTickLabels.some((label) => label?.startsWith("$"))
+      || !chartTickLabelsInside || !chartAxisTitlesInside || !yTitleClearsTicks) {
     throw new Error(`ChartView did not consume Rust log/symlog ticks: ${JSON.stringify({
       chartTickDiagnostics,
       xSource: chartX.source,
       ySource: chartY.source,
+      chartXMinor,
+      chartYMinor,
       chartTickLabels,
+      chartTickRootBounds,
+      chartTickLabelBounds,
+      chartTickLabelsInside,
+      chartAxisTitleBounds,
+      chartAxisTitlesInside,
+      yTitleClearsTicks,
     })}`);
   }
+  await assertTickRevisionSettles(chartTickHandle, "formatted titled Cartesian");
   await chartTickHandle.dispose();
   chartTickView.destroy();
   await nextTask();
@@ -829,6 +949,7 @@ async function run() {
       familyTickLabels,
     })}`);
   }
+  await assertTickRevisionSettles(familyTickHandle, "category/UTC-time");
   await familyTickHandle.dispose();
   familyTickView.destroy();
   familyTickHost.remove();
@@ -842,7 +963,7 @@ async function run() {
     tick_values: [-1, 0, 0.5, 1, 3],
     tick_labels: ["minus", "zero", "half", "one", "three"],
     range: [0, 1],
-    format: "$,.1f",
+    format: "$.1f",
   });
   Object.assign(authoredTickView.axes.y, {
     tick_values: [],
@@ -888,6 +1009,7 @@ async function run() {
       authoredTickLabels,
     })}`);
   }
+  await assertTickRevisionSettles(authoredTickHandle, "authored-label");
   await authoredTickHandle.dispose();
   authoredTickView.destroy();
   authoredTickHost.remove();
@@ -973,8 +1095,8 @@ async function run() {
   );
   if (automaticSwitchTicks.source !== "wasm" || !authoredSwitchHandle.eligible("x")
       || authoredSwitchHandle.covers("x") || pendingAuthoredTicks.source === "wasm"
-      || pendingAuthoredTicks.ticks.join(",") !== "0.25,0.75"
-      || pendingAuthoredLabel !== "quarter") {
+      || pendingAuthoredTicks.ticks.length !== 0
+      || pendingAuthoredLabel !== "") {
     throw new Error(`authored provenance switch reused a stale WASM cache: ${JSON.stringify({
       eligible: authoredSwitchHandle.eligible("x"),
       covers: authoredSwitchHandle.covers("x"),
@@ -1024,7 +1146,7 @@ async function run() {
   delete authoredSwitchView.axes.x.tick_values;
   const pendingAutomaticTicks = authoredSwitchView._axisTicks("x", 6);
   if (authoredSwitchHandle.covers("x") || pendingAutomaticTicks.source === "wasm"
-      || !pendingAutomaticTicks.ticks.length) {
+      || pendingAutomaticTicks.ticks.length) {
     throw new Error(`automatic provenance restore stayed on authored-empty WASM: ${JSON.stringify({
       covers: authoredSwitchHandle.covers("x"),
       pendingAutomaticTicks,
@@ -1069,7 +1191,7 @@ async function run() {
   const switchedXLabel = switchTickView._axisTickText(switchTickView.axes.x, 0, switchedXTicks.step);
   if (linearXTicks.source !== "wasm" || !switchTickHandle.eligible("x")
       || switchTickHandle.covers("x") || switchedXTicks.source === "wasm"
-      || switchedXTicks.ticks.join(",") !== "0,1,2" || switchedXLabel !== "alpha") {
+      || switchedXTicks.ticks.length !== 0 || switchedXLabel !== "") {
     throw new Error(`family switch reused a stale WASM cache: ${JSON.stringify({
       eligible: switchTickHandle.eligible("x"),
       covers: switchTickHandle.covers("x"),
@@ -1099,8 +1221,8 @@ async function run() {
   switchTickView.axes.x.categories = ["red", "green"];
   const renamedXTicks = switchTickView._axisTicks("x", 2);
   if (switchTickHandle.covers("x") || renamedXTicks.source === "wasm"
-      || renamedXTicks.ticks.join(",") !== "0,1"
-      || switchTickView._axisTickText(switchTickView.axes.x, 0, renamedXTicks.step) !== "red") {
+      || renamedXTicks.ticks.length !== 0
+      || switchTickView._axisTickText(switchTickView.axes.x, 0, renamedXTicks.step) !== "") {
     throw new Error(`category-table change stayed on a stale WASM cache: ${JSON.stringify({
       covers: switchTickHandle.covers("x"),
       renamedXTicks,
@@ -1173,11 +1295,13 @@ async function run() {
   reattachView.destroy();
   reattachHost.remove();
 
-  foundationStage = "secondary ChartView axes stay on the compatibility tick path";
+  foundationStage = "secondary ChartView axes use Rust/WASM";
   const secondaryTickHost = document.createElement("div");
   secondaryTickHost.style.cssText = "width:320px;height:240px";
   document.body.append(secondaryTickHost);
   const secondaryTickView = directDensityFixture(secondaryTickHost, null, true);
+  secondaryTickView.axes.x.minor_tick_values = [0.25, 0.75];
+  secondaryTickView.axes.x2.minor_tick_values = [12.5, 17.5];
   const secondaryTickWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
@@ -1191,23 +1315,102 @@ async function run() {
   const primaryYTicks = secondaryTickView._axisTicks("y", 6);
   const secondaryXTicks = secondaryTickView._axisTicks("x2", 6);
   const secondaryYTicks = secondaryTickView._axisTicks("y2", 6);
+  const primaryXMinor = secondaryTickView._axisTicks("x::minor", 6);
+  const secondaryXMinor = secondaryTickView._axisTicks("x2::minor", 6);
   if (primaryXTicks.source !== "wasm" || primaryYTicks.source !== "wasm"
-      || secondaryXTicks.source === "wasm" || secondaryYTicks.source === "wasm"
-      || secondaryTickHandle.diagnostics()?.axisIds.join(",") !== "x,y"
+      || secondaryXTicks.source !== "wasm" || secondaryYTicks.source !== "wasm"
+      || secondaryTickHandle.diagnostics()?.axisIds.join(",") !== "x,x::minor,y,x2,x2::minor,y2"
       || !secondaryXTicks.ticks.length || !secondaryYTicks.ticks.length
+      || primaryXMinor.source !== "wasm" || primaryXMinor.ticks.join(",") !== "0.25,0.75"
+      || secondaryXMinor.source !== "wasm" || secondaryXMinor.ticks.join(",") !== "12.5,17.5"
       || secondaryXTicks.ticks.every((value) => value >= 0 && value <= 1)
       || secondaryYTicks.ticks.every((value) => value >= 0 && value <= 1)) {
-    throw new Error(`secondary axes were claimed by WASM ticks: ${JSON.stringify({
+    throw new Error(`secondary axes were not resolved by WASM ticks: ${JSON.stringify({
       axisIds: secondaryTickHandle.diagnostics()?.axisIds,
       primaryX: primaryXTicks,
       primaryY: primaryYTicks,
       secondaryX: secondaryXTicks,
       secondaryY: secondaryYTicks,
+      primaryXMinor,
+      secondaryXMinor,
+    })}`);
+  }
+
+  foundationStage = "secondary ChartView axis identity replacement uses a fresh Rust request";
+  const beforeRenameRevision = secondaryTickHandle.diagnostics()?.revision;
+  const renamedX = { ...secondaryTickView.axes.x2, id: "x3" };
+  secondaryTickView.axes = {
+    x: secondaryTickView.axes.x,
+    y: secondaryTickView.axes.y,
+    x3: renamedX,
+    y2: secondaryTickView.axes.y2,
+  };
+  for (const viewState of [secondaryTickView.view0, secondaryTickView.view]) {
+    viewState.ranges.x3 = [...viewState.ranges.x2];
+    delete viewState.ranges.x2;
+  }
+  const renamedImmediate = secondaryTickView._axisTicks("x3", 6);
+  secondaryTickHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !secondaryTickHandle.covers("x3"); attempt++) {
+    await nextTask();
+  }
+  const identityRenamedAdmitted = secondaryTickView._axisTicks("x3", 6);
+  if (renamedImmediate.source === "wasm" || renamedImmediate.ticks.length
+      || !secondaryTickHandle.covers("x3") || secondaryTickHandle.covers("x2")
+      || identityRenamedAdmitted.source !== "wasm" || !identityRenamedAdmitted.ticks.length
+      || secondaryTickHandle.diagnostics()?.revision !== beforeRenameRevision + 1
+      || !secondaryTickHandle.diagnostics()?.axisIds.includes("x3")
+      || secondaryTickHandle.diagnostics()?.axisIds.includes("x2")) {
+    throw new Error(`secondary axis identity replacement reused a stale request: ${JSON.stringify({
+      beforeRenameRevision,
+      diagnostics: secondaryTickHandle.diagnostics(),
+      renamedImmediate,
+      renamedAdmitted: identityRenamedAdmitted,
     })}`);
   }
   await secondaryTickHandle.dispose();
   secondaryTickView.destroy();
   secondaryTickHost.remove();
+
+  foundationStage = "Rust Scene major/minor axes remain ineligible for XYTK replacement";
+  const sceneTickHost = document.createElement("div");
+  sceneTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(sceneTickHost);
+  const sceneTickView = directDensityFixture(sceneTickHost);
+  Object.assign(sceneTickView.axes.x, {
+    tick_resolution: "rust_scene",
+    tick_values: [0, 0.5, 1],
+    tick_labels: ["zero", "half", "one"],
+    minor_tick_values: [0.25, 0.75],
+  });
+  const sceneTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const sceneTickHandle = await attachWasmTicks(sceneTickView, {
+    worker: sceneTickWorker,
+    workerOwnership: "own",
+  });
+  const sceneMajor = sceneTickView._axisTicks("x", 6);
+  const sceneMinor = sceneTickView._axisTicks("x::minor", 6);
+  if (sceneTickHandle.eligible("x") || sceneTickHandle.eligible("x::minor")
+      || sceneTickHandle.covers("x") || sceneTickHandle.covers("x::minor")
+      || sceneMajor.source !== "rust-scene" || sceneMajor.ticks.join(",") !== "0,0.5,1"
+      || sceneMinor.source !== "rust-scene" || sceneMinor.ticks.join(",") !== "0.25,0.75"
+      || sceneMinor.labels.length !== 0
+      || sceneTickView._axisTickText(sceneTickView.axes.x, 0.5, sceneMajor.step) !== "half") {
+    throw new Error(`Rust Scene tick planes were replaced by XYTK: ${JSON.stringify({
+      eligibleMajor: sceneTickHandle.eligible("x"),
+      eligibleMinor: sceneTickHandle.eligible("x::minor"),
+      sceneMajor,
+      sceneMinor,
+      diagnostics: sceneTickHandle.diagnostics(),
+    })}`);
+  }
+  await sceneTickHandle.dispose();
+  sceneTickView.destroy();
+  sceneTickHost.remove();
 
   foundationStage = "newly eligible axis after attach does not paint empty wasm";
   const lateTickHost = document.createElement("div");
@@ -1232,9 +1435,9 @@ async function run() {
   delete lateTickView.axes.y.theta_unit;
   const immediateYTicks = lateTickView._axisTicks("y", 6);
   if (!lateTickHandle.eligible("y") || lateTickHandle.covers("y")
-      || angularYTicks.source === "wasm"
+      || angularYTicks.source !== "wasm"
       || immediateYTicks.source === "wasm"
-      || !immediateYTicks.ticks.length) {
+      || immediateYTicks.ticks.length) {
     throw new Error(`newly eligible y painted empty wasm before admission: ${JSON.stringify({
       eligible: lateTickHandle.eligible("y"),
       covers: lateTickHandle.covers("y"),
@@ -1382,6 +1585,32 @@ async function run() {
   lifecycleTickView.destroy();
   lifecycleTickHost.remove();
 
+  foundationStage = "unattached and invalid host tick assets fail closed with stable diagnostics";
+  for (const [assets, expectedMessage] of [
+    [{}, "Rust/WASM tick resolver is not attached"],
+    [{ wasm_ticks: { workerUrl: "blob:blocked", wasm: "data:blocked" } }, "explicit same-origin paths"],
+  ]) {
+    const failHost = document.createElement("div");
+    failHost.style.cssText = "width:320px;height:240px";
+    document.body.append(failHost);
+    const failView = directDensityFixture(failHost);
+    const failures = [];
+    failView.root.addEventListener("xy:wasm_ticks_error", (event) => failures.push(event.detail));
+    attachHostWasmTicks(failView, assets);
+    if (!assets.wasm_ticks) attachHostWasmTicks(failView, assets);
+    const failedTicks = failView._axisTicks("x", 6);
+    if (failures.length !== 1 || failures[0].code !== "XYG_WASM_UNAVAILABLE"
+        || !failures[0].message.includes(expectedMessage)
+        || failedTicks.source !== "failed-closed" || failedTicks.ticks.length
+        || failView.root.dataset.xyTickState !== "failed-closed") {
+      throw new Error(`host tick fail-close diagnostics drifted: ${JSON.stringify({
+        assets, failures, failedTicks, state: failView.root.dataset.xyTickState,
+      })}`);
+    }
+    failView.destroy();
+    failHost.remove();
+  }
+
   foundationStage = "ChartView tick missing assets reject before attachment";
   const missingTickHost = document.createElement("div");
   missingTickHost.style.cssText = "width:320px;height:240px";
@@ -1415,7 +1644,7 @@ async function run() {
   missingTickView.destroy();
   missingTickHost.remove();
 
-  foundationStage = "uncovered ChartView tick families retain compatibility paths";
+  foundationStage = "invalid ChartView tick slots fail closed and retry through Rust/WASM";
   const uncoveredTickHost = document.createElement("div");
   uncoveredTickHost.style.cssText = "width:320px;height:240px";
   document.body.append(uncoveredTickHost);
@@ -1441,6 +1670,9 @@ async function run() {
   uncoveredTickView.axes.x.kind = "linear";
   delete uncoveredTickView.axes.x.categories;
   uncoveredTickView.axes.x.theta_unit = "degrees";
+  uncoveredTickView.axes.x.tick_values = "invalid-authored-plane";
+  const malformedAuthoredEligible = uncoveredTickHandle.eligible("x");
+  delete uncoveredTickView.axes.x.tick_values;
   const angularAxisTicks = uncoveredTickView._axisTicks("x", 6);
   const uncoveredTickErrors = [];
   uncoveredTickView.root.addEventListener(
@@ -1448,16 +1680,21 @@ async function run() {
     (event) => uncoveredTickErrors.push(event.detail),
   );
   uncoveredTickView.draw();
-  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  for (let attempt = 0; attempt < 100 && !uncoveredTickHandle.covers("x"); attempt++) {
+    await nextTask();
+  }
   const idleAngularTicks = uncoveredTickView._axisTicks("x", 6);
-  if (emptyCategoryTicks.source !== undefined
+  if (emptyCategoryTicks.source !== "failed-closed" || emptyCategoryTicks.ticks.length
       || coveredYTicks.source !== "wasm"
-      || angularAxisTicks.source !== undefined || !angularAxisTicks.ticks.length
-      || idleAngularTicks.source !== undefined || uncoveredTickErrors.length) {
+      || malformedAuthoredEligible
+      || angularAxisTicks.source !== "failed-closed" || angularAxisTicks.ticks.length
+      || idleAngularTicks.source !== "wasm" || !idleAngularTicks.ticks.length
+      || uncoveredTickErrors.length) {
     throw new Error(`uncovered tick family routing drifted: ${JSON.stringify({
       emptyCategoryTicks,
       coveredYTicks,
       angularAxisTicks,
+      malformedAuthoredEligible,
       idleAngularTicks,
       uncoveredTickErrors,
     })}`);
@@ -1473,6 +1710,7 @@ async function run() {
   document.body.append(colorbarTickHost);
   const colorbarTickView = directDensityFixture(colorbarTickHost, null, false, false, {
     domain: [0, 1], orientation: "vertical", colormap: "viridis", label: "z",
+    minor_ticks: true, format: "$.1f",
   });
   const colorbarTickWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
@@ -1486,20 +1724,28 @@ async function run() {
   await new Promise((resolve) => requestAnimationFrame(() => resolve()));
   const colorbarTicks = colorbarTickView._axisTicks("colorbar", 6);
   const colorbarX = colorbarTickView._axisTicks("x", 6);
+  const colorbarMinor = colorbarTickView._axisTicks("colorbar::minor", 6);
   const colorbarDom = [...colorbarTickView.root.querySelectorAll(
     '[data-xy-slot="colorbar_tick"]',
   )].map((node) => node.textContent);
+  const colorbarMinorDom = colorbarTickView.root.querySelectorAll(
+    '[data-xy-colorbar-minor="true"]',
+  );
   if (colorbarTicks.source !== "wasm" || colorbarX.source !== "wasm"
       || !colorbarTickHandle.covers("colorbar") || !colorbarTickHandle.covers("x")
-      || colorbarTickHandle.diagnostics()?.axisIds.join(",") !== "x,y,colorbar"
+      || colorbarTickHandle.diagnostics()?.axisIds.join(",") !== "x,y,colorbar,colorbar::minor"
       || !colorbarTicks.ticks.length
+      || colorbarMinor.source !== "wasm" || !colorbarMinor.ticks.length
+      || colorbarMinorDom.length !== colorbarMinor.ticks.length
       || colorbarDom.length !== colorbarTicks.labels.length
+      || colorbarDom.some((label) => !label.startsWith("$"))
       || colorbarDom.some((label, index) => (
         label !== colorbarTickHandle.label("colorbar", colorbarTicks.labels[index])
       ))) {
     throw new Error(`ChartView did not consume Rust colorbar ticks: ${JSON.stringify({
       diagnostics: colorbarTickHandle.diagnostics(),
       colorbarTicks,
+      colorbarMinor,
       colorbarX,
       colorbarDom,
     })}`);
@@ -1538,6 +1784,7 @@ async function run() {
     orientation: "vertical",
     ticks: [-1, 0, 0.5, 1, 3],
     tick_labels: ["minus", "zero", "half", "one", "three"],
+    format: "$.1f",
   });
   const authoredColorbarWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
@@ -1612,7 +1859,7 @@ async function run() {
   const immediateLateColorbar = lateColorbarView._axisTicks("colorbar", 6);
   if (!lateColorbarHandle.eligible("colorbar") || lateColorbarHandle.covers("colorbar")
       || immediateLateColorbar.source === "wasm"
-      || !immediateLateColorbar.ticks.length) {
+      || immediateLateColorbar.ticks.length) {
     throw new Error(`newly eligible colorbar painted empty wasm before admission: ${JSON.stringify({
       eligible: lateColorbarHandle.eligible("colorbar"),
       covers: lateColorbarHandle.covers("colorbar"),
@@ -1648,6 +1895,10 @@ async function run() {
         { value: 0, label: "0", position: 200 },
         { value: 1, label: "1", position: 20 },
       ],
+      minor_ticks: [
+        { value: 0.25, position: 155 },
+        { value: 0.75, position: 65 },
+      ],
     },
   });
   const sceneColorbarWorker = createXygWasmWorker({
@@ -1660,22 +1911,27 @@ async function run() {
     workerOwnership: "own",
   });
   const sceneColorbarTicks = sceneColorbarView._axisTicks("colorbar", 6);
+  const sceneColorbarMinor = sceneColorbarView._axisTicks("colorbar::minor", 6);
   if (sceneColorbarHandle.eligible("colorbar") || sceneColorbarHandle.covers("colorbar")
       || sceneColorbarTicks.source === "wasm"
       || sceneColorbarHandle.diagnostics()?.axisIds.includes("colorbar")
-      || sceneColorbarTicks.ticks.join(",") !== "0,1") {
+      || sceneColorbarTicks.ticks.join(",") !== "0,1"
+      || sceneColorbarMinor.source !== "rust-scene"
+      || sceneColorbarMinor.ticks.join(",") !== "0.25,0.75"
+      || sceneColorbarMinor.labels.length !== 0) {
     throw new Error(`scene-placed colorbar was claimed by XYTK: ${JSON.stringify({
       eligible: sceneColorbarHandle.eligible("colorbar"),
       covers: sceneColorbarHandle.covers("colorbar"),
       diagnostics: sceneColorbarHandle.diagnostics(),
       sceneColorbarTicks,
+      sceneColorbarMinor,
     })}`);
   }
   await sceneColorbarHandle.dispose();
   sceneColorbarView.destroy();
   sceneColorbarHost.remove();
 
-  foundationStage = "polar ChartView ticks reject before attachment";
+  foundationStage = "polar angular and radial ChartView ticks use Rust/WASM";
   const polarTickHost = document.createElement("div");
   polarTickHost.style.cssText = "width:320px;height:240px";
   document.body.append(polarTickHost);
@@ -1683,6 +1939,24 @@ async function run() {
     domain: [0, 1], orientation: "vertical", colormap: "viridis",
   });
   polarTickView.spec.coords = "polar";
+  Object.assign(polarTickView.axes.x, {
+    theta_unit: "degrees",
+    sector: [0, 360],
+    minor_tick_values: [45, 135, 225, 315],
+    minor_style: { grid_color: "#123456", tick_color: "#654321", tick_length: 7 },
+  });
+  Object.assign(polarTickView.axes.y, {
+    minor_tick_values: [0.25, 0.75],
+    minor_style: { grid_color: "#234567", tick_color: "#765432", tick_length: 6 },
+  });
+  const polarMinorPaint = [];
+  const polarStylePaint = polarTickView._axisStylePaint;
+  polarTickView._axisStylePaint = function(axis, key, fallback) {
+    if (axis?.style === this.axes.x.minor_style || axis?.style === this.axes.y.minor_style) {
+      polarMinorPaint.push(`${axis.id}:${key}`);
+    }
+    return polarStylePaint.call(this, axis, key, fallback);
+  };
   const polarTickErrors = [];
   polarTickView.root.addEventListener(
     "xy:wasm_ticks_error",
@@ -1693,19 +1967,33 @@ async function run() {
     wasm: wasmModule,
     maxArenaBytes: 1024 * 1024,
   });
-  await rejected(
-    attachWasmTicks(polarTickView, {
-      worker: polarTickWorker,
-      workerOwnership: "own",
-    }),
-    "XYG_WASM_INVALID_ARGUMENT",
-  );
-  if (polarTickErrors.length !== 1 || polarTickView._wasmTicks != null) {
-    throw new Error(`polar ChartView tick attachment was not rejected: ${JSON.stringify({
+  const polarTickHandle = await attachWasmTicks(polarTickView, {
+    worker: polarTickWorker,
+    workerOwnership: "own",
+  });
+  const polarTheta = polarTickView._axisTicks("x", 6);
+  const polarRadial = polarTickView._axisTicks("y", 6);
+  const polarThetaMinor = polarTickView._axisTicks("x::minor", 6);
+  const polarRadialMinor = polarTickView._axisTicks("y::minor", 6);
+  polarTickView._drawNow();
+  if (polarTickErrors.length !== 0 || polarTickView._wasmTicks !== polarTickHandle
+      || polarTheta.source !== "wasm" || polarRadial.source !== "wasm"
+      || !polarTheta.ticks.length || !polarRadial.ticks.length
+      || polarThetaMinor.source !== "wasm" || polarThetaMinor.ticks.join(",") !== "45,135,225,315"
+      || polarRadialMinor.source !== "wasm" || polarRadialMinor.ticks.join(",") !== "0.25,0.75"
+      || !polarMinorPaint.includes("x:grid_color") || !polarMinorPaint.includes("x:tick_color")
+      || !polarMinorPaint.includes("y:grid_color") || !polarMinorPaint.includes("y:tick_color")) {
+    throw new Error(`polar ChartView ticks were not Rust-resolved: ${JSON.stringify({
       polarTickErrors,
       attached: polarTickView._wasmTicks != null,
+      polarTheta,
+      polarRadial,
+      polarThetaMinor,
+      polarRadialMinor,
+      polarMinorPaint,
     })}`);
   }
+  await polarTickHandle.dispose();
   polarTickView.destroy();
   polarTickHost.remove();
 
@@ -1888,7 +2176,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 25 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== 26 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");

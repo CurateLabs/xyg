@@ -135,6 +135,10 @@ def _probe_js() -> str:
   let restoreGlInstrumentation = () => {};
   try {
     const root = document.getElementById("root");
+    const tickEvents = [];
+    globalThis.__xygStandaloneObserver = (event) => {
+      if (["ticks_ready", "ticks_error"].includes(event?.phase)) tickEvents.push(event);
+    };
     const slots = [];
     const contextEvents = [];
     const creationFailureIds = [];
@@ -229,6 +233,25 @@ def _probe_js() -> str:
         setupFirstDrawDurations.push(performance.now() - setupFirstDrawStart);
       }
     }
+    const expectedTickViews = slots.filter((slot) => slot.view).length;
+    const tickDeadline = performance.now() + 60000;
+    while (tickEvents.length < expectedTickViews && performance.now() < tickDeadline) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    if (tickEvents.length !== expectedTickViews) {
+      throw new Error(
+        `Rust/WASM tick readiness ${tickEvents.length}/${expectedTickViews}`,
+      );
+    }
+    for (const event of tickEvents) {
+      const axisIds = event?.diagnostics?.axisIds || [];
+      if (event.phase !== "ticks_ready" || !axisIds.includes("x") || !axisIds.includes("y")) {
+        throw new Error(
+          `Rust/WASM dashboard ticks failed: ${event.code || axisIds.join(",") || "unknown"}`,
+        );
+      }
+    }
+    await xyRaf();
     // webglcontextlost dispatches as a task, so evictions triggered by the
     // setup/first-draw loop above only fire during this yield — keep phase
     // "create" until they have drained.
@@ -368,6 +391,7 @@ def _probe_js() -> str:
       startup_unique_shader_sources: startupUniqueShaderSources,
       startup_program_create_calls: startupProgramCreateCalls,
       startup_program_link_calls: startupProgramLinkCalls,
+      tick_ready_charts: tickEvents.length,
       pick_probe_charts: pickProbeChartIds.length,
       pick_probe_chart_ids: pickProbeChartIds,
       post_pick_shader_compile_calls: postPickShaderCompileCalls,
@@ -427,6 +451,10 @@ def run(*, chart_counts: list[int], chromium: str | None = None) -> dict[str, An
         total_payload_bytes = 0
         for i, fig in enumerate(figures):
             spec, blob = fig.build_payload()
+            spec["wasm_ticks"] = {
+                "workerUrl": "./wasm-worker.js",
+                "wasm": "./xyg-wasm.wasm",
+            }
             total_payload_bytes += json_bytes(spec) + len(blob)
             payloads.append(chart_payload(f"chart-{i}", spec, blob))
         payload_prep_ms = (time.perf_counter() - prep_start) * 1e3
@@ -440,7 +468,14 @@ def run(*, chart_counts: list[int], chromium: str | None = None) -> dict[str, An
                 ".chart-cell{width:420px;height:280px;border:1px solid #dde3ec;}"
             ),
         )
-        result = run_json_probe(html, marker="XY_DASHBOARD", chromium=chromium)
+        result = run_json_probe(
+            html,
+            marker="XY_DASHBOARD",
+            chromium=chromium,
+            virtual_time_ms=None,
+            hosted=True,
+            wasm_ticks=True,
+        )
         row: dict[str, Any] = {
             "scenario": f"dashboard_{count}",
             "chart_count": count,
@@ -465,6 +500,7 @@ def run(*, chart_counts: list[int], chromium: str | None = None) -> dict[str, An
                 "startup_unique_shader_sources",
                 "startup_program_create_calls",
                 "startup_program_link_calls",
+                "tick_ready_charts",
                 "pick_probe_charts",
                 "pick_probe_chart_ids",
                 "post_pick_shader_compile_calls",

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import base64
 import html
+import http.server
 import io
 import json
 import math
@@ -27,16 +28,21 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import numpy as np
 from PIL import Image
 
 import xyg
-from xyg.export import _bundled_js, _javascript_for_inline_script
+from xyg.export import _bundled_js, _javascript_for_inline_script, copy_wasm_tick_assets
+
+ROOT = Path(__file__).resolve().parents[1]
 
 CHROMIUM_CANDIDATES = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -355,86 +361,107 @@ const probe = {json.dumps(probe)};
 const glTargets = {json.dumps(_rgb_targets(gl_colors))};
 const chromeTargets = {json.dumps(_rgb_targets(chrome_colors))};
 const bytes = Uint8Array.from(atob("{blob64}"), c => c.charCodeAt(0));
-try {{
-  const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
-  setTimeout(() => {{
-    try {{
-      view._drawNow();
-      const gl = view.gl;
-      const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
-      const px = new Uint8Array(w * h * 4);
-      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      let lit = 0, minX = w, minY = h, maxX = -1, maxY = -1;
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {{
-        if (px[(y * w + x) * 4 + 3] <= 8) continue;
-        lit++;
-        minX = Math.min(minX, x); minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
-      }}
-      const countTargets = (pixels, targets) => Object.fromEntries(
-        targets.map(target => {{
-          let count = 0;
-          for (let i = 0; i < pixels.length; i += 4) {{
-            if (pixels[i + 3] <= 8) continue;
-            if (
-              Math.abs(pixels[i] - target.rgb[0]) <= 24 &&
-              Math.abs(pixels[i + 1] - target.rgb[1]) <= 24 &&
-              Math.abs(pixels[i + 2] - target.rgb[2]) <= 24
-            ) count++;
-          }}
-          return [target.name, count];
-        }})
-      );
-      const chrome = view.chrome.getContext("2d").getImageData(
-        0, 0, view.chrome.width, view.chrome.height
-      ).data;
-      const glColorCounts = countTargets(px, glTargets);
-      const chromeColorCounts = countTargets(chrome, chromeTargets);
-      const geom = view._polarGeometry();
-      const innerFraction = view._polarRadius(
-        geom, geom.rLo, {{coord: true}}
-      ) / geom.radius;
-      const localX = geom.cx - view.plot.x;
-      const localY = geom.cy - view.plot.y;
-      const sampleX = Math.max(0, Math.min(w - 1, Math.round(localX * view.dpr)));
-      const sampleY = Math.max(0, Math.min(h - 1, Math.round((view.plot.h - localY) * view.dpr)));
-      const centerAlpha = px[(sampleY * w + sampleX) * 4 + 3];
-      const inverseCenter = view._dataFromCanvas(localX, localY).map(
-        value => Number.isFinite(value) ? value : null
-      );
-      const projectedProbe = view._polarProject(probe[0], probe[1], geom);
-      const probeX = projectedProbe[0] - view.plot.x;
-      const probeY = projectedProbe[1] - view.plot.y;
-      const inverseProbe = view._dataFromCanvas(probeX, probeY).map(
-        value => Number.isFinite(value) ? value : null
-      );
-      const probeHit = view._hoverAt(probeX, probeY);
-      const labels = Array.from(document.querySelectorAll(".xy div"))
-        .map(node => (node.textContent || "").trim()).filter(Boolean);
-      const result = {{
-        lit, total: w * h, bounds: [minX, minY, maxX, maxY],
-        centerAlpha, inverseCenter, labels,
-        projectedProbe, inverseProbe,
-        probeHitKind: probeHit ? probeHit.g.trace.kind : null,
-        glColorCounts, chromeColorCounts,
-        radius: geom.radius, hole: geom.hole, innerFraction,
-        sector: [geom.sectorStart, geom.sectorEnd],
-        fullSector: geom.fullSector, gridShape: geom.gridShape,
-        gpuTraces: view.gpuTraces.map(g => ({{
-          kind: g.trace.kind, n: g.n, width: g.width,
-          value0Mode: g.value0Mode, value0Const: g.value0Const,
-          pos: g._cpuBar ? Array.from(g._cpuBar.pos) : null,
-          value1: g._cpuBar ? Array.from(g._cpuBar.value1) : null,
-        }})),
-        glError: gl.getError(),
-      }};
-      document.title = "XY_OK " + JSON.stringify(result);
-    }} catch (error) {{
-      document.title = "XY_ERROR " + (error.stack || error.message);
+let view = null;
+let tickSettled = false;
+globalThis.__xygStandaloneObserver = (event) => {{
+  if (tickSettled || !["ticks_ready", "ticks_error"].includes(event?.phase)) return;
+  tickSettled = true;
+  globalThis.__xygTickEvent = event;
+  if (event.phase === "ticks_error") {{
+    const message = event.code + ": " + event.message;
+    document.body.setAttribute("data-xy-polar-smoke-error", message);
+    document.title = "XY_ERROR " + message;
+    return;
+  }}
+  requestAnimationFrame(() => requestAnimationFrame(capture));
+}};
+const capture = () => {{
+  try {{
+    view._drawNow();
+    const gl = view.gl;
+    const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+    const px = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    let lit = 0, minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {{
+      if (px[(y * w + x) * 4 + 3] <= 8) continue;
+      lit++;
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
     }}
-  }}, 250);
+    const countTargets = (pixels, targets) => Object.fromEntries(
+      targets.map(target => {{
+        let count = 0;
+        for (let i = 0; i < pixels.length; i += 4) {{
+          if (pixels[i + 3] <= 8) continue;
+          if (
+            Math.abs(pixels[i] - target.rgb[0]) <= 24 &&
+            Math.abs(pixels[i + 1] - target.rgb[1]) <= 24 &&
+            Math.abs(pixels[i + 2] - target.rgb[2]) <= 24
+          ) count++;
+        }}
+        return [target.name, count];
+      }})
+    );
+    const chrome = view.chrome.getContext("2d").getImageData(
+      0, 0, view.chrome.width, view.chrome.height
+    ).data;
+    const glColorCounts = countTargets(px, glTargets);
+    const chromeColorCounts = countTargets(chrome, chromeTargets);
+    const geom = view._polarGeometry();
+    const innerFraction = view._polarRadius(
+      geom, geom.rLo, {{coord: true}}
+    ) / geom.radius;
+    const localX = geom.cx - view.plot.x;
+    const localY = geom.cy - view.plot.y;
+    const sampleX = Math.max(0, Math.min(w - 1, Math.round(localX * view.dpr)));
+    const sampleY = Math.max(0, Math.min(h - 1, Math.round((view.plot.h - localY) * view.dpr)));
+    const centerAlpha = px[(sampleY * w + sampleX) * 4 + 3];
+    const inverseCenter = view._dataFromCanvas(localX, localY).map(
+      value => Number.isFinite(value) ? value : null
+    );
+    const projectedProbe = view._polarProject(probe[0], probe[1], geom);
+    const probeX = projectedProbe[0] - view.plot.x;
+    const probeY = projectedProbe[1] - view.plot.y;
+    const inverseProbe = view._dataFromCanvas(probeX, probeY).map(
+      value => Number.isFinite(value) ? value : null
+    );
+    const probeHit = view._hoverAt(probeX, probeY);
+    const labels = Array.from(document.querySelectorAll(".xy div"))
+      .map(node => (node.textContent || "").trim()).filter(Boolean);
+    const result = {{
+      lit, total: w * h, bounds: [minX, minY, maxX, maxY],
+      centerAlpha, inverseCenter, labels,
+      projectedProbe, inverseProbe,
+      probeHitKind: probeHit ? probeHit.g.trace.kind : null,
+      glColorCounts, chromeColorCounts,
+      radius: geom.radius, hole: geom.hole, innerFraction,
+      sector: [geom.sectorStart, geom.sectorEnd],
+      fullSector: geom.fullSector, gridShape: geom.gridShape,
+      tickDiagnostics: globalThis.__xygTickEvent?.diagnostics || null,
+      gpuTraces: view.gpuTraces.map(g => ({{
+        kind: g.trace.kind, n: g.n, width: g.width,
+        value0Mode: g.value0Mode, value0Const: g.value0Const,
+        pos: g._cpuBar ? Array.from(g._cpuBar.pos) : null,
+        value1: g._cpuBar ? Array.from(g._cpuBar.value1) : null,
+      }})),
+      glError: gl.getError(),
+    }};
+    const encoded = JSON.stringify(result);
+    document.body.setAttribute("data-xy-polar-smoke", encoded);
+    document.title = "XY_OK " + encoded;
+  }} catch (error) {{
+    const message = error.stack || error.message;
+    document.body.setAttribute("data-xy-polar-smoke-error", message);
+    document.title = "XY_ERROR " + message;
+  }}
+}};
+try {{
+  view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
 }} catch (error) {{
-  document.title = "XY_ERROR " + (error.stack || error.message);
+  const message = error.stack || error.message;
+  document.body.setAttribute("data-xy-polar-smoke-error", message);
+  document.title = "XY_ERROR " + message;
 }}
 </script></body></html>"""
 
@@ -466,6 +493,11 @@ def _validate_spec(case: Case, spec: dict[str, Any]) -> None:
 
 
 def _validate_live(case: Case, metrics: dict[str, Any]) -> None:
+    axis_ids = set((metrics.get("tickDiagnostics") or {}).get("axisIds") or ())
+    if not {"x", "y"}.issubset(axis_ids):
+        raise AssertionError(
+            f"{case.name}: Rust/WASM tick admission missing primary axes: {sorted(axis_ids)}"
+        )
     if metrics["lit"] < case.min_live_pixels:
         raise AssertionError(
             f"{case.name}: only {metrics['lit']} live WebGL pixels "
@@ -533,27 +565,22 @@ def _validate_live(case: Case, metrics: dict[str, Any]) -> None:
 def _run_live(
     case: Case,
     chromium: str,
-    page: Path,
+    page_url: str,
     screenshot: Path | None,
 ) -> dict[str, Any]:
     command = [
+        "node",
+        str(ROOT / "scripts" / "browser_probe_dump.mjs"),
         chromium,
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
+        page_url,
+        "data-xy-polar-smoke",
         "--use-angle=swiftshader",
         "--enable-unsafe-swiftshader",
-        "--virtual-time-budget=5000",
-        "--dump-dom",
+        "--hide-scrollbars",
+        f"--window-size={int(case.chart.width)},{int(case.chart.height)}",
     ]
     if screenshot is not None:
-        command.extend(
-            [
-                f"--window-size={int(case.chart.width)},{int(case.chart.height)}",
-                f"--screenshot={screenshot}",
-            ]
-        )
-    command.append(page.as_uri())
+        command.append(f"--screenshot={screenshot}")
     result = subprocess.run(command, capture_output=True, text=True, timeout=120)
     match = re.search(r"<title>([^<]*)</title>", result.stdout)
     title = html.unescape(match.group(1)) if match else "(no title in DOM dump)"
@@ -632,10 +659,38 @@ def main() -> None:
         output_dir = args.artifacts.resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Canonical browser ticks are Rust/WASM-owned. Serve the exact packaged
+    # pair from the same origin as these generated pages; a missing artifact or
+    # failed attachment must abort this smoke instead of reviving JS labels.
+    copy_wasm_tick_assets(output_dir)
+
+    class SmokeHandler(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, format: str, *args: object) -> None:
+            del format, args
+
+        def end_headers(self) -> None:
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; "
+                "style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; "
+                "object-src 'none'; base-uri 'none'",
+            )
+            self.send_header("Cache-Control", "no-store")
+            super().end_headers()
+
+    handler = partial(SmokeHandler, directory=str(output_dir))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    origin = f"http://127.0.0.1:{server.server_port}"
     try:
         for case in cases:
             figure = case.chart.figure()
             spec, blob = figure.build_payload()
+            spec["wasm_ticks"] = {
+                "workerUrl": "./wasm-worker.js",
+                "wasm": "./xyg-wasm.wasm",
+            }
             _validate_spec(case, spec)
             page = output_dir / f"{case.name}.html"
             page.write_text(
@@ -645,7 +700,12 @@ def main() -> None:
             screenshot = (
                 output_dir / f"{case.name}.browser.png" if args.artifacts is not None else None
             )
-            metrics = _run_live(case, chromium, page, screenshot)
+            metrics = _run_live(
+                case,
+                chromium,
+                f"{origin}/{quote(page.name)}",
+                screenshot,
+            )
             svg_bytes, png_bytes, ink_fraction = _validate_static(case, figure, output_dir)
             print(
                 f"{case.name}: live={metrics['lit']} px, "
@@ -653,6 +713,9 @@ def main() -> None:
                 f"native ink={ink_fraction:.2%}"
             )
     finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
         if temporary is not None:
             temporary.cleanup()
     print("polar phase 6/7 live examples: browser, SVG, and PNG all OK")

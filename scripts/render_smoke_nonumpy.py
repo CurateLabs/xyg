@@ -1152,14 +1152,18 @@ try{{
     const occSpec={{protocol:{PROTOCOL_VERSION},width:200,height:160,title:"",backend:"none",
       show_legend:false,show_modebar:false,
       dom:{{style:{{"--chart-bg":"#eaeaf2","--chart-grid":"#ffffff"}}}},
-      x_axis:{{kind:"linear",label:"",range:[0,4]}},
-      y_axis:{{kind:"linear",label:"",range:[0,8]}},
+      // This low-level painter fixture deliberately supplies the already
+      // Rust-resolved Scene tick plane; no Worker or TypeScript ladder is
+      // involved in the chrome-under-background assertion.
+      x_axis:{{id:"x",kind:"linear",label:"",range:[0,4],tick_resolution:"rust_scene",tick_values:[0,2,4]}},
+      y_axis:{{id:"y",kind:"linear",label:"",range:[0,8],tick_resolution:"rust_scene",tick_values:[0,4,8]}},
       traces:[{{id:0,kind:"line",name:"l",tier:"direct",n_points:2,n_marks:2,
         style:{{color:"#2563eb",width:2,opacity:1}},x:occcol([0,4]),y:occcol([1,2])}}],
       columns:occCols}};
     const holderOcc=document.createElement("div");document.body.appendChild(holderOcc);
     const vOcc=xy.renderStandalone(holderOcc,occSpec,occBuf);
     vOcc._drawNow();
+    const occXT=vOcc._axisTicks("x",6), occYT=vOcc._axisTicks("y",6);
     // Marks canvas: transparent where no mark is drawn (upper plot region).
     const gO=vOcc.gl,WO=vOcc.canvas.width,HO=vOcc.canvas.height;
     const oPx=new Uint8Array(4);
@@ -1174,7 +1178,8 @@ try{{
         else if(Math.abs(cim[i]-234)<6&&Math.abs(cim[i+1]-234)<6&&Math.abs(cim[i+2]-242)<6) occLav++;
       }}
     }}
-    const bgocc=(oPx[3]<20 && occLav>500 && occGrid>20)?1:0;
+    const bgocc=(oPx[3]<20 && occLav>500 && occGrid>20
+      && occXT.ticks.length===3 && occYT.ticks.length===3)?1:0;
     vOcc.destroy();holderOcc.remove();
     // curve:"smooth": the GPU polyline densifies ((n-1)*16+1 verts) while the
     // hover/_cpu columns keep the 5 source rows; area smooths its base too.
@@ -1227,7 +1232,7 @@ try{{
     gMc.readPixels(Math.round(WM*0.8),Math.round(HM*0.5),1,1,gMc.RGBA,gMc.UNSIGNED_BYTE,rpx);
     const meancolor=(lpx[0]>60 && lpx[0]>lpx[2]*3 && rpx[2]>60 && rpx[2]>rpx[0]*3)?1:0;
     vMc.destroy();holderMc.remove();
-    const base=`XY_OK lit=${{lit}} total=${{w*h}} labels=${{labels}} pick=${{hits}} row=${{hasXY}} selAll=${{selAll}} selSome=${{selSome}} active=${{active}} btns=${{btns}} modebarHidden=${{modebarHiddenAtRest}} modebarTopLeft=${{modebarTopLeft}} modebarHover=${{modebarHoverReveal}} modebarNoCollapse=${{modebarNoCollapse}} modebarMenu=${{modebarMenu}} modebarDrag=${{modebarDrag}} modebarSelect=${{modebarSelect}} lassoEdit=${{lassoEdit}} modebarExport=${{modebarExport}} panToggle=${{panToggle}} zin=${{zin}} smooth=${{smooth}} labelThrottle=${{labelThrottle}} hoverSkip=${{hoverSkip}} zanch=${{zanch}} retarget=${{retarget}} nosnap=${{nosnap}} prefetch=${{prefetch}} maxwait=${{maxwait}} box=${{boxOk}} xonly=${{xonly}} zmode=${{zmode}} densityLit=${{densityLit}} drill=${{drilled}} pending=${{pending}} dblend=${{dblend}} dseq=${{dseq}} hov=${{hov}} sstale=${{sstale}} sfresh=${{sfresh}} srestore=${{srestore}} plut=${{plut}} reg=${{reg}} refresh=${{refresh}} dpick=${{dpick}} hold=${{hold}} zoomout=${{zoomout}} broad=${{broadfallback}} dying=${{dying}} dback=${{dback}} dnorm=${{dnorm}} dnormDone=${{dnormDone}} stale=${{stale}} thrash=${{thrash}} qwire=${{qwire}} stream=${{stream}} tj=${{Math.round(maxJump*100)}} td=${{Math.round(reviveDip*100)}} malformed=${{malformed}} pixdet=${{pixdet}} splitbuf=${{splitbuf}} barBase=${{barBase}} histBase=${{histBase}} edgepad=${{edgepad}} mgrad=${{mgrad}} axisontop=${{axisontop}} mtipbase=${{mtipbase}} mcorner=${{mcorner}} mstroke=${{mstroke}} bgrad=${{bgrad}} bcorner=${{bcorner}} msmooth=${{msmooth}} bgocc=${{bgocc}} meancolor=${{meancolor}} dretire=${{dretire}}`;
+    const base=`XY_OK lit=${{lit}} total=${{w*h}} labels=${{labels}} pick=${{hits}} row=${{hasXY}} selAll=${{selAll}} selSome=${{selSome}} active=${{active}} btns=${{btns}} modebarHidden=${{modebarHiddenAtRest}} modebarTopLeft=${{modebarTopLeft}} modebarHover=${{modebarHoverReveal}} modebarNoCollapse=${{modebarNoCollapse}} modebarMenu=${{modebarMenu}} modebarDrag=${{modebarDrag}} modebarSelect=${{modebarSelect}} lassoEdit=${{lassoEdit}} modebarExport=${{modebarExport}} panToggle=${{panToggle}} zin=${{zin}} smooth=${{smooth}} labelThrottle=${{labelThrottle}} hoverSkip=${{hoverSkip}} zanch=${{zanch}} retarget=${{retarget}} nosnap=${{nosnap}} prefetch=${{prefetch}} maxwait=${{maxwait}} box=${{boxOk}} xonly=${{xonly}} zmode=${{zmode}} densityLit=${{densityLit}} drill=${{drilled}} pending=${{pending}} dblend=${{dblend}} dseq=${{dseq}} hov=${{hov}} sstale=${{sstale}} sfresh=${{sfresh}} srestore=${{srestore}} plut=${{plut}} reg=${{reg}} refresh=${{refresh}} dpick=${{dpick}} hold=${{hold}} zoomout=${{zoomout}} broad=${{broadfallback}} dying=${{dying}} dback=${{dback}} dnorm=${{dnorm}} dnormDone=${{dnormDone}} stale=${{stale}} thrash=${{thrash}} qwire=${{qwire}} stream=${{stream}} tj=${{Math.round(maxJump*100)}} td=${{Math.round(reviveDip*100)}} malformed=${{malformed}} pixdet=${{pixdet}} splitbuf=${{splitbuf}} barBase=${{barBase}} histBase=${{histBase}} edgepad=${{edgepad}} mgrad=${{mgrad}} axisontop=${{axisontop}} mtipbase=${{mtipbase}} mcorner=${{mcorner}} mstroke=${{mstroke}} bgrad=${{bgrad}} bcorner=${{bcorner}} msmooth=${{msmooth}} bgocc=${{bgocc}} occLav=${{occLav}} occGrid=${{occGrid}} occAlpha=${{oPx[3]}} occTicks=${{occXT.ticks.length}}/${{occYT.ticks.length}} occResolution=${{vOcc.axes.x.tick_resolution||"none"}} meancolor=${{meancolor}} dretire=${{dretire}}`;
     const graphSummary=v._a11ySummaryText();
     const graphA11y=graphSummary.includes("Graph: 3 nodes, 2 visible labels, 1 compound groups, 1 selected, 1 disabled.")?1:0;
     const baseWithStyle=`${{base}} graphA11y=${{graphA11y}} vstyle=${{vstyle}}`;

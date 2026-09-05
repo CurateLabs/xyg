@@ -738,20 +738,16 @@ def test_client_exposes_axis_style_hooks() -> None:
 
 
 def test_log_axis_uses_separate_readable_label_ticks() -> None:
-    required = (
-        "const labels = [];",
-        "labels.push(v);",
-        "return { ticks: out, labels: labels.length ? labels : out, step: 1, log: true };",
+    engine = (ROOT / "crates/xyg-engine/src/packed_ticks.rs").read_text(encoding="utf-8")
+    client_required = (
         "for (const v of (xt.labels || xt.ticks))",
         "for (const v of (yt.labels || yt.ticks))",
         "for (const v of (ticks.labels || ticks.ticks))",
     )
-
-    for path, text in FORMATTER_FILES:
-        for marker in required[:3]:
-            assert marker in text, f"{path} no longer separates log tick labels"
+    assert "scene::log_ticks(lo, hi, target" in engine
+    assert "t.labeled" in engine
     for path, text in CLIENT_FILES:
-        for marker in required[3:]:
+        for marker in client_required:
             assert marker in text, f"{path} no longer draws readable log tick labels"
 
 
@@ -1023,11 +1019,7 @@ def test_client_supports_edge_to_edge_sparklines() -> None:
 def test_client_named_axes_handle_silent_gutters_and_reversed_ticks() -> None:
     """Silent secondary chrome must not shrink the plot, and explicit ticks
     remain valid when a named scale's range is reversed."""
-    required = (
-        'this._axisTickLabelStrategy(axis) !== "none"',
-        "const a = Math.min(lo, hi), b = Math.max(lo, hi);",
-        "v >= a && v <= b",
-    )
+    required = ('this._axisTickLabelStrategy(axis) !== "none"',)
     for path, text in CLIENT_FILES:
         for marker in required:
             assert marker in text, f"{path} lost named-axis range/layout guard {marker!r}"
@@ -1038,6 +1030,11 @@ def test_client_named_axes_handle_silent_gutters_and_reversed_ticks() -> None:
         assert label_layout.index("strategyValue") < label_layout.index("labels.length <= 1"), (
             f"{path} lets a single label bypass tick_label_strategy='none'"
         )
+
+    engine = (ROOT / "crates/xyg-engine/src/packed_ticks.rs").read_text(encoding="utf-8")
+    assert "fn authored_in_window(value: f64, lo: f64, hi: f64, family: u32)" in engine
+    assert "let (a, z) = if lo <= hi { (lo, hi) } else { (hi, lo) };" in engine
+    assert "value >= a && value <= z" in engine
 
 
 def test_built_bundles_keep_minification_safe_invariants() -> None:

@@ -68,11 +68,15 @@ function attachHostWasmTicks(view: ChartView & { _dispatchChartEvent?: Function 
     | { workerUrl?: unknown; worker_url?: unknown; wasm?: unknown }
     | null
     | undefined;
-  if (assets == null) return;
+  if (assets == null) {
+    view._publishTickFailure?.();
+    return;
+  }
   const workerUrl = assets.workerUrl ?? assets.worker_url;
   const wasm = assets.wasm;
   const observer = (globalThis as { __xygStandaloneObserver?: (event: object) => void }).__xygStandaloneObserver;
   const fail = (code: string, message: string, diagnostics: unknown = null) => {
+    view._recordTickFailure?.(code, message);
     view._dispatchChartEvent?.("wasm_ticks_error", { code, message, diagnostics });
     if (typeof observer === "function") observer({ phase: "ticks_error", code, message });
   };

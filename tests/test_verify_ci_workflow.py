@@ -2026,6 +2026,55 @@ def test_ci_workflow_binds_exact_wasm_target_build(tmp_path: Path) -> None:
     assert any("exact fail-closed wasm32 build" in error for error in errors)
 
 
+def test_ci_workflow_requires_real_wasm_ticks_in_full_browser_corpora(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace("          npm run build:wasm\n", "", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("full browser corpus" in error and "npm run build:wasm" in error for error in errors)
+
+
+def test_ci_workflow_requires_real_wasm_ticks_on_python_floor(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    first = workflow.index("          npm run build:wasm\n")
+    second = workflow.index("          npm run build:wasm\n", first + 1)
+    path.write_text(
+        workflow[:second] + workflow[second:].replace("          npm run build:wasm\n", "", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "Python 3.11 floor gate" in error and "npm run build:wasm" in error for error in errors
+    )
+
+
+def test_ci_workflow_requires_worker_before_wasm_payload(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "          node js/build.mjs\n          npm run build:wasm\n",
+            "          npm run build:wasm\n          node js/build.mjs\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("ordered JS Worker then Rust/WASM payload" in error for error in errors)
+
+
 def test_ci_workflow_rejects_commented_wasm_chromium_install(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

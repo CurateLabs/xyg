@@ -1,4 +1,4 @@
-import { fmtCategory, fmtNumberSpec, fmtValue } from "./30_ticks";
+import { fmtAngle, fmtCategory, fmtNumberSpec, fmtValue } from "./30_ticks";
 import { ChartView } from "./50_chartview";
 
 // ChartView tooltip resolution: map a hovered vertex back to its source
@@ -249,14 +249,11 @@ Object.assign(ChartView.prototype, {
         }
       }
     }
-    const step = this._axisTicks?.("x", 6)?.step ?? 1;
-    let text;
-    try {
-      text = this._axisTickText(axis, value, step);
-    } catch {
-      text = null;
-    }
-    return { label: "θ", value: text || fmtValue(value, kind), omit: true };
+    return {
+      label: "θ",
+      value: fmtAngle(value, axis.theta_unit, axis.format) || fmtValue(value, kind),
+      omit: true,
+    };
   },
 
   // A pie slice or a gauge band is one named wedge: the name IS the datum,

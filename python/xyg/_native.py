@@ -6919,6 +6919,26 @@ def scene_axis_ticks(
     return ticks[:written].tolist(), labeled[: labeled_len.value].tolist(), step.value
 
 
+def tick_resolve_packed(request: bytes | bytearray | memoryview) -> bytes:
+    """Resolve canonical packed ``XYTK`` bytes through the native Rust twin."""
+    payload = bytes(request)
+    if not payload:
+        raise ValueError("packed tick request must not be empty")
+    source = np.frombuffer(payload, dtype=np.uint8)
+    required = int(_lib.xyg_tick_resolve_packed(_ptr_u8(source), len(source), 0, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("native packed tick resolver rejected the request")
+    out = np.empty(required, dtype=np.uint8)
+    written = int(
+        _lib.xyg_tick_resolve_packed(
+            _ptr_u8(source), len(source), _ptr_u8(out) if required else 0, required
+        )
+    )
+    if written != required:
+        raise ValueError("native packed tick resolver returned an unstable size")
+    return out.tobytes()
+
+
 _TICK_LAYOUT_KIND = {
     "auto": 0,
     "hide": 1,

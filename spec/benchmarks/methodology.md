@@ -144,7 +144,9 @@ reported).
    `benchmarks/bench_2d_charts.py` stays the Plotly/Seaborn chart-to-pixels
    comparison.
 7. `dashboard_scale`: `benchmarks/bench_dashboard.py` attempts 10/20/50/60 mixed
-   charts in CI, checks every canvas initially and while scrolling, and records
+   charts in CI, serves the packaged Rust/WASM tick pair beside the page, waits
+   for admitted primary axes on every successfully created chart, checks every
+   canvas initially and while scrolling, and records
    payload prep, navigation readiness, per-chart setup/first-draw p50/p95/max, load and
    first-pick shader compiles and program links, advisory startup long tasks, JS
    heap, redraw-submission p95, per-chart context loss/restoration events, and the

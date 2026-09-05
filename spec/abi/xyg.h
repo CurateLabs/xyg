@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 360
-#define XYG_ABI_SIGNATURE_SHA256 "9ab4cec3823938e163c1156677d8ceeac242cea52ab3c3e77be97642143a4827"
+#define XYG_ABI_VERSION 361
+#define XYG_ABI_SIGNATURE_SHA256 "c897e37cef383de38273836d89cf30b3c3cee5077285f7249ed5e5299bc1279c"
 
 #ifdef __cplusplus
 extern "C" {
@@ -478,6 +478,7 @@ uint64_t xyg_temporal_selection_limit();
 size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap);
 size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y);
 size_t xyg_tick_format(double value, double step, uint32_t kind, uint32_t scale, uint32_t theta_unit, const uint8_t * format, size_t format_len, uint32_t n_categories, const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, uint8_t * out, size_t out_cap);
+size_t xyg_tick_resolve_packed(const uint8_t * input, size_t input_len, uint8_t * out, size_t out_cap);
 size_t xyg_tick_window(double range_lo, double range_hi, uint32_t theta_unit, uint32_t kind, uint32_t n_categories, double sector_lo, double sector_hi, double * out_lo, double * out_hi);
 size_t xyg_tick_window_filter(const double * values, size_t n, double lo, double hi, uint32_t theta_unit, uint32_t kind, int32_t require_finite, double * out, size_t out_cap);
 size_t xyg_tight_layout_figure_extra(double canvas_w, double canvas_h, double suptitle_height, double suptitle_y, double xlabel_size, double ylabel_size, double legend_box_w, double * out_extra);

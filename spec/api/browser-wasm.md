@@ -25,7 +25,8 @@ await worker.dispose(); // required for the default borrowed ownership
 
 ## Dynamic viewport ticks
 
-WASM ABI 23 exposes `encodeWasmTickBatch`, `decodeWasmTickBatch`, and
+The dynamic-tick seam introduced in WASM ABI 23 is carried by current WASM ABI
+26, which exposes `encodeWasmTickBatch`, `decodeWasmTickBatch`, and
 `resolveWasmTicks` from the public browser entry point. The low-level
 `XygWasmWorker.resolveTicks()` task carries one atomic `XYTK` request and `XYTO`
 result. Low-level callers supply the full axis batch and explicitly manage the
@@ -40,19 +41,19 @@ Each axis admits at most 200 authored/output ticks, 65,536 source categories,
 
 `attachWasmTicks(view, { worker, workerOwnership })` installs that seam on the
 eligible ChartView path: automatic, authored-value, and authored-empty primary
-Cartesian x/y axes whose kind is linear (scale linear, log, or symlog),
-category, or time, plus eligible ChartView colorbar axes (linear or log,
-including authored and authored-empty `ticks`). Polar, `theta_unit`, empty
-or non-string category tables, and Scene-placed colorbars are excluded. It
+or secondary Cartesian, polar angular/radial, authored minor, and colorbar
+slots. Families are linear, log, symlog, category, time, angular radians, and
+angular degrees; colorbars admit linear/log. Empty or non-string category
+tables are excluded, while Scene-placed axes/colorbars consume their existing
+Rust-resolved descriptors instead. It
 resolves one atomic batch before mounting, then intercepts both tick positions
 and label text for axes that already have an admitted Rust cache matching the
 current family, category table, format, and provenance (`covers`). `frame()`
 still requests every currently eligible axis, including one that became
-eligible after mount; that new slot stays on `30_ticks.ts` until its first
+eligible after mount; that new slot paints no ticks until its first matching
 cache arrives and is never painted as a synthetic empty WASM result. An
-admitted authored-empty cache is a real empty Rust result.
-Angular/polar and secondary-axis paths remain unchanged and are not claimed
-by this API.
+admitted authored-empty cache is a real empty Rust result. TypeScript has no
+canonical axis ladder or tick-label formatting fallback.
 
 ```js
 import {
@@ -77,7 +78,7 @@ The package path requires the ESM client, external module Worker, and WASM
 artifact from one `@curatelabs/xyg` version. Release
 `ASSET-MANIFEST.json` provides byte lengths, SHA-256 hashes, and protocol/ABI/
 Scene/painter versions for pre-deployment verification. The Worker validates
-WASM ABI 23 and the Scene version before the first attachment can mount.
+current WASM ABI 26 and the Scene version before the first attachment can mount.
 Callers using `workerOwnership: "borrow"` must dispose the Worker separately.
 The Python wheel copies `wasm-worker.js` and `xyg-wasm.wasm` into
 `xyg/static/` from the same `@curatelabs/xyg` build. Hosted `to_html(path,
@@ -88,8 +89,8 @@ supplies already-served URLs for notebooks, Reflex, or an in-memory
 document. `render` / `renderStandalone` then call `attachWasmTicks` with
 those exact URLs. Missing or blob/data/CDN values fail closed
 (`xy:wasm_ticks_error`) and do not guess a path. The srcdoc notebook iframe
-and default offline `to_html()` string stay on the JavaScript tick path
-because they cannot load sibling module Workers. Reflex `register()` links
+and default offline `to_html()` string fail closed for dynamic ticks because
+they cannot load sibling module Workers. Reflex `register()` links
 the same two files beside `xy_client.js` when they are packaged, and
 `XYChart` auto-attaches them via `spec.wasm_ticks` plus `attachHostWasmTicks`
 (relative `./wasm-worker.js` and `./xyg-wasm.wasm`, resolved against the
@@ -97,15 +98,17 @@ wrapper module). Real-browser E2E proof of that packaged attach is tracked by
 the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the delivered #59 subset. It never uses
 eval, Blob/data Workers,
 guessed paths, a CDN, implicit asset lookup, synchronous main-thread WASM,
-or JavaScript tick generation for a covered attached axis.
+or JavaScript tick generation for any axis.
 
 Each viewport/resize snapshot gets a monotonic axis revision and Worker tick
 sequence. New work cancels the old task; only the current sequence, revision,
 axis identity, attachment, and ChartView may admit. Until then
 the last admitted Rust-produced positions and labels remain painted. Admission
-and attach paint through `draw()` only — they must not call `_layout()`, which
-rewrites `plot` without moving the marks canvas and can oscillate the
-screen-bounded tick target. Sequential re-attach admits on the incoming handle
+and attach force ChartView's complete resize path after Rust labels arrive;
+that remeasures actual host fonts and moves `plot`, mark canvas, chrome, titles,
+and interaction geometry together. They must not call `_layout()` alone.
+Identical targets deduplicate, and the browser contract asserts stable revisions
+after formatted/title, category/time, and authored-label reflow. Sequential re-attach admits on the incoming handle
 while the previous attachment is still installed (`ownsAttachment` is
 `!active || view._wasmTicks === this`), then activates, owns the slot, and
 retires the previous handle. `cancel()` retires the current request without
@@ -121,8 +124,16 @@ permanently block a later retry of the same viewport. Its detail is
 `{ code, message, diagnostics }`, using a stable `XygWasmError` code and Rust
 diagnostic counters when available. A failed initial attachment emits the
 event and rejects before partial mount. A failure after mounting retains the
-last Rust cache for already-covered axes; it does not fall through to
-`30_ticks.ts`.
+last Rust cache for already-covered axes; an uncovered slot paints nothing and
+never falls through to TypeScript.
+
+Current native ABI 361 exposes the same engine implementation as
+`xyg_tick_resolve_packed(input, input_len, out, out_cap)`. Probe with a null
+output/zero capacity, allocate the returned byte count, then write; invalid
+input returns `usize::MAX`. The native seam was introduced in ABI 360. Python
+`_native.tick_resolve_packed` and Node
+`tickResolvePacked` are thin wrappers for exact parity proof and host
+integration, not alternate tick algorithms.
 
 Every Worker-reported `XygWasmError` after the Rust instance initializes
 carries a read-only `diagnostics` snapshot. Locally rejected argument,
