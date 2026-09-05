@@ -423,7 +423,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                 trace.grid.values,
                 cols,
                 rows,
-                domain,
+                (float(domain[0]), float(domain[1])),
                 stops,
                 alpha,
             )

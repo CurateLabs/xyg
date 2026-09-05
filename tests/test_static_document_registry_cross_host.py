@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from PIL import Image
+
+Image = pytest.importorskip("PIL.Image")
 
 import xyg
 from xyg import _native

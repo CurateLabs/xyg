@@ -278,12 +278,22 @@ def _native_scene_layout_rooms(spec: dict[str, Any], *, rect: bool = False) -> O
         y_label=str(y_axis.get("label") or ""),
         x_format=str(x_axis.get("format")) if x_axis.get("format") else None,
         y_format=str(y_axis.get("format")) if y_axis.get("format") else None,
-        padding=(tuple(map(float, spec["padding"])) if spec.get("padding") is not None else None),
+        padding=(
+            (
+                float(spec["padding"][0]),
+                float(spec["padding"][1]),
+                float(spec["padding"][2]),
+                float(spec["padding"][3]),
+            )
+            if spec.get("padding") is not None
+            else None
+        ),
         colorbar_side=side,
         rect=rect,
     )
     if rect:
-        return tuple(map(float, resolved))  # type: ignore[return-value]
+        left, right, top, bottom = (float(v) for v in resolved)
+        return left, top, right, bottom
     left, right, top, bottom = resolved
     return float(left), float(top), float(right), float(bottom)
 

@@ -7889,8 +7889,8 @@ class Axes(PlotTypeMixin):
                     packed_entries.append(
                         _static_document.LegendFitEntry(
                             3 if horizontal else 2,
-                            authored_values(entry["x"], "y" if horizontal else "x"),
-                            authored_values(entry["y"], "x" if horizontal else "y"),
+                            list(authored_values(entry["x"], "y" if horizontal else "x")),
+                            list(authored_values(entry["y"], "x" if horizontal else "y")),
                             np.ascontiguousarray(
                                 np.asarray(kwargs.get("base", ()), dtype=np.float64).reshape(-1)
                             ),
@@ -7905,7 +7905,9 @@ class Axes(PlotTypeMixin):
                     if len(args) >= 2:
                         packed_entries.append(
                             _static_document.LegendFitEntry(
-                                4, authored_values(args[1], "x"), authored_values(args[0], "y")
+                                4,
+                                list(authored_values(args[1], "x")),
+                                list(authored_values(args[0], "y")),
                             )
                         )
                     continue
@@ -7913,7 +7915,9 @@ class Axes(PlotTypeMixin):
                     args = tuple(entry.get("args") or ())
                     if args:
                         packed_entries.append(
-                            _static_document.LegendFitEntry(5, authored_values(args[0], "x"), ())
+                            _static_document.LegendFitEntry(
+                                5, list(authored_values(args[0], "x")), []
+                            )
                         )
                     continue
                 x_values, y_values = entry.get("x"), entry.get("y")
@@ -7930,8 +7934,8 @@ class Axes(PlotTypeMixin):
                 packed_entries.append(
                     _static_document.LegendFitEntry(
                         1 if kind == "scatter" else 6 if kind == "area" else 0,
-                        authored_values(x_values, "x"),
-                        authored_values(y_values, "y"),
+                        list(authored_values(x_values, "x")),
+                        list(authored_values(y_values, "y")),
                         (
                             np.ascontiguousarray(
                                 np.asarray(kwargs.get("base", ()), dtype=np.float64).reshape(-1)
@@ -8482,7 +8486,8 @@ class Axes(PlotTypeMixin):
                 )
             )
         if static_mathtext:
-            core_figure._pyplot_static_mathtext = True
+            # Declared on the internal Figure for the static-export projection.
+            core_figure.__dict__["_pyplot_static_mathtext"] = True
         core_figure.title_options = [
             {
                 **title,

@@ -393,10 +393,33 @@ def resolve_panel_chrome(
         raise
     if len(resolved) != _PANEL_CHROME_OUTPUT.size:
         raise RuntimeError("invalid native static panel chrome result")
-    magic, version, compact_flag, reserved, *values = _PANEL_CHROME_OUTPUT.unpack(resolved)
+    magic, version, compact_flag, reserved = _PANEL_CHROME_OUTPUT.unpack_from(resolved)[:4]
+    values = _PANEL_CHROME_OUTPUT.unpack(resolved)[4:]
     if magic != b"XYPO" or version != 1 or compact_flag not in {0, 1} or reserved != 0:
         raise RuntimeError("invalid native static panel chrome result")
-    return ResolvedPanelChrome(*values, bool(compact_flag))
+    (
+        left,
+        top,
+        right,
+        bottom,
+        outside_top,
+        outside_right,
+        outside_bottom,
+        probe_width,
+        probe_height,
+    ) = values
+    return ResolvedPanelChrome(
+        left,
+        top,
+        right,
+        bottom,
+        outside_top,
+        outside_right,
+        outside_bottom,
+        probe_width,
+        probe_height,
+        bool(compact_flag),
+    )
 
 
 def _resolved_layout(encoded: bytes, count: int, *, facet: bool = False) -> ResolvedLayout:
@@ -1120,11 +1143,13 @@ def project_figure(
                 continue
             item_style = dict(trace.style or {})
             color_channel = getattr(trace, "color_ch", None)
-            if getattr(color_channel, "mode", None) == "constant":
-                item_style.setdefault("color", color_channel.constant)
+            color_constant = getattr(color_channel, "constant", None)
+            if getattr(color_channel, "mode", None) == "constant" and color_constant is not None:
+                item_style.setdefault("color", color_constant)
             size_channel = getattr(trace, "size_ch", None)
-            if getattr(size_channel, "mode", None) == "constant":
-                item_style.setdefault("size", size_channel.constant)
+            size_constant = getattr(size_channel, "constant", None)
+            if getattr(size_channel, "mode", None) == "constant" and size_constant is not None:
+                item_style.setdefault("size", size_constant)
             items.append({"kind": trace.kind, "name": trace.name, "style": item_style})
         if items:
             legend_options = {
