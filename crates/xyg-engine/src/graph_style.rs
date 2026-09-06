@@ -749,6 +749,7 @@ fn encode_semantic_graph_scene_internal(
         0.08,
         0.35,
         0.0,
+        false, // semantic Scene keeps straight routing; curves are a follow-up here
         &mut route_x0,
         &mut route_y0,
         &mut route_x1,

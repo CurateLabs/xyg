@@ -75,8 +75,12 @@ def graph(
     tier = meta["lod_tier"]
     sources = np.asarray(meta["render_sources"], dtype=np.uint64)
     targets = np.asarray(meta["render_targets"], dtype=np.uint64)
-    # Rust-owned multigraph routing: parallel offsets, self-loops, arrowheads (#33).
+    # Rust-owned multigraph routing: parallel offsets, self-loops, arrowheads,
+    # and optional Bezier-class curved shafts (#33).
     arrow_size = 0.12 if directed else 0.0
+    curve = str(edge_curve or "straight").strip().lower()
+    if curve not in ("straight", "curve"):
+        raise ValueError(f"graph edge_curve must be 'straight' or 'curve', got {edge_curve!r}")
     x0, y0, x1, y1, render_edge_index = _native.graph_edge_route_segments(
         px,
         py,
@@ -86,10 +90,10 @@ def graph(
         separation=0.08,
         loop_radius=0.35,
         arrow_size=arrow_size,
+        curved=curve == "curve",
     )
     edge_name = None if name is None else f"{name}:edges"
     node_name = None if name is None else f"{name}:nodes"
-    curve = str(edge_curve or "straight").strip().lower()
 
     def _expand_edge_values(values, label: str):
         if values is None or np.isscalar(values) or isinstance(values, str):

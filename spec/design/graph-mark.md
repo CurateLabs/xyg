@@ -383,18 +383,30 @@ aggregates (§1.3).
   participate as ordinary scatter traces (no separate path).
 - Node shapes: via scatter `symbol=` (circle / square / …); no separate graph
   glyph ABI for MVP.
-- `edge_curve` meta (`straight` default): recorded on graph meta for client
-  follow-up. Rust `xyg_graph_edge_route_segments` owns Direct-tier paint
-  geometry: deterministic parallel/reciprocal offsets, triangular self-loops,
-  and optional directed arrowheads (`render_edge_index` maps each paint
-  segment back to a render-graph edge). Bezier-class `curve` routing remains
-  a follow-up; hosts must not invent offsets.
+- `edge_curve` meta (`straight` default, `curve` for Bezier-class routing):
+  recorded on graph meta and consumed entirely in Rust — hosts pass the
+  option through and never invent offsets or geometry. Rust
+  `xyg_graph_edge_route_segments` owns Direct-tier paint geometry:
+  deterministic parallel/reciprocal offsets, triangular self-loops, optional
+  directed arrowheads, and (`curved=true`) quadratic-Bezier shafts tessellated
+  into `CURVE_TESSELLATION_SEGMENTS` (8) deterministic straight sub-segments
+  per edge (`render_edge_index` maps every paint segment, including curved
+  ones, back to a render-graph edge). The control point bows perpendicular to
+  the chord by the same rank-based amount used for straight-edge separation
+  (or a small deterministic default for unbundled edges), so reciprocal and
+  parallel curved edges fan out just like their straight counterparts; the
+  arrowhead orients along the final tessellated tangent rather than the chord.
+  `EDGE_ROUTE_SEGMENTS_PER_EDGE` (10) sizes host buffers for the largest
+  per-edge case (curved + directed: 8 shaft pieces + 2 arrow wings).
+  Border-aware endpoint clipping against rendered node radius remains a
+  follow-up (node size is a screen-space paint property, not a routing-time
+  world-space one); hosts must not invent that geometry either.
 
 Interactive path is primary; export must not reshape the hot path (§8).
 Geometry remains segments + scatter buffers from the render graph; the client
 draws uploaded buffers only. Edge routing expands some edges into multiple
-segments (loops / arrow wings) while preserving source edge identity via
-`render_edge_index`.
+segments (loops / arrow wings / curve tessellation) while preserving source
+edge identity via `render_edge_index`.
 
 ### 7.1 Label, visual-state, and compound foundation (#34)
 

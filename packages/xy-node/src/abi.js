@@ -1490,6 +1490,12 @@ export function graphBuildRender(x, y, sources, targets, opts = {}) {
 }
 
 
+// Largest per-edge footprint is a curved directed edge: 8 curve-tessellation
+// shaft pieces + 2 arrow wings. Self-loops (3) and straight arrows (3) fit
+// under it. Mirrors `EDGE_ROUTE_SEGMENTS_PER_EDGE` in
+// crates/xyg-engine/src/edge_route.rs.
+export const EDGE_ROUTE_SEGMENTS_PER_EDGE = 10;
+
 export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
   const xArray = asF64Array(x, "x");
   const yArray = asF64Array(y, "y");
@@ -1499,7 +1505,7 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
   requireEqualLength(sourceArray, targetArray, "sources", "targets");
   const nNodes = xArray.length;
   const nEdges = sourceArray.length;
-  const cap = nEdges * 5;
+  const cap = nEdges * EDGE_ROUTE_SEGMENTS_PER_EDGE;
   const outX0 = new Float64Array(cap);
   const outY0 = new Float64Array(cap);
   const outX1 = new Float64Array(cap);
@@ -1510,6 +1516,7 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
   const separation = Number(opts.separation ?? 0.08);
   const loopRadius = Number(opts.loopRadius ?? 0.35);
   const arrowSize = Number(opts.arrowSize ?? 0.12);
+  const curved = opts.curved ? 1 : 0;
   const code = xyGraphEdgeRouteSegments(
     toU64(nNodes, "nNodes"),
     toU64(nEdges, "nEdges"),
@@ -1521,6 +1528,7 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
     separation,
     loopRadius,
     arrowSize,
+    curved,
     f64Ptr(outX0),
     f64Ptr(outY0),
     f64Ptr(outX1),
