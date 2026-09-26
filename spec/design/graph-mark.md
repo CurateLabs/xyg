@@ -387,7 +387,10 @@ aggregates (§1.3).
   recorded on graph meta and consumed entirely in Rust — hosts pass the
   option through and never invent offsets or geometry. Rust
   `xyg_graph_edge_route_segments` owns Direct-tier paint geometry:
-  deterministic parallel/reciprocal offsets, triangular self-loops, optional
+  deterministic parallel/reciprocal offsets (ranked by source edge index
+  within the undirected endpoint bundle and applied along the bundle's
+  canonical low→high-node normal, so a reversed edge never mirrors onto a
+  sibling's route), triangular self-loops, optional
   directed arrowheads, and (`curved=true`) quadratic-Bezier shafts tessellated
   into `CURVE_TESSELLATION_SEGMENTS` (8) deterministic straight sub-segments
   per edge (`render_edge_index` maps every paint segment, including curved

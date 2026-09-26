@@ -164,8 +164,14 @@ pub fn edge_route_segments(
         if len == 0.0 {
             continue;
         }
-        let ux = -dy / len;
-        let uy = dx / len;
+        // Offset normal lives in the bundle's canonical (low → high node)
+        // frame so a reciprocal edge's rank offset lands on its own side of
+        // the chord instead of mirroring onto a sibling.
+        let (ux, uy) = if s <= t {
+            (-dy / len, dx / len)
+        } else {
+            (dy / len, -dx / len)
+        };
         let x0 = sx + offset * ux;
         let y0 = sy + offset * uy;
         let mut x1 = tx + offset * ux;
@@ -357,6 +363,52 @@ mod tests {
         assert_eq!(ox0[..n as usize], ox0b[..n as usize]);
         assert_eq!(oy0[..n as usize], oy0b[..n as usize]);
         assert_eq!(eidx[..n as usize], eidxb[..n as usize]);
+    }
+
+    #[test]
+    fn reciprocal_siblings_never_share_a_route() {
+        // A plain reciprocal pair and a mixed parallel+reciprocal bundle: the
+        // offset normal must not flip with edge direction, or a reversed edge
+        // mirrors onto a sibling's side of the chord and hides it.
+        let x = [0.0, 4.0];
+        let y = [0.0, 0.0];
+        for (sources, targets) in [
+            (vec![0u64, 1], vec![1u64, 0]),
+            (vec![0u64, 0, 1], vec![1u64, 1, 0]),
+        ] {
+            for curved in [false, true] {
+                let cap = sources.len() * EDGE_ROUTE_SEGMENTS_PER_EDGE;
+                let mut ox0 = vec![0.0; cap];
+                let mut oy0 = vec![0.0; cap];
+                let mut ox1 = vec![0.0; cap];
+                let mut oy1 = vec![0.0; cap];
+                let mut eidx = vec![0u64; cap];
+                let n = edge_route_segments(
+                    2, &x, &y, &sources, &targets, true, 0.2, 0.5, 0.15, curved, &mut ox0,
+                    &mut oy0, &mut ox1, &mut oy1, &mut eidx,
+                )
+                .expect("route") as usize;
+                // Midpoint of each edge's shaft (x == 2 on this horizontal chord).
+                let mids: Vec<f64> = (0..sources.len() as u64)
+                    .map(|e| {
+                        let first = eidx[..n].iter().position(|&k| k == e).unwrap();
+                        if curved {
+                            oy0[first + CURVE_TESSELLATION_SEGMENTS / 2]
+                        } else {
+                            0.5 * (oy0[first] + oy1[first])
+                        }
+                    })
+                    .collect();
+                for a in 0..mids.len() {
+                    for b in a + 1..mids.len() {
+                        assert!(
+                            (mids[a] - mids[b]).abs() > 1e-6,
+                            "edges {a} and {b} overlap (curved={curved}): {mids:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
