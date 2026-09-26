@@ -20,6 +20,20 @@ const CURVE_TESSELLATION_SEGMENTS: usize = 8;
 /// footprint and sizes this constant.
 pub const EDGE_ROUTE_SEGMENTS_PER_EDGE: usize = CURVE_TESSELLATION_SEGMENTS + 2;
 
+/// Maximum paint segments per source edge when `curved == false`: a
+/// three-sided self-loop, or one shaft plus two arrow wings.
+pub const STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE: usize = 3;
+
+/// Per-edge output capacity [`edge_route_segments`] requires for `curved`, so
+/// straight routing does not pay the curved tessellation ceiling.
+pub const fn edge_route_segments_per_edge(curved: bool) -> usize {
+    if curved {
+        EDGE_ROUTE_SEGMENTS_PER_EDGE
+    } else {
+        STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE
+    }
+}
+
 /// Route render-graph edges into paint segments with deterministic multi-edge
 /// separation, self-loop geometry, optional Bezier-class curved shafts, and
 /// optional directed arrowheads (#33).
@@ -37,8 +51,9 @@ pub const EDGE_ROUTE_SEGMENTS_PER_EDGE: usize = CURVE_TESSELLATION_SEGMENTS + 2;
 ///
 /// Writes `out_*` columns of equal length and returns the segment count. Each
 /// `out_edge_index[i]` is the source edge index that produced segment `i`.
-/// Caller buffers must hold at least `sources.len() * EDGE_ROUTE_SEGMENTS_PER_EDGE`
-/// slots (hosts may allocate that ceiling).
+/// Caller buffers must hold at least
+/// `sources.len() * edge_route_segments_per_edge(curved)` slots (hosts may
+/// allocate the [`EDGE_ROUTE_SEGMENTS_PER_EDGE`] ceiling).
 #[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn edge_route_segments(
     n_nodes: u64,
@@ -73,7 +88,7 @@ pub fn edge_route_segments(
         return None;
     }
     let e = sources.len();
-    let capacity = e.checked_mul(EDGE_ROUTE_SEGMENTS_PER_EDGE)?;
+    let capacity = e.checked_mul(edge_route_segments_per_edge(curved))?;
     if out_x0.len() < capacity
         || out_y0.len() < capacity
         || out_x1.len() < capacity
@@ -363,6 +378,34 @@ mod tests {
         assert_eq!(ox0[..n as usize], ox0b[..n as usize]);
         assert_eq!(oy0[..n as usize], oy0b[..n as usize]);
         assert_eq!(eidx[..n as usize], eidxb[..n as usize]);
+    }
+
+    #[test]
+    fn capacity_contract_tracks_curve_mode() {
+        // Directed parallel pair + self-loop: every straight edge fits the
+        // 3-slot straight contract; curved routing requires the full ceiling.
+        let x = [0.0, 4.0];
+        let y = [0.0, 0.0];
+        let sources = [0u64, 0, 1];
+        let targets = [1u64, 1, 1];
+        let route = |curved: bool, per_edge: usize| {
+            let cap = sources.len() * per_edge;
+            let (mut a, mut b, mut c, mut d) = (
+                vec![0.0; cap],
+                vec![0.0; cap],
+                vec![0.0; cap],
+                vec![0.0; cap],
+            );
+            let mut eidx = vec![0u64; cap];
+            edge_route_segments(
+                2, &x, &y, &sources, &targets, true, 0.2, 0.5, 0.15, curved, &mut a, &mut b,
+                &mut c, &mut d, &mut eidx,
+            )
+        };
+        let straight = STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE;
+        assert_eq!(route(false, straight), Some(9));
+        assert_eq!(route(true, straight), None);
+        assert!(route(true, EDGE_ROUTE_SEGMENTS_PER_EDGE).is_some());
     }
 
     #[test]

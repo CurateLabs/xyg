@@ -15867,8 +15867,8 @@ pub unsafe extern "C" fn xyg_graph_build_render(
 ///
 /// Emits deterministic parallel/reciprocal offsets, triangular self-loops,
 /// optional Bezier-class curved shafts (`curved != 0`), and optional directed
-/// arrowheads. `out_*` buffers must hold
-/// `n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE` slots. Writes the segment count into
+/// arrowheads. `out_*` buffers must hold `n_edges * 10` slots when curved and
+/// `n_edges * 3` when straight (`edge_route_segments_per_edge`). Writes the segment count into
 /// `out_n_segments` and returns 0 on success.
 ///
 /// # Safety
@@ -15898,7 +15898,7 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
     }
     let n = n_nodes as usize;
     let e = n_edges as usize;
-    let Some(cap) = e.checked_mul(xyg_engine::edge_route::EDGE_ROUTE_SEGMENTS_PER_EDGE) else {
+    let Some(cap) = e.checked_mul(xyg_engine::edge_route::edge_route_segments_per_edge(curved != 0)) else {
         return -1;
     };
     if n > 0 && (x.is_null() || y.is_null()) {

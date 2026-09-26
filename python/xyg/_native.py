@@ -12515,11 +12515,11 @@ def graph_build_render(
     )
 
 
-# 8 curved-tessellation shaft pieces + 2 arrow wings is the largest per-edge
-# footprint (curved directed edge); self-loops (3) and straight arrows (3)
-# fit comfortably under it. Mirrors `EDGE_ROUTE_SEGMENTS_PER_EDGE` in
-# crates/xyg-engine/src/edge_route.rs.
+# Per-edge route capacity: 8 curved-tessellation shaft pieces + 2 arrow wings
+# when curved; a 3-sided self-loop or shaft + 2 wings when straight. Mirrors
+# `edge_route_segments_per_edge` in crates/xyg-engine/src/edge_route.rs.
 EDGE_ROUTE_SEGMENTS_PER_EDGE = 10
+STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE = 3
 
 
 def graph_edge_route_segments(
@@ -12555,7 +12555,9 @@ def graph_edge_route_segments(
         raise ValueError("sources and targets must have equal length")
     n_nodes = len(x_arr)
     n_edges = len(sources)
-    cap = n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE
+    cap = n_edges * (
+        EDGE_ROUTE_SEGMENTS_PER_EDGE if curved else STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE
+    )
     out_x0 = np.empty(cap, dtype=np.float64)
     out_y0 = np.empty(cap, dtype=np.float64)
     out_x1 = np.empty(cap, dtype=np.float64)

@@ -476,6 +476,19 @@ test("composeGraph edge_curve='curve' emits more paint segments than straight", 
   assert.ok(curved.traces[0].x0.length > straight.traces[0].x0.length);
 });
 
+test("composeGraph expands per-edge colors across curved routed segments", () => {
+  for (const edgeCurve of ["straight", "curve"]) {
+    const out = composeGraph(["a", "b"], [["a", "b"], ["b", "a"]], {
+      layout: "preset", x: [0, 4], y: [0, 0], edgeCurve, edgeColor: [1, 2],
+    });
+    const edges = out.traces[0];
+    const index = out.graphMeta.render_edge_index;
+    assert.ok(edges.x0.length > 2);
+    assert.equal(edges.color_ch.values.length, edges.x0.length);
+    assert.deepEqual(Array.from(edges.color_ch.values), index.map((i) => [1, 2][i]));
+  }
+});
+
 test("composeGraph rejects an unknown edgeCurve value", () => {
   assert.throws(
     () => composeGraph(["a", "b"], [["a", "b"]], { layout: "grid", edgeCurve: "bogus" }),

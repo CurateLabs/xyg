@@ -802,6 +802,19 @@ export function composeGraph(nodes, edges, opts = {}) {
   ) {
     edgeTooltipRows = renderEdgeIndex.map((i) => edgeTooltipRows[Number(i)]);
   }
+  // Per-edge colors are render-edge indexed; expand them across routed
+  // segments (loops / arrow wings / curve tessellation) like tooltips.
+  let edgeColorPaint = edgeColor;
+  if (
+    edgeColor != null &&
+    (Array.isArray(edgeColor) || ArrayBuffer.isView(edgeColor)) &&
+    edgeColor.length !== nEdges &&
+    edgeColor.length === renderEdgeCount &&
+    Array.isArray(renderEdgeIndex) &&
+    renderEdgeIndex.length === nEdges
+  ) {
+    edgeColorPaint = renderEdgeIndex.map((i) => edgeColor[Number(i)]);
+  }
   // Keep auto-built projection rows for meta even when Aggregate collapses edges.
   const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
@@ -826,8 +839,8 @@ export function composeGraph(nodes, edges, opts = {}) {
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
         ...(resolvedOpts.style ?? {}),
       },
-      ...(edgeColor != null && typeof edgeColor !== "string"
-        ? { color_ch: resolveColorChannel(edgeColor, nEdges, "#888888") }
+      ...(edgeColorPaint != null && typeof edgeColorPaint !== "string"
+        ? { color_ch: resolveColorChannel(edgeColorPaint, nEdges, "#888888") }
         : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
