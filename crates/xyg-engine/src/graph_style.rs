@@ -1,6 +1,6 @@
 //! Rust-owned graph label acceptance, visual-state precedence, and compound bounds (#34).
 
-use crate::edge_route::{edge_route_segments, EDGE_ROUTE_SEGMENTS_PER_EDGE};
+use crate::edge_route::{edge_route_segments, STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE};
 use crate::scene::{
     AxisScale, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
     SceneChromeText, SceneError, SceneLabel, SceneLegend, SceneLegendEntry, SceneRecordKind,
@@ -722,7 +722,7 @@ fn encode_semantic_graph_scene_internal(
     let mut columns = SemanticSceneColumns::default();
 
     let route_capacity = e
-        .checked_mul(EDGE_ROUTE_SEGMENTS_PER_EDGE)
+        .checked_mul(STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE)
         .ok_or(SceneError::Limit)?;
     let mut route_x0 = vec![0.0; route_capacity];
     let mut route_y0 = vec![0.0; route_capacity];
@@ -749,6 +749,7 @@ fn encode_semantic_graph_scene_internal(
         0.08,
         0.35,
         0.0,
+        false, // semantic Scene keeps straight routing; curves are a follow-up here
         &mut route_x0,
         &mut route_y0,
         &mut route_x1,

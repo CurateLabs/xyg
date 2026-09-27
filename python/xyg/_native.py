@@ -12515,7 +12515,11 @@ def graph_build_render(
     )
 
 
-EDGE_ROUTE_SEGMENTS_PER_EDGE = 5
+# Per-edge route capacity: 8 curved-tessellation shaft pieces + 2 arrow wings
+# when curved; a 3-sided self-loop or shaft + 2 wings when straight. Mirrors
+# `edge_route_segments_per_edge` in crates/xyg-engine/src/edge_route.rs.
+EDGE_ROUTE_SEGMENTS_PER_EDGE = 10
+STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE = 3
 
 
 def graph_edge_route_segments(
@@ -12528,6 +12532,7 @@ def graph_edge_route_segments(
     separation: float = 0.08,
     loop_radius: float = 0.35,
     arrow_size: float = 0.12,
+    curved: bool = False,
 ) -> tuple[
     npt.NDArray[np.float64],
     npt.NDArray[np.float64],
@@ -12535,7 +12540,11 @@ def graph_edge_route_segments(
     npt.NDArray[np.float64],
     npt.NDArray[np.uint64],
 ]:
-    """Route render-graph edges into paint segments (parallels, loops, arrows)."""
+    """Route render-graph edges into paint segments (parallels, loops, arrows).
+
+    ``curved=True`` bows non-loop shafts into a tessellated Bezier-class arc
+    (#33) instead of the default straight chord.
+    """
     x_arr = _as_f64(x, "x")
     y_arr = _as_f64(y, "y")
     if len(x_arr) != len(y_arr):
@@ -12546,7 +12555,9 @@ def graph_edge_route_segments(
         raise ValueError("sources and targets must have equal length")
     n_nodes = len(x_arr)
     n_edges = len(sources)
-    cap = n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE
+    cap = n_edges * (
+        EDGE_ROUTE_SEGMENTS_PER_EDGE if curved else STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE
+    )
     out_x0 = np.empty(cap, dtype=np.float64)
     out_y0 = np.empty(cap, dtype=np.float64)
     out_x1 = np.empty(cap, dtype=np.float64)
@@ -12564,6 +12575,7 @@ def graph_edge_route_segments(
         ctypes.c_double(float(separation)),
         ctypes.c_double(float(loop_radius)),
         ctypes.c_double(float(arrow_size)),
+        ctypes.c_int32(1 if curved else 0),
         out_x0.ctypes.data if cap else None,
         out_y0.ctypes.data if cap else None,
         out_x1.ctypes.data if cap else None,

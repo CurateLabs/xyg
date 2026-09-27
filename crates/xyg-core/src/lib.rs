@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 365;
+pub const ABI_VERSION: u32 = 366;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15865,9 +15865,10 @@ pub unsafe extern "C" fn xyg_graph_build_render(
 
 /// Route render-graph edges into paint segments (#33).
 ///
-/// Emits deterministic parallel/reciprocal offsets, triangular self-loops, and
-/// optional directed arrowheads. `out_*` buffers must hold
-/// `n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE` slots. Writes the segment count into
+/// Emits deterministic parallel/reciprocal offsets, triangular self-loops,
+/// optional Bezier-class curved shafts (`curved != 0`), and optional directed
+/// arrowheads. `out_*` buffers must hold `n_edges * 10` slots when curved and
+/// `n_edges * 3` when straight (`edge_route_segments_per_edge`). Writes the segment count into
 /// `out_n_segments` and returns 0 on success.
 ///
 /// # Safety
@@ -15884,6 +15885,7 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
     separation: f64,
     loop_radius: f64,
     arrow_size: f64,
+    curved: i32,
     out_x0: *mut f64,
     out_y0: *mut f64,
     out_x1: *mut f64,
@@ -15896,7 +15898,7 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
     }
     let n = n_nodes as usize;
     let e = n_edges as usize;
-    let Some(cap) = e.checked_mul(xyg_engine::edge_route::EDGE_ROUTE_SEGMENTS_PER_EDGE) else {
+    let Some(cap) = e.checked_mul(xyg_engine::edge_route::edge_route_segments_per_edge(curved != 0)) else {
         return -1;
     };
     if n > 0 && (x.is_null() || y.is_null()) {
@@ -15971,6 +15973,7 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
             separation,
             loop_radius,
             arrow_size,
+            curved != 0,
             out_x0,
             out_y0,
             out_x1,

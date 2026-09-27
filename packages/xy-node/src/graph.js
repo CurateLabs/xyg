@@ -485,11 +485,16 @@ export function runLayout(data, opts = {}) {
   const ry = render.y;
   const edgeS = render.edgeSources;
   const edgeT = render.edgeTargets;
+  const edgeCurve = String(opts.edgeCurve ?? "straight").trim().toLowerCase();
+  if (edgeCurve !== "straight" && edgeCurve !== "curve") {
+    throw new Error(`graph edgeCurve must be "straight" or "curve", got ${JSON.stringify(opts.edgeCurve)}`);
+  }
   const routed = graphEdgeRouteSegments(rx, ry, edgeS, edgeT, {
     directed: Boolean(data.directed),
     separation: opts.edgeSeparation ?? 0.08,
     loopRadius: opts.loopRadius ?? 0.35,
     arrowSize: opts.arrowSize ?? (data.directed ? 0.12 : 0),
+    curved: edgeCurve === "curve",
   });
   const edgeSegments = {
     x0: routed.x0,
@@ -797,6 +802,19 @@ export function composeGraph(nodes, edges, opts = {}) {
   ) {
     edgeTooltipRows = renderEdgeIndex.map((i) => edgeTooltipRows[Number(i)]);
   }
+  // Per-edge colors are render-edge indexed; expand them across routed
+  // segments (loops / arrow wings / curve tessellation) like tooltips.
+  let edgeColorPaint = edgeColor;
+  if (
+    edgeColor != null &&
+    (Array.isArray(edgeColor) || ArrayBuffer.isView(edgeColor)) &&
+    edgeColor.length !== nEdges &&
+    edgeColor.length === renderEdgeCount &&
+    Array.isArray(renderEdgeIndex) &&
+    renderEdgeIndex.length === nEdges
+  ) {
+    edgeColorPaint = renderEdgeIndex.map((i) => edgeColor[Number(i)]);
+  }
   // Keep auto-built projection rows for meta even when Aggregate collapses edges.
   const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
@@ -821,8 +839,8 @@ export function composeGraph(nodes, edges, opts = {}) {
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
         ...(resolvedOpts.style ?? {}),
       },
-      ...(edgeColor != null && typeof edgeColor !== "string"
-        ? { color_ch: resolveColorChannel(edgeColor, nEdges, "#888888") }
+      ...(edgeColorPaint != null && typeof edgeColorPaint !== "string"
+        ? { color_ch: resolveColorChannel(edgeColorPaint, nEdges, "#888888") }
         : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },

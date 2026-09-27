@@ -1,9 +1,9 @@
 {
-  "abi_version": 365,
+  "abi_version": 366,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "3a78c0691d0ec79209d08b6c6aa2cddea008739a9c394ed5062ff1e87c677118",
+  "signature_sha256": "99b2cb333843ae124b58f2e6a9d4a244fd02520bfac09f6c602733223ef14c97",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -15700,7 +15700,7 @@
     {
       "name": "xyg_graph_edge_route_segments",
       "node_name": "xyGraphEdgeRouteSegments",
-      "nargs": 16,
+      "nargs": 17,
       "arguments": [
         {
           "name": "n_nodes",
@@ -15857,6 +15857,21 @@
           }
         },
         {
+          "name": "curved",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
           "name": "out_x0",
           "type": {
             "rust": "*mut f64",
@@ -15965,7 +15980,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)"
+      "c_signature": "int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, int32_t curved, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)"
     },
     {
       "name": "xyg_graph_force_create",

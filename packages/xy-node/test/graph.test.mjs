@@ -437,6 +437,65 @@ test("graphEdgeRouteSegments separates parallels and keeps source indices", () =
   assert.equal(loopCount, 3);
 });
 
+test("graphEdgeRouteSegments curved bows off the chord and stays deterministic", () => {
+  const x = new Float64Array([0, 4]);
+  const y = new Float64Array([0, 0]);
+  const sources = BigUint64Array.from([0n]);
+  const targets = BigUint64Array.from([1n]);
+  const routed = graphEdgeRouteSegments(x, y, sources, targets, {
+    directed: true,
+    separation: 0.08,
+    arrowSize: 0.12,
+    curved: true,
+  });
+  // 8 curve-tessellation shaft pieces + 2 arrow wings.
+  assert.equal(routed.x0.length, 10);
+  assert.equal([...routed.edgeIndex].every((v) => Number(v) === 0), true);
+  assert.notEqual(routed.y0[4], 0);
+  const again = graphEdgeRouteSegments(x, y, sources, targets, {
+    directed: true,
+    separation: 0.08,
+    arrowSize: 0.12,
+    curved: true,
+  });
+  assert.deepEqual([...routed.x0], [...again.x0]);
+  assert.deepEqual([...routed.y0], [...again.y0]);
+});
+
+test("composeGraph edge_curve='curve' emits more paint segments than straight", () => {
+  const nodes = ["a", "b"];
+  const edges = [["a", "b"], ["b", "a"]];
+  const straight = composeGraph(nodes, edges, {
+    layout: "preset", x: [0, 4], y: [0, 0],
+  });
+  const curved = composeGraph(nodes, edges, {
+    layout: "preset", x: [0, 4], y: [0, 0], edgeCurve: "curve",
+  });
+  assert.equal(straight.graphMeta.edge_curve, "straight");
+  assert.equal(curved.graphMeta.edge_curve, "curve");
+  assert.ok(curved.traces[0].x0.length > straight.traces[0].x0.length);
+});
+
+test("composeGraph expands per-edge colors across curved routed segments", () => {
+  for (const edgeCurve of ["straight", "curve"]) {
+    const out = composeGraph(["a", "b"], [["a", "b"], ["b", "a"]], {
+      layout: "preset", x: [0, 4], y: [0, 0], edgeCurve, edgeColor: [1, 2],
+    });
+    const edges = out.traces[0];
+    const index = out.graphMeta.render_edge_index;
+    assert.ok(edges.x0.length > 2);
+    assert.equal(edges.color_ch.values.length, edges.x0.length);
+    assert.deepEqual(Array.from(edges.color_ch.values), index.map((i) => [1, 2][i]));
+  }
+});
+
+test("composeGraph rejects an unknown edgeCurve value", () => {
+  assert.throws(
+    () => composeGraph(["a", "b"], [["a", "b"]], { layout: "grid", edgeCurve: "bogus" }),
+    /edgeCurve/,
+  );
+});
+
 test("graph style policies consume the shared Rust ABI", () => {
   assert.deepEqual([...graphVisualStates(new Uint32Array([0, 2, 3, 66]))], [0, 5, 5, 7]);
   const labels = graphLabelAccept(new Float64Array([1, 5, 5, Number.NaN, Infinity, -Infinity]), 2);
