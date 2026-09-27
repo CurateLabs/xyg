@@ -130,6 +130,19 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+## GitHub merge queue
+
+`main` requires the GitHub merge queue. The repository-level ruleset is
+versioned at `.github/merge-queue-ruleset.json`; its queue settings must stay
+compatible with the required `Release surfaces` status check in branch
+protection. The CI workflow handles both `pull_request` and `merge_group`
+events, and merge-group checks are not canceled by concurrency control.
+
+Contributors should use **Merge when ready** / add the pull request to the
+queue after review and required checks pass. Do not merge directly or bypass
+the queue for routine changes. If changing CI, preserve the `merge_group`
+trigger and verify the queue gate with `make check-ci`.
+
 `abi_smoke`, `render_smoke_nonumpy`, and `append_stream_smoke` need neither
 numpy nor PyPI — they verify the Python↔Rust ABI and the render client
 directly, and run first in CI.

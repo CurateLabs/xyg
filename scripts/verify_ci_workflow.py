@@ -813,7 +813,11 @@ def _require_step_runs_exactly(
         forbidden_job_keys += ("env",)
     if not allow_job_gate:
         job_if, job_if_unsafe = _direct_yaml_key_values(job_text, "if", indent=4)
-        if job_if_unsafe or job_if not in ([], ["github.event_name != 'pull_request'"]):
+        if job_if_unsafe or job_if not in (
+            [],
+            ["github.event_name != 'pull_request'"],
+            ["github.event_name == 'push' || github.event_name == 'workflow_dispatch'"],
+        ):
             forbidden_job_keys += ("if",)
         forbidden_job_keys += ("needs",)
     has_forbidden_job_key = any(
@@ -1143,6 +1147,19 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         pull_request, "paths-ignore", indent=4
     ):
         errors.append("CI pull_request trigger must not use path filters")
+    merge_group = _workflow_trigger_block(text, "merge_group")
+    if merge_group is None:
+        errors.append("CI workflow must report required checks for merge_group events")
+    else:
+        types_values, types_unsafe = _direct_yaml_key_values(merge_group, "types", indent=4)
+        if types_unsafe or types_values != ["[checks_requested]"]:
+            errors.append("CI merge_group trigger must handle checks_requested")
+    concurrency = _unique_mapping_block(text, "concurrency", indent=0)
+    cancel_values, cancel_unsafe = _direct_yaml_key_values(
+        concurrency or "", "cancel-in-progress", indent=2
+    )
+    if cancel_unsafe or cancel_values != ["${{ github.event_name != 'merge_group' }}"]:
+        errors.append("CI must not cancel in-flight required merge_group checks")
     _require_unshallow_checkouts(errors, text, "CI")
     missing_jobs = sorted(REQUIRED_CI_JOBS - set(jobs))
     if missing_jobs:
@@ -1174,9 +1191,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     for job_name in sorted(MAIN_ONLY_CI_JOBS):
         values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
         expected = (
-            "always() && github.event_name != 'pull_request'"
+            "always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')"
             if job_name == "benchmark"
-            else "github.event_name != 'pull_request'"
+            else "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
         )
         if unsafe or values != [expected]:
             errors.append(f"CI breadth job {job_name!r} must run only outside pull_request events")
@@ -1270,6 +1287,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "uv venv .venv",
         "uv pip install -p .venv/bin/python -e . --group dev",
         'uv pip install -p .venv/bin/python "matplotlib==3.11.0"',
+        allow_job_gate=True,
     )
     _require_step_runs_exactly(
         errors,
@@ -1278,6 +1296,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "version and snapshot checks",
         ".venv/bin/python -c \"import matplotlib; assert matplotlib.__version__ == '3.11.0'\"",
         ".venv/bin/python scripts/sync_matplotlib_compat.py --check",
+        allow_job_gate=True,
     )
     _require_step_runs_exactly(
         errors,
@@ -1287,6 +1306,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
+        allow_job_gate=True,
     )
 
     _require_job_contains(

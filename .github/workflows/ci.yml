@@ -4,6 +4,8 @@ on:
   push:
     branches: ["main"]
   pull_request:
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 # Limit every job to the only repository permission needed by this workflow.
@@ -15,7 +17,8 @@ permissions:
 # Only the newest run per ref carries signal — cancel the rest.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer merge-group request must not cancel an in-flight required check.
+  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
 
 jobs:
   release_surface_changes:
@@ -51,7 +54,7 @@ jobs:
 
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -515,7 +518,7 @@ jobs:
   # parallel. The report job below merges the partial results.
   benchmark_vs:
     name: Cross-library benchmark (${{ matrix.name }})
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     continue-on-error: true
@@ -653,7 +656,7 @@ jobs:
   # Other benchmark suites run concurrently with the cross-library matrix.
   benchmark_methodology:
     name: Benchmark methodology suites
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     continue-on-error: true
     steps:
@@ -759,7 +762,7 @@ jobs:
 
   benchmark:
     name: Merge and verify benchmark reports
-    if: always() && github.event_name != 'pull_request'
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [benchmark_vs, benchmark_methodology]
     continue-on-error: true

@@ -14,6 +14,21 @@ the hard-won production invariants while the chart surface grows.
   the asset. Do not patch only the generated HTML unless you are applying an
   emergency local fix and immediately back-porting it to the generator.
 
+## Merging pull requests
+
+`main` is protected by a GitHub merge queue. Once review and the required
+`Release surfaces` check are complete, add the PR to the queue with **Merge
+when ready** and let GitHub validate the combined commit against the current
+base branch. Do not merge around the queue for ordinary changes. The CI
+workflow must report the same required check on `merge_group` as on
+`pull_request`; queue runs are intentionally not canceled when new requests
+arrive. The queue policy is recorded in
+`.github/merge-queue-ruleset.json`.
+
+Changes to CI or merge policy should keep that file, branch protection's
+required check, and the `merge_group` workflow trigger in sync. Run
+`make check-ci` after workflow changes.
+
 ## Competitive Evidence
 
 XYG's product north star is to outperform every competing charting library
