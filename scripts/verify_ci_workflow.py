@@ -1150,8 +1150,10 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     merge_group = _workflow_trigger_block(text, "merge_group")
     if merge_group is None:
         errors.append("CI workflow must report required checks for merge_group events")
-    elif _direct_yaml_key_values(merge_group, "types", indent=4)[0] != ["[checks_requested]"]:
-        errors.append("CI merge_group trigger must handle checks_requested")
+    else:
+        types_values, types_unsafe = _direct_yaml_key_values(merge_group, "types", indent=4)
+        if types_unsafe or types_values != ["[checks_requested]"]:
+            errors.append("CI merge_group trigger must handle checks_requested")
     concurrency = _unique_mapping_block(text, "concurrency", indent=0)
     cancel_values, cancel_unsafe = _direct_yaml_key_values(
         concurrency or "", "cancel-in-progress", indent=2

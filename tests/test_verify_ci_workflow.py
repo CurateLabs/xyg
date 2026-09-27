@@ -1069,6 +1069,32 @@ def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
         assert errors
 
 
+def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    trigger = "  merge_group:\n    types: [checks_requested]\n"
+    cancel = "  cancel-in-progress: ${{ github.event_name != 'merge_group' }}\n"
+    assert trigger in workflow and cancel in workflow
+    mutations = (
+        (trigger, "", "must report required checks for merge_group"),
+        (trigger, "  merge_group:\n    types: [destroyed]\n", "must handle checks_requested"),
+        (
+            trigger,
+            "  merge_group:\n    types: [checks_requested]\n    types: [destroyed]\n",
+            "must handle checks_requested",
+        ),
+        (cancel, "  cancel-in-progress: true\n", "must not cancel in-flight"),
+    )
+    for index, (old, new, message) in enumerate(mutations):
+        path = tmp_path / f"ci-merge-queue-{index}.yml"
+        path.write_text(workflow.replace(old, new, 1), encoding="utf-8")
+
+        errors = verify_ci_workflow.validate_ci_workflow(path)
+
+        assert any(message in error for error in errors), (index, errors)
+
+
 def test_ci_and_bazel_reject_non_main_automatic_push_branches(tmp_path: Path) -> None:
     cases = (
         (Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),
