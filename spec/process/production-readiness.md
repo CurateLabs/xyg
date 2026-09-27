@@ -46,6 +46,21 @@ integration are still experimental and may change before a 1.0 release.
 
 ## Fork CI posture
 
+### Main branch merge queue
+
+`main` requires GitHub's repository-level merge queue. Its versioned policy is
+`.github/merge-queue-ruleset.json`; branch protection continues to require the
+single non-skippable `Release surfaces` aggregate. CI runs for both pull
+requests and `merge_group` checks so the required status is produced for the
+candidate commit GitHub intends to merge. The queue uses squash commits,
+single-entry groups, and one active build to bound CI demand while this suite
+is expensive. Merge-group runs cannot be canceled by CI concurrency policy.
+
+Keep the ruleset, branch protection status name, and CI event wiring aligned.
+GitHub does not run `merge_group` checks through the `pull_request` event, and
+missing queue checks block the merge. Contributor instructions are in
+`spec/process/contributing.md`.
+
 CurateLabs/xyg is a permanently divergent product repository, not a deployment
 branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
 integrations are owned or explicitly controlled by CurateLabs:

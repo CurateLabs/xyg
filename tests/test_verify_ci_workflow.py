@@ -1029,7 +1029,10 @@ def test_reference_job_and_steps_must_be_hard_gates(tmp_path: Path) -> None:
 
         errors = verify_ci_workflow.validate_ci_workflow(path)
 
-        assert any("Run optional-interoperability" in error for error in errors)
+        if index == 4:
+            assert any("matplotlib_reference" in error for error in errors)
+        else:
+            assert any("Run optional-interoperability" in error for error in errors)
 
 
 def test_codspeed_workflow_accepts_current_gates() -> None:
@@ -1053,7 +1056,7 @@ def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
         ),
         (
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
-            "    if: github.event_name != 'pull_request'\n",
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n",
         ),
     )
@@ -1541,12 +1544,12 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
         workflow.replace(
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
-            "    if: github.event_name != 'pull_request'\n"
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
             "    timeout-minutes: 10\n",
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
-            "    if: github.event_name != 'pull_request'\n"
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
             1,
         ),
