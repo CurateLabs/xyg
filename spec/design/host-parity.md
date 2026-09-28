@@ -1491,6 +1491,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   (`tooltip_rows` length-checked against geometry; Node `shipScalar` mirrors
   Python `_ship_channels` continuous size). See
   [graph-mark.md](graph-mark.md) encodings table.
+- **REQ-HOSTPARITY-2f (MUST).** Graph edge identity follows the Rust
+  render-edge membership CSR (graph-mark.md §6) on both hosts: per-segment
+  edge rows, `edge_ids`, and the edge pick reply (Python `pick`/`click`, Node
+  `Figure.graphEdgePick`) are identical for the same input, pinned by
+  `tests/fixtures/graph_edge_identity_cross_host.json`. Membership stays
+  host-side and is never serialized to the wire.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

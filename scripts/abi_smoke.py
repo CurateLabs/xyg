@@ -1505,6 +1505,8 @@ def load() -> ctypes.CDLL:
         U64P,
         U32P,
         U64P,
+        U64P,
+        U64P,
     ]
     lib.xyg_graph_sample_edges.restype = ctypes.c_uint64
     lib.xyg_graph_sample_edges.argtypes = [ctypes.c_uint64, ctypes.c_uint64, U64P]
@@ -3223,6 +3225,8 @@ def main() -> None:
     render_e = ctypes.c_uint64()
     render_tier = ctypes.c_uint32()
     render_kept = ctypes.c_uint64()
+    render_member_offsets = array("Q", [99]) * 5  # min(edge_budget, n_edges) + 1
+    render_members = array("Q", [99]) * 5
     ok(
         lib.xyg_graph_build_render(
             6,
@@ -3247,13 +3251,19 @@ def main() -> None:
             ctypes.byref(render_e),
             ctypes.byref(render_tier),
             ctypes.byref(render_kept),
+            _ptr(render_member_offsets, ctypes.c_uint64),
+            _ptr(render_members, ctypes.c_uint64),
         )
         == 0
         and render_n.value <= 2
-        and render_e.value <= 4
+        and render_e.value == 1
         and render_tier.value == 2
-        and list(render_member) == [0, 0, 0, 1, 1, 1],
-        "graph_build_render budgets + recorded tier",
+        and list(render_member) == [0, 0, 0, 1, 1, 1]
+        # Only source edge 4 (0 -> 3) crosses clusters; intra-cluster edges
+        # are dropped and appear in no membership list (#33).
+        and list(render_member_offsets[:2]) == [0, 1]
+        and render_members[0] == 4,
+        "graph_build_render budgets + recorded tier + edge membership",
     )
     graph_sample = array("Q", [99]) * 3
     ok(

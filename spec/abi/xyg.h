@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 366
-#define XYG_ABI_SIGNATURE_SHA256 "99b2cb333843ae124b58f2e6a9d4a244fd02520bfac09f6c602733223ef14c97"
+#define XYG_ABI_VERSION 367
+#define XYG_ABI_SIGNATURE_SHA256 "6d49d3857da3155fea7fb36263d3dd49ecbcd2283118adcf0e6c7dfa2b315604"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,7 +140,7 @@ uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, 
 size_t xyg_geo_column_vertex_count(uint64_t handle);
 int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out_offset);
 int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len);
-int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept);
+int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept, uint64_t * out_edge_member_offsets, uint64_t * out_edge_members);
 int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept);
 int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax);
 size_t xyg_graph_compound_scene(const void * descriptor, uint8_t * out, size_t out_cap);

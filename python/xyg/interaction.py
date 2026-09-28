@@ -222,7 +222,15 @@ def pick(
         idx = int(shipped_sel[idx])
     if idx < 0 or idx >= t.n_points:
         return None
-    return row_dict(fig, t, idx)
+    out = row_dict(fig, t, idx)
+    identity = getattr(fig, "_graph_edge_identity", {}).get(t.id)
+    if identity is not None:
+        # Graph edge segment: exact source edge or deterministic aggregate
+        # membership from Rust's render-edge CSR (#33), never a guess.
+        edge = identity.pick(idx)
+        if edge is not None:
+            out.update(edge)
+    return out
 
 
 def _json_scalar(value: Any) -> Any:

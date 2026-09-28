@@ -539,6 +539,51 @@ export function runLayout(data, opts = {}) {
     nodePositions: { x: rx, y: ry },
     edgeSegments,
     meta,
+    // Host-side only (#33); never serialized into graphMeta.
+    edgeMembership: { offsets: render.edgeMemberOffsets, members: render.edgeMembers },
+  };
+}
+
+/** Source edges listed per edge pick before truncation; mirrors Python
+ * `GRAPH_EDGE_PICK_MEMBER_CAP` in python/xyg/_graph.py. */
+export const GRAPH_EDGE_PICK_MEMBER_CAP = 256;
+
+/**
+ * Host-side identity plane for one graph's routed edge trace (#33).
+ * `renderEdgeIndex[segment]` names the render edge that painted a segment;
+ * render edge r represents source edges `members[offsets[r] .. offsets[r+1]]`.
+ */
+export function createGraphEdgeIdentity(renderEdgeIndex, offsets, members, sourceEdgeIds = null) {
+  const count = (r) => Number(offsets[r + 1] - offsets[r]);
+  const renderEdges = offsets.length - 1;
+  return {
+    renderEdges,
+    count,
+    /** Source edge per render edge when every render edge has one member. */
+    singleMember() {
+      for (let r = 0; r < renderEdges; r += 1) if (count(r) !== 1) return null;
+      return Array.from({ length: renderEdges }, (_, r) => Number(members[Number(offsets[r])]));
+    },
+    /** Exact source edge, or deterministic aggregate membership — never a guess. */
+    pick(segment) {
+      const index = Number(segment);
+      if (!Number.isInteger(index) || index < 0 || index >= renderEdgeIndex.length) return null;
+      const renderEdge = Number(renderEdgeIndex[index]);
+      const start = Number(offsets[renderEdge]);
+      const total = count(renderEdge);
+      const shown = Array.from(
+        members.subarray(start, start + Math.min(total, GRAPH_EDGE_PICK_MEMBER_CAP)),
+        Number,
+      );
+      const out = {
+        render_edge: renderEdge,
+        edge_count: total,
+        source_edges: shown,
+        members_truncated: total > shown.length,
+      };
+      if (sourceEdgeIds != null) out.edge_ids = shown.map((m) => sourceEdgeIds[m]);
+      return out;
+    },
   };
 }
 
@@ -750,7 +795,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     "edge",
   );
   const sizeOpt = resolveEncodingValues(data, resolvedOpts.size, "node");
-  const { nodePositions, edgeSegments, meta } = runLayout(data, resolvedOpts);
+  const { nodePositions, edgeSegments, meta, edgeMembership } = runLayout(data, resolvedOpts);
   const name = resolvedOpts.name ?? null;
   const nNodes = nodePositions.x.length;
   const nEdges = edgeSegments.x0.length;
@@ -780,27 +825,38 @@ export function composeGraph(nodes, edges, opts = {}) {
   }
   let [nodeTooltipRows, edgeTooltipRows] = projectionTooltipRows(data);
   const nodesOneToOne = nNodes === data.ids.length;
-  // Identity is 1:1 against render-graph edges (before loop/arrow expansion).
   const renderEdgeCount = meta.render_sources?.length ?? meta.n_edges ?? 0;
-  const edgesOneToOne = renderEdgeCount === data.sources.length;
+  const renderEdgeIndex = meta.render_edge_index;
+  // Edge identity follows Rust's render-edge membership, not a count match
+  // (#33): one-member render edges carry that source edge's row; Aggregate
+  // edges carry their member count, never one invented source edge.
+  const edgeIdentity = createGraphEdgeIdentity(
+    renderEdgeIndex,
+    edgeMembership.offsets,
+    edgeMembership.members,
+    data.edgeIds?.length ? data.edgeIds.map(String) : null,
+  );
+  const singleMember = edgeIdentity.singleMember();
   if (!(nodeTooltipRows != null && nodesOneToOne)) {
     nodeTooltipRows =
       resolvedOpts.nodeTooltipRows ?? resolvedOpts.tooltipRows ?? resolvedOpts.tooltip_rows ?? null;
   }
-  if (!(edgeTooltipRows != null && edgesOneToOne)) {
+  if (edgeTooltipRows != null) {
+    const sourceRows = edgeTooltipRows;
+    const renderRows = Array.from({ length: renderEdgeCount }, (_, r) =>
+      edgeIdentity.count(r) === 1
+        ? sourceRows[Number(edgeMembership.members[Number(edgeMembership.offsets[r])])]
+        : { edge_count: edgeIdentity.count(r) },
+    );
+    edgeTooltipRows = renderEdgeIndex.map((i) => renderRows[Number(i)]);
+  } else {
     edgeTooltipRows =
       resolvedOpts.edgeTooltipRows ?? resolvedOpts.edge_tooltip_rows ?? null;
-  }
-  // Expand source-edge tooltips across routed segments (loops / arrow wings).
-  const renderEdgeIndex = meta.render_edge_index;
-  if (
-    edgeTooltipRows != null &&
-    edgesOneToOne &&
-    Array.isArray(renderEdgeIndex) &&
-    renderEdgeIndex.length === nEdges &&
-    edgeTooltipRows.length === renderEdgeCount
-  ) {
-    edgeTooltipRows = renderEdgeIndex.map((i) => edgeTooltipRows[Number(i)]);
+    // Caller rows indexed by render edge expand across routed segments.
+    if (edgeTooltipRows != null && edgeTooltipRows.length === renderEdgeCount && renderEdgeCount !== nEdges) {
+      const rows = edgeTooltipRows;
+      edgeTooltipRows = renderEdgeIndex.map((i) => rows[Number(i)]);
+    }
   }
   // Per-edge colors are render-edge indexed; expand them across routed
   // segments (loops / arrow wings / curve tessellation) like tooltips.
@@ -958,8 +1014,9 @@ export function composeGraph(nodes, edges, opts = {}) {
   if (data.edgeIds?.length) {
     // Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
     graphMeta.source_edge_ids = data.edgeIds.map(String);
-    if (edgesOneToOne) {
-      graphMeta.edge_ids = graphMeta.source_edge_ids;
+    if (singleMember != null) {
+      // Render-edge-indexed identity when every render edge is one source edge.
+      graphMeta.edge_ids = singleMember.map((m) => graphMeta.source_edge_ids[m]);
     }
   }
   if (data.nodeProvenanceRows != null) {
@@ -968,7 +1025,7 @@ export function composeGraph(nodes, edges, opts = {}) {
   if (data.edgeProvenanceRows != null) {
     graphMeta.edge_provenance_rows = [...data.edgeProvenanceRows].map(Number);
   }
-  if (sourceEdgeTooltips != null && !edgesOneToOne) {
+  if (sourceEdgeTooltips != null && singleMember == null) {
     graphMeta.edge_tooltip_rows = sourceEdgeTooltips;
   }
   if (sourceNodeTooltips != null && !nodesOneToOne) {
@@ -981,5 +1038,6 @@ export function composeGraph(nodes, edges, opts = {}) {
     nodePositions,
     edgeSegments,
     meta,
+    edgeIdentity,
   };
 }

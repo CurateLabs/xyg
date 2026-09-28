@@ -1443,6 +1443,10 @@ export function graphBuildRender(x, y, sources, targets, opts = {}) {
   const outNEdges = new BigUint64Array(1);
   const tier = new Uint32Array(1);
   const edgesKept = new BigUint64Array(1);
+  // CSR source-edge membership per render edge (#33); render edges never
+  // outnumber source edges, so offsets need min(edgeBudget, |E|) + 1 slots.
+  const memberOffsets = new BigUint64Array(Math.min(Math.max(edgeBudget, 1), sourceArray.length) + 1);
+  const members = new BigUint64Array(Math.max(sourceArray.length, 1));
   const vp = opts.viewport;
   const vpEnabled = vp == null ? 0 : 1;
   const x0 = vp == null ? 0 : Number(vp.x0 ?? vp[0]);
@@ -1472,13 +1476,20 @@ export function graphBuildRender(x, y, sources, targets, opts = {}) {
     u64Ptr(outNEdges),
     u32Ptr(tier),
     u64Ptr(edgesKept),
+    u64Ptr(memberOffsets),
+    u64Ptr(members),
   );
   if (code !== 0) {
     throw new Error(`xyg_graph_build_render failed with code ${code}`);
   }
   const nOut = Number(outNNodes[0]);
   const eOut = Number(outNEdges[0]);
+  const edgeMemberOffsets = memberOffsets.subarray(0, eOut + 1);
   return {
+    // Render edge r represents source edges
+    // edgeMembers[edgeMemberOffsets[r] .. edgeMemberOffsets[r + 1]] (ascending).
+    edgeMemberOffsets,
+    edgeMembers: members.subarray(0, Number(edgeMemberOffsets[eOut])),
     x: outX.subarray(0, nOut),
     y: outY.subarray(0, nOut),
     memberOf,

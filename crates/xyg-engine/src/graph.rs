@@ -1660,6 +1660,14 @@ pub fn cluster_aggregate(
 ///   pairs, and self-loops (then stride-sample when over `edge_budget`).
 /// - `out_n_nodes` / `out_n_edges`: sizes of the reduced graph (`|V'|`, `|E'|`)
 /// - recorded §28 [`LodDecision`] (`tier` / `edges_kept` = `|E'|`)
+/// - optional `out_edge_membership = (offsets, members)`: CSR source-edge
+///   membership per render edge (#33). Render edge `r` represents source
+///   edges `members[offsets[r]..offsets[r + 1]]`, ascending. Direct and
+///   EdgeSample edges have exactly one member; an Aggregate edge lists every
+///   source edge collapsed into its cluster pair. Source edges that are not
+///   rendered (viewport, same-cluster, sampled out) appear nowhere, so hosts
+///   never attribute paint to an unrelated edge. `offsets` needs
+///   `min(edge_budget, |E|) + 1` slots and `members` needs `|E|`.
 ///
 /// Guarantees `|V'| ≤ node_budget` and `|E'| ≤ edge_budget` so hosts never
 /// upload raw V/E when over budget (scatter-density → exact drill-down spirit).
@@ -1680,6 +1688,7 @@ pub fn build_render(
     out_edge_targets: &mut [u64],
     out_n_nodes: &mut u64,
     out_n_edges: &mut u64,
+    out_edge_membership: Option<(&mut [u64], &mut [u64])>,
 ) -> Option<LodDecision> {
     let Ok(n) = usize::try_from(n_nodes) else {
         return None;
@@ -1706,6 +1715,12 @@ pub fn build_render(
     } else {
         edge_budget.min(edge_out_cap)
     };
+    let render_edge_cap = edge_budget.min(n_edges) as usize;
+    if let Some((offsets, members)) = out_edge_membership.as_ref() {
+        if offsets.len() <= render_edge_cap || members.len() < sources.len() {
+            return None;
+        }
+    }
 
     // Mark active (viewport) nodes; outside → member_of = MAX later.
     let mut active = vec![true; n];
@@ -1760,6 +1775,9 @@ pub fn build_render(
         }
         *out_n_nodes = 0;
         *out_n_edges = 0;
+        if let Some((offsets, _)) = out_edge_membership {
+            offsets[0] = 0;
+        }
         return Some(LodDecision {
             tier: LodTier::Direct,
             n_nodes,
@@ -1803,9 +1821,11 @@ pub fn build_render(
     // GraphForge edge identity can stay 1:1 with paint when under budget (#33).
     let clustered = cluster_count < n_active_u64 || n_active_u64 > node_budget;
     let mut aggregated: Vec<(u64, u64)> = Vec::new();
+    // Aggregated-list slot each source edge landed in (u64::MAX = dropped).
+    let mut slot_of_edge = vec![u64::MAX; sources.len()];
     if clustered {
-        let mut edge_set: HashMap<(u64, u64), ()> = HashMap::new();
-        for (&s, &t) in sources.iter().zip(targets.iter()) {
+        let mut edge_set: HashMap<(u64, u64), u64> = HashMap::new();
+        for (edge, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
             if s >= n_nodes || t >= n_nodes {
                 return None;
             }
@@ -1815,12 +1835,14 @@ pub fn build_render(
                 continue;
             }
             let key = (cs, ct);
-            if edge_set.insert(key, ()).is_none() {
+            let slot = *edge_set.entry(key).or_insert_with(|| {
                 aggregated.push(key);
-            }
+                aggregated.len() as u64 - 1
+            });
+            slot_of_edge[edge] = slot;
         }
     } else {
-        for (&s, &t) in sources.iter().zip(targets.iter()) {
+        for (edge, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
             if s >= n_nodes || t >= n_nodes {
                 return None;
             }
@@ -1829,6 +1851,7 @@ pub fn build_render(
             if cs == u64::MAX || ct == u64::MAX {
                 continue;
             }
+            slot_of_edge[edge] = aggregated.len() as u64;
             aggregated.push((cs, ct));
         }
     }
@@ -1844,6 +1867,43 @@ pub fn build_render(
         out_edge_targets[i] = ct;
     }
     *out_n_edges = kept;
+
+    if let Some((offsets, members)) = out_edge_membership {
+        // Aggregated slot -> render edge, then CSR by render edge. Source
+        // edges are visited in index order, so each member list is ascending.
+        let mut render_of_slot = vec![u64::MAX; aggregated.len()];
+        for (render, &slot) in indices[..kept as usize].iter().enumerate() {
+            render_of_slot[slot as usize] = render as u64;
+        }
+        let render_of_edge = |edge: usize| {
+            let slot = slot_of_edge[edge];
+            if slot == u64::MAX {
+                u64::MAX
+            } else {
+                render_of_slot[slot as usize]
+            }
+        };
+        let kept_usize = kept as usize;
+        offsets[..=kept_usize].fill(0);
+        for edge in 0..sources.len() {
+            let render = render_of_edge(edge);
+            if render != u64::MAX {
+                offsets[render as usize + 1] += 1;
+            }
+        }
+        for r in 0..kept_usize {
+            offsets[r + 1] += offsets[r];
+        }
+        let mut cursor = offsets[..kept_usize].to_vec();
+        for edge in 0..sources.len() {
+            let render = render_of_edge(edge);
+            if render != u64::MAX {
+                let at = &mut cursor[render as usize];
+                members[*at as usize] = edge as u64;
+                *at += 1;
+            }
+        }
+    }
 
     // Record §28 decision against the *source* graph sizes; edges_kept = |E'|.
     let tier = if clustered {
@@ -2295,6 +2355,7 @@ mod tests {
             &mut edge_t,
             &mut n_out,
             &mut e_out,
+            None,
         )
         .expect("build_render");
         assert_eq!(d.tier, LodTier::Aggregate);
@@ -2342,6 +2403,7 @@ mod tests {
             &mut edge_t,
             &mut n_out,
             &mut e_out,
+            None,
         )
         .expect("build_render direct");
         assert_eq!(d.tier, LodTier::Direct);
@@ -2351,6 +2413,164 @@ mod tests {
         assert_eq!(&out_x[..3], &x);
         assert_eq!(&edge_s[..2], &sources);
         assert_eq!(&edge_t[..2], &targets);
+    }
+
+    /// Run `build_render` with membership and return
+    /// `(tier, render sources, render targets, member lists)`.
+    fn render_membership(
+        x: &[f64],
+        y: &[f64],
+        sources: &[u64],
+        targets: &[u64],
+        node_budget: u64,
+        edge_budget: u64,
+        viewport: Option<Viewport>,
+    ) -> (LodTier, Vec<u64>, Vec<u64>, Vec<Vec<u64>>) {
+        let n = x.len();
+        let cap = edge_budget as usize;
+        let mut out_x = vec![0.0; n.max(1)];
+        let mut out_y = vec![0.0; n.max(1)];
+        let mut member_of = vec![u64::MAX; n];
+        let mut edge_s = vec![0u64; cap];
+        let mut edge_t = vec![0u64; cap];
+        let mut offsets = vec![u64::MAX; cap.min(sources.len()) + 1];
+        let mut members = vec![u64::MAX; sources.len()];
+        let (mut n_out, mut e_out) = (0u64, 0u64);
+        let d = build_render(
+            n as u64,
+            x,
+            y,
+            sources,
+            targets,
+            node_budget,
+            edge_budget,
+            viewport,
+            &mut out_x,
+            &mut out_y,
+            &mut member_of,
+            &mut edge_s,
+            &mut edge_t,
+            &mut n_out,
+            &mut e_out,
+            Some((&mut offsets, &mut members)),
+        )
+        .expect("build_render membership");
+        let kept = e_out as usize;
+        let lists = (0..kept)
+            .map(|r| members[offsets[r] as usize..offsets[r + 1] as usize].to_vec())
+            .collect();
+        (d.tier, edge_s[..kept].to_vec(), edge_t[..kept].to_vec(), lists)
+    }
+
+    #[test]
+    fn build_render_membership_is_identity_at_direct_tier() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 0.0, 0.0];
+        let (tier, _, _, lists) =
+            render_membership(&x, &y, &[0, 0, 1, 2], &[1, 1, 2, 2], 100, 100, None);
+        assert_eq!(tier, LodTier::Direct);
+        assert_eq!(lists, vec![vec![0], vec![1], vec![2], vec![3]]);
+    }
+
+    #[test]
+    fn build_render_membership_tracks_viewport_drops_and_samples() {
+        let x = [0.0, 1.0, 2.0, 50.0];
+        let y = [0.0, 0.0, 0.0, 50.0];
+        // Edge 1 touches node 3, which the viewport excludes.
+        let sources = [0u64, 0, 1, 2, 1];
+        let targets = [1u64, 3, 2, 0, 0];
+        let vp = Viewport {
+            x0: -1.0,
+            y0: -1.0,
+            x1: 3.0,
+            y1: 1.0,
+        };
+        let (tier, es, et, lists) =
+            render_membership(&x, &y, &sources, &targets, 100, 100, Some(vp));
+        assert_eq!(tier, LodTier::EdgeSample);
+        assert_eq!(lists, vec![vec![0], vec![2], vec![3], vec![4]]);
+        for (r, list) in lists.iter().enumerate() {
+            let e = list[0] as usize;
+            assert_eq!((es[r], et[r]), (sources[e], targets[e]));
+        }
+        // Stride sampling under edge_budget: each kept edge names exactly the
+        // sampled source edge, never a neighbour.
+        let (tier, es, et, lists) =
+            render_membership(&x, &y, &[0, 1, 2, 0, 1, 2], &[1, 2, 0, 2, 0, 1], 100, 3, None);
+        assert_eq!(tier, LodTier::EdgeSample);
+        assert_eq!(lists.len(), 3);
+        let (src, dst) = ([0u64, 1, 2, 0, 1, 2], [1u64, 2, 0, 2, 0, 1]);
+        for (r, list) in lists.iter().enumerate() {
+            assert_eq!(list.len(), 1);
+            let e = list[0] as usize;
+            assert_eq!((es[r], et[r]), (src[e], dst[e]));
+        }
+    }
+
+    #[test]
+    fn build_render_membership_lists_every_collapsed_edge_at_aggregate() {
+        // Two tight clusters far apart; three parallel/reciprocal cross edges
+        // collapse per direction, one intra-cluster edge is dropped.
+        let x = [0.0, 0.1, 100.0, 100.1];
+        let y = [0.0, 0.1, 100.0, 100.1];
+        let sources = [0u64, 2, 1, 0, 3];
+        let targets = [2u64, 0, 3, 1, 1];
+        let (tier, es, et, lists) = render_membership(&x, &y, &sources, &targets, 2, 100, None);
+        assert_eq!(tier, LodTier::Aggregate);
+        assert_eq!(lists.len(), 2);
+        // Every member's endpoints collapse onto its render edge's clusters,
+        // lists are ascending, and the dropped intra-cluster edge 3 is absent.
+        let mut all: Vec<u64> = lists.iter().flatten().copied().collect();
+        all.sort_unstable();
+        assert_eq!(all, vec![0, 1, 2, 4]);
+        for (r, list) in lists.iter().enumerate() {
+            assert!(list.windows(2).all(|w| w[0] < w[1]));
+            let first = (sources[list[0] as usize], targets[list[0] as usize]);
+            for &e in list {
+                let (s, t) = (sources[e as usize], targets[e as usize]);
+                assert_eq!((s < 2, t < 2), (first.0 < 2, first.1 < 2));
+            }
+            assert_ne!(es[r], et[r]);
+        }
+        // Deterministic: a second run is identical.
+        assert_eq!(
+            render_membership(&x, &y, &sources, &targets, 2, 100, None).3,
+            lists
+        );
+    }
+
+    #[test]
+    fn build_render_rejects_undersized_membership_buffers() {
+        let x = [0.0, 1.0];
+        let y = [0.0, 0.0];
+        let (sources, targets) = ([0u64, 1], [1u64, 0]);
+        let mut out_x = [0.0; 2];
+        let mut out_y = [0.0; 2];
+        let mut member_of = [0u64; 2];
+        let mut edge_s = [0u64; 4];
+        let mut edge_t = [0u64; 4];
+        let (mut n_out, mut e_out) = (0u64, 0u64);
+        let mut offsets = [0u64; 2]; // needs min(4, 2) + 1 = 3
+        let mut members = [0u64; 2];
+        assert!(build_render(
+            2,
+            &x,
+            &y,
+            &sources,
+            &targets,
+            100,
+            4,
+            None,
+            &mut out_x,
+            &mut out_y,
+            &mut member_of,
+            &mut edge_s,
+            &mut edge_t,
+            &mut n_out,
+            &mut e_out,
+            Some((&mut offsets, &mut members)),
+        )
+        .is_none());
     }
 
     #[test]
@@ -2383,6 +2603,7 @@ mod tests {
             &mut edge_t,
             &mut n_out,
             &mut e_out,
+            None,
         )
         .expect("direct multigraph");
         assert_eq!(d.tier, LodTier::Direct);
@@ -2426,6 +2647,7 @@ mod tests {
             &mut edge_t,
             &mut n_out,
             &mut e_out,
+            None,
         )
         .expect("viewport render");
         assert_eq!(n_out, 2);

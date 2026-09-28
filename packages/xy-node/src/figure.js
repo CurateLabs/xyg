@@ -1362,6 +1362,8 @@ export class Figure {
     this.traces = [];
     this.axis_options = { x: {}, y: {} };
     this._graphMeta = null;
+    // Host-side graph edge identity planes keyed by edge trace index (#33).
+    this._graphEdgeIdentity = new Map();
     this._axisRange = { x: null, y: null };
     this._polarMeta = null;
     /** @type {Map<number|string, PyramidCache>} */
@@ -1880,6 +1882,20 @@ export class Figure {
   }
 
   /**
+   * Identity for a picked graph edge segment (#33): the exact source edge
+   * (`edge_count` 1) or the deterministic Aggregate membership, with
+   * `edge_ids` when the graph carries GraphForge edge UUIDs. Same shape as the
+   * Python pick reply. Returns null for non-graph traces or out-of-range.
+   *
+   * @param {number} trace edge trace index (`graphMeta.edge_trace`)
+   * @param {number} segment routed segment index within that trace
+   */
+  graphEdgePick(trace, segment) {
+    const identity = this._graphEdgeIdentity.get(Number(trace));
+    return identity == null ? null : identity.pick(segment);
+  }
+
+  /**
    * Compose a graph mark (normalize → layout → render-graph → traces + meta).
    */
   graph(nodes, edges, opts = {}) {
@@ -1908,6 +1924,7 @@ export class Figure {
       node_trace: this.traces.length - 1,
       edge_trace: this.traces.length - 2,
     };
+    this._graphEdgeIdentity.set(meta.edge_trace, composed.edgeIdentity);
     if (this._graphMeta == null) {
       this._graphMeta = [meta];
     } else {
