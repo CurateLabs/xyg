@@ -585,6 +585,18 @@ boundary edges retain their canonical source identity.
 - SVG: circles + polylines from screen-bounded positions (host SVG writer).
 - Native PNG: canonical semantic graph Scenes use the same Rust display-list
   records as SVG and browser paint; there is no graph-specific raster style path.
+- Composed `graph_chart` / `graphChart` (#33): `to_svg`/`to_png` (Python) and
+  `toSvg`/`toPng` (Node) export the routed edge segments (loops, arrows,
+  curves) and node scatter through the public Scene route, autoranged by Rust
+  exactly as the browser is (scene-ir.md, `FLAG_GRAPH_MARKS`). Node positions
+  in the export match the browser projection to 0.01 px, and Python and Node
+  bytes are identical for identical input. Node `graphChart` hides axes like
+  Python `graph_chart`. Current bound: the public route admits at most 10,000
+  points per trace, so graphs over 10,000 routed segments (about 3,300
+  directed straight or 1,000 curved edges) fail closed with
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`; the interactive path is unaffected.
+  Default graph colors still differ between hosts (Python cycles the palette
+  per trace; Node uses grey edges), so the parity fixture pins explicit colors.
 
 ---
 

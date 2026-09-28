@@ -94,6 +94,10 @@ const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
 const FLAG_CHROME_STYLES: u32 = 1 << 2;
 const FLAG_TITLE_OPTIONS: u32 = 1 << 3;
 const FLAG_POLAR: u32 = 1 << 4;
+/// Host observation: every trace belongs to a recorded graph mark (one edge
+/// `segments` trace followed by one node `scatter` trace per graph). Rust
+/// still verifies that shape before admitting it to autorange (#33).
+const FLAG_GRAPH_MARKS: u32 = 1 << 5;
 
 const ANN_WRAP: u8 = 1 << 0;
 const ANN_DX: u8 = 1 << 1;
@@ -1227,6 +1231,27 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             _ => false,
         }
     };
+    // Graph marks (#33): the browser paints exactly the edge segments and node
+    // scatter, with the same Rust autorange (segment endpoints + points), so
+    // the static Scene may consume that domain. Axes are the graph chart's
+    // hidden defaults (`side` plus transparent `style`).
+    let graph_autorange_shape = flags & FLAG_GRAPH_MARKS != 0
+        && flags & FLAG_POLAR == 0
+        && n_annotations == 0
+        && legend_keys.is_empty()
+        && colorbar_keys.is_empty()
+        && !traces.is_empty()
+        && traces.len() % 2 == 0
+        && axes
+            .iter()
+            .all(|axis| !extra_key(&axis.keys, &["side", "style"]))
+        && traces.chunks(2).all(|pair| {
+            pair[0].kind == KIND_SEGMENTS
+                && pair[1].kind == KIND_SCATTER
+                && !extra_key(&pair[0].style_keys, &["color", "opacity", "role", "width"])
+                && !extra_key(&pair[1].style_keys, &["color", "opacity", "size", "symbol"])
+        });
+    let ordinary_autorange_shape = ordinary_autorange_shape || graph_autorange_shape;
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
@@ -2203,6 +2228,101 @@ mod tests {
         out.extend_from_slice(kind_b);
         out.extend_from_slice(role_b);
         out
+    }
+
+    fn xyef_axis_keys(axis_id: u8, side: u8, keys: &[&str]) -> Vec<u8> {
+        let mut out = vec![axis_id, 0, 0, 0, side, 0];
+        out.extend_from_slice(&(keys.len() as u16).to_le_bytes());
+        for key in keys {
+            out.extend_from_slice(&(key.len() as u16).to_le_bytes());
+            out.extend_from_slice(key.as_bytes());
+        }
+        out
+    }
+
+    fn xyef_styled_trace(kind: &str, obs: u32, n: u32, style_keys: &[&str]) -> Vec<u8> {
+        // Hosts pack `style["role"]`; graph edges carry role "segments".
+        let role = if style_keys.contains(&"role") { kind } else { "" };
+        let mut out = xyef_trace(kind, obs, n, 0, 0, 0, role);
+        out[40..42].copy_from_slice(&(style_keys.len() as u16).to_le_bytes());
+        for key in style_keys {
+            out.extend_from_slice(&(key.len() as u16).to_le_bytes());
+            out.extend_from_slice(key.as_bytes());
+        }
+        out
+    }
+
+    /// A graph chart's export facts: hidden default axes and one
+    /// (edge segments, node scatter) pair per graph mark.
+    fn graph_facts(flags: u32, pairs: &[(&str, &[&str], &str, &[&str])], axis: &[&str]) -> Vec<u8> {
+        let mut facts = xyef_header(flags, 0, 0, 0, 2, 0, (pairs.len() * 2) as u32);
+        facts.extend_from_slice(&xyef_axis_keys(0, 1, axis));
+        facts.extend_from_slice(&xyef_axis_keys(1, 2, axis));
+        let endpoints = OBS_HAS_X0
+            | OBS_HAS_Y0
+            | OBS_HAS_X1
+            | OBS_HAS_Y1
+            | OBS_X0_FINITE
+            | OBS_Y0_FINITE
+            | OBS_X1_FINITE
+            | OBS_Y1_FINITE;
+        let points = OBS_HAS_X | OBS_HAS_Y | OBS_X_FINITE | OBS_Y_FINITE;
+        for (first, first_style, second, second_style) in pairs {
+            let obs = |kind: &str| if kind == "segments" { endpoints } else { points };
+            facts.extend_from_slice(&xyef_styled_trace(first, obs(first), 3, first_style));
+            facts.extend_from_slice(&xyef_styled_trace(second, obs(second), 3, second_style));
+        }
+        facts
+    }
+
+    #[test]
+    fn graph_marks_autorange_without_authored_axis_domain() {
+        const EDGE: &[&str] = &["color", "opacity", "role", "width"];
+        const NODE: &[&str] = &["opacity", "symbol"];
+        const HIDDEN: &[&str] = &["side", "style"];
+        let reason = |facts: Vec<u8>| {
+            scene_public_export_reason(&pack_public_export(&facts).unwrap()).unwrap()
+        };
+        // One and two graph marks with the host graph flag are admitted.
+        assert_eq!(
+            reason(graph_facts(FLAG_GRAPH_MARKS, &[("segments", EDGE, "scatter", NODE)], HIDDEN)),
+            ""
+        );
+        assert_eq!(
+            reason(graph_facts(
+                FLAG_GRAPH_MARKS,
+                &[
+                    ("segments", EDGE, "scatter", NODE),
+                    ("segments", EDGE, "scatter", NODE)
+                ],
+                HIDDEN,
+            )),
+            ""
+        );
+        // Without the flag, or with a shape the flag does not describe, the
+        // literal-geometry domain gate still fails closed.
+        let axis = "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS";
+        assert_eq!(reason(graph_facts(0, &[("segments", EDGE, "scatter", NODE)], HIDDEN)), axis);
+        assert_eq!(
+            reason(graph_facts(FLAG_GRAPH_MARKS, &[("scatter", NODE, "segments", EDGE)], HIDDEN)),
+            axis
+        );
+        assert_eq!(
+            reason(graph_facts(
+                FLAG_GRAPH_MARKS,
+                &[("segments", &["color", "dash"], "scatter", NODE)],
+                HIDDEN,
+            )),
+            axis
+        );
+        assert_eq!(
+            reason(graph_facts(
+                FLAG_GRAPH_MARKS,
+                &[("segments", EDGE, "scatter", NODE)],
+                &["side", "style", "label"],
+            )),
+            axis
+        );
     }
 
     #[test]

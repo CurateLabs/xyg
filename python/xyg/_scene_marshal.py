@@ -865,6 +865,23 @@ def _xyep_finite(column: Any) -> bool:
     return _native.scene_finite_all(column.values)
 
 
+def _graph_marks_only(figure: Any) -> bool:
+    """True when every trace belongs to a recorded graph mark (#33).
+
+    Each graph mark owns an edge ``segments`` trace immediately followed by its
+    node ``scatter`` trace; Rust re-verifies the kinds (XYEP ``FLAG_GRAPH_MARKS``).
+    """
+    metas = getattr(figure, "_graph_meta", None) or []
+    traces = getattr(figure, "traces", None) or []
+    owned = []
+    for meta in metas:
+        edge, node = meta.get("edge_trace"), meta.get("node_trace")
+        if not isinstance(edge, int) or node != edge + 1:
+            return False
+        owned.extend((edge, node))
+    return bool(owned) and sorted(owned) == list(range(len(traces)))
+
+
 def pack_public_export_support(
     figure: Any,
     *,
@@ -897,6 +914,8 @@ def pack_public_export_support(
         flags |= 1 << 3
     if export_plan["polar"]:
         flags |= 1 << 4
+    if _graph_marks_only(figure):
+        flags |= 1 << 5
     style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
     legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
     colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]

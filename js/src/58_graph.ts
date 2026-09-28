@@ -6,7 +6,7 @@ import { ChartView } from "./50_chartview";
 // via the existing point-shader selection path (`g.selActive` / `g.selBuf`,
 // see `_drawPoints` / `POINT_VS`). Geometry is already uploaded as segments
 // + scatter — this module never owns layout or edge tessellation
-// (`edge_curve` meta is recorded but MVP keeps straight segments).
+// (Rust routes `edge_curve` / loops / arrows into ordinary segments, #33).
 //
 // Safe to omit from the bundle: every wire mark (including graph's
 // segments/scatter) renders through MARK_KINDS without these hooks.
