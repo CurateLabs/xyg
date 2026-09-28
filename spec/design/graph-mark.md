@@ -592,9 +592,12 @@ boundary edges retain their canonical source identity.
   in the export match the browser projection to 0.01 px, and Python and Node
   bytes are identical for identical input. Node `graphChart` hides axes like
   Python `graph_chart`. Current bound: the public route admits at most 10,000
-  points per trace, so graphs over 10,000 routed segments (about 3,300
-  directed straight or 1,000 curved edges) fail closed with
-  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`; the interactive path is unaffected.
+  records per trace, so graphs over 10,000 nodes or 10,000 routed segments
+  (about 3,300 directed straight or 1,000 curved directed edges) fail closed;
+  the interactive path is unaffected. Reasons: Python reports
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for both; Node reports `…_PUBLIC_LOD` for
+  nodes and `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS` for segment overflow (a
+  pre-existing host reason difference on the general segments path).
   Default graph colors still differ between hosts (Python cycles the palette
   per trace; Node uses grey edges), so the parity fixture pins explicit colors.
 
