@@ -158,6 +158,9 @@ class Figure(AnnotationsMixin, PayloadMixin):
         # Graph mark meta (CSR / LOD / layout decision) — shipped on the wire
         # spec when present (graph-mark.md). Not a Trace; one entry per graph.
         self._graph_meta: list[dict[str, Any]] | None = None
+        # Host-side graph edge identity planes keyed by edge trace id (#33);
+        # never serialized, consumed by pick.
+        self._graph_edge_identity: dict[int, Any] = {}
         self.show_legend = True
         self.legend_options: dict[str, Any] = {}
         # Additional legend boxes (each with its own explicit items + loc),

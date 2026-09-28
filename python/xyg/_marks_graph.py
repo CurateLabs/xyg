@@ -133,14 +133,30 @@ def graph(
         symbol=symbol,
         style=style,
     )
-    # Attach GraphForge semantic rows when render LOD kept a 1:1 mapping.
-    # Direct tier preserves parallels/self-loops; routing may expand loops/arrows
-    # into multiple segments — expand tooltip rows by render_edge_index (#33).
+    # Edge identity follows Rust's render-edge membership, not a count match
+    # (#33): a render edge with one member carries that source edge's row; an
+    # Aggregate edge carries its member count, never one invented source edge.
+    # Routing expands loops/arrows/curves into several segments per render
+    # edge, so rows are expanded by render_edge_index.
+    edge_identity = _graph.GraphEdgeIdentity(
+        render_edge_index=np.asarray(render_edge_index, dtype=np.uint64),
+        offsets=np.asarray(meta["render_edge_member_offsets"], dtype=np.uint64),
+        members=np.asarray(meta["render_edge_members"], dtype=np.uint64),
+        source_edge_ids=[str(edge_id) for edge_id in data.edge_ids] if data.edge_ids else None,
+    )
+    single = edge_identity.single_member()
     node_tooltips, edge_tooltips = _graph.projection_tooltip_rows(data)
     if node_tooltips is not None and len(px) == data.n_nodes:
         self.traces[-1].tooltip_rows = node_tooltips
-    if edge_tooltips is not None and len(sources) == data.n_edges:
-        self.traces[-2].tooltip_rows = [edge_tooltips[int(i)] for i in render_edge_index.tolist()]
+    if edge_tooltips is not None:
+        counts = np.diff(edge_identity.offsets)
+        render_rows = [
+            edge_tooltips[int(edge_identity.members[int(edge_identity.offsets[r])])]
+            if counts[r] == 1
+            else {"edge_count": int(counts[r])}
+            for r in range(len(sources))
+        ]
+        self.traces[-2].tooltip_rows = [render_rows[int(i)] for i in render_edge_index.tolist()]
     # CSR matches the *render* node index space (scatter), not raw source V.
     offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
     # §28 recorded layout/LOD decision for hosts/clients.
@@ -149,7 +165,14 @@ def graph(
         **{
             k: v
             for k, v in meta.items()
-            if k not in ("member_of", "render_sources", "render_targets")
+            if k
+            not in (
+                "member_of",
+                "render_sources",
+                "render_targets",
+                "render_edge_member_offsets",
+                "render_edge_members",
+            )
         },
         "directed": bool(directed),
         "ids": [str(i) for i in data.ids],
@@ -266,13 +289,15 @@ def graph(
         # Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
         source_edge_ids = [str(edge_id) for edge_id in data.edge_ids]
         graph_meta["source_edge_ids"] = source_edge_ids
-        if len(sources) == data.n_edges:
-            graph_meta["edge_ids"] = source_edge_ids
+        if single is not None:
+            # Render-edge-indexed identity when every render edge is exactly
+            # one source edge (Direct, EdgeSample, uncollapsed Aggregate).
+            graph_meta["edge_ids"] = [source_edge_ids[int(m)] for m in single]
     if data.node_provenance_rows is not None:
         graph_meta["node_provenance_rows"] = [int(v) for v in data.node_provenance_rows.tolist()]
     if data.edge_provenance_rows is not None:
         graph_meta["edge_provenance_rows"] = [int(v) for v in data.edge_provenance_rows.tolist()]
-    if edge_tooltips is not None and len(sources) != data.n_edges:
+    if edge_tooltips is not None and single is None:
         # Source-indexed semantic table when Aggregate LOD collapsed multi-edges/loops.
         graph_meta["edge_tooltip_rows"] = edge_tooltips
     if node_tooltips is not None and len(px) != data.n_nodes:
@@ -282,4 +307,6 @@ def graph(
         self._graph_meta = [graph_meta]
     else:
         existing.append(graph_meta)
+    # Register the identity plane only once the graph fully validated.
+    self._graph_edge_identity[graph_meta["edge_trace"]] = edge_identity
     return self

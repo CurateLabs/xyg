@@ -8,6 +8,7 @@ u64 indices + columns.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -696,7 +697,7 @@ def run_layout(
             seed=seed,
         )
 
-    rx, ry, member_of, edge_s, edge_t, tier, edges_kept = _native.graph_build_render(
+    render, (edge_member_offsets, edge_members) = _native.graph_build_render_with_membership(
         x,
         y,
         sources,
@@ -705,6 +706,7 @@ def run_layout(
         edge_budget=int(edge_budget),
         viewport=viewport,
     )
+    rx, ry, member_of, edge_s, edge_t, tier, edges_kept = render
     meta: dict[str, Any] = {
         "layout": layout_name,
         "seed": int(seed),
@@ -718,6 +720,10 @@ def run_layout(
         "member_of": member_of,
         "render_sources": edge_s,
         "render_targets": edge_t,
+        # Host-side CSR source-edge membership per render edge (#33); never
+        # serialized into spec.graph.
+        "render_edge_member_offsets": edge_member_offsets,
+        "render_edge_members": edge_members,
         "node_budget": int(node_budget),
         "edge_budget": int(edge_budget),
     }
@@ -725,3 +731,51 @@ def run_layout(
         meta["iterations"] = int(iterations)
         meta["alpha"] = float(alpha) if alpha is not None else None
     return rx, ry, meta
+
+
+#: Source edges listed per edge pick before truncation (``members_truncated``).
+#: Mirrors ``GRAPH_EDGE_PICK_MEMBER_CAP`` in packages/xy-node/src/graph.js.
+GRAPH_EDGE_PICK_MEMBER_CAP = 256
+
+
+@dataclass(frozen=True)
+class GraphEdgeIdentity:
+    """Host-side identity plane for one graph's routed edge trace (#33).
+
+    ``render_edge_index[segment]`` names the render edge that painted a
+    segment; render edge ``r`` represents source edges
+    ``members[offsets[r]:offsets[r + 1]]`` (Rust ``build_render`` CSR).
+    """
+
+    render_edge_index: np.ndarray
+    offsets: np.ndarray
+    members: np.ndarray
+    source_edge_ids: list[str] | None
+
+    def members_of(self, render_edge: int) -> np.ndarray:
+        return self.members[int(self.offsets[render_edge]) : int(self.offsets[render_edge + 1])]
+
+    def single_member(self) -> np.ndarray | None:
+        """Source edge per render edge when every render edge has one member."""
+        counts = np.diff(self.offsets)
+        if not bool(np.all(counts == 1)):
+            return None
+        return self.members[self.offsets[:-1].astype(np.intp)]
+
+    def pick(self, segment: int) -> dict[str, Any] | None:
+        """Exact identity for a picked segment: the one source edge, or the
+        deterministic aggregate membership — never an unrelated edge."""
+        if not 0 <= segment < len(self.render_edge_index):
+            return None
+        render_edge = int(self.render_edge_index[segment])
+        members = self.members_of(render_edge)
+        shown = members[:GRAPH_EDGE_PICK_MEMBER_CAP]
+        out: dict[str, Any] = {
+            "render_edge": render_edge,
+            "edge_count": int(len(members)),
+            "source_edges": [int(m) for m in shown],
+            "members_truncated": bool(len(members) > len(shown)),
+        }
+        if self.source_edge_ids is not None:
+            out["edge_ids"] = [self.source_edge_ids[int(m)] for m in shown]
+        return out

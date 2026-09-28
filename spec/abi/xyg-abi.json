@@ -1,9 +1,9 @@
 {
-  "abi_version": 366,
+  "abi_version": 367,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "99b2cb333843ae124b58f2e6a9d4a244fd02520bfac09f6c602733223ef14c97",
+  "signature_sha256": "6d49d3857da3155fea7fb36263d3dd49ecbcd2283118adcf0e6c7dfa2b315604",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -14691,7 +14691,7 @@
     {
       "name": "xyg_graph_build_render",
       "node_name": "xyGraphBuildRender",
-      "nargs": 22,
+      "nargs": 24,
       "arguments": [
         {
           "name": "n_nodes",
@@ -15035,6 +15035,38 @@
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
           }
+        },
+        {
+          "name": "out_edge_member_offsets",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_edge_members",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
         }
       ],
       "returns": {
@@ -15049,7 +15081,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept)"
+      "c_signature": "int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept, uint64_t * out_edge_member_offsets, uint64_t * out_edge_members)"
     },
     {
       "name": "xyg_graph_cluster_aggregate",

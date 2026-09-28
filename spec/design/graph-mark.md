@@ -176,8 +176,9 @@ deterministic dense `u64` endpoints, directedness, and optional parent mapping
 then retain validated typed attribute columns and provenance on `GraphData`.
 `graph()` / `composeGraph()` accept GraphForge tables or a ready `GraphData`
 and attach `tooltip_rows` plus source-indexed `source_edge_ids` / provenance
-meta. When render LOD keeps a 1:1 edge mapping, `edge_ids` mirrors
-`source_edge_ids` and is render-aligned. `color=` / `size=` / `edge_color=` may
+meta. When every render edge is exactly one source edge (per the Rust
+membership in §6), `edge_ids` is render-edge-indexed:
+`edge_ids[r]` is the UUID of render edge `r`'s single source edge. `color=` / `size=` / `edge_color=` may
 name projection columns. Generic graph ingest and `from_networkx()` remain
 available and
 compile to the same render pipeline. Browser/WASM identity round-trip for the
@@ -364,6 +365,18 @@ Budgets and tier choice live in Rust decision helpers (render-graph emission);
 hosts do not fork tier policy. Past direct tier, WebGL sees only the emitted
 aggregates (§1.3).
 
+**Edge membership (#33, ABI 367).** `xyg_graph_build_render` also emits CSR
+source-edge membership per render edge when both optional outputs are
+non-null: render edge `r` represents source edges
+`members[offsets[r]..offsets[r + 1]]`, ascending. Direct and EdgeSample edges
+have exactly one member; an Aggregate edge lists every source edge collapsed
+into its ordered cluster pair. Source edges that are not painted (outside the
+viewport, same-cluster at Aggregate, or sampled out) appear in no list, so no
+tier attributes paint to an unrelated edge. Offsets need
+`min(edge_budget, |E|) + 1` slots and members `|E|`. Membership is a host-side
+identity plane (Python `GraphEdgeIdentity`, Node `createGraphEdgeIdentity`): it
+is never serialized into `spec.graph` or the paint payload.
+
 ---
 
 ## 7. Interaction
@@ -371,6 +384,19 @@ aggregates (§1.3).
 - Pan / zoom / fit (chart view) — zoom drives §1.4 LOD, not client-side
   topology walks.
 - Pick nodes via scatter GPU pick; edges via segment hit or neighbor of picked node.
+- Edge identity (#33): the edge trace's per-segment `tooltip_rows` follow the
+  §6 membership, not a count comparison. A render edge with one member carries
+  that source edge's projection row (`edge_id`, endpoints, provenance, attrs);
+  an Aggregate edge carries `{edge_count}` and never one invented source edge.
+  The browser's local hover/click rows therefore show the exact UUID or the
+  aggregate count. A pick of an edge segment (Python `pick` / `click` comm
+  reply; Node `Figure.graphEdgePick(trace, segment)`) adds `render_edge`,
+  `edge_count`, `source_edges`, `edge_ids` (when UUIDs exist) and
+  `members_truncated`, listing at most `GRAPH_EDGE_PICK_MEMBER_CAP` (256)
+  members in ascending source order. Python and Node share one cross-host
+  fixture (`tests/fixtures/graph_edge_identity_cross_host.json`), and a
+  Chromium probe hovers every routed segment to check the browser row carries
+  the same identity.
 - Neighborhood highlight: CSR (`csr_offsets` / `csr_neighbors` u64 arrays on
   `spec.graph[]`) is consumed by the WebGL client. On hover of the graph's
   scatter (`node_trace`), the client builds a temporary `selBuf` mask
@@ -575,7 +601,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_sample_edges` | LOD edge index sample |
 | `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
 | `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
-| `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28 |
+| `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28; optional CSR source-edge membership per render edge (ABI 367, §6) |
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |

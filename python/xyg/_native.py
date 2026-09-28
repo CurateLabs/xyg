@@ -12431,6 +12431,17 @@ def graph_cluster_aggregate(
     )
 
 
+GraphRender = tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    int,
+    int,
+]
+
+
 def graph_build_render(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
@@ -12440,16 +12451,49 @@ def graph_build_render(
     node_budget: int = 200_000,
     edge_budget: int = 500_000,
     viewport: tuple[float, float, float, float] | None = None,
-) -> tuple[
-    npt.NDArray[np.float64],
-    npt.NDArray[np.float64],
-    npt.NDArray[np.uint64],
-    npt.NDArray[np.uint64],
-    npt.NDArray[np.uint64],
-    int,
-    int,
-]:
+) -> GraphRender:
     """Build a perceptually bounded render graph; returns nodes, member_of, edges, tier, edges_kept."""
+    render, _ = _graph_build_render(
+        x, y, sources, targets, node_budget, edge_budget, viewport, membership=False
+    )
+    return render
+
+
+def graph_build_render_with_membership(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    node_budget: int = 200_000,
+    edge_budget: int = 500_000,
+    viewport: tuple[float, float, float, float] | None = None,
+) -> tuple[GraphRender, tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]]:
+    """``graph_build_render`` plus CSR source-edge membership per render edge (#33).
+
+    Returns ``(render, (offsets, members))``: render edge ``r`` represents
+    source edges ``members[offsets[r]:offsets[r + 1]]`` (ascending). Direct and
+    EdgeSample edges have exactly one member; Aggregate edges list every
+    collapsed source edge; unrendered source edges appear nowhere.
+    """
+    render, membership = _graph_build_render(
+        x, y, sources, targets, node_budget, edge_budget, viewport, membership=True
+    )
+    assert membership is not None
+    return render, membership
+
+
+def _graph_build_render(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    node_budget: int,
+    edge_budget: int,
+    viewport: tuple[float, float, float, float] | None,
+    *,
+    membership: bool,
+) -> tuple[GraphRender, tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]] | None]:
     x_arr = _as_f64(x, "x")
     y_arr = _as_f64(y, "y")
     if len(x_arr) != len(y_arr):
@@ -12471,6 +12515,10 @@ def graph_build_render(
     out_n_edges = ctypes.c_uint64(0)
     tier = ctypes.c_uint32(0)
     edges_kept = ctypes.c_uint64(0)
+    member_offsets = (
+        np.zeros(min(edge_budget, len(sources)) + 1, dtype=np.uint64) if membership else None
+    )
+    members = np.zeros(max(len(sources), 1), dtype=np.uint64) if membership else None
     if viewport is None:
         vp_en, x0, y0, x1, y1 = 0, 0.0, 0.0, 0.0, 0.0
     else:
@@ -12499,12 +12547,14 @@ def graph_build_render(
         ctypes.byref(out_n_edges),
         ctypes.byref(tier),
         ctypes.byref(edges_kept),
+        None if member_offsets is None else member_offsets.ctypes.data,
+        None if members is None else members.ctypes.data,
     )
     if ok != 0:
         raise ValueError("native graph_build_render failed")
     n_out = int(out_n_nodes.value)
     e_out = int(out_n_edges.value)
-    return (
+    render = (
         out_x[:n_out],
         out_y[:n_out],
         member_of,
@@ -12513,6 +12563,10 @@ def graph_build_render(
         int(tier.value),
         int(edges_kept.value),
     )
+    if member_offsets is None or members is None:
+        return render, None
+    offsets = member_offsets[: e_out + 1]
+    return render, (offsets, members[: int(offsets[-1])])
 
 
 # Per-edge route capacity: 8 curved-tessellation shaft pieces + 2 arrow wings

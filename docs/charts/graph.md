@@ -74,3 +74,24 @@ Invalid UUIDs, duplicate node/edge ids, and missing endpoints raise stable
 
 IPC fixtures used in CI live under `tests/fixtures/graphforge/` (regenerate with
 `scripts/gen_graphforge_ipc_fixtures.py`).
+
+## Edge identity on hover and pick
+
+Hovering or clicking an edge reports the exact GraphForge `edge_uuid` whenever
+the drawn edge is a single source edge, including routed self-loops, arrow
+wings, curved tessellation, and parallel or reciprocal siblings. When a very
+large graph is aggregated, one drawn edge stands for several source edges; its
+tooltip shows `edge_count`, and a pick reply lists the members in ascending
+order (`source_edges`, `edge_ids`, capped at 256 with `members_truncated`).
+It never names one arbitrary edge on the aggregate's behalf.
+
+```javascript
+const fig = figure().graph(nodes, edges, { layout: "grid" });
+const { edge_trace } = fig._graphMeta[0];
+fig.graphEdgePick(edge_trace, 0);
+// { render_edge: 0, edge_count: 1, source_edges: [0], members_truncated: false,
+//   edge_ids: ["…"] }
+```
+
+Python returns the same fields in the widget/Reflex `pick` and `click`
+replies.

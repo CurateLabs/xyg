@@ -1,0 +1,1223 @@
+{
+ "schema": "xyg.graph-edge-identity-cross-host/v1",
+ "x": [
+  0.0,
+  0.1,
+  100.0,
+  100.1
+ ],
+ "y": [
+  0.0,
+  0.1,
+  100.0,
+  100.1
+ ],
+ "node_uuid": [
+  "00000000-0000-0000-0000-000000000001",
+  "00000000-0000-0000-0000-000000000002",
+  "00000000-0000-0000-0000-000000000003",
+  "00000000-0000-0000-0000-000000000004"
+ ],
+ "edges": [
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003e9",
+   "src": 0,
+   "dst": 2
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003ea",
+   "src": 0,
+   "dst": 2
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003eb",
+   "src": 2,
+   "dst": 0
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003ec",
+   "src": 0,
+   "dst": 0
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003ed",
+   "src": 0,
+   "dst": 1
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003ee",
+   "src": 1,
+   "dst": 3
+  },
+  {
+   "edge_uuid": "00000000-0000-0000-0000-0000000003ef",
+   "src": 3,
+   "dst": 1
+  }
+ ],
+ "cases": {
+  "direct": {
+   "node_budget": 100,
+   "edge_budget": 100,
+   "edge_curve": "straight",
+   "tier_name": "direct",
+   "edge_ids": [
+    "00000000-0000-0000-0000-0000000003e9",
+    "00000000-0000-0000-0000-0000000003ea",
+    "00000000-0000-0000-0000-0000000003eb",
+    "00000000-0000-0000-0000-0000000003ec",
+    "00000000-0000-0000-0000-0000000003ed",
+    "00000000-0000-0000-0000-0000000003ee",
+    "00000000-0000-0000-0000-0000000003ef"
+   ],
+   "picks": [
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    }
+   ]
+  },
+  "direct_curved": {
+   "node_budget": 100,
+   "edge_budget": 100,
+   "edge_curve": "curve",
+   "tier_name": "direct",
+   "edge_ids": [
+    "00000000-0000-0000-0000-0000000003e9",
+    "00000000-0000-0000-0000-0000000003ea",
+    "00000000-0000-0000-0000-0000000003eb",
+    "00000000-0000-0000-0000-0000000003ec",
+    "00000000-0000-0000-0000-0000000003ed",
+    "00000000-0000-0000-0000-0000000003ee",
+    "00000000-0000-0000-0000-0000000003ef"
+   ],
+   "picks": [
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      1
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ea"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 3,
+     "edge_count": 1,
+     "source_edges": [
+      3
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ec"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 4,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 5,
+     "edge_count": 1,
+     "source_edges": [
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 6,
+     "edge_count": 1,
+     "source_edges": [
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    }
+   ]
+  },
+  "edge_sample": {
+   "node_budget": 100,
+   "edge_budget": 3,
+   "edge_curve": "straight",
+   "tier_name": "edge_sample",
+   "edge_ids": [
+    "00000000-0000-0000-0000-0000000003e9",
+    "00000000-0000-0000-0000-0000000003eb",
+    "00000000-0000-0000-0000-0000000003ed"
+   ],
+   "picks": [
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 1,
+     "source_edges": [
+      0
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 1,
+     "source_edges": [
+      2
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    },
+    {
+     "render_edge": 2,
+     "edge_count": 1,
+     "source_edges": [
+      4
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003ed"
+     ]
+    }
+   ]
+  },
+  "aggregate": {
+   "node_budget": 2,
+   "edge_budget": 100,
+   "edge_curve": "straight",
+   "tier_name": "aggregate",
+   "edge_ids": null,
+   "picks": [
+    {
+     "render_edge": 0,
+     "edge_count": 3,
+     "source_edges": [
+      0,
+      1,
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9",
+      "00000000-0000-0000-0000-0000000003ea",
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 3,
+     "source_edges": [
+      0,
+      1,
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9",
+      "00000000-0000-0000-0000-0000000003ea",
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 0,
+     "edge_count": 3,
+     "source_edges": [
+      0,
+      1,
+      5
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003e9",
+      "00000000-0000-0000-0000-0000000003ea",
+      "00000000-0000-0000-0000-0000000003ee"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 2,
+     "source_edges": [
+      2,
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb",
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 2,
+     "source_edges": [
+      2,
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb",
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    },
+    {
+     "render_edge": 1,
+     "edge_count": 2,
+     "source_edges": [
+      2,
+      6
+     ],
+     "members_truncated": false,
+     "edge_ids": [
+      "00000000-0000-0000-0000-0000000003eb",
+      "00000000-0000-0000-0000-0000000003ef"
+     ]
+    }
+   ]
+  }
+ }
+}

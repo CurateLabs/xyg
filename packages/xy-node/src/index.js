@@ -234,6 +234,8 @@ export {
   runLayout,
   edgeSegmentsFromPositions,
   composeGraph,
+  createGraphEdgeIdentity,
+  GRAPH_EDGE_PICK_MEMBER_CAP,
 } from "./graph.js";
 
 import { Figure, PayloadWriter, figure, autoDomain, scatterPerItemChannels, figureAutorangeAxisOptions, figureAutorangeAxisScale, figureAutorangeCategories, figureAutorangeDomain, figureAutorangeThetaUnit, figureAxisIsLog, figureAxisKind, scatterPayloadForceBin2d, scatterPayloadForceDensity, scatterPayloadForceDirect, scatterPayloadForcePyramid, scatterPayloadNoRescan } from "./figure.js";

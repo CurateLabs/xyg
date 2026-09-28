@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 366;
+pub const ABI_VERSION: u32 = 367;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15717,10 +15717,18 @@ pub unsafe extern "C" fn xyg_graph_cluster_aggregate(
 /// viewport when `viewport_enabled != 0`.
 /// Records §28 tier into `out_tier` / `out_edges_kept`. Returns 0 on success.
 ///
+/// When both `out_edge_member_offsets` and `out_edge_members` are non-null,
+/// also writes CSR source-edge membership per render edge (#33): render edge
+/// `r` represents source edges `members[offsets[r]..offsets[r + 1]]`
+/// (ascending). Direct / EdgeSample edges have one member; Aggregate edges
+/// list every collapsed source edge; unrendered source edges appear nowhere.
+/// Pass both null to skip membership.
+///
 /// # Safety
 /// Non-empty buffers must match documented lengths; edge outputs need capacity
 /// `edge_budget`; node outputs need `min(n_nodes, node_budget)` (or active
-/// count under viewport — callers should size to `node_budget`).
+/// count under viewport — callers should size to `node_budget`). Membership
+/// needs `min(edge_budget, n_edges) + 1` offsets and `n_edges` members.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_build_render(
     n_nodes: u64,
@@ -15745,7 +15753,12 @@ pub unsafe extern "C" fn xyg_graph_build_render(
     out_n_edges: *mut u64,
     out_tier: *mut u32,
     out_edges_kept: *mut u64,
+    out_edge_member_offsets: *mut u64,
+    out_edge_members: *mut u64,
 ) -> i32 {
+    if out_edge_member_offsets.is_null() != out_edge_members.is_null() {
+        return -1;
+    }
     if n_nodes > (usize::MAX as u64)
         || n_edges > (usize::MAX as u64)
         || out_n_nodes.is_null()
@@ -15834,6 +15847,20 @@ pub unsafe extern "C" fn xyg_graph_build_render(
     } else {
         None
     };
+    let membership = if out_edge_member_offsets.is_null() {
+        None
+    } else {
+        let offsets_len = edge_budget.min(n_edges) as usize + 1;
+        let members = if e == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out_edge_members, e)
+        };
+        Some((
+            std::slice::from_raw_parts_mut(out_edge_member_offsets, offsets_len),
+            members,
+        ))
+    };
 
     ffi_guard(-1, || {
         match graph::build_render(
@@ -15852,6 +15879,7 @@ pub unsafe extern "C" fn xyg_graph_build_render(
             out_edge_targets,
             &mut *out_n_nodes,
             &mut *out_n_edges,
+            membership,
         ) {
             Some(d) => {
                 *out_tier = d.tier as u32;

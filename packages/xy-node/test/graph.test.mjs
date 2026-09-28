@@ -5,6 +5,7 @@ import {
   abiVersion,
   composeGraph,
   figure,
+  GRAPH_EDGE_PICK_MEMBER_CAP,
   fromGraphForgeTables,
   graphBuildCsr,
   graphBuildRender,
@@ -701,4 +702,49 @@ test("projectionTooltipRows preserves bigint attributes as strings", () => {
   );
   const [nodeRows] = projectionTooltipRows(data);
   assert.equal(nodeRows[0].big, "9007199254740993");
+});
+
+test("graph edge picks match the Python cross-host identity fixture (#33)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_edge_identity_cross_host.json", import.meta.url), "utf8"),
+  );
+  const nodes = { node_uuid: fixture.node_uuid };
+  const edges = {
+    edge_uuid: fixture.edges.map((e) => e.edge_uuid),
+    src_uuid: fixture.edges.map((e) => fixture.node_uuid[e.src]),
+    dst_uuid: fixture.edges.map((e) => fixture.node_uuid[e.dst]),
+  };
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(nodes, edges, {
+      layout: "preset",
+      x: fixture.x,
+      y: fixture.y,
+      nodeBudget: expected.node_budget,
+      edgeBudget: expected.edge_budget,
+      edgeCurve: expected.edge_curve,
+    });
+    const meta = f._graphMeta[0];
+    assert.equal(meta.tier_name, expected.tier_name, name);
+    assert.deepEqual(meta.edge_ids ?? null, expected.edge_ids, name);
+    assert.ok(!Object.keys(meta).some((k) => k.startsWith("render_edge_member")), name);
+    const picks = meta.render_edge_index.map((_, segment) => f.graphEdgePick(meta.edge_trace, segment));
+    assert.deepEqual(picks, expected.picks, name);
+  }
+});
+
+test("graph edge picks truncate aggregate membership at the shared cap (#33)", () => {
+  const n = GRAPH_EDGE_PICK_MEMBER_CAP + 5;
+  const f = figure().graph(["a", "b", "c", "d"], Array.from({ length: n }, () => ["a", "c"]), {
+    layout: "preset",
+    x: [0, 0.1, 100, 100.1],
+    y: [0, 0.1, 100, 100.1],
+    nodeBudget: 2,
+  });
+  const meta = f._graphMeta[0];
+  const pick = f.graphEdgePick(meta.edge_trace, 0);
+  assert.equal(pick.edge_count, n);
+  assert.equal(pick.members_truncated, true);
+  assert.deepEqual(pick.source_edges, Array.from({ length: GRAPH_EDGE_PICK_MEMBER_CAP }, (_, i) => i));
+  assert.equal(f.graphEdgePick(meta.node_trace, 0), null);
 });

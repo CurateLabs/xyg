@@ -211,6 +211,7 @@ const graph = graphChart(nodes, edges, {
 | `abiVersion()` | `xyg_abi_version` |
 | `graphLayout` / `graphForce*` / `graphLod*` / `graphBuildRender` | layout + LOD + render graph |
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |
+| `Figure.graphEdgePick` / `createGraphEdgeIdentity` / `GRAPH_EDGE_PICK_MEMBER_CAP` | exact edge UUID or aggregate membership for a picked edge segment (#33) |
 | `composeScatter` … `composeRadar` / `composeSankey` | mark builders |
 | `scatterChart` … `radarChart` / `sankeyChart` / `graphChart` | convenience figures |
 | `bin2d` / `densityLogU8` / `lodPlan` / `payloadTier` / `shouldUseDensity` | Tier-2 LOD helpers |
