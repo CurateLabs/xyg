@@ -1821,8 +1821,14 @@ pub fn build_render(
     // GraphForge edge identity can stay 1:1 with paint when under budget (#33).
     let clustered = cluster_count < n_active_u64 || n_active_u64 > node_budget;
     let mut aggregated: Vec<(u64, u64)> = Vec::new();
-    // Aggregated-list slot each source edge landed in (u64::MAX = dropped).
-    let mut slot_of_edge = vec![u64::MAX; sources.len()];
+    // Aggregated-list slot each source edge landed in (u64::MAX = dropped);
+    // only tracked when the caller asked for membership.
+    let track = out_edge_membership.is_some();
+    let mut slot_of_edge = if track {
+        vec![u64::MAX; sources.len()]
+    } else {
+        Vec::new()
+    };
     if clustered {
         let mut edge_set: HashMap<(u64, u64), u64> = HashMap::new();
         for (edge, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
@@ -1839,7 +1845,9 @@ pub fn build_render(
                 aggregated.push(key);
                 aggregated.len() as u64 - 1
             });
-            slot_of_edge[edge] = slot;
+            if track {
+                slot_of_edge[edge] = slot;
+            }
         }
     } else {
         for (edge, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
@@ -1851,7 +1859,9 @@ pub fn build_render(
             if cs == u64::MAX || ct == u64::MAX {
                 continue;
             }
-            slot_of_edge[edge] = aggregated.len() as u64;
+            if track {
+                slot_of_edge[edge] = aggregated.len() as u64;
+            }
             aggregated.push((cs, ct));
         }
     }

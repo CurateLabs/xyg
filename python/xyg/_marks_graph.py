@@ -138,26 +138,25 @@ def graph(
     # Aggregate edge carries its member count, never one invented source edge.
     # Routing expands loops/arrows/curves into several segments per render
     # edge, so rows are expanded by render_edge_index.
-    identity = _graph.GraphEdgeIdentity(
+    edge_identity = _graph.GraphEdgeIdentity(
         render_edge_index=np.asarray(render_edge_index, dtype=np.uint64),
         offsets=np.asarray(meta["render_edge_member_offsets"], dtype=np.uint64),
         members=np.asarray(meta["render_edge_members"], dtype=np.uint64),
         source_edge_ids=[str(edge_id) for edge_id in data.edge_ids] if data.edge_ids else None,
     )
-    single = identity.single_member()
+    single = edge_identity.single_member()
     node_tooltips, edge_tooltips = _graph.projection_tooltip_rows(data)
     if node_tooltips is not None and len(px) == data.n_nodes:
         self.traces[-1].tooltip_rows = node_tooltips
     if edge_tooltips is not None:
-        counts = np.diff(identity.offsets)
+        counts = np.diff(edge_identity.offsets)
         render_rows = [
-            edge_tooltips[int(identity.members[int(identity.offsets[r])])]
+            edge_tooltips[int(edge_identity.members[int(edge_identity.offsets[r])])]
             if counts[r] == 1
             else {"edge_count": int(counts[r])}
             for r in range(len(sources))
         ]
         self.traces[-2].tooltip_rows = [render_rows[int(i)] for i in render_edge_index.tolist()]
-    self._graph_edge_identity[len(self.traces) - 2] = identity
     # CSR matches the *render* node index space (scatter), not raw source V.
     offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
     # §28 recorded layout/LOD decision for hosts/clients.
@@ -308,4 +307,6 @@ def graph(
         self._graph_meta = [graph_meta]
     else:
         existing.append(graph_meta)
+    # Register the identity plane only once the graph fully validated.
+    self._graph_edge_identity[graph_meta["edge_trace"]] = edge_identity
     return self

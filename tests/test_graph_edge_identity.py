@@ -186,6 +186,14 @@ def test_membership_stays_host_side() -> None:
         assert not any(key.startswith("render_edge_member") for key in meta)
 
 
+def test_failed_graph_does_not_register_edge_identity() -> None:
+    nodes, table = _graphforge(len(X), EDGES)
+    fig = Figure()
+    with pytest.raises(ValueError, match="node_label"):
+        fig.graph(nodes, table, layout="preset", x=X, y=Y, node_label=["only-one"])
+    assert fig._graph_edge_identity == {}
+
+
 def test_pick_membership_truncates_deterministically(monkeypatch: pytest.MonkeyPatch) -> None:
     cap = _graph.GRAPH_EDGE_PICK_MEMBER_CAP
     many = [(0, 2)] * (cap + 5)

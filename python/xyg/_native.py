@@ -12515,8 +12515,10 @@ def _graph_build_render(
     out_n_edges = ctypes.c_uint64(0)
     tier = ctypes.c_uint32(0)
     edges_kept = ctypes.c_uint64(0)
-    member_offsets = np.zeros(min(edge_budget, len(sources)) + 1, dtype=np.uint64)
-    members = np.zeros(max(len(sources), 1), dtype=np.uint64)
+    member_offsets = (
+        np.zeros(min(edge_budget, len(sources)) + 1, dtype=np.uint64) if membership else None
+    )
+    members = np.zeros(max(len(sources), 1), dtype=np.uint64) if membership else None
     if viewport is None:
         vp_en, x0, y0, x1, y1 = 0, 0.0, 0.0, 0.0, 0.0
     else:
@@ -12545,8 +12547,8 @@ def _graph_build_render(
         ctypes.byref(out_n_edges),
         ctypes.byref(tier),
         ctypes.byref(edges_kept),
-        member_offsets.ctypes.data if membership else None,
-        members.ctypes.data if membership else None,
+        None if member_offsets is None else member_offsets.ctypes.data,
+        None if members is None else members.ctypes.data,
     )
     if ok != 0:
         raise ValueError("native graph_build_render failed")
@@ -12561,7 +12563,7 @@ def _graph_build_render(
         int(tier.value),
         int(edges_kept.value),
     )
-    if not membership:
+    if member_offsets is None or members is None:
         return render, None
     offsets = member_offsets[: e_out + 1]
     return render, (offsets, members[: int(offsets[-1])])
