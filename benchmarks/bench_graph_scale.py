@@ -10,9 +10,9 @@ Each tier row records host normalization, Rust ``build_render``, Rust edge
 routing, the full graph mark, payload build, payload bytes with a sha256 of
 the shipped buffers, peak RSS of a fresh per-tier process, and oracles (budgets, edge
 membership coverage, edge-identity pick). Browser stages mount the payload in
-headless Chromium and record first paint, hover (edge hit-test + identity
-row) p50/p95, pan and wheel-zoom redraw p95, JS heap, teardown, and nonblank
-pixels.
+headless Chromium and record first paint (mount + draw + readback), hover
+(edge hit test + identity row) p50/p95, pan (pointer drag) and wheel zoom
+(WheelEvent) redraw p95, JS heap, teardown, and nonblank pixels.
 
 Profiles: ``smoke`` (small, medium; PR CI) and ``evidence`` (all tiers plus
 LOD-decision rows; scheduled/manual on main, uploaded as a SHA-keyed
@@ -149,51 +149,72 @@ def _probe_js(reps: int, edge_trace: int) -> str:
     el.style.width = "900px"; el.style.height = "420px";
     document.getElementById("root").appendChild(el);
     const heap0 = performance.memory ? performance.memory.usedJSHeapSize : null;
-    const t0 = performance.now();
-    const view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
-    view._drawNow();
-    const lit = xyNonblankPixels(view);
-    const firstPaintMs = performance.now() - t0;
-    await xyRaf();
-    // WebGL work is queued; a 1-pixel readback forces each redraw to finish so
-    // frame timings include rasterization, not just command submission.
+    // WebGL work is queued; a 1-pixel readback forces a frame to finish so
+    // timings include rasterization, not just command submission.
     const px = new Uint8Array(4);
-    const drawSynced = () => {{
-      view._drawNow();
-      view.gl.readPixels(0, 0, 1, 1, view.gl.RGBA, view.gl.UNSIGNED_BYTE, px);
-    }};
+    let view = null;
+    const sync = () => view.gl.readPixels(0, 0, 1, 1, view.gl.RGBA, view.gl.UNSIGNED_BYTE, px);
+    const t0 = performance.now();
+    view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
+    view._drawNow();
+    sync();
+    const firstPaintMs = performance.now() - t0;
+    const lit = xyNonblankPixels(view);
+    await xyRaf();
     const g = view.gpuTraces.find((trace) => trace.trace.id === {edge_trace});
     if (!g || !g._segmentCpu) throw new Error("graph edge trace missing");
     const geom = view._polarGeometry();
+    // Hover: real hit testing at routed segment midpoints; only hits on the
+    // edge trace with a resolved row count as edge identity.
     const hover = [];
-    let rows = 0;
+    let edgeHits = 0;
     const stride = Math.max(1, Math.floor(g.n / {reps}));
     for (let i = 0; i < g.n && hover.length < {reps}; i += stride) {{
       const [[x0, y0], [x1, y1]] = view._projectSegmentEndpoints(g, g._segmentCpu, i, geom);
       const cx = (x0 + x1) / 2 - view.plot.x, cy = (y0 + y1) / 2 - view.plot.y;
       const h0 = performance.now();
       const hit = view._hoverAt(cx, cy);
-      if (hit) {{ view._localRow(hit); rows++; }}
+      const row = hit ? view._localRow(hit) : null;
       hover.push(performance.now() - h0);
+      if (hit && hit.g === g && row && row.trace === {edge_trace} && hit.index < g.n) edgeHits++;
     }}
-    const home = view.view;
-    const xr = home.x || home.ranges?.x; const yr = home.y || home.ranges?.y;
+    // Pan and wheel zoom through the real input handlers, then settle the
+    // queued gesture and force the frame to finish (same method as
+    // bench_interaction.py).
+    const rect = () => view.canvas.getBoundingClientRect();
+    const at = (fx, fy) => {{ const r = rect(); return {{ clientX: r.left + fx * r.width, clientY: r.top + fy * r.height }}; }};
+    view.canvas.setPointerCapture = () => {{}};
+    view.canvas.releasePointerCapture = () => {{}};
+    const settle = () => {{
+      if (view._pendingWheelZoom) {{
+        const pending = view._pendingWheelZoom;
+        view._pendingWheelZoom = null;
+        if (view._wheelZoomRaf) cancelAnimationFrame(view._wheelZoomRaf);
+        view._wheelZoomRaf = null;
+        view._zoomAt(pending.factor, pending.fx, pending.fy, false);
+      }}
+      if (view._viewAnim) {{ const target = view._viewAnim.target; view._cancelViewAnimation(); view.view = target; }}
+      if (view._raf) {{ cancelAnimationFrame(view._raf); view._raf = null; }}
+      view._drawNow();
+      sync();
+    }};
     const pan = [], zoom = [];
+    let viewChanged = false;
+    const before = JSON.stringify(view.view);
     for (let i = 0; i < {reps}; i++) {{
-      const dx = ((i % 2) ? 1 : -1) * 0.05 * (xr[1] - xr[0]);
+      const start = at(0.5, 0.5);
+      const end = at(i % 2 ? 0.53 : 0.47, 0.5);
       const p0 = performance.now();
-      view._setView({{ ranges: {{ x: [xr[0] + dx, xr[1] + dx], y: yr }} }}, {{ animate: false, source: "programmatic" }});
-      drawSynced();
+      view.canvas.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true, pointerId: 7, ...start }}));
+      view.canvas.dispatchEvent(new PointerEvent("pointermove", {{ bubbles: true, pointerId: 7, ...end }}));
+      view.canvas.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true, pointerId: 7, ...end }}));
+      settle();
       pan.push(performance.now() - p0);
-      const f = 1 - 0.3 * ((i % 3) + 1) / 3;
-      const cxr = (xr[0] + xr[1]) / 2, cyr = (yr[0] + yr[1]) / 2;
       const z0 = performance.now();
-      view._setView({{ ranges: {{
-        x: [cxr - f * (xr[1] - xr[0]) / 2, cxr + f * (xr[1] - xr[0]) / 2],
-        y: [cyr - f * (yr[1] - yr[0]) / 2, cyr + f * (yr[1] - yr[0]) / 2] }} }},
-        {{ animate: false, source: "programmatic" }});
-      drawSynced();
+      view.canvas.dispatchEvent(new WheelEvent("wheel", {{ bubbles: true, cancelable: true, deltaY: i % 2 ? 40 : -40, ...at(0.5, 0.5) }}));
+      settle();
       zoom.push(performance.now() - z0);
+      if (JSON.stringify(view.view) !== before) viewChanged = true;
     }}
     const heap1 = performance.memory ? performance.memory.usedJSHeapSize : null;
     view.gl.finish();
@@ -204,9 +225,11 @@ def _probe_js(reps: int, edge_trace: int) -> str:
       first_paint_ms: firstPaintMs,
       lit_pixels: lit,
       hover: xyStats(hover),
-      hover_rows: rows,
+      hover_samples: hover.length,
+      hover_edge_hits: edgeHits,
       pan: xyStats(pan),
       zoom: xyStats(zoom),
+      view_changed: viewChanged,
       js_heap_bytes: heap1 == null || heap0 == null ? null : Math.max(0, heap1 - heap0),
       teardown_ms: teardownMs,
       segments: g.n,
@@ -257,14 +280,20 @@ def _browser_stage(
     row["lit_pixels"] = result["lit_pixels"]
     row["hover_p50_ms"] = result["hover"]["median_ms"]
     row["hover_p95_ms"] = result["hover"]["p95_ms"]
-    row["hover_rows"] = result["hover_rows"]
+    row["hover_samples"] = result["hover_samples"]
+    row["hover_edge_hits"] = result["hover_edge_hits"]
     row["pan_p95_ms"] = result["pan"]["p95_ms"]
     row["zoom_p95_ms"] = result["zoom"]["p95_ms"]
     row["js_heap_bytes"] = result["js_heap_bytes"]
     row["teardown_ms"] = result["teardown_ms"]
     row["browser_segments"] = result["segments"]
     row["oracles"]["nonblank_first_paint"] = result["lit_pixels"] > 0
-    row["oracles"]["hover_resolves_edges"] = result["hover_rows"] > 0
+    # Most midpoint hovers must resolve to an edge (crossing segments or a
+    # node near a midpoint may legitimately win a few samples).
+    row["oracles"]["hover_resolves_edges"] = (
+        result["hover_samples"] > 0 and 2 * result["hover_edge_hits"] >= result["hover_samples"]
+    )
+    row["oracles"]["gestures_change_view"] = bool(result["view_changed"])
     row["oracles"]["browser_segments_match"] = result["segments"] == row["routed_segments"]
     row["oracle_status"] = "pass" if all(row["oracles"].values()) else "fail"
 

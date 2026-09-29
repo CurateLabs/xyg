@@ -828,14 +828,29 @@ def _graph_scale_row(tier: str, n: int) -> dict:
         "payload_blob_sha256": "a" * 64,
         "peak_rss_bytes": 50_000_000,
         "peak_rss_growth_bytes": 6_000_000,
-        "oracles": {"nodes_within_budget": True, "edge_pick_identity": True},
+        "oracles": {
+            name: True
+            for name in (
+                "nodes_within_budget",
+                "edges_within_budget",
+                "every_render_edge_has_members",
+                "no_member_repeats",
+                "edge_pick_identity",
+                "nonempty_payload",
+                "nonblank_first_paint",
+                "hover_resolves_edges",
+                "browser_segments_match",
+                "gestures_change_view",
+            )
+        },
         "oracle_status": "pass",
         "browser_status": "ok",
         "first_paint_ms": 600.0,
         "lit_pixels": 4096,
         "hover_p50_ms": 2.0,
         "hover_p95_ms": 10.0,
-        "hover_rows": 24,
+        "hover_samples": 24,
+        "hover_edge_hits": 22,
         "pan_p95_ms": 80.0,
         "zoom_p95_ms": 60.0,
         "js_heap_bytes": 3_000_000,
@@ -1846,6 +1861,10 @@ def test_verify_benchmark_report_rejects_kind_mismatch(tmp_path: Path) -> None:
         (lambda r: r["rows"][0].update(payload_blob_sha256="xyz"), "sha256"),
         (lambda r: r["rows"][0].update(render_nodes=300_000), "node_budget"),
         (lambda r: r["rows"].pop(), "rows tiers"),
+        (lambda r: r["rows"][0]["oracles"].pop("no_member_repeats"), "must include passing"),
+        (lambda r: r["rows"][1]["oracles"].pop("hover_resolves_edges"), "must include passing"),
+        (lambda r: r["rows"][0].update(n_edges=0), "n_edges must be"),
+        (lambda r: r.update(edges_per_node=1), "edges_per_node"),
     ],
 )
 def test_graph_scale_report_rejects_broken_evidence(tmp_path: Path, mutate, message: str) -> None:

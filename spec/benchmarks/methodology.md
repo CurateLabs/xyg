@@ -745,9 +745,14 @@ to the tier) and records, all labelled with the Rust LOD `mode`
 
 The browser stage mounts the payload in headless Chromium and records first
 paint, hover p50/p95 (edge hit test plus identity row at routed segment
-midpoints), pan and wheel-zoom redraw p95, JS heap growth, and teardown, with
-oracles for nonblank first paint, hovers resolving edges, and browser segment
-count equal to the routed count. **Every redraw is followed by a one-pixel
+midpoints; only hits on the edge trace count), pan (real pointer drag) and
+wheel zoom (real `WheelEvent`, queued gesture settled as in
+`bench_interaction.py`) redraw p95, JS heap growth, and teardown. First paint is
+mount + draw + readback, timed before the separate nonblank-pixel check. The
+verifier requires every named oracle: budgets, member coverage, no member
+repeats, edge-pick identity, nonempty payload, nonblank first paint, most
+hovers resolving edges, browser segment count equal to the routed count, and
+gestures changing the view; it also pins two edges per node. **Every redraw is followed by a one-pixel
 readback**: WebGL commands are queued, and without the sync the frame timings
 measure only command submission while the deferred rasterization lands in
 whatever runs next (the first draft attributed 25 s of queued SwiftShader
@@ -761,8 +766,10 @@ Profiles and wiring (no new CI job or required status):
   ceilings (`GRAPH_SCALE_BROWSER_BUDGET_LIMITS_MS`, ~3-4x measured values) and
   rejects reports that loosen them.
 - `evidence` (all tiers plus LOD-decision rows) runs in the changed-main
-  `authored-scene-browser-evidence` job and uploads
-  `graph-scale-${{ github.sha }}.json` with the other SHA-keyed evidence.
+  `authored-scene-browser-evidence` job, in its own step so a failing 1M
+  probe cannot block the other evidence, and uploads
+  `graph-scale-${{ github.sha }}.json` with the other SHA-keyed evidence
+  (the upload runs `if: always()`).
 
 Reproduce locally:
 

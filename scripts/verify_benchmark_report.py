@@ -78,6 +78,21 @@ GRAPH_SCALE_NATIVE_KEYS = (
     "payload_bytes",
     "peak_rss_bytes",
 )
+GRAPH_SCALE_EDGES_PER_NODE = 2
+GRAPH_SCALE_NATIVE_ORACLES = (
+    "nodes_within_budget",
+    "edges_within_budget",
+    "every_render_edge_has_members",
+    "no_member_repeats",
+    "edge_pick_identity",
+    "nonempty_payload",
+)
+GRAPH_SCALE_BROWSER_ORACLES = (
+    "nonblank_first_paint",
+    "hover_resolves_edges",
+    "browser_segments_match",
+    "gestures_change_view",
+)
 GRAPH_SCALE_BROWSER_KEYS = (
     "first_paint_ms",
     "hover_p50_ms",
@@ -2341,6 +2356,8 @@ def _validate_graph_scale(report: dict[str, Any], errors: list[str]) -> None:
         return
     if report.get("tiers") != GRAPH_SCALE_TIERS:
         errors.append(f"report.tiers must be the graph ladder {GRAPH_SCALE_TIERS}")
+    if report.get("edges_per_node") != GRAPH_SCALE_EDGES_PER_NODE:
+        errors.append(f"report.edges_per_node must be {GRAPH_SCALE_EDGES_PER_NODE}")
     category_ids = _validate_categories(report, errors)
     budgets = report.get("browser_budgets_ms")
     if not isinstance(budgets, dict):
@@ -2375,6 +2392,13 @@ def _validate_graph_scale(report: dict[str, Any], errors: list[str]) -> None:
         tier = row.get("tier")
         if tier in GRAPH_SCALE_TIERS and row.get("n_nodes") != GRAPH_SCALE_TIERS[tier]:
             errors.append(f"{path}.n_nodes must be {GRAPH_SCALE_TIERS[tier]} for tier {tier!r}")
+        if tier in GRAPH_SCALE_TIERS and row.get("n_edges") != (
+            GRAPH_SCALE_EDGES_PER_NODE * GRAPH_SCALE_TIERS[tier]
+        ):
+            errors.append(
+                f"{path}.n_edges must be {GRAPH_SCALE_EDGES_PER_NODE * GRAPH_SCALE_TIERS[tier]}"
+                f" for tier {tier!r}"
+            )
         if row.get("mode") not in GRAPH_SCALE_MODES:
             errors.append(f"{path}.mode must be one of {sorted(GRAPH_SCALE_MODES)}")
         for key in GRAPH_SCALE_NATIVE_KEYS:
@@ -2394,12 +2418,15 @@ def _validate_graph_scale(report: dict[str, Any], errors: list[str]) -> None:
         ):
             errors.append(f"{path}.payload_blob_sha256 must be a lowercase sha256 hex digest")
         oracles = row.get("oracles")
-        if (
-            not isinstance(oracles, dict)
-            or not oracles
-            or not all(v is True for v in oracles.values())
-        ):
+        if not isinstance(oracles, dict) or not all(v is True for v in oracles.values()):
             errors.append(f"{path}.oracles must all pass")
+            oracles = {}
+        required = GRAPH_SCALE_NATIVE_ORACLES + (
+            GRAPH_SCALE_BROWSER_ORACLES if row.get("browser_status") == "ok" else ()
+        )
+        missing = [name for name in required if oracles.get(name) is not True]
+        if missing:
+            errors.append(f"{path}.oracles must include passing {missing}")
         if row.get("oracle_status") != "pass":
             errors.append(f"{path}.oracle_status must be 'pass'")
         if row.get("browser_status") != "ok":
