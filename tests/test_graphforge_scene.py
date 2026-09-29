@@ -97,8 +97,13 @@ def test_graphforge_simple_path_ships_edge_tooltips_on_trace():
     edge_trace = fig.traces[0]
     meta = fig._graph_meta[0]
     assert edge_trace.tooltip_rows is not None
-    # Directed routing expands each edge into shaft + arrow wings.
-    assert len(edge_trace.tooltip_rows) == len(meta["render_edge_index"]) == 6
+    # One shaft per straight edge; arrowheads are drawn in screen space from
+    # the Rust edge-end flags rather than routed as data-space wings (#33).
+    assert len(edge_trace.tooltip_rows) == len(meta["render_edge_index"]) == 2
+    assert [int(flag) & 0x40 for flag in edge_trace.style_channels["edge_ends"].values[:, 2]] == [
+        0x40,
+        0x40,
+    ]
     assert edge_trace.tooltip_rows[0]["relationship_type"] == "ROUTE"
     assert {row["edge_id"] for row in edge_trace.tooltip_rows} == set(meta["edge_ids"])
 

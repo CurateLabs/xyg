@@ -53,7 +53,9 @@ def graph(
     ``edges``), or canonical GraphForge tables with ``node_uuid`` /
     ``edge_uuid`` columns.
     """
-    from . import _graph, _native
+    from . import _graph, _native, channels
+    from ._channels_lut import normalize_to_unit
+    from ._marks_style import SYMBOL_CODES
 
     data = _graph.resolve_graph_data(nodes, edges, x=x, y=y, directed=directed, mapping=mapping)
     color = _graph.resolve_encoding_values(data, color, where="node")
@@ -77,11 +79,23 @@ def graph(
     targets = np.asarray(meta["render_targets"], dtype=np.uint64)
     # Rust-owned multigraph routing: parallel offsets, self-loops, arrowheads,
     # and optional Bezier-class curved shafts (#33).
-    arrow_size = 0.12 if directed else 0.0
     curve = str(edge_curve or "straight").strip().lower()
     if curve not in ("straight", "curve"):
         raise ValueError(f"graph edge_curve must be 'straight' or 'curve', got {edge_curve!r}")
-    x0, y0, x1, y1, render_edge_index = _native.graph_edge_route_segments(
+    # Border-aware ends (#33): Rust trims each edge to its nodes' outlines and
+    # places arrowheads in screen space, so it needs each node's on-screen
+    # radius (the same size mapping the node scatter ships) and outline.
+    node_size = channels.resolve_size(size if size is not None else 8.0, len(px))
+    if node_size.mode == "continuous" and node_size.values is not None and node_size.domain:
+        lo, hi = node_size.range_px
+        unit = normalize_to_unit(node_size.values, node_size.domain)
+        node_diameter = lo + (hi - lo) * np.nan_to_num(unit, nan=0.0)
+    else:
+        node_diameter = np.full(len(px), float(node_size.constant))
+    node_symbol = np.full(
+        len(px), SYMBOL_CODES.get(symbol, 0) if isinstance(symbol, str) else 0, dtype=np.uint8
+    )
+    x0, y0, x1, y1, render_edge_index, edge_ends = _native.graph_edge_route_ends(
         px,
         py,
         sources,
@@ -89,8 +103,9 @@ def graph(
         directed=bool(directed),
         separation=0.08,
         loop_radius=0.35,
-        arrow_size=arrow_size,
         curved=curve == "curve",
+        node_radius_px=node_diameter * 0.5,
+        node_symbol=node_symbol,
     )
     edge_name = None if name is None else f"{name}:edges"
     node_name = None if name is None else f"{name}:nodes"
@@ -122,6 +137,9 @@ def graph(
         width=edge_width_paint,
         opacity=opacity,
         style=style,
+    )
+    self.traces[-1].style_channels["edge_ends"] = channels.StyleChannel(
+        values=np.ascontiguousarray(edge_ends, dtype=np.float64), components=3
     )
     self.scatter(
         px,

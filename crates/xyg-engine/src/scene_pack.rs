@@ -75,13 +75,22 @@ pub const PACK_HEATMAP: u8 = 7;
 pub const PACK_SEGMENT: u8 = 8;
 pub const PACK_HEATMAP_PAINTED: u8 = 9;
 pub const PACK_DENSITY_BLIT: u8 = 10;
+/// Graph edge segments with border-aware ends (#33): two Polyline rows per
+/// segment carrying each endpoint's node border radius and flag byte.
+pub const PACK_EDGE_SEGMENT: u8 = 11;
 
 pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
 pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
 pub const FLAG_JOINED_FILL: u8 = 1 << 3;
-const PACK_FLAGS: u8 =
-    FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT | FLAG_JOINED_FILL;
+/// `segments` columns `x`/`y`/`base` carry per-segment start radius px, end
+/// radius px, and an end flag byte (`edge_route::EDGE_END_*`) (#33).
+pub const FLAG_EDGE_ENDS: u8 = 1 << 4;
+const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER
+    | FLAG_HEATMAP_PAINTED
+    | FLAG_DENSITY_BLIT
+    | FLAG_JOINED_FILL
+    | FLAG_EDGE_ENDS;
 
 pub const XYPK_MAGIC: &[u8; 4] = b"XYPK";
 pub const XYPK_VERSION: u32 = 1;
@@ -91,11 +100,14 @@ pub const FACT_CURVE_SMOOTH: u8 = 1 << 1;
 pub const FACT_DENSITY_PLANE: u8 = 1 << 2;
 pub const FACT_HEATMAP_PAINT: u8 = 1 << 3;
 pub const FACT_JOINED_FILL: u8 = 1 << 4;
+/// Host observation: the segments trace ships graph edge ends (#33).
+pub const FACT_EDGE_ENDS: u8 = 1 << 5;
 const FACT_BITS: u8 = FACT_STROKE_PERIMETER
     | FACT_CURVE_SMOOTH
     | FACT_DENSITY_PLANE
     | FACT_HEATMAP_PAINT
-    | FACT_JOINED_FILL;
+    | FACT_JOINED_FILL
+    | FACT_EDGE_ENDS;
 pub const COORDS_CARTESIAN: u8 = 0;
 pub const COORDS_POLAR: u8 = 1;
 
@@ -115,6 +127,7 @@ const EXP_HEATMAP_PAINTED: u8 = 9;
 const EXP_DENSITY_BLIT: u8 = 10;
 const EXP_CURVE_FLATTEN: u8 = 11;
 const EXP_BAND_FLATTEN: u8 = 12;
+const EXP_EDGE_SEGMENT: u8 = 13;
 
 /// Why a pack request was rejected. Discriminants are the C-ABI error codes
 /// (returned negated by `xyg_scene_pack_trace`).
@@ -273,6 +286,7 @@ fn push_row(out: &mut Vec<PackedSceneRow>, row: PackedSceneRow) -> Result<(), Pa
 pub fn packed_row_count(pack_kind: u8, n: usize) -> Result<usize, PackError> {
     let count = match pack_kind {
         PACK_SCATTER | PACK_LINE | PACK_RECT | PACK_BAND | PACK_HEXBIN | PACK_SEGMENT => n,
+        PACK_EDGE_SEGMENT => n.checked_mul(2).ok_or(PackError::Limit)?,
         PACK_RIBBON => n.checked_mul(2).ok_or(PackError::Limit)?,
         // Unjoined faces emit 2 rows; a joined ring can emit 3 vertices per face.
         PACK_TRIANGLE => n.checked_mul(3).ok_or(PackError::Limit)?,
@@ -292,6 +306,13 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
     }
     let painted = flags & FLAG_HEATMAP_PAINTED != 0;
     let density = flags & FLAG_DENSITY_BLIT != 0;
+    if flags & FLAG_EDGE_ENDS != 0 {
+        return if kind == "segments" && !painted && !density {
+            Ok(PACK_EDGE_SEGMENT)
+        } else {
+            Err(PackError::Length)
+        };
+    }
     if painted && density {
         return Err(PackError::Length);
     }
@@ -360,6 +381,14 @@ pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, 
         PACK_RECT | PACK_SEGMENT => {
             require_used(&[input.x0, input.y0, input.x1, input.y1])?;
             pack(&[input.x0, input.y0, input.x1, input.y1])
+        }
+        PACK_EDGE_SEGMENT => {
+            // x/y/base carry start radius, end radius, and end flags (#33).
+            let columns = [
+                input.x0, input.y0, input.x1, input.y1, input.x, input.y, input.base,
+            ];
+            require_used(&columns)?;
+            pack(&columns)
         }
         PACK_BAND => {
             require_used(&[input.x, input.y, input.base])?;
@@ -453,6 +482,9 @@ pub fn parse_product_facts(bytes: &[u8]) -> Result<ProductFacts<'_>, PackError> 
     }
     if facts & FACT_JOINED_FILL != 0 && kind == "triangle_mesh" {
         flags |= FLAG_JOINED_FILL;
+    }
+    if facts & FACT_EDGE_ENDS != 0 && kind == "segments" && coords == COORDS_CARTESIAN {
+        flags |= FLAG_EDGE_ENDS;
     }
     let mut step_mode = authored_step;
     if authored_step == 0
@@ -563,6 +595,7 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
         }
         PACK_RECT => pack_quad(input, KIND_RECT, 0, 0.0, EXP_NONE, false),
         PACK_SEGMENT => pack_quad(input, KIND_POLYLINE, 0, 0.0, EXP_SEGMENT, true),
+        PACK_EDGE_SEGMENT => pack_edge_segment(input),
         PACK_BAND => pack_band(input),
         PACK_RIBBON => pack_ribbon(input),
         PACK_TRIANGLE => pack_triangle(input),
@@ -636,6 +669,58 @@ fn pack_quad(
                 y1: cols[3][index],
             },
         )?;
+    }
+    Ok(out)
+}
+
+/// Two Polyline rows per graph edge segment: each endpoint keeps its node
+/// border radius (`diameter`) and flag byte (`symbol`) so the Scene pixel
+/// pass can trim to the node outline and add the arrowhead (#33).
+fn pack_edge_segment(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
+    use crate::edge_route::{
+        EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK, EDGE_SEGMENT_FLAG_MASK,
+        EDGE_START_SHAPE_SHIFT,
+    };
+    let cols = require_cols(input.columns, 7)?;
+    require_finite(cols)?;
+    let mut out = Vec::with_capacity(cols[0].len() * 2);
+    for index in 0..cols[0].len() {
+        let (r0, r1, bits) = (cols[4][index], cols[5][index], cols[6][index]);
+        if r0 < 0.0 || r1 < 0.0 || bits < 0.0 || bits > 255.0 || bits.fract() != 0.0 {
+            return Err(PackError::Length);
+        }
+        let bits = bits as u8;
+        if bits & !EDGE_SEGMENT_FLAG_MASK != 0 {
+            return Err(PackError::Length);
+        }
+        let start_shape = (bits >> EDGE_START_SHAPE_SHIFT) & EDGE_END_SHAPE_MASK;
+        let end = bits & (EDGE_END_HEAD | EDGE_END_SHAPE_MASK);
+        let stable_id = split_id(input.trace_id, index)?;
+        for (x, y, radius, symbol) in [
+            (
+                cols[0][index],
+                cols[1][index],
+                r0,
+                EDGE_END_MARK | start_shape,
+            ),
+            (cols[2][index], cols[3][index], r1, EDGE_END_MARK | end),
+        ] {
+            push_row(
+                &mut out,
+                PackedSceneRow {
+                    kind: KIND_POLYLINE,
+                    symbol,
+                    expansion_mode: EXP_EDGE_SEGMENT,
+                    style_ref: input.style_ref,
+                    stable_id,
+                    diameter: radius,
+                    x0: x,
+                    y0: y,
+                    x1: 0.0,
+                    y1: 0.0,
+                },
+            )?;
+        }
     }
     Ok(out)
 }
@@ -1072,6 +1157,75 @@ pub fn encode_packed_rows(rows: &[PackedSceneRow], out: &mut [u8]) -> Result<i32
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn edge_segment_pack_emits_two_flagged_endpoint_rows() {
+        let x0 = [0.0];
+        let y0 = [0.0];
+        let x1 = [4.0];
+        let y1 = [3.0];
+        let r0 = [4.0];
+        let r1 = [6.0];
+        let flags = [f64::from(0x40 | 1 | (2 << 2))];
+        let rows = pack_product(ProductPackInput {
+            kind: "segments",
+            flags: FLAG_EDGE_ENDS,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 2,
+            trace_id: 5,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            x: &r0,
+            y: &r1,
+            x0: &x0,
+            y0: &y0,
+            x1: &x1,
+            y1: &y1,
+            base: &flags,
+        })
+        .expect("edge pack");
+        assert_eq!(rows.len(), 2);
+        assert_eq!(packed_row_count(PACK_EDGE_SEGMENT, 1), Ok(2));
+        assert_eq!(
+            (rows[0].x0, rows[0].y0, rows[0].diameter, rows[0].symbol),
+            (0.0, 0.0, 4.0, 0x80 | 2)
+        );
+        assert_eq!(
+            (rows[1].x0, rows[1].y0, rows[1].diameter, rows[1].symbol),
+            (4.0, 3.0, 6.0, 0x80 | 0x40 | 1)
+        );
+        assert!(rows
+            .iter()
+            .all(|row| row.stable_id == 5 << 32 && row.expansion_mode == EXP_EDGE_SEGMENT));
+        // Unknown flag bits, negative radii, and non-segment kinds are rejected.
+        for (flag, radius, kind) in [
+            (128.0, 1.0, "segments"),
+            (0.0, -1.0, "segments"),
+            (0.0, 1.0, "line"),
+        ] {
+            let result = pack_product(ProductPackInput {
+                kind,
+                flags: FLAG_EDGE_ENDS,
+                step_mode: 0,
+                symbol: 0,
+                style_ref: 0,
+                trace_id: 1,
+                diameter: 0.0,
+                extra0: 0.0,
+                extra1: 0.0,
+                x: &[radius],
+                y: &r1,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                base: &[flag],
+            });
+            assert!(result.is_err());
+        }
+    }
     use super::*;
 
     #[test]

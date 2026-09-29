@@ -24,6 +24,7 @@ import {
   xyGraphBuildCsr,
   xyGraphBuildRender,
   xyGraphEdgeRouteSegments,
+  xyGraphEdgeRouteEnds,
   xyGraphCompoundBounds,
   xyGraphCompoundTransition,
   xyGraphCompoundScene,
@@ -1557,6 +1558,72 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
     x1: outX1.subarray(0, nSeg),
     y1: outY1.subarray(0, nSeg),
     edgeIndex: outEdgeIndex.subarray(0, nSeg),
+  };
+}
+
+/**
+ * Route edges for screen-space, border-aware paint (#33, ABI 368). Same
+ * geometry as `graphEdgeRouteSegments` without data-space arrowheads, plus
+ * `ends` (3 per segment: start border radius px, end border radius px, flag
+ * byte — head 0x40, end shape bits 0-1, start shape bits 2-3).
+ */
+export function graphEdgeRouteEnds(x, y, sources, targets, opts = {}) {
+  const xArray = asF64Array(x, "x");
+  const yArray = asF64Array(y, "y");
+  requireEqualLength(xArray, yArray, "x", "y");
+  const sourceArray = asU64Array(sources, "sources");
+  const targetArray = asU64Array(targets, "targets");
+  requireEqualLength(sourceArray, targetArray, "sources", "targets");
+  const nNodes = xArray.length;
+  const nEdges = sourceArray.length;
+  const curved = opts.curved ? 1 : 0;
+  const radius = opts.nodeRadiusPx == null ? null : asF64Array(opts.nodeRadiusPx, "nodeRadiusPx");
+  const symbol = opts.nodeSymbol == null ? null : asU8Array(opts.nodeSymbol, "nodeSymbol");
+  for (const [name, column] of [["nodeRadiusPx", radius], ["nodeSymbol", symbol]]) {
+    if (column != null && column.length !== nNodes) {
+      throw new RangeError(`${name} must have one value per node`);
+    }
+  }
+  const cap = nEdges * (curved ? EDGE_ROUTE_SEGMENTS_PER_EDGE : STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE);
+  const outX0 = new Float64Array(cap);
+  const outY0 = new Float64Array(cap);
+  const outX1 = new Float64Array(cap);
+  const outY1 = new Float64Array(cap);
+  const outEdgeIndex = new BigUint64Array(cap);
+  const outEnds = new Float64Array(cap * 3);
+  const outN = new BigUint64Array(1);
+  const code = xyGraphEdgeRouteEnds(
+    toU64(nNodes, "nNodes"),
+    toU64(nEdges, "nEdges"),
+    f64Ptr(xArray),
+    f64Ptr(yArray),
+    u64Ptr(sourceArray),
+    u64Ptr(targetArray),
+    opts.directed === false ? 0 : 1,
+    Number(opts.separation ?? 0.08),
+    Number(opts.loopRadius ?? 0.35),
+    curved,
+    radius == null || nNodes === 0 ? null : f64Ptr(radius),
+    symbol == null || nNodes === 0 ? null : u8Ptr(symbol),
+    f64Ptr(outX0),
+    f64Ptr(outY0),
+    f64Ptr(outX1),
+    f64Ptr(outY1),
+    u64Ptr(outEdgeIndex),
+    f64Ptr(outEnds),
+    u64Ptr(outN),
+  );
+  if (code !== 0) {
+    throw new Error(`xyg_graph_edge_route_ends failed with code ${code}`);
+  }
+  const nSeg = Number(outN[0]);
+  return {
+    x0: outX0.subarray(0, nSeg),
+    y0: outY0.subarray(0, nSeg),
+    x1: outX1.subarray(0, nSeg),
+    y1: outY1.subarray(0, nSeg),
+    edgeIndex: outEdgeIndex.subarray(0, nSeg),
+    ends: outEnds.subarray(0, nSeg * 3),
   };
 }
 

@@ -4684,7 +4684,27 @@ export class ChartView {
       g.rgbaBuf = this._upload(this._columnView(buffer, this.spec.columns[t.color.buf]));
     }
     this._buildInstanceStyleChannels(g, t, buffer, "width");
+    // Graph edge ends (#33): Rust-routed per-segment border radii + flags; the
+    // segment shader trims to node outlines and draws screen-space heads.
+    const ends = t.channels && t.channels.edge_ends;
+    if (ends && ends.components === 3) {
+      const values = this._columnView(buffer, this.spec.columns[ends.buf]);
+      if (values.length >= g.n * 3) {
+        g._edgeEnds = Float32Array.from(values.subarray(0, g.n * 3));
+        g.endsBuf = this._upload(g._edgeEnds);
+      }
+    }
     g._cpu = { x: x0, y: y1, xMeta: g.x0Meta, yMeta: g.y1Meta };
+  }
+
+  // Scale from Rust's CSS-px border radii to device px: dpr times the zoom
+  // size factor of the graph's node scatter, so trims track node markers.
+  _edgeEndScale(g) {
+    const graphs = Array.isArray(this.spec && this.spec.graph) ? this.spec.graph : [];
+    const meta = graphs.find((entry) => entry && entry.edge_trace === g.trace.id);
+    const node = meta && this.gpuTraces.find((trace) => trace.trace.id === meta.node_trace);
+    const factor = node ? this._pointZoomStyle(node).sizeFactor : 1;
+    return this.dpr * (Number.isFinite(factor) ? factor : 1);
   }
 
   // Flow bands (ribbon geometry contract). The six geometry columns reuse the
@@ -6398,7 +6418,8 @@ export class ChartView {
         g.rgbaBuf ? g.rgbaBuf._fcId : 0,
         g.styleBuf ? g.styleBuf._fcId : 0,
         dashed ? g._segmentDashOffsetBuf._fcId : 0,
-        dashed ? g._segmentDashDirBuf._fcId : 0],
+        dashed ? g._segmentDashDirBuf._fcId : 0,
+        g.endsBuf ? g.endsBuf._fcId : 0],
       () => {
         this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, 1);
         this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, 1);
@@ -6411,13 +6432,29 @@ export class ChartView {
           this._vaoAttr(ATTR_SLOTS.a_dash0, g._segmentDashOffsetBuf, 0, 1);
           this._vaoAttr(ATTR_SLOTS.a_dashDir, g._segmentDashDirBuf, 0, 1);
         }
+        if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, 1, 3);
       }
     );
     if (!g.cBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
     if (!g.rgbaBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
     if (!g.styleBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
+    if (!g.endsBuf) gl.vertexAttrib3f(ATTR_SLOTS.a_ends, 0, 0, 0);
+    const edgeEnds = g.endsBuf && !this._polarGeometry();
+    gl.uniform1i(u("u_edgeEnds"), edgeEnds ? 1 : 0);
+    gl.uniform1i(u("u_edgePass"), 0);
+    gl.uniform1f(u("u_edgeScale"), edgeEnds ? this._edgeEndScale(g) : 0);
+    // Mirrors edge_route::GRAPH_EDGE_HEAD_LENGTH_PX / _HALF_WIDTH_PX (CSS px).
+    gl.uniform1f(u("u_edgeHeadLen"), 8 * this.dpr);
+    gl.uniform1f(u("u_edgeHeadHalf"), 4 * this.dpr);
     const count = Math.max(0, Math.min(g.n, Math.ceil(g.n * (g._transitionReveal ?? 1))));
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+    if (edgeEnds) {
+      // Filled arrowheads: same instances, head-only geometry, no dash.
+      gl.uniform1i(u("u_edgePass"), 1);
+      gl.uniform1i(u("u_dashCount"), 0);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+      gl.uniform1i(u("u_edgePass"), 0);
+    }
   }
 
   _segmentDash(g, prog) {
@@ -8171,8 +8208,17 @@ export class ChartView {
     let best = null;
     const limit = Math.min(cpu.x0.length, cpu.x1.length, cpu.y0.length, cpu.y1.length, g.n);
     const geom = this._polarGeometry();
+    const ends = !geom && g._edgeEnds ? g._edgeEnds : null;
+    const endScale = ends ? this._edgeEndScale(g) / this.dpr : 0;
     for (let i = 0; i < limit; i++) {
-      const [[x0, y0], [x1, y1]] = this._projectSegmentEndpoints(g, cpu, i, geom);
+      let [[x0, y0], [x1, y1]] = this._projectSegmentEndpoints(g, cpu, i, geom);
+      if (ends) {
+        // Same outline trim as the segment shader (#33), in CSS px; the hover
+        // target keeps the arrowhead, so it ends at the tip.
+        const trimmed = edgeTrimCss(x0, y0, x1, y1, ends, i, endScale);
+        if (!trimmed) continue;
+        [x0, y0, x1, y1] = trimmed;
+      }
       const ax = x0 - this.plot.x;
       const ay = y0 - this.plot.y;
       const bx = x1 - this.plot.x;
@@ -8667,4 +8713,27 @@ export class ChartView {
     this._glPrograms = this._progCache;
     this.gpuTraces = [];
   }
+}
+
+
+// Mirrors edge_route::node_border_distance and the SEGMENT_VS trim (#33).
+function edgeBorderCss(shape, radius, ux, uy) {
+  if (!(radius > 0)) return 0;
+  const ax = Math.abs(ux);
+  const ay = Math.abs(uy);
+  if (shape === 1) return radius / Math.max(ax, ay, 1e-6);
+  if (shape === 2) return Math.SQRT2 * radius / Math.max(ax + ay, 1e-6);
+  return radius;
+}
+
+function edgeTrimCss(x0, y0, x1, y1, ends, index, scale) {
+  const length = Math.hypot(x1 - x0, y1 - y0);
+  if (!(length > 0)) return null;
+  const ux = (x1 - x0) / length;
+  const uy = (y1 - y0) / length;
+  const flags = Math.round(ends[index * 3 + 2]);
+  const t0 = edgeBorderCss((flags >> 2) & 3, ends[index * 3] * scale, ux, uy);
+  const t1 = edgeBorderCss(flags & 3, ends[index * 3 + 1] * scale, ux, uy);
+  if (!(length - t0 - t1 > 0)) return null;
+  return [x0 + ux * t0, y0 + uy * t0, x1 - ux * t1, y1 - uy * t1];
 }

@@ -81,11 +81,21 @@ IPC fixtures used in CI live under `tests/fixtures/graphforge/` (regenerate with
 `.toPng()`) export the same edges, self-loops, arrowheads, curves, and nodes the
 interactive chart draws, framed by the same automatic domain. Static export
 currently admits at most 10,000 nodes and 10,000 drawn edge segments (a
-directed edge draws 3 segments; a curved directed edge draws 10). Larger graphs
+straight edge draws 1 segment, a curved edge 8, a self-loop 3), and nodes with
+a per-node `size` array are not yet admitted statically. Larger graphs
 fail with a stable reason: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in Python (nodes or
 segments) and in Node for nodes, while Node reports edge-segment overflow as
 `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS`. Use the interactive HTML export for
 larger graphs.
+
+## Arrowheads and node borders
+
+Edges start and end on node outlines, and directed edges (including
+self-loops) end in a filled arrowhead whose tip touches the target node, at
+every zoom level and in SVG/PNG exports alike. Circle, square, and diamond
+nodes use their exact outline; other symbols use their circumscribed circle.
+Edges between nodes that overlap on screen are hidden rather than drawn
+backwards.
 
 ## Edge identity on hover and pick
 

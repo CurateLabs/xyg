@@ -485,7 +485,9 @@ test("composeGraph expands per-edge colors across curved routed segments", () =>
     });
     const edges = out.traces[0];
     const index = out.graphMeta.render_edge_index;
-    assert.ok(edges.x0.length > 2);
+    // Straight: one shaft per edge; curved: tessellated pieces (heads are
+    // screen-space, #33).
+    assert.ok(edgeCurve === "curve" ? edges.x0.length > 2 : edges.x0.length === 2);
     assert.equal(edges.color_ch.values.length, edges.x0.length);
     assert.deepEqual(Array.from(edges.color_ch.values), index.map((i) => [1, 2][i]));
   }

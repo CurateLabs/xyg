@@ -164,7 +164,9 @@ class Trace:
             and self.size_ch.mode != "constant"
         ):
             names.append("size")
-        names.extend(self.style_channels)
+        # Graph edge ends are geometry annotations the Scene packs natively
+        # (PACK_EDGE_SEGMENT, #33), not per-item paint.
+        names.extend(name for name in self.style_channels if name != "edge_ends")
         return tuple(names)
 
     def has_per_item_channels(self) -> bool:

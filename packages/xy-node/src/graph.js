@@ -9,7 +9,7 @@
 import {
   graphBuildCsr,
   graphBuildRender,
-  graphEdgeRouteSegments,
+  graphEdgeRouteEnds,
   graphForceCreate,
   graphForceDestroy,
   graphForceTick,
@@ -489,12 +489,19 @@ export function runLayout(data, opts = {}) {
   if (edgeCurve !== "straight" && edgeCurve !== "curve") {
     throw new Error(`graph edgeCurve must be "straight" or "curve", got ${JSON.stringify(opts.edgeCurve)}`);
   }
-  const routed = graphEdgeRouteSegments(rx, ry, edgeS, edgeT, {
+  // Border-aware ends (#33): Rust trims edges to node outlines and places
+  // arrowheads in screen space from each render node's radius and shape.
+  const diameters = opts.nodeDiameterPx;
+  const nodeRadiusPx = diameters != null && diameters.length === rx.length
+    ? Float64Array.from(diameters, (d) => Number(d) * 0.5)
+    : new Float64Array(rx.length).fill(Number(opts.nodeDiameter ?? 8) * 0.5);
+  const routed = graphEdgeRouteEnds(rx, ry, edgeS, edgeT, {
     directed: Boolean(data.directed),
     separation: opts.edgeSeparation ?? 0.08,
     loopRadius: opts.loopRadius ?? 0.35,
-    arrowSize: opts.arrowSize ?? (data.directed ? 0.12 : 0),
     curved: edgeCurve === "curve",
+    nodeRadiusPx,
+    nodeSymbol: new Uint8Array(rx.length).fill(GRAPH_NODE_SHAPE_CODES[opts.symbol] ?? 0),
   });
   const edgeSegments = {
     x0: routed.x0,
@@ -538,11 +545,16 @@ export function runLayout(data, opts = {}) {
   return {
     nodePositions: { x: rx, y: ry },
     edgeSegments,
+    edgeEnds: routed.ends,
     meta,
     // Host-side only (#33); never serialized into graphMeta.
     edgeMembership: { offsets: render.edgeMemberOffsets, members: render.edgeMembers },
   };
 }
+
+/** Scatter symbol codes with exact edge-trim outlines (circle is 0 and the
+ * default; other symbols trim to their circumscribed circle), #33. */
+const GRAPH_NODE_SHAPE_CODES = { circle: 0, square: 1, diamond: 2 };
 
 /** Source edges listed per edge pick before truncation; mirrors Python
  * `GRAPH_EDGE_PICK_MEMBER_CAP` in python/xyg/_graph.py. */
@@ -795,7 +807,24 @@ export function composeGraph(nodes, edges, opts = {}) {
     "edge",
   );
   const sizeOpt = resolveEncodingValues(data, resolvedOpts.size, "node");
-  const { nodePositions, edgeSegments, meta, edgeMembership } = runLayout(data, resolvedOpts);
+  // Node marker diameters (px) for edge trimming, mapped exactly as the node
+  // scatter ships them (array sizes span range_px [8, 22] over their domain).
+  let nodeDiameterPx = null;
+  if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
+    const values = Float64Array.from(sizeOpt, Number);
+    const mm = minMax(values) ?? [0, 1];
+    const lo = mm[0];
+    const span = mm[0] === mm[1] ? 1 : mm[1] - mm[0];
+    nodeDiameterPx = Float64Array.from(values, (v) =>
+      8 + 14 * (Number.isFinite(v) ? Math.min(1, Math.max(0, (v - lo) / span)) : 0));
+  }
+  const { nodePositions, edgeSegments, edgeEnds, meta, edgeMembership } = runLayout(data, {
+    ...resolvedOpts,
+    nodeDiameterPx,
+    nodeDiameter: sizeOpt != null && !Array.isArray(sizeOpt) && !ArrayBuffer.isView(sizeOpt)
+      ? Number(sizeOpt)
+      : 8,
+  });
   const name = resolvedOpts.name ?? null;
   const nNodes = nodePositions.x.length;
   const nEdges = edgeSegments.x0.length;
@@ -890,6 +919,8 @@ export function composeGraph(nodes, edges, opts = {}) {
       y0: edgeSegments.y0,
       x1: edgeSegments.x1,
       y1: edgeSegments.y1,
+      // Border radii + flags per segment (#33); geometry, not per-item paint.
+      style_channels: { edge_ends: { values: Float64Array.from(edgeEnds), components: 3, dtype: "f32" } },
       style: {
         color: typeof edgeColor === "string" ? edgeColor : "#888888",
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,

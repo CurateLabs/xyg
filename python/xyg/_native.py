@@ -12649,6 +12649,96 @@ def graph_edge_route_segments(
     )
 
 
+def graph_edge_route_ends(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    directed: bool = True,
+    separation: float = 0.08,
+    loop_radius: float = 0.35,
+    curved: bool = False,
+    node_radius_px: npt.NDArray[np.float64] | None = None,
+    node_symbol: npt.NDArray[np.uint8] | None = None,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.float64],
+]:
+    """Route edges for screen-space, border-aware paint (#33, ABI 368).
+
+    Returns ``(x0, y0, x1, y1, render_edge_index, ends)`` where ``ends`` is
+    ``(n_segments, 3)``: start border radius px, end border radius px, and the
+    flag byte (head ``0x40``, end shape bits 0-1, start shape bits 2-3). No
+    data-space arrowheads are emitted; painters trim and draw heads in pixels.
+    """
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    n_nodes = len(x_arr)
+    n_edges = len(sources)
+    radius = None if node_radius_px is None else _as_f64(node_radius_px, "node_radius_px")
+    symbol = (
+        None
+        if node_symbol is None
+        else np.ascontiguousarray(np.asarray(node_symbol, dtype=np.uint8))
+    )
+    for name, column in (("node_radius_px", radius), ("node_symbol", symbol)):
+        if column is not None and len(column) != n_nodes:
+            raise ValueError(f"{name} must have one value per node")
+    cap = n_edges * (
+        EDGE_ROUTE_SEGMENTS_PER_EDGE if curved else STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE
+    )
+    out_x0 = np.empty(cap, dtype=np.float64)
+    out_y0 = np.empty(cap, dtype=np.float64)
+    out_x1 = np.empty(cap, dtype=np.float64)
+    out_y1 = np.empty(cap, dtype=np.float64)
+    out_edge_index = np.empty(cap, dtype=np.uint64)
+    out_ends = np.empty(cap * 3, dtype=np.float64)
+    out_n = ctypes.c_uint64(0)
+    ok = _lib.xyg_graph_edge_route_ends(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(n_edges),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        sources.ctypes.data if n_edges else None,
+        targets.ctypes.data if n_edges else None,
+        ctypes.c_int32(1 if directed else 0),
+        ctypes.c_double(float(separation)),
+        ctypes.c_double(float(loop_radius)),
+        ctypes.c_int32(1 if curved else 0),
+        None if radius is None or not n_nodes else radius.ctypes.data,
+        None if symbol is None or not n_nodes else symbol.ctypes.data,
+        out_x0.ctypes.data if cap else None,
+        out_y0.ctypes.data if cap else None,
+        out_x1.ctypes.data if cap else None,
+        out_y1.ctypes.data if cap else None,
+        out_edge_index.ctypes.data if cap else None,
+        out_ends.ctypes.data if cap else None,
+        ctypes.byref(out_n),
+    )
+    if ok != 0:
+        raise ValueError("native graph_edge_route_ends failed")
+    n_seg = int(out_n.value)
+    return (
+        out_x0[:n_seg],
+        out_y0[:n_seg],
+        out_x1[:n_seg],
+        out_y1[:n_seg],
+        out_edge_index[:n_seg],
+        out_ends[: n_seg * 3].reshape(n_seg, 3),
+    )
+
+
 def graph_visual_states(flags: npt.NDArray[np.uint32]) -> npt.NDArray[np.uint8]:
     """Resolve interaction flags with the shared Rust precedence contract."""
     raw = np.asarray(flags)

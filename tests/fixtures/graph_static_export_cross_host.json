@@ -48,13 +48,13 @@
  "cases": {
   "straight": {
    "edge_curve": "straight",
-   "svg_sha256": "7993f97c0d69b93b194bb8f7e577e1944afdc1d6d97f57aa6c63613c4f3da734",
-   "png_scale1_sha256": "c65599270a0fc73c5670eeeb68c078c61d6666cbd0fee562ab3dc046d82bc05c"
+   "svg_sha256": "69179a12b84738a528fd0f6a009830c4fb6bc06ff000b0b4d1e848b376c2ff5e",
+   "png_scale1_sha256": "fc45a9874fff2f13eafdbeb07b019c44f0787da6cf3932ac179c0f5f6600abf2"
   },
   "curved": {
    "edge_curve": "curve",
-   "svg_sha256": "3df6a8f9fb034e9691fbe5690600410c416c73ed7256d3eb5c8dbf788f28b76b",
-   "png_scale1_sha256": "daad5a859bb01557ce6cd0834132d7b5979a07f2d072aeccd599aacb5d395f6b"
+   "svg_sha256": "f1f31507680fff50e1cc09832527a1f1ffb17ac2ec7ff1471d587ef241695c8b",
+   "png_scale1_sha256": "fdfc2dd465e85dc10a9ab1f8c2f04f3b936b9ac9ef238d328959b67a9e63b172"
   }
  }
 }

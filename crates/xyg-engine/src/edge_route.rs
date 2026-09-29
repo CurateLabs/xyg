@@ -297,6 +297,182 @@ pub fn edge_route_segments(
     Some(written as u64)
 }
 
+/// Screen-space arrowhead length in CSS px (matches the Scene straight-arrow
+/// head so graph and annotation arrows read the same).
+pub const GRAPH_EDGE_HEAD_LENGTH_PX: f64 = 8.0;
+/// Screen-space arrowhead half-width in CSS px.
+pub const GRAPH_EDGE_HEAD_HALF_WIDTH_PX: f64 = 4.0;
+/// `f64` values per segment in [`edge_route_segments_with_ends`] `out_ends`:
+/// start border radius (px), end border radius (px), head length (px; 0 = none).
+pub const EDGE_ENDS_STRIDE: usize = 3;
+
+/// Per-endpoint Scene flag byte for border-aware graph edges (#33): marks a
+/// Polyline point as a graph edge end (`EDGE_END_MARK`), requests an arrowhead
+/// at that end (`EDGE_END_HEAD`), and carries the node outline in the low bits
+/// (`EDGE_END_SHAPE_MASK`, a [`NodeShape`] code). Packed by `scene_pack`
+/// (`PACK_EDGE_SEGMENT`) and consumed by the Scene pixel pass.
+pub const EDGE_END_MARK: u8 = 0x80;
+pub const EDGE_END_HEAD: u8 = 0x40;
+pub const EDGE_END_SHAPE_MASK: u8 = 0x03;
+/// Per-segment flag byte in `out_ends[2]`: [`EDGE_END_HEAD`], end-node shape in
+/// bits 0-1, start-node shape in bits 2-3 (`EDGE_START_SHAPE_SHIFT`).
+pub const EDGE_START_SHAPE_SHIFT: u8 = 2;
+pub const EDGE_SEGMENT_FLAG_MASK: u8 =
+    EDGE_END_HEAD | EDGE_END_SHAPE_MASK | (EDGE_END_SHAPE_MASK << EDGE_START_SHAPE_SHIFT);
+
+/// Node marker outline used for border-aware edge trimming (#33).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NodeShape {
+    Circle = 0,
+    Square = 1,
+    Diamond = 2,
+}
+
+impl NodeShape {
+    /// Map a scatter symbol name to its trimming outline. Symbols without an
+    /// exact rule (triangle, star, …) use their circumscribed circle.
+    pub fn from_symbol(symbol: &str) -> NodeShape {
+        match symbol {
+            "square" => NodeShape::Square,
+            "diamond" => NodeShape::Diamond,
+            _ => NodeShape::Circle,
+        }
+    }
+
+    /// Map a scatter symbol code (`circle`=0, `square`=1, `diamond`=2, …).
+    pub fn from_symbol_code(code: u8) -> NodeShape {
+        Self::from_code(code)
+    }
+
+    pub fn from_code(code: u8) -> NodeShape {
+        match code {
+            1 => NodeShape::Square,
+            2 => NodeShape::Diamond,
+            _ => NodeShape::Circle,
+        }
+    }
+}
+
+impl NodeShape {
+    fn code(self) -> u8 {
+        self as u8
+    }
+}
+
+/// Distance from a node's center to its outline along the unit screen
+/// direction `(ux, uy)`, for a marker of `radius` px (half its size). The
+/// WebGL segment shader (`xyEdgeBorder` in `js/src/40_gl.ts`) mirrors this.
+pub fn node_border_distance(shape: NodeShape, radius: f64, ux: f64, uy: f64) -> f64 {
+    if !(radius > 0.0) {
+        return 0.0;
+    }
+    let (ax, ay) = (ux.abs(), uy.abs());
+    match shape {
+        NodeShape::Circle => radius,
+        NodeShape::Square => radius / ax.max(ay).max(1e-12),
+        NodeShape::Diamond => std::f64::consts::SQRT_2 * radius / (ax + ay).max(1e-12),
+    }
+}
+
+/// Route edges for screen-space, border-aware paint (#33).
+///
+/// Geometry is [`edge_route_segments`] with data-space arrows disabled (shaft
+/// pieces only: 1 straight, 3 per self-loop, `CURVE_TESSELLATION_SEGMENTS`
+/// curved). `out_ends` receives [`EDGE_ENDS_STRIDE`] values per segment: the
+/// first piece of an edge carries its source node's border radius, the last
+/// piece its target node's radius, and a flag byte (as `f64`) with
+/// [`EDGE_END_HEAD`] when `directed` plus each end node's [`NodeShape`] code
+/// (end in bits 0-1, start in bits 2-3). Interior curve pieces carry zero
+/// radii. Painters trim each end by [`node_border_distance`] along the piece's
+/// screen direction and draw a [`GRAPH_EDGE_HEAD_LENGTH_PX`] head at the trimmed
+/// tip, so tips meet node outlines at every zoom. `node_radius_px` and
+/// `node_symbol` (scatter symbol codes) are per render node; empty means no
+/// trim / circles.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
+pub fn edge_route_segments_with_ends(
+    n_nodes: u64,
+    x: &[f64],
+    y: &[f64],
+    sources: &[u64],
+    targets: &[u64],
+    directed: bool,
+    separation: f64,
+    loop_radius: f64,
+    curved: bool,
+    node_radius_px: &[f64],
+    node_symbol: &[u8],
+    out_x0: &mut [f64],
+    out_y0: &mut [f64],
+    out_x1: &mut [f64],
+    out_y1: &mut [f64],
+    out_edge_index: &mut [u64],
+    out_ends: &mut [f64],
+) -> Option<u64> {
+    if !node_radius_px.is_empty()
+        && (node_radius_px.len() != x.len()
+            || node_radius_px.iter().any(|r| !r.is_finite() || *r < 0.0))
+    {
+        return None;
+    }
+    if !node_symbol.is_empty() && node_symbol.len() != x.len() {
+        return None;
+    }
+    let capacity = sources
+        .len()
+        .checked_mul(edge_route_segments_per_edge(curved))?;
+    if out_ends.len() < capacity.checked_mul(EDGE_ENDS_STRIDE)? {
+        return None;
+    }
+    let written = edge_route_segments(
+        n_nodes,
+        x,
+        y,
+        sources,
+        targets,
+        directed,
+        separation,
+        loop_radius,
+        0.0,
+        curved,
+        out_x0,
+        out_y0,
+        out_x1,
+        out_y1,
+        out_edge_index,
+    )? as usize;
+    let radius = |node: u64| node_radius_px.get(node as usize).copied().unwrap_or(0.0);
+    let shape = |node: u64| {
+        NodeShape::from_symbol_code(node_symbol.get(node as usize).copied().unwrap_or(0)).code()
+    };
+    out_ends[..written * EDGE_ENDS_STRIDE].fill(0.0);
+    // Pieces of one edge are emitted contiguously; stamp the run's ends.
+    let mut start = 0;
+    while start < written {
+        let edge = out_edge_index[start];
+        let mut end = start + 1;
+        while end < written && out_edge_index[end] == edge {
+            end += 1;
+        }
+        let e = edge as usize;
+        out_ends[start * EDGE_ENDS_STRIDE] = radius(sources[e]);
+        let last = (end - 1) * EDGE_ENDS_STRIDE;
+        out_ends[last + 1] = radius(targets[e]);
+        let start_shape = shape(sources[e]) << EDGE_START_SHAPE_SHIFT;
+        let end_shape = shape(targets[e]);
+        for piece in start..end {
+            let at = piece * EDGE_ENDS_STRIDE + 2;
+            let head = if directed && piece == end - 1 {
+                EDGE_END_HEAD
+            } else {
+                0
+            };
+            out_ends[at] = f64::from(head | start_shape | end_shape);
+        }
+        start = end;
+    }
+    Some(written as u64)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -378,6 +554,110 @@ mod tests {
         assert_eq!(ox0[..n as usize], ox0b[..n as usize]);
         assert_eq!(oy0[..n as usize], oy0b[..n as usize]);
         assert_eq!(eidx[..n as usize], eidxb[..n as usize]);
+    }
+
+    #[test]
+    fn border_distance_matches_marker_outlines() {
+        let r = 8.0;
+        let d = std::f64::consts::FRAC_1_SQRT_2;
+        assert_eq!(node_border_distance(NodeShape::Circle, r, 0.6, 0.8), r);
+        // Square: half side along an axis, half diagonal at 45 degrees.
+        assert!((node_border_distance(NodeShape::Square, r, 1.0, 0.0) - r).abs() < 1e-12);
+        assert!((node_border_distance(NodeShape::Square, r, d, d) - r * 2f64.sqrt()).abs() < 1e-9);
+        // Diamond: vertex radius sqrt(2) r on axis, r across a face.
+        assert!(
+            (node_border_distance(NodeShape::Diamond, r, 0.0, -1.0) - r * 2f64.sqrt()).abs() < 1e-9
+        );
+        assert!((node_border_distance(NodeShape::Diamond, r, d, d) - r).abs() < 1e-9);
+        assert_eq!(node_border_distance(NodeShape::Square, 0.0, 1.0, 0.0), 0.0);
+        assert_eq!(NodeShape::from_symbol_code(1), NodeShape::Square);
+        assert_eq!(NodeShape::from_symbol_code(2), NodeShape::Diamond);
+        assert_eq!(NodeShape::from_symbol_code(7), NodeShape::Circle);
+    }
+
+    #[test]
+    fn ends_stamp_first_and_last_piece_without_data_space_wings() {
+        let x = [0.0, 4.0];
+        let y = [0.0, 0.0];
+        let (sources, targets) = ([0u64, 1], [1u64, 1]);
+        for curved in [false, true] {
+            let cap = sources.len() * edge_route_segments_per_edge(curved);
+            let (mut a, mut b, mut c, mut d) = (
+                vec![0.0; cap],
+                vec![0.0; cap],
+                vec![0.0; cap],
+                vec![0.0; cap],
+            );
+            let mut index = vec![0u64; cap];
+            let mut ends = vec![f64::NAN; cap * EDGE_ENDS_STRIDE];
+            let n = edge_route_segments_with_ends(
+                2,
+                &x,
+                &y,
+                &sources,
+                &targets,
+                true,
+                0.2,
+                0.5,
+                curved,
+                &[3.0, 5.0],
+                &[0, 1],
+                &mut a,
+                &mut b,
+                &mut c,
+                &mut d,
+                &mut index,
+                &mut ends,
+            )
+            .expect("ends") as usize;
+            let pieces = if curved {
+                CURVE_TESSELLATION_SEGMENTS
+            } else {
+                1
+            };
+            // Shaft pieces only (no wings) plus a 3-sided loop.
+            assert_eq!(n, pieces + 3);
+            let row = |i: usize| &ends[i * 3..i * 3 + 3];
+            assert_eq!(row(0)[0], 3.0);
+            assert_eq!(row(pieces - 1)[1], 5.0);
+            assert_eq!(row(pieces - 1)[2] as u8, EDGE_END_HEAD | 1);
+            if curved {
+                // Interior pieces: no trim, no head (shape bits are inert).
+                assert_eq!(&row(1)[..2], &[0.0, 0.0][..]);
+                assert_eq!(row(1)[2] as u8 & EDGE_END_HEAD, 0);
+            }
+            // Loop on the square node: starts and ends there, head at the end.
+            let square = 1 | (1 << EDGE_START_SHAPE_SHIFT);
+            assert_eq!(row(pieces), &[5.0, 0.0, f64::from(square)][..]);
+            assert_eq!(
+                row(n - 1),
+                &[0.0, 5.0, f64::from(EDGE_END_HEAD | square)][..]
+            );
+        }
+        // Radii and symbols must be one per node.
+        let mut buf = vec![0.0; 6];
+        let mut idx = vec![0u64; 6];
+        let mut ends = vec![0.0; 18];
+        assert!(edge_route_segments_with_ends(
+            2,
+            &x,
+            &y,
+            &sources,
+            &targets,
+            true,
+            0.2,
+            0.5,
+            false,
+            &[3.0],
+            &[],
+            &mut buf.clone(),
+            &mut buf.clone(),
+            &mut buf.clone(),
+            &mut buf,
+            &mut idx,
+            &mut ends,
+        )
+        .is_none());
     }
 
     #[test]

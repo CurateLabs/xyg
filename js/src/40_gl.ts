@@ -46,6 +46,9 @@ export const ATTR_SLOTS = {
   // a_sval/a_sel — none ever co-resident with a_prev* in the same program.
   a_prevx: 4, a_prevy: 5, a_prevx1: 7, a_prevy1: 8,
   a_rgba: 12, a_style: 13, a_stroke: 14, a_radius: 15,
+  // Graph edge ends (#33): segment-only; aliases a_stroke, which the segment
+  // program never declares.
+  a_ends: 14,
   // Ribbon target-end colour. Aliases a_style's slot: the ribbon program uses
   // neither the style nor the stroke channel families, so the slot is free
   // there, and no other program declares a_rgba2.
@@ -856,7 +859,14 @@ export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
 in float a_dash0; in float a_dashDir;
+in vec3 a_ends;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
+// Graph edge ends (#33): a_ends = (start border radius px, end border radius
+// px, flag byte: head 64, end shape bits 0-1, start shape bits 2-3) from Rust
+// edge_route_segments_with_ends. u_edgeScale = dpr * node zoom size factor;
+// head sizes are device px. u_edgePass 1 draws only the arrowhead triangle.
+uniform int u_edgeEnds; uniform int u_edgePass; uniform float u_edgeScale;
+uniform float u_edgeHeadLen; uniform float u_edgeHeadHalf;
 uniform float u_animationProgress;
 uniform int u_colorMode;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
@@ -865,9 +875,23 @@ out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
 ${AXIS_GLSL}
 ${POLAR_GLSL_UNIFORMS}
+// Mirrors edge_route::node_border_distance: center-to-outline distance along
+// unit screen direction u for circle (0), square (1), and diamond (2) nodes.
+float xyEdgeBorder(int shape, float r, vec2 u) {
+  if (r <= 0.0) return 0.0;
+  vec2 a = abs(u);
+  if (shape == 1) return r / max(max(a.x, a.y), 1e-6);
+  if (shape == 2) return 1.41421356 * r / max(a.x + a.y, 1e-6);
+  return r;
+}
+void xyEdgeHide() {
+  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+  v_off = 0.0; v_cval = 0.0; v_dash = 0.0; v_rgba = vec4(0.0); v_style = vec4(0.0);
+}
 void main() {
   vec2 p0;
   vec2 p1;
+  if (u_edgePass == 1 && u_edgeEnds == 0) { xyEdgeHide(); return; }
   if (u_coordMode == 1) {
     float th0 = xyAxisCoord(ax0, u_x0meta, u_x0mode, u_x0constant);
     float th1 = xyAxisCoord(ax1, u_x1meta, u_x1mode, u_x1constant);
@@ -909,6 +933,32 @@ void main() {
   p1 = mix(center, p1, u_animationProgress);
   vec2 pix0 = (p0 * 0.5 + 0.5) * u_res;
   vec2 pix1 = (p1 * 0.5 + 0.5) * u_res;
+  if (u_edgeEnds == 1 && u_coordMode != 1) {
+    vec2 d = pix1 - pix0;
+    float l = length(d);
+    if (!(l > 0.0)) { xyEdgeHide(); return; }
+    vec2 ue = d / l;
+    int fl = int(a_ends.z + 0.5);
+    float t0 = xyEdgeBorder((fl >> 2) & 3, a_ends.x * u_edgeScale, ue);
+    float t1 = xyEdgeBorder(fl & 3, a_ends.y * u_edgeScale, ue);
+    float visible = l - t0 - t1;
+    if (!(visible > 0.0)) { xyEdgeHide(); return; }
+    vec2 tip = pix1 - ue * t1;
+    bool head = (fl & 64) != 0 && visible > u_edgeHeadLen;
+    pix0 += ue * t0;
+    pix1 = head ? tip - ue * u_edgeHeadLen : tip;
+    if (u_edgePass == 1) {
+      if (!head) { xyEdgeHide(); return; }
+      vec2 side = vec2(-ue.y, ue.x) * u_edgeHeadHalf;
+      vec2 v = gl_VertexID == 0 ? tip : (gl_VertexID == 1 ? pix1 + side : pix1 - side);
+      gl_Position = vec4(v / u_res * 2.0 - 1.0, 0.0, 1.0);
+      v_off = 0.0;
+      v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
+      v_dash = 0.0;
+      v_rgba = a_rgba; v_style = a_style;
+      return;
+    }
+  }
   vec2 dir = pix1 - pix0;
   float len = max(length(dir), 1e-6);
   dir /= len;

@@ -431,15 +431,34 @@ is never serialized into `spec.graph` or the paint payload.
   3-sided loop, or shaft + 2 wings), so straight graphs never pay the curved
   ceiling. Per-edge encodings (color, width, tooltips) are render-edge indexed
   and every host expands them across routed segments via `render_edge_index`.
-  Border-aware endpoint clipping against rendered node radius remains a
-  follow-up (node size is a screen-space paint property, not a routing-time
-  world-space one); hosts must not invent that geometry either.
+- **Border-aware ends and screen-space arrowheads (#33, ABI 368).** Graph
+  marks route through `xyg_graph_edge_route_ends`: the same geometry without
+  data-space arrow wings (1 shaft per straight edge, 3 loop sides,
+  `CURVE_TESSELLATION_SEGMENTS` curved pieces), plus per-segment `edge_ends`
+  (start border radius px, end border radius px, flag byte: head `0x40`, end
+  node shape bits 0-1, start node shape bits 2-3). The first piece of an edge
+  carries its source node's radius, the last its target's radius and, when
+  directed, the head; directed self-loops get a head on their last side.
+  Hosts pass each render node's on-screen radius (half the diameter the node
+  scatter ships, including continuous `size` mapped over its `range_px`) and
+  scatter symbol code; circle, square, and diamond have exact outlines
+  (`edge_route::node_border_distance`), every other symbol trims to its
+  circumscribed circle. Painters trim each end along the piece's **screen**
+  direction and draw a filled `GRAPH_EDGE_HEAD_LENGTH_PX` (8) ×
+  2·`GRAPH_EDGE_HEAD_HALF_WIDTH_PX` (4) head whose tip touches the outline;
+  an edge whose nodes overlap on screen is hidden rather than inverted, and a
+  head that would not fit is dropped. The WebGL segment shader applies the
+  rule every frame (radii × dpr × the node scatter's zoom size factor), so tips
+  stay on outlines at every zoom; hover uses the same trim. The static Scene
+  applies it once at encode (scene-ir.md `EdgeSegment`), and hosts ship
+  `edge_ends` as a host-computed geometry channel that static admission does
+  not treat as per-item paint. Polar coordinates keep untrimmed edges.
 
 Interactive path is primary; export must not reshape the hot path (§8).
 Geometry remains segments + scatter buffers from the render graph; the client
 draws uploaded buffers only. Edge routing expands some edges into multiple
-segments (loops / arrow wings / curve tessellation) while preserving source
-edge identity via `render_edge_index`.
+segments (loops / curve tessellation) while preserving source edge identity via
+`render_edge_index`.
 
 ### 7.1 Label, visual-state, and compound foundation (#34)
 
@@ -593,7 +612,8 @@ boundary edges retain their canonical source identity.
   bytes are identical for identical input. Node `graphChart` hides axes like
   Python `graph_chart`. Current bound: the public route admits at most 10,000
   records per trace, so graphs over 10,000 nodes or 10,000 routed segments
-  (about 3,300 directed straight or 1,000 curved directed edges) fail closed;
+  (about 10,000 straight or 1,250 curved edges; each self-loop draws 3)
+  fail closed;
   the interactive path is unaffected. Reasons: Python reports
   `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for both; Node reports `…_PUBLIC_LOD` for
   nodes and `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS` for segment overflow (a
@@ -616,6 +636,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_sample_edges` | LOD edge index sample |
 | `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
 | `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
+| `xyg_graph_edge_route_ends` | ABI 368 routed shafts + per-segment border radii and head/shape flags for screen-space trimming (#33) |
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28; optional CSR source-edge membership per render edge (ABI 367, §6) |
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |

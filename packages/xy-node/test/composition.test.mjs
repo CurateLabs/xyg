@@ -30,9 +30,9 @@ test("normalize + circle runLayout emits positions and meta", () => {
     seed: 1,
   });
   assert.equal(nodePositions.x.length, 4);
-  // Directed routing: shaft + two arrow wings per edge.
-  assert.equal(edgeSegments.x0.length, 12);
-  assert.equal(meta.render_edge_index.length, 12);
+  // One shaft per edge; arrowheads are screen-space from edge ends (#33).
+  assert.equal(edgeSegments.x0.length, 4);
+  assert.equal(meta.render_edge_index.length, 4);
   assert.equal(meta.layout, "circle");
   assert.equal(meta.source_n_nodes, 4);
   assert.equal(meta.lod_tier, 0);
@@ -70,8 +70,12 @@ test("composeGraph + figure.buildPayload protocol subset", () => {
   assert.equal(spec.graph[0].layout, "circle");
   assert.ok(Buffer.isBuffer(buffers));
   assert.ok(buffers.length > 0);
-  // columns carry offset/scale from xyg_encode_f32
-  assert.ok(spec.columns.every((c) => typeof c.offset === "number"));
+  // Geometry columns carry offset/scale from xyg_encode_f32; style channels
+  // (graph edge_ends, #33) ship raw f32 like per-item width.
+  const styleColumns = new Set(
+    spec.traces.flatMap((t) => Object.values(t.channels ?? {}).map((c) => c.buf)),
+  );
+  assert.ok(spec.columns.every((c, i) => styleColumns.has(i) || typeof c.offset === "number"));
 });
 
 test("composeGraph helper returns traces ready for figure", () => {
@@ -105,7 +109,7 @@ test("graph ships tooltip_rows plus continuous size and color channels", () => {
   assert.equal(edges.kind, "segments");
   assert.equal(nodes.kind, "scatter");
   assert.deepEqual(nodes.tooltip_rows, [{ id: "a" }, { id: "b" }, { id: "c" }]);
-  assert.equal(edges.tooltip_rows.length, 6);
+  assert.equal(edges.tooltip_rows.length, 2);
   assert.deepEqual(
     [...new Set(edges.tooltip_rows.map((r) => r.e))],
     [0, 1],

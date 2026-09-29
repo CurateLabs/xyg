@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 367;
+pub const ABI_VERSION: u32 = 368;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15889,6 +15889,145 @@ pub unsafe extern "C" fn xyg_graph_build_render(
             None => -1,
         }
     })
+}
+
+/// Route render-graph edges for screen-space, border-aware paint (#33).
+///
+/// Same geometry as `xyg_graph_edge_route_segments` without data-space
+/// arrowheads, plus `out_ends` (3 f64 per segment: start border radius px,
+/// end border radius px, flag byte: head bit 0x40, end shape bits 0-1, start
+/// shape bits 2-3). `node_radius_px` (f64) and `node_symbol` (scatter symbol
+/// codes, u8) are per render node (`n_nodes` values) or null. `out_*` buffers need
+/// `n_edges * 10` (curved) or `n_edges * 3` (straight) segments; `out_ends`
+/// needs three times that. Returns 0 on success.
+///
+/// # Safety
+/// Non-empty input/output pointers must be valid for the documented lengths.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_edge_route_ends(
+    n_nodes: u64,
+    n_edges: u64,
+    x: *const f64,
+    y: *const f64,
+    sources: *const u64,
+    targets: *const u64,
+    directed: i32,
+    separation: f64,
+    loop_radius: f64,
+    curved: i32,
+    node_radius_px: *const f64,
+    node_symbol: *const u8,
+    out_x0: *mut f64,
+    out_y0: *mut f64,
+    out_x1: *mut f64,
+    out_y1: *mut f64,
+    out_edge_index: *mut u64,
+    out_ends: *mut f64,
+    out_n_segments: *mut u64,
+) -> i32 {
+    use xyg_engine::edge_route::{edge_route_segments_per_edge, EDGE_ENDS_STRIDE};
+    if n_nodes > (usize::MAX as u64) || n_edges > (usize::MAX as u64) || out_n_segments.is_null() {
+        return -1;
+    }
+    let n = n_nodes as usize;
+    let e = n_edges as usize;
+    let Some(cap) = e.checked_mul(edge_route_segments_per_edge(curved != 0)) else {
+        return -1;
+    };
+    let Some(ends_cap) = cap.checked_mul(EDGE_ENDS_STRIDE) else {
+        return -1;
+    };
+    if n > 0 && (x.is_null() || y.is_null()) {
+        return -1;
+    }
+    if e > 0 && (sources.is_null() || targets.is_null()) {
+        return -1;
+    }
+    if cap > 0
+        && (out_x0.is_null()
+            || out_y0.is_null()
+            || out_x1.is_null()
+            || out_y1.is_null()
+            || out_edge_index.is_null()
+            || out_ends.is_null())
+    {
+        return -1;
+    }
+    let slice = |p: *const f64, len: usize| {
+        if len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(p, len)
+        }
+    };
+    let x = slice(x, n);
+    let y = slice(y, n);
+    let node_radius = if node_radius_px.is_null() {
+        &[][..]
+    } else {
+        slice(node_radius_px, n)
+    };
+    let node_symbol = if node_symbol.is_null() || n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(node_symbol, n)
+    };
+    let sources = if e == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(sources, e)
+    };
+    let targets = if e == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(targets, e)
+    };
+    let out = |p: *mut f64, len: usize| {
+        if len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(p, len)
+        }
+    };
+    let out_x0 = out(out_x0, cap);
+    let out_y0 = out(out_y0, cap);
+    let out_x1 = out(out_x1, cap);
+    let out_y1 = out(out_y1, cap);
+    let out_ends = out(out_ends, ends_cap);
+    let out_edge_index = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_edge_index, cap)
+    };
+
+    ffi_guard(
+        -1,
+        || match xyg_engine::edge_route::edge_route_segments_with_ends(
+            n_nodes,
+            x,
+            y,
+            sources,
+            targets,
+            directed != 0,
+            separation,
+            loop_radius,
+            curved != 0,
+            node_radius,
+            node_symbol,
+            out_x0,
+            out_y0,
+            out_x1,
+            out_y1,
+            out_edge_index,
+            out_ends,
+        ) {
+            Some(n_seg) => {
+                *out_n_segments = n_seg;
+                0
+            }
+            None => -1,
+        },
+    )
 }
 
 /// Route render-graph edges into paint segments (#33).
