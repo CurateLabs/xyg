@@ -435,24 +435,30 @@ is never serialized into `spec.graph` or the paint payload.
   marks route through `xyg_graph_edge_route_ends`: the same geometry without
   data-space arrow wings (1 shaft per straight edge, 3 loop sides,
   `CURVE_TESSELLATION_SEGMENTS` curved pieces), plus per-segment `edge_ends`
-  (start border radius px, end border radius px, flag byte: head `0x40`, end
-  node shape bits 0-1, start node shape bits 2-3). The first piece of an edge
-  carries its source node's radius, the last its target's radius and, when
-  directed, the head; directed self-loops get a head on their last side.
-  Hosts pass each render node's on-screen radius (half the diameter the node
-  scatter ships, including continuous `size` mapped over its `range_px`) and
-  scatter symbol code; circle, square, and diamond have exact outlines
-  (`edge_route::node_border_distance`), every other symbol trims to its
-  circumscribed circle. Painters trim each end along the piece's **screen**
-  direction and draw a filled `GRAPH_EDGE_HEAD_LENGTH_PX` (8) ×
-  2·`GRAPH_EDGE_HEAD_HALF_WIDTH_PX` (4) head whose tip touches the outline;
-  an edge whose nodes overlap on screen is hidden rather than inverted, and a
-  head that would not fit is dropped. The WebGL segment shader applies the
-  rule every frame (radii × dpr × the node scatter's zoom size factor), so tips
-  stay on outlines at every zoom; hover uses the same trim. The static Scene
-  applies it once at encode (scene-ir.md `EdgeSegment`), and hosts ship
-  `edge_ends` as a host-computed geometry channel that static admission does
-  not treat as per-item paint. Polar coordinates keep untrimmed edges.
+  (7 values: source-node center minus the piece start in data units, source
+  radius px, target-node center minus the piece start, target radius px, and
+  a flag byte: head `0x40` on every piece of a directed edge, terminal `0x20`
+  on its last piece, target shape bits 0-1, source shape bits 2-3). Centers
+  ride as deltas from the piece start so f32 transport stays exact. Hosts pass
+  each render node's on-screen radius (half the diameter the node scatter
+  ships, including continuous `size` over its `range_px`) and scatter symbol
+  code; circle, square, and diamond clip exactly, every other symbol clips to
+  its circumscribed circle. Painters clip **every piece** against both node
+  outlines in screen space (`edge_route::clip_edge_piece` /
+  `node_shape_span`), so parallel/reciprocal shafts offset from the centers
+  and short curve pieces near large nodes still start and end on the
+  outline. The piece that enters the target outline draws a filled
+  `GRAPH_EDGE_HEAD_LENGTH_PX` (8) × 2·`GRAPH_EDGE_HEAD_HALF_WIDTH_PX` (4) head
+  with its tip on the outline; if a shaft misses the target entirely, its
+  terminal piece draws the head at its end. A piece inside a node is hidden;
+  a shaft is only shortened for a head that is actually drawn. The WebGL
+  segment shader applies the rule every frame (radii × dpr × the node
+  scatter's zoom size factor × its entrance-animation scale), and hover uses
+  the same clip. The static Scene applies it once at encode (scene-ir.md
+  `EdgeSegment`); hosts ship `edge_ends` as a host-computed geometry channel
+  that static admission does not treat as per-item paint. Polar keeps
+  untrimmed edges. Parallel separation (0.08) and loop radius are still data
+  units, so collinear layouts can spread parallel edges widely.
 
 Interactive path is primary; export must not reshape the hot path (§8).
 Geometry remains segments + scatter buffers from the render graph; the client

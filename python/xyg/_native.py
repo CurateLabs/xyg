@@ -12672,9 +12672,11 @@ def graph_edge_route_ends(
     """Route edges for screen-space, border-aware paint (#33, ABI 368).
 
     Returns ``(x0, y0, x1, y1, render_edge_index, ends)`` where ``ends`` is
-    ``(n_segments, 3)``: start border radius px, end border radius px, and the
-    flag byte (head ``0x40``, end shape bits 0-1, start shape bits 2-3). No
-    data-space arrowheads are emitted; painters trim and draw heads in pixels.
+    ``(n_segments, 7)``: source-node center minus the piece start (data x, y),
+    source radius px, target-node center minus the piece start (x, y), target
+    radius px, and the flag byte (head ``0x40``, terminal ``0x20``, target shape
+    bits 0-1, source shape bits 2-3). No data-space arrowheads are emitted;
+    painters clip each piece against both node outlines in pixels.
     """
     x_arr = _as_f64(x, "x")
     y_arr = _as_f64(y, "y")
@@ -12703,7 +12705,7 @@ def graph_edge_route_ends(
     out_x1 = np.empty(cap, dtype=np.float64)
     out_y1 = np.empty(cap, dtype=np.float64)
     out_edge_index = np.empty(cap, dtype=np.uint64)
-    out_ends = np.empty(cap * 3, dtype=np.float64)
+    out_ends = np.empty(cap * 7, dtype=np.float64)
     out_n = ctypes.c_uint64(0)
     ok = _lib.xyg_graph_edge_route_ends(
         ctypes.c_uint64(n_nodes),
@@ -12735,7 +12737,7 @@ def graph_edge_route_ends(
         out_x1[:n_seg],
         out_y1[:n_seg],
         out_edge_index[:n_seg],
-        out_ends[: n_seg * 3].reshape(n_seg, 3),
+        out_ends[: n_seg * 7].reshape(n_seg, 7),
     )
 
 

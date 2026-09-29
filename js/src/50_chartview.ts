@@ -4684,26 +4684,36 @@ export class ChartView {
       g.rgbaBuf = this._upload(this._columnView(buffer, this.spec.columns[t.color.buf]));
     }
     this._buildInstanceStyleChannels(g, t, buffer, "width");
-    // Graph edge ends (#33): Rust-routed per-segment border radii + flags; the
-    // segment shader trims to node outlines and draws screen-space heads.
+    // Graph edge ends (#33): per piece, both node centers (data deltas from
+    // the piece start), radii, and flags from Rust; the segment shader clips
+    // each piece against both node outlines and draws screen-space heads.
     const ends = t.channels && t.channels.edge_ends;
-    if (ends && ends.components === 3) {
+    if (ends && ends.components === EDGE_ENDS_STRIDE) {
       const values = this._columnView(buffer, this.spec.columns[ends.buf]);
-      if (values.length >= g.n * 3) {
-        g._edgeEnds = Float32Array.from(values.subarray(0, g.n * 3));
-        g.endsBuf = this._upload(g._edgeEnds);
+      if (values.length >= g.n * EDGE_ENDS_STRIDE) {
+        g._edgeEnds = Float32Array.from(values.subarray(0, g.n * EDGE_ENDS_STRIDE));
+        const source = new Float32Array(g.n * 4);
+        const target = new Float32Array(g.n * 3);
+        for (let i = 0; i < g.n; i++) {
+          const at = i * EDGE_ENDS_STRIDE;
+          source.set([g._edgeEnds[at], g._edgeEnds[at + 1], g._edgeEnds[at + 2], g._edgeEnds[at + 6]], i * 4);
+          target.set([g._edgeEnds[at + 3], g._edgeEnds[at + 4], g._edgeEnds[at + 5]], i * 3);
+        }
+        g.endsBuf = this._upload(source);
+        g.ends2Buf = this._upload(target);
       }
     }
     g._cpu = { x: x0, y: y1, xMeta: g.x0Meta, yMeta: g.y1Meta };
   }
 
   // Scale from Rust's CSS-px border radii to device px: dpr times the zoom
-  // size factor of the graph's node scatter, so trims track node markers.
+  // size factor and entrance-animation scale of the graph's node scatter, so
+  // trims track the node markers as drawn.
   _edgeEndScale(g) {
     const graphs = Array.isArray(this.spec && this.spec.graph) ? this.spec.graph : [];
     const meta = graphs.find((entry) => entry && entry.edge_trace === g.trace.id);
     const node = meta && this.gpuTraces.find((trace) => trace.trace.id === meta.node_trace);
-    const factor = node ? this._pointZoomStyle(node).sizeFactor : 1;
+    const factor = node ? this._pointZoomStyle(node).sizeFactor * (node._transitionScale ?? 1) : 1;
     return this.dpr * (Number.isFinite(factor) ? factor : 1);
   }
 
@@ -6419,7 +6429,8 @@ export class ChartView {
         g.styleBuf ? g.styleBuf._fcId : 0,
         dashed ? g._segmentDashOffsetBuf._fcId : 0,
         dashed ? g._segmentDashDirBuf._fcId : 0,
-        g.endsBuf ? g.endsBuf._fcId : 0],
+        g.endsBuf ? g.endsBuf._fcId : 0,
+        g.ends2Buf ? g.ends2Buf._fcId : 0],
       () => {
         this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, 1);
         this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, 1);
@@ -6432,13 +6443,15 @@ export class ChartView {
           this._vaoAttr(ATTR_SLOTS.a_dash0, g._segmentDashOffsetBuf, 0, 1);
           this._vaoAttr(ATTR_SLOTS.a_dashDir, g._segmentDashDirBuf, 0, 1);
         }
-        if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, 1, 3);
+        if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, 1, 4);
+        if (g.ends2Buf) this._vaoAttr(ATTR_SLOTS.a_ends2, g.ends2Buf, 0, 1, 3);
       }
     );
     if (!g.cBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
     if (!g.rgbaBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
     if (!g.styleBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
-    if (!g.endsBuf) gl.vertexAttrib3f(ATTR_SLOTS.a_ends, 0, 0, 0);
+    if (!g.endsBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_ends, 0, 0, 0, 0);
+    if (!g.ends2Buf) gl.vertexAttrib3f(ATTR_SLOTS.a_ends2, 0, 0, 0);
     const edgeEnds = g.endsBuf && !this._polarGeometry();
     gl.uniform1i(u("u_edgeEnds"), edgeEnds ? 1 : 0);
     gl.uniform1i(u("u_edgePass"), 0);
@@ -8213,11 +8226,16 @@ export class ChartView {
     for (let i = 0; i < limit; i++) {
       let [[x0, y0], [x1, y1]] = this._projectSegmentEndpoints(g, cpu, i, geom);
       if (ends) {
-        // Same outline trim as the segment shader (#33), in CSS px; the hover
+        // Same outline clip as the segment shader (#33), in CSS px; the hover
         // target keeps the arrowhead, so it ends at the tip.
-        const trimmed = edgeTrimCss(x0, y0, x1, y1, ends, i, endScale);
-        if (!trimmed) continue;
-        [x0, y0, x1, y1] = trimmed;
+        const at = i * EDGE_ENDS_STRIDE;
+        const x0Data = this._decodeValue(cpu.x0, g.x0Meta, i);
+        const y0Data = this._decodeValue(cpu.y0, g.y0Meta, i);
+        const c0 = this._projectDataPoint(g.xAxis, g.yAxis, x0Data + ends[at], y0Data + ends[at + 1], null);
+        const c1 = this._projectDataPoint(g.xAxis, g.yAxis, x0Data + ends[at + 3], y0Data + ends[at + 4], null);
+        const clipped = edgeClipCss([x0, y0], [x1, y1], c0, c1, ends, at, endScale);
+        if (!clipped) continue;
+        [x0, y0, x1, y1] = clipped;
       }
       const ax = x0 - this.plot.x;
       const ay = y0 - this.plot.y;
@@ -8716,24 +8734,49 @@ export class ChartView {
 }
 
 
-// Mirrors edge_route::node_border_distance and the SEGMENT_VS trim (#33).
-function edgeBorderCss(shape, radius, ux, uy) {
-  if (!(radius > 0)) return 0;
-  const ax = Math.abs(ux);
-  const ay = Math.abs(uy);
-  if (shape === 1) return radius / Math.max(ax, ay, 1e-6);
-  if (shape === 2) return Math.SQRT2 * radius / Math.max(ax + ay, 1e-6);
-  return radius;
+// Mirrors edge_route::node_shape_span / clip_edge_piece and SEGMENT_VS (#33).
+const EDGE_ENDS_STRIDE = 7;
+
+function edgeShapeSpan(shape, radius, a, d, c) {
+  if (!(radius > 0)) return null;
+  const px = a[0] - c[0];
+  const py = a[1] - c[1];
+  if (shape === 0) {
+    const qa = d[0] * d[0] + d[1] * d[1];
+    if (!(qa > 0)) return null;
+    const qb = 2 * (d[0] * px + d[1] * py);
+    const disc = qb * qb - 4 * qa * (px * px + py * py - radius * radius);
+    if (disc < 0) return null;
+    const root = Math.sqrt(disc);
+    return [(-qb - root) / (2 * qa), (-qb + root) / (2 * qa)];
+  }
+  const limit = shape === 1 ? radius : Math.SQRT2 * radius;
+  const normals = shape === 1 ? [[1, 0], [-1, 0], [0, 1], [0, -1]] : [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+  let lo = -Infinity;
+  let hi = Infinity;
+  for (const [nx, ny] of normals) {
+    const base = nx * px + ny * py - limit;
+    const slope = nx * d[0] + ny * d[1];
+    if (Math.abs(slope) < 1e-12) {
+      if (base > 0) return null;
+    } else if (slope > 0) {
+      hi = Math.min(hi, -base / slope);
+    } else {
+      lo = Math.max(lo, -base / slope);
+    }
+  }
+  return lo <= hi ? [lo, hi] : null;
 }
 
-function edgeTrimCss(x0, y0, x1, y1, ends, index, scale) {
-  const length = Math.hypot(x1 - x0, y1 - y0);
-  if (!(length > 0)) return null;
-  const ux = (x1 - x0) / length;
-  const uy = (y1 - y0) / length;
-  const flags = Math.round(ends[index * 3 + 2]);
-  const t0 = edgeBorderCss((flags >> 2) & 3, ends[index * 3] * scale, ux, uy);
-  const t1 = edgeBorderCss(flags & 3, ends[index * 3 + 1] * scale, ux, uy);
-  if (!(length - t0 - t1 > 0)) return null;
-  return [x0 + ux * t0, y0 + uy * t0, x1 - ux * t1, y1 - uy * t1];
+function edgeClipCss(a, b, c0, c1, ends, at, scale) {
+  const d = [b[0] - a[0], b[1] - a[1]];
+  const flags = Math.round(ends[at + 6]);
+  let t0 = 0;
+  let t1 = 1;
+  const s0 = edgeShapeSpan((flags >> 2) & 3, ends[at + 2] * scale, a, d, c0);
+  if (s0 && s0[0] <= 0 && s0[1] > 0) t0 = s0[1];
+  const s1 = edgeShapeSpan(flags & 3, ends[at + 5] * scale, a, d, c1);
+  if (s1 && s1[0] < 1 && s1[1] >= 1) t1 = s1[0];
+  if (!(t1 > t0)) return null;
+  return [a[0] + d[0] * t0, a[1] + d[1] * t0, a[0] + d[0] * t1, a[1] + d[1] * t1];
 }

@@ -19,8 +19,8 @@ pub const XYCL_VERSION: u32 = 1;
 pub const XYCL_HEADER_BYTES: usize = 16;
 pub const XYCL_PREFIX_BYTES: usize = 48;
 /// XYCL prefix byte 3 bit: a `segments` trace's `base` column carries graph
-/// edge ends as interleaved (start radius px, end radius px, flag byte)
-/// triples, one per segment (#33). Rust routes them into `PACK_EDGE_SEGMENT`.
+/// edge ends (`edge_route::EDGE_ENDS_STRIDE` values per segment) (#33). Rust
+/// routes them into `PACK_EDGE_SEGMENT`.
 pub const XYCL_EDGE_ENDS: u8 = 1 << 0;
 
 const MAX_TRACES: usize = 4_096;
@@ -355,33 +355,23 @@ pub fn pack_trace_rows(
         } else {
             (input.x, input.y)
         };
-        // Graph edge ends ride `base` as triples; split them into the
-        // PACK_EDGE_SEGMENT start-radius/end-radius/flag columns (#33).
+        // Graph edge ends ride `base` (EDGE_ENDS_STRIDE per segment) into
+        // PACK_EDGE_SEGMENT (#33).
         let mut fact_bits = attached.fact_bits as u8;
-        let (x, y, base) = if input.edge_ends {
+        if input.edge_ends {
             let n = input.x0.len();
+            let expected = n
+                .checked_mul(crate::edge_route::EDGE_ENDS_STRIDE)
+                .ok_or(TraceRowsError::new(TraceRowsCode::Limit, index))?;
             if input.kind != "segments"
                 || input.coords == COORDS_POLAR
-                || input.base.len()
-                    != n.checked_mul(3)
-                        .ok_or(TraceRowsError::new(TraceRowsCode::Limit, index))?
+                || input.base.len() != expected
             {
                 return Err(TraceRowsError::new(TraceRowsCode::Length, index));
             }
             fact_bits |= crate::scene_pack::FACT_EDGE_ENDS;
-            let column = |k: usize| {
-                input
-                    .base
-                    .iter()
-                    .skip(k)
-                    .step_by(3)
-                    .copied()
-                    .collect::<Vec<f64>>()
-            };
-            (column(0), column(1), column(2))
-        } else {
-            (x, y, input.base.clone())
-        };
+        }
+        let base = input.base.clone();
         let facts = write_xypk(
             &input.kind,
             index as u32,

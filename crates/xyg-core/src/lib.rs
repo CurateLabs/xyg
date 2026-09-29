@@ -15894,12 +15894,13 @@ pub unsafe extern "C" fn xyg_graph_build_render(
 /// Route render-graph edges for screen-space, border-aware paint (#33).
 ///
 /// Same geometry as `xyg_graph_edge_route_segments` without data-space
-/// arrowheads, plus `out_ends` (3 f64 per segment: start border radius px,
-/// end border radius px, flag byte: head bit 0x40, end shape bits 0-1, start
-/// shape bits 2-3). `node_radius_px` (f64) and `node_symbol` (scatter symbol
-/// codes, u8) are per render node (`n_nodes` values) or null. `out_*` buffers need
+/// arrowheads, plus `out_ends` (7 f64 per segment: source center minus piece
+/// start x/y, source radius px, target center minus piece start x/y, target
+/// radius px, flag byte: head 0x40, terminal 0x20, target shape bits 0-1,
+/// source shape bits 2-3). `node_radius_px` (f64) and `node_symbol` (scatter
+/// symbol codes, u8) are per render node (`n_nodes` values) or null. `out_*` buffers need
 /// `n_edges * 10` (curved) or `n_edges * 3` (straight) segments; `out_ends`
-/// needs three times that. Returns 0 on success.
+/// needs seven times that. Returns 0 on success.
 ///
 /// # Safety
 /// Non-empty input/output pointers must be valid for the documented lengths.

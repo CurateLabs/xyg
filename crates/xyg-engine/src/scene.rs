@@ -6135,12 +6135,14 @@ impl ExpandedSceneRecords {
         self.y1.push(input.y1[index]);
     }
 
+    /// Graph edge endpoint (#33): the point plus its node's center (`x1/y1`),
+    /// border radius (`diameter`, px), and `EDGE_END_*` flags (`symbol`).
     fn push_edge_point(
         &mut self,
         stable_id: u64,
         style_ref: u32,
-        x: f64,
-        y: f64,
+        point: [f64; 2],
+        node_center: [f64; 2],
         border_radius: f64,
         flags: u8,
     ) {
@@ -6149,10 +6151,10 @@ impl ExpandedSceneRecords {
         self.style_refs.push(style_ref);
         self.diameter.push(border_radius);
         self.symbols.push(flags);
-        self.x0.push(x);
-        self.y0.push(y);
-        self.x1.push(0.0);
-        self.y1.push(0.0);
+        self.x0.push(point[0]);
+        self.y0.push(point[1]);
+        self.x1.push(node_center[0]);
+        self.y1.push(node_center[1]);
     }
 
     fn push_step(&mut self, stable_id: u64, style_ref: u32, x: f64, y: f64) {
@@ -6850,8 +6852,8 @@ pub fn expand_scene_records_painted(
                 output.push_edge_point(
                     stable_id,
                     style_ref,
-                    input.x0[index],
-                    input.y0[index],
+                    [input.x0[index], input.y0[index]],
+                    [input.x1[index], input.y1[index]],
                     input.diameter[index],
                     input.symbols[index],
                 );
@@ -8105,8 +8107,12 @@ impl<'a> SceneBatch<'a> {
                 SceneRecordKind::Polyline
                     if symbols[index] & crate::edge_route::EDGE_END_MARK != 0 =>
                 {
-                    use crate::edge_route::{EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK};
-                    if symbols[index] & !(EDGE_END_MARK | EDGE_END_HEAD | EDGE_END_SHAPE_MASK) != 0
+                    use crate::edge_route::{
+                        EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK, EDGE_END_TERMINAL,
+                    };
+                    if symbols[index]
+                        & !(EDGE_END_MARK | EDGE_END_HEAD | EDGE_END_TERMINAL | EDGE_END_SHAPE_MASK)
+                        != 0
                         || !diameter[index].is_finite()
                         || diameter[index] < 0.0
                     {
@@ -8512,6 +8518,17 @@ impl<'a> SceneBatch<'a> {
                 }
             } else {
                 match kind {
+                    // Graph edge ends also project their node center (#33).
+                    SceneRecordKind::Polyline
+                        if self.symbols[index] & crate::edge_route::EDGE_END_MARK != 0 =>
+                    {
+                        [
+                            self.x_scale.pixel(self.x0[index]),
+                            self.y_scale.pixel(self.y0[index]),
+                            self.x_scale.pixel(self.x1[index]),
+                            self.y_scale.pixel(self.y1[index]),
+                        ]
+                    }
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
                     | SceneRecordKind::PolyFill => [
@@ -8591,6 +8608,11 @@ impl<'a> SceneBatch<'a> {
                 [0.0; 4]
             } else {
                 match kind {
+                    SceneRecordKind::Polyline
+                        if self.symbols[index] & crate::edge_route::EDGE_END_MARK != 0 =>
+                    {
+                        mapped
+                    }
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
                     | SceneRecordKind::PolyFill => [mapped[0], mapped[1], 0.0, 0.0],
@@ -9027,19 +9049,20 @@ struct PreparedMarkRecord {
 }
 
 /// Pixel-space pass for graph edge ends (#33): each `EdgeSegment` pair is
-/// trimmed so it starts and ends on its nodes' outlines
-/// (`edge_route::node_border_distance` along the segment's screen direction),
-/// and a flagged end gets a filled arrowhead whose tip touches the outline.
-/// The WebGL segment shader applies the same rule every frame. The flag
-/// bytes and radii are consumed here, so the encoded Scene carries ordinary
-/// Polyline and PolyFill records only.
+/// clipped against its edge's source and target node markers
+/// (`edge_route::clip_edge_piece`, same rule as the WebGL segment shader), and
+/// the piece that enters the target outline (or the terminal piece of a shaft
+/// that misses it) gets a filled arrowhead whose tip touches the outline. A
+/// head is only emitted, and the shaft only shortened for it, when the Scene
+/// has room. Flags, radii, and node centers are consumed here, so the encoded
+/// Scene carries ordinary Polyline and PolyFill records only.
 fn trim_graph_edge_ends(
     marks: Vec<PreparedMarkRecord>,
     head_style_base: u32,
 ) -> (Vec<PreparedMarkRecord>, Vec<u32>) {
     use crate::edge_route::{
-        node_border_distance, NodeShape, EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK,
-        GRAPH_EDGE_HEAD_HALF_WIDTH_PX, GRAPH_EDGE_HEAD_LENGTH_PX,
+        clip_edge_piece, NodeShape, EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK,
+        EDGE_END_TERMINAL, GRAPH_EDGE_HEAD_HALF_WIDTH_PX, GRAPH_EDGE_HEAD_LENGTH_PX,
     };
     let is_end = |mark: &PreparedMarkRecord| {
         mark.kind == SceneRecordKind::Polyline && mark.symbol & EDGE_END_MARK != 0
@@ -9047,6 +9070,18 @@ fn trim_graph_edge_ends(
     if !marks.iter().any(is_end) {
         return (marks, Vec::new());
     }
+    let clear = |mut mark: PreparedMarkRecord| {
+        mark.symbol = 0;
+        mark.diameter = 0.0;
+        mark.coordinates[2] = 0.0;
+        mark.coordinates[3] = 0.0;
+        mark
+    };
+    let hide = |mut mark: PreparedMarkRecord| {
+        mark.visible = false;
+        mark.coordinates = [0.0; 4];
+        mark
+    };
     let mut head_styles: Vec<u32> = Vec::new();
     let mut out = Vec::with_capacity(marks.len());
     let mut index = 0;
@@ -9057,91 +9092,80 @@ fn trim_graph_edge_ends(
             && is_end(&marks[index + 1])
             && marks[index + 1].stable_id == first.stable_id;
         if !paired {
-            let mut mark = first;
-            if is_end(&mark) {
-                mark.symbol = 0;
-                mark.diameter = 0.0;
-            }
-            out.push(mark);
+            out.push(if is_end(&first) { clear(first) } else { first });
             index += 1;
             continue;
         }
         let second = marks[index + 1];
         index += 2;
-        let (mut start, mut end) = (first, second);
-        for mark in [&mut start, &mut end] {
-            mark.symbol = 0;
-            mark.diameter = 0.0;
-        }
-        let (x0, y0) = (first.coordinates[0], first.coordinates[1]);
-        let (x1, y1) = (second.coordinates[0], second.coordinates[1]);
-        let length = (x1 - x0).hypot(y1 - y0);
-        if !first.visible || !second.visible || !(length > 0.0) {
+        let (start, end) = (clear(first), clear(second));
+        if !first.visible || !second.visible {
             out.extend([start, end]);
             continue;
         }
-        let (ux, uy) = ((x1 - x0) / length, (y1 - y0) / length);
-        let t0 = node_border_distance(
-            NodeShape::from_code(first.symbol & EDGE_END_SHAPE_MASK),
+        let a = (first.coordinates[0], first.coordinates[1]);
+        let b = (second.coordinates[0], second.coordinates[1]);
+        let clipped = clip_edge_piece(
+            a,
+            b,
+            (first.coordinates[2], first.coordinates[3]),
             first.diameter,
-            ux,
-            uy,
-        );
-        let t1 = node_border_distance(
-            NodeShape::from_code(second.symbol & EDGE_END_SHAPE_MASK),
+            NodeShape::from_code(first.symbol & EDGE_END_SHAPE_MASK),
+            (second.coordinates[2], second.coordinates[3]),
             second.diameter,
-            ux,
-            uy,
+            NodeShape::from_code(second.symbol & EDGE_END_SHAPE_MASK),
+            second.symbol & EDGE_END_HEAD != 0,
+            second.symbol & EDGE_END_TERMINAL != 0,
         );
-        let visible = length - t0 - t1;
-        if !(visible > 0.0) {
-            // Overlapping nodes hide the edge rather than inverting it.
-            start.visible = false;
-            end.visible = false;
-            start.coordinates = [0.0; 4];
-            end.coordinates = [0.0; 4];
-            out.extend([start, end]);
+        let length = (b.0 - a.0).hypot(b.1 - a.1);
+        let Some((t0, mut t1, tip)) = clipped.filter(|_| length > 0.0) else {
+            out.extend([hide(start), hide(end)]);
             continue;
+        };
+        let (ux, uy) = ((b.0 - a.0) / length, (b.1 - a.1) / length);
+        let at = |t: f64| (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t);
+        // The head needs its three records; without room, keep the full shaft.
+        let head = tip.filter(|_| out.len() + 5 <= MAX_SCENE_MARKS);
+        if let Some(tip_t) = head {
+            t1 = t1.min(tip_t - GRAPH_EDGE_HEAD_LENGTH_PX / length);
         }
-        let tip = (x1 - ux * t1, y1 - uy * t1);
-        let head = second.symbol & EDGE_END_HEAD != 0 && visible > GRAPH_EDGE_HEAD_LENGTH_PX;
-        let shaft_end = if head {
-            (
+        let (p0, p1) = (at(t0), at(t1));
+        let (mut start, mut end) = (start, end);
+        if t1 > t0 {
+            start.coordinates = [p0.0, p0.1, 0.0, 0.0];
+            end.coordinates = [p1.0, p1.1, 0.0, 0.0];
+        } else {
+            (start, end) = (hide(start), hide(end));
+        }
+        out.extend([start, end]);
+        if let Some(tip_t) = head {
+            let tip = at(tip_t);
+            let base = (
                 tip.0 - ux * GRAPH_EDGE_HEAD_LENGTH_PX,
                 tip.1 - uy * GRAPH_EDGE_HEAD_LENGTH_PX,
-            )
-        } else {
-            tip
-        };
-        start.coordinates = [x0 + ux * t0, y0 + uy * t0, 0.0, 0.0];
-        end.coordinates = [shaft_end.0, shaft_end.1, 0.0, 0.0];
-        out.extend([start, end]);
-        if head && out.len() + 3 <= MAX_SCENE_MARKS {
+            );
             let (sx, sy) = (
                 -uy * GRAPH_EDGE_HEAD_HALF_WIDTH_PX,
                 ux * GRAPH_EDGE_HEAD_HALF_WIDTH_PX,
             );
             let slot = match head_styles
                 .iter()
-                .position(|style| *style == start.style_ref)
+                .position(|style| *style == first.style_ref)
             {
                 Some(slot) => slot,
                 None => {
-                    head_styles.push(start.style_ref);
+                    head_styles.push(first.style_ref);
                     head_styles.len() - 1
                 }
             };
-            let head_style = head_style_base + slot as u32;
-            for point in [
-                tip,
-                (shaft_end.0 + sx, shaft_end.1 + sy),
-                (shaft_end.0 - sx, shaft_end.1 - sy),
-            ] {
+            let style_ref = head_style_base + slot as u32;
+            for point in [tip, (base.0 + sx, base.1 + sy), (base.0 - sx, base.1 - sy)] {
                 out.push(PreparedMarkRecord {
                     kind: SceneRecordKind::PolyFill,
+                    visible: true,
                     coordinates: [point.0, point.1, 0.0, 0.0],
-                    style_ref: head_style,
-                    ..start
+                    style_ref,
+                    ..clear(first)
                 });
             }
         }
@@ -15290,29 +15314,31 @@ fn fit_plot_gutters(viewport: f64, lo: f64, hi: f64) -> (f64, f64) {
 mod tests {
 
     #[test]
-    fn graph_edge_ends_trim_to_outlines_and_add_filled_heads() {
-        use crate::edge_route::{EDGE_END_HEAD, EDGE_END_MARK};
-        let point = |x: f64, symbol: u8, radius: f64| PreparedMarkRecord {
-            kind: SceneRecordKind::Polyline,
-            visible: true,
-            symbol,
-            annotation_tag: 0,
-            style_ref: 0,
-            stable_id: 7,
-            coordinates: [x, 50.0, 0.0, 0.0],
-            diameter: radius,
-        };
-        // Circle start (r=4) at x=0, square end (r=6, head) at x=100.
+    fn graph_edge_ends_clip_to_outlines_and_add_filled_heads() {
+        use crate::edge_route::{EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_TERMINAL};
+        let point =
+            |x: f64, y: f64, center: (f64, f64), symbol: u8, radius: f64| PreparedMarkRecord {
+                kind: SceneRecordKind::Polyline,
+                visible: true,
+                symbol,
+                annotation_tag: 0,
+                style_ref: 0,
+                stable_id: 7,
+                coordinates: [x, y, center.0, center.1],
+                diameter: radius,
+            };
+        let end_flags = EDGE_END_MARK | EDGE_END_HEAD | EDGE_END_TERMINAL | 1;
+        // Circle source (r=4) at 0, square target (half-side 6) at 100.
         let marks = vec![
-            point(0.0, EDGE_END_MARK, 4.0),
-            point(100.0, EDGE_END_MARK | EDGE_END_HEAD | 1, 6.0),
+            point(0.0, 50.0, (0.0, 50.0), EDGE_END_MARK, 4.0),
+            point(100.0, 50.0, (100.0, 50.0), end_flags, 6.0),
         ];
         let (out, heads) = trim_graph_edge_ends(marks, 3);
         assert_eq!(heads, vec![0]);
         assert_eq!(out.len(), 5);
-        assert_eq!(out[0].coordinates[0], 4.0);
+        assert_eq!(out[0].coordinates, [4.0, 50.0, 0.0, 0.0]);
         // Shaft stops at the head base: tip at 94 minus the 8 px head.
-        assert_eq!(out[1].coordinates[0], 86.0);
+        assert_eq!(out[1].coordinates, [86.0, 50.0, 0.0, 0.0]);
         assert!(out[..2].iter().all(|m| m.symbol == 0 && m.diameter == 0.0));
         let head: Vec<_> = out[2..]
             .iter()
@@ -15325,22 +15351,25 @@ mod tests {
         // Overlapping nodes hide the edge instead of inverting it.
         let (hidden, _) = trim_graph_edge_ends(
             vec![
-                point(0.0, EDGE_END_MARK, 8.0),
-                point(10.0, EDGE_END_MARK, 8.0),
+                point(0.0, 0.0, (0.0, 0.0), EDGE_END_MARK, 8.0),
+                point(10.0, 0.0, (10.0, 0.0), EDGE_END_MARK, 8.0),
             ],
             0,
         );
         assert!(hidden.iter().all(|m| !m.visible));
-        // Too short for a head: shaft to the tip, no head.
-        let (short, heads) = trim_graph_edge_ends(
+        // A curve piece inside the source node is hidden, and the next piece
+        // starts on the outline instead of inside the node.
+        let (inside, _) = trim_graph_edge_ends(
             vec![
-                point(0.0, EDGE_END_MARK, 1.0),
-                point(10.0, EDGE_END_MARK | EDGE_END_HEAD, 1.0),
+                point(0.0, 0.0, (0.0, 0.0), EDGE_END_MARK, 10.0),
+                point(5.0, 0.0, (60.0, 0.0), EDGE_END_MARK | EDGE_END_HEAD, 4.0),
+                point(5.0, 0.0, (0.0, 0.0), EDGE_END_MARK, 10.0),
+                point(30.0, 0.0, (60.0, 0.0), EDGE_END_MARK | EDGE_END_HEAD, 4.0),
             ],
             0,
         );
-        assert!(heads.is_empty() && short.len() == 2);
-        assert_eq!(short[1].coordinates[0], 9.0);
+        assert!(!inside[0].visible && !inside[1].visible);
+        assert_eq!(inside[2].coordinates[0], 10.0);
     }
     use super::*;
     use std::collections::HashSet;

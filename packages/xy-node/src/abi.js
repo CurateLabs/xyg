@@ -1564,8 +1564,9 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
 /**
  * Route edges for screen-space, border-aware paint (#33, ABI 368). Same
  * geometry as `graphEdgeRouteSegments` without data-space arrowheads, plus
- * `ends` (3 per segment: start border radius px, end border radius px, flag
- * byte — head 0x40, end shape bits 0-1, start shape bits 2-3).
+ * `ends` (7 per segment: source center minus piece start x/y, source radius
+ * px, target center minus piece start x/y, target radius px, flag byte — head
+ * 0x40, terminal 0x20, target shape bits 0-1, source shape bits 2-3).
  */
 export function graphEdgeRouteEnds(x, y, sources, targets, opts = {}) {
   const xArray = asF64Array(x, "x");
@@ -1590,7 +1591,7 @@ export function graphEdgeRouteEnds(x, y, sources, targets, opts = {}) {
   const outX1 = new Float64Array(cap);
   const outY1 = new Float64Array(cap);
   const outEdgeIndex = new BigUint64Array(cap);
-  const outEnds = new Float64Array(cap * 3);
+  const outEnds = new Float64Array(cap * 7);
   const outN = new BigUint64Array(1);
   const code = xyGraphEdgeRouteEnds(
     toU64(nNodes, "nNodes"),
@@ -1623,7 +1624,7 @@ export function graphEdgeRouteEnds(x, y, sources, targets, opts = {}) {
     x1: outX1.subarray(0, nSeg),
     y1: outY1.subarray(0, nSeg),
     edgeIndex: outEdgeIndex.subarray(0, nSeg),
-    ends: outEnds.subarray(0, nSeg * 3),
+    ends: outEnds.subarray(0, nSeg * 7),
   };
 }
 

@@ -100,7 +100,7 @@ def test_graphforge_simple_path_ships_edge_tooltips_on_trace():
     # One shaft per straight edge; arrowheads are drawn in screen space from
     # the Rust edge-end flags rather than routed as data-space wings (#33).
     assert len(edge_trace.tooltip_rows) == len(meta["render_edge_index"]) == 2
-    assert [int(flag) & 0x40 for flag in edge_trace.style_channels["edge_ends"].values[:, 2]] == [
+    assert [int(flag) & 0x40 for flag in edge_trace.style_channels["edge_ends"].values[:, 6]] == [
         0x40,
         0x40,
     ]

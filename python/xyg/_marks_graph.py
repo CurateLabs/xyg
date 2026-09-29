@@ -139,7 +139,7 @@ def graph(
         style=style,
     )
     self.traces[-1].style_channels["edge_ends"] = channels.StyleChannel(
-        values=np.ascontiguousarray(edge_ends, dtype=np.float64), components=3
+        values=np.ascontiguousarray(edge_ends, dtype=np.float64), components=7
     )
     self.scatter(
         px,

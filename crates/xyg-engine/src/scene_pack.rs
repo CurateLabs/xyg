@@ -83,8 +83,8 @@ pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
 pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
 pub const FLAG_JOINED_FILL: u8 = 1 << 3;
-/// `segments` columns `x`/`y`/`base` carry per-segment start radius px, end
-/// radius px, and an end flag byte (`edge_route::EDGE_END_*`) (#33).
+/// A `segments` trace's `base` column carries `edge_route::EDGE_ENDS_STRIDE`
+/// values per segment (node center deltas, radii px, flag byte) (#33).
 pub const FLAG_EDGE_ENDS: u8 = 1 << 4;
 const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER
     | FLAG_HEATMAP_PAINTED
@@ -383,12 +383,9 @@ pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, 
             pack(&[input.x0, input.y0, input.x1, input.y1])
         }
         PACK_EDGE_SEGMENT => {
-            // x/y/base carry start radius, end radius, and end flags (#33).
-            let columns = [
-                input.x0, input.y0, input.x1, input.y1, input.x, input.y, input.base,
-            ];
-            require_used(&columns)?;
-            pack(&columns)
+            // `base` carries EDGE_ENDS_STRIDE values per segment (#33).
+            require_used(&[input.x0, input.y0, input.x1, input.y1])?;
+            pack(&[input.x0, input.y0, input.x1, input.y1, input.base])
         }
         PACK_BAND => {
             require_used(&[input.x, input.y, input.base])?;
@@ -678,14 +675,21 @@ fn pack_quad(
 /// pass can trim to the node outline and add the arrowhead (#33).
 fn pack_edge_segment(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
     use crate::edge_route::{
-        EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK, EDGE_SEGMENT_FLAG_MASK,
-        EDGE_START_SHAPE_SHIFT,
+        EDGE_ENDS_STRIDE, EDGE_END_HEAD, EDGE_END_MARK, EDGE_END_SHAPE_MASK, EDGE_END_TERMINAL,
+        EDGE_SEGMENT_FLAG_MASK, EDGE_START_SHAPE_SHIFT,
     };
-    let cols = require_cols(input.columns, 7)?;
+    let cols = require_cols(input.columns, 4)?;
     require_finite(cols)?;
-    let mut out = Vec::with_capacity(cols[0].len() * 2);
-    for index in 0..cols[0].len() {
-        let (r0, r1, bits) = (cols[4][index], cols[5][index], cols[6][index]);
+    let n = cols[0].len();
+    let ends = input.columns.get(4).ok_or(PackError::Length)?;
+    if ends.len() != n.checked_mul(EDGE_ENDS_STRIDE).ok_or(PackError::Limit)? {
+        return Err(PackError::Length);
+    }
+    require_finite(&[ends])?;
+    let mut out = Vec::with_capacity(n * 2);
+    for index in 0..n {
+        let row = &ends[index * EDGE_ENDS_STRIDE..(index + 1) * EDGE_ENDS_STRIDE];
+        let (r0, r1, bits) = (row[2], row[5], row[6]);
         if r0 < 0.0 || r1 < 0.0 || bits < 0.0 || bits > 255.0 || bits.fract() != 0.0 {
             return Err(PackError::Length);
         }
@@ -694,16 +698,27 @@ fn pack_edge_segment(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, P
             return Err(PackError::Length);
         }
         let start_shape = (bits >> EDGE_START_SHAPE_SHIFT) & EDGE_END_SHAPE_MASK;
-        let end = bits & (EDGE_END_HEAD | EDGE_END_SHAPE_MASK);
+        let end = bits & (EDGE_END_HEAD | EDGE_END_TERMINAL | EDGE_END_SHAPE_MASK);
+        let (ax, ay) = (cols[0][index], cols[1][index]);
         let stable_id = split_id(input.trace_id, index)?;
-        for (x, y, radius, symbol) in [
+        // Each endpoint row carries its node's absolute center in x1/y1.
+        for (x, y, cx, cy, radius, symbol) in [
             (
-                cols[0][index],
-                cols[1][index],
+                ax,
+                ay,
+                ax + row[0],
+                ay + row[1],
                 r0,
                 EDGE_END_MARK | start_shape,
             ),
-            (cols[2][index], cols[3][index], r1, EDGE_END_MARK | end),
+            (
+                cols[2][index],
+                cols[3][index],
+                ax + row[3],
+                ay + row[4],
+                r1,
+                EDGE_END_MARK | end,
+            ),
         ] {
             push_row(
                 &mut out,
@@ -716,8 +731,8 @@ fn pack_edge_segment(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, P
                     diameter: radius,
                     x0: x,
                     y0: y,
-                    x1: 0.0,
-                    y1: 0.0,
+                    x1: cx,
+                    y1: cy,
                 },
             )?;
         }
@@ -1160,71 +1175,55 @@ mod tests {
 
     #[test]
     fn edge_segment_pack_emits_two_flagged_endpoint_rows() {
-        let x0 = [0.0];
-        let y0 = [0.0];
-        let x1 = [4.0];
-        let y1 = [3.0];
-        let r0 = [4.0];
-        let r1 = [6.0];
-        let flags = [f64::from(0x40 | 1 | (2 << 2))];
-        let rows = pack_product(ProductPackInput {
-            kind: "segments",
-            flags: FLAG_EDGE_ENDS,
-            step_mode: 0,
-            symbol: 0,
-            style_ref: 2,
-            trace_id: 5,
-            diameter: 0.0,
-            extra0: 0.0,
-            extra1: 0.0,
-            x: &r0,
-            y: &r1,
-            x0: &x0,
-            y0: &y0,
-            x1: &x1,
-            y1: &y1,
-            base: &flags,
-        })
-        .expect("edge pack");
-        assert_eq!(rows.len(), 2);
-        assert_eq!(packed_row_count(PACK_EDGE_SEGMENT, 1), Ok(2));
-        assert_eq!(
-            (rows[0].x0, rows[0].y0, rows[0].diameter, rows[0].symbol),
-            (0.0, 0.0, 4.0, 0x80 | 2)
-        );
-        assert_eq!(
-            (rows[1].x0, rows[1].y0, rows[1].diameter, rows[1].symbol),
-            (4.0, 3.0, 6.0, 0x80 | 0x40 | 1)
-        );
-        assert!(rows
-            .iter()
-            .all(|row| row.stable_id == 5 << 32 && row.expansion_mode == EXP_EDGE_SEGMENT));
-        // Unknown flag bits, negative radii, and non-segment kinds are rejected.
-        for (flag, radius, kind) in [
-            (128.0, 1.0, "segments"),
-            (0.0, -1.0, "segments"),
-            (0.0, 1.0, "line"),
-        ] {
-            let result = pack_product(ProductPackInput {
+        let (x0, y0, x1, y1) = ([1.0], [1.0], [4.0], [3.0]);
+        // Source center (0,0) and target center (5,4) as deltas from (1,1).
+        let flags = f64::from(0x40 | 0x20 | 1 | (2 << 2));
+        let ends = [-1.0, -1.0, 4.0, 4.0, 3.0, 6.0, flags];
+        let pack = |ends: &[f64], kind| {
+            pack_product(ProductPackInput {
                 kind,
                 flags: FLAG_EDGE_ENDS,
                 step_mode: 0,
                 symbol: 0,
-                style_ref: 0,
-                trace_id: 1,
+                style_ref: 2,
+                trace_id: 5,
                 diameter: 0.0,
                 extra0: 0.0,
                 extra1: 0.0,
-                x: &[radius],
-                y: &r1,
+                x: &[],
+                y: &[],
                 x0: &x0,
                 y0: &y0,
                 x1: &x1,
                 y1: &y1,
-                base: &[flag],
-            });
-            assert!(result.is_err());
-        }
+                base: ends,
+            })
+        };
+        let rows = pack(&ends, "segments").expect("edge pack");
+        assert_eq!(rows.len(), 2);
+        assert_eq!(packed_row_count(PACK_EDGE_SEGMENT, 1), Ok(2));
+        let row0 = (rows[0].x0, rows[0].y0, rows[0].x1, rows[0].y1);
+        assert_eq!(row0, (1.0, 1.0, 0.0, 0.0));
+        assert_eq!((rows[0].diameter, rows[0].symbol), (4.0, 0x80 | 2));
+        let row1 = (rows[1].x0, rows[1].y0, rows[1].x1, rows[1].y1);
+        assert_eq!(row1, (4.0, 3.0, 5.0, 4.0));
+        assert_eq!(
+            (rows[1].diameter, rows[1].symbol),
+            (6.0, 0x80 | 0x40 | 0x20 | 1)
+        );
+        assert!(rows
+            .iter()
+            .all(|row| row.stable_id == 5 << 32 && row.expansion_mode == EXP_EDGE_SEGMENT));
+        // Unknown flag bits, negative radii, short ends, and non-segment kinds
+        // are rejected.
+        let mut bad_flag = ends;
+        bad_flag[6] = 128.0;
+        let mut bad_radius = ends;
+        bad_radius[2] = -1.0;
+        assert!(pack(&bad_flag, "segments").is_err());
+        assert!(pack(&bad_radius, "segments").is_err());
+        assert!(pack(&ends[..6], "segments").is_err());
+        assert!(pack(&ends, "line").is_err());
     }
     use super::*;
 

@@ -453,15 +453,19 @@ marks keep the authored-domain requirement. The flag is a new bit in the
 unchanged XYEP v1 envelope (no C-signature change).
 Graph edge ends (#33): hosts set XYCL prefix byte 3 bit 0
 (`XYCL_EDGE_ENDS`) on a cartesian `segments` trace and ship its `base`
-column as interleaved (start radius px, end radius px, flag byte) triples.
+column as `edge_route::EDGE_ENDS_STRIDE` (7) values per segment (node
+center deltas, radii px, flag byte).
 Rust maps that to XYPK `FACT_EDGE_ENDS` → pack kind `PACK_EDGE_SEGMENT`,
 which emits two Polyline rows per segment in expansion mode 13
-(`EdgeSegment`), each keeping its node border radius in `diameter` and an
-`edge_route::EDGE_END_*` flag byte in `symbol` (the only Polyline records
-allowed nonzero diameter/symbol). At encode, `prepared_mark_records` trims
-each pair to the node outlines in pixel space and appends a 3-point filled
-PolyFill arrowhead styled by a derived solid style (edge stroke color, zero
-width) appended after arrow/callout styles; the flags and radii are consumed,
+(`EdgeSegment`), each keeping its node's absolute center in `x1`/`y1`, its
+border radius in `diameter`, and an `edge_route::EDGE_END_*` flag byte in
+`symbol` (the only Polyline records allowed nonzero diameter/symbol/x1/y1).
+At encode, `prepared_mark_records` projects those centers and
+`edge_route::clip_edge_piece` clips each pair against both node outlines in
+pixel space; the piece entering the target (or a terminal piece whose shaft
+misses it) gains a 3-point filled PolyFill arrowhead styled by a derived
+solid style (edge stroke color, zero width) appended after arrow/callout
+styles, and a shaft is only shortened when its head fits in the Scene; the flags and radii are consumed,
 so the encoded Scene v12 record/style formats and every consumer (SVG,
 raster, browser painter) are unchanged. The WebGL segment shader mirrors the
 same rule (graph-mark.md §7). Heatmap and contour lattices carry

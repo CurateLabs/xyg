@@ -920,7 +920,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       x1: edgeSegments.x1,
       y1: edgeSegments.y1,
       // Border radii + flags per segment (#33); geometry, not per-item paint.
-      style_channels: { edge_ends: { values: Float64Array.from(edgeEnds), components: 3, dtype: "f32" } },
+      style_channels: { edge_ends: { values: Float64Array.from(edgeEnds), components: 7, dtype: "f32" } },
       style: {
         color: typeof edgeColor === "string" ? edgeColor : "#888888",
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
