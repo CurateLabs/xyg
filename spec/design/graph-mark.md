@@ -505,8 +505,8 @@ budget, greedily rejects overlapping screen boxes, and emits final position,
 font, paint, text, and source identity. Browser, SVG, and raster consumers do
 not repeat acceptance, collision, or truncation. The canonical native compound
 Scene seam is exposed in ABI 89 as `xyg_graph_compound_scene`; thin Python and
-Node authoring helpers pass exact source planes and receive canonical Scene v12
-bytes. Parent, validity, and collapse planes must each equal node count; short
+Node authoring helpers pass exact source planes and receive canonical Scene
+bytes (current `SCENE_VERSION`). Parent, validity, and collapse planes must each equal node count; short
 and trailing values fail closed before traversal. The seam additionally accepts strict parent-validity and collapse planes.
 Rust validates the entire acyclic forest before output, leaves a collapsed
 group visible, hides all descendants, maps crossing edges to the nearest
@@ -564,7 +564,7 @@ the 1,024-element ingress ceiling, then transfers canonical f64 coordinates,
 u64 endpoints, semantic planes, and exact compound planes. Rust resolves the
 compound forest and node/edge paint, expands
 halo rings, screen-space dash spans, and arrowheads, and emits at most 1,024
-painter traces plus bounded label primitives in canonical Scene v12. Source-indexed semantic planes are
+painter traces plus bounded label primitives in the canonical Scene. Source-indexed semantic planes are
 rejected for aggregate LOD rather than being attached to cluster identities.
 The same Scene bytes drive direct-WASM WebGL, native SVG, and native
 raster/PNG, including the Rust-ordered `Class`, `Epistemic`, and `Status`
@@ -578,15 +578,62 @@ rejects viewports above 16,384 px per side and charges every expanded primitive
 before allocation or append. The Scene also carries opaque theme-owned chart
 and plot backgrounds plus axis/grid/label chrome for both light and dark.
 
-Application-facing Python/Node composition mapping names and
-aggregate-specific semantic summaries remain follow-up work; aggregate
+Aggregate-specific semantic summaries remain follow-up work; aggregate
 omission is already enforced at this seam.
+
+#### 7.1.2 Public semantic mapping on the composed graph mark (#34)
+
+The public composition API names the v1 planes directly. Python
+`graph(...)` / `graph_chart(...)` accept `node_class`, `node_epistemic`,
+`node_status`, `node_metric`, `edge_class`, `edge_epistemic`, `edge_status`,
+`edge_metric`, and `theme` (`"light"` | `"dark"`); Node `graph` /
+`graphChart` accept the camelCase names (`nodeClass`, …, `theme`) and the
+snake-case aliases. Each is an array or a validated node/edge column name.
+Codes are exact integers `0..=7`; an unset code plane is all zeros and an
+unset metric is all zeros. Unknown columns, non-integer or out-of-range codes,
+length mismatches, unknown themes, and mixing semantic fields with explicit
+node `color`/`size` or `edge_color` all fail closed before layout output.
+
+Hosts call `xyg_graph_semantic_style_resolve` once per side over **source**
+rows (nodes with the §7.1 visual-state flags from `visual_state_flags`; edges
+with zero flags) and never compute palette, scale, or state policy. Resolving
+over every source edge keeps the metric domain the source domain, so an
+EdgeSample tier does not rescale kept edge widths. The resolved rows map onto
+the existing painter channels:
+
+| Resolved field | Composed paint |
+|---|---|
+| node `fill_rgba` | scatter direct-RGBA fill |
+| node `stroke_rgba`, `width` | scatter direct-RGBA stroke, per-node stroke width |
+| node `size` (px diameter) | per-node size with an identity pixel mapping; also the border radius for Rust edge trims |
+| node `shape` (`class % 6`) | per-node symbol (circle, square, diamond, triangle, cross, hexagon); also the edge-trim outline code |
+| node/edge `opacity` | per-item opacity (renderer uniform stays 1) |
+| edge `stroke_rgba`, `width` | per-segment direct-RGBA color and width, gathered through the render-edge membership and expanded across routed segments |
+
+Source rows paint only where render identity is exact: nodes when the render
+graph keeps every node (Direct, EdgeSample), edges when every render edge has
+exactly one member (§28 membership). Under Aggregate LOD that side is omitted.
+Every styled graph records `spec.graph.style_contract` =
+`{version: 1, theme, nodes, edges, pending_layers, node_metric_domain?,
+edge_metric_domain?}` with `nodes`/`edges` one of `"resolved"`,
+`"omitted:aggregate"`, or `null` (not requested), and `pending_layers` =
+`node_halo`, `edge_halo`, `edge_class_body`, `edge_dash`, `edge_arrow_policy`:
+v1 layers the canonical semantic Scene paints but the composed mark does not
+paint yet. Hosts and clients must not treat pending layers as drawn. Static
+SVG/PNG export of a semantically styled composed graph fails closed with
+`XYG_SCENE_UNSUPPORTED_GRADIENT` (per-item paint is not admitted by the static
+Scene route yet) in both hosts; interactive HTML, notebook, and Reflex output
+paint it. `tests/test_graph_semantic_mapping.py` pins the painted values in
+`tests/fixtures/graph_semantic_mapping_cross_host.json` across Direct,
+curved, EdgeSample, and Aggregate cases; `packages/xy-node/test/graph.test.mjs`
+asserts the same fixture, and a browser probe reads the resolved fills back
+from WebGL.
 
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,
 epistemic, and status values; selected and pinned state; node and edge labels;
 a transitive collapsed hierarchy; a boundary edge; an internal omitted edge;
-and a self-loop. Exact SHA-256 goldens cover Scene v22, browser-painter bytes,
+and a self-loop. Exact SHA-256 goldens cover the canonical Scene, browser-painter bytes,
 SVG, raster commands, and PNG in light and dark themes. The native evidence
 asserts preserved node/edge source IDs, collapse remapping, omitted descendants,
 accepted label output, and non-flat raster output. The browser smoke reuses

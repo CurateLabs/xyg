@@ -41,6 +41,15 @@ def graph(
     label_budget: int = 64,
     label_priority_floor: float | None = None,
     visual_state_flags: Union[str, ArrayLike, None] = None,
+    node_class: Union[str, ArrayLike, None] = None,
+    node_epistemic: Union[str, ArrayLike, None] = None,
+    node_status: Union[str, ArrayLike, None] = None,
+    node_metric: Union[str, ArrayLike, None] = None,
+    edge_class: Union[str, ArrayLike, None] = None,
+    edge_epistemic: Union[str, ArrayLike, None] = None,
+    edge_status: Union[str, ArrayLike, None] = None,
+    edge_metric: Union[str, ArrayLike, None] = None,
+    theme: str = "light",
 ) -> "Figure":
     """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
 
@@ -52,6 +61,17 @@ def graph(
     ``from_graphforge_tables`` (pass ``GraphData`` as ``nodes`` and omit
     ``edges``), or canonical GraphForge tables with ``node_uuid`` /
     ``edge_uuid`` columns.
+
+    ``node_class`` / ``node_epistemic`` / ``node_status`` (integer codes 0-7)
+    and ``node_metric`` (numbers), plus the ``edge_*`` equivalents, may be
+    arrays or column names. When any is given for a side, Rust resolves the
+    versioned GraphForge semantic style contract (v1; ``theme`` ``"light"`` or
+    ``"dark"``; node states from ``visual_state_flags``) and the mark paints the
+    resolved node fill, stroke, stroke width, size, shape, and opacity and the
+    edge color, width, and opacity. Semantic fields replace ``color`` / ``size``
+    / ``symbol`` (nodes) and ``edge_color`` / ``edge_width`` (edges). They are
+    indexed by source row, so they paint where render identity is exact and are
+    omitted (and recorded in ``style_contract``) under Aggregate LOD.
     """
     from . import _graph, _native, channels
     from ._channels_lut import normalize_to_unit
@@ -65,6 +85,23 @@ def graph(
     node_label = _graph.resolve_encoding_values(data, node_label, where="node")
     label_priority = _graph.resolve_encoding_values(data, label_priority, where="node")
     visual_state_flags = _graph.resolve_encoding_values(data, visual_state_flags, where="node")
+    if visual_state_flags is None:
+        visual_state_flags = data.node_attrs.get(
+            "visual_state_flags",
+            data.node_attrs.get("state_flags", np.zeros(data.n_nodes, dtype=np.uint32)),
+        )
+    node_fields = _semantic_fields(
+        data, "node", node_class, node_epistemic, node_status, node_metric
+    )
+    edge_fields = _semantic_fields(
+        data, "edge", edge_class, edge_epistemic, edge_status, edge_metric
+    )
+    if node_fields is not None and (color is not None or size is not None):
+        raise ValueError("graph node semantic fields replace color= and size=")
+    if edge_fields is not None and edge_color is not None:
+        raise ValueError("graph edge semantic fields replace edge_color=")
+    if theme not in ("light", "dark"):
+        raise ValueError(f"graph theme must be 'light' or 'dark', got {theme!r}")
     px, py, meta = _graph.run_layout(
         data,
         layout=layout,
@@ -82,18 +119,61 @@ def graph(
     curve = str(edge_curve or "straight").strip().lower()
     if curve not in ("straight", "curve"):
         raise ValueError(f"graph edge_curve must be 'straight' or 'curve', got {edge_curve!r}")
+    # Semantic styling (#34): Rust resolves the v1 contract per source row;
+    # rows paint only where render identity is exact.
+    style_contract: dict[str, Any] | None = None
+    node_style: dict[str, Any] | None = None
+    edge_style: dict[str, Any] | None = None
+    if node_fields is not None or edge_fields is not None:
+        style_contract = {"version": 1, "theme": theme, "nodes": None, "edges": None}
+        style_contract["pending_layers"] = list(SEMANTIC_PENDING_LAYERS)
+    if node_fields is not None and style_contract is not None:
+        if len(px) != data.n_nodes:
+            style_contract["nodes"] = "omitted:aggregate"
+        else:
+            flags = _node_flags(visual_state_flags, data.n_nodes)
+            resolved = _native.graph_semantic_styles(*node_fields, flags, theme=theme)
+            node_style = _node_paint(resolved)
+            style_contract["nodes"] = "resolved"
+            style_contract["node_metric_domain"] = list(resolved["metric_domain"])
+    if edge_fields is not None and style_contract is not None:
+        member_offsets = np.asarray(meta["render_edge_member_offsets"], dtype=np.intp)
+        if not bool(np.all(np.diff(member_offsets) == 1)):
+            style_contract["edges"] = "omitted:aggregate"
+        else:
+            members = np.asarray(meta["render_edge_members"], dtype=np.intp)
+            rows = members[member_offsets[:-1]]
+            # Resolve every source edge so the metric domain is the source
+            # domain (EdgeSample must not rescale widths), then gather rows.
+            no_flags = np.zeros(len(edge_fields[0]), dtype=np.uint32)
+            resolved = _native.graph_semantic_styles(*edge_fields, no_flags, edge=True, theme=theme)
+            edge_style = {
+                "color": resolved["stroke_rgba"][rows].astype(np.float64) / 255.0,
+                "width": resolved["width"][rows].astype(np.float64),
+                "opacity": resolved["opacity"][rows].astype(np.float64),
+            }
+            edge_color, edge_width = edge_style["color"], edge_style["width"]
+            style_contract["edges"] = "resolved"
+            style_contract["edge_metric_domain"] = list(resolved["metric_domain"])
+    if node_style is not None:
+        color, size, symbol = node_style["color"], node_style["size"], node_style["symbol"]
+    size_range = node_style["size_range"] if node_style is not None else (2.0, 18.0)
     # Border-aware ends (#33): Rust trims each edge to its nodes' outlines and
     # places arrowheads in screen space, so it needs each node's on-screen
     # radius (the same size mapping the node scatter ships) and outline.
-    node_size = channels.resolve_size(size if size is not None else 8.0, len(px))
+    node_size = channels.resolve_size(
+        size if size is not None else 8.0, len(px), range_px=size_range
+    )
     if node_size.mode == "continuous" and node_size.values is not None and node_size.domain:
         lo, hi = node_size.range_px
         unit = normalize_to_unit(node_size.values, node_size.domain)
         node_diameter = lo + (hi - lo) * np.nan_to_num(unit, nan=0.0)
     else:
         node_diameter = np.full(len(px), float(node_size.constant))
-    node_symbol = np.full(
-        len(px), SYMBOL_CODES.get(symbol, 0) if isinstance(symbol, str) else 0, dtype=np.uint8
+    node_symbol = (
+        np.full(len(px), SYMBOL_CODES.get(symbol, 0), dtype=np.uint8)
+        if isinstance(symbol, str)
+        else np.asarray([SYMBOL_CODES.get(str(v), 0) for v in np.ravel(symbol)], dtype=np.uint8)
     )
     x0, y0, x1, y1, render_edge_index, edge_ends = _native.graph_edge_route_ends(
         px,
@@ -135,7 +215,9 @@ def graph(
         name=edge_name,
         color=edge_color_paint,
         width=edge_width_paint,
-        opacity=opacity,
+        opacity=opacity
+        if edge_style is None
+        else _expand_edge_values(edge_style["opacity"], "edge opacity"),
         style=style,
     )
     self.traces[-1].style_channels["edge_ends"] = channels.StyleChannel(
@@ -147,8 +229,11 @@ def graph(
         name=node_name,
         color=color,
         size=size if size is not None else 8.0,
-        opacity=opacity,
+        size_range=size_range,
+        opacity=opacity if node_style is None else node_style["opacity"],
         symbol=symbol,
+        stroke=None if node_style is None else node_style["stroke"],
+        stroke_width=0.0 if node_style is None else node_style["stroke_width"],
         style=style,
     )
     # Edge identity follows Rust's render-edge membership, not a count match
@@ -203,6 +288,7 @@ def graph(
         "csr_offsets": offsets.astype(np.uint64).tolist(),
         "csr_neighbors": neighbors.astype(np.uint64).tolist(),
         "node_symbol": symbol if isinstance(symbol, str) else "circle",
+        **({} if style_contract is None else {"style_contract": style_contract}),
         "edge_curve": curve,
         "tier_name": ("direct", "edge_sample", "aggregate")[min(int(tier), 2)],
         "node_trace": len(self.traces) - 1,
@@ -264,16 +350,7 @@ def graph(
             if keep
         ):
             raise ValueError("accepted graph labels are limited to 4096 UTF-8 bytes each")
-        if visual_state_flags is None:
-            visual_state_flags = data.node_attrs.get(
-                "visual_state_flags",
-                data.node_attrs.get("state_flags", np.zeros(data.n_nodes, dtype=np.uint32)),
-            )
-        flags = np.asarray(visual_state_flags)
-        if flags.ndim == 0:
-            flags = np.full(data.n_nodes, flags.item())
-        if flags.ndim != 1 or len(flags) != data.n_nodes:
-            raise ValueError("graph visual_state_flags must match node count")
+        flags = _node_flags(visual_state_flags, data.n_nodes)
         states = _native.graph_visual_states(flags)
         graph_meta.update(
             {
@@ -328,3 +405,74 @@ def graph(
     # Register the identity plane only once the graph fully validated.
     self._graph_edge_identity[graph_meta["edge_trace"]] = edge_identity
     return self
+
+
+# Paint layers of the v1 semantic contract that the composed graph mark does
+# not draw yet (#34); recorded so hosts never mistake them for painted.
+SEMANTIC_PENDING_LAYERS = (
+    "node_halo",
+    "edge_halo",
+    "edge_class_body",
+    "edge_dash",
+    "edge_arrow_policy",
+)
+_SHAPE_SYMBOLS = ("circle", "square", "diamond", "triangle", "cross", "hexagon")
+
+
+def _semantic_fields(
+    data: Any, where: str, classes, epistemic, statuses, metric
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None:
+    """Source-row semantic columns for one side, or ``None`` when unset."""
+    from . import _graph
+
+    raw = (classes, epistemic, statuses, metric)
+    if all(value is None for value in raw):
+        return None
+    n = data.n_nodes if where == "node" else len(data.sources)
+    out = []
+    for index, value in enumerate(raw):
+        value = _graph.resolve_encoding_values(data, value, where=where)
+        label = ("class", "epistemic", "status", "metric")[index]
+        if isinstance(value, str):
+            raise ValueError(f"graph {where}_{label} names unknown {where} column {value!r}")
+        if value is None:
+            arr = np.zeros(n, dtype=np.float64 if index == 3 else np.uint8)
+        elif index == 3:
+            arr = np.asarray(value, dtype=np.float64)
+        else:
+            arr = np.asarray(value)
+            if arr.dtype.kind not in "iu" or arr.dtype == np.bool_:
+                raise ValueError(f"graph {where}_{label} must be integer codes 0..7")
+        if arr.ndim == 0:
+            arr = np.full(n, arr.item(), dtype=arr.dtype)
+        if arr.ndim != 1 or len(arr) != n:
+            raise ValueError(f"graph {where}_{label} must match {where} count {n}")
+        out.append(arr)
+    return out[0], out[1], out[2], out[3]
+
+
+def _node_flags(visual_state_flags: Any, n: int) -> np.ndarray:
+    flags = np.asarray(visual_state_flags)
+    if flags.ndim == 0:
+        flags = np.full(n, flags.item())
+    if flags.ndim != 1 or len(flags) != n:
+        raise ValueError("graph visual_state_flags must match node count")
+    return flags
+
+
+def _node_paint(resolved: dict[str, Any]) -> dict[str, Any]:
+    """Map resolved node rows onto the scatter mark's existing channels."""
+    sizes = resolved["size"].astype(np.float64)
+    lo = float(sizes.min()) if len(sizes) else 8.0
+    hi = float(sizes.max()) if len(sizes) else 8.0
+    # Identity size mapping: an array spanning [lo, hi] onto range [lo, hi]
+    # paints exact pixels; a constant array collapses to one scalar.
+    return {
+        "color": resolved["fill_rgba"].astype(np.float64) / 255.0,
+        "stroke": resolved["stroke_rgba"].astype(np.float64) / 255.0,
+        "stroke_width": resolved["width"].astype(np.float64),
+        "opacity": resolved["opacity"].astype(np.float64),
+        "size": sizes if hi > lo else lo,
+        "size_range": (lo, hi) if hi > lo else (2.0, 18.0),
+        "symbol": [_SHAPE_SYMBOLS[int(code)] for code in resolved["shape"]],
+    }

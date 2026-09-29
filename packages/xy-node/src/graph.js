@@ -20,6 +20,7 @@ import {
   graphProjectionRead,
   graphCompoundBounds,
   graphLabelAccept,
+  graphSemanticStyles,
   graphVisualStates,
 } from "./abi.js";
 import { resolveColorChannel } from "./color.js";
@@ -501,7 +502,9 @@ export function runLayout(data, opts = {}) {
     loopRadius: opts.loopRadius ?? 0.35,
     curved: edgeCurve === "curve",
     nodeRadiusPx,
-    nodeSymbol: new Uint8Array(rx.length).fill(GRAPH_NODE_SHAPE_CODES[opts.symbol] ?? 0),
+    nodeSymbol: opts.nodeShapeCodes != null && opts.nodeShapeCodes.length === rx.length
+      ? opts.nodeShapeCodes
+      : new Uint8Array(rx.length).fill(GRAPH_NODE_SHAPE_CODES[opts.symbol] ?? 0),
   });
   const edgeSegments = {
     x0: routed.x0,
@@ -761,6 +764,42 @@ function resolveEncodingValues(data, values, where = "node") {
  * @param {Iterable|object} [edges]
  * @param {object} [opts]
  */
+/** v1 semantic paint layers the composed graph mark does not draw yet (#34);
+ * mirrors Python `SEMANTIC_PENDING_LAYERS` in python/xyg/_marks_graph.py. */
+export const GRAPH_SEMANTIC_PENDING_LAYERS = Object.freeze([
+  "node_halo",
+  "edge_halo",
+  "edge_class_body",
+  "edge_dash",
+  "edge_arrow_policy",
+]);
+const GRAPH_SEMANTIC_SHAPES = ["circle", "square", "diamond", "triangle", "cross", "hexagon"];
+
+/** Source-row semantic columns for one graph side, or null when unset (#34). */
+function graphSemanticFields(data, where, raw) {
+  if (raw.every((value) => value == null)) return null;
+  const attrs = where === "node" ? data.nodeAttrs : data.edgeAttrs;
+  const n = where === "node" ? data.ids.length : data.sources.length;
+  const labels = ["class", "epistemic", "status", "metric"];
+  return raw.map((value, index) => {
+    const label = `graph ${where}_${labels[index]}`;
+    if (typeof value === "string") {
+      if (attrs == null || !Object.hasOwn(attrs, value)) {
+        throw new RangeError(`${label} names unknown ${where} column ${JSON.stringify(value)}`);
+      }
+      value = attrs[value];
+    }
+    if (value == null) return index === 3 ? new Float64Array(n) : new Uint8Array(n);
+    const rows = typeof value === "number" ? new Array(n).fill(value) : Array.from(value);
+    if (rows.length !== n) throw new RangeError(`${label} must match ${where} count ${n}`);
+    if (index === 3) return Float64Array.from(rows, Number);
+    if (!rows.every((code) => Number.isInteger(Number(code)) && typeof code !== "boolean")) {
+      throw new RangeError(`${label} must be integer codes 0..7`);
+    }
+    return rows.map(Number);
+  });
+}
+
 export function composeGraph(nodes, edges, opts = {}) {
   let resolvedOpts = opts;
   let resolvedEdges = edges;
@@ -806,11 +845,51 @@ export function composeGraph(nodes, edges, opts = {}) {
     resolvedOpts.edgeColor ?? resolvedOpts.edge_color,
     "edge",
   );
-  const sizeOpt = resolveEncodingValues(data, resolvedOpts.size, "node");
+  const semanticOpt = (camel, snake) => resolvedOpts[camel] ?? resolvedOpts[snake];
+  const nodeFields = graphSemanticFields(data, "node", [
+    semanticOpt("nodeClass", "node_class"),
+    semanticOpt("nodeEpistemic", "node_epistemic"),
+    semanticOpt("nodeStatus", "node_status"),
+    semanticOpt("nodeMetric", "node_metric"),
+  ]);
+  const edgeFields = graphSemanticFields(data, "edge", [
+    semanticOpt("edgeClass", "edge_class"),
+    semanticOpt("edgeEpistemic", "edge_epistemic"),
+    semanticOpt("edgeStatus", "edge_status"),
+    semanticOpt("edgeMetric", "edge_metric"),
+  ]);
+  if (nodeFields != null && (resolvedOpts.color != null || resolvedOpts.size != null)) {
+    throw new RangeError("graph node semantic fields replace color and size");
+  }
+  if (edgeFields != null && edgeColor != null) {
+    throw new RangeError("graph edge semantic fields replace edgeColor");
+  }
+  const theme = resolvedOpts.theme ?? "light";
+  if (theme !== "light" && theme !== "dark") {
+    throw new RangeError(`graph theme must be 'light' or 'dark', got ${JSON.stringify(theme)}`);
+  }
+  const resolveNodeAttr = (value) =>
+    typeof value === "string" && Object.hasOwn(data.nodeAttrs, value) ? data.nodeAttrs[value] : value;
+  const rawFlags = resolveNodeAttr(
+    resolvedOpts.visualStateFlags ?? resolvedOpts.visual_state_flags,
+  ) ?? data.nodeAttrs.visual_state_flags ?? data.nodeAttrs.state_flags ?? new Uint32Array(data.ids.length);
+  const nodeFlags = typeof rawFlags === "number"
+    ? new Uint32Array(data.ids.length).fill(rawFlags)
+    : rawFlags;
+  // Semantic styling (#34): Rust resolves the v1 contract per source row; rows
+  // paint only where render identity is exact (checked after layout).
+  const nodeSemantic = nodeFields == null
+    ? null
+    : graphSemanticStyles(...nodeFields, nodeFlags, { theme });
+  const sizeOpt = nodeSemantic != null
+    ? nodeSemantic.size
+    : resolveEncodingValues(data, resolvedOpts.size, "node");
   // Node marker diameters (px) for edge trimming, mapped exactly as the node
   // scatter ships them (array sizes span range_px [8, 22] over their domain).
   let nodeDiameterPx = null;
-  if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
+  if (nodeSemantic != null) {
+    nodeDiameterPx = Float64Array.from(nodeSemantic.size);
+  } else if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
     const values = Float64Array.from(sizeOpt, Number);
     const mm = minMax(values) ?? [0, 1];
     const lo = mm[0];
@@ -821,6 +900,7 @@ export function composeGraph(nodes, edges, opts = {}) {
   const { nodePositions, edgeSegments, edgeEnds, meta, edgeMembership } = runLayout(data, {
     ...resolvedOpts,
     nodeDiameterPx,
+    nodeShapeCodes: nodeSemantic?.shape ?? null,
     nodeDiameter: sizeOpt != null && !Array.isArray(sizeOpt) && !ArrayBuffer.isView(sizeOpt)
       ? Number(sizeOpt)
       : 8,
@@ -830,7 +910,39 @@ export function composeGraph(nodes, edges, opts = {}) {
   const nEdges = edgeSegments.x0.length;
   let styleSize = 8.0;
   let size_ch = resolveSizeChannel(styleSize, nNodes);
-  if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
+  const nodesExact = nNodes === data.ids.length;
+  const styleContract = nodeFields == null && edgeFields == null
+    ? null
+    : {
+      version: 1,
+      theme,
+      nodes: null,
+      edges: null,
+      pending_layers: [...GRAPH_SEMANTIC_PENDING_LAYERS],
+    };
+  let nodePaint = null;
+  if (nodeSemantic != null && !nodesExact) {
+    styleContract.nodes = "omitted:aggregate";
+  } else if (nodeSemantic != null) {
+    styleContract.nodes = "resolved";
+    styleContract.node_metric_domain = [...nodeSemantic.metricDomain];
+    const mm = minMax(Float64Array.from(nodeSemantic.size)) ?? [8, 8];
+    // Identity size mapping: values spanning [lo, hi] onto range [lo, hi]
+    // paint exact pixels; an all-equal array collapses to one constant.
+    size_ch = mm[1] > mm[0]
+      ? { mode: "continuous", values: Float64Array.from(nodeSemantic.size), domain: mm, range_px: mm }
+      : resolveSizeChannel(mm[0], nNodes);
+    nodePaint = {
+      color_ch: { mode: "direct_rgba", rgba: nodeSemantic.fillRgba },
+      stroke_ch: { mode: "direct_rgba", rgba: nodeSemantic.strokeRgba },
+      style_channels: {
+        opacity: { values: Float64Array.from(nodeSemantic.opacity) },
+        symbol: { values: Uint8Array.from(nodeSemantic.shape), dtype: "u8" },
+        stroke_width: { values: Float64Array.from(nodeSemantic.width) },
+      },
+    };
+  }
+  if (nodeSemantic == null && (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt))) {
     const values = sizeOpt instanceof Float64Array
       ? sizeOpt
       : Float64Array.from(sizeOpt, Number);
@@ -848,7 +960,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       domain: [mm[0], mm[0] === mm[1] ? mm[0] + 1 : mm[1]],
       range_px: [8, 22],
     };
-  } else if (sizeOpt != null) {
+  } else if (nodeSemantic == null && sizeOpt != null) {
     styleSize = Number(sizeOpt);
     size_ch = resolveSizeChannel(styleSize, nNodes);
   }
@@ -900,6 +1012,32 @@ export function composeGraph(nodes, edges, opts = {}) {
   ) {
     edgeColorPaint = renderEdgeIndex.map((i) => edgeColor[Number(i)]);
   }
+  let edgePaint = null;
+  if (edgeFields != null && singleMember == null) {
+    styleContract.edges = "omitted:aggregate";
+  } else if (edgeFields != null) {
+    // Resolve every source edge so the metric domain is the source domain
+    // (EdgeSample must not rescale widths), then gather routed segments.
+    const resolved = graphSemanticStyles(...edgeFields, new Uint32Array(edgeFields[0].length), {
+      edge: true,
+      theme,
+    });
+    styleContract.edges = "resolved";
+    styleContract.edge_metric_domain = [...resolved.metricDomain];
+    const rgba = new Uint8Array(nEdges * 4);
+    const width = new Float64Array(nEdges);
+    const opacity = new Float64Array(nEdges);
+    renderEdgeIndex.forEach((renderEdge, segment) => {
+      const row = Number(singleMember[Number(renderEdge)]);
+      rgba.set(resolved.strokeRgba.subarray(row * 4, row * 4 + 4), segment * 4);
+      width[segment] = resolved.width[row];
+      opacity[segment] = resolved.opacity[row];
+    });
+    edgePaint = {
+      color_ch: { mode: "direct_rgba", rgba },
+      style_channels: { width: { values: width }, opacity: { values: opacity } },
+    };
+  }
   // Keep auto-built projection rows for meta even when Aggregate collapses edges.
   const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
@@ -920,15 +1058,21 @@ export function composeGraph(nodes, edges, opts = {}) {
       x1: edgeSegments.x1,
       y1: edgeSegments.y1,
       // Border radii + flags per segment (#33); geometry, not per-item paint.
-      style_channels: { edge_ends: { values: Float64Array.from(edgeEnds), components: 7, dtype: "f32" } },
+      style_channels: {
+        edge_ends: { values: Float64Array.from(edgeEnds), components: 7, dtype: "f32" },
+        ...(edgePaint?.style_channels ?? {}),
+      },
       style: {
         color: typeof edgeColor === "string" ? edgeColor : "#888888",
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
+        ...(edgePaint != null ? { opacity: 1 } : {}),
         ...(resolvedOpts.style ?? {}),
       },
-      ...(edgeColorPaint != null && typeof edgeColorPaint !== "string"
-        ? { color_ch: resolveColorChannel(edgeColorPaint, nEdges, "#888888") }
-        : {}),
+      ...(edgePaint != null
+        ? { color_ch: edgePaint.color_ch }
+        : edgeColorPaint != null && typeof edgeColorPaint !== "string"
+          ? { color_ch: resolveColorChannel(edgeColorPaint, nEdges, "#888888") }
+          : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
     {
@@ -938,12 +1082,19 @@ export function composeGraph(nodes, edges, opts = {}) {
       y: nodePositions.y,
       style: {
         color: typeof nodeColor === "string" ? nodeColor : DEFAULT_MARK_COLOR,
-        symbol: resolvedOpts.symbol ?? "circle",
+        symbol: nodePaint != null ? "circle" : resolvedOpts.symbol ?? "circle",
+        ...(nodePaint != null ? { opacity: 1 } : {}),
         ...(resolvedOpts.style ?? {}),
       },
-      ...(nodeColor != null && typeof nodeColor !== "string"
-        ? { color_ch: resolveColorChannel(nodeColor, nNodes, DEFAULT_MARK_COLOR) }
-        : {}),
+      ...(nodePaint != null
+        ? {
+          color_ch: nodePaint.color_ch,
+          stroke_ch: nodePaint.stroke_ch,
+          style_channels: nodePaint.style_channels,
+        }
+        : nodeColor != null && typeof nodeColor !== "string"
+          ? { color_ch: resolveColorChannel(nodeColor, nNodes, DEFAULT_MARK_COLOR) }
+          : {}),
       size_ch,
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),
     },
@@ -966,6 +1117,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     csr_neighbors: meta.csr_neighbors ? [...meta.csr_neighbors].map(Number) : undefined,
     node_symbol: typeof resolvedOpts.symbol === "string" ? resolvedOpts.symbol : "circle",
     edge_curve: String(resolvedOpts.edgeCurve ?? "straight").trim().toLowerCase(),
+    ...(styleContract != null ? { style_contract: styleContract } : {}),
     tier_name: ["direct", "edge_sample", "aggregate"][Math.min(Number(meta.lod_tier), 2)],
     node_trace: 1,
     edge_trace: 0,
@@ -1012,13 +1164,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     const accepted = graphLabelAccept(priorities, budget, {
       minPriority: resolvedOpts.labelPriorityFloor ?? resolvedOpts.label_priority_floor ?? Number.NaN,
     }).accepted;
-    const rawFlags = resolveNodeOption(
-      resolvedOpts.visualStateFlags ?? resolvedOpts.visual_state_flags,
-    ) ?? data.nodeAttrs.visual_state_flags ?? data.nodeAttrs.state_flags ?? new Uint32Array(nNodes);
-    const flags = typeof rawFlags === "number"
-      ? new Uint32Array(nNodes).fill(rawFlags)
-      : rawFlags;
-    const states = graphVisualStates(flags);
+    const states = graphVisualStates(nodeFlags);
     const encoder = new TextEncoder();
     if (labels.some((label, index) => accepted[index] && encoder.encode(label).length > 4096)) {
       throw new RangeError("accepted graph labels are limited to 4096 UTF-8 bytes each");
