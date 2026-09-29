@@ -181,7 +181,18 @@ jobs:
             --chrome "$XYG_CHROMIUM" \
             --output "hosted-stream-density-browser-${{ github.sha }}.json"
           .venv/bin/python scripts/verify_stream_density_browser_benchmark.py "hosted-stream-density-browser-${{ github.sha }}.json" --sha "${{ github.sha }}"
+      - name: Graph scale evidence (every tier plus LOD-decision rows)
+        # Its own step so a slow or failing 1M browser probe cannot block the
+        # authored-Scene and density evidence above from uploading (#33).
+        run: |
+          XYG_CHROMIUM="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
+          .venv/bin/python benchmarks/bench_graph_scale.py --profile evidence \
+            --chromium "$XYG_CHROMIUM" --reps 8 --probe-timeout 1800 \
+            --out "graph-scale-${{ github.sha }}.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "graph-scale-${{ github.sha }}.json" \
+            --kind graph-scale --expect-commit "${{ github.sha }}"
       - name: Upload SHA-keyed raw authored-Scene evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: authored-scene-browser-${{ github.sha }}
@@ -190,6 +201,7 @@ jobs:
             authored-scene-browser-${{ github.sha }}.json
             hosted-density-browser-${{ github.sha }}.json
             hosted-stream-density-browser-${{ github.sha }}.json
+            graph-scale-${{ github.sha }}.json
             authored-scene-native-${{ github.sha }}.json
             authored-scenes/authored-scene-manifest.json
             authored-scenes/*.svg

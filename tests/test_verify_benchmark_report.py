@@ -809,6 +809,93 @@ def _transport_loopback_report() -> dict:
     }
 
 
+def _graph_scale_row(tier: str, n: int) -> dict:
+    return {
+        "tier": tier,
+        "mode": "direct" if n <= 100_000 else "aggregate",
+        "n_nodes": n,
+        "n_edges": 2 * n,
+        "render_nodes": min(n, 58_021),
+        "render_edges": min(2 * n, 500_000),
+        "routed_segments": min(2 * n, 500_000) + 2,
+        "benchmark_categories": ["graph_render_pipeline"],
+        "host_normalize_ms": 1.0,
+        "build_render_ms": 0.2,
+        "edge_route_ms": 0.5,
+        "graph_mark_ms": 20.0,
+        "payload_build_ms": 2.0,
+        "payload_bytes": 150_000,
+        "payload_blob_sha256": "a" * 64,
+        "peak_rss_bytes": 50_000_000,
+        "peak_rss_growth_bytes": 6_000_000,
+        "oracles": {
+            name: True
+            for name in (
+                "nodes_within_budget",
+                "edges_within_budget",
+                "every_render_edge_has_members",
+                "no_member_repeats",
+                "edge_pick_identity",
+                "nonempty_payload",
+                "nonblank_first_paint",
+                "hover_resolves_edges",
+                "browser_segments_match",
+                "gestures_change_view",
+            )
+        },
+        "oracle_status": "pass",
+        "browser_status": "ok",
+        "first_paint_ms": 600.0,
+        "lit_pixels": 4096,
+        "hover_p50_ms": 2.0,
+        "hover_p95_ms": 10.0,
+        "hover_samples": 24,
+        "hover_edge_hits": 22,
+        "pan_p95_ms": 80.0,
+        "zoom_p95_ms": 60.0,
+        "js_heap_bytes": 3_000_000,
+        "teardown_ms": 3.0,
+        "browser_segments": min(2 * n, 500_000) + 2,
+    }
+
+
+def _graph_scale_report(profile: str = "smoke") -> dict:
+    categories, tracked = _category_registry("graph_render_pipeline")
+    tiers = {"small": 1_000, "medium": 10_000, "large": 100_000, "massive": 1_000_000}
+    names = ("small", "medium") if profile == "smoke" else tuple(tiers)
+    lod = [
+        {
+            "n_nodes": n,
+            "n_edges": 2 * n,
+            "mode": "lod_decision",
+            "tier": "aggregate",
+            "edges_kept": 500_000,
+            "decision_ms": 0.01,
+            "oracle_status": "pass",
+        }
+        for n in (10_000_000, 100_000_000, 1_000_000_000)
+    ]
+    return {
+        **_base(),
+        "kind": "graph-scale",
+        "profile": profile,
+        "measurement_scope": "graph-render-pipeline-and-browser-interaction",
+        "benchmark_categories": categories,
+        "tracked_categories": tracked,
+        "tiers": tiers,
+        "edges_per_node": 2,
+        "node_budget": 200_000,
+        "edge_budget": 500_000,
+        "browser_budgets_ms": {
+            "small": {"first_paint_ms": 2_000.0, "hover_p95_ms": 60.0, "pan_p95_ms": 300.0},
+            "medium": {"first_paint_ms": 6_000.0, "hover_p95_ms": 200.0, "pan_p95_ms": 2_000.0},
+        },
+        "reps": 24,
+        "rows": [_graph_scale_row(name, tiers[name]) for name in names],
+        "lod_decision_rows": lod if profile == "evidence" else [],
+    }
+
+
 @pytest.mark.parametrize(
     ("payload", "kind"),
     [
@@ -824,6 +911,8 @@ def _transport_loopback_report() -> dict:
         (_line_decimation_report(), "line-decimation"),
         (_install_footprint_report(), "install-footprint"),
         (_transport_loopback_report(), "transport-loopback"),
+        (_graph_scale_report(), "graph-scale"),
+        (_graph_scale_report("evidence"), "graph-scale"),
     ],
 )
 def test_verify_benchmark_report_accepts_known_shapes(
@@ -1755,3 +1844,61 @@ def test_verify_benchmark_report_rejects_kind_mismatch(tmp_path: Path) -> None:
     errors = verify_benchmark_report.validate_report(path, kind="scatter-vs")
 
     assert any("expected 'scatter-vs'" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda r: r["tiers"].update(small=500), "graph ladder"),
+        (lambda r: r["browser_budgets_ms"]["small"].update(hover_p95_ms=500.0), "never loosen"),
+        (lambda r: r["rows"][0].update(hover_p95_ms=70.0), "exceeds browser budget"),
+        (lambda r: r["rows"][0].update(lit_pixels=0), "nonblank first paint"),
+        (
+            lambda r: r["rows"][0]["oracles"].update(edge_pick_identity=False),
+            "oracles must all pass",
+        ),
+        (lambda r: r["rows"][1].update(browser_status="failed(timeout)"), "browser_status"),
+        (lambda r: r["rows"][0].update(payload_blob_sha256="xyz"), "sha256"),
+        (lambda r: r["rows"][0].update(render_nodes=300_000), "node_budget"),
+        (lambda r: r["rows"].pop(), "rows tiers"),
+        (lambda r: r["rows"][0]["oracles"].pop("no_member_repeats"), "must include passing"),
+        (lambda r: r["rows"][1]["oracles"].pop("hover_resolves_edges"), "must include passing"),
+        (lambda r: r["rows"][0].update(n_edges=0), "n_edges must be"),
+        (lambda r: r.update(edges_per_node=1), "edges_per_node"),
+    ],
+)
+def test_graph_scale_report_rejects_broken_evidence(tmp_path: Path, mutate, message: str) -> None:
+    report = _graph_scale_report()
+    mutate(report)
+    errors = verify_benchmark_report.validate_report(
+        _write_report(tmp_path, report), kind="graph-scale"
+    )
+    assert any(message in error for error in errors), errors
+
+
+def test_graph_scale_evidence_requires_every_tier_and_policy_rows(tmp_path: Path) -> None:
+    report = _graph_scale_report("evidence")
+    report["lod_decision_rows"][1]["mode"] = "executed"
+    report["rows"] = report["rows"][:3]
+    errors = verify_benchmark_report.validate_report(
+        _write_report(tmp_path, report), kind="graph-scale"
+    )
+    assert any("rows tiers" in error for error in errors), errors
+    assert any("policy rows are not executions" in error for error in errors), errors
+
+
+def test_expect_commit_links_reports_to_their_sha(tmp_path: Path, capsys) -> None:
+    path = _write_report(tmp_path, _graph_scale_report())
+    assert (
+        verify_benchmark_report.main(
+            [str(path), "--kind", "graph-scale", "--expect-commit", "abc123"]
+        )
+        == 0
+    )
+    assert (
+        verify_benchmark_report.main(
+            [str(path), "--kind", "graph-scale", "--expect-commit", "def456"]
+        )
+        == 1
+    )
+    assert "does not match --expect-commit" in capsys.readouterr().err

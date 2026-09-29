@@ -14,7 +14,7 @@ BENCHMARK_CATEGORIES: tuple[dict[str, str], ...] = (
         "name": "Graph render pipeline",
         "why": "GraphForge views need attributed ingest, layout, bounded geometry, payload, and export costs before browser paint.",
         "metrics": "UUID ingest, layout ticks, render-graph build, payload/export bytes, first paint and frame pacing",
-        "harness": "benchmarks/test_codspeed_graph_render.py; benchmarks/bench_dual_host_graph.py; benchmarks/bench_interaction.py",
+        "harness": "benchmarks/test_codspeed_graph_render.py; benchmarks/bench_dual_host_graph.py; benchmarks/bench_interaction.py; benchmarks/bench_graph_scale.py",
         "status": "tracked",
         "goal": "Keep native graph work attributable and browser-visible geometry bounded at every scale tier.",
     },

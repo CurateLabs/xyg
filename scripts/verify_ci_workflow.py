@@ -1506,6 +1506,18 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         test_job,
+        "Graph scale harness contract (small and medium tiers)",
+        "exact PR-only graph scale smoke profile and SHA-linked report verification (#33)",
+        "CHROME=$(node -e 'process.stdout.write(require(\"playwright\").chromium.executablePath())')",
+        ".venv/bin/python benchmarks/bench_graph_scale.py --profile smoke \\",
+        '--chromium "$CHROME" --out "$RUNNER_TEMP/graph-scale-pr.json"',
+        ".venv/bin/python scripts/verify_benchmark_report.py \\",
+        '"$RUNNER_TEMP/graph-scale-pr.json" --kind graph-scale --expect-commit "$GITHUB_SHA"',
+        forbid_environment=True,
+    )
+    _require_step_runs_exactly(
+        errors,
+        test_job,
         "Generated ABI artifacts (stdlib only)",
         "ABI artifact freshness check",
         "python3 scripts/gen_abi_manifest.py --check",
@@ -2207,6 +2219,9 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "scripts/inline_density_file_benchmark.py",
         "scripts/verify_inline_density_benchmark.py",
         "hosted-density-browser-${{ github.sha }}.json",
+        "benchmarks/bench_graph_scale.py --profile evidence",
+        'scripts/verify_benchmark_report.py "graph-scale-${{ github.sha }}.json"',
+        "graph-scale-${{ github.sha }}.json",
         'XYG_CHROMIUM="$(node -e \'process.stdout.write(require("playwright").chromium.executablePath())\')"',
         "actions/upload-artifact@",
     )

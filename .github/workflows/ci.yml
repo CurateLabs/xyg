@@ -230,6 +230,14 @@ jobs:
           python3 scripts/verify_density_e2e_report.py \
             "$RUNNER_TEMP/density-e2e-pr.json" --sha "$GITHUB_SHA"
 
+      - name: Graph scale harness contract (small and medium tiers)
+        run: |
+          CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
+          .venv/bin/python benchmarks/bench_graph_scale.py --profile smoke \
+            --chromium "$CHROME" --out "$RUNNER_TEMP/graph-scale-pr.json"
+          .venv/bin/python scripts/verify_benchmark_report.py \
+            "$RUNNER_TEMP/graph-scale-pr.json" --kind graph-scale --expect-commit "$GITHUB_SHA"
+
       - name: Host-parity landing gates (M2 close bar)
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
