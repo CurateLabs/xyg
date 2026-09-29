@@ -144,7 +144,7 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 | Editing / manipulation | app | **core** | DIY | yes | no | **—** |
 | Analysis algorithms | graphology | no | DIY | yes | DIY | **—** (GraphForge et al.) |
 | Search / filter product UI | app | yes | DIY | yes | no | **—** |
-| Compounds / nested nodes | limited | poor | DIY | yes | no | **—** |
+| Compounds / nested nodes | limited | poor | DIY | yes | no | **M** (Rust-owned forest, bounds, collapse; #34, §6 amendment) |
 
 \*Sigma layouts live in graphology, not the renderer.
 

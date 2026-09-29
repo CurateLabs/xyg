@@ -736,6 +736,88 @@ test("graph edge picks match the Python cross-host identity fixture (#33)", asyn
   }
 });
 
+test("graph semantic paint matches the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_semantic_mapping_cross_host.json", import.meta.url), "utf8"),
+  );
+  const nodes = { node_uuid: fixture.node_uuid, ...fixture.node_columns };
+  const edges = {
+    edge_uuid: fixture.edge_uuid,
+    src_uuid: fixture.edges.map(([s]) => fixture.node_uuid[s]),
+    dst_uuid: fixture.edges.map(([, t]) => fixture.node_uuid[t]),
+    ...fixture.edge_columns,
+  };
+  const shapes = ["circle", "square", "diamond", "triangle", "cross", "hexagon"];
+  const rows = (flat) => Array.from({ length: flat.length / 4 }, (_, i) => [...flat.subarray(i * 4, i * 4 + 4)]);
+  const close = (actual, expected, label) => {
+    assert.equal(actual.length, expected.length, label);
+    actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 1e-6, `${label}[${i}] ${value} != ${expected[i]}`));
+  };
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(nodes, edges, {
+      layout: "preset",
+      x: fixture.x,
+      y: fixture.y,
+      nodeBudget: expected.node_budget,
+      edgeBudget: expected.edge_budget,
+      edgeCurve: expected.edge_curve,
+      nodeClass: "kind",
+      nodeEpistemic: "belief",
+      nodeStatus: "health",
+      nodeMetric: "score",
+      visualStateFlags: "flags",
+      edgeClass: "rel",
+      edgeEpistemic: "evidence",
+      edgeStatus: "state",
+      edgeMetric: "weight",
+    });
+    const meta = f._graphMeta[0];
+    assert.equal(meta.tier_name, expected.tier_name, name);
+    assert.deepEqual(meta.style_contract, expected.style_contract, name);
+    const node = f.traces[meta.node_trace];
+    const edge = f.traces[meta.edge_trace];
+    if (expected.nodes != null) {
+      assert.deepEqual(rows(node.color_ch.rgba), expected.nodes.fill_rgba, `${name} fill`);
+      assert.deepEqual(rows(node.stroke_ch.rgba), expected.nodes.stroke_rgba, `${name} stroke`);
+      const sizes = node.size_ch.values ?? new Array(node.x.length).fill(node.size_ch.constant);
+      close([...sizes], expected.nodes.size, `${name} size`);
+      assert.deepEqual([...node.style_channels.symbol.values].map((c) => shapes[c]), expected.nodes.symbol, name);
+      close([...node.style_channels.opacity.values], expected.nodes.opacity, `${name} opacity`);
+      close([...node.style_channels.stroke_width.values], expected.nodes.stroke_width, `${name} stroke_width`);
+    }
+    if (expected.edges != null) {
+      assert.deepEqual(rows(edge.color_ch.rgba), expected.edges.rgba, `${name} edge rgba`);
+      close([...edge.style_channels.width.values], expected.edges.width, `${name} edge width`);
+      close([...edge.style_channels.opacity.values], expected.edges.opacity, `${name} edge opacity`);
+    }
+  }
+});
+
+test("graph semantic fields fail closed (#34)", () => {
+  const opts = { layout: "preset", x: [0, 1], y: [0, 1] };
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], color: "#f00" }), /replace color/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, edgeClass: [0], edgeColor: "#f00" }), /replace edgeColor/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: "missing" }), /unknown node column/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0.5, 1] }), /integer codes/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [8, 1] }), /0\.\.7/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, edgeClass: [0, 1] }), /edge count/);
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], theme: "sepia" }), /theme/);
+  for (const bad of [null, "", "1", true]) {
+    assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [bad, 1] }), /integer codes/);
+  }
+  // Codes validate even where Aggregate LOD omits paint.
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"], ["a", "b"]], { ...opts, nodeBudget: 1, edgeClass: [0, 9] }), /0\.\.7/);
+  for (const style of [{ opacity: 0.5 }, { fill: "red" }, { "marker-shape": "square" }, { stroke_width: 2 }]) {
+    assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], style }), /node semantic fields own paint/);
+  }
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, edgeClass: [1], style: { width: 3 } }), /edge semantic fields own paint/);
+  const styled = figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1] });
+  assert.equal(styled.traces[styled._graphMeta[0].node_trace].force_direct, true);
+  const plain = figure().graph(["a", "b"], [["a", "b"]], opts);
+  assert.equal(plain._graphMeta[0].style_contract, undefined);
+});
+
 test("graph edge picks truncate aggregate membership at the shared cap (#33)", () => {
   const n = GRAPH_EDGE_PICK_MEMBER_CAP + 5;
   const f = figure().graph(["a", "b", "c", "d"], Array.from({ length: n }, () => ["a", "c"]), {

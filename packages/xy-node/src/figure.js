@@ -1523,6 +1523,7 @@ export class Figure {
           opts.sizeRange ?? opts.size_range ?? [2, 18],
         ),
         ...((opts.stroke_ch ?? strokeCh) != null ? { stroke_ch: opts.stroke_ch ?? strokeCh } : {}),
+        ...(opts.style_channels != null ? { style_channels: opts.style_channels } : {}),
         ...(opts.sizeValues != null ? { sizeValues: opts.sizeValues } : {}),
         ...(opts.sizeRange != null ? { sizeRange: opts.sizeRange } : {}),
         ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
@@ -1919,6 +1920,7 @@ export class Figure {
           name: t.name,
           style: t.style,
           color: t.color,
+          color_ch: t.color_ch,
           tooltip_rows: t.tooltip_rows,
           style_channels: t.style_channels,
         });
@@ -1928,7 +1930,10 @@ export class Figure {
           style: t.style,
           color_ch: t.color_ch,
           size_ch: t.size_ch,
+          stroke_ch: t.stroke_ch,
+          style_channels: t.style_channels,
           tooltip_rows: t.tooltip_rows,
+          ...(t.force_direct ? { forceDirect: true } : {}),
           _composed: true,
         });
       }

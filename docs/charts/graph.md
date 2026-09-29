@@ -88,6 +88,34 @@ segments) and in Node for nodes, while Node reports edge-segment overflow as
 `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS`. Use the interactive HTML export for
 larger graphs.
 
+## Semantic styling
+
+Name GraphForge semantic columns and Rust resolves a color-blind-safe
+palette, sizes, widths, shapes, and state fading for you:
+
+```python
+xyg.graph_chart(
+    nodes=node_table,
+    edges=edge_table,
+    node_class="kind",          # codes 0-7 -> fill color and shape
+    node_epistemic="belief",    # codes 0-7
+    node_status="health",       # codes 0-7 -> outline color
+    node_metric="score",        # numbers -> node size
+    visual_state_flags="flags", # selected / hovered / filtered / disabled …
+    edge_class="relation",
+    edge_metric="weight",       # numbers -> edge width
+    theme="dark",
+)
+```
+
+Node takes the same options in camelCase (`nodeClass`, `edgeMetric`, …).
+Semantic fields replace `color`, `size`, `symbol`, `edge_color`, and
+`edge_width`. When a very large graph is aggregated, per-node and per-edge
+styling is left off and `spec.graph.style_contract` says so. Halos, dashed
+edges, and per-status arrow policy are not drawn on this chart yet (listed in
+`style_contract.pending_layers`), and SVG/PNG export of a semantically styled
+graph is not supported yet; use HTML export.
+
 ## Arrowheads and node borders
 
 Edges start and end on node outlines, and directed edges (including

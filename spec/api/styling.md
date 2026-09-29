@@ -159,6 +159,15 @@ results in `spec.graph` and never run a second precedence or collision policy.
 These fields are semantic scene metadata, not browser paint instructions;
 label/bounds paint waits for a Rust-owned screen-space primitive contract.
 
+GraphForge semantic styling is paint. Python `node_class`, `node_epistemic`,
+`node_status`, `node_metric`, the `edge_*` equivalents, and `theme` (Node:
+camelCase plus snake-case aliases) resolve through Rust's versioned style
+contract v1 and paint node fill, stroke, stroke width, size, shape, and
+opacity and edge color, width, and opacity. They replace `color`/`size`/`symbol`
+and `edge_color`/`edge_width`; combining them with explicit `color`, `size`, or
+`edge_color` is an error. See `spec/design/graph-mark.md` §7.1.2 for the
+mapping, Aggregate omission, pending layers, and the static-export limit.
+
 ### Compound box-plot parts
 
 `box` compiles into a rectangle body, segment whiskers, a segment median, and
