@@ -100,6 +100,7 @@ def graph(
         raise ValueError("graph node semantic fields replace color= and size=")
     if edge_fields is not None and edge_color is not None:
         raise ValueError("graph edge semantic fields replace edge_color=")
+    _reject_semantic_style_overrides(style, node_fields is not None, edge_fields is not None)
     if theme not in ("light", "dark"):
         raise ValueError(f"graph theme must be 'light' or 'dark', got {theme!r}")
     px, py, meta = _graph.run_layout(
@@ -234,6 +235,9 @@ def graph(
         symbol=symbol,
         stroke=None if node_style is None else node_style["stroke"],
         stroke_width=0.0 if node_style is None else node_style["stroke_width"],
+        # Density surfaces drop per-node paint; resolved semantic rows must
+        # paint exactly as style_contract reports.
+        density=None if node_style is None else False,
         style=style,
     )
     # Edge identity follows Rust's render-edge membership, not a count match
@@ -443,12 +447,49 @@ def _semantic_fields(
             arr = np.asarray(value)
             if arr.dtype.kind not in "iu" or arr.dtype == np.bool_:
                 raise ValueError(f"graph {where}_{label} must be integer codes 0..7")
+            # Validate every source row even when Aggregate LOD omits paint.
+            if arr.size and (int(arr.min()) < 0 or int(arr.max()) > 7):
+                raise ValueError(f"graph {where}_{label} codes must be in 0..7")
         if arr.ndim == 0:
             arr = np.full(n, arr.item(), dtype=arr.dtype)
         if arr.ndim != 1 or len(arr) != n:
             raise ValueError(f"graph {where}_{label} must match {where} count {n}")
         out.append(arr)
     return out[0], out[1], out[2], out[3]
+
+
+# Compiled CSS keys that would override each side's resolved semantic paint.
+_NODE_SEMANTIC_CSS = (
+    "color",
+    "opacity",
+    "stroke",
+    "stroke_width",
+    "symbol",
+    "fill_opacity",
+    "stroke_opacity",
+)
+_EDGE_SEMANTIC_CSS = ("color", "width", "opacity")
+
+
+def _reject_semantic_style_overrides(style: Any, nodes: bool, edges: bool) -> None:
+    if not style:
+        return
+    for enabled, kind, keys in (
+        (nodes, "scatter", _NODE_SEMANTIC_CSS),
+        (edges, "segments", _EDGE_SEMANTIC_CSS),
+    ):
+        if not enabled:
+            continue
+        try:
+            css = styles.compile_mark_style(kind, style)
+        except ValueError:
+            continue  # the mark itself reports unsupported properties
+        conflicts = sorted(key for key in keys if key in css)
+        if conflicts:
+            side = "node" if kind == "scatter" else "edge"
+            raise ValueError(
+                f"graph {side} semantic fields own paint; style must not set {conflicts}"
+            )
 
 
 def _node_flags(visual_state_flags: Any, n: int) -> np.ndarray:

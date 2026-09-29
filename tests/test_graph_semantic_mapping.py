@@ -266,6 +266,33 @@ def test_semantic_fields_fail_closed() -> None:
         _figure(**CASES["direct"], edge_class=[0, 1])
 
 
+def test_codes_validate_even_when_aggregate_omits_paint() -> None:
+    with pytest.raises(ValueError, match=r"0\.\.7"):
+        _figure(**CASES["aggregate"], node_class=[9] * len(X))
+    with pytest.raises(ValueError, match=r"0\.\.7"):
+        _figure(**CASES["aggregate"], edge_status=[0] * (len(EDGES) - 1) + [8])
+
+
+@pytest.mark.parametrize(
+    ("style", "side"),
+    [
+        ({"opacity": 0.5}, "node"),
+        ({"fill": "red"}, "node"),
+        ({"marker-shape": "square"}, "node"),
+        ({"stroke-width": 2}, "node"),
+    ],
+)
+def test_style_cannot_override_semantic_paint(style: dict[str, Any], side: str) -> None:
+    with pytest.raises(ValueError, match=f"graph {side} semantic fields own paint"):
+        _figure(**CASES["direct"], style=style)
+
+
+def test_semantic_nodes_never_fall_into_the_density_tier() -> None:
+    fig = _figure(**CASES["direct"])
+    node = fig.traces[fig._graph_meta[0]["node_trace"]]
+    assert node.force_density is False
+
+
 def test_public_composition_api_forwards_semantic_fields() -> None:
     nodes, edges = _tables()
     chart = xyg.graph_chart(

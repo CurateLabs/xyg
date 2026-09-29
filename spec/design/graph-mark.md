@@ -591,8 +591,12 @@ The public composition API names the v1 planes directly. Python
 snake-case aliases. Each is an array or a validated node/edge column name.
 Codes are exact integers `0..=7`; an unset code plane is all zeros and an
 unset metric is all zeros. Unknown columns, non-integer or out-of-range codes,
-length mismatches, unknown themes, and mixing semantic fields with explicit
-node `color`/`size` or `edge_color` all fail closed before layout output.
+length mismatches, unknown themes, mixing semantic fields with explicit
+node `color`/`size` or `edge_color`, and a mark `style` that would override
+resolved paint (node fill, opacity, stroke, stroke width, shape, fill/stroke
+opacity; edge color, width, opacity) all fail closed before layout output.
+Code ranges are checked on every source row even when Aggregate LOD later
+omits the paint.
 
 Hosts call `xyg_graph_semantic_style_resolve` once per side over **source**
 rows (nodes with the §7.1 visual-state flags from `visual_state_flags`; edges
@@ -610,7 +614,10 @@ the existing painter channels:
 | node/edge `opacity` | per-item opacity (renderer uniform stays 1) |
 | edge `stroke_rgba`, `width` | per-segment direct-RGBA color and width, gathered through the render-edge membership and expanded across routed segments |
 
-Source rows paint only where render identity is exact: nodes when the render
+A semantically styled node scatter is pinned to direct draw (Python
+`density=False`, Node `forceDirect`): the density surface would drop per-node
+size, shape, stroke, and opacity, so `style_contract.nodes = "resolved"`
+always means painted. Source rows paint only where render identity is exact: nodes when the render
 graph keeps every node (Direct, EdgeSample), edges when every render edge has
 exactly one member (§28 membership). Under Aggregate LOD that side is omitted.
 Every styled graph records `spec.graph.style_contract` =

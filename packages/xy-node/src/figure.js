@@ -1933,6 +1933,7 @@ export class Figure {
           stroke_ch: t.stroke_ch,
           style_channels: t.style_channels,
           tooltip_rows: t.tooltip_rows,
+          ...(t.force_direct ? { forceDirect: true } : {}),
           _composed: true,
         });
       }

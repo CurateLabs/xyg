@@ -793,12 +793,24 @@ function graphSemanticFields(data, where, raw) {
     const rows = typeof value === "number" ? new Array(n).fill(value) : Array.from(value);
     if (rows.length !== n) throw new RangeError(`${label} must match ${where} count ${n}`);
     if (index === 3) return Float64Array.from(rows, Number);
-    if (!rows.every((code) => Number.isInteger(Number(code)) && typeof code !== "boolean")) {
+    if (!rows.every((code) => typeof code === "number" && Number.isInteger(code))) {
       throw new RangeError(`${label} must be integer codes 0..7`);
     }
-    return rows.map(Number);
+    // Validate every source row even when Aggregate LOD omits paint.
+    if (rows.some((code) => code < 0 || code > 7)) {
+      throw new RangeError(`${label} codes must be in 0..7`);
+    }
+    return rows;
   });
 }
+
+// Style keys that would override each side's resolved semantic paint.
+const GRAPH_NODE_SEMANTIC_STYLE = [
+  "color", "fill", "opacity", "stroke", "stroke_width", "strokeWidth", "stroke-width",
+  "symbol", "marker-shape", "fill_opacity", "fill-opacity", "stroke_opacity", "stroke-opacity",
+  "size",
+];
+const GRAPH_EDGE_SEMANTIC_STYLE = ["color", "stroke", "width", "stroke_width", "stroke-width", "opacity"];
 
 export function composeGraph(nodes, edges, opts = {}) {
   let resolvedOpts = opts;
@@ -863,6 +875,15 @@ export function composeGraph(nodes, edges, opts = {}) {
   }
   if (edgeFields != null && edgeColor != null) {
     throw new RangeError("graph edge semantic fields replace edgeColor");
+  }
+  for (const [fields, keys, side] of [
+    [nodeFields, GRAPH_NODE_SEMANTIC_STYLE, "node"],
+    [edgeFields, GRAPH_EDGE_SEMANTIC_STYLE, "edge"],
+  ]) {
+    const conflicts = fields == null ? [] : keys.filter((key) => resolvedOpts.style?.[key] != null);
+    if (conflicts.length) {
+      throw new RangeError(`graph ${side} semantic fields own paint; style must not set ${JSON.stringify(conflicts)}`);
+    }
   }
   const theme = resolvedOpts.theme ?? "light";
   if (theme !== "light" && theme !== "dark") {
@@ -1091,6 +1112,9 @@ export function composeGraph(nodes, edges, opts = {}) {
           color_ch: nodePaint.color_ch,
           stroke_ch: nodePaint.stroke_ch,
           style_channels: nodePaint.style_channels,
+          // Density surfaces drop per-node paint; resolved semantic rows must
+          // paint exactly as style_contract reports.
+          force_direct: true,
         }
         : nodeColor != null && typeof nodeColor !== "string"
           ? { color_ch: resolveColorChannel(nodeColor, nNodes, DEFAULT_MARK_COLOR) }

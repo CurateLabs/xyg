@@ -803,6 +803,17 @@ test("graph semantic fields fail closed (#34)", () => {
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [8, 1] }), /0\.\.7/);
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, edgeClass: [0, 1] }), /edge count/);
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], theme: "sepia" }), /theme/);
+  for (const bad of [null, "", "1", true]) {
+    assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [bad, 1] }), /integer codes/);
+  }
+  // Codes validate even where Aggregate LOD omits paint.
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"], ["a", "b"]], { ...opts, nodeBudget: 1, edgeClass: [0, 9] }), /0\.\.7/);
+  for (const style of [{ opacity: 0.5 }, { fill: "red" }, { "marker-shape": "square" }, { stroke_width: 2 }]) {
+    assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], style }), /node semantic fields own paint/);
+  }
+  assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, edgeClass: [1], style: { width: 3 } }), /edge semantic fields own paint/);
+  const styled = figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1] });
+  assert.equal(styled.traces[styled._graphMeta[0].node_trace].force_direct, true);
   const plain = figure().graph(["a", "b"], [["a", "b"]], opts);
   assert.equal(plain._graphMeta[0].style_contract, undefined);
 });
