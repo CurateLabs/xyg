@@ -218,10 +218,25 @@ export function radarChart(categoriesOrAngles, seriesValues, opts = {}) {
  * @param {Iterable|object} edges
  * @param {object} [opts]
  */
+// Python `graph_chart` authors `x_axis(show=False)` / `y_axis(show=False)`,
+// which compile to exactly these transparent / zero-width axis properties.
+const HIDDEN_AXIS_STYLE = Object.freeze({
+  axis_width: 0,
+  axis_color: "#00000000",
+  tick_length: 0,
+  tick_width: 0,
+  grid_opacity: 0,
+  tick_label_color: "#00000000",
+  label_color: "#00000000",
+});
+
 export function graphChart(nodes, edges, opts = {}) {
   const { width, height, title, ...graphOpts } = opts;
   const fig = figure({ width, height, title });
   fig.graph(nodes, edges, graphOpts);
+  // Node–link charts hide axes by default, matching Python `graph_chart`.
+  fig.setAxis("x", { style: { ...HIDDEN_AXIS_STYLE } });
+  fig.setAxis("y", { style: { ...HIDDEN_AXIS_STYLE } });
   return fig;
 }
 

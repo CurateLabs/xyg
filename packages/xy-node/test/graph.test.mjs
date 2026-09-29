@@ -5,6 +5,7 @@ import {
   abiVersion,
   composeGraph,
   figure,
+  graphChart,
   GRAPH_EDGE_PICK_MEMBER_CAP,
   fromGraphForgeTables,
   graphBuildCsr,
@@ -747,4 +748,42 @@ test("graph edge picks truncate aggregate membership at the shared cap (#33)", (
   assert.equal(pick.members_truncated, true);
   assert.deepEqual(pick.source_edges, Array.from({ length: GRAPH_EDGE_PICK_MEMBER_CAP }, (_, i) => i));
   assert.equal(f.graphEdgePick(meta.node_trace, 0), null);
+});
+
+test("graphChart static SVG/PNG match the Python cross-host export fixture (#33)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_static_export_cross_host.json", import.meta.url), "utf8"),
+  );
+  const sha = (bytes) => createHash("sha256").update(typeof bytes === "string" ? bytes : Buffer.from(bytes)).digest("hex");
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const fig = graphChart(fixture.nodes, fixture.edges, {
+      layout: "preset",
+      x: fixture.x,
+      y: fixture.y,
+      color: fixture.color,
+      edgeColor: fixture.edge_color,
+      edgeCurve: expected.edge_curve,
+      width: fixture.width,
+      height: fixture.height,
+    });
+    assert.equal(sha(fig.toSvg()), expected.svg_sha256, name);
+    assert.equal(sha(fig.toPng()), expected.png_scale1_sha256, name);
+  }
+});
+
+test("graphChart hides axes like Python graph_chart (#33)", () => {
+  const fig = graphChart(["a", "b"], [["a", "b"]], { layout: "preset", x: [0, 1], y: [0, 1] });
+  for (const axis of ["x", "y"]) {
+    assert.deepEqual(fig.axis_options[axis].style, {
+      axis_width: 0,
+      axis_color: "#00000000",
+      tick_length: 0,
+      tick_width: 0,
+      grid_opacity: 0,
+      tick_label_color: "#00000000",
+      label_color: "#00000000",
+    });
+  }
 });

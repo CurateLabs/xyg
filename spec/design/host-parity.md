@@ -1497,6 +1497,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   `Figure.graphEdgePick`) are identical for the same input, pinned by
   `tests/fixtures/graph_edge_identity_cross_host.json`. Membership stays
   host-side and is never serialized to the wire.
+- **REQ-HOSTPARITY-2g (MUST).** Python `graph_chart` and Node `graphChart`
+  author the same hidden axes and export byte-identical SVG and PNG (equal
+  scale) for identical input through the Rust Scene route
+  (`FLAG_GRAPH_MARKS`, scene-ir.md), pinned by
+  `tests/fixtures/graph_static_export_cross_host.json`. Known open gap:
+  default graph colors differ between hosts.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

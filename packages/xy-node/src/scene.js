@@ -6125,6 +6125,22 @@ export function xyEfStrokeWidthOnly(style) {
   return record.stroke_width != null && record.stroke == null;
 }
 
+/** Every trace belongs to a recorded graph mark: edge `segments` immediately
+ * followed by node `scatter` (#33). Python `_graph_marks_only`; Rust re-verifies
+ * the kinds (XYEP `FLAG_GRAPH_MARKS`). */
+function graphMarksOnly(figure) {
+  const metas = figure._graphMeta ?? [];
+  const owned = [];
+  for (const meta of metas) {
+    const edge = meta.edge_trace;
+    if (!Number.isInteger(edge) || meta.node_trace !== edge + 1) return false;
+    owned.push(edge, edge + 1);
+  }
+  const n = (figure.traces ?? []).length;
+  owned.sort((a, b) => a - b);
+  return owned.length > 0 && owned.length === n && owned.every((v, i) => v === i);
+}
+
 function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const exportPlan = scenePublicExportFigurePlan({
     polar: (figure.coords ?? "cartesian") === "polar",
@@ -6161,6 +6177,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const titleOptions = figureTitleOptions(figure);
   if (exportPlan.hasTitleOptions) flags |= 1 << 3;
   if (exportPlan.polar) flags |= 1 << 4;
+  if (graphMarksOnly(figure)) flags |= 1 << 5;
   const styleKeys = Object.keys(figure.style ?? {});
   const legend = figureLegendOptions(figure) ?? {};
   const legendKeys = Object.keys(legend);

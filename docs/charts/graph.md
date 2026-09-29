@@ -75,6 +75,18 @@ Invalid UUIDs, duplicate node/edge ids, and missing endpoints raise stable
 IPC fixtures used in CI live under `tests/fixtures/graphforge/` (regenerate with
 `scripts/gen_graphforge_ipc_fixtures.py`).
 
+## Static export
+
+`graph_chart(...).to_svg()` / `.to_png()` (and Node `graphChart(...).toSvg()` /
+`.toPng()`) export the same edges, self-loops, arrowheads, curves, and nodes the
+interactive chart draws, framed by the same automatic domain. Static export
+currently admits at most 10,000 nodes and 10,000 drawn edge segments (a
+directed edge draws 3 segments; a curved directed edge draws 10). Larger graphs
+fail with a stable reason: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in Python (nodes or
+segments) and in Node for nodes, while Node reports edge-segment overflow as
+`XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS`. Use the interactive HTML export for
+larger graphs.
+
 ## Edge identity on hover and pick
 
 Hovering or clicking an edge reports the exact GraphForge `edge_uuid` whenever
