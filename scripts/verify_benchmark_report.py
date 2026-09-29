@@ -31,6 +31,7 @@ KNOWN_KINDS = (
     "line-decimation",
     "install-footprint",
     "transport-loopback",
+    "graph-scale",
 )
 ROW_STATUSES = ("ok", "unavailable", "skipped", "failed")
 COMPARISON_VERDICTS = {"pass", "watch", "fail", "no-plotly"}
@@ -55,6 +56,36 @@ INTERACTION_VISUAL_BUDGET_LIMITS = {
     "max_frame_color_delta": 0.85,
     "min_interaction_lit_pixels": 64.0,
 }
+# Graph scale evidence (#33): the graph ladder, profiles, and the CI
+# (software-GL) browser ceilings a report may not loosen.
+GRAPH_SCALE_TIERS = {"small": 1_000, "medium": 10_000, "large": 100_000, "massive": 1_000_000}
+GRAPH_SCALE_PROFILE_TIERS = {
+    "smoke": ("small", "medium"),
+    "evidence": ("small", "medium", "large", "massive"),
+}
+GRAPH_SCALE_BROWSER_BUDGET_LIMITS_MS = {
+    "small": {"first_paint_ms": 2_000.0, "hover_p95_ms": 60.0, "pan_p95_ms": 300.0},
+    "medium": {"first_paint_ms": 6_000.0, "hover_p95_ms": 200.0, "pan_p95_ms": 2_000.0},
+}
+GRAPH_SCALE_LOD_NODES = (10_000_000, 100_000_000, 1_000_000_000)
+GRAPH_SCALE_MODES = {"direct", "edge_sample", "aggregate"}
+GRAPH_SCALE_NATIVE_KEYS = (
+    "host_normalize_ms",
+    "build_render_ms",
+    "edge_route_ms",
+    "graph_mark_ms",
+    "payload_build_ms",
+    "payload_bytes",
+    "peak_rss_bytes",
+)
+GRAPH_SCALE_BROWSER_KEYS = (
+    "first_paint_ms",
+    "hover_p50_ms",
+    "hover_p95_ms",
+    "pan_p95_ms",
+    "zoom_p95_ms",
+    "teardown_ms",
+)
 INTERACTION_REQUIRED_SCENARIOS = (
     "direct_scatter_interaction",
     "density_scatter_interaction",
@@ -2285,6 +2316,138 @@ def summarize_report(report: dict[str, Any], *, kind: str) -> list[str]:
     return summary
 
 
+def _validate_graph_scale(report: dict[str, Any], errors: list[str]) -> None:
+    _require_native_backend(report, "graph-scale", errors)
+    _require_keys(
+        report,
+        {
+            "profile",
+            "measurement_scope",
+            "tiers",
+            "node_budget",
+            "edge_budget",
+            "browser_budgets_ms",
+            "benchmark_categories",
+            "tracked_categories",
+            "rows",
+            "lod_decision_rows",
+        },
+        "report",
+        errors,
+    )
+    profile = report.get("profile")
+    if profile not in GRAPH_SCALE_PROFILE_TIERS:
+        errors.append(f"report.profile must be one of {sorted(GRAPH_SCALE_PROFILE_TIERS)}")
+        return
+    if report.get("tiers") != GRAPH_SCALE_TIERS:
+        errors.append(f"report.tiers must be the graph ladder {GRAPH_SCALE_TIERS}")
+    category_ids = _validate_categories(report, errors)
+    budgets = report.get("browser_budgets_ms")
+    if not isinstance(budgets, dict):
+        errors.append("report.browser_budgets_ms must be an object")
+        budgets = {}
+    for tier, limits in GRAPH_SCALE_BROWSER_BUDGET_LIMITS_MS.items():
+        declared = budgets.get(tier)
+        if not isinstance(declared, dict):
+            errors.append(f"report.browser_budgets_ms.{tier} must be an object")
+            continue
+        for key, limit in limits.items():
+            value = declared.get(key)
+            if not _is_number(value) or value <= 0 or value > limit:
+                errors.append(
+                    f"report.browser_budgets_ms.{tier}.{key} must be in (0, {limit}] "
+                    "(reports may tighten, never loosen, CI graph ceilings)"
+                )
+    rows = report.get("rows")
+    if not isinstance(rows, list) or not rows:
+        errors.append("rows must be a non-empty list")
+        return
+    tiers = [row.get("tier") if isinstance(row, dict) else None for row in rows]
+    if tiers != list(GRAPH_SCALE_PROFILE_TIERS[profile]):
+        errors.append(f"rows tiers {tiers} must be {list(GRAPH_SCALE_PROFILE_TIERS[profile])}")
+    node_budget = report.get("node_budget")
+    edge_budget = report.get("edge_budget")
+    for i, row in enumerate(rows):
+        path = f"rows[{i}]"
+        if not isinstance(row, dict):
+            errors.append(f"{path} must be an object")
+            continue
+        tier = row.get("tier")
+        if tier in GRAPH_SCALE_TIERS and row.get("n_nodes") != GRAPH_SCALE_TIERS[tier]:
+            errors.append(f"{path}.n_nodes must be {GRAPH_SCALE_TIERS[tier]} for tier {tier!r}")
+        if row.get("mode") not in GRAPH_SCALE_MODES:
+            errors.append(f"{path}.mode must be one of {sorted(GRAPH_SCALE_MODES)}")
+        for key in GRAPH_SCALE_NATIVE_KEYS:
+            _require_nonnegative_number(row, key, path, errors)
+        for key in ("render_nodes", "render_edges", "routed_segments"):
+            _require_nonnegative_number(row, key, path, errors)
+        for key, budget in (("render_nodes", node_budget), ("render_edges", edge_budget)):
+            value = row.get(key)
+            if _is_number(budget) and _is_number(value) and value > budget:
+                budget_key = "node_budget" if key == "render_nodes" else "edge_budget"
+                errors.append(f"{path}.{key} exceeds report.{budget_key}")
+        digest = row.get("payload_blob_sha256")
+        if not (
+            isinstance(digest, str)
+            and len(digest) == 64
+            and all(c in "0123456789abcdef" for c in digest)
+        ):
+            errors.append(f"{path}.payload_blob_sha256 must be a lowercase sha256 hex digest")
+        oracles = row.get("oracles")
+        if (
+            not isinstance(oracles, dict)
+            or not oracles
+            or not all(v is True for v in oracles.values())
+        ):
+            errors.append(f"{path}.oracles must all pass")
+        if row.get("oracle_status") != "pass":
+            errors.append(f"{path}.oracle_status must be 'pass'")
+        if row.get("browser_status") != "ok":
+            errors.append(f"{path}.browser_status must be 'ok' (got {row.get('browser_status')!r})")
+            continue
+        for key in GRAPH_SCALE_BROWSER_KEYS:
+            _require_nonnegative_number(row, key, path, errors)
+        if not (_is_number(row.get("lit_pixels")) and row["lit_pixels"] > 0):
+            errors.append(f"{path}.lit_pixels must be positive (nonblank first paint)")
+        if row.get("browser_segments") != row.get("routed_segments"):
+            errors.append(f"{path}.browser_segments must equal routed_segments")
+        for key, limit in (budgets.get(tier) or {}).items():
+            value = row.get(key)
+            if _is_number(value) and _is_number(limit) and value > limit:
+                errors.append(f"{path}.{key}={value:.1f} exceeds browser budget {limit}")
+        categories = row.get("benchmark_categories")
+        if not isinstance(categories, list) or not categories:
+            errors.append(f"{path}.benchmark_categories must be a non-empty list")
+        elif category_ids:
+            for category_id in categories:
+                if category_id not in category_ids:
+                    errors.append(f"{path}.benchmark_categories id {category_id!r} is not declared")
+    lod_rows = report.get("lod_decision_rows")
+    if not isinstance(lod_rows, list):
+        errors.append("report.lod_decision_rows must be a list")
+        return
+    if profile == "evidence":
+        if [row.get("n_nodes") for row in lod_rows if isinstance(row, dict)] != list(
+            GRAPH_SCALE_LOD_NODES
+        ):
+            errors.append(f"lod_decision_rows must cover {list(GRAPH_SCALE_LOD_NODES)} nodes")
+        for i, row in enumerate(lod_rows):
+            path = f"lod_decision_rows[{i}]"
+            if not isinstance(row, dict):
+                continue
+            if row.get("mode") != "lod_decision":
+                errors.append(
+                    f"{path}.mode must be 'lod_decision' (policy rows are not executions)"
+                )
+            if (
+                not (_is_number(row.get("edges_kept")) and _is_number(edge_budget))
+                or row["edges_kept"] > edge_budget
+            ):
+                errors.append(f"{path}.edges_kept must be within report.edge_budget")
+            if row.get("oracle_status") != "pass":
+                errors.append(f"{path}.oracle_status must be 'pass'")
+
+
 def validate_report(path: Path, *, kind: str = "auto") -> list[str]:
     errors: list[str] = []
     try:
@@ -2321,6 +2484,8 @@ def validate_report(path: Path, *, kind: str = "auto") -> list[str]:
         _validate_workflow_native(report, errors)
     elif selected == "transport-loopback":
         _validate_transport_loopback(report, errors)
+    elif selected == "graph-scale":
+        _validate_graph_scale(report, errors)
     else:
         errors.append(f"unknown benchmark report kind: {detected!r}")
     if kind != "auto" and detected != kind:
@@ -2332,9 +2497,20 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     parser.add_argument("--kind", choices=KNOWN_KINDS, default="auto")
+    parser.add_argument(
+        "--expect-commit",
+        help="require environment.git.commit to equal this SHA (hash-linked hosted evidence)",
+    )
     args = parser.parse_args(argv)
 
     errors = validate_report(args.report, kind=args.kind)
+    if args.expect_commit and not errors:
+        report = json.loads(args.report.read_text(encoding="utf-8"))
+        commit = ((report.get("environment") or {}).get("git") or {}).get("commit")
+        if commit != args.expect_commit:
+            errors.append(
+                f"environment.git.commit {commit!r} does not match --expect-commit {args.expect_commit!r}"
+            )
     if errors:
         print(f"benchmark report verification failed for {args.report}:", file=sys.stderr)
         for error in errors:

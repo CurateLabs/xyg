@@ -720,3 +720,55 @@ added. Hosted CodSpeed executes this only from the changed-main nightly workflow
 never on pull requests. The initial engine tests use small deterministic fixtures;
 the sparse larger-than-RAM runner and remote/browser rows remain required before
 issue `#110` can close.
+
+## 11. Graph scale evidence (#33)
+
+`benchmarks/bench_graph_scale.py` (report kind `graph-scale`, verified by
+`scripts/verify_benchmark_report.py --kind graph-scale`) measures the graph
+render and interaction pipeline on the graph ladder: **small 1k, medium 10k,
+large 100k, massive 1M nodes**, two seeded random edges per node, preset
+(seeded normal) positions. This ladder is the graph convention shared with
+`test_codspeed_graph_render.py`; it differs from the Scene ladder
+(100/10k/100k/1M). Layout ticks are measured by the CodSpeed graph rows, not
+here, so these rows isolate render cost.
+
+Each tier runs its native stages in a fresh process (so peak RSS is attributable
+to the tier) and records, all labelled with the Rust LOD `mode`
+(`direct` / `edge_sample` / `aggregate`):
+
+- `host_normalize_ms` (Python id → dense index), `build_render_ms` (Rust render
+  graph with edge membership), `edge_route_ms` (Rust border-aware routing),
+  `graph_mark_ms` (the full public graph mark), `payload_build_ms`;
+- `payload_bytes`, `payload_blob_sha256`, `peak_rss_bytes`;
+- oracles: node/edge budgets hold, every render edge has source-edge members,
+  no member repeats, an edge pick returns identity, the payload is nonempty.
+
+The browser stage mounts the payload in headless Chromium and records first
+paint, hover p50/p95 (edge hit test plus identity row at routed segment
+midpoints), pan and wheel-zoom redraw p95, JS heap growth, and teardown, with
+oracles for nonblank first paint, hovers resolving edges, and browser segment
+count equal to the routed count. **Every redraw is followed by a one-pixel
+readback**: WebGL commands are queued, and without the sync the frame timings
+measure only command submission while the deferred rasterization lands in
+whatever runs next (the first draft attributed 25 s of queued SwiftShader
+frames to teardown). `LOD_DECISION_NODES` rows at 10M / 100M / 1B are Rust
+policy decisions (`mode: lod_decision`), never presented as executions.
+
+Profiles and wiring (no new CI job or required status):
+
+- `smoke` (small, medium) runs in the PR `test` job and is verified with
+  `--expect-commit "$GITHUB_SHA"`; the verifier caps CI (software GL) browser
+  ceilings (`GRAPH_SCALE_BROWSER_BUDGET_LIMITS_MS`, ~3-4x measured values) and
+  rejects reports that loosen them.
+- `evidence` (all tiers plus LOD-decision rows) runs in the changed-main
+  `authored-scene-browser-evidence` job and uploads
+  `graph-scale-${{ github.sha }}.json` with the other SHA-keyed evidence.
+
+Reproduce locally:
+
+```bash
+uv run python benchmarks/bench_graph_scale.py --profile smoke --out graph-scale.json
+uv run python scripts/verify_benchmark_report.py graph-scale.json --kind graph-scale
+uv run python benchmarks/bench_graph_scale.py --profile evidence --reps 8 \
+  --probe-timeout 1800 --out graph-scale-evidence.json
+```

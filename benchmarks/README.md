@@ -273,6 +273,19 @@ Each cost a debugging cycle and is load-bearing for the numbers:
   `config={"scrollZoom": True}`; at ≤1k rows it emits SVG (no canvas), so the
   probe counts `.scatterlayer .point` nodes instead.
 
+## Graph Scale Evidence (#33)
+
+Graph render and interaction cost on the graph ladder (1k / 10k / 100k / 1M
+nodes, two edges per node), plus Rust LOD-decision rows at 10M / 100M / 1B.
+See `spec/benchmarks/methodology.md` §11.
+
+```bash
+uv run python benchmarks/bench_graph_scale.py --profile smoke --out graph-scale.json
+uv run python scripts/verify_benchmark_report.py graph-scale.json --kind graph-scale
+uv run python benchmarks/bench_graph_scale.py --profile evidence --reps 8 \
+  --probe-timeout 1800 --out graph-scale-evidence.json
+```
+
 ## CI Software GL
 
 These commands match the non-blocking GitHub Actions measurement lane:

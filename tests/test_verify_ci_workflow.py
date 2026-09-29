@@ -1318,6 +1318,37 @@ def test_ci_rejects_weakened_or_unverified_pr_density_contract(tmp_path: Path, m
     assert verify_ci_workflow.validate_ci_workflow(path)
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        # Dropping the SHA link, the verifier, or the step, or making it
+        # non-blocking must all fail the CI workflow check (#33).
+        lambda source: source.replace(' --expect-commit "$GITHUB_SHA"', "", 1),
+        lambda source: source.replace(
+            "          .venv/bin/python scripts/verify_benchmark_report.py \\\n"
+            '            "$RUNNER_TEMP/graph-scale-pr.json" --kind graph-scale --expect-commit "$GITHUB_SHA"\n',
+            "",
+            1,
+        ),
+        lambda source: source.replace("--profile smoke", "--profile smoke --no-browser", 1),
+        lambda source: source.replace(
+            "      - name: Graph scale harness contract (small and medium tiers)\n",
+            "      - name: Graph scale harness contract (small and medium tiers)\n"
+            "        continue-on-error: true\n",
+            1,
+        ),
+    ],
+)
+def test_ci_rejects_weakened_or_unverified_graph_scale_contract(tmp_path: Path, mutation) -> None:
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    mutated = mutation(source)
+    assert mutated != source
+    path = tmp_path / "ci.yml"
+    path.write_text(mutated, encoding="utf-8")
+
+    assert verify_ci_workflow.validate_ci_workflow(path)
+
+
 def test_workflows_reject_normalized_top_level_overrides(tmp_path: Path) -> None:
     cases = (
         ("ci", Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),

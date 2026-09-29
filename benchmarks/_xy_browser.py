@@ -12,6 +12,7 @@ import html as html_lib
 import http.server
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -140,6 +141,9 @@ def run_json_probe(
     exe = find_chromium(chromium)
     if not exe:
         return {"status": "skipped(no chromium)"}
+    # The hosted Playwright launcher needs an absolute executable path; a bare
+    # name found on PATH would fail to launch.
+    exe = shutil.which(exe) or exe
 
     with tempfile.TemporaryDirectory() as td:
         page = Path(td) / "probe.html"
