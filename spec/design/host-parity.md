@@ -1501,8 +1501,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   author the same hidden axes and export byte-identical SVG and PNG (equal
   scale) for identical input through the Rust Scene route
   (`FLAG_GRAPH_MARKS`, scene-ir.md), pinned by
-  `tests/fixtures/graph_static_export_cross_host.json`. Known open gap:
-  default graph colors differ between hosts.
+  `tests/fixtures/graph_static_export_cross_host.json`. Both hosts route
+  graph edges through `xyg_graph_edge_route_ends` with the same node radii
+  and shapes, ship the same `edge_ends` channel, and set the same XYCL
+  edge-ends flag, so border-aware arrowheads are byte-identical too (#33).
+  Known open gap: default graph colors differ between hosts.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

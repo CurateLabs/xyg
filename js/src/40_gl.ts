@@ -46,6 +46,9 @@ export const ATTR_SLOTS = {
   // a_sval/a_sel — none ever co-resident with a_prev* in the same program.
   a_prevx: 4, a_prevy: 5, a_prevx1: 7, a_prevy1: 8,
   a_rgba: 12, a_style: 13, a_stroke: 14, a_radius: 15,
+  // Graph edge ends (#33): segment-only; alias a_stroke/a_radius, which the
+  // segment program never declares.
+  a_ends: 14, a_ends2: 15,
   // Ribbon target-end colour. Aliases a_style's slot: the ribbon program uses
   // neither the style nor the stroke channel families, so the slot is free
   // there, and no other program declares a_rgba2.
@@ -856,7 +859,17 @@ export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
 in float a_dash0; in float a_dashDir;
+in vec4 a_ends; in vec3 a_ends2;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
+// Graph edge ends (#33), from Rust edge_route_segments_with_ends:
+// a_ends = (source center - piece start x, y [data], source radius px, flags:
+// head 64, terminal 32, target shape bits 0-1, source shape bits 2-3);
+// a_ends2 = (target center - piece start x, y [data], target radius px).
+// Each piece clips itself against both node outlines (edge_route::
+// clip_edge_piece). u_edgeScale = dpr * node zoom/animation size factor; head
+// sizes are device px. u_edgePass 1 draws only the arrowhead triangle.
+uniform int u_edgeEnds; uniform int u_edgePass; uniform float u_edgeScale;
+uniform float u_edgeHeadLen; uniform float u_edgeHeadHalf;
 uniform float u_animationProgress;
 uniform int u_colorMode;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
@@ -865,9 +878,49 @@ out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
 ${AXIS_GLSL}
 ${POLAR_GLSL_UNIFORMS}
+// Mirrors edge_route::node_shape_span: parameter interval of a + t*d inside a
+// circle (0), square (1, half-side r), or diamond (2, vertex radius sqrt2*r)
+// marker centered at c; (1e30, -1e30) when the line misses it.
+vec2 xyEdgeSpan(int shape, float r, vec2 a, vec2 d, vec2 c) {
+  const vec2 NONE = vec2(1e30, -1e30);
+  if (r <= 0.0) return NONE;
+  vec2 p = a - c;
+  if (shape == 0) {
+    float qa = dot(d, d);
+    if (!(qa > 0.0)) return NONE;
+    float qb = 2.0 * dot(d, p);
+    float disc = qb * qb - 4.0 * qa * (dot(p, p) - r * r);
+    if (disc < 0.0) return NONE;
+    float root = sqrt(disc);
+    return vec2((-qb - root) / (2.0 * qa), (-qb + root) / (2.0 * qa));
+  }
+  float limit = shape == 1 ? r : 1.41421356 * r;
+  float lo = -1e30;
+  float hi = 1e30;
+  for (int k = 0; k < 4; k++) {
+    vec2 n = shape == 1
+      ? (k == 0 ? vec2(1.0, 0.0) : k == 1 ? vec2(-1.0, 0.0) : k == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0))
+      : (k == 0 ? vec2(1.0, 1.0) : k == 1 ? vec2(1.0, -1.0) : k == 2 ? vec2(-1.0, 1.0) : vec2(-1.0, -1.0));
+    float base = dot(n, p) - limit;
+    float slope = dot(n, d);
+    if (abs(slope) < 1e-12) {
+      if (base > 0.0) return NONE;
+    } else if (slope > 0.0) {
+      hi = min(hi, -base / slope);
+    } else {
+      lo = max(lo, -base / slope);
+    }
+  }
+  return lo <= hi ? vec2(lo, hi) : NONE;
+}
+void xyEdgeHide() {
+  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+  v_off = 0.0; v_cval = 0.0; v_dash = 0.0; v_rgba = vec4(0.0); v_style = vec4(0.0);
+}
 void main() {
   vec2 p0;
   vec2 p1;
+  if (u_edgePass == 1 && u_edgeEnds == 0) { xyEdgeHide(); return; }
   if (u_coordMode == 1) {
     float th0 = xyAxisCoord(ax0, u_x0meta, u_x0mode, u_x0constant);
     float th1 = xyAxisCoord(ax1, u_x1meta, u_x1mode, u_x1constant);
@@ -909,6 +962,53 @@ void main() {
   p1 = mix(center, p1, u_animationProgress);
   vec2 pix0 = (p0 * 0.5 + 0.5) * u_res;
   vec2 pix1 = (p1 * 0.5 + 0.5) * u_res;
+  if (u_edgeEnds == 1 && u_coordMode != 1) {
+    vec2 d = pix1 - pix0;
+    float l = length(d);
+    if (!(l > 0.0)) { xyEdgeHide(); return; }
+    // Node centers ride as data deltas from the piece start: encode them with
+    // the start column's meta so f32 transport stays exact.
+    vec2 c0 = (vec2(
+      xyMap(ax0 + a_ends.x * abs(u_x0meta.y), u_xmap, u_x0meta, u_x0mode, u_x0constant),
+      xyMap(ay0 + a_ends.y * abs(u_y0meta.y), u_ymap, u_y0meta, u_y0mode, u_y0constant)) * 0.5 + 0.5) * u_res;
+    vec2 c1 = (vec2(
+      xyMap(ax0 + a_ends2.x * abs(u_x0meta.y), u_xmap, u_x0meta, u_x0mode, u_x0constant),
+      xyMap(ay0 + a_ends2.y * abs(u_y0meta.y), u_ymap, u_y0meta, u_y0mode, u_y0constant)) * 0.5 + 0.5) * u_res;
+    int fl = int(a_ends.w + 0.5);
+    bool head = (fl & 64) != 0;
+    float t0 = 0.0;
+    float t1 = 1.0;
+    float tipT = -1.0;
+    vec2 s0 = xyEdgeSpan((fl >> 2) & 3, a_ends.z * u_edgeScale, pix0, d, c0);
+    if (s0.x <= 0.0 && s0.y > 0.0) t0 = s0.y;
+    vec2 s1 = xyEdgeSpan(fl & 3, a_ends2.z * u_edgeScale, pix0, d, c1);
+    bool hit1 = s1.x <= s1.y;
+    if (hit1 && s1.x < 1.0 && s1.y >= 1.0) {
+      t1 = s1.x;
+      if (head && s1.x > 0.0) tipT = s1.x;
+    }
+    if (head && (fl & 32) != 0 && !hit1) tipT = 1.0;
+    if (!(t1 > t0)) { xyEdgeHide(); return; }
+    vec2 ue = d / l;
+    if (u_edgePass == 1) {
+      if (tipT < 0.0) { xyEdgeHide(); return; }
+      vec2 tip = pix0 + d * tipT;
+      vec2 base = tip - ue * u_edgeHeadLen;
+      vec2 side = vec2(-ue.y, ue.x) * u_edgeHeadHalf;
+      vec2 v = gl_VertexID == 0 ? tip : (gl_VertexID == 1 ? base + side : base - side);
+      gl_Position = vec4(v / u_res * 2.0 - 1.0, 0.0, 1.0);
+      v_off = 0.0;
+      v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
+      v_dash = 0.0;
+      v_rgba = a_rgba; v_style = a_style;
+      return;
+    }
+    if (tipT >= 0.0) t1 = min(t1, tipT - u_edgeHeadLen / l);
+    if (!(t1 > t0)) { xyEdgeHide(); return; }
+    vec2 q0 = pix0 + d * t0;
+    pix1 = pix0 + d * t1;
+    pix0 = q0;
+  }
   vec2 dir = pix1 - pix0;
   float len = max(length(dir), 1e-6);
   dir /= len;

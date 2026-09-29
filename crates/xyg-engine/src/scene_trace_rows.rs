@@ -18,6 +18,10 @@ pub const XYCL_MAGIC: &[u8; 4] = b"XYCL";
 pub const XYCL_VERSION: u32 = 1;
 pub const XYCL_HEADER_BYTES: usize = 16;
 pub const XYCL_PREFIX_BYTES: usize = 48;
+/// XYCL prefix byte 3 bit: a `segments` trace's `base` column carries graph
+/// edge ends (`edge_route::EDGE_ENDS_STRIDE` values per segment) (#33). Rust
+/// routes them into `PACK_EDGE_SEGMENT`.
+pub const XYCL_EDGE_ENDS: u8 = 1 << 0;
 
 const MAX_TRACES: usize = 4_096;
 const MAX_KIND: usize = 32;
@@ -69,6 +73,7 @@ struct AttachedTrace {
 struct ColumnInput {
     kind: String,
     coords: u8,
+    edge_ends: bool,
     trace_id: u64,
     x: Vec<f64>,
     y: Vec<f64>,
@@ -233,6 +238,10 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
     if coords > COORDS_POLAR {
         return Err(TraceRowsError::new(TraceRowsCode::Coords, index));
     }
+    let column_flags = prefix[3];
+    if column_flags & !XYCL_EDGE_ENDS != 0 {
+        return Err(TraceRowsError::new(TraceRowsCode::Length, index));
+    }
     let trace_id = u64::from_le_bytes(prefix[8..16].try_into().unwrap());
     let n_x = u32::from_le_bytes(prefix[16..20].try_into().unwrap());
     let n_y = u32::from_le_bytes(prefix[20..24].try_into().unwrap());
@@ -265,6 +274,7 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
     Ok(ColumnInput {
         kind,
         coords,
+        edge_ends: column_flags & XYCL_EDGE_ENDS != 0,
         trace_id,
         x: decode_f64s(x, index)?,
         y: decode_f64s(y, index)?,
@@ -345,13 +355,30 @@ pub fn pack_trace_rows(
         } else {
             (input.x, input.y)
         };
+        // Graph edge ends ride `base` (EDGE_ENDS_STRIDE per segment) into
+        // PACK_EDGE_SEGMENT (#33).
+        let mut fact_bits = attached.fact_bits as u8;
+        if input.edge_ends {
+            let n = input.x0.len();
+            let expected = n
+                .checked_mul(crate::edge_route::EDGE_ENDS_STRIDE)
+                .ok_or(TraceRowsError::new(TraceRowsCode::Limit, index))?;
+            if input.kind != "segments"
+                || input.coords == COORDS_POLAR
+                || input.base.len() != expected
+            {
+                return Err(TraceRowsError::new(TraceRowsCode::Length, index));
+            }
+            fact_bits |= crate::scene_pack::FACT_EDGE_ENDS;
+        }
+        let base = input.base.clone();
         let facts = write_xypk(
             &input.kind,
             index as u32,
             input.coords,
             symbol,
             attached.authored_step as u8,
-            attached.fact_bits as u8,
+            fact_bits,
             input.trace_id,
             diameter,
             attached.hex_dx,
@@ -360,14 +387,7 @@ pub fn pack_trace_rows(
             f64::from(attached.grid_cols),
         );
         let packed = pack_product_facts(
-            &facts,
-            &x,
-            &y,
-            &input.x0,
-            &input.y0,
-            &input.x1,
-            &input.y1,
-            &input.base,
+            &facts, &x, &y, &input.x0, &input.y0, &input.x1, &input.y1, &base,
         )
         .map_err(|error| pack_error(error, index))?;
         rows.extend(packed);

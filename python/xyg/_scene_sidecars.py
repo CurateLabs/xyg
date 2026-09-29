@@ -22,7 +22,9 @@ from ._scene_observations import (
 from .config import default_mark_color
 
 _XYCL_HEADER = struct.Struct("<4sIII")
-_XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
+_XYCL_PREFIX = struct.Struct("<HBBIQ7I4x")
+# XYCL prefix byte 3: `segments` `base` carries graph edge-end triples (#33).
+_XYCL_EDGE_ENDS = 1 << 0
 _XYNM_HEADER = struct.Struct("<4sIII")
 _XYNM_PREFIX = struct.Struct("<H")
 _XYFS_TRACE_RECT_GRADIENT = 1 << 5
@@ -47,14 +49,22 @@ def pack_xycl(figure: Any) -> bytes:
     records = bytearray(_XYCL_HEADER.pack(b"XYCL", 1, len(traces), 0))
     for trace in traces:
         kind = str(trace.kind).encode("utf-8")
+        columns = {name: _trace_column(trace, name) for name in ("x", "y", "x0", "y0", "x1", "y1")}
+        ends = (getattr(trace, "style_channels", None) or {}).get("edge_ends")
+        column_flags = 0
+        if ends is not None and str(trace.kind) == "segments" and not coords:
+            columns["base"] = ends.values
+            column_flags = _XYCL_EDGE_ENDS
+        else:
+            columns["base"] = _trace_column(trace, "base")
         packed = [
-            pack_xycl_column(_trace_column(trace, name))
-            for name in ("x", "y", "x0", "y0", "x1", "y1", "base")
+            pack_xycl_column(columns[name]) for name in ("x", "y", "x0", "y0", "x1", "y1", "base")
         ]
         records.extend(
             _XYCL_PREFIX.pack(
                 len(kind),
                 coords,
+                column_flags,
                 0,
                 int(trace.id),
                 *(count for count, _payload in packed),

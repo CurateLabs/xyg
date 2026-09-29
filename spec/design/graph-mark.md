@@ -431,15 +431,40 @@ is never serialized into `spec.graph` or the paint payload.
   3-sided loop, or shaft + 2 wings), so straight graphs never pay the curved
   ceiling. Per-edge encodings (color, width, tooltips) are render-edge indexed
   and every host expands them across routed segments via `render_edge_index`.
-  Border-aware endpoint clipping against rendered node radius remains a
-  follow-up (node size is a screen-space paint property, not a routing-time
-  world-space one); hosts must not invent that geometry either.
+- **Border-aware ends and screen-space arrowheads (#33, ABI 368).** Graph
+  marks route through `xyg_graph_edge_route_ends`: the same geometry without
+  data-space arrow wings (1 shaft per straight edge, 3 loop sides,
+  `CURVE_TESSELLATION_SEGMENTS` curved pieces), plus per-segment `edge_ends`
+  (7 values: source-node center minus the piece start in data units, source
+  radius px, target-node center minus the piece start, target radius px, and
+  a flag byte: head `0x40` on every piece of a directed edge, terminal `0x20`
+  on its last piece, target shape bits 0-1, source shape bits 2-3). Centers
+  ride as deltas from the piece start so f32 transport stays exact. Hosts pass
+  each render node's on-screen radius (half the diameter the node scatter
+  ships, including continuous `size` over its `range_px`) and scatter symbol
+  code; circle, square, and diamond clip exactly, every other symbol clips to
+  its circumscribed circle. Painters clip **every piece** against both node
+  outlines in screen space (`edge_route::clip_edge_piece` /
+  `node_shape_span`), so parallel/reciprocal shafts offset from the centers
+  and short curve pieces near large nodes still start and end on the
+  outline. The piece that enters the target outline draws a filled
+  `GRAPH_EDGE_HEAD_LENGTH_PX` (8) × 2·`GRAPH_EDGE_HEAD_HALF_WIDTH_PX` (4) head
+  with its tip on the outline; if a shaft misses the target entirely, its
+  terminal piece draws the head at its end. A piece inside a node is hidden;
+  a shaft is only shortened for a head that is actually drawn. The WebGL
+  segment shader applies the rule every frame (radii × dpr × the node
+  scatter's zoom size factor × its entrance-animation scale), and hover uses
+  the same clip. The static Scene applies it once at encode (scene-ir.md
+  `EdgeSegment`); hosts ship `edge_ends` as a host-computed geometry channel
+  that static admission does not treat as per-item paint. Polar keeps
+  untrimmed edges. Parallel separation (0.08) and loop radius are still data
+  units, so collinear layouts can spread parallel edges widely.
 
 Interactive path is primary; export must not reshape the hot path (§8).
 Geometry remains segments + scatter buffers from the render graph; the client
 draws uploaded buffers only. Edge routing expands some edges into multiple
-segments (loops / arrow wings / curve tessellation) while preserving source
-edge identity via `render_edge_index`.
+segments (loops / curve tessellation) while preserving source edge identity via
+`render_edge_index`.
 
 ### 7.1 Label, visual-state, and compound foundation (#34)
 
@@ -593,7 +618,8 @@ boundary edges retain their canonical source identity.
   bytes are identical for identical input. Node `graphChart` hides axes like
   Python `graph_chart`. Current bound: the public route admits at most 10,000
   records per trace, so graphs over 10,000 nodes or 10,000 routed segments
-  (about 3,300 directed straight or 1,000 curved directed edges) fail closed;
+  (about 10,000 straight or 1,250 curved edges; each self-loop draws 3)
+  fail closed;
   the interactive path is unaffected. Reasons: Python reports
   `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for both; Node reports `…_PUBLIC_LOD` for
   nodes and `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS` for segment overflow (a
@@ -616,6 +642,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_sample_edges` | LOD edge index sample |
 | `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
 | `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
+| `xyg_graph_edge_route_ends` | ABI 368 routed shafts + per-segment border radii and head/shape flags for screen-space trimming (#33) |
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28; optional CSR source-edge membership per render edge (ABI 367, §6) |
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |

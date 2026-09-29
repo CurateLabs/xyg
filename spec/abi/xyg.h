@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 367
-#define XYG_ABI_SIGNATURE_SHA256 "6d49d3857da3155fea7fb36263d3dd49ecbcd2283118adcf0e6c7dfa2b315604"
+#define XYG_ABI_VERSION 368
+#define XYG_ABI_SIGNATURE_SHA256 "f326727f1d4ba75225c58865237eaf4fcf245849d9bd00ca67ca93996fdca870"
 
 #ifdef __cplusplus
 extern "C" {
@@ -145,6 +145,7 @@ int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const do
 int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax);
 size_t xyg_graph_compound_scene(const void * descriptor, uint8_t * out, size_t out_cap);
 int32_t xyg_graph_compound_transition(uint64_t n, const uint64_t * node_ids, const uint64_t * parents, const uint8_t * validity, const uint8_t * collapsed, uint64_t target_id, uint32_t action, uint32_t lod_tier, uint8_t * out, uint8_t * out_changed);
+int32_t xyg_graph_edge_route_ends(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, int32_t curved, const double * node_radius_px, const uint8_t * node_symbol, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, double * out_ends, uint64_t * out_n_segments);
 int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, int32_t curved, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments);
 int32_t xyg_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, uint64_t seed, uint32_t algorithm, uint64_t * out_handle);
 int32_t xyg_graph_force_create_cose(const void * descriptor, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, uint64_t seed, uint64_t * out_handle);

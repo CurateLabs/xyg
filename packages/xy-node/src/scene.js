@@ -5318,7 +5318,11 @@ function packXyCl(figure) {
   header.setUint32(8, traces.length, true);
   for (const trace of traces) {
     const kind = new TextEncoder().encode(String(trace.kind ?? ""));
-    const cols = [trace.x, trace.y, trace.x0, trace.y0, trace.x1, trace.y1, trace.base].map((column) => {
+    // XYCL prefix byte 3 bit 0: `base` carries graph edge-end triples (#33).
+    const ends = trace.style_channels?.edge_ends;
+    const edgeEnds = ends?.values != null && String(trace.kind) === "segments" && coords === 0;
+    const base = edgeEnds ? ends.values : trace.base;
+    const cols = [trace.x, trace.y, trace.x0, trace.y0, trace.x1, trace.y1, base].map((column) => {
       if (column == null || column.length === 0) return new Uint8Array();
       const arr = asF64Array(column, "trace column");
       return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
@@ -5327,6 +5331,7 @@ function packXyCl(figure) {
     const view = new DataView(prefix.buffer);
     view.setUint16(0, kind.length, true);
     prefix[2] = coords;
+    prefix[3] = edgeEnds ? 1 : 0;
     view.setBigUint64(8, asU64(Number(trace.id), "stableIds value"), true);
     view.setUint32(16, cols[0].length / 8, true);
     view.setUint32(20, cols[1].length / 8, true);
@@ -6761,7 +6766,8 @@ function perItemChannelNames(trace) {
   if (size != null && typeof size === "object" && size.mode !== "constant") names.push("size");
   const channels = trace.style_channels ?? {};
   if (channels != null && typeof channels === "object" && !Array.isArray(channels) && !ArrayBuffer.isView(channels)) {
-    names.push(...Object.keys(channels));
+    // Graph edge ends are Scene-packed geometry (PACK_EDGE_SEGMENT, #33).
+    names.push(...Object.keys(channels).filter((name) => name !== "edge_ends"));
   }
   return names;
 }

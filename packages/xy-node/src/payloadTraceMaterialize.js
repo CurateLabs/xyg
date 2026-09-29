@@ -231,6 +231,16 @@ function resolveStyleChannelValues(channel, sel, nMarks) {
   if (channel?.values != null) {
     let values = channel.values;
     if (sel != null) {
+      const components = Math.max(1, Number(channel.components ?? 1));
+      if (components > 1) {
+        // Multi-component rows (e.g. graph edge_ends) gather whole rows.
+        const src = values instanceof Float64Array ? values : Float64Array.from(values, Number);
+        const out = new Float64Array(sel.length * components);
+        for (let i = 0; i < sel.length; i += 1) {
+          for (let k = 0; k < components; k += 1) out[i * components + k] = src[sel[i] * components + k];
+        }
+        return out;
+      }
       values = values instanceof Uint8Array
         ? gatherItems(values, sel)
         : gatherF64(values, sel);
