@@ -222,6 +222,65 @@ Hexbin count is larger than mean/sum because this fixture occupies more
 cells under count. Mean and sum share Scene/SVG/PNG/PDF bytes, matching the
 golden. No competitive-win claim.
 
+### Graph scale evidence (#33, local diagnostic)
+
+`benchmarks/bench_graph_scale.py --profile evidence` (methodology §11) on the
+graph ladder, two edges per node, preset positions, default budgets (200k
+nodes, 500k edges). Recorded on clean commit `e827855b` (Linux, CPython
+3.12.13, native backend, 16 CPUs, **software GL / SwiftShader**, 8 reps) and
+committed as `spec/benchmarks/graph-scale-local.json`, verified with
+`verify_benchmark_report.py --kind graph-scale --expect-commit e827855b...`.
+This is a Cloud Agent VM diagnostic, not reference hardware and not the hosted
+SHA-keyed `graph-scale-<sha>.json` row, which the changed-main evidence job
+uploads after merge.
+
+```bash
+uv run python benchmarks/bench_graph_scale.py --profile evidence --reps 8 \
+  --probe-timeout 1800 --out spec/benchmarks/graph-scale-local.json
+uv run python scripts/verify_benchmark_report.py spec/benchmarks/graph-scale-local.json \
+  --kind graph-scale --expect-commit "$(git rev-parse HEAD)"
+```
+
+Native stages (ms), payload, and peak RSS of the fresh per-tier process:
+
+| tier | mode | render nodes / edges | host normalize | build_render | edge route | graph mark | payload build | payload MiB | peak RSS MiB |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| small 1k | direct | 1,000 / 2,000 | 1.1 | 0.1 | 0.6 | 19.2 | 1.9 | 0.2 | 51 |
+| medium 10k | direct | 10,000 / 20,000 | 11.0 | 1.0 | 5.0 | 45.0 | 5.0 | 1.6 | 70 |
+| large 100k | direct | 100,000 / 200,000 | 122.3 | 12.2 | 62.9 | 343.8 | 35.5 | 16.9 | 244 |
+| massive 1M | aggregate | 58,021 / 500,000 | 2,501.4 | 566.1 | 220.8 | 3,473.7 | 67.8 | 47.7 | 683 |
+
+Browser stage (ms, headless Chromium, SwiftShader; redraws GPU-synced):
+
+| tier | first paint | hover p95 | pan p95 | zoom p95 | teardown |
+|---|---:|---:|---:|---:|---:|
+| small 1k | 697 | 20 | 122 | 65 | 3 |
+| medium 10k | 1,625 | 58 | 754 | 572 | 4 |
+| large 100k | 10,983 | 314 | 8,521 | 5,365 | 8 |
+| massive 1M | 26,717 | 752 | 20,916 | 13,190 | 11 |
+
+Rust LOD decisions (policy rows, not executions): 10M, 100M, and 1B nodes all
+resolve to `aggregate` with 500,000 edges kept. Every row's oracles pass:
+budgets hold, every render edge has source-edge members, edge picks return
+identity, first paint is nonblank, hovers resolve edges, and browser segment
+counts equal the routed counts.
+
+Reading the rows:
+
+- Rust stages scale near linearly and stay small (1M-node `build_render`
+  0.57 s, routing 0.22 s). At 1M the host path is dominated by Python id
+  normalization (2.5 s of the 3.5 s graph mark), a follow-up for Rust
+  projection of generic id inputs.
+- Browser redraw cost here is SwiftShader CPU rasterization and grows with
+  drawn segments (200k at large, 500k at massive); reference-hardware GPUs
+  are not represented by these rows. The 500k-edge aggregate budget is
+  heavy for software GL; lowering it or adding an edge-density tier is a
+  product decision for a follow-up.
+- Hover stays interactive through large (314 ms p95) because hit testing is
+  CPU-side on the routed segments; it does not use the GPU.
+
+No competitive-win claim.
+
 ### Density no-refinement gate
 
 Location: `js/src/49_wasm_density.ts` (adapter policy), `js/src/54_kernel.ts`

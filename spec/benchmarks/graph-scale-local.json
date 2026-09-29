@@ -1,0 +1,453 @@
+{
+  "benchmark_categories": [
+    {
+      "goal": "Keep native graph work attributable and browser-visible geometry bounded at every scale tier.",
+      "harness": "benchmarks/test_codspeed_graph_render.py; benchmarks/bench_dual_host_graph.py; benchmarks/bench_interaction.py; benchmarks/bench_graph_scale.py",
+      "id": "graph_render_pipeline",
+      "metrics": "UUID ingest, layout ticks, render-graph build, payload/export bytes, first paint and frame pacing",
+      "name": "Graph render pipeline",
+      "status": "tracked",
+      "why": "GraphForge views need attributed ingest, layout, bounded geometry, payload, and export costs before browser paint."
+    },
+    {
+      "goal": "Beat Plotly/Bokeh/Altair on first interactive paint for common charts.",
+      "harness": "benchmarks/bench_vs.py --ttfr at 1k-100k; benchmarks/test_codspeed_kernels.py::test_first_payload_scatter_small",
+      "id": "small_data_startup",
+      "metrics": "TTFR, JS/payload size, Python overhead",
+      "name": "Small-data startup",
+      "status": "tracked",
+      "why": "Everyday charts should feel instant; a performance library cannot only win at 10M rows."
+    },
+    {
+      "goal": "Keep xy lightweight at import and smaller to install than broad plotting stacks.",
+      "harness": "benchmarks/bench_install.py",
+      "id": "install_footprint_import_budget",
+      "metrics": "cold import time, installed distribution bytes, file count",
+      "name": "Install footprint and import budget",
+      "status": "tracked",
+      "why": "Notebook, CI, and serverless users feel package weight and cold import time before the first chart exists."
+    },
+    {
+      "goal": "Smooth exact WebGL scatter with bounded bytes/point and no JSON-number payload cliff.",
+      "harness": "benchmarks/bench_vs.py at 100k-200k; benchmarks/bench_interaction.py; benchmarks/test_codspeed_kernels.py::test_first_payload_scatter_medium",
+      "id": "medium_direct_scatter",
+      "metrics": "FPS, TTFR, memory, bytes/point, hover latency",
+      "name": "Medium direct scatter",
+      "status": "tracked",
+      "why": "Proves exact marker rendering, hover, color, and size channels before aggregation kicks in."
+    },
+    {
+      "goal": "Keep resident/render payload flat in N while showing truthful density summaries.",
+      "harness": "benchmarks/bench_scatter_native.py, benchmarks/bench_vs.py, benchmarks/test_codspeed_kernels.py::test_first_payload_density_large, example app assets",
+      "id": "huge_scatter_overview",
+      "metrics": "ingest/bin time, density payload size, peak memory, TTFR",
+      "name": "Huge scatter overview",
+      "status": "tracked",
+      "why": "Proves screen-bounded rendering for datasets larger than the browser should draw point-for-point."
+    },
+    {
+      "goal": "Exact points when visible count is under budget; sampled/density with explicit counts otherwise.",
+      "harness": "benchmarks/test_codspeed_kernels.py::test_adaptive_drilldown_cycle and ::test_adaptive_drilldown_cycle_mean_color (channel-bearing: per-request cost must exclude full-column color work)",
+      "id": "adaptive_scatter_drilldown",
+      "metrics": "visible-query latency, tier-switch latency, exact-point recovery, badge accuracy",
+      "name": "Adaptive scatter drilldown",
+      "status": "tracked",
+      "why": "The large-data claim needs a credible path from overview to exact visible points."
+    },
+    {
+      "goal": "Screen-bounded line payloads with extrema-preserving decimation and fast zoom refresh.",
+      "harness": "benchmarks/bench.py, benchmarks/bench_native.py, benchmarks/bench_interaction.py, benchmarks/test_codspeed_kernels.py::test_decimate_view",
+      "id": "huge_line_time_series",
+      "metrics": "decimation time, zoom re-decimation latency, TTFR, extrema preservation",
+      "name": "Huge line/time series",
+      "status": "tracked",
+      "why": "Common observability and finance workload; Plotly-resampler sets the bar here."
+    },
+    {
+      "goal": "Measure the 10-60 chart scaling curve and expose LRU context eviction without discarding partial-row metrics.",
+      "harness": "benchmarks/bench_dashboard.py",
+      "id": "many_chart_dashboards",
+      "metrics": "payload prep, navigation readiness, per-chart setup/first draw, shader compiles/program links, startup long tasks, JS heap, redraw submission, scroll visibility, context loss/restore, stable chart-count ceiling",
+      "name": "Many-chart dashboards",
+      "status": "tracked",
+      "why": "Plotly-class apps often fail from total page weight and many live canvases, not one chart."
+    },
+    {
+      "goal": "Stay responsive during interaction, avoid blank/flickering frames, then refine view after interaction settles.",
+      "harness": "benchmarks/bench_interaction.py; benchmarks/bench_transport.py",
+      "id": "interaction_smoothness",
+      "metrics": "pan/zoom FPS, wheel latency, hover latency, tooltip stability, selection latency, frame color delta",
+      "name": "Interaction smoothness",
+      "status": "tracked",
+      "why": "Users judge performance by pan/zoom/hover, not just export time."
+    },
+    {
+      "goal": "Keep data payloads binary and screen-bounded where possible; warn when exact export would be huge.",
+      "harness": "benchmarks/bench_vs.py, benchmarks/bench_scatter_native.py, benchmarks/bench_transport.py, benchmarks/test_codspeed_transport.py, benchmarks/test_codspeed_kernels.py::test_first_payload_density_large, benchmarks/test_codspeed_kernels.py::test_memory_report_density_medium, example app asset sizes",
+      "id": "payload_export_size",
+      "metrics": "standalone HTML bytes, binary payload bytes, bundle bytes",
+      "name": "Payload/export size",
+      "status": "tracked",
+      "why": "Notebooks, static HTML, docs, and dashboards pay for every byte shipped."
+    },
+    {
+      "goal": "Beat Plotly on user-visible first paint for common 2D charts while tracking Seaborn raster baselines where applicable.",
+      "harness": "benchmarks/bench_2d_charts.py vs Plotly/Seaborn; benchmarks/bench_pyplot_vs_matplotlib.py; benchmarks/bench_interaction.py; CodSpeed core_2d rows",
+      "id": "core_2d_chart_breadth",
+      "metrics": "payload-prep time, payload bytes, standalone HTML bytes, TTFR",
+      "name": "Core 2D chart breadth",
+      "status": "tracked",
+      "why": "The library needs to stay fast beyond the scatter wedge: bars, histograms, areas, and heatmaps are everyday chart workloads."
+    },
+    {
+      "goal": "Keep zero-copy inputs cheap and make unavoidable conversions visible.",
+      "harness": "benchmarks/bench_workflows.py ingestion rows",
+      "id": "input_ingestion",
+      "metrics": "ingest latency, copies, peak Python memory",
+      "name": "Input ingestion",
+      "status": "tracked",
+      "why": "Real applications provide float32, strided, datetime, list, pandas, and Arrow inputs rather than only ideal contiguous float64 arrays."
+    },
+    {
+      "goal": "Keep stable-domain appends proportional to the batch and expose unavoidable domain-growth rebuilds.",
+      "harness": "benchmarks/bench_workflows.py streaming rows; benchmarks/bench_transport.py append diagnostics",
+      "id": "streaming_updates",
+      "metrics": "append latency, refresh bytes, incremental pyramid update latency, domain-growth rebuild latency",
+      "name": "Streaming updates",
+      "status": "tracked",
+      "why": "Monitoring and notebook workflows append data repeatedly; stable domains should not trigger full-index rebuilds."
+    },
+    {
+      "goal": "Compute correct positive log domains from zone statistics with cost proportional to chunks, not points.",
+      "harness": "benchmarks/bench_workflows.py log autorange row; tests/test_figure.py",
+      "id": "log_autorange",
+      "metrics": "range latency, positive-domain correctness, peak Python memory",
+      "name": "Log autorange",
+      "status": "tracked",
+      "why": "Large positive/negative and non-finite series are common in monitoring and scientific charts, and log axes must avoid full-data rescans."
+    },
+    {
+      "goal": "Keep polar payload prep bounded by composition size rather than observation count, and keep wedge subdivision proportional to each wedge's own angular span.",
+      "harness": "benchmarks/test_codspeed_polar.py",
+      "id": "polar_coordinate_system",
+      "metrics": "payload-prep time, wedge flattening cost, SVG/PNG export latency, inverse-raster latency",
+      "name": "Polar coordinate system",
+      "status": "tracked",
+      "why": "Radar, wind rose, pie/donut and gauge views are a whole chart family, and a polar wedge is the most expensive mark in the engine \u2014 one annular sector per bar instead of one quad."
+    },
+    {
+      "goal": "Track each export target independently without mixing payload preparation and browser startup.",
+      "harness": "benchmarks/bench_workflows.py export rows; benchmarks/bench_pyplot_vs_matplotlib.py matched PNG rows",
+      "id": "static_export",
+      "metrics": "export latency, output bytes, peak Python memory",
+      "name": "Static export",
+      "status": "tracked",
+      "why": "HTML, SVG, and PNG export are common notebook, documentation, and reporting paths with different bottlenecks."
+    }
+  ],
+  "browser_budgets_ms": {
+    "medium": {
+      "first_paint_ms": 6000.0,
+      "hover_p95_ms": 200.0,
+      "pan_p95_ms": 2000.0
+    },
+    "small": {
+      "first_paint_ms": 2000.0,
+      "hover_p95_ms": 60.0,
+      "pan_p95_ms": 300.0
+    }
+  },
+  "edge_budget": 500000,
+  "edges_per_node": 2,
+  "environment": {
+    "browser_renderer": "software-gl",
+    "cpu_count": 16,
+    "executables": {
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "node": "v22.22.1",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+    },
+    "generated_at_utc": "2026-09-29T19:23:39.359110Z",
+    "git": {
+      "branch": "graph/issue-33-scale-evidence",
+      "commit": "e827855b32ec4d8234963ffb9d77fdec9c399228",
+      "dirty": false
+    },
+    "package_versions": {
+      "altair": null,
+      "bokeh": null,
+      "datashader": null,
+      "holoviews": null,
+      "hvplot": null,
+      "kaleido": null,
+      "matplotlib": null,
+      "numpy": "2.5.1",
+      "pandas": null,
+      "plotly": null,
+      "psutil": "7.2.2",
+      "seaborn": null,
+      "xy": null,
+      "xyg": "0.0.1.dev2782+7996efa8"
+    },
+    "platform": {
+      "machine": "x86_64",
+      "processor": "",
+      "release": "7.0.0-30-generic",
+      "system": "Linux",
+      "version": "#30-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 31 18:22:54 UTC 2026"
+    },
+    "python": {
+      "compiler": "Clang 21.1.4 ",
+      "implementation": "CPython",
+      "version": "3.12.13"
+    },
+    "xy_backend": "native"
+  },
+  "kind": "graph-scale",
+  "lod_decision_rows": [
+    {
+      "decision_ms": 0.029780901968479156,
+      "edges_kept": 500000,
+      "mode": "lod_decision",
+      "n_edges": 20000000,
+      "n_nodes": 10000000,
+      "oracle_status": "pass",
+      "tier": "aggregate"
+    },
+    {
+      "decision_ms": 0.007160007953643799,
+      "edges_kept": 500000,
+      "mode": "lod_decision",
+      "n_edges": 200000000,
+      "n_nodes": 100000000,
+      "oracle_status": "pass",
+      "tier": "aggregate"
+    },
+    {
+      "decision_ms": 0.0038798898458480835,
+      "edges_kept": 500000,
+      "mode": "lod_decision",
+      "n_edges": 2000000000,
+      "n_nodes": 1000000000,
+      "oracle_status": "pass",
+      "tier": "aggregate"
+    }
+  ],
+  "measurement_scope": "graph-render-pipeline-and-browser-interaction",
+  "node_budget": 200000,
+  "profile": "evidence",
+  "reps": 8,
+  "rows": [
+    {
+      "benchmark_categories": [
+        "graph_render_pipeline",
+        "interaction_smoothness"
+      ],
+      "browser_segments": 2002,
+      "browser_status": "ok",
+      "build_render_ms": 0.11234171688556671,
+      "edge_route_ms": 0.5923612043261528,
+      "first_paint_ms": 697.3000001907349,
+      "graph_mark_ms": 19.189193844795227,
+      "host_normalize_ms": 1.088449265807867,
+      "hover_p50_ms": 6.200000286102295,
+      "hover_p95_ms": 20.200000286102295,
+      "hover_rows": 8,
+      "html_bytes": 759700,
+      "js_heap_bytes": 1681052,
+      "lit_pixels": 4096,
+      "mode": "direct",
+      "n_edges": 2000,
+      "n_nodes": 1000,
+      "oracle_status": "pass",
+      "oracles": {
+        "browser_segments_match": true,
+        "edge_pick_identity": true,
+        "edges_within_budget": true,
+        "every_render_edge_has_members": true,
+        "hover_resolves_edges": true,
+        "no_member_repeats": true,
+        "nodes_within_budget": true,
+        "nonblank_first_paint": true,
+        "nonempty_payload": true
+      },
+      "pan_p95_ms": 122.30000019073486,
+      "payload_blob_sha256": "24c2d28e5d994a36dc89c78297a11b10f26c87667f641028537f1b89fdebb262",
+      "payload_build_ms": 1.9118641503155231,
+      "payload_bytes": 158351,
+      "peak_rss_bytes": 53698560,
+      "peak_rss_growth_bytes": 5660672,
+      "render_edges": 2000,
+      "render_nodes": 1000,
+      "routed_segments": 2002,
+      "teardown_ms": 3.1000003814697266,
+      "tier": "small",
+      "zoom_p95_ms": 64.59999990463257
+    },
+    {
+      "benchmark_categories": [
+        "graph_render_pipeline",
+        "interaction_smoothness"
+      ],
+      "browser_segments": 20002,
+      "browser_status": "ok",
+      "build_render_ms": 0.9932280518114567,
+      "edge_route_ms": 5.003019236028194,
+      "first_paint_ms": 1624.5999999046326,
+      "graph_mark_ms": 45.0185970403254,
+      "host_normalize_ms": 10.955365840345621,
+      "hover_p50_ms": 34.90000009536743,
+      "hover_p95_ms": 58,
+      "hover_rows": 8,
+      "html_bytes": 2556600,
+      "js_heap_bytes": 5130768,
+      "lit_pixels": 4096,
+      "mode": "direct",
+      "n_edges": 20000,
+      "n_nodes": 10000,
+      "oracle_status": "pass",
+      "oracles": {
+        "browser_segments_match": true,
+        "edge_pick_identity": true,
+        "edges_within_budget": true,
+        "every_render_edge_has_members": true,
+        "hover_resolves_edges": true,
+        "no_member_repeats": true,
+        "nodes_within_budget": true,
+        "nonblank_first_paint": true,
+        "nonempty_payload": true
+      },
+      "pan_p95_ms": 754.5,
+      "payload_blob_sha256": "204b5e1fbd4d5d8bc5d7a7cf4e1d2403b6a936ebf0718f4177e11a219ff58a19",
+      "payload_build_ms": 5.02731092274189,
+      "payload_bytes": 1667250,
+      "peak_rss_bytes": 73867264,
+      "peak_rss_growth_bytes": 25853952,
+      "render_edges": 20000,
+      "render_nodes": 10000,
+      "routed_segments": 20002,
+      "teardown_ms": 3.5999999046325684,
+      "tier": "medium",
+      "zoom_p95_ms": 572.4000000953674
+    },
+    {
+      "benchmark_categories": [
+        "graph_render_pipeline",
+        "interaction_smoothness"
+      ],
+      "browser_segments": 200004,
+      "browser_status": "ok",
+      "build_render_ms": 12.182347942143679,
+      "edge_route_ms": 62.88573797792196,
+      "first_paint_ms": 10983.199999809265,
+      "graph_mark_ms": 343.7802321277559,
+      "host_normalize_ms": 122.27202206850052,
+      "hover_p50_ms": 264.2999997138977,
+      "hover_p95_ms": 313.69999980926514,
+      "hover_rows": 8,
+      "html_bytes": 21516418,
+      "js_heap_bytes": 16321431,
+      "lit_pixels": 4096,
+      "mode": "direct",
+      "n_edges": 200000,
+      "n_nodes": 100000,
+      "oracle_status": "pass",
+      "oracles": {
+        "browser_segments_match": true,
+        "edge_pick_identity": true,
+        "edges_within_budget": true,
+        "every_render_edge_has_members": true,
+        "hover_resolves_edges": true,
+        "no_member_repeats": true,
+        "nodes_within_budget": true,
+        "nonblank_first_paint": true,
+        "nonempty_payload": true
+      },
+      "pan_p95_ms": 8521.199999809265,
+      "payload_blob_sha256": "c7a26515d60493b4c7499d7fd4d392f0d0326f35cbf0e67c8e9bcb694ac2d96e",
+      "payload_build_ms": 35.46421602368355,
+      "payload_bytes": 17747039,
+      "peak_rss_bytes": 255897600,
+      "peak_rss_growth_bytes": 191807488,
+      "render_edges": 200000,
+      "render_nodes": 100000,
+      "routed_segments": 200004,
+      "teardown_ms": 8.099999904632568,
+      "tier": "large",
+      "zoom_p95_ms": 5365.299999713898
+    },
+    {
+      "benchmark_categories": [
+        "graph_render_pipeline",
+        "interaction_smoothness"
+      ],
+      "browser_segments": 500000,
+      "browser_status": "ok",
+      "build_render_ms": 566.1131381057203,
+      "edge_route_ms": 220.77902406454086,
+      "first_paint_ms": 26717,
+      "graph_mark_ms": 3473.6668840050697,
+      "host_normalize_ms": 2501.4153528027236,
+      "hover_p50_ms": 638.9000000953674,
+      "hover_p95_ms": 752.2999997138977,
+      "hover_rows": 8,
+      "html_bytes": 58075229,
+      "js_heap_bytes": 37497027,
+      "lit_pixels": 4096,
+      "mode": "aggregate",
+      "n_edges": 2000000,
+      "n_nodes": 1000000,
+      "oracle_status": "pass",
+      "oracles": {
+        "browser_segments_match": true,
+        "edge_pick_identity": true,
+        "edges_within_budget": true,
+        "every_render_edge_has_members": true,
+        "hover_resolves_edges": true,
+        "no_member_repeats": true,
+        "nodes_within_budget": true,
+        "nonblank_first_paint": true,
+        "nonempty_payload": true
+      },
+      "pan_p95_ms": 20915.699999809265,
+      "payload_blob_sha256": "9a1c199dcc69e616a8bdb55e48266a44bb3ffe86441b1e02e814dd19a6b19956",
+      "payload_build_ms": 67.80796591192484,
+      "payload_bytes": 50017853,
+      "peak_rss_bytes": 717131776,
+      "peak_rss_growth_bytes": 481857536,
+      "render_edges": 500000,
+      "render_nodes": 58021,
+      "routed_segments": 500000,
+      "teardown_ms": 10.699999809265137,
+      "tier": "massive",
+      "zoom_p95_ms": 13189.800000190735
+    }
+  ],
+  "schema_version": 2,
+  "tiers": {
+    "large": 100000,
+    "massive": 1000000,
+    "medium": 10000,
+    "small": 1000
+  },
+  "tracked_categories": [
+    {
+      "goal": "Keep native graph work attributable and browser-visible geometry bounded at every scale tier.",
+      "harness": "benchmarks/test_codspeed_graph_render.py; benchmarks/bench_dual_host_graph.py; benchmarks/bench_interaction.py; benchmarks/bench_graph_scale.py",
+      "id": "graph_render_pipeline",
+      "metrics": "UUID ingest, layout ticks, render-graph build, payload/export bytes, first paint and frame pacing",
+      "name": "Graph render pipeline",
+      "status": "tracked",
+      "why": "GraphForge views need attributed ingest, layout, bounded geometry, payload, and export costs before browser paint."
+    },
+    {
+      "goal": "Stay responsive during interaction, avoid blank/flickering frames, then refine view after interaction settles.",
+      "harness": "benchmarks/bench_interaction.py; benchmarks/bench_transport.py",
+      "id": "interaction_smoothness",
+      "metrics": "pan/zoom FPS, wheel latency, hover latency, tooltip stability, selection latency, frame color delta",
+      "name": "Interaction smoothness",
+      "status": "tracked",
+      "why": "Users judge performance by pan/zoom/hover, not just export time."
+    }
+  ]
+}
