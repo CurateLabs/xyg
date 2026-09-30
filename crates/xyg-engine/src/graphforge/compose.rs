@@ -832,11 +832,7 @@ impl<'b> Planes<'b> {
             });
         }
         self.extra(layer, extra, "nodes")?;
-        self.decide(
-            "GF_COMPOSE_EMPTY_PATHS",
-            Some(layer.index),
-            short + lists.nulls as u64,
-        );
+        self.decide("GF_COMPOSE_EMPTY_PATHS", Some(layer.index), short);
         self.path_statuses_legend(composition);
         self.label_single_path(layer, first_path)?;
         let mut out = LayerOut {

@@ -429,8 +429,11 @@ export function graphforgeGraphData(composition) {
   // Derived edges have no persisted UUID: identify them by layer and result row.
   const edgeIds = edges.uuid.map((id, i) => {
     if (id != null) return id;
+    // One result row may yield several steps (paths, walks, cycles): the
+    // step index keeps each derived edge's id unique.
     const layer = composition.layers[edges.layer[i]];
-    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}`;
+    const step = edges.order != null && edges.order[i] >= 0n ? `:${edges.order[i]}` : "";
+    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}${step}`;
   });
   if (edges.order != null) {
     edgeAttrs.step = Float64Array.from(edges.order, (v) => (v < 0n ? Number.NaN : Number(v)));

@@ -355,6 +355,15 @@ fn many_paths_keep_rank_and_cost_but_skip_labels() {
         .decisions()
         .iter()
         .any(|(c, _)| c == "GF_COMPOSE_PATH_LABELS_OMITTED"));
+    // A null or empty path list is one empty overlay, counted once.
+    let bfs = compose_one("bfs");
+    let empties: u64 = Doc::new(&bfs)
+        .decisions()
+        .iter()
+        .filter(|(c, _)| c == "GF_COMPOSE_EMPTY_PATHS")
+        .map(|(_, n)| *n)
+        .sum();
+    assert!(empties <= Doc::new(&bfs).f64s("path.cost", 0).len() as u64);
     let all_pairs = compose_one("dijkstra_all_pairs");
     let doc = Doc::new(&all_pairs);
     assert!(doc.f64s("path.cost", 0).len() > 2);

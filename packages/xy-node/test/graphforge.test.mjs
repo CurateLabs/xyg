@@ -301,6 +301,8 @@ test("ordered overlays expose paths, step order, and position labels", () => {
   const fig = graphforgeChart(c);
   const edges = fig.traces[fig._graphMeta[0].edge_trace];
   assert.ok(edges.tooltip_rows.some((row) => row.step === 0));
+  const ids = graphforgeGraphData(c).edgeIds.filter((id) => id.startsWith("derived:"));
+  assert.equal(new Set(ids).size, ids.length, "every derived step has its own id");
 
   const euler = compose("euler_circuit");
   assert.equal(euler.paths.length, 1);
