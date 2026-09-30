@@ -87,8 +87,21 @@ Playwright browser artifacts are cached on Blacksmith. Chromium-only install
 steps have a ten-minute bound and the three-engine install has a fifteen-minute
 bound; none invokes Playwright's coupled `--with-deps` path. Blacksmith images
 carry the Chromium and Firefox runner libraries. The three-engine job installs
-only WebKit's additional runtime libraries in a separate ten-minute-bounded
-step. Real browser launches remain the dependency proof.
+only WebKit's additional runtime libraries in a separate twenty-minute-bounded
+step. Two runner behaviors are handled there:
+
+- apt's needrestart hook would restart runner services after the install and
+  never return, so it is set to list-only in its configuration (install-deps
+  runs apt through sudo, which drops the environment);
+- the runner's apt mirror is slow and erratic (1 to 20+ minutes for the same
+  ~250 packages), so the downloaded `.deb` files are cached. apt keeps them,
+  a newest-by-prefix cache restore seeds `/var/cache/apt/archives` before
+  install-deps, `apt-get autoclean` drops versions the mirror no longer
+  serves, and a per-run save runs only when the package set changed, so
+  updated Ubuntu packages are retained without an entry per run.
+
+`scripts/verify_ci_workflow.py` requires each of these settings. Real browser
+launches remain the dependency proof.
 
 The inherited reflex.dev deployment workflows were removed. They built images
 for upstream AWS, Harbor, and Azure registries, changed

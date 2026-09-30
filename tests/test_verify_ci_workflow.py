@@ -2821,6 +2821,47 @@ def test_ci_workflow_rejects_unexported_node_xyts_native_library(tmp_path: Path)
     assert any("Node XYTS cross-host conformance" in error for error in errors)
 
 
+@pytest.mark.parametrize(
+    ("step", "needle"),
+    [
+        ("Restore WebKit runtime packages", None),
+        ("Restore WebKit runtime packages", "restore-keys: "),
+        ("Restore WebKit runtime packages", "-${{ github.run_id }}"),
+        ("Install WebKit runtime libraries", 'APT::Keep-Downloaded-Packages "true";'),
+        (
+            "Install WebKit runtime libraries",
+            'sudo cp "$HOME"/.cache/xyg-webkit-debs/*.deb /var/cache/apt/archives/',
+        ),
+        ("Install WebKit runtime libraries", "sudo apt-get autoclean -y"),
+        (
+            "Install WebKit runtime libraries",
+            "cp /var/cache/apt/archives/*.deb ~/.cache/xyg-webkit-debs/",
+        ),
+        ("Install WebKit runtime libraries", 'echo "changed=true" >> "$GITHUB_OUTPUT"'),
+        ("Save WebKit runtime packages", None),
+        ("Save WebKit runtime packages", "if: steps.webkit-deps.outputs.changed == 'true'"),
+    ],
+)
+def test_ci_workflow_rejects_a_broken_webkit_package_cache(
+    tmp_path: Path, step: str, needle: str | None
+) -> None:
+    text = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    start = text.index(f"      - name: {step}\n")
+    end = text.index("      - name: ", start + 1)
+    block = text[start:end]
+    if needle is None:
+        mutated = ""  # the whole step
+    else:
+        assert needle in block
+        mutated = block.replace(needle, "", 1)
+    path = tmp_path / "ci.yml"
+    path.write_text(text[:start] + mutated + text[end:], encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(step in error for error in errors), errors
+
+
 def test_ci_workflow_rejects_missing_playwright_browser_cache(tmp_path: Path) -> None:
     text = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
@@ -2838,7 +2879,9 @@ def test_ci_workflow_rejects_missing_playwright_browser_cache(tmp_path: Path) ->
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
-    assert any("browser_conformance" in error and "actions/cache" in error for error in errors)
+    # Two pinned caches share the job, so the rule is per step.
+    assert "missing required CI step 'Cache Playwright browsers'" in errors
+    assert any("browser_conformance" in error and "ms-playwright" in error for error in errors)
 
 
 def test_ci_workflow_rejects_missing_regression_gate(tmp_path: Path) -> None:
