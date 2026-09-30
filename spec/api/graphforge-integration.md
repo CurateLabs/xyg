@@ -49,7 +49,10 @@ import {
   composeGraphForge, graphforgeWebviewPayload, graphforgePick,
   graphforgeTableHtml, graphforgeLedger, GraphForgeCompositionError,
 } from "@curatelabs/xyg-node/graphforge";
-import { loadXygNode } from "@curatelabs/xyg-node/load";   // non-throwing native load (#928)
+import { loadXygNode, LOAD_ERROR_CODES } from "@curatelabs/xyg-node/load";
+
+const loaded = await loadXygNode();   // never throws; messages carry no paths
+if (!loaded.ok) return showUnavailable(loaded.code);      // stable code (§6)
 
 const composition = composeGraphForge({
   base: { tables: [nodesIpc, edgesIpc], generation: generationUuid },
@@ -137,8 +140,9 @@ message}`). Details: design §6.4.
 | Result schema (same as the extension ledger) | `GF_RESULT_SCHEMA_UNREGISTERED`, `GF_RESULT_SCHEMA_VERSION`, `GF_RESULT_SCHEMA_MISMATCH`, `GF_RESULT_NOT_ALGORITHM`, `GF_RESULT_NULL_IDENTITY`, `GF_RESULT_UUID_INVALID`, `GF_RESULT_VALUE_RANGE` |
 | Base graph | `GF_BASE_SCHEMA`, `GF_BASE_EMPTY`, `GF_BASE_ENDPOINT_MISSING`, `GF_BASE_EDGE_CONFLICT`, `GF_BASE_NULL_IDENTITY` |
 | Composition | `GF_COMPOSE_REQUEST_INVALID`, `GF_COMPOSE_VERSION`, `GF_COMPOSE_INTENT_REQUIRED`, `GF_COMPOSE_INTENT_INVALID`, `GF_COMPOSE_INTENT_UNSUPPORTED`, `GF_COMPOSE_INTENT_CONFLICT`, `GF_COMPOSE_BASE_REQUIRED`, `GF_COMPOSE_GENERATION_STALE`, `GF_COMPOSE_GENERATION_MISSING`, `GF_COMPOSE_EXTRA_IDS`, `GF_COMPOSE_MISSING_IDS`, `GF_COMPOSE_DUPLICATE_ID`, `GF_COMPOSE_IDENTITY_KIND`, `GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`, `GF_COMPOSE_CHANNEL_CONFLICT`, `GF_COMPOSE_TOO_LARGE`, `GF_COMPOSE_COORDINATES_REQUIRED`, `GF_COMPOSE_COORDINATES_MISSING`, `GF_COMPOSE_COORDINATES_INVALID` |
-| Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID` |
-| Native loading | `XYG_NATIVE_UNSUPPORTED_PLATFORM`, `XYG_NATIVE_LIBRARY_MISSING`, `XYG_NATIVE_LIBRARY_PATH_INVALID`, `XYG_NATIVE_LOAD_FAILED`, `XYG_NATIVE_ABI_MISMATCH` |
+| Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID`, `GF_COMPOSE_SCENE_EMPTY` (every node hidden: `renderWasmGraphForge` rejects, the document records the decision) |
+| Document decoding | `GF_COMPOSE_DOCUMENT_INVALID` (a supplied document is malformed or its sections disagree on shape) |
+| Native loading (`LOAD_ERROR_CODES`) | `XYG_NATIVE_UNSUPPORTED_PLATFORM`, `XYG_NATIVE_LIBRARY_MISSING`, `XYG_NATIVE_LIBRARY_PATH_INVALID`, `XYG_NATIVE_LOAD_FAILED`, `XYG_NATIVE_ABI_MISMATCH` (also a library without `xyg_abi_version`), `XYG_NODE_DEPENDENCY_MISSING` (e.g. `koffi` absent), `XYG_NODE_IMPORT_FAILED`; messages never include filesystem paths or loader text |
 | WASM init | `XYG_WASM_ABI_MISMATCH`, `XYG_WASM_SCENE_MISMATCH`, `XYG_WASM_PALETTE_MISMATCH`, `XYG_WASM_EXPORT_MISMATCH`, `XYG_WASM_IMPORTS_REJECTED`, `XYG_WASM_BUDGET_EXCEEDED`, `XYG_WASM_INSTANCE_EXHAUSTED`, `XYG_WASM_INIT_FAILED` (asset loading) |
 
 Recorded (non-fatal) decisions arrive in `composition.decisions` as
@@ -174,6 +178,6 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 - Static PNG/SVG of `bar-chart` compositions fails closed
   (`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`), as every category-axis export does in
   both hosts today; the interactive chart and the table carry the names.
-- Scene positions come from Rust's seeded force layout; documents are
-  bit-identical across hosts, Scene bytes are identical where the platform
-  `libm` agrees with wasm32's.
+- Scene positions come from Rust's seeded force layout with a `libm`-free
+  seed, so documents and Scene bytes are bit-identical across hosts and
+  platforms.

@@ -140,7 +140,7 @@ try {
       for (let x = chart.plot.x; x < chart.plot.x + chart.plot.w; x += 2) {
         // The click handler's own precedence: GPU pick, then CPU hover.
         const hit = chart._pickAt(x, y) || chart._hoverAt(x, y);
-        if (hit && isNode(hit)) return { x: rect.left + x, y: rect.top + y };
+        if (hit && isNode(hit)) return { x: rect.left + x, y: rect.top + y, trace: hit.trace, index: hit.index, stableId: chart.sceneStableId?.(hit.trace, hit.index)?.toString() ?? null };
       }
     }
     return null;
@@ -173,14 +173,14 @@ const browser = await chromium.launch({
 const violations = [];
 const fail = (message) => { throw new Error(`graphforge webview smoke: ${message}`); };
 
-/** Click a located node with real mouse events (hover, then click). */
+/** Click a located node with real mouse events (hover, then click); returns the located hit. */
 async function clickNode(tab, locate) {
   const point = await tab.evaluate(locate);
-  if (!point) return false;
+  if (!point) return null;
   await tab.mouse.move(point.x, point.y);
   await tab.waitForTimeout(100);
   await tab.mouse.click(point.x, point.y);
-  return true;
+  return point;
 }
 
 try {
@@ -194,22 +194,29 @@ try {
 
   // 1. Native: a real click relays {trace, index}; the host maps it.
   const nodeTrace = payload.nodeTrace;
-  if (!(await clickNode(tab, `window.__locateNative(${nodeTrace})`))) fail("no native node was located");
+  const nativeHit = await clickNode(tab, `window.__locateNative(${nodeTrace})`);
+  if (!nativeHit) fail("no native node was located");
   await tab.waitForFunction(() => window.__events.some((e) => e.path === "native"), null, { timeout: 10_000 });
   const relayed = (await tab.evaluate(() => window.__events)).find((e) => e.path === "native");
+  if (relayed.trace !== nativeHit.trace || relayed.index !== nativeHit.index) fail("the relayed click is not the located node");
   const identity = graphforgePick(payload.figure, composition, relayed);
-  if (identity?.kind !== "node" || !composition.nodes.uuid.includes(identity.uuid)) fail("native pick did not map to a node UUID");
+  // Independent oracle: the tooltip row painted for that element names its UUID.
+  const shown = payload.spec.traces[nativeHit.trace].tooltip_rows[nativeHit.index].id;
+  if (identity?.kind !== "node" || identity.uuid !== shown) fail("native pick did not map to the clicked node's UUID");
   if (!identity.layers.some((l) => l.resultId === "result-rank") || !identity.layers.some((l) => l.resultId === "result-community")) {
     fail("native pick lost per-layer result rows");
   }
 
   // 2. WASM: a real click dispatches xy:graphforge-select in the webview.
-  if (!(await clickNode(tab, "window.__locateWasm()"))) fail("no WASM node was located");
+  const wasmHit = await clickNode(tab, "window.__locateWasm()");
+  if (!wasmHit) fail("no WASM node was located");
   await tab.waitForFunction(() => window.__events.some((e) => e.path === "wasm"), null, { timeout: 10_000 });
   const selected = (await tab.evaluate(() => window.__events)).find((e) => e.path === "wasm");
   const wasmNodes = await tab.evaluate(() => window.__wasmNodes);
-  if (selected.kind !== "node" || !wasmNodes.includes(selected.uuid) || !composition.nodes.uuid.includes(selected.uuid)) {
-    fail("WASM pick did not dispatch a node UUID");
+  // Independent oracle: node i paints under stable ID 2^32 + i.
+  const clicked = Number(BigInt(wasmHit.stableId) - (1n << 32n));
+  if (selected.kind !== "node" || selected.index !== clicked || selected.uuid !== wasmNodes[clicked]) {
+    fail("WASM pick did not dispatch the clicked node's UUID");
   }
   if (!selected.layers.some((l) => l.resultId === "result-rank")) fail("WASM pick lost its result row");
 
