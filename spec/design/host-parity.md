@@ -1498,7 +1498,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   `tests/fixtures/graph_edge_identity_cross_host.json`. Membership stays
   host-side and is never serialized to the wire.
 - **REQ-HOSTPARITY-2g (MUST).** Python `graph_chart` and Node `graphChart`
-  author the same hidden axes and export byte-identical SVG and PNG (equal
+  author the same axes (the hidden default for each unauthored primary axis;
+  an authored `x_axis` / `y_axis`, Node `xAxis` / `yAxis`, as given, #909)
+  and export byte-identical SVG and PNG (equal
   scale) for identical input through the Rust Scene route
   (`FLAG_GRAPH_MARKS`, scene-ir.md), pinned by
   `tests/fixtures/graph_static_export_cross_host.json`. Both hosts route

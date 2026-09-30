@@ -445,8 +445,11 @@ multi-trace exception: when hosts set XYEP/XYEF flag bit 5
 verifies the traces are consecutive (edge `segments`, node `scatter`) pairs with
 graph style keys only (`color`/`opacity`/`role`/`width`;
 `color`/`opacity`/`size`/`symbol`), no annotations/legend/colorbar/polar, and
-axes carrying only `side` plus the hidden-axis `style`, the figure consumes the
-same Rust autorange the browser uses (segment endpoints plus node points).
+every axis without an authored domain carrying only `side` plus the
+hidden-axis `style`, the figure consumes the same Rust autorange the browser
+uses (segment endpoints plus node points) for those axes. An authored axis
+with its own domain (#909, e.g. a log x axis) is admitted with that domain;
+an authored axis without one still fails closed.
 Python and Node graph SVG/PNG bytes are pinned by
 `tests/fixtures/graph_static_export_cross_host.json`; graphs mixed with other
 marks keep the authored-domain requirement. The flag is a new bit in the

@@ -831,8 +831,11 @@ boundary edges retain their canonical source identity.
   curves) and node scatter through the public Scene route, autoranged by Rust
   exactly as the browser is (scene-ir.md, `FLAG_GRAPH_MARKS`). Node positions
   in the export match the browser projection to 0.01 px, and Python and Node
-  bytes are identical for identical input. Node `graphChart` hides axes like
-  Python `graph_chart`. Current bound: the public route admits at most 10,000
+  bytes are identical for identical input. Both hosts give each unauthored
+  primary axis the hidden default and keep an authored one as given (Python
+  `xyg.x_axis(...)` / `xyg.y_axis(...)` children, Node `xAxis` / `yAxis`;
+  #909); an authored axis with a domain exports with that domain (a log x
+  axis included) while the hidden axis keeps the graph autorange. Current bound: the public route admits at most 10,000
   records per trace, so graphs over 10,000 nodes or 10,000 routed segments
   (about 10,000 straight or 1,250 curved edges; each self-loop draws 3)
   fail closed;

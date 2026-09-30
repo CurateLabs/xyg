@@ -195,6 +195,40 @@ def test_default_graph_colors_are_the_rust_contract() -> None:
     assert nodes.color_ch.constant == _native.default_palette_contract()[1][0]
 
 
+def test_graph_chart_keeps_authored_axes() -> None:
+    # #909: graph_chart's hidden default axes no longer replace authored ones.
+    chart = xyg.graph_chart(
+        xyg.graph(["a", "b"], [("a", "b")], layout="preset", x=[1.0, 100.0], y=[0.0, 1.0]),
+        xyg.x_axis(type_="log", domain=(1.0, 1000.0)),
+    )
+    options = chart.figure().axis_options
+    assert options["x"]["type"] == "log"
+    assert options["x"]["domain"] == (1.0, 1000.0)
+    assert options["y"]["style"]["axis_width"] == 0.0  # y keeps the hidden default
+    # Static export honors the authored log domain: 1, 10, 100 sit at 0, 1/3,
+    # 2/3 of the plot width; the hidden y axis keeps the graph autorange.
+    svg = xyg.graph_chart(
+        xyg.graph(
+            ["a", "b", "c"],
+            [("a", "b"), ("b", "c")],
+            layout="preset",
+            x=[1.0, 10.0, 100.0],
+            y=[0.0, 1.0, 0.0],
+        ),
+        xyg.x_axis(type_="log", domain=(1.0, 1000.0)),
+        width=400,
+        height=300,
+    ).to_svg()
+    left, width = (
+        float(v)
+        for v in re.search(
+            r'<clipPath[^>]*><rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"', svg
+        ).groups()
+    )
+    xs = [float(cx) for cx in re.findall(r'<circle cx="([\d.]+)"', svg)]
+    assert xs == pytest.approx([left, left + width / 3, left + 2 * width / 3], abs=0.01)
+
+
 if __name__ == "__main__":
     if sys.argv[1:] != ["--write"]:
         raise SystemExit("usage: test_graph_static_export.py --write")
