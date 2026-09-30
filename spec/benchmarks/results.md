@@ -283,6 +283,74 @@ Reading the rows:
 
 No competitive-win claim.
 
+### GraphForge composition scale (#37, local diagnostic)
+
+`benchmarks/bench_graphforge_compose.mjs` publishes seeded GraphForge bulk
+graphs (`benchmarks/gen_graphforge_scale_inputs.py`, two edges per node,
+UUIDv7 identities) into real GraphForge 0.5.2. GraphForge runs `pagerank`,
+`louvain`, `minimum_spanning_tree`, and `dijkstra`, and the base graph is
+dumped with `MATCH (n) RETURN n` / `MATCH ()-[r]->() RETURN r`. The bench
+times only XYG's side of the engine's own output. Recorded on clean commit
+`87bb3b81` (linux-x64, Node 22.22.1, AMD Ryzen 7 3800X, 16 CPUs, median of 5
+after a warm-up) as `spec/benchmarks/graphforge-compose-local.json`. This is
+a Cloud Agent VM diagnostic, not reference hardware.
+
+```bash
+uv run python benchmarks/gen_graphforge_scale_inputs.py --out /tmp/gfscale
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so" node benchmarks/bench_graphforge_compose.mjs \
+  --inputs /tmp/gfscale --graphforge path/to/node_modules/@curatelabs/graphforge \
+  --out spec/benchmarks/graphforge-compose-local.json
+```
+
+XYG stages (ms). The four-layer rows compose PageRank, Louvain, the MST
+overlay, and the Dijkstra path over one base graph:
+
+| nodes | composed edges | native 1 layer | native 4 layers | WASM 4 layers | Node decode | chart build | payload encode | document MiB | paint buffer MiB | spec JSON MiB |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 211 | 0.17 | 0.22 | 0.37 | 1.3 | 16 | 10 | 0.05 | 0.02 | 0.10 |
+| 1,000 | 2,013 | 1.2 | 1.2 | 1.8 | 5.6 | 184 | 16 | 0.41 | 0.20 | 0.95 |
+| 10,000 | 20,014 | 11 | 17 | 21 | 77 | 1,554 | 93 | 4.0 | 2.0 | 9.6 |
+| 100,000 | 200,022 | 175 | 203 | 247 | 963 | 13,095 | 1,123 | 40.3 | 19.9 | 97.8 |
+
+Native and WASM documents are byte-identical at every size. The 100-node
+four-layer direct-tier Scene (Rust layout plus the canonical Scene, 72 KiB)
+takes 10.5 ms native and 12.1 ms WASM and is byte-identical. Larger graphs
+fail closed with `GF_COMPOSE_SCENE_TOO_LARGE` and use the graph mark.
+
+GraphForge's own cost, for context and not XYG work (ms):
+
+| nodes | publish | pagerank | louvain | minimum_spanning_tree | dijkstra | base dump |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 4.7 | 1.3 | 0.7 | 1.7 | 1.1 | 10 |
+| 1,000 | 12 | 5.6 | 7.8 | 97 | 3.7 | 8.3 |
+| 10,000 | 103 | 46 | 94 | 4,140 | 27 | 33 |
+| 100,000 | 1,306 | 783 | 2,195 | 468,618 | 744 | 1,211 |
+
+Reading the rows:
+
+- Rust composition stays well under the engine's own algorithm time at
+  every size: 203 ms for four layers over 100k nodes and 200k relationships
+  natively, 247 ms in WASM.
+- The chart build is the graph mark's default Rust force layout (300 ticks).
+  A 10k-node CPU profile attributes 1.50 s of 1.76 s to `graphForceTick`.
+  Hosts that recompose one graph should reuse positions rather than lay it
+  out again.
+- Webview spec JSON is dominated by per-element `tooltip_rows` (id, row,
+  properties) and reaches 98 MiB at 100k, which is heavy for a webview
+  `postMessage`. Moving tooltip text out of the spec (host-answered or
+  typed-buffer tooltips) is the follow-up. The numeric paint data already
+  travels as typed buffers.
+- Node's document decode (963 ms at 100k) mostly materializes UUID strings.
+  Lazy identity decoding is a follow-up.
+- GraphForge 0.5.2 `minimum_spanning_tree` grows superlinearly (4.1 s at 10k,
+  469 s at 100k), which is an upstream engine report.
+- Peak RSS (1,749 MiB) covers the whole process, including GraphForge's
+  in-memory graph at 100k.
+
+No competitive-win claim: no other charting library composes GraphForge
+result schemas. The graph-render comparison stays in the graph scale
+evidence above.
+
 ### Density no-refinement gate
 
 Location: `js/src/49_wasm_density.ts` (adapter policy), `js/src/54_kernel.ts`

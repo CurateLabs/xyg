@@ -174,6 +174,13 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 
 ## 8. Known limits
 
+- Scale (spec/benchmarks/results.md, "GraphForge composition scale"): Rust
+  composition takes about 0.2 s for four layers over 100k nodes, but the
+  graph-mark chart build (force layout) takes about 13 s. The webview spec
+  JSON reaches about 98 MiB at 100k because of per-element tooltip rows, so
+  for very large graphs select rows (`layers[].rows`, `select`) or reuse
+  positions across recompositions.
+
 - WASM Scene: direct tier only (≤ 1,024 elements).
 - Static PNG/SVG of `bar-chart` compositions fails closed
   (`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`), as every category-axis export does in
