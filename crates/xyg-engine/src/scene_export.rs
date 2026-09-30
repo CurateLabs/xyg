@@ -1294,7 +1294,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS");
             }
             // Capacity overflow uses the shared LOD reason so both hosts
-            // produce an identical stable code (#899).
+            // produce an identical stable code (#899; graph-mark.md §8,
+            // static-document.md §2).
             if trace.n_x0 as usize > MAX_PUBLIC_POINTS {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
             }
