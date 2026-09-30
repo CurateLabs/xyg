@@ -1565,10 +1565,49 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs.get("browser_conformance", ""),
         "Install WebKit runtime libraries",
         "bounded Blacksmith-only WebKit dependency install",
+        "id: webkit-deps",
         "timeout-minutes: 20",
         "npx playwright install-deps webkit",
         # apt's needrestart hook hangs after the install; keep it list-only.
         "$nrconf{restart} = 'l';",
+        # The slow mirror: keep, seed, prune, and copy back the cached .debs,
+        # and report whether the package set changed.
+        'APT::Keep-Downloaded-Packages "true";',
+        'sudo cp "$HOME"/.cache/xyg-webkit-debs/*.deb /var/cache/apt/archives/',
+        "sudo apt-get autoclean -y",
+        "cp /var/cache/apt/archives/*.deb ~/.cache/xyg-webkit-debs/",
+        'echo "changed=true" >> "$GITHUB_OUTPUT"',
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Cache Playwright browsers",
+        "pinned actions/cache for the Playwright browser engines",
+        "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+        "path: ~/.cache/ms-playwright",
+    )
+    webkit_key = (
+        "webkit-debs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}-"
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Restore WebKit runtime packages",
+        "pinned newest-prefix restore of WebKit runtime packages (slow runner apt mirror)",
+        "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+        "path: ~/.cache/xyg-webkit-debs",
+        f"key: {webkit_key}${{{{ github.run_id }}}}",
+        f"restore-keys: {webkit_key}",
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Save WebKit runtime packages",
+        "pinned per-run save of changed WebKit runtime packages",
+        "if: steps.webkit-deps.outputs.changed == 'true'",
+        "actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+        "path: ~/.cache/xyg-webkit-debs",
+        f"key: {webkit_key}${{{{ github.run_id }}}}",
     )
     _require_job_contains(
         errors,

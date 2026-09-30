@@ -452,7 +452,18 @@ jobs:
         run: |
           npm ci
           npx playwright install chromium firefox webkit
+      - name: Restore WebKit runtime packages
+        # The runner apt mirror is slow and erratic (1 to 20+ minutes for the
+        # same ~250 packages), so keep the downloaded .debs between runs. Each
+        # save gets a fresh key and restores take the newest by prefix, so
+        # packages Ubuntu updates are retained too.
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/xyg-webkit-debs
+          key: webkit-debs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
+          restore-keys: webkit-debs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}-
       - name: Install WebKit runtime libraries
+        id: webkit-deps
         # Bounded, with room for a slow runner apt mirror (observed at about
         # 150 KB/s, over 10 minutes for this install alone).
         timeout-minutes: 20
@@ -460,11 +471,35 @@ jobs:
         # install and never returns, timing the step out with every package
         # already installed. install-deps runs apt through sudo (which drops
         # the environment), so switch needrestart to list-only in its config.
+        # Cached .debs seed apt's archive, so only packages the mirror has
+        # changed download; autoclean drops versions the mirror no longer
+        # serves before the archive is copied back for the cache.
         run: |
           if [ -d /etc/needrestart/conf.d ]; then
             echo "\$nrconf{restart} = 'l';" | sudo tee /etc/needrestart/conf.d/99-ci-list-only.conf >/dev/null
           fi
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99-ci-keep-debs >/dev/null
+          mkdir -p ~/.cache/xyg-webkit-debs
+          if compgen -G "$HOME/.cache/xyg-webkit-debs/*.deb" >/dev/null; then
+            sudo cp "$HOME"/.cache/xyg-webkit-debs/*.deb /var/cache/apt/archives/
+          fi
+          before=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
           npx playwright install-deps webkit
+          sudo apt-get autoclean -y >/dev/null
+          after=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
+          rm -f ~/.cache/xyg-webkit-debs/*.deb
+          if compgen -G "/var/cache/apt/archives/*.deb" >/dev/null; then
+            cp /var/cache/apt/archives/*.deb ~/.cache/xyg-webkit-debs/
+          fi
+          if [ "$before" != "$after" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Save WebKit runtime packages
+        # Only when the install changed the package set, so unchanged runs
+        # add no cache entries.
+        if: steps.webkit-deps.outputs.changed == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/xyg-webkit-debs
+          key: webkit-debs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
       - name: Build render client
         run: node js/build.mjs
       - name: Run accessibility and cross-browser conformance
