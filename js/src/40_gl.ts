@@ -53,8 +53,8 @@ export const ATTR_SLOTS = {
   // point-only a_dval; edge halo/body RGBA and their (halo, body) widths use
   // slots the segment program leaves free (4/5/7); node halo RGBA and
   // diameter alias the line-only a_len0/a_len1 slots in the point program.
-  a_edgeDash: 9, a_haloRgba: 4, a_bodyRgba: 5, a_layerWidth: 7,
-  a_ptHaloRgba: 10, a_ptHaloSize: 11,
+  a_edgeDash: 9, a_haloRgba: 4, a_bodyRgba: 5, a_layerWidth: 7, a_edgeLayer: 8,
+  a_ptHaloRgba: 10, a_ptHaloSize: 11, a_ptLayer: 2,
   // Ribbon target-end colour. Aliases a_style's slot: the ribbon program uses
   // neither the style nor the stroke channel families, so the slot is free
   // there, and no other program declares a_rgba2.
@@ -333,15 +333,16 @@ export const POINT_VS = `#version 300 es
 in float ax; in float ay; in float a_prevx; in float a_prevy;
 in float a_cval; in float a_sval; in float a_sel; in float a_dval;
 in vec4 a_rgba; in vec4 a_style; in vec4 a_stroke;
-in vec4 a_ptHaloRgba; in float a_ptHaloSize;
+in vec4 a_ptHaloRgba; in float a_ptHaloSize; in float a_ptLayer;
 uniform vec2 u_xmap; uniform vec2 u_ymap;
 uniform vec2 u_xmeta; uniform vec2 u_ymeta; uniform int u_xmode; uniform float u_xconstant; uniform int u_ymode; uniform float u_yconstant;
 uniform float u_size; uniform int u_sizeMode; uniform vec2 u_sizeRange;
-// Semantic node halos (#34): with u_nodeLayered each point draws two
-// consecutive instances (attribute divisor 2) - its halo circle (Rust-resolved
-// CSS px diameter a_ptHaloSize times u_sizeScale, baked-alpha color, no
-// stroke) then the node - matching the canonical Scene's per-node order.
-uniform int u_nodeLayered; uniform float u_sizeScale;
+// Semantic node halos (#34): a layered draw emits two consecutive instances
+// per point (data attributes at divisor 2) and a_ptLayer (divisor 1) names
+// each - 0 its halo circle (Rust-resolved CSS px diameter a_ptHaloSize times
+// u_sizeScale, baked-alpha color, no stroke), 1 the node - matching the
+// canonical Scene's per-node order. Plain draws hold a_ptLayer at 1.
+uniform float u_sizeScale;
 uniform int u_colorMode; uniform int u_symbol; uniform float u_dpr; uniform int u_selActive;
 uniform float u_selectedOpacity; uniform float u_unselectedOpacity;
 uniform float u_transitionProgress; uniform int u_transitionActive;
@@ -355,7 +356,7 @@ void main() {
   float x = u_transitionActive == 1 ? mix(a_prevx, ax, u_transitionProgress) : ax;
   float y = u_transitionActive == 1 ? mix(a_prevy, ay, u_transitionProgress) : ay;
   gl_Position = vec4(xyPos(x, y), 0.0, 1.0);
-  bool halo = u_nodeLayered == 1 && gl_InstanceID % 2 == 0;
+  bool halo = a_ptLayer < 0.5;
   vec4 style = halo ? vec4(1.0, -1.0, 0.0, 0.0) : a_style;
   float sz = halo ? a_ptHaloSize * u_sizeScale
     : u_sizeMode == 1 ? mix(u_sizeRange.x, u_sizeRange.y, a_sval) : u_size;
@@ -876,7 +877,7 @@ export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
 in float a_dash0; in float a_dashDir;
 in vec4 a_ends; in vec3 a_ends2; in vec2 a_edgeDash;
-in vec4 a_haloRgba; in vec4 a_bodyRgba; in vec2 a_layerWidth;
+in vec4 a_haloRgba; in vec4 a_bodyRgba; in vec2 a_layerWidth; in float a_edgeLayer;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
 // Graph edge ends (#33), from Rust edge_route_segments_with_ends:
 // a_ends = (source center - piece start x, y [data], source radius px, flags:
@@ -891,12 +892,12 @@ uniform float u_edgeHeadLen; uniform float u_edgeHeadHalf;
 // (on, off) CSS px scaled by u_edgeDashScale (dpr), measured along each routed
 // piece from its start like the canonical Scene. (0, 0) is solid.
 uniform float u_edgeDashScale;
-// Semantic layers (#34): with u_edgeLayered each segment draws three
-// consecutive instances (attribute divisor 3) - epistemic halo, class body,
-// status stroke - so every edge finishes its layers before the next edge
-// paints, exactly like the canonical Scene. Halo/body colors carry Rust-baked
-// alpha; an absent layer (alpha 0) emits nothing.
-uniform int u_edgeLayered;
+// Semantic layers (#34): a layered draw emits three consecutive instances
+// per segment (data attributes at divisor 3) and a_edgeLayer (divisor 1)
+// names each one - 0 epistemic halo, 1 class body, 2 status stroke - so every
+// edge finishes its layers before the next edge paints, exactly like the
+// canonical Scene. Plain draws hold a_edgeLayer at 2. Halo/body colors carry
+// Rust-baked alpha; an absent layer (alpha 0) emits nothing.
 uniform float u_animationProgress;
 uniform int u_colorMode;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
@@ -950,7 +951,7 @@ void main() {
   vec2 p0;
   vec2 p1;
   if (u_edgePass == 1 && u_edgeEnds == 0) { xyEdgeHide(); return; }
-  int layer = u_edgeLayered == 1 ? gl_InstanceID % 3 : 2;
+  int layer = int(a_edgeLayer + 0.5);
   vec4 rgba = a_rgba;
   vec4 style = a_style;
   if (layer < 2) {

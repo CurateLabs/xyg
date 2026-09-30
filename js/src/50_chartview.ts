@@ -4745,6 +4745,7 @@ export class ChartView {
       if (halo && size) {
         g.haloRgbaBuf = this._upload(halo);
         g.haloSizeBuf = this._upload(Float32Array.from(size.subarray(0, g.n)));
+        g.ptLayerBuf = this._upload(this._layerIndices(g.n, 2));
       }
       return;
     }
@@ -4762,7 +4763,16 @@ export class ChartView {
     g.bodyRgbaBuf = this._upload(body && bodyWidth ? body : empty);
     g._cpuLayerWidths = widths;
     g.layerWidthBuf = this._upload(widths);
+    g.edgeLayerBuf = this._upload(this._layerIndices(g.n, 3));
     g._styleDpr = this.dpr;
+  }
+
+  // Per-instance layer index for a layered draw: `layers` consecutive
+  // instances per item, numbered 0..layers-1 (no gl_InstanceID dependence).
+  _layerIndices(n, layers) {
+    const out = new Float32Array(n * layers);
+    for (let i = 0; i < out.length; i++) out[i] = i % layers;
+    return out;
   }
 
 
@@ -6157,7 +6167,7 @@ export class ChartView {
     const blendOn = blend > 0.001 && g.dBuf;
 
     // Semantic node halos (#34): two instances per point, halo then node.
-    const layered = !!(g.haloRgbaBuf && g.haloSizeBuf);
+    const layered = !!(g.haloRgbaBuf && g.haloSizeBuf && g.ptLayerBuf);
     const div = layered ? 2 : 0;
     this._bindVao(
       g,
@@ -6175,6 +6185,7 @@ export class ChartView {
         strokeOn ? g.strokeBuf._fcId : 0,
         layered ? g.haloRgbaBuf._fcId : 0,
         layered ? g.haloSizeBuf._fcId : 0,
+        layered ? g.ptLayerBuf._fcId : 0,
       ],
       () => {
         this._vaoAttr(ATTR_SLOTS.ax, g.xBuf, 0, div);
@@ -6193,6 +6204,7 @@ export class ChartView {
         if (layered) {
           this._vaoAttr(ATTR_SLOTS.a_ptHaloRgba, g.haloRgbaBuf, 0, div, 4, true);
           this._vaoAttr(ATTR_SLOTS.a_ptHaloSize, g.haloSizeBuf, 0, div);
+          this._vaoAttr(ATTR_SLOTS.a_ptLayer, g.ptLayerBuf, 0, 1);
         }
       }
     );
@@ -6205,7 +6217,7 @@ export class ChartView {
     if (!rgbaOn) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
     if (!styleOn) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
     if (!strokeOn) gl.vertexAttrib4f(ATTR_SLOTS.a_stroke, r, gg, b, a);
-    gl.uniform1i(u("u_nodeLayered"), layered ? 1 : 0);
+    if (!layered) gl.vertexAttrib1f(ATTR_SLOTS.a_ptLayer, 1);
     gl.uniform1f(u("u_sizeScale"), animationScale * zoomStyle.sizeFactor);
     if (layered) gl.drawArraysInstanced(gl.POINTS, 0, 1, g.n * 2);
     else gl.drawArrays(gl.POINTS, 0, g.n);
@@ -6495,7 +6507,8 @@ export class ChartView {
     // Semantic graph layers (#34): one instanced draw with three instances
     // per segment (attribute divisor 3) - halo, body, stroke - so each edge
     // paints its layers before the next, like the canonical Scene.
-    const layered = !!(g.layerWidthBuf && g.haloRgbaBuf && g.bodyRgbaBuf && g.colorMode === 3);
+    const layered = !!(g.layerWidthBuf && g.haloRgbaBuf && g.bodyRgbaBuf && g.edgeLayerBuf
+      && g.colorMode === 3);
     const bindSegments = (div) => {
       const rgbaBuf = g.rgbaBuf;
       const styleBuf = g.styleBuf;
@@ -6514,7 +6527,8 @@ export class ChartView {
           g.edgeDashBuf ? g.edgeDashBuf._fcId : 0,
           layers ? g.haloRgbaBuf._fcId : 0,
           layers ? g.bodyRgbaBuf._fcId : 0,
-          layers ? g.layerWidthBuf._fcId : 0],
+          layers ? g.layerWidthBuf._fcId : 0,
+          layers ? g.edgeLayerBuf._fcId : 0],
         () => {
           this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, div);
           this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, div);
@@ -6534,6 +6548,7 @@ export class ChartView {
             this._vaoAttr(ATTR_SLOTS.a_haloRgba, g.haloRgbaBuf, 0, div, 4, true);
             this._vaoAttr(ATTR_SLOTS.a_bodyRgba, g.bodyRgbaBuf, 0, div, 4, true);
             this._vaoAttr(ATTR_SLOTS.a_layerWidth, g.layerWidthBuf, 0, div, 2);
+            this._vaoAttr(ATTR_SLOTS.a_edgeLayer, g.edgeLayerBuf, 0, 1);
           }
         }
       );
@@ -6543,6 +6558,7 @@ export class ChartView {
       if (!g.endsBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_ends, 0, 0, 0, 0);
       if (!g.ends2Buf) gl.vertexAttrib3f(ATTR_SLOTS.a_ends2, 0, 0, 0);
       if (!g.edgeDashBuf) gl.vertexAttrib2f(ATTR_SLOTS.a_edgeDash, 0, 0);
+      if (!layers) gl.vertexAttrib1f(ATTR_SLOTS.a_edgeLayer, 2);
     };
     const edgeEnds = g.endsBuf && !this._polarGeometry();
     gl.uniform1i(u("u_edgeEnds"), edgeEnds ? 1 : 0);
@@ -6553,10 +6569,8 @@ export class ChartView {
     gl.uniform1f(u("u_edgeHeadLen"), 8 * this.dpr);
     gl.uniform1f(u("u_edgeHeadHalf"), 4 * this.dpr);
     const count = Math.max(0, Math.min(g.n, Math.ceil(g.n * (g._transitionReveal ?? 1))));
-    gl.uniform1i(u("u_edgeLayered"), layered ? 1 : 0);
     bindSegments(layered ? 3 : 1);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, layered ? count * 3 : count);
-    gl.uniform1i(u("u_edgeLayered"), 0);
     if (edgeEnds) {
       // Filled arrowheads: same instances, head-only geometry, no dash.
       if (layered) bindSegments(1);

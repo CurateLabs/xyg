@@ -631,8 +631,11 @@ absent layer, and an absent layer ships no channel.
 | edge arrow: status ≠ 0 | the `edge_ends` head bit (0x40) per segment; replaces the `directed` default for semantically styled edges |
 
 Paint order matches the Scene item by item: the point program draws two
-instances per node (attribute divisor 2: halo, then node) and the segment
-program three per edge segment (divisor 3: halo, body, stroke), so each item
+instances per node (data attributes at divisor 2: halo, then node) and the
+segment program three per edge segment (divisor 3: halo, body, stroke), each
+instance naming its layer through a per-instance layer attribute rather than
+`gl_InstanceID` (older SwiftShader builds crash on the latter in point
+draws), so each item
 finishes its layers before the next item paints and a later edge's halo covers
 an earlier edge's stroke at a crossing. Filled arrowheads remain one pass over
 all edge layers. The Scene bounds very long dashed pieces to 64 periods to cap
