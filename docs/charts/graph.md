@@ -84,14 +84,36 @@ fixed domain, or visible axes; the one you pass replaces that hidden default.
 ## Static export
 
 `graph_chart(...).to_svg()` / `.to_png()` (and Node `graphChart(...).toSvg()` /
-`.toPng()`) export the same edges, self-loops, arrowheads, curves, and nodes the
-interactive chart draws, framed by the same automatic domain. Static export
-currently admits at most 10,000 nodes and 10,000 drawn edge segments (a
-straight edge draws 1 segment, a curved edge 8, a self-loop 3), and nodes with
-a per-node `size` array are not yet admitted statically. Larger graphs
-fail with a stable reason: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in both Python
-and Node for nodes or segments. Use the interactive HTML export for larger
-graphs.
+`.toPng()`) export what the interactive chart draws at its home view, framed
+by the same automatic domain: edges, self-loops, arrowheads, curves, and nodes,
+plus semantic styling (halos, class bodies, dashes, state fading), compound
+group frames and collapsed groups, per-node sizes and color scales, the labels
+visible at that zoom, and the semantic legend. Python and Node write identical
+bytes for identical input.
+
+A few limits apply to static output:
+
+- At most 10,000 nodes and 10,000 drawn edge segments (a straight edge draws
+  1 segment, a curved edge 8, a self-loop 3). Larger graphs fail with
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in both hosts; use the interactive HTML
+  export for them.
+- At most 128 labels (8 KiB of label text); past that the export keeps the
+  labels that appear first when zooming in. The default `label_budget` (64)
+  stays under this limit.
+- The legend goes where `xyg.legend(loc=...)` (Node: the `legend` option)
+  puts it, upper right by default. Placements without a fixed position, such
+  as `"best"`, fail with `XYG_STATIC_UNSUPPORTED_GRAPH`, and a legend taller
+  than the plot (the interactive legend scrolls instead) fails with
+  `XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT`; make the chart taller or pass
+  `semantic_legend=False`.
+- Labels and legend text use your `--chart-text` color, as in the browser.
+- Annotations (`xyg.text`, rules, arrows) on a graph chart are not exported
+  yet; export fails with `XYG_STATIC_UNSUPPORTED_GRAPH` rather than dropping
+  them. Use the interactive HTML export for annotated graphs.
+
+Pass chart settings such as `style=` next to a graph child:
+`xyg.graph_chart(xyg.graph(...), style={"background": "#0f172a",
+"--chart-text": "#e2e8f0"})`.
 
 ## Semantic styling
 
@@ -121,8 +143,7 @@ styling is left off and `spec.graph.style_contract` says so.
 Epistemic codes draw a soft halo around nodes and edges and give edges a dash
 pattern; edge classes add a colored body under the status stroke; and only
 edges with a nonzero status get an arrowhead, whether or not the graph is
-directed. SVG/PNG export of a semantically styled graph is not supported yet;
-use HTML export.
+directed. SVG/PNG export draws every one of these layers (see Static export).
 
 ## Color scales
 
@@ -157,8 +178,8 @@ xyg.graph_chart(nodes=node_table, edges=edge_table, collapsed=["<group uuid>"])
 
 Positions stay put when a group opens or closes (the whole graph is laid out
 once). Collapsing needs every node drawn, so very large graphs that the chart
-aggregates refuse `collapsed`. SVG/PNG export of grouped graphs is not
-supported yet.
+aggregates refuse `collapsed`. SVG/PNG export draws the group frames and
+collapsed groups.
 
 ## Labels
 
@@ -181,7 +202,7 @@ xyg.graph_chart(
 ```
 
 Node uses `nodeLabel`, `labelPriority`, `edgeLabel`, and `labelBudget`. SVG/PNG
-export does not draw these labels yet.
+export draws the labels visible at the exported zoom.
 
 ## Arrowheads and node borders
 

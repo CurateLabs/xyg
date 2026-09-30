@@ -33,6 +33,7 @@ import {
   xyGraphCompoundCollapse,
   xyGraphCompoundFrames,
   xyGraphOrdinalColors,
+  xyGraphComposedScene,
   xyGraphDivergingDomain,
   xyGraphSemanticLegendText,
   xyGraphSemanticStyleResolve,
@@ -207,6 +208,26 @@ const GraphCompoundSceneDescriptor = koffi.struct("XygGraphCompoundSceneDescript
   edge_metric: "const void *", edge_flags: "const void *", edge_label_lengths: "const void *",
   label_payload: "const void *", label_payload_len: "uint64_t", parents: "const void *",
   parent_validity: "const void *", collapsed: "const void *", reserved: "uint64_t",
+});
+
+// Mirror of Rust `XygComposedGraphSceneDescriptor` (#34).
+const ComposedGraphSceneDescriptor = koffi.struct("XygComposedGraphSceneDescriptor", {
+  version: "uint32_t", reserved0: "uint32_t", base: "const void *", base_len: "uint64_t",
+  node_count: "uint64_t", x: "const void *", y: "const void *", fill: "const void *",
+  stroke: "const void *", stroke_width: "const void *", diameter: "const void *",
+  symbol: "const void *", opacity: "const void *", halo: "const void *",
+  halo_diameter: "const void *", node_label_plan: "const void *",
+  node_label_lengths: "const void *", frames: "const void *", segment_count: "uint64_t",
+  x0: "const void *", y0: "const void *", x1: "const void *", y1: "const void *",
+  segment_rgba: "const void *", segment_width: "const void *", segment_opacity: "const void *",
+  segment_halo: "const void *", segment_halo_width: "const void *", segment_body: "const void *",
+  segment_body_width: "const void *", segment_dash: "const void *", edge_ends: "const void *",
+  segment_label_plan: "const void *", segment_label_lengths: "const void *",
+  label_payload: "const void *", label_payload_len: "uint64_t", legend_count: "uint64_t",
+  legend_title: "const void *", legend_title_len: "uint64_t", legend_rgba: "const void *",
+  legend_symbol: "const void *", legend_label_lengths: "const void *",
+  legend_payload: "const void *", legend_payload_len: "uint64_t", legend_loc: "const void *",
+  legend_loc_len: "uint64_t", text_rgba: "const void *", reserved: "uint64_t",
 });
 
 const CoseDescriptor = koffi.struct("XygCoseDescriptor", {
@@ -1868,6 +1889,102 @@ export function graphCompoundScene(input) {
   if (!Number.isSafeInteger(needed) || needed <= 0) throw new Error(`invalid compound graph Scene input (${needed})`);
   const output = new Uint8Array(needed);
   if (Number(xyGraphCompoundScene(descriptor, u8Ptr(output), output.length)) !== needed) throw new Error("compound graph Scene changed between bounded copies");
+  return output;
+}
+
+// Composed graph planes (#34) and their extents per node (n) / segment (m).
+const COMPOSED_GRAPH_PLANES = {
+  x: ["n", 1, "f64"], y: ["n", 1, "f64"], fill: ["n", 4, "u8"], stroke: ["n", 4, "u8"],
+  stroke_width: ["n", 1, "f64"], diameter: ["n", 1, "f64"], symbol: ["n", 1, "u8"],
+  opacity: ["n", 1, "f64"], halo: ["n", 4, "u8"], halo_diameter: ["n", 1, "f64"],
+  node_label_plan: ["n", 5, "f64"], frames: ["n", 10, "f64"],
+  x0: ["m", 1, "f64"], y0: ["m", 1, "f64"], x1: ["m", 1, "f64"], y1: ["m", 1, "f64"],
+  segment_rgba: ["m", 4, "u8"], segment_width: ["m", 1, "f64"], segment_opacity: ["m", 1, "f64"],
+  segment_halo: ["m", 4, "u8"], segment_halo_width: ["m", 1, "f64"], segment_body: ["m", 4, "u8"],
+  segment_body_width: ["m", 1, "f64"], segment_dash: ["m", 2, "f64"], edge_ends: ["m", 7, "f64"],
+  segment_label_plan: ["m", 5, "f64"],
+};
+// Optional chart text paint (straight RGBA8).
+const COMPOSED_TEXT_RGBA_BYTES = 4;
+
+/**
+ * Rebuild a composed graph chart's static Scene from its composed-graph
+ * planes (#34; Python `_native.graph_composed_scene`). `planes` holds the
+ * descriptor planes (optional ones may be omitted), `node_labels` /
+ * `segment_labels` (string or null per item), and `legend` rows
+ * `[label, rgba, symbol]` with `legend_title`.
+ */
+export function graphComposedScene(base, planes) {
+  const n = planes.x.length;
+  const m = planes.x0.length;
+  const arrays = {};
+  for (const [name, [axis, stride, kind]] of Object.entries(COMPOSED_GRAPH_PLANES)) {
+    if (planes[name] == null) continue;
+    const value = kind === "u8" ? asU8Array(planes[name], name) : asF64Array(planes[name], name);
+    // Rust reads the declared count: every plane must cover exactly its extent.
+    if (value.length !== (axis === "n" ? n : m) * stride) {
+      throw new RangeError(`composed graph plane ${JSON.stringify(name)} must hold ${(axis === "n" ? n : m) * stride} values`);
+    }
+    arrays[name] = value;
+  }
+  const textRgba = planes.text_rgba == null ? null : asU8Array(planes.text_rgba, "text_rgba");
+  if (textRgba != null && textRgba.length !== COMPOSED_TEXT_RGBA_BYTES) {
+    throw new RangeError(`composed graph plane "text_rgba" must hold ${COMPOSED_TEXT_RGBA_BYTES} values`);
+  }
+  const text = new TextEncoder();
+  const chunks = [];
+  const lengths = (values, count, name) => {
+    if (values == null) return null;
+    if (values.length !== count) throw new RangeError(`composed graph ${JSON.stringify(name)} must hold ${count} entries`);
+    return Uint32Array.from(values, (value) => {
+      if (value == null) return 0xffffffff;
+      const bytes = text.encode(String(value));
+      chunks.push(bytes);
+      return bytes.length;
+    });
+  };
+  const nodeLengths = lengths(planes.node_labels, n, "node_labels");
+  const segmentLengths = lengths(planes.segment_labels, m, "segment_labels");
+  const concat = (parts) => {
+    const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+    let at = 0;
+    for (const part of parts) { out.set(part, at); at += part.length; }
+    return out;
+  };
+  const payload = concat(chunks);
+  const legend = planes.legend ?? [];
+  const legendNames = legend.map(([label]) => text.encode(String(label)));
+  const legendPayload = concat(legendNames);
+  const legendRgba = Uint8Array.from(legend.flatMap(([, rgba]) => [...rgba]));
+  const legendSymbol = Uint8Array.from(legend, ([, , symbol]) => symbol);
+  const legendLengths = Uint32Array.from(legendNames, (bytes) => bytes.length);
+  const title = text.encode(String(planes.legend_title ?? ""));
+  const legendLoc = text.encode(String(planes.legend_loc ?? ""));
+  const baseBytes = base instanceof Uint8Array ? base : Uint8Array.from(base);
+  const ptr = (value) => (value != null && value.length ? pointer(value, "void *") : null);
+  const encoded = Buffer.alloc(koffi.sizeof(ComposedGraphSceneDescriptor));
+  koffi.encode(encoded, ComposedGraphSceneDescriptor, {
+    version: 1, reserved0: 0, base: ptr(baseBytes), base_len: BigInt(baseBytes.length),
+    node_count: BigInt(n), segment_count: BigInt(m),
+    ...Object.fromEntries(Object.keys(COMPOSED_GRAPH_PLANES).map((name) => [name, ptr(arrays[name])])),
+    node_label_lengths: ptr(nodeLengths), segment_label_lengths: ptr(segmentLengths),
+    label_payload: ptr(payload), label_payload_len: BigInt(payload.length),
+    legend_count: BigInt(legend.length), legend_title: ptr(title), legend_title_len: BigInt(title.length),
+    legend_rgba: ptr(legendRgba), legend_symbol: ptr(legendSymbol), legend_label_lengths: ptr(legendLengths),
+    legend_payload: ptr(legendPayload), legend_payload_len: BigInt(legendPayload.length),
+    legend_loc: ptr(legendLoc), legend_loc_len: BigInt(legendLoc.length), text_rgba: ptr(textRgba), reserved: 0n,
+  });
+  const descriptor = koffi.as(encoded, "const void *");
+  const reason = new Uint32Array([1]);
+  const needed = Number(xyGraphComposedScene(descriptor, null, 0, u32Ptr(reason)));
+  if (!Number.isSafeInteger(needed) || needed <= 0 || needed >= Number.MAX_SAFE_INTEGER) {
+    // Reason 2: the explicit legend does not fit the plot.
+    throw new RangeError(reason[0] === 2 ? "XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT" : "invalid composed graph Scene input");
+  }
+  const output = new Uint8Array(needed);
+  if (Number(xyGraphComposedScene(descriptor, u8Ptr(output), output.length, u32Ptr(reason))) !== needed) {
+    throw new Error("composed graph Scene changed between bounded copies");
+  }
   return output;
 }
 

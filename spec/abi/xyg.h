@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 374
-#define XYG_ABI_SIGNATURE_SHA256 "1132f8c75769f7b4626aaf8253db148e49912caf6355e1da7c56327c9c47e0cc"
+#define XYG_ABI_VERSION 376
+#define XYG_ABI_SIGNATURE_SHA256 "d29396fea81ad8d4709e528988c667a04440925ec27bad419d74d79150242435"
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,6 +143,7 @@ int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out
 int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len);
 int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept, uint64_t * out_edge_member_offsets, uint64_t * out_edge_members);
 int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept);
+size_t xyg_graph_composed_scene(const void * descriptor, uint8_t * out, size_t out_cap, uint32_t * out_reason);
 int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax);
 int32_t xyg_graph_compound_collapse(uint64_t n, const uint64_t * parents, const uint8_t * parent_validity, const uint8_t * collapsed, const uint32_t * flags, uint64_t e, const uint64_t * sources, const uint64_t * targets, uint8_t * out_visible, uint64_t * out_representative, uint32_t * out_flags, uint8_t * out_edge_keep, uint64_t * out_edge_source, uint64_t * out_edge_target);
 int32_t xyg_graph_compound_frames(uint64_t n, const double * x, const double * y, const double * radius_px, const uint64_t * parents, const uint8_t * parent_validity, const uint8_t * collapsed, const uint8_t * stroke, const float * opacity, uint32_t theme, uint64_t * out_node, double * out_bounds, uint8_t * out_rgba, double * out_width, double * out_pad, uint64_t * out_count);

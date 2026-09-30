@@ -127,9 +127,9 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 | Force layout (for display) | yes* | yes | yes | yes | DIY | **M** |
 | Hierarchy / tree layout | limited | yes | DIY | yes | DIY | **M** |
 | Progressive layout ticks | app | yes | yes | yes | no | **M** |
-| Attr → color / size / width | yes | yes | DIY | yes | manual | **M** |
+| Attr → color / size / width | yes | yes | DIY | yes | manual | **M** (linear / diverging / ordinal / categorical scales, GraphForge semantic style contract and legend; #34) |
 | Directed arrows | yes | yes | DIY | yes | weak | **M** |
-| Labels + zoom LOD | yes | yes | DIY | yes | text | **M** |
+| Labels + zoom LOD | yes | yes | DIY | yes | text | **M** (Rust budgeted, collision-free zoom-threshold label plan; #34) |
 | Pan / zoom / fit | yes | yes | DIY | yes | yes | **M** |
 | Select + hover tooltips | yes | yes | DIY | yes | hover | **M** |
 | Neighborhood highlight | pattern | hover | DIY | yes | no | **M** |
@@ -140,7 +140,7 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 | xyg-native sequence/array/column ingest | n/a | limited | DIY | n/a | recipe | **M** (never drop) |
 | Edge-list / table / NX / GraphForge helpers | n/a | via PyVis | n/a | n/a | recipe | **M** (GF primary OK) |
 | Python + Node same layout/render buffers | partial | wrap | no | ext | split | **M** |
-| Native PNG/SVG/HTML export | no | no | no | limited | kaleido | **M** |
+| Native PNG/SVG/HTML export | no | no | no | limited | kaleido | **M** (every composed layer, frame, label, and legend; byte-identical across hosts; #34) |
 | Editing / manipulation | app | **core** | DIY | yes | no | **—** |
 | Analysis algorithms | graphology | no | DIY | yes | DIY | **—** (GraphForge et al.) |
 | Search / filter product UI | app | yes | DIY | yes | no | **—** |

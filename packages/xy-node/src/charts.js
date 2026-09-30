@@ -231,8 +231,9 @@ const HIDDEN_AXIS_STYLE = Object.freeze({
 });
 
 export function graphChart(nodes, edges, opts = {}) {
-  const { width, height, title, xAxis, yAxis, ...graphOpts } = opts;
-  const fig = figure({ width, height, title });
+  const { width, height, title, xAxis, yAxis, legend, ...graphOpts } = opts;
+  // `legend` is the chart-level legend (Python `graph_chart(..., xyg.legend())`).
+  const fig = figure({ width, height, title, ...(legend != null ? { legend } : {}) });
   fig.graph(nodes, edges, graphOpts);
   // Node–link charts hide axes by default, matching Python `graph_chart`; an
   // authored `xAxis` / `yAxis` is used as given instead (#909).

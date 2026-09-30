@@ -452,7 +452,11 @@ with its own domain (#909, e.g. a log x axis) is admitted with that domain;
 an authored axis without one still fails closed.
 Python and Node graph SVG/PNG bytes are pinned by
 `tests/fixtures/graph_static_export_cross_host.json`; graphs mixed with other
-marks keep the authored-domain requirement. The flag is a new bit in the
+marks keep the authored-domain requirement. A single composed graph (#34)
+exports this plain Scene first; `xyg_graph_composed_scene` then decodes it
+(rejecting polar, colorbar, image, or label content), keeps its layout, scales,
+chrome, and text, and re-emits the records, labels, and explicit legend from the
+graph's resolved per-item planes (graph-mark.md §8). The flag is a new bit in the
 unchanged XYEP v1 envelope (no C-signature change).
 Graph edge ends (#33): hosts set XYCL prefix byte 3 bit 0
 (`XYCL_EDGE_ENDS`) on a cartesian `segments` trace and ship its `base`

@@ -318,18 +318,9 @@ fn legend_loc(name: &[u8], authored: bool) -> Result<u8, ChromePackError> {
         return Ok(0);
     }
     let text = utf8(name)?;
-    Ok(match text {
-        "upper right" => 0,
-        "upper left" => 1,
-        "lower left" => 2,
-        "lower right" => 3,
-        "center right" => 4,
-        "center left" => 5,
-        "upper center" => 6,
-        "lower center" => 7,
-        "center" => 8,
-        _ => return Err(ChromePackError::LegendLoc),
-    })
+    crate::scene::LegendLocation::from_name(text)
+        .map(|location| location as u8)
+        .ok_or(ChromePackError::LegendLoc)
 }
 
 fn resolve_chrome(bytes: &[u8]) -> Result<[u8; SCENE_CHROME_STYLE_INPUT_BYTES], ChromePackError> {

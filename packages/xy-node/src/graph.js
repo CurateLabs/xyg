@@ -815,6 +815,9 @@ const GRAPH_SCALE_KEYS = {
 
 /** Resolve a graph color scale into a color channel (#34). Mirrors Python
  * `_color_scale`: diverging domains and ordinal colors come from Rust. */
+/** Continuous node `size` pixel range (diameter), Python `graph`'s default. */
+const GRAPH_SIZE_RANGE_PX = [2, 18];
+
 function graphScaledColor(values, scale, n, fallback, label) {
   if (scale == null) return resolveColorChannel(values, n, fallback);
   const kind = scale?.type;
@@ -1267,7 +1270,8 @@ export function composeGraph(nodes, edges, opts = {}) {
     ? nodeSemantic.size
     : resolveEncodingValues(data, resolvedOpts.size, "node");
   // Node marker diameters (px) for edge trimming, mapped exactly as the node
-  // scatter ships them (array sizes span range_px [8, 22] over their domain).
+  // scatter ships them (array sizes span the scatter default range_px [2, 18]
+  // over their domain, like Python `graph`).
   let nodeDiameterPx = null;
   if (nodeSemantic != null) {
     nodeDiameterPx = Float64Array.from(nodeSemantic.size);
@@ -1277,7 +1281,8 @@ export function composeGraph(nodes, edges, opts = {}) {
     const lo = mm[0];
     const span = mm[0] === mm[1] ? 1 : mm[1] - mm[0];
     nodeDiameterPx = Float64Array.from(values, (v) =>
-      8 + 14 * (Number.isFinite(v) ? Math.min(1, Math.max(0, (v - lo) / span)) : 0));
+      GRAPH_SIZE_RANGE_PX[0] + (GRAPH_SIZE_RANGE_PX[1] - GRAPH_SIZE_RANGE_PX[0])
+        * (Number.isFinite(v) ? Math.min(1, Math.max(0, (v - lo) / span)) : 0));
   }
   const nodeDiameter = sizeOpt != null && !Array.isArray(sizeOpt) && !ArrayBuffer.isView(sizeOpt)
     ? Number(sizeOpt)
@@ -1347,7 +1352,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       mode: "continuous",
       values,
       domain: [mm[0], mm[0] === mm[1] ? mm[0] + 1 : mm[1]],
-      range_px: [8, 22],
+      range_px: [...GRAPH_SIZE_RANGE_PX],
     };
   } else if (nodeSemantic == null && sizeOpt != null) {
     styleSize = Number(sizeOpt);

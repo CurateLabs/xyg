@@ -712,6 +712,7 @@ Forbidden:
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_scale.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graph_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/hexbin.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/jpeg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/colormap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) | — |
@@ -949,6 +950,7 @@ Forbidden:
 | `python/xyg/_marks_ribbon.py` | Python host | `python-host` | `keep-host`; ribbon flow-band mark; mirrors Node `marks/ribbon.js` | — |
 | `python/xyg/_marks_segments.py` | Python host | `python-host` | `keep-host`; segments line mark; mirrors Node `marks/segments.js` | — |
 | `python/xyg/_marks_step.py` | Python host | `python-host` | `keep-host`; step/stairs/ecdf/stem marks; mirrors Node step/ecdf/stem modules | — |
+| `python/xyg/_graph_static.py` | Python host | `python-host` | `keep-host`; reads a composed graph's resolved planes off its traces and strips them for the plain static pass; Rust rebuilds the Scene (`xyg_graph_composed_scene`); mirrors Node `composedGraphPlanes` | — |
 | `python/xyg/_marks_graph.py` | Python host | `python-host` | `keep-host`; graph mark; mirrors Node `graph.js` | — |
 | `python/xyg/_marks_sankey.py` | Python host | `python-host` | `keep-host`; sankey mark; mirrors Node `sankey.js` | — |
 | `python/xyg/_marks_triangle_mesh.py` | Python host | `python-host` | `keep-host`; triangle mesh mark; mirrors Node `marks/triangle_mesh.js` | — |

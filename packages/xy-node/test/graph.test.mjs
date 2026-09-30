@@ -995,6 +995,86 @@ test("semantic legend respects authored options, merges graphs, and scales fail 
   );
 });
 
+test("composed graphChart static SVG/PNG match the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const { composed } = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_static_export_cross_host.json", import.meta.url), "utf8"),
+  );
+  const sha = (bytes) => createHash("sha256").update(typeof bytes === "string" ? bytes : Buffer.from(bytes)).digest("hex");
+  const camel = (key) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  for (const [name, expected] of Object.entries(composed.cases)) {
+    const options = Object.fromEntries(Object.entries(expected.options).map(([key, value]) => [camel(key), value]));
+    const fig = graphChart(composed.nodes, composed.edges, {
+      layout: "preset", x: composed.x, y: composed.y, width: 640, height: 480, ...options,
+      ...(expected.legend != null ? { legend: expected.legend } : {}),
+    });
+    assert.equal(sha(fig.toSvg()), expected.svg_sha256, name);
+    assert.equal(sha(fig.toPng({ scale: 1 })), expected.png_scale1_sha256, `${name} scale=1`);
+    assert.equal(sha(fig.toPng({ scale: 2 })), expected.png_scale2_sha256, `${name} scale=2`);
+  }
+});
+
+test("edgeless graphs export and unplaceable graph legends fail closed like Python (#34)", async () => {
+  const fig = graphChart(["a", "b"], [], { layout: "preset", x: [0, 1], y: [0, 1], width: 320, height: 240 });
+  assert.equal(new TextDecoder().decode(fig.toSvg()).split("<circle").length - 1, 2);
+  const { readFileSync } = await import("node:fs");
+  const { composed } = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_static_export_cross_host.json", import.meta.url), "utf8"),
+  );
+  const best = graphChart(composed.nodes, composed.edges, {
+    layout: "preset", x: composed.x, y: composed.y, nodeClass: "kind", legend: { loc: "best" },
+  });
+  assert.throws(() => best.toSvg(), /XYG_STATIC_UNSUPPORTED_GRAPH/);
+  // A legend taller than the plot reports the static footprint reason.
+  const short = graphChart(composed.nodes, composed.edges, {
+    layout: "preset", x: composed.x, y: composed.y, width: 480, height: 240,
+    nodeClass: "kind", nodeEpistemic: "belief", nodeStatus: "health",
+  });
+  assert.throws(() => short.toSvg(), /XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT/);
+});
+
+test("graph visual goldens: Node exports the committed PNG bytes (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const manifest = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_visual_goldens.json", import.meta.url), "utf8"),
+  );
+  const sha = (bytes) => createHash("sha256").update(Buffer.from(bytes)).digest("hex");
+  const camel = (key) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  const hidden = {
+    axis_width: 0, axis_color: "#00000000", tick_length: 0, tick_width: 0,
+    grid_opacity: 0, tick_label_color: "#00000000", label_color: "#00000000",
+  };
+  for (const [name, golden] of Object.entries(manifest.cases)) {
+    // Python `graph_chart(graph(...), style=...)`: a chart style plus the
+    // graph mark with hidden default axes.
+    const options = Object.fromEntries(Object.entries(golden.options).map(([key, value]) => [camel(key), value]));
+    const fig = figure({ width: manifest.width, height: manifest.height, ...(golden.chart ?? {}) })
+      .graph(golden.nodes, golden.edges, options);
+    fig.setAxis("x", { style: { ...hidden } });
+    fig.setAxis("y", { style: { ...hidden } });
+    const png = fig.toPng({ scale: 1 });
+    assert.equal(sha(png), golden.sha256, name);
+    const committed = readFileSync(new URL(`../../../tests/fixtures/${golden.png}`, import.meta.url));
+    assert.equal(sha(committed), golden.sha256, `${name} committed golden`);
+  }
+});
+
+test("graph annotations fail closed in static export like Python (#34)", () => {
+  for (const annotation of [
+    { kind: "text", x: 0.5, y: 0.5, text: "NOTE" },
+    { kind: "rule", axis: "y", value: 0.25 },
+  ]) {
+    // Authored domains pass the axis admission, so the rebuild itself decides.
+    const fig = graphChart(["a", "b"], [["a", "b"]], {
+      layout: "preset", x: [0, 1], y: [0, 1],
+      xAxis: { domain: [-1, 2], style: { axis_width: 0 } }, yAxis: { domain: [-1, 2], style: { axis_width: 0 } },
+    }).annotate(annotation);
+    assert.throws(() => fig.toSvg(), /XYG_STATIC_UNSUPPORTED_GRAPH/, annotation.kind);
+  }
+});
+
 test("graphChart keeps an authored axis like Python graph_chart (#909)", () => {
   const fig = graphChart(["a", "b"], [["a", "b"]], {
     layout: "preset", x: [1, 100], y: [0, 1], xAxis: { type: "log", domain: [1, 1000] },

@@ -1048,6 +1048,13 @@ def project_figure(
     from . import _scene_v3
 
     projected = copy.deepcopy(figure)
+    # Composed graph charts (#34): the plain graph Scene provides layout and
+    # chrome; Rust rebuilds it from the full composed-graph planes below.
+    from . import _graph_static
+
+    graph_planes = _graph_static.composed_graph_planes(projected)
+    if graph_planes is not None:
+        _graph_static.strip_to_plain(projected)
     root_style = dict(getattr(projected, "style", None) or {})
     if getattr(projected, "_pyplot_static_mathtext", False):
         raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE")
@@ -1164,6 +1171,15 @@ def project_figure(
     reason, scene = _scene_v3._public_scene_or_reason(projected, width=width, height=height)
     if reason is not None or scene is None:
         raise UnsupportedStaticExport(reason or "XYG_STATIC_UNSUPPORTED_PANEL")
+    if graph_planes is not None:
+        from . import _native
+
+        try:
+            scene = _native.graph_composed_scene(scene, graph_planes)
+        except _native.ComposedGraphLegendFootprint as exc:
+            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT") from exc
+        except ValueError as exc:
+            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_GRAPH") from exc
     frame_sides = set(getattr(projected, "frame_sides", None) or ("left", "bottom"))
     title_style = None
     if getattr(projected, "title", None):

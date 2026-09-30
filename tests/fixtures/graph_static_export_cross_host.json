@@ -49,23 +49,280 @@
   "straight": {
    "edge_curve": "straight",
    "colors": true,
-   "svg_sha256": "2d82b45883815ff9bccd1f759a62fc4f316bb927322416f8414bb8cedd3caadc",
-   "png_scale1_sha256": "d764b5af9bcd2ea9bdec3b0266f3448cde94707995437114f1585aa86dfab2b9",
-   "png_scale2_sha256": "aee309f436b348075871c70a3e4df37cea22087cb31810700ac0cc5b95fd5b1d"
+   "svg_sha256": "2dc7c5ed88b0bd64bdd00848a52661e668e01ec97d7df0512578c4e42871dc27",
+   "png_scale1_sha256": "9116f9a8abc0c54586485ad4b07f28f9778f1dee1a5f4c20f933586ff32d9da4",
+   "png_scale2_sha256": "d3e7351c07b2e1a049985b019b835958a61185775c5abebe2f8435a8db4514cb"
   },
   "curved": {
    "edge_curve": "curve",
    "colors": true,
-   "svg_sha256": "5a68e756c84ce4958f412307da3b0528ad948d44b73c7eb358a04b649d83e56c",
-   "png_scale1_sha256": "2f67ba0da6e6261c9f2a3c8afb0353e348ddeed983158c13b8b3fd2a4fbcb97f",
-   "png_scale2_sha256": "470dde62925e9940a8ad6d365b12ead91e09540ee6dc81c37c474cd4025e1aaf"
+   "svg_sha256": "5b2657f55e3f945af611a62ecba580637af5d306d5486d75984f7e7afd0666fb",
+   "png_scale1_sha256": "29131330eb9e616300a4bb7e97e0608a36049d48cce1d7aee975abe44620b0ab",
+   "png_scale2_sha256": "fa59363ec601caa5d8d7412a70b5352f105a23d3ebfd4eb01ef8950670385306"
   },
   "default_colors": {
    "edge_curve": "straight",
    "colors": false,
-   "svg_sha256": "9fc92d2d3343b4c0ba05418c59105c28a1d4b08286c5bc87cb9170058206606e",
-   "png_scale1_sha256": "d974613423638793afdc809eefd834f2b91db81113c015cc49ec7c2bf0368243",
-   "png_scale2_sha256": "23480f1173641537c3bfef761d13d250ee91b77743c449b2cd38dceafb114453"
+   "svg_sha256": "a4385f08760b56b318233f04b0f1cc0573d41f9f7d798b91a65b358e551556af",
+   "png_scale1_sha256": "5b125fad4cbe6ae2913c427157d54ea7f0d8b75ad956d0959a8320fbddbc05c0",
+   "png_scale2_sha256": "1d85845e793c6974101feba77579608d6132aefeffb210f780d28e5da9cf7095"
+  }
+ },
+ "composed": {
+  "nodes": {
+   "node_uuid": [
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+    "00000000-0000-0000-0000-000000000004",
+    "00000000-0000-0000-0000-000000000005",
+    "00000000-0000-0000-0000-000000000006"
+   ],
+   "parent_uuid": [
+    null,
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000001",
+    null,
+    "00000000-0000-0000-0000-000000000004",
+    null
+   ],
+   "name": [
+    "A",
+    "a1",
+    "a2",
+    "B",
+    "b1",
+    "out"
+   ],
+   "kind": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "belief": [
+    0,
+    1,
+    2,
+    0,
+    3,
+    1
+   ],
+   "health": [
+    1,
+    0,
+    2,
+    3,
+    0,
+    1
+   ],
+   "score": [
+    0.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    1.0
+   ],
+   "flags": [
+    0,
+    2,
+    1,
+    0,
+    8,
+    0
+   ]
+  },
+  "edges": {
+   "edge_uuid": [
+    "00000000-0000-0000-0000-000000000101",
+    "00000000-0000-0000-0000-000000000102",
+    "00000000-0000-0000-0000-000000000103",
+    "00000000-0000-0000-0000-000000000104"
+   ],
+   "src_uuid": [
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+    "00000000-0000-0000-0000-000000000006"
+   ],
+   "dst_uuid": [
+    "00000000-0000-0000-0000-000000000006",
+    "00000000-0000-0000-0000-000000000003",
+    "00000000-0000-0000-0000-000000000005",
+    "00000000-0000-0000-0000-000000000001"
+   ],
+   "rel": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "evidence": [
+    1,
+    0,
+    2,
+    3
+   ],
+   "state": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "weight": [
+    1.0,
+    4.0,
+    2.0,
+    8.0
+   ]
+  },
+  "x": [
+   0.0,
+   0.0,
+   1.0,
+   5.0,
+   5.0,
+   9.0
+  ],
+  "y": [
+   0.0,
+   1.0,
+   0.0,
+   0.0,
+   1.0,
+   5.0
+  ],
+  "cases": {
+   "semantic": {
+    "options": {
+     "node_class": "kind",
+     "node_epistemic": "belief",
+     "node_status": "health",
+     "node_metric": "score",
+     "visual_state_flags": "flags",
+     "edge_class": "rel",
+     "edge_epistemic": "evidence",
+     "edge_status": "state",
+     "edge_metric": "weight"
+    },
+    "svg_sha256": "e920dc31ad256fab19e14de425b58bcff6194e5a696c871ff84296f85dac04dc",
+    "png_scale1_sha256": "e6a5e550068e71faae9cd83bdab791056a6b5280cc79c32c250ea768c355a869",
+    "png_scale2_sha256": "adc3a897b6f714430d3cc0838951bd680bb0398f4410086920de40160e56861f"
+   },
+   "semantic_dark": {
+    "options": {
+     "node_class": "kind",
+     "node_epistemic": "belief",
+     "node_status": "health",
+     "node_metric": "score",
+     "visual_state_flags": "flags",
+     "edge_class": "rel",
+     "edge_epistemic": "evidence",
+     "edge_status": "state",
+     "edge_metric": "weight",
+     "theme": "dark"
+    },
+    "svg_sha256": "f0fbf73cc1f1e0eeb2d621442b43e81a4a94804d0cc0539286330d057556dc78",
+    "png_scale1_sha256": "a5f55037adb3306b17ce2c5e2544fa21d342805e134784beebe3aa878b0bd087",
+    "png_scale2_sha256": "95efb07cab920c6680404f7778987012cfbb93f67971493d833c542f06fbbd74"
+   },
+   "compound_collapsed": {
+    "options": {
+     "collapsed": [
+      "00000000-0000-0000-0000-000000000001"
+     ],
+     "node_class": "kind"
+    },
+    "svg_sha256": "1a3fa9ad1b3bd4b90b7c6f4943f4504e54b914c4d47d25e1bc268a2e12f20a10",
+    "png_scale1_sha256": "f400db00c0ac1effc48f42f3ba02fa8ade764c36e2bb7cd7933ffda1cc12e16a",
+    "png_scale2_sha256": "28cbc0d28f2c19ad679950cfb86f14fbc3c438b0813bc8d1369743ff41243a46"
+   },
+   "sizes": {
+    "options": {
+     "size": [
+      1.0,
+      5.0,
+      9.0,
+      2.0,
+      3.0,
+      4.0
+     ],
+     "symbol": "square"
+    },
+    "svg_sha256": "fe7fb7a3c0e8df3e6d2b009fc6bfda72c352243632483f3a283466efc231d6fc",
+    "png_scale1_sha256": "7f49132fc06cac690716c94ac729f9b71c16c803deccd4e996d26ff99e3fb887",
+    "png_scale2_sha256": "ffd546198b6feabc5bb19e446295fa49385e451626b9daea3444253c17e9af4c"
+   },
+   "labels_scales": {
+    "options": {
+     "edge_curve": "curve",
+     "label_priority": [
+      5.0,
+      1.0,
+      4.0,
+      2.0,
+      3.0,
+      0.0
+     ],
+     "edge_label": [
+      "x",
+      null,
+      "long edge label",
+      "loop"
+     ],
+     "color": [
+      "low",
+      "high",
+      "mid",
+      "low",
+      "mid",
+      "high"
+     ],
+     "color_scale": {
+      "type": "ordinal",
+      "order": [
+       "low",
+       "mid",
+       "high"
+      ]
+     },
+     "edge_color": [
+      -2.0,
+      1.0,
+      5.0,
+      0.0
+     ],
+     "edge_color_scale": {
+      "type": "diverging",
+      "midpoint": 1.0
+     }
+    },
+    "svg_sha256": "66c03959c5fc4e84c68be359e6190d0d7e0f1117a3831002e5ce9d8db00e08fe",
+    "png_scale1_sha256": "3a2bb8246a07b5b7092b38797f4656531a5e0e68ee458788e94a208aee8e506d",
+    "png_scale2_sha256": "a45f2433fe494d57f2cdbdd1c8fa1d35a41824c44f9725fc537c93b925f9eebf"
+   },
+   "legend_lower_left": {
+    "options": {
+     "node_class": "kind",
+     "node_epistemic": "belief",
+     "node_status": "health",
+     "node_metric": "score",
+     "visual_state_flags": "flags",
+     "edge_class": "rel",
+     "edge_epistemic": "evidence",
+     "edge_status": "state",
+     "edge_metric": "weight"
+    },
+    "legend": {
+     "loc": "lower left"
+    },
+    "svg_sha256": "bc8025ba67e1a78564f736f9962ffb78d26500e22591d7469de6947b1591422a",
+    "png_scale1_sha256": "07f187db6c77879201187cb5ecd10bad99f03eef3ddf7661ccfe148c4f7229f4",
+    "png_scale2_sha256": "331bdaa65d9f1b7fa9527b934320ac24f6634f78ba3f1c3529ce0e8df2f6c591"
+   }
   }
  }
 }

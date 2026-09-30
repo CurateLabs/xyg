@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 import json
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -29,7 +30,6 @@ import pytest
 import xyg
 from xyg import _graph, _native, interaction
 from xyg._figure import Figure
-from xyg._static_document import UnsupportedStaticExport
 
 FIXTURE = Path(__file__).parent / "fixtures" / "graph_compound_cross_host.json"
 
@@ -192,13 +192,16 @@ def test_disclosure_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _figure()._graph_meta[0]["compound_frames"] == "omitted:aggregate"
 
 
-def test_compound_frames_are_paint_so_static_export_fails_closed() -> None:
+def test_compound_frames_export_as_padded_frame_rects() -> None:
     nodes, edges = _tables()
     chart = xyg.graph_chart(xyg.graph(nodes, edges, layout="preset", x=X, y=Y))
-    node = chart.figure().traces[-1]
-    assert "compound_frame" in node.per_item_channel_names()
-    with pytest.raises(UnsupportedStaticExport):
-        chart.to_svg()
+    fig = chart.figure()
+    rows = fig.traces[fig._graph_meta[0]["node_trace"]].style_channels["compound_frame"].values
+    svg = chart.to_svg()
+    # One stroked, unfilled rect per group, in the Rust frame paint.
+    for row in (rows[0], rows[3]):
+        paint = "rgb({},{},{})".format(*(int(c) for c in row[4:7]))
+        assert re.search(rf'<rect [^>]*fill-opacity="0" stroke="{re.escape(paint)}"', svg), paint
 
 
 _FRAME_PROBE = """

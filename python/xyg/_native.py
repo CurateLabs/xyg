@@ -74,6 +74,61 @@ class _GraphProjectionDescriptor(ctypes.Structure):
     ]
 
 
+class _ComposedGraphSceneDescriptor(ctypes.Structure):
+    """Mirror of Rust ``XygComposedGraphSceneDescriptor`` (#34)."""
+
+    _fields_ = [
+        ("version", ctypes.c_uint32),
+        ("reserved0", ctypes.c_uint32),
+        ("base", ctypes.c_void_p),
+        ("base_len", ctypes.c_uint64),
+        ("node_count", ctypes.c_uint64),
+        ("x", ctypes.c_void_p),
+        ("y", ctypes.c_void_p),
+        ("fill", ctypes.c_void_p),
+        ("stroke", ctypes.c_void_p),
+        ("stroke_width", ctypes.c_void_p),
+        ("diameter", ctypes.c_void_p),
+        ("symbol", ctypes.c_void_p),
+        ("opacity", ctypes.c_void_p),
+        ("halo", ctypes.c_void_p),
+        ("halo_diameter", ctypes.c_void_p),
+        ("node_label_plan", ctypes.c_void_p),
+        ("node_label_lengths", ctypes.c_void_p),
+        ("frames", ctypes.c_void_p),
+        ("segment_count", ctypes.c_uint64),
+        ("x0", ctypes.c_void_p),
+        ("y0", ctypes.c_void_p),
+        ("x1", ctypes.c_void_p),
+        ("y1", ctypes.c_void_p),
+        ("segment_rgba", ctypes.c_void_p),
+        ("segment_width", ctypes.c_void_p),
+        ("segment_opacity", ctypes.c_void_p),
+        ("segment_halo", ctypes.c_void_p),
+        ("segment_halo_width", ctypes.c_void_p),
+        ("segment_body", ctypes.c_void_p),
+        ("segment_body_width", ctypes.c_void_p),
+        ("segment_dash", ctypes.c_void_p),
+        ("edge_ends", ctypes.c_void_p),
+        ("segment_label_plan", ctypes.c_void_p),
+        ("segment_label_lengths", ctypes.c_void_p),
+        ("label_payload", ctypes.c_void_p),
+        ("label_payload_len", ctypes.c_uint64),
+        ("legend_count", ctypes.c_uint64),
+        ("legend_title", ctypes.c_void_p),
+        ("legend_title_len", ctypes.c_uint64),
+        ("legend_rgba", ctypes.c_void_p),
+        ("legend_symbol", ctypes.c_void_p),
+        ("legend_label_lengths", ctypes.c_void_p),
+        ("legend_payload", ctypes.c_void_p),
+        ("legend_payload_len", ctypes.c_uint64),
+        ("legend_loc", ctypes.c_void_p),
+        ("legend_loc_len", ctypes.c_uint64),
+        ("text_rgba", ctypes.c_void_p),
+        ("reserved", ctypes.c_uint64),
+    ]
+
+
 class _GraphCompoundSceneDescriptor(ctypes.Structure):
     _fields_ = [
         (name, kind)
@@ -13521,6 +13576,163 @@ def graph_compound_scene(
     output = (ctypes.c_uint8 * needed)()
     if int(_lib.xyg_graph_compound_scene(ctypes.byref(descriptor), output, needed)) != needed:
         raise ValueError("compound graph Scene changed between bounded copies")
+    return bytes(output)
+
+
+class ComposedGraphLegendFootprint(ValueError):
+    """The composed graph's explicit legend does not fit the plot (#34)."""
+
+
+def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
+    """Rebuild a composed graph chart's static Scene from its composed-graph
+    planes (#34). ``planes`` holds contiguous numpy arrays keyed like the
+    Rust descriptor (optional planes may be omitted), plus ``node_labels`` /
+    ``segment_labels`` (lists of ``str | None``) and ``legend`` rows
+    ``(label, rgba, symbol)`` with ``legend_title``."""
+    keep: list[Any] = []
+
+    def ptr(name: str, dtype: Any) -> int | None:
+        value = planes.get(name)
+        if value is None:
+            return None
+        arr = np.ascontiguousarray(value, dtype=dtype).reshape(-1)
+        keep.append(arr)
+        return arr.ctypes.data if arr.size else None
+
+    def texts(values: list[str | None] | None) -> tuple[int | None, list[bytes]]:
+        if values is None:
+            return None, []
+        encoded = [None if v is None else str(v).encode("utf-8") for v in values]
+        lengths = np.asarray(
+            [0xFFFF_FFFF if v is None else len(v) for v in encoded], dtype=np.uint32
+        )
+        keep.append(lengths)
+        return (lengths.ctypes.data if lengths.size else None), [v for v in encoded if v]
+
+    n = len(np.asarray(planes["x"]))
+    m = len(np.asarray(planes["x0"]))
+    # Every plane must cover exactly its documented extent before a pointer
+    # crosses the ABI (Rust reads the declared count).
+    extents = {
+        "y": n,
+        "fill": n * 4,
+        "stroke": n * 4,
+        "stroke_width": n,
+        "diameter": n,
+        "symbol": n,
+        "opacity": n,
+        "halo": n * 4,
+        "halo_diameter": n,
+        "node_label_plan": n * 5,
+        "frames": n * 10,
+        "y0": m,
+        "x1": m,
+        "y1": m,
+        "segment_rgba": m * 4,
+        "segment_width": m,
+        "segment_opacity": m,
+        "segment_halo": m * 4,
+        "segment_halo_width": m,
+        "segment_body": m * 4,
+        "segment_body_width": m,
+        "segment_dash": m * 2,
+        "edge_ends": m * 7,
+        "segment_label_plan": m * 5,
+        "text_rgba": 4,
+    }
+    for name, extent in extents.items():
+        value = planes.get(name)
+        if value is not None and np.asarray(value).size != extent:
+            raise ValueError(f"composed graph plane {name!r} must hold {extent} values")
+    for name, count in (("node_labels", n), ("segment_labels", m)):
+        if planes.get(name) is not None and len(planes[name]) != count:
+            raise ValueError(f"composed graph {name!r} must hold {count} entries")
+    node_lengths, node_bytes = texts(planes.get("node_labels"))
+    segment_lengths, segment_bytes = texts(planes.get("segment_labels"))
+    payload = b"".join(node_bytes + segment_bytes)
+    legend = list(planes.get("legend") or [])
+    legend_names = [str(row[0]).encode("utf-8") for row in legend]
+    legend_rgba = np.asarray([row[1] for row in legend], dtype=np.uint8).reshape(-1)
+    legend_symbol = np.asarray([row[2] for row in legend], dtype=np.uint8)
+    legend_lengths = np.asarray([len(b) for b in legend_names], dtype=np.uint32)
+    legend_payload = b"".join(legend_names)
+    title = str(planes.get("legend_title") or "").encode("utf-8")
+    keep.extend([legend_rgba, legend_symbol, legend_lengths])
+    base_buf = (ctypes.c_uint8 * len(base)).from_buffer_copy(base)
+    payload_buf = (ctypes.c_uint8 * max(1, len(payload))).from_buffer_copy(payload or b"\0")
+    legend_buf = (ctypes.c_uint8 * max(1, len(legend_payload))).from_buffer_copy(
+        legend_payload or b"\0"
+    )
+    title_buf = (ctypes.c_uint8 * max(1, len(title))).from_buffer_copy(title or b"\0")
+    loc = str(planes.get("legend_loc") or "").encode("utf-8")
+    loc_buf = (ctypes.c_uint8 * max(1, len(loc))).from_buffer_copy(loc or b"\0")
+    f64, u8 = np.float64, np.uint8
+    descriptor = _ComposedGraphSceneDescriptor(
+        version=1,
+        reserved0=0,
+        base=ctypes.addressof(base_buf),
+        base_len=len(base),
+        node_count=n,
+        x=ptr("x", f64),
+        y=ptr("y", f64),
+        fill=ptr("fill", u8),
+        stroke=ptr("stroke", u8),
+        stroke_width=ptr("stroke_width", f64),
+        diameter=ptr("diameter", f64),
+        symbol=ptr("symbol", u8),
+        opacity=ptr("opacity", f64),
+        halo=ptr("halo", u8),
+        halo_diameter=ptr("halo_diameter", f64),
+        node_label_plan=ptr("node_label_plan", f64),
+        node_label_lengths=node_lengths,
+        frames=ptr("frames", f64),
+        segment_count=m,
+        x0=ptr("x0", f64),
+        y0=ptr("y0", f64),
+        x1=ptr("x1", f64),
+        y1=ptr("y1", f64),
+        segment_rgba=ptr("segment_rgba", u8),
+        segment_width=ptr("segment_width", f64),
+        segment_opacity=ptr("segment_opacity", f64),
+        segment_halo=ptr("segment_halo", u8),
+        segment_halo_width=ptr("segment_halo_width", f64),
+        segment_body=ptr("segment_body", u8),
+        segment_body_width=ptr("segment_body_width", f64),
+        segment_dash=ptr("segment_dash", f64),
+        edge_ends=ptr("edge_ends", f64),
+        segment_label_plan=ptr("segment_label_plan", f64),
+        segment_label_lengths=segment_lengths,
+        label_payload=ctypes.addressof(payload_buf) if payload else None,
+        label_payload_len=len(payload),
+        legend_count=len(legend),
+        legend_title=ctypes.addressof(title_buf) if title else None,
+        legend_title_len=len(title),
+        legend_rgba=legend_rgba.ctypes.data if legend_rgba.size else None,
+        legend_symbol=legend_symbol.ctypes.data if legend_symbol.size else None,
+        legend_label_lengths=legend_lengths.ctypes.data if legend_lengths.size else None,
+        legend_payload=ctypes.addressof(legend_buf) if legend_payload else None,
+        legend_payload_len=len(legend_payload),
+        legend_loc=ctypes.addressof(loc_buf) if loc else None,
+        legend_loc_len=len(loc),
+        text_rgba=ptr("text_rgba", u8),
+        reserved=0,
+    )
+    reason = ctypes.c_uint32(1)
+    needed = int(
+        _lib.xyg_graph_composed_scene(ctypes.byref(descriptor), None, 0, ctypes.byref(reason))
+    )
+    if needed == ctypes.c_size_t(-1).value:
+        if reason.value == 2:
+            raise ComposedGraphLegendFootprint("XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT")
+        raise ValueError("invalid composed graph Scene input")
+    output = (ctypes.c_uint8 * needed)()
+    copied = int(
+        _lib.xyg_graph_composed_scene(
+            ctypes.byref(descriptor), output, needed, ctypes.byref(reason)
+        )
+    )
+    if copied != needed:
+        raise ValueError("composed graph Scene changed between bounded copies")
     return bytes(output)
 
 
