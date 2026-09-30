@@ -359,7 +359,7 @@ def test_registered_document_all_consumers(name, node_results):
         assert struct.unpack_from("<I", document, 16)[0] & 8
         assert document[40:44] == b"\0" * 4
     assert scenes == [base64.b64decode(value) for value in node["scenes"]]
-    assert [_native.scene_raster_commands(scene) for scene in scenes] == [
+    assert [_native.scene_raster_commands(scene, scale=1.0) for scene in scenes] == [
         base64.b64decode(value) for value in node["sceneRaster"]
     ]
     for format in FORMATS:

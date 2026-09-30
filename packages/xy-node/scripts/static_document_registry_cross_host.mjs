@@ -100,7 +100,7 @@ function build(name) {
   }
   return { document: staticDocumentEncode({ panels, width: name === "document_title_x_center" ? 321 : panels.length === 2 ? 640 : 320,
     height: panels.length === 2 ? 260 : 240, ...document }),
-    scenes: panels.map(() => scene), sceneRaster: panels.map(() => fig.toSceneRasterCommands()),
+    scenes: panels.map(() => scene), sceneRaster: panels.map(() => fig.toSceneRasterCommands({ scale: 1 })),
     scale: name === "document_half_scale" ? 0.5 : name === "document_double_scale" ? 2 : 1,
     quality: name === "document_jpeg_quality_low" ? 1 : name === "document_jpeg_quality_high" ? 100 : 90 };
 }
