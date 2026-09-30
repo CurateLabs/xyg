@@ -211,7 +211,7 @@ fn pagerank_joins_scores_by_uuid_not_row_position() {
 }
 
 #[test]
-fn every_node_and_edge_fixture_composes_onto_its_base() {
+fn every_graph_intent_fixture_composes_onto_its_base() {
     let manifest = std::fs::read_to_string(format!(
         "{}/../../tests/fixtures/graphforge/results/manifest.json",
         env!("CARGO_MANIFEST_DIR")
@@ -222,17 +222,7 @@ fn every_node_and_edge_fixture_composes_onto_its_base() {
     for part in contracts.split("\"algorithm\": \"").skip(1) {
         let name = &part[..part.find('"').unwrap()];
         let entry = ledger::schema_for_algorithm(name).unwrap();
-        let graph_layer = matches!(
-            entry.composition,
-            Composition::NodeScore
-                | Composition::NodeGroup
-                | Composition::NodeOrder
-                | Composition::NodeTraversal
-                | Composition::NodeSet
-                | Composition::EdgeOverlay { .. }
-                | Composition::EdgeGroup
-        );
-        if graph_layer {
+        if entry.composition.intents().contains(&Intent::Graph) {
             let document = compose_one(name);
             let doc = Doc::new(&document);
             assert_eq!(doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(), "graph");
@@ -245,10 +235,247 @@ fn every_node_and_edge_fixture_composes_onto_its_base() {
     assert!(Doc::new(&find)
         .u8s("node.status")
         .contains(&NODE_STATUS_MEMBER));
+    assert_eq!(composed, 78, "graph-intent schemas in GraphForge 0.5.2");
+}
+
+fn derived_edges(doc: &Doc<'_>) -> Vec<usize> {
+    doc.u8s("edge.derived")
+        .iter()
+        .enumerate()
+        .filter(|(_, &d)| d == 1)
+        .map(|(i, _)| i)
+        .collect()
+}
+
+#[test]
+fn similarity_pairs_are_visibly_derived_edges() {
+    let document = compose_one("node_similarity");
+    let doc = Doc::new(&document);
+    let derived = derived_edges(&doc);
+    let rows = result_values("node_similarity", "node1_uuid", "similarity");
+    assert_eq!(derived.len(), rows.len());
+    let uuids = doc.uuids("edge.uuid");
+    let epistemic = doc.u8s("edge.epistemic");
+    let status = doc.u8s("edge.status");
+    let metric = doc.f64s("edge.metric", 0);
+    let edge_rows = doc.u64s("layer.edge_rows", 0);
+    let types = doc.texts("edge.type", 0);
+    for &e in &derived {
+        assert_eq!(uuids[e], [0; 16], "derived edges carry no persisted UUID");
+        assert_eq!(epistemic[e], 1, "halo and dash set them apart");
+        assert_eq!(status[e], 0, "similarity is symmetric: no arrowhead");
+        assert_eq!(types[e], "SIMILAR");
+        assert_eq!(metric[e], rows[edge_rows[e] as usize].1);
+    }
+    // Persisted relationships are untouched.
+    let persisted: Vec<usize> = (0..uuids.len()).filter(|i| !derived.contains(i)).collect();
+    assert_eq!(persisted.len(), 5);
+    assert!(persisted
+        .iter()
+        .all(|&e| epistemic[e] == 0 && doc.u32s("edge.layer")[e] == NONE_U32));
+    assert!(doc.texts("legend.text", 0).contains(&"similar (derived)"));
+}
+
+#[test]
+fn reachability_and_flows_are_directed_derived_edges() {
+    for (name, epistemic) in [
+        ("transitive_closure", 2),
+        ("max_flow", 3),
+        ("min_cut", 5),
+        ("min_cost_max_flow", 3),
+    ] {
+        let document = compose_one(name);
+        let doc = Doc::new(&document);
+        let derived = derived_edges(&doc);
+        assert!(!derived.is_empty(), "{name}");
+        for &e in &derived {
+            assert_eq!(doc.u8s("edge.epistemic")[e], epistemic, "{name}");
+            assert_eq!(doc.u8s("edge.status")[e], 1, "{name}: directed");
+        }
+    }
+    let document = compose_one("gomory_hu_tree");
+    let doc = Doc::new(&document);
+    assert!(derived_edges(&doc)
+        .iter()
+        .all(|&e| doc.u8s("edge.status")[e] == 0));
+}
+
+#[test]
+fn a_single_path_orders_steps_and_labels_positions() {
+    let document = compose_one("dijkstra");
+    let doc = Doc::new(&document);
+    let offsets = doc.u64s("path.node_offsets", 0);
+    assert_eq!(offsets.len(), 2, "one path");
+    let path_nodes = doc.u64s("path.nodes", 0);
+    let path_edges = doc.u64s("path.edges", 0);
+    assert_eq!(path_edges.len() + 1, path_nodes.len());
+    let order = doc.0.get("edge.order", 0).unwrap();
+    let order: Vec<i64> = order
+        .payload
+        .chunks_exact(8)
+        .map(|c| i64::from_le_bytes(c.try_into().unwrap()))
+        .collect();
+    let (sources, targets) = (doc.u64s("edge.source", 0), doc.u64s("edge.target", 0));
+    for (k, &e) in path_edges.iter().enumerate() {
+        assert_eq!(order[e as usize], k as i64);
+        assert_eq!(sources[e as usize], path_nodes[k]);
+        assert_eq!(targets[e as usize], path_nodes[k + 1]);
+        assert_eq!(
+            doc.u8s("edge.status")[e as usize],
+            1,
+            "steps point along the path"
+        );
+        assert_eq!(doc.u8s("edge.epistemic")[e as usize], 7);
+    }
+    let labels = doc.texts("node.label", 0);
+    for (k, &n) in path_nodes.iter().enumerate() {
+        assert_eq!(labels[n as usize], k.to_string());
+    }
+    let status = doc.u8s("node.status");
+    assert_eq!(status[path_nodes[0] as usize], NODE_STATUS_PATH_END);
     assert_eq!(
-        composed, 54,
-        "node and edge layer schemas in GraphForge 0.5.2"
+        status[*path_nodes.last().unwrap() as usize],
+        NODE_STATUS_PATH_END
     );
+    let bytes = fixture("dijkstra");
+    let table = read_table(&bytes).unwrap();
+    let cost = f64s(&table.column("cost").unwrap()).unwrap()[0].unwrap();
+    assert_eq!(doc.f64s("path.cost", 0), vec![cost]);
+    assert!(doc.f64s("path.rank", 0)[0].is_nan());
+    assert_eq!(doc.texts("layer.value_names", 0), vec!["cost"]);
+}
+
+#[test]
+fn many_paths_keep_rank_and_cost_but_skip_labels() {
+    let document = compose_one("yens");
+    let doc = Doc::new(&document);
+    let ranks = doc.f64s("path.rank", 0);
+    assert_eq!(ranks.len(), 2, "k = 2 ranked paths");
+    assert!(doc
+        .decisions()
+        .iter()
+        .any(|(c, _)| c == "GF_COMPOSE_PATH_LABELS_OMITTED"));
+    let all_pairs = compose_one("dijkstra_all_pairs");
+    let doc = Doc::new(&all_pairs);
+    assert!(doc.f64s("path.cost", 0).len() > 2);
+}
+
+#[test]
+fn cycles_close_and_walks_start() {
+    let document = compose_one("find_cycles");
+    let doc = Doc::new(&document);
+    let nodes = doc.u64s("path.nodes", 0);
+    let edges = doc.u64s("path.edges", 0);
+    assert_eq!(edges.len(), nodes.len(), "the closing step is added");
+    assert!(nodes
+        .iter()
+        .all(|&n| doc.u8s("node.status")[n as usize] == NODE_STATUS_ON_PATH));
+    let walk = compose_one("random_walk");
+    let doc = Doc::new(&walk);
+    let nodes = doc.u64s("path.nodes", 0);
+    assert_eq!(
+        doc.u8s("node.status")[nodes[0] as usize],
+        NODE_STATUS_PATH_END
+    );
+    assert!(doc.texts("legend.text", 0).contains(&"walk step (derived)"));
+}
+
+#[test]
+fn euler_trails_order_persisted_edges_without_derived_ones() {
+    for name in ["euler_circuit", "euler_path"] {
+        let document = compose_one(name);
+        let doc = Doc::new(&document);
+        assert!(
+            derived_edges(&doc).is_empty(),
+            "{name}: trails name persisted edges"
+        );
+        let path_edges = doc.u64s("path.edges", 0);
+        let labels = doc.texts("edge.label", 0);
+        let (sources, targets) = (doc.u64s("edge.source", 0), doc.u64s("edge.target", 0));
+        let path_nodes = doc.u64s("path.nodes", 0);
+        for (k, &e) in path_edges.iter().enumerate() {
+            assert_eq!(labels[e as usize], k.to_string(), "{name}");
+            assert_eq!(doc.u8s("edge.class")[e as usize], 1);
+            assert_eq!(doc.u8s("edge.status")[e as usize], 1);
+            // Reoriented where the trail runs against the stored direction.
+            assert_eq!(
+                (sources[e as usize], targets[e as usize]),
+                (path_nodes[k], path_nodes[k + 1])
+            );
+        }
+        assert!(doc.texts("legend.text", 0).contains(&"Euler trail edge"));
+    }
+}
+
+#[test]
+fn derived_layers_coexist_with_node_layers_and_conflicts_fail() {
+    let (base, generation) = base_of("pagerank");
+    let bytes = request(
+        &[base],
+        Some(generation),
+        &[
+            layer("pagerank"),
+            layer("louvain"),
+            layer("node_similarity"),
+            layer("dijkstra"),
+        ],
+    );
+    let document = compose_bytes(&bytes).unwrap();
+    let doc = Doc::new(&document);
+    let edge_layer = doc.u32s("edge.layer");
+    assert!(edge_layer.contains(&2) && edge_layer.contains(&3));
+    // Layer arrays cover every composed edge, padded where a layer is absent.
+    assert_eq!(
+        doc.u64s("layer.edge_rows", 2).len(),
+        doc.uuids("edge.uuid").len()
+    );
+    let (code, layer_index) = fail(request(
+        &[base],
+        Some(generation),
+        &[layer("minimum_spanning_tree"), layer("node_similarity")],
+    ));
+    assert_eq!(
+        (code.as_str(), layer_index),
+        ("GF_COMPOSE_CHANNEL_CONFLICT", 1)
+    );
+}
+
+#[test]
+fn hidden_nodes_take_derived_edges_and_paths_with_them() {
+    let (base, generation) = base_of("pagerank");
+    let mut rank = layer("pagerank");
+    rank.rows = Some(vec![0]);
+    rank.missing = Some("hide");
+    let bytes = request(&[base], Some(generation), &[rank, layer("dijkstra")]);
+    let document = compose_bytes(&bytes).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(doc.uuids("node.uuid").len(), 1);
+    assert!(derived_edges(&doc).is_empty());
+    assert!(doc
+        .decisions()
+        .iter()
+        .any(|(c, _)| c == "GF_COMPOSE_PATHS_HIDDEN"));
+    assert!(doc.f64s("path.cost", 0).is_empty());
+}
+
+#[test]
+fn paths_through_absent_nodes_follow_the_extra_policy() {
+    let (_, generation) = base_of("dag_longest_path");
+    let cyclic_gen = base_of("dijkstra").1;
+    let mut foreign = layer("dijkstra");
+    foreign.generation = Some(generation);
+    assert_eq!(
+        fail(request(&["dag"], Some(generation), &[foreign.clone()])).0,
+        "GF_COMPOSE_EXTRA_IDS"
+    );
+    foreign.extra = Some("drop");
+    let document = compose_bytes(&request(&["dag"], Some(generation), &[foreign])).unwrap();
+    let doc = Doc::new(&document);
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_EXTRA_DROPPED".into(), 1)));
+    assert!(derived_edges(&doc).is_empty());
+    let _ = cyclic_gen;
 }
 
 #[test]

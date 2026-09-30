@@ -290,7 +290,25 @@ export class GraphForgeComposition {
         status: get("edge.status"),
         metric: get("edge.metric"),
         flags: get("edge.flags"),
+        order: get("edge.order"),
+        path: get("edge.path"),
+        label: get("edge.label"),
+        labelPriority: get("edge.label_priority"),
       };
+      const nodeOffsets = get("path.node_offsets") ?? [0n];
+      const edgeOffsets = get("path.edge_offsets") ?? [0n];
+      const pathNodes = get("path.nodes") ?? [];
+      const pathEdges = get("path.edges") ?? [];
+      const pathLayer = get("path.layer") ?? [];
+      /** Ordered overlays (paths, walks, cycles, Euler trails) as composed indices. */
+      this.paths = [...pathLayer].map((layer, i) => ({
+        layer,
+        row: Number(get("path.row")[i]),
+        rank: get("path.rank")[i],
+        cost: get("path.cost")[i],
+        nodes: [...pathNodes.subarray(Number(nodeOffsets[i]), Number(nodeOffsets[i + 1]))].map(Number),
+        edges: [...pathEdges.subarray(Number(edgeOffsets[i]), Number(edgeOffsets[i + 1]))].map(Number),
+      }));
       this._nodeIndex = new Map(this.nodes.uuid.map((id, i) => [id, i]));
       this._edgeIndex = new Map();
       this.edges.uuid.forEach((id, i) => { if (id != null) this._edgeIndex.set(id, i); });
@@ -344,6 +362,12 @@ export class GraphForgeComposition {
     const out = { kind, index, uuid: side.uuid[index], layers };
     if (kind === "edge") {
       out.derived = side.derived[index] === 1;
+      out.type = side.type[index] || null;
+      const order = side.order?.[index];
+      if (order != null && order >= 0n) {
+        out.order = Number(order);
+        out.path = Number(side.path[index]);
+      }
       out.source = this.nodes.uuid[Number(side.source[index])];
       out.target = this.nodes.uuid[Number(side.target[index])];
     }
@@ -402,7 +426,15 @@ export function graphforgeGraphData(composition) {
       });
     }
   }
-  const edgeIds = edges.uuid.map((id, i) => id ?? `derived:${edges.layer[i]}:${i}`);
+  // Derived edges have no persisted UUID: identify them by layer and result row.
+  const edgeIds = edges.uuid.map((id, i) => {
+    if (id != null) return id;
+    const layer = composition.layers[edges.layer[i]];
+    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}`;
+  });
+  if (edges.order != null) {
+    edgeAttrs.step = Float64Array.from(edges.order, (v) => (v < 0n ? Number.NaN : Number(v)));
+  }
   return {
     ids: nodes.uuid,
     edgeIds,
@@ -439,6 +471,9 @@ export function graphforgeGraphOptions(composition, { theme = "light" } = {}) {
     edgeVisualStateFlags: edges.flags,
     nodeLabel: [...nodes.label].map((v) => v || null),
     labelPriority: nodes.labelPriority,
+    ...(edges.label != null && edges.label.some((v) => v)
+      ? { edgeLabel: [...edges.label].map((v) => v || null), edgeLabelPriority: edges.labelPriority }
+      : {}),
     semanticLegend: false,
   };
 }
