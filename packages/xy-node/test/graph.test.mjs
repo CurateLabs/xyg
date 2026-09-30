@@ -995,6 +995,24 @@ test("semantic legend respects authored options, merges graphs, and scales fail 
   );
 });
 
+test("graphChart keeps an authored axis like Python graph_chart (#909)", () => {
+  const fig = graphChart(["a", "b"], [["a", "b"]], {
+    layout: "preset", x: [1, 100], y: [0, 1], xAxis: { type: "log", domain: [1, 1000] },
+  });
+  assert.equal(fig.axis_options.x.type, "log");
+  assert.deepEqual([...fig.axis_options.x.domain], [1, 1000]);
+  assert.equal(fig.axis_options.y.style.axis_width, 0);
+  // Static export honors the authored log domain like Python: 1, 10, 100 sit
+  // at 0, 1/3, 2/3 of the plot width.
+  const svg = new TextDecoder().decode(graphChart(["a", "b", "c"], [["a", "b"], ["b", "c"]], {
+    layout: "preset", x: [1, 10, 100], y: [0, 1, 0], width: 400, height: 300,
+    xAxis: { type: "log", domain: [1, 1000] },
+  }).toSvg());
+  const [, left, width] = svg.match(/<clipPath[^>]*><rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/).map(Number);
+  const xs = [...svg.matchAll(/<circle cx="([\d.]+)"/g)].map((m) => Number(m[1]));
+  [left, left + width / 3, left + (2 * width) / 3].forEach((want, i) => assert.ok(Math.abs(xs[i] - want) <= 0.01, `${xs[i]} != ${want}`));
+});
+
 test("graphChart hides axes like Python graph_chart (#33)", () => {
   const fig = graphChart(["a", "b"], [["a", "b"]], { layout: "preset", x: [0, 1], y: [0, 1] });
   for (const axis of ["x", "y"]) {

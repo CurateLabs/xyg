@@ -1242,9 +1242,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         && colorbar_keys.is_empty()
         && !traces.is_empty()
         && traces.len() % 2 == 0
+        // An authored axis with a domain needs no autorange (#909); every
+        // axis the graph autorange fills is a hidden default.
         && axes
             .iter()
-            .all(|axis| !extra_key(&axis.keys, &["side", "style"]))
+            .all(|axis| axis.domain_present || !extra_key(&axis.keys, &["side", "style"]))
         && traces.chunks(2).all(|pair| {
             pair[0].kind == KIND_SEGMENTS
                 && pair[1].kind == KIND_SCATTER
@@ -2327,6 +2329,27 @@ mod tests {
             )),
             axis
         );
+        // An authored axis with its own domain (#909) keeps the graph
+        // autorange for the hidden other axis; without a domain it fails
+        // closed like any authored axis.
+        let authored = |domain: bool| {
+            let mut facts = graph_facts(
+                FLAG_GRAPH_MARKS,
+                &[("segments", EDGE, "scatter", NODE)],
+                HIDDEN,
+            );
+            let hidden = xyef_axis_keys(0, 1, HIDDEN);
+            let at = facts
+                .windows(hidden.len())
+                .position(|window| window == hidden.as_slice())
+                .unwrap();
+            let mut x = xyef_axis_keys(0, 1, &["side", "style", "type", "domain"]);
+            x[3] = u8::from(domain);
+            facts.splice(at..at + hidden.len(), x);
+            facts
+        };
+        assert_eq!(reason(authored(true)), "");
+        assert_eq!(reason(authored(false)), axis);
     }
 
     #[test]
