@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 from . import export
-from .kernels import DEFAULT_PNG_EXPORT_SCALE as _DEFAULT_PNG_EXPORT_SCALE
 
 
 class FacetGrid:
@@ -197,7 +196,7 @@ for(const p of panels){{
         self,
         path: Optional[str | PathLike[str]] = None,
         *,
-        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+        scale: Optional[float] = None,
         engine: export.Engine = export.Engine.default,
         optimize: bool = False,
         custom_css: Optional[str] = None,
@@ -242,7 +241,7 @@ for(const p of panels){{
         self,
         format: str = "png",
         *,
-        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+        scale: Optional[float] = None,
         background: Optional[str] = None,
         engine: "export.Engine | str" = export.Engine.auto,
         quality: Optional[int] = None,
@@ -264,6 +263,8 @@ for(const p of panels){{
         resolved_engine = export._resolve_image_engine(engine, fmt, custom_css)
         quality = export._validated_quality(quality, fmt, resolved_engine)
         background = export._validated_background(background, fmt)
+        if scale is None:
+            scale = export._default_png_scale()
         scale = export._positive_finite_float(scale, "export scale")
         optimize = export._bool_option(optimize, "export optimize")
         sandbox = export._bool_option(sandbox, "export sandbox")
@@ -304,7 +305,7 @@ for(const p of panels){{
         path: str | PathLike[str],
         *,
         format: Optional[str] = None,
-        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+        scale: Optional[float] = None,
         background: Optional[str] = None,
         engine: "export.Engine | str" = export.Engine.auto,
         quality: Optional[int] = None,

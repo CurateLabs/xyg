@@ -454,7 +454,9 @@ def test_chart_and_figure_png_export_types_stay_in_sync() -> None:
         assert type(None) in args, key
     assert str in get_args(chart_hints["path"])
     assert str in get_args(chart_hints["custom_css"])
-    assert chart_hints["scale"] is float
+    # scale: Optional[float] = None — default resolved lazily from Rust (ABI 370)
+    _scale_args = get_args(chart_hints["scale"])
+    assert float in _scale_args and type(None) in _scale_args
     assert chart_hints["engine"] is Engine
     assert chart_hints["sandbox"] is bool
 

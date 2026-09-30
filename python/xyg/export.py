@@ -25,10 +25,18 @@ from typing import TYPE_CHECKING, Any, Optional, SupportsFloat, SupportsIndex, c
 if TYPE_CHECKING:
     from ._figure import Figure
 
-# Default device-pixel ratio for raster export; sourced from Rust (ABI 370).
-# Both Python and Node read this value from xyg_default_png_export_scale() so
-# the product default has a single source of truth.
-from .kernels import DEFAULT_PNG_EXPORT_SCALE as _DEFAULT_PNG_EXPORT_SCALE
+
+def _default_png_scale() -> float:
+    """Default device-pixel ratio for raster export, read lazily from Rust (ABI 370).
+
+    Both Python and Node read the value from ``xyg_default_png_export_scale()``
+    so the product default has a single source of truth in Rust. The import of
+    ``_native`` is deferred to call time so that importing ``xyg.export`` alone
+    does not load the native library.
+    """
+    from . import _native  # noqa: PLC0415  # intentional lazy import
+
+    return float(_native._lib.xyg_default_png_export_scale())
 
 
 class Engine(StrEnum):
@@ -716,7 +724,7 @@ def html_to_png(
     width: int,
     height: int,
     *,
-    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+    scale: Optional[float] = None,
     time_budget_ms: int = 4000,
     timeout_s: float = 120.0,
     sandbox: bool = True,
@@ -735,6 +743,8 @@ def html_to_png(
     at the cost of driver-dependent rasterization."""
     width = _positive_pixel_count(width, "PNG width")
     height = _positive_pixel_count(height, "PNG height")
+    if scale is None:
+        scale = _default_png_scale()
     scale = _positive_finite_float(scale, "PNG scale")
     time_budget_ms = _positive_pixel_count(time_budget_ms, "PNG time_budget_ms")
     timeout_s = _positive_finite_float(timeout_s, "PNG timeout_s")
@@ -889,7 +899,7 @@ def write_images(
             settings = {
                 "width": width,
                 "height": height,
-                "scale": scale if scale is not None else _DEFAULT_PNG_EXPORT_SCALE,
+                "scale": scale if scale is not None else _default_png_scale(),
                 "background": background,
                 "quality": quality,
             }
@@ -952,7 +962,7 @@ def to_png(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+    scale: Optional[float] = None,
     engine: Engine = Engine.default,
     optimize: bool = False,
     custom_css: Optional[str] = None,
@@ -981,6 +991,8 @@ def to_png(
         height if height is not None else (fig.height if isinstance(fig.height, int) else 500),
         "PNG height",
     )
+    if scale is None:
+        scale = _default_png_scale()
     scale = _positive_finite_float(scale, "PNG scale")
     optimize = _bool_option(optimize, "PNG optimize")
     sandbox = _bool_option(sandbox, "PNG sandbox")
@@ -1282,7 +1294,7 @@ def to_image(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+    scale: Optional[float] = None,
     background: Optional[str] = None,
     engine: Engine | str = Engine.auto,
     quality: Optional[int] = None,
@@ -1310,6 +1322,8 @@ def to_image(
     quality = _validated_quality(quality, fmt, resolved_engine)
     background = _validated_background(background, fmt)
     w, h = _export_dimensions(fig, width, height)
+    if scale is None:
+        scale = _default_png_scale()
     scale = _positive_finite_float(scale, "export scale")
     optimize = _bool_option(optimize, "export optimize")
     sandbox = _bool_option(sandbox, "export sandbox")
@@ -1346,7 +1360,7 @@ def write_image(
     format: Optional[str] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
+    scale: Optional[float] = None,
     background: Optional[str] = None,
     engine: Engine | str = Engine.auto,
     quality: Optional[int] = None,
@@ -1370,7 +1384,7 @@ def write_image(
             for name, value, default in (
                 ("width", width, None),
                 ("height", height, None),
-                ("scale", scale, _DEFAULT_PNG_EXPORT_SCALE),
+                ("scale", scale, None),  # None = "use default"; any explicit float is non-default
                 ("background", background, None),
                 ("quality", quality, None),
                 ("optimize", optimize, False),
