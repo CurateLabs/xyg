@@ -501,6 +501,22 @@ pub enum LegendLocation {
 }
 
 impl LegendLocation {
+    /// The static legend's fixed placements by their authored names.
+    pub fn from_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "upper right" => Self::UpperRight,
+            "upper left" => Self::UpperLeft,
+            "lower left" => Self::LowerLeft,
+            "lower right" => Self::LowerRight,
+            "center right" => Self::CenterRight,
+            "center left" => Self::CenterLeft,
+            "upper center" => Self::UpperCenter,
+            "lower center" => Self::LowerCenter,
+            "center" => Self::Center,
+            _ => return None,
+        })
+    }
+
     fn from_code(value: u8) -> Result<Self, SceneError> {
         match value {
             0 => Ok(Self::UpperRight),
@@ -526,6 +542,11 @@ pub struct SceneLegendEntry {
     pub stroke_rgba: [u8; 4],
     pub label: String,
 }
+
+/// Legend paint when the host authored none.
+pub const LEGEND_DEFAULT_TEXT_RGBA: [u8; 4] = [32, 32, 32, 255];
+pub const LEGEND_DEFAULT_FRAME_FILL_RGBA: [u8; 4] = [255, 255, 255, 230];
+pub const LEGEND_DEFAULT_FRAME_STROKE_RGBA: [u8; 4] = [32, 32, 32, 71];
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneLegend {
@@ -706,9 +727,9 @@ impl SceneLegend {
             title,
             font_size,
             title_font_size,
-            text_rgba: resolved_paint(32..36, 8, [32, 32, 32, 255])?,
-            frame_fill_rgba: resolved_paint(36..40, 16, [255, 255, 255, 230])?,
-            frame_stroke_rgba: resolved_paint(40..44, 32, [32, 32, 32, 71])?,
+            text_rgba: resolved_paint(32..36, 8, LEGEND_DEFAULT_TEXT_RGBA)?,
+            frame_fill_rgba: resolved_paint(36..40, 16, LEGEND_DEFAULT_FRAME_FILL_RGBA)?,
+            frame_stroke_rgba: resolved_paint(40..44, 32, LEGEND_DEFAULT_FRAME_STROKE_RGBA)?,
             entries,
         }))
     }
@@ -1588,6 +1609,16 @@ impl AxisScale {
     #[inline(always)]
     pub fn pixel(self, value: f64) -> f64 {
         self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
+    }
+
+    /// Data value at a pixel: the exact inverse of [`AxisScale::pixel`] on
+    /// linear, log, and symlog scales.
+    pub(crate) fn data(self, pixel: f64) -> f64 {
+        self.value(self.coord_lo + (pixel - self.px0) / self.px_delta * self.coord_span)
+    }
+
+    pub(crate) fn is_linear(self) -> bool {
+        matches!(self.kind, ScaleKind::Linear)
     }
 }
 
@@ -3354,7 +3385,7 @@ fn recut_polar_scene_layout(
     Ok((recut_layout, recut.legend_box))
 }
 
-fn resolved_legend_bounds(
+pub(crate) fn resolved_legend_bounds(
     layout: PlotLayout,
     legend: &SceneLegend,
     polar_legend_box: Option<[f64; 4]>,
@@ -5364,7 +5395,20 @@ struct StyleCap {
     cap: u8,
 }
 
-#[cfg(test)]
+/// XYLC sidecar giving the listed Scene styles butt caps (for batches built
+/// in the engine, e.g. screen-space dash pieces that must not cap over their
+/// gaps). Pass to `SceneBatch::with_dashes`.
+pub(crate) fn encode_butt_caps(style_refs: &[u32]) -> Result<Vec<u8>, SceneError> {
+    let entries: Vec<StyleCap> = style_refs
+        .iter()
+        .map(|&style_ref| StyleCap {
+            style_ref,
+            cap: LINECAP_BUTT,
+        })
+        .collect();
+    encode_xylc(&entries)
+}
+
 fn encode_xylc(entries: &[StyleCap]) -> Result<Vec<u8>, SceneError> {
     if entries.is_empty() {
         return Ok(Vec::new());
@@ -10363,7 +10407,43 @@ pub struct SceneDocument {
     marker_glyphs: Vec<Option<String>>,
 }
 
+/// Layout, scales, chrome, text, and legend of a decoded Scene, kept by the
+/// composed-graph export rebuild (#34, `graph_scene`).
+pub struct SceneGraphParts {
+    pub layout: PlotLayout,
+    pub x_scale: AxisScale,
+    pub y_scale: AxisScale,
+    pub chrome: SceneChromeStyle,
+    pub text: SceneChromeText,
+    pub legend: Option<SceneLegend>,
+}
+
 impl SceneDocument {
+    /// Parts a graph rebuild keeps. Polar, image, colorbar, gradient, and
+    /// authored-label Scenes are not graph charts and fail closed, as do
+    /// authored annotations: the rebuild re-emits only the graph, so it
+    /// refuses rather than silently dropping them (#34).
+    pub(crate) fn into_graph_parts(self) -> Result<SceneGraphParts, SceneError> {
+        if self.polar.is_some()
+            || self.colorbar.is_some()
+            || !self.images.is_empty()
+            || !self.labels.is_empty()
+            || self.records.iter().any(|record| {
+                is_scene_annotation_id(record.stable_id) || record.annotation_tag != 0
+            })
+        {
+            return Err(SceneError::Length);
+        }
+        Ok(SceneGraphParts {
+            layout: self.layout,
+            x_scale: self.x_scale,
+            y_scale: self.y_scale,
+            chrome: self.chrome,
+            text: self.text,
+            legend: self.legend,
+        })
+    }
+
     /// Logical viewport owned by the encoded Scene. StaticDocument validates
     /// panel facts against this size before any consumer allocates output.
     pub(crate) fn viewport_size(&self) -> (f64, f64) {

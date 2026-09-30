@@ -532,9 +532,9 @@ wide page font can never push text past its collision box; it is clipped to
 the plot. With anisotropic scales the threshold test is conservative (never
 overlapping). The plan assumes linear axes, so a graph on log or symlog axes
 paints no labels, and a legend-hidden node or edge trace paints none of its
-labels. The client adds no placement, collision, or truncation policy. `label_plan` is placement, not per-item paint, so labeled
-graphs keep static export; static SVG/PNG do not paint composed-graph labels
-yet (the semantic Scene route does). `tests/test_graph_label_plan.py` pins the
+labels. The client adds no placement, collision, or truncation policy. Static
+SVG/PNG paint the planned labels the exported view's scale reveals (§8).
+`tests/test_graph_label_plan.py` pins the
 plan in `tests/fixtures/graph_label_plan_cross_host.json` (Node asserts the
 same fixture) and probes Chromium for non-overlapping labels that multiply
 when zoomed; a Rust property test checks collision freedom and monotonicity
@@ -700,10 +700,8 @@ edge_metric_domain?}` with `nodes`/`edges` one of `"resolved"`,
 layers the canonical Scene paints but the composed mark does not; it is empty
 now that every layer paints, and hosts and clients must never treat a listed
 layer as drawn. Static
-SVG/PNG export of a semantically styled composed graph fails closed with
-`XYG_SCENE_UNSUPPORTED_GRADIENT` (per-item paint is not admitted by the static
-Scene route yet) in both hosts; interactive HTML, notebook, and Reflex output
-paint it. `tests/test_graph_semantic_mapping.py` pins the painted values in
+SVG/PNG export paints every resolved layer from the same planes in both hosts
+(§8). `tests/test_graph_semantic_mapping.py` pins the painted values in
 `tests/fixtures/graph_semantic_mapping_cross_host.json` across Direct,
 curved, EdgeSample, and Aggregate cases; `packages/xy-node/test/graph.test.mjs`
 asserts the same fixture (including every layer channel and head bit), and
@@ -775,9 +773,8 @@ compound rects the same way. Hosts ship frames as the node trace's
 `compound_frame` channel (bounds as deltas from the node for exact f32
 transport, RGBA, width, pad); the browser strokes them on the chrome canvas
 under the data. Frames need exact source identity, so Aggregate LOD records
-`compound_frames: "omitted:aggregate"` instead (§28). `compound_frame` is
-per-item paint: static SVG/PNG of a compound graph fails closed until the
-static route paints frames.
+`compound_frames: "omitted:aggregate"` instead (§28). Static SVG/PNG stroke
+the same frames, padded in screen space, under the data (§8).
 
 `collapsed=` (group ids, a node mask, or a node column; Node `collapsed`)
 discloses groups. The full graph is laid out once and must be Direct LOD
@@ -842,11 +839,59 @@ boundary edges retain their canonical source identity.
   the interactive path is unaffected. Reason: both hosts report
   `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for node or segment capacity overflow;
   Rust's admission code owns this decision for all hosts (#899).
-  Default series colors are now host-parity (#918): Node `Figure._seriesCursor`
-  advances once per graph node scatter (same as Python's `_series_cursor`);
-  graph edges use the neutral `"#888888"` on both hosts.  The parity fixture
-  `tests/fixtures/series_palette_cross_host.json` covers graph node cursor
-  progression and custom-palette graph nodes.
+  Default graph colors are Rust-owned and identical across hosts (§7.1.6),
+  custom palettes included: both hosts give the node scatter the next series
+  color (#918, `tests/fixtures/series_palette_cross_host.json`), and edges
+  paint the Rust neutral. The export fixture pins explicit and default colors.
+- Composed layers (#34): the browser paints a composed graph from resolved
+  per-item planes, so static export does too. The host first builds the
+  **plain** graph Scene through the figure route above (solid paint, edge
+  ends only, no explicit legend; an edgeless graph drops its empty edge
+  trace), keeping the layout, scales, and chrome authoritative. Rust then
+  rebuilds it from the planes (`xyg_graph_composed_scene`,
+  `graph_scene::rebuild_composed_graph_scene`): compound frames (unfilled
+  rects padded by their screen pad), then per edge piece its halo, body, and
+  stroke layers in the browser's per-item order (semantic dashes split along
+  the untrimmed piece in screen px from its start, with butt caps, like the
+  fragment discard), each shaft clipped by `clip_edge_piece` exactly as the
+  browser clips it (against both node outlines, ending one head length before
+  the tip when the piece carries the arrowhead, so no stroke runs under or past
+  the head), filled arrowheads computed in screen space, then node halos under
+  their markers, then labels, then the explicit legend. Pixel-derived geometry
+  (padded frames, heads, dash spans) maps back through each axis scale's exact
+  inverse, so an authored log or symlog axis (#909) keeps the browser's
+  screen-space shapes. Labels paint when `min(|sx|, |sy|)` reaches their
+  threshold and their planned box fits the plot, on linear axes only (the plan
+  assumes linear spacing, and the browser paints none on log or symlog axes);
+  past the Scene label caps (128 labels, 8 KiB of text) the export keeps
+  the lowest thresholds, the labels that appear first when zooming in (§28;
+  the default `label_budget` of 64 stays under both caps). The explicit legend
+  (the semantic legend) uses the chart-level legend placement the browser
+  honors: the nine fixed `loc` names resolve in Rust; any other placement
+  (such as `"best"` or an anchor) fails closed with
+  `XYG_STATIC_UNSUPPORTED_GRAPH`, as does any plane Rust rejects. The rebuild
+  re-emits only the graph, so a graph chart with authored annotations (text,
+  rules, arrows) fails closed with the same reason instead of silently losing
+  them (carrying annotations through the rebuild: #922). A legend
+  taller or wider than the plot (the browser scrolls it) reports
+  `XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT`, like every static legend
+  (`out_reason` 2). A themed (opaque) chart background carries the legend
+  frame; otherwise the Scene's default legend paint. Labels and legend text
+  paint in the chart text color (`--chart-text`, the browser's theme label)
+  when authored, else the Scene chrome's label paint. Hosts only read planes off their traces (Python
+  `_graph_static`, Node `composedGraphPlanes`); a figure with more than one
+  graph mark keeps the plain route. `tests/test_graph_static_export.py` pins
+  SVG and PNG bytes for semantic (light and dark), collapsed compound,
+  per-node size, labels with ordinal/diverging scales, and legend placement
+  in `tests/fixtures/graph_static_export_cross_host.json`, and
+  `packages/xy-node/test/graph.test.mjs` asserts the same bytes.
+- Visual regression (#34): `tests/test_graph_visual_goldens.py` commits PNG
+  goldens for the ordinary, dense, compound, selected, and dark-theme states
+  (`tests/fixtures/graph_visual/`, inputs in
+  `tests/fixtures/graph_visual_goldens.json`). Python and Node must export the
+  committed bytes exactly, and a Chromium screenshot of each live chart must
+  match its export (mean channel difference under 3.5, under 1% of pixels off
+  by more than 96; the browser's HTML legend is compared switched off).
 
 ---
 
@@ -872,6 +917,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_semantic_legend_text` | ABI 372 semantic legend row labels and title (#34) |
 | `xyg_graph_compound_collapse` | ABI 373 compound disclosure for composed graphs: visibility, representatives, propagated flags, edge keep/remap (#34) |
 | `xyg_graph_compound_frames` | ABI 373 visible group frames: transitive bounds, Scene paint, member-clearing pad (#34) |
+| `xyg_graph_composed_scene` | ABI 376 (`out_reason`: 1 invalid, 2 legend footprint) rebuilds a composed graph chart's plain static Scene from its resolved per-item planes (frames, layered/dashed edges, heads, halos, nodes, labels, explicit legend; §8) (#34) |
 | `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |

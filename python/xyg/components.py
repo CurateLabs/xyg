@@ -7222,7 +7222,8 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         )
 
     Or pass ``nodes`` / ``edges`` (and other ``xyg.graph`` kwargs) on the chart
-    itself. Remaining kwargs (``width``, ``height``, ``title``, …) style the chart.
+    itself. Remaining kwargs (``width``, ``height``, ``title``, …) style the chart;
+    with a graph child, every kwarg (including ``style=``) belongs to the chart.
     """
     mark_keys = (
         "nodes",
@@ -7267,8 +7268,11 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         "semantic_legend",
         "collapsed",
     )
-    mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
-    if "nodes" in mark_kwargs or "edges" in mark_kwargs:
+    # Mark kwargs belong to the chart-level graph only when it is declared on
+    # the chart itself; with a graph child they stay chart props (a chart
+    # ``style=`` must not vanish into a mark that does not exist).
+    if "nodes" in props or "edges" in props:
+        mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
         nodes = mark_kwargs.pop("nodes", [])
         edges = mark_kwargs.pop("edges", [])
         children = (graph(nodes, edges, **mark_kwargs), *children)

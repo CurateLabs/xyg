@@ -88,8 +88,9 @@ import {
 
 /** Default device-pixel ratio for raster PNG export; sourced from Rust (ABI 370). */
 const DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, graphDefaultEdgeColor, colormapStopBytes, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
+import { graphComposedScene } from "./abi.js";
 import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3339,15 +3340,22 @@ export function figureStaticDocument(figure, {
     else delete next.minor_style;
     axisOptions[axisId] = next;
   }
-  const traces = (figure.traces ?? []).map((trace) => {
+  let traces = (figure.traces ?? []).map((trace) => {
     const style = {};
     for (const [key, value] of Object.entries(trace.style ?? {})) {
       if (!String(key).startsWith("_legend_")) style[key] = value;
     }
     return { ...trace, style };
   });
+  // Composed graphs (#34): read the planes, then make the base pass plain.
+  const graphPlanes = composedGraphPlanes(figure);
+  let graphMetas = figure._graphMeta;
+  let showLegend = Boolean(figure.show_legend);
+  if (graphPlanes != null) {
+    ({ traces, metas: graphMetas } = plainGraphTraces(figure, traces));
+    if (figure.legend_options?.items?.length) showLegend = false;
+  }
   const annotationFacts = staticAnnotationStyleFacts(figure.annotations ?? []);
-  const showLegend = Boolean(figure.show_legend);
   let legend = null;
   if (showLegend) {
     if (figure.extra_legends && (!Array.isArray(figure.extra_legends) || figure.extra_legends.length > 0)) {
@@ -3368,13 +3376,22 @@ export function figureStaticDocument(figure, {
   projected.chrome_styles = {};
   projected.axis_options = axisOptions;
   projected.traces = traces;
+  projected._graphMeta = graphMetas;
   projected.annotations = annotationFacts.annotations;
   projected.show_legend = false;
   projected.legend_options = {};
   projected.extra_legends = Array.isArray(figure.extra_legends) ? [] : null;
   const reason = sceneExportSupportReason(projected);
   if (reason) throw new RangeError(reason);
-  const scene = figureSceneV3(projected);
+  let scene = figureSceneV3(projected);
+  if (graphPlanes != null) {
+    try {
+      scene = graphComposedScene(scene, graphPlanes);
+    } catch (error) {
+      if (error?.message === "XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT") throw error;
+      throw new RangeError("XYG_STATIC_UNSUPPORTED_GRAPH");
+    }
+  }
   const frameSides = figure.frame_sides == null ? ["left", "bottom"] : figure.frame_sides;
   const sides = new Set(frameSides);
   const axisSides = [
@@ -3413,6 +3430,171 @@ export function figureStaticDocument(figure, {
     optimizePng: Boolean(optimizePng),
     legend,
   });
+}
+
+/** Style channels the plain Scene route admits on graph traces (#34). */
+const GRAPH_PLAIN_CHANNELS = new Set(["edge_ends"]);
+
+/** Per-item straight RGBA8 of a resolved color channel (Rust color math). */
+function graphRgbaRows(channel, n, fallback) {
+  if (channel == null || channel.mode === "constant") {
+    const rgba = cssColorRgba8(channel?.constant ?? fallback);
+    const out = new Uint8Array(n * 4);
+    for (let i = 0; i < n; i += 1) out.set(rgba, i * 4);
+    return out;
+  }
+  // Node direct_rgba channels already hold quantized RGBA8.
+  if (channel.mode === "direct_rgba") {
+    return channel.rgba instanceof Uint8Array ? channel.rgba : clipQuantizeU8(channel.rgba);
+  }
+  if (channel.mode === "categorical") {
+    const palette = channel.palette?.length ? channel.palette : DEFAULT_PALETTE;
+    const table = (channel.categories ?? []).map((_, i) => cssColorRgba8(palette[i % palette.length]));
+    const out = new Uint8Array(n * 4);
+    channel.codes.forEach((code, i) => out.set(table[Number(code)], i * 4));
+    return out;
+  }
+  if (channel.mode === "continuous") {
+    const [lo, hi] = channel.domain;
+    const unit = Float64Array.from(channel.values, (v) => (hi > lo ? Math.min(Math.max((v - lo) / (hi - lo), 0), 1) : 0));
+    const colormap = channel.colormap ?? "viridis";
+    const stops = typeof colormap === "string" ? colormapNamedStops(colormap) : colormapStopBytes(colormap);
+    if (stops == null) throw new RangeError("XYG_STATIC_UNSUPPORTED_GRAPH");
+    return colormapRgba(unit, n, 1, stops, 255).rgba;
+  }
+  throw new RangeError("XYG_STATIC_UNSUPPORTED_GRAPH");
+}
+
+function graphStyleValues(trace, name, fallback, n) {
+  const channel = trace.style_channels?.[name];
+  if (channel != null) return Float64Array.from(channel.values, Number);
+  return new Float64Array(n).fill(Number(trace.style?.[name] ?? fallback));
+}
+
+/**
+ * One graph's composed planes off a graph-only figure, or null (#34). Mirrors
+ * Python `_graph_static.composed_graph_planes`: the browser paints the same
+ * resolved per-item planes; Rust rebuilds the plain Scene from them.
+ */
+function composedGraphPlanes(figure) {
+  const metas = figure._graphMeta ?? [];
+  if (metas.length !== 1 || !graphMarksOnly(figure)) return null;
+  const meta = metas[0];
+  const node = figure.traces[meta.node_trace];
+  const edge = figure.traces[meta.edge_trace];
+  const n = node.x.length;
+  const m = edge.x0.length;
+  const fill = graphRgbaRows(node.color_ch, n, node.style?.color ?? DEFAULT_PALETTE[0]);
+  let stroke;
+  if (node.stroke_ch?.mode === "direct_rgba") stroke = graphRgbaRows(node.stroke_ch, n, "#000000");
+  else if (node.style?.stroke) stroke = graphRgbaRows({ mode: "constant", constant: node.style.stroke }, n, "#000000");
+  else stroke = new Uint8Array(n * 4);
+  const size = node.size_ch;
+  let diameter;
+  if (size?.mode === "continuous" && size.values != null) {
+    const [lo, hi] = size.range_px;
+    const [d0, d1] = size.domain;
+    diameter = Float64Array.from(size.values, (v) => lo + (hi - lo) * (d1 > d0 ? Math.min(Math.max((v - d0) / (d1 - d0), 0), 1) : 0));
+  } else {
+    diameter = new Float64Array(n).fill(Number(size?.constant ?? 8));
+  }
+  const symbolChannel = node.style_channels?.symbol;
+  const symbol = symbolChannel != null
+    ? Uint8Array.from(symbolChannel.values)
+    : new Uint8Array(n).fill(SYMBOL_CODES.get(String(node.style?.symbol ?? "circle")) ?? 0);
+  const planes = {
+    x: asF64Array(node.x),
+    y: asF64Array(node.y),
+    fill,
+    stroke,
+    stroke_width: graphStyleValues(node, "stroke_width", stroke.some((v) => v !== 0) ? 1 : 0, n),
+    diameter,
+    symbol,
+    opacity: graphStyleValues(node, "opacity", 1, n),
+    x0: asF64Array(edge.x0),
+    y0: asF64Array(edge.y0),
+    x1: asF64Array(edge.x1),
+    y1: asF64Array(edge.y1),
+    segment_rgba: graphRgbaRows(edge.color_ch, m, edge.style?.color || graphDefaultEdgeColor()),
+    segment_width: graphStyleValues(edge, "width", 1.2, m),
+    segment_opacity: graphStyleValues(edge, "opacity", 1, m),
+  };
+  for (const [key, trace, name] of [
+    ["halo", node, "halo_rgba"],
+    ["halo_diameter", node, "halo_size"],
+    ["frames", node, "compound_frame"],
+    ["node_label_plan", node, "label_plan"],
+    ["segment_halo", edge, "halo_rgba"],
+    ["segment_halo_width", edge, "halo_width"],
+    ["segment_body", edge, "body_rgba"],
+    ["segment_body_width", edge, "body_width"],
+    ["segment_dash", edge, "edge_dash"],
+    ["edge_ends", edge, "edge_ends"],
+    ["segment_label_plan", edge, "label_plan"],
+  ]) {
+    const channel = trace.style_channels?.[name];
+    if (channel != null) planes[key] = channel.values;
+  }
+  if (planes.node_label_plan != null) {
+    planes.node_labels = (meta.node_labels ?? new Array(n).fill(null)).map((label) => (label == null ? null : String(label)));
+  }
+  if (planes.segment_label_plan != null) {
+    const texts = new Array(m).fill(null);
+    (meta.edge_label_segments ?? []).forEach((segment, i) => { texts[Number(segment)] = meta.edge_label_text[i]; });
+    planes.segment_labels = texts;
+  }
+  // Labels and legend text paint in the chart text color, like the
+  // browser's theme label (`--chart-text`).
+  const chartText = figure.style?.["--chart-text"];
+  if (chartText) planes.text_rgba = cssColorRgba8(String(chartText));
+  const items = figure.legend_options?.items ?? [];
+  if (items.length && figure.show_legend) {
+    planes.legend_title = String(figure.legend_options.title ?? "");
+    // Rust resolves the placement name; unknown names fail closed.
+    planes.legend_loc = String(figure.legend_options.loc ?? "");
+    planes.legend = items.map((item) => [
+      String(item.name ?? ""),
+      cssColorRgba8(String(item.style?.color || "#000000")),
+      SYMBOL_CODES.get(String(item.style?.symbol ?? "circle")) ?? 0,
+    ]);
+  }
+  return planes;
+}
+
+/**
+ * Plain copies of a graph figure's traces for the base Scene pass (#34;
+ * Python `_graph_static.strip_to_plain`): solid paint, no per-item channels,
+ * no explicit legend (the rebuild owns them). Returns the traces and metas.
+ */
+function plainGraphTraces(figure, traces) {
+  const meta = { ...figure._graphMeta[0] };
+  const plain = traces.map((trace, index) => {
+    if (index !== meta.node_trace && index !== meta.edge_trace) return trace;
+    const next = {
+      ...trace,
+      style_channels: Object.fromEntries(
+        Object.entries(trace.style_channels ?? {}).filter(([name]) => GRAPH_PLAIN_CHANNELS.has(name)),
+      ),
+      color_ch: { mode: "constant", constant: "#888888" },
+    };
+    delete next.stroke_ch;
+    if (index === meta.node_trace) {
+      next.size_ch = { mode: "constant", constant: 8.0 };
+      next.style = Object.fromEntries(
+        Object.entries(next.style ?? {}).filter(([key]) => !["stroke", "stroke_width", "symbol"].includes(key)),
+      );
+      delete next.forceDirect;
+    }
+    return next;
+  });
+  if (plain[meta.edge_trace].x0.length === 0) {
+    // The Scene admits no empty trace; an edgeless graph's base pass is its
+    // nodes alone (edges never widen the node autorange).
+    plain.splice(meta.edge_trace, 1);
+    if (meta.node_trace > meta.edge_trace) meta.node_trace -= 1;
+    meta.edge_trace = null;
+  }
+  return { traces: plain, metas: [meta] };
 }
 
 /** Marshal authored annotations through the Rust XYAS/XYAO style contract. */

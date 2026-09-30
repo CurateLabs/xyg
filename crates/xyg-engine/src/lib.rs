@@ -55,6 +55,7 @@ pub mod geo_viewport;
 pub mod geom;
 pub mod graph;
 pub mod graph_scale;
+pub mod graph_scene;
 pub mod graph_style;
 pub mod hexbin;
 #[cfg(feature = "raster")]

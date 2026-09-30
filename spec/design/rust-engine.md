@@ -332,6 +332,7 @@ crates/
                         #   ([graph-mark.md](graph-mark.md)).
     graph_style.rs      # graph labels, v1 semantic paint/scales/legends, states, compounds
     graph_scale.rs      # graph color scales: diverging domains, ordinal colormap levels
+    graph_scene.rs      # composed graph static Scene rebuild from resolved planes
     sankey.rs           # sankey layout (`xyg_sankey_layout`), dual-host.
     transition.rs       # stable animation-key encoding (`xyg_transition_keys_fixed`).
     stats.rs            # quantiles + Tukey box/grouped geometry + violin_density +
