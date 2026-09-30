@@ -229,7 +229,7 @@ for(const p of panels){{
             data = _native.static_document_export(
                 self._static_document(optimize_png=optimize),
                 "png",
-                scale=scale,
+                scale=scale if scale is not None else export._default_png_scale(),
             )
         else:  # `_png_engine` returns only these two internal values.
             raise AssertionError(f"unreachable PNG engine {resolved_engine!r}")
