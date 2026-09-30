@@ -1509,10 +1509,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   edge-ends flag, so border-aware arrowheads are byte-identical too (#33).
   Default graph colors are Rust-owned and identical (#898): edges paint
   `xyg_graph_default_edge_color_utf8` and take no palette slot, and nodes
-  take the series palette color (the `default_colors` fixture case). Known
-  open gap (#918, not graph-specific): Node ignores a custom figure palette
-  and the series cursor for every default-colored series, so with
-  `palette=` the hosts' default node colors differ like every other mark's.
+  take the series palette color (the `default_colors` fixture case).
+  Default series colors in general are host-parity (#918): Node `Figure`
+  keeps a series cursor that advances once per logical series exactly like
+  Python's `Figure.next_series_color`, over `palette=` or the Rust built-in
+  palette, so graph nodes (one slot per graph) match with custom palettes
+  too. Pinned by `tests/fixtures/series_palette_cross_host.json`.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

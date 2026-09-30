@@ -80,8 +80,12 @@ export function composeHeatmap(z, opts = {}) {
   }
   const constantColor = typeof opts.color === "string" ? opts.color : null;
   const useConstantColor = constantColor != null;
+  // #918: _seriesColor is the cursor-resolved default from Figure.heatmap();
+  // it is the fallback/background color for colormap heatmaps (matching
+  // Python) without suppressing the colormap the way opts.color would.
+  const fallbackColor = opts._seriesColor ?? DEFAULT_PALETTE[0];
   const style = {
-    color: constantColor ?? DEFAULT_PALETTE[0],
+    color: constantColor ?? fallbackColor,
     opacity: opts.opacity ?? 0.95,
     role: "heatmap",
     domain: [lo, hi],

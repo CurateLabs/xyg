@@ -12,7 +12,7 @@ function categoryPositions(x) {
   return out;
 }
 
-function resolvePositions(x) {
+export function resolvePositions(x) {
   if (x == null) {
     throw new TypeError("bar x is required");
   }
@@ -37,7 +37,7 @@ function resolvePositions(x) {
  * Resolve y into a row-major Float64Array of shape (nSeries, nItems).
  * Accepts 1-D heights or an array-of-series / nested matrix.
  */
-function resolveValueMatrix(y, nItems) {
+export function resolveValueMatrix(y, nItems) {
   if (y == null) {
     throw new TypeError("bar y is required");
   }

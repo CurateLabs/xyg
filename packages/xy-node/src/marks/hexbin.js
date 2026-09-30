@@ -37,8 +37,11 @@ export function composeHexbin(x, y, opts = {}) {
   }
   const constantColor = opts.color;
   const colormap = opts.colormap ?? "viridis";
+  // #918: _seriesColor is the cursor-resolved default from Figure.hexbin();
+  // it is the fallback color without suppressing the continuous density color_ch.
+  const fallbackColor = opts._seriesColor ?? DEFAULT_MARK_COLOR;
   const style = {
-    color: constantColor ?? DEFAULT_MARK_COLOR,
+    color: constantColor ?? fallbackColor,
     opacity: opts.opacity ?? 0.9,
     role: "hexbin",
     hex_dx: result.dx,

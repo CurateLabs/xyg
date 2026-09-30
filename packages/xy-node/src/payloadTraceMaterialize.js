@@ -567,7 +567,11 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   const tier = sv.getInt32(4, true) === 0 ? "direct" : "decimated";
   const style = { ...(t.style ?? {}) };
   if (sv.getInt32(20, true)) {
-    style.color = DEFAULT_PALETTE[t.id % DEFAULT_PALETTE.length];
+    // #918: use the figure's own palette cycle when available (custom palette
+    // support); fall back to DEFAULT_PALETTE for callers without paletteColor.
+    style.color = typeof figure?.paletteColor === "function"
+      ? figure.paletteColor(t.id)
+      : DEFAULT_PALETTE[t.id % DEFAULT_PALETTE.length];
   }
   const entry = {
     id: t.id,

@@ -1493,7 +1493,11 @@ export function composeGraph(nodes, edges, opts = {}) {
       x: nodePositions.x,
       y: nodePositions.y,
       style: {
-        color: typeof nodeColor === "string" ? nodeColor : DEFAULT_MARK_COLOR,
+        // #918: when called via Figure.graph() (_resolveNodeColor: true), emit
+        // null so the figure resolves the palette slot; otherwise fill
+        // DEFAULT_MARK_COLOR so standalone composeGraph callers always get a
+        // valid color (#918 finding 5).
+        color: typeof nodeColor === "string" ? nodeColor : (opts._resolveNodeColor ? null : DEFAULT_MARK_COLOR),
         symbol: nodePaint != null ? "circle" : resolvedOpts.symbol ?? "circle",
         ...(nodePaint != null ? { opacity: 1 } : {}),
         ...(resolvedOpts.style ?? {}),

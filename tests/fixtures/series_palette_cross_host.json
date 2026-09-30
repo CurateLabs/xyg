@@ -1,0 +1,389 @@
+{
+  "schema": "xyg.series-palette-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js nextSeriesColor + Python Figure.next_series_color (#918)",
+  "protocol": 12,
+  "abi_version": 374,
+  "cases": [
+    {
+      "name": "builtin_cursor_scatter_line_hist",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "line",
+          "color": "#008300"
+        },
+        {
+          "kind": "histogram",
+          "color": "#d55181"
+        }
+      ]
+    },
+    {
+      "name": "builtin_cursor_bar_2series",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "bar",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "bar",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "builtin_cursor_segments_errorbar",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "segments",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "errorbar",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "custom_palette_cursor",
+      "palette": [
+        "#aa0000",
+        "#00aa00",
+        "#0000aa"
+      ],
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#aa0000"
+        },
+        {
+          "kind": "line",
+          "color": "#00aa00"
+        },
+        {
+          "kind": "histogram",
+          "color": "#0000aa"
+        }
+      ]
+    },
+    {
+      "name": "custom_palette_wrap",
+      "palette": [
+        "#ff0000",
+        "#00ff00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#ff0000"
+        },
+        {
+          "kind": "line",
+          "color": "#00ff00"
+        },
+        {
+          "kind": "histogram",
+          "color": "#ff0000"
+        }
+      ]
+    },
+    {
+      "name": "explicit_color_no_cursor",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#abcdef"
+        },
+        {
+          "kind": "line",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "graph_node_cursor_edge_neutral",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "segments",
+          "color": "#888888"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "graph_custom_palette_node",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "segments",
+          "color": "#888888"
+        },
+        {
+          "kind": "scatter",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "heatmap_string_color",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "heatmap",
+          "color": "#ff00ff"
+        },
+        {
+          "kind": "line",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "heatmap_no_color",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "heatmap",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "heatmap_nonstring_color",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#aa0000"
+        },
+        {
+          "kind": "heatmap",
+          "color": "#00aa00"
+        }
+      ]
+    },
+    {
+      "name": "hexbin_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "hexbin",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "ribbon_no_color",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "ribbon",
+          "color": null
+        },
+        {
+          "kind": "scatter",
+          "color": "#00aa00"
+        }
+      ]
+    },
+    {
+      "name": "ribbon_style_color",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "ribbon",
+          "color": null
+        },
+        {
+          "kind": "scatter",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "area_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "area",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "step_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "line",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "box_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "box_whisker",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "box",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "box_median",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "violin_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "violin",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "stem_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "stem",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "triangle_mesh_cursor",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "triangle_mesh",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "scatter",
+          "color": "#008300"
+        }
+      ]
+    },
+    {
+      "name": "scatter_style_color_explicit",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "scatter",
+          "color": "#aabbcc"
+        },
+        {
+          "kind": "line",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "bar_style_color_explicit",
+      "palette": [
+        "#aa0000",
+        "#00aa00"
+      ],
+      "trace_colors": [
+        {
+          "kind": "bar",
+          "color": "#ff0000"
+        },
+        {
+          "kind": "scatter",
+          "color": "#aa0000"
+        }
+      ]
+    },
+    {
+      "name": "bar_flat_multi_series",
+      "palette": null,
+      "trace_colors": [
+        {
+          "kind": "bar",
+          "color": "#3987e5"
+        },
+        {
+          "kind": "bar",
+          "color": "#008300"
+        }
+      ]
+    }
+  ]
+}
