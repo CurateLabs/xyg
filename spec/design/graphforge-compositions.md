@@ -129,14 +129,10 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `search` | node-layer | node-search | graph | (find) |
 <!-- graphforge-ledger:end -->
 
-**Delivery status.** Every graph-intent composition composes today: node
-and edge layers (node-score, node-group, node-order, node-traversal,
-node-set, node-search, edge-overlay, edge-group), derived edges, and ordered
-overlays (paths, walks, cycles, Euler trails). Table/bar-chart compositions
-and embeddings are recognized and intent-checked but fail with
-`GF_COMPOSE_UNSUPPORTED_COMPOSITION` until their slice lands (xyg#37
-follow-up); WASM parity follows it. The ledger, recognition, and codes above
-do not change when it lands.
+**Delivery status.** Every schema composes: graph intents (node and edge
+layers, derived edges, ordered overlays; §4.4–4.5), tables and bar charts for
+scalar and category results, and embedding views (§4.6). WASM parity follows
+(xyg#37 follow-up); the ledger, recognition, and codes do not change for it.
 
 ## 4. Composition
 
@@ -262,7 +258,37 @@ loses any node or step leaves the `path.*` sections
 (`GF_COMPOSE_PATHS_HIDDEN`). Paths with fewer than two nodes (no route) are
 kept without steps and counted as `GF_COMPOSE_EMPTY_PATHS`.
 
-### 4.6 Decisions (never silent)
+### 4.6 Tables, bar charts, and embeddings
+
+Intents other than `graph` compose exactly one layer
+(`GF_COMPOSE_INTENT_CONFLICT` otherwise) and never produce a graph. A base
+graph is optional; when one is passed, the generation rules of §4.2 apply and
+embedding rows join it for display names (and follow the `extra` policy).
+
+- **table** (scalar and category results): the schema's canonical columns in
+  ledger order; per cell, deterministic text (booleans `true`/`false`,
+  integers in decimal, floats as the shortest round-trip decimal), the numeric
+  value (NaN for text), and validity. At most 1,000,000 cells.
+- **bar-chart** (category results): one bar per result row in result order
+  (never re-sorted), category text and value; nulls are recorded
+  (`GF_COMPOSE_NULL_VALUES`).
+- **parallel-coordinates** (embeddings): every node's full vector over the
+  dimension index, with the node UUID, result row, and base display name,
+  plus a Rust plot domain (dimension span and finite value range, each padded
+  by 5%). `graphforge.dimensions`, when present, must equal the vector length
+  (`GF_RESULT_SCHEMA_MISMATCH`). At most 20,000,000 values.
+- **embedding-coordinates** (embeddings): nodes placed at caller-provided 2D
+  coordinates (`layer.coordinates`: Arrow IPC `node_uuid`, numeric `x`, `y`;
+  malformed, null, or non-finite coordinates fail with
+  `GF_COMPOSE_COORDINATES_INVALID`). Embedded nodes without coordinates fail
+  (`GF_COMPOSE_COORDINATES_MISSING`) unless `missing: "hide"`; coordinates for
+  nodes outside the embedding follow `extra`. Without coordinates, only a
+  two-dimensional embedding may place itself (recorded
+  `GF_COMPOSE_EMBEDDING_2D`); any other dimensionality fails with
+  `GF_COMPOSE_COORDINATES_REQUIRED`, so the first two of many dimensions are
+  never plotted as x/y.
+
+### 4.7 Decisions (never silent)
 
 Every reduction or policy outcome is a recorded decision `(code, layer,
 count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIED`,
@@ -272,6 +298,7 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_EDGE_REVERSED`, `GF_COMPOSE_EDGE_REORIENTED`,
 `GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
 `GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
+`GF_COMPOSE_EMBEDDING_2D`,
 `GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
@@ -340,7 +367,17 @@ optionally `error.field`. A graph composition holds:
 | `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection. Node layers list the canonical value fields first, then the numeric node properties rank/cluster/find results carry; derived edges and path steps carry their layer's row (rank/cost for steps) |
 | `layer.text_names`, `layer.node_texts` [i] | text node properties of node layers, joined per node (row-major, empty when absent); at most 32 property columns per layer (`GF_COMPOSE_PROPERTIES_TRUNCATED`) |
 | `legend.*` | Rust legend rows (§4.4) |
-| `decision.code`, `decision.layer`, `decision.count` | §4.6 |
+| `decision.code`, `decision.layer`, `decision.count` | §4.7 |
+
+Other document kinds share the header, `layer.*` provenance (index 0),
+`layer.counts`, and `decision.*`:
+
+| `kind` | Sections |
+|---|---|
+| `table` | `table.columns`, `table.kinds`, `table.rows` (result rows), `table.cells` (text list, row-major), `table.values` (f64), `table.valid` (u8) |
+| `bar-chart` | `chart.category_name`, `chart.value_name`, `chart.category`, `chart.value`, `chart.result_row` |
+| `parallel-coordinates` | `vector.dimensions`, `vector.uuid`, `vector.result_row`, `vector.base_row`, `vector.name`, `vector.values` (row-major), `vector.domain` (`x0, x1, y0, y1`) |
+| `scatter` | `point.source` (`caller` or `embedding`), `vector.dimensions`, `point.uuid`, `point.result_row`, `point.base_row`, `point.name`, `point.x`, `point.y` |
 
 Output is deterministic for identical request bytes, so native and WASM hosts
 are compared byte for byte.
@@ -377,6 +414,15 @@ composition.select([uuid, ...]);      // { nodes: [i], edges: [j] } for highligh
 composition.diagnostics();            // schema ids, counts, decision codes only
 ```
 
+`graphforgeChart` dispatches on `kind`: graphs through the graph mark, bar
+charts through `barChart` with a category axis, parallel coordinates as one
+polyline per node (`segments` with per-segment node tooltips and the Rust
+domain), and embedding coordinates as a scatter with node tooltips. Tables
+render with `graphforgeTableHtml(composition)`, an escaped `<table>` (cells
+are text, never markup). Static export of a bar chart fails closed with
+`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`, as every category-axis export does in
+both hosts today; the interactive chart and the table carry the names.
+
 `encodeGraphForgeRequest` / `composeGraphForgeRequest` /
 `decodeGraphForgeDocument` expose the raw bytes for hosts that move requests
 or documents across processes; `graphforgeGraphData` /
@@ -402,6 +448,14 @@ mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
   single-path order, labels, and cost; ranked and all-pairs paths; cycle
   closing steps; walks; Euler trails over persisted edges with reorientation;
   coexistence and metric conflicts; hide cascades; extra policy for paths.
+- Rust (views): every scalar and category schema composes as a table (and
+  categories as bar charts) and never as a graph; exact cell text and values;
+  parallel coordinates for all four embedding algorithms with and without a
+  base, vectors equal to the result's, and a covering domain; caller
+  coordinates, a two-dimensional embedding placing itself, and the
+  required/missing/extra coordinate failures. Coordinate and 2D-embedding
+  inputs are derived from the real `node2vec` output
+  (`scripts/gen_graphforge_derived_fixtures.py --check`).
 - Node: joins checked against the independent expectations for node and edge
   layers, selection round trips (including derived edges by layer and row and
   path steps), error codes, chart paint, legend, and edge labels, the edge

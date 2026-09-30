@@ -52,6 +52,7 @@ struct LayerSpec {
     extra: Option<&'static str>,
     result_id: Option<&'static str>,
     rows: Option<Vec<u64>>,
+    coordinates: Option<Vec<u8>>,
 }
 
 fn layer(name: &str) -> LayerSpec {
@@ -93,6 +94,9 @@ fn request(bases: &[&str], generation: Option<Uuid>, layers: &[LayerSpec]) -> Ve
         }
         if let Some(rows) = &spec.rows {
             builder.u64s("layer.rows", i, rows);
+        }
+        if let Some(coordinates) = &spec.coordinates {
+            builder.bytes("layer.coordinates", i, coordinates);
         }
     }
     builder.finish()
@@ -929,4 +933,261 @@ fn diagnostics_never_carry_values_or_identities() {
             "{message}"
         );
     }
+}
+
+// -- tables, bar charts, embeddings (views) ----------------------------------------
+
+fn derived(name: &str) -> Vec<u8> {
+    std::fs::read(format!(
+        "{}/../../tests/fixtures/graphforge/derived/{name}.arrow",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap()
+}
+
+fn view(name: &str, intent: &'static str, with_base: bool) -> LayerSpec {
+    let mut spec = layer(name);
+    spec.intent = intent;
+    if !with_base {
+        spec.generation = None;
+    }
+    spec
+}
+
+fn compose_view(spec: LayerSpec, with_base: bool) -> Result<Vec<u8>, Vec<u8>> {
+    let (base, generation) = base_of("node2vec");
+    if with_base {
+        compose_bytes(&request(&[base], Some(generation), &[spec]))
+    } else {
+        compose_bytes(&request(&[], None, &[spec]))
+    }
+}
+
+#[test]
+fn scalar_and_category_results_compose_as_tables_not_graphs() {
+    for name in [
+        "is_dag",
+        "has_euler_circuit",
+        "has_euler_path",
+        "is_planar",
+        "chromatic_number",
+        "triangle_count",
+        "count_automorphisms",
+        "modularity",
+        "transitivity",
+        "conductance",
+        "triad_census",
+        "dyad_census",
+    ] {
+        let spec = view(name, "table", false);
+        let document =
+            compose_view(spec, false).unwrap_or_else(|d| panic!("{name}: {}", error_code(&d)));
+        let doc = Doc::new(&document);
+        assert_eq!(doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(), "table");
+        let entry = ledger::schema_for_algorithm(name).unwrap();
+        let columns = doc.texts("table.columns", 0);
+        assert_eq!(
+            columns,
+            entry.fields.iter().map(|f| f.name).collect::<Vec<_>>()
+        );
+        let rows = doc.u64s("table.rows", 0).len();
+        assert_eq!(doc.texts("table.cells", 0).len(), rows * columns.len());
+        assert!(
+            doc.0.get("node.uuid", 0).is_none(),
+            "{name}: never forced into a graph"
+        );
+    }
+    let document = compose_view(view("chromatic_number", "table", false), false).unwrap();
+    let doc = Doc::new(&document);
+    let bytes = fixture("chromatic_number");
+    let table = read_table(&bytes).unwrap();
+    let want = i64s(&table.column("chromatic_number").unwrap()).unwrap()[0].unwrap();
+    assert_eq!(doc.texts("table.cells", 0), vec![want.to_string()]);
+    assert_eq!(doc.f64s("table.values", 0), vec![want as f64]);
+    let document = compose_view(view("is_dag", "table", false), false).unwrap();
+    assert!(["true", "false"].contains(&Doc::new(&document).texts("table.cells", 0)[0]));
+}
+
+#[test]
+fn category_results_compose_as_bar_charts_in_result_order() {
+    for name in ["conductance", "triad_census", "dyad_census"] {
+        let document = compose_view(view(name, "bar-chart", false), false).unwrap();
+        let doc = Doc::new(&document);
+        assert_eq!(
+            doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(),
+            "bar-chart"
+        );
+        let bytes = fixture(name);
+        let table = read_table(&bytes).unwrap();
+        let entry = ledger::schema_for_algorithm(name).unwrap();
+        let value = entry
+            .fields
+            .iter()
+            .find(|f| f.role == Role::Metric)
+            .unwrap()
+            .name;
+        let want: Vec<f64> = f64s(&table.column(value).unwrap())
+            .unwrap()
+            .into_iter()
+            .map(|v| v.unwrap())
+            .collect();
+        assert_eq!(doc.f64s("chart.value", 0), want, "{name}");
+        assert_eq!(doc.texts("chart.category", 0).len(), want.len());
+        assert_eq!(
+            doc.0
+                .get("chart.value_name", 0)
+                .unwrap()
+                .as_utf8("x")
+                .unwrap(),
+            value
+        );
+    }
+    let (code, _) = fail(request(&[], None, &[view("is_dag", "bar-chart", false)]));
+    assert_eq!(code, "GF_COMPOSE_INTENT_UNSUPPORTED");
+}
+
+#[test]
+fn non_graph_intents_take_exactly_one_layer() {
+    let (code, _) = fail(request(
+        &[],
+        None,
+        &[
+            view("is_dag", "table", false),
+            view("modularity", "table", false),
+        ],
+    ));
+    assert_eq!(code, "GF_COMPOSE_INTENT_CONFLICT");
+}
+
+#[test]
+fn embeddings_offer_an_honest_dimensional_view() {
+    for name in ["node2vec", "graphsage", "fast_random_projection", "hashgnn"] {
+        let document = compose_view(view(name, "parallel-coordinates", true), true)
+            .unwrap_or_else(|d| panic!("{name}: {}", error_code(&d)));
+        let doc = Doc::new(&document);
+        assert_eq!(
+            doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(),
+            "parallel-coordinates"
+        );
+        let dims = doc.u32s("vector.dimensions")[0] as usize;
+        assert_eq!(dims, 4);
+        let ids = doc.uuids("vector.uuid");
+        assert_eq!(doc.f64s("vector.values", 0).len(), ids.len() * dims);
+        assert!(
+            doc.texts("vector.name", 0).iter().all(|n| !n.is_empty()),
+            "names from the base graph"
+        );
+    }
+    let document = compose_view(view("node2vec", "parallel-coordinates", false), false).unwrap();
+    let doc = Doc::new(&document);
+    assert!(doc.texts("vector.name", 0).iter().all(|n| n.is_empty()));
+    assert!(doc
+        .u64s("vector.base_row", 0)
+        .iter()
+        .all(|&r| r == NONE_U64));
+    // The vectors are the result's own values, in result order.
+    let bytes = fixture("node2vec");
+    let table = read_table(&bytes).unwrap();
+    let vectors = crate::graphforge::columns::vectors(&table.column("embedding").unwrap()).unwrap();
+    assert_eq!(doc.f64s("vector.values", 0), vectors.values);
+    let domain = doc.f64s("vector.domain", 0);
+    assert!(
+        domain[0] < 0.0 && domain[1] > 3.0,
+        "x spans dimensions 0..3"
+    );
+    let finite = vectors.values.iter().copied().filter(|v| v.is_finite());
+    let (lo, hi) = finite.fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), v| {
+        (a.min(v), b.max(v))
+    });
+    assert!(
+        domain[2] < lo && domain[3] > hi,
+        "every value is inside the y domain"
+    );
+}
+
+#[test]
+fn embeddings_never_plot_their_first_two_dimensions_by_default() {
+    let (code, _) = fail(request(
+        &[],
+        None,
+        &[view("node2vec", "embedding-coordinates", false)],
+    ));
+    assert_eq!(code, "GF_COMPOSE_COORDINATES_REQUIRED");
+    // Caller coordinates place every embedded node.
+    let mut spec = view("node2vec", "embedding-coordinates", true);
+    spec.coordinates = Some(derived("node2vec-coordinates"));
+    let document = compose_view(spec, true).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(
+        doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(),
+        "scatter"
+    );
+    assert_eq!(
+        doc.0.get("point.source", 0).unwrap().as_utf8("x").unwrap(),
+        "caller"
+    );
+    let xs = doc.f64s("point.x", 0);
+    let ys = doc.f64s("point.y", 0);
+    let rows = doc.u64s("point.result_row", 0);
+    for k in 0..xs.len() {
+        // The derived coordinates are (row, row²) keyed by UUID.
+        assert_eq!((xs[k], ys[k]), (rows[k] as f64, (rows[k] * rows[k]) as f64));
+    }
+    // A two-dimensional embedding may place itself, and says so.
+    let mut two = view("node2vec", "embedding-coordinates", false);
+    two.result = derived("node2vec-2d");
+    let document = compose_view(two, false).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(
+        doc.0.get("point.source", 0).unwrap().as_utf8("x").unwrap(),
+        "embedding"
+    );
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_EMBEDDING_2D".into(), 1)));
+}
+
+#[test]
+fn coordinate_joins_follow_missing_and_extra_policies() {
+    let mut partial = view("node2vec", "embedding-coordinates", false);
+    partial.coordinates = Some(derived("node2vec-coordinates-partial"));
+    let (code, _) = fail(request(&[], None, &[partial.clone()]));
+    assert_eq!(code, "GF_COMPOSE_COORDINATES_MISSING");
+    partial.missing = Some("hide");
+    let document = compose_view(partial, false).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(doc.f64s("point.x", 0).len(), 2);
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_MISSING_HIDDEN".into(), 2)));
+
+    let mut subset = view("node2vec", "embedding-coordinates", false);
+    subset.coordinates = Some(derived("node2vec-coordinates"));
+    subset.rows = Some(vec![0, 1]);
+    assert_eq!(
+        fail(request(&[], None, &[subset.clone()])).0,
+        "GF_COMPOSE_EXTRA_IDS"
+    );
+    subset.extra = Some("drop");
+    let document = compose_view(subset, false).unwrap();
+    assert!(Doc::new(&document)
+        .decisions()
+        .contains(&("GF_COMPOSE_EXTRA_DROPPED".into(), 2)));
+}
+
+#[test]
+fn embeddings_against_an_incompatible_base_fail() {
+    let (_, generation) = base_of("dag_longest_path");
+    let mut spec = view("node2vec", "parallel-coordinates", true);
+    spec.generation = Some(generation);
+    assert_eq!(
+        fail(request(&["dag"], Some(generation), &[spec])).0,
+        "GF_COMPOSE_EXTRA_IDS"
+    );
+    let mut stale = view("node2vec", "parallel-coordinates", true);
+    stale.generation = Some(generation);
+    assert_eq!(
+        fail(request(&["cyclic"], Some(base_of("node2vec").1), &[stale])).0,
+        "GF_COMPOSE_GENERATION_STALE"
+    );
 }

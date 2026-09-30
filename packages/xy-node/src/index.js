@@ -143,6 +143,7 @@ export {
   graphforgeGraphOptions,
   graphforgeLedger,
   graphforgeLegendItems,
+  graphforgeTableHtml,
 } from "./graphforge.js";
 
 export {
