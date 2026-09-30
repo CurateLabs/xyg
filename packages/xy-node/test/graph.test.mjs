@@ -6,6 +6,7 @@ import {
   composeGraph,
   figure,
   graphChart,
+  sceneExportSupportReason,
   GRAPH_EDGE_PICK_MEMBER_CAP,
   fromGraphForgeTables,
   graphBuildCsr,
@@ -887,4 +888,35 @@ test("graphChart hides axes like Python graph_chart (#33)", () => {
       label_color: "#00000000",
     });
   }
+});
+
+test("segment and point overflow both report XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (#899)", () => {
+  // Point overflow: 10 001 nodes -> scatter trace exceeds the 10 000-record budget.
+  const n = 10_001;
+  const xs = Float64Array.from({ length: n }, (_, i) => i);
+  const ys = Float64Array.from({ length: n }, () => 0);
+  const nodesFig = graphChart(xs, [], { layout: "preset", x: xs, y: ys, width: 320, height: 240 });
+  assert.equal(
+    sceneExportSupportReason(nodesFig),
+    "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+    "node overflow should produce XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+  );
+
+  // Segment overflow: 4 000 directed curved edges -> 10 segments per edge = 40 000 routed
+  // segments, well above the 10 000-record bound.  Both hosts must agree on the reason.
+  const nEdges = 4_000;
+  const edgeSource = Float64Array.from({ length: nEdges }, (_, i) => i % 10);
+  const edgeTarget = Float64Array.from({ length: nEdges }, (_, i) => (i + 1) % 10);
+  const nodePositions = Float64Array.from({ length: 10 }, (_, i) => i);
+  const zeroPositions = new Float64Array(10);
+  const segFig = graphChart(
+    Float64Array.from({ length: 10 }, (_, i) => i),
+    { source: edgeSource, target: edgeTarget },
+    { layout: "preset", x: nodePositions, y: zeroPositions, edgeCurve: "curve", width: 320, height: 240 },
+  );
+  assert.equal(
+    sceneExportSupportReason(segFig),
+    "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+    "segment overflow should produce XYG_SCENE_UNSUPPORTED_PUBLIC_LOD, not XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS",
+  );
 });

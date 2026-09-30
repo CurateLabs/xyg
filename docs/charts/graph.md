@@ -83,10 +83,9 @@ interactive chart draws, framed by the same automatic domain. Static export
 currently admits at most 10,000 nodes and 10,000 drawn edge segments (a
 straight edge draws 1 segment, a curved edge 8, a self-loop 3), and nodes with
 a per-node `size` array are not yet admitted statically. Larger graphs
-fail with a stable reason: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in Python (nodes or
-segments) and in Node for nodes, while Node reports edge-segment overflow as
-`XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS`. Use the interactive HTML export for
-larger graphs.
+fail with a stable reason: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in both Python
+and Node for nodes or segments. Use the interactive HTML export for larger
+graphs.
 
 ## Semantic styling
 

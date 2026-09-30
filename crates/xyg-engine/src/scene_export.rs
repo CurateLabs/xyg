@@ -1290,10 +1290,13 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             if trace.flags & TRACE_ENDPOINTS_PRESENT == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS");
             }
-            if trace.flags & TRACE_ENDPOINTS_LEN_EQUAL == 0
-                || trace.n_x0 as usize > MAX_PUBLIC_POINTS
-            {
+            if trace.flags & TRACE_ENDPOINTS_LEN_EQUAL == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS");
+            }
+            // Capacity overflow uses the shared LOD reason so both hosts
+            // produce an identical stable code (#899).
+            if trace.n_x0 as usize > MAX_PUBLIC_POINTS {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
             }
             if !accepted_segment_role(trace.kind, trace.role) {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
