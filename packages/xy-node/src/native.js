@@ -8,19 +8,30 @@ import {
 } from "./_abi_generated.js";
 
 import {
+  NATIVE_ERROR_CODES,
+  XygNativeError,
   assertAbiVersion,
   resolveNativeLibrary,
 } from "./native-path.js";
 
 export * from "./_abi_generated.js";
-export { nativeLibraryFileName, NATIVE_LIBRARY_NAMES } from "./native-path.js";
+export { nativeLibraryFileName, NATIVE_LIBRARY_NAMES, NATIVE_ERROR_CODES, XygNativeError } from "./native-path.js";
 
 export function resolvePackageNativeLibrary() {
   return resolveNativeLibrary();
 }
 
 const libraryPath = resolvePackageNativeLibrary();
-const lib = koffi.load(libraryPath);
+let lib;
+try {
+  lib = koffi.load(libraryPath);
+} catch (cause) {
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.LOAD_FAILED,
+    `XYG native library could not be loaded from ${libraryPath}: ${cause?.message ?? cause}. Reinstall the exact-platform package or rebuild the development library.`,
+    { cause, libraryPath },
+  );
+}
 
 export const nativeLibraryPath = libraryPath;
 
@@ -30,7 +41,17 @@ const xygAbiVersion = bindAbiVersion(lib);
 assertAbiVersion(xygAbiVersion(), ABI_VERSION);
 export const xyAbiVersion = xygAbiVersion;
 
-bindGeneratedAbi(lib);
+try {
+  bindGeneratedAbi(lib);
+} catch (cause) {
+  // The version matched but a declared symbol is absent or mistyped: the
+  // library is not the build these bindings were generated for.
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.ABI_MISMATCH,
+    `XYG native library ${libraryPath} reports ABI ${ABI_VERSION} but lacks a declared symbol: ${cause?.message ?? cause}. Rebuild or reinstall so library and bindings come from one release.`,
+    { cause, libraryPath, expected: ABI_VERSION, actual: ABI_VERSION },
+  );
+}
 _configureGeneratedAbiTraceFromEnv();
 
 export function pointer(view, cType) {

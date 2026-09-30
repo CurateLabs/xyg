@@ -854,6 +854,7 @@ Forbidden:
 | `packages/xy-node/src/graphforge.js` | Node host | `node-host` | `keep-host`; ABI 378 GraphForge composition framing/decoding only | — |
 | `packages/xy-node/src/html.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/index.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/load.js` | Node host | `node-host` | `keep-host`; non-throwing `loadXygNode()` with stable native-loading codes | — |
 | `packages/xy-node/src/marks/area.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/bar.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/box.js` | Node host | `node-host` | `keep-host` | — |

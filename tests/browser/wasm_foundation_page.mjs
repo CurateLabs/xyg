@@ -333,6 +333,8 @@ async function fixtureModule({
   cancelTrap = false,
   graphStepTrap = false,
   paletteVersion = 1,
+  abiVersion = 27,
+  sceneVersion = CANONICAL_SCENE_VERSION,
 } = {}) {
   const names = [
     "xyg_wasm_abi_version",
@@ -405,7 +407,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    27, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    abiVersion, sceneVersion, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -4364,8 +4366,22 @@ async function run() {
     wasm: await fixtureModule({ paletteVersion: 99 }),
     maxArenaBytes: 1024,
   });
-  await rejected(stalePalette.ready, "XYG_WASM_INIT_FAILED");
+  await rejected(stalePalette.ready, "XYG_WASM_PALETTE_MISMATCH");
   await stalePalette.dispose();
+
+  // Protocol mismatches are distinct, stable codes (not one generic failure).
+  for (const [options, code] of [
+    [{ abiVersion: 25 }, "XYG_WASM_ABI_MISMATCH"],
+    [{ sceneVersion: CANONICAL_SCENE_VERSION - 1 }, "XYG_WASM_SCENE_MISMATCH"],
+  ]) {
+    const mismatched = createXygWasmWorker({
+      workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+      wasm: await fixtureModule(options),
+      maxArenaBytes: 1024,
+    });
+    await rejected(mismatched.ready, code);
+    await mismatched.dispose();
+  }
 
   const malformedModule = await WebAssembly.compile(
     new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]),
@@ -4374,7 +4390,7 @@ async function run() {
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: malformedModule,
   });
-  await rejected(failed.ready, "XYG_WASM_INIT_FAILED");
+  await rejected(failed.ready, "XYG_WASM_EXPORT_MISMATCH");
   await failed.dispose();
 
   // Invalid source types fail before any Worker is allocated.

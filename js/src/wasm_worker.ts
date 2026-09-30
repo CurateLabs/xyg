@@ -120,6 +120,11 @@ async function loadModule(source: any): Promise<WebAssembly.Module> {
   throw new TypeError("unsupported explicit WASM source");
 }
 
+/** A coded initialization failure; `code` reaches `XygWasmError.code`. */
+class WasmInitError extends Error {
+  constructor(readonly code: string, message: string) { super(message); }
+}
+
 async function initialize(message: any) {
   if (lifecycle !== "idle") {
     error(message.requestId, "XYG_WASM_ALREADY_INITIALIZED", "worker cannot be reinitialized");
@@ -134,23 +139,43 @@ async function initialize(message: any) {
     const module = await loadModule(message.source);
     if (isDisposed()) return;
     if (WebAssembly.Module.imports(module).length !== 0) {
-      throw new Error("XYG WASM module must not request ambient imports");
+      throw new WasmInitError("XYG_WASM_IMPORTS_REJECTED", "XYG WASM module must not request ambient imports");
     }
     const instance = await WebAssembly.instantiate(module, {});
     if (isDisposed()) return;
-    bound = bindXygWasmExports(instance);
-    if (bound.xyg_wasm_abi_version() !== message.expectedAbiVersion
-      || bound.xyg_wasm_scene_version() !== message.expectedSceneVersion
-      || bound.xyg_wasm_default_palette_version() !== XYG_WASM_DEFAULT_PALETTE_VERSION
+    try {
+      bound = bindXygWasmExports(instance);
+    } catch (cause) {
+      // The generated binder also rejects a version skew; name it as one.
+      const raw = instance.exports as Record<string, unknown>;
+      const abi = typeof raw.xyg_wasm_abi_version === "function" ? (raw.xyg_wasm_abi_version as () => number)() >>> 0 : null;
+      if (abi !== null && abi !== message.expectedAbiVersion) {
+        throw new WasmInitError("XYG_WASM_ABI_MISMATCH", `XYG WASM ABI ${abi} does not match the client's ${message.expectedAbiVersion}; deploy the Worker, WASM, and client from one @curatelabs/xyg release`);
+      }
+      const scene = typeof raw.xyg_wasm_scene_version === "function" ? (raw.xyg_wasm_scene_version as () => number)() >>> 0 : null;
+      if (scene !== null && scene !== message.expectedSceneVersion) {
+        throw new WasmInitError("XYG_WASM_SCENE_MISMATCH", `XYG WASM Scene version ${scene} does not match the client's ${message.expectedSceneVersion}`);
+      }
+      throw new WasmInitError("XYG_WASM_EXPORT_MISMATCH", cause instanceof Error ? cause.message : "XYG WASM exports are incompatible");
+    }
+    const abi = bound.xyg_wasm_abi_version() >>> 0;
+    if (abi !== message.expectedAbiVersion) {
+      throw new WasmInitError("XYG_WASM_ABI_MISMATCH", `XYG WASM ABI ${abi} does not match the client's ${message.expectedAbiVersion}; deploy the Worker, WASM, and client from one @curatelabs/xyg release`);
+    }
+    const scene = bound.xyg_wasm_scene_version() >>> 0;
+    if (scene !== message.expectedSceneVersion) {
+      throw new WasmInitError("XYG_WASM_SCENE_MISMATCH", `XYG WASM Scene version ${scene} does not match the client's ${message.expectedSceneVersion}`);
+    }
+    if (bound.xyg_wasm_default_palette_version() !== XYG_WASM_DEFAULT_PALETTE_VERSION
       || bound.xyg_wasm_default_palette_rows() !== XYG_WASM_DEFAULT_PALETTE_ROWS) {
-      throw new Error("XYG WASM, canonical scene, or default palette contract is incompatible");
+      throw new WasmInitError("XYG_WASM_PALETTE_MISMATCH", "XYG WASM default palette contract is incompatible with the client");
     }
     const max = Number(message.maxArenaBytes);
     if (!Number.isInteger(max) || max <= 0 || max > bound.xyg_wasm_max_arena_bytes()) {
-      throw new Error("maxArenaBytes exceeds the Rust adapter bound");
+      throw new WasmInitError("XYG_WASM_BUDGET_EXCEEDED", "maxArenaBytes exceeds the Rust adapter bound");
     }
     created = bound.xyg_wasm_instance_new(max) >>> 0;
-    if (!created) throw new Error("XYG WASM instance budget is exhausted");
+    if (!created) throw new WasmInitError("XYG_WASM_INSTANCE_EXHAUSTED", "XYG WASM instance budget is exhausted");
     if (isDisposed()) {
       disposeAttempt(bound, created);
       return;
@@ -170,7 +195,7 @@ async function initialize(message: any) {
     disposeRust();
     error(
       message.requestId,
-      "XYG_WASM_INIT_FAILED",
+      cause instanceof WasmInitError ? cause.code : "XYG_WASM_INIT_FAILED",
       cause instanceof Error ? cause.message : "WASM initialization failed",
     );
   }

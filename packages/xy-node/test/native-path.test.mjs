@@ -5,9 +5,13 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { spawnSync } from "node:child_process";
+
 import {
   ABI_VERSION,
+  NATIVE_ERROR_CODES,
   NATIVE_LIBRARY_NAMES,
+  XygNativeError,
   PLATFORM_PACKAGES,
   assertAbiVersion,
   assertSupportedPlatform,
@@ -204,4 +208,70 @@ test("ABI mismatch fails before other symbols are usable", () => {
     () => assertAbiVersion(59, 60),
     /ABI mismatch: wrapper expects 60, library reports 59/,
   );
+});
+
+const PACKAGE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function coded(code) {
+  return (error) => {
+    assert.ok(error instanceof XygNativeError, `expected XygNativeError, got ${error?.name}`);
+    assert.equal(error.code, code);
+    return true;
+  };
+}
+
+test("every native loading failure carries a stable code", () => {
+  assert.throws(() => assertSupportedPlatform("win32", "arm64"), coded(NATIVE_ERROR_CODES.UNSUPPORTED_PLATFORM));
+  assert.throws(() => assertSupportedPlatform("sunos", "x64"), (error) => {
+    coded(NATIVE_ERROR_CODES.UNSUPPORTED_PLATFORM)(error);
+    assert.equal(error.platform, "sunos");
+    assert.equal(error.arch, "x64");
+    assert.ok(error.supported.includes("linux-x64"));
+    return true;
+  });
+  assert.throws(
+    () => candidateNativeLibraries({ platform: "linux", arch: "x64", env: { XYG_NATIVE_LIB: "rel/lib.so" }, requireFn: missingRequire() }),
+    coded(NATIVE_ERROR_CODES.LIBRARY_PATH_INVALID),
+  );
+  assert.throws(
+    () => resolveNativeLibrary({ platform: "linux", arch: "x64", env: {}, requireFn: missingRequire() }),
+    (error) => {
+      coded(NATIVE_ERROR_CODES.LIBRARY_MISSING)(error);
+      assert.equal(error.packageName, "@curatelabs/xyg-node-linux-x64");
+      assert.deepEqual(error.searched, []);
+      return true;
+    },
+  );
+  assert.throws(() => assertAbiVersion(59, 60), (error) => {
+    coded(NATIVE_ERROR_CODES.ABI_MISMATCH)(error);
+    assert.equal(error.expected, 60);
+    assert.equal(error.actual, 59);
+    return true;
+  });
+});
+
+function loadInChild(env) {
+  const script = "import('./src/load.js').then(async (m) => process.stdout.write(JSON.stringify(await m.loadXygNode())))";
+  const run = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+    cwd: PACKAGE_DIR,
+    env: { ...process.env, ...env },
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  return JSON.parse(run.stdout);
+}
+
+test("loadXygNode reports missing and unloadable libraries without throwing", () => {
+  const missing = loadInChild({ XYG_NATIVE_LIB: path.join(os.tmpdir(), "no-such-dir", "libxyg_core.so") });
+  // A staged platform package may exist in some checkouts; either way the
+  // outcome is a stable code, never an unhandled exception.
+  if (!missing.ok) assert.equal(missing.code, NATIVE_ERROR_CODES.LIBRARY_MISSING);
+  const unloadable = loadInChild({ XYG_NATIVE_LIB: path.join(PACKAGE_DIR, "package.json") });
+  if (!unloadable.ok) assert.equal(unloadable.code, NATIVE_ERROR_CODES.LOAD_FAILED);
+});
+
+test("loadXygNode loads the development library when it is present", { skip: process.env.XYG_NATIVE_LIB ? false : "set XYG_NATIVE_LIB" }, () => {
+  const loaded = loadInChild({});
+  assert.equal(loaded.ok, true);
+  assert.equal(loaded.abiVersion, ABI_VERSION);
 });

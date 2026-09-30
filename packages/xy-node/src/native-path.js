@@ -7,6 +7,31 @@ import { ABI_VERSION } from "./_abi_generated.js";
 
 export { ABI_VERSION };
 
+/**
+ * Stable native-loading failure codes. Every loader error is an
+ * `XygNativeError` whose `code` is one of these; messages carry the exact
+ * platform, package, and versions but never user data.
+ */
+export const NATIVE_ERROR_CODES = Object.freeze({
+  UNSUPPORTED_PLATFORM: "XYG_NATIVE_UNSUPPORTED_PLATFORM",
+  LIBRARY_MISSING: "XYG_NATIVE_LIBRARY_MISSING",
+  LIBRARY_PATH_INVALID: "XYG_NATIVE_LIBRARY_PATH_INVALID",
+  LOAD_FAILED: "XYG_NATIVE_LOAD_FAILED",
+  ABI_MISMATCH: "XYG_NATIVE_ABI_MISMATCH",
+});
+
+/** A coded native-loading failure (`code` from `NATIVE_ERROR_CODES`). */
+export class XygNativeError extends Error {
+  constructor(code, message, details = {}) {
+    super(message, details.cause != null ? { cause: details.cause } : undefined);
+    this.name = "XygNativeError";
+    this.code = code;
+    for (const [key, value] of Object.entries(details)) {
+      if (key !== "cause") this[key] = value;
+    }
+  }
+}
+
 /** Platform filenames for the one shipped cdylib. */
 export const NATIVE_LIBRARY_NAMES = Object.freeze([
   "libxyg_core.so",
@@ -56,24 +81,27 @@ export function assertSupportedPlatform(
   arch = process.arch,
 ) {
   const id = platformPackageId(platform, arch);
+  const supported = Object.keys(PLATFORM_PACKAGES);
   if (platform === "win32" && arch === "arm64") {
-    throw new Error(
+    throw new XygNativeError(NATIVE_ERROR_CODES.UNSUPPORTED_PLATFORM,
       [
         "XYG Node does not support Windows arm64.",
         "Install on win32-x64, or use the Python/browser hosts on this machine.",
         "Supported Node native packages: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64.",
         "Remediation: run XYG Node on a supported architecture, or set XYG_NATIVE_LIB only on a supported platform during development.",
       ].join(" "),
+      { platform, arch, supported },
     );
   }
   if (!Object.hasOwn(PLATFORM_PACKAGES, id)) {
-    throw new Error(
+    throw new XygNativeError(NATIVE_ERROR_CODES.UNSUPPORTED_PLATFORM,
       [
         `XYG Node has no exact-platform package for ${id}.`,
         "Supported: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64.",
         "Windows arm64 is intentionally unsupported.",
         "Remediation: use a supported OS/arch or the Python/browser hosts.",
       ].join(" "),
+      { platform, arch, supported },
     );
   }
   return id;
@@ -148,7 +176,8 @@ export function candidateNativeLibraries({
   }
   if (env.XYG_NATIVE_LIB) {
     if (!path.isAbsolute(env.XYG_NATIVE_LIB)) {
-      throw new Error(
+      throw new XygNativeError(
+        NATIVE_ERROR_CODES.LIBRARY_PATH_INVALID,
         "XYG_NATIVE_LIB must be an absolute path so native loading never depends on the current working directory.",
       );
     }
@@ -168,7 +197,8 @@ export function resolveNativeLibrary(opts) {
       return candidate;
     }
   }
-  throw new Error(
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.LIBRARY_MISSING,
     [
       "Unable to find XYG native library (libxyg_core).",
       `Expected optional dependency ${packageName} with its bundled library,`,
@@ -176,13 +206,16 @@ export function resolveNativeLibrary(opts) {
       "Lookup never searches repository, working-directory, or system library paths and never falls back to Python.",
       `Searched: ${candidates.join(", ") || "(none)"}`,
     ].join(" "),
+    { platform, arch, packageName, searched: candidates },
   );
 }
 
 export function assertAbiVersion(got, expected = ABI_VERSION) {
   if (got !== expected) {
-    throw new Error(
+    throw new XygNativeError(
+      NATIVE_ERROR_CODES.ABI_MISMATCH,
       `XYG native ABI mismatch: wrapper expects ${expected}, library reports ${got}. Rebuild with \`cargo build --release\` or reinstall so the native library matches the host bindings.`,
+      { expected, actual: got },
     );
   }
 }
