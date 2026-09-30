@@ -885,6 +885,29 @@ boundary edges retain their canonical source identity.
   per-node size, labels with ordinal/diverging scales, and legend placement
   in `tests/fixtures/graph_static_export_cross_host.json`, and
   `packages/xy-node/test/graph.test.mjs` asserts the same bytes.
+- Home view (#910): node-center autorange used to clip markers, halos,
+  labels, and compound frames at the plot edge. `xyg_graph_home_domain`
+  (`graph_scene::graph_home_domain`) returns the smallest domain containing
+  the node-center autorange in which every node marker (plus stroke), halo,
+  edge stroke end, compound frame (plus its pad and width), and home-view
+  label box fits the plot, with 1 px antialiasing room. It reads the same
+  composed-graph descriptor as the export. Per axis it bisects the least span
+  whose px pads fit (the covering span grows with slope below 0.9, so feasible
+  spans form one interval). The plot rectangle is the Scene's cartesian
+  layout for the hidden-axis graph shell (viewport, title, padding), re-solved
+  until it is stable, at most 6 passes. Marker and frame pads come first; the
+  labels that paint at that scale are then added, and since more room only
+  lowers the scale, no revealed label can be clipped. If labels cannot fit
+  (pads over 90% of the plot), the view pads markers and frames only; if
+  those cannot fit, the autorange stays (return 1). Python `graph_chart`
+  (`_graph_static.apply_home_view`) and Node `graphChart`
+  (`applyGraphHomeView`) set the result as the hidden axes' domain, so the
+  browser and static export share it exactly. Charts with authored axes,
+  several graph marks, other marks, multi-part titles, or polar coordinates
+  keep the autorange. `tests/test_graph_home_view.py` checks every drawn
+  extent against the Rust plot rectangle, and a Chromium probe checks the
+  live chart's nodes and painted labels. The visual goldens pin the domain
+  in both hosts.
 - Visual regression (#34): `tests/test_graph_visual_goldens.py` commits PNG
   goldens for the ordinary, dense, compound, selected, and dark-theme states
   (`tests/fixtures/graph_visual/`, inputs in
@@ -917,6 +940,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_semantic_legend_text` | ABI 372 semantic legend row labels and title (#34) |
 | `xyg_graph_compound_collapse` | ABI 373 compound disclosure for composed graphs: visibility, representatives, propagated flags, edge keep/remap (#34) |
 | `xyg_graph_compound_frames` | ABI 373 visible group frames: transitive bounds, Scene paint, member-clearing pad (#34) |
+| `xyg_graph_home_domain` | ABI 377 composed graph home view: node-center autorange padded so markers, halos, frames, and home-view labels fit the hidden-axis graph plot (§8, #910) |
 | `xyg_graph_composed_scene` | ABI 376 (`out_reason`: 1 invalid, 2 legend footprint) rebuilds a composed graph chart's plain static Scene from its resolved per-item planes (frames, layered/dashed edges, heads, halos, nodes, labels, explicit legend; §8) (#34) |
 | `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |

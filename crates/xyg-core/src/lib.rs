@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 376;
+pub const ABI_VERSION: u32 = 377;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -17193,6 +17193,200 @@ pub struct XygComposedGraphSceneDescriptor {
     pub reserved: u64,
 }
 
+/// Parse the composed-graph planes of `descriptor` and hand them to `use_planes`
+/// (#34/#910). `None` for malformed or inconsistent planes.
+///
+/// # Safety
+/// Every non-null plane must cover its declared count.
+unsafe fn with_composed_graph_planes<R>(
+    descriptor: &XygComposedGraphSceneDescriptor,
+    use_planes: impl FnOnce(&xyg_engine::graph_scene::ComposedGraphPlanes<'_>) -> R,
+) -> Option<R> {
+    let d = descriptor;
+    let (Ok(n), Ok(m), Ok(k)) = (
+        usize::try_from(d.node_count),
+        usize::try_from(d.segment_count),
+        usize::try_from(d.legend_count),
+    ) else {
+        return None;
+    };
+    if d.version != 1 {
+        return None;
+    }
+    fn slice<'a, T>(p: *const T, len: usize) -> Option<&'a [T]> {
+        if len == 0 {
+            Some(&[])
+        } else if p.is_null() {
+            None
+        } else {
+            Some(unsafe { std::slice::from_raw_parts(p, len) })
+        }
+    }
+    fn optional<'a, T>(p: *const T, len: usize) -> &'a [T] {
+        if p.is_null() || len == 0 {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(p, len) }
+        }
+    }
+    let Ok(payload_len) = usize::try_from(d.label_payload_len) else {
+        return None;
+    };
+    let payload = optional(d.label_payload, payload_len);
+    let mut cursor = 0usize;
+    let mut texts = |lengths: &[u32]| -> Option<Vec<Option<&str>>> {
+        lengths
+            .iter()
+            .map(|&len| {
+                if len == u32::MAX {
+                    return Some(None);
+                }
+                let end = cursor.checked_add(len as usize)?;
+                let text = std::str::from_utf8(payload.get(cursor..end)?).ok()?;
+                cursor = end;
+                Some(Some(text))
+            })
+            .collect()
+    };
+    let node_lengths = optional(d.node_label_lengths, n);
+    let segment_lengths = optional(d.segment_label_lengths, m);
+    let (Some(node_labels), Some(segment_labels)) = (texts(node_lengths), texts(segment_lengths))
+    else {
+        return None;
+    };
+    let Ok(legend_payload_len) = usize::try_from(d.legend_payload_len) else {
+        return None;
+    };
+    let legend_payload = optional(d.legend_payload, legend_payload_len);
+    let legend_lengths = optional(d.legend_label_lengths, k);
+    let (Some(legend_rgba), Some(legend_symbol)) =
+        (slice(d.legend_rgba, k * 4), slice(d.legend_symbol, k))
+    else {
+        return None;
+    };
+    if legend_lengths.len() != k {
+        return None;
+    }
+    let mut legend = Vec::with_capacity(k);
+    let mut legend_cursor = 0usize;
+    for i in 0..k {
+        let end = legend_cursor + legend_lengths[i] as usize;
+        let label = legend_payload
+            .get(legend_cursor..end)
+            .and_then(|bytes| std::str::from_utf8(bytes).ok())?;
+        legend_cursor = end;
+        legend.push(xyg_engine::graph_scene::GraphLegendRow {
+            label: label.to_owned(),
+            rgba: [
+                legend_rgba[i * 4],
+                legend_rgba[i * 4 + 1],
+                legend_rgba[i * 4 + 2],
+                legend_rgba[i * 4 + 3],
+            ],
+            symbol: legend_symbol[i],
+        });
+    }
+    let Ok(title_len) = usize::try_from(d.legend_title_len) else {
+        return None;
+    };
+    let title = std::str::from_utf8(optional(d.legend_title, title_len)).ok()?;
+    let Ok(loc_len) = usize::try_from(d.legend_loc_len) else {
+        return None;
+    };
+    let legend_loc = std::str::from_utf8(optional(d.legend_loc, loc_len)).ok()?;
+    let required = (
+        slice(d.x, n),
+        slice(d.y, n),
+        slice(d.fill, n * 4),
+        slice(d.stroke, n * 4),
+        slice(d.stroke_width, n),
+        slice(d.diameter, n),
+        slice(d.symbol, n),
+        slice(d.opacity, n),
+    );
+    let (
+        Some(x),
+        Some(y),
+        Some(fill),
+        Some(stroke),
+        Some(stroke_width),
+        Some(diameter),
+        Some(symbol),
+        Some(opacity),
+    ) = required
+    else {
+        return None;
+    };
+    let segments = (
+        slice(d.x0, m),
+        slice(d.y0, m),
+        slice(d.x1, m),
+        slice(d.y1, m),
+        slice(d.segment_rgba, m * 4),
+        slice(d.segment_width, m),
+        slice(d.segment_opacity, m),
+    );
+    let (
+        Some(x0),
+        Some(y0),
+        Some(x1),
+        Some(y1),
+        Some(segment_rgba),
+        Some(segment_width),
+        Some(segment_opacity),
+    ) = segments
+    else {
+        return None;
+    };
+    let planes = xyg_engine::graph_scene::ComposedGraphPlanes {
+        x,
+        y,
+        fill,
+        stroke,
+        stroke_width,
+        diameter,
+        symbol,
+        opacity,
+        halo: optional(d.halo, n * 4),
+        halo_diameter: optional(d.halo_diameter, n),
+        node_label_plan: optional(d.node_label_plan, n * 5),
+        node_labels: if node_lengths.is_empty() {
+            &[]
+        } else {
+            &node_labels
+        },
+        frames: optional(d.frames, n * 10),
+        x0,
+        y0,
+        x1,
+        y1,
+        segment_rgba,
+        segment_width,
+        segment_opacity,
+        segment_halo: optional(d.segment_halo, m * 4),
+        segment_halo_width: optional(d.segment_halo_width, m),
+        segment_body: optional(d.segment_body, m * 4),
+        segment_body_width: optional(d.segment_body_width, m),
+        segment_dash: optional(d.segment_dash, m * 2),
+        edge_ends: optional(d.edge_ends, m * 7),
+        segment_label_plan: optional(d.segment_label_plan, m * 5),
+        segment_labels: if segment_lengths.is_empty() {
+            &[]
+        } else {
+            &segment_labels
+        },
+        legend_title: title,
+        legend: &legend,
+        legend_loc,
+        text_rgba: if d.text_rgba.is_null() {
+            None
+        } else {
+            Some(*(d.text_rgba as *const [u8; 4]))
+        },
+    };
+    Some(use_planes(&planes))
+}
+
 /// Rebuild a composed graph chart's static Scene from its composed-graph
 /// planes (#34): the base Scene's layout, scales, and chrome are kept.
 /// Returns the required bytes, or `usize::MAX` with `out_reason` (when
@@ -17220,200 +17414,19 @@ pub unsafe extern "C" fn xyg_graph_composed_scene(
     }
     ffi_guard(usize::MAX, || {
         let d = &*descriptor;
-        let (Ok(n), Ok(m), Ok(k)) = (
-            usize::try_from(d.node_count),
-            usize::try_from(d.segment_count),
-            usize::try_from(d.legend_count),
-        ) else {
+        if d.base.is_null() || d.base_len == 0 {
             return usize::MAX;
-        };
-        if d.version != 1 || d.base.is_null() || d.base_len == 0 {
-            return usize::MAX;
-        }
-        fn slice<'a, T>(p: *const T, len: usize) -> Option<&'a [T]> {
-            if len == 0 {
-                Some(&[])
-            } else if p.is_null() {
-                None
-            } else {
-                Some(unsafe { std::slice::from_raw_parts(p, len) })
-            }
-        }
-        fn optional<'a, T>(p: *const T, len: usize) -> &'a [T] {
-            if p.is_null() || len == 0 {
-                &[]
-            } else {
-                unsafe { std::slice::from_raw_parts(p, len) }
-            }
         }
         let Ok(base_len) = usize::try_from(d.base_len) else {
             return usize::MAX;
         };
-        let Ok(payload_len) = usize::try_from(d.label_payload_len) else {
-            return usize::MAX;
-        };
-        let payload = optional(d.label_payload, payload_len);
-        let mut cursor = 0usize;
-        let mut texts = |lengths: &[u32]| -> Option<Vec<Option<&str>>> {
-            lengths
-                .iter()
-                .map(|&len| {
-                    if len == u32::MAX {
-                        return Some(None);
-                    }
-                    let end = cursor.checked_add(len as usize)?;
-                    let text = std::str::from_utf8(payload.get(cursor..end)?).ok()?;
-                    cursor = end;
-                    Some(Some(text))
-                })
-                .collect()
-        };
-        let node_lengths = optional(d.node_label_lengths, n);
-        let segment_lengths = optional(d.segment_label_lengths, m);
-        let (Some(node_labels), Some(segment_labels)) =
-            (texts(node_lengths), texts(segment_lengths))
-        else {
-            return usize::MAX;
-        };
-        let Ok(legend_payload_len) = usize::try_from(d.legend_payload_len) else {
-            return usize::MAX;
-        };
-        let legend_payload = optional(d.legend_payload, legend_payload_len);
-        let legend_lengths = optional(d.legend_label_lengths, k);
-        let (Some(legend_rgba), Some(legend_symbol)) =
-            (slice(d.legend_rgba, k * 4), slice(d.legend_symbol, k))
-        else {
-            return usize::MAX;
-        };
-        if legend_lengths.len() != k {
-            return usize::MAX;
-        }
-        let mut legend = Vec::with_capacity(k);
-        let mut legend_cursor = 0usize;
-        for i in 0..k {
-            let end = legend_cursor + legend_lengths[i] as usize;
-            let Some(label) = legend_payload
-                .get(legend_cursor..end)
-                .and_then(|bytes| std::str::from_utf8(bytes).ok())
-            else {
-                return usize::MAX;
-            };
-            legend_cursor = end;
-            legend.push(xyg_engine::graph_scene::GraphLegendRow {
-                label: label.to_owned(),
-                rgba: [
-                    legend_rgba[i * 4],
-                    legend_rgba[i * 4 + 1],
-                    legend_rgba[i * 4 + 2],
-                    legend_rgba[i * 4 + 3],
-                ],
-                symbol: legend_symbol[i],
-            });
-        }
-        let Ok(title_len) = usize::try_from(d.legend_title_len) else {
-            return usize::MAX;
-        };
-        let Some(title) = std::str::from_utf8(optional(d.legend_title, title_len)).ok() else {
-            return usize::MAX;
-        };
-        let Ok(loc_len) = usize::try_from(d.legend_loc_len) else {
-            return usize::MAX;
-        };
-        let Some(legend_loc) = std::str::from_utf8(optional(d.legend_loc, loc_len)).ok() else {
-            return usize::MAX;
-        };
-        let required = (
-            slice(d.x, n),
-            slice(d.y, n),
-            slice(d.fill, n * 4),
-            slice(d.stroke, n * 4),
-            slice(d.stroke_width, n),
-            slice(d.diameter, n),
-            slice(d.symbol, n),
-            slice(d.opacity, n),
-        );
-        let (
-            Some(x),
-            Some(y),
-            Some(fill),
-            Some(stroke),
-            Some(stroke_width),
-            Some(diameter),
-            Some(symbol),
-            Some(opacity),
-        ) = required
-        else {
-            return usize::MAX;
-        };
-        let segments = (
-            slice(d.x0, m),
-            slice(d.y0, m),
-            slice(d.x1, m),
-            slice(d.y1, m),
-            slice(d.segment_rgba, m * 4),
-            slice(d.segment_width, m),
-            slice(d.segment_opacity, m),
-        );
-        let (
-            Some(x0),
-            Some(y0),
-            Some(x1),
-            Some(y1),
-            Some(segment_rgba),
-            Some(segment_width),
-            Some(segment_opacity),
-        ) = segments
-        else {
-            return usize::MAX;
-        };
-        let planes = xyg_engine::graph_scene::ComposedGraphPlanes {
-            x,
-            y,
-            fill,
-            stroke,
-            stroke_width,
-            diameter,
-            symbol,
-            opacity,
-            halo: optional(d.halo, n * 4),
-            halo_diameter: optional(d.halo_diameter, n),
-            node_label_plan: optional(d.node_label_plan, n * 5),
-            node_labels: if node_lengths.is_empty() {
-                &[]
-            } else {
-                &node_labels
-            },
-            frames: optional(d.frames, n * 10),
-            x0,
-            y0,
-            x1,
-            y1,
-            segment_rgba,
-            segment_width,
-            segment_opacity,
-            segment_halo: optional(d.segment_halo, m * 4),
-            segment_halo_width: optional(d.segment_halo_width, m),
-            segment_body: optional(d.segment_body, m * 4),
-            segment_body_width: optional(d.segment_body_width, m),
-            segment_dash: optional(d.segment_dash, m * 2),
-            edge_ends: optional(d.edge_ends, m * 7),
-            segment_label_plan: optional(d.segment_label_plan, m * 5),
-            segment_labels: if segment_lengths.is_empty() {
-                &[]
-            } else {
-                &segment_labels
-            },
-            legend_title: title,
-            legend: &legend,
-            legend_loc,
-            text_rgba: if d.text_rgba.is_null() {
-                None
-            } else {
-                Some(*(d.text_rgba as *const [u8; 4]))
-            },
-        };
         let base = std::slice::from_raw_parts(d.base, base_len);
-        let encoded = match xyg_engine::graph_scene::rebuild_composed_graph_scene(base, &planes) {
+        let Some(rebuilt) = with_composed_graph_planes(d, |planes| {
+            xyg_engine::graph_scene::rebuild_composed_graph_scene(base, planes)
+        }) else {
+            return usize::MAX;
+        };
+        let encoded = match rebuilt {
             Ok(encoded) => encoded,
             Err(xyg_engine::graph_scene::ComposedSceneError::LegendFootprint) => {
                 if !out_reason.is_null() {
@@ -17433,6 +17446,87 @@ pub unsafe extern "C" fn xyg_graph_composed_scene(
             *out_reason = 0;
         }
         encoded.len()
+    })
+}
+
+/// Chart facts for `xyg_graph_home_domain` (#910).
+#[repr(C)]
+pub struct XygGraphHomeLayout {
+    pub version: u32,
+    pub reserved0: u32,
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    /// Authored padding (4 f64: top, right, bottom, left as the Scene layout
+    /// takes it) or null.
+    pub padding: *const f64,
+    pub title: *const u8,
+    pub title_len: u64,
+    /// The node-center autorange the home view must contain.
+    pub base_x_lo: f64,
+    pub base_x_hi: f64,
+    pub base_y_lo: f64,
+    pub base_y_hi: f64,
+}
+
+/// The composed graph home view (#910): the smallest domain containing the
+/// node-center autorange in which every node marker, halo, edge stroke,
+/// compound frame, and home-view label fits the plot of the hidden-axis graph
+/// shell. Writes `[x_lo, x_hi, y_lo, y_hi]` and returns 0; returns 1 (keep the
+/// autorange; nothing written) when the drawn extents cannot fit the plot, or
+/// -1 for malformed input. The descriptor's `base` Scene is not read.
+///
+/// # Safety
+/// The descriptor, layout, and every non-null plane must cover their declared
+/// counts; `out_domain` must address 4 writable `f64`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_home_domain(
+    descriptor: *const XygComposedGraphSceneDescriptor,
+    layout: *const XygGraphHomeLayout,
+    out_domain: *mut f64,
+) -> i32 {
+    if descriptor.is_null() || layout.is_null() || out_domain.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let l = &*layout;
+        let Ok(title_len) = usize::try_from(l.title_len) else {
+            return -1;
+        };
+        if l.version != 1 || (title_len > 0 && l.title.is_null()) {
+            return -1;
+        }
+        let title = if title_len == 0 {
+            ""
+        } else {
+            match std::str::from_utf8(std::slice::from_raw_parts(l.title, title_len)) {
+                Ok(text) => text,
+                Err(_) => return -1,
+            }
+        };
+        let padding = if l.padding.is_null() {
+            None
+        } else {
+            let values = std::slice::from_raw_parts(l.padding, 4);
+            Some([values[0], values[1], values[2], values[3]])
+        };
+        let home = xyg_engine::graph_scene::GraphHomeLayout {
+            viewport_width: l.viewport_width,
+            viewport_height: l.viewport_height,
+            padding,
+            title,
+            base_x: (l.base_x_lo, l.base_x_hi),
+            base_y: (l.base_y_lo, l.base_y_hi),
+        };
+        match with_composed_graph_planes(&*descriptor, |planes| {
+            xyg_engine::graph_scene::graph_home_domain(planes, &home)
+        }) {
+            None => -1,
+            Some(None) => 1,
+            Some(Some(domain)) => {
+                std::slice::from_raw_parts_mut(out_domain, 4).copy_from_slice(&domain);
+                0
+            }
+        }
     })
 }
 

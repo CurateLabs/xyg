@@ -667,6 +667,312 @@ pub fn rebuild_composed_graph_scene(
     .map_err(ComposedSceneError::from)
 }
 
+/// Chart facts that fix the graph home view's plot rectangle (#910).
+#[derive(Clone, Copy, Debug)]
+pub struct GraphHomeLayout<'a> {
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    pub padding: Option<[f64; 4]>,
+    pub title: &'a str,
+    /// The node-center autorange the home view must still contain.
+    pub base_x: (f64, f64),
+    pub base_y: (f64, f64),
+}
+
+/// What is drawn around one data anchor, in CSS px on each side.
+#[derive(Clone, Copy, Debug)]
+struct Extent {
+    x: f64,
+    y: f64,
+    left: f64,
+    right: f64,
+    up: f64,
+    down: f64,
+}
+
+/// Stop the solve when the pads alone would take this share of the plot.
+const HOME_MAX_PAD_SHARE: f64 = 0.9;
+const HOME_LAYOUT_PASSES: usize = 6;
+
+/// The smallest `[lo, hi]` containing `base` in which every anchor's pads fit
+/// on a plot `length` px long: `(v - lo) * length / (hi - lo) >= pad_lo` and
+/// likewise above. `None` when the pads cannot fit.
+fn home_axis(base: (f64, f64), anchors: &[(f64, f64, f64)], length: f64) -> Option<(f64, f64)> {
+    let (max_lo, max_hi) = anchors
+        .iter()
+        .fold((0.0_f64, 0.0_f64), |(a, b), &(_, lo, hi)| {
+            (a.max(lo), b.max(hi))
+        });
+    if !(length > 0.0) || (max_lo + max_hi) / length >= HOME_MAX_PAD_SHARE {
+        return None;
+    }
+    let bounds = |span: f64| {
+        anchors.iter().fold(base, |(lo, hi), &(v, pad_lo, pad_hi)| {
+            (
+                lo.min(v - pad_lo * span / length),
+                hi.max(v + pad_hi * span / length),
+            )
+        })
+    };
+    let fits = |span: f64| {
+        let (lo, hi) = bounds(span);
+        hi - lo <= span
+    };
+    let base_span = base.1 - base.0;
+    if !(base_span > 0.0) {
+        return None;
+    }
+    if fits(base_span) {
+        return Some(bounds(base_span));
+    }
+    // g(span) = hi - lo grows with slope below HOME_MAX_PAD_SHARE, so the
+    // feasible spans form [span*, inf): bisect for the least one.
+    let (lo_all, hi_all) = anchors
+        .iter()
+        .fold(base, |(lo, hi), &(v, _, _)| (lo.min(v), hi.max(v)));
+    // The bracket is the exact fixed point when the widest pads sit on the
+    // extreme anchors; widen it past rounding.
+    let mut high = (hi_all - lo_all) / (1.0 - (max_lo + max_hi) / length) * (1.0 + 1e-9);
+    let mut low = base_span;
+    if !high.is_finite() || !fits(high) {
+        return None;
+    }
+    for _ in 0..80 {
+        let mid = 0.5 * (low + high);
+        if fits(mid) {
+            high = mid;
+        } else {
+            low = mid;
+        }
+    }
+    let (lo, hi) = bounds(high);
+    (lo.is_finite() && hi.is_finite() && lo < hi).then_some((lo, hi))
+}
+
+fn home_extents(planes: &ComposedGraphPlanes<'_>) -> Vec<Extent> {
+    let mut out = Vec::with_capacity(planes.x.len() + planes.x0.len() * 2);
+    for i in 0..planes.x.len() {
+        // The marker's drawn extent (diamonds reach sqrt(2) further along the
+        // axes), plus half its stroke.
+        let mut r = crate::scene::marker_symbol_extent(0.5 * planes.diameter[i], planes.symbol[i])
+            + 0.5 * planes.stroke_width[i];
+        if !planes.halo.is_empty() && planes.halo[i * 4 + 3] > 0 {
+            r = r.max(0.5 * planes.halo_diameter[i]);
+        }
+        let r = r + 1.0; // antialiasing
+        out.push(Extent {
+            x: planes.x[i],
+            y: planes.y[i],
+            left: r,
+            right: r,
+            up: r,
+            down: r,
+        });
+        if !planes.frames.is_empty() {
+            let row = &planes.frames[i * COMPOUND_FRAME_STRIDE..(i + 1) * COMPOUND_FRAME_STRIDE];
+            if row[8] > 0.0 {
+                let pad = row[9] + 0.5 * row[8] + 1.0;
+                let (x0, x1) = (planes.x[i] + row[0], planes.x[i] + row[1]);
+                let (y0, y1) = (planes.y[i] + row[2], planes.y[i] + row[3]);
+                let mid = (0.5 * (x0 + x1), 0.5 * (y0 + y1));
+                for (x, y, left, right, up, down) in [
+                    (x0, mid.1, pad, 0.0, 0.0, 0.0),
+                    (x1, mid.1, 0.0, pad, 0.0, 0.0),
+                    (mid.0, y0, 0.0, 0.0, 0.0, pad),
+                    (mid.0, y1, 0.0, 0.0, pad, 0.0),
+                ] {
+                    out.push(Extent {
+                        x,
+                        y,
+                        left,
+                        right,
+                        up,
+                        down,
+                    });
+                }
+            }
+        }
+    }
+    for s in 0..planes.x0.len() {
+        let mut w = planes.segment_width[s];
+        if !planes.segment_halo.is_empty() && planes.segment_halo[s * 4 + 3] > 0 {
+            w = w.max(planes.segment_halo_width[s]);
+        }
+        let r = 0.5 * w + 1.0;
+        for (x, y) in [(planes.x0[s], planes.y0[s]), (planes.x1[s], planes.y1[s])] {
+            out.push(Extent {
+                x,
+                y,
+                left: r,
+                right: r,
+                up: r,
+                down: r,
+            });
+        }
+    }
+    out
+}
+
+/// Boxes of the labels that paint at `scale` (px per data unit), as extents
+/// around their anchors (the label box model of `plan_labels`).
+fn home_label_extents(planes: &ComposedGraphPlanes<'_>, scale: f64) -> Vec<Extent> {
+    let mut out = Vec::new();
+    let mut add = |plan: &[f64], texts: &[Option<&str>], anchor: &dyn Fn(usize) -> (f64, f64)| {
+        for (index, text) in texts.iter().enumerate() {
+            let row = &plan[index * LABEL_PLAN_STRIDE..(index + 1) * LABEL_PLAN_STRIDE];
+            if text.is_none() || !(row[0] >= 0.0) || row[0] > scale {
+                continue;
+            }
+            let (x, y) = anchor(index);
+            let (dx, dy, width, font) = (row[1], row[2], row[3], row[4]);
+            out.push(Extent {
+                x,
+                y,
+                left: (-dx).max(0.0),
+                right: (dx + width).max(0.0),
+                up: (font - dy).max(0.0),
+                down: (dy + 2.0).max(0.0),
+            });
+        }
+    };
+    if !planes.node_label_plan.is_empty() {
+        add(planes.node_label_plan, planes.node_labels, &|i| {
+            (planes.x[i], planes.y[i])
+        });
+    }
+    if !planes.segment_label_plan.is_empty() {
+        add(planes.segment_label_plan, planes.segment_labels, &|s| {
+            (
+                0.5 * (planes.x0[s] + planes.x1[s]),
+                0.5 * (planes.y0[s] + planes.y1[s]),
+            )
+        });
+    }
+    out
+}
+
+fn home_domain_for_plot(
+    extents: &[Extent],
+    base_x: (f64, f64),
+    base_y: (f64, f64),
+    width: f64,
+    height: f64,
+) -> Option<[f64; 4]> {
+    let xs: Vec<_> = extents.iter().map(|e| (e.x, e.left, e.right)).collect();
+    // Screen up is the high end of a linear y axis.
+    let ys: Vec<_> = extents.iter().map(|e| (e.y, e.down, e.up)).collect();
+    let (x0, x1) = home_axis(base_x, &xs, width)?;
+    let (y0, y1) = home_axis(base_y, &ys, height)?;
+    Some([x0, x1, y0, y1])
+}
+
+/// The graph home view (#910): the smallest domain containing the node-center
+/// autorange in which every node marker and halo, edge stroke, compound frame,
+/// and home-view label fits inside the plot. Marker and frame pads are solved
+/// first; the labels that paint at that scale are then added (adding room only
+/// lowers the scale, so no revealed label can be clipped). The plot rectangle
+/// is the Scene's cartesian layout for the hidden graph axes, re-solved until
+/// it is stable. When labels cannot fit, the view pads markers and frames
+/// only; when those cannot fit either, `None` keeps the autorange.
+pub fn graph_home_domain(
+    planes: &ComposedGraphPlanes<'_>,
+    layout: &GraphHomeLayout<'_>,
+) -> Option<[f64; 4]> {
+    let n = planes.x.len();
+    let m = planes.x0.len();
+    let valid = planes.y.len() == n
+        && planes.diameter.len() == n
+        && planes.symbol.len() == n
+        && planes.stroke_width.len() == n
+        && (planes.halo.is_empty()
+            || (planes.halo.len() == n * 4 && planes.halo_diameter.len() == n))
+        && (planes.frames.is_empty() || planes.frames.len() == n * COMPOUND_FRAME_STRIDE)
+        && (planes.node_label_plan.is_empty()
+            || (planes.node_label_plan.len() == n * LABEL_PLAN_STRIDE
+                && planes.node_labels.len() == n))
+        && [
+            planes.y0.len(),
+            planes.x1.len(),
+            planes.y1.len(),
+            planes.segment_width.len(),
+        ]
+        .iter()
+        .all(|&len| len == m)
+        && (planes.segment_halo.is_empty()
+            || (planes.segment_halo.len() == m * 4 && planes.segment_halo_width.len() == m))
+        && (planes.segment_label_plan.is_empty()
+            || (planes.segment_label_plan.len() == m * LABEL_PLAN_STRIDE
+                && planes.segment_labels.len() == m));
+    let finite = |pair: (f64, f64)| pair.0.is_finite() && pair.1.is_finite() && pair.0 < pair.1;
+    if !valid || !finite(layout.base_x) || !finite(layout.base_y) {
+        return None;
+    }
+    let geometry = home_extents(planes);
+    if geometry.iter().any(|e| {
+        ![e.x, e.y, e.left, e.right, e.up, e.down]
+            .iter()
+            .all(|v| v.is_finite())
+    }) {
+        return None;
+    }
+    let plot = |domain: [f64; 4]| -> Option<(f64, f64)> {
+        let (left, right, top, bottom) =
+            crate::scene::cartesian_scene_margins(crate::scene::CartesianLayoutRequest {
+                viewport_width: layout.viewport_width,
+                viewport_height: layout.viewport_height,
+                authored_padding: layout.padding,
+                title: layout.title,
+                x_label: "",
+                y_label: "",
+                x_kind: crate::scene::ScaleKind::Linear,
+                x_lo: domain[0],
+                x_hi: domain[1],
+                x_constant: 1.0,
+                x_mask_nonpositive: false,
+                x_format: None,
+                x_tick_kind: 0,
+                y_kind: crate::scene::ScaleKind::Linear,
+                y_lo: domain[2],
+                y_hi: domain[3],
+                y_constant: 1.0,
+                y_mask_nonpositive: false,
+                y_format: None,
+                y_tick_kind: 0,
+                colorbar_side: crate::scene::ColorbarSide::None,
+                collision: crate::scene::TickCollisionLayout::default(),
+            })
+            .ok()?;
+        let (w, h) = (
+            layout.viewport_width - left - right,
+            layout.viewport_height - top - bottom,
+        );
+        (w > 0.0 && h > 0.0).then_some((w, h))
+    };
+    let mut domain = [
+        layout.base_x.0,
+        layout.base_x.1,
+        layout.base_y.0,
+        layout.base_y.1,
+    ];
+    for _ in 0..HOME_LAYOUT_PASSES {
+        let (w, h) = plot(domain)?;
+        let shapes = home_domain_for_plot(&geometry, layout.base_x, layout.base_y, w, h)?;
+        let scale = (w / (shapes[1] - shapes[0])).min(h / (shapes[3] - shapes[2]));
+        let mut all = geometry.clone();
+        all.extend(home_label_extents(planes, scale));
+        let next = home_domain_for_plot(&all, layout.base_x, layout.base_y, w, h).unwrap_or(shapes);
+        let stable = next
+            .iter()
+            .zip(domain.iter())
+            .all(|(a, b)| (a - b).abs() <= 1e-12 * (1.0 + a.abs().max(b.abs())));
+        domain = next;
+        if stable {
+            break;
+        }
+    }
+    Some(domain)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -935,7 +1241,10 @@ mod tests {
             .unwrap()
             .parse()
             .unwrap();
-        assert!((last_x - shaft_end).abs() < 0.01, "{last_x} vs {shaft_end}: {out}");
+        assert!(
+            (last_x - shaft_end).abs() < 0.01,
+            "{last_x} vs {shaft_end}: {out}"
+        );
         assert!(out.contains("M 166 80"), "head tip on the outline: {out}");
     }
 
@@ -963,5 +1272,143 @@ mod tests {
         assert!(out.contains(r#"<rect x="110""#), "{out}");
         // The label plan assumes linear spacing: none paint, like the browser.
         assert!(!out.contains(">left<") && !out.contains(">right<"));
+    }
+
+    fn home_layout() -> GraphHomeLayout<'static> {
+        GraphHomeLayout {
+            viewport_width: 480.0,
+            viewport_height: 320.0,
+            padding: None,
+            title: "",
+            base_x: (0.25 - 0.015, 0.75 + 0.015),
+            base_y: (0.49, 0.51),
+        }
+    }
+
+    /// Plot rect and px position of `(x, y)` for a solved domain.
+    fn home_px(domain: [f64; 4], x: f64, y: f64) -> (f64, f64, f64, f64) {
+        let (l, r, t, b) =
+            crate::scene::cartesian_scene_margins(crate::scene::CartesianLayoutRequest {
+                viewport_width: 480.0,
+                viewport_height: 320.0,
+                authored_padding: None,
+                title: "",
+                x_label: "",
+                y_label: "",
+                x_kind: crate::scene::ScaleKind::Linear,
+                x_lo: domain[0],
+                x_hi: domain[1],
+                x_constant: 1.0,
+                x_mask_nonpositive: false,
+                x_format: None,
+                x_tick_kind: 0,
+                y_kind: crate::scene::ScaleKind::Linear,
+                y_lo: domain[2],
+                y_hi: domain[3],
+                y_constant: 1.0,
+                y_mask_nonpositive: false,
+                y_format: None,
+                y_tick_kind: 0,
+                colorbar_side: crate::scene::ColorbarSide::None,
+                collision: crate::scene::TickCollisionLayout::default(),
+            })
+            .unwrap();
+        let (w, h) = (480.0 - l - r, 320.0 - t - b);
+        let px = (x - domain[0]) / (domain[1] - domain[0]) * w;
+        let py = (domain[3] - y) / (domain[3] - domain[2]) * h;
+        (px, py, w, h)
+    }
+
+    #[test]
+    fn home_domain_keeps_markers_and_halos_inside_the_plot() {
+        let halo = [0, 0, 0, 0, 0, 90, 156, 97];
+        let planes = ComposedGraphPlanes {
+            diameter: &[20.0, 20.0],
+            halo: &halo,
+            halo_diameter: &[0.0, 40.0],
+            ..nodes()
+        };
+        let domain = graph_home_domain(&planes, &home_layout()).unwrap();
+        // Contains the autorange, and every marker (and the halo) fits.
+        assert!(domain[0] <= 0.235 && domain[1] >= 0.765);
+        let (px0, _, _, _) = home_px(domain, 0.25, 0.5);
+        let (px1, _, w, _) = home_px(domain, 0.75, 0.5);
+        assert!(px0 >= 11.0 - 1e-6, "{px0}");
+        assert!(w - px1 >= 21.0 - 1e-6, "{}", w - px1);
+        // Nothing drawn outside the nodes: the autorange already fits.
+        let bare = ComposedGraphPlanes {
+            diameter: &[0.0, 0.0],
+            stroke_width: &[0.0, 0.0],
+            ..nodes()
+        };
+        let small = graph_home_domain(&bare, &home_layout()).unwrap();
+        assert!(small[1] - small[0] < domain[1] - domain[0]);
+    }
+
+    #[test]
+    fn home_domain_fits_diamond_vertices() {
+        // A 20 px diamond reaches 20 / sqrt(2) = 14.1 px along the axes.
+        let planes = ComposedGraphPlanes {
+            diameter: &[20.0, 20.0],
+            symbol: &[2, 2],
+            stroke_width: &[0.0, 0.0],
+            ..nodes()
+        };
+        let domain = graph_home_domain(&planes, &home_layout()).unwrap();
+        let (px1, _, w, _) = home_px(domain, 0.75, 0.5);
+        let reach = 10.0 * std::f64::consts::SQRT_2 + 1.0;
+        assert!(w - px1 >= reach - 1e-6, "{} < {reach}", w - px1);
+        let (px0, _, _, _) = home_px(domain, 0.25, 0.5);
+        assert!(px0 >= reach - 1e-6, "{px0} < {reach}");
+    }
+
+    #[test]
+    fn home_domain_fits_home_view_labels_and_frames() {
+        // Node 1 labels 90 px to its right from any scale; node 0 never.
+        let plan = [-1.0, 6.0, 4.0, 90.0, 12.0, 0.0, 6.0, 4.0, 90.0, 12.0];
+        let labels = [None, Some("right-hand label")];
+        let planes = ComposedGraphPlanes {
+            node_label_plan: &plan,
+            node_labels: &labels,
+            ..nodes()
+        };
+        let domain = graph_home_domain(&planes, &home_layout()).unwrap();
+        let (px1, _, w, _) = home_px(domain, 0.75, 0.5);
+        assert!(w - px1 >= 96.0 - 1e-6, "{}", w - px1);
+        // A group frame around node 0 padded 14 px, 2 px wide, clears the edge.
+        let mut frames = [0.0; 2 * COMPOUND_FRAME_STRIDE];
+        frames[..COMPOUND_FRAME_STRIDE]
+            .copy_from_slice(&[0.0, 0.5, -0.01, 0.01, 75.0, 85.0, 99.0, 184.0, 2.0, 14.0]);
+        let framed = graph_home_domain(
+            &ComposedGraphPlanes {
+                frames: &frames,
+                ..nodes()
+            },
+            &home_layout(),
+        )
+        .unwrap();
+        let (px0, _, _, _) = home_px(framed, 0.25, 0.5);
+        assert!(px0 >= 16.0 - 1e-6, "{px0}");
+    }
+
+    #[test]
+    fn home_domain_keeps_the_autorange_when_pads_cannot_fit() {
+        let planes = ComposedGraphPlanes {
+            diameter: &[600.0, 600.0],
+            ..nodes()
+        };
+        assert_eq!(graph_home_domain(&planes, &home_layout()), None);
+        // Labels too wide to fit fall back to marker-only pads.
+        let plan = [0.0, 6.0, 4.0, 900.0, 12.0, -1.0, 6.0, 4.0, 90.0, 12.0];
+        let labels = [Some("far too wide"), None];
+        let with_labels = graph_home_domain(
+            &ComposedGraphPlanes {
+                node_label_plan: &plan,
+                node_labels: &labels,
+                ..nodes()
+            },
+            &home_layout(),
+        );
+        assert_eq!(with_labels, graph_home_domain(&nodes(), &home_layout()));
     }
 }

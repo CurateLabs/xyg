@@ -1278,11 +1278,7 @@ fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
 
 #[inline]
 fn symbol_extent(r: f32, sym: u8) -> f32 {
-    if matches!(sym, 2 | 14) {
-        r * std::f32::consts::SQRT_2
-    } else {
-        r
-    }
+    crate::scene::marker_symbol_extent(f64::from(r), sym) as f32
 }
 
 #[allow(clippy::too_many_arguments)]

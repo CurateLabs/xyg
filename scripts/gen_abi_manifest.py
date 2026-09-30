@@ -124,6 +124,7 @@ _POINTER_C: dict[str, str] = {
     "*const XygGraphProjectionDescriptor": "const void *",
     "*const XygGraphCompoundSceneDescriptor": "const void *",
     "*const XygComposedGraphSceneDescriptor": "const void *",
+    "*const XygGraphHomeLayout": "const void *",
     "*const XygCoseDescriptor": "const void *",
     "*const XygTemporalColumnDescriptor": "const void *",
     "*const XygTemporalIntervalDescriptor": "const void *",

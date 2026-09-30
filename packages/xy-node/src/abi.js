@@ -34,6 +34,7 @@ import {
   xyGraphCompoundFrames,
   xyGraphOrdinalColors,
   xyGraphComposedScene,
+  xyGraphHomeDomain,
   xyGraphDivergingDomain,
   xyGraphSemanticLegendText,
   xyGraphSemanticStyleResolve,
@@ -228,6 +229,13 @@ const ComposedGraphSceneDescriptor = koffi.struct("XygComposedGraphSceneDescript
   legend_symbol: "const void *", legend_label_lengths: "const void *",
   legend_payload: "const void *", legend_payload_len: "uint64_t", legend_loc: "const void *",
   legend_loc_len: "uint64_t", text_rgba: "const void *", reserved: "uint64_t",
+});
+
+// Mirror of Rust `XygGraphHomeLayout` (#910).
+const GraphHomeLayout = koffi.struct("XygGraphHomeLayout", {
+  version: "uint32_t", reserved0: "uint32_t", viewport_width: "double", viewport_height: "double",
+  padding: "const void *", title: "const void *", title_len: "uint64_t",
+  base_x_lo: "double", base_x_hi: "double", base_y_lo: "double", base_y_hi: "double",
 });
 
 const CoseDescriptor = koffi.struct("XygCoseDescriptor", {
@@ -1914,7 +1922,7 @@ const COMPOSED_TEXT_RGBA_BYTES = 4;
  * `segment_labels` (string or null per item), and `legend` rows
  * `[label, rgba, symbol]` with `legend_title`.
  */
-export function graphComposedScene(base, planes) {
+function composedGraphDescriptor(base, planes) {
   const n = planes.x.length;
   const m = planes.x0.length;
   const arrays = {};
@@ -1960,11 +1968,11 @@ export function graphComposedScene(base, planes) {
   const legendLengths = Uint32Array.from(legendNames, (bytes) => bytes.length);
   const title = text.encode(String(planes.legend_title ?? ""));
   const legendLoc = text.encode(String(planes.legend_loc ?? ""));
-  const baseBytes = base instanceof Uint8Array ? base : Uint8Array.from(base);
+  const baseBytes = base == null ? null : base instanceof Uint8Array ? base : Uint8Array.from(base);
   const ptr = (value) => (value != null && value.length ? pointer(value, "void *") : null);
   const encoded = Buffer.alloc(koffi.sizeof(ComposedGraphSceneDescriptor));
   koffi.encode(encoded, ComposedGraphSceneDescriptor, {
-    version: 1, reserved0: 0, base: ptr(baseBytes), base_len: BigInt(baseBytes.length),
+    version: 1, reserved0: 0, base: ptr(baseBytes), base_len: BigInt(baseBytes?.length ?? 0),
     node_count: BigInt(n), segment_count: BigInt(m),
     ...Object.fromEntries(Object.keys(COMPOSED_GRAPH_PLANES).map((name) => [name, ptr(arrays[name])])),
     node_label_lengths: ptr(nodeLengths), segment_label_lengths: ptr(segmentLengths),
@@ -1974,7 +1982,39 @@ export function graphComposedScene(base, planes) {
     legend_payload: ptr(legendPayload), legend_payload_len: BigInt(legendPayload.length),
     legend_loc: ptr(legendLoc), legend_loc_len: BigInt(legendLoc.length), text_rgba: ptr(textRgba), reserved: 0n,
   });
-  const descriptor = koffi.as(encoded, "const void *");
+  // The views stay referenced for the lifetime of the returned descriptor.
+  return {
+    descriptor: koffi.as(encoded, "const void *"),
+    keep: [encoded, baseBytes, arrays, nodeLengths, segmentLengths, payload, legendPayload, legendRgba, legendSymbol, legendLengths, title, legendLoc, textRgba],
+  };
+}
+
+/**
+ * The composed graph home view (#910; Python `_native.graph_home_domain`):
+ * `[xLo, xHi, yLo, yHi]` in which every marker, halo, edge stroke, compound
+ * frame, and home-view label fits the hidden-axis graph plot, or null to keep
+ * the autorange.
+ */
+export function graphHomeDomain(planes, { viewport, baseX, baseY, title = "", padding = null }) {
+  const { descriptor, keep } = composedGraphDescriptor(null, planes);
+  const titleBytes = new TextEncoder().encode(String(title));
+  const pad = padding == null ? null : Float64Array.from(padding, Number);
+  const layout = Buffer.alloc(koffi.sizeof(GraphHomeLayout));
+  koffi.encode(layout, GraphHomeLayout, {
+    version: 1, reserved0: 0, viewport_width: Number(viewport[0]), viewport_height: Number(viewport[1]),
+    padding: pad == null ? null : f64Ptr(pad), title: titleBytes.length ? u8Ptr(titleBytes) : null,
+    title_len: BigInt(titleBytes.length), base_x_lo: Number(baseX[0]), base_x_hi: Number(baseX[1]),
+    base_y_lo: Number(baseY[0]), base_y_hi: Number(baseY[1]),
+  });
+  const out = new Float64Array(4);
+  const status = Number(xyGraphHomeDomain(descriptor, koffi.as(layout, "const void *"), f64Ptr(out)));
+  keep.length;
+  if (status < 0) throw new RangeError("invalid composed graph home-view input");
+  return status === 1 ? null : [...out];
+}
+
+export function graphComposedScene(base, planes) {
+  const { descriptor, keep } = composedGraphDescriptor(base, planes);
   const reason = new Uint32Array([1]);
   const needed = Number(xyGraphComposedScene(descriptor, null, 0, u32Ptr(reason)));
   if (!Number.isSafeInteger(needed) || needed <= 0 || needed >= Number.MAX_SAFE_INTEGER) {
@@ -1985,6 +2025,7 @@ export function graphComposedScene(base, planes) {
   if (Number(xyGraphComposedScene(descriptor, u8Ptr(output), output.length, u32Ptr(reason))) !== needed) {
     throw new Error("composed graph Scene changed between bounded copies");
   }
+  keep.length;
   return output;
 }
 

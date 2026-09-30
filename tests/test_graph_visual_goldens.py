@@ -153,7 +153,15 @@ def _manifest() -> dict[str, Any]:
     cases = {}
     for name, case in _cases().items():
         png = chart(case).to_png(scale=1)
-        cases[name] = {**case, "png": f"graph_visual/{name}.png", "sha256": _sha(png)}
+        # The Rust home view (#910) both hosts must set on the hidden axes.
+        axes = chart(case).figure().axis_options
+        home = [*axes["x"]["domain"], *axes["y"]["domain"]]
+        cases[name] = {
+            **case,
+            "png": f"graph_visual/{name}.png",
+            "sha256": _sha(png),
+            "home_domain": home,
+        }
     return {
         "schema": "xyg.graph-visual-goldens/v1",
         "width": WIDTH,
