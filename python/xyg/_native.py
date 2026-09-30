@@ -13006,6 +13006,78 @@ def graph_label_accept(
     return out.astype(np.bool_)
 
 
+def graph_label_plan(
+    kinds: Any,
+    x: Any,
+    y: Any,
+    radius_px: Any,
+    chars: Any,
+    states: Any,
+    priorities: Any,
+    budget: int,
+    *,
+    min_priority: float | None = None,
+) -> dict[str, Any]:
+    """Rust-owned bounded, collision-free, zoom-monotone label plan (#34).
+
+    Returns per-label ``keep`` (characters kept before an ellipsis; 0 when not
+    accepted), ``threshold`` (smallest isotropic zoom scale in screen px per
+    data unit from which the label paints; ``inf`` never), ``offset_x`` /
+    ``offset_y`` (left-aligned baseline offset from the anchor, px, y down),
+    ``width`` / ``font_px`` (planned text width and font size the painter must
+    fit the label into), and ``accepted`` (count).
+    """
+    kind_arr = np.ascontiguousarray(kinds, dtype=np.uint8)
+    n = len(kind_arr)
+    floats = [np.ascontiguousarray(v, dtype=np.float64) for v in (x, y, radius_px, priorities)]
+    char_arr = np.ascontiguousarray(chars, dtype=np.uint32)
+    state_arr = np.ascontiguousarray(states, dtype=np.uint8)
+    if any(a.ndim != 1 or len(a) != n for a in (*floats, char_arr, state_arr)):
+        raise ValueError("label plan inputs must be equal-length 1-D arrays")
+    if isinstance(budget, (bool, np.bool_)):
+        raise TypeError("budget must be an exact uint64 integer")
+    budget_value = operator.index(budget)
+    if budget_value < 0 or budget_value > 0xFFFF_FFFF_FFFF_FFFF:
+        raise ValueError("budget must fit uint64")
+    keep = np.empty(n, dtype=np.uint32)
+    threshold, offset_x, offset_y, width, font_px = (
+        np.empty(n, dtype=np.float64) for _ in range(5)
+    )
+    accepted = ctypes.c_uint64()
+
+    def ptr(value: np.ndarray) -> int | None:
+        return value.ctypes.data if n else None
+
+    status = _lib.xyg_graph_label_plan(
+        ctypes.c_uint64(n),
+        ptr(kind_arr),
+        *(ptr(value) for value in floats[:3]),
+        ptr(char_arr),
+        ptr(state_arr),
+        ptr(floats[3]),
+        ctypes.c_uint64(budget_value),
+        ctypes.c_double(math.nan if min_priority is None else float(min_priority)),
+        ptr(keep),
+        ptr(threshold),
+        ptr(offset_x),
+        ptr(offset_y),
+        ptr(width),
+        ptr(font_px),
+        ctypes.byref(accepted),
+    )
+    if status != 0:
+        raise ValueError("native graph_label_plan failed")
+    return {
+        "keep": keep,
+        "threshold": threshold,
+        "offset_x": offset_x,
+        "offset_y": offset_y,
+        "width": width,
+        "font_px": font_px,
+        "accepted": int(accepted.value),
+    }
+
+
 def graph_compound_bounds(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

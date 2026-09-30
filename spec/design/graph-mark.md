@@ -359,7 +359,7 @@ the zoom story in §1.4:
 | Direct | Draw all nodes/edges under budget — sole tier that may expose per-element V/E to WebGL |
 | Edge sample | Rust samples edges when edge count E is over budget; record §28 |
 | Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space at Aggregate tier only, and record §28; Direct / EdgeSample keep parallels and self-loops; hosts keep `member_of` for drill / hover |
-| Labels | Hide below zoom / over label budget; Rust emits the accepted mask |
+| Labels | Over-budget labels never paint; others paint from their Rust zoom threshold (§7.1 painted labels) |
 
 Budgets and tier choice live in Rust decision helpers (render-graph emission);
 hosts do not fork tier policy. Past direct tier, WebGL sees only the emitted
@@ -497,6 +497,48 @@ the viewport budget. The default budget is
 are limited to 4096 UTF-8 bytes, and equal priorities retain source order.
 Aggregate LOD intentionally omits
 source-indexed style metadata rather than attaching it to cluster identities.
+
+**Painted labels on the composed mark (#34, ABI 371).** Composed `graph()`
+paints node and edge labels in the browser from one Rust plan,
+`xyg_graph_label_plan` (`graph_style::graph_label_plan`). Hosts pass every
+candidate: nodes (label text, `label_priority`, resolved visual state, marker
+radius) and edges (`edge_label` / `edge_label_priority`, Python and Node
+camelCase; no default edge label), each edge anchored at the midpoint of the
+middle routed piece of a single-member render edge, as in the Scene. Rust then
+decides everything:
+
+- candidates need a finite priority at or above `label_priority_floor`, a
+  nonempty label, and a state other than aggregate or filtered;
+- `label_budget` (default 64, maximum 4096) keeps the highest priorities
+  across nodes and edges together;
+- labels keep at most 32 characters (31 plus "…"); hosts apply the returned
+  `keep` count mechanically;
+- the box model is the Scene's: 12 px face, 0.62 em advance, baseline 4 px
+  right of a node marker or 4 px above an edge anchor;
+- accepted labels are ordered by visual state (descending, as the Scene),
+  priority, then input order, and each gets a **zoom threshold**: the
+  smallest isotropic scale (screen px per data unit) from which it no longer
+  overlaps any higher-ordered label that is itself visible there. Zooming in
+  therefore only adds labels, and painted labels never overlap.
+
+The plan ships as a per-item `label_plan` placement channel
+(`threshold`, `offset_x`, `offset_y`, planned `width`, `font_px`; threshold −1
+never paints) on the node trace and, per anchor segment, on the edge trace,
+with `node_labels` and `edge_label_segments`/`edge_label_text` in
+`spec.graph`. The browser paints a label when `min(sx, sy)` (CSS px per data
+unit) reaches its threshold, at its anchor plus the Rust offset, at the
+planned font size and fitted into the planned width (canvas `maxWidth`), so a
+wide page font can never push text past its collision box; it is clipped to
+the plot. With anisotropic scales the threshold test is conservative (never
+overlapping). The plan assumes linear axes, so a graph on log or symlog axes
+paints no labels, and a legend-hidden node or edge trace paints none of its
+labels. The client adds no placement, collision, or truncation policy. `label_plan` is placement, not per-item paint, so labeled
+graphs keep static export; static SVG/PNG do not paint composed-graph labels
+yet (the semantic Scene route does). `tests/test_graph_label_plan.py` pins the
+plan in `tests/fixtures/graph_label_plan_cross_host.json` (Node asserts the
+same fixture) and probes Chromium for non-overlapping labels that multiply
+when zoomed; a Rust property test checks collision freedom and monotonicity
+across scales.
 
 The direct semantic Scene now paints node and edge label text. Rust ranks the
 resolved visual state with stable source identity as its tie-breaker, omits
@@ -730,6 +772,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28; optional CSR source-edge membership per render edge (ABI 367, §6) |
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
+| `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |
 | `xyg_graph_compound_transition` | ABI 90 atomic stable-ID expand/collapse/toggle; Direct LOD only (#34) |

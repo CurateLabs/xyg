@@ -175,6 +175,7 @@ export {
   graphSemanticPaintLayers,
   graphSemanticLegend,
   graphLabelAccept,
+  graphLabelPlan,
   graphCompoundBounds,
   graphCompoundTransition,
   GRAPH_COMPOUND_EXPAND,

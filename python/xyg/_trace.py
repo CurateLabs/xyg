@@ -165,8 +165,11 @@ class Trace:
         ):
             names.append("size")
         # Graph edge ends are geometry annotations the Scene packs natively
-        # (PACK_EDGE_SEGMENT, #33), not per-item paint.
-        names.extend(name for name in self.style_channels if name != "edge_ends")
+        # (PACK_EDGE_SEGMENT, #33), and the Rust label plan is label placement
+        # (#34); neither is per-item paint.
+        names.extend(
+            name for name in self.style_channels if name not in ("edge_ends", "label_plan")
+        )
         return tuple(names)
 
     def has_per_item_channels(self) -> bool:

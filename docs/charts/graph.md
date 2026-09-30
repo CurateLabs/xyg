@@ -118,6 +118,29 @@ edges with a nonzero status get an arrowhead, whether or not the graph is
 directed. SVG/PNG export of a semantically styled graph is not supported yet;
 use HTML export.
 
+## Labels
+
+Nodes are labeled from `node_label` (default: the `label` column, then
+`name`, then the node id), and edges from `edge_label` when you pass it.
+`label_priority` / `edge_label_priority` decide which labels win, and
+`label_budget` (default 64) caps how many can ever show. Labels are cut to 32
+characters and never overlap: a crowded graph shows the most important labels
+first, and zooming in reveals more.
+
+```python
+xyg.graph_chart(
+    nodes=node_table,
+    edges=edge_table,
+    node_label="name",
+    label_priority="degree",
+    edge_label="relationship_type",
+    label_budget=200,
+)
+```
+
+Node uses `nodeLabel`, `labelPriority`, `edgeLabel`, and `labelBudget`. SVG/PNG
+export does not draw these labels yet.
+
 ## Arrowheads and node borders
 
 Edges start and end on node outlines, and directed edges (including

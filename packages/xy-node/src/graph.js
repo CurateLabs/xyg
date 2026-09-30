@@ -19,7 +19,7 @@ import {
   graphProjectionDestroy,
   graphProjectionRead,
   graphCompoundBounds,
-  graphLabelAccept,
+  graphLabelPlan,
   graphSemanticPaintLayers,
   graphSemanticStyles,
   graphVisualStates,
@@ -837,6 +837,55 @@ const GRAPH_NODE_SEMANTIC_STYLE = [
 ];
 const GRAPH_EDGE_SEMANTIC_STYLE = ["color", "stroke", "width", "stroke_width", "stroke-width", "opacity"];
 
+/** label_plan channel row: threshold, offset x, offset y, width, font px
+ * (#34); mirrors Python `LABEL_PLAN_COMPONENTS`. */
+const GRAPH_LABEL_PLAN_COMPONENTS = 5;
+
+/** Per render edge: label text, priority, and anchor segment (the middle
+ * routed piece), for single-member render edges only. Mirrors Python
+ * `_edge_label_rows`. */
+function graphEdgeLabelRows(data, opts, singleMember, renderEdgeIndex) {
+  const empty = { texts: [], priorities: [], anchors: [] };
+  let raw = opts.edgeLabel ?? opts.edge_label;
+  if (raw == null || singleMember == null) return empty;
+  const nEdges = data.sources.length;
+  if (typeof raw === "string" && data.edgeAttrs && Object.hasOwn(data.edgeAttrs, raw)) raw = data.edgeAttrs[raw];
+  const rows = typeof raw === "string" ? new Array(nEdges).fill(raw) : Array.from(raw);
+  if (rows.length !== nEdges) throw new RangeError("graph edgeLabel must match edge count");
+  if (rows.some((value) => value != null && typeof value !== "string")) {
+    throw new TypeError("graph edge labels must be strings or null");
+  }
+  let rawPriority = opts.edgeLabelPriority ?? opts.edge_label_priority ?? 0;
+  if (typeof rawPriority === "string" && data.edgeAttrs && Object.hasOwn(data.edgeAttrs, rawPriority)) {
+    rawPriority = data.edgeAttrs[rawPriority];
+  }
+  const priority = typeof rawPriority === "number"
+    ? new Float64Array(nEdges).fill(rawPriority)
+    : Float64Array.from(rawPriority, Number);
+  if (priority.length !== nEdges) throw new RangeError("graph edgeLabelPriority must match edge count");
+  const counts = new Array(singleMember.length).fill(0);
+  const starts = new Array(singleMember.length).fill(-1);
+  renderEdgeIndex.forEach((renderEdge, segment) => {
+    const r = Number(renderEdge);
+    if (segment > 0 && r < Number(renderEdgeIndex[segment - 1])) {
+      throw new RangeError("graph routing must emit every render edge's segments contiguously");
+    }
+    if (starts[r] < 0) starts[r] = segment;
+    counts[r] += 1;
+  });
+  if (counts.some((count) => count === 0)) {
+    throw new RangeError("graph routing must emit every render edge's segments contiguously");
+  }
+  const texts = []; const priorities = []; const anchors = [];
+  singleMember.forEach((member, r) => {
+    const row = Number(member);
+    texts.push(rows[row]);
+    priorities.push(rows[row] == null ? Number.NaN : priority[row]);
+    anchors.push(starts[r] + Math.floor(counts[r] / 2));
+  });
+  return { texts, priorities, anchors };
+}
+
 export function composeGraph(nodes, edges, opts = {}) {
   let resolvedOpts = opts;
   let resolvedEdges = edges;
@@ -943,13 +992,14 @@ export function composeGraph(nodes, edges, opts = {}) {
     nodeDiameterPx = Float64Array.from(values, (v) =>
       8 + 14 * (Number.isFinite(v) ? Math.min(1, Math.max(0, (v - lo) / span)) : 0));
   }
+  const nodeDiameter = sizeOpt != null && !Array.isArray(sizeOpt) && !ArrayBuffer.isView(sizeOpt)
+    ? Number(sizeOpt)
+    : 8;
   const { nodePositions, edgeSegments, edgeEnds, meta, edgeMembership } = runLayout(data, {
     ...resolvedOpts,
     nodeDiameterPx,
     nodeShapeCodes: nodeSemantic?.shape ?? null,
-    nodeDiameter: sizeOpt != null && !Array.isArray(sizeOpt) && !ArrayBuffer.isView(sizeOpt)
-      ? Number(sizeOpt)
-      : 8,
+    nodeDiameter,
   });
   const name = resolvedOpts.name ?? null;
   const nNodes = nodePositions.x.length;
@@ -1233,16 +1283,62 @@ export function composeGraph(nodes, edges, opts = {}) {
     if (!Number.isSafeInteger(budget) || budget < 0 || budget > 4096) {
       throw new RangeError("graph labelBudget must be a safe integer from 0 through 4096");
     }
-    const accepted = graphLabelAccept(priorities, budget, {
-      minPriority: resolvedOpts.labelPriorityFloor ?? resolvedOpts.label_priority_floor ?? Number.NaN,
-    }).accepted;
     const states = graphVisualStates(nodeFlags);
+    // Node and edge labels share one Rust plan (#34); edge labels anchor at
+    // the middle routed piece of a single-member render edge.
+    const edgeRows = graphEdgeLabelRows(data, resolvedOpts, singleMember, renderEdgeIndex);
+    const mid = edgeRows.anchors;
+    const segMid = (a, b) => mid.map((segment) => (a[segment] + b[segment]) / 2);
+    const radii = nodeDiameterPx != null && nodeDiameterPx.length === nNodes
+      ? Array.from(nodeDiameterPx, (d) => d / 2)
+      : new Array(nNodes).fill(Number(nodeDiameter) / 2);
+    const allTexts = [...labels, ...edgeRows.texts];
+    const plan = graphLabelPlan(
+      [...new Array(nNodes).fill(0), ...new Array(mid.length).fill(1)],
+      [...nodePositions.x, ...segMid(edgeSegments.x0, edgeSegments.x1)],
+      [...nodePositions.y, ...segMid(edgeSegments.y0, edgeSegments.y1)],
+      [...radii, ...new Array(mid.length).fill(0)],
+      allTexts.map((text) => (text == null ? 0 : Array.from(text).length)),
+      [...states, ...new Array(mid.length).fill(0)],
+      [...priorities, ...edgeRows.priorities],
+      budget,
+      { minPriority: resolvedOpts.labelPriorityFloor ?? resolvedOpts.label_priority_floor ?? Number.NaN },
+    );
+    const texts = allTexts.map((text, i) => {
+      const keep = plan.keep[i];
+      if (text == null || keep === 0) return null;
+      const chars = Array.from(text);
+      return keep >= chars.length ? text : `${chars.slice(0, keep).join("")}\u2026`;
+    });
     const encoder = new TextEncoder();
-    if (labels.some((label, index) => accepted[index] && encoder.encode(label).length > 4096)) {
+    if (texts.some((text) => text != null && encoder.encode(text).length > 4096)) {
       throw new RangeError("accepted graph labels are limited to 4096 UTF-8 bytes each");
     }
-    graphMeta.node_labels = labels.map((label, index) => accepted[index] ? label : null);
-    graphMeta.label_accepted = [...accepted].map(Boolean);
+    // Rust label plan rides the traces as placement (threshold px per data
+    // unit, -1 never; baseline offset px). Mirrors Python `_marks_graph`.
+    const planRow = (i) => [
+      Number.isFinite(plan.threshold[i]) && plan.keep[i] > 0 ? plan.threshold[i] : -1,
+      plan.offsetX[i],
+      plan.offsetY[i],
+      plan.width[i],
+      plan.fontPx[i],
+    ];
+    const stride = GRAPH_LABEL_PLAN_COMPONENTS;
+    const nodePlan = new Float64Array(nNodes * stride);
+    for (let i = 0; i < nNodes; i += 1) nodePlan.set(planRow(i), i * stride);
+    traces[1].style_channels = { ...(traces[1].style_channels ?? {}), label_plan: { values: nodePlan, components: stride } };
+    const painted = mid.map((_, k) => k).filter((k) => plan.keep[nNodes + k] > 0);
+    if (painted.length) {
+      const edgePlan = new Float64Array(nEdges * stride);
+      for (let segment = 0; segment < nEdges; segment += 1) edgePlan[segment * stride] = -1;
+      for (const k of painted) edgePlan.set(planRow(nNodes + k), mid[k] * stride);
+      traces[0].style_channels = { ...traces[0].style_channels, label_plan: { values: edgePlan, components: stride } };
+      graphMeta.edge_label_segments = painted.map((k) => mid[k]);
+      graphMeta.edge_label_text = painted.map((k) => texts[nNodes + k]);
+    }
+    const accepted = labels.map((_, i) => plan.keep[i] > 0);
+    graphMeta.node_labels = labels.map((_, index) => accepted[index] ? texts[index] : null);
+    graphMeta.label_accepted = accepted;
     graphMeta.label_budget = Number(budget);
     graphMeta.visual_states = [...states];
     if (data.parentIndices != null) {
