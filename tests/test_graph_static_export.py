@@ -28,13 +28,13 @@ NODES = ["a", "b", "c"]
 EDGES = [["a", "b"], ["a", "b"], ["b", "a"], ["b", "c"], ["c", "c"], ["a", "c"]]
 X = [0.0, 4.0, 2.0]
 Y = [0.0, 0.0, 3.0]
-# Explicit colors: default graph colors differ between hosts today and are a
-# separate product decision; this fixture pins geometry and export bytes.
+# Explicit colors pin geometry and export bytes; the "default_colors" case pins
+# the Rust-owned graph defaults (#898: neutral edges, palette nodes).
 COLORS = {"color": "#1f77b4", "edge_color": "#888888"}
-CASES = {"straight": "straight", "curved": "curve"}
+CASES = {"straight": "straight", "curved": "curve", "default_colors": "straight"}
 
 
-def _chart(edge_curve: str) -> xyg.Chart:
+def _chart(edge_curve: str, *, colors: bool = True) -> xyg.Chart:
     return xyg.graph_chart(
         xyg.graph(
             NODES,
@@ -43,7 +43,7 @@ def _chart(edge_curve: str) -> xyg.Chart:
             x=X,
             y=Y,
             edge_curve=edge_curve,
-            **COLORS,
+            **(COLORS if colors else {}),
         ),
         width=640,
         height=480,
@@ -57,9 +57,10 @@ def _sha(data: bytes) -> str:
 def _expected() -> dict[str, Any]:
     cases = {}
     for name, curve in CASES.items():
-        chart = _chart(curve)
+        chart = _chart(curve, colors=name != "default_colors")
         cases[name] = {
             "edge_curve": curve,
+            "colors": name != "default_colors",
             "svg_sha256": _sha(chart.to_svg().encode()),
             "png_scale1_sha256": _sha(chart.to_png(scale=1)),
             "png_scale2_sha256": _sha(chart.to_png(scale=2)),
@@ -120,7 +121,7 @@ def test_default_png_export_scale_is_2x() -> None:
 
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     for name, case in fixture["cases"].items():
-        chart = _chart(case["edge_curve"])
+        chart = _chart(case["edge_curve"], colors=case.get("colors", True))
         png = chart.to_png()  # default scale
         w = struct.unpack(">I", png[16:20])[0]
         h = struct.unpack(">I", png[20:24])[0]
@@ -182,6 +183,16 @@ def test_browser_node_positions_match_static_export(tmp_path: Path) -> None:
     for (bx, by), (sx, sy) in zip(browser, exported, strict=True):
         assert bx == pytest.approx(sx, abs=0.01)
         assert by == pytest.approx(sy, abs=0.01)
+
+
+def test_default_graph_colors_are_the_rust_contract() -> None:
+    from xyg import _native
+
+    fig = _chart("straight", colors=False).figure()
+    meta = fig._graph_meta[0]
+    edges, nodes = fig.traces[meta["edge_trace"]], fig.traces[meta["node_trace"]]
+    assert edges.style["color"] == _native.graph_default_edge_color() == "#888888"
+    assert nodes.color_ch.constant == _native.default_palette_contract()[1][0]
 
 
 if __name__ == "__main__":

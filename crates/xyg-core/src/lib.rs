@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 373;
+pub const ABI_VERSION: u32 = 374;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11124,6 +11124,29 @@ pub unsafe extern "C" fn xyg_default_palette_utf8(out: *mut u8, out_cap: usize) 
             offset = end;
         }
         required
+    })
+}
+
+/// Copy the default graph edge color (#898) as UTF-8 CSS. Capacity and
+/// return semantics match ``xyg_default_palette_utf8``.
+///
+/// # Safety
+/// `out` addresses `out_cap` writable bytes when `out_cap > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_default_edge_color_utf8(out: *mut u8, out_cap: usize) -> usize {
+    let text = kernels::GRAPH_DEFAULT_EDGE_COLOR.as_bytes();
+    if out_cap == 0 {
+        return text.len();
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    if out_cap < text.len() {
+        return text.len();
+    }
+    ffi_guard(usize::MAX, || {
+        std::slice::from_raw_parts_mut(out, text.len()).copy_from_slice(text);
+        text.len()
     })
 }
 

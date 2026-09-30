@@ -749,6 +749,20 @@ contrast against both theme backgrounds
 fixture) and probes Chromium for the ordinal node colors and the painted
 legend rows.
 
+#### 7.1.6 Default graph colors (#898, ABI 374)
+
+Without `color` / `edge_color` (or semantic fields), edges paint the
+Rust-owned neutral `GRAPH_DEFAULT_EDGE_COLOR` (`#888888`, read through
+`xyg_graph_default_edge_color_utf8`) and never consume a palette slot, so the
+node scatter takes the figure's next series color (the first palette entry in
+a fresh chart): the common node–link convention where edges recede and nodes
+carry the color. Neither host hard-codes it. The `default_colors` case of
+`tests/fixtures/graph_static_export_cross_host.json` pins identical default
+SVG/PNG bytes in Python and Node. With a custom chart palette the node color
+still differs between hosts, because Node ignores `palette=` for every
+default-colored series (#918, not graph-specific; host-parity.md
+REQ-HOSTPARITY-2g).
+
 #### 7.1.5 Compound frames and disclosure on the composed mark (#34, ABI 373)
 
 Compound graphs (GraphForge `parent_uuid`) paint a **frame** around every
