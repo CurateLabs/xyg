@@ -756,7 +756,13 @@ records it appends a fixed 40-byte chrome trailer plus optional UTF-8 payloads:
 
 Default paints match the previous hard-coded chrome. Whole-scene SVG and raster
 consumers paint grid/axis/labels from the trailer and place title / x-label /
-y-label with deterministic margin-relative anchors. Hosts may now compile
+y-label with deterministic margin-relative anchors. The chart-title SVG
+y-baseline is `max(top_margin × 0.55, title_font_size)`, where
+`title_font_size = label_font_size + 2`; this floor ensures the title text
+never clips the top edge. The authored static-title size (when set via
+`apply_static_title_style`) replaces the default `label_font_size + 2` as
+both the render size and the minimum baseline. This rule was made explicit in
+#890 (ABI 203) when title placement moved fully into Rust. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
 slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
