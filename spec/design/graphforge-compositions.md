@@ -267,7 +267,7 @@ embedding rows join it for display names (and follow the `extra` policy).
 
 - **table** (scalar and category results): the schema's canonical columns in
   ledger order; per cell, deterministic text (booleans `true`/`false`,
-  integers in decimal, floats as the shortest round-trip decimal), the numeric
+  integers in exact decimal (unsigned counts above `i64::MAX` included), floats as the shortest round-trip decimal), the numeric
   value (NaN for text), and validity. At most 1,000,000 cells.
 - **bar-chart** (category results): one bar per result row in result order
   (never re-sorted), category text and value; nulls are recorded
@@ -276,7 +276,9 @@ embedding rows join it for display names (and follow the `extra` policy).
   dimension index, with the node UUID, result row, and base display name,
   plus a Rust plot domain (dimension span and finite value range, each padded
   by 5%). `graphforge.dimensions`, when present, must equal the vector length
-  (`GF_RESULT_SCHEMA_MISMATCH`). At most 20,000,000 values.
+  (`GF_RESULT_SCHEMA_MISMATCH`). At most 20,000,000 values, checked from the
+  declared width before any vector is decoded. A one-dimensional embedding
+  renders as points at dimension 0.
 - **embedding-coordinates** (embeddings): nodes placed at caller-provided 2D
   coordinates (`layer.coordinates`: Arrow IPC `node_uuid`, numeric `x`, `y`;
   malformed, null, or non-finite coordinates fail with

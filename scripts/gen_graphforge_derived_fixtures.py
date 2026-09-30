@@ -10,6 +10,7 @@ its node UUIDs and schema metadata, into `tests/fixtures/graphforge/derived/`:
   squared) as a caller would supply them;
 - `node2vec-coordinates-partial.arrow`: the first two of those rows (nodes
   without coordinates);
+- `node2vec-1d.arrow`: the result truncated to one dimension;
 - `node2vec-2d.arrow`: the same result with `embedding` truncated to two
   dimensions and `graphforge.dimensions = 2`, standing in for a GraphForge
   run with `dimensions: 2`.
@@ -59,7 +60,18 @@ def build() -> dict[str, bytes]:
             metadata=metadata,
         ),
     )
+    one = pa.array([v[:1] for v in vectors], pa.list_(pa.field("item", pa.float32(), False), 1))
+    metadata_1d = dict(source.schema.metadata)
+    metadata_1d[b"graphforge.dimensions"] = b"1"
+    one_d = pa.table(
+        [source.column("node_uuid"), one],
+        schema=pa.schema(
+            [source.schema.field("node_uuid"), pa.field("embedding", one.type, False)],
+            metadata=metadata_1d,
+        ),
+    )
     return {
+        "node2vec-1d.arrow": _stream(one_d),
         "node2vec-coordinates.arrow": _stream(coordinates),
         "node2vec-coordinates-partial.arrow": _stream(coordinates.slice(0, 2)),
         "node2vec-2d.arrow": _stream(two_d),

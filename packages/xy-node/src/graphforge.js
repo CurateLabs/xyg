@@ -585,6 +585,21 @@ function graphforgeBarChart(composition, opts) {
  */
 function graphforgeParallelChart(composition, opts) {
   const { dimensions, values, uuid, name } = composition.vectors;
+  if (dimensions < 2) {
+    // One dimension has no polyline: each node is a point at dimension 0.
+    const { width, height, title } = opts;
+    const fig = figure({ width, height, title });
+    fig.scatter(new Float64Array(uuid.length), Float64Array.from(values), {
+      name: "embedding",
+      style: { color: fig.nextSeriesColor() },
+      tooltip_rows: uuid.map((id, i) => ({ id, ...(name[i] ? { name: name[i] } : {}), dimension: 0 })),
+      _composed: true,
+    });
+    const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
+    fig.setAxis("x", { domain: [dx0, dx1] });
+    fig.setAxis("y", { domain: [dy0, dy1] });
+    return axisTitles(fig, "dimension", "value");
+  }
   const n = uuid.length;
   const pieces = n * Math.max(dimensions - 1, 0);
   const x0 = new Float64Array(pieces); const y0 = new Float64Array(pieces);

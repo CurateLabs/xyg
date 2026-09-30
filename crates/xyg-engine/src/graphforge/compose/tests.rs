@@ -1191,3 +1191,32 @@ fn embeddings_against_an_incompatible_base_fail() {
         "GF_COMPOSE_GENERATION_STALE"
     );
 }
+
+#[test]
+fn integer_cells_keep_their_exact_decimal_text() {
+    // Unsigned census counts may exceed i64::MAX; the text stays exact.
+    let field = crate::arrow_ipc::Field {
+        name: "count".into(),
+        nullable: false,
+        data_type: DataType::Int {
+            bits: 64,
+            signed: false,
+        },
+        children: Vec::new(),
+    };
+    let bytes = u64::MAX.to_le_bytes();
+    let table = Table {
+        schema: crate::arrow_ipc::Schema {
+            fields: vec![field],
+            metadata: Vec::new(),
+        },
+        batches: vec![crate::arrow_ipc::Batch {
+            rows: 1,
+            columns: vec![crate::arrow_ipc::Array::fixed_for_tests(1, 8, &bytes)],
+        }],
+        rows: 1,
+    };
+    let values = crate::graphforge::columns::int_texts(&table.column("count").unwrap()).unwrap();
+    assert_eq!(values[0].as_ref().unwrap().0, "18446744073709551615");
+    assert_eq!(values[0].as_ref().unwrap().1, u64::MAX as f64);
+}

@@ -361,6 +361,12 @@ test("embeddings: parallel coordinates or explicit coordinates, never dims 0/1",
   assert.equal(placed.points.source, "caller");
   const scatter = graphforgeChart(placed, { width: 480, height: 320 });
   assert.equal(scatter.traces[0].tooltip_rows[0].id, placed.points.uuid[0]);
+  const oneD = composeGraphForge({ layers: [{ result: derivedFixture("node2vec-1d"), intent: "parallel-coordinates" }] });
+  assert.equal(oneD.vectors.dimensions, 1);
+  const points = graphforgeChart(oneD, { width: 480, height: 320 });
+  assert.equal(points.traces[0].kind, "scatter", "one dimension renders as points, not empty polylines");
+  assert.equal(points.traces[0].tooltip_rows.length, oneD.vectors.uuid.length);
+  assert.ok(points.toPng().length > 0);
   const self = composeGraphForge({ layers: [{ result: derivedFixture("node2vec-2d"), intent: "embedding-coordinates" }] });
   assert.equal(self.points.source, "embedding");
   assert.ok(self.decisions.some((d) => d.code === "GF_COMPOSE_EMBEDDING_2D"));

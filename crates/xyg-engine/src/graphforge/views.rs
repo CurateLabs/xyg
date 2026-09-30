@@ -5,7 +5,7 @@
 //! two-dimensional and the caller asked for coordinates.
 
 use super::base::{self, BaseGraph, RawPlanes};
-use super::columns::{bools, f64s, i64s, texts, uuids, vectors};
+use super::columns::{bools, f64s, int_texts, texts, uuids, vectors};
 use super::compose::{
     check_generation, document_header, encode_decisions, layer_error, layer_provenance, Decision,
     Layer, NONE_U64,
@@ -121,12 +121,16 @@ fn table(layer: &Layer<'_>, mut decisions: Vec<Decision>) -> GfResult<Vec<u8>> {
                 )
             }
             Kind::Int => {
-                let values = i64s(&column).map_err(|e| e.in_layer(layer.index))?;
+                // Exact decimal text, including UInt64 counts above i64::MAX.
+                let values = int_texts(&column).map_err(|e| e.in_layer(layer.index))?;
                 (
-                    values.iter().map(|v| v.map(|i| i.to_string())).collect(),
                     values
                         .iter()
-                        .map(|v| v.map_or(f64::NAN, |i| i as f64))
+                        .map(|v| v.as_ref().map(|(t, _)| t.clone()))
+                        .collect(),
+                    values
+                        .iter()
+                        .map(|v| v.as_ref().map_or(f64::NAN, |(_, f)| *f))
                         .collect(),
                 )
             }
@@ -265,8 +269,25 @@ fn embedding_rows(
     let vector_field = layer.field(Role::Vector).unwrap();
     let ids = uuids(&layer.table.column(node_field).unwrap(), false)
         .map_err(|e| e.in_layer(layer.index))?;
-    let vectors =
-        vectors(&layer.table.column(vector_field).unwrap()).map_err(|e| e.in_layer(layer.index))?;
+    // Bound the decode before allocating it: every row's vector is decoded,
+    // so the table's row count times the declared width must fit.
+    let column = layer.table.column(vector_field).unwrap();
+    let declared = match column.field.data_type {
+        DataType::FixedSizeList(n) => Some(n),
+        _ => layer
+            .table
+            .schema
+            .metadata("graphforge.dimensions")
+            .and_then(|d| d.parse::<usize>().ok()),
+    };
+    if declared.is_some_and(|d| layer.table.rows.saturating_mul(d) > MAX_EMBEDDING_VALUES) {
+        return Err(layer_error(
+            "GF_COMPOSE_TOO_LARGE",
+            layer.index,
+            format!("embedding views hold at most {MAX_EMBEDDING_VALUES} values"),
+        ));
+    }
+    let vectors = vectors(&column).map_err(|e| e.in_layer(layer.index))?;
     let dimensions = vectors.dimensions;
     if let Some(declared) = layer.table.schema.metadata("graphforge.dimensions") {
         if declared.parse::<usize>().ok() != Some(dimensions) {
