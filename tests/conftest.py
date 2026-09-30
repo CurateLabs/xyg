@@ -176,7 +176,8 @@ def _dump_dom(
     except OSError as exc:  # binary vanished, not executable, exec format error
         raise _BrowserUnavailable(str(exc)) from exc
     if proc.returncode != 0:
-        tail = " / ".join((proc.stderr or "").strip().splitlines()[-3:])
+        # A bounded tail: enough of a wrapper's stack trace to diagnose a crash.
+        tail = " / ".join((proc.stderr or "").strip().splitlines()[-40:])[-4000:]
         return None, f"chromium exited {proc.returncode}: {tail or '(no stderr)'}"
     return proc.stdout, None
 
