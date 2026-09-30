@@ -6771,7 +6771,8 @@ function perItemChannelNames(trace) {
   const channels = trace.style_channels ?? {};
   if (channels != null && typeof channels === "object" && !Array.isArray(channels) && !ArrayBuffer.isView(channels)) {
     // Graph edge ends are Scene-packed geometry (PACK_EDGE_SEGMENT, #33).
-    names.push(...Object.keys(channels).filter((name) => name !== "edge_ends"));
+    // edge_ends (#33) and the Rust label plan (#34) are placement, not paint.
+    names.push(...Object.keys(channels).filter((name) => name !== "edge_ends" && name !== "label_plan"));
   }
   return names;
 }

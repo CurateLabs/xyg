@@ -476,6 +476,10 @@ function xyInitiallyVisible(el) {
   );
 }
 
+// label_plan channel row: threshold, offset x, offset y, width, font px
+// (#34); mirrors the host GRAPH_LABEL_PLAN_COMPONENTS.
+const GRAPH_LABEL_PLAN_STRIDE = 5;
+
 export class ChartView {
   constructor(el, spec, buffer, comm) {
     if (spec.protocol !== PROTOCOL) {
@@ -4278,6 +4282,7 @@ export class ChartView {
     }
     this._buildInstanceStyleChannels(g, t, buffer, "stroke_width");
     this._buildSemanticLayers(g, t, buffer, true);
+    this._buildLabelPlan(g, t, buffer);
     this._pointMarkStyle(g, t);
   }
 
@@ -4718,6 +4723,7 @@ export class ChartView {
     // (graph_style::semantic_paint_layers): epistemic halo and class body
     // under the status stroke, plus per-segment dash.
     this._buildSemanticLayers(g, t, buffer, false);
+    this._buildLabelPlan(g, t, buffer);
     g._cpu = { x: x0, y: y1, xMeta: g.x0Meta, yMeta: g.y1Meta };
   }
 
@@ -4776,6 +4782,101 @@ export class ChartView {
     g.haloRgbaBuf = this._upload(hasHalo ? halo : empty);
     g.bodyRgbaBuf = this._upload(hasBody ? body : empty);
     g.edgeLayerBuf = this._upload(this._layerIndices(g.n, 3));
+  }
+
+  // Rust graph label plan (#34): per item (threshold px per data unit, -1
+  // never; baseline offset x, y px; planned width and font px). Kept
+  // CPU-side with the painted rows.
+  _buildLabelPlan(g, t, buffer) {
+    const spec = t.channels && t.channels.label_plan;
+    if (!spec || spec.components !== GRAPH_LABEL_PLAN_STRIDE) return;
+    const values = this._columnView(buffer, this.spec.columns[spec.buf]);
+    const stride = GRAPH_LABEL_PLAN_STRIDE;
+    if (values.length < g.n * stride) return;
+    g._labelPlan = Float32Array.from(values.subarray(0, g.n * stride));
+    g._labelRows = [];
+    for (let i = 0; i < g.n; i++) if (g._labelPlan[i * stride] >= 0) g._labelRows.push(i);
+  }
+
+  // Graph labels (#34) paint the Rust plan: a label shows once the view's
+  // isotropic scale min(sx, sy) (CSS px per data unit) reaches its threshold,
+  // at its anchor plus the Rust baseline offset, fitted into the planned
+  // width at the planned font size. Rust guarantees planned boxes never
+  // overlap and zooming in only adds labels; the client adds no placement,
+  // collision, or truncation policy. The plan assumes linear axes, so log or
+  // symlog graph axes paint no labels, and legend-hidden traces paint none.
+  // `_graphLabelsDrawn` records the last frame for probes.
+  _drawGraphLabels(ctx) {
+    const drawn = [];
+    this._graphLabelsDrawn = drawn;
+    const graphs = Array.isArray(this.spec && this.spec.graph) ? this.spec.graph : [];
+    if (!graphs.length || this._polarGeometry()) return;
+    const p = this.plot;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p.x, p.y, p.w, p.h);
+    ctx.clip();
+    const family = getComputedStyle(this.root).fontFamily || "sans-serif";
+    const linear = (axisId) => {
+      const axis = this._axis(axisId);
+      return !axis || axis.scale == null || axis.scale === "linear";
+    };
+    ctx.fillStyle = this.theme.label;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    for (const meta of graphs) {
+      const node = this.gpuTraces.find((g) => g.trace.id === meta.node_trace);
+      const edge = this.gpuTraces.find((g) => g.trace.id === meta.edge_trace);
+      if (!node || !node._cpu || !linear(node.xAxis) || !linear(node.yAxis)) continue;
+      const project = (x, y) => this._projectDataPoint(node.xAxis, node.yAxis, x, y, null);
+      const x0 = this._decodeValue(node._cpu.x, node._cpu.xMeta, 0);
+      const y0 = this._decodeValue(node._cpu.y, node._cpu.yMeta, 0);
+      const origin = project(x0, y0);
+      const ex = project(x0 + 1, y0);
+      const ey = project(x0, y0 + 1);
+      const scale = Math.min(Math.hypot(ex[0] - origin[0], ex[1] - origin[1]),
+        Math.hypot(ey[0] - origin[0], ey[1] - origin[1]));
+      if (!(scale > 0)) continue;
+      const stride = GRAPH_LABEL_PLAN_STRIDE;
+      const paint = (g, i, text, x, y, kind) => {
+        const plan = g._labelPlan;
+        const at0 = i * stride;
+        if (text == null || !(plan[at0] >= 0) || plan[at0] > scale) return;
+        const at = project(x, y);
+        if (!Number.isFinite(at[0]) || !Number.isFinite(at[1])) return;
+        const left = at[0] + plan[at0 + 1];
+        const baseline = at[1] + plan[at0 + 2];
+        const width = plan[at0 + 3];
+        ctx.font = `${plan[at0 + 4]}px ${family}`;
+        // maxWidth keeps the painted text inside its planned collision box
+        // whatever the page font's glyph widths are.
+        ctx.fillText(text, left, baseline, width);
+        drawn.push({ kind, index: i, text, x: left, y: baseline, width });
+      };
+      const labels = Array.isArray(meta.node_labels) ? meta.node_labels : [];
+      if (node._labelPlan && !node._legendHidden) {
+        for (const i of node._labelRows) {
+          if (node._visInv && node._visInv[i] < 0) continue;
+          paint(node, i, labels[i],
+            this._decodeValue(node._cpu.x, node._cpu.xMeta, i),
+            this._decodeValue(node._cpu.y, node._cpu.yMeta, i), "node");
+        }
+      }
+      const segments = Array.isArray(meta.edge_label_segments) ? meta.edge_label_segments : [];
+      const texts = Array.isArray(meta.edge_label_text) ? meta.edge_label_text : [];
+      if (edge && edge._labelPlan && edge._segmentCpu && !edge._legendHidden) {
+        const cpu = edge._segmentCpu;
+        segments.forEach((segment, k) => {
+          if (!(segment >= 0 && segment < edge.n)) return;
+          const mx = (this._decodeValue(cpu.x0, edge.x0Meta, segment)
+            + this._decodeValue(cpu.x1, edge.x1Meta, segment)) / 2;
+          const my = (this._decodeValue(cpu.y0, edge.y0Meta, segment)
+            + this._decodeValue(cpu.y1, edge.y1Meta, segment)) / 2;
+          paint(edge, segment, texts[k], mx, my, "edge");
+        });
+      }
+    }
+    ctx.restore();
   }
 
   // Per-instance layer index for a layered draw: `layers` consecutive
@@ -8082,6 +8183,7 @@ export class ChartView {
     // Label layout resolves responsive callout offsets before the pointer is
     // painted, keeping its start attached when an edge clamp moves the text.
     this._drawAuthoredScatterMarkers(octx);
+    this._drawGraphLabels(octx);
     this._drawAnnotationShapes(octx);
   }
 

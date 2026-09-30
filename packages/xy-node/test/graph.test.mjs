@@ -812,6 +812,35 @@ test("graph semantic paint matches the Python cross-host fixture (#34)", async (
   }
 });
 
+test("graph label plan matches the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_label_plan_cross_host.json", import.meta.url), "utf8"),
+  );
+  const close = (actual, expected, label) => {
+    assert.equal(actual.length, expected.length, label);
+    actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 1e-6, `${label}[${i}] ${value} != ${expected[i]}`));
+  };
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(fixture.ids, fixture.edges, {
+      layout: "preset",
+      x: fixture.x,
+      y: fixture.y,
+      edgeCurve: expected.edge_curve,
+      labelPriority: fixture.label_priority,
+      labelBudget: expected.label_budget,
+      edgeLabel: fixture.edge_labels,
+    });
+    const meta = f._graphMeta[0];
+    assert.deepEqual(meta.node_labels, expected.node_labels, `${name} node labels`);
+    assert.deepEqual(meta.edge_label_segments ?? [], expected.edge_label_segments, `${name} edge anchors`);
+    assert.deepEqual(meta.edge_label_text ?? [], expected.edge_label_text, `${name} edge text`);
+    close([...f.traces[meta.node_trace].style_channels.label_plan.values], expected.node_plan.flat(), `${name} node plan`);
+    const edgePlan = f.traces[meta.edge_trace].style_channels.label_plan?.values ?? [];
+    close(expected.edge_label_segments.flatMap((s) => [...edgePlan.slice(s * 5, s * 5 + 5)]), expected.edge_plan.flat(), `${name} edge plan`);
+  }
+});
+
 test("graph semantic fields fail closed (#34)", () => {
   const opts = { layout: "preset", x: [0, 1], y: [0, 1] };
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], color: "#f00" }), /replace color/);

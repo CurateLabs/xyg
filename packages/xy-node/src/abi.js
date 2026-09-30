@@ -29,6 +29,7 @@ import {
   xyGraphCompoundTransition,
   xyGraphCompoundScene,
   xyGraphLabelAccept,
+  xyGraphLabelPlan,
   xyGraphSemanticStyleResolve,
   xyGraphSemanticPaintLayers,
   xyGraphSemanticLegend,
@@ -1702,6 +1703,29 @@ export function graphLabelAccept(priorities, budget, opts = {}) {
   const code = xyGraphLabelAccept(toU64(input.length, "priorities.length"), f64Ptr(input), toU64(budget, "budget"), floor, u8Ptr(out), u64Ptr(count));
   if (code !== 0) throw new Error(`xyg_graph_label_accept failed with code ${code}`);
   return { accepted: out, count: count[0] };
+}
+
+/** Rust-owned bounded, collision-free, zoom-monotone graph label plan (#34).
+ * Mirrors Python `_native.graph_label_plan`: per label `keep` (characters
+ * kept before an ellipsis; 0 when not accepted), `threshold` (smallest
+ * isotropic zoom scale in px per data unit from which it paints; Infinity
+ * never), the baseline `offsetX`/`offsetY` (px, y down), and the planned
+ * `width`/`fontPx` the painter fits the text into. */
+export function graphLabelPlan(kinds, x, y, radiusPx, chars, states, priorities, budget, opts = {}) {
+  const ka = asU8Array(kinds, "kinds"); const n = ka.length;
+  const xa = asF64Array(x, "x"); const ya = asF64Array(y, "y"); const ra = asF64Array(radiusPx, "radiusPx");
+  const ca = asU32Array(chars, "chars"); const sa = asU8Array(states, "states");
+  const pa = priorities instanceof Float64Array ? priorities : Float64Array.from(priorities ?? [], Number);
+  for (const [name, value] of [["x", xa], ["y", ya], ["radiusPx", ra], ["chars", ca], ["states", sa], ["priorities", pa]]) {
+    requireEqualLength(ka, value, "kinds", name);
+  }
+  const keep = new Uint32Array(n); const threshold = new Float64Array(n);
+  const offsetX = new Float64Array(n); const offsetY = new Float64Array(n); const accepted = new BigUint64Array(1);
+  const width = new Float64Array(n); const fontPx = new Float64Array(n);
+  const floor = opts.minPriority == null ? Number.NaN : Number(opts.minPriority);
+  const code = xyGraphLabelPlan(toU64(n, "kinds.length"), u8Ptr(ka), f64Ptr(xa), f64Ptr(ya), f64Ptr(ra), u32Ptr(ca), u8Ptr(sa), f64Ptr(pa), toU64(budget, "budget"), floor, u32Ptr(keep), f64Ptr(threshold), f64Ptr(offsetX), f64Ptr(offsetY), f64Ptr(width), f64Ptr(fontPx), u64Ptr(accepted));
+  if (code !== 0) throw new Error(`xyg_graph_label_plan failed with code ${code}`);
+  return { keep, threshold, offsetX, offsetY, width, fontPx, accepted: accepted[0] };
 }
 
 export function graphCompoundBounds(x, y, parents, parentValidity) {

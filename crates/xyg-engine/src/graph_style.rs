@@ -324,13 +324,229 @@ pub struct CompoundGraphSceneInput<'a> {
 
 const MAX_GRAPH_LABEL_CHARS: usize = 32;
 const GRAPH_LABEL_FONT_SIZE: f64 = 12.0;
+/// Approximate advance per character (px) of the 12 px label face.
+const GRAPH_LABEL_ADVANCE: f64 = GRAPH_LABEL_FONT_SIZE * 0.62;
+pub const GRAPH_LABEL_KIND_NODE: u8 = 0;
+pub const GRAPH_LABEL_KIND_EDGE: u8 = 1;
+/// Largest label set one plan orders (pairwise collision thresholds).
+pub const MAX_GRAPH_LABEL_PLAN: usize = 4_096;
+
+/// Left-aligned baseline offset (px, screen y down) of a label from its
+/// anchor: node labels sit 4 px right of the marker, edge labels just above
+/// the route midpoint. Shared by the semantic Scene and the composed mark.
+pub fn graph_label_offset(kind: u8, radius_px: f64) -> (f64, f64) {
+    if kind == GRAPH_LABEL_KIND_EDGE {
+        (0.0, -4.0)
+    } else {
+        (radius_px + 4.0, 4.0)
+    }
+}
+
+/// Screen box `(left, top, right, bottom)` of a label relative to its anchor.
+pub fn graph_label_box(kind: u8, radius_px: f64, chars: usize) -> (f64, f64, f64, f64) {
+    let (dx, dy) = graph_label_offset(kind, radius_px);
+    let width = chars as f64 * GRAPH_LABEL_ADVANCE;
+    (dx, dy - GRAPH_LABEL_FONT_SIZE, dx + width, dy + 2.0)
+}
+
+/// Characters of a `count`-character label kept before an ellipsis; the
+/// painted label is `keep` characters plus "…" when `keep < count`.
+pub fn graph_label_keep(count: usize) -> usize {
+    if count <= MAX_GRAPH_LABEL_CHARS {
+        count
+    } else {
+        MAX_GRAPH_LABEL_CHARS - 1
+    }
+}
+
+/// Inputs to [`graph_label_plan`]: one row per label candidate.
+pub struct GraphLabelPlanInput<'a> {
+    pub kinds: &'a [u8],
+    /// Anchor in data units (node center or edge route midpoint).
+    pub x: &'a [f64],
+    pub y: &'a [f64],
+    /// Node marker radius in px (ignored for edge labels).
+    pub radius_px: &'a [f64],
+    /// Label length in Unicode scalar values; 0 means no label.
+    pub chars: &'a [u32],
+    /// Resolved visual state (§7.1); aggregate and filtered rows get no label.
+    pub states: &'a [u8],
+    /// Label priority; non-finite means no label.
+    pub priorities: &'a [f64],
+    pub budget: u64,
+    /// Optional finite minimum priority (non-finite disables the floor).
+    pub floor: f64,
+}
+
+/// Per-label plan output.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GraphLabelPlan {
+    /// Characters kept (see [`graph_label_keep`]); 0 for no label.
+    pub keep: u32,
+    /// Smallest isotropic zoom scale (screen px per data unit) at which the
+    /// label paints; `f64::INFINITY` means never.
+    pub threshold: f64,
+    pub offset_x: f64,
+    pub offset_y: f64,
+    /// Planned text width (px) of the painted label, ellipsis included; the
+    /// painter must fit the text inside it.
+    pub width: f64,
+    /// Label font size (px).
+    pub font_px: f64,
+}
+
+/// Collision interval `(lo, hi)` of scales `s > 0` at which two boxes overlap
+/// when anchors sit at `s * (x, -y)` px; `None` when they never overlap.
+fn label_collision(
+    a: (f64, f64, (f64, f64, f64, f64)),
+    b: (f64, f64, (f64, f64, f64, f64)),
+) -> Option<(f64, f64)> {
+    let (mut lo, mut hi) = (0.0_f64, f64::INFINITY);
+    // Overlap on an axis: s*d < k1 and -s*d < k2, with d the anchor delta.
+    let mut constrain = |c: f64, k: f64| -> bool {
+        if c > 0.0 {
+            hi = hi.min(k / c);
+        } else if c < 0.0 {
+            lo = lo.max(k / c);
+        } else if k <= 0.0 {
+            return false;
+        }
+        true
+    };
+    let (ax, ay, abox) = a;
+    let (bx, by, bbox) = b;
+    let dx = ax - bx;
+    let dy = -(ay - by);
+    let ok = constrain(dx, bbox.2 - abox.0)
+        && constrain(-dx, abox.2 - bbox.0)
+        && constrain(dy, bbox.3 - abox.1)
+        && constrain(-dy, abox.3 - bbox.1);
+    (ok && lo < hi).then_some((lo, hi))
+}
+
+/// Bounded, collision-free, zoom-monotone label plan (#34).
+///
+/// Candidates (finite priority at or above the floor, a nonempty label, not
+/// aggregate or filtered) are budgeted like [`label_accept`] and then ordered
+/// by visual state (descending, as the semantic Scene), priority
+/// (descending), and input order. Each accepted label gets the smallest
+/// isotropic scale from which it paints: a label waits until it no longer
+/// overlaps any higher-ordered label that is itself visible at that scale.
+/// Zooming in therefore only adds labels, and no two painted labels overlap.
+/// Hosts evaluate `s = min(sx, sy)`; with anisotropic scales that is
+/// conservative, never overlapping.
+pub fn graph_label_plan(
+    input: &GraphLabelPlanInput<'_>,
+    out: &mut [GraphLabelPlan],
+) -> Option<u64> {
+    let n = input.kinds.len();
+    if [
+        input.x.len(),
+        input.y.len(),
+        input.radius_px.len(),
+        input.chars.len(),
+        input.states.len(),
+        input.priorities.len(),
+        out.len(),
+    ]
+    .iter()
+    .any(|&len| len != n)
+        || input.kinds.iter().any(|&kind| kind > GRAPH_LABEL_KIND_EDGE)
+        || input.states.iter().any(|&state| state > STATE_DISABLED)
+    {
+        return None;
+    }
+    let candidate = |i: usize| {
+        input.chars[i] > 0
+            && input.x[i].is_finite()
+            && input.y[i].is_finite()
+            && input.radius_px[i].is_finite()
+            && input.radius_px[i] >= 0.0
+            && input.states[i] != STATE_AGGREGATE
+            && input.states[i] != STATE_FILTERED
+    };
+    let priorities: Vec<f64> = (0..n)
+        .map(|i| {
+            if candidate(i) {
+                input.priorities[i]
+            } else {
+                f64::NAN
+            }
+        })
+        .collect();
+    let mut accepted = vec![0_u8; n];
+    let taken = label_accept(&priorities, input.budget, input.floor, &mut accepted)?;
+    if taken as usize > MAX_GRAPH_LABEL_PLAN {
+        return None;
+    }
+    for (i, slot) in out.iter_mut().enumerate() {
+        let keep = if accepted[i] != 0 {
+            graph_label_keep(input.chars[i] as usize) as u32
+        } else {
+            0
+        };
+        let (offset_x, offset_y) = graph_label_offset(input.kinds[i], input.radius_px[i]);
+        let painted = keep as usize + usize::from((keep as usize) < input.chars[i] as usize);
+        *slot = GraphLabelPlan {
+            keep,
+            threshold: f64::INFINITY,
+            offset_x,
+            offset_y,
+            width: if keep > 0 {
+                painted as f64 * GRAPH_LABEL_ADVANCE
+            } else {
+                0.0
+            },
+            font_px: GRAPH_LABEL_FONT_SIZE,
+        };
+    }
+    let mut order: Vec<usize> = (0..n).filter(|&i| accepted[i] != 0).collect();
+    order.sort_by(|&a, &b| {
+        input.states[b]
+            .cmp(&input.states[a])
+            .then_with(|| priorities[b].total_cmp(&priorities[a]))
+            .then_with(|| a.cmp(&b))
+    });
+    let boxes: Vec<(f64, f64, (f64, f64, f64, f64))> = order
+        .iter()
+        .map(|&i| {
+            let chars = out[i].keep as usize
+                + usize::from((out[i].keep as usize) < input.chars[i] as usize);
+            (
+                input.x[i],
+                input.y[i],
+                graph_label_box(input.kinds[i], input.radius_px[i], chars),
+            )
+        })
+        .collect();
+    let mut thresholds: Vec<f64> = Vec::with_capacity(order.len());
+    for (rank, &item) in boxes.iter().enumerate() {
+        let mut threshold = 0.0_f64;
+        for (other, &above) in boxes[..rank].iter().enumerate() {
+            let visible_from = thresholds[other];
+            if !visible_from.is_finite() {
+                continue;
+            }
+            if let Some((lo, hi)) = label_collision(item, above) {
+                if lo.max(visible_from) < hi {
+                    threshold = threshold.max(hi);
+                }
+            }
+        }
+        thresholds.push(threshold);
+    }
+    for (rank, &i) in order.iter().enumerate() {
+        out[i].threshold = thresholds[rank];
+    }
+    Some(taken)
+}
 
 fn bounded_label(text: &str, available_width: f64) -> Option<String> {
     if text.is_empty() || text.contains('\0') || text.len() > 4_096 || available_width < 8.0 {
         return None;
     }
-    let max_chars = ((available_width / (GRAPH_LABEL_FONT_SIZE * 0.62)).floor() as usize)
-        .min(MAX_GRAPH_LABEL_CHARS);
+    let max_chars =
+        ((available_width / GRAPH_LABEL_ADVANCE).floor() as usize).min(MAX_GRAPH_LABEL_CHARS);
     if max_chars == 0 {
         return None;
     }
@@ -864,13 +1080,15 @@ fn encode_semantic_graph_scene_internal(
             continue;
         }
         let (px, py) = to_px(input.x[index], input.y[index]);
-        let x = px + f64::from(nodes[index].size) * 0.5 + 4.0;
+        let (dx, dy) =
+            graph_label_offset(GRAPH_LABEL_KIND_NODE, f64::from(nodes[index].size) * 0.5);
+        let x = px + dx;
         if let Some(text) = bounded_label(text, layout.right - x) {
             candidates.push(Candidate {
                 state: nodes[index].state,
                 stable_id: (1_u64 << 32) + index as u64,
                 x,
-                y: py + 4.0,
+                y: py + dy,
                 rgba: foreground,
                 text,
             });
@@ -887,12 +1105,13 @@ fn encode_semantic_graph_scene_internal(
         }
         let segment = routes[index][routes[index].len() / 2];
         let (px, py) = to_px((segment.0 + segment.2) * 0.5, (segment.1 + segment.3) * 0.5);
-        if let Some(text) = bounded_label(text, layout.right - px) {
+        let (dx, dy) = graph_label_offset(GRAPH_LABEL_KIND_EDGE, 0.0);
+        if let Some(text) = bounded_label(text, layout.right - px - dx) {
             candidates.push(Candidate {
                 state: edges[index].state,
                 stable_id: index as u64 + 1,
-                x: px,
-                y: py - 4.0,
+                x: px + dx,
+                y: py + dy,
                 rgba: foreground,
                 text,
             });
@@ -905,7 +1124,7 @@ fn encode_semantic_graph_scene_internal(
         if labels.len() == crate::scene::MAX_SCENE_LABELS {
             break;
         }
-        let width = candidate.text.chars().count() as f64 * GRAPH_LABEL_FONT_SIZE * 0.62;
+        let width = candidate.text.chars().count() as f64 * GRAPH_LABEL_ADVANCE;
         let bounds = (
             candidate.x,
             candidate.y - GRAPH_LABEL_FONT_SIZE,
@@ -1691,6 +1910,133 @@ mod tests {
             (STATE_SELECTED, [0, 0, 0, 255])
         );
         assert_eq!((out[2].state, out[2].opacity), (STATE_DISABLED, 0.28));
+    }
+
+    fn plan(
+        kinds: &[u8],
+        x: &[f64],
+        y: &[f64],
+        chars: &[u32],
+        states: &[u8],
+        priorities: &[f64],
+        budget: u64,
+    ) -> Vec<GraphLabelPlan> {
+        let n = kinds.len();
+        let mut out = vec![
+            GraphLabelPlan {
+                keep: 0,
+                threshold: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                width: 0.0,
+                font_px: 0.0,
+            };
+            n
+        ];
+        graph_label_plan(
+            &GraphLabelPlanInput {
+                kinds,
+                x,
+                y,
+                radius_px: &vec![5.0; n],
+                chars,
+                states,
+                priorities,
+                budget,
+                floor: f64::NAN,
+            },
+            &mut out,
+        )
+        .unwrap();
+        out
+    }
+
+    #[test]
+    fn label_plan_orders_by_state_then_priority_and_truncates() {
+        // Two labels on the same anchor: only the higher-ordered one ever paints.
+        let out = plan(
+            &[0, 0, 0],
+            &[0.0, 0.0, 100.0],
+            &[0.0, 0.0, 0.0],
+            &[5, 40, 3],
+            &[STATE_NORMAL, STATE_SELECTED, STATE_FILTERED],
+            &[9.0, 1.0, 5.0],
+            10,
+        );
+        assert_eq!(out[1].threshold, 0.0);
+        assert!(out[0].threshold.is_infinite());
+        assert_eq!(out[1].keep, 31); // 31 chars + ellipsis
+                                     // Filtered rows are never labels.
+        assert_eq!((out[2].keep, out[2].threshold.is_infinite()), (0, true));
+        assert_eq!((out[1].offset_x, out[1].offset_y), (9.0, 4.0));
+        assert_eq!(
+            (out[1].width, out[1].font_px),
+            (32.0 * GRAPH_LABEL_ADVANCE, 12.0)
+        );
+        // Budget keeps the highest priorities only.
+        let budgeted = plan(
+            &[0, 0, 1],
+            &[0.0, 50.0, 100.0],
+            &[0.0, 0.0, 0.0],
+            &[3, 3, 3],
+            &[0, 0, 0],
+            &[1.0, 3.0, 2.0],
+            2,
+        );
+        assert_eq!(
+            budgeted.iter().map(|p| p.keep).collect::<Vec<_>>(),
+            vec![0, 3, 3]
+        );
+        assert_eq!((budgeted[2].offset_x, budgeted[2].offset_y), (0.0, -4.0));
+    }
+
+    #[test]
+    fn label_plan_is_collision_free_and_zoom_monotone() {
+        let mut seed = 0x2545_f491_4f6c_dd1d_u64;
+        let mut next = move || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed >> 11) as f64 / (1_u64 << 53) as f64
+        };
+        let n = 240;
+        let kinds: Vec<u8> = (0..n).map(|i| (i % 3 == 0) as u8).collect();
+        let x: Vec<f64> = (0..n).map(|_| next() * 10.0).collect();
+        let y: Vec<f64> = (0..n).map(|_| next() * 10.0).collect();
+        let chars: Vec<u32> = (0..n).map(|_| 1 + (next() * 40.0) as u32).collect();
+        let states: Vec<u8> = (0..n).map(|_| (next() * 6.0) as u8).collect();
+        let priorities: Vec<f64> = (0..n).map(|_| next()).collect();
+        let out = plan(&kinds, &x, &y, &chars, &states, &priorities, 200);
+        let boxed = |i: usize, s: f64| {
+            let chars = out[i].keep as usize + usize::from(out[i].keep < chars[i]);
+            let b = graph_label_box(kinds[i], 5.0, chars);
+            (
+                x[i] * s + b.0,
+                -y[i] * s + b.1,
+                x[i] * s + b.2,
+                -y[i] * s + b.3,
+            )
+        };
+        let mut previous = 0;
+        for step in 0..24 {
+            let s = 2.0_f64.powf(step as f64 * 0.5);
+            let visible: Vec<usize> = (0..n).filter(|&i| out[i].threshold <= s).collect();
+            assert!(visible.len() >= previous, "zooming in never removes labels");
+            previous = visible.len();
+            for (a, &i) in visible.iter().enumerate() {
+                for &j in &visible[a + 1..] {
+                    let (p, q) = (boxed(i, s), boxed(j, s));
+                    assert!(
+                        !(p.0 < q.2 && q.0 < p.2 && p.1 < q.3 && q.1 < p.3),
+                        "labels {i} and {j} overlap at scale {s}"
+                    );
+                }
+            }
+        }
+        assert!(
+            previous > 150,
+            "far zoom paints most accepted labels: {previous}"
+        );
     }
 
     #[test]

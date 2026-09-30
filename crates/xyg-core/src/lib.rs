@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 370;
+pub const ABI_VERSION: u32 = 371;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16500,6 +16500,113 @@ pub unsafe extern "C" fn xyg_graph_semantic_legend(
             *out_shape.add(i) = entry.shape;
             std::ptr::copy_nonoverlapping(entry.color.as_ptr(), out_rgba.add(i * 4), 4);
         }
+        0
+    })
+}
+
+/// Bounded, collision-free, zoom-monotone graph label plan (#34).
+///
+/// Inputs address `n` elements: `kinds` (0 node, 1 edge), anchors `x`/`y`
+/// (data units), node `radius_px`, label `chars` (Unicode scalar count; 0 is
+/// no label), resolved visual `states`, and `priorities` (non-finite is no
+/// label). `budget` and `min_priority` match `xyg_graph_label_accept`
+/// (non-finite `min_priority` disables the floor). Outputs address `n`
+/// elements: characters kept before an ellipsis (0 when not accepted), the
+/// smallest isotropic zoom scale in screen px per data unit from which the
+/// label paints (`+inf` never), the left-aligned baseline offset from the
+/// anchor (px, y down), and the planned text width and font size (px) the
+/// painter must fit the label into. `out_accepted` receives the accepted count. Outputs are
+/// written only after the whole input validates.
+///
+/// # Safety
+/// Every non-empty pointer must address the documented readable/writable extent.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_label_plan(
+    n: u64,
+    kinds: *const u8,
+    x: *const f64,
+    y: *const f64,
+    radius_px: *const f64,
+    chars: *const u32,
+    states: *const u8,
+    priorities: *const f64,
+    budget: u64,
+    min_priority: f64,
+    out_keep: *mut u32,
+    out_threshold: *mut f64,
+    out_offset_x: *mut f64,
+    out_offset_y: *mut f64,
+    out_width: *mut f64,
+    out_font_px: *mut f64,
+    out_accepted: *mut u64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if out_accepted.is_null()
+        || (n > 0
+            && ([kinds, states].iter().any(|p| p.is_null())
+                || [x, y, radius_px, priorities].iter().any(|p| p.is_null())
+                || chars.is_null()
+                || out_keep.is_null()
+                || [
+                    out_threshold,
+                    out_offset_x,
+                    out_offset_y,
+                    out_width,
+                    out_font_px,
+                ]
+                .iter()
+                .any(|p| p.is_null())))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let mut plan = vec![
+            xyg_engine::graph_style::GraphLabelPlan {
+                keep: 0,
+                threshold: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                width: 0.0,
+                font_px: 0.0,
+            };
+            n
+        ];
+        let Some(accepted) = xyg_engine::graph_style::graph_label_plan(
+            &xyg_engine::graph_style::GraphLabelPlanInput {
+                kinds: input!(kinds),
+                x: input!(x),
+                y: input!(y),
+                radius_px: input!(radius_px),
+                chars: input!(chars),
+                states: input!(states),
+                priorities: input!(priorities),
+                budget,
+                floor: min_priority,
+            },
+            &mut plan,
+        ) else {
+            return -1;
+        };
+        for (i, row) in plan.iter().enumerate() {
+            *out_keep.add(i) = row.keep;
+            *out_threshold.add(i) = row.threshold;
+            *out_offset_x.add(i) = row.offset_x;
+            *out_offset_y.add(i) = row.offset_y;
+            *out_width.add(i) = row.width;
+            *out_font_px.add(i) = row.font_px;
+        }
+        *out_accepted = accepted;
         0
     })
 }

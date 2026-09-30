@@ -156,8 +156,10 @@ strings or null (which continues fallback); other scalar/object types are not
 stringified. Rust chooses the
 bounded accepted-label mask and winning visual-state enum; hosts expose those
 results in `spec.graph` and never run a second precedence or collision policy.
-These fields are semantic scene metadata, not browser paint instructions;
-label/bounds paint waits for a Rust-owned screen-space primitive contract.
+Labels paint in the browser from the Rust label plan (`graph-mark.md` §7.1,
+ABI 371): `edge_label` / `edge_label_priority` (Node: `edgeLabel` /
+`edgeLabelPriority`) add edge labels, and every painted label is budgeted,
+truncated, and zoom-thresholded by Rust. Compound bounds remain metadata.
 
 GraphForge semantic styling is paint. Python `node_class`, `node_epistemic`,
 `node_status`, `node_metric`, the `edge_*` equivalents, and `theme` (Node:

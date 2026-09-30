@@ -41,6 +41,8 @@ def graph(
     label_budget: int = 64,
     label_priority_floor: float | None = None,
     visual_state_flags: Union[str, ArrayLike, None] = None,
+    edge_label: Union[str, ArrayLike, None] = None,
+    edge_label_priority: Union[str, ArrayLike, None] = None,
     node_class: Union[str, ArrayLike, None] = None,
     node_epistemic: Union[str, ArrayLike, None] = None,
     node_status: Union[str, ArrayLike, None] = None,
@@ -85,6 +87,8 @@ def graph(
     node_label = _graph.resolve_encoding_values(data, node_label, where="node")
     label_priority = _graph.resolve_encoding_values(data, label_priority, where="node")
     visual_state_flags = _graph.resolve_encoding_values(data, visual_state_flags, where="node")
+    edge_label = _graph.resolve_encoding_values(data, edge_label, where="edge")
+    edge_label_priority = _graph.resolve_encoding_values(data, edge_label_priority, where="edge")
     if visual_state_flags is None:
         visual_state_flags = data.node_attrs.get(
             "visual_state_flags",
@@ -369,21 +373,58 @@ def graph(
             raise TypeError("graph label_budget must be an exact integer")
         if int(label_budget) < 0 or int(label_budget) > 4096:
             raise ValueError("graph label_budget must be between 0 and 4096")
-        accepted = _native.graph_label_accept(
-            priorities, label_budget, min_priority=label_priority_floor
-        )
-        if any(
-            label is not None and len(label.encode("utf-8")) > 4096
-            for label, keep in zip(labels, accepted, strict=True)
-            if keep
-        ):
-            raise ValueError("accepted graph labels are limited to 4096 UTF-8 bytes each")
         flags = _node_flags(visual_state_flags, data.n_nodes)
         states = _native.graph_visual_states(flags)
+        # Edge labels anchor at the middle routed piece of a single-member
+        # render edge (exact source identity), like the semantic Scene.
+        edge_texts, edge_priorities, edge_anchor = _edge_label_rows(
+            data, edge_label, edge_label_priority, single, render_edge_index
+        )
+        mid = edge_anchor.astype(np.intp)
+        plan = _native.graph_label_plan(
+            np.r_[np.zeros(data.n_nodes, np.uint8), np.ones(len(mid), np.uint8)],
+            np.r_[px, (x0[mid] + x1[mid]) * 0.5],
+            np.r_[py, (y0[mid] + y1[mid]) * 0.5],
+            np.r_[node_diameter * 0.5, np.zeros(len(mid))],
+            [_label_chars(t) for t in (*labels, *edge_texts)],
+            np.r_[states.astype(np.uint8), np.zeros(len(mid), np.uint8)],
+            np.r_[priorities, edge_priorities],
+            int(label_budget),
+            min_priority=label_priority_floor,
+        )
+        keep = plan["keep"]
+        texts = [_truncated(t, int(k)) for t, k in zip((*labels, *edge_texts), keep, strict=True)]
+        if any(t is not None and len(t.encode("utf-8")) > 4096 for t in texts):
+            raise ValueError("accepted graph labels are limited to 4096 UTF-8 bytes each")
+        accepted = keep[: data.n_nodes] > 0
+        # Rust label plan rides the node/edge traces as per-item placement
+        # (threshold px per data unit, -1 never; baseline offset px; planned
+        # width and font px the painter fits the text into).
+        rows = np.c_[
+            np.where(np.isfinite(plan["threshold"]) & (keep > 0), plan["threshold"], -1.0),
+            plan["offset_x"],
+            plan["offset_y"],
+            plan["width"],
+            plan["font_px"],
+        ]
+        self.traces[-1].style_channels["label_plan"] = channels.StyleChannel(
+            values=np.ascontiguousarray(rows[: data.n_nodes]), components=LABEL_PLAN_COMPONENTS
+        )
+        edge_rows = np.zeros((len(x0), LABEL_PLAN_COMPONENTS))
+        edge_rows[:, 0] = -1.0
+        painted = [i for i in range(len(mid)) if keep[data.n_nodes + i] > 0]
+        for i in painted:
+            edge_rows[mid[i]] = rows[data.n_nodes + i]
+        if painted:
+            self.traces[-2].style_channels["label_plan"] = channels.StyleChannel(
+                values=np.ascontiguousarray(edge_rows), components=LABEL_PLAN_COMPONENTS
+            )
+            graph_meta["edge_label_segments"] = [int(mid[i]) for i in painted]
+            graph_meta["edge_label_text"] = [texts[data.n_nodes + i] for i in painted]
         graph_meta.update(
             {
                 "node_labels": [
-                    label if bool(accepted[i]) else None for i, label in enumerate(labels)
+                    texts[i] if bool(accepted[i]) else None for i in range(data.n_nodes)
                 ],
                 "label_accepted": accepted.astype(bool).tolist(),
                 "label_budget": int(label_budget),
@@ -433,6 +474,52 @@ def graph(
     # Register the identity plane only once the graph fully validated.
     self._graph_edge_identity[graph_meta["edge_trace"]] = edge_identity
     return self
+
+
+# label_plan channel row: threshold, offset x, offset y, width, font px (#34).
+LABEL_PLAN_COMPONENTS = 5
+
+
+def _label_chars(text: str | None) -> int:
+    return 0 if text is None else len(text)
+
+
+def _truncated(text: str | None, keep: int) -> str | None:
+    """Apply Rust's ``keep`` count: ``keep`` characters plus an ellipsis."""
+    if text is None or keep <= 0:
+        return None
+    text = str(text)
+    return text if keep >= len(text) else text[:keep] + "\u2026"
+
+
+def _edge_label_rows(
+    data: Any, edge_label: Any, edge_label_priority: Any, single: Any, render_edge_index: Any
+) -> tuple[list[str | None], np.ndarray, np.ndarray]:
+    """Per render edge: label text, priority, and anchor segment (middle piece)."""
+    if edge_label is None or single is None:
+        return [], np.zeros(0), np.zeros(0, dtype=np.intp)
+    n_edges = len(data.sources)
+    raw = [edge_label] * n_edges if isinstance(edge_label, str) else list(edge_label)
+    if len(raw) != n_edges:
+        raise ValueError("graph edge_label must match edge count")
+    if any(value is not None and not isinstance(value, str) for value in raw):
+        raise TypeError("graph edge labels must be strings or null")
+    priority = np.zeros(n_edges) if edge_label_priority is None else edge_label_priority
+    priority = np.asarray(priority, dtype=np.float64)
+    if priority.ndim == 0:
+        priority = np.full(n_edges, priority.item())
+    if priority.ndim != 1 or len(priority) != n_edges:
+        raise ValueError("graph edge_label_priority must match edge count")
+    rows = np.asarray(single, dtype=np.intp)
+    texts = [raw[int(row)] for row in rows]
+    priorities = priority[rows].copy()
+    priorities[[text is None for text in texts]] = np.nan
+    segments = np.asarray(render_edge_index, dtype=np.intp)
+    starts = np.searchsorted(segments, np.arange(len(rows)), side="left")
+    ends = np.searchsorted(segments, np.arange(len(rows)), side="right")
+    if np.any(ends <= starts) or np.any(np.diff(segments) < 0):
+        raise ValueError("graph routing must emit every render edge's segments contiguously")
+    return texts, priorities, starts + (ends - starts) // 2
 
 
 def _add_layer_channels(trace: Any, layers: dict[str, Any], *, edge: bool) -> None:
