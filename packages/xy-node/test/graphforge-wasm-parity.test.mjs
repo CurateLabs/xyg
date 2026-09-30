@@ -115,6 +115,30 @@ test("rendered Scenes are identical and carry every composed identity", { skip }
   assert.deepEqual(scene(native), scene(browser));
 });
 
+test("rendered Scenes stay identical on graphs large enough to exercise layout seeding", { skip }, async () => {
+  // Fixture graphs are tiny; circle seeding at larger n is where a platform
+  // libm and wasm32's used to disagree by an ulp, which force ticks amplify.
+  const wasm = await loadWasm();
+  const id = (kind, i) => `0190a000-0000-7000-8${kind}00-${i.toString(16).padStart(12, "0")}`;
+  for (const n of [37, 150, 330]) {
+    const nodeUuid = Array.from({ length: n }, (_, i) => id(1, i));
+    const pairs = Array.from({ length: n }, (_, i) => [i, (i + 1) % n]).concat(Array.from({ length: n }, (_, i) => [i, (i * 7 + 3) % n]));
+    const request = encodeGraphForgeRequest({
+      base: {
+        nodeUuid,
+        edgeUuid: pairs.map((_, j) => id(2, j)),
+        edgeSourceUuid: pairs.map(([s]) => nodeUuid[s]),
+        edgeTargetUuid: pairs.map(([, t]) => nodeUuid[t]),
+      },
+      layers: [{ result: arrow("articulation_points"), intent: "graph", extra: "drop" }],
+      render: { width: 800, height: 600 },
+    });
+    const native = composeGraphForgeRequest(request);
+    assert.ok(decodeGraphForgeDocument(native).scene, `n=${n}: a Scene was rendered`);
+    assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(wasm(request))), 0, `n=${n}: documents differ`);
+  }
+});
+
 test("the browser bundle frames the same request bytes and decodes the same identities", { skip }, async () => {
   const client = await import(pathToFileURL(BUNDLE).href);
   const gen = MANIFEST.bases.cyclic.generation;

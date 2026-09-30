@@ -489,10 +489,15 @@ work before synchronous composition and layout start.
 
 **Equivalence.** Documents contain only integer, UUID, text, and IEEE value
 copies, so identical request bytes give identical documents on every host.
-Scene bytes additionally include force-layout positions, whose seeding uses
-`sin`/`cos`; they are byte-identical wherever the platform `libm` agrees with
-wasm32's (asserted on linux-x64 in CI) and otherwise differ only in the last
-bits of positions.
+Scene bytes additionally include force-layout positions. The graph mark's
+force layout seeds a circle with the platform `libm` `sin`/`cos`, which can
+differ from wasm32's by an ulp that 300 force ticks amplify (about 1e-3 on a
+six-node graph), so the Scene seeds the same circle with
+`graph::portable_sin_cos` (Cody–Waite reduction and Taylor polynomials in
+basic IEEE operations) through `graph::layout_force_portable`; the ticks use
+only `+ − × ÷ √`. Scene bytes are therefore identical on every host and
+platform (parity tests cover 37-, 150-, and 330-node graphs), and the layout
+matches the graph mark's wherever `libm` rounds the circle the same way.
 
 **Webview / CSP.** The Worker and WASM are ordinary same-origin assets, so a
 strict policy needs only `script-src 'self' 'wasm-unsafe-eval'`,

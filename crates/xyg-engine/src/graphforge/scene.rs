@@ -2,17 +2,18 @@
 //!
 //! When a request carries `render.*` sections, Rust lays the composed graph
 //! out with the graph mark's default layout (seeded force, seed 0, 300 ticks,
-//! over every composed edge) and lowers the document's own planes and legend
-//! to the canonical semantic graph Scene. The Scene is a pure function of the
-//! `XYGF` document and the render options, so native and direct-browser WASM
-//! hosts produce identical bytes, and browser WebGL, SVG, and raster consumers
+//! over every composed edge), seeded from a `libm`-free circle
+//! ([`layout_force_portable`]), and lowers the document's own planes and
+//! legend to the canonical semantic graph Scene. The Scene is a pure function
+//! of the `XYGF` document and the render options, so native and
+//! direct-browser WASM hosts produce identical bytes on every platform, and browser WebGL, SVG, and raster consumers
 //! paint the same primitives. Stable IDs follow the semantic Scene: node `i`
 //! is `2^32 + i`, edge `j` is `j + 1`.
 
 use super::container::{Container, DOCUMENT_MAGIC};
 use super::request::Render;
 use super::{GfError, GfResult};
-use crate::graph::{layout_force_family, LAYOUT_FORCE};
+use crate::graph::layout_force_portable;
 use crate::graph_style::{
     encode_semantic_graph_scene_with_legend, SemanticGraphSceneInput, SemanticLegendOverride,
     SemanticLegendRow, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
@@ -60,8 +61,7 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
     let targets = get("edge.target")?.as_u64("edge.target")?;
     let mut x = vec![0.0; n];
     let mut y = vec![0.0; n];
-    if !layout_force_family(
-        LAYOUT_FORCE,
+    if !layout_force_portable(
         n as u64,
         &sources,
         &targets,
