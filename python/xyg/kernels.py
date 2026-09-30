@@ -36,6 +36,9 @@ css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
+default_png_export_scale = _impl.default_png_export_scale
+#: Default device-pixel ratio for raster export; sourced from Rust (ABI 370).
+DEFAULT_PNG_EXPORT_SCALE: float = _impl.default_png_export_scale()
 default_palette_contract = _impl.default_palette_contract
 palette_rows_rgba8 = _impl.palette_rows_rgba8
 colormap_lut_rgba8 = _impl.colormap_lut_rgba8

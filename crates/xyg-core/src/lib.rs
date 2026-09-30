@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 369;
+pub const ABI_VERSION: u32 = 370;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11072,6 +11072,15 @@ pub unsafe extern "C" fn xyg_quantize_unit_u8(
         };
         kernels::quantize_unit_u8_into(values, lo, hi, out)
     })
+}
+
+/// Default device-pixel ratio for raster PNG export (ABI 370).
+///
+/// Both Python and Node read this through the ABI so the product default has
+/// a single source of truth in Rust.
+#[no_mangle]
+pub extern "C" fn xyg_default_png_export_scale() -> f64 {
+    kernels::DEFAULT_PNG_EXPORT_SCALE
 }
 
 /// Version of the Rust-owned default categorical palette contract (ABI 360).

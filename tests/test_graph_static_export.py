@@ -62,6 +62,7 @@ def _expected() -> dict[str, Any]:
             "edge_curve": curve,
             "svg_sha256": _sha(chart.to_svg().encode()),
             "png_scale1_sha256": _sha(chart.to_png(scale=1)),
+            "png_scale2_sha256": _sha(chart.to_png(scale=2)),
         }
     return {
         "schema": "xyg.graph-static-export-cross-host/v1",
@@ -111,6 +112,25 @@ def test_graph_mixed_with_other_marks_stays_fail_closed() -> None:
 
 def test_cross_host_fixture_matches_python_export() -> None:
     assert json.loads(FIXTURE.read_text(encoding="utf-8")) == _expected()
+
+
+def test_default_png_export_scale_is_2x() -> None:
+    """The default to_png() scale is 2x (sourced from xyg_default_png_export_scale ABI 370)."""
+    import struct
+
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    for name, case in fixture["cases"].items():
+        chart = _chart(case["edge_curve"])
+        png = chart.to_png()  # default scale
+        w = struct.unpack(">I", png[16:20])[0]
+        h = struct.unpack(">I", png[20:24])[0]
+        assert w == fixture["width"] * 2, f"{name}: expected width {fixture['width'] * 2}, got {w}"
+        assert h == fixture["height"] * 2, (
+            f"{name}: expected height {fixture['height'] * 2}, got {h}"
+        )
+        assert _sha(png) == case["png_scale2_sha256"], (
+            f"{name}: default PNG bytes differ from fixture"
+        )
 
 
 _BROWSER_PROBE = """

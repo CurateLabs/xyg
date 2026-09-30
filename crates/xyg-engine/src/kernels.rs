@@ -8858,6 +8858,11 @@ pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -
     1
 }
 
+/// Default device-pixel ratio for raster PNG (and raster-format) export (ABI 370).
+///
+/// Both Python and Node hosts read this through the ABI; neither hardcodes it.
+pub const DEFAULT_PNG_EXPORT_SCALE: f64 = 2.0;
+
 /// Versioned built-in categorical palette (design dossier §20/§36).
 ///
 /// This is the sole product definition. Native and direct-WASM hosts read it

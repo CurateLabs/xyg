@@ -871,7 +871,15 @@ test("graphChart static SVG/PNG match the Python cross-host export fixture (#33)
       height: fixture.height,
     });
     assert.equal(sha(fig.toSvg()), expected.svg_sha256, name);
-    assert.equal(sha(fig.toPng()), expected.png_scale1_sha256, name);
+    // Explicit scale=1: verifies the 640×480 bytes are still identical across hosts.
+    assert.equal(sha(fig.toPng({ scale: 1 })), expected.png_scale1_sha256, `${name} scale=1`);
+    // Default scale (2x, sourced from xyg_default_png_export_scale ABI 370): cross-host parity.
+    const defaultPng = fig.toPng();
+    assert.equal(sha(defaultPng), expected.png_scale2_sha256, `${name} default scale`);
+    // Dimensions must be 2× the logical size.
+    const view = new DataView(defaultPng.buffer, defaultPng.byteOffset);
+    assert.equal(view.getUint32(16), fixture.width * 2, `${name} PNG width`);
+    assert.equal(view.getUint32(20), fixture.height * 2, `${name} PNG height`);
   }
 });
 

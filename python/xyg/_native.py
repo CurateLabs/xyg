@@ -9783,6 +9783,11 @@ def quantize_unit_u8(
     return out
 
 
+def default_png_export_scale() -> float:
+    """Default device-pixel ratio for raster PNG export, sourced from Rust (ABI 370)."""
+    return float(_lib.xyg_default_png_export_scale())
+
+
 def default_palette_contract() -> tuple[int, tuple[str, ...], npt.NDArray[np.uint8]]:
     """Versioned Rust-owned default palette text and RGBA8 rows (ABI 360)."""
     version = int(_lib.xyg_default_palette_version())

@@ -83,7 +83,11 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
   xyFoldCodesU8,
+  xyDefaultPngExportScale,
 } from "./native.js";
+
+/** Default device-pixel ratio for raster PNG export; sourced from Rust (ABI 370). */
+const DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
 import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
@@ -2808,7 +2812,7 @@ export function encodePng(pixels, width, height, channels, mode = 0, compression
   return encodePixels(xyEncodePng, pixels, width, height, channels, [m, c], "PNG");
 }
 
-export function sceneRasterCommands(encoded, scale = 1) {
+export function sceneRasterCommands(encoded, scale = DEFAULT_PNG_EXPORT_SCALE) {
   const factor = Number(scale);
   if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("scene raster scale must be positive and finite");
   return sceneOutput(encoded, xySceneRasterCommands, "raster commands", [factor]);
@@ -2816,7 +2820,7 @@ export function sceneRasterCommands(encoded, scale = 1) {
 
 const SCENE_STATIC_FORMATS = { svg: 0, png: 1, pdf: 2, jpeg: 3, webp: 4 };
 
-export function sceneStaticExport(encoded, format, { scale = 1, width = 1, height = 1, quality = 90 } = {}) {
+export function sceneStaticExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_SCALE, width = 1, height = 1, quality = 90 } = {}) {
   const code = SCENE_STATIC_FORMATS[format];
   if (code == null) {
     throw new RangeError(`Scene public static format must be svg, png, pdf, jpeg, or webp, got ${String(format)}`);
@@ -3515,7 +3519,7 @@ function staticAnnotationStyleFacts(sources) {
   };
 }
 
-export function staticDocumentExport(encoded, format, { scale = 1, quality = 90 } = {}) {
+export function staticDocumentExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_SCALE, quality = 90 } = {}) {
   const code = SCENE_STATIC_FORMATS[format];
   if (code == null) {
     throw new RangeError(`StaticDocument format must be svg, png, pdf, jpeg, or webp, got ${String(format)}`);
