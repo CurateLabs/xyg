@@ -453,8 +453,18 @@ jobs:
           npm ci
           npx playwright install chromium firefox webkit
       - name: Install WebKit runtime libraries
-        timeout-minutes: 10
-        run: npx playwright install-deps webkit
+        # Bounded, with room for a slow runner apt mirror (observed at about
+        # 150 KB/s, over 10 minutes for this install alone).
+        timeout-minutes: 20
+        # apt's needrestart hook otherwise restarts runner services after the
+        # install and never returns, timing the step out with every package
+        # already installed. install-deps runs apt through sudo (which drops
+        # the environment), so switch needrestart to list-only in its config.
+        run: |
+          if [ -d /etc/needrestart/conf.d ]; then
+            echo "\$nrconf{restart} = 'l';" | sudo tee /etc/needrestart/conf.d/99-ci-list-only.conf >/dev/null
+          fi
+          npx playwright install-deps webkit
       - name: Build render client
         run: node js/build.mjs
       - name: Run accessibility and cross-browser conformance
