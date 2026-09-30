@@ -957,6 +957,15 @@ test("graphChart static SVG/PNG match the Python cross-host export fixture (#33)
   }
 });
 
+test("graphChart keeps an authored axis like Python graph_chart (#909)", () => {
+  const fig = graphChart(["a", "b"], [["a", "b"]], {
+    layout: "preset", x: [1, 100], y: [0, 1], xAxis: { type: "log", domain: [1, 1000] },
+  });
+  assert.equal(fig.axis_options.x.type, "log");
+  assert.deepEqual([...fig.axis_options.x.domain], [1, 1000]);
+  assert.equal(fig.axis_options.y.style.axis_width, 0);
+});
+
 test("graphChart hides axes like Python graph_chart (#33)", () => {
   const fig = graphChart(["a", "b"], [["a", "b"]], { layout: "preset", x: [0, 1], y: [0, 1] });
   for (const axis of ["x", "y"]) {

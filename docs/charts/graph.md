@@ -75,6 +75,12 @@ Invalid UUIDs, duplicate node/edge ids, and missing endpoints raise stable
 IPC fixtures used in CI live under `tests/fixtures/graphforge/` (regenerate with
 `scripts/gen_graphforge_ipc_fixtures.py`).
 
+## Axes
+
+Graph charts hide their axes by default. Pass your own `xyg.x_axis(...)` /
+`xyg.y_axis(...)` (Node: the `xAxis` / `yAxis` options) to use a log scale, a
+fixed domain, or visible axes; the one you pass replaces that hidden default.
+
 ## Static export
 
 `graph_chart(...).to_svg()` / `.to_png()` (and Node `graphChart(...).toSvg()` /

@@ -231,12 +231,13 @@ const HIDDEN_AXIS_STYLE = Object.freeze({
 });
 
 export function graphChart(nodes, edges, opts = {}) {
-  const { width, height, title, ...graphOpts } = opts;
+  const { width, height, title, xAxis, yAxis, ...graphOpts } = opts;
   const fig = figure({ width, height, title });
   fig.graph(nodes, edges, graphOpts);
-  // Node–link charts hide axes by default, matching Python `graph_chart`.
-  fig.setAxis("x", { style: { ...HIDDEN_AXIS_STYLE } });
-  fig.setAxis("y", { style: { ...HIDDEN_AXIS_STYLE } });
+  // Node–link charts hide axes by default, matching Python `graph_chart`; an
+  // authored `xAxis` / `yAxis` is used as given instead (#909).
+  fig.setAxis("x", xAxis ?? { style: { ...HIDDEN_AXIS_STYLE } });
+  fig.setAxis("y", yAxis ?? { style: { ...HIDDEN_AXIS_STYLE } });
   return fig;
 }
 

@@ -7207,6 +7207,9 @@ def sankey_chart(
 def graph_chart(*children: Component, **props: Any) -> Chart:
     """A node–link graph chart: Rust layout, pan/zoom, axes hidden by default.
 
+    An ``xyg.x_axis`` / ``xyg.y_axis`` child is used as given (its type,
+    domain, and visibility), replacing that axis's hidden default.
+
         xyg.graph_chart(
             xyg.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force"),
         )
@@ -7262,10 +7265,15 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         nodes = mark_kwargs.pop("nodes", [])
         edges = mark_kwargs.pop("edges", [])
         children = (graph(nodes, edges, **mark_kwargs), *children)
+    # Node–link charts hide their axes by default, but an authored primary
+    # axis (type, domain, visibility, ...) is used as given (#909).
+    authored = {
+        child.which for child in children if isinstance(child, Axis) and child.id == child.which
+    }
     children = (
         *children,
-        x_axis(show=False),
-        y_axis(show=False),
+        *(() if "x" in authored else (x_axis(show=False),)),
+        *(() if "y" in authored else (y_axis(show=False),)),
     )
     return Chart("graph_chart", children, **props)
 
