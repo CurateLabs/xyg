@@ -77,6 +77,12 @@ IPC fixtures used in CI live under `tests/fixtures/graphforge/` (regenerate with
 
 ## Axes
 
+Graph charts frame their nodes so nothing is cut off at the edge: node
+markers, halos, group frames, and the labels shown at the starting zoom all
+fit inside the chart, in the browser and in SVG/PNG export alike. Passing
+your own axes turns this off and uses the plain automatic domain (or the
+domain you set).
+
 Graph charts hide their axes by default. Pass your own `xyg.x_axis(...)` /
 `xyg.y_axis(...)` (Node: the `xAxis` / `yAxis` options) to use a log scale, a
 fixed domain, or visible axes; the one you pass replaces that hidden default.

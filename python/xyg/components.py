@@ -4191,6 +4191,11 @@ class Chart(Component):
                     if node_ticks is not None:
                         options["ticks"] = node_ticks
                     fig.colorbar_options = options
+        if self.kind == "graph_chart":
+            from . import _graph_static
+
+            # Rust home view: nothing drawn around a node is clipped (#910).
+            _graph_static.apply_home_view(fig)
         fig._validate_interaction()
         self._figure = fig
         return fig

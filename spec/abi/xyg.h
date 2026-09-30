@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 376
-#define XYG_ABI_SIGNATURE_SHA256 "d29396fea81ad8d4709e528988c667a04440925ec27bad419d74d79150242435"
+#define XYG_ABI_VERSION 377
+#define XYG_ABI_SIGNATURE_SHA256 "d322861b4c638b56845ede3d2863bba8d8b611cbe982860b8ec9c8291ef2e4bb"
 
 #ifdef __cplusplus
 extern "C" {
@@ -157,6 +157,7 @@ int32_t xyg_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_
 int32_t xyg_graph_force_create_cose(const void * descriptor, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, uint64_t seed, uint64_t * out_handle);
 int32_t xyg_graph_force_destroy(uint64_t handle);
 int32_t xyg_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double * out_x, double * out_y, double * out_alpha);
+int32_t xyg_graph_home_domain(const void * descriptor, const void * layout, double * out_domain);
 int32_t xyg_graph_label_accept(uint64_t n, const double * priorities, uint64_t budget, double floor, uint8_t * out, uint64_t * out_count);
 int32_t xyg_graph_label_plan(uint64_t n, const uint8_t * kinds, const double * x, const double * y, const double * radius_px, const uint32_t * chars, const uint8_t * states, const double * priorities, uint64_t budget, double min_priority, uint32_t * out_keep, double * out_threshold, double * out_offset_x, double * out_offset_y, double * out_width, double * out_font_px, uint64_t * out_accepted);
 int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, const uint64_t * roots, uint64_t n_roots, uint64_t seed, double * out_x, double * out_y);

@@ -1,4 +1,4 @@
-"""Static SVG/PNG export of composed graph charts (#34).
+"""Static SVG/PNG export and the home view of composed graph charts (#34, #910).
 
 The browser paints a composed graph from resolved per-item planes (node and
 edge paint, semantic halo/body/dash layers, border-trimmed edges and filled
@@ -207,3 +207,74 @@ def strip_to_plain(fig: Any) -> None:
             k: v for k, v in fig.legend_options.items() if k not in ("items", "title")
         }
         fig.show_legend = False
+
+
+#: Axis options a graph chart's hidden default axes leave unset (#910).
+_HOME_UNSET_AXIS_KEYS = (
+    "label",
+    "constant",
+    "domain",
+    "margin",
+    "bounds",
+    "format",
+    "tick_count",
+    "tick_values",
+    "minor_tick_values",
+    "tick_labels",
+    "tick_label_angle",
+    "tick_label_strategy",
+    "tick_label_anchor",
+    "tick_label_min_gap",
+    "tick_sides",
+    "tick_label_sides",
+    "nonpositive",
+)
+_HOME_SIDES = {"x": "bottom", "y": "left"}
+
+
+def _hidden_default_axes(fig: Any) -> bool:
+    from .components import _AXIS_GRID_OFF, _AXIS_LINE_OFF, _AXIS_TEXT_OFF, _AXIS_TICKS_OFF
+
+    hidden = {**_AXIS_LINE_OFF, **_AXIS_TICKS_OFF, **_AXIS_GRID_OFF, **_AXIS_TEXT_OFF}
+    for axis_id, side in _HOME_SIDES.items():
+        options = (fig.axis_options or {}).get(axis_id) or {}
+        if (
+            any(options.get(key) is not None for key in _HOME_UNSET_AXIS_KEYS)
+            or options.get("type") not in (None, "linear")
+            or options.get("reverse")
+            or options.get("side", side) != side
+            or (options.get("style") or {}) != hidden
+        ):
+            return False
+    return set(fig.axis_options) <= set(_HOME_SIDES)
+
+
+def apply_home_view(fig: Any) -> None:
+    """Set a graph chart's home view (#910): Rust pads the node-center
+    autorange so every marker, halo, edge stroke, compound frame, and
+    home-view label fits the plot of the hidden-axis graph shell. The domain
+    ships to the browser and static export alike. Charts with authored axes,
+    several graph marks, or other marks keep the autorange."""
+    from . import _native
+
+    if getattr(fig, "coords", "cartesian") != "cartesian" or getattr(fig, "title_options", None):
+        return
+    if not _hidden_default_axes(fig):
+        return
+    planes = composed_graph_planes(fig)
+    if planes is None:
+        return
+    padding = getattr(fig, "padding", None)
+    domain = _native.graph_home_domain(
+        planes,
+        viewport=(float(fig.width), float(fig.height)),
+        base_x=fig.x_range(),
+        base_y=fig.y_range(),
+        title=str(fig.title or ""),
+        padding=None
+        if padding is None
+        else (float(padding[0]), float(padding[1]), float(padding[2]), float(padding[3])),
+    )
+    if domain is not None:
+        fig.axis_options["x"]["domain"] = (domain[0], domain[1])
+        fig.axis_options["y"]["domain"] = (domain[2], domain[3])

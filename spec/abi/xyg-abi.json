@@ -1,9 +1,9 @@
 {
-  "abi_version": 376,
+  "abi_version": 377,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "d29396fea81ad8d4709e528988c667a04440925ec27bad419d74d79150242435",
+  "signature_sha256": "d322861b4c638b56845ede3d2863bba8d8b611cbe982860b8ec9c8291ef2e4bb",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -17535,6 +17535,74 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double * out_x, double * out_y, double * out_alpha)"
+    },
+    {
+      "name": "xyg_graph_home_domain",
+      "node_name": "xyGraphHomeDomain",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "descriptor",
+          "type": {
+            "rust": "*const XygComposedGraphSceneDescriptor",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "layout",
+          "type": {
+            "rust": "*const XygGraphHomeLayout",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_domain",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_graph_home_domain(const void * descriptor, const void * layout, double * out_domain)"
     },
     {
       "name": "xyg_graph_label_accept",

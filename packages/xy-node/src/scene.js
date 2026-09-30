@@ -90,7 +90,7 @@ import {
 const DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
 import { asF64Array, DEFAULT_PALETTE, graphDefaultEdgeColor, colormapStopBytes, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, paletteRowsRgba8, quantizeUnitU8 } from "./color.js";
-import { graphComposedScene } from "./abi.js";
+import { graphComposedScene, graphHomeDomain } from "./abi.js";
 import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3559,6 +3559,28 @@ function composedGraphPlanes(figure) {
     ]);
   }
   return planes;
+}
+
+/**
+ * Set a graph chart's home view (#910; Python `_graph_static.apply_home_view`):
+ * Rust pads the node-center autorange so every marker, halo, edge stroke,
+ * compound frame, and home-view label fits the plot of the hidden-axis graph
+ * shell. Callers apply it only to the hidden default axes.
+ */
+export function applyGraphHomeView(figure) {
+  if ((figure.coords ?? "cartesian") !== "cartesian" || (figure.title_options?.length ?? 0) > 0) return;
+  const planes = composedGraphPlanes(figure);
+  if (planes == null) return;
+  const domain = graphHomeDomain(planes, {
+    viewport: [figure.width, figure.height],
+    baseX: figure._range("x"),
+    baseY: figure._range("y"),
+    title: figure.title ?? "",
+    padding: figure.padding ?? null,
+  });
+  if (domain == null) return;
+  figure.axis_options.x = { ...figure.axis_options.x, domain: [domain[0], domain[1]] };
+  figure.axis_options.y = { ...figure.axis_options.y, domain: [domain[2], domain[3]] };
 }
 
 /**

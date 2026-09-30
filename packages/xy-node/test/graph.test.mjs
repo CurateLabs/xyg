@@ -35,6 +35,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 import { ABI_VERSION } from "../src/native-path.js";
+import { applyGraphHomeView } from "../src/scene.js";
 
 const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? ABI_VERSION);
 
@@ -1054,6 +1055,9 @@ test("graph visual goldens: Node exports the committed PNG bytes (#34)", async (
       .graph(golden.nodes, golden.edges, options);
     fig.setAxis("x", { style: { ...hidden } });
     fig.setAxis("y", { style: { ...hidden } });
+    applyGraphHomeView(fig);
+    // The Rust home view (#910) matches Python's exactly.
+    assert.deepEqual([...fig.axis_options.x.domain, ...fig.axis_options.y.domain], golden.home_domain, `${name} home view`);
     const png = fig.toPng({ scale: 1 });
     assert.equal(sha(png), golden.sha256, name);
     const committed = readFileSync(new URL(`../../../tests/fixtures/${golden.png}`, import.meta.url));

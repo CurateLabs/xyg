@@ -1508,6 +1508,19 @@ fn push_raster_polyline_dash(
     Ok(())
 }
 
+/// Axis-aligned half extent of a scatter marker of `radius` (half its
+/// diameter): diamonds (2) and thin diamonds (14) reach `radius * sqrt(2)`
+/// along the axes, every other symbol stays within `radius`. Shared by the
+/// raster and the graph home view (#910).
+#[inline]
+pub(crate) fn marker_symbol_extent(radius: f64, symbol: u8) -> f64 {
+    if matches!(symbol, 2 | 14) {
+        radius * std::f64::consts::SQRT_2
+    } else {
+        radius
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScaleKind {
     Linear,

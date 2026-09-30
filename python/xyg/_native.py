@@ -74,6 +74,24 @@ class _GraphProjectionDescriptor(ctypes.Structure):
     ]
 
 
+class _GraphHomeLayout(ctypes.Structure):
+    """Mirror of Rust ``XygGraphHomeLayout`` (#910)."""
+
+    _fields_ = [
+        ("version", ctypes.c_uint32),
+        ("reserved0", ctypes.c_uint32),
+        ("viewport_width", ctypes.c_double),
+        ("viewport_height", ctypes.c_double),
+        ("padding", ctypes.c_void_p),
+        ("title", ctypes.c_void_p),
+        ("title_len", ctypes.c_uint64),
+        ("base_x_lo", ctypes.c_double),
+        ("base_x_hi", ctypes.c_double),
+        ("base_y_lo", ctypes.c_double),
+        ("base_y_hi", ctypes.c_double),
+    ]
+
+
 class _ComposedGraphSceneDescriptor(ctypes.Structure):
     """Mirror of Rust ``XygComposedGraphSceneDescriptor`` (#34)."""
 
@@ -13583,12 +13601,15 @@ class ComposedGraphLegendFootprint(ValueError):
     """The composed graph's explicit legend does not fit the plot (#34)."""
 
 
-def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
-    """Rebuild a composed graph chart's static Scene from its composed-graph
-    planes (#34). ``planes`` holds contiguous numpy arrays keyed like the
-    Rust descriptor (optional planes may be omitted), plus ``node_labels`` /
-    ``segment_labels`` (lists of ``str | None``) and ``legend`` rows
-    ``(label, rgba, symbol)`` with ``legend_title``."""
+def _composed_graph_descriptor(
+    base: Optional[bytes], planes: dict[str, Any]
+) -> tuple["_ComposedGraphSceneDescriptor", list[Any]]:
+    """The `XygComposedGraphSceneDescriptor` for ``planes`` (#34/#910) plus the
+    buffers it points into (keep them alive across the native call).
+    ``planes`` holds contiguous numpy arrays keyed like the Rust descriptor
+    (optional planes may be omitted), plus ``node_labels`` / ``segment_labels``
+    (lists of ``str | None``) and ``legend`` rows ``(label, rgba, symbol)`` with
+    ``legend_title``. ``base`` is the plain Scene (None when unused)."""
     keep: list[Any] = []
 
     def ptr(name: str, dtype: Any) -> int | None:
@@ -13658,7 +13679,7 @@ def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
     legend_payload = b"".join(legend_names)
     title = str(planes.get("legend_title") or "").encode("utf-8")
     keep.extend([legend_rgba, legend_symbol, legend_lengths])
-    base_buf = (ctypes.c_uint8 * len(base)).from_buffer_copy(base)
+    base_buf = (ctypes.c_uint8 * len(base)).from_buffer_copy(base) if base else None
     payload_buf = (ctypes.c_uint8 * max(1, len(payload))).from_buffer_copy(payload or b"\0")
     legend_buf = (ctypes.c_uint8 * max(1, len(legend_payload))).from_buffer_copy(
         legend_payload or b"\0"
@@ -13670,8 +13691,8 @@ def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
     descriptor = _ComposedGraphSceneDescriptor(
         version=1,
         reserved0=0,
-        base=ctypes.addressof(base_buf),
-        base_len=len(base),
+        base=ctypes.addressof(base_buf) if base_buf is not None else None,
+        base_len=len(base) if base else 0,
         node_count=n,
         x=ptr("x", f64),
         y=ptr("y", f64),
@@ -13717,6 +13738,56 @@ def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
         text_rgba=ptr("text_rgba", u8),
         reserved=0,
     )
+    keep.extend([base_buf, payload_buf, legend_buf, title_buf, loc_buf])
+    return descriptor, keep
+
+
+def graph_home_domain(
+    planes: dict[str, Any],
+    *,
+    viewport: tuple[float, float],
+    base_x: tuple[float, float],
+    base_y: tuple[float, float],
+    title: str = "",
+    padding: Optional[tuple[float, float, float, float]] = None,
+) -> Optional[tuple[float, float, float, float]]:
+    """The composed graph home view (#910): ``(x_lo, x_hi, y_lo, y_hi)`` in which
+    every marker, halo, edge stroke, compound frame, and home-view label fits
+    the hidden-axis graph plot, or None to keep the autorange."""
+    descriptor, _keep = _composed_graph_descriptor(None, planes)
+    title_bytes = str(title).encode("utf-8")
+    title_buf = (ctypes.c_uint8 * max(1, len(title_bytes))).from_buffer_copy(title_bytes or b"\0")
+    pad = None if padding is None else np.ascontiguousarray(padding, dtype=np.float64)
+    layout = _GraphHomeLayout(
+        version=1,
+        reserved0=0,
+        viewport_width=float(viewport[0]),
+        viewport_height=float(viewport[1]),
+        padding=None if pad is None else pad.ctypes.data,
+        title=ctypes.addressof(title_buf) if title_bytes else None,
+        title_len=len(title_bytes),
+        base_x_lo=float(base_x[0]),
+        base_x_hi=float(base_x[1]),
+        base_y_lo=float(base_y[0]),
+        base_y_hi=float(base_y[1]),
+    )
+    out = np.zeros(4, dtype=np.float64)
+    status = int(
+        _lib.xyg_graph_home_domain(
+            ctypes.byref(descriptor), ctypes.byref(layout), out.ctypes.data_as(ctypes.c_void_p)
+        )
+    )
+    if status < 0:
+        raise ValueError("invalid composed graph home-view input")
+    if status == 1:
+        return None
+    return (float(out[0]), float(out[1]), float(out[2]), float(out[3]))
+
+
+def graph_composed_scene(base: bytes, planes: dict[str, Any]) -> bytes:
+    """Rebuild a composed graph chart's static Scene from its composed-graph
+    planes (#34); see `_composed_graph_descriptor` for ``planes``."""
+    descriptor, _keep = _composed_graph_descriptor(base, planes)
     reason = ctypes.c_uint32(1)
     needed = int(
         _lib.xyg_graph_composed_scene(ctypes.byref(descriptor), None, 0, ctypes.byref(reason))

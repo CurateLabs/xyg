@@ -63,7 +63,13 @@
     "edge_curve": "curve"
    },
    "png": "graph_visual/ordinary.png",
-   "sha256": "6a4e20c1c9e6984ddfb8958543e50180b2c598597d73b5a95209f079a8f881f1"
+   "sha256": "9c034935f341f513fe96958e22bc8a7f4c8e7ce50af3b7ea5b5ff26c6233e3c8",
+   "home_domain": [
+    -0.12,
+    4.502774480712166,
+    -0.048,
+    1.6480000000000001
+   ]
   },
   "dense": {
    "nodes": [
@@ -2778,7 +2784,13 @@
     ]
    },
    "png": "graph_visual/dense.png",
-   "sha256": "d1084a3e0f58c85d949b6de5f66b2786be8c3c332f337e5f57fc09ca8a3d9569"
+   "sha256": "d1084a3e0f58c85d949b6de5f66b2786be8c3c332f337e5f57fc09ca8a3d9569",
+   "home_domain": [
+    -17.72267382,
+    17.98288982,
+    -17.92215693,
+    17.92082193
+   ]
   },
   "compound": {
    "nodes": {
@@ -2907,7 +2919,13 @@
     ]
    },
    "png": "graph_visual/compound.png",
-   "sha256": "36a55883e6755652c5ae4c59ce21b53a38e0a0fc3945179f05b7f8dc4de173d7"
+   "sha256": "69afc697fa74eda46709a97a0b6e0bc64dfea07a536a17f388d51f749161e060",
+   "home_domain": [
+    -0.26579291066150357,
+    8.606191141763857,
+    -0.13434782608695653,
+    3.09
+   ]
   },
   "selected": {
    "nodes": {
@@ -3049,7 +3067,13 @@
     "visual_state_flags": "flags"
    },
    "png": "graph_visual/selected.png",
-   "sha256": "1507b8c04ab7c50b6a8f252c43411d6ded0e3e42485e9e1854a15089d29f2e82"
+   "sha256": "aae34740247dd33355f8b2f527fc085b0808e6a0fa4ab191642a489b98e2f46e",
+   "home_domain": [
+    -0.2642188461499166,
+    8.555224018440402,
+    -0.16607872823618472,
+    3.09
+   ]
   },
   "dark": {
    "nodes": {
@@ -3189,7 +3213,13 @@
     }
    },
    "png": "graph_visual/dark.png",
-   "sha256": "3c8112fe5dfa35dce78a4b88bd2eb6b8a20f57c99e0c0703f47848a38df3d3ac"
+   "sha256": "1455e1e4cf6ce41daefe2bf3a4919e2c70225c1070e5cd9b0bc4c6c16a661fc4",
+   "home_domain": [
+    -0.2642188461499166,
+    8.555224018440402,
+    -0.16607872823618472,
+    3.09
+   ]
   }
  }
 }

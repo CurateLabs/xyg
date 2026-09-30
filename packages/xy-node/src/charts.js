@@ -4,6 +4,7 @@
  */
 
 import { figure } from "./figure.js";
+import { applyGraphHomeView } from "./scene.js";
 import { attachScatter } from "./marks/scatter.js";
 import { attachLine } from "./marks/line.js";
 import { attachHistogram } from "./marks/histogram.js";
@@ -239,6 +240,9 @@ export function graphChart(nodes, edges, opts = {}) {
   // authored `xAxis` / `yAxis` is used as given instead (#909).
   fig.setAxis("x", xAxis ?? { style: { ...HIDDEN_AXIS_STYLE } });
   fig.setAxis("y", yAxis ?? { style: { ...HIDDEN_AXIS_STYLE } });
+  // Rust home view on the hidden default axes: nothing drawn around a node
+  // is clipped (#910).
+  if (xAxis == null && yAxis == null) applyGraphHomeView(fig);
   return fig;
 }
 
