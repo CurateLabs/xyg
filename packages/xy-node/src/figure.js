@@ -1376,6 +1376,7 @@ export class Figure {
     this._graphMeta = null;
     // Host-side graph edge identity planes keyed by edge trace index (#33).
     this._graphEdgeIdentity = new Map();
+    this._graphNodeIdentity = new Map();
     this._axisRange = { x: null, y: null };
     this._polarMeta = null;
     /** @type {Map<number|string, PyramidCache>} */
@@ -1906,6 +1907,15 @@ export class Figure {
    * @param {number} trace edge trace index (`graphMeta.edge_trace`)
    * @param {number} segment routed segment index within that trace
    */
+  /**
+   * Identity for a picked collapsed compound group (#34): its hidden members
+   * (from Rust's collapse representatives), or null for other nodes. Same
+   * shape as the Python pick reply fields.
+   */
+  graphNodePick(trace, index) {
+    return this._graphNodeIdentity.get(Number(trace))?.get(Number(index)) ?? null;
+  }
+
   graphEdgePick(trace, segment) {
     const identity = this._graphEdgeIdentity.get(Number(trace));
     return identity == null ? null : identity.pick(segment);
@@ -1946,6 +1956,7 @@ export class Figure {
       edge_trace: this.traces.length - 2,
     };
     this._graphEdgeIdentity.set(meta.edge_trace, composed.edgeIdentity);
+    if (composed.compoundMembers != null) this._graphNodeIdentity.set(meta.node_trace, composed.compoundMembers);
     if (composed.legend != null && !(this.legend_options?.items?.length)) {
       this.legend = { ...(this.legend_options ?? {}), ...composed.legend };
       this.legend_options = this.legend;

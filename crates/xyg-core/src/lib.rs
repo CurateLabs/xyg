@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 372;
+pub const ABI_VERSION: u32 = 373;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16605,6 +16605,181 @@ pub unsafe extern "C" fn xyg_graph_semantic_legend_text(
             return -2;
         }
         std::ptr::copy_nonoverlapping(text.as_ptr(), out, text.len());
+        0
+    })
+}
+
+/// Collapse one compound forest for the composed graph mark (#34), exactly as
+/// the compound semantic Scene routes it. Node inputs address `n` elements
+/// (`parents`, `parent_validity` 0/1, `collapsed` 0/1, interaction `flags`);
+/// edge inputs address `e` source/target indices. Outputs: per node
+/// visibility (0/1), nearest visible representative, and flags with hidden
+/// selected/hovered/neighbor/pinned state propagated to the representative;
+/// per edge whether it stays (newly internal edges drop; authored self-loops
+/// stay) and its routed endpoints. Outputs are written only after the whole
+/// input validates; a collapse on a non-group, a cycle, or bad shapes returns -1.
+///
+/// # Safety
+/// Non-empty pointers address the documented extents.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_compound_collapse(
+    n: u64,
+    parents: *const u64,
+    parent_validity: *const u8,
+    collapsed: *const u8,
+    flags: *const u32,
+    e: u64,
+    sources: *const u64,
+    targets: *const u64,
+    out_visible: *mut u8,
+    out_representative: *mut u64,
+    out_flags: *mut u32,
+    out_edge_keep: *mut u8,
+    out_edge_source: *mut u64,
+    out_edge_target: *mut u64,
+) -> i32 {
+    let (Ok(n), Ok(e)) = (usize::try_from(n), usize::try_from(e)) else {
+        return -1;
+    };
+    if (n > 0
+        && (parents.is_null()
+            || parent_validity.is_null()
+            || collapsed.is_null()
+            || flags.is_null()
+            || out_visible.is_null()
+            || out_representative.is_null()
+            || out_flags.is_null()))
+        || (e > 0
+            && (sources.is_null()
+                || targets.is_null()
+                || out_edge_keep.is_null()
+                || out_edge_source.is_null()
+                || out_edge_target.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! slice {
+            ($p:expr, $len:expr) => {
+                if $len == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, $len)
+                }
+            };
+        }
+        let Some(out) = xyg_engine::graph_style::compound_collapse(
+            slice!(parents, n),
+            slice!(parent_validity, n),
+            slice!(collapsed, n),
+            slice!(flags, n),
+            slice!(sources, e),
+            slice!(targets, e),
+        ) else {
+            return -1;
+        };
+        for i in 0..n {
+            *out_visible.add(i) = u8::from(out.visible[i]);
+            *out_representative.add(i) = out.representative[i] as u64;
+            *out_flags.add(i) = out.flags[i];
+        }
+        for i in 0..e {
+            *out_edge_keep.add(i) = u8::from(out.edge_keep[i]);
+            *out_edge_source.add(i) = out.edge_source[i] as u64;
+            *out_edge_target.add(i) = out.edge_target[i] as u64;
+        }
+        0
+    })
+}
+
+/// Compound frames for the composed graph mark (#34): one per visible
+/// compound node, with transitive bounds over every descendant (hidden ones
+/// included), the Scene's frame paint, and a screen padding (px) that clears
+/// the largest visible member marker (`radius_px` per node). Inputs address `n` elements; `stroke`
+/// is `n * 4` resolved RGBA (all-zero takes the theme neutral). Outputs
+/// address `n` elements (`out_bounds` `n * 4`, `out_rgba` `n * 4`); only the
+/// first `*out_count` rows are written, in node order.
+///
+/// # Safety
+/// Non-empty pointers address the documented extents.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_compound_frames(
+    n: u64,
+    x: *const f64,
+    y: *const f64,
+    radius_px: *const f64,
+    parents: *const u64,
+    parent_validity: *const u8,
+    collapsed: *const u8,
+    stroke: *const u8,
+    opacity: *const f32,
+    theme: u32,
+    out_node: *mut u64,
+    out_bounds: *mut f64,
+    out_rgba: *mut u8,
+    out_width: *mut f64,
+    out_pad: *mut f64,
+    out_count: *mut u64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    let Ok(theme) = u8::try_from(theme) else {
+        return -1;
+    };
+    if out_count.is_null()
+        || (n > 0
+            && ([x, y, radius_px].iter().any(|p| p.is_null())
+                || parents.is_null()
+                || [parent_validity, collapsed, stroke]
+                    .iter()
+                    .any(|p| p.is_null())
+                || opacity.is_null()
+                || out_node.is_null()
+                || out_bounds.is_null()
+                || out_rgba.is_null()
+                || out_width.is_null()
+                || out_pad.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! slice {
+            ($p:expr, $len:expr) => {
+                if $len == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, $len)
+                }
+            };
+        }
+        let strokes: Vec<[u8; 4]> = slice!(stroke, n * 4)
+            .chunks_exact(4)
+            .map(|c| [c[0], c[1], c[2], c[3]])
+            .collect();
+        let Some(frames) = xyg_engine::graph_style::compound_frames(
+            slice!(x, n),
+            slice!(y, n),
+            slice!(radius_px, n),
+            slice!(parents, n),
+            slice!(parent_validity, n),
+            slice!(collapsed, n),
+            &strokes,
+            slice!(opacity, n),
+            theme,
+        ) else {
+            return -1;
+        };
+        for (row, frame) in frames.iter().enumerate() {
+            *out_node.add(row) = frame.node as u64;
+            for k in 0..4 {
+                *out_bounds.add(row * 4 + k) = frame.bounds[k];
+                *out_rgba.add(row * 4 + k) = frame.rgba[k];
+            }
+            *out_width.add(row) = frame.width_px;
+            *out_pad.add(row) = frame.pad_px;
+        }
+        *out_count = frames.len() as u64;
         0
     })
 }

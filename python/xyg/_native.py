@@ -13055,6 +13055,132 @@ def graph_semantic_legend_text(field: int, value: int = 0) -> str:
     return out.raw[: length.value].decode("utf-8")
 
 
+def graph_compound_collapse(
+    parents: Any, parent_validity: Any, collapsed: Any, flags: Any, sources: Any, targets: Any
+) -> dict[str, np.ndarray]:
+    """Rust compound collapse for the composed graph mark (#34).
+
+    Returns per node ``visible`` (bool), ``representative`` (nearest visible
+    ancestor), and propagated ``flags``; per edge ``edge_keep`` (bool) and
+    routed ``edge_source`` / ``edge_target``.
+    """
+    par = np.ascontiguousarray(parents, dtype=np.uint64)
+    n = len(par)
+    val = np.ascontiguousarray(parent_validity, dtype=np.uint8)
+    col = np.ascontiguousarray(collapsed, dtype=np.uint8)
+    flg = np.ascontiguousarray(flags, dtype=np.uint32)
+    src = np.ascontiguousarray(sources, dtype=np.uint64)
+    tgt = np.ascontiguousarray(targets, dtype=np.uint64)
+    if any(len(a) != n for a in (val, col, flg)) or len(src) != len(tgt):
+        raise ValueError("compound collapse planes must match node and edge counts")
+    e = len(src)
+    visible = np.empty(n, dtype=np.uint8)
+    representative = np.empty(n, dtype=np.uint64)
+    out_flags = np.empty(n, dtype=np.uint32)
+    keep = np.empty(e, dtype=np.uint8)
+    edge_source = np.empty(e, dtype=np.uint64)
+    edge_target = np.empty(e, dtype=np.uint64)
+
+    def ptr(value: np.ndarray) -> int | None:
+        return value.ctypes.data if len(value) else None
+
+    status = _lib.xyg_graph_compound_collapse(
+        ctypes.c_uint64(n),
+        ptr(par),
+        ptr(val),
+        ptr(col),
+        ptr(flg),
+        ctypes.c_uint64(e),
+        ptr(src),
+        ptr(tgt),
+        ptr(visible),
+        ptr(representative),
+        ptr(out_flags),
+        ptr(keep),
+        ptr(edge_source),
+        ptr(edge_target),
+    )
+    if status != 0:
+        raise ValueError(
+            "graph compound collapse failed: collapsed nodes must be groups in a valid "
+            "acyclic parent forest"
+        )
+    return {
+        "visible": visible.astype(bool),
+        "representative": representative,
+        "flags": out_flags,
+        "edge_keep": keep.astype(bool),
+        "edge_source": edge_source,
+        "edge_target": edge_target,
+    }
+
+
+def graph_compound_frames(
+    x: Any,
+    y: Any,
+    radius_px: Any,
+    parents: Any,
+    parent_validity: Any,
+    collapsed: Any,
+    stroke_rgba: Any,
+    opacity: Any,
+    *,
+    theme: str = "light",
+) -> dict[str, np.ndarray]:
+    """Rust compound frames (#34): visible groups' transitive bounds, paint,
+    and screen padding (px) clearing the largest visible member marker."""
+    theme_id = {"light": 0, "dark": 1}.get(theme)
+    if theme_id is None:
+        raise ValueError("theme must be 'light' or 'dark'")
+    xs, ys, radius = (np.ascontiguousarray(v, dtype=np.float64) for v in (x, y, radius_px))
+    n = len(xs)
+    par = np.ascontiguousarray(parents, dtype=np.uint64)
+    val = np.ascontiguousarray(parent_validity, dtype=np.uint8)
+    col = np.ascontiguousarray(collapsed, dtype=np.uint8)
+    stroke = np.ascontiguousarray(stroke_rgba, dtype=np.uint8).reshape(-1)
+    alpha = np.ascontiguousarray(opacity, dtype=np.float32)
+    if any(len(a) != n for a in (ys, radius, par, val, col, alpha)) or len(stroke) != n * 4:
+        raise ValueError("compound frame planes must match node count")
+    node = np.empty(n, dtype=np.uint64)
+    bounds = np.empty((n, 4), dtype=np.float64)
+    rgba = np.empty((n, 4), dtype=np.uint8)
+    width = np.empty(n, dtype=np.float64)
+    pad = np.empty(n, dtype=np.float64)
+    count = ctypes.c_uint64()
+
+    def ptr(value: np.ndarray) -> int | None:
+        return value.ctypes.data if n else None
+
+    status = _lib.xyg_graph_compound_frames(
+        ctypes.c_uint64(n),
+        ptr(xs),
+        ptr(ys),
+        ptr(radius),
+        ptr(par),
+        ptr(val),
+        ptr(col),
+        ptr(stroke),
+        ptr(alpha),
+        ctypes.c_uint32(theme_id),
+        ptr(node),
+        ptr(bounds),
+        ptr(rgba),
+        ptr(width),
+        ptr(pad),
+        ctypes.byref(count),
+    )
+    if status != 0:
+        raise ValueError("graph compound frames failed")
+    k = int(count.value)
+    return {
+        "node": node[:k],
+        "bounds": bounds[:k],
+        "rgba": rgba[:k],
+        "width": width[:k],
+        "pad": pad[:k],
+    }
+
+
 def graph_label_plan(
     kinds: Any,
     x: Any,

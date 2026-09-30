@@ -30,6 +30,8 @@ import {
   xyGraphCompoundScene,
   xyGraphLabelAccept,
   xyGraphLabelPlan,
+  xyGraphCompoundCollapse,
+  xyGraphCompoundFrames,
   xyGraphOrdinalColors,
   xyGraphDivergingDomain,
   xyGraphSemanticLegendText,
@@ -1759,6 +1761,44 @@ export function graphSemanticLegendText(field, value = 0) {
   const code = xyGraphSemanticLegendText(field, value, u8Ptr(out), 64n, u64Ptr(length));
   if (code !== 0) throw new RangeError("invalid semantic legend field or value");
   return Buffer.from(out.subarray(0, Number(length[0]))).toString("utf8");
+}
+
+/** Rust compound collapse for the composed graph mark (#34). Mirrors Python
+ * `_native.graph_compound_collapse`. */
+export function graphCompoundCollapse(parents, parentValidity, collapsed, flags, sources, targets) {
+  const pa = asU64Array(parents, "parents"); const n = pa.length;
+  const va = asU8Array(parentValidity, "parentValidity"); const ca = asU8Array(collapsed, "collapsed");
+  const fa = asU32Array(flags, "flags");
+  const sa = asU64Array(sources, "sources"); const ta = asU64Array(targets, "targets"); const e = sa.length;
+  requireEqualLength(pa, va, "parents", "parentValidity"); requireEqualLength(pa, ca, "parents", "collapsed");
+  requireEqualLength(pa, fa, "parents", "flags"); requireEqualLength(sa, ta, "sources", "targets");
+  const visible = new Uint8Array(n); const representative = new BigUint64Array(n); const outFlags = new Uint32Array(n);
+  const edgeKeep = new Uint8Array(e); const edgeSource = new BigUint64Array(e); const edgeTarget = new BigUint64Array(e);
+  const code = xyGraphCompoundCollapse(toU64(n, "parents.length"), u64Ptr(pa), u8Ptr(va), u8Ptr(ca), u32Ptr(fa), toU64(e, "sources.length"), u64Ptr(sa), u64Ptr(ta), u8Ptr(visible), u64Ptr(representative), u32Ptr(outFlags), u8Ptr(edgeKeep), u64Ptr(edgeSource), u64Ptr(edgeTarget));
+  if (code !== 0) throw new RangeError("graph compound collapse failed: collapsed nodes must be groups in a valid acyclic parent forest");
+  return { visible, representative, flags: outFlags, edgeKeep, edgeSource, edgeTarget };
+}
+
+/** Rust compound frames (#34): visible groups' transitive bounds, paint, and
+ * screen padding. Mirrors Python `_native.graph_compound_frames`. */
+export function graphCompoundFrames(x, y, radiusPx, parents, parentValidity, collapsed, strokeRgba, opacity, opts = {}) {
+  const theme = opts.theme ?? "light"; const themeId = theme === "light" ? 0 : theme === "dark" ? 1 : -1;
+  if (themeId < 0) throw new RangeError("theme must be 'light' or 'dark'");
+  const xa = asF64Array(x, "x"); const n = xa.length;
+  const ya = asF64Array(y, "y"); const ra = asF64Array(radiusPx, "radiusPx");
+  const pa = asU64Array(parents, "parents"); const va = asU8Array(parentValidity, "parentValidity");
+  const ca = asU8Array(collapsed, "collapsed"); const sa = asU8Array(strokeRgba, "strokeRgba");
+  const oa = Float32Array.from(opacity, Number);
+  for (const [name, value] of [["y", ya], ["radiusPx", ra], ["parents", pa], ["parentValidity", va], ["collapsed", ca], ["opacity", oa]]) {
+    requireEqualLength(xa, value, "x", name);
+  }
+  if (sa.length !== n * 4) throw new RangeError("strokeRgba must hold 4 bytes per node");
+  const node = new BigUint64Array(n); const bounds = new Float64Array(n * 4); const rgba = new Uint8Array(n * 4);
+  const width = new Float64Array(n); const pad = new Float64Array(n); const count = new BigUint64Array(1);
+  const code = xyGraphCompoundFrames(toU64(n, "x.length"), f64Ptr(xa), f64Ptr(ya), f64Ptr(ra), u64Ptr(pa), u8Ptr(va), u8Ptr(ca), u8Ptr(sa), f32Ptr(oa), themeId, u64Ptr(node), f64Ptr(bounds), u8Ptr(rgba), f64Ptr(width), f64Ptr(pad), u64Ptr(count));
+  if (code !== 0) throw new Error(`xyg_graph_compound_frames failed with code ${code}`);
+  const k = Number(count[0]);
+  return { node: node.subarray(0, k), bounds: bounds.subarray(0, k * 4), rgba: rgba.subarray(0, k * 4), width: width.subarray(0, k), pad: pad.subarray(0, k) };
 }
 
 export function graphCompoundBounds(x, y, parents, parentValidity) {
