@@ -1,0 +1,15 @@
+{
+  "graphforge": "0.5.2",
+  "nodes": 100,
+  "generation": "01a0f491-f7cc-7c60-ac1c-5ec75168cf2b",
+  "base": {
+    "nodes": "base-nodes.arrow",
+    "edges": "base-edges.arrow"
+  },
+  "results": [
+    "pagerank",
+    "louvain",
+    "minimum_spanning_tree",
+    "dijkstra"
+  ]
+}
