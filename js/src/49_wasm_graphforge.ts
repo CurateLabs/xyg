@@ -25,6 +25,20 @@ const WIDTH: Record<number, number> = { 1: 1, 2: 4, 3: 8, 4: 8, 5: 8, 6: 1, 7: 1
 const NAME = /^[a-z0-9._]{1,64}$/;
 const UUID_TEXT = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/;
 const align8 = (n: number) => (n + 7) & ~7;
+// The format is little-endian; typed arrays use host order, so numbers go
+// through DataView unless the host is little-endian (every browser today).
+const HOST_LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+function packLE(width: number, count: number, write: (view: DataView, at: number, i: number) => void): Uint8Array {
+  const out = new Uint8Array(count * width), view = new DataView(out.buffer);
+  for (let i = 0; i < count; i++) write(view, i * width, i);
+  return out;
+}
+function unpackLE<T>(payload: Uint8Array, width: number, make: (buffer: ArrayBuffer) => T, alloc: (n: number) => T, read: (view: DataView, at: number) => number | bigint): T {
+  if (HOST_LITTLE_ENDIAN) return make(payload.slice().buffer);
+  const n = payload.length / width, out: any = alloc(n), view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  for (let i = 0; i < n; i++) out[i] = read(view, i * width);
+  return out as T;
+}
 
 type Bytes = Uint8Array | ArrayBuffer;
 export type XygGraphForgeIntent = "graph" | "table" | "bar-chart" | "embedding-coordinates" | "parallel-coordinates";
@@ -74,8 +88,8 @@ export function encodeGraphForgeContainer(magic: string, sections: Array<{ name:
     let payload: Uint8Array; let count: number;
     switch (dtype) {
       case DT.u8: payload = Uint8Array.from(values as ArrayLike<number>); count = payload.length; break;
-      case DT.u64: { const a = BigUint64Array.from(values as ArrayLike<bigint>, (v: any) => BigInt(v)); payload = new Uint8Array(a.buffer); count = a.length; break; }
-      case DT.f64: { const a = Float64Array.from(values as ArrayLike<number>); payload = new Uint8Array(a.buffer); count = a.length; break; }
+      case DT.u64: { const a = BigUint64Array.from(values as ArrayLike<bigint>, (v: any) => BigInt(v)); payload = packLE(8, a.length, (v, at, i) => v.setBigUint64(at, a[i]!, true)); count = a.length; break; }
+      case DT.f64: { const a = Float64Array.from(values as ArrayLike<number>); payload = packLE(8, a.length, (v, at, i) => v.setFloat64(at, a[i]!, true)); count = a.length; break; }
       case DT.bytes: payload = values as Uint8Array; count = payload.length; break;
       case DT.uuid: payload = values as Uint8Array; if (payload.length % 16) throw new RangeError(`${name} must hold 16-byte UUIDs`); count = payload.length / 16; break;
       case DT.utf8: payload = encoder.encode(String(values)); count = payload.length; break;
@@ -128,11 +142,10 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
     const length = Number(view.getBigUint64(at + 32, true));
     if (offset % 8 || offset < payloadStart || offset + length > bytes.length) fail("section range");
     const payload = bytes.subarray(offset, offset + length);
-    const copy = () => payload.slice().buffer;
     let value: any;
     if (dtype === DT.texts) {
       const head = (n + 1) * 8; if (length < head) fail("texts");
-      const offs = new BigUint64Array(payload.slice(0, head).buffer), text = payload.subarray(head);
+      const offs = unpackLE(payload.subarray(0, head), 8, (b) => new BigUint64Array(b), (m) => new BigUint64Array(m), (v, at) => v.getBigUint64(at, true)), text = payload.subarray(head);
       value = [];
       for (let k = 0; k < n; k++) {
         const start = Number(offs[k]), end = Number(offs[k + 1]);
@@ -142,10 +155,10 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
     } else {
       const width = WIDTH[dtype]; if (width === undefined || n * width !== length) fail("section size");
       switch (dtype) {
-        case DT.u32: value = new Uint32Array(copy()); break;
-        case DT.u64: value = new BigUint64Array(copy()); break;
-        case DT.i64: value = new BigInt64Array(copy()); break;
-        case DT.f64: value = new Float64Array(copy()); break;
+        case DT.u32: value = unpackLE(payload, 4, (b) => new Uint32Array(b), (m) => new Uint32Array(m), (v, at) => v.getUint32(at, true)); break;
+        case DT.u64: value = unpackLE(payload, 8, (b) => new BigUint64Array(b), (m) => new BigUint64Array(m), (v, at) => v.getBigUint64(at, true)); break;
+        case DT.i64: value = unpackLE(payload, 8, (b) => new BigInt64Array(b), (m) => new BigInt64Array(m), (v, at) => v.getBigInt64(at, true)); break;
+        case DT.f64: value = unpackLE(payload, 8, (b) => new Float64Array(b), (m) => new Float64Array(m), (v, at) => v.getFloat64(at, true)); break;
         case DT.utf8: value = decoder.decode(payload); break;
         default: value = payload.slice(); break;
       }

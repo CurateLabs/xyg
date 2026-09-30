@@ -16,9 +16,7 @@ use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
 use super::{GfError, GfResult, Uuid, UuidKey, NIL_UUID};
 use crate::arrow_ipc::{read_table, DataType, Table};
-use crate::graph_style::{
-    semantic_palette, FLAG_DISABLED, FLAG_SELECTED, THEME_DARK, THEME_LIGHT,
-};
+use crate::graph_style::{semantic_palette, FLAG_DISABLED, FLAG_SELECTED, THEME_DARK, THEME_LIGHT};
 
 /// Version of the composition semantics carried by `XYGF` documents. Bumps
 /// when a plane's meaning changes; added sections do not bump it.
