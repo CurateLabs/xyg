@@ -67,6 +67,7 @@ export const TRACE_GPU_BUFFERS = [
   "posBuf", "value1Buf", "value0Buf",
   "rgbaBuf", "rgba2Buf", "styleBuf", "strokeBuf", "radiusBuf", "dBuf",
   "_lenBuf", "_segmentDashOffsetBuf", "_segmentDashDirBuf", "endsBuf", "ends2Buf",
+  "haloRgbaBuf", "haloStyleBuf", "haloSizeBuf", "bodyRgbaBuf", "bodyStyleBuf", "edgeDashBuf",
   "_transitionPrevXBuf", "_transitionPrevYBuf",
   "_transitionPrevPosBuf", "_transitionPrevValue1Buf", "_transitionPrevValue0Buf",
 ];

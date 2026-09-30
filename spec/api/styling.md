@@ -166,7 +166,8 @@ contract v1 and paint node fill, stroke, stroke width, size, shape, and
 opacity and edge color, width, and opacity. They replace `color`/`size`/`symbol`
 and `edge_color`/`edge_width`; combining them with explicit `color`, `size`, or
 `edge_color` is an error. See `spec/design/graph-mark.md` §7.1.2 for the
-mapping, Aggregate omission, pending layers, and the static-export limit.
+mapping, the Rust-lowered halo/body/dash/arrow layers, Aggregate omission,
+and the static-export limit.
 
 ### Compound box-plot parts
 

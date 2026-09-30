@@ -472,6 +472,80 @@ impl SemanticSceneColumns {
     }
 }
 
+/// Alpha factor of the epistemic halo layer.
+pub const SEMANTIC_HALO_ALPHA: f32 = 0.38;
+/// Node halo diameter grows the node diameter by this many px.
+pub const SEMANTIC_NODE_HALO_PAD_PX: f32 = 7.0;
+/// Edge halo and class-body widths grow the status stroke by these many px.
+pub const SEMANTIC_EDGE_HALO_PAD_PX: f32 = 5.0;
+pub const SEMANTIC_EDGE_BODY_PAD_PX: f32 = 2.0;
+/// Screen-space `(on, off)` px per resolved dash code; code 0 is solid.
+pub const SEMANTIC_DASH_PATTERNS_PX: [(f32, f32); 4] =
+    [(0.0, 0.0), (6.0, 4.0), (2.0, 3.0), (10.0, 4.0)];
+
+/// Ordered paint layers of one resolved semantic row (#34). The canonical
+/// semantic Scene and the composed WebGL graph mark both paint from this one
+/// lowering; neither re-derives halo, body, dash, or arrow policy.
+///
+/// Colors carry the row opacity and layer alpha in their alpha byte. A
+/// `[0; 4]` color means the layer is absent for that row.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SemanticPaintLayers {
+    /// Epistemic halo (nodes and edges; absent when epistemic is 0).
+    pub halo: [u8; 4],
+    /// Node halo diameter px, or edge halo width px.
+    pub halo_extent: f32,
+    /// Node fill, or the edge class body (absent when the edge class is 0).
+    pub body: [u8; 4],
+    /// Edge class-body width px (0 for nodes).
+    pub body_width: f32,
+    /// Node outline or edge status stroke.
+    pub stroke: [u8; 4],
+    /// Screen-space dash `(on, off)` px; `(0, 0)` is solid.
+    pub dash: (f32, f32),
+    /// Edge arrowhead at the target end.
+    pub head: bool,
+}
+
+pub fn semantic_paint_layers(
+    style: &ResolvedGraphStyle,
+    class: u8,
+    epistemic: u8,
+    edge: bool,
+) -> SemanticPaintLayers {
+    let halo = if epistemic != 0 {
+        alpha(style.halo, style.opacity, SEMANTIC_HALO_ALPHA)
+    } else {
+        [0; 4]
+    };
+    let body = if !edge || class != 0 {
+        alpha(style.fill, style.opacity, 1.0)
+    } else {
+        [0; 4]
+    };
+    SemanticPaintLayers {
+        halo,
+        halo_extent: if edge {
+            style.width + SEMANTIC_EDGE_HALO_PAD_PX
+        } else {
+            style.size + SEMANTIC_NODE_HALO_PAD_PX
+        },
+        body,
+        body_width: if edge {
+            style.width + SEMANTIC_EDGE_BODY_PAD_PX
+        } else {
+            0.0
+        },
+        stroke: alpha(style.stroke, style.opacity, 1.0),
+        dash: if edge {
+            SEMANTIC_DASH_PATTERNS_PX[usize::from(style.dash % 4)]
+        } else {
+            (0.0, 0.0)
+        },
+        head: edge && style.arrow != 0,
+    }
+}
+
 fn alpha(color: [u8; 4], opacity: f32, factor: f32) -> [u8; 4] {
     let mut out = color;
     out[3] = ((f32::from(color[3]) * opacity * factor).round()).clamp(0.0, 255.0) as u8;
@@ -870,9 +944,14 @@ fn encode_semantic_graph_scene_internal(
         {
             continue;
         }
-        let layer_count = 1
-            + usize::from(input.edge_epistemic[index] != 0)
-            + usize::from(input.edge_classes[index] != 0);
+        let layers = semantic_paint_layers(
+            style,
+            input.edge_classes[index],
+            input.edge_epistemic[index],
+            true,
+        );
+        let layer_count =
+            1 + usize::from(layers.halo != [0; 4]) + usize::from(layers.body != [0; 4]);
         let remaining = MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES
             .checked_sub(columns.primitives)
             .ok_or(SceneError::Limit)?;
@@ -895,11 +974,10 @@ fn encode_semantic_graph_scene_internal(
             if !length.is_finite() || length <= f64::EPSILON {
                 continue;
             }
-            let pattern = match style.dash {
-                1 => (6.0, 4.0),
-                2 => (2.0, 3.0),
-                3 => (10.0, 4.0),
-                _ => (length, 0.0),
+            let pattern = if layers.dash.1 > 0.0 {
+                (f64::from(layers.dash.0), f64::from(layers.dash.1))
+            } else {
+                (length, 0.0)
             };
             // Preserve authored dash ratios while bounding screen-space
             // expansion for very large but valid viewports.
@@ -927,7 +1005,7 @@ fn encode_semantic_graph_scene_internal(
                 cursor = end + pattern.1;
             }
         }
-        if style.arrow != 0 && !routes[index].is_empty() {
+        if layers.head && !routes[index].is_empty() {
             let &(ax, ay, bx, by) = routes[index].last().unwrap();
             let (apx, apy) = to_px(ax, ay);
             let (bpx, bpy) = to_px(bx, by);
@@ -952,25 +1030,16 @@ fn encode_semantic_graph_scene_internal(
         // The line-like Scene primitive has one paint. Rust therefore lowers
         // the complete three-channel semantic edge style as ordered layers:
         // epistemic halo, class body, then status stroke. Consumers only paint.
-        let mut layers = Vec::with_capacity(3);
-        if input.edge_epistemic[index] != 0 {
-            layers.push((
-                alpha(style.halo, style.opacity, 0.38),
-                f64::from(style.width + 5.0),
-            ));
+        let mut paints = Vec::with_capacity(3);
+        if layers.halo != [0; 4] {
+            paints.push((layers.halo, f64::from(layers.halo_extent)));
         }
-        if input.edge_classes[index] != 0 {
-            layers.push((
-                alpha(style.fill, style.opacity, 1.0),
-                f64::from(style.width + 2.0),
-            ));
+        if layers.body != [0; 4] {
+            paints.push((layers.body, f64::from(layers.body_width)));
         }
-        layers.push((
-            alpha(style.stroke, style.opacity, 1.0),
-            f64::from(style.width),
-        ));
+        paints.push((layers.stroke, f64::from(style.width)));
         let stable = index as u64 + 1;
-        for (paint, width) in layers {
+        for (paint, width) in paints {
             for &(x0, y0, x1, y1) in &geometry {
                 // Fresh style_ref is the run plane: reusing a deduplicated
                 // style would join adjacent records and paint across dash gaps.
@@ -1002,23 +1071,24 @@ fn encode_semantic_graph_scene_internal(
             continue;
         }
         let stable = (1u64 << 32) + index as u64;
-        if input.node_epistemic[index] != 0 {
-            let halo = alpha(style.halo, style.opacity, 0.38);
-            let halo_ref = columns.style(halo, [0; 4], 0.0);
+        let layers = semantic_paint_layers(
+            style,
+            input.node_classes[index],
+            input.node_epistemic[index],
+            false,
+        );
+        if layers.halo != [0; 4] {
+            let halo_ref = columns.style(layers.halo, [0; 4], 0.0);
             columns.point(
                 stable,
                 halo_ref,
-                f64::from(style.size + 7.0),
+                f64::from(layers.halo_extent),
                 0,
                 input.x[index],
                 input.y[index],
             )?;
         }
-        let node_ref = columns.style(
-            alpha(style.fill, style.opacity, 1.0),
-            alpha(style.stroke, style.opacity, 1.0),
-            f64::from(style.width),
-        );
+        let node_ref = columns.style(layers.body, layers.stroke, f64::from(style.width));
         columns.point(
             stable,
             node_ref,
@@ -1621,6 +1691,68 @@ mod tests {
             (STATE_SELECTED, [0, 0, 0, 255])
         );
         assert_eq!((out[2].state, out[2].opacity), (STATE_DISABLED, 0.28));
+    }
+
+    #[test]
+    fn paint_layers_lower_halo_body_dash_and_arrow_once() {
+        let blank = ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        };
+        let mut edges = [blank; 3];
+        resolve!(
+            &[0, 2, 1],
+            &[0, 1, 3],
+            &[0, 4, 0],
+            &[1.0, 2.0, 3.0],
+            &[0, 0, FLAG_FILTERED],
+            true,
+            THEME_LIGHT,
+            &mut edges,
+        )
+        .unwrap();
+        let plain = semantic_paint_layers(&edges[0], 0, 0, true);
+        assert_eq!((plain.halo, plain.body), ([0; 4], [0; 4]));
+        assert_eq!((plain.dash, plain.head), ((0.0, 0.0), false));
+        assert_eq!(plain.stroke, alpha(edges[0].stroke, 1.0, 1.0));
+        let rich = semantic_paint_layers(&edges[1], 2, 1, true);
+        assert_eq!(rich.halo, alpha(edges[1].halo, 1.0, SEMANTIC_HALO_ALPHA));
+        assert_eq!(rich.halo_extent, edges[1].width + SEMANTIC_EDGE_HALO_PAD_PX);
+        assert_eq!(rich.body, edges[1].fill);
+        assert_eq!(rich.body_width, edges[1].width + SEMANTIC_EDGE_BODY_PAD_PX);
+        assert_eq!((rich.dash, rich.head), ((6.0, 4.0), true));
+        // Filtered rows fade every layer by the state opacity.
+        let faded = semantic_paint_layers(&edges[2], 1, 3, true);
+        assert_eq!(faded.stroke[3], (255.0_f32 * 0.08).round() as u8);
+        assert_eq!(faded.halo[3], (255.0_f32 * 0.08 * 0.38).round() as u8);
+        assert_eq!(faded.dash, (10.0, 4.0));
+        let mut nodes = [blank; 1];
+        resolve!(
+            &[3],
+            &[2],
+            &[1],
+            &[5.0],
+            &[0],
+            false,
+            THEME_LIGHT,
+            &mut nodes
+        )
+        .unwrap();
+        let node = semantic_paint_layers(&nodes[0], 3, 2, false);
+        assert_eq!(node.body, nodes[0].fill);
+        assert_eq!(node.halo_extent, nodes[0].size + SEMANTIC_NODE_HALO_PAD_PX);
+        assert_eq!(
+            (node.body_width, node.dash, node.head),
+            (0.0, (0.0, 0.0), false)
+        );
     }
 
     #[test]

@@ -138,6 +138,7 @@ def _painted(fig: Figure) -> dict[str, Any]:
             "symbol": [SHAPES[int(c)] for c in node.style_channels["symbol"].values],
             "opacity": _floats(node.style_channels["opacity"].values),
             "stroke_width": _floats(node.style_channels["stroke_width"].values),
+            "layers": _layers(node.style_channels, ("halo_rgba",), ("halo_size",)),
         }
     out["edges"] = None
     if contract["edges"] == "resolved":
@@ -145,7 +146,25 @@ def _painted(fig: Figure) -> dict[str, Any]:
             "rgba": _u8(edge.color_ch.rgba),
             "width": _floats(edge.style_channels["width"].values),
             "opacity": _floats(edge.style_channels["opacity"].values),
+            "layers": _layers(
+                edge.style_channels,
+                ("halo_rgba", "body_rgba"),
+                ("halo_width", "body_width", "edge_dash"),
+            ),
+            "flags": [int(v) for v in edge.style_channels["edge_ends"].values[:, 6]],
         }
+    return out
+
+
+def _layers(style_channels: dict[str, Any], colors: tuple, floats: tuple) -> dict[str, Any]:
+    # Rust-lowered paint layers (#34) as shipped; absent layers ship nothing.
+    out: dict[str, Any] = {}
+    for name in colors:
+        if name in style_channels:
+            out[name] = np.asarray(style_channels[name].values).astype(int).tolist()
+    for name in floats:
+        if name in style_channels:
+            out[name] = _floats(style_channels[name].values)
     return out
 
 
@@ -239,7 +258,7 @@ def test_aggregate_lod_omits_source_row_styling_and_records_it() -> None:
     assert fig._graph_meta[0]["tier_name"] == "aggregate"
     assert contract["nodes"] == "omitted:aggregate"
     assert contract["edges"] == "omitted:aggregate"
-    assert "node_halo" in contract["pending_layers"]
+    assert contract["pending_layers"] == []
 
 
 def test_themes_resolve_different_palettes() -> None:
@@ -384,6 +403,162 @@ def test_browser_paints_resolved_node_fills(tmp_path: Path) -> None:
             pixel,
             rgba.tolist(),
         )
+
+
+_LAYER_PROBE = """
+(async () => {
+  try {
+    const view = window.__fcProbeView;
+    view._layout(); view._drawNow(); view._raf = null;
+    const node = view.gpuTraces.find((t) => t.trace.id === __NODE_TRACE__);
+    const read = ([x, y]) => {
+      const px = new Uint8Array(4);
+      const dpr = view.dpr;
+      view.gl.readPixels(
+        Math.round((x - view.plot.x) * dpr),
+        Math.round(view.canvas.height - (y - view.plot.y) * dpr),
+        1, 1, view.gl.RGBA, view.gl.UNSIGNED_BYTE, px);
+      return Array.from(px);
+    };
+    const a = view._projectDataPoint(node.xAxis, node.yAxis, 0, 0, null);
+    const b = view._projectDataPoint(node.xAxis, node.yAxis, 10, 0, null);
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+    const at = (along, across) => [a[0] + ux * along - uy * across, a[1] + uy * along + ux * across];
+    // Device-pixel columns across the edge, centerline outward.
+    const column = (along) => Array.from({ length: 10 }, (_, k) => read(at(along, k)));
+    const out = {
+      dpr: view.dpr,
+      on: column(__ON__),
+      gap: column(__GAP__),
+      nodeHalo: read([a[0], a[1] - __NODE_HALO__]),
+      noHalo: read([b[0], b[1] - __NO_HALO__]),
+    };
+    document.body.setAttribute("data-xy-layer-probe", JSON.stringify(out));
+  } catch (error) {
+    document.body.setAttribute("data-xy-layer-probe-error", String((error && error.stack) || error));
+  }
+})();
+"""
+
+
+def test_browser_paints_halo_body_and_dash_layers(tmp_path: Path) -> None:
+    from conftest import probe_document, run_browser_probe
+    from xyg.export import find_chromium
+
+    chromium = find_chromium()
+    if chromium is None:
+        pytest.skip("Chromium unavailable")
+    xs, ys = [0.0, 10.0, 0.0, 10.0], [0.0, 0.0, 5.0, 5.0]
+    nodes = {
+        "node_uuid": [_uuid(i) for i in range(4)],
+        "kind": [1, 1, 1, 1],
+        "belief": [2, 0, 0, 0],
+        "score": [1.0, 1.0, 1.0, 1.0],
+    }
+    edges = {
+        "edge_uuid": [_uuid(100), _uuid(101)],
+        "src_uuid": [_uuid(0), _uuid(2)],
+        "dst_uuid": [_uuid(1), _uuid(3)],
+        # Edge 0: class body, epistemic halo with dash (10, 4) px, max width.
+        "rel": [2, 0],
+        "evidence": [3, 0],
+        "state": [1, 0],
+        "weight": [10.0, 0.0],
+    }
+    chart = xyg.graph_chart(
+        xyg.graph(
+            nodes,
+            edges,
+            layout="preset",
+            x=xs,
+            y=ys,
+            node_class="kind",
+            node_epistemic="belief",
+            node_metric="score",
+            edge_class="rel",
+            edge_epistemic="evidence",
+            edge_status="state",
+            edge_metric="weight",
+        ),
+        width=640,
+        height=480,
+    )
+    fig = chart.figure()
+    meta = fig._graph_meta[0]
+    node = fig.traces[meta["node_trace"]]
+    edge = fig.traces[meta["edge_trace"]]
+    width = float(edge.style_channels["width"].values[0])
+    body_width = float(edge.style_channels["body_width"].values[0])
+    halo_width = float(edge.style_channels["halo_width"].values[0])
+    dash_on, dash_off = (float(v) for v in edge.style_channels["edge_dash"].values[0])
+    assert (width, dash_on, dash_off) == (4.0, 10.0, 4.0)
+    radius = float(node.size_ch.constant) / 2
+    # Three dash periods from the source center: inside a dash, then its gap.
+    on = 3 * (dash_on + dash_off) + dash_on / 2
+    gap = 3 * (dash_on + dash_off) + dash_on + dash_off / 2
+    assert (body_width, halo_width) == (width + 2, width + 5)
+    script = (
+        _LAYER_PROBE.replace("__NODE_TRACE__", str(meta["node_trace"]))
+        .replace("__ON__", repr(on))
+        .replace("__GAP__", repr(gap))
+        .replace("__NODE_HALO__", repr(radius + 2.0))
+        .replace("__NO_HALO__", repr(radius + 2.0))
+    )
+    result = run_browser_probe(
+        chromium,
+        probe_document(chart, f"<script>{script}</script>"),
+        tmp_path / "graph-semantic-layers.html",
+        "data-xy-layer-probe",
+        label="graph semantic layers",
+    )
+    assert result["dpr"] == 1
+
+    def premultiplied(rgba: Any) -> list[int]:
+        alpha = int(rgba[3]) / 255
+        return [round(int(c) * alpha) for c in rgba[:3]] + [int(rgba[3])]
+
+    def near(pixel: list[int], rgba: Any, tolerance: int = 12) -> bool:
+        return all(abs(p - e) <= tolerance for p, e in zip(pixel, premultiplied(rgba), strict=True))
+
+    stroke = [int(v * 255 + 0.5) for v in edge.color_ch.rgba[0]]
+    body = edge.style_channels["body_rgba"].values[0]
+    halo = edge.style_channels["halo_rgba"].values[0]
+    node_halo = node.style_channels["halo_rgba"].values[0]
+    # Outward from the centerline: status stroke, then the class body ring,
+    # then the translucent epistemic halo ring, then nothing.
+    column = result["on"]
+    layers = [
+        next((k for k, pixel in enumerate(column) if near(pixel, paint)), None)
+        for paint in (stroke, body, halo)
+    ]
+    assert None not in layers and layers == sorted(layers), (column, layers)
+    assert column[-1][3] <= 8, column
+    # Every layer shares the dash: the gap column is empty.
+    assert all(pixel[3] <= 8 for pixel in result["gap"]), result["gap"]
+    assert near(result["nodeHalo"], node_halo), (result["nodeHalo"], node_halo.tolist())
+    # Epistemic 0 nodes draw no halo.
+    assert result["noHalo"][3] <= 8, result["noHalo"]
+
+
+def test_u8_style_channels_ship_one_byte_per_value() -> None:
+    # Regression: u8 style channels (per-point symbol codes, semantic layer
+    # RGBA) materialized as f32 bytes and were read back as u8 in browsers.
+    from xyg import _channels_ship
+
+    fig = Figure().scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], symbol=["circle", "square", "diamond"])
+
+    shipped: list[np.ndarray] = []
+
+    def ship_u8(values: np.ndarray) -> int:
+        shipped.append(np.asarray(values))
+        return len(shipped) - 1
+
+    specs = _channels_ship.ship_style_channels(
+        fig.traces[0].style_channels, None, lambda values: -1, ship_u8
+    )
+    assert specs["symbol"]["dtype"] == "u8"
+    assert shipped[specs["symbol"]["buf"]].tolist() == [0, 1, 2]
 
 
 if __name__ == "__main__":

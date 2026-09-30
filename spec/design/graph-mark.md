@@ -614,6 +614,26 @@ the existing painter channels:
 | node/edge `opacity` | per-item opacity (renderer uniform stays 1) |
 | edge `stroke_rgba`, `width` | per-segment direct-RGBA color and width, gathered through the render-edge membership and expanded across routed segments |
 
+The ordered paint layers come from one Rust lowering,
+`graph_style::semantic_paint_layers` (ABI 369
+`xyg_graph_semantic_paint_layers`), which the canonical semantic Scene also
+uses, so neither consumer owns halo, body, dash, or arrow policy. Layer colors
+carry the row opacity and layer alpha (halo 0.38); an all-zero color is an
+absent layer, and an absent layer ships no channel.
+
+| Layer (Rust rule) | Composed paint |
+|---|---|
+| node halo: epistemic ≠ 0, circle at size + 7 px | scatter `halo_rgba` (u8×4) + `halo_size` (CSS px); the point program draws it first with `u_sizeMode` 2 (direct px), no stroke |
+| edge halo: epistemic ≠ 0, width + 5 px | segments `halo_rgba` + `halo_width`; first segment pass |
+| edge class body: class ≠ 0, width + 2 px | segments `body_rgba` + `body_width`; second pass |
+| edge status stroke | the stroke pass above |
+| edge dash: code → (6, 4), (2, 3), (10, 4) px; pinned 3, aggregate 2 | segments `edge_dash` (on, off) CSS px, applied to every edge layer and measured along each routed piece from its start, like the Scene; arrowheads are never dashed |
+| edge arrow: status ≠ 0 | the `edge_ends` head bit (0x40) per segment; replaces the `directed` default for semantically styled edges |
+
+The Scene bounds very long dashed pieces to 64 periods to cap primitive
+expansion; the WebGL pass expands nothing, so it keeps the authored period at
+every length.
+
 A semantically styled node scatter is pinned to direct draw (Python
 `density=False`, Node `forceDirect`): the density surface would drop per-node
 size, shape, stroke, and opacity, so `style_contract.nodes = "resolved"`
@@ -623,18 +643,19 @@ exactly one member (§28 membership). Under Aggregate LOD that side is omitted.
 Every styled graph records `spec.graph.style_contract` =
 `{version: 1, theme, nodes, edges, pending_layers, node_metric_domain?,
 edge_metric_domain?}` with `nodes`/`edges` one of `"resolved"`,
-`"omitted:aggregate"`, or `null` (not requested), and `pending_layers` =
-`node_halo`, `edge_halo`, `edge_class_body`, `edge_dash`, `edge_arrow_policy`:
-v1 layers the canonical semantic Scene paints but the composed mark does not
-paint yet. Hosts and clients must not treat pending layers as drawn. Static
+`"omitted:aggregate"`, or `null` (not requested). `pending_layers` lists v1
+layers the canonical Scene paints but the composed mark does not; it is empty
+now that every layer paints, and hosts and clients must never treat a listed
+layer as drawn. Static
 SVG/PNG export of a semantically styled composed graph fails closed with
 `XYG_SCENE_UNSUPPORTED_GRADIENT` (per-item paint is not admitted by the static
 Scene route yet) in both hosts; interactive HTML, notebook, and Reflex output
 paint it. `tests/test_graph_semantic_mapping.py` pins the painted values in
 `tests/fixtures/graph_semantic_mapping_cross_host.json` across Direct,
 curved, EdgeSample, and Aggregate cases; `packages/xy-node/test/graph.test.mjs`
-asserts the same fixture, and a browser probe reads the resolved fills back
-from WebGL.
+asserts the same fixture (including every layer channel and head bit), and
+browser probes read the resolved fills and the ordered stroke/body/halo rings,
+dash gaps, and node halos back from WebGL.
 
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,
@@ -703,6 +724,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |
 | `xyg_graph_compound_transition` | ABI 90 atomic stable-ID expand/collapse/toggle; Direct LOD only (#34) |
+| `xyg_graph_semantic_paint_layers` | ABI 369 ordered semantic paint layers (halo, body, stroke, dash, arrow) shared by the canonical Scene and the composed mark (#34, §7.1.2) |
 | `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
 
 Element counts and indices are `u64` / `uint64_t`.

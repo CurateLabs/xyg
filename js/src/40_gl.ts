@@ -49,6 +49,9 @@ export const ATTR_SLOTS = {
   // Graph edge ends (#33): segment-only; alias a_stroke/a_radius, which the
   // segment program never declares.
   a_ends: 14, a_ends2: 15,
+  // Semantic edge dash (#34): (on, off) CSS px per segment; segment-only,
+  // aliases the point-only a_dval slot.
+  a_edgeDash: 9,
   // Ribbon target-end colour. Aliases a_style's slot: the ribbon program uses
   // neither the style nor the stroke channel families, so the slot is free
   // there, and no other program declares a_rgba2.
@@ -330,6 +333,9 @@ in vec4 a_rgba; in vec4 a_style; in vec4 a_stroke;
 uniform vec2 u_xmap; uniform vec2 u_ymap;
 uniform vec2 u_xmeta; uniform vec2 u_ymeta; uniform int u_xmode; uniform float u_xconstant; uniform int u_ymode; uniform float u_yconstant;
 uniform float u_size; uniform int u_sizeMode; uniform vec2 u_sizeRange;
+// u_sizeMode 2: a_sval is a direct CSS px diameter times u_sizeScale (the
+// graph node halo pass, #34).
+uniform float u_sizeScale;
 uniform int u_colorMode; uniform int u_symbol; uniform float u_dpr; uniform int u_selActive;
 uniform float u_selectedOpacity; uniform float u_unselectedOpacity;
 uniform float u_transitionProgress; uniform int u_transitionActive;
@@ -343,7 +349,8 @@ void main() {
   float x = u_transitionActive == 1 ? mix(a_prevx, ax, u_transitionProgress) : ax;
   float y = u_transitionActive == 1 ? mix(a_prevy, ay, u_transitionProgress) : ay;
   gl_Position = vec4(xyPos(x, y), 0.0, 1.0);
-  float sz = u_sizeMode == 1 ? mix(u_sizeRange.x, u_sizeRange.y, a_sval) : u_size;
+  float sz = u_sizeMode == 2 ? a_sval * u_sizeScale
+    : u_sizeMode == 1 ? mix(u_sizeRange.x, u_sizeRange.y, a_sval) : u_size;
   int symbol = a_style.w >= 0.0 ? int(a_style.w + 0.5) : u_symbol;
   float symbolScale = symbol == 2 || symbol == 14 ? 1.414213562 : 1.0;
   gl_PointSize = sz * u_dpr * symbolScale;
@@ -859,7 +866,7 @@ export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
 in float a_dash0; in float a_dashDir;
-in vec4 a_ends; in vec3 a_ends2;
+in vec4 a_ends; in vec3 a_ends2; in vec2 a_edgeDash;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
 // Graph edge ends (#33), from Rust edge_route_segments_with_ends:
 // a_ends = (source center - piece start x, y [data], source radius px, flags:
@@ -870,11 +877,16 @@ uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_wi
 // sizes are device px. u_edgePass 1 draws only the arrowhead triangle.
 uniform int u_edgeEnds; uniform int u_edgePass; uniform float u_edgeScale;
 uniform float u_edgeHeadLen; uniform float u_edgeHeadHalf;
+// Rust-resolved semantic dash (graph_style::semantic_paint_layers): a_edgeDash
+// (on, off) CSS px scaled by u_edgeDashScale (dpr), measured along each routed
+// piece from its start like the canonical Scene. (0, 0) is solid.
+uniform float u_edgeDashScale;
 uniform float u_animationProgress;
 uniform int u_colorMode;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
 uniform int u_x0mode; uniform float u_x0constant; uniform int u_x1mode; uniform float u_x1constant; uniform int u_y0mode; uniform float u_y0constant; uniform int u_y1mode; uniform float u_y1constant;
 out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v_style;
+out vec2 v_edgeDash; out float v_edgeDist;
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
 ${AXIS_GLSL}
 ${POLAR_GLSL_UNIFORMS}
@@ -916,6 +928,7 @@ vec2 xyEdgeSpan(int shape, float r, vec2 a, vec2 d, vec2 c) {
 void xyEdgeHide() {
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
   v_off = 0.0; v_cval = 0.0; v_dash = 0.0; v_rgba = vec4(0.0); v_style = vec4(0.0);
+  v_edgeDash = vec2(0.0); v_edgeDist = 0.0;
 }
 void main() {
   vec2 p0;
@@ -962,6 +975,10 @@ void main() {
   p1 = mix(center, p1, u_animationProgress);
   vec2 pix0 = (p0 * 0.5 + 0.5) * u_res;
   vec2 pix1 = (p1 * 0.5 + 0.5) * u_res;
+  // Piece parameter span drawn and the untrimmed piece length (dash phase).
+  float pieceT0 = 0.0;
+  float pieceT1 = 1.0;
+  float pieceLen = length(pix1 - pix0);
   if (u_edgeEnds == 1 && u_coordMode != 1) {
     vec2 d = pix1 - pix0;
     float l = length(d);
@@ -1001,10 +1018,13 @@ void main() {
       v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
       v_dash = 0.0;
       v_rgba = a_rgba; v_style = a_style;
+      v_edgeDash = vec2(0.0); v_edgeDist = 0.0;
       return;
     }
     if (tipT >= 0.0) t1 = min(t1, tipT - u_edgeHeadLen / l);
     if (!(t1 > t0)) { xyEdgeHide(); return; }
+    pieceT0 = t0;
+    pieceT1 = t1;
     vec2 q0 = pix0 + d * t0;
     pix1 = pix0 + d * t1;
     pix0 = q0;
@@ -1022,6 +1042,8 @@ void main() {
   v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
   v_dash = a_dash0 + c.x * len * a_dashDir;
   v_rgba = a_rgba; v_style = a_style;
+  v_edgeDash = a_edgeDash * u_edgeDashScale;
+  v_edgeDist = mix(pieceT0, pieceT1, c.x) * pieceLen;
 }`;
 
 export const SEGMENT_FS = `#version 300 es
@@ -1029,10 +1051,12 @@ precision highp float; precision highp int;
 uniform vec4 u_color; uniform float u_width; uniform int u_colorMode; uniform sampler2D u_lut; uniform float u_opacity;
 uniform int u_dashCount; uniform float u_dashArr[8]; uniform float u_dashPeriod;
 in float v_off; in float v_cval; in float v_dash; in vec4 v_rgba; in vec4 v_style;
+in vec2 v_edgeDash; in float v_edgeDist;
 out vec4 outColor;
 ${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
   xyClipPolarFragment();
+  if (v_edgeDash.y > 0.0 && mod(v_edgeDist, v_edgeDash.x + v_edgeDash.y) >= v_edgeDash.x) discard;
   float itemWidth = v_style.z >= 0.0 ? v_style.z : u_width;
   float half_w = itemWidth * 0.5;
   vec4 paint = u_colorMode == 3 ? v_rgba : (u_colorMode != 0 ? vec4(texture(u_lut, vec2(clamp(v_cval, 0.0, 1.0), 0.5)).rgb, 1.0) : u_color);

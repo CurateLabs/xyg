@@ -111,10 +111,13 @@ xyg.graph_chart(
 Node takes the same options in camelCase (`nodeClass`, `edgeMetric`, …).
 Semantic fields replace `color`, `size`, `symbol`, `edge_color`, and
 `edge_width`. When a very large graph is aggregated, per-node and per-edge
-styling is left off and `spec.graph.style_contract` says so. Halos, dashed
-edges, and per-status arrow policy are not drawn on this chart yet (listed in
-`style_contract.pending_layers`), and SVG/PNG export of a semantically styled
-graph is not supported yet; use HTML export.
+styling is left off and `spec.graph.style_contract` says so.
+
+Epistemic codes draw a soft halo around nodes and edges and give edges a dash
+pattern; edge classes add a colored body under the status stroke; and only
+edges with a nonzero status get an arrowhead, whether or not the graph is
+directed. SVG/PNG export of a semantically styled graph is not supported yet;
+use HTML export.
 
 ## Arrowheads and node borders
 
