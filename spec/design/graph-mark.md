@@ -842,8 +842,11 @@ boundary edges retain their canonical source identity.
   the interactive path is unaffected. Reason: both hosts report
   `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for node or segment capacity overflow;
   Rust's admission code owns this decision for all hosts (#899).
-  Default graph colors still differ between hosts (Python cycles the palette
-  per trace; Node uses grey edges), so the parity fixture pins explicit colors.
+  Default series colors are now host-parity (#918): Node `Figure._seriesCursor`
+  advances once per graph node scatter (same as Python's `_series_cursor`);
+  graph edges use the neutral `"#888888"` on both hosts.  The parity fixture
+  `tests/fixtures/series_palette_cross_host.json` covers graph node cursor
+  progression and custom-palette graph nodes.
 
 ---
 

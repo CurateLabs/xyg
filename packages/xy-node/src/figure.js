@@ -100,7 +100,7 @@ import { composeScatter, normalizeScatterStyle, resolveSizeChannel, resolveStrok
 import { composeLine } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
 import { composeArea } from "./marks/area.js";
-import { composeBar } from "./marks/bar.js";
+import { composeBar, resolvePositions as resolveBarPositions, resolveValueMatrix as resolveBarValueMatrix } from "./marks/bar.js";
 import { composeBox } from "./marks/box.js";
 import { composeEcdf } from "./marks/ecdf.js";
 import { composeSegments } from "./marks/segments.js";
@@ -1367,6 +1367,9 @@ export class Figure {
     this.mark_style = opts.mark_style ?? {};
     this.animation_options = opts.animation_options ?? opts.animationOptions ?? null;
     this.palette = opts.palette ?? null;
+    // Per-figure series cursor (#918): advances once per logical series that
+    // uses the default color; mirrors Python Figure._series_cursor.
+    this._seriesCursor = 0;
     this.padding = opts.padding ?? null;
     this.class_name = opts.class_name ?? opts.className ?? null;
     this.class_names = opts.class_names ?? opts.classNames ?? {};
@@ -1384,6 +1387,64 @@ export class Figure {
     this._appendSeq = 0;
     if (opts.xAxis != null || opts.x_axis != null) this.setAxis("x", opts.xAxis ?? opts.x_axis);
     if (opts.yAxis != null || opts.y_axis != null) this.setAxis("y", opts.yAxis ?? opts.y_axis);
+  }
+
+  /**
+   * Color for the `index`-th series (0-based): the chart palette, cycled.
+   *
+   * Wrapping is allowed but emits a RuntimeWarning matching Python (#918).
+   * Uses the figure's `palette` when set, else the Rust-owned DEFAULT_PALETTE.
+   */
+  paletteColor(index) {
+    const cycle = paletteCycle(this.palette);
+    if (cycle == null) {
+      if (index >= DEFAULT_PALETTE.length) {
+        process.emitWarning(
+          `more than ${DEFAULT_PALETTE.length} series use default colors; the default ` +
+          `palette repeats every ${DEFAULT_PALETTE.length} (series ${DEFAULT_PALETTE.length + 1} wears ` +
+          `series 1's color). Pass explicit color= per series, or group ` +
+          `series, to keep identities distinct.`,
+          "RuntimeWarning",
+        );
+      }
+      return DEFAULT_PALETTE[index % DEFAULT_PALETTE.length];
+    }
+    if (index >= cycle.length) {
+      process.emitWarning(
+        `more than ${cycle.length} series use default colors; the chart ` +
+        `palette repeats every ${cycle.length} (series ` +
+        `${cycle.length + 1} wears series 1's color). Pass a longer ` +
+        `xyg.theme(palette=...), or an explicit color= per series.`,
+        "RuntimeWarning",
+      );
+    }
+    return cycle[index % cycle.length];
+  }
+
+  /**
+   * Take the next categorical slot for one logical series (#918).
+   *
+   * Marks call this only when the caller gave no explicit color, so a mark
+   * that builds several traces (box, stem, errorbar) consumes exactly one slot.
+   * Mirrors Python Figure.next_series_color.
+   */
+  nextSeriesColor() {
+    const index = this._seriesCursor;
+    this._seriesCursor += 1;
+    return this.paletteColor(index);
+  }
+
+  /**
+   * @private Advance the series cursor once if opts carries no explicit color.
+   *
+   * "Explicit color" means: opts.color != null, opts.color_ch != null, or
+   * opts.style?.color != null. An array opts.color (per-item channel) also
+   * counts as explicit. The resolved opts object is returned with color set.
+   */
+  _resolveSeriesColor(opts) {
+    if (opts == null) return { color: this.nextSeriesColor() };
+    if (opts.color != null || opts.color_ch != null || opts.style?.color != null) return opts;
+    return { ...opts, color: this.nextSeriesColor() };
   }
 
   /**
@@ -1493,6 +1554,10 @@ export class Figure {
       opts.pyramidSpill ?? opts.pyramid_spill,
       "scatter pyramidSpill",
     );
+    // Advance series cursor once when no explicit color is given (#918).
+    // The _composed path is used by internal callers (box, stem, graph) that
+    // have already resolved their color before delegating here.
+    if (!opts._composed) opts = this._resolveSeriesColor(opts);
     if (opts._composed) {
       const rawStyle = { ...(opts.style ?? {}) };
       const xCol = canonicalScatterColumn(x, "x");
@@ -1569,6 +1634,7 @@ export class Figure {
   }
 
   line(x, y, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeLine(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1585,6 +1651,7 @@ export class Figure {
   }
 
   histogram(values, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeHistogram(values, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1604,6 +1671,7 @@ export class Figure {
   }
 
   area(x, y, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeArea(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1621,6 +1689,29 @@ export class Figure {
   }
 
   bar(x, y, opts = {}) {
+    // Advance the series cursor once per logical series that has no explicit
+    // color. style.color counts as explicit (Python parity: css.get("color",
+    // color) extracts it before the cursor check). Use resolveBarPositions +
+    // resolveBarValueMatrix to count series the same way composeBar does,
+    // including flat Float64Array multi-series inputs (#918).
+    const hasExplicitStyle = opts.style?.color != null;
+    if (!hasExplicitStyle && (opts.color == null || (Array.isArray(opts.color) && opts.color.some((c) => c == null)))) {
+      let nSeries;
+      try {
+        const pos = resolveBarPositions(x);
+        nSeries = resolveBarValueMatrix(y, pos.length).nSeries;
+      } catch {
+        // Malformed input: fall back to best-effort nSeries; composeBar will
+        // throw with a clear message when it runs.
+        nSeries = Array.isArray(y) && y.length > 0 && (Array.isArray(y[0]) || ArrayBuffer.isView(y[0]))
+          ? y.length : 1;
+      }
+      if (Array.isArray(opts.color)) {
+        opts = { ...opts, color: opts.color.map((c) => (c == null ? this.nextSeriesColor() : c)) };
+      } else {
+        opts = { ...opts, color: Array.from({ length: nSeries }, () => this.nextSeriesColor()) };
+      }
+    }
     const composed = composeBar(x, y, opts);
     for (const t of composed.traces) {
       this._pushRectTrace(t.kind ?? "bar", t, opts);
@@ -1662,6 +1753,7 @@ export class Figure {
   }
 
   box(values, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918: one slot for all box sub-traces
     const composed = composeBox(values, opts);
     for (const t of composed.traces) {
       if (t.kind === "box_whisker" || t.kind === "box_median") {
@@ -1676,6 +1768,7 @@ export class Figure {
   }
 
   ecdf(values, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeEcdf(values, opts);
     const t = composed.traces[0];
     // Browser paints ecdf as line + style.step (Python parity).
@@ -1702,6 +1795,7 @@ export class Figure {
   }
 
   errorbar(x, y, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918: one slot for all errorbar sub-traces
     const composed = composeErrorbar(x, y, opts);
     for (const t of composed.traces) {
       this._pushSegmentTrace(t);
@@ -1710,6 +1804,7 @@ export class Figure {
   }
 
   errorBand(x, lower, upper, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeErrorBand(x, lower, upper, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1727,6 +1822,7 @@ export class Figure {
   }
 
   stem(x, y, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918: one slot for scatter+segments
     const composed = composeStem(x, y, opts);
     for (const t of composed.traces) {
       if (t.kind === "scatter") {
@@ -1739,6 +1835,7 @@ export class Figure {
   }
 
   step(x, y, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeStep(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1755,6 +1852,7 @@ export class Figure {
   }
 
   stairs(edges, values, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeStairs(edges, values, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1771,6 +1869,7 @@ export class Figure {
   }
 
   triangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1844,6 +1943,12 @@ export class Figure {
   }
 
   heatmap(z, opts = {}) {
+    // #918: advance cursor whenever color is not a string constant, matching
+    // Python which calls next_series_color() for non-string color (including
+    // None and numeric/array encodings). Use _seriesColor so the compose fn
+    // can distinguish cursor-default from an explicit string constant (which
+    // suppresses the colormap).
+    if (opts.color == null || typeof opts.color !== "string") opts = { ...opts, _seriesColor: this.nextSeriesColor() };
     const composed = composeHeatmap(z, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1865,6 +1970,10 @@ export class Figure {
   }
 
   hexbin(x, y, opts = {}) {
+    // #918: advance cursor when no explicit constant color. Use _seriesColor
+    // so composeHexbin distinguishes cursor-default from user-provided color
+    // (which suppresses the continuous density color_ch).
+    if (opts.color == null) opts = { ...opts, _seriesColor: this.nextSeriesColor() };
     const composed = composeHexbin(x, y, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -1886,6 +1995,7 @@ export class Figure {
   }
 
   violin(values, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const composed = composeViolin(values, opts);
     const t = composed.traces[0];
     this._pushRectTrace("violin", t, opts);
@@ -1893,6 +2003,7 @@ export class Figure {
   }
 
   segments(x0, y0, x1, y1, opts = {}) {
+    opts = this._resolveSeriesColor(opts); // #918
     const t = composeSegments(x0, y0, x1, y1, opts).traces[0];
     this._pushSegmentTrace(t, opts);
     return this;
@@ -1925,9 +2036,15 @@ export class Figure {
    * Compose a graph mark (normalize → layout → render-graph → traces + meta).
    */
   graph(nodes, edges, opts = {}) {
-    const composed = composeGraph(nodes, edges, opts);
+    // Pass _resolveNodeColor so composeGraph emits null for figure-level
+    // palette resolution instead of DEFAULT_MARK_COLOR, keeping standalone
+    // composeGraph calls valid (#918 finding 5).
+    const composed = composeGraph(nodes, edges, { ...opts, _resolveNodeColor: true });
     for (const t of composed.traces) {
       if (t.kind === "segments") {
+        // Graph edges: color is already set to "#888888" (Rust neutral) or an
+        // explicit string/channel; segments() resolves via _resolveSeriesColor
+        // which respects opts.style?.color and will not advance the cursor.
         this.segments(t.x0, t.y0, t.x1, t.y1, {
           name: t.name,
           style: t.style,
@@ -1937,9 +2054,16 @@ export class Figure {
           style_channels: t.style_channels,
         });
       } else if (t.kind === "scatter") {
+        // Graph nodes: advance cursor once when no explicit color is given (#918).
+        // composeGraph emits null style.color when no user-provided string color,
+        // allowing us to detect the default case here.
+        const nodeStyle = { ...t.style };
+        if (nodeStyle.color == null && t.color_ch == null) {
+          nodeStyle.color = this.nextSeriesColor();
+        }
         this.scatter(t.x, t.y, {
           name: t.name,
-          style: t.style,
+          style: nodeStyle,
           color_ch: t.color_ch,
           size_ch: t.size_ch,
           stroke_ch: t.stroke_ch,
@@ -2001,6 +2125,10 @@ export class Figure {
    * Flow band primitive (Sankey / alluvial).
    */
   ribbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts = {}) {
+    // #918: advance cursor when no explicit color. style.color counts as
+    // explicit — Python extracts css.get("color", color) before the cursor
+    // check, so a style.color suppresses the palette slot (#918 finding 4).
+    if (opts.color == null && opts.style?.color == null) opts = { ...opts, color: this.nextSeriesColor() };
     const composed = composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts);
     const t = composed.traces[0];
     this.traces.push({
@@ -3344,7 +3472,9 @@ export class Figure {
       yAxisScale: "linear",
     });
     if (plan.applyPaletteDefault) {
-      style.color = DEFAULT_PALETTE[t.id % DEFAULT_PALETTE.length];
+      // Use the figure's own palette cycle (#918); falls back to DEFAULT_PALETTE
+      // when no custom palette is set, matching Python Figure._default_styled.
+      style.color = this.paletteColor(t.id);
     }
     return style;
   }
