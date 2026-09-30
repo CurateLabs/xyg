@@ -1193,6 +1193,7 @@ def graph(
     color_scale: Optional[dict[str, Any]] = None,
     edge_color_scale: Optional[dict[str, Any]] = None,
     semantic_legend: bool = True,
+    collapsed: Union[str, ArrayLike, None] = None,
 ) -> Mark:
     """A node–link graph: Rust layout, edges as segments, nodes as scatter.
 
@@ -1255,6 +1256,9 @@ def graph(
         edge_color_scale: The same for ``edge_color``.
         semantic_legend: Show the Rust semantic legend when semantic fields
             are set (default ``True``).
+        collapsed: Compound group ids (or a node mask/column) to collapse.
+            Rust hides their descendants and routes crossing edges to the
+            group; needs Direct LOD.
     """
     return Mark(
         kind="graph",
@@ -1300,6 +1304,7 @@ def graph(
             "color_scale": None if color_scale is None else dict(color_scale),
             "edge_color_scale": None if edge_color_scale is None else dict(edge_color_scale),
             "semantic_legend": semantic_legend,
+            "collapsed": collapsed,
         },
     )
 
@@ -6069,6 +6074,7 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         color_scale=m.props.get("color_scale"),
         edge_color_scale=m.props.get("edge_color_scale"),
         semantic_legend=m.props.get("semantic_legend", True),
+        collapsed=m.props.get("collapsed"),
     )
 
 
@@ -7256,6 +7262,7 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         "color_scale",
         "edge_color_scale",
         "semantic_legend",
+        "collapsed",
     )
     mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
     if "nodes" in mark_kwargs or "edges" in mark_kwargs:

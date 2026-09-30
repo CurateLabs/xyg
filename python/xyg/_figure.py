@@ -161,6 +161,8 @@ class Figure(AnnotationsMixin, PayloadMixin):
         # Host-side graph edge identity planes keyed by edge trace id (#33);
         # never serialized, consumed by pick.
         self._graph_edge_identity: dict[int, Any] = {}
+        # Collapsed compound groups per graph node trace (#34): row -> members.
+        self._graph_node_identity: dict[int, dict[int, dict[str, Any]]] = {}
         self.show_legend = True
         self.legend_options: dict[str, Any] = {}
         # Additional legend boxes (each with its own explicit items + loc),

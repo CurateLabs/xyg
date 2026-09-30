@@ -20,6 +20,8 @@ import {
   graphProjectionRead,
   graphCompoundBounds,
   graphLabelPlan,
+  graphCompoundCollapse,
+  graphCompoundFrames,
   graphSemanticPaintLayers,
   graphSemanticLegend,
   graphSemanticLegendText,
@@ -905,6 +907,187 @@ const GRAPH_EDGE_SEMANTIC_STYLE = ["color", "stroke", "width", "stroke_width", "
 /** label_plan channel row: threshold, offset x, offset y, width, font px
  * (#34); mirrors Python `LABEL_PLAN_COMPONENTS`. */
 const GRAPH_LABEL_PLAN_COMPONENTS = 5;
+/** Hidden members listed per collapsed-group pick; mirrors Python
+ * `COMPOUND_PICK_MEMBER_CAP`. */
+const COMPOUND_PICK_MEMBER_CAP = 256;
+/** compound_frame channel row (#34): bounds deltas (4), RGBA (4), width, pad;
+ * mirrors Python `COMPOUND_FRAME_COMPONENTS`. */
+const COMPOUND_FRAME_COMPONENTS = 10;
+
+function graphCollapsedMask(data, collapsed) {
+  const n = data.ids.length;
+  let values = collapsed;
+  if (typeof values === "string") {
+    if (!Object.hasOwn(data.nodeAttrs, values)) {
+      throw new RangeError(`graph collapsed names unknown node column ${JSON.stringify(values)}`);
+    }
+    values = data.nodeAttrs[values];
+  }
+  const rows = Array.from(values);
+  if (rows.length === n && rows.every((v) => typeof v === "boolean")) return Uint8Array.from(rows, Number);
+  const wanted = new Set(rows.map(String));
+  const ids = data.ids.map(String);
+  const unknown = [...wanted].filter((id) => !ids.includes(id)).sort();
+  if (unknown.length) throw new RangeError(`graph collapsed ids ${JSON.stringify(unknown.slice(0, 4))} are not nodes`);
+  return Uint8Array.from(ids, (id) => (wanted.has(id) ? 1 : 0));
+}
+
+function takeRows(values, idx, count) {
+  if (values == null) return values;
+  const stride = count > 0 && values.length % count === 0 ? values.length / count : 1;
+  if (ArrayBuffer.isView(values)) {
+    const out = new values.constructor(idx.length * stride);
+    idx.forEach((row, j) => { for (let k = 0; k < stride; k += 1) out[j * stride + k] = values[row * stride + k]; });
+    return out;
+  }
+  return idx.map((row) => values[row]);
+}
+
+/** Lay the full graph out once, then let Rust collapse it (#34). Mirrors
+ * Python `_collapse_compounds`. */
+function graphCollapseCompounds(data, collapsed, opts) {
+  if (data.parentIndices == null) {
+    throw new RangeError("graph collapsed needs compound parents (GraphForge parent_uuid)");
+  }
+  const n = data.ids.length;
+  const e = data.sources.length;
+  const mask = graphCollapsedMask(data, collapsed);
+  const { nodePositions, meta } = runLayout(data, { ...opts, includeCsr: false });
+  if (Number(meta.lod_tier) !== 0 || nodePositions.x.length !== n) {
+    throw new RangeError("graph compound disclosure needs Direct LOD: collapse keeps exact node identity, which Aggregate LOD does not have");
+  }
+  const attr = (value) => typeof value === "string" && Object.hasOwn(data.nodeAttrs, value) ? data.nodeAttrs[value] : value;
+  const rawFlags = attr(opts.visualStateFlags ?? opts.visual_state_flags)
+    ?? data.nodeAttrs.visual_state_flags ?? data.nodeAttrs.state_flags ?? new Uint32Array(n);
+  const flags = typeof rawFlags === "number" ? new Uint32Array(n).fill(rawFlags) : Uint32Array.from(rawFlags, Number);
+  const validity = data.parentValidity ?? new Uint8Array(n).fill(1);
+  const out = graphCompoundCollapse(data.parentIndices, validity, mask, flags, data.sources, data.targets);
+  const rows = [];
+  const newIndex = new Int32Array(n).fill(-1);
+  for (let i = 0; i < n; i += 1) if (out.visible[i]) { newIndex[i] = rows.length; rows.push(i); }
+  const erows = [];
+  for (let k = 0; k < e; k += 1) if (out.edgeKeep[k]) erows.push(k);
+  const parents = new BigUint64Array(rows.length);
+  const parentValidity = new Uint8Array(rows.length);
+  rows.forEach((row, j) => {
+    if (!validity[row]) return;
+    const mapped = newIndex[Number(data.parentIndices[row])];
+    if (mapped >= 0) { parents[j] = BigInt(mapped); parentValidity[j] = 1; }
+  });
+  const sub = {
+    ids: rows.map((row) => data.ids[row]),
+    edgeIds: Array.isArray(data.edgeIds) ? erows.map((k) => data.edgeIds[k]) : data.edgeIds,
+    sources: BigUint64Array.from(erows, (k) => BigInt(newIndex[Number(out.edgeSource[k])])),
+    targets: BigUint64Array.from(erows, (k) => BigInt(newIndex[Number(out.edgeTarget[k])])),
+    x: Float64Array.from(rows, (row) => nodePositions.x[row]),
+    y: Float64Array.from(rows, (row) => nodePositions.y[row]),
+    nodeAttrs: Object.fromEntries(Object.entries(data.nodeAttrs).map(([k, v]) => [k, takeRows(v, rows, n)])),
+    edgeAttrs: Object.fromEntries(Object.entries(data.edgeAttrs ?? {}).map(([k, v]) => [k, takeRows(v, erows, e)])),
+    nodeUuidBytes: takeRows(data.nodeUuidBytes, rows, n),
+    edgeUuidBytes: takeRows(data.edgeUuidBytes, erows, e),
+    nodeProvenanceRows: takeRows(data.nodeProvenanceRows, rows, n),
+    edgeProvenanceRows: takeRows(data.edgeProvenanceRows, erows, e),
+    parentIndices: parents,
+    parentValidity,
+    directed: data.directed,
+    get nNodes() { return this.ids.length; },
+    get nEdges() { return this.sources.length; },
+  };
+  // One pass: hidden nodes bucketed by representative, in node order.
+  const byGroup = new Map();
+  for (let i = 0; i < n; i += 1) {
+    if (out.visible[i]) continue;
+    const rep = Number(out.representative[i]);
+    if (!byGroup.has(rep)) byGroup.set(rep, []);
+    byGroup.get(rep).push(String(data.ids[i]));
+  }
+  const members = new Map();
+  for (let group = 0; group < n; group += 1) {
+    if (!mask[group] || !out.visible[group]) continue;
+    const hidden = byGroup.get(group) ?? [];
+    members.set(newIndex[group], {
+      compound_collapsed: true,
+      compound_member_count: hidden.length,
+      compound_members: hidden.slice(0, COMPOUND_PICK_MEMBER_CAP),
+      compound_members_truncated: hidden.length > COMPOUND_PICK_MEMBER_CAP,
+    });
+  }
+  return {
+    data: sub,
+    rows,
+    erows,
+    newIndex,
+    visible: out.visible,
+    mask,
+    flagsVisible: Uint32Array.from(rows, (row) => out.flags[row]),
+    positions: nodePositions,
+    collapsedIds: data.ids.filter((_, i) => mask[i]).map(String),
+    members,
+  };
+}
+
+function graphSubsetOptions(opts, compound, full) {
+  const n = full.ids.length;
+  const e = full.sources.length;
+  const subset = (value, idx, count) =>
+    value != null && typeof value !== "string" && typeof value !== "number"
+      && (Array.isArray(value) || ArrayBuffer.isView(value)) && value.length === count
+      ? takeRows(value, idx, count)
+      : value;
+  const nodeKeys = ["color", "size", "nodeLabel", "node_label", "labelPriority", "label_priority",
+    "nodeClass", "node_class", "nodeEpistemic", "node_epistemic", "nodeStatus", "node_status",
+    "nodeMetric", "node_metric"];
+  const edgeKeys = ["edgeColor", "edge_color", "edgeWidth", "edge_width", "edgeLabel", "edge_label",
+    "edgeLabelPriority", "edge_label_priority", "edgeClass", "edge_class", "edgeEpistemic",
+    "edge_epistemic", "edgeStatus", "edge_status", "edgeMetric", "edge_metric"];
+  const out = { ...opts, layout: "preset", pinned: undefined, cose: undefined,
+    visualStateFlags: compound.flagsVisible, visual_state_flags: undefined };
+  for (const key of nodeKeys) out[key] = subset(opts[key], compound.rows, n);
+  for (const key of edgeKeys) out[key] = subset(opts[key], compound.erows, e);
+  return out;
+}
+
+/** Rust compound frames as the node trace's `compound_frame` channel (#34);
+ * mirrors Python `_compound_frames` + `_add_compound_frame_channel`. */
+function graphCompoundFrameChannel(full, compound, nodePositions, direct, nodeSemantic, radii, theme) {
+  if (full.parentIndices == null || (compound == null && !direct)) return null;
+  const n = full.ids.length;
+  const positions = compound?.positions ?? nodePositions;
+  const rowOf = (i) => (compound == null ? i : compound.newIndex[i]);
+  const stroke = new Uint8Array(n * 4);
+  const opacity = new Float32Array(n).fill(1);
+  const radius = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) {
+    const row = rowOf(i);
+    if (row < 0) continue;
+    radius[i] = radii[row];
+    if (nodeSemantic != null) {
+      stroke.set(nodeSemantic.strokeRgba.subarray(row * 4, row * 4 + 4), i * 4);
+      opacity[i] = nodeSemantic.opacity[row];
+    }
+  }
+  const validity = full.parentValidity ?? new Uint8Array(n).fill(1);
+  const mask = compound?.mask ?? new Uint8Array(n);
+  const frames = graphCompoundFrames(positions.x, positions.y, radius, full.parentIndices, validity, mask,
+    stroke, opacity, { theme });
+  const rows = nodePositions.x.length;
+  const values = new Float64Array(rows * COMPOUND_FRAME_COMPONENTS);
+  const ids = [];
+  frames.node.forEach((node, k) => {
+    const i = Number(node);
+    const row = rowOf(i);
+    const at = row * COMPOUND_FRAME_COMPONENTS;
+    values[at] = frames.bounds[k * 4] - nodePositions.x[row];
+    values[at + 1] = frames.bounds[k * 4 + 1] - nodePositions.x[row];
+    values[at + 2] = frames.bounds[k * 4 + 2] - nodePositions.y[row];
+    values[at + 3] = frames.bounds[k * 4 + 3] - nodePositions.y[row];
+    for (let c = 0; c < 4; c += 1) values[at + 4 + c] = frames.rgba[k * 4 + c];
+    values[at + 8] = frames.width[k];
+    values[at + 9] = frames.pad[k];
+    ids.push(String(full.ids[i]));
+  });
+  return { ids, channel: { values, components: COMPOUND_FRAME_COMPONENTS } };
+}
 
 /** Per render edge: label text, priority, and anchor segment (the middle
  * routed piece), for single-member render edges only. Mirrors Python
@@ -1005,12 +1188,21 @@ export function composeGraph(nodes, edges, opts = {}) {
   } else if (edges == null) {
     resolvedEdges = undefined;
   }
-  const data = resolveGraphData(nodes, resolvedEdges, {
+  let data = resolveGraphData(nodes, resolvedEdges, {
     x: resolvedOpts.x,
     y: resolvedOpts.y,
     directed: resolvedOpts.directed,
     mapping: resolvedOpts.mapping,
   });
+  // Compound disclosure (#34): lay the full graph out once, let Rust collapse
+  // it, then compose the visible graph at those positions.
+  const full = data;
+  let compound = null;
+  if (resolvedOpts.collapsed != null) {
+    compound = graphCollapseCompounds(data, resolvedOpts.collapsed, resolvedOpts);
+    data = compound.data;
+    resolvedOpts = graphSubsetOptions(resolvedOpts, compound, full);
+  }
   const nodeColor = resolveEncodingValues(data, resolvedOpts.color, "node");
   const edgeColor = resolveEncodingValues(
     data,
@@ -1252,6 +1444,12 @@ export function composeGraph(nodes, edges, opts = {}) {
       },
     };
   }
+  // Rust compound frames (#34) over the full graph's positions.
+  const frames = graphCompoundFrameChannel(full, compound, nodePositions, nodesExact, nodeSemantic,
+    nodeDiameterPx != null && nodeDiameterPx.length === nNodes
+      ? Float64Array.from(nodeDiameterPx, (d) => d / 2)
+      : new Float64Array(nNodes).fill(Number(nodeDiameter) / 2),
+    theme);
   // Keep auto-built projection rows for meta even when Aggregate collapses edges.
   const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
@@ -1316,6 +1514,9 @@ export function composeGraph(nodes, edges, opts = {}) {
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),
     },
   ];
+  if (frames != null && frames.ids.length) {
+    traces[1].style_channels = { ...(traces[1].style_channels ?? {}), compound_frame: frames.channel };
+  }
 
   const graphMeta = {
     ...Object.fromEntries(
@@ -1335,6 +1536,8 @@ export function composeGraph(nodes, edges, opts = {}) {
     node_symbol: typeof resolvedOpts.symbol === "string" ? resolvedOpts.symbol : "circle",
     edge_curve: String(resolvedOpts.edgeCurve ?? "straight").trim().toLowerCase(),
     ...(styleContract != null ? { style_contract: styleContract } : {}),
+    ...(frames != null ? { compound_frames: frames.ids } : full.parentIndices != null ? { compound_frames: "omitted:aggregate" } : {}),
+    ...(compound != null ? { compound_collapsed: compound.collapsedIds } : {}),
     tier_name: ["direct", "edge_sample", "aggregate"][Math.min(Number(meta.lod_tier), 2)],
     node_trace: 1,
     edge_trace: 0,
@@ -1478,6 +1681,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     ? { planes: [nodeFields, edgeFields].filter(Boolean), theme }
     : null;
   return {
+    compoundMembers: compound?.members ?? null,
     semanticLegend,
     traces,
     graphMeta,

@@ -139,6 +139,21 @@ legend listing each class, epistemic, and status value in use; pass
 `semantic_legend=False` to hide it. Node takes `colorScale`,
 `edgeColorScale`, and `semanticLegend`.
 
+## Groups (compound nodes)
+
+Give nodes a `parent_uuid` and each group gets a frame around its members.
+Collapse groups to hide their members; edges to hidden members reroute to the
+group, and picking a collapsed group lists its members:
+
+```python
+xyg.graph_chart(nodes=node_table, edges=edge_table, collapsed=["<group uuid>"])
+```
+
+Positions stay put when a group opens or closes (the whole graph is laid out
+once). Collapsing needs every node drawn, so very large graphs that the chart
+aggregates refuse `collapsed`. SVG/PNG export of grouped graphs is not
+supported yet.
+
 ## Labels
 
 Nodes are labeled from `node_label` (default: the `label` column, then

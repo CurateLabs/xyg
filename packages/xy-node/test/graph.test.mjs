@@ -863,6 +863,30 @@ test("graph color scales and semantic legend match the Python cross-host fixture
   }
 });
 
+test("graph compound frames and disclosure match the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_compound_cross_host.json", import.meta.url), "utf8"),
+  );
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(fixture.nodes, fixture.edges, { layout: "preset", x: fixture.x, y: fixture.y, ...expected.options });
+    const meta = f._graphMeta[0];
+    assert.deepEqual(meta.ids, expected.ids, `${name} ids`);
+    assert.deepEqual(meta.sources, expected.sources, `${name} sources`);
+    assert.deepEqual(meta.targets, expected.targets, `${name} targets`);
+    assert.deepEqual(meta.edge_ids ?? null, expected.edge_ids, `${name} edge ids`);
+    assert.deepEqual(meta.compound_frames ?? null, expected.compound_frames, `${name} frames`);
+    assert.deepEqual(meta.compound_collapsed ?? null, expected.compound_collapsed, `${name} collapsed`);
+    assert.deepEqual(meta.visual_states ?? null, expected.visual_states, `${name} states`);
+    const rows = f.traces[meta.node_trace].style_channels.compound_frame?.values;
+    const flat = rows == null ? null : [...rows];
+    assert.deepEqual(flat, expected.frame_rows == null ? null : expected.frame_rows.flat(), `${name} frame rows`);
+    for (const [index, pick] of Object.entries(expected.pick)) {
+      assert.deepEqual(f.graphNodePick(meta.node_trace, Number(index)) ?? {}, pick, `${name} pick ${index}`);
+    }
+  }
+});
+
 test("graph semantic fields fail closed (#34)", () => {
   const opts = { layout: "preset", x: [0, 1], y: [0, 1] };
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], color: "#f00" }), /replace color/);

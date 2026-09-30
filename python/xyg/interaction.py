@@ -230,6 +230,11 @@ def pick(
         edge = identity.pick(idx)
         if edge is not None:
             out.update(edge)
+    group = getattr(fig, "_graph_node_identity", {}).get(t.id, {}).get(idx)
+    if group is not None:
+        # Collapsed compound group (#34): its hidden members, from Rust's
+        # collapse representatives, never an unrelated node.
+        out.update(group)
     return out
 
 
