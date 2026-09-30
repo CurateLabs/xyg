@@ -705,10 +705,9 @@ boundary edges retain their canonical source identity.
   records per trace, so graphs over 10,000 nodes or 10,000 routed segments
   (about 10,000 straight or 1,250 curved edges; each self-loop draws 3)
   fail closed;
-  the interactive path is unaffected. Reasons: Python reports
-  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for both; Node reports `…_PUBLIC_LOD` for
-  nodes and `XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS` for segment overflow (a
-  pre-existing host reason difference on the general segments path).
+  the interactive path is unaffected. Reason: both hosts report
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` for node or segment capacity overflow;
+  Rust's admission code owns this decision for all hosts (#899).
   Default graph colors still differ between hosts (Python cycles the palette
   per trace; Node uses grey edges), so the parity fixture pins explicit colors.
 

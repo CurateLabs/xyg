@@ -2530,6 +2530,49 @@ def test_public_disconnected_segments_reject_more_than_ten_thousand_endpoint_pai
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
+def test_graph_segment_overflow_and_point_overflow_share_lod_reason_cross_host() -> None:
+    """Segment and point overflow both return XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (#899).
+
+    The same Rust admission code owns the reason in both hosts; no host-side
+    pre-check should diverge.
+    """
+    # Point overflow: 10 001 nodes -> scatter trace exceeds the 10 000-record budget.
+    n = 10_001
+    xs = np.arange(n, dtype=np.float64)
+    ys = np.zeros(n, dtype=np.float64)
+    node_fig = xyg.graph_chart(xyg.graph(xs, [], layout="preset", x=xs, y=ys)).figure()
+    node_fig.width = 320
+    node_fig.height = 240
+    node_fig.axis_options["x"]["domain"] = (0.0, float(n))
+    node_fig.axis_options["y"]["domain"] = (-1.0, 1.0)
+    assert scene_export_support_reason(node_fig) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+    # Segment overflow: 4 000 directed curved edges produce ~40 000 routed segments
+    # (10 per edge), far above the 10 000-record bound.
+    n_edges = 4_000
+    node_ids = np.arange(10, dtype=np.float64)
+    edge_source = (np.arange(n_edges) % 10).astype(float)
+    edge_target = ((np.arange(n_edges) + 1) % 10).astype(float)
+    node_x = np.arange(10, dtype=np.float64)
+    node_y = np.zeros(10, dtype=np.float64)
+    seg_fig = xyg.graph_chart(
+        xyg.graph(
+            node_ids,
+            {"source": edge_source, "target": edge_target},
+            layout="preset",
+            x=node_x,
+            y=node_y,
+            edge_curve="curve",
+        )
+    ).figure()
+    seg_fig.width = 320
+    seg_fig.height = 240
+    seg_fig.axis_options["x"]["domain"] = (0.0, 9.0)
+    seg_fig.axis_options["y"]["domain"] = (-1.0, 1.0)
+    # Both hosts must return the same LOD reason, not XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS.
+    assert scene_export_support_reason(seg_fig) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
 def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() -> None:
     maximum_values = np.concatenate(
         (np.arange(10_000, dtype=np.float64) + 0.5, np.array([0.0, 10_000.0]))
