@@ -218,7 +218,8 @@ spanning-tree overlay + articulation points).
 Base elements start at class/epistemic/status 0 and metric NaN. Node labels
 default to the base display name. Missing elements under `dim` carry the
 disabled flag (opacity 0.28, neutral fill). The graph mark gained
-`edge_visual_state_flags` / `edgeVisualStateFlags` so relationships resolve
+`edge_visual_state_flags` / `edgeVisualStateFlags` (an array or an edge
+column name) so relationships resolve
 states through the same Rust precedence as nodes (Python and Node).
 
 The document's legend rows are Rust's: side (node/relationship), semantic
@@ -299,7 +300,8 @@ optionally `error.field`. A graph composition holds:
 | `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags` | semantic planes |
 | `layer.schema`, `layer.schema_version`, `layer.verb`, `layer.algorithm`, `layer.disposition`, `layer.composition`, `layer.intent`, `layer.missing_policy`, `layer.extra_policy`, `layer.result_id`, `layer.generation`, `layer.derived_type` [i] | layer provenance |
 | `layer.counts` [i] | u64 ×5: result rows, selected rows, matched, missing, extra |
-| `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection |
+| `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection. Node layers list the canonical value fields first, then the numeric node properties rank/cluster/find results carry |
+| `layer.text_names`, `layer.node_texts` [i] | text node properties of node layers, joined per node (row-major, empty when absent); at most 32 property columns per layer (`GF_COMPOSE_PROPERTIES_TRUNCATED`) |
 | `legend.*` | Rust legend rows (§4.4) |
 | `decision.code`, `decision.layer`, `decision.count` | §4.5 |
 

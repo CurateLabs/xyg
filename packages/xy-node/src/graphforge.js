@@ -248,6 +248,8 @@ export class GraphForgeComposition {
           matched: Number(counts[2] ?? 0n), missing: Number(counts[3] ?? 0n), extra: Number(counts[4] ?? 0n),
         },
         valueNames: get("layer.value_names", i) ?? [],
+        textNames: get("layer.text_names", i) ?? [],
+        nodeTexts: get("layer.node_texts", i) ?? null,
         nodeValues: get("layer.node_values", i) ?? null,
         nodeRows: get("layer.node_rows", i) ?? null,
         edgeValues: get("layer.edge_values", i) ?? null,
@@ -386,6 +388,12 @@ export function graphforgeGraphData(composition) {
   const edgeAttrs = { type: [...edges.type].map((v) => v || null) };
   for (const layer of composition.layers) {
     const prefix = layer.algorithm || layer.verb;
+    if (layer.nodeTexts != null) {
+      const t = layer.textNames.length;
+      layer.textNames.forEach((name, j) => {
+        nodeAttrs[`${prefix}.${name}`] = Array.from({ length: nodes.count }, (_, i) => layer.nodeTexts[i * t + j] || null);
+      });
+    }
     for (const [values, attrs, count] of [[layer.nodeValues, nodeAttrs, nodes.count], [layer.edgeValues, edgeAttrs, edges.count]]) {
       if (values == null) continue;
       const k = layer.valueNames.length;

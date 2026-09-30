@@ -50,7 +50,7 @@ function assertJoins(composition, name, layerIndex = 0) {
   const values = side === "node" ? layer.nodeValues : layer.edgeValues;
   const rows = side === "node" ? layer.nodeRows : layer.edgeRows;
   const k = layer.valueNames.length;
-  assert.deepEqual(layer.valueNames, expected.values);
+  assert.deepEqual(layer.valueNames.slice(0, expected.values.length), expected.values);
   for (const [uuid, want] of Object.entries(expected.rows)) {
     const index = side === "node" ? composition.nodeIndex(uuid) : composition.edgeIndex(uuid);
     assert.ok(index >= 0, `${name}: ${side} is in the composition`);
@@ -176,6 +176,21 @@ test("request framing is host-neutral bytes; the document decodes identically", 
   assert.deepEqual([...decoded.nodes.class], [...composeGraphForge(input).nodes.class]);
 });
 
+test("container numbers are little-endian bytes regardless of host order", () => {
+  const bytes = encodeContainer("XYGQ", [
+    { name: "a.u32", dtype: DTYPE.u32, values: [0x01020304] },
+    { name: "a.u64", dtype: DTYPE.u64, values: [0x0102030405060708n] },
+    { name: "a.f64", dtype: DTYPE.f64, values: [1.5] },
+  ]);
+  const sections = decodeContainer(bytes, "XYGQ");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const at = (name) => Number(view.getBigUint64(32 + [...sections.keys()].indexOf(`${name}#0`) * 40 + 16, true));
+  assert.equal(view.getUint32(at("a.u32"), true), 0x01020304);
+  assert.equal(view.getBigUint64(at("a.u64"), true), 0x0102030405060708n);
+  assert.equal(view.getFloat64(at("a.f64"), true), 1.5);
+  assert.equal(sections.get("a.u32#0").value[0], 0x01020304);
+});
+
 test("container codec round-trips and rejects corruption", () => {
   const bytes = encodeContainer("XYGF", [
     { name: "a.u8", dtype: DTYPE.u8, values: [1, 2] },
@@ -229,6 +244,16 @@ test("graph mark accepts edge visual-state flags only with edge semantic fields"
   assert.deepEqual([...opacity].map((o) => Math.round(o * 100) / 100), [1, 0.28]);
   assert.throws(() => graphChart(nodes, edges, { layout: "circle", edgeVisualStateFlags: [0, 64] }), /edge semantic fields/);
   assert.throws(() => graphChart(nodes, edges, { layout: "circle", edgeClass: [1, 1], edgeVisualStateFlags: [0] }), /edge count/);
+  // A column name resolves like every other per-edge option.
+  const u = (i) => `00000000-0000-4000-8000-00000000000${i}`;
+  const named = graphChart(
+    { node_uuid: [u(1), u(2), u(3)] },
+    { edge_uuid: [u(4), u(5)], src_uuid: [u(1), u(2)], dst_uuid: [u(2), u(3)], flags: [64, 0] },
+    { layout: "circle", edgeClass: [1, 1], edgeVisualStateFlags: "flags" },
+  );
+  const namedOpacity = named.traces[named._graphMeta[0].edge_trace].style_channels.opacity.values;
+  assert.deepEqual([...namedOpacity].map((o) => Math.round(o * 100) / 100), [0.28, 1]);
+  assert.throws(() => graphChart(nodes, edges, { layout: "circle", edgeClass: [1, 1], edgeVisualStateFlags: "nope" }), /unknown edge column/);
 });
 
 test("the Rust ledger covers every GraphForge 0.5.2 contract", () => {

@@ -189,9 +189,17 @@ fn pagerank_joins_scores_by_uuid_not_row_position() {
             .position(|i| *i == id)
             .expect("every result node is in the base");
         assert_eq!(metric[node], score);
-        assert_eq!(values[node], score);
+        assert_eq!(values[node * 2], score);
     }
-    assert_eq!(doc.texts("layer.value_names", 0), vec!["score"]);
+    // Canonical score first, then the node properties rank results carry.
+    assert_eq!(doc.texts("layer.value_names", 0), vec!["score", "prize"]);
+    assert_eq!(doc.texts("layer.text_names", 0), vec!["name"]);
+    let names = doc.texts("layer.node_texts", 0);
+    assert_eq!(
+        names,
+        doc.texts("node.name", 0),
+        "properties join by UUID like values"
+    );
     assert!(
         doc.u32s("node.flags").iter().all(|&f| f == 0),
         "full coverage dims nothing"
@@ -319,7 +327,7 @@ fn traversal_labels_order_and_sizes_depth() {
     assert_eq!(sorted, vec!["0", "1", "2", "3"]);
     let metric = doc.f64s("node.metric", 0);
     assert!(metric.iter().all(|m| m.is_finite()));
-    assert_eq!(doc.texts("layer.value_names", 0), vec!["depth", "order"]);
+    assert_eq!(doc.texts("layer.value_names", 0)[..2], ["depth", "order"]);
 }
 
 #[test]

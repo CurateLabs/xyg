@@ -1264,7 +1264,13 @@ export function composeGraph(nodes, edges, opts = {}) {
     : rawFlags;
   // Edge visual states (disabled/filtered/selected/...) resolve through the
   // same Rust precedence as nodes; they need the edge semantic fields.
-  const rawEdgeFlags = resolvedOpts.edgeVisualStateFlags ?? resolvedOpts.edge_visual_state_flags;
+  let rawEdgeFlags = resolvedOpts.edgeVisualStateFlags ?? resolvedOpts.edge_visual_state_flags;
+  if (typeof rawEdgeFlags === "string") {
+    if (!Object.hasOwn(data.edgeAttrs ?? {}, rawEdgeFlags)) {
+      throw new RangeError(`graph edgeVisualStateFlags names unknown edge column ${JSON.stringify(rawEdgeFlags)}`);
+    }
+    rawEdgeFlags = data.edgeAttrs[rawEdgeFlags];
+  }
   if (rawEdgeFlags != null && edgeFields == null) {
     throw new RangeError("graph edgeVisualStateFlags needs edge semantic fields");
   }

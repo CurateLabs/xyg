@@ -21,6 +21,27 @@ const NAME = /^[a-z0-9._]{1,64}$/;
 
 const align8 = (n) => (n + 7) & ~7;
 
+// The format is little-endian. Typed-array views use host order, so every
+// numeric section goes through DataView (or a checked fast path on
+// little-endian hosts, which is every supported platform).
+const HOST_LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+
+function packLittleEndian(width, values, write) {
+  const out = new Uint8Array(values.length * width);
+  const view = new DataView(out.buffer);
+  for (let i = 0; i < values.length; i += 1) write(view, i * width, values[i]);
+  return out;
+}
+
+function unpackLittleEndian(payload, width, Array_, read) {
+  const count = payload.length / width;
+  if (HOST_LITTLE_ENDIAN) return new Array_(payload.slice().buffer);
+  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  const out = new Array_(count);
+  for (let i = 0; i < count; i += 1) out[i] = read(view, i * width);
+  return out;
+}
+
 function asBytes(value, label) {
   if (value instanceof Uint8Array) return value;
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
@@ -43,10 +64,10 @@ export function encodeContainer(magic, sections) {
     let count;
     switch (dtype) {
       case DTYPE.u8: payload = Uint8Array.from(values); count = payload.length; break;
-      case DTYPE.u32: { const a = Uint32Array.from(values); payload = new Uint8Array(a.buffer); count = a.length; break; }
-      case DTYPE.u64: { const a = BigUint64Array.from(values, BigInt); payload = new Uint8Array(a.buffer); count = a.length; break; }
-      case DTYPE.i64: { const a = BigInt64Array.from(values, BigInt); payload = new Uint8Array(a.buffer); count = a.length; break; }
-      case DTYPE.f64: { const a = Float64Array.from(values); payload = new Uint8Array(a.buffer); count = a.length; break; }
+      case DTYPE.u32: { const a = Uint32Array.from(values); payload = packLittleEndian(4, a, (v, at, x) => v.setUint32(at, x, true)); count = a.length; break; }
+      case DTYPE.u64: { const a = BigUint64Array.from(values, BigInt); payload = packLittleEndian(8, a, (v, at, x) => v.setBigUint64(at, x, true)); count = a.length; break; }
+      case DTYPE.i64: { const a = BigInt64Array.from(values, BigInt); payload = packLittleEndian(8, a, (v, at, x) => v.setBigInt64(at, x, true)); count = a.length; break; }
+      case DTYPE.f64: { const a = Float64Array.from(values); payload = packLittleEndian(8, a, (v, at, x) => v.setFloat64(at, x, true)); count = a.length; break; }
       case DTYPE.bytes: payload = asBytes(values, name); count = payload.length; break;
       case DTYPE.uuid: {
         payload = asBytes(values, name);
@@ -61,7 +82,7 @@ export function encodeContainer(magic, sections) {
         let at = 0;
         parts.forEach((p, i) => { at += p.length; offsets[i + 1] = BigInt(at); });
         payload = new Uint8Array(offsets.byteLength + at);
-        payload.set(new Uint8Array(offsets.buffer), 0);
+        payload.set(packLittleEndian(8, offsets, (v, at, x) => v.setBigUint64(at, x, true)), 0);
         let cursor = offsets.byteLength;
         for (const p of parts) { payload.set(p, cursor); cursor += p.length; }
         count = parts.length;
@@ -134,11 +155,10 @@ export function decodeContainer(input, magic) {
     if (offset % 8 || offset < payloadStart || offset + length > bytes.length) fail("section range");
     const payload = bytes.subarray(offset, offset + length);
     let value;
-    const copy = () => payload.slice().buffer;
     if (dtype === DTYPE.texts) {
       const head = (n + 1) * 8;
       if (length < head) fail("texts");
-      const offs = new BigUint64Array(payload.slice(0, head).buffer);
+      const offs = unpackLittleEndian(payload.subarray(0, head), 8, BigUint64Array, (v, at) => v.getBigUint64(at, true));
       const text = payload.subarray(head);
       value = [];
       for (let k = 0; k < n; k += 1) {
@@ -152,10 +172,10 @@ export function decodeContainer(input, magic) {
       if (width == null || n * width !== length) fail("section size");
       switch (dtype) {
         case DTYPE.u8: value = payload.slice(); break;
-        case DTYPE.u32: value = new Uint32Array(copy()); break;
-        case DTYPE.u64: value = new BigUint64Array(copy()); break;
-        case DTYPE.i64: value = new BigInt64Array(copy()); break;
-        case DTYPE.f64: value = new Float64Array(copy()); break;
+        case DTYPE.u32: value = unpackLittleEndian(payload, 4, Uint32Array, (v, at) => v.getUint32(at, true)); break;
+        case DTYPE.u64: value = unpackLittleEndian(payload, 8, BigUint64Array, (v, at) => v.getBigUint64(at, true)); break;
+        case DTYPE.i64: value = unpackLittleEndian(payload, 8, BigInt64Array, (v, at) => v.getBigInt64(at, true)); break;
+        case DTYPE.f64: value = unpackLittleEndian(payload, 8, Float64Array, (v, at) => v.getFloat64(at, true)); break;
         case DTYPE.utf8: value = decoder.decode(payload); break;
         default: value = payload.slice(); break;
       }

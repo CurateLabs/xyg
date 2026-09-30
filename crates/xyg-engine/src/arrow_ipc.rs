@@ -1182,8 +1182,18 @@ fn read_file(bytes: &[u8]) -> Result<Table<'_>> {
             if offset < 8 || offset as u64 >= footer_start as u64 {
                 return Err(IpcError::malformed("record batch block is out of range"));
             }
+            let meta_len = read_u32(footer.buf, at + 8)? as i32 as i64;
+            let body_len = read_i64(footer.buf, at + 16)?;
             let (message, _) = read_message(&bytes[..footer_start], offset as usize)?
                 .ok_or(IpcError::malformed("record batch block is empty"))?;
+            // The block must describe exactly the message it points at:
+            // prefix + metadata, then the body.
+            let body_start = message.body.as_ptr() as usize - bytes.as_ptr() as usize;
+            if body_start as i64 - offset != meta_len || message.body.len() as i64 != body_len {
+                return Err(IpcError::malformed(
+                    "record batch block disagrees with its message",
+                ));
+            }
             if message.header_type != HEADER_RECORD_BATCH {
                 return Err(IpcError::malformed("file block is not a record batch"));
             }
@@ -1465,6 +1475,34 @@ mod tests {
             read_table(b"ARROW1\0\0garbage").unwrap_err().kind,
             IpcErrorKind::Malformed
         );
+    }
+
+    #[test]
+    fn arrow_file_blocks_must_match_their_messages() {
+        let path = format!(
+            "{}/../../tests/fixtures/graphforge/airports_nodes.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let bytes = std::fs::read(path).unwrap();
+        let len = bytes.len();
+        let footer_len = u32::from_le_bytes(bytes[len - 10..len - 6].try_into().unwrap()) as usize;
+        let footer_start = len - 10 - footer_len;
+        let footer = FbTable::root(&bytes[footer_start..len - 10]).unwrap();
+        let (start, count) = footer.vector(3, 24).unwrap().unwrap();
+        assert_eq!(count, 1);
+        let at = footer_start + start;
+        for (field, delta) in [(8usize, 8i64), (16, 8)] {
+            let mut damaged = bytes.clone();
+            let width = if field == 8 { 4 } else { 8 };
+            let mut raw = [0u8; 8];
+            raw[..width].copy_from_slice(&damaged[at + field..at + field + width]);
+            let value = i64::from_le_bytes(raw) + delta;
+            damaged[at + field..at + field + width].copy_from_slice(&value.to_le_bytes()[..width]);
+            assert_eq!(
+                read_table(&damaged).unwrap_err().kind,
+                IpcErrorKind::Malformed
+            );
+        }
     }
 
     #[test]

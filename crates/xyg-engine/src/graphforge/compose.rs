@@ -9,13 +9,13 @@
 use std::collections::{BTreeMap, HashMap};
 
 use super::base::{self, BaseGraph, RawPlanes};
-use super::columns::{f64s, i64s, uuids};
+use super::columns::{f64s, i64s, texts, uuids};
 use super::container::{Builder, DOCUMENT_MAGIC};
 use super::ledger::{self, Composition, Intent, Role, SchemaEntry};
 use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
 use super::{GfError, GfResult, UuidKey};
-use crate::arrow_ipc::{read_table, Table};
+use crate::arrow_ipc::{read_table, DataType, Table};
 use crate::graph_style::{semantic_palette, FLAG_DISABLED, THEME_DARK, THEME_LIGHT};
 
 /// Version of the composition semantics carried by `XYGF` documents. Bumps
@@ -28,6 +28,8 @@ pub const NONE_U32: u32 = u32::MAX;
 
 /// Node status codes (combined across layers by maximum).
 pub const NODE_STATUS_MEMBER: u8 = 1;
+/// Node property columns carried per layer (canonical fields included).
+pub const MAX_PROPERTY_COLUMNS: usize = 32;
 /// Class codes available to group layers before bucketing.
 const GROUP_CODES: usize = 7;
 
@@ -78,7 +80,10 @@ impl Layer<'_> {
 
 #[derive(Default)]
 struct LayerOut {
-    value_names: Vec<&'static str>,
+    value_names: Vec<String>,
+    /// Text property columns (node layers) and their row-major values.
+    text_names: Vec<String>,
+    node_texts: Option<Vec<String>>,
     node_values: Option<Vec<f64>>,
     edge_values: Option<Vec<f64>>,
     node_rows: Option<Vec<u64>>,
@@ -400,13 +405,36 @@ impl<'b> Planes<'b> {
             covered[node] = true;
         }
         let composition = layer.entry().composition;
-        let value_fields: Vec<&'static str> = layer
+        // Canonical value fields, then the node properties rank/cluster/find
+        // results append (numeric as values, text as texts), for tooltips and
+        // table linking. Properties are display data, never diagnostics.
+        let mut value_fields: Vec<String> = layer
             .entry()
             .fields
             .iter()
             .filter(|f| matches!(f.role, Role::Metric | Role::Group | Role::Order))
-            .map(|f| f.name)
+            .map(|f| f.name.to_owned())
             .collect();
+        let mut text_fields: Vec<String> = Vec::new();
+        for field in layer
+            .table
+            .schema
+            .fields
+            .iter()
+            .filter(|f| !layer.entry().fields.iter().any(|spec| spec.name == f.name))
+        {
+            if value_fields.len() + text_fields.len() >= MAX_PROPERTY_COLUMNS {
+                self.decide("GF_COMPOSE_PROPERTIES_TRUNCATED", Some(layer.index), 1);
+                break;
+            }
+            match field.data_type {
+                DataType::Float { .. } | DataType::Int { .. } => {
+                    value_fields.push(field.name.clone())
+                }
+                DataType::Utf8 { .. } => text_fields.push(field.name.clone()),
+                _ => {}
+            }
+        }
         let mut values = vec![f64::NAN; n * value_fields.len()];
         for (k, name) in value_fields.iter().enumerate() {
             let column = layer
@@ -414,6 +442,14 @@ impl<'b> Planes<'b> {
                 .map_err(|e| e.in_layer(layer.index))?;
             for &(row, node) in &joined {
                 values[node * value_fields.len() + k] = column[row];
+            }
+        }
+        let mut texts_out = vec![String::new(); n * text_fields.len()];
+        for (k, name) in text_fields.iter().enumerate() {
+            let column =
+                texts(&layer.table.column(name).unwrap()).map_err(|e| e.in_layer(layer.index))?;
+            for &(row, node) in &joined {
+                texts_out[node * text_fields.len() + k] = column[row].unwrap_or("").to_owned();
             }
         }
         match composition {
@@ -506,6 +542,8 @@ impl<'b> Planes<'b> {
         out.extra = layer.rows.len() as u64 - out.matched;
         out.missing = self.missing_nodes(layer, &covered)?;
         out.value_names = value_fields;
+        out.text_names = text_fields;
+        out.node_texts = Some(texts_out);
         out.node_values = Some(values);
         out.node_rows = Some(rows);
         self.layers.push(out);
@@ -697,7 +735,7 @@ impl<'b> Planes<'b> {
             ..Default::default()
         };
         out.missing = self.missing_edges(layer, &covered)?;
-        out.value_names = value_fields;
+        out.value_names = value_fields.iter().map(|s| (*s).to_owned()).collect();
         out.edge_values = Some(values);
         out.edge_rows = Some(rows);
         self.layers.push(out);
@@ -1061,6 +1099,17 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
                 picked.extend_from_slice(&values[node * k..node * k + k]);
             }
             out.f64s("layer.node_values", i, &picked);
+            if let Some(texts) = &result.node_texts {
+                let t = result.text_names.len();
+                if t > 0 {
+                    let mut picked = Vec::with_capacity(nodes.len() * t);
+                    for &node in &nodes {
+                        picked.extend(texts[node * t..node * t + t].iter().map(String::as_str));
+                    }
+                    out.texts("layer.text_names", i, &result.text_names);
+                    out.texts("layer.node_texts", i, &picked);
+                }
+            }
             out.u64s(
                 "layer.node_rows",
                 i,
