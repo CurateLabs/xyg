@@ -1565,8 +1565,10 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs.get("browser_conformance", ""),
         "Install WebKit runtime libraries",
         "bounded Blacksmith-only WebKit dependency install",
-        "timeout-minutes: 10",
+        "timeout-minutes: 20",
         "npx playwright install-deps webkit",
+        # apt's needrestart hook hangs after the install; keep it list-only.
+        "$nrconf{restart} = 'l';",
     )
     _require_job_contains(
         errors,
