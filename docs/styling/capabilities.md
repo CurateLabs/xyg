@@ -51,7 +51,7 @@ built — one renderer never silently ignores what another draws.
 - **`stroke-linecap`** — Line family only — a cap is open-path geometry. XYG's default is `round`, not CSS's `butt`, because the native rasterizer has always drawn round and is the reference for static export. Verified per renderer: a Rust coverage test, a rasterized-ink test, and three Chromium screenshots that hash differently per cap.
 - **`border-radius`** — Rect kinds only. `corner_radius=(tip, base)` rounds the two ends separately.
 - **`wedge-gap`** — Gap between neighbouring polar wedges, in px. Rect kinds under `coords="polar"` only; ignored elsewhere. Deliberately a LENGTH rather than an angle: an angular pad's seam is `r * dtheta` wide, so it tapers to nothing at the hole and reads as uneven spacing. The angular inset therefore grows as the radius shrinks, which is the same construction as d3's padAngle/padRadius pair. An XYG vocabulary name: CSS has no gap between two arcs.
-- **`marker-shape`** — 17 shapes, drawn as analytic signed-distance fields in all three renderers. An XYG vocabulary name: CSS has no shape keyword for a non-DOM point mark, and the CSS spelling and `symbol=` compile to the same value.
+- **`marker-shape`** — 17 shapes, drawn as analytic signed-distance fields in all three renderers, with the same orientation (`triangle` points up): the WebGL client takes "up" from window y rather than trusting `gl_PointCoord`, which some implementations run bottom-up. An XYG vocabulary name: CSS has no shape keyword for a non-DOM point mark, and the CSS spelling and `symbol=` compile to the same value.
 
 ## Chrome slots
 

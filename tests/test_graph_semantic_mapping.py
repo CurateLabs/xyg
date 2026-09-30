@@ -346,9 +346,9 @@ _PIXEL_PROBE = """
         1, 1, view.gl.RGBA, view.gl.UNSIGNED_BYTE, px);
       return Array.from(px);
     };
-    const out = POINTS.map(([x, y]) => {
+    const out = POINTS.map(([x, y, dy]) => {
       const p = view._projectDataPoint(node.xAxis, node.yAxis, x, y, null);
-      return read(p[0], p[1]);
+      return read(p[0], p[1] + dy);
     });
     document.body.setAttribute("data-xy-semantic-probe", JSON.stringify(out));
   } catch (error) {
@@ -388,8 +388,11 @@ def test_browser_paints_resolved_node_fills(tmp_path: Path) -> None:
     fig = chart.figure()
     meta = fig._graph_meta[0]
     expected = np.asarray(_u8(fig.traces[meta["node_trace"]].color_ch.rgba))
+    # Sample each marker's interior: the box center, except 2 px lower for the
+    # apex-up triangle (class 3), whose box center sits near its slanted edges.
+    offsets = [2.0 if kind == 3 else 0.0 for kind in nodes["kind"]]
     script = _PIXEL_PROBE.replace("NODE_TRACE", str(meta["node_trace"])).replace(
-        "POINTS", json.dumps(list(zip(xs, ys, strict=True)))
+        "POINTS", json.dumps(list(zip(xs, ys, offsets, strict=True)))
     )
     result = run_browser_probe(
         chromium,

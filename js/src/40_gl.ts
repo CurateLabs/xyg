@@ -475,8 +475,14 @@ out vec4 outColor;
 ${MARKER_SDF_GLSL}
 ${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
-  xyClipPolarFragment();
+  // GLSL ES puts gl_PointCoord's origin at the point's top, but some
+  // implementations (SwiftShader/ANGLE, #911) run it bottom-up. Window y
+  // always grows upward, so orient "up" from it: every marker keeps its apex
+  // up, matching the static export (§7), on every GPU. (Derivative taken
+  // before any discard.)
   vec2 d = gl_PointCoord - 0.5;
+  if (dFdy(gl_PointCoord.y) > 0.0) d.y = -d.y;
+  xyClipPolarFragment();
   float sd;
   int symbol = v_style.w >= 0.0 ? int(v_style.w + 0.5) : u_symbol;
   bool lineMarker = symbol == 15 || symbol == 16 || symbol == 17 || symbol == 18;

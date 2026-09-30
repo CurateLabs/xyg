@@ -220,9 +220,11 @@ MARK_STYLE_PROPERTIES: tuple[MarkStyleProperty, ...] = (
         status="shipped",
         notes=(
             "17 shapes, drawn as analytic signed-distance fields in all three "
-            "renderers. An XYG vocabulary name: CSS has no shape keyword for a "
-            "non-DOM point mark, and the CSS spelling and `symbol=` compile to "
-            "the same value."
+            "renderers, with the same orientation (`triangle` points up): the "
+            'WebGL client takes "up" from window y rather than trusting '
+            "`gl_PointCoord`, which some implementations run bottom-up. An XYG "
+            "vocabulary name: CSS has no shape keyword for a non-DOM point mark, "
+            "and the CSS spelling and `symbol=` compile to the same value."
         ),
     ),
 )
