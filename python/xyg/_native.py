@@ -13006,6 +13006,55 @@ def graph_label_accept(
     return out.astype(np.bool_)
 
 
+def graph_ordinal_colors(colormap: str, levels: int) -> list[str]:
+    """``levels`` evenly spaced ``#rrggbb`` colors of a built-in colormap (#34)."""
+    if not isinstance(colormap, str):
+        raise TypeError("colormap must be a built-in colormap name")
+    count = operator.index(levels)
+    if not 1 <= count <= 256:
+        raise ValueError("ordinal scales need 1..256 levels")
+    name = colormap.encode("utf-8")
+    out = np.empty(count * 3, dtype=np.uint8)
+    status = _lib.xyg_graph_ordinal_colors(
+        name, ctypes.c_uint64(len(name)), ctypes.c_uint64(count), out.ctypes.data
+    )
+    if status != 0:
+        raise ValueError(f"unknown colormap {colormap!r} for an ordinal scale")
+    return ["#{:02x}{:02x}{:02x}".format(*out[i * 3 : i * 3 + 3]) for i in range(count)]
+
+
+def graph_diverging_domain(values: Any, midpoint: float) -> tuple[float, float]:
+    """Rust domain symmetric about ``midpoint`` covering every finite value (#34)."""
+    arr = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
+    lo, hi = ctypes.c_double(), ctypes.c_double()
+    status = _lib.xyg_graph_diverging_domain(
+        arr.ctypes.data if len(arr) else None,
+        ctypes.c_uint64(len(arr)),
+        ctypes.c_double(float(midpoint)),
+        ctypes.byref(lo),
+        ctypes.byref(hi),
+    )
+    if status != 0:
+        raise ValueError("diverging scale needs a finite midpoint and at least one finite value")
+    return (lo.value, hi.value)
+
+
+def graph_semantic_legend_text(field: int, value: int = 0) -> str:
+    """Rust text of a semantic legend row (field 0-2) or its title (field 3)."""
+    length = ctypes.c_uint64()
+    out = ctypes.create_string_buffer(64)
+    status = _lib.xyg_graph_semantic_legend_text(
+        ctypes.c_uint32(field),
+        ctypes.c_uint32(value),
+        out,
+        ctypes.c_uint64(64),
+        ctypes.byref(length),
+    )
+    if status != 0:
+        raise ValueError("invalid semantic legend field or value")
+    return out.raw[: length.value].decode("utf-8")
+
+
 def graph_label_plan(
     kinds: Any,
     x: Any,

@@ -709,6 +709,40 @@ asserts the same fixture (including every layer channel and head bit), and
 browser probes read the resolved fills, the ordered stroke/body/halo rings,
 dash gaps, node halos, and per-edge layer order at a crossing back from WebGL.
 
+#### 7.1.4 Color scales and the semantic legend (#34, ABI 372)
+
+`graph(color_scale=..., edge_color_scale=...)` (Node `colorScale` /
+`edgeColorScale`) chooses how an array `color` / `edge_color` maps to paint.
+Each is a dict with a `type` and only that type's keys; unknown types or keys,
+constant colors, and combining a scale with that side's semantic fields fail
+closed.
+
+| `type` | Keys | Paint |
+|---|---|---|
+| `linear` | `colormap` (viridis), `domain` | continuous channel; an omitted domain is the data extent |
+| `diverging` | `colormap` (rdbu), `midpoint` (0) | continuous channel over `xyg_graph_diverging_domain`: symmetric about the midpoint and covering every finite value, so the midpoint paints the colormap center |
+| `ordinal` | `order` (required, unique), `colormap` (viridis) | categorical channel in `order` with `xyg_graph_ordinal_colors`: level *i* samples the colormap at *i/(k−1)* exactly like the continuous LUT (one level samples the center); values outside `order` fail closed |
+| `categorical` | `palette` | categorical channel with the given palette |
+
+Categorical and ordinal channels produce one legend row per category in their
+order; continuous channels produce a gradient row for a named trace.
+
+A graph with semantic fields shows the **semantic legend** unless
+`semantic_legend=False` (Node `semanticLegend: false`): hosts pass the
+concatenated node and edge class/epistemic/status planes to
+`xyg_graph_semantic_legend`, whose per-field value union and field/value order
+equal the semantic Scene's merged legend, and take row labels and the
+"Graph semantics" title from `xyg_graph_semantic_legend_text`. Rows are
+scatter swatches in the value's palette color (class rows in the class shape).
+The legend fills the chart legend's explicit `items` and never replaces items
+an author already set. Every active semantic style keeps at least 3:1 non-text
+contrast against both theme backgrounds
+(`actual_active_styles_meet_non_text_contrast_in_both_themes`).
+`tests/test_graph_scales_legend.py` pins the resolved channels and legend in
+`tests/fixtures/graph_scales_legend_cross_host.json` (Node asserts the same
+fixture) and probes Chromium for the ordinal node colors and the painted
+legend rows.
+
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,
 epistemic, and status values; selected and pinned state; node and edge labels;
@@ -772,6 +806,9 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28; optional CSR source-edge membership per render edge (ABI 367, §6) |
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
+| `xyg_graph_ordinal_colors` | ABI 372 evenly spaced colormap colors for ordinal graph scales (#34) |
+| `xyg_graph_diverging_domain` | ABI 372 midpoint-centered continuous domain for diverging graph scales (#34) |
+| `xyg_graph_semantic_legend_text` | ABI 372 semantic legend row labels and title (#34) |
 | `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |

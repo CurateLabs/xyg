@@ -785,7 +785,12 @@ fn padded_domain(values: &[f64]) -> Option<(f64, f64)> {
     (lo.is_finite() && hi.is_finite() && lo < hi).then_some((lo, hi))
 }
 
-fn semantic_legend_label(field: u8, value: u8) -> String {
+/// Title of the semantic legend box.
+pub const SEMANTIC_LEGEND_TITLE: &str = "Graph semantics";
+
+/// Row label of a semantic legend descriptor (`field` 0 class, 1 epistemic,
+/// 2 status). Shared by the semantic Scene and composed-graph legends.
+pub fn semantic_legend_label(field: u8, value: u8) -> String {
     let field = match field {
         0 => "Class",
         1 => "Epistemic",
@@ -1356,7 +1361,7 @@ fn encode_semantic_graph_scene_internal(
     let colors = palette(input.theme).ok_or(SceneError::Length)?;
     let legend = (!legend_entries.is_empty()).then(|| SceneLegend {
         location: LegendLocation::UpperRight,
-        title: "Graph semantics".to_owned(),
+        title: SEMANTIC_LEGEND_TITLE.to_owned(),
         font_size: 11.0,
         title_font_size: 12.0,
         text_rgba: colors[0],

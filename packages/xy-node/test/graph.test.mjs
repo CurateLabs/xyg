@@ -841,6 +841,28 @@ test("graph label plan matches the Python cross-host fixture (#34)", async () =>
   }
 });
 
+test("graph color scales and semantic legend match the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_scales_legend_cross_host.json", import.meta.url), "utf8"),
+  );
+  const channel = (ch) => ch.mode === "categorical"
+    ? { mode: "categorical", categories: [...ch.categories], codes: [...ch.codes].map(Number), palette: [...ch.palette].slice(0, ch.categories.length) }
+    : { mode: ch.mode, domain: [...ch.domain].map(Number), colormap: ch.colormap };
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(fixture.ids, fixture.edges, { layout: "preset", x: fixture.x, y: fixture.y, ...expected.options });
+    const meta = f._graphMeta[0];
+    const node = f.traces[meta.node_trace].color_ch;
+    const edge = f.traces[meta.edge_trace].color_ch;
+    if (expected.node_color) assert.deepEqual(channel(node), expected.node_color, `${name} node color`);
+    if (expected.edge_color) assert.deepEqual(channel(edge), expected.edge_color, `${name} edge color`);
+    if (expected.legend) {
+      assert.equal(f.legend_options.title, expected.legend.title, `${name} legend title`);
+      assert.deepEqual(f.legend_options.items, expected.legend.items, `${name} legend items`);
+    }
+  }
+});
+
 test("graph semantic fields fail closed (#34)", () => {
   const opts = { layout: "preset", x: [0, 1], y: [0, 1] };
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], color: "#f00" }), /replace color/);

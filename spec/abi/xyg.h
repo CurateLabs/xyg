@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 371
-#define XYG_ABI_SIGNATURE_SHA256 "1a7d9dd5663dde1ac2f570cc21ee779459804b2a1dc8f105b37bde47a99334f2"
+#define XYG_ABI_VERSION 372
+#define XYG_ABI_SIGNATURE_SHA256 "04721830b62bbce92b3622b81b81048cfb017fd9251445985367beaa332023d0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,6 +146,7 @@ int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const do
 int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax);
 size_t xyg_graph_compound_scene(const void * descriptor, uint8_t * out, size_t out_cap);
 int32_t xyg_graph_compound_transition(uint64_t n, const uint64_t * node_ids, const uint64_t * parents, const uint8_t * validity, const uint8_t * collapsed, uint64_t target_id, uint32_t action, uint32_t lod_tier, uint8_t * out, uint8_t * out_changed);
+int32_t xyg_graph_diverging_domain(const double * values, uint64_t n, double midpoint, double * out_lo, double * out_hi);
 int32_t xyg_graph_edge_route_ends(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, int32_t curved, const double * node_radius_px, const uint8_t * node_symbol, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, double * out_ends, uint64_t * out_n_segments);
 int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, int32_t curved, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments);
 int32_t xyg_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, uint64_t seed, uint32_t algorithm, uint64_t * out_handle);
@@ -156,6 +157,7 @@ int32_t xyg_graph_label_accept(uint64_t n, const double * priorities, uint64_t b
 int32_t xyg_graph_label_plan(uint64_t n, const uint8_t * kinds, const double * x, const double * y, const double * radius_px, const uint32_t * chars, const uint8_t * states, const double * priorities, uint64_t budget, double min_priority, uint32_t * out_keep, double * out_threshold, double * out_offset_x, double * out_offset_y, double * out_width, double * out_font_px, uint64_t * out_accepted);
 int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, const uint64_t * roots, uint64_t n_roots, uint64_t seed, double * out_x, double * out_y);
 int32_t xyg_graph_lod_decision(uint64_t n_nodes, uint64_t n_edges, uint64_t node_budget, uint64_t edge_budget, uint32_t * out_tier, uint64_t * out_edges_kept);
+int32_t xyg_graph_ordinal_colors(const uint8_t * name, uint64_t name_len, uint64_t k, uint8_t * out_rgb);
 int32_t xyg_graph_projection_copy_edge_ids(uint64_t handle, uint8_t * output, uint64_t capacity);
 int32_t xyg_graph_projection_copy_endpoints(uint64_t handle, uint64_t * out_sources, uint64_t * out_targets, uint64_t capacity);
 int32_t xyg_graph_projection_copy_node_ids(uint64_t handle, uint8_t * output, uint64_t capacity);
@@ -165,6 +167,7 @@ int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_hand
 int32_t xyg_graph_projection_destroy(uint64_t handle);
 uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices);
 int32_t xyg_graph_semantic_legend(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, uint64_t capacity, uint8_t * out_field, uint8_t * out_value, uint8_t * out_rgba, uint8_t * out_shape, uint64_t * out_count);
+int32_t xyg_graph_semantic_legend_text(uint32_t field, uint32_t value, uint8_t * out, uint64_t capacity, uint64_t * out_len);
 int32_t xyg_graph_semantic_paint_layers(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * halo_rgba, float * halo_extent, uint8_t * body_rgba, float * body_width, uint8_t * stroke_rgba, float * dash_px, uint8_t * head);
 int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi);
 int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out);

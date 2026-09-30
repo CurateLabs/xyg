@@ -52,6 +52,9 @@ def graph(
     edge_status: Union[str, ArrayLike, None] = None,
     edge_metric: Union[str, ArrayLike, None] = None,
     theme: str = "light",
+    color_scale: dict[str, Any] | None = None,
+    edge_color_scale: dict[str, Any] | None = None,
+    semantic_legend: bool = True,
 ) -> "Figure":
     """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
 
@@ -74,6 +77,14 @@ def graph(
     / ``symbol`` (nodes) and ``edge_color`` / ``edge_width`` (edges). They are
     indexed by source row, so they paint where render identity is exact and are
     omitted (and recorded in ``style_contract``) under Aggregate LOD.
+
+    ``color_scale`` / ``edge_color_scale`` choose how an array ``color`` /
+    ``edge_color`` maps to paint: ``{"type": "linear", "colormap", "domain"}``,
+    ``{"type": "diverging", "colormap" (default "rdbu"), "midpoint" (0)}``
+    (Rust centers the domain on the midpoint), ``{"type": "ordinal", "order",
+    "colormap"}`` (Rust samples one color per ordered level, legend in that
+    order), or ``{"type": "categorical", "palette"}``. With semantic fields,
+    ``semantic_legend`` (default on) shows the Rust semantic legend.
     """
     from . import _graph, _native, channels
     from ._channels_lut import normalize_to_unit
@@ -105,6 +116,10 @@ def graph(
     if edge_fields is not None and edge_color is not None:
         raise ValueError("graph edge semantic fields replace edge_color=")
     _reject_semantic_style_overrides(style, node_fields is not None, edge_fields is not None)
+    if node_fields is not None and color_scale is not None:
+        raise ValueError("graph node semantic fields replace color_scale")
+    if edge_fields is not None and edge_color_scale is not None:
+        raise ValueError("graph edge semantic fields replace edge_color_scale")
     if theme not in ("light", "dark"):
         raise ValueError(f"graph theme must be 'light' or 'dark', got {theme!r}")
     px, py, meta = _graph.run_layout(
@@ -220,6 +235,8 @@ def graph(
         )
 
     edge_color_paint = _expand_edge_values(edge_color, "edge_color")
+    node_scale = _color_scale(color, color_scale, "color_scale")
+    edge_scale = _color_scale(edge_color_paint, edge_color_scale, "edge_color_scale")
     edge_width_paint = _expand_edge_values(edge_width, "edge_width")
     self.segments(
         x0,
@@ -228,12 +245,16 @@ def graph(
         y1,
         name=edge_name,
         color=edge_color_paint,
+        colormap=edge_scale.get("colormap", channels.DEFAULT_COLORMAP),
+        domain=edge_scale.get("domain"),
         width=edge_width_paint,
         opacity=opacity
         if edge_style is None
         else _expand_edge_values(edge_style["opacity"], "edge opacity"),
         style=style,
     )
+    if "channel" in edge_scale:
+        self.traces[-1].color_ch = edge_scale["channel"]
     if edge_style is not None:
         # Rust's arrow policy replaces the directed default: the head bit
         # (0x40) follows each segment's source-edge `head` layer.
@@ -255,6 +276,8 @@ def graph(
         py,
         name=node_name,
         color=color,
+        colormap=node_scale.get("colormap", channels.DEFAULT_COLORMAP),
+        color_domain=node_scale.get("domain"),
         size=size if size is not None else 8.0,
         size_range=size_range,
         opacity=opacity if node_style is None else node_style["opacity"],
@@ -266,8 +289,12 @@ def graph(
         density=None if node_style is None else False,
         style=style,
     )
+    if "channel" in node_scale:
+        self.traces[-1].color_ch = node_scale["channel"]
     if node_style is not None:
         _add_layer_channels(self.traces[-1], node_style["layers"], edge=False)
+    if semantic_legend and (node_fields is not None or edge_fields is not None):
+        _apply_semantic_legend(self, node_fields, edge_fields, theme)
     # Edge identity follows Rust's render-edge membership, not a count match
     # (#33): a render edge with one member carries that source edge's row; an
     # Aggregate edge carries its member count, never one invented source edge.
@@ -478,6 +505,105 @@ def graph(
 
 # label_plan channel row: threshold, offset x, offset y, width, font px (#34).
 LABEL_PLAN_COMPONENTS = 5
+
+
+_SCALE_KEYS = {
+    "linear": {"type", "colormap", "domain"},
+    "diverging": {"type", "colormap", "midpoint"},
+    "ordinal": {"type", "colormap", "order"},
+    "categorical": {"type", "palette"},
+}
+
+
+def _color_scale(values: Any, scale: dict[str, Any] | None, label: str) -> dict[str, Any]:
+    """Resolve a graph color scale into scatter/segments arguments (#34).
+
+    Linear and diverging scales return a colormap and domain (Rust centers a
+    diverging domain on its midpoint). Ordinal and categorical scales return a
+    ready categorical channel whose category order and palette come from the
+    scale (ordinal colors are sampled by Rust).
+    """
+    from . import _native, channels
+
+    if scale is None:
+        return {}
+    if not isinstance(scale, dict) or scale.get("type") not in _SCALE_KEYS:
+        raise ValueError(f"graph {label} must be a dict with type {sorted(_SCALE_KEYS)}")
+    kind = scale["type"]
+    unknown = set(scale) - _SCALE_KEYS[kind]
+    if unknown:
+        raise ValueError(f"graph {label} {kind!r} does not accept {sorted(unknown)}")
+    if values is None or isinstance(values, str) or np.ndim(values) != 1:
+        raise ValueError(f"graph {label} needs a per-item color array or column")
+    if kind in ("linear", "diverging"):
+        numeric = np.asarray(values, dtype=np.float64)
+        colormap = scale.get("colormap", "rdbu" if kind == "diverging" else "viridis")
+        if kind == "diverging":
+            domain = _native.graph_diverging_domain(numeric, float(scale.get("midpoint", 0.0)))
+        else:
+            domain = scale.get("domain")
+        return {"colormap": colormap, "domain": None if domain is None else tuple(domain)}
+    items = list(values)
+    if kind == "ordinal":
+        order = list(scale.get("order") or [])
+        if not order or len(set(map(str, order))) != len(order):
+            raise ValueError(f"graph {label} ordinal needs a nonempty, unique 'order'")
+        index = {str(level): i for i, level in enumerate(order)}
+        missing = sorted({str(v) for v in items if str(v) not in index})
+        if missing:
+            raise ValueError(f"graph {label} values {missing[:4]} are not in the ordinal order")
+        codes = np.asarray([index[str(v)] for v in items], dtype=np.uint8)
+        palette = _native.graph_ordinal_colors(scale.get("colormap", "viridis"), len(order))
+        return {
+            "channel": channels.ColorChannel(
+                mode="categorical",
+                codes=codes,
+                categories=[str(level) for level in order],
+                palette=palette,
+                counts=np.bincount(codes, minlength=len(order)).astype(np.uint64),
+            )
+        }
+    palette = scale.get("palette")
+    resolved = channels.resolve_color(np.asarray(items), len(items), default_constant="#888888")
+    if resolved.mode != "categorical":
+        raise ValueError(f"graph {label} categorical needs category labels")
+    if palette is not None:
+        colors = [str(c) for c in palette]
+        if not colors:
+            raise ValueError(f"graph {label} categorical 'palette' must not be empty")
+        resolved.palette = colors
+    return {"channel": resolved}
+
+
+def _apply_semantic_legend(fig: Any, node_fields: Any, edge_fields: Any, theme: str) -> None:
+    """Show the Rust semantic legend: one row per class/epistemic/status value
+    present on nodes or edges, ordered like the semantic Scene (#34)."""
+    from . import _native
+
+    planes = [f for f in (node_fields, edge_fields) if f is not None]
+    classes, epistemic, statuses = (np.concatenate([f[k] for f in planes]) for k in range(3))
+    legend = _native.graph_semantic_legend(classes, epistemic, statuses, theme=theme)
+    items = []
+    for field, value, rgba, shape in zip(
+        legend["field"], legend["value"], legend["rgba"], legend["shape"], strict=True
+    ):
+        items.append(
+            {
+                "kind": "scatter",
+                "name": _native.graph_semantic_legend_text(int(field), int(value)),
+                "style": {
+                    "color": "#{:02x}{:02x}{:02x}".format(*(int(c) for c in rgba[:3])),
+                    "symbol": _SHAPE_SYMBOLS[int(shape) % len(_SHAPE_SYMBOLS)],
+                },
+            }
+        )
+    if items and not fig.legend_options.get("items"):
+        fig.legend_options = {
+            **fig.legend_options,
+            "title": _native.graph_semantic_legend_text(3),
+            "items": items,
+        }
+        fig.show_legend = True
 
 
 def _label_chars(text: str | None) -> int:

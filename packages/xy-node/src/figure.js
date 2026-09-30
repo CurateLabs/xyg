@@ -1946,6 +1946,12 @@ export class Figure {
       edge_trace: this.traces.length - 2,
     };
     this._graphEdgeIdentity.set(meta.edge_trace, composed.edgeIdentity);
+    if (composed.legend != null && !(this.legend_options?.items?.length)) {
+      this.legend = { ...(this.legend_options ?? {}), ...composed.legend };
+      this.legend_options = this.legend;
+      this.showLegend = true;
+      this.show_legend = true;
+    }
     if (this._graphMeta == null) {
       this._graphMeta = [meta];
     } else {

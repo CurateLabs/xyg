@@ -21,6 +21,10 @@ import {
   graphCompoundBounds,
   graphLabelPlan,
   graphSemanticPaintLayers,
+  graphSemanticLegend,
+  graphSemanticLegendText,
+  graphOrdinalColors,
+  graphDivergingDomain,
   graphSemanticStyles,
   graphVisualStates,
 } from "./abi.js";
@@ -800,6 +804,57 @@ function graphLayerChannels(layers, rows, edge) {
 }
 const GRAPH_SEMANTIC_SHAPES = ["circle", "square", "diamond", "triangle", "cross", "hexagon"];
 
+const GRAPH_SCALE_KEYS = {
+  linear: ["type", "colormap", "domain"],
+  diverging: ["type", "colormap", "midpoint"],
+  ordinal: ["type", "colormap", "order"],
+  categorical: ["type", "palette"],
+};
+
+/** Resolve a graph color scale into a color channel (#34). Mirrors Python
+ * `_color_scale`: diverging domains and ordinal colors come from Rust. */
+function graphScaledColor(values, scale, n, fallback, label) {
+  if (scale == null) return resolveColorChannel(values, n, fallback);
+  const kind = scale?.type;
+  if (!Object.hasOwn(GRAPH_SCALE_KEYS, kind)) {
+    throw new RangeError(`graph ${label} must be an object with type ${Object.keys(GRAPH_SCALE_KEYS).sort().join(", ")}`);
+  }
+  const unknown = Object.keys(scale).filter((key) => !GRAPH_SCALE_KEYS[kind].includes(key));
+  if (unknown.length) throw new RangeError(`graph ${label} ${JSON.stringify(kind)} does not accept ${JSON.stringify(unknown.sort())}`);
+  const items = Array.from(values);
+  if (kind === "linear" || kind === "diverging") {
+    const numeric = Float64Array.from(items, Number);
+    const channel = resolveColorChannel(numeric, n, fallback);
+    const domain = kind === "diverging"
+      ? graphDivergingDomain(numeric, Number(scale.midpoint ?? 0))
+      : scale.domain != null ? [Number(scale.domain[0]), Number(scale.domain[1])] : channel.domain;
+    return { ...channel, domain, colormap: scale.colormap ?? (kind === "diverging" ? "rdbu" : "viridis") };
+  }
+  if (kind === "ordinal") {
+    const order = Array.from(scale.order ?? []).map(String);
+    if (!order.length || new Set(order).size !== order.length) {
+      throw new RangeError(`graph ${label} ordinal needs a nonempty, unique 'order'`);
+    }
+    const index = new Map(order.map((level, i) => [level, i]));
+    const missing = [...new Set(items.map(String).filter((v) => !index.has(v)))].sort();
+    if (missing.length) throw new RangeError(`graph ${label} values ${JSON.stringify(missing.slice(0, 4))} are not in the ordinal order`);
+    return {
+      mode: "categorical",
+      codes: Uint8Array.from(items, (v) => index.get(String(v))),
+      categories: order,
+      palette: graphOrdinalColors(scale.colormap ?? "viridis", order.length),
+    };
+  }
+  const channel = resolveColorChannel(items, n, fallback);
+  if (channel.mode !== "categorical") throw new RangeError(`graph ${label} categorical needs category labels`);
+  if (scale.palette != null) {
+    const palette = Array.from(scale.palette, String);
+    if (!palette.length) throw new RangeError(`graph ${label} categorical 'palette' must not be empty`);
+    return { ...channel, palette };
+  }
+  return channel;
+}
+
 /** Source-row semantic columns for one graph side, or null when unset (#34). */
 function graphSemanticFields(data, where, raw) {
   if (raw.every((value) => value == null)) return null;
@@ -957,6 +1012,15 @@ export function composeGraph(nodes, edges, opts = {}) {
     const conflicts = fields == null ? [] : keys.filter((key) => resolvedOpts.style?.[key] != null);
     if (conflicts.length) {
       throw new RangeError(`graph ${side} semantic fields own paint; style must not set ${JSON.stringify(conflicts)}`);
+    }
+  }
+  const colorScale = resolvedOpts.colorScale ?? resolvedOpts.color_scale ?? null;
+  const edgeColorScale = resolvedOpts.edgeColorScale ?? resolvedOpts.edge_color_scale ?? null;
+  if (nodeFields != null && colorScale != null) throw new RangeError("graph node semantic fields replace colorScale");
+  if (edgeFields != null && edgeColorScale != null) throw new RangeError("graph edge semantic fields replace edgeColorScale");
+  for (const [scale, label, values] of [[colorScale, "colorScale", nodeColor], [edgeColorScale, "edgeColorScale", edgeColor]]) {
+    if (scale != null && (values == null || typeof values === "string")) {
+      throw new RangeError(`graph ${label} needs a per-item color array or column`);
     }
   }
   const theme = resolvedOpts.theme ?? "light";
@@ -1190,7 +1254,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       ...(edgePaint != null
         ? { color_ch: edgePaint.color_ch }
         : edgeColorPaint != null && typeof edgeColorPaint !== "string"
-          ? { color_ch: resolveColorChannel(edgeColorPaint, nEdges, "#888888") }
+          ? { color_ch: graphScaledColor(edgeColorPaint, edgeColorScale, nEdges, "#888888", "edgeColorScale") }
           : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
@@ -1215,7 +1279,7 @@ export function composeGraph(nodes, edges, opts = {}) {
           force_direct: true,
         }
         : nodeColor != null && typeof nodeColor !== "string"
-          ? { color_ch: resolveColorChannel(nodeColor, nNodes, DEFAULT_MARK_COLOR) }
+          ? { color_ch: graphScaledColor(nodeColor, colorScale, nNodes, DEFAULT_MARK_COLOR, "colorScale") }
           : {}),
       size_ch,
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),
@@ -1377,7 +1441,26 @@ export function composeGraph(nodes, edges, opts = {}) {
     graphMeta.node_tooltip_rows = sourceNodeTooltips;
   }
 
+  // Rust semantic legend (#34): one row per class/epistemic/status value on
+  // nodes or edges, in the semantic Scene's order.
+  let legend = null;
+  if ((resolvedOpts.semanticLegend ?? resolvedOpts.semantic_legend ?? true) && (nodeFields || edgeFields)) {
+    const planes = [nodeFields, edgeFields].filter(Boolean);
+    const plane = (k) => planes.flatMap((fields) => Array.from(fields[k]));
+    const rows = graphSemanticLegend(plane(0), plane(1), plane(2), { theme });
+    const hex = (v) => v.toString(16).padStart(2, "0");
+    const items = [...rows.field].map((field, i) => ({
+      kind: "scatter",
+      name: graphSemanticLegendText(field, rows.value[i]),
+      style: {
+        color: `#${hex(rows.rgba[i * 4])}${hex(rows.rgba[i * 4 + 1])}${hex(rows.rgba[i * 4 + 2])}`,
+        symbol: GRAPH_SEMANTIC_SHAPES[rows.shape[i] % GRAPH_SEMANTIC_SHAPES.length],
+      },
+    }));
+    if (items.length) legend = { title: graphSemanticLegendText(3), items };
+  }
   return {
+    legend,
     traces,
     graphMeta,
     nodePositions,

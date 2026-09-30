@@ -30,6 +30,9 @@ import {
   xyGraphCompoundScene,
   xyGraphLabelAccept,
   xyGraphLabelPlan,
+  xyGraphOrdinalColors,
+  xyGraphDivergingDomain,
+  xyGraphSemanticLegendText,
   xyGraphSemanticStyleResolve,
   xyGraphSemanticPaintLayers,
   xyGraphSemanticLegend,
@@ -1726,6 +1729,36 @@ export function graphLabelPlan(kinds, x, y, radiusPx, chars, states, priorities,
   const code = xyGraphLabelPlan(toU64(n, "kinds.length"), u8Ptr(ka), f64Ptr(xa), f64Ptr(ya), f64Ptr(ra), u32Ptr(ca), u8Ptr(sa), f64Ptr(pa), toU64(budget, "budget"), floor, u32Ptr(keep), f64Ptr(threshold), f64Ptr(offsetX), f64Ptr(offsetY), f64Ptr(width), f64Ptr(fontPx), u64Ptr(accepted));
   if (code !== 0) throw new Error(`xyg_graph_label_plan failed with code ${code}`);
   return { keep, threshold, offsetX, offsetY, width, fontPx, accepted: accepted[0] };
+}
+
+/** `levels` evenly spaced `#rrggbb` colors of a built-in colormap (#34).
+ * Mirrors Python `_native.graph_ordinal_colors`. */
+export function graphOrdinalColors(colormap, levels) {
+  if (typeof colormap !== "string") throw new TypeError("colormap must be a built-in colormap name");
+  if (!Number.isSafeInteger(levels) || levels < 1 || levels > 256) throw new RangeError("ordinal scales need 1..256 levels");
+  const name = Buffer.from(colormap, "utf8");
+  const out = new Uint8Array(levels * 3);
+  const code = xyGraphOrdinalColors(u8Ptr(new Uint8Array(name)), BigInt(name.length), BigInt(levels), u8Ptr(out));
+  if (code !== 0) throw new RangeError(`unknown colormap ${JSON.stringify(colormap)} for an ordinal scale`);
+  const hex = (v) => v.toString(16).padStart(2, "0");
+  return Array.from({ length: levels }, (_, i) => `#${hex(out[i * 3])}${hex(out[i * 3 + 1])}${hex(out[i * 3 + 2])}`);
+}
+
+/** Rust domain symmetric about `midpoint` covering every finite value (#34). */
+export function graphDivergingDomain(values, midpoint) {
+  const va = Float64Array.from(values, Number);
+  const lo = new Float64Array(1); const hi = new Float64Array(1);
+  const code = xyGraphDivergingDomain(f64Ptr(va), BigInt(va.length), Number(midpoint), f64Ptr(lo), f64Ptr(hi));
+  if (code !== 0) throw new RangeError("diverging scale needs a finite midpoint and at least one finite value");
+  return [lo[0], hi[0]];
+}
+
+/** Rust text of a semantic legend row (field 0-2) or its title (field 3). */
+export function graphSemanticLegendText(field, value = 0) {
+  const out = new Uint8Array(64); const length = new BigUint64Array(1);
+  const code = xyGraphSemanticLegendText(field, value, u8Ptr(out), 64n, u64Ptr(length));
+  if (code !== 0) throw new RangeError("invalid semantic legend field or value");
+  return Buffer.from(out.subarray(0, Number(length[0]))).toString("utf8");
 }
 
 export function graphCompoundBounds(x, y, parents, parentValidity) {

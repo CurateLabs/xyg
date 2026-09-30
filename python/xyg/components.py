@@ -1190,6 +1190,9 @@ def graph(
     edge_status: Union[str, ArrayLike, None] = None,
     edge_metric: Union[str, ArrayLike, None] = None,
     theme: str = "light",
+    color_scale: Optional[dict[str, Any]] = None,
+    edge_color_scale: Optional[dict[str, Any]] = None,
+    semantic_legend: bool = True,
 ) -> Mark:
     """A node–link graph: Rust layout, edges as segments, nodes as scatter.
 
@@ -1245,6 +1248,13 @@ def graph(
         edge_status: Edge status codes (0-7) or edge-column name.
         edge_metric: Numeric edge metric (drives width) or edge-column name.
         theme: Semantic palette, ``"light"`` or ``"dark"``.
+        color_scale: How an array ``color`` maps to paint: ``{"type":
+            "linear"|"diverging"|"ordinal"|"categorical", ...}`` (see
+            ``spec/design/graph-mark.md`` §7.1.4). Diverging domains and
+            ordinal colors come from Rust.
+        edge_color_scale: The same for ``edge_color``.
+        semantic_legend: Show the Rust semantic legend when semantic fields
+            are set (default ``True``).
     """
     return Mark(
         kind="graph",
@@ -1287,6 +1297,9 @@ def graph(
             "edge_status": edge_status,
             "edge_metric": edge_metric,
             "theme": theme,
+            "color_scale": None if color_scale is None else dict(color_scale),
+            "edge_color_scale": None if edge_color_scale is None else dict(edge_color_scale),
+            "semantic_legend": semantic_legend,
         },
     )
 
@@ -6046,6 +6059,9 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         edge_status=m.props.get("edge_status"),
         edge_metric=m.props.get("edge_metric"),
         theme=m.props.get("theme", "light"),
+        color_scale=m.props.get("color_scale"),
+        edge_color_scale=m.props.get("edge_color_scale"),
+        semantic_legend=m.props.get("semantic_legend", True),
     )
 
 
@@ -7230,6 +7246,9 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         "edge_status",
         "edge_metric",
         "theme",
+        "color_scale",
+        "edge_color_scale",
+        "semantic_legend",
     )
     mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
     if "nodes" in mark_kwargs or "edges" in mark_kwargs:
