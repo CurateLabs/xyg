@@ -69,6 +69,7 @@ try {
   if (result.tableRows < 1 || /<script|<img/.test(result.tableHtml)) fail("table did not render as text");
   if (result.staleCode !== "GF_COMPOSE_GENERATION_STALE") fail("stale generation code");
   if (!result.legend) fail("Rust legend text is missing");
+  if (result.cancelCode !== "XYG_WASM_CANCELLED" || result.afterCancel !== result.nodes.length) fail("cancelled composition did not leave the worker ready");
   const diagnosticsText = JSON.stringify(result.diagnostics);
   for (const id of expected) if (diagnosticsText.includes(id)) fail("diagnostics leaked an identity");
   if (violations.length) fail(`CSP violations: ${violations.join(" | ")}`);

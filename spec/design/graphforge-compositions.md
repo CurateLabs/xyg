@@ -300,7 +300,7 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_EDGE_REVERSED`, `GF_COMPOSE_EDGE_REORIENTED`,
 `GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
 `GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
-`GF_COMPOSE_EMBEDDING_2D`,
+`GF_COMPOSE_EMBEDDING_2D`, `GF_COMPOSE_SCENE_EMPTY`,
 `GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
@@ -347,7 +347,7 @@ changes. Requests are strict: unknown request sections fail.
 | `layer.missing`, `layer.extra` [i] | UTF-8 | policies (§4.3) |
 | `layer.rows` [i] | u64 | explicit result rows |
 | `layer.coordinates` [i] | bytes | Arrow IPC `node_uuid`, `x`, `y` (embeddings) |
-| `select.uuid` | UUID | node or relationship UUIDs painted in the selected state (§4.4 flags); unknown UUIDs are counted (`GF_COMPOSE_SELECTION_UNMATCHED`) |
+| `select.uuid` | UUID | node or relationship UUIDs painted in the selected state (§4.4 flags); a UUID naming both a node and a relationship (separate identity spaces) selects both; unknown UUIDs are counted (`GF_COMPOSE_SELECTION_UNMATCHED`) |
 | `render.width`, `render.height` | f64 ×1 | viewport (160–16,384 × 120–16,384 CSS px): also lower a graph composition to the canonical Scene (§6.3); other kinds fail with `GF_COMPOSE_RENDER_UNSUPPORTED` |
 | `render.theme`, `render.title` | UTF-8 | `light` (default) or `dark`; chart title |
 
@@ -472,10 +472,20 @@ edge `j + 1`) back to the composition with
 `XygGraphForgeComposition.identifyStableId`. The Scene is direct tier: at most
 1,024 composed nodes plus edges and the semantic Scene's primitive bound
 (`GF_COMPOSE_SCENE_TOO_LARGE`); larger graphs use the native graph mark,
-whose Rust level-of-detail applies. Non-graph documents render in the host
-(`graphforgeTableElement`, or the chart helpers from their sections).
-`decodeWasmGraphForgeDocument` throws an `XygWasmError` carrying the Rust
-`code`, `layer`, and `field`.
+whose Rust level-of-detail applies. A composition that hides every node has
+nothing to lay out: the document carries no `scene.*` sections and records
+`GF_COMPOSE_SCENE_EMPTY`, and `renderWasmGraphForge` rejects it with that
+code so the host shows its empty state. Non-graph
+documents render in the host (`graphforgeTableElement`, or the chart helpers
+from their sections). `graphforgeTableElement` is the one DOM surface here,
+like the client's legends and tooltips: it lays out no data, only places the
+Rust-formatted cells as `textContent`. `decodeWasmGraphForgeDocument` throws
+an `XygWasmError` carrying the Rust `code`, `layer`, and `field`; a document
+whose sections disagree on shape (for example table cells that do not fill
+`rows × columns`) fails with `GF_COMPOSE_DOCUMENT_INVALID` in both the browser
+and Node decoders. The Worker defers `graphforge.compose` by one task turn, as
+it does Scene operations, so a cancellation already queued suppresses the
+work before synchronous composition and layout start.
 
 **Equivalence.** Documents contain only integer, UUID, text, and IEEE value
 copies, so identical request bytes give identical documents on every host.

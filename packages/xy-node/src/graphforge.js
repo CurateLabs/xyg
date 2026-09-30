@@ -332,7 +332,11 @@ export class GraphForgeComposition {
       const values = get("table.values");
       const valid = get("table.valid");
       const rows = get("table.rows");
-      const k = columns.length;
+      const k = columns?.length ?? 0;
+      if (!k || !cells || !rows || !values || !valid || cells.length !== rows.length * k
+          || values.length !== cells.length || valid.length !== cells.length) {
+        throw new GraphForgeCompositionError("GF_COMPOSE_DOCUMENT_INVALID", "table sections disagree on shape");
+      }
       /** Table composition: canonical columns, text cells, numeric values. */
       this.table = {
         columns,

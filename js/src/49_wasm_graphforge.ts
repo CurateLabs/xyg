@@ -223,6 +223,15 @@ export class XygGraphForgeComposition {
   constructor(bytes: Uint8Array, sections: Map<string, Section>) {
     this.bytes = bytes; this.sections = sections;
     this.kind = this.get("kind");
+    if (this.kind === "table") {
+      // Documents can arrive from outside this worker; check the table shape
+      // before anything iterates it.
+      const columns = this.get("table.columns"), cells = this.get("table.cells"), valid = this.get("table.valid"), rows = this.get("table.rows");
+      if (!Array.isArray(columns) || !columns.length || !Array.isArray(cells) || !rows || !valid
+          || cells.length !== rows.length * columns.length || valid.length !== cells.length) {
+        throw new XygWasmError("GF_COMPOSE_DOCUMENT_INVALID", "table sections disagree on shape");
+      }
+    }
     const nodes: Uint8Array | undefined = this.get("node.uuid");
     const edges: Uint8Array | undefined = this.get("edge.uuid");
     const derived: Uint8Array | undefined = this.get("edge.derived");
@@ -319,7 +328,8 @@ export async function renderWasmGraphForge(options: {
   if (!options?.el || !options.worker || !options.input) throw new TypeError("el, worker, and input are required");
   const render = { width: options.width, height: options.height, theme: options.theme ?? "light", ...(options.title != null ? { title: options.title } : {}) };
   const composition = await composeWasmGraphForge(options.worker, { ...options.input, render }).result;
-  if (composition.kind !== "graph" || composition.scene == null) throw new XygWasmError("GF_COMPOSE_RENDER_UNSUPPORTED", "only graph compositions paint through the Scene");
+  if (composition.kind !== "graph") throw new XygWasmError("GF_COMPOSE_RENDER_UNSUPPORTED", "only graph compositions paint through the Scene");
+  if (composition.scene == null) throw new XygWasmError("GF_COMPOSE_SCENE_EMPTY", "every composed node is hidden; there is nothing to paint");
   const view = await renderWasmScene({ el: options.el, scene: composition.scene.slice(), worker: options.worker });
   // Scene views disable click events by default; GraphForge picks need them.
   (view as any).interaction = { ...((view as any).interaction ?? {}), click: true };
@@ -343,7 +353,8 @@ export function graphforgeTableElement(composition: XygGraphForgeComposition, do
   const head = table.createTHead().insertRow();
   for (const column of columns) { const th = doc.createElement("th"); th.scope = "col"; th.textContent = column; head.appendChild(th); }
   const body = table.createTBody();
-  for (let r = 0; r * columns.length < cells.length; r++) {
+  const rows = cells.length / columns.length;
+  for (let r = 0; r < rows; r++) {
     const row = body.insertRow();
     columns.forEach((_, c) => { const i = r * columns.length + c; row.insertCell().textContent = valid[i] ? cells[i]! : ""; });
   }

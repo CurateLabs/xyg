@@ -640,11 +640,18 @@ impl<'b> Planes<'b> {
     fn select(&mut self, selected: &[Uuid]) {
         let mut unmatched = 0u64;
         for id in selected {
-            if let Some(&node) = self.base.node_index.get(&UuidKey(*id)) {
+            // Node and relationship identities are indexed separately, so one
+            // UUID can name both; select every entity it names.
+            let key = UuidKey(*id);
+            let node = self.base.node_index.get(&key).copied();
+            let edge = self.base.edge_index.get(&key).copied();
+            if let Some(node) = node {
                 self.node_flags[node] |= FLAG_SELECTED;
-            } else if let Some(&edge) = self.base.edge_index.get(&UuidKey(*id)) {
+            }
+            if let Some(edge) = edge {
                 self.edge_flags[edge] |= FLAG_SELECTED;
-            } else {
+            }
+            if node.is_none() && edge.is_none() {
                 unmatched += 1;
             }
         }
@@ -1450,8 +1457,11 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
 
 /// Append the direct-tier canonical Scene (spec §6.3) to a graph document.
 fn with_scene(document: Vec<u8>, render: &super::request::Render<'_>) -> GfResult<Vec<u8>> {
-    let rendered = super::scene::render_graph(&document, render)?;
     let decoded = super::container::Container::decode(&document, DOCUMENT_MAGIC)?;
+    if decoded.get("node.class", 0).is_none_or(|s| s.count == 0) {
+        return Ok(document);
+    }
+    let rendered = super::scene::render_graph(&document, render)?;
     let mut out = Builder::new(DOCUMENT_MAGIC);
     out.extend_from(&decoded);
     out.u32s("scene.version", 0, &[crate::scene::SCENE_VERSION]);
@@ -1768,6 +1778,15 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             code: "GF_COMPOSE_EDGES_HIDDEN_WITH_NODES",
             layer: None,
             count: cascaded,
+        });
+    }
+    // Every node hidden: there is nothing to lay out, so the document carries
+    // no Scene and says so; hosts show their empty state.
+    if request.render.is_some() && nodes.is_empty() {
+        decisions.push(Decision {
+            code: "GF_COMPOSE_SCENE_EMPTY",
+            layer: None,
+            count: 1,
         });
     }
     encode_decisions(&mut out, &decisions);

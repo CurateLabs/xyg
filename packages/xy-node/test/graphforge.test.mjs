@@ -209,6 +209,22 @@ test("container codec round-trips and rejects corruption", () => {
   assert.throws(() => decodeContainer(bytes.subarray(0, bytes.length - 8), "XYGF"));
 });
 
+test("table documents with inconsistent shapes are rejected, not iterated", () => {
+  const table = (columns, cells) => encodeContainer("XYGF", [
+    { name: "status", dtype: DTYPE.u8, values: [0] },
+    { name: "kind", dtype: DTYPE.utf8, values: "table" },
+    { name: "table.columns", dtype: DTYPE.texts, values: columns },
+    { name: "table.kinds", dtype: DTYPE.u8, values: columns.map(() => 0) },
+    { name: "table.cells", dtype: DTYPE.texts, values: cells },
+    { name: "table.values", dtype: DTYPE.f64, values: cells.map(() => 0) },
+    { name: "table.valid", dtype: DTYPE.u8, values: cells.map(() => 1) },
+    { name: "table.rows", dtype: DTYPE.u64, values: [0n] },
+  ]);
+  assert.throws(() => decodeGraphForgeDocument(table([], ["x"])), { code: "GF_COMPOSE_DOCUMENT_INVALID" });
+  assert.throws(() => decodeGraphForgeDocument(table(["a"], ["x", "y"])), { code: "GF_COMPOSE_DOCUMENT_INVALID" });
+  assert.deepEqual(decodeGraphForgeDocument(table(["a"], ["x"])).table.rows, [["x"]]);
+});
+
 test("graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips", () => {
   const c = compose("pagerank", "louvain", "minimum_spanning_tree");
   const fig = graphforgeChart(c, { width: 640, height: 420, title: "GraphForge" });

@@ -1395,3 +1395,43 @@ fn selection_paints_the_selected_state_by_uuid() {
         .decisions()
         .contains(&("GF_COMPOSE_SELECTION_UNMATCHED".into(), 1)));
 }
+
+#[test]
+fn rendering_an_all_hidden_graph_records_an_empty_scene() {
+    let (base, generation) = base_of("pagerank");
+    let mut none = layer("pagerank");
+    none.rows = Some(vec![]);
+    none.missing = Some("hide");
+    let bytes = with_render(request(&[base], Some(generation), &[none]), "light");
+    let document = compose_bytes(&bytes).unwrap();
+    let doc = Doc::new(&document);
+    assert!(doc.u32s("node.flags").is_empty());
+    assert!(doc.0.get("scene.canonical", 0).is_none());
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_SCENE_EMPTY".into(), 1)));
+}
+
+#[test]
+fn one_uuid_naming_a_node_and_a_relationship_selects_both() {
+    let (a, b) = ([1u8; 16], [2u8; 16]);
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.uuids("base.node_uuid", 0, &[a, b]);
+    // Node and relationship identities are separate namespaces.
+    builder.uuids("base.edge_uuid", 0, &[a]);
+    builder.uuids("base.edge_source_uuid", 0, &[a]);
+    builder.uuids("base.edge_target_uuid", 0, &[b]);
+    builder.bytes("layer.result", 0, &fixture("articulation_points"));
+    builder.utf8("layer.intent", 0, "graph");
+    builder.utf8("layer.extra", 0, "drop");
+    builder.uuids("select.uuid", 0, &[a]);
+    let document = compose_bytes(&builder.finish()).unwrap();
+    let doc = Doc::new(&document);
+    assert_ne!(doc.u32s("node.flags")[0] & FLAG_SELECTED, 0);
+    assert_eq!(doc.u32s("node.flags")[1] & FLAG_SELECTED, 0);
+    assert_ne!(doc.u32s("edge.flags")[0] & FLAG_SELECTED, 0);
+    assert!(!doc
+        .decisions()
+        .iter()
+        .any(|(code, _)| code == "GF_COMPOSE_SELECTION_UNMATCHED"));
+}

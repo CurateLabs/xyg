@@ -62,8 +62,17 @@ try {
   try {
     await composeWasmGraphForge(worker, { base, layers: [{ result: await bytes("pagerank"), intent: "graph", generation: manifest.bases.dag.generation }] }).result;
   } catch (error) { staleCode = error.code; }
+  // A composition cancelled at once rejects with the cancellation code and
+  // leaves the worker ready for the next request.
+  const cancelled = composeWasmGraphForge(worker, { base, layers: [{ result: await bytes("pagerank"), intent: "graph", generation }] });
+  cancelled.cancel();
+  let cancelCode = null;
+  try { await cancelled.result; } catch (error) { cancelCode = error.code; }
+  const after = await composeWasmGraphForge(worker, { base, layers: [{ result: await bytes("pagerank"), intent: "graph", generation }] }).result;
   window.__graphforge = {
     ok: true,
+    cancelCode,
+    afterCancel: after.nodeUuid.length,
     nodes: composition.nodeUuid,
     edges: composition.edgeUuid.filter(Boolean),
     painted: [...painted],

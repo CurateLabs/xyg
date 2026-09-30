@@ -1057,6 +1057,7 @@ function runCompoundTransition(message: any) {
 }
 
 function runGraphforgeCompose(message: any) {
+  queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
     if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 32 || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graphforge request is malformed"); return; }
@@ -1161,7 +1162,13 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "graphforge.compose") { runGraphforgeCompose(message); return; }
+  if (message?.type === "graphforge.compose") {
+    // Composition and layout run synchronously; one task turn lets a queued
+    // cancellation clear the timer before any WASM work starts.
+    const timer = setTimeout(() => runGraphforgeCompose(message), 0);
+    queued.set(message.requestId, timer as unknown as number);
+    return;
+  }
   if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
   if (message?.type === "cancel") {
     const timer = queued.get(message.requestId);

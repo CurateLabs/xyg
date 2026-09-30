@@ -297,8 +297,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 `xyg_wasm_graphforge_composition_version`: one staged GraphForge `XYGQ`
 request in, the native host's byte-identical `XYGF` document out
 ([graphforge-compositions.md](graphforge-compositions.md) §6.3). ABI 23 introduced the bounded `XYTK`/`XYTO` tick
-resolver and its independent Worker sequence lane; ABI 26 is the current
-contract after the default-palette and stricter packed-tick validation cuts.
+resolver and its independent Worker sequence lane; ABI 26 added the
+default-palette and stricter packed-tick validation cuts that ABI 27 keeps.
 ABI 22 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical
