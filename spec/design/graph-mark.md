@@ -554,7 +554,8 @@ Rust validates the entire acyclic forest before output, leaves a collapsed
 group visible, hides all descendants, maps crossing edges to the nearest
 visible collapsed ancestor, omits edges that become internal, propagates
 hidden selected/hovered/neighbor/pinned state to the representative, and emits
-visible transitive group bounds as Rect primitives. Stable node/edge source
+visible transitive group bounds, padded by the largest visible member marker
+radius plus 6 px (§7.1.5), as Rect primitives. Stable node/edge source
 identity is unchanged. Direct-WASM authoring uses the same compiler through
 XYGG v3; TypeScript only frames the three exact planes and does not synthesize
 collapse policy.
@@ -748,6 +749,41 @@ contrast against both theme backgrounds
 fixture) and probes Chromium for the ordinal node colors and the painted
 legend rows.
 
+#### 7.1.5 Compound frames and disclosure on the composed mark (#34, ABI 373)
+
+Compound graphs (GraphForge `parent_uuid`) paint a **frame** around every
+visible group, from `xyg_graph_compound_frames`: the transitive bounds over
+all descendants (hidden ones included), the semantic Scene's paint (the
+group's resolved stroke, or the theme neutral, at 0.72 alpha and 1.5 px), and
+a screen **pad** equal to the largest visible member marker radius plus 6 px,
+so the frame clears its members at every zoom. The semantic Scene pads its
+compound rects the same way. Hosts ship frames as the node trace's
+`compound_frame` channel (bounds as deltas from the node for exact f32
+transport, RGBA, width, pad); the browser strokes them on the chrome canvas
+under the data. Frames need exact source identity, so Aggregate LOD records
+`compound_frames: "omitted:aggregate"` instead (§28). `compound_frame` is
+per-item paint: static SVG/PNG of a compound graph fails closed until the
+static route paints frames.
+
+`collapsed=` (group ids, a node mask, or a node column; Node `collapsed`)
+discloses groups. The full graph is laid out once and must be Direct LOD
+(otherwise it fails closed, like `xyg_graph_compound_transition`); then
+`xyg_graph_compound_collapse` returns, exactly as the compound Scene routes
+it, which nodes stay visible (collapsed groups do; their descendants do not),
+each hidden node's visible representative, interaction flags with hidden
+selected/hovered/neighbor/pinned state propagated to the representative, and
+per edge whether it stays (newly internal edges drop; authored self-loops
+stay) with its routed endpoints. The host composes that visible graph at the
+full layout's positions, so positions do not jump when a group toggles, and
+every per-row argument follows the visible rows. `spec.graph` records
+`compound_collapsed` and `compound_frames`; a pick on a collapsed group adds
+`compound_collapsed`, `compound_member_count`, and `compound_members` (hidden
+member ids, capped at 256 with `compound_members_truncated`). Hosts toggle a
+group by recomposing with the next collapse set (`xyg_graph_compound_transition`
+validates it). `tests/test_graph_compound.py` pins the composed result in
+`tests/fixtures/graph_compound_cross_host.json` (Node asserts the same
+fixture) and probes Chromium for padded frames under the data.
+
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,
 epistemic, and status values; selected and pinned state; node and edge labels;
@@ -814,6 +850,8 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_ordinal_colors` | ABI 372 evenly spaced colormap colors for ordinal graph scales (#34) |
 | `xyg_graph_diverging_domain` | ABI 372 midpoint-centered continuous domain for diverging graph scales (#34) |
 | `xyg_graph_semantic_legend_text` | ABI 372 semantic legend row labels and title (#34) |
+| `xyg_graph_compound_collapse` | ABI 373 compound disclosure for composed graphs: visibility, representatives, propagated flags, edge keep/remap (#34) |
+| `xyg_graph_compound_frames` | ABI 373 visible group frames: transitive bounds, Scene paint, member-clearing pad (#34) |
 | `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |

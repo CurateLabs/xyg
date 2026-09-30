@@ -479,6 +479,9 @@ function xyInitiallyVisible(el) {
 // label_plan channel row: threshold, offset x, offset y, width, font px
 // (#34); mirrors the host GRAPH_LABEL_PLAN_COMPONENTS.
 const GRAPH_LABEL_PLAN_STRIDE = 5;
+// compound_frame channel row (#34): bounds deltas (4), RGBA (4), width, pad;
+// mirrors the host COMPOUND_FRAME_COMPONENTS.
+const COMPOUND_FRAME_STRIDE = 10;
 
 export class ChartView {
   constructor(el, spec, buffer, comm) {
@@ -4283,6 +4286,7 @@ export class ChartView {
     this._buildInstanceStyleChannels(g, t, buffer, "stroke_width");
     this._buildSemanticLayers(g, t, buffer, true);
     this._buildLabelPlan(g, t, buffer);
+    this._buildCompoundFrames(g, t, buffer);
     this._pointMarkStyle(g, t);
   }
 
@@ -4796,6 +4800,54 @@ export class ChartView {
     g._labelPlan = Float32Array.from(values.subarray(0, g.n * stride));
     g._labelRows = [];
     for (let i = 0; i < g.n; i++) if (g._labelPlan[i * stride] >= 0) g._labelRows.push(i);
+  }
+
+  // Rust compound frames (#34): per node row, bounds deltas from the node
+  // (xmin, xmax, ymin, ymax; data units), RGBA 0-255, width px, pad px.
+  _buildCompoundFrames(g, t, buffer) {
+    const spec = t.channels && t.channels.compound_frame;
+    if (!spec || spec.components !== COMPOUND_FRAME_STRIDE) return;
+    const values = this._columnView(buffer, this.spec.columns[spec.buf]);
+    if (values.length < g.n * COMPOUND_FRAME_STRIDE) return;
+    g._compoundFrames = Float32Array.from(values.subarray(0, g.n * COMPOUND_FRAME_STRIDE));
+    g._compoundFrameRows = [];
+    for (let i = 0; i < g.n; i++) {
+      if (g._compoundFrames[i * COMPOUND_FRAME_STRIDE + 8] > 0) g._compoundFrameRows.push(i);
+    }
+  }
+
+  // Compound frames (#34) stroke the Rust frame for each visible group on
+  // the chrome canvas, under the data: its bounds (node position plus Rust
+  // deltas) grown by the Rust screen pad so the frame clears member markers
+  // at every zoom. Paint, width, and pad are Rust's; the client only projects.
+  _drawCompoundFrames(ctx) {
+    const graphs = Array.isArray(this.spec && this.spec.graph) ? this.spec.graph : [];
+    if (!graphs.length || this._polarGeometry()) return;
+    const p = this.plot;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p.x, p.y, p.w, p.h);
+    ctx.clip();
+    for (const meta of graphs) {
+      const node = this.gpuTraces.find((g) => g.trace.id === meta.node_trace);
+      if (!node || !node._compoundFrames || !node._cpu || node._legendHidden) continue;
+      const f = node._compoundFrames;
+      for (const i of node._compoundFrameRows) {
+        const at = i * COMPOUND_FRAME_STRIDE;
+        const x = this._decodeValue(node._cpu.x, node._cpu.xMeta, i);
+        const y = this._decodeValue(node._cpu.y, node._cpu.yMeta, i);
+        const a = this._projectDataPoint(node.xAxis, node.yAxis, x + f[at], y + f[at + 2], null);
+        const b = this._projectDataPoint(node.xAxis, node.yAxis, x + f[at + 1], y + f[at + 3], null);
+        if (![a[0], a[1], b[0], b[1]].every(Number.isFinite)) continue;
+        const pad = f[at + 9];
+        const left = Math.min(a[0], b[0]) - pad;
+        const top = Math.min(a[1], b[1]) - pad;
+        ctx.strokeStyle = `rgba(${f[at + 4]},${f[at + 5]},${f[at + 6]},${f[at + 7] / 255})`;
+        ctx.lineWidth = f[at + 8];
+        ctx.strokeRect(left, top, Math.abs(b[0] - a[0]) + 2 * pad, Math.abs(b[1] - a[1]) + 2 * pad);
+      }
+    }
+    ctx.restore();
   }
 
   // Graph labels (#34) paint the Rust plan: a label shows once the view's
@@ -7547,6 +7599,7 @@ export class ChartView {
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.setLineDash([]);
+    this._drawCompoundFrames(ctx);
 
     // Annotation shapes go on the overlay canvas, above the marks canvas —
     // exporter parity: SVG/raster emit annotation marks after the data.

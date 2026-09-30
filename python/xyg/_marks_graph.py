@@ -55,6 +55,7 @@ def graph(
     color_scale: dict[str, Any] | None = None,
     edge_color_scale: dict[str, Any] | None = None,
     semantic_legend: bool = True,
+    collapsed: Union[str, ArrayLike, None] = None,
 ) -> "Figure":
     """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
 
@@ -85,6 +86,13 @@ def graph(
     "colormap"}`` (Rust samples one color per ordered level, legend in that
     order), or ``{"type": "categorical", "palette"}``. With semantic fields,
     ``semantic_legend`` (default on) shows the Rust semantic legend.
+
+    Compound graphs (parent/child nodes) paint a Rust frame around each
+    visible group. ``collapsed`` (group ids, a node mask, or a node column)
+    collapses groups: the full graph is laid out once (Direct LOD), then Rust
+    hides descendants, routes crossing edges to the collapsed group, drops
+    newly internal edges, and propagates hidden interaction state; picking a
+    collapsed group reports its hidden members.
     """
     from . import _graph, _native, channels
     from ._channels_lut import normalize_to_unit
@@ -122,6 +130,37 @@ def graph(
         raise ValueError("graph edge semantic fields replace edge_color_scale")
     if theme not in ("light", "dark"):
         raise ValueError(f"graph theme must be 'light' or 'dark', got {theme!r}")
+    full = data
+    compound: dict[str, Any] | None = None
+    if collapsed is not None:
+        compound = _collapse_compounds(
+            data,
+            collapsed,
+            visual_state_flags,
+            layout=layout,
+            seed=seed,
+            iterations=iterations,
+            cose=cose,
+            pinned=pinned,
+        )
+        keep_n, keep_e = compound["visible"], compound["edge_keep"]
+        n0, e0 = full.n_nodes, len(full.sources)
+        data = compound["data"]
+        visual_state_flags = compound["flags"][keep_n]
+        color, size, node_label, label_priority = (
+            _subset_rows(v, keep_n, n0) for v in (color, size, node_label, label_priority)
+        )
+        edge_color, edge_width, edge_label, edge_label_priority = (
+            _subset_rows(v, keep_e, e0)
+            for v in (edge_color, edge_width, edge_label, edge_label_priority)
+        )
+        if node_fields is not None:
+            c, ep, st, mt = node_fields
+            node_fields = (c[keep_n], ep[keep_n], st[keep_n], mt[keep_n])
+        if edge_fields is not None:
+            c, ep, st, mt = edge_fields
+            edge_fields = (c[keep_e], ep[keep_e], st[keep_e], mt[keep_e])
+        layout, pinned, cose = "preset", None, None
     px, py, meta = _graph.run_layout(
         data,
         layout=layout,
@@ -235,6 +274,9 @@ def graph(
         )
 
     edge_color_paint = _expand_edge_values(edge_color, "edge_color")
+    frames = _compound_frames(
+        full, compound, px, py, len(px) == data.n_nodes, node_style, node_diameter * 0.5, theme
+    )
     node_scale = _color_scale(color, color_scale, "color_scale")
     edge_scale = _color_scale(edge_color_paint, edge_color_scale, "edge_color_scale")
     edge_width_paint = _expand_edge_values(edge_width, "edge_width")
@@ -293,6 +335,8 @@ def graph(
         self.traces[-1].color_ch = node_scale["channel"]
     if node_style is not None:
         _add_layer_channels(self.traces[-1], node_style["layers"], edge=False)
+    if frames is not None and len(frames["node"]):
+        _add_compound_frame_channel(self.traces[-1], frames, compound, px, py)
     if semantic_legend and (node_fields is not None or edge_fields is not None):
         _apply_semantic_legend(self, node_fields, edge_fields, theme)
     # Edge identity follows Rust's render-edge membership, not a count match
@@ -500,6 +544,14 @@ def graph(
         existing.append(graph_meta)
     # Register the identity plane only once the graph fully validated.
     self._graph_edge_identity[graph_meta["edge_trace"]] = edge_identity
+    if frames is not None:
+        graph_meta["compound_frames"] = [str(full.ids[int(i)]) for i in frames["node"]]
+    elif full.parent_indices is not None:
+        # Frames need exact source identity; Aggregate LOD omits them (§28).
+        graph_meta["compound_frames"] = "omitted:aggregate"
+    if compound is not None:
+        graph_meta["compound_collapsed"] = compound["collapsed_ids"]
+        self._graph_node_identity[graph_meta["node_trace"]] = compound["members"]
     return self
 
 
@@ -625,6 +677,201 @@ def _apply_semantic_legend(fig: Any, node_fields: Any, edge_fields: Any, theme: 
             **fig.legend_options,
             "items": items,
         }
+
+
+#: Hidden members listed per collapsed-group pick before truncation; mirrors
+#: GRAPH_EDGE_PICK_MEMBER_CAP.
+COMPOUND_PICK_MEMBER_CAP = 256
+
+
+def _subset_rows(value: Any, keep: np.ndarray, n: int) -> Any:
+    """Keep the visible rows of a per-row argument; scalars/strings pass."""
+    if value is None or isinstance(value, str) or np.ndim(value) == 0:
+        return value
+    if len(value) != n:
+        return value  # the mark's own length validation reports it
+    idx = np.flatnonzero(keep)
+    return value[idx] if isinstance(value, np.ndarray) else [value[int(i)] for i in idx]
+
+
+def _collapsed_mask(data: Any, collapsed: Any) -> np.ndarray:
+    n = data.n_nodes
+    if isinstance(collapsed, str):
+        if collapsed not in data.node_attrs:
+            raise ValueError(f"graph collapsed names unknown node column {collapsed!r}")
+        collapsed = data.node_attrs[collapsed]
+    values = list(collapsed)
+    if len(values) == n and all(isinstance(v, (bool, np.bool_)) for v in values):
+        return np.asarray(values, dtype=np.uint8)
+    wanted = {str(v) for v in values}
+    ids = [str(i) for i in data.ids]
+    unknown = sorted(wanted - set(ids))
+    if unknown:
+        raise ValueError(f"graph collapsed ids {unknown[:4]} are not nodes")
+    return np.asarray([i in wanted for i in ids], dtype=np.uint8)
+
+
+def _collapse_compounds(
+    data: Any, collapsed: Any, flags: Any, **layout_opts: Any
+) -> dict[str, Any]:
+    """Lay the full graph out once, then let Rust collapse it (#34)."""
+    from . import _graph, _native
+
+    if data.parent_indices is None:
+        raise ValueError("graph collapsed= needs compound parents (GraphForge parent_uuid)")
+    n = data.n_nodes
+    mask = _collapsed_mask(data, collapsed)
+    px, py, meta = _graph.run_layout(data, **layout_opts)
+    if int(meta["lod_tier"]) != 0 or len(px) != n:
+        raise ValueError(
+            "graph compound disclosure needs Direct LOD: collapse keeps exact node "
+            "identity, which Aggregate LOD does not have"
+        )
+    validity = (
+        np.ones(n, dtype=np.uint8)
+        if data.parent_validity is None
+        else np.asarray(data.parent_validity, dtype=np.uint8)
+    )
+    parents = np.asarray(data.parent_indices, dtype=np.uint64)
+    out = _native.graph_compound_collapse(
+        parents, validity, mask, _node_flags(flags, n), data.sources, data.targets
+    )
+    visible, keep = out["visible"], out["edge_keep"]
+    new_index = np.full(n, -1, dtype=np.int64)
+    new_index[visible] = np.arange(int(visible.sum()))
+    rows = np.flatnonzero(visible)
+    erows = np.flatnonzero(keep)
+
+    def pick(values: Any, idx: np.ndarray) -> Any:
+        if values is None:
+            return None
+        return values[idx] if isinstance(values, np.ndarray) else [values[int(i)] for i in idx]
+
+    sub_parents = parents[rows].copy()
+    sub_validity = validity[rows].copy()
+    for j, parent in enumerate(sub_parents):
+        if sub_validity[j]:
+            mapped = new_index[int(parent)]
+            sub_parents[j], sub_validity[j] = (mapped, 1) if mapped >= 0 else (0, 0)
+    sub = _graph.GraphData(
+        [data.ids[int(i)] for i in rows],
+        new_index[out["edge_source"][erows].astype(np.int64)],
+        new_index[out["edge_target"][erows].astype(np.int64)],
+        x=px[rows],
+        y=py[rows],
+        node_attrs={k: pick(np.asarray(v, dtype=object), rows) for k, v in data.node_attrs.items()},
+        edge_ids=None if data.edge_ids is None else [data.edge_ids[int(i)] for i in erows],
+        edge_attrs={
+            k: pick(np.asarray(v, dtype=object), erows) for k, v in data.edge_attrs.items()
+        },
+        node_uuid_bytes=pick(data.node_uuid_bytes, rows),
+        edge_uuid_bytes=pick(data.edge_uuid_bytes, erows),
+        node_provenance_rows=pick(data.node_provenance_rows, rows),
+        edge_provenance_rows=pick(data.edge_provenance_rows, erows),
+        parent_indices=sub_parents,
+        parent_validity=sub_validity,
+        directed=data.directed,
+    )
+    members: dict[int, dict[str, Any]] = {}
+    representative = out["representative"]
+    # One pass: hidden nodes bucketed by representative, in node order.
+    hidden_rows = np.flatnonzero(~visible)
+    hidden_reps = np.asarray(representative)[hidden_rows]
+    order = np.argsort(hidden_reps, kind="stable")
+    reps, starts = np.unique(hidden_reps[order], return_index=True)
+    by_group = {
+        int(rep): hidden_rows[order[start:end]]
+        for rep, start, end in zip(reps, starts, [*starts[1:], len(order)], strict=True)
+    }
+    for group in np.flatnonzero(mask):
+        hidden = [str(data.ids[int(i)]) for i in by_group.get(int(group), ())]
+        if visible[group]:
+            members[int(new_index[group])] = {
+                "compound_collapsed": True,
+                "compound_member_count": len(hidden),
+                "compound_members": hidden[:COMPOUND_PICK_MEMBER_CAP],
+                "compound_members_truncated": len(hidden) > COMPOUND_PICK_MEMBER_CAP,
+            }
+    return {
+        "data": sub,
+        "visible": visible,
+        "edge_keep": keep,
+        "flags": out["flags"],
+        "mask": mask,
+        "positions": (px, py),
+        "collapsed_ids": [str(data.ids[int(i)]) for i in np.flatnonzero(mask)],
+        "members": members,
+    }
+
+
+def _compound_frames(
+    full: Any,
+    compound: dict[str, Any] | None,
+    px: np.ndarray,
+    py: np.ndarray,
+    direct: bool,
+    node_style: dict[str, Any] | None,
+    radius_px: np.ndarray,
+    theme: str,
+) -> dict[str, np.ndarray] | None:
+    """Rust compound frames over the full graph's positions, or None."""
+    from . import _native
+
+    if full.parent_indices is None or (compound is None and not direct):
+        return None
+    n = full.n_nodes
+    visible = np.ones(n, dtype=bool) if compound is None else compound["visible"]
+    fx, fy = (px, py) if compound is None else compound["positions"]
+    mask = np.zeros(n, dtype=np.uint8) if compound is None else compound["mask"]
+    stroke = np.zeros((n, 4), dtype=np.uint8)
+    opacity = np.ones(n, dtype=np.float32)
+    radius = np.zeros(n, dtype=np.float64)
+    radius[visible] = np.asarray(radius_px, dtype=np.float64)
+    if node_style is not None:
+        stroke[visible] = np.rint(np.asarray(node_style["stroke"]) * 255.0).astype(np.uint8)
+        opacity[visible] = np.asarray(node_style["opacity"], dtype=np.float32)
+    validity = (
+        np.ones(n, dtype=np.uint8)
+        if full.parent_validity is None
+        else np.asarray(full.parent_validity, dtype=np.uint8)
+    )
+    return _native.graph_compound_frames(
+        fx, fy, radius, full.parent_indices, validity, mask, stroke, opacity, theme=theme
+    )
+
+
+# compound_frame channel row: bounds deltas from the node (xmin, xmax, ymin,
+# ymax; data units), RGBA 0-255, stroke width px, screen pad px (#34).
+COMPOUND_FRAME_COMPONENTS = 10
+
+
+def _add_compound_frame_channel(
+    trace: Any,
+    frames: dict[str, np.ndarray],
+    compound: dict[str, Any] | None,
+    px: np.ndarray,
+    py: np.ndarray,
+) -> None:
+    """Ship Rust compound frames on the node trace: rows of nodes without a
+    frame carry width 0. Bounds ride as deltas from the node so f32 transport
+    stays exact (§4)."""
+    from . import channels
+
+    rows = np.zeros((len(px), COMPOUND_FRAME_COMPONENTS))
+    if compound is None:
+        index = np.asarray(frames["node"], dtype=np.intp)
+    else:
+        new_index = np.cumsum(compound["visible"]) - 1
+        index = new_index[np.asarray(frames["node"], dtype=np.intp)]
+    b = np.asarray(frames["bounds"], dtype=np.float64)
+    rows[index, 0:2] = b[:, 0:2] - px[index, None]
+    rows[index, 2:4] = b[:, 2:4] - py[index, None]
+    rows[index, 4:8] = np.asarray(frames["rgba"], dtype=np.float64)
+    rows[index, 8] = frames["width"]
+    rows[index, 9] = frames["pad"]
+    trace.style_channels["compound_frame"] = channels.StyleChannel(
+        values=np.ascontiguousarray(rows), components=COMPOUND_FRAME_COMPONENTS
+    )
 
 
 def _label_chars(text: str | None) -> int:

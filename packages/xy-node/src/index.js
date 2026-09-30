@@ -176,6 +176,8 @@ export {
   graphSemanticLegend,
   graphLabelAccept,
   graphLabelPlan,
+  graphCompoundCollapse,
+  graphCompoundFrames,
   graphOrdinalColors,
   graphDivergingDomain,
   graphSemanticLegendText,

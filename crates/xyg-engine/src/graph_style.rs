@@ -1272,15 +1272,33 @@ fn encode_semantic_graph_scene_internal(
             }
         }
     }
+    let radii: Vec<f64> = nodes
+        .iter()
+        .map(|style| f64::from(style.size) * 0.5)
+        .collect();
+    let pads = compound_frame_pads(&hierarchy, &radii);
+    let px_to_x = (x_domain.1 - x_domain.0) / (layout.right - layout.left);
+    let px_to_y = (y_domain.1 - y_domain.0) / (layout.bottom - layout.top);
     for (index, style) in nodes.iter().copied().enumerate() {
         if !hierarchy.visible[index] || !hierarchy.is_compound[index] {
             continue;
         }
-        let bounds = hierarchy.bounds[index];
-        if bounds.iter().any(|value| !value.is_finite()) {
+        let raw = hierarchy.bounds[index];
+        if raw.iter().any(|value| !value.is_finite()) {
             continue;
         }
-        let outline = columns.style([0; 4], alpha(style.stroke, style.opacity, 0.72), 1.5);
+        let (pad_x, pad_y) = (pads[index] * px_to_x, pads[index] * px_to_y);
+        let bounds = [
+            raw[0] - pad_x,
+            raw[1] + pad_x,
+            raw[2] - pad_y,
+            raw[3] + pad_y,
+        ];
+        let outline = columns.style(
+            [0; 4],
+            alpha(style.stroke, style.opacity, COMPOUND_FRAME_ALPHA),
+            COMPOUND_FRAME_WIDTH_PX,
+        );
         columns.rect(
             (1u64 << 32) + index as u64,
             outline,
@@ -1629,6 +1647,185 @@ pub fn compound_collapse_transition(
     resolved[target] = next;
     out.copy_from_slice(&resolved);
     Some(changed)
+}
+
+/// Composed-graph view of one compound disclosure state (#34).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompoundCollapse {
+    /// Whether each source node stays visible (collapsed groups do; their
+    /// descendants do not).
+    pub visible: Vec<bool>,
+    /// Nearest visible ancestor for hidden nodes; the node itself otherwise.
+    pub representative: Vec<usize>,
+    /// Interaction flags with hidden selected/hovered/neighbor/pinned state
+    /// propagated to each hidden node's representative.
+    pub flags: Vec<u32>,
+    /// Whether each source edge stays: edges that become internal to a
+    /// collapsed group are omitted; authored self-loops stay.
+    pub edge_keep: Vec<bool>,
+    /// Routed endpoints (representatives) of each source edge.
+    pub edge_source: Vec<usize>,
+    pub edge_target: Vec<usize>,
+}
+
+/// Resolve one validated parent forest and collapse plane into the visible
+/// graph the composed mark draws, exactly as the compound semantic Scene
+/// routes it: collapsed groups stay visible, descendants hide, crossing edges
+/// route to the nearest visible collapsed ancestor, newly internal edges drop,
+/// and hidden interaction state propagates to the representative.
+pub fn compound_collapse(
+    parents: &[u64],
+    validity: &[u8],
+    collapsed: &[u8],
+    flags: &[u32],
+    sources: &[u64],
+    targets: &[u64],
+) -> Option<CompoundCollapse> {
+    let n = parents.len();
+    if flags.len() != n
+        || sources.len() != targets.len()
+        || flags.iter().any(|&value| value & !KNOWN_STATE_FLAGS != 0)
+    {
+        return None;
+    }
+    let hierarchy = compound_hierarchy(parents, validity, collapsed)?;
+    let effective = collapsed_node_flags(flags, &hierarchy)?;
+    let mut edge_keep = Vec::with_capacity(sources.len());
+    let mut edge_source = Vec::with_capacity(sources.len());
+    let mut edge_target = Vec::with_capacity(sources.len());
+    for (&s, &t) in sources.iter().zip(targets) {
+        let s = usize::try_from(s).ok().filter(|&v| v < n)?;
+        let t = usize::try_from(t).ok().filter(|&v| v < n)?;
+        let (rs, rt) = (hierarchy.representative[s], hierarchy.representative[t]);
+        edge_keep.push(!(rs == rt && s != t));
+        edge_source.push(rs);
+        edge_target.push(rt);
+    }
+    Some(CompoundCollapse {
+        visible: hierarchy.visible,
+        representative: hierarchy.representative,
+        flags: effective,
+        edge_keep,
+        edge_source,
+        edge_target,
+    })
+}
+
+/// Alpha factor and stroke width of a compound frame (the Scene's rect).
+pub const COMPOUND_FRAME_ALPHA: f32 = 0.72;
+pub const COMPOUND_FRAME_WIDTH_PX: f64 = 1.5;
+/// Screen gap between a frame and the largest member marker it encloses.
+pub const COMPOUND_FRAME_GAP_PX: f64 = 6.0;
+
+/// Per-node frame padding (px): the largest marker radius among the node and
+/// its visible descendants plus [`COMPOUND_FRAME_GAP_PX`], so a frame encloses
+/// its members' markers at every zoom.
+fn compound_frame_pads(hierarchy: &CompoundHierarchy, radius_px: &[f64]) -> Vec<f64> {
+    let n = radius_px.len();
+    let mut reach: Vec<f64> = (0..n)
+        .map(|i| {
+            if hierarchy.visible[i] && radius_px[i].is_finite() {
+                radius_px[i].max(0.0)
+            } else {
+                0.0
+            }
+        })
+        .collect();
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    for index in order {
+        if let Some(parent) = hierarchy.direct_parent[index] {
+            reach[parent] = reach[parent].max(reach[index]);
+        }
+    }
+    reach
+        .into_iter()
+        .map(|r| r + COMPOUND_FRAME_GAP_PX)
+        .collect()
+}
+
+/// One compound frame: the transitive bounds `[xmin, xmax, ymin, ymax]` of a
+/// visible group over all its descendants (hidden ones included) and its
+/// paint, as the compound semantic Scene draws it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CompoundFrame {
+    pub node: usize,
+    pub bounds: [f64; 4],
+    pub rgba: [u8; 4],
+    pub width_px: f64,
+    /// Screen padding (px) applied outside `bounds` on every side.
+    pub pad_px: f64,
+}
+
+/// Frames for every visible compound node (#34). `stroke` / `opacity` are the
+/// node's resolved paint; an all-zero stroke takes the theme's neutral.
+#[allow(clippy::too_many_arguments)]
+pub fn compound_frames(
+    x: &[f64],
+    y: &[f64],
+    radius_px: &[f64],
+    parents: &[u64],
+    validity: &[u8],
+    collapsed: &[u8],
+    stroke: &[[u8; 4]],
+    opacity: &[f32],
+    theme: u8,
+) -> Option<Vec<CompoundFrame>> {
+    let n = parents.len();
+    if [
+        x.len(),
+        y.len(),
+        radius_px.len(),
+        stroke.len(),
+        opacity.len(),
+    ]
+    .iter()
+    .any(|&len| len != n)
+    {
+        return None;
+    }
+    let neutral = palette(theme)?[0];
+    let mut hierarchy = compound_hierarchy(parents, validity, collapsed)?;
+    for index in 0..n {
+        hierarchy.bounds[index] = [x[index], x[index], y[index], y[index]];
+    }
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    for index in order {
+        let Some(parent) = hierarchy.direct_parent[index] else {
+            continue;
+        };
+        let child = hierarchy.bounds[index];
+        let bounds = &mut hierarchy.bounds[parent];
+        bounds[0] = bounds[0].min(child[0]);
+        bounds[1] = bounds[1].max(child[1]);
+        bounds[2] = bounds[2].min(child[2]);
+        bounds[3] = bounds[3].max(child[3]);
+    }
+    let pads = compound_frame_pads(&hierarchy, radius_px);
+    Some(
+        (0..n)
+            .filter(|&index| {
+                hierarchy.visible[index]
+                    && hierarchy.is_compound[index]
+                    && hierarchy.bounds[index].iter().all(|v| v.is_finite())
+            })
+            .map(|index| {
+                let paint = if stroke[index] == [0; 4] {
+                    neutral
+                } else {
+                    stroke[index]
+                };
+                CompoundFrame {
+                    node: index,
+                    bounds: hierarchy.bounds[index],
+                    rgba: alpha(paint, opacity[index], COMPOUND_FRAME_ALPHA),
+                    width_px: COMPOUND_FRAME_WIDTH_PX,
+                    pad_px: pads[index],
+                }
+            })
+            .collect(),
+    )
 }
 
 fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<Vec<u32>> {
@@ -2042,6 +2239,70 @@ mod tests {
             previous > 150,
             "far zoom paints most accepted labels: {previous}"
         );
+    }
+
+    #[test]
+    fn compound_collapse_routes_edges_like_the_scene() {
+        // 0 group; 1, 2 children of 0; 3 outside. Edges: 1->3 crosses the
+        // boundary, 1->2 becomes internal, 2->2 is an authored self-loop.
+        let parents = [0, 0, 0, 0];
+        let validity = [0, 1, 1, 0];
+        let out = compound_collapse(
+            &parents,
+            &validity,
+            &[1, 0, 0, 0],
+            &[0, FLAG_SELECTED, 0, 0],
+            &[1, 1, 2],
+            &[3, 2, 2],
+        )
+        .unwrap();
+        assert_eq!(out.visible, vec![true, false, false, true]);
+        assert_eq!(out.representative, vec![0, 0, 0, 3]);
+        assert_eq!(out.flags[0] & FLAG_SELECTED, FLAG_SELECTED);
+        assert_eq!(out.edge_keep, vec![true, false, true]);
+        assert_eq!((out.edge_source[0], out.edge_target[0]), (0, 3));
+        let open = compound_collapse(&parents, &validity, &[0; 4], &[0; 4], &[1], &[2]).unwrap();
+        assert_eq!(open.visible, vec![true; 4]);
+        assert!(compound_collapse(&parents, &validity, &[0, 1, 0, 0], &[0; 4], &[], &[]).is_none());
+        assert!(compound_collapse(&parents, &validity, &[0; 4], &[0; 4], &[9], &[0]).is_none());
+    }
+
+    #[test]
+    fn compound_frames_cover_descendants_with_scene_paint() {
+        let frames = compound_frames(
+            &[0.0, 1.0, 3.0, 9.0],
+            &[0.0, -2.0, 4.0, 9.0],
+            &[4.0, 9.0, 2.0, 30.0],
+            &[0, 0, 0, 0],
+            &[0, 1, 1, 0],
+            &[1, 0, 0, 0],
+            &[[0; 4], [0; 4], [0; 4], [0; 4]],
+            &[1.0; 4],
+            THEME_LIGHT,
+        )
+        .unwrap();
+        assert_eq!(frames.len(), 1);
+        assert_eq!(frames[0].node, 0);
+        assert_eq!(frames[0].bounds, [0.0, 3.0, -2.0, 4.0]);
+        let neutral = palette(THEME_LIGHT).unwrap()[0];
+        assert_eq!(frames[0].rgba, alpha(neutral, 1.0, COMPOUND_FRAME_ALPHA));
+        assert_eq!(frames[0].width_px, 1.5);
+        // Collapsed: only the group's own marker (radius 4) is visible.
+        assert_eq!(frames[0].pad_px, 4.0 + COMPOUND_FRAME_GAP_PX);
+        let open = compound_frames(
+            &[0.0, 1.0, 3.0, 9.0],
+            &[0.0, -2.0, 4.0, 9.0],
+            &[4.0, 9.0, 2.0, 30.0],
+            &[0, 0, 0, 0],
+            &[0, 1, 1, 0],
+            &[0; 4],
+            &[[0; 4]; 4],
+            &[1.0; 4],
+            THEME_LIGHT,
+        )
+        .unwrap();
+        // Expanded: the largest visible member marker (radius 9) plus the gap.
+        assert_eq!(open[0].pad_px, 9.0 + COMPOUND_FRAME_GAP_PX);
     }
 
     #[test]
