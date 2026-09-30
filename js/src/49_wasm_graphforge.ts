@@ -308,6 +308,8 @@ export async function renderWasmGraphForge(options: {
   const composition = await composeWasmGraphForge(options.worker, { ...options.input, render }).result;
   if (composition.kind !== "graph" || composition.scene == null) throw new XygWasmError("GF_COMPOSE_RENDER_UNSUPPORTED", "only graph compositions paint through the Scene");
   const view = await renderWasmScene({ el: options.el, scene: composition.scene.slice(), worker: options.worker });
+  // Scene views disable click events by default; GraphForge picks need them.
+  (view as any).interaction = { ...((view as any).interaction ?? {}), click: true };
   view.root.addEventListener("xy:click", (event: Event) => {
     const detail = (event as CustomEvent).detail;
     const stableId = view.sceneStableId(detail?.trace, detail?.index);
