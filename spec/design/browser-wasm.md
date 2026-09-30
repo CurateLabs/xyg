@@ -187,6 +187,7 @@ chrome.
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
 | `js/src/49_wasm_semantic_graph.ts` | Packed direct-tier `XYGG` semantic planes; Rust emits styles, primitives, and legend |
+| `js/src/49_wasm_graphforge.ts` | GraphForge `XYGQ` framing, `XYGF` decoding, Scene stable-ID → UUID identity, text-only tables; no joins or policy |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
@@ -292,7 +293,10 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 26. ABI 23 introduced the bounded `XYTK`/`XYTO` tick
+`WASM_ABI_VERSION` is 27. ABI 27 adds `xyg_wasm_graphforge_compose` and
+`xyg_wasm_graphforge_composition_version`: one staged GraphForge `XYGQ`
+request in, the native host's byte-identical `XYGF` document out
+([graphforge-compositions.md](graphforge-compositions.md) §6.3). ABI 23 introduced the bounded `XYTK`/`XYTO` tick
 resolver and its independent Worker sequence lane; ABI 26 is the current
 contract after the default-palette and stricter packed-tick validation cuts.
 ABI 22 retains the bounded `XYSA` v1 envelope and

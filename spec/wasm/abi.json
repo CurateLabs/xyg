@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 26,
+  "abi_version": 27,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -201,6 +201,20 @@
         "usize"
       ],
       "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_compose",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_composition_version",
+      "params": [],
+      "result": "u32"
     },
     {
       "name": "xyg_wasm_arena_resize",

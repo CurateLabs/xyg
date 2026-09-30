@@ -90,6 +90,16 @@ pub struct BasePlanes {
     pub edge_target: Vec<Uuid>,
 }
 
+/// Optional direct-tier Scene rendering of a graph composition (spec §6.3).
+#[derive(Debug, Clone)]
+pub struct Render<'a> {
+    pub width: f64,
+    pub height: f64,
+    /// `graph_style::THEME_LIGHT` or `THEME_DARK`.
+    pub theme: u8,
+    pub title: &'a str,
+}
+
 #[derive(Debug)]
 pub struct Request<'a> {
     pub base_tables: Vec<&'a [u8]>,
@@ -97,6 +107,9 @@ pub struct Request<'a> {
     pub base_generation: Option<Uuid>,
     pub directed: bool,
     pub layers: Vec<LayerRequest<'a>>,
+    pub render: Option<Render<'a>>,
+    /// Node or relationship UUIDs to paint in the selected state.
+    pub selected: Vec<Uuid>,
 }
 
 const KNOWN: &[&str] = &[
@@ -115,6 +128,11 @@ const KNOWN: &[&str] = &[
     "layer.extra",
     "layer.rows",
     "layer.coordinates",
+    "render.width",
+    "render.height",
+    "render.theme",
+    "render.title",
+    "select.uuid",
 ];
 
 fn invalid(message: impl Into<String>) -> GfError {
@@ -295,11 +313,85 @@ pub fn decode(bytes: &[u8]) -> GfResult<Request<'_>> {
     if layers.is_empty() {
         return Err(invalid("a composition needs at least one result layer"));
     }
+    let render = decode_render(&container)?;
+    if container.indices("select.uuid").iter().any(|&i| i != 0) {
+        return Err(invalid("\"select.uuid\" is a single section"));
+    }
+    let selected = container
+        .get("select.uuid", 0)
+        .map(|s| s.as_uuids("select.uuid"))
+        .transpose()?
+        .unwrap_or_default();
+    if selected.len() > super::base::MAX_BASE_NODES {
+        return Err(GfError::new(
+            "GF_COMPOSE_TOO_LARGE",
+            "the selection exceeds the node bound",
+        ));
+    }
     Ok(Request {
+        render,
+        selected,
         base_tables,
         base_planes,
         base_generation: generation(&container, "base.generation", 0)?,
         directed,
         layers,
     })
+}
+
+fn decode_render<'a>(container: &Container<'a>) -> GfResult<Option<Render<'a>>> {
+    let names = [
+        "render.width",
+        "render.height",
+        "render.theme",
+        "render.title",
+    ];
+    if names.iter().all(|n| container.get(n, 0).is_none()) {
+        return Ok(None);
+    }
+    if names
+        .iter()
+        .any(|n| container.indices(n).iter().any(|&i| i != 0))
+    {
+        return Err(invalid("render sections are single sections"));
+    }
+    let scalar = |name: &str| -> GfResult<f64> {
+        match container
+            .get(name, 0)
+            .map(|s| s.as_f64(name))
+            .transpose()?
+            .as_deref()
+        {
+            Some([value]) => Ok(*value),
+            _ => Err(invalid(format!("\"{name}\" must hold one f64"))),
+        }
+    };
+    let (width, height) = (scalar("render.width")?, scalar("render.height")?);
+    let viewport = crate::graph_style::MAX_SEMANTIC_GRAPH_VIEWPORT;
+    if !(160.0..=viewport).contains(&width) || !(120.0..=viewport).contains(&height) {
+        return Err(invalid(format!(
+            "render viewports are 160..{viewport} by 120..{viewport} CSS pixels"
+        )));
+    }
+    let theme = match container.get("render.theme", 0) {
+        None => crate::graph_style::THEME_LIGHT,
+        Some(section) => match section.as_utf8("render.theme")? {
+            "light" => crate::graph_style::THEME_LIGHT,
+            "dark" => crate::graph_style::THEME_DARK,
+            _ => return Err(invalid("render.theme must be light or dark")),
+        },
+    };
+    let title = match container.get("render.title", 0) {
+        None => "",
+        Some(section) => section.as_utf8("render.title")?,
+    };
+    if title.len() > 4096 || title.contains('\0') {
+        return Err(invalid("render.title exceeds the Scene text bound"));
+    }
+    Ok(Some(Render {
+        width,
+        height,
+        theme,
+        title,
+    }))
 }

@@ -1220,3 +1220,178 @@ fn integer_cells_keep_their_exact_decimal_text() {
     assert_eq!(values[0].as_ref().unwrap().0, "18446744073709551615");
     assert_eq!(values[0].as_ref().unwrap().1, u64::MAX as f64);
 }
+
+// -- direct-tier Scene (render sections) ----------------------------------------
+
+fn with_render(mut bytes: Vec<u8>, theme: &str) -> Vec<u8> {
+    let decoded = Container::decode(&bytes, REQUEST_MAGIC).unwrap();
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.extend_from(&decoded);
+    builder.f64s("render.width", 0, &[640.0]);
+    builder.f64s("render.height", 0, &[420.0]);
+    builder.utf8("render.theme", 0, theme);
+    builder.utf8("render.title", 0, "GraphForge");
+    bytes = builder.finish();
+    bytes
+}
+
+#[test]
+fn render_sections_append_a_canonical_semantic_scene() {
+    let (base, generation) = base_of("pagerank");
+    let plain = request(
+        &[base],
+        Some(generation),
+        &[
+            layer("pagerank"),
+            layer("louvain"),
+            layer("node_similarity"),
+            layer("dijkstra"),
+        ],
+    );
+    let rendered = compose_bytes(&with_render(plain.clone(), "light")).unwrap();
+    let doc = Doc::new(&rendered);
+    // The document is the plain composition plus scene sections.
+    let without = compose_bytes(&plain).unwrap();
+    let base_doc = Doc::new(&without);
+    for (name, index, section) in &base_doc.0.sections {
+        assert_eq!(
+            doc.0.get(name, *index).unwrap().payload,
+            section.payload,
+            "{name}"
+        );
+    }
+    let scene = doc
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .as_bytes("s")
+        .unwrap();
+    let document = crate::scene::SceneDocument::decode(scene).unwrap();
+    let svg = document.to_svg();
+    let n = doc.uuids("node.uuid").len() as u64;
+    let e = doc.uuids("edge.uuid").len() as u64;
+    for i in 0..n {
+        assert!(
+            svg.contains(&format!("data-xy-stable-id=\"{}\"", (1u64 << 32) + i)),
+            "node {i}"
+        );
+    }
+    // Every composed edge paints under its own stable ID (painter polylines).
+    let painter = document.to_browser_painter(1 << 22).unwrap();
+    let traces = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
+    let mut edge_ids = std::collections::BTreeSet::new();
+    for trace in 0..traces {
+        let at = crate::scene::BROWSER_PAINTER_HEADER_BYTES
+            + trace * crate::scene::BROWSER_PAINTER_TRACE_BYTES;
+        if painter[at] != crate::scene::SceneRecordKind::Polyline as u8 {
+            continue;
+        }
+        let count = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap()) as usize;
+        let low = u32::from_le_bytes(painter[at + 24..at + 28].try_into().unwrap()) as usize;
+        for row in 0..count {
+            edge_ids.insert(u32::from_le_bytes(
+                painter[low + row * 4..low + row * 4 + 4]
+                    .try_into()
+                    .unwrap(),
+            ) as u64);
+        }
+    }
+    assert_eq!(edge_ids, (1..=e).collect(), "edge stable IDs are j + 1");
+    // The composition's legend text, not generic class rows.
+    for text in doc.texts("legend.text", 0) {
+        assert!(svg.contains(text), "{text}");
+    }
+    assert!(!svg.contains("Class 1"));
+    assert!(svg.contains("GraphForge result"));
+    assert_eq!(doc.f64s("scene.x", 0).len() as u64, n);
+    // Deterministic, and the theme changes paint only.
+    assert_eq!(
+        rendered,
+        compose_bytes(&with_render(plain.clone(), "light")).unwrap()
+    );
+    let dark = compose_bytes(&with_render(plain, "dark")).unwrap();
+    let dark_scene = Doc::new(&dark)
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .payload
+        .to_vec();
+    assert_ne!(dark_scene, scene);
+}
+
+#[test]
+fn render_sections_fail_closed() {
+    let table = with_render(
+        request(&[], None, &[view("is_dag", "table", false)]),
+        "light",
+    );
+    assert_eq!(fail(table).0, "GF_COMPOSE_RENDER_UNSUPPORTED");
+    let (base, generation) = base_of("pagerank");
+    let mut bytes = request(&[base], Some(generation), &[layer("pagerank")]);
+    let decoded = Container::decode(&bytes, REQUEST_MAGIC).unwrap();
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.extend_from(&decoded);
+    builder.f64s("render.width", 0, &[20.0]);
+    builder.f64s("render.height", 0, &[420.0]);
+    bytes = builder.finish();
+    assert_eq!(fail(bytes).0, "GF_COMPOSE_REQUEST_INVALID");
+    let bad_theme = with_render(
+        request(&[base], Some(generation), &[layer("pagerank")]),
+        "sepia",
+    );
+    assert_eq!(fail(bad_theme).0, "GF_COMPOSE_REQUEST_INVALID");
+}
+
+#[test]
+fn scenes_are_direct_tier_only() {
+    // 600 nodes and 700 relationships exceed the 1,024-element direct tier.
+    let node_uuid: Vec<Uuid> = (0..600u32)
+        .map(|i| {
+            let mut u = [0u8; 16];
+            u[..4].copy_from_slice(&(i + 1).to_le_bytes());
+            u
+        })
+        .collect();
+    let edge_uuid: Vec<Uuid> = (0..700u32)
+        .map(|i| {
+            let mut u = [9u8; 16];
+            u[..4].copy_from_slice(&i.to_le_bytes());
+            u
+        })
+        .collect();
+    let sources: Vec<Uuid> = (0..700).map(|i| node_uuid[i % 600]).collect();
+    let targets: Vec<Uuid> = (0..700).map(|i| node_uuid[(i * 7 + 1) % 600]).collect();
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.uuids("base.node_uuid", 0, &node_uuid);
+    builder.uuids("base.edge_uuid", 0, &edge_uuid);
+    builder.uuids("base.edge_source_uuid", 0, &sources);
+    builder.uuids("base.edge_target_uuid", 0, &targets);
+    builder.bytes("layer.result", 0, &fixture("articulation_points"));
+    builder.utf8("layer.intent", 0, "graph");
+    builder.f64s("render.width", 0, &[640.0]);
+    builder.f64s("render.height", 0, &[420.0]);
+    assert_eq!(fail(builder.finish()).0, "GF_COMPOSE_SCENE_TOO_LARGE");
+}
+
+#[test]
+fn selection_paints_the_selected_state_by_uuid() {
+    let (base, generation) = base_of("pagerank");
+    let bytes = request(&[base], Some(generation), &[layer("pagerank")]);
+    let plain = compose_bytes(&bytes).unwrap();
+    let plain = Doc::new(&plain);
+    let node = plain.uuids("node.uuid")[2];
+    let edge = plain.uuids("edge.uuid")[1];
+    let decoded = Container::decode(&bytes, REQUEST_MAGIC).unwrap();
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.extend_from(&decoded);
+    builder.uuids("select.uuid", 0, &[node, edge, [0xee; 16]]);
+    let selected = compose_bytes(&builder.finish()).unwrap();
+    let doc = Doc::new(&selected);
+    let flags = doc.u32s("node.flags");
+    assert_eq!(flags.iter().filter(|&&f| f & FLAG_SELECTED != 0).count(), 1);
+    assert_ne!(flags[2] & FLAG_SELECTED, 0);
+    assert_ne!(doc.u32s("edge.flags")[1] & FLAG_SELECTED, 0);
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_SELECTION_UNMATCHED".into(), 1)));
+}

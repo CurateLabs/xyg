@@ -39,6 +39,14 @@ import { XygWasmTemporalController } from "./49_wasm_temporal";
 import { XygWasmTemporalGraph, decodeWasmTemporalGraphFrame, encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 import { decodeWasmGraphCheckpoint, encodeWasmCose, layoutWasmCose } from "./49_wasm_graph";
 import {
+  XygGraphForgeComposition,
+  composeWasmGraphForge,
+  decodeWasmGraphForgeDocument,
+  encodeWasmGraphForgeRequest,
+  graphforgeTableElement,
+  renderWasmGraphForge,
+} from "./49_wasm_graphforge";
+import {
   compilePrepareWasmSemanticGraph,
   compileWasmSemanticGraph,
   encodeWasmSemanticGraph,
@@ -331,6 +339,12 @@ export {
   encodeWasmCompoundTransition,
   decodeWasmCompoundTransition,
   transitionWasmCompound,
+  XygGraphForgeComposition,
+  composeWasmGraphForge,
+  decodeWasmGraphForgeDocument,
+  encodeWasmGraphForgeRequest,
+  graphforgeTableElement,
+  renderWasmGraphForge,
 };
 export type { XygWasmAggregateTaskOptions } from "./47_wasm";
 export type {
@@ -349,4 +363,5 @@ export type { XygWasmCoseOptions, XygWasmGraphCheckpoint, XygWasmGraphRequest } 
 export type { XygTemporalPlane, XygWasmTemporalGraphBinding, XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 export type { XygWasmSemanticGraphInput } from "./49_wasm_semantic_graph";
 export type { XygCompoundAction, XygWasmCompoundTransitionInput, XygWasmCompoundTransitionResult } from "./49_wasm_compound";
+export type { XygGraphForgeInput, XygGraphForgeLayerInput, XygGraphForgeIdentity, XygGraphForgeIntent, XygWasmGraphForgeView } from "./49_wasm_graphforge";
 export default { render, decodeFrame };

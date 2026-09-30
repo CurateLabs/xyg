@@ -810,7 +810,33 @@ pub fn semantic_legend_label(field: u8, value: u8) -> String {
 pub fn encode_semantic_graph_scene(
     input: SemanticGraphSceneInput<'_>,
 ) -> Result<Vec<u8>, SceneError> {
-    encode_semantic_graph_scene_internal(input, None)
+    encode_semantic_graph_scene_internal(input, None, None)
+}
+
+/// One caller-labelled legend row for [`encode_semantic_graph_scene_with_legend`].
+#[derive(Clone, Copy, Debug)]
+pub struct SemanticLegendRow<'a> {
+    pub symbol: u8,
+    pub color: [u8; 4],
+    pub label: &'a str,
+}
+
+/// A composition-owned legend (e.g. GraphForge compositions, whose rows name
+/// communities, overlays, and derived relationships) replacing the generic
+/// `Class n` rows. Rows paint in the given order.
+#[derive(Clone, Copy, Debug)]
+pub struct SemanticLegendOverride<'a> {
+    pub title: &'a str,
+    pub rows: &'a [SemanticLegendRow<'a>],
+}
+
+/// [`encode_semantic_graph_scene`] with a caller-owned legend. Every other
+/// decision (paint, layers, labels, bounds) is the semantic Scene's own.
+pub fn encode_semantic_graph_scene_with_legend(
+    input: SemanticGraphSceneInput<'_>,
+    legend: SemanticLegendOverride<'_>,
+) -> Result<Vec<u8>, SceneError> {
+    encode_semantic_graph_scene_internal(input, None, Some(legend))
 }
 
 /// Resolve strict compound/collapse planes into the same canonical Scene used
@@ -821,12 +847,14 @@ pub fn encode_compound_graph_scene(
     encode_semantic_graph_scene_internal(
         input.graph,
         Some((input.parents, input.parent_validity, input.collapsed)),
+        None,
     )
 }
 
 fn encode_semantic_graph_scene_internal(
     input: SemanticGraphSceneInput<'_>,
     compound: Option<(&[u64], &[u8], &[u8])>,
+    legend_override: Option<SemanticLegendOverride<'_>>,
 ) -> Result<Vec<u8>, SceneError> {
     if input.version != SEMANTIC_GRAPH_SCENE_VERSION
         || !input.width.is_finite()
@@ -1370,6 +1398,20 @@ fn encode_semantic_graph_scene_internal(
     }
     descriptors.sort_by_key(|item| (item.field, item.value));
     let mut legend_entries = Vec::with_capacity(descriptors.len());
+    if let Some(custom) = legend_override {
+        descriptors.clear();
+        for row in custom.rows {
+            let style_ref = columns.style(row.color, row.color, 1.5) as usize;
+            legend_entries.push(SceneLegendEntry {
+                style_ref,
+                kind: SceneRecordKind::Scatter,
+                symbol: row.symbol,
+                fill_rgba: row.color,
+                stroke_rgba: row.color,
+                label: row.label.to_owned(),
+            });
+        }
+    }
     for descriptor in descriptors {
         let style_ref = columns.style(descriptor.color, descriptor.color, 1.5) as usize;
         legend_entries.push(SceneLegendEntry {
@@ -1384,7 +1426,7 @@ fn encode_semantic_graph_scene_internal(
     let colors = palette(input.theme).ok_or(SceneError::Length)?;
     let legend = (!legend_entries.is_empty()).then(|| SceneLegend {
         location: LegendLocation::UpperRight,
-        title: SEMANTIC_LEGEND_TITLE.to_owned(),
+        title: legend_override.map_or(SEMANTIC_LEGEND_TITLE, |l| l.title).to_owned(),
         font_size: 11.0,
         title_font_size: 12.0,
         text_rgba: colors[0],
