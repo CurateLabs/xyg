@@ -501,6 +501,13 @@ jobs:
           smoke="$RUNNER_TEMP/xyg-node-clean-install"
           mkdir -p "$smoke"
           cp scripts/node_release_smoke.mjs "$smoke/release-smoke.mjs"
+          mkdir -p "$smoke/graphforge"
+          cp tests/fixtures/graphforge/results/manifest.json \
+            tests/fixtures/graphforge/results/base-cyclic-nodes.arrow \
+            tests/fixtures/graphforge/results/base-cyclic-edges.arrow \
+            tests/fixtures/graphforge/results/pagerank.arrow \
+            tests/fixtures/graphforge/results/node_similarity.arrow \
+            "$smoke/graphforge/"
           cp release-smoke/facade/*.tgz "$smoke/facade.tgz"
           cp release-smoke/native/*.tgz "$smoke/native.tgz"
           export XYG_EXPECTED_ABI="$(node -p "require('./spec/abi/xyg-abi.json').abi_version")"

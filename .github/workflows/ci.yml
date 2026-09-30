@@ -198,6 +198,14 @@ jobs:
           # Do not invoke Playwright's apt-based --with-deps path: a stalled
           # Azure Ubuntu mirror can otherwise hang this job indefinitely.
           npx playwright install chromium
+      # VS Code webview emulation: nonce CSP, cross-origin local assets, a Blob
+      # module Worker, and real picks on the native and WASM GraphForge paths
+      # (spec/design/graphforge-compositions.md §6.4).
+      - name: GraphForge webview smoke (native + WASM, Chromium)
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          node scripts/graphforge_webview_smoke.mjs
+
       - name: Headless render smoke (stdlib + Chromium)
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")

@@ -145,6 +145,8 @@ export {
   graphforgeLedger,
   graphforgeLegendItems,
   graphforgeTableHtml,
+  graphforgePick,
+  graphforgeWebviewPayload,
 } from "./graphforge.js";
 
 export {
