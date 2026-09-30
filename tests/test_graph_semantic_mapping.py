@@ -541,6 +541,91 @@ def test_browser_paints_halo_body_and_dash_layers(tmp_path: Path) -> None:
     assert result["noHalo"][3] <= 8, result["noHalo"]
 
 
+_CROSSING_PROBE = """
+(async () => {
+  try {
+    const view = window.__fcProbeView;
+    view._layout(); view._drawNow(); view._raf = null;
+    const node = view.gpuTraces.find((t) => t.trace.id === __NODE_TRACE__);
+    const read = ([x, y]) => {
+      const px = new Uint8Array(4);
+      view.gl.readPixels(
+        Math.round((x - view.plot.x) * view.dpr),
+        Math.round(view.canvas.height - (y - view.plot.y) * view.dpr),
+        1, 1, view.gl.RGBA, view.gl.UNSIGNED_BYTE, px);
+      return Array.from(px);
+    };
+    const c = view._projectDataPoint(node.xAxis, node.yAxis, 5, 0, null);
+    // Along the earlier (horizontal) edge, outward from the crossing.
+    const row = Array.from({ length: 12 }, (_, k) => read([c[0] + k, c[1]]));
+    document.body.setAttribute("data-xy-crossing-probe", JSON.stringify(row));
+  } catch (error) {
+    document.body.setAttribute("data-xy-crossing-probe-error", String((error && error.stack) || error));
+  }
+})();
+"""
+
+
+def test_browser_paints_each_edge_layers_before_the_next_edge(tmp_path: Path) -> None:
+    # The canonical Scene paints halo, body, and stroke per edge in order, so
+    # a later edge's halo covers an earlier edge's stroke at a crossing.
+    from conftest import probe_document, run_browser_probe
+    from xyg.export import find_chromium
+
+    chromium = find_chromium()
+    if chromium is None:
+        pytest.skip("Chromium unavailable")
+    nodes = {"node_uuid": [_uuid(i) for i in range(4)], "kind": [0, 0, 0, 0]}
+    edges = {
+        "edge_uuid": [_uuid(100), _uuid(101)],
+        "src_uuid": [_uuid(0), _uuid(2)],
+        "dst_uuid": [_uuid(1), _uuid(3)],
+        "evidence": [0, 4],  # edge 1: solid (4 % 4) epistemic halo
+        "state": [0, 0],
+    }
+    chart = xyg.graph_chart(
+        xyg.graph(
+            nodes,
+            edges,
+            layout="preset",
+            x=[0.0, 10.0, 5.0, 5.0],
+            y=[0.0, 0.0, -5.0, 5.0],
+            node_class="kind",
+            edge_epistemic="evidence",
+            edge_status="state",
+        ),
+        width=640,
+        height=480,
+    )
+    fig = chart.figure()
+    meta = fig._graph_meta[0]
+    edge = fig.traces[meta["edge_trace"]]
+    rows = meta["render_edge_index"]
+    earlier = [int(v * 255 + 0.5) for v in edge.color_ch.rgba[rows.index(0)]]
+    halo = edge.style_channels["halo_rgba"].values[rows.index(1)]
+    assert not edge.style_channels["halo_rgba"].values[rows.index(0)].any()
+    script = _CROSSING_PROBE.replace("__NODE_TRACE__", str(meta["node_trace"]))
+    row = run_browser_probe(
+        chromium,
+        probe_document(chart, f"<script>{script}</script>"),
+        tmp_path / "graph-semantic-crossing.html",
+        "data-xy-crossing-probe",
+        label="graph semantic crossing",
+    )
+    alpha = int(halo[3]) / 255
+    over = [
+        round(int(h) * alpha + int(e) * (1 - alpha))
+        for h, e in zip(halo[:3], earlier[:3], strict=True)
+    ]
+    assert any(
+        all(abs(p - o) <= 12 for p, o in zip(pixel[:3], over, strict=True)) for pixel in row
+    ), (
+        row,
+        over,
+        earlier,
+    )
+
+
 def test_u8_style_channels_ship_one_byte_per_value() -> None:
     # Regression: u8 style channels (per-point symbol codes, semantic layer
     # RGBA) materialized as f32 bytes and were read back as u8 in browsers.

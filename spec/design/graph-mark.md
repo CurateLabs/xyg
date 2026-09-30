@@ -623,16 +623,21 @@ absent layer, and an absent layer ships no channel.
 
 | Layer (Rust rule) | Composed paint |
 |---|---|
-| node halo: epistemic ≠ 0, circle at size + 7 px | scatter `halo_rgba` (u8×4) + `halo_size` (CSS px); the point program draws it first with `u_sizeMode` 2 (direct px), no stroke |
-| edge halo: epistemic ≠ 0, width + 5 px | segments `halo_rgba` + `halo_width`; first segment pass |
-| edge class body: class ≠ 0, width + 2 px | segments `body_rgba` + `body_width`; second pass |
-| edge status stroke | the stroke pass above |
+| node halo: epistemic ≠ 0, circle at size + 7 px | scatter `halo_rgba` (u8×4) + `halo_size` (CSS px); a circle with no stroke immediately under its node |
+| edge halo: epistemic ≠ 0, width + 5 px | segments `halo_rgba` + `halo_width` |
+| edge class body: class ≠ 0, width + 2 px | segments `body_rgba` + `body_width` |
+| edge status stroke | the stroke above |
 | edge dash: code → (6, 4), (2, 3), (10, 4) px; pinned 3, aggregate 2 | segments `edge_dash` (on, off) CSS px, applied to every edge layer and measured along each routed piece from its start, like the Scene; arrowheads are never dashed |
 | edge arrow: status ≠ 0 | the `edge_ends` head bit (0x40) per segment; replaces the `directed` default for semantically styled edges |
 
-The Scene bounds very long dashed pieces to 64 periods to cap primitive
-expansion; the WebGL pass expands nothing, so it keeps the authored period at
-every length.
+Paint order matches the Scene item by item: the point program draws two
+instances per node (attribute divisor 2: halo, then node) and the segment
+program three per edge segment (divisor 3: halo, body, stroke), so each item
+finishes its layers before the next item paints and a later edge's halo covers
+an earlier edge's stroke at a crossing. Filled arrowheads remain one pass over
+all edge layers. The Scene bounds very long dashed pieces to 64 periods to cap
+primitive expansion; the WebGL pass expands nothing, so it keeps the authored
+period at every length.
 
 A semantically styled node scatter is pinned to direct draw (Python
 `density=False`, Node `forceDirect`): the density surface would drop per-node
@@ -654,8 +659,8 @@ paint it. `tests/test_graph_semantic_mapping.py` pins the painted values in
 `tests/fixtures/graph_semantic_mapping_cross_host.json` across Direct,
 curved, EdgeSample, and Aggregate cases; `packages/xy-node/test/graph.test.mjs`
 asserts the same fixture (including every layer channel and head bit), and
-browser probes read the resolved fills and the ordered stroke/body/halo rings,
-dash gaps, and node halos back from WebGL.
+browser probes read the resolved fills, the ordered stroke/body/halo rings,
+dash gaps, node halos, and per-edge layer order at a crossing back from WebGL.
 
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,

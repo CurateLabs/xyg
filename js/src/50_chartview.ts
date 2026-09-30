@@ -2374,11 +2374,10 @@ export class ChartView {
         for (let i = 2; i < style.length; i += 4) style[i] *= factor;
         this._reuploadBuffer(record.styleBuf, style);
       }
-      for (const [layer, rows] of Object.entries(record._layerStyles || {}) as [string, Float32Array][]) {
-        const buffer = record[`${layer}StyleBuf`];
-        if (!buffer || rows.length !== record.n * 4) continue;
-        for (let i = 2; i < rows.length; i += 4) rows[i] *= factor;
-        this._reuploadBuffer(buffer, rows);
+      const layerWidths = record._cpuLayerWidths;
+      if (layerWidths && record.layerWidthBuf && layerWidths.length === rows * 2) {
+        for (let i = 0; i < layerWidths.length; i++) layerWidths[i] *= factor;
+        this._reuploadBuffer(record.layerWidthBuf, layerWidths);
       }
       const radius = record._cpuRadius;
       if (radius && record.radiusBuf) {
@@ -4273,7 +4272,7 @@ export class ChartView {
       g.sizeRange = t.size.range_px;
     }
     this._buildInstanceStyleChannels(g, t, buffer, "stroke_width");
-    this._buildSemanticLayers(g, t, buffer, [["halo", "halo_size"]]);
+    this._buildSemanticLayers(g, t, buffer, true);
     this._pointMarkStyle(g, t);
   }
 
@@ -4713,7 +4712,7 @@ export class ChartView {
     // Semantic graph paint layers (#34), resolved in Rust
     // (graph_style::semantic_paint_layers): epistemic halo and class body
     // under the status stroke, plus per-segment dash.
-    this._buildSemanticLayers(g, t, buffer, [["halo", "halo_width"], ["body", "body_width"]]);
+    this._buildSemanticLayers(g, t, buffer, false);
     const dash = t.channels && t.channels.edge_dash;
     if (dash && dash.components === 2) {
       const values = this._columnView(buffer, this.spec.columns[dash.buf]);
@@ -4722,34 +4721,50 @@ export class ChartView {
     g._cpu = { x: x0, y: y1, xMeta: g.x0Meta, yMeta: g.y1Meta };
   }
 
-  // Per-item layer paint (halo/body RGBA with Rust-baked alpha) plus a layer
-  // style row (opacity 1, width px in component 2) for each `[name, extent]`
-  // channel pair present on the trace. Width rows are dpr-baked like styleBuf
-  // and rescaled with it (`_rescaleDprBakedBuffers`).
-  _buildSemanticLayers(g, t, buffer, layers) {
+  // Semantic graph layers (#34), lowered in Rust: per-item halo/body RGBA
+  // with baked alpha. Nodes carry halo diameters (CSS px); edges carry
+  // (halo, body) widths as dpr-baked rows rescaled with styleBuf
+  // (`_rescaleDprBakedBuffers`). Absent channels leave the buffers unset.
+  _buildSemanticLayers(g, t, buffer, node) {
     const channel = (name) => t.channels && t.channels[name];
-    for (const [layer, extentName] of layers) {
-      const rgba = channel(`${layer}_rgba`);
-      const extent = channel(extentName);
-      if (!rgba || !extent || rgba.components !== 4) continue;
-      const colors = this._columnView(buffer, this.spec.columns[rgba.buf]);
-      const extents = this._columnView(buffer, this.spec.columns[extent.buf]);
-      if (colors.length < g.n * 4 || extents.length < g.n) continue;
-      const bytes = new Uint8Array(g.n * 4);
-      for (let i = 0; i < g.n * 4; i++) bytes[i] = colors[i];
-      g[`${layer}RgbaBuf`] = this._upload(bytes);
-      if (g.kind === "scatter" || t.kind === "scatter") {
-        // Node halos: direct CSS px diameters (u_sizeMode 2).
-        g[`${layer}SizeBuf`] = this._upload(Float32Array.from(extents.subarray(0, g.n)));
-        continue;
+    const rgba = (name) => {
+      const spec = channel(name);
+      if (!spec || spec.components !== 4) return null;
+      const values = this._columnView(buffer, this.spec.columns[spec.buf]);
+      return values.length >= g.n * 4 ? Uint8Array.from(values.subarray(0, g.n * 4)) : null;
+    };
+    const floats = (name) => {
+      const spec = channel(name);
+      if (!spec) return null;
+      const values = this._columnView(buffer, this.spec.columns[spec.buf]);
+      return values.length >= g.n ? values : null;
+    };
+    const halo = rgba("halo_rgba");
+    if (node) {
+      const size = floats("halo_size");
+      if (halo && size) {
+        g.haloRgbaBuf = this._upload(halo);
+        g.haloSizeBuf = this._upload(Float32Array.from(size.subarray(0, g.n)));
       }
-      const rows = new Float32Array(g.n * 4);
-      for (let i = 0; i < g.n; i++) rows.set([1, -1, extents[i] * this.dpr, -1], i * 4);
-      g[`${layer}StyleBuf`] = this._upload(rows);
-      (g._layerStyles ||= {})[layer] = rows;
-      g._styleDpr = this.dpr;
+      return;
     }
+    const body = rgba("body_rgba");
+    const haloWidth = floats("halo_width");
+    const bodyWidth = floats("body_width");
+    if (!(halo && haloWidth) && !(body && bodyWidth)) return;
+    const widths = new Float32Array(g.n * 2);
+    for (let i = 0; i < g.n; i++) {
+      widths[i * 2] = halo && haloWidth ? haloWidth[i] * this.dpr : 0;
+      widths[i * 2 + 1] = body && bodyWidth ? bodyWidth[i] * this.dpr : 0;
+    }
+    const empty = new Uint8Array(g.n * 4);
+    g.haloRgbaBuf = this._upload(halo && haloWidth ? halo : empty);
+    g.bodyRgbaBuf = this._upload(body && bodyWidth ? body : empty);
+    g._cpuLayerWidths = widths;
+    g.layerWidthBuf = this._upload(widths);
+    g._styleDpr = this.dpr;
   }
+
 
   // Scale from Rust's CSS-px border radii to device px: dpr times the zoom
   // size factor and entrance-animation scale of the graph's node scatter, so
@@ -6140,54 +6155,13 @@ export class ChartView {
     }
     gl.uniform1f(u("u_dblend"), blend);
     const blendOn = blend > 0.001 && g.dBuf;
-    if (g.haloRgbaBuf && g.haloSizeBuf) {
-      // Graph node halos (#34): a circle under each node at the Rust-resolved
-      // halo diameter and color (alpha baked); no stroke, no density blend.
-      gl.uniform1i(u("u_sizeMode"), 2);
-      gl.uniform1f(u("u_sizeScale"), animationScale * zoomStyle.sizeFactor);
-      gl.uniform1i(u("u_colorMode"), 3);
-      gl.uniform1i(u("u_symbol"), 0);
-      gl.uniform1f(u("u_ptStrokeWidth"), 0);
-      gl.uniform1i(u("u_strokeMode"), 0);
-      gl.uniform1f(u("u_dblend"), 0);
-      this._bindVao(
-        g,
-        "points-halo",
-        [
-          g.xBuf._fcId, g.yBuf._fcId, g.haloSizeBuf._fcId, g.haloRgbaBuf._fcId,
-          selOn ? g.selBuf._fcId : 0,
-          transitionOn ? g._transitionPrevXBuf._fcId : 0,
-          transitionOn ? g._transitionPrevYBuf._fcId : 0,
-        ],
-        () => {
-          this._vaoAttr(ATTR_SLOTS.ax, g.xBuf, 0, 0);
-          this._vaoAttr(ATTR_SLOTS.ay, g.yBuf, 0, 0);
-          this._vaoAttr(ATTR_SLOTS.a_sval, g.haloSizeBuf, 0, 0);
-          this._vaoAttr(ATTR_SLOTS.a_rgba, g.haloRgbaBuf, 0, 0, 4, true);
-          if (selOn) this._vaoAttr(ATTR_SLOTS.a_sel, g.selBuf, 0, 0);
-          if (transitionOn) {
-            this._vaoAttr(ATTR_SLOTS.a_prevx, g._transitionPrevXBuf, 0, 0);
-            this._vaoAttr(ATTR_SLOTS.a_prevy, g._transitionPrevYBuf, 0, 0);
-          }
-        }
-      );
-      gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
-      if (!selOn) gl.vertexAttrib1f(ATTR_SLOTS.a_sel, 1.0);
-      gl.vertexAttrib1f(ATTR_SLOTS.a_dval, 0);
-      gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, 0, 0);
-      gl.vertexAttrib4f(ATTR_SLOTS.a_stroke, 0, 0, 0, 0);
-      gl.drawArrays(gl.POINTS, 0, g.n);
-      gl.uniform1i(u("u_sizeMode"), g.sizeMode);
-      gl.uniform1i(u("u_colorMode"), g.colorMode);
-      gl.uniform1i(u("u_symbol"), g.symbol || 0);
-      gl.uniform1f(u("u_ptStrokeWidth"), (g.pointStrokeWidth || 0) * this.dpr);
-      gl.uniform1i(u("u_strokeMode"), g.strokeBuf ? 1 : 0);
-      gl.uniform1f(u("u_dblend"), blend);
-    }
 
+    // Semantic node halos (#34): two instances per point, halo then node.
+    const layered = !!(g.haloRgbaBuf && g.haloSizeBuf);
+    const div = layered ? 2 : 0;
     this._bindVao(
       g,
-      "points",
+      layered ? "points-layered" : "points",
       [
         g.xBuf._fcId, g.yBuf._fcId,
         colorOn ? g.cBuf._fcId : 0,
@@ -6199,21 +6173,27 @@ export class ChartView {
         rgbaOn ? g.rgbaBuf._fcId : 0,
         styleOn ? g.styleBuf._fcId : 0,
         strokeOn ? g.strokeBuf._fcId : 0,
+        layered ? g.haloRgbaBuf._fcId : 0,
+        layered ? g.haloSizeBuf._fcId : 0,
       ],
       () => {
-        this._vaoAttr(ATTR_SLOTS.ax, g.xBuf, 0, 0);
-        this._vaoAttr(ATTR_SLOTS.ay, g.yBuf, 0, 0);
-        if (colorOn) this._vaoAttr(ATTR_SLOTS.a_cval, g.cBuf, 0, 0);
-        if (sizeOn) this._vaoAttr(ATTR_SLOTS.a_sval, g.sBuf, 0, 0);
-        if (selOn) this._vaoAttr(ATTR_SLOTS.a_sel, g.selBuf, 0, 0);
-        if (blendOn) this._vaoAttr(ATTR_SLOTS.a_dval, g.dBuf, 0, 0);
+        this._vaoAttr(ATTR_SLOTS.ax, g.xBuf, 0, div);
+        this._vaoAttr(ATTR_SLOTS.ay, g.yBuf, 0, div);
+        if (colorOn) this._vaoAttr(ATTR_SLOTS.a_cval, g.cBuf, 0, div);
+        if (sizeOn) this._vaoAttr(ATTR_SLOTS.a_sval, g.sBuf, 0, div);
+        if (selOn) this._vaoAttr(ATTR_SLOTS.a_sel, g.selBuf, 0, div);
+        if (blendOn) this._vaoAttr(ATTR_SLOTS.a_dval, g.dBuf, 0, div);
         if (transitionOn) {
-          this._vaoAttr(ATTR_SLOTS.a_prevx, g._transitionPrevXBuf, 0, 0);
-          this._vaoAttr(ATTR_SLOTS.a_prevy, g._transitionPrevYBuf, 0, 0);
+          this._vaoAttr(ATTR_SLOTS.a_prevx, g._transitionPrevXBuf, 0, div);
+          this._vaoAttr(ATTR_SLOTS.a_prevy, g._transitionPrevYBuf, 0, div);
         }
-        if (rgbaOn) this._vaoAttr(ATTR_SLOTS.a_rgba, g.rgbaBuf, 0, 0, 4, true);
-        if (styleOn) this._vaoAttr(ATTR_SLOTS.a_style, g.styleBuf, 0, 0, 4);
-        if (strokeOn) this._vaoAttr(ATTR_SLOTS.a_stroke, g.strokeBuf, 0, 0, 4, true);
+        if (rgbaOn) this._vaoAttr(ATTR_SLOTS.a_rgba, g.rgbaBuf, 0, div, 4, true);
+        if (styleOn) this._vaoAttr(ATTR_SLOTS.a_style, g.styleBuf, 0, div, 4);
+        if (strokeOn) this._vaoAttr(ATTR_SLOTS.a_stroke, g.strokeBuf, 0, div, 4, true);
+        if (layered) {
+          this._vaoAttr(ATTR_SLOTS.a_ptHaloRgba, g.haloRgbaBuf, 0, div, 4, true);
+          this._vaoAttr(ATTR_SLOTS.a_ptHaloSize, g.haloSizeBuf, 0, div);
+        }
       }
     );
     // Generic (constant) attribute values are context state, not VAO state —
@@ -6225,7 +6205,10 @@ export class ChartView {
     if (!rgbaOn) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
     if (!styleOn) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
     if (!strokeOn) gl.vertexAttrib4f(ATTR_SLOTS.a_stroke, r, gg, b, a);
-    gl.drawArrays(gl.POINTS, 0, g.n);
+    gl.uniform1i(u("u_nodeLayered"), layered ? 1 : 0);
+    gl.uniform1f(u("u_sizeScale"), animationScale * zoomStyle.sizeFactor);
+    if (layered) gl.drawArraysInstanced(gl.POINTS, 0, 1, g.n * 2);
+    else gl.drawArrays(gl.POINTS, 0, g.n);
   }
 
   _drawSimplePoints(g, xm, ym, opacityScale = 1) {
@@ -6509,12 +6492,17 @@ export class ChartView {
       gl.bindTexture(gl.TEXTURE_2D, g.lut);
       gl.uniform1i(u("u_lut"), 0);
     }
-    // One VAO per paint layer: the semantic halo/body passes (#34) reuse the
-    // geometry, ends, and dash attributes and swap only color and style rows.
-    const bindSegments = (key, rgbaBuf, styleBuf) => {
+    // Semantic graph layers (#34): one instanced draw with three instances
+    // per segment (attribute divisor 3) - halo, body, stroke - so each edge
+    // paints its layers before the next, like the canonical Scene.
+    const layered = !!(g.layerWidthBuf && g.haloRgbaBuf && g.bodyRgbaBuf && g.colorMode === 3);
+    const bindSegments = (div) => {
+      const rgbaBuf = g.rgbaBuf;
+      const styleBuf = g.styleBuf;
+      const layers = div === 3;
       this._bindVao(
         g,
-        key,
+        layers ? "segment-layered" : "segment",
         [g.x0Buf._fcId, g.x1Buf._fcId, g.y0Buf._fcId, g.y1Buf._fcId,
           g.colorMode && g.cBuf ? g.cBuf._fcId : 0,
           rgbaBuf ? rgbaBuf._fcId : 0,
@@ -6523,22 +6511,30 @@ export class ChartView {
           dashed ? g._segmentDashDirBuf._fcId : 0,
           g.endsBuf ? g.endsBuf._fcId : 0,
           g.ends2Buf ? g.ends2Buf._fcId : 0,
-          g.edgeDashBuf ? g.edgeDashBuf._fcId : 0],
+          g.edgeDashBuf ? g.edgeDashBuf._fcId : 0,
+          layers ? g.haloRgbaBuf._fcId : 0,
+          layers ? g.bodyRgbaBuf._fcId : 0,
+          layers ? g.layerWidthBuf._fcId : 0],
         () => {
-          this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, 1);
-          this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, 1);
-          this._vaoAttr(ATTR_SLOTS.ay0, g.y0Buf, 0, 1);
-          this._vaoAttr(ATTR_SLOTS.ay1, g.y1Buf, 0, 1);
-          if (g.colorMode && g.cBuf) this._vaoAttr(ATTR_SLOTS.a_cval, g.cBuf, 0, 1);
-          if (rgbaBuf) this._vaoAttr(ATTR_SLOTS.a_rgba, rgbaBuf, 0, 1, 4, true);
-          if (styleBuf) this._vaoAttr(ATTR_SLOTS.a_style, styleBuf, 0, 1, 4);
+          this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, div);
+          this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, div);
+          this._vaoAttr(ATTR_SLOTS.ay0, g.y0Buf, 0, div);
+          this._vaoAttr(ATTR_SLOTS.ay1, g.y1Buf, 0, div);
+          if (g.colorMode && g.cBuf) this._vaoAttr(ATTR_SLOTS.a_cval, g.cBuf, 0, div);
+          if (rgbaBuf) this._vaoAttr(ATTR_SLOTS.a_rgba, rgbaBuf, 0, div, 4, true);
+          if (styleBuf) this._vaoAttr(ATTR_SLOTS.a_style, styleBuf, 0, div, 4);
           if (dashed) {
-            this._vaoAttr(ATTR_SLOTS.a_dash0, g._segmentDashOffsetBuf, 0, 1);
-            this._vaoAttr(ATTR_SLOTS.a_dashDir, g._segmentDashDirBuf, 0, 1);
+            this._vaoAttr(ATTR_SLOTS.a_dash0, g._segmentDashOffsetBuf, 0, div);
+            this._vaoAttr(ATTR_SLOTS.a_dashDir, g._segmentDashDirBuf, 0, div);
           }
-          if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, 1, 4);
-          if (g.ends2Buf) this._vaoAttr(ATTR_SLOTS.a_ends2, g.ends2Buf, 0, 1, 3);
-          if (g.edgeDashBuf) this._vaoAttr(ATTR_SLOTS.a_edgeDash, g.edgeDashBuf, 0, 1, 2);
+          if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, div, 4);
+          if (g.ends2Buf) this._vaoAttr(ATTR_SLOTS.a_ends2, g.ends2Buf, 0, div, 3);
+          if (g.edgeDashBuf) this._vaoAttr(ATTR_SLOTS.a_edgeDash, g.edgeDashBuf, 0, div, 2);
+          if (layers) {
+            this._vaoAttr(ATTR_SLOTS.a_haloRgba, g.haloRgbaBuf, 0, div, 4, true);
+            this._vaoAttr(ATTR_SLOTS.a_bodyRgba, g.bodyRgbaBuf, 0, div, 4, true);
+            this._vaoAttr(ATTR_SLOTS.a_layerWidth, g.layerWidthBuf, 0, div, 2);
+          }
         }
       );
       if (!g.cBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
@@ -6557,21 +6553,13 @@ export class ChartView {
     gl.uniform1f(u("u_edgeHeadLen"), 8 * this.dpr);
     gl.uniform1f(u("u_edgeHeadHalf"), 4 * this.dpr);
     const count = Math.max(0, Math.min(g.n, Math.ceil(g.n * (g._transitionReveal ?? 1))));
-    // Semantic halo then class body under the status stroke, the canonical
-    // Scene's layer order. Their colors carry Rust-baked alpha.
-    for (const layer of ["halo", "body"]) {
-      const rgbaBuf = g[`${layer}RgbaBuf`];
-      const styleBuf = g[`${layer}StyleBuf`];
-      if (!rgbaBuf || !styleBuf) continue;
-      gl.uniform1i(u("u_colorMode"), 3);
-      bindSegments(`segment-${layer}`, rgbaBuf, styleBuf);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
-    }
-    gl.uniform1i(u("u_colorMode"), g.colorMode || 0);
-    bindSegments("segment", g.rgbaBuf, g.styleBuf);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+    gl.uniform1i(u("u_edgeLayered"), layered ? 1 : 0);
+    bindSegments(layered ? 3 : 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, layered ? count * 3 : count);
+    gl.uniform1i(u("u_edgeLayered"), 0);
     if (edgeEnds) {
       // Filled arrowheads: same instances, head-only geometry, no dash.
+      if (layered) bindSegments(1);
       gl.uniform1i(u("u_edgePass"), 1);
       gl.uniform1i(u("u_dashCount"), 0);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
