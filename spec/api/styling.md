@@ -159,7 +159,9 @@ results in `spec.graph` and never run a second precedence or collision policy.
 Labels paint in the browser from the Rust label plan (`graph-mark.md` §7.1,
 ABI 371): `edge_label` / `edge_label_priority` (Node: `edgeLabel` /
 `edgeLabelPriority`) add edge labels, and every painted label is budgeted,
-truncated, and zoom-thresholded by Rust. Compound bounds remain metadata.
+truncated, and zoom-thresholded by Rust. Compound bounds remain metadata. `color_scale` / `edge_color_scale` add
+linear, diverging, ordinal, and categorical graph color scales, and semantic
+graphs show the Rust semantic legend (`graph-mark.md` §7.1.4).
 
 GraphForge semantic styling is paint. Python `node_class`, `node_epistemic`,
 `node_status`, `node_metric`, the `edge_*` equivalents, and `theme` (Node:

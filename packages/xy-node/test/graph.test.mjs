@@ -841,6 +841,28 @@ test("graph label plan matches the Python cross-host fixture (#34)", async () =>
   }
 });
 
+test("graph color scales and semantic legend match the Python cross-host fixture (#34)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_scales_legend_cross_host.json", import.meta.url), "utf8"),
+  );
+  const channel = (ch) => ch.mode === "categorical"
+    ? { mode: "categorical", categories: [...ch.categories], codes: [...ch.codes].map(Number), palette: [...ch.palette].slice(0, ch.categories.length) }
+    : { mode: ch.mode, domain: [...ch.domain].map(Number), colormap: ch.colormap };
+  for (const [name, expected] of Object.entries(fixture.cases)) {
+    const f = figure().graph(fixture.ids, fixture.edges, { layout: "preset", x: fixture.x, y: fixture.y, ...expected.options });
+    const meta = f._graphMeta[0];
+    const node = f.traces[meta.node_trace].color_ch;
+    const edge = f.traces[meta.edge_trace].color_ch;
+    if (expected.node_color) assert.deepEqual(channel(node), expected.node_color, `${name} node color`);
+    if (expected.edge_color) assert.deepEqual(channel(edge), expected.edge_color, `${name} edge color`);
+    if (expected.legend) {
+      assert.equal(f.legend_options.title, expected.legend.title, `${name} legend title`);
+      assert.deepEqual(f.legend_options.items, expected.legend.items, `${name} legend items`);
+    }
+  }
+});
+
 test("graph semantic fields fail closed (#34)", () => {
   const opts = { layout: "preset", x: [0, 1], y: [0, 1] };
   assert.throws(() => figure().graph(["a", "b"], [["a", "b"]], { ...opts, nodeClass: [0, 1], color: "#f00" }), /replace color/);
@@ -910,6 +932,44 @@ test("graphChart static SVG/PNG match the Python cross-host export fixture (#33)
     assert.equal(view.getUint32(16), fixture.width * 2, `${name} PNG width`);
     assert.equal(view.getUint32(20), fixture.height * 2, `${name} PNG height`);
   }
+});
+
+test("figure legend options place the graph semantic legend like Python (#34)", () => {
+  const f = figure({ legend: { loc: "lower left", title: "Kinds" } })
+    .graph(["a", "b", "c", "d"], [["a", "b"]], { layout: "preset", x: [0, 1, 2, 3], y: [0, 1, 0, 1], nodeClass: [0, 1, 2, 1] });
+  assert.equal(f.legend_options.loc, "lower left");
+  assert.equal(f.legend_options.title, "Kinds");
+  assert.ok(f.legend_options.items.length > 0);
+  const plain = figure().graph(["a", "b", "c", "d"], [["a", "b"]], { layout: "preset", x: [0, 1, 2, 3], y: [0, 1, 0, 1], nodeClass: [0, 1, 2, 1] });
+  assert.equal(plain.legend_options.title, "Graph semantics");
+});
+
+test("semantic legend respects authored options, merges graphs, and scales fail closed like Python (#34)", async () => {
+  const ids = ["a", "b", "c", "d"];
+  const edges = [["a", "b"], ["b", "c"], ["c", "d"]];
+  const geo = { layout: "preset", x: [0, 1, 2, 3], y: [0, 1, 0, 1] };
+  const f = figure({ showLegend: false, legend: { title: "My title" } })
+    .graph(ids, edges, { ...geo, nodeClass: [0, 1, 1, 1] });
+  assert.equal(f.show_legend, false);
+  assert.equal(f.legend_options.title, "My title");
+  const first = f.legend_options.items.map((item) => item.name);
+  f.graph(ids, edges, { ...geo, nodeClass: [2, 3, 3, 3] });
+  const merged = f.legend_options.items.map((item) => item.name);
+  assert.ok(first.every((name) => merged.includes(name)) && merged.length > first.length);
+  // Python pins the same merged order; the fixture-free check is the union.
+  const warnings = [];
+  const onWarning = (warning) => warnings.push(warning.message);
+  process.on("warning", onWarning);
+  figure().graph(ids, edges, {
+    ...geo, color: ["x", "y", "z", "x"], colorScale: { type: "categorical", palette: ["#111111", "#222222"] },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  process.off("warning", onWarning);
+  assert.ok(warnings.some((message) => /colors repeat every 2/.test(message)), warnings.join("; "));
+  assert.throws(
+    () => figure().graph(ids, edges, { ...geo, color: [0, 1, 2, 3], colorScale: { type: "diverging", midpoint: Number.MAX_VALUE } }),
+    /representable in f64/,
+  );
 });
 
 test("graphChart hides axes like Python graph_chart (#33)", () => {

@@ -94,7 +94,7 @@ import {
   tileStoreAppend,
   tileStoreStats,
 } from "./pyramid.js";
-import { composeGraph } from "./graph.js";
+import { composeGraph, graphSemanticLegendItems } from "./graph.js";
 import { composeSankey } from "./sankey.js";
 import { composeScatter, normalizeScatterStyle, resolveSizeChannel, resolveStrokeChannel } from "./marks/scatter.js";
 import { composeLine } from "./marks/line.js";
@@ -1946,6 +1946,18 @@ export class Figure {
       edge_trace: this.traces.length - 2,
     };
     this._graphEdgeIdentity.set(meta.edge_trace, composed.edgeIdentity);
+    // Rust semantic legend (#34) over every semantic graph in the figure.
+    // Authored rows are never replaced; authored options (title, placement,
+    // visibility) win. Mirrors Python `_apply_semantic_legend`.
+    if (composed.semanticLegend != null
+      && (this._graphSemanticPlanes != null || !(this.legend_options?.items?.length))) {
+      this._graphSemanticPlanes = [...(this._graphSemanticPlanes ?? []), ...composed.semanticLegend.planes];
+      const legend = graphSemanticLegendItems(this._graphSemanticPlanes, composed.semanticLegend.theme);
+      if (legend != null) {
+        this.legend = { title: legend.title, ...(this.legend_options ?? {}), items: legend.items };
+        this.legend_options = this.legend;
+      }
+    }
     if (this._graphMeta == null) {
       this._graphMeta = [meta];
     } else {

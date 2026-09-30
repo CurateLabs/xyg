@@ -5876,7 +5876,7 @@ pub(crate) fn heatmap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4]
 /// heatmaps and borrowed per-mark color channels so ties-to-even byte rounding
 /// cannot drift between static chart families.
 #[allow(clippy::needless_range_loop)] // channel indexes stops and color together
-pub(crate) fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4] {
+pub fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4] {
     debug_assert!(!stops.is_empty());
     let last = stops.len() - 1;
     let t = value.clamp(0.0, 1.0);
