@@ -8873,6 +8873,10 @@ pub const DEFAULT_PALETTE: [&str; 8] = [
     "#e66767",
 ];
 pub const DEFAULT_MARK_COLOR: &str = DEFAULT_PALETTE[0];
+/// Default graph edge paint (#898): node–link edges recede in a neutral grey
+/// while nodes carry the series palette color, the common node–link
+/// convention. Graph edges therefore never consume a palette slot.
+pub const GRAPH_DEFAULT_EDGE_COLOR: &str = "#888888";
 
 /// Canonical straight-alpha rows for the built-in palette.
 pub fn default_palette_rgba8() -> [[u8; 4]; DEFAULT_PALETTE.len()] {

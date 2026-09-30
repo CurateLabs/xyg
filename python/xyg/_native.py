@@ -9788,6 +9788,15 @@ def default_png_export_scale() -> float:
     return float(_lib.xyg_default_png_export_scale())
 
 
+def graph_default_edge_color() -> str:
+    """Rust-owned default graph edge paint (#898)."""
+    need = int(_lib.xyg_graph_default_edge_color_utf8(0, 0))
+    out = np.empty(need, dtype=np.uint8)
+    if int(_lib.xyg_graph_default_edge_color_utf8(_ptr_u8(out), out.size)) != need:
+        raise RuntimeError("native default graph edge color copy failed")
+    return bytes(out).decode("ascii")
+
+
 def default_palette_contract() -> tuple[int, tuple[str, ...], npt.NDArray[np.uint8]]:
     """Versioned Rust-owned default palette text and RGBA8 rows (ABI 360)."""
     version = int(_lib.xyg_default_palette_version())

@@ -31,7 +31,7 @@ import {
   graphVisualStates,
 } from "./abi.js";
 import { resolveColorChannel } from "./color.js";
-import { DEFAULT_MARK_COLOR, minMax } from "./encode.js";
+import { DEFAULT_MARK_COLOR, GRAPH_DEFAULT_EDGE_COLOR, minMax } from "./encode.js";
 import { resolveSizeChannel } from "./marks/scatter.js";
 
 /** Default layout name — matches Python `_graph.DEFAULT_LAYOUT`. */
@@ -1475,7 +1475,7 @@ export function composeGraph(nodes, edges, opts = {}) {
         ...(edgePaint?.style_channels ?? {}),
       },
       style: {
-        color: typeof edgeColor === "string" ? edgeColor : "#888888",
+        color: typeof edgeColor === "string" ? edgeColor : GRAPH_DEFAULT_EDGE_COLOR,
         width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
         ...(edgePaint != null ? { opacity: 1 } : {}),
         ...(resolvedOpts.style ?? {}),
@@ -1483,7 +1483,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       ...(edgePaint != null
         ? { color_ch: edgePaint.color_ch }
         : edgeColorPaint != null && typeof edgeColorPaint !== "string"
-          ? { color_ch: graphScaledColor(edgeColorPaint, edgeColorScale, nEdges, "#888888", "edgeColorScale") }
+          ? { color_ch: graphScaledColor(edgeColorPaint, edgeColorScale, nEdges, GRAPH_DEFAULT_EDGE_COLOR, "edgeColorScale") }
           : {}),
       ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
