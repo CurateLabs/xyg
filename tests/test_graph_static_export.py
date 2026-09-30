@@ -121,7 +121,7 @@ def test_default_png_export_scale_is_2x() -> None:
 
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     for name, case in fixture["cases"].items():
-        chart = _chart(case["edge_curve"])
+        chart = _chart(case["edge_curve"], colors=case.get("colors", True))
         png = chart.to_png()  # default scale
         w = struct.unpack(">I", png[16:20])[0]
         h = struct.unpack(">I", png[20:24])[0]
