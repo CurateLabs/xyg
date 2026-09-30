@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 371;
+pub const ABI_VERSION: u32 = 372;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16500,6 +16500,111 @@ pub unsafe extern "C" fn xyg_graph_semantic_legend(
             *out_shape.add(i) = entry.shape;
             std::ptr::copy_nonoverlapping(entry.color.as_ptr(), out_rgba.add(i * 4), 4);
         }
+        0
+    })
+}
+
+/// `k` evenly spaced RGB colors of a built-in colormap for an ordinal graph
+/// color scale (#34): level `i` samples `i / (k - 1)` like the continuous LUT.
+/// `out_rgb` addresses `k * 3` bytes. Returns 0, or -1 for an unknown colormap,
+/// invalid UTF-8, or `k` outside `1..=256`.
+///
+/// # Safety
+/// `name` addresses `name_len` bytes; `out_rgb` addresses `k * 3` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_ordinal_colors(
+    name: *const u8,
+    name_len: u64,
+    k: u64,
+    out_rgb: *mut u8,
+) -> i32 {
+    let (Ok(name_len), Ok(k)) = (usize::try_from(name_len), usize::try_from(k)) else {
+        return -1;
+    };
+    if name.is_null() || out_rgb.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let Ok(name) = std::str::from_utf8(std::slice::from_raw_parts(name, name_len)) else {
+            return -1;
+        };
+        let Some(colors) = xyg_engine::graph_scale::ordinal_colors(name, k) else {
+            return -1;
+        };
+        for (i, rgb) in colors.iter().enumerate() {
+            std::ptr::copy_nonoverlapping(rgb.as_ptr(), out_rgb.add(i * 3), 3);
+        }
+        0
+    })
+}
+
+/// Domain symmetric about `midpoint` covering every finite value, for a
+/// diverging graph color scale (#34). Returns 0, or -1 without a finite
+/// midpoint or any finite value.
+///
+/// # Safety
+/// `values` addresses `n` doubles; outputs are writable doubles.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_diverging_domain(
+    values: *const f64,
+    n: u64,
+    midpoint: f64,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if out_lo.is_null() || out_hi.is_null() || (n > 0 && values.is_null()) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let input = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(values, n)
+        };
+        let Some((lo, hi)) = xyg_engine::graph_scale::diverging_domain(input, midpoint) else {
+            return -1;
+        };
+        *out_lo = lo;
+        *out_hi = hi;
+        0
+    })
+}
+
+/// UTF-8 text of the semantic graph legend (#34): `field` 0-2 gives the row
+/// label for `value` (class, epistemic, status); `field` 3 gives the legend
+/// title. `out_len` always receives the byte length; a `capacity` below it
+/// writes nothing and returns -2.
+///
+/// # Safety
+/// `out` addresses `capacity` writable bytes when `capacity > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_legend_text(
+    field: u32,
+    value: u32,
+    out: *mut u8,
+    capacity: u64,
+    out_len: *mut u64,
+) -> i32 {
+    if out_len.is_null() || field > 3 || value > 7 {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let text = if field == 3 {
+            xyg_engine::graph_style::SEMANTIC_LEGEND_TITLE.to_owned()
+        } else {
+            xyg_engine::graph_style::semantic_legend_label(field as u8, value as u8)
+        };
+        *out_len = text.len() as u64;
+        let Ok(capacity) = usize::try_from(capacity) else {
+            return -1;
+        };
+        if capacity < text.len() || (capacity > 0 && out.is_null()) {
+            return -2;
+        }
+        std::ptr::copy_nonoverlapping(text.as_ptr(), out, text.len());
         0
     })
 }

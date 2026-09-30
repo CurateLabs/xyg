@@ -1,0 +1,237 @@
+{
+ "schema": "xyg.graph-scales-legend-cross-host/v1",
+ "ids": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "edges": [
+  [
+   "a",
+   "b"
+  ],
+  [
+   "b",
+   "c"
+  ],
+  [
+   "c",
+   "d"
+  ]
+ ],
+ "x": [
+  0.0,
+  1.0,
+  2.0,
+  3.0
+ ],
+ "y": [
+  0.0,
+  1.0,
+  0.0,
+  1.0
+ ],
+ "cases": {
+  "ordinal_diverging": {
+   "options": {
+    "color": [
+     "low",
+     "high",
+     "mid",
+     "low"
+    ],
+    "color_scale": {
+     "type": "ordinal",
+     "order": [
+      "low",
+      "mid",
+      "high"
+     ],
+     "colormap": "viridis"
+    },
+    "edge_color": [
+     -2.0,
+     1.0,
+     5.0
+    ],
+    "edge_color_scale": {
+     "type": "diverging",
+     "midpoint": 1.0
+    }
+   },
+   "node_color": {
+    "mode": "categorical",
+    "categories": [
+     "low",
+     "mid",
+     "high"
+    ],
+    "codes": [
+     0,
+     2,
+     1,
+     0
+    ],
+    "palette": [
+     "#440154",
+     "#21918c",
+     "#fde725"
+    ]
+   },
+   "edge_color": {
+    "mode": "continuous",
+    "domain": [
+     -3.0,
+     5.0
+    ],
+    "colormap": "rdbu"
+   }
+  },
+  "linear_categorical": {
+   "options": {
+    "color": [
+     0.0,
+     2.0,
+     4.0,
+     8.0
+    ],
+    "color_scale": {
+     "type": "linear",
+     "colormap": "magma",
+     "domain": [
+      0.0,
+      10.0
+     ]
+    },
+    "edge_color": [
+     "x",
+     "y",
+     "x"
+    ],
+    "edge_color_scale": {
+     "type": "categorical",
+     "palette": [
+      "#112233",
+      "#445566"
+     ]
+    }
+   },
+   "node_color": {
+    "mode": "continuous",
+    "domain": [
+     0.0,
+     10.0
+    ],
+    "colormap": "magma"
+   },
+   "edge_color": {
+    "mode": "categorical",
+    "categories": [
+     "x",
+     "y"
+    ],
+    "codes": [
+     0,
+     1,
+     0
+    ],
+    "palette": [
+     "#112233",
+     "#445566"
+    ]
+   }
+  },
+  "semantic_legend": {
+   "options": {
+    "node_class": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "node_epistemic": [
+     0,
+     3,
+     0,
+     0
+    ],
+    "edge_status": [
+     0,
+     1,
+     2
+    ],
+    "theme": "dark"
+   },
+   "legend": {
+    "title": "Graph semantics",
+    "items": [
+     {
+      "kind": "scatter",
+      "name": "Class 0",
+      "style": {
+       "color": "#aab2bf",
+       "symbol": "circle"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Class 1",
+      "style": {
+       "color": "#56b4e9",
+       "symbol": "square"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Class 2",
+      "style": {
+       "color": "#e69f00",
+       "symbol": "diamond"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Epistemic 0",
+      "style": {
+       "color": "#aab2bf",
+       "symbol": "circle"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Epistemic 3",
+      "style": {
+       "color": "#00b887",
+       "symbol": "circle"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Status 0",
+      "style": {
+       "color": "#aab2bf",
+       "symbol": "circle"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Status 1",
+      "style": {
+       "color": "#56b4e9",
+       "symbol": "circle"
+      }
+     },
+     {
+      "kind": "scatter",
+      "name": "Status 2",
+      "style": {
+       "color": "#e69f00",
+       "symbol": "circle"
+      }
+     }
+    ]
+   }
+  }
+ }
+}

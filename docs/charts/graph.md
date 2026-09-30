@@ -118,6 +118,27 @@ edges with a nonzero status get an arrowhead, whether or not the graph is
 directed. SVG/PNG export of a semantically styled graph is not supported yet;
 use HTML export.
 
+## Color scales
+
+Pass an array or column as `color` / `edge_color` and pick a scale:
+
+```python
+xyg.graph(
+    nodes, edges,
+    color="risk",                    # ordered levels
+    color_scale={"type": "ordinal", "order": ["low", "medium", "high"]},
+    edge_color="delta",              # signed change
+    edge_color_scale={"type": "diverging", "midpoint": 0, "colormap": "rdbu"},
+)
+```
+
+`linear` takes a `colormap` and optional `domain`; `diverging` centers the
+colors on `midpoint`; `ordinal` spreads a colormap over your `order`; and
+`categorical` takes a `palette`. Semantic graphs show a "Graph semantics"
+legend listing each class, epistemic, and status value in use; pass
+`semantic_legend=False` to hide it. Node takes `colorScale`,
+`edgeColorScale`, and `semanticLegend`.
+
 ## Labels
 
 Nodes are labeled from `node_label` (default: the `label` column, then

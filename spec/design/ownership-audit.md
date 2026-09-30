@@ -711,6 +711,7 @@ Forbidden:
 | `crates/xyg-engine/src/geom.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graph_scale.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/hexbin.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/jpeg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/colormap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) | — |
