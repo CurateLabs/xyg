@@ -204,7 +204,7 @@ export function resolveNativeLibrary(opts) {
       `Expected optional dependency ${packageName} with its bundled library,`,
       "or set XYG_NATIVE_LIB to one explicit development build.",
       "Lookup never searches repository, working-directory, or system library paths and never falls back to Python.",
-      `Searched: ${candidates.join(", ") || "(none)"}`,
+      `Checked ${candidates.length} candidate path(s); see the error's \`searched\` property.`,
     ].join(" "),
     { platform, arch, packageName, searched: candidates },
   );

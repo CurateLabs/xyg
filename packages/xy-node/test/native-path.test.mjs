@@ -21,6 +21,7 @@ import {
   resolvePlatformPackageName,
   tryResolvePlatformPackageLibrary,
 } from "../src/native-path.js";
+import { LOAD_ERROR_CODES, loadXygNode } from "../src/load.js";
 
 const facadePackageJson = JSON.parse(
   fs.readFileSync(
@@ -267,7 +268,34 @@ test("loadXygNode reports missing and unloadable libraries without throwing", ()
   // outcome is a stable code, never an unhandled exception.
   if (!missing.ok) assert.equal(missing.code, NATIVE_ERROR_CODES.LIBRARY_MISSING);
   const unloadable = loadInChild({ XYG_NATIVE_LIB: path.join(PACKAGE_DIR, "package.json") });
-  if (!unloadable.ok) assert.equal(unloadable.code, NATIVE_ERROR_CODES.LOAD_FAILED);
+  if (!unloadable.ok) {
+    assert.equal(unloadable.code, NATIVE_ERROR_CODES.LOAD_FAILED);
+    assert.ok(!unloadable.message.includes(PACKAGE_DIR), "host-facing messages carry no paths");
+  }
+});
+
+const LIBC = "/lib/x86_64-linux-gnu/libc.so.6";
+test("a loadable library without xyg_abi_version is an ABI mismatch", {
+  skip: process.platform === "linux" && process.arch === "x64" && fs.existsSync(LIBC) ? false : "needs linux-x64 libc",
+}, () => {
+  const foreign = loadInChild({ XYG_NATIVE_LIB: LIBC });
+  if (foreign.ok) return; // a staged platform package took precedence
+  assert.equal(foreign.code, NATIVE_ERROR_CODES.ABI_MISMATCH);
+  assert.equal(foreign.expected, ABI_VERSION);
+  assert.equal(foreign.actual, null);
+  assert.ok(!foreign.message.includes(LIBC));
+});
+
+test("loadXygNode separates packaging failures from native ones", async () => {
+  const missing = Object.assign(new Error("Cannot find package 'koffi' imported from /home/someone/app/index.js"), { code: "ERR_MODULE_NOT_FOUND" });
+  const dependency = await loadXygNode({ importer: () => Promise.reject(missing) });
+  assert.equal(dependency.code, LOAD_ERROR_CODES.DEPENDENCY_MISSING);
+  assert.ok(!dependency.message.includes("/home/someone"));
+  const other = await loadXygNode({ importer: () => Promise.reject(new SyntaxError("Unexpected token in /home/someone/x.js")) });
+  assert.equal(other.code, LOAD_ERROR_CODES.IMPORT_FAILED);
+  assert.ok(!other.message.includes("/home/someone"));
+  const coded = await loadXygNode({ importer: () => Promise.reject(new XygNativeError(NATIVE_ERROR_CODES.ABI_MISMATCH, "mismatch", { expected: 2, actual: 1 })) });
+  assert.deepEqual([coded.code, coded.expected, coded.actual], [NATIVE_ERROR_CODES.ABI_MISMATCH, 2, 1]);
 });
 
 test("loadXygNode loads the development library when it is present", { skip: process.env.XYG_NATIVE_LIB ? false : "set XYG_NATIVE_LIB" }, () => {
