@@ -53,7 +53,10 @@ export const ATTR_SLOTS = {
   // point-only a_dval; edge halo/body RGBA and their (halo, body) widths use
   // slots the segment program leaves free (4/5/7); node halo RGBA and
   // diameter alias the line-only a_len0/a_len1 slots in the point program.
-  a_edgeDash: 9, a_haloRgba: 4, a_bodyRgba: 5, a_layerWidth: 7, a_edgeLayer: 8,
+  // a_edgeLayout packs (dash on, dash off, halo width, body width) so the
+  // segment program stays within 16 vertex inputs including gl_VertexID,
+  // which some SwiftShader/ANGLE builds count as an attribute.
+  a_edgeLayout: 9, a_haloRgba: 4, a_bodyRgba: 5, a_edgeLayer: 8,
   a_ptHaloRgba: 10, a_ptHaloSize: 11, a_ptLayer: 2,
   // Ribbon target-end colour. Aliases a_style's slot: the ribbon program uses
   // neither the style nor the stroke channel families, so the slot is free
@@ -876,8 +879,8 @@ export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
 in float a_dash0; in float a_dashDir;
-in vec4 a_ends; in vec3 a_ends2; in vec2 a_edgeDash;
-in vec4 a_haloRgba; in vec4 a_bodyRgba; in vec2 a_layerWidth; in float a_edgeLayer;
+in vec4 a_ends; in vec3 a_ends2; in vec4 a_edgeLayout;
+in vec4 a_haloRgba; in vec4 a_bodyRgba; in float a_edgeLayer;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
 // Graph edge ends (#33), from Rust edge_route_segments_with_ends:
 // a_ends = (source center - piece start x, y [data], source radius px, flags:
@@ -888,8 +891,9 @@ uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_wi
 // sizes are device px. u_edgePass 1 draws only the arrowhead triangle.
 uniform int u_edgeEnds; uniform int u_edgePass; uniform float u_edgeScale;
 uniform float u_edgeHeadLen; uniform float u_edgeHeadHalf;
-// Rust-resolved semantic dash (graph_style::semantic_paint_layers): a_edgeDash
-// (on, off) CSS px scaled by u_edgeDashScale (dpr), measured along each routed
+// Rust-resolved semantic dash (graph_style::semantic_paint_layers):
+// a_edgeLayout.xy (on, off) CSS px scaled by u_edgeDashScale (dpr); .zw are
+// the halo and body widths in device px. Dash is measured along each routed
 // piece from its start like the canonical Scene. (0, 0) is solid.
 uniform float u_edgeDashScale;
 // Semantic layers (#34): a layered draw emits three consecutive instances
@@ -957,7 +961,7 @@ void main() {
   if (layer < 2) {
     rgba = layer == 0 ? a_haloRgba : a_bodyRgba;
     if (!(rgba.a > 0.0)) { xyEdgeHide(); return; }
-    style = vec4(1.0, -1.0, layer == 0 ? a_layerWidth.x : a_layerWidth.y, -1.0);
+    style = vec4(1.0, -1.0, layer == 0 ? a_edgeLayout.z : a_edgeLayout.w, -1.0);
   }
   if (u_coordMode == 1) {
     float th0 = xyAxisCoord(ax0, u_x0meta, u_x0mode, u_x0constant);
@@ -1067,7 +1071,7 @@ void main() {
   v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
   v_dash = a_dash0 + c.x * len * a_dashDir;
   v_rgba = rgba; v_style = style;
-  v_edgeDash = a_edgeDash * u_edgeDashScale;
+  v_edgeDash = a_edgeLayout.xy * u_edgeDashScale;
   v_edgeDist = mix(pieceT0, pieceT1, c.x) * pieceLen;
 }`;
 

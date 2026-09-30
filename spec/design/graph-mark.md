@@ -633,9 +633,11 @@ absent layer, and an absent layer ships no channel.
 Paint order matches the Scene item by item: the point program draws two
 instances per node (data attributes at divisor 2: halo, then node) and the
 segment program three per edge segment (divisor 3: halo, body, stroke), each
-instance naming its layer through a per-instance layer attribute rather than
-`gl_InstanceID` (older SwiftShader builds crash on the latter in point
-draws), so each item
+instance naming its layer through a per-instance layer attribute. Dash and
+layer widths share one vec4 per segment so the segment program stays within
+16 vertex inputs including `gl_VertexID`, which some SwiftShader/ANGLE builds
+count as an attribute (`tests/test_shader_attribute_budget.py` holds every
+client vertex shader to that budget), so each item
 finishes its layers before the next item paints and a later edge's halo covers
 an earlier edge's stroke at a crossing. Filled arrowheads remain one pass over
 all edge layers. The Scene bounds very long dashed pieces to 64 periods to cap

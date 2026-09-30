@@ -2374,10 +2374,15 @@ export class ChartView {
         for (let i = 2; i < style.length; i += 4) style[i] *= factor;
         this._reuploadBuffer(record.styleBuf, style);
       }
-      const layerWidths = record._cpuLayerWidths;
-      if (layerWidths && record.layerWidthBuf && layerWidths.length === rows * 2) {
-        for (let i = 0; i < layerWidths.length; i++) layerWidths[i] *= factor;
-        this._reuploadBuffer(record.layerWidthBuf, layerWidths);
+      // Edge layout rows: components 2/3 are dpr-baked layer widths; dash
+      // (0/1) stays CSS px and scales in the shader.
+      const layout = record._cpuEdgeLayout;
+      if (layout && record.edgeLayoutBuf && layout.length === rows * 4) {
+        for (let i = 0; i < layout.length; i += 4) {
+          layout[i + 2] *= factor;
+          layout[i + 3] *= factor;
+        }
+        this._reuploadBuffer(record.edgeLayoutBuf, layout);
       }
       const radius = record._cpuRadius;
       if (radius && record.radiusBuf) {
@@ -4713,11 +4718,6 @@ export class ChartView {
     // (graph_style::semantic_paint_layers): epistemic halo and class body
     // under the status stroke, plus per-segment dash.
     this._buildSemanticLayers(g, t, buffer, false);
-    const dash = t.channels && t.channels.edge_dash;
-    if (dash && dash.components === 2) {
-      const values = this._columnView(buffer, this.spec.columns[dash.buf]);
-      if (values.length >= g.n * 2) g.edgeDashBuf = this._upload(Float32Array.from(values.subarray(0, g.n * 2)));
-    }
     g._cpu = { x: x0, y: y1, xMeta: g.x0Meta, yMeta: g.y1Meta };
   }
 
@@ -4752,19 +4752,30 @@ export class ChartView {
     const body = rgba("body_rgba");
     const haloWidth = floats("halo_width");
     const bodyWidth = floats("body_width");
-    if (!(halo && haloWidth) && !(body && bodyWidth)) return;
-    const widths = new Float32Array(g.n * 2);
+    const dashSpec = channel("edge_dash");
+    const dashValues = dashSpec && dashSpec.components === 2
+      ? this._columnView(buffer, this.spec.columns[dashSpec.buf]) : null;
+    const dash = dashValues && dashValues.length >= g.n * 2 ? dashValues : null;
+    const hasHalo = !!(halo && haloWidth);
+    const hasBody = !!(body && bodyWidth);
+    if (!hasHalo && !hasBody && !dash) return;
+    // One vec4 per segment: (dash on, dash off) CSS px, (halo, body) widths in
+    // device px (dpr-baked, rescaled by `_rescaleDprBakedBuffers`).
+    const layout = new Float32Array(g.n * 4);
     for (let i = 0; i < g.n; i++) {
-      widths[i * 2] = halo && haloWidth ? haloWidth[i] * this.dpr : 0;
-      widths[i * 2 + 1] = body && bodyWidth ? bodyWidth[i] * this.dpr : 0;
+      layout[i * 4] = dash ? dash[i * 2] : 0;
+      layout[i * 4 + 1] = dash ? dash[i * 2 + 1] : 0;
+      layout[i * 4 + 2] = hasHalo ? haloWidth[i] * this.dpr : 0;
+      layout[i * 4 + 3] = hasBody ? bodyWidth[i] * this.dpr : 0;
     }
-    const empty = new Uint8Array(g.n * 4);
-    g.haloRgbaBuf = this._upload(halo && haloWidth ? halo : empty);
-    g.bodyRgbaBuf = this._upload(body && bodyWidth ? body : empty);
-    g._cpuLayerWidths = widths;
-    g.layerWidthBuf = this._upload(widths);
-    g.edgeLayerBuf = this._upload(this._layerIndices(g.n, 3));
+    g._cpuEdgeLayout = layout;
+    g.edgeLayoutBuf = this._upload(layout);
     g._styleDpr = this.dpr;
+    if (!hasHalo && !hasBody) return;
+    const empty = new Uint8Array(g.n * 4);
+    g.haloRgbaBuf = this._upload(hasHalo ? halo : empty);
+    g.bodyRgbaBuf = this._upload(hasBody ? body : empty);
+    g.edgeLayerBuf = this._upload(this._layerIndices(g.n, 3));
   }
 
   // Per-instance layer index for a layered draw: `layers` consecutive
@@ -6507,7 +6518,7 @@ export class ChartView {
     // Semantic graph layers (#34): one instanced draw with three instances
     // per segment (attribute divisor 3) - halo, body, stroke - so each edge
     // paints its layers before the next, like the canonical Scene.
-    const layered = !!(g.layerWidthBuf && g.haloRgbaBuf && g.bodyRgbaBuf && g.edgeLayerBuf
+    const layered = !!(g.edgeLayoutBuf && g.haloRgbaBuf && g.bodyRgbaBuf && g.edgeLayerBuf
       && g.colorMode === 3);
     const bindSegments = (div) => {
       const rgbaBuf = g.rgbaBuf;
@@ -6524,10 +6535,9 @@ export class ChartView {
           dashed ? g._segmentDashDirBuf._fcId : 0,
           g.endsBuf ? g.endsBuf._fcId : 0,
           g.ends2Buf ? g.ends2Buf._fcId : 0,
-          g.edgeDashBuf ? g.edgeDashBuf._fcId : 0,
+          g.edgeLayoutBuf ? g.edgeLayoutBuf._fcId : 0,
           layers ? g.haloRgbaBuf._fcId : 0,
           layers ? g.bodyRgbaBuf._fcId : 0,
-          layers ? g.layerWidthBuf._fcId : 0,
           layers ? g.edgeLayerBuf._fcId : 0],
         () => {
           this._vaoAttr(ATTR_SLOTS.ax0, g.x0Buf, 0, div);
@@ -6543,11 +6553,10 @@ export class ChartView {
           }
           if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, div, 4);
           if (g.ends2Buf) this._vaoAttr(ATTR_SLOTS.a_ends2, g.ends2Buf, 0, div, 3);
-          if (g.edgeDashBuf) this._vaoAttr(ATTR_SLOTS.a_edgeDash, g.edgeDashBuf, 0, div, 2);
+          if (g.edgeLayoutBuf) this._vaoAttr(ATTR_SLOTS.a_edgeLayout, g.edgeLayoutBuf, 0, div, 4);
           if (layers) {
             this._vaoAttr(ATTR_SLOTS.a_haloRgba, g.haloRgbaBuf, 0, div, 4, true);
             this._vaoAttr(ATTR_SLOTS.a_bodyRgba, g.bodyRgbaBuf, 0, div, 4, true);
-            this._vaoAttr(ATTR_SLOTS.a_layerWidth, g.layerWidthBuf, 0, div, 2);
             this._vaoAttr(ATTR_SLOTS.a_edgeLayer, g.edgeLayerBuf, 0, 1);
           }
         }
@@ -6557,7 +6566,7 @@ export class ChartView {
       if (!styleBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
       if (!g.endsBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_ends, 0, 0, 0, 0);
       if (!g.ends2Buf) gl.vertexAttrib3f(ATTR_SLOTS.a_ends2, 0, 0, 0);
-      if (!g.edgeDashBuf) gl.vertexAttrib2f(ATTR_SLOTS.a_edgeDash, 0, 0);
+      if (!g.edgeLayoutBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_edgeLayout, 0, 0, 0, 0);
       if (!layers) gl.vertexAttrib1f(ATTR_SLOTS.a_edgeLayer, 2);
     };
     const edgeEnds = g.endsBuf && !this._polarGeometry();
