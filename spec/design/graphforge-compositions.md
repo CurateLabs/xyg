@@ -495,8 +495,9 @@ differ from wasm32's by an ulp that 300 force ticks amplify (about 1e-3 on a
 six-node graph), so the Scene seeds the same circle with
 `graph::portable_sin_cos` (Cody–Waite reduction and Taylor polynomials in
 basic IEEE operations) through `graph::layout_force_portable`; the ticks use
-only `+ − × ÷ √`. Scene bytes are therefore identical on every host and
-platform (parity tests cover 37-, 150-, and 330-node graphs), and the layout
+only `+ − × ÷ √`. The semantic Scene's edge lowering measures segment lengths
+(dash cuts, arrowheads) with `√` rather than `libm` `hypot`. Scene bytes are
+therefore identical on every host and platform (parity tests cover 37-, 150-, and 330-node graphs), and the layout
 matches the graph mark's wherever `libm` rounds the circle the same way.
 
 **Webview / CSP.** The Worker and WASM are ordinary same-origin assets, so a

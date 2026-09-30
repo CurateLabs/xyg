@@ -1227,7 +1227,11 @@ fn encode_semantic_graph_scene_internal(
         for &(ax, ay, bx, by) in &routes[index] {
             let (apx, apy) = to_px(ax, ay);
             let (bpx, bpy) = to_px(bx, by);
-            let length = (bpx - apx).hypot(bpy - apy);
+            // `sqrt` is correctly rounded on every target; `hypot` is a libm
+            // call whose last bit differs between platforms and wasm32, and
+            // these lengths place dash cuts and arrowheads in the Scene.
+            // Pixel coordinates are viewport-bounded, so the sum cannot overflow.
+            let length = ((bpx - apx) * (bpx - apx) + (bpy - apy) * (bpy - apy)).sqrt();
             if !length.is_finite() || length <= f64::EPSILON {
                 continue;
             }
@@ -1266,7 +1270,7 @@ fn encode_semantic_graph_scene_internal(
             let &(ax, ay, bx, by) = routes[index].last().unwrap();
             let (apx, apy) = to_px(ax, ay);
             let (bpx, bpy) = to_px(bx, by);
-            let length = (bpx - apx).hypot(bpy - apy);
+            let length = ((bpx - apx) * (bpx - apx) + (bpy - apy) * (bpy - apy)).sqrt();
             if length >= 8.0 {
                 let ux = (bpx - apx) / length;
                 let uy = (bpy - apy) / length;
