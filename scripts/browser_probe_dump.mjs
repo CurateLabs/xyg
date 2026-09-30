@@ -40,6 +40,14 @@ try {
       ? { deviceScaleFactor: requestedScale }
       : {}),
   });
+  // Page errors explain a probe that never reports; surface them on timeout.
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(`pageerror: ${error?.stack || error}`));
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      pageErrors.push(`console.${message.type()}: ${message.text()}`);
+    }
+  });
   await page.goto(url, { waitUntil: "load" });
   await page.waitForFunction(
     ([result, error]) => document.body?.hasAttribute(result) || document.body?.hasAttribute(error),
@@ -49,7 +57,10 @@ try {
         ? requestedTimeout
         : 10_000,
     },
-  );
+  ).catch((error) => {
+    const details = pageErrors.slice(-20).join("\n");
+    throw new Error(`${error.message}${details ? `\npage errors:\n${details}` : ""}`);
+  });
   if (screenshotArg) {
     await page.screenshot({ path: screenshotArg.slice(screenshotArg.indexOf("=") + 1) });
   }

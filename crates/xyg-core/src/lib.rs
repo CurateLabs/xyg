@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 368;
+pub const ABI_VERSION: u32 = 369;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16302,6 +16302,119 @@ pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
         }
         *out_domain_lo = domain.0;
         *out_domain_hi = domain.1;
+        0
+    })
+}
+
+/// Lower versioned GraphForge semantic fields into ordered paint layers (#34).
+///
+/// Same inputs and validation as `xyg_graph_semantic_style_resolve`. Per row:
+/// the epistemic halo color and extent (node halo diameter px or edge halo
+/// width px), the body color (node fill or edge class body) and edge body
+/// width px, the stroke color, the edge dash `(on, off)` px, and the edge
+/// arrowhead flag. Colors carry row opacity and layer alpha; `[0; 4]` marks an
+/// absent layer. RGBA outputs address `n * 4` bytes, `dash_px` addresses
+/// `n * 2` floats, and every other output addresses `n` elements. Outputs are
+/// written only after the complete input validates.
+///
+/// # Safety
+/// Every non-empty pointer must address the documented readable/writable extent.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_paint_layers(
+    version: u32,
+    theme: u32,
+    n: u64,
+    classes: *const u8,
+    epistemic: *const u8,
+    statuses: *const u8,
+    metric: *const f64,
+    flags: *const u32,
+    edge: i32,
+    halo_rgba: *mut u8,
+    halo_extent: *mut f32,
+    body_rgba: *mut u8,
+    body_width: *mut f32,
+    stroke_rgba: *mut u8,
+    dash_px: *mut f32,
+    head: *mut u8,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if version != xyg_engine::graph_style::RESOLVED_STYLE_VERSION
+        || (n > 0
+            && ([classes, epistemic, statuses].iter().any(|p| p.is_null())
+                || metric.is_null()
+                || flags.is_null()
+                || [halo_rgba, body_rgba, stroke_rgba, head]
+                    .iter()
+                    .any(|p| p.is_null())
+                || [halo_extent, body_width, dash_px]
+                    .iter()
+                    .any(|p| p.is_null())))
+    {
+        return -1;
+    }
+    let Ok(theme) = u8::try_from(theme) else {
+        return -1;
+    };
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let blank = xyg_engine::graph_style::ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        };
+        let mut resolved = vec![blank; n];
+        let class_codes: &[u8] = input!(classes);
+        let epistemic_codes: &[u8] = input!(epistemic);
+        if xyg_engine::graph_style::resolve_semantic_styles(
+            xyg_engine::graph_style::SemanticStyleInput {
+                classes: class_codes,
+                epistemic: epistemic_codes,
+                statuses: input!(statuses),
+                metric: input!(metric),
+                flags: input!(flags),
+                edge: edge != 0,
+                theme,
+            },
+            &mut resolved,
+        )
+        .is_none()
+        {
+            return -1;
+        }
+        for (i, style) in resolved.iter().enumerate() {
+            let layers = xyg_engine::graph_style::semantic_paint_layers(
+                style,
+                class_codes[i],
+                epistemic_codes[i],
+                edge != 0,
+            );
+            std::ptr::copy_nonoverlapping(layers.halo.as_ptr(), halo_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(layers.body.as_ptr(), body_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(layers.stroke.as_ptr(), stroke_rgba.add(i * 4), 4);
+            *halo_extent.add(i) = layers.halo_extent;
+            *body_width.add(i) = layers.body_width;
+            *dash_px.add(i * 2) = layers.dash.0;
+            *dash_px.add(i * 2 + 1) = layers.dash.1;
+            *head.add(i) = u8::from(layers.head);
+        }
         0
     })
 }

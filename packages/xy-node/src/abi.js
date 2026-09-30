@@ -30,6 +30,7 @@ import {
   xyGraphCompoundScene,
   xyGraphLabelAccept,
   xyGraphSemanticStyleResolve,
+  xyGraphSemanticPaintLayers,
   xyGraphSemanticLegend,
   xyGraphVisualStateResolve,
   xyGraphClusterAggregate,
@@ -1636,7 +1637,7 @@ export function graphVisualStates(flags) {
   return out;
 }
 
-export function graphSemanticStyles(classes, epistemic, statuses, metric, flags, opts = {}) {
+function graphSemanticInputs(classes, epistemic, statuses, metric, flags, opts) {
   if (opts.edge !== undefined && typeof opts.edge !== "boolean") throw new TypeError("edge must be a bool");
   const theme = opts.theme ?? "light"; const themeId = theme === "light" ? 0 : theme === "dark" ? 1 : -1;
   if (themeId < 0) throw new RangeError("theme must be 'light' or 'dark'");
@@ -1649,6 +1650,11 @@ export function graphSemanticStyles(classes, epistemic, statuses, metric, flags,
   for (const [name, value] of [["classes", ca], ["epistemic", ea], ["statuses", sa]]) {
     if (value.some((code) => code > 7)) throw new RangeError(`${name} codes must be in the closed range 0..7`);
   }
+  return { theme, themeId, ca, ea, sa, ma, fa, n };
+}
+
+export function graphSemanticStyles(classes, epistemic, statuses, metric, flags, opts = {}) {
+  const { theme, themeId, ca, ea, sa, ma, fa, n } = graphSemanticInputs(classes, epistemic, statuses, metric, flags, opts);
   const fillRgba = new Uint8Array(n * 4); const strokeRgba = new Uint8Array(n * 4); const haloRgba = new Uint8Array(n * 4);
   const size = new Float32Array(n); const width = new Float32Array(n); const opacity = new Float32Array(n);
   const shape = new Uint8Array(n); const dash = new Uint8Array(n); const arrow = new Uint8Array(n); const state = new Uint8Array(n);
@@ -1656,6 +1662,21 @@ export function graphSemanticStyles(classes, epistemic, statuses, metric, flags,
   const code = xyGraphSemanticStyleResolve(1, themeId, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), f64Ptr(ma), u32Ptr(fa), opts.edge ? 1 : 0, u8Ptr(fillRgba), u8Ptr(strokeRgba), u8Ptr(haloRgba), f32Ptr(size), f32Ptr(width), f32Ptr(opacity), u8Ptr(shape), u8Ptr(dash), u8Ptr(arrow), u8Ptr(state), f64Ptr(domain.subarray(0, 1)), f64Ptr(domain.subarray(1)));
   if (code !== 0) throw new Error(`xyg_graph_semantic_style_resolve failed with code ${code}`);
   return { version: 1, theme, fillRgba, strokeRgba, haloRgba, size, width, opacity, shape, dash, arrow, state, metricDomain: domain };
+}
+
+/** Lower the v1 GraphForge semantic contract into ordered paint layers in Rust
+ * (#34). Colors carry row opacity and layer alpha; all-zero is an absent layer.
+ * `haloExtent` is the node halo diameter or edge halo width (px); `dashPx` is
+ * `(on, off)` px per row (`(0, 0)` is solid). Mirrors Python
+ * `_native.graph_semantic_paint_layers`. */
+export function graphSemanticPaintLayers(classes, epistemic, statuses, metric, flags, opts = {}) {
+  const { theme, themeId, ca, ea, sa, ma, fa, n } = graphSemanticInputs(classes, epistemic, statuses, metric, flags, opts);
+  const haloRgba = new Uint8Array(n * 4); const bodyRgba = new Uint8Array(n * 4); const strokeRgba = new Uint8Array(n * 4);
+  const haloExtent = new Float32Array(n); const bodyWidth = new Float32Array(n); const dashPx = new Float32Array(n * 2);
+  const head = new Uint8Array(n);
+  const code = xyGraphSemanticPaintLayers(1, themeId, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), f64Ptr(ma), u32Ptr(fa), opts.edge ? 1 : 0, u8Ptr(haloRgba), f32Ptr(haloExtent), u8Ptr(bodyRgba), f32Ptr(bodyWidth), u8Ptr(strokeRgba), f32Ptr(dashPx), u8Ptr(head));
+  if (code !== 0) throw new Error(`xyg_graph_semantic_paint_layers failed with code ${code}`);
+  return { version: 1, theme, haloRgba, haloExtent, bodyRgba, bodyWidth, strokeRgba, dashPx, head };
 }
 
 export function graphSemanticLegend(classes, epistemic, statuses, opts = {}) {

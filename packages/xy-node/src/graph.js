@@ -20,6 +20,7 @@ import {
   graphProjectionRead,
   graphCompoundBounds,
   graphLabelAccept,
+  graphSemanticPaintLayers,
   graphSemanticStyles,
   graphVisualStates,
 } from "./abi.js";
@@ -764,15 +765,39 @@ function resolveEncodingValues(data, values, where = "node") {
  * @param {Iterable|object} [edges]
  * @param {object} [opts]
  */
-/** v1 semantic paint layers the composed graph mark does not draw yet (#34);
- * mirrors Python `SEMANTIC_PENDING_LAYERS` in python/xyg/_marks_graph.py. */
-export const GRAPH_SEMANTIC_PENDING_LAYERS = Object.freeze([
-  "node_halo",
-  "edge_halo",
-  "edge_class_body",
-  "edge_dash",
-  "edge_arrow_policy",
-]);
+/** Ship Rust-lowered semantic paint layers (#34) as per-item trace channels,
+ * gathering source rows through `rows` (output index -> source row). Absent
+ * layers ship nothing. Mirrors Python `_add_layer_channels`. */
+function graphLayerChannels(layers, rows, edge) {
+  const n = rows.length;
+  const out = {};
+  const rgba = (source) => {
+    const values = new Uint8Array(n * 4);
+    rows.forEach((row, i) => values.set(source.subarray(row * 4, row * 4 + 4), i * 4));
+    return values;
+  };
+  const floats = (source, components = 1) => {
+    const values = new Float64Array(n * components);
+    rows.forEach((row, i) => {
+      for (let c = 0; c < components; c += 1) values[i * components + c] = source[row * components + c];
+    });
+    return values;
+  };
+  const halo = rgba(layers.haloRgba);
+  if (halo.some((v) => v !== 0)) {
+    out.halo_rgba = { values: halo, components: 4, dtype: "u8" };
+    out[edge ? "halo_width" : "halo_size"] = { values: floats(layers.haloExtent) };
+  }
+  if (!edge) return out;
+  const body = rgba(layers.bodyRgba);
+  if (body.some((v) => v !== 0)) {
+    out.body_rgba = { values: body, components: 4, dtype: "u8" };
+    out.body_width = { values: floats(layers.bodyWidth) };
+  }
+  const dash = floats(layers.dashPx, 2);
+  if (dash.some((v, i) => i % 2 === 1 && v > 0)) out.edge_dash = { values: dash, components: 2 };
+  return out;
+}
 const GRAPH_SEMANTIC_SHAPES = ["circle", "square", "diamond", "triangle", "cross", "hexagon"];
 
 /** Source-row semantic columns for one graph side, or null when unset (#34). */
@@ -939,7 +964,8 @@ export function composeGraph(nodes, edges, opts = {}) {
       theme,
       nodes: null,
       edges: null,
-      pending_layers: [...GRAPH_SEMANTIC_PENDING_LAYERS],
+      // Every v1 layer now paints on the composed mark (#34).
+      pending_layers: [],
     };
   let nodePaint = null;
   if (nodeSemantic != null && !nodesExact) {
@@ -960,6 +986,11 @@ export function composeGraph(nodes, edges, opts = {}) {
         opacity: { values: Float64Array.from(nodeSemantic.opacity) },
         symbol: { values: Uint8Array.from(nodeSemantic.shape), dtype: "u8" },
         stroke_width: { values: Float64Array.from(nodeSemantic.width) },
+        ...graphLayerChannels(
+          graphSemanticPaintLayers(...nodeFields, nodeFlags, { theme }),
+          Array.from({ length: nNodes }, (_, i) => i),
+          false,
+        ),
       },
     };
   }
@@ -1034,6 +1065,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     edgeColorPaint = renderEdgeIndex.map((i) => edgeColor[Number(i)]);
   }
   let edgePaint = null;
+  let edgeEndsPaint = null;
   if (edgeFields != null && singleMember == null) {
     styleContract.edges = "omitted:aggregate";
   } else if (edgeFields != null) {
@@ -1054,9 +1086,25 @@ export function composeGraph(nodes, edges, opts = {}) {
       width[segment] = resolved.width[row];
       opacity[segment] = resolved.opacity[row];
     });
+    const layers = graphSemanticPaintLayers(...edgeFields, new Uint32Array(edgeFields[0].length), {
+      edge: true,
+      theme,
+    });
+    const segmentRows = renderEdgeIndex.map((renderEdge) => Number(singleMember[Number(renderEdge)]));
+    // Rust's arrow policy replaces the directed default: the head bit (0x40)
+    // follows each segment's source-edge `head` layer.
+    edgeEndsPaint = Float64Array.from(edgeEnds);
+    segmentRows.forEach((row, segment) => {
+      const at = segment * 7 + 6;
+      edgeEndsPaint[at] = (edgeEndsPaint[at] & ~0x40) | (layers.head[row] ? 0x40 : 0);
+    });
     edgePaint = {
       color_ch: { mode: "direct_rgba", rgba },
-      style_channels: { width: { values: width }, opacity: { values: opacity } },
+      style_channels: {
+        width: { values: width },
+        opacity: { values: opacity },
+        ...graphLayerChannels(layers, segmentRows, true),
+      },
     };
   }
   // Keep auto-built projection rows for meta even when Aggregate collapses edges.
@@ -1080,7 +1128,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       y1: edgeSegments.y1,
       // Border radii + flags per segment (#33); geometry, not per-item paint.
       style_channels: {
-        edge_ends: { values: Float64Array.from(edgeEnds), components: 7, dtype: "f32" },
+        edge_ends: { values: edgeEndsPaint ?? Float64Array.from(edgeEnds), components: 7, dtype: "f32" },
         ...(edgePaint?.style_channels ?? {}),
       },
       style: {

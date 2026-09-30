@@ -126,8 +126,10 @@ def graph(
     node_style: dict[str, Any] | None = None
     edge_style: dict[str, Any] | None = None
     if node_fields is not None or edge_fields is not None:
+        # Every v1 layer (halo, class body, dash, arrow policy) now paints on
+        # the composed mark; the key stays so hosts can gate on it.
         style_contract = {"version": 1, "theme": theme, "nodes": None, "edges": None}
-        style_contract["pending_layers"] = list(SEMANTIC_PENDING_LAYERS)
+        style_contract["pending_layers"] = []
     if node_fields is not None and style_contract is not None:
         if len(px) != data.n_nodes:
             style_contract["nodes"] = "omitted:aggregate"
@@ -135,6 +137,9 @@ def graph(
             flags = _node_flags(visual_state_flags, data.n_nodes)
             resolved = _native.graph_semantic_styles(*node_fields, flags, theme=theme)
             node_style = _node_paint(resolved)
+            node_style["layers"] = _native.graph_semantic_paint_layers(
+                *node_fields, flags, theme=theme
+            )
             style_contract["nodes"] = "resolved"
             style_contract["node_metric_domain"] = list(resolved["metric_domain"])
     if edge_fields is not None and style_contract is not None:
@@ -148,10 +153,14 @@ def graph(
             # domain (EdgeSample must not rescale widths), then gather rows.
             no_flags = np.zeros(len(edge_fields[0]), dtype=np.uint32)
             resolved = _native.graph_semantic_styles(*edge_fields, no_flags, edge=True, theme=theme)
+            layers = _native.graph_semantic_paint_layers(
+                *edge_fields, no_flags, edge=True, theme=theme
+            )
             edge_style = {
                 "color": resolved["stroke_rgba"][rows].astype(np.float64) / 255.0,
                 "width": resolved["width"][rows].astype(np.float64),
                 "opacity": resolved["opacity"][rows].astype(np.float64),
+                "layers": {key: value[rows] for key, value in layers.items() if key != "version"},
             }
             edge_color, edge_width = edge_style["color"], edge_style["width"]
             style_contract["edges"] = "resolved"
@@ -221,6 +230,19 @@ def graph(
         else _expand_edge_values(edge_style["opacity"], "edge opacity"),
         style=style,
     )
+    if edge_style is not None:
+        # Rust's arrow policy replaces the directed default: the head bit
+        # (0x40) follows each segment's source-edge `head` layer.
+        segment_rows = render_edge_index.astype(np.intp)
+        edge_layers = edge_style["layers"]
+        edge_ends = np.array(edge_ends, dtype=np.float64)
+        head = edge_layers["head"][segment_rows].astype(np.int64) * 0x40
+        edge_ends[:, 6] = (edge_ends[:, 6].astype(np.int64) & ~0x40) | head
+        _add_layer_channels(
+            self.traces[-1],
+            {key: value[segment_rows] for key, value in edge_layers.items() if key != "head"},
+            edge=True,
+        )
     self.traces[-1].style_channels["edge_ends"] = channels.StyleChannel(
         values=np.ascontiguousarray(edge_ends, dtype=np.float64), components=7
     )
@@ -240,6 +262,8 @@ def graph(
         density=None if node_style is None else False,
         style=style,
     )
+    if node_style is not None:
+        _add_layer_channels(self.traces[-1], node_style["layers"], edge=False)
     # Edge identity follows Rust's render-edge membership, not a count match
     # (#33): a render edge with one member carries that source edge's row; an
     # Aggregate edge carries its member count, never one invented source edge.
@@ -411,15 +435,37 @@ def graph(
     return self
 
 
-# Paint layers of the v1 semantic contract that the composed graph mark does
-# not draw yet (#34); recorded so hosts never mistake them for painted.
-SEMANTIC_PENDING_LAYERS = (
-    "node_halo",
-    "edge_halo",
-    "edge_class_body",
-    "edge_dash",
-    "edge_arrow_policy",
-)
+def _add_layer_channels(trace: Any, layers: dict[str, Any], *, edge: bool) -> None:
+    """Ship Rust-lowered semantic paint layers as per-item trace channels (#34).
+
+    Absent layers (every color all-zero, every dash solid) ship nothing, so
+    plain graphs keep their exact payload. Node halos carry their diameter
+    (``halo_size``); edge halos and class bodies carry widths.
+    """
+    from . import channels
+
+    def rgba(name: str, values: np.ndarray) -> None:
+        trace.style_channels[name] = channels.StyleChannel(
+            values=np.ascontiguousarray(values, dtype=np.uint8), components=4, dtype="u8"
+        )
+
+    def floats(name: str, values: np.ndarray, components: int = 1) -> None:
+        trace.style_channels[name] = channels.StyleChannel(
+            values=np.ascontiguousarray(values, dtype=np.float64), components=components
+        )
+
+    if np.any(layers["halo_rgba"]):
+        rgba("halo_rgba", layers["halo_rgba"])
+        floats("halo_width" if edge else "halo_size", layers["halo_extent"])
+    if not edge:
+        return
+    if np.any(layers["body_rgba"]):
+        rgba("body_rgba", layers["body_rgba"])
+        floats("body_width", layers["body_width"])
+    if np.any(layers["dash_px"][:, 1] > 0):
+        floats("edge_dash", layers["dash_px"], components=2)
+
+
 _SHAPE_SYMBOLS = ("circle", "square", "diamond", "triangle", "cross", "hexagon")
 
 

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 368
-#define XYG_ABI_SIGNATURE_SHA256 "f326727f1d4ba75225c58865237eaf4fcf245849d9bd00ca67ca93996fdca870"
+#define XYG_ABI_VERSION 369
+#define XYG_ABI_SIGNATURE_SHA256 "09eb56b21884811a0809d1fb385919f3197984ff4758e7ffc43439fda12fca28"
 
 #ifdef __cplusplus
 extern "C" {
@@ -163,6 +163,7 @@ int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_hand
 int32_t xyg_graph_projection_destroy(uint64_t handle);
 uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices);
 int32_t xyg_graph_semantic_legend(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, uint64_t capacity, uint8_t * out_field, uint8_t * out_value, uint8_t * out_rgba, uint8_t * out_shape, uint64_t * out_count);
+int32_t xyg_graph_semantic_paint_layers(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * halo_rgba, float * halo_extent, uint8_t * body_rgba, float * body_width, uint8_t * stroke_rgba, float * dash_px, uint8_t * head);
 int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi);
 int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out);
 int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out);

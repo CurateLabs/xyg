@@ -12760,17 +12760,10 @@ def graph_visual_states(flags: npt.NDArray[np.uint32]) -> npt.NDArray[np.uint8]:
     return out
 
 
-def graph_semantic_styles(
-    classes: Any,
-    epistemic: Any,
-    statuses: Any,
-    metric: Any,
-    flags: Any,
-    *,
-    edge: bool = False,
-    theme: str = "light",
-) -> dict[str, Any]:
-    """Resolve the v1 GraphForge semantic style contract in Rust."""
+def _graph_semantic_inputs(
+    classes: Any, epistemic: Any, statuses: Any, metric: Any, flags: Any, edge: bool, theme: str
+) -> tuple[int, list[np.ndarray], np.ndarray, np.ndarray, int]:
+    """Validate the canonical semantic planes shared by the style resolvers."""
     if not isinstance(edge, (bool, np.bool_)):
         raise TypeError("edge must be a bool")
     theme_id = {"light": 0, "dark": 1}.get(theme)
@@ -12794,6 +12787,23 @@ def graph_semantic_styles(
         len(value) != n for value in [*codes[1:], metric_arr, flags_arr]
     ):
         raise ValueError("semantic style fields must have equal 1-D lengths")
+    return n, codes, metric_arr, flags_arr, theme_id
+
+
+def graph_semantic_styles(
+    classes: Any,
+    epistemic: Any,
+    statuses: Any,
+    metric: Any,
+    flags: Any,
+    *,
+    edge: bool = False,
+    theme: str = "light",
+) -> dict[str, Any]:
+    """Resolve the v1 GraphForge semantic style contract in Rust."""
+    n, codes, metric_arr, flags_arr, theme_id = _graph_semantic_inputs(
+        classes, epistemic, statuses, metric, flags, edge, theme
+    )
     rgba = [np.empty((n, 4), dtype=np.uint8) for _ in range(3)]
     floats = [np.empty(n, dtype=np.float32) for _ in range(3)]
     bytes_out = [np.empty(n, dtype=np.uint8) for _ in range(4)]
@@ -12832,6 +12842,66 @@ def graph_semantic_styles(
         "arrow": bytes_out[2],
         "state": bytes_out[3],
         "metric_domain": (lo.value, hi.value),
+    }
+
+
+def graph_semantic_paint_layers(
+    classes: Any,
+    epistemic: Any,
+    statuses: Any,
+    metric: Any,
+    flags: Any,
+    *,
+    edge: bool = False,
+    theme: str = "light",
+) -> dict[str, Any]:
+    """Lower the v1 GraphForge semantic contract into ordered paint layers in Rust.
+
+    Colors carry row opacity and layer alpha; an all-zero color is an absent
+    layer. ``halo_extent`` is the node halo diameter or edge halo width (px);
+    ``dash_px`` is ``(on, off)`` px per row (``(0, 0)`` is solid).
+    """
+    n, codes, metric_arr, flags_arr, theme_id = _graph_semantic_inputs(
+        classes, epistemic, statuses, metric, flags, edge, theme
+    )
+    halo = np.empty((n, 4), dtype=np.uint8)
+    body = np.empty((n, 4), dtype=np.uint8)
+    stroke = np.empty((n, 4), dtype=np.uint8)
+    halo_extent = np.empty(n, dtype=np.float32)
+    body_width = np.empty(n, dtype=np.float32)
+    dash = np.empty((n, 2), dtype=np.float32)
+    head = np.empty(n, dtype=np.uint8)
+
+    def ptr(value: np.ndarray) -> int | None:
+        return value.ctypes.data if n else None
+
+    status = _lib.xyg_graph_semantic_paint_layers(
+        ctypes.c_uint32(1),
+        ctypes.c_uint32(theme_id),
+        ctypes.c_uint64(n),
+        *(ptr(value) for value in codes),
+        ptr(metric_arr),
+        ptr(flags_arr),
+        ctypes.c_int32(bool(edge)),
+        ptr(halo),
+        ptr(halo_extent),
+        ptr(body),
+        ptr(body_width),
+        ptr(stroke),
+        ptr(dash),
+        ptr(head),
+    )
+    if status != 0:
+        raise ValueError("native graph_semantic_paint_layers failed")
+    return {
+        "version": 1,
+        "halo_rgba": halo,
+        "halo_extent": halo_extent,
+        "body_rgba": body,
+        "body_width": body_width,
+        "stroke_rgba": stroke,
+        "dash_px": dash,
+        "head": head.astype(bool),
     }
 
 

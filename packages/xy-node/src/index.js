@@ -172,6 +172,7 @@ export {
   graphEdgeRouteSegments,
   graphVisualStates,
   graphSemanticStyles,
+  graphSemanticPaintLayers,
   graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,

@@ -90,11 +90,14 @@ def _ship_wire_buffer(
     elif transform == "raw":
         if raw is None:
             raise ValueError("raw wire encode missing values")
+        # A u8 style buffer (e.g. per-point symbol codes, semantic layer RGBA)
+        # must materialize as bytes; `mark_dtype_u8` only tags color specs.
         materialized = kernels.payload_channel_materialize(
             role=role,
             mode=mode,
             n_categories=n_categories,
-            style_dtype_u8=bool(plan.get("mark_dtype_u8", False)),
+            style_dtype_u8=bool(plan.get("mark_dtype_u8", False))
+            or (role == "style" and plan["buf_kind"] == "u8"),
             quantize_continuous=False,
             domain=(0.0, 1.0),
             n_palette=n_palette,

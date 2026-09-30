@@ -750,6 +750,19 @@ test("graph semantic paint matches the Python cross-host fixture (#34)", async (
   };
   const shapes = ["circle", "square", "diamond", "triangle", "cross", "hexagon"];
   const rows = (flat) => Array.from({ length: flat.length / 4 }, (_, i) => [...flat.subarray(i * 4, i * 4 + 4)]);
+  // Rust-lowered paint layers (#34); absent layers ship on neither host.
+  const assertLayers = (styleChannels, expected, label) => {
+    const layerNames = ["halo_rgba", "body_rgba", "halo_size", "halo_width", "body_width", "edge_dash"];
+    assert.deepEqual(
+      layerNames.filter((key) => styleChannels[key] != null).sort(),
+      Object.keys(expected).sort(),
+      `${label} layer channels`,
+    );
+    for (const [key, values] of Object.entries(expected)) {
+      if (key.endsWith("_rgba")) assert.deepEqual(rows(styleChannels[key].values), values, `${label} ${key}`);
+      else close([...styleChannels[key].values], values, `${label} ${key}`);
+    }
+  };
   const close = (actual, expected, label) => {
     assert.equal(actual.length, expected.length, label);
     actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 1e-6, `${label}[${i}] ${value} != ${expected[i]}`));
@@ -785,11 +798,15 @@ test("graph semantic paint matches the Python cross-host fixture (#34)", async (
       assert.deepEqual([...node.style_channels.symbol.values].map((c) => shapes[c]), expected.nodes.symbol, name);
       close([...node.style_channels.opacity.values], expected.nodes.opacity, `${name} opacity`);
       close([...node.style_channels.stroke_width.values], expected.nodes.stroke_width, `${name} stroke_width`);
+      assertLayers(node.style_channels, expected.nodes.layers, `${name} node`);
     }
     if (expected.edges != null) {
       assert.deepEqual(rows(edge.color_ch.rgba), expected.edges.rgba, `${name} edge rgba`);
       close([...edge.style_channels.width.values], expected.edges.width, `${name} edge width`);
       close([...edge.style_channels.opacity.values], expected.edges.opacity, `${name} edge opacity`);
+      assertLayers(edge.style_channels, expected.edges.layers, `${name} edge`);
+      const flags = [...edge.style_channels.edge_ends.values].filter((_, i) => i % 7 === 6);
+      assert.deepEqual(flags, expected.edges.flags, `${name} head flags`);
     }
   }
 });
