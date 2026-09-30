@@ -1,9 +1,9 @@
 {
-  "abi_version": 369,
+  "abi_version": 370,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "09eb56b21884811a0809d1fb385919f3197984ff4758e7ffc43439fda12fca28",
+  "signature_sha256": "114eb8fa0cbfcc68f1bda2d57381a2acbf3dba7a9817c0831b9e58a2b28d5a38",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8951,6 +8951,25 @@
         "nullable": false
       },
       "c_signature": "uint32_t xyg_default_palette_version()"
+    },
+    {
+      "name": "xyg_default_png_export_scale",
+      "node_name": "xyDefaultPngExportScale",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "f64",
+        "c": "double",
+        "ctypes": "ctypes.c_double",
+        "koffi": "double",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "double xyg_default_png_export_scale()"
     },
     {
       "name": "xyg_delaunay_triangles",

@@ -49,12 +49,14 @@
   "straight": {
    "edge_curve": "straight",
    "svg_sha256": "2d82b45883815ff9bccd1f759a62fc4f316bb927322416f8414bb8cedd3caadc",
-   "png_scale1_sha256": "d764b5af9bcd2ea9bdec3b0266f3448cde94707995437114f1585aa86dfab2b9"
+   "png_scale1_sha256": "d764b5af9bcd2ea9bdec3b0266f3448cde94707995437114f1585aa86dfab2b9",
+   "png_scale2_sha256": "aee309f436b348075871c70a3e4df37cea22087cb31810700ac0cc5b95fd5b1d"
   },
   "curved": {
    "edge_curve": "curve",
    "svg_sha256": "5a68e756c84ce4958f412307da3b0528ad948d44b73c7eb358a04b649d83e56c",
-   "png_scale1_sha256": "2f67ba0da6e6261c9f2a3c8afb0353e348ddeed983158c13b8b3fd2a4fbcb97f"
+   "png_scale1_sha256": "2f67ba0da6e6261c9f2a3c8afb0353e348ddeed983158c13b8b3fd2a4fbcb97f",
+   "png_scale2_sha256": "470dde62925e9940a8ad6d365b12ead91e09540ee6dc81c37c474cd4025e1aaf"
   }
  }
 }

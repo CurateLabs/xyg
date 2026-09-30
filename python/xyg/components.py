@@ -48,6 +48,7 @@ from . import _validate, channels, export, plugins, styles
 from ._figure import Figure, Selection
 from ._typing import ArrayLike, ColorLike, Scalar, TableLike
 from .dom import CHART_DOM_SLOTS, validate_dom_slots
+from .kernels import DEFAULT_PNG_EXPORT_SCALE as _DEFAULT_PNG_EXPORT_SCALE
 
 # Shared validators (single source of truth in `_validate`); these aliases keep
 # the module-private names their call sites already use.
@@ -4350,7 +4351,7 @@ class Chart(Component):
         *,
         width: Optional[int] = None,
         height: Optional[int] = None,
-        scale: float = 2.0,
+        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
         engine: export.Engine = export.Engine.default,
         optimize: bool = False,
         custom_css: Optional[str] = None,
@@ -4403,7 +4404,7 @@ class Chart(Component):
         return {
             "width": width if width is not None else config.get("width"),
             "height": height if height is not None else config.get("height"),
-            "scale": scale if scale is not None else config.get("scale", 2.0),
+            "scale": scale if scale is not None else config.get("scale", _DEFAULT_PNG_EXPORT_SCALE),
             "background": background,
             "quality": quality,
         }
@@ -4492,7 +4493,7 @@ class Chart(Component):
                 format=format,
                 width=width,
                 height=height,
-                scale=scale if scale is not None else 2.0,
+                scale=scale if scale is not None else _DEFAULT_PNG_EXPORT_SCALE,
                 background=background,
                 engine=engine,
                 quality=quality,
@@ -5633,7 +5634,7 @@ class FacetChart(Component):
         self,
         path: Optional[str | PathLike[str]] = None,
         *,
-        scale: float = 2.0,
+        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
         engine: export.Engine = export.Engine.default,
         optimize: bool = False,
         custom_css: Optional[str] = None,
@@ -5655,7 +5656,7 @@ class FacetChart(Component):
         self,
         format: str = "png",
         *,
-        scale: float = 2.0,
+        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
         background: Optional[str] = None,
         engine: export.Engine | str = export.Engine.auto,
         quality: Optional[int] = None,
@@ -5683,7 +5684,7 @@ class FacetChart(Component):
         path: str | PathLike[str],
         *,
         format: Optional[str] = None,
-        scale: float = 2.0,
+        scale: float = _DEFAULT_PNG_EXPORT_SCALE,
         background: Optional[str] = None,
         engine: export.Engine | str = export.Engine.auto,
         quality: Optional[int] = None,

@@ -130,6 +130,8 @@ import {
   staticDocumentExport,
   svgToPdf,
 } from "./scene.js";
+import { xyDefaultPngExportScale } from "./native.js";
+const _DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
 
 export { PROTOCOL_VERSION };
 
@@ -3736,7 +3738,7 @@ export class Figure {
 
   /** Existing native-raster display list compiled from Scene v5. */
   toSceneRasterCommands(opts = {}) {
-    return sceneRasterCommands(this.toScene(opts), opts.scale ?? 1);
+    return sceneRasterCommands(this.toScene(opts), opts.scale ?? _DEFAULT_PNG_EXPORT_SCALE);
   }
 
   /** One-panel XYST document projected from this Figure onto the shared kernel. */

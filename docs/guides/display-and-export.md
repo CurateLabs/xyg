@@ -210,3 +210,9 @@ output should use explicit dimensions for deterministic results; fluid
 (`"100%"`) charts fall back to 800×500 at export time. Exports are
 deterministic byte-for-byte for identical figures and options — no
 timestamps, transient hover chrome, or nondeterministic ids are embedded.
+
+The default raster scale is **2.0** (HiDPI / Retina-crisp). A 640×480 chart
+therefore produces a 1280×960 PNG by default. This default is the same across
+Python and Node — both read it from the Rust constant
+`xyg_default_png_export_scale()` — so the same figure produces identical bytes
+on either host at equal scale.

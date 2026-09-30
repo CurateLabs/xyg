@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 369
-#define XYG_ABI_SIGNATURE_SHA256 "09eb56b21884811a0809d1fb385919f3197984ff4758e7ffc43439fda12fca28"
+#define XYG_ABI_VERSION 370
+#define XYG_ABI_SIGNATURE_SHA256 "114eb8fa0cbfcc68f1bda2d57381a2acbf3dba7a9817c0831b9e58a2b28d5a38"
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,6 +86,7 @@ size_t xyg_default_palette_rows();
 /* Buffer contract: out: query-first concatenated fixed-width lowercase #rrggbb rows; out_cap >= checked(xyg_default_palette_rows * 7) bytes; null with zero capacity queries the required count; short capacity returns that count without writing; null with nonzero capacity returns usize::MAX. */
 size_t xyg_default_palette_utf8(uint8_t * out, size_t out_cap);
 uint32_t xyg_default_palette_version();
+double xyg_default_png_export_scale();
 size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1);
 size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out);

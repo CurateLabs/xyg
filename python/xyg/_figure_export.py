@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 from . import export, interaction, kernels
+from .kernels import DEFAULT_PNG_EXPORT_SCALE as _DEFAULT_PNG_EXPORT_SCALE
 
 if TYPE_CHECKING:
     pass
@@ -130,7 +131,7 @@ def to_png(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     engine: export.Engine = export.Engine.default,
     optimize: bool = False,
     custom_css: Optional[str] = None,
@@ -166,7 +167,7 @@ def to_image(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     background: Optional[str] = None,
     engine: export.Engine | str = export.Engine.auto,
     quality: Optional[int] = None,
@@ -204,7 +205,7 @@ def write_image(
     format: Optional[str] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     background: Optional[str] = None,
     engine: export.Engine | str = export.Engine.auto,
     quality: Optional[int] = None,

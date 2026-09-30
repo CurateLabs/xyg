@@ -151,10 +151,12 @@ the figure's own integer size, else `800×500` — a fluid `"100%"` figure has n
 concrete size, and a raster needs one. Values must be positive integer pixel
 counts.
 
-`scale` is the device-pixel ratio for raster output (default `2.0`): native
-rasters multiply canvas pixels, Chromium sets `deviceScaleFactor`. It is ignored
-by SVG and PDF, which are resolution-independent — `render_pdf` pins
-`deviceScaleFactor: 1.0` and maps the CSS pixel box at 96 px/in ↔ 72 pt/in.
+`scale` is the device-pixel ratio for raster output (default `2.0`, sourced
+from `xyg_default_png_export_scale()` — ABI 370 — so Python and Node share one
+policy): native rasters multiply canvas pixels, Chromium sets
+`deviceScaleFactor`. It is ignored by SVG and PDF, which are
+resolution-independent — `render_pdf` pins `deviceScaleFactor: 1.0` and maps
+the CSS pixel box at 96 px/in ↔ 72 pt/in.
 
 ## 6. Background, and the theme-parity gap
 

@@ -25,6 +25,11 @@ from typing import TYPE_CHECKING, Any, Optional, SupportsFloat, SupportsIndex, c
 if TYPE_CHECKING:
     from ._figure import Figure
 
+# Default device-pixel ratio for raster export; sourced from Rust (ABI 370).
+# Both Python and Node read this value from xyg_default_png_export_scale() so
+# the product default has a single source of truth.
+from .kernels import DEFAULT_PNG_EXPORT_SCALE as _DEFAULT_PNG_EXPORT_SCALE
+
 
 class Engine(StrEnum):
     """Static-export engine.
@@ -711,7 +716,7 @@ def html_to_png(
     width: int,
     height: int,
     *,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     time_budget_ms: int = 4000,
     timeout_s: float = 120.0,
     sandbox: bool = True,
@@ -884,7 +889,7 @@ def write_images(
             settings = {
                 "width": width,
                 "height": height,
-                "scale": scale if scale is not None else 2.0,
+                "scale": scale if scale is not None else _DEFAULT_PNG_EXPORT_SCALE,
                 "background": background,
                 "quality": quality,
             }
@@ -947,7 +952,7 @@ def to_png(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     engine: Engine = Engine.default,
     optimize: bool = False,
     custom_css: Optional[str] = None,
@@ -1277,7 +1282,7 @@ def to_image(
     *,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     background: Optional[str] = None,
     engine: Engine | str = Engine.auto,
     quality: Optional[int] = None,
@@ -1341,7 +1346,7 @@ def write_image(
     format: Optional[str] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    scale: float = 2.0,
+    scale: float = _DEFAULT_PNG_EXPORT_SCALE,
     background: Optional[str] = None,
     engine: Engine | str = Engine.auto,
     quality: Optional[int] = None,
@@ -1365,7 +1370,7 @@ def write_image(
             for name, value, default in (
                 ("width", width, None),
                 ("height", height, None),
-                ("scale", scale, 2.0),
+                ("scale", scale, _DEFAULT_PNG_EXPORT_SCALE),
                 ("background", background, None),
                 ("quality", quality, None),
                 ("optimize", optimize, False),
