@@ -296,7 +296,7 @@ and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. M2 #869 removes canonical axis
 policy from `js/src/30_ticks.ts`; it retains only presentation-oriented tooltip
-formatting. The tick seam introduced in WASM ABI 23, now WASM ABI 26, plus
+formatting. The tick seam introduced in WASM ABI 23, now WASM ABI 27, plus
 `attachWasmTicks` cuts attached primary/secondary
 Cartesian, polar angular/radial, authored minor, and eligible colorbar slots to
 the Rust resolver and independent Worker lane. Native ABI 360 introduced the
@@ -723,7 +723,7 @@ Forbidden:
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 122 compile-time payload tier + visible mask; ABI 204 line M4 emit indices; ABI 205 emit visible/even/sample indices | — |
-| `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 26/native ABI 361 | — |
+| `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 27/native ABI 361 | — |
 | `crates/xyg-engine/src/density_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 132 first-paint density emit policy | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/png_encode.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

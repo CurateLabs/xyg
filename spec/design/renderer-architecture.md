@@ -342,7 +342,7 @@ the offset-f32 paint wire (§16). The canonical linear, log, symlog, category,
 UTC-time, angular-radian, and angular-degree ladders, modular authored-window
 filter, minor subdivisions, format grammar, and packed output live in
 `xyg-engine::packed_ticks`. The tick boundary introduced in WASM ABI 23 and
-native ABI 360 is carried by current WASM ABI 26 and native ABI 361; both call
+native ABI 360 is carried by current WASM ABI 27 and native ABI 361; both call
 that same implementation.
 
 `49_wasm_ticks.ts` is a bounded lifecycle adapter. It enumerates every current

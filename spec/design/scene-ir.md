@@ -1155,7 +1155,7 @@ documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
 slice above and ABI 202 Scene product-path time/angular formatting
 and ABI 203 Scene cartesian ABI 123 collision emit.
-The tick seam introduced in WASM ABI 23, now WASM ABI 26, plus
+The tick seam introduced in WASM ABI 23, now WASM ABI 27, plus
 `attachWasmTicks` cuts explicitly attached automatic,
 authored-value, and authored-empty primary/secondary Cartesian, polar
 angular/radial, authored minor, and eligible colorbar slots to the shared

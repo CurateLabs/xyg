@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 26
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 27
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -65,7 +65,7 @@ deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
 
 M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
-current WASM ABI 26 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+current WASM ABI 27 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
 was introduced in WASM ABI 23/native ABI 360. The native function
 uses the capacity-aware probe/write contract and returns `usize::MAX` for an
 invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
