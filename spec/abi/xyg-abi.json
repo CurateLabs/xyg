@@ -1,9 +1,9 @@
 {
-  "abi_version": 373,
+  "abi_version": 374,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "febbb0d4787182737bc70f311b6368b8a4431161413c298e2d4079c99a104210",
+  "signature_sha256": "1132f8c75769f7b4626aaf8253db148e49912caf6355e1da7c56327c9c47e0cc",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -16263,6 +16263,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_graph_compound_transition(uint64_t n, const uint64_t * node_ids, const uint64_t * parents, const uint8_t * validity, const uint8_t * collapsed, uint64_t target_id, uint32_t action, uint32_t lod_tier, uint8_t * out, uint8_t * out_changed)"
+    },
+    {
+      "name": "xyg_graph_default_edge_color_utf8",
+      "node_name": "xyGraphDefaultEdgeColorUtf8",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_graph_default_edge_color_utf8(uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_graph_diverging_domain",

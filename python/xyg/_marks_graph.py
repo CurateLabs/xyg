@@ -273,6 +273,10 @@ def graph(
             f"{len(sources)} or routed segments {len(x0)}"
         )
 
+    if edge_color is None:
+        # Rust-owned neutral default (#898): edges recede and never consume a
+        # palette slot, so the node scatter takes the series color.
+        edge_color = _native.graph_default_edge_color()
     edge_color_paint = _expand_edge_values(edge_color, "edge_color")
     frames = _compound_frames(
         full, compound, px, py, len(px) == data.n_nodes, node_style, node_diameter * 0.5, theme

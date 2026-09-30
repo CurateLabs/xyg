@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 373
-#define XYG_ABI_SIGNATURE_SHA256 "febbb0d4787182737bc70f311b6368b8a4431161413c298e2d4079c99a104210"
+#define XYG_ABI_VERSION 374
+#define XYG_ABI_SIGNATURE_SHA256 "1132f8c75769f7b4626aaf8253db148e49912caf6355e1da7c56327c9c47e0cc"
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,6 +148,7 @@ int32_t xyg_graph_compound_collapse(uint64_t n, const uint64_t * parents, const 
 int32_t xyg_graph_compound_frames(uint64_t n, const double * x, const double * y, const double * radius_px, const uint64_t * parents, const uint8_t * parent_validity, const uint8_t * collapsed, const uint8_t * stroke, const float * opacity, uint32_t theme, uint64_t * out_node, double * out_bounds, uint8_t * out_rgba, double * out_width, double * out_pad, uint64_t * out_count);
 size_t xyg_graph_compound_scene(const void * descriptor, uint8_t * out, size_t out_cap);
 int32_t xyg_graph_compound_transition(uint64_t n, const uint64_t * node_ids, const uint64_t * parents, const uint8_t * validity, const uint8_t * collapsed, uint64_t target_id, uint32_t action, uint32_t lod_tier, uint8_t * out, uint8_t * out_changed);
+size_t xyg_graph_default_edge_color_utf8(uint8_t * out, size_t out_cap);
 int32_t xyg_graph_diverging_domain(const double * values, uint64_t n, double midpoint, double * out_lo, double * out_hi);
 int32_t xyg_graph_edge_route_ends(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, int32_t curved, const double * node_radius_px, const uint8_t * node_symbol, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, double * out_ends, uint64_t * out_n_segments);
 int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, int32_t curved, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments);
