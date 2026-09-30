@@ -39,6 +39,7 @@ mod font;
 mod simd;
 
 pub mod arrow_geom;
+pub mod arrow_ipc;
 pub mod autorange;
 pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 #[cfg(not(target_family = "wasm"))]
@@ -57,6 +58,7 @@ pub mod graph;
 pub mod graph_scale;
 pub mod graph_scene;
 pub mod graph_style;
+pub mod graphforge;
 pub mod hexbin;
 #[cfg(feature = "raster")]
 pub mod jpeg;

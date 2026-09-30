@@ -1042,7 +1042,8 @@ function graphSubsetOptions(opts, compound, full) {
     "nodeMetric", "node_metric"];
   const edgeKeys = ["edgeColor", "edge_color", "edgeWidth", "edge_width", "edgeLabel", "edge_label",
     "edgeLabelPriority", "edge_label_priority", "edgeClass", "edge_class", "edgeEpistemic",
-    "edge_epistemic", "edgeStatus", "edge_status", "edgeMetric", "edge_metric"];
+    "edge_epistemic", "edgeStatus", "edge_status", "edgeMetric", "edge_metric",
+    "edgeVisualStateFlags", "edge_visual_state_flags"];
   const out = { ...opts, layout: "preset", pinned: undefined, cose: undefined,
     visualStateFlags: compound.flagsVisible, visual_state_flags: undefined };
   for (const key of nodeKeys) out[key] = subset(opts[key], compound.rows, n);
@@ -1261,6 +1262,21 @@ export function composeGraph(nodes, edges, opts = {}) {
   const nodeFlags = typeof rawFlags === "number"
     ? new Uint32Array(data.ids.length).fill(rawFlags)
     : rawFlags;
+  // Edge visual states (disabled/filtered/selected/...) resolve through the
+  // same Rust precedence as nodes; they need the edge semantic fields.
+  const rawEdgeFlags = resolvedOpts.edgeVisualStateFlags ?? resolvedOpts.edge_visual_state_flags;
+  if (rawEdgeFlags != null && edgeFields == null) {
+    throw new RangeError("graph edgeVisualStateFlags needs edge semantic fields");
+  }
+  const edgeCount = data.sources.length;
+  const edgeFlags = rawEdgeFlags == null
+    ? new Uint32Array(edgeCount)
+    : typeof rawEdgeFlags === "number"
+      ? new Uint32Array(edgeCount).fill(rawEdgeFlags)
+      : Uint32Array.from(rawEdgeFlags, Number);
+  if (edgeFlags.length !== edgeCount) {
+    throw new RangeError(`graph edgeVisualStateFlags must match edge count ${edgeCount}`);
+  }
   // Semantic styling (#34): Rust resolves the v1 contract per source row; rows
   // paint only where render identity is exact (checked after layout).
   const nodeSemantic = nodeFields == null
@@ -1413,7 +1429,7 @@ export function composeGraph(nodes, edges, opts = {}) {
   } else if (edgeFields != null) {
     // Resolve every source edge so the metric domain is the source domain
     // (EdgeSample must not rescale widths), then gather routed segments.
-    const resolved = graphSemanticStyles(...edgeFields, new Uint32Array(edgeFields[0].length), {
+    const resolved = graphSemanticStyles(...edgeFields, edgeFlags, {
       edge: true,
       theme,
     });
@@ -1428,7 +1444,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       width[segment] = resolved.width[row];
       opacity[segment] = resolved.opacity[row];
     });
-    const layers = graphSemanticPaintLayers(...edgeFields, new Uint32Array(edgeFields[0].length), {
+    const layers = graphSemanticPaintLayers(...edgeFields, edgeFlags, {
       edge: true,
       theme,
     });

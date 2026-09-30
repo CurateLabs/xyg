@@ -97,6 +97,11 @@ const DARK_PALETTE: [[u8; 4]; 8] = [
     [240, 228, 66, 255],
 ];
 
+/// The v1 semantic palette for a theme (code-indexed; code 0 is neutral).
+pub fn semantic_palette(theme: u8) -> Option<&'static [[u8; 4]; 8]> {
+    palette(theme)
+}
+
 fn palette(theme: u8) -> Option<&'static [[u8; 4]; 8]> {
     match theme {
         THEME_LIGHT => Some(&LIGHT_PALETTE),

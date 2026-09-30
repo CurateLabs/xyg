@@ -1,9 +1,9 @@
 {
-  "abi_version": 377,
+  "abi_version": 378,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "d322861b4c638b56845ede3d2863bba8d8b611cbe982860b8ec9c8291ef2e4bb",
+  "signature_sha256": "52354c2b196ad21f9b1a3ff1a1aec34b0a2dbd7e94453418e75ee30235302304",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -19934,6 +19934,295 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)"
+    },
+    {
+      "name": "xyg_graphforge_compose",
+      "node_name": "xyGraphforgeCompose",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "request",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "request_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_handle",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_graphforge_compose(const uint8_t * request, size_t request_len, uint64_t * out_handle)"
+    },
+    {
+      "name": "xyg_graphforge_composition_version",
+      "node_name": "xyGraphforgeCompositionVersion",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "u32",
+        "c": "uint32_t",
+        "ctypes": "ctypes.c_uint32",
+        "koffi": "uint32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "uint32_t xyg_graphforge_composition_version()"
+    },
+    {
+      "name": "xyg_graphforge_document_copy",
+      "node_name": "xyGraphforgeDocumentCopy",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_graphforge_document_copy(uint64_t handle, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_graphforge_document_destroy",
+      "node_name": "xyGraphforgeDocumentDestroy",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_graphforge_document_destroy(uint64_t handle)"
+    },
+    {
+      "name": "xyg_graphforge_document_len",
+      "node_name": "xyGraphforgeDocumentLen",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_len",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_graphforge_document_len(uint64_t handle, uint64_t * out_len)"
+    },
+    {
+      "name": "xyg_graphforge_ledger_tsv",
+      "node_name": "xyGraphforgeLedgerTsv",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_graphforge_ledger_tsv(uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_hash_row_ids",

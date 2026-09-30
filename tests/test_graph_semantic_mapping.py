@@ -325,6 +325,41 @@ def test_public_composition_api_forwards_semantic_fields() -> None:
     )
 
 
+def test_edge_visual_state_flags_resolve_through_rust_precedence() -> None:
+    """Edges take the node visual-state precedence (Node asserts the same in
+    ``packages/xy-node/test/graphforge.test.mjs``): a disabled edge paints at
+    the resolver's 0.28 opacity; flags need the edge semantic fields."""
+    fig = Figure().graph(
+        ["a", "b", "c"],
+        [("a", "b"), ("b", "c")],
+        layout="circle",
+        edge_class=[1, 1],
+        edge_visual_state_flags=[0, 1 << 6],
+    )
+    edge = fig.traces[fig._graph_meta[0]["edge_trace"]]
+    opacity = np.asarray(edge.style_channels["opacity"].values, dtype=np.float64)
+    assert np.round(opacity, 2).tolist() == [1.0, 0.28]
+    with pytest.raises(ValueError, match="edge semantic fields"):
+        Figure().graph(["a", "b"], [("a", "b")], layout="circle", edge_visual_state_flags=[64])
+    with pytest.raises(ValueError, match="edge count"):
+        Figure().graph(
+            ["a", "b"],
+            [("a", "b")],
+            layout="circle",
+            edge_class=[1],
+            edge_visual_state_flags=[0, 0],
+        )
+    chart = xyg.graph_chart(
+        nodes=["a", "b"],
+        edges=[("a", "b")],
+        layout="circle",
+        edge_class=[1],
+        edge_visual_state_flags=[1 << 6],
+    )
+    edge = chart.figure().traces[chart.figure()._graph_meta[0]["edge_trace"]]
+    assert np.round(np.asarray(edge.style_channels["opacity"].values), 2).tolist() == [0.28]
+
+
 def test_unstyled_graph_records_no_contract() -> None:
     nodes, edges = _tables()
     fig = Figure().graph(nodes, edges, layout="preset", x=X, y=Y)

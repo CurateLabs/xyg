@@ -146,9 +146,9 @@ this avoids ambiguous combinations such as `color` plus `stroke` and keeps the
 same declarations meaningful in SVG, WebGL, and native PNG output.
 
 Graph label/state composition is data-only and callback-free. Python accepts
-`node_label`, `label_priority`, `label_budget`, `label_priority_floor`, and
-`visual_state_flags`; Node accepts the camelCase equivalents (and snake-case
-aliases). Column names resolve against validated node attributes. Labels fall
+`node_label`, `label_priority`, `label_budget`, `label_priority_floor`,
+`visual_state_flags`, and `edge_visual_state_flags` (with the edge semantic
+fields); Node accepts the camelCase equivalents (and snake-case aliases). Column names resolve against validated node attributes. Labels fall
 back through `label`, `name`, then canonical node identity. String and exact
 safe-integer identities have cross-host text; unsafe/non-finite/boolean/object
 identities produce no label candidate while remaining valid graph IDs. Cells must be

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 377
-#define XYG_ABI_SIGNATURE_SHA256 "d322861b4c638b56845ede3d2863bba8d8b611cbe982860b8ec9c8291ef2e4bb"
+#define XYG_ABI_VERSION 378
+#define XYG_ABI_SIGNATURE_SHA256 "52354c2b196ad21f9b1a3ff1a1aec34b0a2dbd7e94453418e75ee30235302304"
 
 #ifdef __cplusplus
 extern "C" {
@@ -176,6 +176,12 @@ int32_t xyg_graph_semantic_legend_text(uint32_t field, uint32_t value, uint8_t *
 int32_t xyg_graph_semantic_paint_layers(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * halo_rgba, float * halo_extent, uint8_t * body_rgba, float * body_width, uint8_t * stroke_rgba, float * dash_px, uint8_t * head);
 int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi);
 int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out);
+int32_t xyg_graphforge_compose(const uint8_t * request, size_t request_len, uint64_t * out_handle);
+uint32_t xyg_graphforge_composition_version();
+int32_t xyg_graphforge_document_copy(uint64_t handle, uint8_t * out, size_t out_cap);
+int32_t xyg_graphforge_document_destroy(uint64_t handle);
+int32_t xyg_graphforge_document_len(uint64_t handle, uint64_t * out_len);
+size_t xyg_graphforge_ledger_tsv(uint8_t * out, size_t out_cap);
 int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out);
 /* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
 int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity);

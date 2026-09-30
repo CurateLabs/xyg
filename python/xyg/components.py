@@ -1179,6 +1179,7 @@ def graph(
     label_budget: int = 64,
     label_priority_floor: float | None = None,
     visual_state_flags: Union[str, ArrayLike, None] = None,
+    edge_visual_state_flags: Union[str, ArrayLike, None] = None,
     edge_label: Union[str, ArrayLike, None] = None,
     edge_label_priority: Union[str, ArrayLike, None] = None,
     node_class: Union[str, ArrayLike, None] = None,
@@ -1229,6 +1230,8 @@ def graph(
         label_budget: Maximum accepted labels for this composed viewport.
         label_priority_floor: Optional minimum finite accepted priority.
         visual_state_flags: Rust visual-state bit flags or node-column name.
+        edge_visual_state_flags: Rust visual-state bit flags per edge, or an
+            edge-column name; needs the edge semantic fields.
         edge_label: Edge label values or an edge-column name (no default).
             Node and edge labels share one Rust plan: at most
             ``label_budget``, truncated to 32 characters, and painted only
@@ -1290,6 +1293,7 @@ def graph(
             "label_budget": label_budget,
             "label_priority_floor": label_priority_floor,
             "visual_state_flags": visual_state_flags,
+            "edge_visual_state_flags": edge_visual_state_flags,
             "edge_label": edge_label,
             "edge_label_priority": edge_label_priority,
             "node_class": node_class,
@@ -6065,6 +6069,7 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         label_budget=m.props.get("label_budget", 64),
         label_priority_floor=m.props.get("label_priority_floor"),
         visual_state_flags=m.props.get("visual_state_flags"),
+        edge_visual_state_flags=m.props.get("edge_visual_state_flags"),
         edge_label=m.props.get("edge_label"),
         edge_label_priority=m.props.get("edge_label_priority"),
         node_class=m.props.get("node_class"),
@@ -7257,6 +7262,7 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         "label_budget",
         "label_priority_floor",
         "visual_state_flags",
+        "edge_visual_state_flags",
         "edge_label",
         "edge_label_priority",
         "node_class",

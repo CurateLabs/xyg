@@ -76,6 +76,10 @@ Internal architecture: how the engine is built and why.
 - [`rust-engine.md`](design/rust-engine.md) — the Rust workspace
   (`crates/xyg-engine` + `crates/xyg-core`), what lives in Rust vs the hosts,
   and how the C-ABI/FFI seam evolves without rewrites.
+- [`graphforge-compositions.md`](design/graphforge-compositions.md) — GraphForge
+  result compositions: Rust Arrow IPC ingress, metadata recognition and the
+  coverage ledger, UUID joins, identity/generation policy, and the `XYGQ`/`XYGF`
+  contract every host consumes.
 - [`scene-ir.md`](design/scene-ir.md) — versioned, bounded canonical scene
   records and the #58 vertical-slice migration from host render policy to Rust.
 - [`browser-wasm.md`](design/browser-wasm.md) — direct-browser Rust/WASM

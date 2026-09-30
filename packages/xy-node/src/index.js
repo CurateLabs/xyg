@@ -127,6 +127,23 @@ export {
 
 export { ChunkedColumns } from "./chunked-columns.js";
 export { TemporalGraph } from "./temporal-graph.js";
+export {
+  GRAPHFORGE_COMPOSITION_VERSION,
+  GRAPHFORGE_EXTRA_POLICIES,
+  GRAPHFORGE_INTENTS,
+  GRAPHFORGE_MISSING_POLICIES,
+  GraphForgeComposition,
+  GraphForgeCompositionError,
+  composeGraphForge,
+  composeGraphForgeRequest,
+  decodeGraphForgeDocument,
+  encodeGraphForgeRequest,
+  graphforgeChart,
+  graphforgeGraphData,
+  graphforgeGraphOptions,
+  graphforgeLedger,
+  graphforgeLegendItems,
+} from "./graphforge.js";
 
 export {
   nativeLibraryPath,
