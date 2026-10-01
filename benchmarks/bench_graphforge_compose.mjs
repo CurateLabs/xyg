@@ -19,7 +19,7 @@
 //   node benchmarks/bench_graphforge_compose.mjs --inputs /tmp/gfscale --sizes 100,1000,10000,100000 \
 //     --graphforge /path/to/node_modules/@curatelabs/graphforge --out spec/benchmarks/graphforge-compose-local.json
 //
-// `--fixture-out DIR` also keeps the smallest size's engine run (base dump and
+// `--fixture-out DIR` also keeps the 100-node engine run (base dump and
 // results) as the native/WASM parity fixture `tests/fixtures/graphforge/scale-100`.
 //
 // Requires the native core (XYG_NATIVE_LIB or target/release) and the WASM
@@ -56,6 +56,11 @@ const { values: args } = parseArgs({
 });
 if (!args.inputs) throw new Error("--inputs DIR is required (see gen_graphforge_scale_inputs.py)");
 const REPS = Number(args.reps);
+// The parity fixture must be the direct-tier (Scene-rendering) run.
+const FIXTURE_NODES = 100;
+if (args["fixture-out"] && !args.sizes.split(",").map(Number).includes(FIXTURE_NODES)) {
+  throw new Error(`--fixture-out needs ${FIXTURE_NODES} in --sizes`);
+}
 const require = createRequire(import.meta.url);
 const graphforgeEntry = require.resolve(args.graphforge, { paths: [process.cwd(), ROOT] });
 const { GraphForge } = require(graphforgeEntry);
@@ -96,8 +101,6 @@ function bench(fn) {
   return [value, round(median(samples))];
 }
 
-let peakRss = 0;
-const sampleRss = () => { peakRss = Math.max(peakRss, process.memoryUsage().rss); };
 
 async function loadWasm() {
   const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
@@ -157,7 +160,6 @@ function writeFixture(dir, n, engine, generation) {
 
 function measure(n, composeWasm, fixtureDir) {
   const engine = engineRun(n);
-  sampleRss();
   const generation = uuidv7();
   if (fixtureDir) writeFixture(fixtureDir, n, engine, generation);
   const base = { tables: [engine.base.nodes, engine.base.edges], generation };
@@ -183,14 +185,12 @@ function measure(n, composeWasm, fixtureDir) {
     const [request, encodeMs] = bench(() => encodeGraphForgeRequest(input));
     const [document, composeMs] = bench(() => composeGraphForgeRequest(request));
     const [composition, decodeMs] = bench(() => decodeGraphForgeDocument(document));
-    sampleRss();
     const [wasmDocument, wasmMs] = bench(() => composeWasm(request));
     // graphforgeWebviewPayload = graphforgeChart (graph mark: Rust force
     // layout, LOD, routing) + buildPayload (encode); timed apart.
     const [figure, chartMs] = bench(() => graphforgeChart(composition, { width: 960, height: 640 }));
     const [payload, payloadEncodeMs] = bench(() => figure.buildPayload());
     const buffer = payload.buffers instanceof Uint8Array ? payload.buffers : new Uint8Array(payload.buffers);
-    sampleRss();
     row.compositions[name] = {
       layers: input.layers.length,
       composed_nodes: composition.nodes.uuid.length,
@@ -234,7 +234,7 @@ function measure(n, composeWasm, fixtureDir) {
 const composeWasm = await loadWasm();
 const rows = [];
 for (const size of args.sizes.split(",").map(Number)) {
-  const row = measure(size, composeWasm, rows.length === 0 ? args["fixture-out"] : null);
+  const row = measure(size, composeWasm, size === FIXTURE_NODES ? args["fixture-out"] : null);
   rows.push(row);
   const single = row.compositions.single_pagerank;
   const multi = row.compositions.multi_4_layers;
@@ -259,7 +259,8 @@ const report = {
     composition_version: GRAPHFORGE_COMPOSITION_VERSION,
     reps: REPS,
   },
-  peak_rss_mib: Math.round(peakRss / 1024 / 1024),
+  // The process high-water mark (getrusage ru_maxrss), GraphForge included.
+  max_rss_mib: Math.round(process.resourceUsage().maxRSS / 1024),
   rows,
 };
 const text = `${JSON.stringify(report, null, 2)}\n`;
