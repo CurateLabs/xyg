@@ -128,7 +128,7 @@ message}`). Details: design §6.4.
 | Native C ABI | 378 | `abiVersion()`, `xyg_abi_version` |
 | WASM ABI | 27 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 31 | `SCENE_VERSION` |
-| Paint protocol | 12 | `PROTOCOL_VERSION` |
+| Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 1 | `composition.ledgerVersion` |
@@ -162,7 +162,7 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 - `@curatelabs/xyg` (browser: `index.js`, `standalone.js`, `wasm-worker.js`,
   `xyg-wasm.wasm`, `ASSET-MANIFEST.json` with sizes and SHA-256, NOTICE).
   Copy these into the extension's media folder; do not mix versions.
-- Until public npm publication (#13/#108), consume the exact-version
+- Until public npm publication (the 0.6.0-rc.1 cohort, #108), consume the exact-version
   candidate tarballs the `Release` workflow (`publish.yaml`) builds and
   retains as run artifacts (`node-facade`, `node-platform-<platform>`,
   `browser-package`), e.g.
