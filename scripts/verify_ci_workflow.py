@@ -2688,7 +2688,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "scripts/stage_browser_package.py",
         "--dist packages/xy-client/dist",
         "npm pack ./staged/xyg-browser",
-        "npm publish packed/*.tgz --dry-run --tag next --provenance=false",
+        "npm publish ./packed/*.tgz --dry-run --tag next --provenance=false",
         'XYG_BROWSER_DIST="$PWD/unpacked-browser/package" node scripts/wasm_foundation_smoke.mjs',
         "name: browser-package",
     )
@@ -2766,7 +2766,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         '--platform "${{ matrix.platform }}"',
         "--wheel wheel/*.whl",
         "npm pack",
-        "npm publish packed/*.tgz --dry-run --provenance=false",
+        "npm publish ./packed/*.tgz --dry-run --provenance=false",
         "node-platform-${{ matrix.platform }}",
     )
     _require_job_contains(
