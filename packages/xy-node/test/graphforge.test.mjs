@@ -18,6 +18,8 @@ import {
   graphforgeGraphData,
   graphforgeLedger,
   graphforgeTableHtml,
+  graphforgePick,
+  graphforgeWebviewPayload,
 } from "../src/graphforge.js";
 import { decodeContainer, encodeContainer, DTYPE } from "../src/graphforge-container.js";
 import { graphChart } from "../src/charts.js";
@@ -402,4 +404,29 @@ test("render requests append the canonical Scene and selections paint selected",
   assert.notEqual(c.nodes.flags[c.nodeIndex(EXPECT.bases.cyclic.nodeUuids[1])] & 2, 0, "selected flag");
   assert.throws(() => composeGraphForge({ layers: [{ result: arrow("is_dag"), intent: "table" }], render: { width: 480, height: 360 } }),
     (e) => e.code === "GF_COMPOSE_RENDER_UNSUPPORTED");
+});
+
+test("webview payloads relay picks back to GraphForge identity", () => {
+  const c = compose("pagerank", "node_similarity");
+  const payload = graphforgeWebviewPayload(c, { width: 480, height: 360 });
+  assert.ok(payload.buffer instanceof ArrayBuffer && payload.buffer.byteLength > 0);
+  assert.equal(payload.spec.interaction.click, true, "picks need click events");
+  for (let i = 0; i < c.nodes.count; i += 1) {
+    assert.deepEqual(graphforgePick(payload.figure, c, { trace: payload.nodeTrace, index: i }), c.identify("node", i));
+  }
+  const edges = payload.figure.traces[payload.edgeTrace];
+  let derived = 0;
+  for (let segment = 0; segment < edges.x0.length; segment += 1) {
+    const identity = graphforgePick(payload.figure, c, { trace: payload.edgeTrace, index: segment });
+    assert.equal(identity.kind, "edge");
+    if (identity.derived) {
+      derived += 1;
+      assert.equal(identity.uuid, null);
+      assert.equal(identity.type, "SIMILAR");
+    } else {
+      assert.ok(c.edges.uuid.includes(identity.uuid));
+    }
+  }
+  assert.ok(derived > 0);
+  assert.equal(graphforgePick(payload.figure, c, { trace: 99, index: 0 }), null);
 });

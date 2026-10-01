@@ -55,8 +55,36 @@ assert.equal(
   "offline HTML must not fetch a network asset",
 );
 
+// GraphForge compositions from the packaged facade (#37/#40): real engine
+// fixtures copied beside this script compose through the packaged Rust core.
+const graphforgeDir = "graphforge";
+assert.ok(fs.existsSync(graphforgeDir), "GraphForge release fixtures are required beside the smoke");
+const gf = await import("@curatelabs/xyg-node/graphforge");
+const fixture = (name) => fs.readFileSync(path.join(graphforgeDir, `${name}.arrow`));
+const generation = JSON.parse(fs.readFileSync(path.join(graphforgeDir, "manifest.json"), "utf8")).bases.cyclic.generation;
+const composition = gf.composeGraphForge({
+  base: { tables: [fixture("base-cyclic-nodes"), fixture("base-cyclic-edges")], generation },
+  layers: [
+    { result: fixture("pagerank"), intent: "graph", generation, resultId: "release-rank" },
+    { result: fixture("node_similarity"), intent: "graph", generation },
+  ],
+  render: { width: 480, height: 360 },
+});
+assert.equal(composition.layers[0].counts.matched, composition.nodes.count, "every node joins by UUID");
+assert.ok([...composition.edges.derived].some(Boolean), "derived similarity edges compose");
+assert.ok(composition.scene.bytes.length > 0, "the direct-tier Scene renders");
+const webview = gf.graphforgeWebviewPayload(composition, { width: 480, height: 360 });
+assert.equal(gf.graphforgePick(webview.figure, composition, { trace: webview.nodeTrace, index: 0 }).uuid, composition.nodes.uuid[0]);
+assert.throws(
+  () => gf.composeGraphForge({ layers: [{ result: fixture("pagerank"), intent: "graph" }] }),
+  (error) => error.code === "GF_COMPOSE_BASE_REQUIRED",
+);
+
 console.log(
   JSON.stringify({
+    graphforgeCompositionVersion: gf.GRAPHFORGE_COMPOSITION_VERSION,
+    graphforgeNodes: composition.nodes.count,
+    graphforgeEdges: composition.edges.count,
     package: "@curatelabs/xyg-node",
     platformPackage: expectedPackage,
     nativeLibrary: path.basename(nativeRealPath),

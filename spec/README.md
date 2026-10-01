@@ -46,6 +46,10 @@ The public surface: what callers can build, style, export, and interact with.
   backlog, from core 2D through geographic, 3D, and volume visualization.
 - [`export.md`](api/export.md) — how a figure becomes bytes: one entry point
   across five image formats, deterministic engine choice, browser-free default.
+- [`graphforge-integration.md`](api/graphforge-integration.md) — how a
+  GraphForge host (the VS Code extension first) passes results, base graph,
+  generation, and intent to XYG; Node and WASM APIs, versions, error codes,
+  webview CSP and messages, and package consumption.
 - [`interaction.md`](api/interaction.md) — the authority on which browser
   interactions exist, which are configurable, and every event payload.
 - [`styling.md`](api/styling.md) — the implementation contract for CSS-addressable

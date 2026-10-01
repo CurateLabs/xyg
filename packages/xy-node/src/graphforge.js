@@ -696,6 +696,62 @@ function graphforgeGraphChart(composition, opts) {
   });
 }
 
+/**
+ * Map a pick on a `graphforgeChart` figure (a webview's `xy:click` detail
+ * `{trace, index}`, relayed to the extension host) to the composed element's
+ * GraphForge identity. Node rows are exact below Aggregate LOD; edge segments
+ * resolve through Rust's render-edge membership, so an aggregate edge reports
+ * its member count and never one invented relationship.
+ *
+ * @returns {object|null} `composition.identify(...)`, or
+ *   `{ kind: "aggregate", trace, edgeCount, edges }`, or null off-graph.
+ */
+export function graphforgePick(fig, composition, { trace, index } = {}) {
+  const meta = fig?._graphMeta?.[0];
+  if (meta == null || !Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
+  if (trace === meta.node_trace) {
+    if (meta.tier_name === "aggregate" || index >= composition.nodes.count) {
+      return { kind: "aggregate", trace, nodeCount: null };
+    }
+    return composition.identify("node", index);
+  }
+  if (trace === meta.edge_trace) {
+    const pick = fig.graphEdgePick(trace, index);
+    if (pick == null) return null;
+    if (pick.edge_count === 1) return composition.identify("edge", pick.source_edges[0]);
+    return {
+      kind: "aggregate",
+      trace,
+      edgeCount: pick.edge_count,
+      edges: pick.source_edges.map((edge) => composition.identify("edge", edge)),
+      truncated: pick.members_truncated,
+    };
+  }
+  return null;
+}
+
+/**
+ * The paint payload for a VS Code webview (or any browser host): the chart's
+ * `{spec, buffers}` plus the trace indices a pick relay needs. Post `spec` and
+ * the buffer (transferable) to the webview, which calls
+ * `xy.renderStandalone(el, spec, buffer)` from the local paint client.
+ */
+export function graphforgeWebviewPayload(composition, opts = {}) {
+  const fig = graphforgeChart(composition, opts);
+  // Webviews relay picks, so the chart emits `xy:click` (off by default).
+  fig.interaction = { click: true, ...(fig.interaction ?? {}) };
+  const { spec, buffers } = fig.buildPayload();
+  const bytes = buffers instanceof Uint8Array ? buffers : new Uint8Array(buffers);
+  const meta = fig._graphMeta?.[0];
+  return {
+    figure: fig,
+    spec,
+    buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    nodeTrace: meta?.node_trace ?? null,
+    edgeTrace: meta?.edge_trace ?? null,
+  };
+}
+
 /** The Rust coverage ledger rows (for coverage agreement checks). */
 export function graphforgeLedger() {
   const size = Number(xyGraphforgeLedgerTsv(null, 0n));

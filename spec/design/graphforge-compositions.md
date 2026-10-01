@@ -429,6 +429,13 @@ are text, never markup). Static export of a bar chart fails closed with
 `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`, as every category-axis export does in
 both hosts today; the interactive chart and the table carry the names.
 
+`graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
+nodeTrace, edgeTrace, figure}` for a browser host (click events on);
+`graphforgePick(figure, composition, {trace, index})` maps a relayed pick to
+`composition.identify(...)` — node rows exactly below Aggregate LOD, edge
+segments through Rust's render-edge membership (an aggregate edge reports its
+member count, never one invented relationship).
+
 `encodeGraphForgeRequest` / `composeGraphForgeRequest` /
 `decodeGraphForgeDocument` expose the raw bytes for hosts that move requests
 or documents across processes; `graphforgeGraphData` /
@@ -506,6 +513,58 @@ strict policy needs only `script-src 'self' 'wasm-unsafe-eval'`,
 self-contained HTML inline density worker (`xyg-wasm-inline.js`) is the only
 path that needs `worker-src blob:`.
 
+### 6.4 VS Code webviews
+
+A webview is a browser document with a nonce CSP whose resources are served
+from a different origin (`webview.cspSource`), so a Worker cannot be created
+from a resource URL and nothing may load from a CDN. Both host paths work
+under these constraints (proved by `scripts/graphforge_webview_smoke.mjs`,
+which serves the page and its assets from two origins):
+
+- **Native (extension host).** The extension host composes with
+  `@curatelabs/xyg-node/graphforge` and posts `graphforgeWebviewPayload(...)`'s
+  `{spec, buffer}` (transfer the buffer). The webview imports the local
+  `@curatelabs/xyg` `index.js` (or `standalone.js`, `window.xy`) with its
+  nonce and calls `xy.renderStandalone(el, spec, buffer)`. Any graph size
+  (Rust level-of-detail applies).
+- **Direct-browser WASM (webview).** The webview fetches the local
+  `wasm-worker.js` text and `xyg-wasm.wasm` bytes, creates the module Worker
+  from a Blob URL (`createXygWasmWorker({workerUrl: blobUrl, wasm: bytes})`),
+  and calls `renderWasmGraphForge`. Direct tier (≤ 1,024 elements).
+
+Required webview CSP (VS Code's recommended shape plus exactly what the paint
+client needs):
+
+```text
+default-src 'none';
+script-src 'nonce-${nonce}' ${webview.cspSource} 'wasm-unsafe-eval';
+style-src ${webview.cspSource} 'unsafe-inline';
+img-src ${webview.cspSource} data: blob:;
+font-src ${webview.cspSource};
+connect-src ${webview.cspSource};
+worker-src blob:;
+```
+
+`'wasm-unsafe-eval'` compiles WASM (it does not allow JavaScript `eval`);
+`worker-src blob:` is for the Blob-URL Worker (WASM path) and the
+self-contained HTML inline density worker; `style-src 'unsafe-inline'` is
+required because the client injects its theme `<style>` element
+(`20_theme.ts`) and sets inline styles. The native path without density needs
+neither `'wasm-unsafe-eval'` nor `worker-src`.
+
+Message contract (all identities are UUID strings; no values are logged):
+
+| Direction | Message | Payload |
+|---|---|---|
+| host → webview | `xyg.render` | `{composition: {version, kind}, spec, buffer}` (native) or `{request}` (`XYGQ` bytes, WASM) |
+| webview → host | `xyg.pick` | native: `{trace, index}` from `xy:click`, mapped host-side with `graphforgePick`; WASM: the `xy:graphforge-select` detail `{kind, uuid, derived, type, source, target, order, path, layers: [{layer, resultId, row}]}` |
+| host → webview | `xyg.select` | `{uuids}`: recompose with `select: uuids` (Rust sets the selected state) and re-render |
+| host → webview | `xyg.error` | `{code, layer, field, message}` from `GraphForgeCompositionError` / `XygWasmError` |
+
+Table rows and chart elements link through `layers[].resultId` + `row` (the
+caller's result id and the result row) or the element UUID; a selection from
+another result or generation never matches (generation checks, §4.2).
+
 ## 7. Evidence
 
 - Fixtures: `tests/fixtures/graphforge/results/` — real GraphForge 0.5.2
@@ -544,6 +603,17 @@ path that needs `worker-src blob:`.
   PageRank + similarity composition through WebGL, maps every painted row to
   a composed UUID, routes a click to `xy:graphforge-select` with the result
   row, renders a table as text, and surfaces a stale generation's code.
+- Webview: `scripts/graphforge_webview_smoke.mjs` (CI) serves a nonce-CSP
+  page from one origin and every asset from another, renders the native
+  payload through `renderStandalone` and a WASM composition through a Blob
+  module Worker, clicks a node on each with real mouse events, and requires
+  the native relay (`graphforgePick`) and the WASM `xy:graphforge-select`
+  event to name the node's UUID and per-layer result rows, with no CSP
+  violations and only local asset requests.
+- Release: the `publish.yaml` clean-install job installs the packed facade and
+  exact-platform package on every supported OS/arch and composes real
+  GraphForge fixtures (join, derived edges, Scene, pick relay, coded error)
+  through the packaged core.
 - Node: joins checked against the independent expectations for node and edge
   layers, selection round trips (including derived edges by layer and row and
   path steps), error codes, chart paint, legend, and edge labels, the edge
