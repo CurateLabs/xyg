@@ -52,23 +52,23 @@ pub struct Decision {
     pub count: u64,
 }
 
-struct Layer<'a> {
-    index: usize,
-    request: &'a LayerRequest<'a>,
-    table: Table<'a>,
-    recognized: Recognized,
-    missing: MissingPolicy,
-    extra: ExtraPolicy,
+pub(super) struct Layer<'a> {
+    pub(super) index: usize,
+    pub(super) request: &'a LayerRequest<'a>,
+    pub(super) table: Table<'a>,
+    pub(super) recognized: Recognized,
+    pub(super) missing: MissingPolicy,
+    pub(super) extra: ExtraPolicy,
     /// Result rows to compose, in order.
-    rows: Vec<usize>,
+    pub(super) rows: Vec<usize>,
 }
 
 impl Layer<'_> {
-    fn entry(&self) -> &'static SchemaEntry {
+    pub(super) fn entry(&self) -> &'static SchemaEntry {
         self.recognized.entry
     }
 
-    fn field(&self, role: Role) -> Option<&'static str> {
+    pub(super) fn field(&self, role: Role) -> Option<&'static str> {
         self.entry()
             .fields
             .iter()
@@ -76,7 +76,7 @@ impl Layer<'_> {
             .map(|f| f.name)
     }
 
-    fn column_f64(&self, name: &str) -> GfResult<Vec<f64>> {
+    pub(super) fn column_f64(&self, name: &str) -> GfResult<Vec<f64>> {
         let values = f64s(&self.table.column(name).unwrap())?;
         Ok(values.into_iter().map(|v| v.unwrap_or(f64::NAN)).collect())
     }
@@ -140,7 +140,7 @@ struct Planes<'b> {
     layers: Vec<LayerOut>,
 }
 
-fn layer_error(code: &'static str, layer: usize, message: String) -> GfError {
+pub(super) fn layer_error(code: &'static str, layer: usize, message: String) -> GfError {
     GfError::new(code, message).in_layer(layer)
 }
 
@@ -1270,7 +1270,10 @@ fn default_missing(composition: Composition) -> MissingPolicy {
     }
 }
 
-fn prepare_layer<'a>(index: usize, request: &'a LayerRequest<'a>) -> GfResult<Layer<'a>> {
+pub(super) fn prepare_layer<'a>(
+    index: usize,
+    request: &'a LayerRequest<'a>,
+) -> GfResult<Layer<'a>> {
     let table = read_table(request.result).map_err(|e| GfError::from(e).in_layer(index))?;
     let recognized = recognize(&table.schema).map_err(|e| e.in_layer(index))?;
     let composition = recognized.entry.composition;
@@ -1319,7 +1322,7 @@ fn prepare_layer<'a>(index: usize, request: &'a LayerRequest<'a>) -> GfResult<La
 }
 
 /// Result generation must match the base generation, or both are absent.
-fn check_generation(
+pub(super) fn check_generation(
     request: &Request<'_>,
     layer: &Layer<'_>,
     decisions: &mut Vec<Decision>,
@@ -1361,14 +1364,7 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
                 "table, chart, and embedding intents compose exactly one result layer",
             ));
         }
-        return Err(layer_error(
-            "GF_COMPOSE_UNSUPPORTED_COMPOSITION",
-            0,
-            format!(
-                "the {} intent is not composed by this engine yet",
-                layers[0].request.intent.name()
-            ),
-        ));
+        return super::views::document(request, &layers[0]);
     }
     if request.base_tables.is_empty() && request.base_planes.is_none() {
         return Err(GfError::new(
@@ -1460,10 +1456,7 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     let text = |value: &Option<String>| value.clone().unwrap_or_default();
 
     let mut out = Builder::new(DOCUMENT_MAGIC);
-    out.u32s("status", 0, &[0]);
-    out.utf8("kind", 0, "graph");
-    out.u32s("composition.version", 0, &[COMPOSITION_VERSION]);
-    out.u32s("ledger.version", 0, &[ledger::LEDGER_VERSION]);
+    document_header(&mut out, "graph");
     out.u8s("graph.directed", 0, &[u8::from(base.directed)]);
     if let Some(generation) = request.base_generation {
         out.uuids("base.generation", 0, &[generation]);
@@ -1652,25 +1645,7 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     out.u64s("path.edges", 0, &path_edges);
 
     for (i, (layer, result)) in layers.iter().zip(&planes.layers).enumerate() {
-        let entry = layer.entry();
-        out.utf8("layer.schema", i, entry.id);
-        out.u32s("layer.schema_version", i, &[entry.version]);
-        out.utf8("layer.verb", i, layer.recognized.verb);
-        out.utf8("layer.algorithm", i, layer.recognized.algorithm);
-        out.utf8("layer.disposition", i, entry.disposition.name());
-        out.utf8("layer.composition", i, entry.composition.name());
-        out.utf8("layer.intent", i, layer.request.intent.name());
-        out.utf8("layer.missing_policy", i, layer.missing.name());
-        out.utf8("layer.extra_policy", i, layer.extra.name());
-        if let Some(id) = layer.request.result_id {
-            out.utf8("layer.result_id", i, id);
-        }
-        if let Some(generation) = layer.request.generation {
-            out.uuids("layer.generation", i, &[generation]);
-        }
-        if let Some(kind) = entry.derived_type {
-            out.utf8("layer.derived_type", i, kind);
-        }
+        layer_provenance(&mut out, i, layer);
         out.u64s(
             "layer.counts",
             i,
@@ -1746,24 +1721,7 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             count: cascaded,
         });
     }
-    out.texts(
-        "decision.code",
-        0,
-        &decisions.iter().map(|d| d.code).collect::<Vec<_>>(),
-    );
-    out.u32s(
-        "decision.layer",
-        0,
-        &decisions
-            .iter()
-            .map(|d| d.layer.map_or(NONE_U32, |l| l as u32))
-            .collect::<Vec<_>>(),
-    );
-    out.u64s(
-        "decision.count",
-        0,
-        &decisions.iter().map(|d| d.count).collect::<Vec<_>>(),
-    );
+    encode_decisions(&mut out, &decisions);
     out.finish()
 }
 
@@ -1869,6 +1827,59 @@ fn encode_legend(out: &mut Builder, planes: &Planes<'_>, nodes: &[usize], edges:
             .iter()
             .flat_map(|r| color(dark, r.1, r.2))
             .collect::<Vec<_>>(),
+    );
+}
+
+/// Header sections every successful document carries.
+pub(super) fn document_header(out: &mut Builder, kind: &str) {
+    out.u32s("status", 0, &[0]);
+    out.utf8("kind", 0, kind);
+    out.u32s("composition.version", 0, &[COMPOSITION_VERSION]);
+    out.u32s("ledger.version", 0, &[ledger::LEDGER_VERSION]);
+}
+
+/// Provenance sections for one layer (shared by every document kind).
+pub(super) fn layer_provenance(out: &mut Builder, i: usize, layer: &Layer<'_>) {
+    let entry = layer.entry();
+    out.utf8("layer.schema", i, entry.id);
+    out.u32s("layer.schema_version", i, &[entry.version]);
+    out.utf8("layer.verb", i, layer.recognized.verb);
+    out.utf8("layer.algorithm", i, layer.recognized.algorithm);
+    out.utf8("layer.disposition", i, entry.disposition.name());
+    out.utf8("layer.composition", i, entry.composition.name());
+    out.utf8("layer.intent", i, layer.request.intent.name());
+    out.utf8("layer.missing_policy", i, layer.missing.name());
+    out.utf8("layer.extra_policy", i, layer.extra.name());
+    if let Some(id) = layer.request.result_id {
+        out.utf8("layer.result_id", i, id);
+    }
+    if let Some(generation) = layer.request.generation {
+        out.uuids("layer.generation", i, &[generation]);
+    }
+    if let Some(kind) = entry.derived_type {
+        out.utf8("layer.derived_type", i, kind);
+    }
+}
+
+/// Decision sections.
+pub(super) fn encode_decisions(out: &mut Builder, decisions: &[Decision]) {
+    out.texts(
+        "decision.code",
+        0,
+        &decisions.iter().map(|d| d.code).collect::<Vec<_>>(),
+    );
+    out.u32s(
+        "decision.layer",
+        0,
+        &decisions
+            .iter()
+            .map(|d| d.layer.map_or(NONE_U32, |l| l as u32))
+            .collect::<Vec<_>>(),
+    );
+    out.u64s(
+        "decision.count",
+        0,
+        &decisions.iter().map(|d| d.count).collect::<Vec<_>>(),
     );
 }
 

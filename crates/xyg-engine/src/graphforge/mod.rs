@@ -19,6 +19,7 @@ pub mod container;
 pub mod ledger;
 pub mod recognize;
 pub mod request;
+pub mod views;
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};

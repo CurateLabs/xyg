@@ -106,6 +106,29 @@ pub fn i64s(column: &Column<'_, '_>) -> GfResult<Vec<Option<i64>>> {
     Ok(out)
 }
 
+/// Integers as exact decimal text plus their f64 value (unsigned values
+/// above `i64::MAX` keep their exact text).
+pub fn int_texts(column: &Column<'_, '_>) -> GfResult<Vec<Option<(String, f64)>>> {
+    let DataType::Int { signed, .. } = column.field.data_type else {
+        return Err(mismatch(column, "an integer type"));
+    };
+    let mut out = Vec::with_capacity(column.len());
+    column.for_each::<GfError>(|array, row| {
+        out.push(array.is_valid(row).then(|| {
+            let bytes = array.fixed(row).unwrap();
+            if signed {
+                let v = sign_extend(bytes);
+                (v.to_string(), v as f64)
+            } else {
+                let v = zero_extend(bytes);
+                (v.to_string(), v as f64)
+            }
+        }));
+        Ok(())
+    })?;
+    Ok(out)
+}
+
 pub fn bools(column: &Column<'_, '_>) -> GfResult<Vec<Option<bool>>> {
     if column.field.data_type != DataType::Bool {
         return Err(mismatch(column, "Bool"));

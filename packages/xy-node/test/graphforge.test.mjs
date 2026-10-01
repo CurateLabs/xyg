@@ -17,6 +17,7 @@ import {
   graphforgeChart,
   graphforgeGraphData,
   graphforgeLedger,
+  graphforgeTableHtml,
 } from "../src/graphforge.js";
 import { decodeContainer, encodeContainer, DTYPE } from "../src/graphforge-container.js";
 import { graphChart } from "../src/charts.js";
@@ -309,4 +310,64 @@ test("ordered overlays expose paths, step order, and position labels", () => {
   assert.ok([...euler.edges.derived].every((d) => d === 0), "Euler trails name persisted edges");
   const trail = graphforgeChart(euler, { width: 480, height: 360 });
   assert.ok(trail._graphMeta[0].edge_label_text.includes("0"), "step labels paint on edges");
+});
+
+const derivedFixture = (name) => fs.readFileSync(path.join(ROOT, "tests/fixtures/graphforge/derived", `${name}.arrow`));
+
+test("scalar and category results compose as tables and bar charts, never graphs", () => {
+  const table = composeGraphForge({ layers: [{ result: arrow("chromatic_number"), intent: "table" }] });
+  assert.equal(table.kind, "table");
+  assert.deepEqual(table.table.columns, ["chromatic_number"]);
+  assert.equal(table.nodes, undefined);
+  const html = graphforgeTableHtml(table);
+  assert.match(html, /<th scope="col">chromatic_number<\/th>/);
+  assert.throws(() => graphforgeChart(table), /graphforgeTableHtml/);
+
+  const census = composeGraphForge({ layers: [{ result: arrow("triad_census"), intent: "bar-chart" }] });
+  assert.equal(census.kind, "bar-chart");
+  const fig = graphforgeChart(census, { width: 480, height: 320 });
+  assert.equal(fig.traces[0].kind, "bar");
+  assert.equal(fig.x_label, "triad_type");
+  assert.deepEqual(fig._axis_categories.x, [...census.chart.categories]);
+  assert.ok(fig.toHtml().includes(census.chart.categories[0]));
+  assert.throws(() => fig.toPng(), /XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS/, "category axes fail closed in static export");
+  assert.throws(() => composeGraphForge({ layers: [{ result: arrow("is_dag"), intent: "bar-chart" }] }),
+    (e) => e.code === "GF_COMPOSE_INTENT_UNSUPPORTED");
+});
+
+test("table cells are escaped text", () => {
+  const conductance = composeGraphForge({ layers: [{ result: arrow("conductance"), intent: "table" }] });
+  conductance.table.rows[0][0] = "<img src=x onerror=alert(1)>";
+  const html = graphforgeTableHtml(conductance);
+  assert.ok(!html.includes("<img"));
+  assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"));
+});
+
+test("embeddings: parallel coordinates or explicit coordinates, never dims 0/1", () => {
+  const gen = generationOf("cyclic");
+  const parallel = composeGraphForge({ base: base("cyclic"), layers: [{ result: arrow("node2vec"), intent: "parallel-coordinates", generation: gen }] });
+  assert.equal(parallel.kind, "parallel-coordinates");
+  assert.equal(parallel.vectors.dimensions, 4);
+  assert.deepEqual(parallel.vectors.uuid, [...EXPECT.bases.cyclic.nodeUuids].filter((u) => parallel.vectors.uuid.includes(u)));
+  const lines = graphforgeChart(parallel, { width: 480, height: 320 });
+  assert.equal(lines.traces[0].kind, "segments");
+  assert.equal(lines.traces[0].tooltip_rows.length, parallel.vectors.uuid.length * 3);
+  assert.ok(lines.toPng().length > 0, "the Rust domain makes the view exportable");
+
+  assert.throws(() => composeGraphForge({ layers: [{ result: arrow("node2vec"), intent: "embedding-coordinates" }] }),
+    (e) => e.code === "GF_COMPOSE_COORDINATES_REQUIRED" && /never plotted/.test(e.message));
+  const placed = composeGraphForge({ layers: [{ result: arrow("node2vec"), intent: "embedding-coordinates", coordinates: derivedFixture("node2vec-coordinates") }] });
+  assert.equal(placed.kind, "scatter");
+  assert.equal(placed.points.source, "caller");
+  const scatter = graphforgeChart(placed, { width: 480, height: 320 });
+  assert.equal(scatter.traces[0].tooltip_rows[0].id, placed.points.uuid[0]);
+  const oneD = composeGraphForge({ layers: [{ result: derivedFixture("node2vec-1d"), intent: "parallel-coordinates" }] });
+  assert.equal(oneD.vectors.dimensions, 1);
+  const points = graphforgeChart(oneD, { width: 480, height: 320 });
+  assert.equal(points.traces[0].kind, "scatter", "one dimension renders as points, not empty polylines");
+  assert.equal(points.traces[0].tooltip_rows.length, oneD.vectors.uuid.length);
+  assert.ok(points.toPng().length > 0);
+  const self = composeGraphForge({ layers: [{ result: derivedFixture("node2vec-2d"), intent: "embedding-coordinates" }] });
+  assert.equal(self.points.source, "embedding");
+  assert.ok(self.decisions.some((d) => d.code === "GF_COMPOSE_EMBEDDING_2D"));
 });

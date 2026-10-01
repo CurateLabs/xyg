@@ -685,6 +685,17 @@ impl<'a> Offsets<'a> {
 }
 
 impl<'a> Array<'a> {
+    /// A non-null fixed-width array (unit tests of typed readers).
+    #[cfg(test)]
+    pub(crate) fn fixed_for_tests(len: usize, width: usize, values: &'a [u8]) -> Self {
+        Array {
+            len,
+            null_count: 0,
+            validity: None,
+            data: ArrayData::Fixed { width, values },
+        }
+    }
+
     pub fn is_valid(&self, i: usize) -> bool {
         match self.validity {
             None => !matches!(self.data, ArrayData::Null),

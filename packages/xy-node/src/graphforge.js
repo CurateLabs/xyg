@@ -13,7 +13,8 @@
  * and counts — never result values, UUIDs, vectors, or coordinates.
  */
 
-import { graphChart } from "./charts.js";
+import { barChart, graphChart } from "./charts.js";
+import { figure } from "./figure.js";
 import {
   DOCUMENT_MAGIC,
   DTYPE,
@@ -313,6 +314,50 @@ export class GraphForgeComposition {
       this._edgeIndex = new Map();
       this.edges.uuid.forEach((id, i) => { if (id != null) this._edgeIndex.set(id, i); });
     }
+    if (this.kind === "table") {
+      const columns = get("table.columns");
+      const cells = get("table.cells");
+      const values = get("table.values");
+      const valid = get("table.valid");
+      const rows = get("table.rows");
+      const k = columns.length;
+      /** Table composition: canonical columns, text cells, numeric values. */
+      this.table = {
+        columns,
+        kinds: get("table.kinds"),
+        resultRows: [...rows].map(Number),
+        rows: [...rows].map((_, r) => cells.slice(r * k, r * k + k).map((cell, c) => (valid[r * k + c] ? cell : null))),
+        values: [...rows].map((_, r) => Array.from(values.subarray(r * k, r * k + k))),
+      };
+    } else if (this.kind === "bar-chart") {
+      this.chart = {
+        categoryName: get("chart.category_name"),
+        valueName: get("chart.value_name"),
+        categories: get("chart.category"),
+        values: get("chart.value"),
+        resultRows: [...get("chart.result_row")].map(Number),
+      };
+    } else if (this.kind === "parallel-coordinates") {
+      const dimensions = get("vector.dimensions")[0];
+      this.vectors = {
+        dimensions,
+        uuid: uuidList(get("vector.uuid")),
+        name: get("vector.name"),
+        resultRows: [...get("vector.result_row")].map(Number),
+        values: get("vector.values"),
+        domain: Array.from(get("vector.domain")),
+      };
+    } else if (this.kind === "scatter") {
+      this.points = {
+        source: get("point.source"),
+        dimensions: get("vector.dimensions")[0],
+        uuid: uuidList(get("point.uuid")),
+        name: get("point.name"),
+        resultRows: [...get("point.result_row")].map(Number),
+        x: get("point.x"),
+        y: get("point.y"),
+      };
+    }
     const legendSide = get("legend.side") ?? new Uint8Array(0);
     const light = get("legend.rgba_light");
     const dark = get("legend.rgba_dark");
@@ -392,6 +437,7 @@ export class GraphForgeComposition {
     return {
       kind: this.kind,
       compositionVersion: this.version,
+      rows: this.table?.rows.length ?? this.chart?.categories.length ?? this.vectors?.uuid.length ?? this.points?.uuid.length,
       ledgerVersion: this.ledgerVersion,
       nodes: this.nodes?.count ?? 0,
       edges: this.edges?.count ?? 0,
@@ -503,9 +549,113 @@ export function graphforgeLegendItems(composition, { theme = "light" } = {}) {
  * the composition's legend. Extra options pass through to `graphChart`.
  */
 export function graphforgeChart(composition, opts = {}) {
-  if (composition?.kind !== "graph") {
-    throw new TypeError(`graphforgeChart needs a graph composition, got ${JSON.stringify(composition?.kind)}`);
+  switch (composition?.kind) {
+    case "graph": return graphforgeGraphChart(composition, opts);
+    case "bar-chart": return graphforgeBarChart(composition, opts);
+    case "parallel-coordinates": return graphforgeParallelChart(composition, opts);
+    case "scatter": return graphforgeScatterChart(composition, opts);
+    case "table": throw new TypeError("table compositions render as tables: use graphforgeTableHtml(composition)");
+    default: throw new TypeError(`unknown composition kind ${JSON.stringify(composition?.kind)}`);
   }
+}
+
+function axisTitles(fig, x, y) {
+  // Figure-level axis titles (chrome `x_label` / `y_label`), which every
+  // export route admits, rather than authored axis options.
+  fig.x_label = x;
+  fig.y_label = y;
+  return fig;
+}
+
+/** Category results as bars in result order (never re-sorted). */
+function graphforgeBarChart(composition, opts) {
+  const { categories, values, categoryName, valueName } = composition.chart;
+  const { width, height, title } = opts;
+  const fig = barChart([...categories], Float64Array.from(values), { width, height, title });
+  // A real category axis (as Python bar charts have): the browser labels each
+  // bar with its category; static export fails closed like Python's
+  // (XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS) instead of printing bare positions.
+  fig._axis_categories = { ...(fig._axis_categories ?? {}), x: [...categories] };
+  return axisTitles(fig, categoryName, valueName);
+}
+
+/**
+ * Parallel coordinates: every node's full vector over the dimension index,
+ * one polyline per node (segments carry the node identity for hover/pick).
+ */
+function graphforgeParallelChart(composition, opts) {
+  const { dimensions, values, uuid, name } = composition.vectors;
+  if (dimensions < 2) {
+    // One dimension has no polyline: each node is a point at dimension 0.
+    const { width, height, title } = opts;
+    const fig = figure({ width, height, title });
+    fig.scatter(new Float64Array(uuid.length), Float64Array.from(values), {
+      name: "embedding",
+      style: { color: fig.nextSeriesColor() },
+      tooltip_rows: uuid.map((id, i) => ({ id, ...(name[i] ? { name: name[i] } : {}), dimension: 0 })),
+      _composed: true,
+    });
+    const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
+    fig.setAxis("x", { domain: [dx0, dx1] });
+    fig.setAxis("y", { domain: [dy0, dy1] });
+    return axisTitles(fig, "dimension", "value");
+  }
+  const n = uuid.length;
+  const pieces = n * Math.max(dimensions - 1, 0);
+  const x0 = new Float64Array(pieces); const y0 = new Float64Array(pieces);
+  const x1 = new Float64Array(pieces); const y1 = new Float64Array(pieces);
+  const rows = [];
+  let at = 0;
+  for (let r = 0; r < n; r += 1) {
+    for (let d = 0; d + 1 < dimensions; d += 1, at += 1) {
+      x0[at] = d; x1[at] = d + 1;
+      y0[at] = values[r * dimensions + d]; y1[at] = values[r * dimensions + d + 1];
+      rows.push({ id: uuid[r], ...(name[r] ? { name: name[r] } : {}), dimension: d });
+    }
+  }
+  const { width, height, title } = opts;
+  const fig = figure({ width, height, title });
+  fig.segments(x0, y0, x1, y1, { name: "embedding", ...(pieces <= 100_000 ? { tooltip_rows: rows } : {}) });
+  // Rust owns the plot domain (dimension span, padded finite value range).
+  const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
+  fig.setAxis("x", { domain: [dx0, dx1] });
+  fig.setAxis("y", { domain: [dy0, dy1] });
+  return axisTitles(fig, "dimension", "value");
+}
+
+/** Embedded nodes at caller (or two-dimensional embedding) coordinates. */
+function graphforgeScatterChart(composition, opts) {
+  const { x, y, uuid, name, source } = composition.points;
+  const { width, height, title } = opts;
+  const rows = uuid.map((id, i) => ({ id, ...(name[i] ? { name: name[i] } : {}) }));
+  const fig = figure({ width, height, title });
+  // The composed scatter path carries per-point tooltip rows (as the graph
+  // mark's nodes do); it takes the figure's next series color explicitly.
+  fig.scatter(Float64Array.from(x), Float64Array.from(y), {
+    name: "embedding",
+    style: { color: fig.nextSeriesColor() },
+    tooltip_rows: rows,
+    _composed: true,
+  });
+  return source === "embedding" ? axisTitles(fig, "dimension 0", "dimension 1") : fig;
+}
+
+const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ESCAPES[c]);
+
+/** A table composition as an escaped HTML `<table>` (cells are text only). */
+export function graphforgeTableHtml(composition) {
+  if (composition?.kind !== "table") throw new TypeError("graphforgeTableHtml needs a table composition");
+  const { columns, rows } = composition.table;
+  const head = columns.map((c) => `<th scope="col">${escapeHtml(c)}</th>`).join("");
+  const body = rows
+    .map((row) => `<tr>${row.map((cell) => `<td>${cell == null ? "" : escapeHtml(cell)}</td>`).join("")}</tr>`)
+    .join("");
+  const caption = composition.layers[0]?.algorithm ? `<caption>${escapeHtml(composition.layers[0].algorithm)}</caption>` : "";
+  return `<table class="xyg-graphforge-table">${caption}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function graphforgeGraphChart(composition, opts) {
   const { theme = "light", legend, ...rest } = opts;
   const items = graphforgeLegendItems(composition, { theme });
   const chartLegend = legend === false
