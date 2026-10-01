@@ -126,6 +126,7 @@ export {
 } from "./encode.js";
 
 export { ChunkedColumns } from "./chunked-columns.js";
+export { NATIVE_ERROR_CODES, XygNativeError } from "./native-path.js";
 export { TemporalGraph } from "./temporal-graph.js";
 export {
   GRAPHFORGE_COMPOSITION_VERSION,

@@ -531,7 +531,17 @@ reinterpreted with the wider descriptor contract.
   and unreadable Worker messages terminate immediately; disposal waits at most
   one second for cooperative cleanup before terminating the Worker.
 - Unsupported operations, incompatible versions, malformed scenes, invalid
-  ranges, and resource bounds return stable error codes. There is no silent
+  ranges, and resource bounds return stable error codes. Initialization
+  mismatches are distinct: `XYG_WASM_ABI_MISMATCH` (WASM ABI differs from the
+  client's), `XYG_WASM_SCENE_MISMATCH` (Scene version), `XYG_WASM_PALETTE_MISMATCH`
+  (default palette contract), `XYG_WASM_EXPORT_MISMATCH` (a required export is
+  absent or has another signature at the same versions),
+  `XYG_WASM_IMPORTS_REJECTED` (the module requests ambient imports),
+  `XYG_WASM_BUDGET_EXCEEDED` (`maxArenaBytes` above the adapter bound), and
+  `XYG_WASM_INSTANCE_EXHAUSTED`; asset loading failures (fetch, redirect,
+  compile) stay `XYG_WASM_INIT_FAILED`. The self-contained HTML inline worker
+  embeds its WASM bytes beside its own source, so a version skew cannot occur
+  there and it reports `XYG_WASM_INIT_FAILED`. There is no silent
   JavaScript algorithm or remote-service fallback.
 
 ## CSP, offline, and asset loading

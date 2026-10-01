@@ -8,29 +8,63 @@ import {
 } from "./_abi_generated.js";
 
 import {
+  NATIVE_ERROR_CODES,
+  XygNativeError,
   assertAbiVersion,
   resolveNativeLibrary,
 } from "./native-path.js";
 
 export * from "./_abi_generated.js";
-export { nativeLibraryFileName, NATIVE_LIBRARY_NAMES } from "./native-path.js";
+export { nativeLibraryFileName, NATIVE_LIBRARY_NAMES, NATIVE_ERROR_CODES, XygNativeError } from "./native-path.js";
 
 export function resolvePackageNativeLibrary() {
   return resolveNativeLibrary();
 }
 
 const libraryPath = resolvePackageNativeLibrary();
-const lib = koffi.load(libraryPath);
+let lib;
+try {
+  lib = koffi.load(libraryPath);
+} catch (cause) {
+  // Messages stay free of paths and loader text (hosts may surface them);
+  // `libraryPath` and `cause` remain on the error for local debugging.
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.LOAD_FAILED,
+    "The XYG native library exists but could not be loaded. Reinstall the exact-platform package or rebuild the development library.",
+    { cause, libraryPath },
+  );
+}
 
 export const nativeLibraryPath = libraryPath;
 
 // Bind and check ABI_VERSION before any other symbol so a mismatched
 // libxyg_core cannot be half-bound (xyg-naming.md §3).
-const xygAbiVersion = bindAbiVersion(lib);
+let xygAbiVersion;
+try {
+  xygAbiVersion = bindAbiVersion(lib);
+} catch (cause) {
+  // No xyg_abi_version at all: not an XYG core, or one from before the ABI
+  // contract. Either way the bindings cannot trust it.
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.ABI_MISMATCH,
+    `The loaded library does not export xyg_abi_version; these bindings expect XYG native ABI ${ABI_VERSION}. Rebuild or reinstall so library and bindings come from one release.`,
+    { cause, libraryPath, expected: ABI_VERSION, actual: null },
+  );
+}
 assertAbiVersion(xygAbiVersion(), ABI_VERSION);
 export const xyAbiVersion = xygAbiVersion;
 
-bindGeneratedAbi(lib);
+try {
+  bindGeneratedAbi(lib);
+} catch (cause) {
+  // The version matched but a declared symbol is absent or mistyped: the
+  // library is not the build these bindings were generated for.
+  throw new XygNativeError(
+    NATIVE_ERROR_CODES.ABI_MISMATCH,
+    `The XYG native library reports ABI ${ABI_VERSION} but lacks a declared symbol. Rebuild or reinstall so library and bindings come from one release.`,
+    { cause, libraryPath, expected: ABI_VERSION, actual: ABI_VERSION },
+  );
+}
 _configureGeneratedAbiTraceFromEnv();
 
 export function pointer(view, cType) {
