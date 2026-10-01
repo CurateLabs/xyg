@@ -1382,7 +1382,7 @@ impl ForceState {
 
 /// Worker threads for one grid repulsion pass: serial on wasm32 (no threads)
 /// and under CodSpeed's instruction-count gate; otherwise one thread per
-/// 8,192 nodes up to the available cores (at most 16). Forces are
+/// 2,048 nodes up to the available cores (at most 16). Forces are
 /// bit-identical for every count.
 fn repulsion_threads(n: usize) -> usize {
     if cfg!(target_arch = "wasm32") {
@@ -1393,7 +1393,7 @@ fn repulsion_threads(n: usize) -> usize {
         return 1;
     }
     let cores = std::thread::available_parallelism().map_or(1, |p| p.get().min(16));
-    cores.min(n / 8_192).max(1)
+    cores.min(n / 2_048).max(1)
 }
 
 /// Optional axis-aligned viewport for [`build_render`].
