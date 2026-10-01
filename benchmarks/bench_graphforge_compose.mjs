@@ -237,6 +237,8 @@ function measure(n, composeWasm, fixtureDir) {
 }
 
 const composeWasm = await loadWasm();
+// Timings are only comparable on a quiet machine; record the load around the run.
+const loadBefore = os.loadavg().map((v) => Math.round(v * 10) / 10);
 const rows = [];
 for (const size of args.sizes.split(",").map(Number)) {
   const row = measure(size, composeWasm, size === FIXTURE_NODES ? args["fixture-out"] : null);
@@ -263,6 +265,7 @@ const report = {
     graphforge: graphforgeVersion,
     composition_version: GRAPHFORGE_COMPOSITION_VERSION,
     reps: REPS,
+    load_average_1_5_15: { before: loadBefore, after: os.loadavg().map((v) => Math.round(v * 10) / 10) },
   },
   // The process high-water mark (getrusage ru_maxrss), GraphForge included.
   max_rss_mib: Math.round(process.resourceUsage().maxRSS / 1024),
