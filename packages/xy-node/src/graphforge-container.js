@@ -160,12 +160,17 @@ export function decodeContainer(input, magic) {
       if (length < head) fail("texts");
       const offs = unpackLittleEndian(payload.subarray(0, head), 8, BigUint64Array, (v, at) => v.getBigUint64(at, true));
       const text = payload.subarray(head);
-      value = [];
+      value = new Array(n);
+      // ASCII text (labels, names, codes) decodes once; byte offsets are then
+      // character offsets. Anything else decodes per item, strictly.
+      let ascii = true;
+      for (let k = 0; k < text.length; k += 1) if (text[k] > 0x7f) { ascii = false; break; }
+      const whole = ascii ? decoder.decode(text) : null;
       for (let k = 0; k < n; k += 1) {
         const start = Number(offs[k]);
         const end = Number(offs[k + 1]);
         if (end < start || end > text.length) fail("text offsets");
-        value.push(decoder.decode(text.subarray(start, end)));
+        value[k] = whole != null ? whole.slice(start, end) : decoder.decode(text.subarray(start, end));
       }
     } else {
       const width = WIDTH[dtype];

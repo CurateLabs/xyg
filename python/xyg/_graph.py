@@ -16,9 +16,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from . import _native
+from ._graph_wire import HOST_ONLY_GRAPH_META, wire_graph_meta
 
 __all__ = [
     "DEFAULT_LAYOUT",
+    "HOST_ONLY_GRAPH_META",
     "GraphData",
     "GraphProjectionError",
     "from_graphforge_tables",
@@ -28,6 +30,7 @@ __all__ = [
     "projection_tooltip_rows",
     "resolve_encoding_values",
     "resolve_graph_data",
+    "wire_graph_meta",
 ]
 
 DEFAULT_LAYOUT = "force"

@@ -9,6 +9,7 @@ import numpy as np
 
 from . import _native, channels
 from ._payload_helpers import binning_coords, transition_entry, visible_sel
+from ._tooltip_columns import encode_tooltip_rows
 from ._trace import Trace
 from .channels import MAX_CATEGORIES
 from .columns import Column
@@ -565,7 +566,7 @@ def emit_trace_materialized(
     if summary.attach_tooltip:
         tooltip_rows = t.tooltip_rows
         if tooltip_rows is not None:
-            entry["tooltip_rows"] = [
+            shipped = [
                 dict(tooltip_rows[i])
                 for i in (
                     range(len(tooltip_rows))
@@ -573,6 +574,11 @@ def emit_trace_materialized(
                     else (int(i) for i in (sel if sel is not None else []))
                 )
             ]
+            columns = encode_tooltip_rows(shipped, pw)
+            if columns is not None:
+                entry["tooltip_columns"] = columns
+            else:
+                entry["tooltip_rows"] = shipped
     elif t.tooltip_rows is not None and not summary.tooltip_length_ok:
         raise ValueError(
             f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"

@@ -25,6 +25,7 @@ import pytest
 
 from xyg import _native
 from xyg._figure import Figure
+from xyg._tooltip_columns import decode_tooltip_rows
 from xyg.config import PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,13 +97,14 @@ def _build_case(name: str) -> Figure:
     return fig
 
 
-def _emit_meta(spec: dict) -> dict:
+def _emit_meta(spec: dict, blob: bytes) -> dict:
     trace = spec["traces"][0]
     return {
         "trace_id": trace["id"],
         "kind": trace["kind"],
         "n_points": trace["n_points"],
-        "tooltip_rows": trace.get("tooltip_rows"),
+        # Either wire form (JSON rows or typed columns) decodes to the same rows.
+        "tooltip_rows": decode_tooltip_rows(spec, blob, trace),
     }
 
 
@@ -154,8 +156,8 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         with pytest.raises(ValueError, match=re.escape(entry["error_match"])):
             fig.build_payload()
         return
-    spec, _blob = fig.build_payload()
-    meta = _emit_meta(spec)
+    spec, blob = fig.build_payload()
+    meta = _emit_meta(spec, blob)
     assert meta["trace_id"] == entry["trace_id"]
     assert meta["kind"] == entry["kind"]
     assert meta["n_points"] == entry["n_points"]
@@ -171,7 +173,7 @@ def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
             fig.build_payload()
         assert node_case.get("error_message") is not None
         return
-    spec, _blob = fig.build_payload()
-    meta = _emit_meta(spec)
+    spec, blob = fig.build_payload()
+    meta = _emit_meta(spec, blob)
     assert meta["tooltip_rows"] == node_case["tooltip_rows"]
     assert meta["n_points"] == node_case["n_points"]

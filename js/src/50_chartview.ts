@@ -4111,7 +4111,7 @@ export class ChartView {
       // Semantic hover rows (graph node/edge props, Sankey bands, …). Set once
       // for every mark so standalone `_localRow` can merge them; ribbons also
       // assign this in `_buildRibbonMark` (same value).
-      tooltipRows: Array.isArray(t.tooltip_rows) ? t.tooltip_rows : null,
+      tooltipRows: this._tooltipRowSource(t, buffer),
     };
 
     if (t.tier === "density") {
@@ -4987,7 +4987,52 @@ export class ChartView {
     const style = t.style || {};
     g.stroke = style.stroke ? parseColor(this.root, style.stroke, g.color) : null;
     g.strokeWidth = Number(style.stroke_width) || 0;
-    g.tooltipRows = Array.isArray(t.tooltip_rows) ? t.tooltip_rows : null;
+    g.tooltipRows = this._tooltipRowSource(t, buffer);
+  }
+
+  /**
+   * Semantic hover rows as `{ length, at(i) }`: JSON `tooltip_rows`, or typed
+   * `tooltip_columns` (graph-mark.md §2) decoded one row per hover — never
+   * materialized wholesale.
+   */
+  _tooltipRowSource(t, buffer) {
+    if (Array.isArray(t.tooltip_rows)) return t.tooltip_rows;
+    const cols = t.tooltip_columns;
+    if (cols == null || !Array.isArray(cols.keys)) return null;
+    const n = Number(cols.n);
+    const keys: string[] = cols.keys;
+    const view = (index) => this._columnView(buffer, this.spec.columns[index]);
+    const data = cols.data.map((index, c) => {
+      const raw = view(index);
+      return cols.kinds[c] === "text"
+        ? raw
+        : new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+    });
+    const present = cols.present.map((index) => (index == null ? null : view(index)));
+    const hex = (b: number) => (b < 16 ? "0" : "") + b.toString(16);
+    return {
+      length: n,
+      at: (i: number) => {
+        if (!(i >= 0 && i < n)) return undefined;
+        const row: Record<string, unknown> = {};
+        keys.forEach((key, c) => {
+          const state = present[c] == null ? 2 : present[c][i];
+          if (state === 0) return;
+          if (state === 1) { row[key] = null; return; }
+          const kind = cols.kinds[c];
+          if (kind === "text") { row[key] = cols.dict[c][data[c][i]]; return; }
+          const dv = data[c];
+          if (kind === "f64") row[key] = dv.getFloat64(i * 8, true);
+          else if (kind === "bool") row[key] = dv.getUint8(i) !== 0;
+          else {
+            let h = "";
+            for (let b = 0; b < 16; b++) h += hex(dv.getUint8(i * 16 + b));
+            row[key] = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+          }
+        });
+        return row;
+      },
+    };
   }
 
   _drawRibbons(g, xm, ym) {

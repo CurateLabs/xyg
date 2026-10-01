@@ -94,7 +94,8 @@ import {
   tileStoreAppend,
   tileStoreStats,
 } from "./pyramid.js";
-import { composeGraph, graphSemanticLegendItems } from "./graph.js";
+import { composeGraph, graphSemanticLegendItems, wireGraphMeta } from "./graph.js";
+import { encodeTooltipRows } from "./tooltip-columns.js";
 import { composeSankey } from "./sankey.js";
 import { composeScatter, normalizeScatterStyle, resolveSizeChannel, resolveStrokeChannel } from "./marks/scatter.js";
 import { composeLine } from "./marks/line.js";
@@ -1136,7 +1137,7 @@ function traceNPoints(t) {
 }
 
 /** Ship optional semantic hover rows, filtered with geometry (Python `_attach_tooltip_rows`). */
-function attachTooltipRows(entry, t, sel) {
+function attachTooltipRows(entry, t, sel, pw = null) {
   const nPoints = traceNPoints(t);
   const plan = payloadTransitionEntryAttach({
     hasTraceAnimation: false,
@@ -1165,7 +1166,11 @@ function attachTooltipRows(entry, t, sel) {
   const rows = t.tooltip_rows;
   const indices = plan.filterTooltipBySel ? sel : null;
   const selected = indices == null ? rows : gatherItems(rows, indices);
-  entry.tooltip_rows = selected.map((row) => ({ ...row }));
+  const shipped = selected.map((row) => ({ ...row }));
+  // Typed columns when the rows allow it (tooltip-columns.js); else JSON rows.
+  const columns = pw != null ? encodeTooltipRows(shipped, pw) : null;
+  if (columns != null) entry.tooltip_columns = columns;
+  else entry.tooltip_rows = shipped;
 }
 
 export class PayloadWriter {
@@ -1380,6 +1385,9 @@ export class Figure {
     // Host-side graph edge identity planes keyed by edge trace index (#33).
     this._graphEdgeIdentity = new Map();
     this._graphNodeIdentity = new Map();
+    // Host-side laid-out positions per graph mark (index = graph order), for
+    // hosts that reuse a layout across recompositions; never serialized.
+    this._graphPositions = [];
     this._axisRange = { x: null, y: null };
     this._polarMeta = null;
     /** @type {Map<number|string, PyramidCache>} */
@@ -2098,6 +2106,7 @@ export class Figure {
     } else {
       this._graphMeta.push(meta);
     }
+    this._graphPositions.push(composed.nodePositions);
     return this;
   }
 
@@ -2444,7 +2453,7 @@ export class Figure {
       { includeTraceStyles: plan.includeTraceStyles },
     );
     if (plan.attachTooltip) {
-      attachTooltipRows(entry, t, sel);
+      attachTooltipRows(entry, t, sel, pw);
     } else if (t.tooltip_rows != null && !plan.tooltipLengthOk) {
       throw new Error(
         `${t.kind} tooltip rows must match geometry (${t.tooltip_rows.length} != ${t.x.length})`,
@@ -3057,7 +3066,7 @@ export class Figure {
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles },
     );
-    attachTooltipRows(entry, t, sourceSel);
+    attachTooltipRows(entry, t, sourceSel, pw);
     if (plan.attachTransition) {
       attachTransitionEntry(entry, t, pw, sourceSel);
     }
@@ -3628,7 +3637,7 @@ export class Figure {
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles, hasColor2Ch: plan.attachColor2 },
     );
-    attachTooltipRows(entry, t, sel);
+    attachTooltipRows(entry, t, sel, pw);
     if (plan.attachTransition) {
       attachTransitionEntry(entry, t, pw, sel);
     }
@@ -3855,7 +3864,7 @@ export class Figure {
       spec.animation = { ...this.animation_options };
     }
     if (buildPlan.attachGraph) {
-      spec.graph = this._graphMeta;
+      spec.graph = this._graphMeta.map(wireGraphMeta);
     }
     if (split) {
       spec.buffer_layout = "split";

@@ -706,6 +706,24 @@ function jsonScalar(value) {
 }
 
 /**
+ * Host-side identity planes kept on `figure._graphMeta` for picks, edge
+ * identity, and selection. The browser never reads them, so the wire spec
+ * omits them (graph-mark.md §7, "Wire graph meta"); Python
+ * `HOST_ONLY_GRAPH_META` is the same list.
+ */
+export const HOST_ONLY_GRAPH_META = Object.freeze([
+  "ids", "sources", "targets", "member_of", "render_edge_index", "source_edge_ids", "edge_ids",
+  "node_provenance_rows", "edge_provenance_rows", "node_tooltip_rows", "edge_tooltip_rows",
+]);
+
+/** The `spec.graph` entry for one graph: host meta minus host-only identity planes. */
+export function wireGraphMeta(meta) {
+  const out = {};
+  for (const [key, value] of Object.entries(meta)) if (!HOST_ONLY_GRAPH_META.includes(key)) out[key] = value;
+  return out;
+}
+
+/**
  * Build node/edge semantic hover rows from a validated projection.
  * @param {object} data
  * @returns {[object[]|null, object[]|null]}

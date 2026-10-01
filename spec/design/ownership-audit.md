@@ -748,6 +748,7 @@ Forbidden:
 | `crates/xyg-core/src/scene_xyta_trace_observations_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-core/src/scene_xytc_trace_observations_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `packages/xy-node/src/payloadTraceMaterialize.js` | Node host | `node-host` | `keep-host`; ABI 321 trace emit materialize marshal | — |
+| `packages/xy-node/src/tooltip-columns.js` | Node host | `node-host` | `keep-host`; typed tooltip-column wire packing (byte-identical to Python) | — |
 | `crates/xyg-engine/src/polar.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 131 polar projection; ABI 133 XYPL polar Scene compile | — |
 | `crates/xyg-engine/src/projection.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/arrow_ipc.rs` | Rust safe engine | `rust-engine` | `keep-rust`; bounded Arrow IPC reader for GraphForge result ingress (ABI 378) | — |
@@ -946,6 +947,8 @@ Forbidden:
 | `python/xyg/_paint.py` | Python host | `python-host` | `keep-host`; shared static-export paint/grid resolution for `_svg`/`_raster` (`trace_paint_rgba`, grid RGBA decode, stroke/CSS metadata helpers, `colormap_lut`, CSS→RGBA8); ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` recorded stay-host joined-fill geometry | — |
 | `python/xyg/_payload.py` | Python host | `python-host` | `keep-host`; marshal-only `build_payload` delegating to ABI 303 + ABI 321 via `_payload_trace_materialize.py` | — |
 | `python/xyg/_payload_helpers.py` | Python host | `python-payload-migration` | `keep-host`; transition/tooltip attach, visible-mask predicates, binning coords, channel ship delegates | — |
+| `python/xyg/_tooltip_columns.py` | Python host | `python-host` | `keep-host`; typed tooltip-column wire packing (byte-identical to Node) | — |
+| `python/xyg/_graph_wire.py` | Python host | `python-host` | `keep-host`; wire form of graph meta (host-only identity planes omitted) | — |
 | `python/xyg/_payload_ship.py` | Python host | `python-payload-migration` | `keep-host`; column registry gather + ship via `payload_column_gather_materialize` (ABI 310/314) | — |
 | `python/xyg/_payload_spec_attach.py` | Python host | `python-payload-migration` | `keep-host`; apply `payload_build_plan` optional top-level spec attach fields (ABI 303) | — |
 | `python/xyg/_payload_trace_materialize.py` | Python host | `python-host` | `keep-host`; ABI 321 trace emit materialize marshal | — |

@@ -459,9 +459,9 @@ The reassembled bytes are identical to the source blob, which is what keeps
 
 Two independent version constants:
 
-- **Renderer/spec protocol.** `PROTOCOL_VERSION = 12` (`python/xyg/config.py`)
+- **Renderer/spec protocol.** `PROTOCOL_VERSION = 13` (`python/xyg/config.py`)
   rides every first-paint spec as `spec["protocol"]`; the client's
-  `PROTOCOL = 12` (`js/src/00_header.ts`) is checked in the `ChartView`
+  `PROTOCOL = 13` (`js/src/00_header.ts`) is checked in the `ChartView`
   constructor. A mismatch replaces the chart element with "update the xy
   package and restart the kernel" and throws. Requests and replies carry no
   version of their own — the handshake happens once, at first paint, before
@@ -508,7 +508,13 @@ Two independent version constants:
   v11 client would silently draw a full circular, centre-origin view and route
   those grid/segment traces through their Cartesian paths. The v12 handshake
   rejects that stale bundle before any of those compatible-looking wrong
-  pictures can appear.
+  pictures can appear. v13 ships semantic hover rows as typed
+  `tooltip_columns` (UUID, f64, bool, and dictionary-text planes in ordinary
+  payload columns; graph-mark.md §2) instead of per-element JSON
+  `tooltip_rows`, which remain only for rows that are not one scalar kind per
+  key. It also stops serializing host-only graph identity planes into
+  `spec.graph`. A cached v12 client would accept the payload and silently
+  show no node, edge, or band rows on hover, so v13 rejects it.
 - **Transport frame.** `FRAME_MAGIC` `"XYBF"` with `FRAME_VERSION = 1`
   versions the binary envelope separately, so the transport and the renderer
   can evolve without coupling.

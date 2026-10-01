@@ -31,6 +31,7 @@ import {
   graphforgePick,
   graphforgeWebviewPayload,
 } from "../packages/xy-node/src/graphforge.js";
+import { decodeTooltipRows } from "../packages/xy-node/src/tooltip-columns.js";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."));
 const results = join(root, "tests/fixtures/graphforge/results");
@@ -201,7 +202,7 @@ try {
   if (relayed.trace !== nativeHit.trace || relayed.index !== nativeHit.index) fail("the relayed click is not the located node");
   const identity = graphforgePick(payload.figure, composition, relayed);
   // Independent oracle: the tooltip row painted for that element names its UUID.
-  const shown = payload.spec.traces[nativeHit.trace].tooltip_rows[nativeHit.index].id;
+  const shown = decodeTooltipRows(payload.spec, payload.buffer, payload.spec.traces[nativeHit.trace])[nativeHit.index].id;
   if (identity?.kind !== "node" || identity.uuid !== shown) fail("native pick did not map to the clicked node's UUID");
   if (!identity.layers.some((l) => l.resultId === "result-rank") || !identity.layers.some((l) => l.resultId === "result-community")) {
     fail("native pick lost per-layer result rows");

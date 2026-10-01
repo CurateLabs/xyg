@@ -3,6 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 import { PROTOCOL_VERSION, abiVersion, figure } from "../src/index.js";
+import { decodeTooltipRows } from "../src/tooltip-columns.js";
 
 const fixture = JSON.parse(
   fs.readFileSync(
@@ -62,11 +63,12 @@ for (const entry of fixture.cases) {
       );
       return;
     }
-    const { spec } = fig.buildPayload();
+    const { spec, buffers } = fig.buildPayload();
     const trace = spec.traces[0];
     assert.equal(trace.id, entry.trace_id);
     assert.equal(trace.kind, entry.kind);
     assert.equal(trace.n_points, entry.n_points);
-    assert.deepEqual(trace.tooltip_rows, entry.tooltip_rows);
+    // Either wire form (JSON rows or typed columns) decodes to the same rows.
+    assert.deepEqual(decodeTooltipRows(spec, buffers, trace), entry.tooltip_rows);
   });
 }

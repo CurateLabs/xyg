@@ -53,7 +53,7 @@ test("toHtml inlines the host-neutral standalone client", () => {
   );
   assert.ok(fs.existsSync(clientPath), "run `node js/build.mjs` so packages/xy-client/dist exists");
 
-  const spec = { protocol: 12, title: "fixture", traces: [], columns: [] };
+  const spec = { protocol: 13, title: "fixture", traces: [], columns: [] };
   const doc = toHtml({ spec, buffers: Buffer.from([1, 2, 3]) });
   const client = fs.readFileSync(clientPath, "utf8");
   assert.ok(doc.startsWith("<!doctype html>"));
@@ -65,7 +65,7 @@ test("toHtml inlines the host-neutral standalone client", () => {
 });
 
 test("toHtml writes a destination path when given", () => {
-  const spec = { protocol: 12, title: "saved", traces: [], columns: [] };
+  const spec = { protocol: 13, title: "saved", traces: [], columns: [] };
   const dest = path.join(os.tmpdir(), `xy-tohtml-${process.pid}.html`);
   try {
     const doc = toHtml({ spec, buffers: Buffer.alloc(0), title: "saved" }, dest);
@@ -77,7 +77,7 @@ test("toHtml writes a destination path when given", () => {
 });
 
 test("toHtml rejects customCss that could break out of <style>", () => {
-  const spec = { protocol: 12, traces: [], columns: [] };
+  const spec = { protocol: 13, traces: [], columns: [] };
   assert.throws(
     () => toHtml({ spec, buffers: Buffer.alloc(0) }, null, { customCss: "</style>" }),
     /customCss/,

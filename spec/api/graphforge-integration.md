@@ -63,8 +63,10 @@ composition.kind;              // "graph" | "table" | "bar-chart" | "parallel-co
 composition.identify("node", i);   // { uuid, layers: [{ layer, resultId, row }] }
 composition.select(uuids);         // { nodes: [i], edges: [j] }
 composition.diagnostics();         // value-free: schema ids, counts, decision codes
-const { spec, buffer, figure } = graphforgeWebviewPayload(composition, { width, height, theme });
+const { spec, buffer, figure, positions } = graphforgeWebviewPayload(composition, { width, height, theme });
 graphforgePick(figure, composition, { trace, index });     // relayed webview click → identity
+// Recomposing the same base (new layers, selection, theme): reuse the layout.
+graphforgeWebviewPayload(next, { width, height, theme, positions });
 graphforgeTableHtml(tableComposition);                     // escaped <table> for table intents
 ```
 

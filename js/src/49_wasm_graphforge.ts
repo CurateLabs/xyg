@@ -73,10 +73,12 @@ export function uuidToBytes(text: string, label = "uuid"): Uint8Array {
   return out;
 }
 
+const HEX = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
+
 export function uuidFromBytes(bytes: Uint8Array, offset = 0): string {
-  let hex = "";
-  for (let i = 0; i < 16; i++) hex += bytes[offset + i]!.toString(16).padStart(2, "0");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  const h = (i: number) => HEX[bytes[offset + i]!]!;
+  return h(0) + h(1) + h(2) + h(3) + "-" + h(4) + h(5) + "-" + h(6) + h(7) + "-" + h(8) + h(9) + "-"
+    + h(10) + h(11) + h(12) + h(13) + h(14) + h(15);
 }
 
 /** Named-section container encoder (twin of the Node and Rust codecs). */
@@ -146,11 +148,15 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
     if (dtype === DT.texts) {
       const head = (n + 1) * 8; if (length < head) fail("texts");
       const offs = unpackLE(payload.subarray(0, head), 8, (b) => new BigUint64Array(b), (m) => new BigUint64Array(m), (v, at) => v.getBigUint64(at, true)), text = payload.subarray(head);
-      value = [];
+      value = new Array(n);
+      // ASCII text decodes once; byte offsets are then character offsets.
+      let ascii = true;
+      for (let k = 0; k < text.length; k++) if (text[k]! > 0x7f) { ascii = false; break; }
+      const whole = ascii ? decoder.decode(text) : null;
       for (let k = 0; k < n; k++) {
         const start = Number(offs[k]), end = Number(offs[k + 1]);
         if (end < start || end > text.length) fail("text offsets");
-        value.push(decoder.decode(text.subarray(start, end)));
+        value[k] = whole !== null ? whole.slice(start, end) : decoder.decode(text.subarray(start, end));
       }
     } else {
       const width = WIDTH[dtype]; if (width === undefined || n * width !== length) fail("section size");
@@ -213,12 +219,31 @@ export class XygGraphForgeComposition {
   readonly bytes: Uint8Array;
   readonly sections: Map<string, Section>;
   readonly kind: string;
-  readonly nodeUuid: string[];
-  readonly edgeUuid: Array<string | null>;
+  private _nodeUuid: string[] | null = null;
+  private _edgeUuid: Array<string | null> | null = null;
   readonly layers: Array<{ schema: string; algorithm: string; intent: string; resultId: string | null; nodeRows: BigUint64Array | null; edgeRows: BigUint64Array | null }>;
   readonly decisions: Array<{ code: string; layer: number | null; count: number }>;
   /** Canonical semantic Scene bytes when the request carried `render`. */
   readonly scene: Uint8Array | null;
+
+  /** Node UUID text by composed index (built on first use). */
+  get nodeUuid(): string[] {
+    if (this._nodeUuid === null) {
+      const nodes: Uint8Array | undefined = this.get("node.uuid");
+      this._nodeUuid = nodes ? Array.from({ length: nodes.length / 16 }, (_, i) => uuidFromBytes(nodes, i * 16)) : [];
+    }
+    return this._nodeUuid;
+  }
+
+  /** Relationship UUID text by composed index; null for derived edges (built on first use). */
+  get edgeUuid(): Array<string | null> {
+    if (this._edgeUuid === null) {
+      const edges: Uint8Array | undefined = this.get("edge.uuid");
+      const derived: Uint8Array | undefined = this.get("edge.derived");
+      this._edgeUuid = edges ? Array.from({ length: edges.length / 16 }, (_, i) => (derived?.[i] ? null : uuidFromBytes(edges, i * 16))) : [];
+    }
+    return this._edgeUuid;
+  }
 
   constructor(bytes: Uint8Array, sections: Map<string, Section>) {
     this.bytes = bytes; this.sections = sections;
@@ -232,11 +257,6 @@ export class XygGraphForgeComposition {
         throw new XygWasmError("GF_COMPOSE_DOCUMENT_INVALID", "table sections disagree on shape");
       }
     }
-    const nodes: Uint8Array | undefined = this.get("node.uuid");
-    const edges: Uint8Array | undefined = this.get("edge.uuid");
-    const derived: Uint8Array | undefined = this.get("edge.derived");
-    this.nodeUuid = nodes ? Array.from({ length: nodes.length / 16 }, (_, i) => uuidFromBytes(nodes, i * 16)) : [];
-    this.edgeUuid = edges ? Array.from({ length: edges.length / 16 }, (_, i) => (derived?.[i] ? null : uuidFromBytes(edges, i * 16))) : [];
     this.layers = [];
     for (let i = 0; sections.has(`layer.schema#${i}`); i++) {
       this.layers.push({

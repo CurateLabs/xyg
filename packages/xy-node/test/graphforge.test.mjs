@@ -430,3 +430,30 @@ test("webview payloads relay picks back to GraphForge identity", () => {
   assert.ok(derived > 0);
   assert.equal(graphforgePick(payload.figure, c, { trace: 99, index: 0 }), null);
 });
+
+test("recompositions reuse a layout by node UUID instead of laying out again", () => {
+  const first = graphforgeWebviewPayload(compose("pagerank"), { width: 480, height: 360 });
+  assert.equal(first.positions.uuid.length, first.figure.traces[first.nodeTrace].x.length);
+  // Another layer over the same base: every node has a position → preset layout.
+  const next = compose("pagerank", "louvain");
+  const reused = graphforgeWebviewPayload(next, { width: 480, height: 360, positions: first.positions });
+  const at = new Map(first.positions.uuid.map((id, i) => [id, i]));
+  next.nodes.uuid.forEach((id, i) => {
+    assert.equal(reused.positions.x[i], first.positions.x[at.get(id)]);
+    assert.equal(reused.positions.y[i], first.positions.y[at.get(id)]);
+  });
+  assert.equal(reused.figure._graphMeta[0].layout, "preset");
+  // A node without a position: laid out afresh, never partially preset.
+  const partial = { uuid: first.positions.uuid.slice(1), x: first.positions.x.subarray(1), y: first.positions.y.subarray(1) };
+  assert.equal(graphforgeChart(next, { positions: partial })._graphMeta[0].layout, "force");
+  assert.throws(() => graphforgeChart(next, { positions: { uuid: ["x"], x: [] } }), TypeError);
+});
+
+test("composition identities decode lazily and agree with the planes", () => {
+  const c = compose("pagerank", "node_similarity");
+  assert.equal(Object.getOwnPropertyDescriptor(c.nodes, "uuid").get != null, true);
+  assert.equal(c.nodes.uuid.length, c.nodes.count);
+  assert.equal(Object.getOwnPropertyDescriptor(c.nodes, "uuid").get, undefined, "cached after first read");
+  c.edges.uuid.forEach((id, j) => assert.equal(id === null, c.edges.derived[j] === 1));
+  assert.equal(c.nodeIndex(c.nodes.uuid[2]), 2);
+});

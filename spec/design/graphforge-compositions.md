@@ -430,7 +430,19 @@ are text, never markup). Static export of a bar chart fails closed with
 both hosts today; the interactive chart and the table carry the names.
 
 `graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
-nodeTrace, edgeTrace, figure}` for a browser host (click events on);
+nodeTrace, edgeTrace, figure, positions}` for a browser host (click events on).
+Hover rows travel as typed tooltip columns (protocol v13, graph-mark.md §2),
+not per-element JSON. `positions` (also `graphforgePositions(figure,
+composition)`) are the laid-out node positions keyed by node UUID.
+`graphforgeChart(next, { positions })` and `graphforgeWebviewPayload(next, {
+positions })` reuse them with a preset layout, skipping the force ticks, when
+every composed node has one (a recomposition of the same base with other
+layers, selection, or theme); otherwise the graph is laid out afresh. At 10k
+nodes reuse takes the payload from 1.9 s to 0.27 s with identical positions.
+`decodeGraphForgeDocument` builds UUID text and lookup maps on first use, so
+decoding stays proportional to the typed planes (about 75 ms at 100k nodes).
+
+`graphforgePick(figure, composition, {trace, index})` maps a relayed pick to
 `graphforgePick(figure, composition, {trace, index})` maps a relayed pick to
 `composition.identify(...)` — node rows exactly below Aggregate LOD, edge
 segments through Rust's render-edge membership (an aggregate edge reports its
