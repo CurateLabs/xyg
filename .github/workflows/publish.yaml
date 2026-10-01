@@ -264,6 +264,10 @@ jobs:
           mkdir packed
           npm pack ./staged/xyg-browser --pack-destination packed
           npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
+      - name: Install Chromium
+        # The strict-CSP proof drives a real browser; the runner image does not
+        # carry Playwright's build (ci.yml installs it the same way).
+        run: npx playwright install chromium
       - name: Prove clean published browser assets under strict CSP
         shell: bash
         run: |
@@ -406,7 +410,7 @@ jobs:
         run: |
           mkdir packed
           npm pack "./staged/xyg-node-${{ matrix.platform }}" --pack-destination packed
-          npm publish ./packed/*.tgz --dry-run --provenance=false
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-platform-${{ matrix.platform }}
@@ -447,7 +451,7 @@ jobs:
           grep -F 'client", "standalone.js' staged/xyg-node/src/html.js
           mkdir packed
           npm pack ./staged/xyg-node --pack-destination packed
-          npm publish ./packed/*.tgz --dry-run --provenance=false
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-facade
@@ -629,7 +633,7 @@ jobs:
         run: |
           test "$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')" = 6
           for artifact in $(find ./node-dist -name '*.tgz' -type f | sort); do
-            npm publish "$artifact" --dry-run --provenance=false
+            npm publish "$artifact" --dry-run --tag next --provenance=false
           done
       - name: Publish platform packages before the facade (OIDC)
         if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && vars.XYG_ALLOW_NPM_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')

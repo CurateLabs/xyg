@@ -196,6 +196,12 @@ def _confirm_registry_bytes(artifact: Artifact) -> None:
     )
 
 
+def _dist_tag(version: str) -> list[str]:
+    """npm refuses to publish a prerelease without an explicit dist-tag, and a
+    prerelease must never become ``latest``."""
+    return ["--tag", "next"] if "-" in version else []
+
+
 def publish_release(artifacts: list[Artifact]) -> None:
     for artifact in artifacts:
         spec = f"{artifact.name}@{artifact.version}"
@@ -205,7 +211,15 @@ def publish_release(artifacts: list[Artifact]) -> None:
             print(f"already published with identical SHA-512 bytes: {spec}")
             continue
         subprocess.run(
-            ["npm", "publish", str(artifact.path.resolve()), "--access", "public", "--provenance"],
+            [
+                "npm",
+                "publish",
+                str(artifact.path.resolve()),
+                "--access",
+                "public",
+                "--provenance",
+                *_dist_tag(artifact.version),
+            ],
             check=True,
             timeout=NPM_TIMEOUT_S,
         )

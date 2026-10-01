@@ -482,7 +482,9 @@ CHANGELOG, and package-name guards) succeeds before npm can publish.
 Publication
 uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
 OIDC `id-token: write`) and publishes platform packages before the facade, so
-the public facade never points at absent versioned optionals. Publication is
+the public facade never points at absent versioned optionals. Prerelease
+versions (`-rc.N`, dry runs) publish under the `next` dist-tag, which npm
+requires and which keeps them off `latest`. Publication is
 retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
 after both its registry SHA-1 and SHA-512 Subresource Integrity value match the
 local tarball, rejects a mismatch in either digest, and resumes the native-first

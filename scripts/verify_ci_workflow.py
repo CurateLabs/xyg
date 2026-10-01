@@ -2766,7 +2766,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         '--platform "${{ matrix.platform }}"',
         "--wheel wheel/*.whl",
         "npm pack",
-        "npm publish ./packed/*.tgz --dry-run --provenance=false",
+        "npm publish ./packed/*.tgz --dry-run --tag next --provenance=false",
         "node-platform-${{ matrix.platform }}",
     )
     _require_job_contains(
