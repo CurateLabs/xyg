@@ -4,18 +4,22 @@ Hosts keep ``trace.tooltip_rows`` as row dicts. On the wire, a trace's rows ship
 as typed planes instead of one JSON object per element: each key becomes one
 column of a single kind, all as ``u8``/``u32`` payload columns:
 
-- ``uuid``: canonical lowercase UUID text, 16 bytes per row;
+- ``uuid``: canonical lowercase UUID text, 16 bytes per row; a column holding
+  any UUID uses this kind, and its other strings (for example synthetic ids of
+  derived edges) are dictionary text stored in the slot's first four bytes;
 - ``f64``: numbers, 8 little-endian bytes per row (u8 column: packed blobs are
   only 4-byte aligned);
 - ``bool``: one byte per row;
 - ``text``: ``u32`` index into the entry's string dictionary.
 
-An optional ``u8`` presence plane per key distinguishes an absent key (0), a
-null value (1), and a value (2); it is omitted when every row has a value.
-Non-finite numbers ship as null, as JSON would. Rows whose keys do not follow
-one shared order, or whose values are not scalars of one kind per key, keep the
-JSON ``tooltip_rows`` form. Node ``tooltip-columns.js`` is the same encoding;
-the browser materializes one row per hover.
+All text columns share one dictionary per entry (``dict``), so a name repeated
+across keys ships once. An optional ``u8`` presence plane per key records an
+absent key (0), a null value (1), a value (2), or, in a ``uuid`` column, a
+dictionary string (3); it is omitted when every row has a value. Non-finite
+numbers ship as null, as JSON would. Rows whose keys do not follow one shared
+order, or whose values are not scalars of one kind per key, keep the JSON
+``tooltip_rows`` form. Node ``tooltip-columns.js`` is the same encoding byte for
+byte; the browser materializes one row per hover.
 """
 
 from __future__ import annotations
@@ -30,7 +34,7 @@ import numpy as np
 __all__ = ["decode_tooltip_rows", "encode_tooltip_rows"]
 
 _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-_ABSENT, _NULL, _VALUE = 0, 1, 2
+_ABSENT, _NULL, _VALUE, _TEXT = 0, 1, 2, 3
 
 
 def _kind(value: Any) -> str | None:
@@ -39,6 +43,10 @@ def _kind(value: Any) -> str | None:
     if isinstance(value, (bool, np.bool_)):
         return "bool"
     if isinstance(value, (int, float, np.integer, np.floating)):
+        try:
+            float(value)
+        except OverflowError:
+            return None  # an integer beyond f64: keep JSON rows
         return "f64"
     if isinstance(value, str):
         return "text"
@@ -46,7 +54,10 @@ def _kind(value: Any) -> str | None:
 
 
 def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, Any] | None:
-    """Ship ``rows`` as typed columns through ``pw``; ``None`` keeps JSON rows."""
+    """Ship ``rows`` as typed columns through ``pw`` (rows are only read).
+
+    Returns the ``tooltip_columns`` entry, or ``None`` to keep JSON rows.
+    """
     n = len(rows)
     if n == 0:
         return None
@@ -69,34 +80,37 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
     kinds: list[str] = []
     for key in keys:
         kind = "null"
+        any_uuid = False
         for row in rows:
             if key not in row:
                 continue
-            k = _kind(row[key])
+            value = row[key]
+            k = _kind(value)
             if k is None:
                 return None
-            if k == "f64" and not isinstance(row[key], (float, np.floating)):
-                try:
-                    float(row[key])
-                except OverflowError:
-                    return None  # an integer beyond f64: keep JSON rows
             if k == "null":
                 continue
             if kind not in ("null", k):
                 return None
             kind = k
-        if kind == "text" and all(
-            not isinstance(row.get(key), str) or _UUID.match(row[key]) for row in rows
-        ):
-            kind = "uuid"
-        kinds.append("bool" if kind == "null" else kind)
+            if k == "text" and not any_uuid and _UUID.match(value):
+                any_uuid = True
+        kinds.append("bool" if kind == "null" else "uuid" if any_uuid else kind)
 
     data: list[int] = []
     present: list[int | None] = []
-    dictionaries: list[list[str] | None] = []
+    dictionary: list[str] = []
+    lookup: dict[str, int] = {}
+
+    def intern(text: str) -> int:
+        index = lookup.get(text)
+        if index is None:
+            index = lookup[text] = len(dictionary)
+            dictionary.append(text)
+        return index
+
     for key, kind in zip(keys, kinds, strict=True):
         presence = np.full(n, _VALUE, dtype=np.uint8)
-        dictionary: list[str] | None = None
         if kind == "uuid":
             plane = np.zeros(n * 16, dtype=np.uint8)
         elif kind == "f64":
@@ -105,8 +119,6 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             plane = np.zeros(n, dtype=np.uint8)
         else:
             indices = np.zeros(n, dtype="<u4")
-            dictionary = []
-            lookup: dict[str, int] = {}
         for i, row in enumerate(rows):
             if key not in row:
                 presence[i] = _ABSENT
@@ -114,21 +126,22 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             value = row[key]
             if value is None or (kind == "f64" and not math.isfinite(float(value))):
                 presence[i] = _NULL
-                continue
-            if kind == "uuid":
-                plane[i * 16 : i * 16 + 16] = np.frombuffer(
-                    bytes.fromhex(value.replace("-", "")), dtype=np.uint8
-                )
+            elif kind == "uuid":
+                if _UUID.match(value):
+                    plane[i * 16 : i * 16 + 16] = np.frombuffer(
+                        bytes.fromhex(value.replace("-", "")), dtype=np.uint8
+                    )
+                else:
+                    presence[i] = _TEXT
+                    plane[i * 16 : i * 16 + 4] = np.frombuffer(
+                        intern(value).to_bytes(4, "little"), dtype=np.uint8
+                    )
             elif kind == "f64":
                 numbers[i] = float(value)
             elif kind == "bool":
                 plane[i] = 1 if value else 0
             else:
-                index = lookup.get(value)
-                if index is None:
-                    index = lookup[value] = len(dictionary)
-                    dictionary.append(value)
-                indices[i] = index
+                indices[i] = intern(value)
         present.append(None if bool(np.all(presence == _VALUE)) else pw.ship_u8(presence))
         if kind == "f64":
             data.append(pw.ship_u8(numbers.view(np.uint8)))
@@ -136,14 +149,13 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             data.append(pw.ship_u32(indices))
         else:
             data.append(pw.ship_u8(plane))
-        dictionaries.append(dictionary)
     return {
         "n": n,
         "keys": keys,
         "kinds": kinds,
         "data": data,
         "present": present,
-        "dict": dictionaries,
+        "dict": dictionary,
     }
 
 
@@ -166,9 +178,10 @@ def decode_tooltip_rows(
     if cols is None:
         return None
     n = int(cols["n"])
+    dictionary = cols["dict"]
     rows: list[dict[str, Any]] = [{} for _ in range(n)]
-    for key, kind, data, present, dictionary in zip(
-        cols["keys"], cols["kinds"], cols["data"], cols["present"], cols["dict"], strict=True
+    for key, kind, data, present in zip(
+        cols["keys"], cols["kinds"], cols["data"], cols["present"], strict=True
     ):
         raw = _column_bytes(spec, payload, data)
         flags = _column_bytes(spec, payload, present) if present is not None else None
@@ -178,6 +191,8 @@ def decode_tooltip_rows(
                 continue
             if state == _NULL:
                 rows[i][key] = None
+            elif state == _TEXT:
+                rows[i][key] = dictionary[int.from_bytes(raw[i * 16 : i * 16 + 4], "little")]
             elif kind == "uuid":
                 h = bytes(raw[i * 16 : i * 16 + 16]).hex()
                 rows[i][key] = f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:]}"

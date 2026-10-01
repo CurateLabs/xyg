@@ -19,6 +19,24 @@ Object.assign(ChartView.prototype, {
     }
   },
 
+  /**
+   * An integer plane of graph meta: hosts ship them as typed payload columns
+   * (`{column: index}`, graph-mark.md §7); older or hand-built specs as arrays.
+   */
+  _graphMetaArray(meta, key) {
+    const value = meta && meta[key];
+    if (Array.isArray(value) || ArrayBuffer.isView(value)) return value;
+    if (!value || !Number.isInteger(value.column) || !this.spec?.columns?.[value.column]) return null;
+    this._graphMetaColumns ??= new WeakMap();
+    let resolved = this._graphMetaColumns.get(meta);
+    if (!resolved) { resolved = {}; this._graphMetaColumns.set(meta, resolved); }
+    if (!(key in resolved)) {
+      try { resolved[key] = this._columnView(this._payload, this.spec.columns[value.column]); }
+      catch (_error) { resolved[key] = null; }
+    }
+    return resolved[key];
+  },
+
   _graphMetaForNodeTrace(traceId) {
     const graphs = this._graphs || [];
     for (const meta of graphs) {
@@ -43,11 +61,10 @@ Object.assign(ChartView.prototype, {
     }
     const meta = this._graphMetaForNodeTrace(hit.trace);
     if (!meta) return this._clearGraphNeighborhoodHighlight();
-    const offsets = meta.csr_offsets;
-    const neighbors = meta.csr_neighbors;
+    const offsets = this._graphMetaArray(meta, "csr_offsets");
+    const neighbors = this._graphMetaArray(meta, "csr_neighbors");
     const node = hit.index | 0;
-    if (!Array.isArray(offsets) || !Array.isArray(neighbors)
-        || node < 0 || node + 1 >= offsets.length) {
+    if (!offsets || !neighbors || node < 0 || node + 1 >= offsets.length) {
       return this._clearGraphNeighborhoodHighlight();
     }
     const key = `${hit.trace}:${node}`;
@@ -137,9 +154,15 @@ ChartView.prototype._a11ySummaryText = function () {
   const graphs = this._graphs || [];
   if (!graphs.length) return base;
   const nodes = graphs.reduce((sum, meta) => sum + (meta.node_labels?.length || 0), 0);
-  const labels = graphs.reduce((sum, meta) => sum + (meta.label_accepted || []).filter(Boolean).length, 0);
-  const compounds = graphs.reduce((sum, meta) => sum + (meta.compound_nodes || []).filter(Boolean).length, 0);
-  const selected = graphs.reduce((sum, meta) => sum + (meta.visual_states || []).filter((state) => state === 5).length, 0);
-  const disabled = graphs.reduce((sum, meta) => sum + (meta.visual_states || []).filter((state) => state === 7).length, 0);
+  const count = (key, keep) => graphs.reduce((sum, meta) => {
+    const values = this._graphMetaArray(meta, key) || [];
+    let n = 0;
+    for (let i = 0; i < values.length; i++) if (keep(Number(values[i]))) n++;
+    return sum + n;
+  }, 0);
+  const labels = count("label_accepted", (v) => v !== 0);
+  const compounds = count("compound_nodes", (v) => v !== 0);
+  const selected = count("visual_states", (state) => state === 5);
+  const disabled = count("visual_states", (state) => state === 7);
   return `${base} Graph: ${nodes} nodes, ${labels} visible labels, ${compounds} compound groups, ${selected} selected, ${disabled} disabled.`;
 };

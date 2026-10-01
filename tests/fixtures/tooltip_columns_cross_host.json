@@ -55,16 +55,9 @@
           5
         ],
         "dict": [
-          null,
-          null,
-          [
-            "ann"
-          ],
-          [
-            "Person",
-            "Place"
-          ],
-          null
+          "ann",
+          "Person",
+          "Place"
         ]
       },
       "shipped": [
@@ -86,7 +79,7 @@
         },
         {
           "dtype": "u32",
-          "hex": "000000000000000001000000"
+          "hex": "010000000100000002000000"
         },
         {
           "dtype": "u8",
@@ -114,10 +107,16 @@
           "target": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
           "edge_id": null,
           "provenance_row": 9
+        },
+        {
+          "source": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "target": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "edge_id": "derived:1:4:0",
+          "provenance_row": 9
         }
       ],
       "tooltip_columns": {
-        "n": 3,
+        "n": 4,
         "keys": [
           "source",
           "target",
@@ -147,53 +146,49 @@
           8
         ],
         "dict": [
-          null,
-          null,
-          null,
-          null,
-          null
+          "derived:1:4:0"
         ]
       },
       "shipped": [
         {
           "dtype": "u8",
-          "hex": "020002"
+          "hex": "02000202"
         },
         {
           "dtype": "u8",
-          "hex": "01a0f3fd23dd76d387e7d765a3665ef50000000000000000000000000000000001a0f3fd23e276c3b1d4c2aadc972cc9"
+          "hex": "01a0f3fd23dd76d387e7d765a3665ef50000000000000000000000000000000001a0f3fd23e276c3b1d4c2aadc972cc901a0f3fd23dd76d387e7d765a3665ef5"
         },
         {
           "dtype": "u8",
-          "hex": "020002"
+          "hex": "02000202"
         },
         {
           "dtype": "u8",
-          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc90000000000000000000000000000000001a0f3fd23dd76d387e7d765a3665ef5"
+          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc90000000000000000000000000000000001a0f3fd23dd76d387e7d765a3665ef501a0f3fd23dd76d387e7d765a3665ef5"
         },
         {
           "dtype": "u8",
-          "hex": "020001"
+          "hex": "02000103"
         },
         {
           "dtype": "u8",
-          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc90000000000000000000000000000000000000000000000000000000000000000"
+          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
         },
         {
           "dtype": "u8",
-          "hex": "020002"
+          "hex": "02000202"
         },
         {
           "dtype": "u8",
-          "hex": "0000000000001c4000000000000000000000000000002240"
+          "hex": "0000000000001c40000000000000000000000000000022400000000000002240"
         },
         {
           "dtype": "u8",
-          "hex": "000200"
+          "hex": "00020000"
         },
         {
           "dtype": "u8",
-          "hex": "000000000000000000000000000028400000000000000000"
+          "hex": "0000000000000000000000000000284000000000000000000000000000000000"
         }
       ]
     },
@@ -238,13 +233,9 @@
           null
         ],
         "dict": [
-          null,
-          null,
-          [
-            "na\u00efve \u2603",
-            "",
-            "x"
-          ]
+          "na\u00efve \u2603",
+          "",
+          "x"
         ]
       },
       "shipped": [
@@ -293,9 +284,7 @@
         "present": [
           0
         ],
-        "dict": [
-          null
-        ]
+        "dict": []
       },
       "shipped": [
         {
@@ -305,6 +294,51 @@
         {
           "dtype": "u8",
           "hex": "0000"
+        }
+      ]
+    },
+    "shared_dictionary": {
+      "rows": [
+        {
+          "name": "ann",
+          "pagerank.name": "ann"
+        },
+        {
+          "name": "bo",
+          "pagerank.name": "bo"
+        }
+      ],
+      "tooltip_columns": {
+        "n": 2,
+        "keys": [
+          "name",
+          "pagerank.name"
+        ],
+        "kinds": [
+          "text",
+          "text"
+        ],
+        "data": [
+          0,
+          1
+        ],
+        "present": [
+          null,
+          null
+        ],
+        "dict": [
+          "ann",
+          "bo"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
+        },
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
         }
       ]
     },
@@ -351,5 +385,96 @@
       "tooltip_columns": null,
       "shipped": []
     }
+  },
+  "graph_meta": {
+    "meta": {
+      "layout": "force",
+      "ids": [
+        "a",
+        "b",
+        "c"
+      ],
+      "csr_offsets": [
+        0,
+        2,
+        3,
+        4
+      ],
+      "csr_neighbors": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "node_labels": [
+        "a",
+        null,
+        "c"
+      ],
+      "label_accepted": [
+        true,
+        false,
+        true
+      ],
+      "visual_states": [
+        0,
+        5,
+        7
+      ],
+      "source_edge_ids": [
+        "e0",
+        "e1"
+      ],
+      "compound_nodes": [
+        false,
+        false,
+        true
+      ]
+    },
+    "wire": {
+      "layout": "force",
+      "csr_offsets": {
+        "column": 0
+      },
+      "csr_neighbors": {
+        "column": 1
+      },
+      "node_labels": [
+        "a",
+        null,
+        "c"
+      ],
+      "label_accepted": {
+        "column": 2
+      },
+      "visual_states": {
+        "column": 3
+      },
+      "compound_nodes": {
+        "column": 4
+      }
+    },
+    "shipped": [
+      {
+        "dtype": "u32",
+        "hex": "00000000020000000300000004000000"
+      },
+      {
+        "dtype": "u32",
+        "hex": "01000000020000000000000000000000"
+      },
+      {
+        "dtype": "u8",
+        "hex": "010001"
+      },
+      {
+        "dtype": "u8",
+        "hex": "000507"
+      },
+      {
+        "dtype": "u8",
+        "hex": "000001"
+      }
+    ]
   }
 }

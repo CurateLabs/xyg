@@ -93,5 +93,5 @@ def attach_build_plan_fields(
         spec["animation"] = dict(figure.animation_options)
     if build_plan["attach_graph"]:
         spec["graph"] = [
-            wire_graph_meta(meta) for meta in getattr(figure, "_graph_meta", None) or []
+            wire_graph_meta(meta, pw) for meta in getattr(figure, "_graph_meta", None) or []
         ]

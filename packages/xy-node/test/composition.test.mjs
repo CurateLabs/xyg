@@ -76,7 +76,13 @@ test("composeGraph + figure.buildPayload protocol subset", () => {
   const styleColumns = new Set(
     spec.traces.flatMap((t) => Object.values(t.channels ?? {}).map((c) => c.buf)),
   );
-  assert.ok(spec.columns.every((c, i) => styleColumns.has(i) || typeof c.offset === "number"));
+  // Graph meta integer planes (CSR, a11y counts) ride as typed u8/u32 columns.
+  const metaColumns = new Set(
+    spec.graph.flatMap((m) => Object.values(m).filter((v) => Number.isInteger(v?.column)).map((v) => v.column)),
+  );
+  assert.ok(metaColumns.size > 0);
+  assert.ok(spec.columns.every((c, i) => styleColumns.has(i) || metaColumns.has(i) || typeof c.offset === "number"));
+  assert.ok([...metaColumns].every((i) => ["u8", "u32"].includes(spec.columns[i].dtype)));
 });
 
 test("composeGraph helper returns traces ready for figure", () => {

@@ -566,19 +566,18 @@ def emit_trace_materialized(
     if summary.attach_tooltip:
         tooltip_rows = t.tooltip_rows
         if tooltip_rows is not None:
-            shipped = [
-                dict(tooltip_rows[i])
-                for i in (
-                    range(len(tooltip_rows))
-                    if not summary.filter_tooltip_by_sel
-                    else (int(i) for i in (sel if sel is not None else []))
-                )
-            ]
+            shipped = (
+                tooltip_rows
+                if not summary.filter_tooltip_by_sel
+                else [tooltip_rows[int(i)] for i in (sel if sel is not None else [])]
+            )
+            # Typed columns when the rows allow it (it only reads them); else
+            # JSON rows, copied so the spec never aliases host rows.
             columns = encode_tooltip_rows(shipped, pw)
             if columns is not None:
                 entry["tooltip_columns"] = columns
             else:
-                entry["tooltip_rows"] = shipped
+                entry["tooltip_rows"] = [dict(row) for row in shipped]
     elif t.tooltip_rows is not None and not summary.tooltip_length_ok:
         raise ValueError(
             f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"

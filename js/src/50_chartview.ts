@@ -5020,8 +5020,10 @@ export class ChartView {
           if (state === 0) return;
           if (state === 1) { row[key] = null; return; }
           const kind = cols.kinds[c];
-          if (kind === "text") { row[key] = cols.dict[c][data[c][i]]; return; }
+          if (kind === "text") { row[key] = cols.dict[data[c][i]]; return; }
           const dv = data[c];
+          // 3: dictionary text in a uuid column (index in the slot's first 4 bytes).
+          if (state === 3) { row[key] = cols.dict[dv.getUint32(i * 16, true)]; return; }
           if (kind === "f64") row[key] = dv.getFloat64(i * 8, true);
           else if (kind === "bool") row[key] = dv.getUint8(i) !== 0;
           else {

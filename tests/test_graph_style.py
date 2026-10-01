@@ -5,6 +5,7 @@ import numpy as np
 from xyg import _native
 from xyg._figure import Figure
 from xyg._graph import GraphData
+from xyg._graph_wire import decode_wire_graph_meta
 
 
 def test_visual_state_and_label_budget_are_rust_owned() -> None:
@@ -226,8 +227,8 @@ def test_graph_composition_serializes_rust_owned_style_policy() -> None:
         parent_indices=np.array([0, 0, 0], dtype=np.uint64),
         parent_validity=np.array([0, 1, 1], dtype=np.uint8),
     )
-    spec, _ = Figure().graph(data, layout="preset", label_budget=2).build_payload()
-    graph = spec["graph"][0]
+    spec, blob = Figure().graph(data, layout="preset", label_budget=2).build_payload()
+    graph = decode_wire_graph_meta(spec, blob, spec["graph"][0])
     assert graph["node_labels"] == [None, "Alpha", "Beta"]
     assert graph["label_accepted"] == [False, True, True]
     assert graph["visual_states"] == [0, 5, 7]
@@ -264,6 +265,9 @@ def test_graph_numeric_identity_label_fallback_is_safe_and_exact() -> None:
     data = GraphData(
         [unsafe, "safe"], np.array([0], dtype=np.uint64), np.array([1], dtype=np.uint64)
     )
-    spec, _ = Figure().graph(data, layout="grid").build_payload()
-    assert spec["graph"][0]["node_labels"] == [None, "safe"]
-    assert spec["graph"][0]["label_accepted"] == [False, True]
+    spec, blob = Figure().graph(data, layout="grid").build_payload()
+    graph = decode_wire_graph_meta(spec, blob, spec["graph"][0])
+    assert graph["node_labels"] == [None, "safe"]
+    assert graph["label_accepted"] == [False, True]
+    # Integer planes ride as typed payload columns, not JSON numbers.
+    assert set(spec["graph"][0]["label_accepted"]) == {"column"}

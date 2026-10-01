@@ -16,6 +16,7 @@ from typing import Any
 
 import numpy as np
 
+from xyg._graph_wire import wire_graph_meta
 from xyg._tooltip_columns import encode_tooltip_rows
 
 FIXTURE = Path(__file__).parent / "fixtures" / "tooltip_columns_cross_host.json"
@@ -32,6 +33,7 @@ CASES: dict[str, list[dict[str, Any]]] = {
         {"source": U1, "target": U2, "edge_id": U2, "provenance_row": 7},
         {"edge_count": 12},
         {"source": U2, "target": U1, "edge_id": None, "provenance_row": 9},
+        {"source": U1, "target": U1, "edge_id": "derived:1:4:0", "provenance_row": 9},
     ],
     "non_finite_and_bools": [
         {"value": float("nan"), "flag": True, "label": "naïve ☃"},
@@ -39,6 +41,10 @@ CASES: dict[str, list[dict[str, Any]]] = {
         {"value": -0.5, "flag": None, "label": "x"},
     ],
     "only_nulls": [{"a": None}, {"a": None}],
+    "shared_dictionary": [
+        {"name": "ann", "pagerank.name": "ann"},
+        {"name": "bo", "pagerank.name": "bo"},
+    ],
     "key_order_differs": [{"a": 1, "b": 2}, {"b": 3, "a": 4}],
     "mixed_kinds": [{"a": 1}, {"a": "x"}],
     "nested_value": [{"a": [1, 2]}],
@@ -69,13 +75,36 @@ def _encode(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {"tooltip_columns": columns, "shipped": recorder.columns if columns else []}
 
 
+GRAPH_META = {
+    "layout": "force",
+    "ids": ["a", "b", "c"],
+    "csr_offsets": [0, 2, 3, 4],
+    "csr_neighbors": [1, 2, 0, 0],
+    "node_labels": ["a", None, "c"],
+    "label_accepted": [True, False, True],
+    "visual_states": [0, 5, 7],
+    "source_edge_ids": ["e0", "e1"],
+    "compound_nodes": [False, False, True],
+}
+
+
+def _graph_meta() -> dict[str, Any]:
+    recorder = _Recorder()
+    return {"wire": wire_graph_meta(GRAPH_META, recorder), "shipped": recorder.columns}
+
+
 def test_python_matches_fixture() -> None:
     produced = {name: _encode(rows) for name, rows in CASES.items()}
     if os.environ.get("XYG_REGEN_TOOLTIP_COLUMNS"):
         cases = {name: {"rows": rows, **produced[name]} for name, rows in CASES.items()}
+        cases_meta = {"meta": GRAPH_META, **_graph_meta()}
         # NaN/inf rows are rebuilt from names in the Node test; store them as strings.
         text = json.dumps(
-            {"schema": "xyg.tooltip-columns-cross-host/v1", "cases": cases},
+            {
+                "schema": "xyg.tooltip-columns-cross-host/v1",
+                "cases": cases,
+                "graph_meta": cases_meta,
+            },
             indent=2,
             allow_nan=True,
         )
@@ -85,6 +114,12 @@ def test_python_matches_fixture() -> None:
     for name, expected in fixture["cases"].items():
         assert produced[name]["tooltip_columns"] == expected["tooltip_columns"], name
         assert produced[name]["shipped"] == expected["shipped"], name
+    graph_meta = _graph_meta()
+    assert graph_meta["wire"] == fixture["graph_meta"]["wire"]
+    assert graph_meta["shipped"] == fixture["graph_meta"]["shipped"]
+    # Host-only identity planes are dropped; browser integer planes are columns.
+    assert "ids" not in graph_meta["wire"] and "source_edge_ids" not in graph_meta["wire"]
+    assert graph_meta["wire"]["csr_offsets"] == {"column": 0}
 
 
 def test_fixture_exercises_every_kind_and_the_json_fallback() -> None:

@@ -700,13 +700,12 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     });
   }
   if (sv.getInt32(32, true)) {
-    const shipped = sv.getInt32(36, true)
-      ? (sel ?? []).map((i) => ({ ...t.tooltip_rows[i] }))
-      : t.tooltip_rows.map((row) => ({ ...row }));
-    // Typed columns when the rows allow it (tooltip-columns.js); else JSON rows.
+    const shipped = sv.getInt32(36, true) ? (sel ?? []).map((i) => t.tooltip_rows[i]) : t.tooltip_rows;
+    // Typed columns when the rows allow it (tooltip-columns.js; it only reads
+    // them); else JSON rows, copied so the spec never aliases host rows.
     const columns = encodeTooltipRows(shipped, pw);
     if (columns != null) entry.tooltip_columns = columns;
-    else entry.tooltip_rows = shipped;
+    else entry.tooltip_rows = shipped.map((row) => ({ ...row }));
   } else if (t.tooltip_rows != null && !sv.getInt32(40, true)) {
     throw new RangeError(`${t.kind} tooltip rows must match geometry`);
   }

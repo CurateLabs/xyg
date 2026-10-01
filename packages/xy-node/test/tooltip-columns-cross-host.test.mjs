@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { wireGraphMeta } from "../src/graph.js";
 import { decodeTooltipRows, encodeTooltipRows } from "../src/tooltip-columns.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -43,4 +44,10 @@ test("typed columns decode to the rows JSON would have carried", () => {
   const blobs = pw.columns.map((c) => Buffer.from(c.hex, "hex"));
   const spec = { columns: pw.columns.map((c, i) => ({ buf: i, byte_offset: 0, len: blobs[i].length / (c.dtype === "u32" ? 4 : 1), dtype: c.dtype })) };
   assert.deepEqual(decodeTooltipRows(spec, blobs, entry), JSON.parse(JSON.stringify(rows)));
+});
+
+test("Node wire graph meta matches the Python fixture", () => {
+  const pw = recorder();
+  assert.deepEqual(wireGraphMeta(FIXTURE.graph_meta.meta, pw), FIXTURE.graph_meta.wire);
+  assert.deepEqual(pw.columns, FIXTURE.graph_meta.shipped);
 });

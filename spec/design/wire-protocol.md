@@ -513,7 +513,8 @@ Two independent version constants:
   payload columns; graph-mark.md §2) instead of per-element JSON
   `tooltip_rows`, which remain only for rows that are not one scalar kind per
   key. It also stops serializing host-only graph identity planes into
-  `spec.graph`. A cached v12 client would accept the payload and silently
+  `spec.graph` and ships its integer planes (CSR, label acceptance, visual
+  states, compound flags) as typed `{column}` references. A cached v12 client would accept the payload and silently
   show no node, edge, or band rows on hover, so v13 rejects it.
 - **Transport frame.** `FRAME_MAGIC` `"XYBF"` with `FRAME_VERSION = 1`
   versions the binary envelope separately, so the transport and the renderer

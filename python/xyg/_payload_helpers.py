@@ -96,12 +96,12 @@ def attach_tooltip_rows(
         if sel is None:
             return
         indices = (int(i) for i in sel)
-    shipped = [dict(tooltip_rows[i]) for i in indices]
+    shipped = [tooltip_rows[i] for i in indices]
     columns = encode_tooltip_rows(shipped, pw) if pw is not None else None
     if columns is not None:
         entry["tooltip_columns"] = columns
     else:
-        entry["tooltip_rows"] = shipped
+        entry["tooltip_rows"] = [dict(row) for row in shipped]
 
 
 def visible_mask_needed(

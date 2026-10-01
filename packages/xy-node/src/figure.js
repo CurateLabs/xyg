@@ -1166,11 +1166,11 @@ function attachTooltipRows(entry, t, sel, pw = null) {
   const rows = t.tooltip_rows;
   const indices = plan.filterTooltipBySel ? sel : null;
   const selected = indices == null ? rows : gatherItems(rows, indices);
-  const shipped = selected.map((row) => ({ ...row }));
-  // Typed columns when the rows allow it (tooltip-columns.js); else JSON rows.
-  const columns = pw != null ? encodeTooltipRows(shipped, pw) : null;
+  // Typed columns when the rows allow it (tooltip-columns.js; it only reads
+  // them); else JSON rows, copied so the spec never aliases host rows.
+  const columns = pw != null ? encodeTooltipRows(selected, pw) : null;
   if (columns != null) entry.tooltip_columns = columns;
-  else entry.tooltip_rows = shipped;
+  else entry.tooltip_rows = selected.map((row) => ({ ...row }));
 }
 
 export class PayloadWriter {
@@ -3864,7 +3864,7 @@ export class Figure {
       spec.animation = { ...this.animation_options };
     }
     if (buildPlan.attachGraph) {
-      spec.graph = this._graphMeta.map(wireGraphMeta);
+      spec.graph = this._graphMeta.map((meta) => wireGraphMeta(meta, pw));
     }
     if (split) {
       spec.buffer_layout = "split";

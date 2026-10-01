@@ -91,7 +91,7 @@ def test_tooltip_columns_round_trip_every_kind_in_packed_and_split_payloads():
     spec, blob = fig.build_payload()
     columns = spec["traces"][0]["tooltip_columns"]
     assert columns["kinds"] == ["uuid", "f64", "text", "bool"]
-    assert columns["dict"][2] == ["a"]
+    assert columns["dict"] == ["a"]
     assert decode_tooltip_rows(spec, blob, spec["traces"][0]) == expected
     spec, buffers = fig.build_payload_split()
     assert decode_tooltip_rows(spec, buffers, spec["traces"][0]) == expected

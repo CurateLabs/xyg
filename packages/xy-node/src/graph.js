@@ -716,10 +716,41 @@ export const HOST_ONLY_GRAPH_META = Object.freeze([
   "node_provenance_rows", "edge_provenance_rows", "node_tooltip_rows", "edge_tooltip_rows",
 ]);
 
-/** The `spec.graph` entry for one graph: host meta minus host-only identity planes. */
-export function wireGraphMeta(meta) {
+/**
+ * Per-node/per-edge integer planes the browser reads (CSR neighborhood,
+ * accessibility counts) ship as typed payload columns, `{column: index}`,
+ * never as JSON numbers; Python `WIRE_COLUMN_GRAPH_META` is the same table.
+ */
+export const WIRE_COLUMN_GRAPH_META = Object.freeze({
+  csr_offsets: "u32", csr_neighbors: "u32", label_accepted: "u8", visual_states: "u8", compound_nodes: "u8",
+});
+
+function wireColumn(values, dtype, pw) {
+  if (!(Array.isArray(values) || ArrayBuffer.isView(values))) return null;
+  const max = dtype === "u32" ? 0xffffffff : 0xff;
+  const out = dtype === "u32" ? new Uint32Array(values.length) : new Uint8Array(values.length);
+  for (let i = 0; i < values.length; i += 1) {
+    const v = values[i];
+    if (v === null || v === undefined) return null;
+    const n = Number(v);
+    if (!(n >= 0 && n <= max)) return null;
+    out[i] = n;
+  }
+  return { column: dtype === "u32" ? pw.shipU32(out) : pw.shipU8(out) };
+}
+
+/**
+ * The `spec.graph` entry for one graph: host meta minus host-only identity
+ * planes, with browser-read integer planes as typed columns when `pw` is given.
+ */
+export function wireGraphMeta(meta, pw = null) {
   const out = {};
-  for (const [key, value] of Object.entries(meta)) if (!HOST_ONLY_GRAPH_META.includes(key)) out[key] = value;
+  for (const [key, value] of Object.entries(meta)) {
+    if (HOST_ONLY_GRAPH_META.includes(key)) continue;
+    const dtype = WIRE_COLUMN_GRAPH_META[key];
+    const column = dtype != null && pw != null ? wireColumn(value, dtype, pw) : null;
+    out[key] = column ?? value;
+  }
   return out;
 }
 

@@ -158,20 +158,24 @@ Node hosts mirror the same option names (TypedArrays / arrays).
 
 Hosts keep `tooltip_rows` as row dicts; the wire carries them as **tooltip
 columns** (protocol v13). Each key becomes one typed plane in ordinary payload
-columns: `uuid` (canonical lowercase UUID text, 16 bytes per row), `f64`
-(8 little-endian bytes per row in a `u8` column, because packed blobs are only
-4-byte aligned), `bool` (one byte), or `text` (a `u32` index into the entry's
-string dictionary). An optional `u8` presence plane per key distinguishes an
-absent key (0), a null value (1), and a value (2), and is omitted when every row
-has a value; non-finite numbers ship as null, as JSON would. The entry is
-`tooltip_columns: {n, keys, kinds, data, present, dict}` (`data`/`present`
-are column indices). Rows whose keys do not follow one shared order, or whose
+columns: `uuid` (canonical lowercase UUID text, 16 bytes per row; a column
+holding any UUID uses this kind, and its other strings, such as the synthetic
+ids of derived edges, are dictionary text stored in the slot's first four
+bytes), `f64` (8 little-endian bytes per row in a `u8` column, because packed
+blobs are only 4-byte aligned), `bool` (one byte), or `text` (a `u32` index).
+All text columns share one dictionary per entry, so a name repeated across keys
+ships once. An optional `u8` presence plane per key records an absent key (0), a
+null value (1), a value (2), or dictionary text in a `uuid` column (3), and is
+omitted when every row has a value; non-finite numbers ship as null, as JSON
+would. The entry is `tooltip_columns: {n, keys, kinds, data, present, dict}`
+(`data`/`present` are column indices, `dict` the shared strings). Rows whose keys do not follow one shared order, or whose
 values are not one scalar kind per key, keep the JSON `tooltip_rows` form.
 Python `_tooltip_columns.py` and Node `tooltip-columns.js` are byte-identical
 (`tests/fixtures/tooltip_columns_cross_host.json`). The browser decodes one row
 per hover (`ChartView._tooltipRowSource`) and never materializes the table.
-At 100k GraphForge nodes this takes the webview spec from 98 MiB of JSON to
-typed buffers (spec/benchmarks/results.md, "GraphForge composition scale").
+With the wire graph meta below, a 100k-node GraphForge webview spec goes from
+98 MiB of JSON to 1.3 MiB (strings only) plus typed buffers
+(spec/benchmarks/results.md, "GraphForge composition scale").
 Missing or sparse rows are ignored at hover time; a length mismatch raises
 before shipping.
 Encodings and tooltip rows are indexed in **render-graph** space, matching the
@@ -406,6 +410,12 @@ is never serialized into `spec.graph` or the paint payload.
   `edge_provenance_rows`, `node_tooltip_rows`, and `edge_tooltip_rows` stay on
   the figure (`_graph_meta` / `_graphMeta`) for picks and selection and are
   never serialized (Python `HOST_ONLY_GRAPH_META`, Node `HOST_ONLY_GRAPH_META`).
+  The integer planes the browser reads ship as typed payload columns,
+  `{"column": index}`, not JSON numbers (`WIRE_COLUMN_GRAPH_META`):
+  `csr_offsets` and `csr_neighbors` as `u32`, and `label_accepted`,
+  `visual_states`, and `compound_nodes` as `u8`. The client resolves either form
+  (`ChartView._graphMetaArray`); `decode_wire_graph_meta` reads them back on the
+  Python side.
 - Edge identity (#33): the edge trace's per-segment `tooltip_rows` follow the
   §6 membership, not a count comparison. A render edge with one member carries
   that source edge's projection row (`edge_id`, endpoints, provenance, attrs);
@@ -419,8 +429,8 @@ is never serialized into `spec.graph` or the paint payload.
   fixture (`tests/fixtures/graph_edge_identity_cross_host.json`), and a
   Chromium probe hovers every routed segment to check the browser row carries
   the same identity.
-- Neighborhood highlight: CSR (`csr_offsets` / `csr_neighbors` u64 arrays on
-  `spec.graph[]`) is consumed by the WebGL client. On hover of the graph's
+- Neighborhood highlight: CSR (`csr_offsets` / `csr_neighbors` as typed `u32`
+  columns referenced from `spec.graph[]`) is consumed by the WebGL client. On hover of the graph's
   scatter (`node_trace`), the client builds a temporary `selBuf` mask
   (hovered node + CSR neighbors) and dims the rest through the existing
   point-shader `u_selActive` path; leave clears the mask. Durable
