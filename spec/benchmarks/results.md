@@ -335,13 +335,10 @@ Reading the rows:
   A 10k-node CPU profile attributes 1.50 s of 1.76 s to `graphForceTick`.
   Hosts that recompose one graph should reuse positions rather than lay it
   out again.
-- Webview spec JSON is dominated by per-element `tooltip_rows` (id, row,
-  properties) and reaches 98 MiB at 100k, which is heavy for a webview
-  `postMessage`. Moving tooltip text out of the spec (host-answered or
-  typed-buffer tooltips) is the follow-up. The numeric paint data already
-  travels as typed buffers.
-- Node's document decode (963 ms at 100k) mostly materializes UUID strings.
-  Lazy identity decoding is a follow-up.
+- Webview spec JSON was dominated by per-element `tooltip_rows` and reached
+  98 MiB at 100k. Protocol 13 ships them as typed tooltip columns (A/B below).
+- Node's document decode (963 ms at 100k) mostly materialized UUID strings; it
+  is now lazy (A/B below).
 - GraphForge 0.5.2 `minimum_spanning_tree` grows superlinearly (4.1 s at 10k,
   469 s at 100k), which is an upstream engine report.
 - Peak RSS (1,749 MiB) covers the whole process, including GraphForge's
@@ -350,6 +347,47 @@ Reading the rows:
 No competitive-win claim: no other charting library composes GraphForge
 result schemas. The graph-render comparison stays in the graph scale
 evidence above.
+
+### GraphForge payload and layout A/B (#932, local diagnostic)
+
+`benchmarks/ab_graphforge_payload.mjs` runs one GraphForge composition
+(PageRank, Louvain, a Dijkstra path over the seeded bulk graph) through two
+checkouts alternately. Before is `c6d7a728` (the #929 stack top), after is the
+#932 branch. The machine was shared with unrelated workloads (1-minute load 5
+to 10 on 16 threads), so the A/B alternation, not the absolute numbers, carries
+the comparison. Byte counts are exact. Raw rows are in
+`spec/benchmarks/graphforge-payload-ab-local.json`.
+
+```bash
+node benchmarks/ab_graphforge_payload.mjs --inputs /tmp/gfscale --sizes 10000,100000 \
+  --graphforge path/to/node_modules/@curatelabs/graphforge \
+  --before ../xyg-before --after . --out spec/benchmarks/graphforge-payload-ab-local.json
+```
+
+Medians of the two rounds (ms, MiB):
+
+| nodes | side | decode | chart build | chart, reused layout | payload encode | spec JSON | typed buffers |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 10,000 | before | 115 | 1,830 | — | 97 | 8.78 | 1.84 |
+| 10,000 | after | 25 | 852 | 174 | 136 | 0.13 | 4.02 |
+| 100,000 | before | 907 | 11,402 | — | 1,170 | 89.66 | 18.41 |
+| 100,000 | after | 108 | 5,266 | 1,799 | 1,620 | 1.33 | 40.15 |
+
+- **Spec JSON (98% smaller).** Protocol 13 ships hover rows as typed
+  `tooltip_columns` (UUID, f64, bool, and shared-dictionary text planes) and
+  keeps host-only graph identity out of `spec.graph`. At 100k the spec is
+  1.3 MiB of strings instead of 90 MiB, which removes about 0.6 s of
+  `JSON.stringify` on the host and the matching parse in the webview. The typed
+  buffers grow because numbers and UUIDs now ride there.
+- **Chart build (2.2× faster at 10k and 100k).** Grid repulsion runs on scoped
+  threads, one per 2,048 nodes. Forces are bit-identical for any thread count,
+  so positions are byte-identical to before (verified at 10k and 100k).
+  Recomposing the same base with `{ positions }` skips the layout: 174 ms at
+  10k and 1.8 s at 100k.
+- **Decode (8× faster).** UUID text and index maps build lazily, and ASCII text
+  lists decode once.
+- **Encode (+40%).** Payload encode now includes the tooltip-column packing that
+  replaced JSON row serialization; the stringify saving outweighs it.
 
 ### Density no-refinement gate
 

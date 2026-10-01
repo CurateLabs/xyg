@@ -176,12 +176,12 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 
 ## 8. Known limits
 
-- Scale (spec/benchmarks/results.md, "GraphForge composition scale"): Rust
-  composition takes about 0.2 s for four layers over 100k nodes, but the
-  graph-mark chart build (force layout) takes about 13 s. The webview spec
-  JSON reaches about 98 MiB at 100k because of per-element tooltip rows, so
-  for very large graphs select rows (`layers[].rows`, `select`) or reuse
-  positions across recompositions.
+- Scale (spec/benchmarks/results.md, "GraphForge composition scale" and
+  "GraphForge payload and layout A/B"): at 100k nodes Rust composition takes
+  about 0.2 s, the graph-mark chart build about 5 s (1.8 s when recomposing with
+  reused `positions`), and the webview spec is 1.3 MiB of JSON plus about
+  40 MiB of typed buffers. Pass `positions` whenever the base graph is
+  unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
 - Scene positions come from Rust's seeded force layout with a `libm`-free
