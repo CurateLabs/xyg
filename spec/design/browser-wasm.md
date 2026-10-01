@@ -196,6 +196,23 @@ The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
 SVG/PNG/PDF export remains a native-host concern; browser output reuses the
 shared painter. The raw module must request no ambient WebAssembly imports.
 
+**Artifact size.** `dist/xyg-wasm.wasm` is built with the workspace release
+profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
+921 KiB raw and 336 KiB gzipped at WASM ABI 27. GraphForge compositions
+(composition, views, request/base decoding) and the Arrow IPC reader account
+for about 224 KiB of code; there is no single outlier. A size-optimized
+profile was measured and rejected, since the module's compute is on users'
+interactive path:
+
+| profile | raw | gzip | GraphForge compose, 10k / 100k nodes |
+|---|---:|---:|---:|
+| `opt-level = 3` (shipped) | 943 KB | 344 KB | 15.6 / 156 ms |
+| `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
+| `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
+
+`js/package-wasm.mjs` fails the build above a 1 MiB budget, so further growth
+is a recorded decision rather than drift.
+
 `XYTS` magic, header and descriptor offsets, flags, and mark-kind codes are
 owned by `spec/wasm/abi.json` and emitted into generated TypeScript and Rust
 contract modules. The thin framer and Rust decoder both consume those generated

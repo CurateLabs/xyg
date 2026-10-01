@@ -184,9 +184,6 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   positions across recompositions.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
-- Static PNG/SVG of `bar-chart` compositions fails closed
-  (`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`), as every category-axis export does in
-  both hosts today; the interactive chart and the table carry the names.
 - Scene positions come from Rust's seeded force layout with a `libm`-free
   seed, so documents and Scene bytes are bit-identical across hosts and
   platforms.

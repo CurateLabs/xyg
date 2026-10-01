@@ -346,9 +346,20 @@ test("scalar and category results compose as tables and bar charts, never graphs
   const fig = graphforgeChart(census, { width: 480, height: 320 });
   assert.equal(fig.traces[0].kind, "bar");
   assert.equal(fig.x_label, "triad_type");
-  assert.deepEqual(fig._axis_categories.x, [...census.chart.categories]);
+  // Bars on integer slots of a linear axis; ticks carry the category names.
+  const k = census.chart.categories.length;
+  assert.deepEqual(fig.axis_options.x.tick_labels, [...census.chart.categories]);
+  assert.deepEqual(fig.axis_options.x.tick_values, Array.from({ length: k }, (_, i) => i));
+  assert.deepEqual(fig.axis_options.x.domain, [-0.5, k - 0.5]);
+  assert.ok(fig.axis_options.y.domain[0] <= 0 && fig.axis_options.y.domain[1] >= Math.max(...census.chart.values));
+  assert.deepEqual(fig.traces[0].tooltip_rows[0], {
+    triad_type: census.chart.categories[0], [census.chart.valueName]: census.chart.values[0],
+  });
   assert.ok(fig.toHtml().includes(census.chart.categories[0]));
-  assert.throws(() => fig.toPng(), /XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS/, "category axes fail closed in static export");
+  // Static export labels the same categories (no category-axis refusal).
+  const svg = Buffer.from(fig.toSvg()).toString("utf8");
+  for (const category of census.chart.categories) assert.ok(svg.includes(`>${category}<`), category);
+  assert.equal(Buffer.from(fig.toPng()).subarray(1, 4).toString("latin1"), "PNG");
   assert.throws(() => composeGraphForge({ layers: [{ result: arrow("is_dag"), intent: "bar-chart" }] }),
     (e) => e.code === "GF_COMPOSE_INTENT_UNSUPPORTED");
 });

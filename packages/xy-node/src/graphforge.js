@@ -13,7 +13,7 @@
  * and counts — never result values, UUIDs, vectors, or coordinates.
  */
 
-import { barChart, graphChart } from "./charts.js";
+import { graphChart } from "./charts.js";
 import { figure } from "./figure.js";
 import {
   DOCUMENT_MAGIC,
@@ -378,6 +378,8 @@ export class GraphForgeComposition {
         valueName: get("chart.value_name"),
         categories: get("chart.category"),
         values: get("chart.value"),
+        /** `[x0, x1, y0, y1]`: bar slots 0..k-1 and a zero-baseline value range (Rust). */
+        domain: get("chart.domain"),
         resultRows: [...get("chart.result_row")].map(Number),
       };
     } else if (this.kind === "parallel-coordinates") {
@@ -624,13 +626,22 @@ function axisTitles(fig, x, y) {
 
 /** Category results as bars in result order (never re-sorted). */
 function graphforgeBarChart(composition, opts) {
-  const { categories, values, categoryName, valueName } = composition.chart;
+  const { categories, values, categoryName, valueName, domain } = composition.chart;
   const { width, height, title } = opts;
-  const fig = barChart([...categories], Float64Array.from(values), { width, height, title });
-  // A real category axis (as Python bar charts have): the browser labels each
-  // bar with its category; static export fails closed like Python's
-  // (XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS) instead of printing bare positions.
-  fig._axis_categories = { ...(fig._axis_categories ?? {}), x: [...categories] };
+  const k = categories.length;
+  const slots = Float64Array.from({ length: k }, (_, i) => i);
+  const fig = figure({ width, height, title });
+  fig.bar(slots, Float64Array.from(values), { name: valueName });
+  // Hover names the category and its value, never a slot position.
+  fig.traces[fig.traces.length - 1].tooltip_rows = categories.map((category, i) => ({
+    [categoryName]: category,
+    [valueName]: Number.isFinite(values[i]) ? values[i] : null,
+  }));
+  // Bars sit on integer slots of a linear axis whose ticks carry the category
+  // names (Rust domain), so the browser and SVG/PNG export label them alike.
+  const [x0, x1, y0, y1] = domain;
+  fig.setAxis("x", { domain: [x0, x1], tick_values: [...slots], tick_labels: [...categories] });
+  fig.setAxis("y", { domain: [y0, y1] });
   return axisTitles(fig, categoryName, valueName);
 }
 

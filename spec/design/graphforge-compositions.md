@@ -381,7 +381,7 @@ Other document kinds share the header, `layer.*` provenance (index 0),
 | `kind` | Sections |
 |---|---|
 | `table` | `table.columns`, `table.kinds`, `table.rows` (result rows), `table.cells` (text list, row-major), `table.values` (f64), `table.valid` (u8) |
-| `bar-chart` | `chart.category_name`, `chart.value_name`, `chart.category`, `chart.value`, `chart.result_row` |
+| `bar-chart` | `chart.category_name`, `chart.value_name`, `chart.category`, `chart.value`, `chart.result_row`, `chart.domain` (`[x0, x1, y0, y1]`: bar slots 0..k−1 as `[-0.5, k-0.5]`, and a value range that includes zero with 5% headroom away from it) |
 | `parallel-coordinates` | `vector.dimensions`, `vector.uuid`, `vector.result_row`, `vector.base_row`, `vector.name`, `vector.values` (row-major), `vector.domain` (`x0, x1, y0, y1`) |
 | `scatter` | `point.source` (`caller` or `embedding`), `vector.dimensions`, `point.uuid`, `point.result_row`, `point.base_row`, `point.name`, `point.x`, `point.y` |
 
@@ -421,13 +421,16 @@ composition.diagnostics();            // schema ids, counts, decision codes only
 ```
 
 `graphforgeChart` dispatches on `kind`: graphs through the graph mark, bar
-charts through `barChart` with a category axis, parallel coordinates as one
+charts as bars on integer slots of a linear x axis whose ticks carry the
+category names (`chart.domain`, `tick_values`, `tick_labels`) with
+category/value hover rows, parallel coordinates as one
 polyline per node (`segments` with per-segment node tooltips and the Rust
 domain), and embedding coordinates as a scatter with node tooltips. Tables
 render with `graphforgeTableHtml(composition)`, an escaped `<table>` (cells
-are text, never markup). Static export of a bar chart fails closed with
-`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`, as every category-axis export does in
-both hosts today; the interactive chart and the table carry the names.
+are text, never markup). Because bar charts use a labelled linear axis rather
+than a category axis, their SVG/PNG export labels every bar like the browser
+(the public Scene axis admits authored ticks and labels); category axes
+themselves remain outside static export.
 
 `graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
 nodeTrace, edgeTrace, figure, positions}` for a browser host (click events on).
