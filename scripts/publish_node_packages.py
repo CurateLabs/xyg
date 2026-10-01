@@ -205,7 +205,7 @@ def publish_release(artifacts: list[Artifact]) -> None:
             print(f"already published with identical SHA-512 bytes: {spec}")
             continue
         subprocess.run(
-            ["npm", "publish", str(artifact.path), "--access", "public", "--provenance"],
+            ["npm", "publish", str(artifact.path.resolve()), "--access", "public", "--provenance"],
             check=True,
             timeout=NPM_TIMEOUT_S,
         )

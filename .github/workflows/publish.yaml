@@ -263,7 +263,7 @@ jobs:
         run: |
           mkdir packed
           npm pack ./staged/xyg-browser --pack-destination packed
-          npm publish packed/*.tgz --dry-run --tag next --provenance=false
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
       - name: Prove clean published browser assets under strict CSP
         shell: bash
         run: |
@@ -406,7 +406,7 @@ jobs:
         run: |
           mkdir packed
           npm pack "./staged/xyg-node-${{ matrix.platform }}" --pack-destination packed
-          npm publish packed/*.tgz --dry-run --provenance=false
+          npm publish ./packed/*.tgz --dry-run --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-platform-${{ matrix.platform }}
@@ -447,7 +447,7 @@ jobs:
           grep -F 'client", "standalone.js' staged/xyg-node/src/html.js
           mkdir packed
           npm pack ./staged/xyg-node --pack-destination packed
-          npm publish packed/*.tgz --dry-run --provenance=false
+          npm publish ./packed/*.tgz --dry-run --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-facade
@@ -628,7 +628,7 @@ jobs:
         shell: bash
         run: |
           test "$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')" = 6
-          for artifact in $(find node-dist -name '*.tgz' -type f | sort); do
+          for artifact in $(find ./node-dist -name '*.tgz' -type f | sort); do
             npm publish "$artifact" --dry-run --provenance=false
           done
       - name: Publish platform packages before the facade (OIDC)
