@@ -482,7 +482,9 @@ CHANGELOG, and package-name guards) succeeds before npm can publish.
 Publication
 uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
 OIDC `id-token: write`) and publishes platform packages before the facade, so
-the public facade never points at absent versioned optionals. Publication is
+the public facade never points at absent versioned optionals. Prerelease
+versions (`-rc.N`, dry runs) publish under the `next` dist-tag, which npm
+requires and which keeps them off `latest`. Publication is
 retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
 after both its registry SHA-1 and SHA-512 Subresource Integrity value match the
 local tarball, rejects a mismatch in either digest, and resumes the native-first
@@ -504,7 +506,10 @@ adapter and the ESM, standalone, and static Worker bundles from the tagged
 source, then stages an exact-version `@curatelabs/xyg` tarball. Its
 `ASSET-MANIFEST.json` binds every shipped filename to SHA-256 and byte length
 and records the wire protocol, WASM ABI, Scene, and painter versions. Staging
-rejects extra files (including source maps), symlinked assets,
+leaves out the Python-only self-contained HTML inline worker
+(`wasm-inline-worker.js`, `xyg-wasm-inline.js`, packaged into the wheel by
+`hatch_build.py`) and rejects any other extra file (including source maps),
+symlinked assets,
 CDN/repository/fork-origin paths, runtime dependencies, npm lifecycle scripts
 or executable bins, invalid WASM headers, and per-file or aggregate budget
 overruns. The tarball is then unpacked into a clean directory and the existing

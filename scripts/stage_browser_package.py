@@ -30,6 +30,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "packages" / "xy-client"
 PACKAGE_NAME = "@curatelabs/xyg"
 ASSETS = ("index.js", "standalone.js", "wasm-worker.js", "xyg-wasm.wasm")
+# `js/package-wasm.mjs` also writes the self-contained HTML inline worker into
+# dist; Python static exports consume it (hatch_build.py), the npm browser
+# package does not, so staging leaves it out rather than rejecting the build.
+PYTHON_ONLY_ARTIFACTS = ("wasm-inline-worker.js", "xyg-wasm-inline.js")
 EXPECTED_EXPORTS = {
     ".": "./dist/index.js",
     "./standalone": "./dist/standalone.js",
@@ -77,7 +81,11 @@ def _validate_assets(dist: Path) -> dict[str, dict[str, int | str]]:
     symlinks = sorted(path.name for path in dist.iterdir() if path.is_symlink())
     if symlinks:
         raise ValueError(f"browser dist assets must not be symlinks: {symlinks!r}")
-    actual = sorted(path.name for path in dist.iterdir() if path.is_file())
+    actual = sorted(
+        path.name
+        for path in dist.iterdir()
+        if path.is_file() and path.name not in PYTHON_ONLY_ARTIFACTS
+    )
     if actual != sorted(ASSETS):
         raise ValueError(
             f"browser dist inventory must be exactly {list(ASSETS)!r}; found {actual!r}"

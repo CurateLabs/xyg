@@ -117,3 +117,11 @@ def test_stage_rejects_executable_manifest_hooks(
     monkeypatch.setattr(stage_browser.json, "loads", loads_with_hook)
     with pytest.raises(ValueError, match=message):
         stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")
+
+
+def test_stage_leaves_python_only_inline_artifacts_out(tmp_path: Path) -> None:
+    source = _dist(tmp_path / "dist")
+    for name in stage_browser.PYTHON_ONLY_ARTIFACTS:
+        (source / name).write_text("globalThis.__xygInlineWasm={};\n")
+    staged = stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")
+    assert sorted(p.name for p in (staged / "dist").iterdir()) == sorted(stage_browser.ASSETS)

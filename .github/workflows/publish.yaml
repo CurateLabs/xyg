@@ -79,7 +79,11 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
+          # rust-toolchain.toml pins 1.96.0: install the target for that
+          # toolchain (not `stable`), with its components up front.
+          toolchain: 1.96.0
           targets: ${{ matrix.target }}
+          components: rustfmt, clippy
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: false
@@ -169,6 +173,9 @@ jobs:
         with:
           toolchain: 1.96.0
           targets: wasm32-unknown-emscripten
+          # Install rust-toolchain.toml's components now; an on-demand
+          # install later conflicts with the image's cargo-clippy proxy.
+          components: rustfmt, clippy
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -228,6 +235,7 @@ jobs:
         with:
           toolchain: 1.96.0
           targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
@@ -255,7 +263,11 @@ jobs:
         run: |
           mkdir packed
           npm pack ./staged/xyg-browser --pack-destination packed
-          npm publish packed/*.tgz --dry-run --tag next --provenance=false
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
+      - name: Install Chromium
+        # The strict-CSP proof drives a real browser; the runner image does not
+        # carry Playwright's build (ci.yml installs it the same way).
+        run: npx playwright install chromium
       - name: Prove clean published browser assets under strict CSP
         shell: bash
         run: |
@@ -280,6 +292,9 @@ jobs:
         with:
           enable-cache: false
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          components: rustfmt, clippy
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -394,8 +409,8 @@ jobs:
         shell: bash
         run: |
           mkdir packed
-          npm pack "staged/xyg-node-${{ matrix.platform }}" --pack-destination packed
-          npm publish packed/*.tgz --dry-run --provenance=false
+          npm pack "./staged/xyg-node-${{ matrix.platform }}" --pack-destination packed
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-platform-${{ matrix.platform }}
@@ -435,8 +450,8 @@ jobs:
           test -s staged/xyg-node/client/standalone.js
           grep -F 'client", "standalone.js' staged/xyg-node/src/html.js
           mkdir packed
-          npm pack staged/xyg-node --pack-destination packed
-          npm publish packed/*.tgz --dry-run --provenance=false
+          npm pack ./staged/xyg-node --pack-destination packed
+          npm publish ./packed/*.tgz --dry-run --tag next --provenance=false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: node-facade
@@ -572,8 +587,10 @@ jobs:
         run: |
           consumer="$RUNNER_TEMP/xyg-release-cohort-consumer"
           python3 -m venv "$consumer/venv"
-          "$consumer/venv/bin/pip" install --no-index cohort/python/*.whl
-          "$consumer/venv/bin/python" -c 'import xyg; assert xyg.__name__ == "xyg"'
+          # The cohort wheel installs from its file (never from an index); its
+          # third-party dependencies (numpy, anywidget) come from PyPI.
+          "$consumer/venv/bin/pip" install cohort/python/*.whl
+          "$consumer/venv/bin/python" -c 'import xyg, xyg.kernels as k; assert xyg.__name__ == "xyg"; assert k.BACKEND == "native", k.BACKEND'
           mkdir -p "$consumer/npm"
           cd "$consumer/npm"
           npm init --yes
@@ -617,8 +634,8 @@ jobs:
         shell: bash
         run: |
           test "$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')" = 6
-          for artifact in $(find node-dist -name '*.tgz' -type f | sort); do
-            npm publish "$artifact" --dry-run --provenance=false
+          for artifact in $(find ./node-dist -name '*.tgz' -type f | sort); do
+            npm publish "$artifact" --dry-run --tag next --provenance=false
           done
       - name: Publish platform packages before the facade (OIDC)
         if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && vars.XYG_ALLOW_NPM_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')

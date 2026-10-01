@@ -192,3 +192,28 @@ def test_publish_timeout_fails_through_the_stable_cli_error(tmp_path: Path, monk
 
     monkeypatch.setattr(mod.subprocess, "run", timeout)
     assert mod.main([str(tmp_path)]) == 1
+
+
+def test_prereleases_publish_under_the_next_dist_tag(tmp_path: Path, monkeypatch) -> None:
+    mod = _release(tmp_path)
+    artifacts = mod.load_release(tmp_path)
+    commands: list[list[str]] = []
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda command, check, timeout: commands.append(command)
+    )
+    published: set[str] = set()
+
+    def registry(spec):
+        if spec not in published:
+            published.add(spec)
+            return None
+        artifact = next(a for a in artifacts if f"{a.name}@{a.version}" == spec)
+        return mod.RegistryDist(artifact.shasum, artifact.integrity)
+
+    monkeypatch.setattr(mod, "_registry_dist", registry)
+    mod.publish_release(artifacts)
+    for command, artifact in zip(commands, artifacts, strict=True):
+        tagged = command[-2:] == ["--tag", "next"]
+        assert tagged == ("-" in artifact.version), (artifact.version, command)
+    assert mod._dist_tag("0.6.0-rc.1") == ["--tag", "next"]
+    assert mod._dist_tag("0.6.0") == []
