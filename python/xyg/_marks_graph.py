@@ -41,6 +41,7 @@ def graph(
     label_budget: int = 64,
     label_priority_floor: float | None = None,
     visual_state_flags: Union[str, ArrayLike, None] = None,
+    edge_visual_state_flags: Union[str, ArrayLike, None] = None,
     edge_label: Union[str, ArrayLike, None] = None,
     edge_label_priority: Union[str, ArrayLike, None] = None,
     node_class: Union[str, ArrayLike, None] = None,
@@ -72,7 +73,8 @@ def graph(
     and ``node_metric`` (numbers), plus the ``edge_*`` equivalents, may be
     arrays or column names. When any is given for a side, Rust resolves the
     versioned GraphForge semantic style contract (v1; ``theme`` ``"light"`` or
-    ``"dark"``; node states from ``visual_state_flags``) and the mark paints the
+    ``"dark"``; node states from ``visual_state_flags``, edge states from
+    ``edge_visual_state_flags``) and the mark paints the
     resolved node fill, stroke, stroke width, size, shape, and opacity and the
     edge color, width, and opacity. Semantic fields replace ``color`` / ``size``
     / ``symbol`` (nodes) and ``edge_color`` / ``edge_width`` (edges). They are
@@ -106,6 +108,9 @@ def graph(
     node_label = _graph.resolve_encoding_values(data, node_label, where="node")
     label_priority = _graph.resolve_encoding_values(data, label_priority, where="node")
     visual_state_flags = _graph.resolve_encoding_values(data, visual_state_flags, where="node")
+    edge_visual_state_flags = _graph.resolve_encoding_values(
+        data, edge_visual_state_flags, where="edge"
+    )
     edge_label = _graph.resolve_encoding_values(data, edge_label, where="edge")
     edge_label_priority = _graph.resolve_encoding_values(data, edge_label_priority, where="edge")
     if visual_state_flags is None:
@@ -119,6 +124,9 @@ def graph(
     edge_fields = _semantic_fields(
         data, "edge", edge_class, edge_epistemic, edge_status, edge_metric
     )
+    if edge_visual_state_flags is not None and edge_fields is None:
+        raise ValueError("graph edge_visual_state_flags needs edge semantic fields")
+    edge_flags = _edge_flags(edge_visual_state_flags, len(data.sources))
     if node_fields is not None and (color is not None or size is not None):
         raise ValueError("graph node semantic fields replace color= and size=")
     if edge_fields is not None and edge_color is not None:
@@ -160,6 +168,7 @@ def graph(
         if edge_fields is not None:
             c, ep, st, mt = edge_fields
             edge_fields = (c[keep_e], ep[keep_e], st[keep_e], mt[keep_e])
+        edge_flags = edge_flags[keep_e]
         layout, pinned, cose = "preset", None, None
     px, py, meta = _graph.run_layout(
         data,
@@ -209,10 +218,11 @@ def graph(
             rows = members[member_offsets[:-1]]
             # Resolve every source edge so the metric domain is the source
             # domain (EdgeSample must not rescale widths), then gather rows.
-            no_flags = np.zeros(len(edge_fields[0]), dtype=np.uint32)
-            resolved = _native.graph_semantic_styles(*edge_fields, no_flags, edge=True, theme=theme)
+            resolved = _native.graph_semantic_styles(
+                *edge_fields, edge_flags, edge=True, theme=theme
+            )
             layers = _native.graph_semantic_paint_layers(
-                *edge_fields, no_flags, edge=True, theme=theme
+                *edge_fields, edge_flags, edge=True, theme=theme
             )
             edge_style = {
                 "color": resolved["stroke_rgba"][rows].astype(np.float64) / 255.0,
@@ -1021,6 +1031,18 @@ def _reject_semantic_style_overrides(style: Any, nodes: bool, edges: bool) -> No
             raise ValueError(
                 f"graph {side} semantic fields own paint; style must not set {conflicts}"
             )
+
+
+def _edge_flags(edge_visual_state_flags: Any, n: int) -> np.ndarray:
+    """Source-edge visual-state flags (zeros when unset); Rust validates bits."""
+    if edge_visual_state_flags is None:
+        return np.zeros(n, dtype=np.uint32)
+    flags = np.asarray(edge_visual_state_flags)
+    if flags.ndim == 0:
+        return np.full(n, int(flags), dtype=np.uint32)
+    if flags.shape != (n,):
+        raise ValueError("graph edge_visual_state_flags must match edge count")
+    return flags.astype(np.uint32)
 
 
 def _node_flags(visual_state_flags: Any, n: int) -> np.ndarray:

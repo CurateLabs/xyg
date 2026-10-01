@@ -1,0 +1,696 @@
+//! Composition tests over the real GraphForge 0.5.2 fixture corpus
+//! (`tests/fixtures/graphforge/results`, produced by one engine run).
+
+use super::*;
+use crate::graphforge::container::{Container, REQUEST_MAGIC};
+use crate::graphforge::parse_uuid_text;
+use crate::graphforge::Uuid;
+
+fn fixture(name: &str) -> Vec<u8> {
+    std::fs::read(format!(
+        "{}/../../tests/fixtures/graphforge/results/{name}.arrow",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap_or_else(|e| panic!("{name}: {e}"))
+}
+
+/// `(base graph, generation)` for a fixture, from the manifest.
+fn base_of(name: &str) -> (&'static str, Uuid) {
+    let manifest = std::fs::read_to_string(format!(
+        "{}/../../tests/fixtures/graphforge/results/manifest.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let fixtures = &manifest[manifest.find("\"fixtures\"").unwrap()..];
+    let entry = &fixtures[fixtures.find(&format!("\"{name}\": {{")).unwrap()..];
+    let base = entry.split("\"base\": \"").nth(1).unwrap();
+    let base = &base[..base.find('"').unwrap()];
+    let base: &'static str = match base {
+        "cyclic" => "cyclic",
+        "dag" => "dag",
+        "flow" => "flow",
+        "ring" => "ring",
+        "points" => "points",
+        other => panic!("unknown base {other}"),
+    };
+    let generation = match base {
+        "cyclic" => "0190a000-0000-7000-8000-000000000001",
+        "dag" => "0190a000-0000-7000-8000-000000000002",
+        "flow" => "0190a000-0000-7000-8000-000000000003",
+        "ring" => "0190a000-0000-7000-8000-000000000004",
+        _ => "0190a000-0000-7000-8000-000000000005",
+    };
+    (base, parse_uuid_text(generation).unwrap())
+}
+
+#[derive(Default, Clone)]
+struct LayerSpec {
+    result: Vec<u8>,
+    intent: &'static str,
+    generation: Option<Uuid>,
+    missing: Option<&'static str>,
+    extra: Option<&'static str>,
+    result_id: Option<&'static str>,
+    rows: Option<Vec<u64>>,
+}
+
+fn layer(name: &str) -> LayerSpec {
+    LayerSpec {
+        result: fixture(name),
+        intent: "graph",
+        generation: Some(base_of(name).1),
+        ..Default::default()
+    }
+}
+
+fn request(bases: &[&str], generation: Option<Uuid>, layers: &[LayerSpec]) -> Vec<u8> {
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    let mut tables = Vec::new();
+    for base in bases {
+        tables.push(fixture(&format!("base-{base}-nodes")));
+        tables.push(fixture(&format!("base-{base}-edges")));
+    }
+    for (i, table) in tables.iter().enumerate() {
+        builder.bytes("base.table", i, table);
+    }
+    if let Some(generation) = generation {
+        builder.uuids("base.generation", 0, &[generation]);
+    }
+    for (i, spec) in layers.iter().enumerate() {
+        builder.bytes("layer.result", i, &spec.result);
+        builder.utf8("layer.intent", i, spec.intent);
+        if let Some(g) = spec.generation {
+            builder.uuids("layer.generation", i, &[g]);
+        }
+        if let Some(m) = spec.missing {
+            builder.utf8("layer.missing", i, m);
+        }
+        if let Some(x) = spec.extra {
+            builder.utf8("layer.extra", i, x);
+        }
+        if let Some(id) = spec.result_id {
+            builder.utf8("layer.result_id", i, id);
+        }
+        if let Some(rows) = &spec.rows {
+            builder.u64s("layer.rows", i, rows);
+        }
+    }
+    builder.finish()
+}
+
+fn compose_one(name: &str) -> Vec<u8> {
+    let (base, generation) = base_of(name);
+    compose_bytes(&request(&[base], Some(generation), &[layer(name)]))
+        .unwrap_or_else(|doc| panic!("{name}: {}", error_code(&doc)))
+}
+
+fn error_code(document: &[u8]) -> String {
+    let c = Container::decode(document, DOCUMENT_MAGIC).unwrap();
+    let code = c.get("error.code", 0).unwrap().as_utf8("x").unwrap();
+    let message = c.get("error.message", 0).unwrap().as_utf8("x").unwrap();
+    format!("{code}: {message}")
+}
+
+fn fail(bytes: Vec<u8>) -> (String, u32) {
+    let document = compose_bytes(&bytes).expect_err("composition should fail");
+    let c = Container::decode(&document, DOCUMENT_MAGIC).unwrap();
+    assert_eq!(c.get("status", 0).unwrap().payload, &1u32.to_le_bytes());
+    let layer = u32::from_le_bytes(c.get("error.layer", 0).unwrap().payload.try_into().unwrap());
+    (
+        c.get("error.code", 0)
+            .unwrap()
+            .as_utf8("x")
+            .unwrap()
+            .to_owned(),
+        layer,
+    )
+}
+
+struct Doc<'a>(Container<'a>);
+
+impl<'a> Doc<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Doc(Container::decode(bytes, DOCUMENT_MAGIC).unwrap())
+    }
+    fn u8s(&self, name: &str) -> &'a [u8] {
+        self.0.get(name, 0).unwrap().as_u8(name).unwrap()
+    }
+    fn f64s(&self, name: &str, index: u32) -> Vec<f64> {
+        self.0.get(name, index).unwrap().as_f64(name).unwrap()
+    }
+    fn u64s(&self, name: &str, index: u32) -> Vec<u64> {
+        self.0.get(name, index).unwrap().as_u64(name).unwrap()
+    }
+    fn u32s(&self, name: &str) -> Vec<u32> {
+        self.0
+            .get(name, 0)
+            .unwrap()
+            .payload
+            .chunks_exact(4)
+            .map(|c| u32::from_le_bytes(c.try_into().unwrap()))
+            .collect()
+    }
+    fn texts(&self, name: &str, index: u32) -> Vec<&'a str> {
+        self.0.get(name, index).unwrap().as_texts(name).unwrap()
+    }
+    fn uuids(&self, name: &str) -> Vec<Uuid> {
+        self.0.get(name, 0).unwrap().as_uuids(name).unwrap()
+    }
+    fn decisions(&self) -> Vec<(String, u64)> {
+        self.texts("decision.code", 0)
+            .into_iter()
+            .zip(self.u64s("decision.count", 0))
+            .map(|(c, n)| (c.to_owned(), n))
+            .collect()
+    }
+}
+
+fn result_values(name: &str, id_field: &str, value_field: &str) -> Vec<(Uuid, f64)> {
+    let bytes = fixture(name);
+    let table = read_table(&bytes).unwrap();
+    let ids = uuids(&table.column(id_field).unwrap(), false).unwrap();
+    let values = f64s(&table.column(value_field).unwrap()).unwrap();
+    ids.into_iter()
+        .zip(values)
+        .map(|(i, v)| (i.unwrap(), v.unwrap()))
+        .collect()
+}
+
+#[test]
+fn pagerank_joins_scores_by_uuid_not_row_position() {
+    let document = compose_one("pagerank");
+    let doc = Doc::new(&document);
+    let ids = doc.uuids("node.uuid");
+    let metric = doc.f64s("node.metric", 0);
+    let values = doc.f64s("layer.node_values", 0);
+    for (id, score) in result_values("pagerank", "node_uuid", "score") {
+        let node = ids
+            .iter()
+            .position(|i| *i == id)
+            .expect("every result node is in the base");
+        assert_eq!(metric[node], score);
+        assert_eq!(values[node * 2], score);
+    }
+    // Canonical score first, then the node properties rank results carry.
+    assert_eq!(doc.texts("layer.value_names", 0), vec!["score", "prize"]);
+    assert_eq!(doc.texts("layer.text_names", 0), vec!["name"]);
+    let names = doc.texts("layer.node_texts", 0);
+    assert_eq!(
+        names,
+        doc.texts("node.name", 0),
+        "properties join by UUID like values"
+    );
+    assert!(
+        doc.u32s("node.flags").iter().all(|&f| f == 0),
+        "full coverage dims nothing"
+    );
+    assert_eq!(doc.u64s("layer.counts", 0), vec![4, 4, 4, 0, 0]);
+    // Labels fall back to the base node name.
+    assert!(doc.texts("node.label", 0).iter().all(|l| !l.is_empty()));
+    assert!(doc.decisions().is_empty(), "{:?}", doc.decisions());
+}
+
+#[test]
+fn every_node_and_edge_fixture_composes_onto_its_base() {
+    let manifest = std::fs::read_to_string(format!(
+        "{}/../../tests/fixtures/graphforge/results/manifest.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let contracts = &manifest[..manifest.find("\"fixtures\"").unwrap()];
+    let mut composed = 0;
+    for part in contracts.split("\"algorithm\": \"").skip(1) {
+        let name = &part[..part.find('"').unwrap()];
+        let entry = ledger::schema_for_algorithm(name).unwrap();
+        let graph_layer = matches!(
+            entry.composition,
+            Composition::NodeScore
+                | Composition::NodeGroup
+                | Composition::NodeOrder
+                | Composition::NodeTraversal
+                | Composition::NodeSet
+                | Composition::EdgeOverlay { .. }
+                | Composition::EdgeGroup
+        );
+        if graph_layer {
+            let document = compose_one(name);
+            let doc = Doc::new(&document);
+            assert_eq!(doc.0.get("kind", 0).unwrap().as_utf8("k").unwrap(), "graph");
+            let counts = doc.u64s("layer.counts", 0);
+            assert_eq!(counts[4], 0, "{name}: no extra identities");
+            composed += 1;
+        }
+    }
+    let find = compose_one("find");
+    assert!(Doc::new(&find)
+        .u8s("node.status")
+        .contains(&NODE_STATUS_MEMBER));
+    assert_eq!(
+        composed, 54,
+        "node and edge layer schemas in GraphForge 0.5.2"
+    );
+}
+
+#[test]
+fn communities_map_to_ranked_class_codes_with_legend() {
+    let document = compose_one("louvain");
+    let doc = Doc::new(&document);
+    let classes = doc.u8s("node.class");
+    assert!(classes.iter().all(|&c| (1..=7).contains(&c)));
+    let texts = doc.texts("legend.text", 0);
+    assert!(
+        texts.iter().all(|t| t.starts_with("community ")),
+        "{texts:?}"
+    );
+    assert_eq!(doc.u8s("legend.side").len(), texts.len());
+    assert_eq!(doc.u8s("legend.rgba_light").len(), 4 * texts.len());
+}
+
+#[test]
+fn unassigned_groups_are_class_zero_and_recorded() {
+    let document = compose_one("hdbscan");
+    let doc = Doc::new(&document);
+    assert!(doc.u8s("node.class").iter().all(|&c| c == 0));
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_UNASSIGNED_GROUP".into(), 4)));
+    assert!(doc.texts("legend.text", 0).contains(&"no community"));
+}
+
+#[test]
+fn groups_beyond_seven_share_one_bucket() {
+    let mut planes_values: Vec<(usize, Option<i64>)> =
+        (0..20).map(|i| (i, Some(i as i64 % 10))).collect();
+    planes_values.push((20, Some(3)));
+    let base = BaseGraph {
+        node_uuid: vec![[1; 16]; 21],
+        node_name: vec![None; 21],
+        node_type: vec![None; 21],
+        ..Default::default()
+    };
+    let mut planes = Planes::new(&base);
+    let bytes = fixture("louvain");
+    let req = LayerRequest {
+        result: &bytes,
+        result_id: None,
+        generation: None,
+        intent: Intent::Graph,
+        missing: None,
+        extra: None,
+        rows: None,
+        coordinates: None,
+    };
+    let layer = prepare_layer(0, &req).unwrap();
+    let codes = planes.group_codes(&layer, LEGEND_NODE, "community", &planes_values);
+    // Group 3 is largest (3 members); ties by ascending id: 0, 1, 2, 4, 5.
+    let code_of = |element: usize| codes.iter().find(|(e, _)| *e == element).unwrap().1;
+    assert_eq!(code_of(3), 1);
+    assert_eq!(code_of(0), 2);
+    assert_eq!(code_of(5), 6);
+    assert_eq!(code_of(6), 7);
+    assert_eq!(code_of(9), 7);
+    assert!(planes.decisions.contains(&Decision {
+        code: "GF_COMPOSE_GROUPS_BUCKETED",
+        layer: Some(0),
+        count: 4
+    }));
+    assert_eq!(planes.legend[&(LEGEND_NODE, 0, 7)], "other communities (4)");
+}
+
+#[test]
+fn traversal_labels_order_and_sizes_depth() {
+    let document = compose_one("dfs");
+    let doc = Doc::new(&document);
+    let labels = doc.texts("node.label", 0);
+    let mut sorted: Vec<_> = labels.clone();
+    sorted.sort();
+    assert_eq!(sorted, vec!["0", "1", "2", "3"]);
+    let metric = doc.f64s("node.metric", 0);
+    assert!(metric.iter().all(|m| m.is_finite()));
+    assert_eq!(doc.texts("layer.value_names", 0)[..2], ["depth", "order"]);
+}
+
+#[test]
+fn spanning_tree_overlay_marks_members_and_dims_context() {
+    let document = compose_one("minimum_spanning_tree");
+    let doc = Doc::new(&document);
+    let class = doc.u8s("edge.class");
+    let flags = doc.u32s("edge.flags");
+    let members = class.iter().filter(|&&c| c == 1).count();
+    assert_eq!(members, 3, "a spanning tree of 4 nodes has 3 edges");
+    for (c, f) in class.iter().zip(&flags) {
+        assert_eq!(*c == 1, *f & FLAG_DISABLED == 0);
+    }
+    assert!(
+        doc.u8s("edge.status").iter().all(|&s| s == 0),
+        "undirected overlays draw no arrows"
+    );
+    assert!(doc.texts("legend.text", 0).contains(&"spanning tree edge"));
+    assert!(doc.texts("legend.text", 0).contains(&"not in result"));
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_MISSING_DIMMED".into(), 2)));
+}
+
+#[test]
+fn flow_edges_are_directional_with_flow_metric() {
+    let document = compose_one("max_flow_edges");
+    let doc = Doc::new(&document);
+    let status = doc.u8s("edge.status");
+    let metric = doc.f64s("edge.metric", 0);
+    let ids = doc.uuids("edge.uuid");
+    for (id, flow) in result_values("max_flow_edges", "edge_uuid", "flow") {
+        let edge = ids.iter().position(|i| *i == id).unwrap();
+        assert_eq!(status[edge], 1);
+        assert_eq!(metric[edge], flow);
+    }
+}
+
+#[test]
+fn edge_colors_compose_onto_the_base_graph() {
+    let document = compose_one("edge_coloring");
+    let doc = Doc::new(&document);
+    let class = doc.u8s("edge.class");
+    assert!(class.iter().all(|&c| c >= 1), "every edge is colored");
+    assert!(doc
+        .texts("legend.text", 0)
+        .iter()
+        .any(|t| t.starts_with("edge color ")));
+}
+
+#[test]
+fn k_spanning_trees_group_by_tree_id() {
+    let document = compose_one("minimum_k_spanning_tree");
+    let doc = Doc::new(&document);
+    assert!(doc
+        .texts("legend.text", 0)
+        .iter()
+        .any(|t| t.starts_with("tree ")));
+    assert_eq!(doc.texts("layer.value_names", 0), vec!["tree_id", "weight"]);
+    // Two spanning trees of a five-edge graph share at least one edge.
+    assert!(doc
+        .decisions()
+        .iter()
+        .any(|(c, n)| c == "GF_COMPOSE_SHARED_MEMBERSHIP" && *n > 0));
+}
+
+#[test]
+fn several_layers_coexist_without_mutating_the_base() {
+    let (base, generation) = base_of("pagerank");
+    let bytes = request(
+        &[base],
+        Some(generation),
+        &[
+            layer("pagerank"),
+            layer("louvain"),
+            layer("minimum_spanning_tree"),
+            layer("articulation_points"),
+        ],
+    );
+    let document = compose_bytes(&bytes).unwrap();
+    let doc = Doc::new(&document);
+    assert!(doc.f64s("node.metric", 0).iter().all(|m| m.is_finite()));
+    assert!(doc.u8s("node.class").iter().all(|&c| c > 0));
+    assert_eq!(doc.u8s("edge.class").iter().filter(|&&c| c == 1).count(), 3);
+    for i in 0..4 {
+        assert!(doc.0.get("layer.schema", i).is_some());
+    }
+    // The base graph itself is unchanged: same nodes and edges in base order.
+    let alone = compose_one("pagerank");
+    let alone = Doc::new(&alone);
+    assert_eq!(doc.uuids("node.uuid"), alone.uuids("node.uuid"));
+    assert_eq!(doc.uuids("edge.uuid"), alone.uuids("edge.uuid"));
+    assert_eq!(doc.u64s("edge.source", 0), alone.u64s("edge.source", 0));
+}
+
+#[test]
+fn two_writers_of_one_channel_conflict() {
+    let (base, generation) = base_of("pagerank");
+    let (code, layer_index) = fail(request(
+        &[base],
+        Some(generation),
+        &[layer("pagerank"), layer("betweenness")],
+    ));
+    assert_eq!(
+        (code.as_str(), layer_index),
+        ("GF_COMPOSE_CHANNEL_CONFLICT", 1)
+    );
+}
+
+#[test]
+fn stale_and_missing_generations_fail_explicitly() {
+    let (base, generation) = base_of("pagerank");
+    let mut stale = layer("pagerank");
+    stale.generation = Some(parse_uuid_text("0190a000-0000-7000-8000-0000000000ff").unwrap());
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[stale])).0,
+        "GF_COMPOSE_GENERATION_STALE"
+    );
+
+    let mut unnamed = layer("pagerank");
+    unnamed.generation = None;
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[unnamed.clone()])).0,
+        "GF_COMPOSE_GENERATION_MISSING"
+    );
+    assert_eq!(
+        fail(request(&[base], None, &[layer("pagerank")])).0,
+        "GF_COMPOSE_GENERATION_MISSING"
+    );
+
+    let document = compose_bytes(&request(&[base], None, &[unnamed])).unwrap();
+    assert!(Doc::new(&document)
+        .decisions()
+        .contains(&("GF_COMPOSE_GENERATION_UNVERIFIED".into(), 1)));
+}
+
+#[test]
+fn incompatible_base_graphs_fail_on_extra_identities() {
+    let (_, generation) = base_of("pagerank");
+    let (code, _) = fail(request(&["dag"], Some(generation), &[layer("pagerank")]));
+    assert_eq!(code, "GF_COMPOSE_EXTRA_IDS");
+
+    let mut dropped = layer("pagerank");
+    dropped.extra = Some("drop");
+    let document = compose_bytes(&request(&["dag"], Some(generation), &[dropped])).unwrap();
+    let doc = Doc::new(&document);
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_EXTRA_DROPPED".into(), 4)));
+    assert!(doc
+        .u32s("node.flags")
+        .iter()
+        .all(|&f| f & FLAG_DISABLED != 0));
+}
+
+#[test]
+fn missing_identity_policies() {
+    let (_, generation) = base_of("pagerank");
+    // A base holding two graphs: the result covers only one of them.
+    let both = &["cyclic", "flow"];
+    let document = compose_bytes(&request(both, Some(generation), &[layer("pagerank")])).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(
+        doc.u32s("node.flags")
+            .iter()
+            .filter(|&&f| f & FLAG_DISABLED != 0)
+            .count(),
+        4
+    );
+    assert_eq!(doc.u64s("layer.counts", 0)[3], 4);
+
+    let mut hide = layer("pagerank");
+    hide.missing = Some("hide");
+    let document = compose_bytes(&request(both, Some(generation), &[hide])).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(doc.uuids("node.uuid").len(), 4);
+    assert_eq!(
+        doc.uuids("edge.uuid").len(),
+        5,
+        "flow edges leave with their nodes"
+    );
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_EDGES_HIDDEN_WITH_NODES".into(), 4)));
+    assert!(doc.u64s("edge.source", 0).iter().all(|&s| s < 4));
+
+    let mut strict = layer("pagerank");
+    strict.missing = Some("error");
+    assert_eq!(
+        fail(request(both, Some(generation), &[strict])).0,
+        "GF_COMPOSE_MISSING_IDS"
+    );
+}
+
+#[test]
+fn relationship_endpoints_must_match_the_base() {
+    let nodes = fixture("base-flow-nodes");
+    let edges = fixture("base-flow-edges");
+    let tables = [read_table(&nodes).unwrap(), read_table(&edges).unwrap()];
+    let graph = base::build(&tables, None, true).unwrap();
+    let mut targets: Vec<Uuid> = graph
+        .edge_target
+        .iter()
+        .map(|&t| graph.node_uuid[t])
+        .collect();
+    let sources: Vec<Uuid> = graph
+        .edge_source
+        .iter()
+        .map(|&s| graph.node_uuid[s])
+        .collect();
+    targets.rotate_left(1);
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.uuids("base.node_uuid", 0, &graph.node_uuid);
+    builder.uuids("base.edge_uuid", 0, &graph.edge_uuid);
+    builder.uuids("base.edge_source_uuid", 0, &sources);
+    builder.uuids("base.edge_target_uuid", 0, &targets);
+    builder.bytes("layer.result", 0, &fixture("max_flow_edges"));
+    builder.utf8("layer.intent", 0, "graph");
+    assert_eq!(
+        fail(builder.finish()).0,
+        "GF_COMPOSE_EDGE_ENDPOINT_MISMATCH"
+    );
+}
+
+#[test]
+fn node_results_naming_relationships_are_rejected() {
+    let ids = result_values("pagerank", "node_uuid", "score");
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.uuids("base.node_uuid", 0, &[[7; 16], [8; 16]]);
+    builder.uuids("base.edge_uuid", 0, &[ids[0].0]);
+    builder.uuids("base.edge_source_uuid", 0, &[[7; 16]]);
+    builder.uuids("base.edge_target_uuid", 0, &[[8; 16]]);
+    builder.bytes("layer.result", 0, &fixture("pagerank"));
+    builder.utf8("layer.intent", 0, "graph");
+    assert_eq!(fail(builder.finish()).0, "GF_COMPOSE_IDENTITY_KIND");
+}
+
+#[test]
+fn intents_are_explicit_and_checked_against_the_ledger() {
+    let (base, generation) = base_of("pagerank");
+    let mut table = layer("pagerank");
+    table.intent = "table";
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[table])).0,
+        "GF_COMPOSE_INTENT_UNSUPPORTED"
+    );
+    let mut unknown = layer("pagerank");
+    unknown.intent = "auto";
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[unknown])).0,
+        "GF_COMPOSE_INTENT_INVALID"
+    );
+    let mut scalar = layer("is_dag");
+    scalar.intent = "graph";
+    assert_eq!(
+        fail(request(&["dag"], Some(base_of("is_dag").1), &[scalar])).0,
+        "GF_COMPOSE_INTENT_UNSUPPORTED"
+    );
+
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.bytes("layer.result", 0, &fixture("pagerank"));
+    assert_eq!(fail(builder.finish()).0, "GF_COMPOSE_INTENT_REQUIRED");
+}
+
+#[test]
+fn graph_intents_need_a_base_graph() {
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.bytes("layer.result", 0, &fixture("pagerank"));
+    builder.utf8("layer.intent", 0, "graph");
+    assert_eq!(fail(builder.finish()).0, "GF_COMPOSE_BASE_REQUIRED");
+}
+
+#[test]
+fn malformed_requests_and_results_fail_with_codes() {
+    assert_eq!(fail(b"nope".to_vec()).0, "GF_COMPOSE_REQUEST_INVALID");
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.bytes("layer.surprise", 0, b"x");
+    assert_eq!(fail(builder.finish()).0, "GF_COMPOSE_REQUEST_INVALID");
+
+    let (base, generation) = base_of("pagerank");
+    let mut truncated = layer("pagerank");
+    truncated.result.truncate(truncated.result.len() / 2);
+    let (code, layer_index) = fail(request(&[base], Some(generation), &[truncated]));
+    assert_eq!((code.as_str(), layer_index), ("GF_ARROW_MALFORMED", 0));
+
+    let mut cypher = layer("cypher-nodes");
+    cypher.intent = "graph";
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[cypher])).0,
+        "GF_RESULT_NOT_ALGORITHM"
+    );
+}
+
+#[test]
+fn selected_rows_restrict_a_layer() {
+    let (base, generation) = base_of("pagerank");
+    let mut some = layer("pagerank");
+    some.rows = Some(vec![2, 0]);
+    let document = compose_bytes(&request(&[base], Some(generation), &[some])).unwrap();
+    let doc = Doc::new(&document);
+    assert_eq!(doc.u64s("layer.counts", 0), vec![4, 2, 2, 2, 0]);
+    let mut bad = layer("pagerank");
+    bad.rows = Some(vec![0, 0]);
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[bad])).0,
+        "GF_COMPOSE_REQUEST_INVALID"
+    );
+}
+
+#[test]
+fn composition_is_deterministic_and_echoes_provenance() {
+    let (base, generation) = base_of("pagerank");
+    let mut spec = layer("pagerank");
+    spec.result_id = Some("01961e0c-7a1b-7c3d-8e4f-a1b2c3d4e5f6");
+    let bytes = request(&[base], Some(generation), &[spec, layer("louvain")]);
+    let first = compose_bytes(&bytes).unwrap();
+    assert_eq!(first, compose_bytes(&bytes).unwrap());
+    let doc = Doc::new(&first);
+    assert_eq!(
+        doc.0
+            .get("layer.result_id", 0)
+            .unwrap()
+            .as_utf8("x")
+            .unwrap(),
+        "01961e0c-7a1b-7c3d-8e4f-a1b2c3d4e5f6"
+    );
+    assert_eq!(
+        doc.0
+            .get("layer.algorithm", 1)
+            .unwrap()
+            .as_utf8("x")
+            .unwrap(),
+        "louvain"
+    );
+    assert_eq!(doc.u64s("node.base_row", 0), vec![0, 1, 2, 3]);
+}
+
+#[test]
+fn diagnostics_never_carry_values_or_identities() {
+    // Every error message across the negative corpus is free of UUID text
+    // and of any fixture value.
+    let (base, generation) = base_of("pagerank");
+    let mut stale = layer("pagerank");
+    stale.generation = Some([0xab; 16]);
+    for bytes in [
+        request(&["dag"], Some(generation), &[layer("pagerank")]),
+        request(&[base], Some(generation), &[stale]),
+        request(
+            &[base],
+            Some(generation),
+            &[layer("pagerank"), layer("betweenness")],
+        ),
+    ] {
+        let document = compose_bytes(&bytes).unwrap_err();
+        let c = Container::decode(&document, DOCUMENT_MAGIC).unwrap();
+        let message = c.get("error.message", 0).unwrap().as_utf8("x").unwrap();
+        assert!(
+            !message.contains("0190a000") && !message.contains("abab"),
+            "{message}"
+        );
+        assert!(
+            !message.chars().any(|c| c == '.' && message.contains("0.")),
+            "{message}"
+        );
+    }
+}

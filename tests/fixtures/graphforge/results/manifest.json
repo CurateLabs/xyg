@@ -1,0 +1,1039 @@
+{
+  "graphforgeVersion": "0.5.2",
+  "contracts": [
+    {
+      "verb": "rank",
+      "algorithm": "pagerank",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "betweenness",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "closeness",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "harmonic_closeness",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "degree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "eigenvector",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "article_rank",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "hits_hub",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "hits_authority",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "celf",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "clustering_coefficient",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "triangles",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "k_core",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "preferential_attachment",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "adamic_adar",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "common_neighbors",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "resource_allocation",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "rank",
+      "algorithm": "total_neighbors",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "louvain",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "leiden",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "label_propagation",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "speaker_listener",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "girvan_newman",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "modularity_optimization",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "fastgreedy",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "infomap",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "leading_eigenvector",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "walktrap",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "spinglass",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "hdbscan",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "k_means",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "approximate_max_k_cut",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "components",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "strongly_connected",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "biconnected",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "cluster",
+      "algorithm": "k_core_decomposition",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "bfs",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "dijkstra",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "dijkstra_all_pairs",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "astar",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "bellman_ford",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "floyd_warshall",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "delta_stepping",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "yens",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "max_flow",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "max_flow_edges",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "min_cut",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "min_cut_edges",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "min_cost_max_flow",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "min_cost_max_flow_edges",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "gomory_hu_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "min_steiner_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "prize_collecting_steiner_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "dfs",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "random_walk",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "paths",
+      "algorithm": "transitive_closure",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "minimum_spanning_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "maximum_spanning_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "minimum_k_spanning_tree",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "topological_sort",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "is_dag",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "find_cycles",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "dag_longest_path",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "dag_longest_path_weighted",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "node_coloring",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "edge_coloring",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "chromatic_number",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "k1_coloring",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "max_weight_matching",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "max_cardinality_matching",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "max_bipartite_matching",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "euler_circuit",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "euler_path",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "has_euler_circuit",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "has_euler_path",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "is_planar",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "articulation_points",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "bridges",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "triangle_count",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "conductance",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "modularity",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "transitivity",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "triad_census",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "dyad_census",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "count_automorphisms",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "node2vec",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "graphsage",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "fast_random_projection",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "analyze",
+      "algorithm": "hashgnn",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "similar",
+      "algorithm": "node_similarity",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "similar",
+      "algorithm": "knn",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "similar",
+      "algorithm": "filtered_knn",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "similar",
+      "algorithm": "filtered_node_similarity",
+      "resultSchemaVersion": 1
+    },
+    {
+      "verb": "similar",
+      "algorithm": "cosine",
+      "resultSchemaVersion": 1
+    }
+  ],
+  "fixtures": {
+    "base-cyclic-nodes": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "base-cyclic-edges": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "base-dag-nodes": {
+      "verb": "execute",
+      "base": "dag"
+    },
+    "base-dag-edges": {
+      "verb": "execute",
+      "base": "dag"
+    },
+    "base-flow-nodes": {
+      "verb": "execute",
+      "base": "flow"
+    },
+    "base-flow-edges": {
+      "verb": "execute",
+      "base": "flow"
+    },
+    "base-ring-nodes": {
+      "verb": "execute",
+      "base": "ring"
+    },
+    "base-ring-edges": {
+      "verb": "execute",
+      "base": "ring"
+    },
+    "base-points-nodes": {
+      "verb": "execute",
+      "base": "points"
+    },
+    "base-points-edges": {
+      "verb": "execute",
+      "base": "points"
+    },
+    "pagerank": {
+      "verb": "rank",
+      "algorithm": "pagerank",
+      "base": "cyclic"
+    },
+    "betweenness": {
+      "verb": "rank",
+      "algorithm": "betweenness",
+      "base": "cyclic"
+    },
+    "closeness": {
+      "verb": "rank",
+      "algorithm": "closeness",
+      "base": "cyclic"
+    },
+    "harmonic_closeness": {
+      "verb": "rank",
+      "algorithm": "harmonic_closeness",
+      "base": "cyclic"
+    },
+    "degree": {
+      "verb": "rank",
+      "algorithm": "degree",
+      "base": "cyclic"
+    },
+    "eigenvector": {
+      "verb": "rank",
+      "algorithm": "eigenvector",
+      "base": "cyclic"
+    },
+    "article_rank": {
+      "verb": "rank",
+      "algorithm": "article_rank",
+      "base": "cyclic"
+    },
+    "hits_hub": {
+      "verb": "rank",
+      "algorithm": "hits_hub",
+      "base": "cyclic"
+    },
+    "hits_authority": {
+      "verb": "rank",
+      "algorithm": "hits_authority",
+      "base": "cyclic"
+    },
+    "celf": {
+      "verb": "rank",
+      "algorithm": "celf",
+      "base": "cyclic"
+    },
+    "clustering_coefficient": {
+      "verb": "rank",
+      "algorithm": "clustering_coefficient",
+      "base": "cyclic"
+    },
+    "triangles": {
+      "verb": "rank",
+      "algorithm": "triangles",
+      "base": "cyclic"
+    },
+    "k_core": {
+      "verb": "rank",
+      "algorithm": "k_core",
+      "base": "cyclic"
+    },
+    "preferential_attachment": {
+      "verb": "rank",
+      "algorithm": "preferential_attachment",
+      "base": "cyclic"
+    },
+    "adamic_adar": {
+      "verb": "rank",
+      "algorithm": "adamic_adar",
+      "base": "cyclic"
+    },
+    "common_neighbors": {
+      "verb": "rank",
+      "algorithm": "common_neighbors",
+      "base": "cyclic"
+    },
+    "resource_allocation": {
+      "verb": "rank",
+      "algorithm": "resource_allocation",
+      "base": "cyclic"
+    },
+    "total_neighbors": {
+      "verb": "rank",
+      "algorithm": "total_neighbors",
+      "base": "cyclic"
+    },
+    "louvain": {
+      "verb": "cluster",
+      "algorithm": "louvain",
+      "base": "cyclic"
+    },
+    "leiden": {
+      "verb": "cluster",
+      "algorithm": "leiden",
+      "base": "cyclic"
+    },
+    "label_propagation": {
+      "verb": "cluster",
+      "algorithm": "label_propagation",
+      "base": "cyclic"
+    },
+    "speaker_listener": {
+      "verb": "cluster",
+      "algorithm": "speaker_listener",
+      "base": "cyclic"
+    },
+    "girvan_newman": {
+      "verb": "cluster",
+      "algorithm": "girvan_newman",
+      "base": "cyclic"
+    },
+    "modularity_optimization": {
+      "verb": "cluster",
+      "algorithm": "modularity_optimization",
+      "base": "cyclic"
+    },
+    "fastgreedy": {
+      "verb": "cluster",
+      "algorithm": "fastgreedy",
+      "base": "cyclic"
+    },
+    "infomap": {
+      "verb": "cluster",
+      "algorithm": "infomap",
+      "base": "cyclic"
+    },
+    "leading_eigenvector": {
+      "verb": "cluster",
+      "algorithm": "leading_eigenvector",
+      "base": "cyclic"
+    },
+    "walktrap": {
+      "verb": "cluster",
+      "algorithm": "walktrap",
+      "base": "cyclic"
+    },
+    "spinglass": {
+      "verb": "cluster",
+      "algorithm": "spinglass",
+      "base": "cyclic"
+    },
+    "hdbscan": {
+      "verb": "cluster",
+      "algorithm": "hdbscan",
+      "base": "cyclic"
+    },
+    "k_means": {
+      "verb": "cluster",
+      "algorithm": "k_means",
+      "base": "points"
+    },
+    "approximate_max_k_cut": {
+      "verb": "cluster",
+      "algorithm": "approximate_max_k_cut",
+      "base": "cyclic"
+    },
+    "components": {
+      "verb": "cluster",
+      "algorithm": "components",
+      "base": "cyclic"
+    },
+    "strongly_connected": {
+      "verb": "cluster",
+      "algorithm": "strongly_connected",
+      "base": "cyclic"
+    },
+    "biconnected": {
+      "verb": "cluster",
+      "algorithm": "biconnected",
+      "base": "cyclic"
+    },
+    "k_core_decomposition": {
+      "verb": "cluster",
+      "algorithm": "k_core_decomposition",
+      "base": "cyclic"
+    },
+    "bfs": {
+      "verb": "paths",
+      "algorithm": "bfs",
+      "base": "cyclic"
+    },
+    "dijkstra": {
+      "verb": "paths",
+      "algorithm": "dijkstra",
+      "base": "cyclic"
+    },
+    "dijkstra_all_pairs": {
+      "verb": "paths",
+      "algorithm": "dijkstra_all_pairs",
+      "base": "cyclic"
+    },
+    "astar": {
+      "verb": "paths",
+      "algorithm": "astar",
+      "base": "cyclic"
+    },
+    "bellman_ford": {
+      "verb": "paths",
+      "algorithm": "bellman_ford",
+      "base": "cyclic"
+    },
+    "floyd_warshall": {
+      "verb": "paths",
+      "algorithm": "floyd_warshall",
+      "base": "cyclic"
+    },
+    "delta_stepping": {
+      "verb": "paths",
+      "algorithm": "delta_stepping",
+      "base": "cyclic"
+    },
+    "yens": {
+      "verb": "paths",
+      "algorithm": "yens",
+      "base": "cyclic"
+    },
+    "max_flow": {
+      "verb": "paths",
+      "algorithm": "max_flow",
+      "base": "flow"
+    },
+    "max_flow_edges": {
+      "verb": "paths",
+      "algorithm": "max_flow_edges",
+      "base": "flow"
+    },
+    "min_cut": {
+      "verb": "paths",
+      "algorithm": "min_cut",
+      "base": "flow"
+    },
+    "min_cut_edges": {
+      "verb": "paths",
+      "algorithm": "min_cut_edges",
+      "base": "flow"
+    },
+    "min_cost_max_flow": {
+      "verb": "paths",
+      "algorithm": "min_cost_max_flow",
+      "base": "flow"
+    },
+    "min_cost_max_flow_edges": {
+      "verb": "paths",
+      "algorithm": "min_cost_max_flow_edges",
+      "base": "flow"
+    },
+    "gomory_hu_tree": {
+      "verb": "paths",
+      "algorithm": "gomory_hu_tree",
+      "base": "cyclic"
+    },
+    "min_steiner_tree": {
+      "verb": "paths",
+      "algorithm": "min_steiner_tree",
+      "base": "cyclic"
+    },
+    "prize_collecting_steiner_tree": {
+      "verb": "paths",
+      "algorithm": "prize_collecting_steiner_tree",
+      "base": "cyclic"
+    },
+    "dfs": {
+      "verb": "paths",
+      "algorithm": "dfs",
+      "base": "cyclic"
+    },
+    "random_walk": {
+      "verb": "paths",
+      "algorithm": "random_walk",
+      "base": "cyclic"
+    },
+    "transitive_closure": {
+      "verb": "paths",
+      "algorithm": "transitive_closure",
+      "base": "cyclic"
+    },
+    "minimum_spanning_tree": {
+      "verb": "analyze",
+      "algorithm": "minimum_spanning_tree",
+      "base": "cyclic"
+    },
+    "maximum_spanning_tree": {
+      "verb": "analyze",
+      "algorithm": "maximum_spanning_tree",
+      "base": "cyclic"
+    },
+    "minimum_k_spanning_tree": {
+      "verb": "analyze",
+      "algorithm": "minimum_k_spanning_tree",
+      "base": "cyclic"
+    },
+    "topological_sort": {
+      "verb": "analyze",
+      "algorithm": "topological_sort",
+      "base": "dag"
+    },
+    "is_dag": {
+      "verb": "analyze",
+      "algorithm": "is_dag",
+      "base": "dag"
+    },
+    "find_cycles": {
+      "verb": "analyze",
+      "algorithm": "find_cycles",
+      "base": "cyclic"
+    },
+    "dag_longest_path": {
+      "verb": "analyze",
+      "algorithm": "dag_longest_path",
+      "base": "dag"
+    },
+    "dag_longest_path_weighted": {
+      "verb": "analyze",
+      "algorithm": "dag_longest_path_weighted",
+      "base": "dag"
+    },
+    "node_coloring": {
+      "verb": "analyze",
+      "algorithm": "node_coloring",
+      "base": "cyclic"
+    },
+    "edge_coloring": {
+      "verb": "analyze",
+      "algorithm": "edge_coloring",
+      "base": "cyclic"
+    },
+    "chromatic_number": {
+      "verb": "analyze",
+      "algorithm": "chromatic_number",
+      "base": "cyclic"
+    },
+    "k1_coloring": {
+      "verb": "analyze",
+      "algorithm": "k1_coloring",
+      "base": "cyclic"
+    },
+    "max_weight_matching": {
+      "verb": "analyze",
+      "algorithm": "max_weight_matching",
+      "base": "cyclic"
+    },
+    "max_cardinality_matching": {
+      "verb": "analyze",
+      "algorithm": "max_cardinality_matching",
+      "base": "cyclic"
+    },
+    "max_bipartite_matching": {
+      "verb": "analyze",
+      "algorithm": "max_bipartite_matching",
+      "base": "ring"
+    },
+    "euler_circuit": {
+      "verb": "analyze",
+      "algorithm": "euler_circuit",
+      "base": "ring"
+    },
+    "euler_path": {
+      "verb": "analyze",
+      "algorithm": "euler_path",
+      "base": "cyclic"
+    },
+    "has_euler_circuit": {
+      "verb": "analyze",
+      "algorithm": "has_euler_circuit",
+      "base": "cyclic"
+    },
+    "has_euler_path": {
+      "verb": "analyze",
+      "algorithm": "has_euler_path",
+      "base": "cyclic"
+    },
+    "is_planar": {
+      "verb": "analyze",
+      "algorithm": "is_planar",
+      "base": "cyclic"
+    },
+    "articulation_points": {
+      "verb": "analyze",
+      "algorithm": "articulation_points",
+      "base": "cyclic"
+    },
+    "bridges": {
+      "verb": "analyze",
+      "algorithm": "bridges",
+      "base": "cyclic"
+    },
+    "triangle_count": {
+      "verb": "analyze",
+      "algorithm": "triangle_count",
+      "base": "cyclic"
+    },
+    "conductance": {
+      "verb": "analyze",
+      "algorithm": "conductance",
+      "base": "cyclic"
+    },
+    "modularity": {
+      "verb": "analyze",
+      "algorithm": "modularity",
+      "base": "cyclic"
+    },
+    "transitivity": {
+      "verb": "analyze",
+      "algorithm": "transitivity",
+      "base": "cyclic"
+    },
+    "triad_census": {
+      "verb": "analyze",
+      "algorithm": "triad_census",
+      "base": "cyclic"
+    },
+    "dyad_census": {
+      "verb": "analyze",
+      "algorithm": "dyad_census",
+      "base": "cyclic"
+    },
+    "count_automorphisms": {
+      "verb": "analyze",
+      "algorithm": "count_automorphisms",
+      "base": "cyclic"
+    },
+    "node2vec": {
+      "verb": "analyze",
+      "algorithm": "node2vec",
+      "base": "cyclic"
+    },
+    "graphsage": {
+      "verb": "analyze",
+      "algorithm": "graphsage",
+      "base": "cyclic"
+    },
+    "fast_random_projection": {
+      "verb": "analyze",
+      "algorithm": "fast_random_projection",
+      "base": "cyclic"
+    },
+    "hashgnn": {
+      "verb": "analyze",
+      "algorithm": "hashgnn",
+      "base": "cyclic"
+    },
+    "node_similarity": {
+      "verb": "similar",
+      "algorithm": "node_similarity",
+      "base": "cyclic"
+    },
+    "knn": {
+      "verb": "similar",
+      "algorithm": "knn",
+      "base": "cyclic"
+    },
+    "filtered_knn": {
+      "verb": "similar",
+      "algorithm": "filtered_knn",
+      "base": "cyclic"
+    },
+    "filtered_node_similarity": {
+      "verb": "similar",
+      "algorithm": "filtered_node_similarity",
+      "base": "cyclic"
+    },
+    "cosine": {
+      "verb": "similar",
+      "algorithm": "cosine",
+      "base": "cyclic"
+    },
+    "cypher-nodes": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "cypher-edges": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "cypher-paths": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "cypher-scalars": {
+      "verb": "execute",
+      "base": "cyclic"
+    },
+    "find": {
+      "verb": "find",
+      "base": "cyclic"
+    },
+    "schema": {
+      "verb": "schema",
+      "base": "cyclic"
+    }
+  },
+  "bases": {
+    "cyclic": {
+      "nodes": "base-cyclic-nodes",
+      "edges": "base-cyclic-edges",
+      "generation": "0190a000-0000-7000-8000-000000000001"
+    },
+    "dag": {
+      "nodes": "base-dag-nodes",
+      "edges": "base-dag-edges",
+      "generation": "0190a000-0000-7000-8000-000000000002"
+    },
+    "flow": {
+      "nodes": "base-flow-nodes",
+      "edges": "base-flow-edges",
+      "generation": "0190a000-0000-7000-8000-000000000003"
+    },
+    "ring": {
+      "nodes": "base-ring-nodes",
+      "edges": "base-ring-edges",
+      "generation": "0190a000-0000-7000-8000-000000000004"
+    },
+    "points": {
+      "nodes": "base-points-nodes",
+      "edges": "base-points-edges",
+      "generation": "0190a000-0000-7000-8000-000000000005"
+    }
+  },
+  "failures": {}
+}

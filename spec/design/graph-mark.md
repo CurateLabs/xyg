@@ -643,7 +643,13 @@ omits the paint.
 
 Hosts call `xyg_graph_semantic_style_resolve` once per side over **source**
 rows (nodes with the §7.1 visual-state flags from `visual_state_flags`; edges
-with zero flags) and never compute palette, scale, or state policy. Resolving
+with `edge_visual_state_flags` / Node `edgeVisualStateFlags`, zero when unset)
+and never compute palette, scale, or state policy. Edge flags are source-edge
+indexed, need the edge semantic fields, follow collapse subsetting like every
+per-edge plane, and resolve through the same Rust precedence as nodes (a
+disabled edge paints at opacity 0.28); GraphForge compositions use them to dim
+relationships a result does not cover
+([graphforge-compositions.md](graphforge-compositions.md) §4.3). Resolving
 over every source edge keeps the metric domain the source domain, so an
 EdgeSample tier does not rescale kept edge widths. The resolved rows map onto
 the existing painter channels:
@@ -948,6 +954,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_compound_transition` | ABI 90 atomic stable-ID expand/collapse/toggle; Direct LOD only (#34) |
 | `xyg_graph_semantic_paint_layers` | ABI 369 ordered semantic paint layers (halo, body, stroke, dash, arrow) shared by the canonical Scene and the composed mark (#34, §7.1.2) |
 | `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
+| `xyg_graphforge_compose` / `xyg_graphforge_document_len` / `_copy` / `_destroy`, `xyg_graphforge_composition_version`, `xyg_graphforge_ledger_tsv` | ABI 378 GraphForge result compositions: Arrow IPC results + base graph + generation + intent → `XYGF` semantic planes for this mark ([graphforge-compositions.md](graphforge-compositions.md) §6.1) |
 
 Element counts and indices are `u64` / `uint64_t`.
 

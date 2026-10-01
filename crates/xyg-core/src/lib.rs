@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 377;
+pub const ABI_VERSION: u32 = 378;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -13573,6 +13573,247 @@ pub unsafe extern "C" fn xyg_graph_projection_destroy(handle: u64) -> i32 {
             projection::ProjectionError::StaleHandle as i32
         }
     })
+}
+
+// ---------------------------------------------------------------------------
+// GraphForge result compositions (spec/design/graphforge-compositions.md §5).
+// One request/document pair serves every host; WASM runs the same engine call.
+// ---------------------------------------------------------------------------
+
+/// Live composition documents held for hosts to copy out.
+const GRAPHFORGE_MAX_DOCUMENTS: usize = 1024;
+
+type GraphForgeDocuments = (u64, std::collections::HashMap<u64, Vec<u8>>);
+
+fn graphforge_documents() -> &'static std::sync::Mutex<GraphForgeDocuments> {
+    static DOCUMENTS: std::sync::OnceLock<std::sync::Mutex<GraphForgeDocuments>> =
+        std::sync::OnceLock::new();
+    DOCUMENTS.get_or_init(|| std::sync::Mutex::new((0, std::collections::HashMap::new())))
+}
+
+/// Version of the `XYGF` composition semantics.
+#[no_mangle]
+pub extern "C" fn xyg_graphforge_composition_version() -> u32 {
+    xyg_engine::graphforge::compose::COMPOSITION_VERSION
+}
+
+/// Compose one `XYGQ` request into an `XYGF` document held behind a handle.
+/// Returns 0 when the document is a composition, 1 when it is an error
+/// document (stable `error.code` inside), -1 for invalid arguments, and -2
+/// when too many documents are live. Composition work runs entirely in Rust.
+///
+/// # Safety
+/// `request` must address `request_len` readable bytes (null only when the
+/// length is zero); `out_handle` must be valid for one write.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graphforge_compose(
+    request: *const u8,
+    request_len: usize,
+    out_handle: *mut u64,
+) -> i32 {
+    if out_handle.is_null() || (request.is_null() && request_len != 0) {
+        return -1;
+    }
+    *out_handle = 0;
+    ffi_guard(-1, || {
+        let bytes = if request_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(request, request_len)
+        };
+        let (status, document) = match xyg_engine::graphforge::compose::compose_bytes(bytes) {
+            Ok(document) => (0, document),
+            Err(document) => (1, document),
+        };
+        let mut guard = graphforge_documents()
+            .lock()
+            .expect("graphforge registry poisoned");
+        if guard.1.len() >= GRAPHFORGE_MAX_DOCUMENTS {
+            return -2;
+        }
+        guard.0 += 1;
+        let handle = guard.0;
+        guard.1.insert(handle, document);
+        *out_handle = handle;
+        status
+    })
+}
+
+/// Byte length of a composition document. Returns 0, or -7 for a stale handle.
+///
+/// # Safety
+/// `out_len` must be valid for one write.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graphforge_document_len(handle: u64, out_len: *mut u64) -> i32 {
+    if out_len.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let guard = graphforge_documents()
+            .lock()
+            .expect("graphforge registry poisoned");
+        match guard.1.get(&handle) {
+            Some(document) => {
+                *out_len = document.len() as u64;
+                0
+            }
+            None => -7,
+        }
+    })
+}
+
+/// Copy a composition document. Returns 0, -7 for a stale handle, or -8 when
+/// `out_cap` is smaller than the document.
+///
+/// # Safety
+/// `out` must address `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graphforge_document_copy(
+    handle: u64,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        let guard = graphforge_documents()
+            .lock()
+            .expect("graphforge registry poisoned");
+        let Some(document) = guard.1.get(&handle) else {
+            return -7;
+        };
+        if out_cap < document.len() || (out.is_null() && !document.is_empty()) {
+            return -8;
+        }
+        std::ptr::copy_nonoverlapping(document.as_ptr(), out, document.len());
+        0
+    })
+}
+
+/// Release a composition document. Returns 0, or -7 for a stale handle.
+///
+/// # Safety
+/// No other call may use `handle` after it is destroyed.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graphforge_document_destroy(handle: u64) -> i32 {
+    ffi_guard(-1, || {
+        let mut guard = graphforge_documents()
+            .lock()
+            .expect("graphforge registry poisoned");
+        if guard.1.remove(&handle).is_some() {
+            0
+        } else {
+            -7
+        }
+    })
+}
+
+/// The Rust result-schema coverage ledger as tab-separated UTF-8. Returns the
+/// required byte count; writes it (no trailing NUL) when `out_cap` suffices.
+///
+/// # Safety
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graphforge_ledger_tsv(out: *mut u8, out_cap: usize) -> usize {
+    ffi_guard(usize::MAX, || {
+        let tsv = xyg_engine::graphforge::ledger::ledger_tsv();
+        if !out.is_null() && out_cap >= tsv.len() {
+            std::ptr::copy_nonoverlapping(tsv.as_ptr(), out, tsv.len());
+        }
+        tsv.len()
+    })
+}
+
+#[cfg(test)]
+mod graphforge_ffi_tests {
+    use super::*;
+
+    fn fixture(name: &str) -> Vec<u8> {
+        std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/results/{name}.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap()
+    }
+
+    fn request(result: &str, with_base: bool) -> Vec<u8> {
+        use xyg_engine::graphforge::container::{Builder, REQUEST_MAGIC};
+        let mut builder = Builder::new(REQUEST_MAGIC);
+        if with_base {
+            builder.bytes("base.table", 0, &fixture("base-cyclic-nodes"));
+            builder.bytes("base.table", 1, &fixture("base-cyclic-edges"));
+        }
+        builder.bytes("layer.result", 0, &fixture(result));
+        builder.utf8("layer.intent", 0, "graph");
+        builder.finish()
+    }
+
+    unsafe fn document(handle: u64) -> Vec<u8> {
+        let mut len = 0u64;
+        assert_eq!(xyg_graphforge_document_len(handle, &mut len), 0);
+        let mut out = vec![0u8; len as usize];
+        assert_eq!(
+            xyg_graphforge_document_copy(handle, out.as_mut_ptr(), 0),
+            -8
+        );
+        assert_eq!(
+            xyg_graphforge_document_copy(handle, out.as_mut_ptr(), out.len()),
+            0
+        );
+        out
+    }
+
+    #[test]
+    fn compose_round_trips_documents_and_errors() {
+        unsafe {
+            let bytes = request("pagerank", true);
+            let mut handle = 0u64;
+            assert_eq!(
+                xyg_graphforge_compose(bytes.as_ptr(), bytes.len(), &mut handle),
+                0
+            );
+            let ok = document(handle);
+            assert_eq!(&ok[..4], b"XYGF");
+            assert_eq!(
+                ok,
+                xyg_engine::graphforge::compose::compose_bytes(&bytes).unwrap(),
+                "the C ABI returns the engine document unchanged"
+            );
+            assert_eq!(xyg_graphforge_document_destroy(handle), 0);
+            assert_eq!(xyg_graphforge_document_destroy(handle), -7);
+            let mut len = 0u64;
+            assert_eq!(xyg_graphforge_document_len(handle, &mut len), -7);
+
+            let missing_base = request("pagerank", false);
+            assert_eq!(
+                xyg_graphforge_compose(missing_base.as_ptr(), missing_base.len(), &mut handle),
+                1
+            );
+            let error = document(handle);
+            let text = String::from_utf8_lossy(&error);
+            assert!(text.contains("GF_COMPOSE_BASE_REQUIRED"));
+            assert_eq!(xyg_graphforge_document_destroy(handle), 0);
+
+            assert_eq!(xyg_graphforge_compose(std::ptr::null(), 0, &mut handle), 1);
+            assert_eq!(xyg_graphforge_document_destroy(handle), 0);
+            assert_eq!(xyg_graphforge_compose(std::ptr::null(), 4, &mut handle), -1);
+            assert_eq!(
+                xyg_graphforge_compose(bytes.as_ptr(), bytes.len(), std::ptr::null_mut()),
+                -1
+            );
+        }
+    }
+
+    #[test]
+    fn ledger_and_version_are_exposed() {
+        unsafe {
+            let size = xyg_graphforge_ledger_tsv(std::ptr::null_mut(), 0);
+            let mut out = vec![0u8; size];
+            assert_eq!(xyg_graphforge_ledger_tsv(out.as_mut_ptr(), out.len()), size);
+            let tsv = String::from_utf8(out).unwrap();
+            assert!(tsv.starts_with("schema\tversion\tdisposition"));
+            assert!(tsv.contains("\nnode-score\t1\tnode-layer\t"));
+        }
+        assert_eq!(xyg_graphforge_composition_version(), 1);
+    }
 }
 
 // ---------------------------------------------------------------------------

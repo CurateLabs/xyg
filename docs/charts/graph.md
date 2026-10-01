@@ -136,6 +136,7 @@ xyg.graph_chart(
     node_metric="score",        # numbers -> node size
     visual_state_flags="flags", # selected / hovered / filtered / disabled …
     edge_class="relation",
+    edge_visual_state_flags="edge_flags",  # the same states for edges
     edge_metric="weight",       # numbers -> edge width
     theme="dark",
 )

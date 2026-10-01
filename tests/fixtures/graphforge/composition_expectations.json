@@ -1,0 +1,401 @@
+{
+ "bases": {
+  "cyclic": {
+   "edges": 5,
+   "generation": "0190a000-0000-7000-8000-000000000001",
+   "nodeUuids": [
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547",
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd"
+   ],
+   "nodes": 4
+  },
+  "dag": {
+   "edges": 4,
+   "generation": "0190a000-0000-7000-8000-000000000002",
+   "nodeUuids": [
+    "01a0f3fd-2403-70e1-b448-71b819fc5f1b",
+    "01a0f3fd-2406-76d2-a766-d6d7acebf3ea",
+    "01a0f3fd-2409-7550-a581-d8fcb317b5b5",
+    "01a0f3fd-240c-7880-88ee-cdd8c9534fd1"
+   ],
+   "nodes": 4
+  },
+  "flow": {
+   "edges": 4,
+   "generation": "0190a000-0000-7000-8000-000000000003",
+   "nodeUuids": [
+    "01a0f3fd-2418-7e80-901e-5906a187d092",
+    "01a0f3fd-241b-76d2-b55e-bb95cd56dde5",
+    "01a0f3fd-241f-75a3-bf8e-750c562bc519",
+    "01a0f3fd-2422-7ed1-9508-67d75ad515d2"
+   ],
+   "nodes": 4
+  },
+  "points": {
+   "edges": 0,
+   "generation": "0190a000-0000-7000-8000-000000000005",
+   "nodeUuids": [
+    "01a0f3fd-2447-7391-a272-6b1d1d4dbab7",
+    "01a0f3fd-244b-7000-b87a-e02c0149cf32",
+    "01a0f3fd-2450-79a0-bfbc-e13283372951",
+    "01a0f3fd-2455-7302-ad74-5901af878ad1",
+    "01a0f3fd-245b-7b22-84c6-e7429a44f78d",
+    "01a0f3fd-2461-77e3-8be7-6434d15f1026",
+    "01a0f3fd-2467-7921-9614-0fdb37f5aebf",
+    "01a0f3fd-246c-73b1-9075-28bf166fc614",
+    "01a0f3fd-2471-71e3-8ab3-894948c50290",
+    "01a0f3fd-2477-7762-a8e7-f2bf820f7efc"
+   ],
+   "nodes": 10
+  },
+  "ring": {
+   "edges": 4,
+   "generation": "0190a000-0000-7000-8000-000000000004",
+   "nodeUuids": [
+    "01a0f3fd-242e-79b2-a6c3-d186cb81c7de",
+    "01a0f3fd-2432-7983-bd19-d044c200bdc8",
+    "01a0f3fd-2436-7691-9e09-0de34d201d0c",
+    "01a0f3fd-243a-7c51-b07b-9b80f7e3027e"
+   ],
+   "nodes": 4
+  }
+ },
+ "graphforgeVersion": "0.5.2",
+ "layers": {
+  "betweenness": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "row": 0,
+     "score": 0.16666666666666666
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "row": 1,
+     "score": 0.16666666666666666
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "row": 2,
+     "score": 0.3333333333333333
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "row": 3,
+     "score": 0.0
+    }
+   },
+   "values": [
+    "score"
+   ]
+  },
+  "dfs": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "depth": 0,
+     "order": 0,
+     "row": 0
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "depth": 1,
+     "order": 1,
+     "row": 1
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "depth": 2,
+     "order": 2,
+     "row": 2
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "depth": 3,
+     "order": 3,
+     "row": 3
+    }
+   },
+   "values": [
+    "depth",
+    "order"
+   ]
+  },
+  "edge_coloring": {
+   "base": "cyclic",
+   "identity": "edge_uuid",
+   "rows": {
+    "01a0f3fd-23ee-76a2-a6a1-bb18bbcedfeb": {
+     "color": 0,
+     "row": 0
+    },
+    "01a0f3fd-23f0-7cb3-85a2-f139b6ac0ed6": {
+     "color": 1,
+     "row": 1
+    },
+    "01a0f3fd-23f2-7b42-97a1-a7b2624dd117": {
+     "color": 2,
+     "row": 2
+    },
+    "01a0f3fd-23f4-7851-8e4a-a11d743bfc1d": {
+     "color": 0,
+     "row": 3
+    },
+    "01a0f3fd-23f6-71f3-b2af-89cad88f12d5": {
+     "color": 1,
+     "row": 4
+    }
+   },
+   "values": [
+    "color"
+   ]
+  },
+  "find": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "row": 0,
+     "score": 1.2039728164672852
+    }
+   },
+   "values": [
+    "score"
+   ]
+  },
+  "hdbscan": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "community_id": -1,
+     "row": 0
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "community_id": -1,
+     "row": 1
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "community_id": -1,
+     "row": 2
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "community_id": -1,
+     "row": 3
+    }
+   },
+   "values": [
+    "community_id"
+   ]
+  },
+  "louvain": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "community_id": 0,
+     "row": 0
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "community_id": 0,
+     "row": 1
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "community_id": 0,
+     "row": 2
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "community_id": 0,
+     "row": 3
+    }
+   },
+   "values": [
+    "community_id"
+   ]
+  },
+  "max_flow_edges": {
+   "base": "flow",
+   "identity": "edge_uuid",
+   "rows": {
+    "01a0f3fd-2426-7e02-a394-3e60a366890f": {
+     "flow": 3.0,
+     "row": 0
+    },
+    "01a0f3fd-2428-7743-8826-dd3512c556a5": {
+     "flow": 2.0,
+     "row": 1
+    },
+    "01a0f3fd-242a-76a0-9f40-4c903942261c": {
+     "flow": 3.0,
+     "row": 2
+    },
+    "01a0f3fd-242c-7010-9a2b-bbe202d6c2e4": {
+     "flow": 2.0,
+     "row": 3
+    }
+   },
+   "values": [
+    "flow"
+   ]
+  },
+  "min_cost_max_flow_edges": {
+   "base": "flow",
+   "identity": "edge_uuid",
+   "rows": {
+    "01a0f3fd-2426-7e02-a394-3e60a366890f": {
+     "flow": 3.0,
+     "flow_cost": 3.0,
+     "row": 0,
+     "unit_cost": 1.0
+    },
+    "01a0f3fd-2428-7743-8826-dd3512c556a5": {
+     "flow": 2.0,
+     "flow_cost": 4.0,
+     "row": 1,
+     "unit_cost": 2.0
+    },
+    "01a0f3fd-242a-76a0-9f40-4c903942261c": {
+     "flow": 3.0,
+     "flow_cost": 3.0,
+     "row": 2,
+     "unit_cost": 1.0
+    },
+    "01a0f3fd-242c-7010-9a2b-bbe202d6c2e4": {
+     "flow": 2.0,
+     "flow_cost": 2.0,
+     "row": 3,
+     "unit_cost": 1.0
+    }
+   },
+   "values": [
+    "flow",
+    "unit_cost",
+    "flow_cost"
+   ]
+  },
+  "minimum_k_spanning_tree": {
+   "base": "cyclic",
+   "identity": "edge_uuid",
+   "rows": {
+    "01a0f3fd-23ee-76a2-a6a1-bb18bbcedfeb": {
+     "row": 0,
+     "tree_id": 0,
+     "weight": 1.5
+    },
+    "01a0f3fd-23f2-7b42-97a1-a7b2624dd117": {
+     "row": 1,
+     "tree_id": 0,
+     "weight": 1.25
+    },
+    "01a0f3fd-23f4-7851-8e4a-a11d743bfc1d": {
+     "row": 2,
+     "tree_id": 0,
+     "weight": 3.5
+    },
+    "01a0f3fd-23f6-71f3-b2af-89cad88f12d5": {
+     "row": 5,
+     "tree_id": 1,
+     "weight": 4.25
+    }
+   },
+   "values": [
+    "tree_id",
+    "weight"
+   ]
+  },
+  "minimum_spanning_tree": {
+   "base": "cyclic",
+   "identity": "edge_uuid",
+   "rows": {
+    "01a0f3fd-23ee-76a2-a6a1-bb18bbcedfeb": {
+     "row": 1,
+     "weight": 1.5
+    },
+    "01a0f3fd-23f2-7b42-97a1-a7b2624dd117": {
+     "row": 0,
+     "weight": 1.25
+    },
+    "01a0f3fd-23f4-7851-8e4a-a11d743bfc1d": {
+     "row": 2,
+     "weight": 3.5
+    }
+   },
+   "values": [
+    "weight"
+   ]
+  },
+  "node_coloring": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "color": 0,
+     "row": 0
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "color": 1,
+     "row": 1
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "color": 2,
+     "row": 2
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "color": 1,
+     "row": 3
+    }
+   },
+   "values": [
+    "color"
+   ]
+  },
+  "pagerank": {
+   "base": "cyclic",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-23dd-76d3-87e7-d765a3665ef5": {
+     "row": 0,
+     "score": 0.21921128420889605
+    },
+    "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9": {
+     "row": 1,
+     "score": 0.19704471285386455
+    },
+    "01a0f3fd-23e6-71b2-a3b3-5f18fd15a547": {
+     "row": 2,
+     "score": 0.2713679228979441
+    },
+    "01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd": {
+     "row": 3,
+     "score": 0.31237608003929546
+    }
+   },
+   "values": [
+    "score"
+   ]
+  },
+  "topological_sort": {
+   "base": "dag",
+   "identity": "node_uuid",
+   "rows": {
+    "01a0f3fd-2403-70e1-b448-71b819fc5f1b": {
+     "order": 0,
+     "row": 0
+    },
+    "01a0f3fd-2406-76d2-a766-d6d7acebf3ea": {
+     "order": 1,
+     "row": 1
+    },
+    "01a0f3fd-2409-7550-a581-d8fcb317b5b5": {
+     "order": 2,
+     "row": 2
+    },
+    "01a0f3fd-240c-7880-88ee-cdd8c9534fd1": {
+     "order": 3,
+     "row": 3
+    }
+   },
+   "values": [
+    "order"
+   ]
+  }
+ }
+}

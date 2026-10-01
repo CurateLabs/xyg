@@ -1,0 +1,371 @@
+# GraphForge result compositions
+
+**Status:** implementation design (xyg#37; unblocks CurateLabs/graphforge-vscode#80).
+Authoritative for GraphForge result recognition, UUID joins, identity
+policies, generation checks, the `XYGQ` request / `XYGF` composition
+document, and how compositions paint. Related: [graph-mark.md](graph-mark.md)
+(the mark compositions paint through), [host-parity.md](host-parity.md),
+[browser-wasm.md](browser-wasm.md).
+
+GraphForge Core computes; XYG composes and renders. XYG never executes a
+GraphForge algorithm and never recommends a chart: every result layer carries
+an explicit caller intent, and every schema has one documented composition.
+
+## 1. Architecture
+
+```text
+GraphForge (engine) ── Arrow IPC bytes ──┐  result tables + base-graph entity tables
+extension / host    ── generation UUIDs, intent, policy words
+                                          ▼
+Host adapter (Node JS today; browser TS twin with WASM parity)
+  · frames bytes into one XYGQ request (no decoding, no joins)
+                                          ▼
+Rust  xyg_engine::graphforge  (native C ABI and, with WASM parity, the browser)
+  · arrow_ipc: bounded Arrow IPC reader (stream + file, V4/V5)
+  · recognize: schema from graphforge.* metadata + field-type checks
+  · base: canonical base graph from entity tables / UUID planes
+  · compose: UUID joins, missing/extra policy, generation checks,
+             channel ownership, semantic planes, legend, decisions
+                                          ▼
+XYGF document (identity + planes + provenance + value-free diagnostics)
+                                          ▼
+Host paints through the existing graph mark (Rust layout / LOD / paint)
+```
+
+Rust owns result-schema dispatch, joins, membership/provenance, dimensional
+decisions, and the planes. Hosts own only transport and presentation; the
+TypeScript/Node adapters never hold a second analytical registry.
+
+## 2. Arrow IPC ingress
+
+`crates/xyg-engine/src/arrow_ipc.rs` is a dependency-free reader for the
+bytes GraphForge returns. Accepted: little-endian IPC streams and files,
+metadata V4/V5, uncompressed bodies, any number of record batches. Rejected
+with `GF_ARROW_UNSUPPORTED`: dictionary encoding, compressed bodies,
+big-endian data, tensors. Every flatbuffer offset, buffer range, offsets
+array, validity bitmap, UTF-8 value, and child length is validated before a
+value is read; malformed input fails with `GF_ARROW_MALFORMED` and never
+panics (truncation and byte-flip fuzz tests over the fixture corpus). Types a
+composition never reads (unions, maps, views, run-end encoding) are walked for
+buffer accounting only.
+
+| Bound | Value |
+|---|---|
+| Fields per schema (nested included) / depth | 4,096 / 16 |
+| Schema metadata entries / key bytes / value bytes | 64 / 256 / 1,024 |
+| Record batches / rows per table | 2^20 / 2^31 |
+
+Exceeding a bound fails with `GF_ARROW_LIMIT`.
+
+## 3. Recognition and the coverage ledger
+
+Algorithm results are recognized from schema metadata only:
+`graphforge.verb` ∈ {rank, cluster, similar, paths, analyze},
+`graphforge.algorithm`, and `graphforge.algorithm_schema_version` (must be
+`1`). `find` results use `graphforge.verb=find` and
+`graphforge.search_schema_version` (must be `1`). Embedding metadata such as
+`graphforge.dimensions` stays attached to the table. Nothing is inferred from
+column names or values for these results. Cypher results (entity structs) are
+base-graph material, not result layers (`GF_RESULT_NOT_ALGORITHM`).
+
+After the ledger lookup, every canonical field must exist with its Arrow kind:
+`uuid` = `FixedSizeBinary(16)`, `uuid-list` = `List<FixedSizeBinary(16)>`,
+`float`/`int` = any width, `utf8`, `bool`, `float-vector` =
+`List`/`FixedSizeList` of floats. Leading canonical fields are followed by
+nullable node properties in rank/cluster/find results; those are carried, not
+checked.
+
+The ledger lives in `crates/xyg-engine/src/graphforge/ledger.rs`. Schema ids,
+canonical fields, and dispositions match the extension's
+`docs/engineering/RESULT_SCHEMAS.md` (vendored at
+`tests/fixtures/graphforge/extension/RESULT_SCHEMAS.md`; a Rust test fails if
+they disagree). The *composition* column is XYG's rendering of each
+disposition; the *intents* column lists the only intents a caller may request.
+A Rust test also fails if this table drifts from the code, and another if any
+GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
+
+<!-- graphforge-ledger:begin -->
+| Schema | Disposition | Composition | Intents | Algorithms |
+|---|---|---|---|---|
+| `node-score` | node-layer | node-score | graph | pagerank, betweenness, closeness, harmonic_closeness, degree, eigenvector, article_rank, hits_hub, hits_authority, celf, clustering_coefficient, local_clustering_coefficient, triangles, k_core, preferential_attachment, adamic_adar, common_neighbors, resource_allocation, total_neighbors |
+| `node-community` | node-layer | node-group | graph | louvain, leiden, label_propagation, speaker_listener, girvan_newman, modularity_optimization, fastgreedy, infomap, leading_eigenvector, walktrap, spinglass, hdbscan, k_means, approximate_max_k_cut, components, strongly_connected, biconnected, k_core_decomposition |
+| `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
+| `path` | ordered-paths | paths | graph | bfs, dijkstra, dijkstra_all_pairs, astar, bellman_ford, floyd_warshall, delta_stepping |
+| `ranked-path` | ordered-paths | paths | graph | yens |
+| `traversal` | node-layer | node-traversal | graph | dfs |
+| `walk` | ordered-paths | walks | graph | random_walk |
+| `pair` | derived-edges | derived-edges | graph | transitive_closure |
+| `flow` | derived-edges | derived-edges | graph | max_flow |
+| `costed-flow` | derived-edges | derived-edges | graph | min_cost_max_flow |
+| `min-cut` | derived-edges | derived-edges | graph | min_cut |
+| `cut-tree` | derived-edges | derived-edges | graph | gomory_hu_tree |
+| `flow-edges` | edge-layer | edge-overlay | graph | max_flow_edges |
+| `costed-flow-edges` | edge-layer | edge-overlay | graph | min_cost_max_flow_edges |
+| `min-cut-edges` | edge-layer | edge-overlay | graph | min_cut_edges |
+| `steiner-edge-list` | edge-layer | edge-overlay | graph | min_steiner_tree, prize_collecting_steiner_tree |
+| `edge-list` | edge-layer | edge-overlay | graph | minimum_spanning_tree, maximum_spanning_tree, max_weight_matching |
+| `unweighted-edge-list` | edge-layer | edge-overlay | graph | max_cardinality_matching, max_bipartite_matching, bridges |
+| `k-edge-list` | edge-layer | edge-overlay | graph | minimum_k_spanning_tree |
+| `node-order` | node-layer | node-order | graph | topological_sort |
+| `node` | node-layer | node-set | graph | articulation_points |
+| `node-color` | node-layer | node-group | graph | node_coloring, k1_coloring |
+| `edge-color` | composition-required | edge-group | graph | edge_coloring |
+| `euler-trail` | ordered-paths | euler-trail | graph | euler_circuit, euler_path |
+| `cycle` | ordered-paths | cycles | graph | find_cycles |
+| `cost-path` | ordered-paths | paths | graph | dag_longest_path, dag_longest_path_weighted |
+| `is-dag` | table-only | table | table | is_dag |
+| `has-euler-circuit` | table-only | table | table | has_euler_circuit |
+| `has-euler-path` | table-only | table | table | has_euler_path |
+| `is-planar` | table-only | table | table | is_planar |
+| `chromatic-number` | table-only | table | table | chromatic_number |
+| `triangle-count` | table-only | table | table | triangle_count |
+| `automorphism-count` | table-only | table | table | count_automorphisms |
+| `modularity` | table-only | table | table | modularity |
+| `transitivity` | table-only | table | table | transitivity |
+| `conductance` | table-only | category | table, bar-chart | conductance |
+| `triad-census` | table-only | category | table, bar-chart | triad_census |
+| `dyad-census` | table-only | category | table, bar-chart | dyad_census |
+| `embedding` | composition-required | embedding | embedding-coordinates, parallel-coordinates | node2vec, graphsage, fast_random_projection, hashgnn |
+| `search` | node-layer | node-search | graph | (find) |
+<!-- graphforge-ledger:end -->
+
+**Delivery status.** Node and edge layers (node-score, node-group,
+node-order, node-traversal, node-set, node-search, edge-overlay, edge-group)
+compose today. Derived edges, ordered overlays (paths, walks, cycles, Euler
+trails), table/bar-chart compositions, and embeddings are recognized and
+intent-checked but fail with `GF_COMPOSE_UNSUPPORTED_COMPOSITION` until their
+slices land (xyg#37 follow-up PRs); WASM parity follows them. The ledger,
+recognition, and codes above do not change when they land.
+
+## 4. Composition
+
+### 4.1 Base graph
+
+The base graph is the canonical graph a result joins onto. It is built from
+any mix of, in order:
+
+- GraphForge Cypher entity results: struct columns with `node_uuid` (nodes),
+  `edge_uuid` + `src_uuid`/`dst_uuid` (relationships), or `nodes` +
+  `relationships` lists (paths), including lists of those structs — e.g.
+  `MATCH (n) RETURN n` and `MATCH ()-[r]->() RETURN r`;
+- flat node tables (`node_uuid`) and flat edge tables (`edge_uuid` plus
+  `src_uuid`/`dst_uuid` or `source_uuid`/`target_uuid`), UUIDs as
+  `FixedSizeBinary(16)` or canonical text;
+- raw packed UUID planes (`base.node_uuid`, `base.edge_uuid`,
+  `base.edge_source_uuid`, `base.edge_target_uuid`).
+
+The same entity may appear in many rows (`RETURN a, r, b`); identical UUIDs
+merge (counted as `GF_BASE_MERGED_ENTITIES`), and a relationship seen twice
+must name the same endpoints (`GF_BASE_EDGE_CONFLICT`). Relationships whose
+endpoints are not base nodes fail (`GF_BASE_ENDPOINT_MISSING`). Node display
+names come from a `name` property/column (`label` first for flat tables), the
+node type from `labels[0]`, and the relationship type from `rel_type`. Bounds:
+20M nodes, 50M relationships (`GF_COMPOSE_TOO_LARGE`). No layer ever mutates
+the base graph: the composed node/edge order is the base order.
+
+### 4.2 Generation identity
+
+Callers pass the generation the base graph was read at (`base.generation`)
+and, per layer, the generation the result was computed at. Both present and
+different: `GF_COMPOSE_GENERATION_STALE`. Exactly one present:
+`GF_COMPOSE_GENERATION_MISSING`. Both absent: the join is allowed and
+recorded as `GF_COMPOSE_GENERATION_UNVERIFIED`. Joins also fail when the
+identities themselves disagree with the base (§4.3), so an incompatible base
+graph is caught even without generations.
+
+### 4.3 Joins and identity policies
+
+Node layers join `node_uuid` onto base nodes; edge layers join `edge_uuid`
+onto base relationships and require the result's `source_uuid`/`target_uuid`
+to equal the base endpoints (or their reverse; reversed matches are counted as
+`GF_COMPOSE_EDGE_REVERSED`, or reoriented for directional overlays and counted
+as `GF_COMPOSE_EDGE_REORIENTED`). A mismatch fails with
+`GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`. A node identity that names a base
+relationship (or the reverse) fails with `GF_COMPOSE_IDENTITY_KIND`; one
+element in two rows fails with `GF_COMPOSE_DUPLICATE_ID`, except k spanning
+trees sharing an edge (the first row paints it; `GF_COMPOSE_SHARED_MEMBERSHIP`).
+Null identities fail with `GF_RESULT_NULL_IDENTITY`.
+
+| Policy | Values | Default | Meaning |
+|---|---|---|---|
+| `extra` (result identities absent from the base) | `error`, `drop` | `error` | `GF_COMPOSE_EXTRA_IDS`, or drop and record `GF_COMPOSE_EXTRA_DROPPED` |
+| `missing` (base elements the layer does not cover) | `dim`, `hide`, `keep`, `error` | `dim` for coverage layers (score, group, order, traversal) and edge overlays; `keep` for sets and search | `dim` sets the disabled visual state (recorded `GF_COMPOSE_MISSING_DIMMED`); `hide` removes them, and hidden nodes take their relationships (`GF_COMPOSE_EDGES_HIDDEN_WITH_NODES`); `keep` paints them normally; `error` fails with `GF_COMPOSE_MISSING_IDS` |
+
+`rows` restricts a layer to explicit result rows (unique, in range).
+
+### 4.4 Planes, channels, and paint
+
+A composition writes the graph mark's v1 semantic planes
+([graph-mark.md §7.1.1–7.1.2](graph-mark.md)): per node and per relationship
+`class`, `epistemic`, `status` (codes 0–7), `metric` (f64), and visual-state
+`flags`, plus node labels and label priorities. The graph mark resolves them
+in Rust exactly like any semantic graph (palette, sizes, widths, halos, dashes,
+arrowheads, states). Each channel has one writer; a second layer writing the
+same channel fails with `GF_COMPOSE_CHANNEL_CONFLICT`, so multiple layers
+coexist only when they are complementary (e.g. PageRank size + Louvain class +
+spanning-tree overlay + articulation points).
+
+| Composition | Planes written |
+|---|---|
+| node-score, node-search | node `metric` = score (size 7–20 px); label priority = score. Search hits also get node `status` 1 |
+| node-group | node `class`: the six largest groups (ties by ascending id) get codes 1–6; with more than seven groups the rest share 7 (`GF_COMPOSE_GROUPS_BUCKETED`). Negative ids (e.g. HDBSCAN noise) and nulls are class 0 (`GF_COMPOSE_UNASSIGNED_GROUP`, `GF_COMPOSE_NULL_VALUES`) |
+| node-order | node label = order value; label priority = −order |
+| node-traversal | node label = order; node `metric` = depth |
+| node-set | node `status` 1 (combined across set layers by maximum) |
+| edge-overlay | relationship `class` 1 for members (or group codes for `tree_id`); `metric` = the schema's metric (flow, capacity, weight); directional overlays (flow, cut edges) set `status` 1, which draws the arrowhead |
+| edge-group | relationship `class` from the group id (edge coloring), bucketed like node groups |
+
+Base elements start at class/epistemic/status 0 and metric NaN. Node labels
+default to the base display name. Missing elements under `dim` carry the
+disabled flag (opacity 0.28, neutral fill). The graph mark gained
+`edge_visual_state_flags` / `edgeVisualStateFlags` (an array or an edge
+column name) so relationships resolve
+states through the same Rust precedence as nodes (Python and Node).
+
+The document's legend rows are Rust's: side (node/relationship), semantic
+field and code, text such as `community 3`, `other communities (4)`,
+`spanning tree edge`, `articulation point`, or `not in result`, the class
+shape, and the light and dark palette colors. Hosts render them as the
+chart legend (marker swatches, like the semantic legend) instead of the
+generic `Class n` rows.
+
+### 4.5 Decisions (never silent)
+
+Every reduction or policy outcome is a recorded decision `(code, layer,
+count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIED`,
+`GF_COMPOSE_MISSING_{DIMMED,HIDDEN,KEPT}`, `GF_COMPOSE_EXTRA_DROPPED`,
+`GF_COMPOSE_EDGES_HIDDEN_WITH_NODES`, `GF_COMPOSE_GROUPS_BUCKETED`,
+`GF_COMPOSE_UNASSIGNED_GROUP`, `GF_COMPOSE_NULL_VALUES`,
+`GF_COMPOSE_EDGE_REVERSED`, `GF_COMPOSE_EDGE_REORIENTED`,
+`GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_BASE_MERGED_ENTITIES`.
+
+## 5. Wire contract
+
+### 5.1 Container
+
+`XYGQ` (request) and `XYGF` (document) share one self-describing
+named-section container (`crates/xyg-engine/src/graphforge/container.rs`,
+Node `packages/xy-node/src/graphforge-container.js`):
+
+```text
+0   magic[4]            "XYGQ" | "XYGF"
+4   version u32         1
+8   entry_count u32     ≤ 8,192
+12  names_bytes u32
+16  total_bytes u64     == buffer length
+24  reserved u64        0
+32  entries × 40: name_offset u32, name_len u32, dtype u32, index u32,
+                  offset u64, count u64, byte_len u64
+..  names ([a-z0-9._], ≤ 64 bytes each), zero-padded to 8
+..  payloads, each 8-aligned, non-overlapping
+```
+
+dtypes: 1 `u8`, 2 `u32`, 3 `u64`, 4 `i64`, 5 `f64`, 6 bytes, 7 UUID (16
+bytes each), 8 UTF-8, 9 text list (`count + 1` u64 offsets, then UTF-8).
+All little-endian. Sections are keyed by `(name, index)`; `index` is the layer
+for `layer.*` sections. Hosts decode sections generically and ignore unknown
+document sections, so sections can be added without a version bump;
+`composition.version` (currently 1) bumps when an existing section's meaning
+changes. Requests are strict: unknown request sections fail.
+
+### 5.2 Request (`XYGQ`)
+
+| Section | dtype | Meaning |
+|---|---|---|
+| `base.table` [i] | bytes | GraphForge Arrow IPC base tables (§4.1), in order |
+| `base.node_uuid`, `base.edge_uuid`, `base.edge_source_uuid`, `base.edge_target_uuid` | UUID | packed base planes (optional) |
+| `base.generation` | UUID ×1 | base-graph generation |
+| `base.directed` | u8 ×1 | default 1 |
+| `layer.result` [i] | bytes | GraphForge Arrow IPC result (required; ≤ 16 layers) |
+| `layer.intent` [i] | UTF-8 | required: `graph`, `table`, `bar-chart`, `embedding-coordinates`, `parallel-coordinates` |
+| `layer.result_id` [i] | UTF-8 | caller result id, echoed (1–128 of `[A-Za-z0-9._:-]`) |
+| `layer.generation` [i] | UUID ×1 | result generation |
+| `layer.missing`, `layer.extra` [i] | UTF-8 | policies (§4.3) |
+| `layer.rows` [i] | u64 | explicit result rows |
+| `layer.coordinates` [i] | bytes | Arrow IPC `node_uuid`, `x`, `y` (embeddings) |
+
+### 5.3 Document (`XYGF`)
+
+`status` (u32: 0 composition, 1 error). An error document holds `error.code`,
+`error.message` (value-free), `error.layer` (u32, `u32::MAX` none), and
+optionally `error.field`. A graph composition holds:
+
+| Sections | Meaning |
+|---|---|
+| `kind`, `composition.version`, `ledger.version` | `"graph"`; versions |
+| `graph.directed`, `base.generation`, `base.counts` | base facts |
+| `node.uuid`, `node.base_row`, `node.name`, `node.type` | identity (hidden nodes removed; `base_row` maps back) |
+| `node.class`, `node.epistemic`, `node.status`, `node.metric`, `node.flags`, `node.label`, `node.label_priority` | semantic planes |
+| `edge.uuid`, `edge.base_row`, `edge.source`, `edge.target`, `edge.type`, `edge.derived`, `edge.layer` | identity and dense endpoints (`edge.derived` 1 marks derived edges; persisted edges keep their UUID) |
+| `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags` | semantic planes |
+| `layer.schema`, `layer.schema_version`, `layer.verb`, `layer.algorithm`, `layer.disposition`, `layer.composition`, `layer.intent`, `layer.missing_policy`, `layer.extra_policy`, `layer.result_id`, `layer.generation`, `layer.derived_type` [i] | layer provenance |
+| `layer.counts` [i] | u64 ×5: result rows, selected rows, matched, missing, extra |
+| `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection. Node layers list the canonical value fields first, then the numeric node properties rank/cluster/find results carry |
+| `layer.text_names`, `layer.node_texts` [i] | text node properties of node layers, joined per node (row-major, empty when absent); at most 32 property columns per layer (`GF_COMPOSE_PROPERTIES_TRUNCATED`) |
+| `legend.*` | Rust legend rows (§4.4) |
+| `decision.code`, `decision.layer`, `decision.count` | §4.5 |
+
+Output is deterministic for identical request bytes, so native and WASM hosts
+are compared byte for byte.
+
+## 6. Hosts
+
+### 6.1 Native C ABI (ABI 378)
+
+| Symbol | Role |
+|---|---|
+| `xyg_graphforge_compose(request, len, out_handle)` | 0 composition, 1 error document, −1 bad arguments, −2 too many live documents (1,024) |
+| `xyg_graphforge_document_len` / `_copy` / `_destroy` | read and release the document (−7 stale handle, −8 undersized buffer) |
+| `xyg_graphforge_composition_version` | `XYGF` semantics version |
+| `xyg_graphforge_ledger_tsv` | the ledger as TSV (schema, version, disposition, composition, intents, fields, algorithms) |
+
+### 6.2 Node (`@curatelabs/xyg-node/graphforge`)
+
+```js
+import { composeGraphForge, graphforgeChart } from "@curatelabs/xyg-node/graphforge";
+
+const composition = composeGraphForge({
+  base: { tables: [nodesIpc, edgesIpc], generation: generationUuid },
+  layers: [
+    { result: pagerankIpc, intent: "graph", resultId, generation: generationUuid },
+    { result: louvainIpc, intent: "graph", resultId: other, generation: generationUuid },
+  ],
+});                                   // throws GraphForgeCompositionError (.code/.layer/.field)
+const fig = graphforgeChart(composition, { width: 800, height: 600, theme: "dark" });
+fig.toHtml();                         // or toPng()/toSvg()/payload
+composition.identify("node", i);      // { uuid, layers: [{ layer, resultId, row }] }
+composition.select([uuid, ...]);      // { nodes: [i], edges: [j] } for highlight
+composition.diagnostics();            // schema ids, counts, decision codes only
+```
+
+`encodeGraphForgeRequest` / `composeGraphForgeRequest` /
+`decodeGraphForgeDocument` expose the raw bytes for hosts that move requests
+or documents across processes; `graphforgeGraphData` /
+`graphforgeGraphOptions` / `graphforgeLegendItems` feed the ordinary graph
+mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
+
+## 7. Evidence
+
+- Fixtures: `tests/fixtures/graphforge/results/` — real GraphForge 0.5.2
+  output for every algorithm, Cypher node/edge/path/scalar results, `find`,
+  `schema()`, and one base-graph dump per synthetic graph, all from one engine
+  run (`scripts/gen_graphforge_result_fixtures.cjs`, adapted from the
+  extension's generator). `composition_expectations.json` holds UUID → value
+  pairs decoded independently with pyarrow
+  (`scripts/gen_graphforge_composition_expectations.py --check`).
+- Rust: reader fuzz and bounds tests; recognition of every fixture; code
+  tests for unknown algorithms, versions, and type mismatches; joins for
+  every node/edge layer fixture; generation, extra, missing, conflict,
+  endpoint, identity-kind, and intent negatives; determinism; value-free
+  diagnostics.
+- Node: joins checked against the independent expectations for node and edge
+  layers, selection round trips, error codes, chart paint and legend, the
+  edge visual-state flags; Python asserts the same edge-flag resolution.
+
+## 8. Privacy
+
+Diagnostics, errors, and decisions never contain result values, UUIDs,
+vectors, coordinates, or paths: only codes, schema ids and versions, field and
+type names, and counts. Metadata echoed in a message is reduced to a bounded
+identifier. Displayed text (labels, legend, tooltips) is painted as text
+(canvas/`textContent`), never as markup.
