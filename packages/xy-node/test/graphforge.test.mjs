@@ -468,3 +468,13 @@ test("composition identities decode lazily and agree with the planes", () => {
   c.edges.uuid.forEach((id, j) => assert.equal(id === null, c.edges.derived[j] === 1));
   assert.equal(c.nodeIndex(c.nodes.uuid[2]), 2);
 });
+
+test("derived edges carry no provenance row in hover rows", () => {
+  const c = compose("pagerank", "node_similarity");
+  const fig = graphforgeChart(c, { width: 480, height: 320 });
+  const rows = fig.traces[0].tooltip_rows;
+  const derived = rows.filter((r) => String(r.edge_id).startsWith("derived:"));
+  assert.ok(derived.length > 0);
+  assert.ok(derived.every((r) => !("provenance_row" in r)));
+  assert.ok(rows.filter((r) => !String(r.edge_id).startsWith("derived:")).every((r) => Number.isInteger(r.provenance_row)));
+});

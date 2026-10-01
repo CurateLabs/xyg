@@ -202,6 +202,13 @@ def _json_scalar(value: Any) -> Any:
     return str(value)
 
 
+def _no_provenance_row(value: Any) -> bool:
+    """u64::MAX marks an element with no source row (e.g. a GraphForge derived
+    edge); its hover row omits ``provenance_row`` rather than show the sentinel.
+    Node ``noProvenanceRow`` is the same rule."""
+    return int(value) == 0xFFFFFFFFFFFFFFFF
+
+
 def projection_tooltip_rows(
     data: GraphData,
 ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
@@ -225,7 +232,9 @@ def projection_tooltip_rows(
     node_rows: list[dict[str, Any]] = []
     for i in range(data.n_nodes):
         row: dict[str, Any] = {"id": str(data.ids[i])}
-        if data.node_provenance_rows is not None:
+        if data.node_provenance_rows is not None and not _no_provenance_row(
+            data.node_provenance_rows[i]
+        ):
             row["provenance_row"] = int(data.node_provenance_rows[i])
         for key, col in data.node_attrs.items():
             row[str(key)] = _json_scalar(col[i])
@@ -241,7 +250,9 @@ def projection_tooltip_rows(
         }
         if data.edge_ids:
             row["edge_id"] = str(data.edge_ids[i])
-        if data.edge_provenance_rows is not None:
+        if data.edge_provenance_rows is not None and not _no_provenance_row(
+            data.edge_provenance_rows[i]
+        ):
             row["provenance_row"] = int(data.edge_provenance_rows[i])
         for key, col in data.edge_attrs.items():
             row[str(key)] = _json_scalar(col[i])

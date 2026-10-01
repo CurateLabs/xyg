@@ -19205,3 +19205,44 @@ _SCENE_BULK_REEXPORTS = (
     scene_xytc_trace_observations_materialize,
 )
 del _SCENE_BULK_REEXPORTS
+
+
+# -- GraphForge result compositions (ABI 378, spec/design/graphforge-compositions.md) --
+
+
+def graphforge_compose(request: bytes) -> bytes:
+    """Run one ``XYGQ`` request through Rust; the ``XYGF`` document bytes.
+
+    Error documents are ordinary documents (status != 0); only a malformed
+    call or a stale handle raises here.
+    """
+    data = bytes(request)
+    buf = (ctypes.c_uint8 * len(data)).from_buffer_copy(data) if data else None
+    handle = ctypes.c_uint64(0)
+    status = _lib.xyg_graphforge_compose(buf, len(data), ctypes.byref(handle))
+    if status < 0 or handle.value == 0:
+        raise RuntimeError(f"xyg_graphforge_compose failed with status {status}")
+    try:
+        length = ctypes.c_uint64(0)
+        if _lib.xyg_graphforge_document_len(handle.value, ctypes.byref(length)) != 0:
+            raise RuntimeError("GraphForge composition handle is stale")
+        out = (ctypes.c_uint8 * length.value)()
+        if _lib.xyg_graphforge_document_copy(handle.value, out, length.value) != 0:
+            raise RuntimeError("GraphForge composition copy failed")
+        return bytes(out)
+    finally:
+        _lib.xyg_graphforge_document_destroy(handle.value)
+
+
+def graphforge_composition_version() -> int:
+    """``XYGF`` composition semantics version."""
+    return int(_lib.xyg_graphforge_composition_version())
+
+
+def graphforge_ledger_tsv() -> str:
+    """The Rust coverage ledger (one GraphForge result schema per row)."""
+    size = int(_lib.xyg_graphforge_ledger_tsv(None, 0))
+    out = (ctypes.c_uint8 * size)()
+    if int(_lib.xyg_graphforge_ledger_tsv(out, size)) != size:
+        raise RuntimeError("GraphForge ledger copy failed")
+    return bytes(out).decode("utf-8")

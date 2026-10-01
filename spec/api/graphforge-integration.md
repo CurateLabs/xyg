@@ -75,6 +75,13 @@ value-free `message`). `encodeGraphForgeRequest(input)` /
 `composeGraphForgeRequest(bytes)` / `decodeGraphForgeDocument(bytes)` expose
 the raw `XYGQ`/`XYGF` bytes (e.g. to compose in the webview instead).
 
+Python (notebooks, scripts, services) has the same surface in snake case:
+`xyg.compose_graphforge(base=..., layers=[{"result", "intent", "result_id",
+"generation"}], select=..., render=...)`, `xyg.graphforge_chart(composition,
+**chart_props)`, `xyg.graphforge_table_html`, `xyg.graphforge_ledger`, and
+`xyg.GraphForgeCompositionError` (`code`, `layer`, `field`). Requests and
+documents are byte-identical to Node's (design §6.2a).
+
 ## 3. Direct-browser WASM host (webview)
 
 ```js

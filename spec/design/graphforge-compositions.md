@@ -457,6 +457,37 @@ or documents across processes; `graphforgeGraphData` /
 `graphforgeGraphOptions` / `graphforgeLegendItems` feed the ordinary graph
 mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
 
+### 6.2a Python (`xyg.compose_graphforge`)
+
+The Python host binds the same C ABI (`_native.graphforge_compose`) and frames
+and decodes the container in `xyg._graphforge_container`, byte-identical to
+Node and the browser:
+
+```python
+import xyg
+
+composition = xyg.compose_graphforge(
+    base={"tables": [nodes_ipc, edges_ipc], "generation": generation_uuid},
+    layers=[{"result": pagerank_ipc, "intent": "graph", "result_id": rid, "generation": generation_uuid}],
+    select=None, render=None,
+)                                    # raises GraphForgeCompositionError (.code/.layer/.field)
+composition.identify("node", i)      # {"uuid", "layers": [{"layer", "result_id", "row"}]}
+xyg.graphforge_chart(composition, width=800, height=600)   # a Chart (graph, bars, parallel, scatter)
+xyg.graphforge_table_html(table_composition)               # escaped <table>
+xyg.graphforge_ledger()                                    # the Rust coverage ledger
+```
+
+Inputs and outputs mirror §6.2 in snake case (`result_id`, `node_values`,
+`edge_rows`, …). `graphforge_chart` returns an ordinary `Chart`: graphs use
+the `graph` mark with the composition's planes and Rust legend; bar charts,
+parallel coordinates, and embedding scatters attach the same UUID hover rows
+as Node. `encode_graphforge_request` and `decode_graphforge_document` expose
+the raw bytes. `tests/fixtures/graphforge/cross_host.json` pins the request and
+document SHA-256 for 99 cases; the Python generator
+(`scripts/gen_graphforge_cross_host.py`) writes it and both
+`tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
+reproduce it.
+
 ### 6.3 Direct-browser WASM (`@curatelabs/xyg`, WASM ABI 27)
 
 `xyg_wasm_graphforge_compose(handle, offset, length)` composes one staged
@@ -607,6 +638,10 @@ another result or generation never matches (generation checks, §4.2).
   required/missing/extra coordinate failures. Coordinate and 2D-embedding
   inputs are derived from the real `node2vec` output
   (`scripts/gen_graphforge_derived_fixtures.py --check`).
+- Python/Node: `tests/fixtures/graphforge/cross_host.json` (99 cases: every
+  contract fixture with its intent, multi-layer render/select, rows and
+  policies, coordinates, and failures) pins request and document digests that
+  both hosts reproduce, so Python, Node, and WASM agree byte for byte.
 - Native/WASM: `packages/xy-node/test/graphforge-wasm-parity.test.mjs` runs
   every GraphForge contract fixture (plus multi-layer render/select,
   coordinates, and four failure cases) through the native C ABI and the real

@@ -929,6 +929,8 @@ Forbidden:
 | `python/xyg/_framing.py` | Python host | `python-host` | `keep-host`; XYBF transport framing, not chart policy | — |
 | `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_graph.py` | Python host | `python-host` | `keep-host`; ingest/id maps; layout is `xyg_graph_layout` | — |
+| `python/xyg/_graphforge.py` | Python host | `python-host` | `keep-host`; GraphForge composition framing/decoding and chart wiring over the Rust C ABI (Node `graphforge.js` twin) | — |
+| `python/xyg/_graphforge_container.py` | Python host | `python-host` | `keep-host`; `XYGQ`/`XYGF` container codec (byte-identical to Node and browser) | — |
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
 | `python/xyg/_facets_data.py` | Python host | `python-host` | `keep-host`; facet row subsetting and column factorization | — |

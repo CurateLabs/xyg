@@ -1493,6 +1493,14 @@ client must not grow a parallel “JS layout/LOD” product path.
   `spec.graph` omits the same host-only identity planes; Node `shipScalar`
   mirrors Python `_ship_channels` continuous size). See
   [graph-mark.md](graph-mark.md) encodings table.
+- **REQ-HOSTPARITY-2e2 (MUST).** GraphForge result compositions
+  (`compose_graphforge` / `composeGraphForge` / `composeWasmGraphForge`) frame
+  identical `XYGQ` requests and receive identical `XYGF` documents on Python,
+  Node, and direct-browser WASM, pinned by
+  `tests/fixtures/graphforge/cross_host.json` and the Node/WASM parity suite
+  ([graphforge-compositions.md](graphforge-compositions.md) §6). Hover rows
+  omit `provenance_row` where the provenance plane holds the u64::MAX "no
+  source row" sentinel (derived edges) on both hosts.
 - **REQ-HOSTPARITY-2f (MUST).** Graph edge identity follows the Rust
   render-edge membership CSR (graph-mark.md §6) on both hosts: per-segment
   edge rows, `edge_ids`, and the edge pick reply (Python `pick`/`click`, Node

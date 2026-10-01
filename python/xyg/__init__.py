@@ -117,6 +117,14 @@ _EXPORTS = {
     "graph": ".components",
     "graph_chart": ".components",
     "from_graphforge_tables": "._graph",
+    "GraphForgeComposition": "._graphforge",
+    "GraphForgeCompositionError": "._graphforge",
+    "compose_graphforge": "._graphforge",
+    "decode_graphforge_document": "._graphforge",
+    "encode_graphforge_request": "._graphforge",
+    "graphforge_chart": "._graphforge",
+    "graphforge_ledger": "._graphforge",
+    "graphforge_table_html": "._graphforge",
     "scatter": ".components",
     "scatter_chart": ".components",
     "segments": ".components",
@@ -163,6 +171,8 @@ __all__ = [
     "ExportConfig",
     "FacetChart",
     "GraphData",
+    "GraphForgeComposition",
+    "GraphForgeCompositionError",
     "GraphLayoutCheckpoint",
     "GraphLayoutController",
     "GraphLayoutDisposed",
@@ -197,10 +207,13 @@ __all__ = [
     "colorbar",
     "column",
     "column_chart",
+    "compose_graphforge",
     "contour",
     "contour_chart",
+    "decode_graphforge_document",
     "ecdf",
     "ecdf_chart",
+    "encode_graphforge_request",
     "error_band",
     "error_band_chart",
     "errorbar",
@@ -210,6 +223,9 @@ __all__ = [
     "from_graphforge_tables",
     "graph",
     "graph_chart",
+    "graphforge_chart",
+    "graphforge_ledger",
+    "graphforge_table_html",
     "heatmap",
     "heatmap_chart",
     "hexbin",
@@ -315,6 +331,16 @@ def __dir__() -> list[str]:
 if TYPE_CHECKING:
     from ._figure import Selection
     from ._graph import GraphData, GraphProjectionError, from_graphforge_tables
+    from ._graphforge import (
+        GraphForgeComposition,
+        GraphForgeCompositionError,
+        compose_graphforge,
+        decode_graphforge_document,
+        encode_graphforge_request,
+        graphforge_chart,
+        graphforge_ledger,
+        graphforge_table_html,
+    )
     from ._ooc import ChunkedColumns
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
