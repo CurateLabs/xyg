@@ -154,12 +154,30 @@ Node hosts mirror the same option names (TypedArrays / arrays).
 | `size` | nodes (scalar px or length-`n_nodes` continuous values) | style.size or `size` continuous channel (`mode: continuous`, f32 unit buffer) |
 | `edge_color` / `edgeColor` | edges | style or color channel on the segments trace |
 | `edge_width` / `edgeWidth` | edges | style.width |
-| `tooltip_rows` (post-compose on traces) or Node `nodeTooltipRows` / `edgeTooltipRows` | per-node / per-edge semantic dicts | `tooltip_rows` on the scatter / segments entries; length must equal **render-graph** `n_points` / geometry count (after `nodeBudget`/`edgeBudget`); filtered with finite-row selection on Python |
+| `tooltip_rows` (post-compose on traces) or Node `nodeTooltipRows` / `edgeTooltipRows` | per-node / per-edge semantic dicts | `tooltip_columns` (or, for rows that cannot be columns, JSON `tooltip_rows`) on the scatter / segments entries; length must equal **render-graph** `n_points` / geometry count (after `nodeBudget`/`edgeBudget`); filtered with finite-row selection on Python |
 
-`tooltip_rows` are small-N JSON scalars (labels, ids, ranks, one numeric
-readout per row) — not geometry — and therefore ride the spec rather than §29
-buffers (same exception as Sankey in `chart-kind-contract.md`). Missing or
-sparse rows are ignored at hover time; a length mismatch raises before shipping.
+Hosts keep `tooltip_rows` as row dicts; the wire carries them as **tooltip
+columns** (protocol v13). Each key becomes one typed plane in ordinary payload
+columns: `uuid` (canonical lowercase UUID text, 16 bytes per row; a column
+holding any UUID uses this kind, and its other strings, such as the synthetic
+ids of derived edges, are dictionary text stored in the slot's first four
+bytes), `f64` (8 little-endian bytes per row in a `u8` column, because packed
+blobs are only 4-byte aligned), `bool` (one byte), or `text` (a `u32` index).
+All text columns share one dictionary per entry, so a name repeated across keys
+ships once. An optional `u8` presence plane per key records an absent key (0), a
+null value (1), a value (2), or dictionary text in a `uuid` column (3), and is
+omitted when every row has a value; non-finite numbers ship as null, as JSON
+would. The entry is `tooltip_columns: {n, keys, kinds, data, present, dict}`
+(`data`/`present` are column indices, `dict` the shared strings). Rows whose keys do not follow one shared order, or whose
+values are not one scalar kind per key, keep the JSON `tooltip_rows` form.
+Python `_tooltip_columns.py` and Node `tooltip-columns.js` are byte-identical
+(`tests/fixtures/tooltip_columns_cross_host.json`). The browser decodes one row
+per hover (`ChartView._tooltipRowSource`) and never materializes the table.
+With the wire graph meta below, a 100k-node GraphForge webview spec goes from
+98 MiB of JSON to 1.3 MiB (strings only) plus typed buffers
+(spec/benchmarks/results.md, "GraphForge composition scale").
+Missing or sparse rows are ignored at hover time; a length mismatch raises
+before shipping.
 Encodings and tooltip rows are indexed in **render-graph** space, matching the
 emitted scatter/segments lengths.
 
@@ -384,6 +402,20 @@ is never serialized into `spec.graph` or the paint payload.
 - Pan / zoom / fit (chart view) — zoom drives §1.4 LOD, not client-side
   topology walks.
 - Pick nodes via scatter GPU pick; edges via segment hit or neighbor of picked node.
+- Wire graph meta: `spec.graph[]` carries what the browser paints and
+  highlights with (`node_trace`/`edge_trace`, CSR, labels, visual states,
+  compound frames, LOD and style records). The host-side identity planes
+  `ids`, `sources`, `targets`, `member_of`, `render_edge_index`,
+  `source_edge_ids`, `edge_ids`, `node_provenance_rows`,
+  `edge_provenance_rows`, `node_tooltip_rows`, and `edge_tooltip_rows` stay on
+  the figure (`_graph_meta` / `_graphMeta`) for picks and selection and are
+  never serialized (Python `HOST_ONLY_GRAPH_META`, Node `HOST_ONLY_GRAPH_META`).
+  The integer planes the browser reads ship as typed payload columns,
+  `{"column": index}`, not JSON numbers (`WIRE_COLUMN_GRAPH_META`):
+  `csr_offsets` and `csr_neighbors` as `u32`, and `label_accepted`,
+  `visual_states`, and `compound_nodes` as `u8`. The client resolves either form
+  (`ChartView._graphMetaArray`); `decode_wire_graph_meta` reads them back on the
+  Python side.
 - Edge identity (#33): the edge trace's per-segment `tooltip_rows` follow the
   §6 membership, not a count comparison. A render edge with one member carries
   that source edge's projection row (`edge_id`, endpoints, provenance, attrs);
@@ -397,8 +429,8 @@ is never serialized into `spec.graph` or the paint payload.
   fixture (`tests/fixtures/graph_edge_identity_cross_host.json`), and a
   Chromium probe hovers every routed segment to check the browser row carries
   the same identity.
-- Neighborhood highlight: CSR (`csr_offsets` / `csr_neighbors` u64 arrays on
-  `spec.graph[]`) is consumed by the WebGL client. On hover of the graph's
+- Neighborhood highlight: CSR (`csr_offsets` / `csr_neighbors` as typed `u32`
+  columns referenced from `spec.graph[]`) is consumed by the WebGL client. On hover of the graph's
   scatter (`node_trace`), the client builds a temporary `selBuf` mask
   (hovered node + CSR neighbors) and dims the rest through the existing
   point-shader `u_selActive` path; leave clears the mask. Durable

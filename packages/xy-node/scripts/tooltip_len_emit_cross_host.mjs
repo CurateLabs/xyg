@@ -12,19 +12,21 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const { PROTOCOL_VERSION, abiVersion, figure } = await import(
   path.join(root, "packages/xy-node/src/index.js"),
 );
+const { decodeTooltipRows } = await import(path.join(root, "packages/xy-node/src/tooltip-columns.js"));
 
 function okCase(name, traceId, build) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
   fig.traces[0].id = traceId;
-  const { spec } = fig.buildPayload();
+  const { spec, buffers } = fig.buildPayload();
   const trace = spec.traces[0];
   return {
     name,
     trace_id: trace.id,
     kind: trace.kind,
     n_points: trace.n_points,
-    tooltip_rows: trace.tooltip_rows ?? null,
+    // Either wire form (JSON rows or typed columns) decodes to the same rows.
+    tooltip_rows: decodeTooltipRows(spec, buffers, trace),
     expect_error: false,
   };
 }

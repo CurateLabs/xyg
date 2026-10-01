@@ -13,7 +13,7 @@
  * and counts — never result values, UUIDs, vectors, or coordinates.
  */
 
-import { barChart, graphChart } from "./charts.js";
+import { graphChart } from "./charts.js";
 import { figure } from "./figure.js";
 import {
   DOCUMENT_MAGIC,
@@ -72,11 +72,29 @@ export function uuidToBytes(text, label = "uuid") {
   return out;
 }
 
+const HEX = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
+
 /** 16 bytes → canonical hyphenated UUID text. */
 export function uuidFromBytes(bytes, offset = 0) {
-  let hex = "";
-  for (let i = 0; i < 16; i += 1) hex += bytes[offset + i].toString(16).padStart(2, "0");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  const h = (i) => HEX[bytes[offset + i]];
+  return h(0) + h(1) + h(2) + h(3) + "-" + h(4) + h(5) + "-" + h(6) + h(7) + "-" + h(8) + h(9) + "-"
+    + h(10) + h(11) + h(12) + h(13) + h(14) + h(15);
+}
+
+/** Define `key` on `target` as a value computed on first read, then cached. */
+function lazy(target, key, compute) {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    get() {
+      const value = compute();
+      Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+      return value;
+    },
+    set(value) {
+      Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+    },
+  });
 }
 
 function ipcBytes(value, label) {
@@ -272,10 +290,11 @@ export class GraphForgeComposition {
     if (this.kind === "graph") {
       const nodeUuid = get("node.uuid");
       const edgeUuid = get("edge.uuid");
+      // UUID text and lookup maps are built on first use: decoding a large
+      // document stays proportional to its typed planes.
       this.nodes = {
         count: nodeUuid.length / 16,
         uuidBytes: nodeUuid,
-        uuid: uuidList(nodeUuid),
         baseRow: get("node.base_row"),
         name: get("node.name"),
         type: get("node.type"),
@@ -287,11 +306,11 @@ export class GraphForgeComposition {
         label: get("node.label"),
         labelPriority: get("node.label_priority"),
       };
+      lazy(this.nodes, "uuid", () => uuidList(nodeUuid));
       const derived = get("edge.derived");
       this.edges = {
         count: edgeUuid.length / 16,
         uuidBytes: edgeUuid,
-        uuid: uuidList(edgeUuid).map((id, i) => (derived[i] ? null : id)),
         baseRow: get("edge.base_row"),
         source: get("edge.source"),
         target: get("edge.target"),
@@ -322,9 +341,17 @@ export class GraphForgeComposition {
         nodes: [...pathNodes.subarray(Number(nodeOffsets[i]), Number(nodeOffsets[i + 1]))].map(Number),
         edges: [...pathEdges.subarray(Number(edgeOffsets[i]), Number(edgeOffsets[i + 1]))].map(Number),
       }));
-      this._nodeIndex = new Map(this.nodes.uuid.map((id, i) => [id, i]));
-      this._edgeIndex = new Map();
-      this.edges.uuid.forEach((id, i) => { if (id != null) this._edgeIndex.set(id, i); });
+      lazy(this.edges, "uuid", () => {
+        const out = new Array(edgeUuid.length / 16);
+        for (let i = 0; i < out.length; i += 1) out[i] = derived[i] ? null : uuidFromBytes(edgeUuid, i * 16);
+        return out;
+      });
+      lazy(this, "_nodeIndex", () => new Map(this.nodes.uuid.map((id, i) => [id, i])));
+      lazy(this, "_edgeIndex", () => {
+        const index = new Map();
+        this.edges.uuid.forEach((id, i) => { if (id != null) index.set(id, i); });
+        return index;
+      });
     }
     if (this.kind === "table") {
       const columns = get("table.columns");
@@ -351,6 +378,8 @@ export class GraphForgeComposition {
         valueName: get("chart.value_name"),
         categories: get("chart.category"),
         values: get("chart.value"),
+        /** `[x0, x1, y0, y1]`: bar slots 0..k-1 and a zero-baseline value range (Rust). */
+        domain: get("chart.domain"),
         resultRows: [...get("chart.result_row")].map(Number),
       };
     } else if (this.kind === "parallel-coordinates") {
@@ -597,13 +626,22 @@ function axisTitles(fig, x, y) {
 
 /** Category results as bars in result order (never re-sorted). */
 function graphforgeBarChart(composition, opts) {
-  const { categories, values, categoryName, valueName } = composition.chart;
+  const { categories, values, categoryName, valueName, domain } = composition.chart;
   const { width, height, title } = opts;
-  const fig = barChart([...categories], Float64Array.from(values), { width, height, title });
-  // A real category axis (as Python bar charts have): the browser labels each
-  // bar with its category; static export fails closed like Python's
-  // (XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS) instead of printing bare positions.
-  fig._axis_categories = { ...(fig._axis_categories ?? {}), x: [...categories] };
+  const k = categories.length;
+  const slots = Float64Array.from({ length: k }, (_, i) => i);
+  const fig = figure({ width, height, title });
+  fig.bar(slots, Float64Array.from(values), { name: valueName });
+  // Hover names the category and its value, never a slot position.
+  fig.traces[fig.traces.length - 1].tooltip_rows = categories.map((category, i) => ({
+    [categoryName]: category,
+    [valueName]: Number.isFinite(values[i]) ? values[i] : null,
+  }));
+  // Bars sit on integer slots of a linear axis whose ticks carry the category
+  // names (Rust domain), so the browser and SVG/PNG export label them alike.
+  const [x0, x1, y0, y1] = domain;
+  fig.setAxis("x", { domain: [x0, x1], tick_values: [...slots], tick_labels: [...categories] });
+  fig.setAxis("y", { domain: [y0, y1] });
   return axisTitles(fig, categoryName, valueName);
 }
 
@@ -684,16 +722,58 @@ export function graphforgeTableHtml(composition) {
 }
 
 function graphforgeGraphChart(composition, opts) {
-  const { theme = "light", legend, ...rest } = opts;
+  const { theme = "light", legend, positions, ...rest } = opts;
   const items = graphforgeLegendItems(composition, { theme });
   const chartLegend = legend === false
     ? undefined
     : { title: composition.legend.title, ...(legend ?? {}), items: legend?.items ?? items };
-  return graphChart(graphforgeGraphData(composition), undefined, {
+  const data = graphforgeGraphData(composition);
+  const preset = presetPositions(composition, positions);
+  if (preset) Object.assign(data, preset);
+  return graphChart(data, undefined, {
     ...graphforgeGraphOptions(composition, { theme }),
     ...rest,
+    ...(preset ? { layout: "preset" } : {}),
     ...(chartLegend && items.length ? { legend: chartLegend } : {}),
   });
+}
+
+/**
+ * Reuse a previous layout: `positions` from `graphforgePositions` (keyed by
+ * node UUID) cover every composed node → preset layout, no force ticks.
+ * Otherwise the composition is laid out afresh.
+ */
+function presetPositions(composition, positions) {
+  if (positions == null) return null;
+  const { uuid, x, y } = positions;
+  if (!Array.isArray(uuid) || x?.length !== uuid.length || y?.length !== uuid.length) {
+    throw new TypeError("positions must be { uuid: string[], x, y } from graphforgePositions");
+  }
+  const at = new Map(uuid.map((id, i) => [id, i]));
+  const n = composition.nodes.count;
+  const px = new Float64Array(n);
+  const py = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) {
+    const k = at.get(composition.nodes.uuid[i]);
+    if (k === undefined) return null;
+    px[i] = x[k];
+    py[i] = y[k];
+  }
+  return { x: px, y: py };
+}
+
+/**
+ * The node positions a `graphforgeChart` figure was laid out at, keyed by
+ * node UUID, for `graphforgeChart(next, { positions })` on a recomposition of
+ * the same base graph (new layers, selection, theme). `null` when the graph
+ * was drawn at Aggregate LOD (positions are cluster centroids, not nodes).
+ *
+ * @returns {{uuid: string[], x: Float64Array, y: Float64Array} | null}
+ */
+export function graphforgePositions(fig, composition) {
+  const laid = fig?._graphPositions?.[0];
+  if (laid == null || composition?.kind !== "graph" || laid.x.length !== composition.nodes.count) return null;
+  return { uuid: composition.nodes.uuid.slice(), x: Float64Array.from(laid.x), y: Float64Array.from(laid.y) };
 }
 
 /**
@@ -749,6 +829,7 @@ export function graphforgeWebviewPayload(composition, opts = {}) {
     buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
     nodeTrace: meta?.node_trace ?? null,
     edgeTrace: meta?.edge_trace ?? null,
+    positions: composition.kind === "graph" ? graphforgePositions(fig, composition) : null,
   };
 }
 

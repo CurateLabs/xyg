@@ -36,6 +36,7 @@ import {
 } from "../src/index.js";
 import { ABI_VERSION } from "../src/native-path.js";
 import { applyGraphHomeView } from "../src/scene.js";
+import { decodeTooltipRows } from "../src/tooltip-columns.js";
 
 const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? ABI_VERSION);
 
@@ -603,9 +604,9 @@ test("composeGraph GraphForge tables preserve edge identity and node tooltips", 
 test("figure.graph GraphForge tables ship continuous size from column name", () => {
   const fig = figure({ width: 400, height: 300 });
   fig.graph(AIRPORTS_NODES, AIRPORTS_EDGES, { layout: "circle", seed: 2, size: "rank" });
-  const { spec } = fig.buildPayload();
+  const { spec, buffers } = fig.buildPayload();
   assert.equal(spec.traces[1].size.mode, "continuous");
-  assert.ok(Array.isArray(spec.traces[1].tooltip_rows));
+  assert.equal(decodeTooltipRows(spec, buffers, spec.traces[1]).length, spec.traces[1].n_points);
 });
 
 test("fromGraphForgeTables rejects duplicate edge uuid before paint", () => {

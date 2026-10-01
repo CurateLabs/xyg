@@ -105,8 +105,8 @@ Object.assign(ChartView.prototype, {
     // Semantic rows (Sankey bands, graph node/edge props, …) ride the wire as
     // tooltip_rows. Merge after geometry so hosts can replace or enrich the
     // coordinate readout — ribbon/graph edges often have no useful x/y.
-    if (Array.isArray(g.tooltipRows)) {
-      const semantic = g.tooltipRows[hit.index];
+    if (g.tooltipRows != null) {
+      const semantic = g.tooltipRows.at(hit.index);
       if (semantic && typeof semantic === "object") {
         for (const [key, value] of Object.entries(semantic)) {
           if (key === "trace" || key === "index") continue;

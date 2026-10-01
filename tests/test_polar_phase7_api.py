@@ -30,7 +30,7 @@ def _spec(*children: xyg.Component) -> dict:
 
 def test_protocol_v12_is_locked_to_the_client() -> None:
     header = Path(__file__).parents[1] / "js" / "src" / "00_header.ts"
-    assert PROTOCOL_VERSION == 12
+    assert PROTOCOL_VERSION == 13
     assert f"PROTOCOL = {PROTOCOL_VERSION};" in header.read_text()
 
 

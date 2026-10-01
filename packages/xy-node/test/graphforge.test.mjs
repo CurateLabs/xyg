@@ -346,9 +346,20 @@ test("scalar and category results compose as tables and bar charts, never graphs
   const fig = graphforgeChart(census, { width: 480, height: 320 });
   assert.equal(fig.traces[0].kind, "bar");
   assert.equal(fig.x_label, "triad_type");
-  assert.deepEqual(fig._axis_categories.x, [...census.chart.categories]);
+  // Bars on integer slots of a linear axis; ticks carry the category names.
+  const k = census.chart.categories.length;
+  assert.deepEqual(fig.axis_options.x.tick_labels, [...census.chart.categories]);
+  assert.deepEqual(fig.axis_options.x.tick_values, Array.from({ length: k }, (_, i) => i));
+  assert.deepEqual(fig.axis_options.x.domain, [-0.5, k - 0.5]);
+  assert.ok(fig.axis_options.y.domain[0] <= 0 && fig.axis_options.y.domain[1] >= Math.max(...census.chart.values));
+  assert.deepEqual(fig.traces[0].tooltip_rows[0], {
+    triad_type: census.chart.categories[0], [census.chart.valueName]: census.chart.values[0],
+  });
   assert.ok(fig.toHtml().includes(census.chart.categories[0]));
-  assert.throws(() => fig.toPng(), /XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS/, "category axes fail closed in static export");
+  // Static export labels the same categories (no category-axis refusal).
+  const svg = Buffer.from(fig.toSvg()).toString("utf8");
+  for (const category of census.chart.categories) assert.ok(svg.includes(`>${category}<`), category);
+  assert.equal(Buffer.from(fig.toPng()).subarray(1, 4).toString("latin1"), "PNG");
   assert.throws(() => composeGraphForge({ layers: [{ result: arrow("is_dag"), intent: "bar-chart" }] }),
     (e) => e.code === "GF_COMPOSE_INTENT_UNSUPPORTED");
 });
@@ -429,4 +440,31 @@ test("webview payloads relay picks back to GraphForge identity", () => {
   }
   assert.ok(derived > 0);
   assert.equal(graphforgePick(payload.figure, c, { trace: 99, index: 0 }), null);
+});
+
+test("recompositions reuse a layout by node UUID instead of laying out again", () => {
+  const first = graphforgeWebviewPayload(compose("pagerank"), { width: 480, height: 360 });
+  assert.equal(first.positions.uuid.length, first.figure.traces[first.nodeTrace].x.length);
+  // Another layer over the same base: every node has a position → preset layout.
+  const next = compose("pagerank", "louvain");
+  const reused = graphforgeWebviewPayload(next, { width: 480, height: 360, positions: first.positions });
+  const at = new Map(first.positions.uuid.map((id, i) => [id, i]));
+  next.nodes.uuid.forEach((id, i) => {
+    assert.equal(reused.positions.x[i], first.positions.x[at.get(id)]);
+    assert.equal(reused.positions.y[i], first.positions.y[at.get(id)]);
+  });
+  assert.equal(reused.figure._graphMeta[0].layout, "preset");
+  // A node without a position: laid out afresh, never partially preset.
+  const partial = { uuid: first.positions.uuid.slice(1), x: first.positions.x.subarray(1), y: first.positions.y.subarray(1) };
+  assert.equal(graphforgeChart(next, { positions: partial })._graphMeta[0].layout, "force");
+  assert.throws(() => graphforgeChart(next, { positions: { uuid: ["x"], x: [] } }), TypeError);
+});
+
+test("composition identities decode lazily and agree with the planes", () => {
+  const c = compose("pagerank", "node_similarity");
+  assert.equal(Object.getOwnPropertyDescriptor(c.nodes, "uuid").get != null, true);
+  assert.equal(c.nodes.uuid.length, c.nodes.count);
+  assert.equal(Object.getOwnPropertyDescriptor(c.nodes, "uuid").get, undefined, "cached after first read");
+  c.edges.uuid.forEach((id, j) => assert.equal(id === null, c.edges.derived[j] === 1));
+  assert.equal(c.nodeIndex(c.nodes.uuid[2]), 2);
 });

@@ -63,8 +63,10 @@ composition.kind;              // "graph" | "table" | "bar-chart" | "parallel-co
 composition.identify("node", i);   // { uuid, layers: [{ layer, resultId, row }] }
 composition.select(uuids);         // { nodes: [i], edges: [j] }
 composition.diagnostics();         // value-free: schema ids, counts, decision codes
-const { spec, buffer, figure } = graphforgeWebviewPayload(composition, { width, height, theme });
+const { spec, buffer, figure, positions } = graphforgeWebviewPayload(composition, { width, height, theme });
 graphforgePick(figure, composition, { trace, index });     // relayed webview click → identity
+// Recomposing the same base (new layers, selection, theme): reuse the layout.
+graphforgeWebviewPayload(next, { width, height, theme, positions });
 graphforgeTableHtml(tableComposition);                     // escaped <table> for table intents
 ```
 
@@ -126,7 +128,7 @@ message}`). Details: design §6.4.
 | Native C ABI | 378 | `abiVersion()`, `xyg_abi_version` |
 | WASM ABI | 27 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 31 | `SCENE_VERSION` |
-| Paint protocol | 12 | `PROTOCOL_VERSION` |
+| Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 1 | `composition.ledgerVersion` |
@@ -160,7 +162,7 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 - `@curatelabs/xyg` (browser: `index.js`, `standalone.js`, `wasm-worker.js`,
   `xyg-wasm.wasm`, `ASSET-MANIFEST.json` with sizes and SHA-256, NOTICE).
   Copy these into the extension's media folder; do not mix versions.
-- Until public npm publication (#13/#108), consume the exact-version
+- Until public npm publication (the 0.6.0-rc.1 cohort, #108), consume the exact-version
   candidate tarballs the `Release` workflow (`publish.yaml`) builds and
   retains as run artifacts (`node-facade`, `node-platform-<platform>`,
   `browser-package`), e.g.
@@ -174,17 +176,14 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 
 ## 8. Known limits
 
-- Scale (spec/benchmarks/results.md, "GraphForge composition scale"): Rust
-  composition takes about 0.2 s for four layers over 100k nodes, but the
-  graph-mark chart build (force layout) takes about 13 s. The webview spec
-  JSON reaches about 98 MiB at 100k because of per-element tooltip rows, so
-  for very large graphs select rows (`layers[].rows`, `select`) or reuse
-  positions across recompositions.
+- Scale (spec/benchmarks/results.md, "GraphForge composition scale" and
+  "GraphForge payload and layout A/B"): at 100k nodes Rust composition takes
+  about 0.2 s, the graph-mark chart build about 5 s (1.8 s when recomposing with
+  reused `positions`), and the webview spec is 1.3 MiB of JSON plus about
+  40 MiB of typed buffers. Pass `positions` whenever the base graph is
+  unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
-- Static PNG/SVG of `bar-chart` compositions fails closed
-  (`XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`), as every category-axis export does in
-  both hosts today; the interactive chart and the table carry the names.
 - Scene positions come from Rust's seeded force layout with a `libm`-free
   seed, so documents and Scene bytes are bit-identical across hosts and
   platforms.

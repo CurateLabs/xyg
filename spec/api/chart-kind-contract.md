@@ -79,7 +79,7 @@ implements it without reading the other three.
 | `x`, `y` | **target** span, lower and upper edge — y values in the `x`/`y` slots, which is why `_range_columns` needs a ribbon branch | y |
 | `color` | channel record for the **source** end — always **resolved paint** (`constant` or `direct_rgba`): numeric encodings are sampled through the shared exporter LUT at the factory (`channels.resolve_direct_rgba`), because the ribbon program's `a_rgba2` shares its attribute slot with `a_style` and has no cval/LUT path, and a small-N direct-tier mark makes CPU sampling free | |
 | `color_target` | channel record for the **target** end, same resolved-paint rule; absent means flat, painted with `color` | |
-| `tooltip_rows` | optional per-band semantic objects; Sankey links carry `source`, `target`, `value`, while node bands carry `node`, `value`. The values are deliberately JSON scalars: these are small-N semantic readouts (labels and one flow value per band), not geometry that scales with data, which is what §29's raw-buffer rule exists for | |
+| `tooltip_columns` / `tooltip_rows` | optional per-band semantic rows; Sankey links carry `source`, `target`, `value`, while node bands carry `node`, `value`. They ship as typed `tooltip_columns` (text dictionary plus f64 planes; graph-mark.md §2), so no numbers ride the JSON; rows that are not one scalar kind per key keep JSON `tooltip_rows` | |
 
 **The curve.** A cubic in *axis-transformed space* with both control points at
 the horizontal midpoint `xm = (x0 + x1) / 2`, each holding its own end's y —
@@ -154,7 +154,7 @@ along the band — and the implicit match-fill outline is already per-band.
 `gl.POINTS`. Hover resolves on the CPU by evaluating the same cubic at the
 cursor's data x and testing vertical containment, so tooltips work and box or
 lasso selection is correctly absent rather than present and wrong. When
-`tooltip_rows` is present, the client and kernel exact-pick path preserve those
+semantic rows are present (`tooltip_columns` or `tooltip_rows`), the client and kernel exact-pick path preserve those
 semantic fields so a Sankey tooltip describes the flow or node rather than its
 internal placement coordinates.
 

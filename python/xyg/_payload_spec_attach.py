@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from . import kernels
+from ._graph_wire import wire_graph_meta
 from ._payload_writer import PayloadWriter
 
 
@@ -91,4 +92,6 @@ def attach_build_plan_fields(
     if build_plan["attach_animation"]:
         spec["animation"] = dict(figure.animation_options)
     if build_plan["attach_graph"]:
-        spec["graph"] = list(getattr(figure, "_graph_meta", None) or [])
+        spec["graph"] = [
+            wire_graph_meta(meta, pw) for meta in getattr(figure, "_graph_meta", None) or []
+        ]

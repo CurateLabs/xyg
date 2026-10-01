@@ -240,6 +240,7 @@ fn bar_chart(layer: &Layer<'_>, mut decisions: Vec<Decision>) -> GfResult<Vec<u8
     out.utf8("chart.value_name", 0, metric);
     out.texts("chart.category", 0, &names);
     out.f64s("chart.value", 0, &bars);
+    out.f64s("chart.domain", 0, &bar_domain(&bars));
     out.u64s(
         "chart.result_row",
         0,
@@ -247,6 +248,28 @@ fn bar_chart(layer: &Layer<'_>, mut decisions: Vec<Decision>) -> GfResult<Vec<u8
     );
     encode_decisions(&mut out, &decisions);
     Ok(out.finish())
+}
+
+/// `[x0, x1, y0, y1]` for bars at x = 0..k-1 (one unit slot each, so category
+/// ticks sit on integer positions) over a value range that always includes the
+/// zero baseline, with 5% headroom on the sides away from zero.
+fn bar_domain(bars: &[f64]) -> [f64; 4] {
+    let k = bars.len().max(1) as f64;
+    let (mut lo, mut hi) = bars
+        .iter()
+        .filter(|v| v.is_finite())
+        .fold((0.0f64, 0.0f64), |(lo, hi), &v| (lo.min(v), hi.max(v)));
+    if hi - lo <= 0.0 {
+        hi = lo + 1.0;
+    }
+    let pad = (hi - lo) * 0.05;
+    if hi > 0.0 {
+        hi += pad;
+    }
+    if lo < 0.0 {
+        lo -= pad;
+    }
+    [-0.5, k - 0.5, lo, hi]
 }
 
 // -- embeddings ------------------------------------------------------------------

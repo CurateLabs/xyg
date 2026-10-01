@@ -85,6 +85,12 @@ function wasmType(rustType) {
   throw new Error(`unsupported Rust ABI type in manifest: ${rustType}`);
 }
 
+// Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
+// deliberate, recorded decision, not drift.
+const WASM_SIZE_BUDGET_BYTES = 1024 * 1024;
+if (bytes.length > WASM_SIZE_BUDGET_BYTES) {
+  throw new Error(`xyg-wasm is ${bytes.length} bytes, over the ${WASM_SIZE_BUDGET_BYTES}-byte budget (spec/design/browser-wasm.md, "Artifact size")`);
+}
 const module = await WebAssembly.compile(bytes);
 const imports = WebAssembly.Module.imports(module);
 if (imports.length) {

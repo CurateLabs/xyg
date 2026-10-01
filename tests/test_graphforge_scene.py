@@ -10,6 +10,7 @@ import pytest
 import xyg
 from xyg import _graph
 from xyg._figure import Figure
+from xyg._tooltip_columns import decode_tooltip_rows
 
 pytest.importorskip("pyarrow")
 import pyarrow as pa  # noqa: E402
@@ -62,7 +63,10 @@ def test_graphforge_ipc_preserves_parallel_edge_identity_and_node_tooltips():
     assert {row["edge_id"] for row in edge_trace.tooltip_rows} == set(meta["source_edge_ids"])
     assert any(row["relationship_type"] == "SELF" for row in edge_trace.tooltip_rows)
     spec, blob = fig.build_payload()
-    assert "tooltip_rows" in spec["traces"][1]
+    # Node rows ship as typed tooltip columns and decode to the host rows.
+    assert decode_tooltip_rows(spec, blob, spec["traces"][1]) == node_trace.tooltip_rows
+    # The wire spec carries no host-only identity planes (graph-mark.md §7).
+    assert not set(_graph.HOST_ONLY_GRAPH_META) & set(spec["graph"][0])
     assert isinstance(blob, (bytes, memoryview, bytearray))
 
 

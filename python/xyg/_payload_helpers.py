@@ -8,6 +8,7 @@ import numpy as np
 
 from . import channels, kernels
 from ._payload_writer import PayloadWriter
+from ._tooltip_columns import encode_tooltip_rows
 from ._trace import Trace
 from .columns import Column
 from .config import MAX_ANIMATION_MATCH_ROWS
@@ -56,8 +57,14 @@ def transition_entry(
     return entry
 
 
-def attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
-    """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
+def attach_tooltip_rows(
+    entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray], pw: Any = None
+) -> None:
+    """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry.
+
+    With a payload writer the rows ship as typed ``tooltip_columns`` when they
+    can (``_tooltip_columns``); otherwise as JSON ``tooltip_rows``.
+    """
     plan = kernels.payload_transition_entry_attach(
         has_trace_animation=False,
         entry_has_animation=False,
@@ -89,7 +96,12 @@ def attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarra
         if sel is None:
             return
         indices = (int(i) for i in sel)
-    entry["tooltip_rows"] = [dict(tooltip_rows[i]) for i in indices]
+    shipped = [tooltip_rows[i] for i in indices]
+    columns = encode_tooltip_rows(shipped, pw) if pw is not None else None
+    if columns is not None:
+        entry["tooltip_columns"] = columns
+    else:
+        entry["tooltip_rows"] = [dict(row) for row in shipped]
 
 
 def visible_mask_needed(

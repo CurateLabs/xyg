@@ -1488,8 +1488,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   numbers. Native-vs-WASM projection parity is covered by the #59 foundation.
 - **REQ-HOSTPARITY-2e (MUST).** Graph node/edge `tooltip_rows` and continuous
   size/color channels ship with the same wire shape on Python and Node
-  (`tooltip_rows` length-checked against geometry; Node `shipScalar` mirrors
-  Python `_ship_channels` continuous size). See
+  (`tooltip_rows` length-checked against geometry and encoded as byte-identical
+  typed `tooltip_columns`, `tests/fixtures/tooltip_columns_cross_host.json`;
+  `spec.graph` omits the same host-only identity planes; Node `shipScalar`
+  mirrors Python `_ship_channels` continuous size). See
   [graph-mark.md](graph-mark.md) encodings table.
 - **REQ-HOSTPARITY-2f (MUST).** Graph edge identity follows the Rust
   render-edge membership CSR (graph-mark.md §6) on both hosts: per-segment

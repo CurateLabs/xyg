@@ -1,0 +1,525 @@
+{
+  "schema": "xyg.tooltip-columns-cross-host/v1",
+  "cases": {
+    "graph_nodes": {
+      "rows": [
+        {
+          "id": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "provenance_row": 0,
+          "name": "ann",
+          "type": "Person",
+          "pagerank.score": 0.25
+        },
+        {
+          "id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "provenance_row": 1,
+          "type": "Person",
+          "pagerank.score": null
+        },
+        {
+          "id": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "provenance_row": 2,
+          "name": "ann",
+          "type": "Place",
+          "pagerank.score": 1e-300
+        }
+      ],
+      "tooltip_columns": {
+        "n": 3,
+        "keys": [
+          "id",
+          "provenance_row",
+          "name",
+          "type",
+          "pagerank.score"
+        ],
+        "kinds": [
+          "uuid",
+          "f64",
+          "text",
+          "text",
+          "f64"
+        ],
+        "data": [
+          0,
+          1,
+          3,
+          4,
+          6
+        ],
+        "present": [
+          null,
+          null,
+          2,
+          null,
+          5
+        ],
+        "dict": [
+          "ann",
+          "Person",
+          "Place"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u8",
+          "hex": "01a0f3fd23dd76d387e7d765a3665ef501a0f3fd23e276c3b1d4c2aadc972cc901a0f3fd23dd76d387e7d765a3665ef5"
+        },
+        {
+          "dtype": "u8",
+          "hex": "0000000000000000000000000000f03f0000000000000040"
+        },
+        {
+          "dtype": "u8",
+          "hex": "020002"
+        },
+        {
+          "dtype": "u32",
+          "hex": "000000000000000000000000"
+        },
+        {
+          "dtype": "u32",
+          "hex": "010000000100000002000000"
+        },
+        {
+          "dtype": "u8",
+          "hex": "020102"
+        },
+        {
+          "dtype": "u8",
+          "hex": "000000000000d03f000000000000000059f3f8c21f6ea501"
+        }
+      ]
+    },
+    "graph_edges_with_aggregates": {
+      "rows": [
+        {
+          "source": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "target": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "edge_id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "provenance_row": 7
+        },
+        {
+          "edge_count": 12
+        },
+        {
+          "source": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "target": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "edge_id": null,
+          "provenance_row": 9
+        },
+        {
+          "source": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "target": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5",
+          "edge_id": "derived:1:4:0",
+          "provenance_row": 9
+        }
+      ],
+      "tooltip_columns": {
+        "n": 4,
+        "keys": [
+          "source",
+          "target",
+          "edge_id",
+          "provenance_row",
+          "edge_count"
+        ],
+        "kinds": [
+          "uuid",
+          "uuid",
+          "uuid",
+          "f64",
+          "f64"
+        ],
+        "data": [
+          1,
+          3,
+          5,
+          7,
+          9
+        ],
+        "present": [
+          0,
+          2,
+          4,
+          6,
+          8
+        ],
+        "dict": [
+          "derived:1:4:0"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u8",
+          "hex": "02000202"
+        },
+        {
+          "dtype": "u8",
+          "hex": "01a0f3fd23dd76d387e7d765a3665ef50000000000000000000000000000000001a0f3fd23e276c3b1d4c2aadc972cc901a0f3fd23dd76d387e7d765a3665ef5"
+        },
+        {
+          "dtype": "u8",
+          "hex": "02000202"
+        },
+        {
+          "dtype": "u8",
+          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc90000000000000000000000000000000001a0f3fd23dd76d387e7d765a3665ef501a0f3fd23dd76d387e7d765a3665ef5"
+        },
+        {
+          "dtype": "u8",
+          "hex": "02000103"
+        },
+        {
+          "dtype": "u8",
+          "hex": "01a0f3fd23e276c3b1d4c2aadc972cc9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "dtype": "u8",
+          "hex": "02000202"
+        },
+        {
+          "dtype": "u8",
+          "hex": "0000000000001c40000000000000000000000000000022400000000000002240"
+        },
+        {
+          "dtype": "u8",
+          "hex": "00020000"
+        },
+        {
+          "dtype": "u8",
+          "hex": "0000000000000000000000000000284000000000000000000000000000000000"
+        }
+      ]
+    },
+    "non_finite_and_bools": {
+      "rows": [
+        {
+          "value": "NaN",
+          "flag": true,
+          "label": "na\u00efve \u2603"
+        },
+        {
+          "value": "Infinity",
+          "flag": false,
+          "label": ""
+        },
+        {
+          "value": -0.5,
+          "flag": null,
+          "label": "x"
+        }
+      ],
+      "tooltip_columns": {
+        "n": 3,
+        "keys": [
+          "value",
+          "flag",
+          "label"
+        ],
+        "kinds": [
+          "f64",
+          "bool",
+          "text"
+        ],
+        "data": [
+          1,
+          3,
+          4
+        ],
+        "present": [
+          0,
+          2,
+          null
+        ],
+        "dict": [
+          "na\u00efve \u2603",
+          "",
+          "x"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u8",
+          "hex": "010102"
+        },
+        {
+          "dtype": "u8",
+          "hex": "00000000000000000000000000000000000000000000e0bf"
+        },
+        {
+          "dtype": "u8",
+          "hex": "020201"
+        },
+        {
+          "dtype": "u8",
+          "hex": "010000"
+        },
+        {
+          "dtype": "u32",
+          "hex": "000000000100000002000000"
+        }
+      ]
+    },
+    "only_nulls": {
+      "rows": [
+        {
+          "a": null
+        },
+        {
+          "a": null
+        }
+      ],
+      "tooltip_columns": {
+        "n": 2,
+        "keys": [
+          "a"
+        ],
+        "kinds": [
+          "bool"
+        ],
+        "data": [
+          1
+        ],
+        "present": [
+          0
+        ],
+        "dict": []
+      },
+      "shipped": [
+        {
+          "dtype": "u8",
+          "hex": "0101"
+        },
+        {
+          "dtype": "u8",
+          "hex": "0000"
+        }
+      ]
+    },
+    "proto_key": {
+      "rows": [
+        {
+          "__proto__": "a",
+          "x": 1
+        },
+        {
+          "__proto__": "b",
+          "x": 2
+        }
+      ],
+      "tooltip_columns": {
+        "n": 2,
+        "keys": [
+          "__proto__",
+          "x"
+        ],
+        "kinds": [
+          "text",
+          "f64"
+        ],
+        "data": [
+          0,
+          1
+        ],
+        "present": [
+          null,
+          null
+        ],
+        "dict": [
+          "a",
+          "b"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
+        },
+        {
+          "dtype": "u8",
+          "hex": "000000000000f03f0000000000000040"
+        }
+      ]
+    },
+    "shared_dictionary": {
+      "rows": [
+        {
+          "name": "ann",
+          "pagerank.name": "ann"
+        },
+        {
+          "name": "bo",
+          "pagerank.name": "bo"
+        }
+      ],
+      "tooltip_columns": {
+        "n": 2,
+        "keys": [
+          "name",
+          "pagerank.name"
+        ],
+        "kinds": [
+          "text",
+          "text"
+        ],
+        "data": [
+          0,
+          1
+        ],
+        "present": [
+          null,
+          null
+        ],
+        "dict": [
+          "ann",
+          "bo"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
+        },
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
+        }
+      ]
+    },
+    "key_order_differs": {
+      "rows": [
+        {
+          "a": 1,
+          "b": 2
+        },
+        {
+          "b": 3,
+          "a": 4
+        }
+      ],
+      "tooltip_columns": null,
+      "shipped": []
+    },
+    "mixed_kinds": {
+      "rows": [
+        {
+          "a": 1
+        },
+        {
+          "a": "x"
+        }
+      ],
+      "tooltip_columns": null,
+      "shipped": []
+    },
+    "nested_value": {
+      "rows": [
+        {
+          "a": [
+            1,
+            2
+          ]
+        }
+      ],
+      "tooltip_columns": null,
+      "shipped": []
+    },
+    "empty": {
+      "rows": [],
+      "tooltip_columns": null,
+      "shipped": []
+    }
+  },
+  "graph_meta": {
+    "meta": {
+      "layout": "force",
+      "ids": [
+        "a",
+        "b",
+        "c"
+      ],
+      "csr_offsets": [
+        0,
+        2,
+        3,
+        4
+      ],
+      "csr_neighbors": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "node_labels": [
+        "a",
+        null,
+        "c"
+      ],
+      "label_accepted": [
+        true,
+        false,
+        true
+      ],
+      "visual_states": [
+        0,
+        5,
+        7
+      ],
+      "source_edge_ids": [
+        "e0",
+        "e1"
+      ],
+      "compound_nodes": [
+        false,
+        false,
+        true
+      ]
+    },
+    "wire": {
+      "layout": "force",
+      "csr_offsets": {
+        "column": 0
+      },
+      "csr_neighbors": {
+        "column": 1
+      },
+      "node_labels": [
+        "a",
+        null,
+        "c"
+      ],
+      "label_accepted": {
+        "column": 2
+      },
+      "visual_states": {
+        "column": 3
+      },
+      "compound_nodes": {
+        "column": 4
+      }
+    },
+    "shipped": [
+      {
+        "dtype": "u32",
+        "hex": "00000000020000000300000004000000"
+      },
+      {
+        "dtype": "u32",
+        "hex": "01000000020000000000000000000000"
+      },
+      {
+        "dtype": "u8",
+        "hex": "010001"
+      },
+      {
+        "dtype": "u8",
+        "hex": "000507"
+      },
+      {
+        "dtype": "u8",
+        "hex": "000001"
+      }
+    ]
+  }
+}

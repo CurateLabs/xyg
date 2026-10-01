@@ -21,6 +21,7 @@ import xyg
 from xyg._figure import Figure
 from xyg._sankey import compute_layout
 from xyg._scene import RIBBON_STEPS, ribbon_polygon
+from xyg._tooltip_columns import decode_tooltip_rows
 from xyg.config import PROTOCOL_VERSION
 
 LINKS = [
@@ -212,14 +213,15 @@ def test_ribbon_autorange_rejects_incomplete_geometry() -> None:
 def test_sankey_chart_builds_ribbon_traces_only() -> None:
     chart = xyg.sankey_chart(LINKS, width=680, height=420)
     figure = chart.figure()
-    spec, _ = figure.build_payload_split()
+    spec, buffers = figure.build_payload_split()
     assert [t["kind"] for t in spec["traces"]] == ["ribbon", "ribbon"]
-    assert spec["traces"][0]["tooltip_rows"][0] == {
+    links, nodes = (decode_tooltip_rows(spec, buffers, t) for t in spec["traces"])
+    assert links[0] == {
         "source": "Inflow",
         "target": "Equities",
         "value": 78000.0,
     }
-    assert spec["traces"][1]["tooltip_rows"][0] == {
+    assert nodes[0] == {
         "node": "Inflow",
         "value": 148000.0,
     }
@@ -236,7 +238,7 @@ def test_sankey_chart_builds_ribbon_traces_only() -> None:
     # ribbon's internal placement (its target span), never a data readout.
     for row in (exact_link, exact_node):
         assert "x" not in row and "y" not in row
-    assert spec["protocol"] == PROTOCOL_VERSION == 12
+    assert spec["protocol"] == PROTOCOL_VERSION == 13
 
 
 # -- resolved paints and per-trace styles ------------------------------------

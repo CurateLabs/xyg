@@ -39,6 +39,7 @@ import {
   decodeGraphForgeDocument,
   encodeGraphForgeRequest,
   graphforgeChart,
+  graphforgePositions,
   GRAPHFORGE_COMPOSITION_VERSION,
 } from "../packages/xy-node/src/graphforge.js";
 
@@ -190,6 +191,9 @@ function measure(n, composeWasm, fixtureDir) {
     // layout, LOD, routing) + buildPayload (encode); timed apart.
     const [figure, chartMs] = bench(() => graphforgeChart(composition, { width: 960, height: 640 }));
     const [payload, payloadEncodeMs] = bench(() => figure.buildPayload());
+    // A recomposition of the same base reuses the layout (preset positions).
+    const positions = graphforgePositions(figure, composition);
+    const [, chartReuseMs] = bench(() => graphforgeChart(composition, { width: 960, height: 640, positions }));
     const buffer = payload.buffers instanceof Uint8Array ? payload.buffers : new Uint8Array(payload.buffers);
     row.compositions[name] = {
       layers: input.layers.length,
@@ -205,6 +209,7 @@ function measure(n, composeWasm, fixtureDir) {
       decode_document_ms: decodeMs,
       wasm_compose_ms: wasmMs,
       webview_chart_ms: chartMs,
+      webview_chart_reuse_ms: positions ? chartReuseMs : null,
       webview_encode_ms: payloadEncodeMs,
       native_wasm_identical: equalBytes(document, wasmDocument),
     };
@@ -232,6 +237,8 @@ function measure(n, composeWasm, fixtureDir) {
 }
 
 const composeWasm = await loadWasm();
+// Timings are only comparable on a quiet machine; record the load around the run.
+const loadBefore = os.loadavg().map((v) => Math.round(v * 10) / 10);
 const rows = [];
 for (const size of args.sizes.split(",").map(Number)) {
   const row = measure(size, composeWasm, size === FIXTURE_NODES ? args["fixture-out"] : null);
@@ -258,6 +265,7 @@ const report = {
     graphforge: graphforgeVersion,
     composition_version: GRAPHFORGE_COMPOSITION_VERSION,
     reps: REPS,
+    load_average_1_5_15: { before: loadBefore, after: os.loadavg().map((v) => Math.round(v * 10) / 10) },
   },
   // The process high-water mark (getrusage ru_maxrss), GraphForge included.
   max_rss_mib: Math.round(process.resourceUsage().maxRSS / 1024),

@@ -1222,6 +1222,18 @@ impl ForceState {
         mass_scale: f64,
         minimum_separation: f64,
     ) {
+        let threads = repulsion_threads(self.n);
+        self.apply_repulsion_grid_bh_threads(fx, fy, mass_scale, minimum_separation, threads);
+    }
+
+    fn apply_repulsion_grid_bh_threads(
+        &self,
+        fx: &mut [f64],
+        fy: &mut [f64],
+        mass_scale: f64,
+        minimum_separation: f64,
+        threads: usize,
+    ) {
         const EXACT_CELL_MAX: usize = 32;
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
@@ -1243,7 +1255,6 @@ impl ForceState {
         let span_x = (max_x - min_x).max(1e-12);
         let span_y = (max_y - min_y).max(1e-12);
         let mut cell_of = vec![0usize; n];
-        let mut members: Vec<Vec<usize>> = vec![Vec::new(); cells];
         let mut mass = vec![0u64; cells];
         let mut sum_x = vec![0.0f64; cells];
         let mut sum_y = vec![0.0f64; cells];
@@ -1256,14 +1267,29 @@ impl ForceState {
                 .clamp(0.0, (side - 1) as f64) as usize;
             let cell = row * side + col;
             *cell_slot = cell;
-            members[cell].push(i);
             mass[cell] += 1;
             sum_x[cell] += self.x[i];
             sum_y[cell] += self.y[i];
         }
+        // Cell members as one stable counting sort (ascending node index per
+        // cell, the order the per-cell lists had), without a Vec per cell.
+        let mut cell_start = vec![0usize; cells + 1];
+        for c in 0..cells {
+            cell_start[c + 1] = cell_start[c] + mass[c] as usize;
+        }
+        let mut cursor = cell_start.clone();
+        let mut ordered = vec![0usize; n];
+        for (i, &cell) in cell_of.iter().enumerate() {
+            ordered[cursor[cell]] = i;
+            cursor[cell] += 1;
+        }
+        let members = |c: usize| &ordered[cell_start[c]..cell_start[c + 1]];
         let total_sum_x: f64 = sum_x.iter().sum();
         let total_sum_y: f64 = sum_y.iter().sum();
-        for i in 0..n {
+        // Node `i`'s force reads shared state and writes only `fx[i]`/`fy[i]`,
+        // accumulating its terms in a fixed order, so splitting the node range
+        // across threads gives bit-identical forces for any thread count.
+        let node_force = |i: usize, fxi: &mut f64, fyi: &mut f64| {
             let ci = cell_of[i];
             let ri = ci / side;
             let coli = ci % side;
@@ -1281,8 +1307,8 @@ impl ForceState {
                     near_mass += mass[c];
                     near_sum_x += sum_x[c];
                     near_sum_y += sum_y[c];
-                    if members[c].len() <= EXACT_CELL_MAX {
-                        for &j in &members[c] {
+                    if members(c).len() <= EXACT_CELL_MAX {
+                        for &j in members(c) {
                             if i == j {
                                 continue;
                             }
@@ -1290,12 +1316,12 @@ impl ForceState {
                             let dy = self.y[i] - self.y[j];
                             let dist = (dx * dx + dy * dy + 1e-8).sqrt();
                             let force = k2 / dist;
-                            fx[i] += force * dx / dist;
-                            fy[i] += force * dy / dist;
+                            *fxi += force * dx / dist;
+                            *fyi += force * dy / dist;
                             if dist < minimum_separation {
                                 let pressure = (minimum_separation - dist) * 2.0;
-                                fx[i] += pressure * dx / dist;
-                                fy[i] += pressure * dy / dist;
+                                *fxi += pressure * dx / dist;
+                                *fyi += pressure * dy / dist;
                             }
                         }
                     } else {
@@ -1310,13 +1336,13 @@ impl ForceState {
                             let dy = self.y[i] - my;
                             let dist = (dx * dx + dy * dy + 1e-8).sqrt();
                             let force = k2 * aggregate_mass as f64 / dist;
-                            fx[i] += force * dx / dist;
-                            fy[i] += force * dy / dist;
+                            *fxi += force * dx / dist;
+                            *fyi += force * dy / dist;
                             if dist < minimum_separation {
                                 let pressure =
                                     (minimum_separation - dist) * 2.0 * aggregate_mass as f64;
-                                fx[i] += pressure * dx / dist;
-                                fy[i] += pressure * dy / dist;
+                                *fxi += pressure * dx / dist;
+                                *fyi += pressure * dy / dist;
                             }
                         }
                     }
@@ -1330,11 +1356,44 @@ impl ForceState {
                 let dy = self.y[i] - my;
                 let dist = (dx * dx + dy * dy + 1e-8).sqrt();
                 let force = k2 * far_mass as f64 / dist;
-                fx[i] += force * dx / dist;
-                fy[i] += force * dy / dist;
+                *fxi += force * dx / dist;
+                *fyi += force * dy / dist;
             }
+        };
+        if threads <= 1 {
+            for (i, (fxi, fyi)) in fx.iter_mut().zip(fy.iter_mut()).enumerate() {
+                node_force(i, fxi, fyi);
+            }
+            return;
         }
+        let chunk = n.div_ceil(threads);
+        std::thread::scope(|scope| {
+            for (t, (fxc, fyc)) in fx.chunks_mut(chunk).zip(fy.chunks_mut(chunk)).enumerate() {
+                let node_force = &node_force;
+                scope.spawn(move || {
+                    for (k, (fxi, fyi)) in fxc.iter_mut().zip(fyc.iter_mut()).enumerate() {
+                        node_force(t * chunk + k, fxi, fyi);
+                    }
+                });
+            }
+        });
     }
+}
+
+/// Worker threads for one grid repulsion pass: serial on wasm32 (no threads)
+/// and under CodSpeed's instruction-count gate; otherwise one thread per
+/// 2,048 nodes up to the available cores (at most 16). Forces are
+/// bit-identical for every count.
+fn repulsion_threads(n: usize) -> usize {
+    if cfg!(target_arch = "wasm32") {
+        return 1;
+    }
+    static CODSPEED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *CODSPEED.get_or_init(|| std::env::var_os("CODSPEED_ENV").is_some()) {
+        return 1;
+    }
+    let cores = std::thread::available_parallelism().map_or(1, |p| p.get().min(16));
+    cores.min(n / 2_048).max(1)
 }
 
 /// Optional axis-aligned viewport for [`build_render`].
@@ -2122,6 +2181,36 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn grid_repulsion_is_bit_identical_for_any_thread_count() {
+        let n = 30_000u64;
+        let sources: Vec<u64> = (0..n).collect();
+        let targets: Vec<u64> = (0..n).map(|i| (i * 7 + 3) % n).collect();
+        let state =
+            super::ForceState::new(n, &sources, &targets, None, None, 0, super::LAYOUT_FORCE)
+                .unwrap();
+        let forces = |threads: usize| {
+            let (mut fx, mut fy) = (vec![0.0; n as usize], vec![0.0; n as usize]);
+            state.apply_repulsion_grid_bh_threads(&mut fx, &mut fy, 1.0, 0.5, threads);
+            (fx, fy)
+        };
+        let serial = forces(1);
+        assert!(serial.0.iter().any(|v| *v != 0.0));
+        for threads in [2, 3, 7, 16] {
+            let parallel = forces(threads);
+            assert!(serial
+                .0
+                .iter()
+                .zip(&parallel.0)
+                .all(|(a, b)| a.to_bits() == b.to_bits()));
+            assert!(serial
+                .1
+                .iter()
+                .zip(&parallel.1)
+                .all(|(a, b)| a.to_bits() == b.to_bits()));
+        }
+    }
+
     #[test]
     fn portable_sin_cos_tracks_libm() {
         for i in -4000..=4000 {

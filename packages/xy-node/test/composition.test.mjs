@@ -9,6 +9,7 @@ import {
   runForceTicks,
   runLayout,
 } from "../src/index.js";
+import { decodeTooltipRows } from "../src/tooltip-columns.js";
 
 test("normalize + circle runLayout emits positions and meta", () => {
   const data = normalizeGraphInputs(
@@ -75,7 +76,13 @@ test("composeGraph + figure.buildPayload protocol subset", () => {
   const styleColumns = new Set(
     spec.traces.flatMap((t) => Object.values(t.channels ?? {}).map((c) => c.buf)),
   );
-  assert.ok(spec.columns.every((c, i) => styleColumns.has(i) || typeof c.offset === "number"));
+  // Graph meta integer planes (CSR, a11y counts) ride as typed u8/u32 columns.
+  const metaColumns = new Set(
+    spec.graph.flatMap((m) => Object.values(m).filter((v) => Number.isInteger(v?.column)).map((v) => v.column)),
+  );
+  assert.ok(metaColumns.size > 0);
+  assert.ok(spec.columns.every((c, i) => styleColumns.has(i) || metaColumns.has(i) || typeof c.offset === "number"));
+  assert.ok([...metaColumns].every((i) => ["u8", "u32"].includes(spec.columns[i].dtype)));
 });
 
 test("composeGraph helper returns traces ready for figure", () => {
@@ -103,15 +110,18 @@ test("graph ships tooltip_rows plus continuous size and color channels", () => {
       edgeTooltipRows: [{ e: 0 }, { e: 1 }],
     },
   );
-  const { spec } = fig.buildPayload();
+  const { spec, buffers } = fig.buildPayload();
   const edges = spec.traces[0];
   const nodes = spec.traces[1];
   assert.equal(edges.kind, "segments");
   assert.equal(nodes.kind, "scatter");
-  assert.deepEqual(nodes.tooltip_rows, [{ id: "a" }, { id: "b" }, { id: "c" }]);
-  assert.equal(edges.tooltip_rows.length, 2);
+  // Scalar rows ride as typed tooltip columns (graph-mark.md §2).
+  assert.equal(nodes.tooltip_rows, undefined);
+  assert.deepEqual(decodeTooltipRows(spec, buffers, nodes), [{ id: "a" }, { id: "b" }, { id: "c" }]);
+  const edgeRows = decodeTooltipRows(spec, buffers, edges);
+  assert.equal(edgeRows.length, 2);
   assert.deepEqual(
-    [...new Set(edges.tooltip_rows.map((r) => r.e))],
+    [...new Set(edgeRows.map((r) => r.e))],
     [0, 1],
   );
   assert.equal(nodes.size.mode, "continuous");
