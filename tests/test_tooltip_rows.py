@@ -108,3 +108,13 @@ def test_rows_that_cannot_be_columns_stay_json():
     fig.traces[-1].tooltip_rows = [{"a": 1}, {"a": "x"}]  # mixed kinds
     spec, _ = fig.build_payload()
     assert spec["traces"][0]["tooltip_rows"] == [{"a": 1}, {"a": "x"}]
+
+
+def test_integers_beyond_f64_keep_json_rows():
+    fig = Figure().scatter([1.0, 2.0], [1.0, 2.0])
+    fig.traces[-1].tooltip_rows = [{"n": 2**53 + 1}, {"n": 1}]
+    spec, _ = fig.build_payload()
+    assert spec["traces"][0]["tooltip_rows"] == [{"n": 2**53 + 1}, {"n": 1}]
+    fig.traces[-1].tooltip_rows = [{"n": 2**53}, {"n": -(2**53)}]  # exact in f64
+    spec, blob = fig.build_payload()
+    assert decode_tooltip_rows(spec, blob, spec["traces"][0]) == [{"n": 2**53}, {"n": -(2**53)}]

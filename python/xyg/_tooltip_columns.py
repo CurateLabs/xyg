@@ -17,8 +17,9 @@ across keys ships once. An optional ``u8`` presence plane per key records an
 absent key (0), a null value (1), a value (2), or, in a ``uuid`` column, a
 dictionary string (3); it is omitted when every row has a value. Non-finite
 numbers ship as null, as JSON would. Rows whose keys do not follow one shared
-order, or whose values are not scalars of one kind per key, keep the JSON
-``tooltip_rows`` form. Node ``tooltip-columns.js`` is the same encoding byte for
+order, whose values are not scalars of one kind per key, or that hold an
+integer beyond ±2**53 (which f64 would round) keep the JSON ``tooltip_rows``
+form. Node ``tooltip-columns.js`` is the same encoding byte for
 byte; the browser materializes one row per hover.
 """
 
@@ -35,6 +36,7 @@ __all__ = ["decode_tooltip_rows", "encode_tooltip_rows"]
 
 _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _ABSENT, _NULL, _VALUE, _TEXT = 0, 1, 2, 3
+_EXACT_INT = 2**53  # integers beyond this lose digits as f64
 
 
 def _kind(value: Any) -> str | None:
@@ -42,11 +44,9 @@ def _kind(value: Any) -> str | None:
         return "null"
     if isinstance(value, (bool, np.bool_)):
         return "bool"
+    if isinstance(value, (int, np.integer)) and abs(int(value)) > _EXACT_INT:
+        return None  # an integer f64 cannot hold exactly: keep JSON rows
     if isinstance(value, (int, float, np.integer, np.floating)):
-        try:
-            float(value)
-        except OverflowError:
-            return None  # an integer beyond f64: keep JSON rows
         return "f64"
     if isinstance(value, str):
         return "text"

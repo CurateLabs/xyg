@@ -51,3 +51,16 @@ test("Node wire graph meta matches the Python fixture", () => {
   assert.deepEqual(wireGraphMeta(FIXTURE.graph_meta.meta, pw), FIXTURE.graph_meta.wire);
   assert.deepEqual(pw.columns, FIXTURE.graph_meta.shipped);
 });
+
+test("decoded rows keep a __proto__ key as an own field", () => {
+  const rows = rowsOf(FIXTURE.cases.proto_key.rows);
+  assert.ok(Object.prototype.hasOwnProperty.call(rows[0], "__proto__"));
+  const pw = recorder();
+  const entry = { tooltip_columns: encodeTooltipRows(rows, pw) };
+  const blobs = pw.columns.map((c) => Buffer.from(c.hex, "hex"));
+  const spec = { columns: pw.columns.map((c, i) => ({ buf: i, byte_offset: 0, len: blobs[i].length / (c.dtype === "u32" ? 4 : 1), dtype: c.dtype })) };
+  const decoded = decodeTooltipRows(spec, blobs, entry);
+  assert.ok(Object.prototype.hasOwnProperty.call(decoded[0], "__proto__"));
+  assert.equal(Object.getOwnPropertyDescriptor(decoded[1], "__proto__").value, "b");
+  assert.equal(Object.getPrototypeOf(decoded[0]), Object.prototype);
+});

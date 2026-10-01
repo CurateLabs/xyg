@@ -297,6 +297,51 @@
         }
       ]
     },
+    "proto_key": {
+      "rows": [
+        {
+          "__proto__": "a",
+          "x": 1
+        },
+        {
+          "__proto__": "b",
+          "x": 2
+        }
+      ],
+      "tooltip_columns": {
+        "n": 2,
+        "keys": [
+          "__proto__",
+          "x"
+        ],
+        "kinds": [
+          "text",
+          "f64"
+        ],
+        "data": [
+          0,
+          1
+        ],
+        "present": [
+          null,
+          null
+        ],
+        "dict": [
+          "a",
+          "b"
+        ]
+      },
+      "shipped": [
+        {
+          "dtype": "u32",
+          "hex": "0000000001000000"
+        },
+        {
+          "dtype": "u8",
+          "hex": "000000000000f03f0000000000000040"
+        }
+      ]
+    },
     "shared_dictionary": {
       "rows": [
         {

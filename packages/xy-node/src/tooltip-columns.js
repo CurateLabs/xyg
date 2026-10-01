@@ -143,6 +143,11 @@ function columnBytes(columns, payload, index) {
 
 const HEX = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
 
+/** An own field even for keys like `__proto__` (plain assignment would set the prototype). */
+function setField(row, key, value) {
+  Object.defineProperty(row, key, { value, enumerable: true, writable: true, configurable: true });
+}
+
 /**
  * The rows a payload trace entry carries, from either wire form. `payload` is
  * the packed blob or the split buffer list `buildPayload` returned.
@@ -162,19 +167,19 @@ export function decodeTooltipRows(spec, payload, entry) {
       const state = flags == null ? VALUE : flags[i];
       if (state === ABSENT) continue;
       if (state === NULL) {
-        rows[i][key] = null;
+        setField(rows[i], key, null);
       } else if (state === TEXT) {
-        rows[i][key] = cols.dict[view.getUint32(i * 16, true)];
+        setField(rows[i], key, cols.dict[view.getUint32(i * 16, true)]);
       } else if (kind === "uuid") {
         let h = "";
         for (let b = 0; b < 16; b += 1) h += HEX[raw[i * 16 + b]];
-        rows[i][key] = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+        setField(rows[i], key, `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`);
       } else if (kind === "f64") {
-        rows[i][key] = view.getFloat64(i * 8, true);
+        setField(rows[i], key, view.getFloat64(i * 8, true));
       } else if (kind === "bool") {
-        rows[i][key] = raw[i] !== 0;
+        setField(rows[i], key, raw[i] !== 0);
       } else {
-        rows[i][key] = cols.dict[view.getUint32(i * 4, true)];
+        setField(rows[i], key, cols.dict[view.getUint32(i * 4, true)]);
       }
     }
   });

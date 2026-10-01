@@ -5015,21 +5015,23 @@ export class ChartView {
       at: (i: number) => {
         if (!(i >= 0 && i < n)) return undefined;
         const row: Record<string, unknown> = {};
+        // Own fields even for keys like `__proto__`, as JSON.parse creates them.
+        const put = (key: string, value: unknown) => Object.defineProperty(row, key, { value, enumerable: true, writable: true, configurable: true });
         keys.forEach((key, c) => {
           const state = present[c] == null ? 2 : present[c][i];
           if (state === 0) return;
-          if (state === 1) { row[key] = null; return; }
+          if (state === 1) { put(key, null); return; }
           const kind = cols.kinds[c];
-          if (kind === "text") { row[key] = cols.dict[data[c][i]]; return; }
+          if (kind === "text") { put(key, cols.dict[data[c][i]]); return; }
           const dv = data[c];
           // 3: dictionary text in a uuid column (index in the slot's first 4 bytes).
-          if (state === 3) { row[key] = cols.dict[dv.getUint32(i * 16, true)]; return; }
-          if (kind === "f64") row[key] = dv.getFloat64(i * 8, true);
-          else if (kind === "bool") row[key] = dv.getUint8(i) !== 0;
+          if (state === 3) { put(key, cols.dict[dv.getUint32(i * 16, true)]); return; }
+          if (kind === "f64") put(key, dv.getFloat64(i * 8, true));
+          else if (kind === "bool") put(key, dv.getUint8(i) !== 0);
           else {
             let h = "";
             for (let b = 0; b < 16; b++) h += hex(dv.getUint8(i * 16 + b));
-            row[key] = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+            put(key, `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`);
           }
         });
         return row;

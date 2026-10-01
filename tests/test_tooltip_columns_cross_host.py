@@ -41,6 +41,7 @@ CASES: dict[str, list[dict[str, Any]]] = {
         {"value": -0.5, "flag": None, "label": "x"},
     ],
     "only_nulls": [{"a": None}, {"a": None}],
+    "proto_key": [{"__proto__": "a", "x": 1}, {"__proto__": "b", "x": 2}],
     "shared_dictionary": [
         {"name": "ann", "pagerank.name": "ann"},
         {"name": "bo", "pagerank.name": "bo"},
