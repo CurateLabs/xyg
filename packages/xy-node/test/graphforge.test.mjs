@@ -209,6 +209,22 @@ test("container codec round-trips and rejects corruption", () => {
   assert.throws(() => decodeContainer(bytes.subarray(0, bytes.length - 8), "XYGF"));
 });
 
+test("table documents with inconsistent shapes are rejected, not iterated", () => {
+  const table = (columns, cells) => encodeContainer("XYGF", [
+    { name: "status", dtype: DTYPE.u8, values: [0] },
+    { name: "kind", dtype: DTYPE.utf8, values: "table" },
+    { name: "table.columns", dtype: DTYPE.texts, values: columns },
+    { name: "table.kinds", dtype: DTYPE.u8, values: columns.map(() => 0) },
+    { name: "table.cells", dtype: DTYPE.texts, values: cells },
+    { name: "table.values", dtype: DTYPE.f64, values: cells.map(() => 0) },
+    { name: "table.valid", dtype: DTYPE.u8, values: cells.map(() => 1) },
+    { name: "table.rows", dtype: DTYPE.u64, values: [0n] },
+  ]);
+  assert.throws(() => decodeGraphForgeDocument(table([], ["x"])), { code: "GF_COMPOSE_DOCUMENT_INVALID" });
+  assert.throws(() => decodeGraphForgeDocument(table(["a"], ["x", "y"])), { code: "GF_COMPOSE_DOCUMENT_INVALID" });
+  assert.deepEqual(decodeGraphForgeDocument(table(["a"], ["x"])).table.rows, [["x"]]);
+});
+
 test("graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips", () => {
   const c = compose("pagerank", "louvain", "minimum_spanning_tree");
   const fig = graphforgeChart(c, { width: 640, height: 420, title: "GraphForge" });
@@ -370,4 +386,20 @@ test("embeddings: parallel coordinates or explicit coordinates, never dims 0/1",
   const self = composeGraphForge({ layers: [{ result: derivedFixture("node2vec-2d"), intent: "embedding-coordinates" }] });
   assert.equal(self.points.source, "embedding");
   assert.ok(self.decisions.some((d) => d.code === "GF_COMPOSE_EMBEDDING_2D"));
+});
+
+test("render requests append the canonical Scene and selections paint selected", () => {
+  const gen = generationOf("cyclic");
+  const c = composeGraphForge({
+    base: base("cyclic"),
+    layers: [{ result: arrow("pagerank"), intent: "graph", generation: gen }],
+    select: [EXPECT.bases.cyclic.nodeUuids[1]],
+    render: { width: 480, height: 360, theme: "light", title: "t" },
+  });
+  assert.ok(c.scene.bytes.length > 0);
+  assert.equal(c.scene.x.length, c.nodes.count);
+  assert.equal(c.scene.nodeStableIdBase, 1n << 32n);
+  assert.notEqual(c.nodes.flags[c.nodeIndex(EXPECT.bases.cyclic.nodeUuids[1])] & 2, 0, "selected flag");
+  assert.throws(() => composeGraphForge({ layers: [{ result: arrow("is_dag"), intent: "table" }], render: { width: 480, height: 360 } }),
+    (e) => e.code === "GF_COMPOSE_RENDER_UNSUPPORTED");
 });

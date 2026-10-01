@@ -1462,6 +1462,87 @@ pub fn layout_force_family(
     true
 }
 
+/// `(sin a, cos a)` from basic IEEE operations only (Cody–Waite reduction by
+/// π/2, then Taylor polynomials on |r| ≤ π/4), so every platform and wasm32
+/// get the same bits; the platform `libm` is not consulted. Accurate to a few
+/// ulps, which is all layout seeding needs.
+pub fn portable_sin_cos(a: f64) -> (f64, f64) {
+    const PIO2_HI: f64 = std::f64::consts::FRAC_PI_2;
+    const PIO2_LO: f64 = 6.123_233_995_736_766e-17;
+    let k = (a * std::f64::consts::FRAC_2_PI + 0.5).floor();
+    let r = (a - k * PIO2_HI) - k * PIO2_LO;
+    let r2 = r * r;
+    let mut sin = 0.0;
+    let mut cos = 0.0;
+    // Coefficients ±1/n! from the highest order down (Horner form).
+    for n in (1..=9).rev() {
+        let odd = (2 * n + 1) as f64;
+        let even = (2 * n) as f64;
+        sin = -r2 * (1.0 + sin) / ((odd - 1.0) * odd);
+        cos = -r2 * (1.0 + cos) / ((even - 1.0) * even);
+    }
+    let (s, c) = (r * (1.0 + sin), 1.0 + cos);
+    match (k as i64).rem_euclid(4) {
+        0 => (s, c),
+        1 => (c, -s),
+        2 => (-s, -c),
+        _ => (-c, s),
+    }
+}
+
+/// [`layout_force_family`] for `LAYOUT_FORCE`, seeded from a circle built with
+/// [`portable_sin_cos`] instead of the platform `libm`, so native and wasm32
+/// hosts produce bit-identical positions. The jitter and random stream match
+/// `layout_force_family`, so the two agree wherever `libm` rounds the circle
+/// the same way. The force ticks themselves use only `+ − × ÷ √`.
+#[allow(clippy::too_many_arguments)]
+pub fn layout_force_portable(
+    n_nodes: u64,
+    sources: &[u64],
+    targets: &[u64],
+    seed: u64,
+    steps: u32,
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> bool {
+    let n = n_nodes as usize;
+    if out_x.len() != n || out_y.len() != n {
+        return false;
+    }
+    let mut x = vec![0.0; n];
+    let mut y = vec![0.0; n];
+    let r = (n as f64).max(1.0);
+    for i in 0..n {
+        let (sin, cos) = portable_sin_cos(std::f64::consts::TAU * (i as f64) / (n as f64));
+        x[i] = r * cos;
+        y[i] = r * sin;
+    }
+    let mut rng = seed | 1;
+    for i in 0..n {
+        x[i] += 0.01 * (rand01(&mut rng) - 0.5);
+        y[i] += 0.01 * (rand01(&mut rng) - 0.5);
+    }
+    let Some(mut state) = ForceState::new(
+        n_nodes,
+        sources,
+        targets,
+        Some(&x),
+        Some(&y),
+        seed,
+        LAYOUT_FORCE,
+    ) else {
+        return false;
+    };
+    state.rng = rng;
+    state.tick(steps.max(1));
+    if !state.alpha.is_finite() || state.x.iter().chain(&state.y).any(|v| !v.is_finite()) {
+        return false;
+    }
+    out_x.copy_from_slice(&state.x);
+    out_y.copy_from_slice(&state.y);
+    true
+}
+
 pub fn force_tick(handle: u64, steps: u32, out_x: &mut [f64], out_y: &mut [f64]) -> Option<f64> {
     let mut map = force_map().lock().unwrap_or_else(|e| e.into_inner());
     let state = map.get_mut(&handle)?;
@@ -2041,6 +2122,37 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn portable_sin_cos_tracks_libm() {
+        for i in -4000..=4000 {
+            let a = i as f64 * 0.001_7;
+            let (s, c) = super::portable_sin_cos(a);
+            assert!((s - a.sin()).abs() < 4e-16, "sin({a})");
+            assert!((c - a.cos()).abs() < 4e-16, "cos({a})");
+        }
+        assert_eq!(super::portable_sin_cos(0.0), (0.0, 1.0));
+    }
+
+    #[test]
+    fn portable_force_layout_is_deterministic() {
+        // Its seeding tracks libm to an ulp (above), but 300 force ticks
+        // amplify an ulp, so equality with the libm-seeded layout is not a
+        // property; bit-identity across hosts is (graphforge parity tests).
+        let sources = [0, 1, 2, 3, 4, 0, 2];
+        let targets = [1, 2, 3, 4, 5, 5, 5];
+        let run = || {
+            let (mut x, mut y) = (vec![0.0; 6], vec![0.0; 6]);
+            assert!(super::layout_force_portable(
+                6, &sources, &targets, 0, 300, &mut x, &mut y
+            ));
+            (x, y)
+        };
+        let (x, y) = run();
+        assert_eq!((x.clone(), y.clone()), run());
+        let spread = x.iter().chain(&y).fold(0.0f64, |m, v| m.max(v.abs()));
+        assert!(spread > 0.1 && spread < 100.0);
+    }
+
     use super::*;
 
     #[test]

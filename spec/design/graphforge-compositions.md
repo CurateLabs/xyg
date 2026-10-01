@@ -131,8 +131,8 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 
 **Delivery status.** Every schema composes: graph intents (node and edge
 layers, derived edges, ordered overlays; §4.4–4.5), tables and bar charts for
-scalar and category results, and embedding views (§4.6). WASM parity follows
-(xyg#37 follow-up); the ledger, recognition, and codes do not change for it.
+scalar and category results, and embedding views (§4.6), on the native C ABI
+and in direct-browser WASM from the same bytes (§6.3).
 
 ## 4. Composition
 
@@ -300,7 +300,7 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_EDGE_REVERSED`, `GF_COMPOSE_EDGE_REORIENTED`,
 `GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
 `GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
-`GF_COMPOSE_EMBEDDING_2D`,
+`GF_COMPOSE_EMBEDDING_2D`, `GF_COMPOSE_SCENE_EMPTY`,
 `GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
@@ -347,6 +347,9 @@ changes. Requests are strict: unknown request sections fail.
 | `layer.missing`, `layer.extra` [i] | UTF-8 | policies (§4.3) |
 | `layer.rows` [i] | u64 | explicit result rows |
 | `layer.coordinates` [i] | bytes | Arrow IPC `node_uuid`, `x`, `y` (embeddings) |
+| `select.uuid` | UUID | node or relationship UUIDs painted in the selected state (§4.4 flags); a UUID naming both a node and a relationship (separate identity spaces) selects both; unknown UUIDs are counted (`GF_COMPOSE_SELECTION_UNMATCHED`) |
+| `render.width`, `render.height` | f64 ×1 | viewport (160–16,384 × 120–16,384 CSS px): also lower a graph composition to the canonical Scene (§6.3); other kinds fail with `GF_COMPOSE_RENDER_UNSUPPORTED` |
+| `render.theme`, `render.title` | UTF-8 | `light` (default) or `dark`; chart title |
 
 ### 5.3 Document (`XYGF`)
 
@@ -370,6 +373,7 @@ optionally `error.field`. A graph composition holds:
 | `layer.text_names`, `layer.node_texts` [i] | text node properties of node layers, joined per node (row-major, empty when absent); at most 32 property columns per layer (`GF_COMPOSE_PROPERTIES_TRUNCATED`) |
 | `legend.*` | Rust legend rows (§4.4) |
 | `decision.code`, `decision.layer`, `decision.count` | §4.7 |
+| `scene.version`, `scene.stable_id_base`, `scene.x`, `scene.y`, `scene.canonical` | with `render`: Scene version, stable-ID bases (node `2^32`, edge `1`), laid-out node positions, and the canonical Scene bytes (§6.3) |
 
 Other document kinds share the header, `layer.*` provenance (index 0),
 `layer.counts`, and `decision.*`:
@@ -431,6 +435,77 @@ or documents across processes; `graphforgeGraphData` /
 `graphforgeGraphOptions` / `graphforgeLegendItems` feed the ordinary graph
 mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
 
+### 6.3 Direct-browser WASM (`@curatelabs/xyg`, WASM ABI 27)
+
+`xyg_wasm_graphforge_compose(handle, offset, length)` composes one staged
+`XYGQ` request with the same engine call as the native host and returns its
+`XYGF` document (error documents included) in the instance output. The Worker
+message `graphforge.compose` and `XygWasmWorker.graphforgeCompose(request)`
+move the bytes; nothing else runs in TypeScript. Public browser API
+(`js/src/49_wasm_graphforge.ts`):
+
+```js
+import { createXygWasmWorker, renderWasmGraphForge, composeWasmGraphForge,
+         graphforgeTableElement } from "@curatelabs/xyg";
+
+const worker = createXygWasmWorker({ workerUrl, wasm });        // local assets only
+const { view, composition } = await renderWasmGraphForge({
+  el, worker, width: 800, height: 600, theme: "dark",
+  input: { base: { tables: [nodesIpc, edgesIpc], generation },
+           layers: [{ result: pagerankIpc, intent: "graph", generation, resultId }],
+           select: [uuid] },                                   // optional
+});
+view.root.addEventListener("xy:graphforge-select", (e) => e.detail);
+//   { kind, index, uuid (null for derived edges), type, source, target,
+//     order/path (steps), layers: [{ layer, resultId, row }] }
+const table = await composeWasmGraphForge(worker, { layers: [{ result, intent: "table" }] }).result;
+el.append(graphforgeTableElement(table));                      // text-only DOM
+```
+
+`renderWasmGraphForge` adds `render` sections, so Rust also lays the composed
+graph out (the graph mark's `layout="force"` default: seed 0, 300 ticks, over
+every composed edge) and lowers the document's planes and legend to the
+canonical semantic graph Scene (`graph_style::encode_semantic_graph_scene_with_legend`:
+the semantic Scene with the composition's legend text). The browser paints it
+through `renderWasmScene`; clicks map Scene stable IDs (node `2^32 + i`,
+edge `j + 1`) back to the composition with
+`XygGraphForgeComposition.identifyStableId`. The Scene is direct tier: at most
+1,024 composed nodes plus edges and the semantic Scene's primitive bound
+(`GF_COMPOSE_SCENE_TOO_LARGE`); larger graphs use the native graph mark,
+whose Rust level-of-detail applies. A composition that hides every node has
+nothing to lay out: the document carries no `scene.*` sections and records
+`GF_COMPOSE_SCENE_EMPTY`, and `renderWasmGraphForge` rejects it with that
+code so the host shows its empty state. Non-graph
+documents render in the host (`graphforgeTableElement`, or the chart helpers
+from their sections). `graphforgeTableElement` is the one DOM surface here,
+like the client's legends and tooltips: it lays out no data, only places the
+Rust-formatted cells as `textContent`. `decodeWasmGraphForgeDocument` throws
+an `XygWasmError` carrying the Rust `code`, `layer`, and `field`; a document
+whose sections disagree on shape (for example table cells that do not fill
+`rows × columns`) fails with `GF_COMPOSE_DOCUMENT_INVALID` in both the browser
+and Node decoders. The Worker defers `graphforge.compose` by one task turn, as
+it does Scene operations, so a cancellation already queued suppresses the
+work before synchronous composition and layout start.
+
+**Equivalence.** Documents contain only integer, UUID, text, and IEEE value
+copies, so identical request bytes give identical documents on every host.
+Scene bytes additionally include force-layout positions. The graph mark's
+force layout seeds a circle with the platform `libm` `sin`/`cos`, which can
+differ from wasm32's by an ulp that 300 force ticks amplify (about 1e-3 on a
+six-node graph), so the Scene seeds the same circle with
+`graph::portable_sin_cos` (Cody–Waite reduction and Taylor polynomials in
+basic IEEE operations) through `graph::layout_force_portable`; the ticks use
+only `+ − × ÷ √`. The semantic Scene's edge lowering measures segment lengths
+(dash cuts, arrowheads) with `√` rather than `libm` `hypot`. Scene bytes are
+therefore identical on every host and platform (parity tests cover 37-, 150-, and 330-node graphs), and the layout
+matches the graph mark's wherever `libm` rounds the circle the same way.
+
+**Webview / CSP.** The Worker and WASM are ordinary same-origin assets, so a
+strict policy needs only `script-src 'self' 'wasm-unsafe-eval'`,
+`worker-src 'self'`, and `connect-src 'self'` (browser-wasm.md, CSP). The
+self-contained HTML inline density worker (`xyg-wasm-inline.js`) is the only
+path that needs `worker-src blob:`.
+
 ## 7. Evidence
 
 - Fixtures: `tests/fixtures/graphforge/results/` — real GraphForge 0.5.2
@@ -458,6 +533,17 @@ mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
   required/missing/extra coordinate failures. Coordinate and 2D-embedding
   inputs are derived from the real `node2vec` output
   (`scripts/gen_graphforge_derived_fixtures.py --check`).
+- Native/WASM: `packages/xy-node/test/graphforge-wasm-parity.test.mjs` runs
+  every GraphForge contract fixture (plus multi-layer render/select,
+  coordinates, and four failure cases) through the native C ABI and the real
+  wasm32 artifact and requires byte-identical documents and Scenes; the
+  browser bundle's request framing must equal Node's and decode the same
+  identities. `cargo test -p xyg-wasm` checks the adapter against the C ABI.
+- Browser: `scripts/graphforge_wasm_smoke.mjs` serves only the packaged
+  Worker/WASM/client and fixtures under a strict CSP (no `blob:`), paints a
+  PageRank + similarity composition through WebGL, maps every painted row to
+  a composed UUID, routes a click to `xy:graphforge-select` with the result
+  row, renders a table as text, and surfaces a stale generation's code.
 - Node: joins checked against the independent expectations for node and edge
   layers, selection round trips (including derived edges by layer and row and
   path steps), error codes, chart paint, legend, and edge labels, the edge

@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 26
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 27
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -65,7 +65,7 @@ deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
 
 M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
-current WASM ABI 26 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+current WASM ABI 27 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
 was introduced in WASM ABI 23/native ABI 360. The native function
 uses the capacity-aware probe/write contract and returns `usize::MAX` for an
 invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
@@ -187,6 +187,7 @@ chrome.
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
 | `js/src/49_wasm_semantic_graph.ts` | Packed direct-tier `XYGG` semantic planes; Rust emits styles, primitives, and legend |
+| `js/src/49_wasm_graphforge.ts` | GraphForge `XYGQ` framing, `XYGF` decoding, Scene stable-ID → UUID identity, text-only tables; no joins or policy |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
@@ -292,9 +293,12 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 26. ABI 23 introduced the bounded `XYTK`/`XYTO` tick
-resolver and its independent Worker sequence lane; ABI 26 is the current
-contract after the default-palette and stricter packed-tick validation cuts.
+`WASM_ABI_VERSION` is 27. ABI 27 adds `xyg_wasm_graphforge_compose` and
+`xyg_wasm_graphforge_composition_version`: one staged GraphForge `XYGQ`
+request in, the native host's byte-identical `XYGF` document out
+([graphforge-compositions.md](graphforge-compositions.md) §6.3). ABI 23 introduced the bounded `XYTK`/`XYTO` tick
+resolver and its independent Worker sequence lane; ABI 26 added the
+default-palette and stricter packed-tick validation cuts that ABI 27 keeps.
 ABI 22 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical

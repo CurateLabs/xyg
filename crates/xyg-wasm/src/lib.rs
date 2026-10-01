@@ -12,6 +12,7 @@ pub mod compile;
 mod compound;
 mod dashboard;
 mod graph;
+mod graphforge;
 mod temporal;
 mod temporal_graph;
 pub mod ticks;
@@ -20,7 +21,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 26;
+pub const WASM_ABI_VERSION: u32 = 27;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -407,6 +408,21 @@ pub extern "C" fn xyg_wasm_compound_transition(handle: u32, offset: usize, lengt
         compound::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Compose one staged `XYGQ` GraphForge request into an `XYGF` document
+/// (error documents included); the output is byte-identical to the native
+/// `xyg_graphforge_compose` document for the same request.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_compose(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |instance| graphforge::execute(instance, offset, length))
+        .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Version of the `XYGF` composition semantics.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_composition_version() -> u32 {
+    xyg_engine::graphforge::compose::COMPOSITION_VERSION
 }
 
 #[no_mangle]
@@ -1699,6 +1715,59 @@ mod tests {
     fn write_arena(handle: u32, bytes: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(bytes)).unwrap();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn graphforge_compose_matches_the_native_c_abi() {
+        use xyg_engine::graphforge::container::{Builder, REQUEST_MAGIC};
+        let fixture = |name: &str| {
+            std::fs::read(format!(
+                "{}/../../tests/fixtures/graphforge/results/{name}.arrow",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap()
+        };
+        let request = |layers: &[&str], with_base: bool| {
+            let mut builder = Builder::new(REQUEST_MAGIC);
+            if with_base {
+                builder.bytes("base.table", 0, &fixture("base-cyclic-nodes"));
+                builder.bytes("base.table", 1, &fixture("base-cyclic-edges"));
+            }
+            for (i, name) in layers.iter().enumerate() {
+                builder.bytes("layer.result", i, &fixture(name));
+                builder.utf8("layer.intent", i, "graph");
+            }
+            builder.f64s("render.width", 0, &[480.0]);
+            builder.f64s("render.height", 0, &[360.0]);
+            builder.finish()
+        };
+        let handle = xyg_wasm_instance_new(64 << 20);
+        for bytes in [
+            request(&["pagerank", "louvain", "node_similarity", "dijkstra"], true),
+            request(&["pagerank"], false),
+        ] {
+            write_arena(handle, &bytes);
+            assert_eq!(xyg_wasm_graphforge_compose(handle, 0, bytes.len()), STATUS_OK);
+            let wasm = with_instance_mut(handle, |instance| instance.output.clone()).unwrap();
+            let mut native_handle = 0u64;
+            let status = unsafe {
+                xyg_core::xyg_graphforge_compose(bytes.as_ptr(), bytes.len(), &mut native_handle)
+            };
+            assert!(status == 0 || status == 1);
+            let mut len = 0u64;
+            unsafe { xyg_core::xyg_graphforge_document_len(native_handle, &mut len) };
+            let mut native = vec![0u8; len as usize];
+            unsafe {
+                xyg_core::xyg_graphforge_document_copy(native_handle, native.as_mut_ptr(), native.len());
+                xyg_core::xyg_graphforge_document_destroy(native_handle);
+            }
+            assert_eq!(wasm, native);
+        }
+        assert_eq!(xyg_wasm_graphforge_composition_version(), xyg_core::xyg_graphforge_composition_version());
+        // Staging is single-use and a bad range fails without output.
+        assert_eq!(xyg_wasm_graphforge_compose(handle, 0, 64), STATUS_INVALID_ARGUMENT);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     fn scene_annotations_request(scene: &[u8], annotations: &[u8]) -> Vec<u8> {

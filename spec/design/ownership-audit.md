@@ -296,7 +296,7 @@ and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. M2 #869 removes canonical axis
 policy from `js/src/30_ticks.ts`; it retains only presentation-oriented tooltip
-formatting. The tick seam introduced in WASM ABI 23, now WASM ABI 26, plus
+formatting. The tick seam introduced in WASM ABI 23, now WASM ABI 27, plus
 `attachWasmTicks` cuts attached primary/secondary
 Cartesian, polar angular/radial, authored minor, and eligible colorbar slots to
 the Rust resolver and independent Worker lane. Native ABI 360 introduced the
@@ -689,6 +689,7 @@ Forbidden:
 | `crates/xyg-core/src/lib.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-wasm/src/lib.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 25 exports engine-owned default-palette version/rows/indexed RGBA8 for #868 | #59 |
 | `crates/xyg-wasm/src/compound.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `crates/xyg-wasm/src/graphforge.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 27 GraphForge `XYGQ` → `XYGF` compose | #59 |
 | `crates/xyg-wasm/src/dashboard.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/compile.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/bin/xyts_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
@@ -722,7 +723,7 @@ Forbidden:
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 122 compile-time payload tier + visible mask; ABI 204 line M4 emit indices; ABI 205 emit visible/even/sample indices | — |
-| `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 26/native ABI 361 | — |
+| `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 27/native ABI 361 | — |
 | `crates/xyg-engine/src/density_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 132 first-paint density emit policy | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/png_encode.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -759,6 +760,7 @@ Forbidden:
 | `crates/xyg-engine/src/graphforge/mod.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/recognize.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/request.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust`; direct-tier canonical Scene of a GraphForge composition | — |
 | `crates/xyg-engine/src/graphforge/views.rs` | Rust safe engine | `rust-engine` | `keep-rust`; GraphForge table, bar-chart, and embedding compositions | — |
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -813,6 +815,7 @@ Forbidden:
 | `js/src/47_wasm.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; #868 diagnostics report and init fails closed on a mismatched direct-WASM palette contract | #59 |
 | `js/src/48_wasm_scene.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_compound.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/49_wasm_graphforge.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GraphForge request framing, document decoding, stable-ID identity, text-only tables | #59 |
 | `js/src/49_wasm_dashboard.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_columns.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |

@@ -82,14 +82,14 @@ fn valid_name(name: &str) -> bool {
 }
 
 struct Pending {
-    name: &'static str,
+    name: String,
     index: u32,
     dtype: Dtype,
     count: u64,
     payload: Vec<u8>,
 }
 
-/// Section writer. Names are compile-time constants.
+/// Section writer.
 pub struct Builder {
     magic: [u8; 4],
     sections: Vec<Pending>,
@@ -103,17 +103,10 @@ impl Builder {
         }
     }
 
-    fn push(
-        &mut self,
-        name: &'static str,
-        index: usize,
-        dtype: Dtype,
-        count: usize,
-        payload: Vec<u8>,
-    ) {
+    fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
         debug_assert!(valid_name(name), "section name {name}");
         self.sections.push(Pending {
-            name,
+            name: name.to_owned(),
             index: index as u32,
             dtype,
             count: count as u64,
@@ -121,39 +114,39 @@ impl Builder {
         });
     }
 
-    pub fn u8s(&mut self, name: &'static str, index: usize, values: &[u8]) {
+    pub fn u8s(&mut self, name: &str, index: usize, values: &[u8]) {
         self.push(name, index, Dtype::U8, values.len(), values.to_vec());
     }
 
-    pub fn u32s(&mut self, name: &'static str, index: usize, values: &[u32]) {
+    pub fn u32s(&mut self, name: &str, index: usize, values: &[u32]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::U32, values.len(), payload);
     }
 
-    pub fn u64s(&mut self, name: &'static str, index: usize, values: &[u64]) {
+    pub fn u64s(&mut self, name: &str, index: usize, values: &[u64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::U64, values.len(), payload);
     }
 
-    pub fn i64s(&mut self, name: &'static str, index: usize, values: &[i64]) {
+    pub fn i64s(&mut self, name: &str, index: usize, values: &[i64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::I64, values.len(), payload);
     }
 
-    pub fn f64s(&mut self, name: &'static str, index: usize, values: &[f64]) {
+    pub fn f64s(&mut self, name: &str, index: usize, values: &[f64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::F64, values.len(), payload);
     }
 
-    pub fn bytes(&mut self, name: &'static str, index: usize, value: &[u8]) {
+    pub fn bytes(&mut self, name: &str, index: usize, value: &[u8]) {
         self.push(name, index, Dtype::Bytes, value.len(), value.to_vec());
     }
 
-    pub fn uuids(&mut self, name: &'static str, index: usize, values: &[Uuid]) {
+    pub fn uuids(&mut self, name: &str, index: usize, values: &[Uuid]) {
         self.push(name, index, Dtype::Uuid, values.len(), values.concat());
     }
 
-    pub fn utf8(&mut self, name: &'static str, index: usize, value: &str) {
+    pub fn utf8(&mut self, name: &str, index: usize, value: &str) {
         self.push(
             name,
             index,
@@ -163,7 +156,7 @@ impl Builder {
         );
     }
 
-    pub fn texts<S: AsRef<str>>(&mut self, name: &'static str, index: usize, values: &[S]) {
+    pub fn texts<S: AsRef<str>>(&mut self, name: &str, index: usize, values: &[S]) {
         let mut offsets = Vec::with_capacity(values.len() + 1);
         let mut text = Vec::new();
         offsets.push(0u64);
@@ -174,6 +167,20 @@ impl Builder {
         let mut payload: Vec<u8> = offsets.iter().flat_map(|v| v.to_le_bytes()).collect();
         payload.extend_from_slice(&text);
         self.push(name, index, Dtype::TextList, values.len(), payload);
+    }
+
+    /// Copy every section of an existing container (names, indices, and
+    /// payloads unchanged) so more sections can follow.
+    pub fn extend_from(&mut self, container: &Container<'_>) {
+        for (name, index, section) in &container.sections {
+            self.push(
+                name,
+                *index as usize,
+                section.dtype,
+                section.count,
+                section.payload.to_vec(),
+            );
+        }
     }
 
     pub fn finish(self) -> Vec<u8> {

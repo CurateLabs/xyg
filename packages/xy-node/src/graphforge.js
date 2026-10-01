@@ -106,9 +106,12 @@ function uuidPlane(values, label) {
  * @param {Array<object>} input.layers result layers: `result` (Arrow IPC
  *   bytes), `intent` (required), `resultId`, `generation`, `missing`,
  *   `extra`, `rows`, `coordinates` (Arrow IPC bytes).
+ * @param {string[]} [input.select] node/relationship UUIDs painted selected.
+ * @param {object} [input.render] `{width, height, theme, title}`: also lower a
+ *   graph composition to the direct-tier canonical Scene (`scene.canonical`).
  * @returns {Uint8Array} `XYGQ` request bytes
  */
-export function encodeGraphForgeRequest({ base = {}, layers } = {}) {
+export function encodeGraphForgeRequest({ base = {}, layers, select = null, render = null } = {}) {
   if (!Array.isArray(layers) || layers.length === 0) {
     throw hostError("GF_COMPOSE_REQUEST_INVALID", "layers must be a non-empty array");
   }
@@ -147,6 +150,15 @@ export function encodeGraphForgeRequest({ base = {}, layers } = {}) {
       sections.push({ name: "layer.coordinates", index, dtype: DTYPE.bytes, values: ipcBytes(layer.coordinates, `layers[${index}].coordinates`) });
     }
   });
+  if (select != null) {
+    sections.push({ name: "select.uuid", dtype: DTYPE.uuid, values: uuidPlane([...select], "select") });
+  }
+  if (render != null) {
+    sections.push({ name: "render.width", dtype: DTYPE.f64, values: [render.width] });
+    sections.push({ name: "render.height", dtype: DTYPE.f64, values: [render.height] });
+    if (render.theme != null) sections.push({ name: "render.theme", dtype: DTYPE.utf8, values: String(render.theme) });
+    if (render.title != null) sections.push({ name: "render.title", dtype: DTYPE.utf8, values: String(render.title) });
+  }
   return encodeContainer(REQUEST_MAGIC, sections);
 }
 
@@ -320,7 +332,11 @@ export class GraphForgeComposition {
       const values = get("table.values");
       const valid = get("table.valid");
       const rows = get("table.rows");
-      const k = columns.length;
+      const k = columns?.length ?? 0;
+      if (!k || !cells || !rows || !values || !valid || cells.length !== rows.length * k
+          || values.length !== cells.length || valid.length !== cells.length) {
+        throw new GraphForgeCompositionError("GF_COMPOSE_DOCUMENT_INVALID", "table sections disagree on shape");
+      }
       /** Table composition: canonical columns, text cells, numeric values. */
       this.table = {
         columns,
@@ -358,6 +374,18 @@ export class GraphForgeComposition {
         y: get("point.y"),
       };
     }
+    /** Direct-tier canonical Scene (`render` requests): bytes, node positions, stable-ID bases. */
+    const canonical = get("scene.canonical");
+    this.scene = canonical == null
+      ? null
+      : {
+        version: get("scene.version")[0],
+        bytes: canonical,
+        x: get("scene.x"),
+        y: get("scene.y"),
+        nodeStableIdBase: get("scene.stable_id_base")[0],
+        edgeStableIdBase: get("scene.stable_id_base")[1],
+      };
     const legendSide = get("legend.side") ?? new Uint8Array(0);
     const light = get("legend.rgba_light");
     const dark = get("legend.rgba_dark");

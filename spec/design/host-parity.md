@@ -77,7 +77,7 @@ Dynamic tick resolution is likewise one shared implementation. Packed `XYTK`
 parsing, linear/log/symlog/category/time/angular generation, modular authored
 filtering, minor subdivision, formatting, and packed `XYTO` output live in
 `xyg-engine::packed_ticks`. The seam was introduced in WASM ABI 23 and native
-ABI 360; current WASM ABI 26 re-exports that module and current native ABI 361
+ABI 360; current WASM ABI 27 re-exports that module and current native ABI 361
 provides the capacity-aware `xyg_tick_resolve_packed` twin used by Python and
 Node. `tests/fixtures/packed_ticks_cross_host.json` is byte-exact across those
 two native hosts and the real-browser Worker proof. TypeScript owns viewport
@@ -1224,7 +1224,7 @@ fixtures pin exact Python/Node formatted Scene bytes and the Node forwarding of
 scale kind, symlog constant, and log nonpositive policy. Explicit authored
 labels win, invalid grammar retains default labels, and legacy raw `XYAD`
 annotation input remains accepted. The bounded, atomic Worker seam introduced
-in WASM ABI 23 is carried by current WASM ABI 26 for Rust-owned f64
+in WASM ABI 23 is carried by current WASM ABI 27 for Rust-owned f64
 linear/log/symlog/category/angular/UTC-time
 values, steps, and formatting. M2 #869 generalizes `attachWasmTicks` to
 primary/secondary Cartesian, polar angular/radial, authored minor, and eligible

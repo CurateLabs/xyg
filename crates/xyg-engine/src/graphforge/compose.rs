@@ -16,7 +16,7 @@ use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
 use super::{GfError, GfResult, Uuid, UuidKey, NIL_UUID};
 use crate::arrow_ipc::{read_table, DataType, Table};
-use crate::graph_style::{semantic_palette, FLAG_DISABLED, THEME_DARK, THEME_LIGHT};
+use crate::graph_style::{semantic_palette, FLAG_DISABLED, FLAG_SELECTED, THEME_DARK, THEME_LIGHT};
 
 /// Version of the composition semantics carried by `XYGF` documents. Bumps
 /// when a plane's meaning changes; added sections do not bump it.
@@ -633,6 +633,29 @@ impl<'b> Planes<'b> {
         self.edge_reversed.push(false);
         self.legend(LEGEND_EDGE, 1, epistemic, derived_text(kind));
         Ok(self.edge_class.len() - 1)
+    }
+
+    /// Paint the requested node and relationship UUIDs in the selected state
+    /// (§7.1 precedence); identities that are not composed are counted.
+    fn select(&mut self, selected: &[Uuid]) {
+        let mut unmatched = 0u64;
+        for id in selected {
+            // Node and relationship identities are indexed separately, so one
+            // UUID can name both; select every entity it names.
+            let key = UuidKey(*id);
+            let node = self.base.node_index.get(&key).copied();
+            let edge = self.base.edge_index.get(&key).copied();
+            if let Some(node) = node {
+                self.node_flags[node] |= FLAG_SELECTED;
+            }
+            if let Some(edge) = edge {
+                self.edge_flags[edge] |= FLAG_SELECTED;
+            }
+            if node.is_none() && edge.is_none() {
+                unmatched += 1;
+            }
+        }
+        self.decide("GF_COMPOSE_SELECTION_UNMATCHED", None, unmatched);
     }
 
     /// Nodes a derived or ordered layer touched → the layer's missing policy.
@@ -1364,6 +1387,13 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
                 "table, chart, and embedding intents compose exactly one result layer",
             ));
         }
+        if request.render.is_some() {
+            return Err(layer_error(
+                "GF_COMPOSE_RENDER_UNSUPPORTED",
+                0,
+                "render sections lower graph compositions to a Scene; chart and table documents render through the host's chart builders".into(),
+            ));
+        }
         return super::views::document(request, &layers[0]);
     }
     if request.base_tables.is_empty() && request.base_planes.is_none() {
@@ -1417,7 +1447,36 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
             }
         }
     }
-    Ok(encode_graph(&planes, request, &layers))
+    planes.select(&request.selected);
+    let document = encode_graph(&planes, request, &layers);
+    match &request.render {
+        None => Ok(document),
+        Some(render) => with_scene(document, render),
+    }
+}
+
+/// Append the direct-tier canonical Scene (spec §6.3) to a graph document.
+fn with_scene(document: Vec<u8>, render: &super::request::Render<'_>) -> GfResult<Vec<u8>> {
+    let decoded = super::container::Container::decode(&document, DOCUMENT_MAGIC)?;
+    if decoded.get("node.class", 0).is_none_or(|s| s.count == 0) {
+        return Ok(document);
+    }
+    let rendered = super::scene::render_graph(&document, render)?;
+    let mut out = Builder::new(DOCUMENT_MAGIC);
+    out.extend_from(&decoded);
+    out.u32s("scene.version", 0, &[crate::scene::SCENE_VERSION]);
+    out.u64s(
+        "scene.stable_id_base",
+        0,
+        &[
+            super::scene::NODE_STABLE_ID_BASE,
+            super::scene::EDGE_STABLE_ID_BASE,
+        ],
+    );
+    out.f64s("scene.x", 0, &rendered.x);
+    out.f64s("scene.y", 0, &rendered.y);
+    out.bytes("scene.canonical", 0, &rendered.scene);
+    Ok(out.finish())
 }
 
 fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]) -> Vec<u8> {
@@ -1719,6 +1778,15 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             code: "GF_COMPOSE_EDGES_HIDDEN_WITH_NODES",
             layer: None,
             count: cascaded,
+        });
+    }
+    // Every node hidden: there is nothing to lay out, so the document carries
+    // no Scene and says so; hosts show their empty state.
+    if request.render.is_some() && nodes.is_empty() {
+        decisions.push(Decision {
+            code: "GF_COMPOSE_SCENE_EMPTY",
+            layer: None,
+            count: 1,
         });
     }
     encode_decisions(&mut out, &decisions);

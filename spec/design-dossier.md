@@ -678,7 +678,7 @@ F3, still pending (above).
   explicit-major plus `XYTL` records. Scene stays v25, legacy raw `XYAD`
   remains valid, and the envelope keeps the batch function below Koffi's
   64-parameter ceiling. The tick seam introduced in WASM ABI 23 is carried by
-  current WASM ABI 26 and exposes the same Rust-owned f64 ladders and labels
+  current WASM ABI 27 and exposes the same Rust-owned f64 ladders and labels
   through an atomic, bounded Worker request. Native ABI 360 moved packed XYTK/
   XYTO into `xyg-engine`; current ABI 361 carries the same capacity-aware proof seam.
   `attachWasmTicks` schedules attached automatic, authored-value, and

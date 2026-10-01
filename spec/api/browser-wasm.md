@@ -78,7 +78,7 @@ The package path requires the ESM client, external module Worker, and WASM
 artifact from one `@curatelabs/xyg` version. Release
 `ASSET-MANIFEST.json` provides byte lengths, SHA-256 hashes, and protocol/ABI/
 Scene/painter versions for pre-deployment verification. The Worker validates
-current WASM ABI 26 and the Scene version before the first attachment can mount.
+current WASM ABI 27 and the Scene version before the first attachment can mount.
 Callers using `workerOwnership: "borrow"` must dispose the Worker separately.
 The Python wheel copies `wasm-worker.js` and `xyg-wasm.wasm` into
 `xyg/static/` from the same `@curatelabs/xyg` build. Hosted `to_html(path,
