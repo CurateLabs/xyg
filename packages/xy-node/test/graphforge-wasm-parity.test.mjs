@@ -139,6 +139,26 @@ test("rendered Scenes stay identical on graphs large enough to exercise layout s
   }
 });
 
+test("a 100-node GraphForge run renders identical Scenes on both hosts", { skip }, async () => {
+  // Real engine output (benchmarks/bench_graphforge_compose.mjs --fixture-out):
+  // derived, tree, and path layers exercise dash cuts and arrowheads, where a
+  // libm hypot once made the hosts differ.
+  const dir = path.join(ROOT, "tests/fixtures/graphforge/scale-100");
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"));
+  const read = (file) => fs.readFileSync(path.join(dir, file));
+  const wasm = await loadWasm();
+  const request = encodeGraphForgeRequest({
+    base: { tables: [read(manifest.base.nodes), read(manifest.base.edges)], generation: manifest.generation },
+    layers: manifest.results.map((name) => ({ result: read(`${name}.arrow`), intent: "graph", generation: manifest.generation })),
+    render: { width: 960, height: 640, theme: "dark", title: "scale-100" },
+  });
+  const native = composeGraphForgeRequest(request);
+  const composition = decodeGraphForgeDocument(native);
+  assert.equal(composition.nodes.count, manifest.nodes);
+  assert.ok(composition.scene, "a Scene was rendered");
+  assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(wasm(request))), 0, "documents differ");
+});
+
 test("the browser bundle frames the same request bytes and decodes the same identities", { skip }, async () => {
   const client = await import(pathToFileURL(BUNDLE).href);
   const gen = MANIFEST.bases.cyclic.generation;

@@ -614,6 +614,13 @@ another result or generation never matches (generation checks, §4.2).
   exact-platform package on every supported OS/arch and composes real
   GraphForge fixtures (join, derived edges, Scene, pick relay, coded error)
   through the packaged core.
+- Scale: `benchmarks/bench_graphforge_compose.mjs` composes real GraphForge
+  0.5.2 output on 100 to 100,000-node graphs. Four layers over 100k nodes
+  compose in 203 ms native and 247 ms WASM, byte-identical
+  (`spec/benchmarks/graphforge-compose-local.json`; spec/benchmarks/results.md
+  "GraphForge composition scale"). Its 100-node run is kept as
+  `tests/fixtures/graphforge/scale-100`, which the parity suite renders on
+  both hosts.
 - Node: joins checked against the independent expectations for node and edge
   layers, selection round trips (including derived edges by layer and row and
   path steps), error codes, chart paint, legend, and edge labels, the edge
