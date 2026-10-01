@@ -759,6 +759,14 @@ export function wireGraphMeta(meta, pw = null) {
  * @param {object} data
  * @returns {[object[]|null, object[]|null]}
  */
+/**
+ * u64::MAX marks an element with no source row (e.g. a GraphForge derived
+ * edge); its hover row omits `provenance_row` rather than show the sentinel.
+ */
+function noProvenanceRow(value) {
+  return value === 0xffffffffffffffffn || value === 18446744073709551615;
+}
+
 export function projectionTooltipRows(data) {
   const hasProjection =
     data.nodeUuidBytes != null ||
@@ -772,7 +780,7 @@ export function projectionTooltipRows(data) {
   const nodeRows = [];
   for (let i = 0; i < data.ids.length; i += 1) {
     const row = { id: String(data.ids[i]) };
-    if (data.nodeProvenanceRows != null) {
+    if (data.nodeProvenanceRows != null && !noProvenanceRow(data.nodeProvenanceRows[i])) {
       row.provenance_row = Number(data.nodeProvenanceRows[i]);
     }
     for (const [key, col] of Object.entries(data.nodeAttrs ?? {})) {
@@ -791,7 +799,7 @@ export function projectionTooltipRows(data) {
       target: String(data.ids[tgt]),
     };
     if (data.edgeIds?.length) row.edge_id = String(data.edgeIds[i]);
-    if (data.edgeProvenanceRows != null) {
+    if (data.edgeProvenanceRows != null && !noProvenanceRow(data.edgeProvenanceRows[i])) {
       row.provenance_row = Number(data.edgeProvenanceRows[i]);
     }
     for (const [key, col] of Object.entries(data.edgeAttrs ?? {})) {
