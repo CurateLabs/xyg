@@ -587,8 +587,10 @@ jobs:
         run: |
           consumer="$RUNNER_TEMP/xyg-release-cohort-consumer"
           python3 -m venv "$consumer/venv"
-          "$consumer/venv/bin/pip" install --no-index cohort/python/*.whl
-          "$consumer/venv/bin/python" -c 'import xyg; assert xyg.__name__ == "xyg"'
+          # The cohort wheel installs from its file (never from an index); its
+          # third-party dependencies (numpy, anywidget) come from PyPI.
+          "$consumer/venv/bin/pip" install cohort/python/*.whl
+          "$consumer/venv/bin/python" -c 'import xyg, xyg.kernels as k; assert xyg.__name__ == "xyg"; assert k.BACKEND == "native", k.BACKEND'
           mkdir -p "$consumer/npm"
           cd "$consumer/npm"
           npm init --yes
