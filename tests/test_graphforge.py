@@ -217,3 +217,28 @@ def test_ledger_and_render_scene() -> None:
     )
     assert c.scene is not None and c.scene["node_stable_id_base"] == 2**32
     assert len(c.scene["x"]) == c.nodes.count
+
+
+def test_large_parallel_coordinates_keep_every_segment_identity() -> None:
+    from types import SimpleNamespace
+
+    import numpy as np
+
+    n, dims = 25_001, 5  # 100,004 segments: past the old 100k hover-row cap
+    uuids = [f"01a0f3fd-0000-7000-8000-{i:012x}" for i in range(n)]
+    composition = SimpleNamespace(
+        kind="parallel-coordinates",
+        vectors={
+            "dimensions": dims,
+            "uuid": uuids,
+            "name": [""] * n,
+            "values": np.random.default_rng(0).random(n * dims),
+            "domain": [0.0, dims - 1.0, 0.0, 1.0],
+        },
+    )
+    fig = xyg.graphforge_chart(composition).figure()
+    rows = fig.traces[0].tooltip_rows
+    assert len(rows) == n * (dims - 1)
+    assert rows[-1] == {"id": uuids[-1], "dimension": dims - 2}
+    spec, blob = fig.build_payload()
+    assert "tooltip_columns" in spec["traces"][0]

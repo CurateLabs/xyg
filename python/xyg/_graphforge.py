@@ -820,13 +820,12 @@ def _parallel_chart(composition: GraphForgeComposition, props: dict[str, Any]) -
         *axes,
         **props,
     )
-    pieces = n * (dims - 1)
-    if pieces <= 100_000:
-        chart.figure().traces[-1].tooltip_rows = [
-            {"id": uuid[r], **({"name": name[r]} if name[r] else {}), "dimension": dd}
-            for r in range(n)
-            for dd in range(dims - 1)
-        ]
+    # Every segment keeps its node identity (rows ship as typed tooltip columns).
+    chart.figure().traces[-1].tooltip_rows = [
+        {"id": uuid[r], **({"name": name[r]} if name[r] else {}), "dimension": dd}
+        for r in range(n)
+        for dd in range(dims - 1)
+    ]
     return chart
 
 

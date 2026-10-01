@@ -681,7 +681,8 @@ function graphforgeParallelChart(composition, opts) {
   }
   const { width, height, title } = opts;
   const fig = figure({ width, height, title });
-  fig.segments(x0, y0, x1, y1, { name: "embedding", ...(pieces <= 100_000 ? { tooltip_rows: rows } : {}) });
+  // Every segment keeps its node identity (rows ship as typed tooltip columns).
+  fig.segments(x0, y0, x1, y1, { name: "embedding", tooltip_rows: rows });
   // Rust owns the plot domain (dimension span, padded finite value range).
   const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
   fig.setAxis("x", { domain: [dx0, dx1] });
