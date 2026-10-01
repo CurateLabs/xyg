@@ -255,10 +255,10 @@ def test_sankey_tooltips_describe_flows_and_nodes(tmp_path: Path) -> None:
         _PRELUDE
         + """
     const linkTrace = view.gpuTraces.find(
-      (trace) => Array.isArray(trace.tooltipRows) && trace.tooltipRows[0].source
+      (trace) => trace.tooltipRows && trace.tooltipRows.at(0)?.source
     );
     const nodeTrace = view.gpuTraces.find(
-      (trace) => Array.isArray(trace.tooltipRows) && trace.tooltipRows[0].node
+      (trace) => trace.tooltipRows && trace.tooltipRows.at(0)?.node
     );
     if (!linkTrace || !nodeTrace) throw new Error("semantic Sankey rows missing");
     const linkRow = view._localRow({g: linkTrace, index: 0});
