@@ -9,12 +9,12 @@
 use std::collections::{BTreeMap, HashMap};
 
 use super::base::{self, BaseGraph, RawPlanes};
-use super::columns::{f64s, i64s, texts, uuids};
+use super::columns::{f64s, i64s, texts, uuid_lists, uuids};
 use super::container::{Builder, DOCUMENT_MAGIC};
 use super::ledger::{self, Composition, Intent, Role, SchemaEntry};
 use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
-use super::{GfError, GfResult, UuidKey};
+use super::{GfError, GfResult, Uuid, UuidKey, NIL_UUID};
 use crate::arrow_ipc::{read_table, DataType, Table};
 use crate::graph_style::{semantic_palette, FLAG_DISABLED, THEME_DARK, THEME_LIGHT};
 
@@ -30,6 +30,10 @@ pub const NONE_U32: u32 = u32::MAX;
 pub const NODE_STATUS_MEMBER: u8 = 1;
 /// Node property columns carried per layer (canonical fields included).
 pub const MAX_PROPERTY_COLUMNS: usize = 32;
+pub const NODE_STATUS_ON_PATH: u8 = 2;
+pub const NODE_STATUS_PATH_END: u8 = 3;
+/// Derived edges (pairs and ordered steps) across all layers.
+pub const MAX_DERIVED_EDGES: usize = 5_000_000;
 /// Class codes available to group layers before bucketing.
 const GROUP_CODES: usize = 7;
 
@@ -93,8 +97,28 @@ struct LayerOut {
     extra: u64,
 }
 
+/// One composed ordered overlay (path, walk, cycle, or Euler trail).
+struct PathOut {
+    layer: usize,
+    row: usize,
+    rank: f64,
+    cost: f64,
+    nodes: Vec<usize>,
+    edges: Vec<usize>,
+}
+
 struct Planes<'b> {
     base: &'b BaseGraph,
+    /// Composed edges: base relationships first, derived edges appended.
+    edge_source: Vec<usize>,
+    edge_target: Vec<usize>,
+    edge_type: Vec<Option<String>>,
+    edge_layer: Vec<u32>,
+    edge_order: Vec<i64>,
+    edge_path: Vec<u64>,
+    edge_label: Vec<Option<String>>,
+    edge_label_priority: Vec<f64>,
+    paths: Vec<PathOut>,
     node_class: Vec<u8>,
     node_epistemic: Vec<u8>,
     node_status: Vec<u8>,
@@ -134,6 +158,15 @@ impl<'b> Planes<'b> {
             node_label: base.node_name.clone(),
             node_priority: vec![0.0; n],
             node_hidden: vec![false; n],
+            edge_source: base.edge_source.clone(),
+            edge_target: base.edge_target.clone(),
+            edge_type: base.edge_type.clone(),
+            edge_layer: vec![NONE_U32; e],
+            edge_order: vec![-1; e],
+            edge_path: vec![NONE_U64; e],
+            edge_label: vec![None; e],
+            edge_label_priority: vec![f64::NAN; e],
+            paths: Vec::new(),
             edge_class: vec![0; e],
             edge_epistemic: vec![0; e],
             edge_status: vec![0; e],
@@ -552,6 +585,425 @@ impl<'b> Planes<'b> {
 
     // -- edge layers ---------------------------------------------------------
 
+    /// Resolve one result node identity: `Ok(Some(i))`, `Ok(None)` when the
+    /// base lacks it, or `GF_COMPOSE_IDENTITY_KIND` when it names a relationship.
+    fn resolve_node(&self, layer: &Layer<'_>, id: Uuid, field: &str) -> GfResult<Option<usize>> {
+        if let Some(&node) = self.base.node_index.get(&UuidKey(id)) {
+            return Ok(Some(node));
+        }
+        if self.base.edge_index.contains_key(&UuidKey(id)) {
+            return Err(layer_error(
+                "GF_COMPOSE_IDENTITY_KIND",
+                layer.index,
+                format!("node identities in field \"{field}\" name base relationships"),
+            )
+            .with_field(field));
+        }
+        Ok(None)
+    }
+
+    fn push_derived(&mut self, layer: &Layer<'_>, source: usize, target: usize) -> GfResult<usize> {
+        let derived = self.edge_class.len() - self.base.edge_uuid.len();
+        if derived >= MAX_DERIVED_EDGES {
+            return Err(layer_error(
+                "GF_COMPOSE_TOO_LARGE",
+                layer.index,
+                format!("derived edges exceed {MAX_DERIVED_EDGES}; select result rows with `rows`"),
+            ));
+        }
+        let kind = layer
+            .entry()
+            .derived_type
+            .expect("derived layers name a type");
+        let (epistemic, directed) = derived_style(layer.entry().composition, kind);
+        self.edge_source.push(source);
+        self.edge_target.push(target);
+        self.edge_type.push(Some(kind.to_owned()));
+        self.edge_layer.push(layer.index as u32);
+        self.edge_order.push(-1);
+        self.edge_path.push(NONE_U64);
+        self.edge_label.push(None);
+        self.edge_label_priority.push(f64::NAN);
+        self.edge_class.push(0);
+        self.edge_epistemic.push(epistemic);
+        self.edge_status.push(u8::from(directed));
+        self.edge_metric.push(f64::NAN);
+        self.edge_flags.push(0);
+        self.edge_hidden.push(false);
+        self.edge_reversed.push(false);
+        self.legend(LEGEND_EDGE, 1, epistemic, derived_text(kind));
+        Ok(self.edge_class.len() - 1)
+    }
+
+    /// Nodes a derived or ordered layer touched → the layer's missing policy.
+    fn touched_nodes(&mut self, layer: &Layer<'_>, touched: &[bool]) -> GfResult<u64> {
+        self.missing_nodes(layer, touched)
+    }
+
+    // -- derived pairs -------------------------------------------------------
+
+    fn derived_layer(&mut self, layer: &Layer<'_>) -> GfResult<()> {
+        let n = self.base.node_uuid.len();
+        let (source_field, target_field) = (
+            layer
+                .field(Role::Source)
+                .expect("derived pairs name a source"),
+            layer
+                .field(Role::Target)
+                .expect("derived pairs name a target"),
+        );
+        let sources = uuids(&layer.table.column(source_field).unwrap(), false)
+            .map_err(|e| e.in_layer(layer.index))?;
+        let targets = uuids(&layer.table.column(target_field).unwrap(), false)
+            .map_err(|e| e.in_layer(layer.index))?;
+        let metric = match layer.field(Role::Metric) {
+            Some(name) => {
+                self.claim("edge.metric", layer)?;
+                Some(
+                    layer
+                        .column_f64(name)
+                        .map_err(|e| e.in_layer(layer.index))?,
+                )
+            }
+            None => None,
+        };
+        let value_fields = value_fields(layer.entry(), &[Role::Metric, Role::Cost]);
+        let columns = value_fields
+            .iter()
+            .map(|name| layer.column_f64(name))
+            .collect::<GfResult<Vec<_>>>()
+            .map_err(|e| e.in_layer(layer.index))?;
+        let mut touched = vec![false; n];
+        let mut extra = 0u64;
+        let mut placed: Vec<(usize, usize)> = Vec::with_capacity(layer.rows.len());
+        for &row in &layer.rows {
+            let null = || {
+                layer_error(
+                    "GF_RESULT_NULL_IDENTITY",
+                    layer.index,
+                    "a derived pair endpoint is null".into(),
+                )
+            };
+            let s = sources[row].ok_or_else(null)?;
+            let t = targets[row].ok_or_else(null)?;
+            let (Some(s), Some(t)) = (
+                self.resolve_node(layer, s, source_field)?,
+                self.resolve_node(layer, t, target_field)?,
+            ) else {
+                extra += 1;
+                continue;
+            };
+            let edge = self.push_derived(layer, s, t)?;
+            if let Some(metric) = &metric {
+                self.edge_metric[edge] = metric[row];
+            }
+            touched[s] = true;
+            touched[t] = true;
+            placed.push((row, edge));
+        }
+        self.extra(layer, extra, "nodes")?;
+        if let Some(metric) = &metric {
+            self.null_values(layer, metric, &placed);
+        }
+        let mut out = LayerOut {
+            matched: placed.len() as u64,
+            extra,
+            ..Default::default()
+        };
+        out.missing = self.touched_nodes(layer, &touched)?;
+        self.finish_edge_values(&mut out, value_fields, &columns, &placed);
+        self.layers.push(out);
+        Ok(())
+    }
+
+    /// Per-element values and rows for edges this layer placed; arrays cover
+    /// every edge composed so far (later derived edges are padded at encode).
+    fn finish_edge_values(
+        &self,
+        out: &mut LayerOut,
+        names: Vec<&'static str>,
+        columns: &[Vec<f64>],
+        placed: &[(usize, usize)],
+    ) {
+        let e = self.edge_class.len();
+        let k = names.len();
+        let mut values = vec![f64::NAN; e * k];
+        let mut rows = vec![NONE_U64; e];
+        for &(row, edge) in placed {
+            rows[edge] = row as u64;
+            for (j, column) in columns.iter().enumerate() {
+                values[edge * k + j] = column[row];
+            }
+        }
+        out.value_names = names.iter().map(|s| (*s).to_owned()).collect();
+        out.edge_values = Some(values);
+        out.edge_rows = Some(rows);
+    }
+
+    // -- ordered overlays ----------------------------------------------------
+
+    fn path_layer(&mut self, layer: &Layer<'_>) -> GfResult<()> {
+        let n = self.base.node_uuid.len();
+        let composition = layer.entry().composition;
+        let list_field = layer
+            .field(Role::NodePath)
+            .expect("ordered layers carry a node list");
+        let lists = uuid_lists(&layer.table.column(list_field).unwrap())
+            .map_err(|e| e.in_layer(layer.index))?;
+        let rank = match layer.field(Role::Rank) {
+            Some(name) => Some(
+                layer
+                    .column_f64(name)
+                    .map_err(|e| e.in_layer(layer.index))?,
+            ),
+            None => None,
+        };
+        let cost = match layer.field(Role::Cost) {
+            Some(name) => Some(
+                layer
+                    .column_f64(name)
+                    .map_err(|e| e.in_layer(layer.index))?,
+            ),
+            None => None,
+        };
+        let value_fields = value_fields(layer.entry(), &[Role::Rank, Role::Cost]);
+        let columns = value_fields
+            .iter()
+            .map(|name| layer.column_f64(name))
+            .collect::<GfResult<Vec<_>>>()
+            .map_err(|e| e.in_layer(layer.index))?;
+        let mut touched = vec![false; n];
+        let mut extra = 0u64;
+        let mut short = 0u64;
+        let mut placed = Vec::new();
+        let first_path = self.paths.len();
+        for &row in &layer.rows {
+            let ids = &lists.values[lists.offsets[row]..lists.offsets[row + 1]];
+            let mut nodes = Vec::with_capacity(ids.len());
+            for &id in ids {
+                match self.resolve_node(layer, id, list_field)? {
+                    Some(node) => nodes.push(node),
+                    None => {
+                        nodes.clear();
+                        extra += 1;
+                        break;
+                    }
+                }
+            }
+            if nodes.is_empty() && !ids.is_empty() {
+                continue;
+            }
+            if nodes.len() < 2 {
+                short += 1;
+            }
+            let path = self.paths.len() as u64;
+            let mut steps: Vec<(usize, usize)> = nodes.windows(2).map(|w| (w[0], w[1])).collect();
+            if composition == Composition::Cycles
+                && nodes.len() >= 2
+                && nodes.first() != nodes.last()
+            {
+                steps.push((nodes[nodes.len() - 1], nodes[0]));
+            }
+            let mut edges = Vec::with_capacity(steps.len());
+            for (k, (s, t)) in steps.into_iter().enumerate() {
+                let edge = self.push_derived(layer, s, t)?;
+                self.edge_order[edge] = k as i64;
+                self.edge_path[edge] = path;
+                placed.push((row, edge));
+                edges.push(edge);
+            }
+            for (k, &node) in nodes.iter().enumerate() {
+                touched[node] = true;
+                let end = composition != Composition::Cycles && (k == 0 || k + 1 == nodes.len());
+                let status = if end {
+                    NODE_STATUS_PATH_END
+                } else {
+                    NODE_STATUS_ON_PATH
+                };
+                self.node_status[node] = self.node_status[node].max(status);
+            }
+            self.paths.push(PathOut {
+                layer: layer.index,
+                row,
+                rank: rank.as_ref().map_or(f64::NAN, |r| r[row]),
+                cost: cost.as_ref().map_or(f64::NAN, |c| c[row]),
+                nodes,
+                edges,
+            });
+        }
+        self.extra(layer, extra, "nodes")?;
+        self.decide("GF_COMPOSE_EMPTY_PATHS", Some(layer.index), short);
+        self.path_statuses_legend(composition);
+        self.label_single_path(layer, first_path)?;
+        let mut out = LayerOut {
+            matched: (self.paths.len() - first_path) as u64,
+            extra,
+            ..Default::default()
+        };
+        out.missing = self.touched_nodes(layer, &touched)?;
+        self.finish_edge_values(&mut out, value_fields, &columns, &placed);
+        self.layers.push(out);
+        Ok(())
+    }
+
+    fn path_statuses_legend(&mut self, composition: Composition) {
+        let noun = match composition {
+            Composition::Walks => "walk",
+            Composition::Cycles => "cycle",
+            Composition::EulerTrail => "trail",
+            _ => "path",
+        };
+        if self.node_status.contains(&NODE_STATUS_ON_PATH) {
+            self.legend(LEGEND_NODE, 2, NODE_STATUS_ON_PATH, format!("on {noun}"));
+        }
+        if self.node_status.contains(&NODE_STATUS_PATH_END) {
+            self.legend(
+                LEGEND_NODE,
+                2,
+                NODE_STATUS_PATH_END,
+                format!("{noun} endpoint"),
+            );
+        }
+    }
+
+    /// One composed overlay labels its nodes with their first position
+    /// (0-based, like GraphForge orders); several overlays stay unlabeled.
+    fn label_single_path(&mut self, layer: &Layer<'_>, first_path: usize) -> GfResult<()> {
+        if self.paths.len() != first_path + 1 {
+            if self.paths.len() > first_path + 1 {
+                self.decide(
+                    "GF_COMPOSE_PATH_LABELS_OMITTED",
+                    Some(layer.index),
+                    (self.paths.len() - first_path) as u64,
+                );
+            }
+            return Ok(());
+        }
+        self.claim("node.label", layer)?;
+        let nodes = self.paths[first_path].nodes.clone();
+        let mut seen = std::collections::HashSet::new();
+        for (k, node) in nodes.into_iter().enumerate() {
+            if seen.insert(node) {
+                self.node_label[node] = Some(k.to_string());
+                self.node_priority[node] = -(k as f64);
+            }
+        }
+        Ok(())
+    }
+
+    fn euler_layer(&mut self, layer: &Layer<'_>) -> GfResult<()> {
+        let e = self.base.edge_uuid.len();
+        let node_field = layer.field(Role::NodePath).unwrap();
+        let edge_field = layer.field(Role::EdgePath).unwrap();
+        let node_lists = uuid_lists(&layer.table.column(node_field).unwrap())
+            .map_err(|e| e.in_layer(layer.index))?;
+        let edge_lists = uuid_lists(&layer.table.column(edge_field).unwrap())
+            .map_err(|e| e.in_layer(layer.index))?;
+        self.claim("edge.class", layer)?;
+        self.claim("edge.status", layer)?;
+        self.claim("edge.label", layer)?;
+        let mut covered = vec![false; e];
+        let mut rows = vec![NONE_U64; e];
+        let mut extra = 0u64;
+        let mut reoriented = 0u64;
+        let first_path = self.paths.len();
+        for &row in &layer.rows {
+            let node_ids = &node_lists.values[node_lists.offsets[row]..node_lists.offsets[row + 1]];
+            let edge_ids = &edge_lists.values[edge_lists.offsets[row]..edge_lists.offsets[row + 1]];
+            let mut nodes = Vec::with_capacity(node_ids.len());
+            for &id in node_ids {
+                match self.resolve_node(layer, id, node_field)? {
+                    Some(node) => nodes.push(node),
+                    None => break,
+                }
+            }
+            let mut edges = Vec::with_capacity(edge_ids.len());
+            for &id in edge_ids {
+                match self.base.edge_index.get(&UuidKey(id)) {
+                    Some(&edge) => edges.push(edge),
+                    None if self.base.node_index.contains_key(&UuidKey(id)) => {
+                        return Err(layer_error(
+                            "GF_COMPOSE_IDENTITY_KIND",
+                            layer.index,
+                            format!(
+                                "relationship identities in field \"{edge_field}\" name base nodes"
+                            ),
+                        )
+                        .with_field(edge_field));
+                    }
+                    None => break,
+                }
+            }
+            if nodes.len() != node_ids.len() || edges.len() != edge_ids.len() {
+                extra += 1;
+                continue;
+            }
+            if !edges.is_empty() && nodes.len() != edges.len() + 1 {
+                return Err(layer_error(
+                    "GF_RESULT_SCHEMA_MISMATCH",
+                    layer.index,
+                    "an Euler trail's node_path must be one longer than its edge_path".into(),
+                ));
+            }
+            let path = self.paths.len() as u64;
+            for (k, &edge) in edges.iter().enumerate() {
+                let (a, b) = (nodes[k], nodes[k + 1]);
+                let (s, t) = (self.base.edge_source[edge], self.base.edge_target[edge]);
+                if (s, t) == (b, a) && s != t {
+                    self.edge_reversed[edge] = true;
+                    reoriented += 1;
+                } else if (s, t) != (a, b) {
+                    return Err(layer_error(
+                        "GF_COMPOSE_EDGE_ENDPOINT_MISMATCH",
+                        layer.index,
+                        "an Euler trail step does not match its relationship's endpoints; the base graph is stale or incompatible".into(),
+                    ));
+                }
+                covered[edge] = true;
+                rows[edge] = row as u64;
+                self.edge_class[edge] = 1;
+                self.edge_status[edge] = 1;
+                self.edge_order[edge] = k as i64;
+                self.edge_path[edge] = path;
+                self.edge_label[edge] = Some(k.to_string());
+                self.edge_label_priority[edge] = -(k as f64);
+            }
+            for (k, &node) in nodes.iter().enumerate() {
+                let end = k == 0 || k + 1 == nodes.len();
+                let status = if end {
+                    NODE_STATUS_PATH_END
+                } else {
+                    NODE_STATUS_ON_PATH
+                };
+                self.node_status[node] = self.node_status[node].max(status);
+            }
+            self.paths.push(PathOut {
+                layer: layer.index,
+                row,
+                rank: f64::NAN,
+                cost: f64::NAN,
+                nodes,
+                edges,
+            });
+        }
+        self.extra(layer, extra, "entities")?;
+        self.decide("GF_COMPOSE_EDGE_REORIENTED", Some(layer.index), reoriented);
+        if covered.contains(&true) {
+            self.legend(LEGEND_EDGE, 0, 1, "Euler trail edge".into());
+        }
+        self.path_statuses_legend(Composition::EulerTrail);
+        let mut out = LayerOut {
+            matched: (self.paths.len() - first_path) as u64,
+            extra,
+            ..Default::default()
+        };
+        out.missing = self.missing_edges(layer, &covered)?;
+        out.edge_rows = Some(rows);
+        out.edge_values = Some(Vec::new());
+        self.layers.push(out);
+        Ok(())
+    }
+
     fn edge_layer(&mut self, layer: &Layer<'_>) -> GfResult<()> {
         let e = self.base.edge_uuid.len();
         let edge_field = layer
@@ -743,6 +1195,49 @@ impl<'b> Planes<'b> {
     }
 }
 
+/// Canonical value columns (in ledger order) with the given roles.
+fn value_fields(entry: &SchemaEntry, roles: &[Role]) -> Vec<&'static str> {
+    entry
+        .fields
+        .iter()
+        .filter(|f| roles.contains(&f.role))
+        .map(|f| f.name)
+        .collect()
+}
+
+/// `(epistemic code, arrowhead)` of a derived edge. Epistemic codes draw the
+/// halo and dash that set derived edges apart from persisted relationships;
+/// code 4 (solid in the v1 dash table) is skipped so every derived type dashes.
+fn derived_style(composition: Composition, kind: &str) -> (u8, bool) {
+    let code = match kind {
+        "SIMILAR" => 1,
+        "REACHES" => 2,
+        "MAX_FLOW" | "MIN_COST_FLOW" => 3,
+        "MIN_CUT" => 5,
+        "CUT_TREE" => 6,
+        _ => 7,
+    };
+    let directed = match composition {
+        Composition::DerivedPairs { directed } => directed,
+        _ => true,
+    };
+    (code, directed)
+}
+
+fn derived_text(kind: &str) -> String {
+    match kind {
+        "SIMILAR" => "similar (derived)".into(),
+        "REACHES" => "reaches (derived)".into(),
+        "MAX_FLOW" | "MIN_COST_FLOW" => "source-to-sink flow (derived)".into(),
+        "MIN_CUT" => "source-to-sink cut (derived)".into(),
+        "CUT_TREE" => "cut tree (derived)".into(),
+        "PATH_STEP" => "path step (derived)".into(),
+        "WALK_STEP" => "walk step (derived)".into(),
+        "CYCLE_STEP" => "cycle step (derived)".into(),
+        other => format!("{} (derived)", other.to_ascii_lowercase().replace('_', " ")),
+    }
+}
+
 fn plural(noun: &str) -> String {
     match noun.strip_suffix('y') {
         Some(stem) => format!("{stem}ies"),
@@ -768,7 +1263,9 @@ fn edge_member_text(algorithm: &str) -> String {
 fn default_missing(composition: Composition) -> MissingPolicy {
     match composition {
         c if c.covers_base() => MissingPolicy::Dim,
-        Composition::EdgeOverlay { .. } | Composition::EdgeGroup => MissingPolicy::Dim,
+        Composition::EdgeOverlay { .. } | Composition::EdgeGroup | Composition::EulerTrail => {
+            MissingPolicy::Dim
+        }
         _ => MissingPolicy::Keep,
     }
 }
@@ -907,6 +1404,11 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
             | Composition::NodeSet
             | Composition::NodeSearch => planes.node_layer(layer)?,
             Composition::EdgeOverlay { .. } | Composition::EdgeGroup => planes.edge_layer(layer)?,
+            Composition::DerivedPairs { .. } => planes.derived_layer(layer)?,
+            Composition::Paths | Composition::Walks | Composition::Cycles => {
+                planes.path_layer(layer)?
+            }
+            Composition::EulerTrail => planes.euler_layer(layer)?,
             other => {
                 return Err(layer_error(
                     "GF_COMPOSE_UNSUPPORTED_COMPOSITION",
@@ -924,12 +1426,15 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
 
 fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]) -> Vec<u8> {
     let base = planes.base;
-    // Hidden nodes take their incident relationships with them.
+    let base_edges = base.edge_uuid.len();
+    let total_edges = planes.edge_class.len();
+    // Hidden nodes take their incident relationships (and derived edges) with them.
     let mut edge_hidden = planes.edge_hidden.clone();
     let mut cascaded = 0u64;
-    for i in 0..base.edge_uuid.len() {
+    for i in 0..total_edges {
         if !edge_hidden[i]
-            && (planes.node_hidden[base.edge_source[i]] || planes.node_hidden[base.edge_target[i]])
+            && (planes.node_hidden[planes.edge_source[i]]
+                || planes.node_hidden[planes.edge_target[i]])
         {
             edge_hidden[i] = true;
             cascaded += 1;
@@ -938,12 +1443,14 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     let nodes: Vec<usize> = (0..base.node_uuid.len())
         .filter(|&i| !planes.node_hidden[i])
         .collect();
-    let edges: Vec<usize> = (0..base.edge_uuid.len())
-        .filter(|&i| !edge_hidden[i])
-        .collect();
+    let edges: Vec<usize> = (0..total_edges).filter(|&i| !edge_hidden[i]).collect();
     let mut remap = vec![NONE_U64; base.node_uuid.len()];
     for (dense, &node) in nodes.iter().enumerate() {
         remap[node] = dense as u64;
+    }
+    let mut edge_remap = vec![NONE_U64; total_edges];
+    for (dense, &edge) in edges.iter().enumerate() {
+        edge_remap[edge] = dense as u64;
     }
     let pick_u8 = |plane: &[u8], rows: &[usize]| rows.iter().map(|&i| plane[i]).collect::<Vec<_>>();
     let pick_f64 =
@@ -964,7 +1471,7 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     out.u64s(
         "base.counts",
         0,
-        &[base.node_uuid.len() as u64, base.edge_uuid.len() as u64],
+        &[base.node_uuid.len() as u64, base_edges as u64],
     );
 
     out.uuids(
@@ -1021,22 +1528,35 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
         Vec::with_capacity(edges.len()),
     );
     for &i in &edges {
-        let (mut s, mut t) = (base.edge_source[i], base.edge_target[i]);
+        let (mut s, mut t) = (planes.edge_source[i], planes.edge_target[i]);
         if planes.edge_reversed[i] {
             std::mem::swap(&mut s, &mut t);
         }
         sources.push(remap[s]);
         targets.push(remap[t]);
     }
+    let derived = |i: usize| i >= base_edges;
     out.uuids(
         "edge.uuid",
         0,
-        &edges.iter().map(|&i| base.edge_uuid[i]).collect::<Vec<_>>(),
+        &edges
+            .iter()
+            .map(|&i| {
+                if derived(i) {
+                    NIL_UUID
+                } else {
+                    base.edge_uuid[i]
+                }
+            })
+            .collect::<Vec<_>>(),
     );
     out.u64s(
         "edge.base_row",
         0,
-        &edges.iter().map(|&i| i as u64).collect::<Vec<_>>(),
+        &edges
+            .iter()
+            .map(|&i| if derived(i) { NONE_U64 } else { i as u64 })
+            .collect::<Vec<_>>(),
     );
     out.u64s("edge.source", 0, &sources);
     out.u64s("edge.target", 0, &targets);
@@ -1045,11 +1565,34 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
         0,
         &edges
             .iter()
-            .map(|&i| text(&base.edge_type[i]))
+            .map(|&i| text(&planes.edge_type[i]))
             .collect::<Vec<_>>(),
     );
-    out.u8s("edge.derived", 0, &vec![0; edges.len()]);
-    out.u32s("edge.layer", 0, &vec![NONE_U32; edges.len()]);
+    out.u8s(
+        "edge.derived",
+        0,
+        &edges
+            .iter()
+            .map(|&i| u8::from(derived(i)))
+            .collect::<Vec<_>>(),
+    );
+    out.u32s("edge.layer", 0, &pick_u32(&planes.edge_layer, &edges));
+    out.i64s(
+        "edge.order",
+        0,
+        &edges
+            .iter()
+            .map(|&i| planes.edge_order[i])
+            .collect::<Vec<_>>(),
+    );
+    out.u64s(
+        "edge.path",
+        0,
+        &edges
+            .iter()
+            .map(|&i| planes.edge_path[i])
+            .collect::<Vec<_>>(),
+    );
     out.u8s("edge.class", 0, &pick_u8(&planes.edge_class, &edges));
     out.u8s(
         "edge.epistemic",
@@ -1059,6 +1602,54 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     out.u8s("edge.status", 0, &pick_u8(&planes.edge_status, &edges));
     out.f64s("edge.metric", 0, &pick_f64(&planes.edge_metric, &edges));
     out.u32s("edge.flags", 0, &pick_u32(&planes.edge_flags, &edges));
+    out.texts(
+        "edge.label",
+        0,
+        &edges
+            .iter()
+            .map(|&i| text(&planes.edge_label[i]))
+            .collect::<Vec<_>>(),
+    );
+    out.f64s(
+        "edge.label_priority",
+        0,
+        &pick_f64(&planes.edge_label_priority, &edges),
+    );
+
+    // Ordered overlays whose elements all survived hiding, in layer order.
+    let mut path_layer = Vec::new();
+    let mut path_row = Vec::new();
+    let mut path_rank = Vec::new();
+    let mut path_cost = Vec::new();
+    let mut node_offsets = vec![0u64];
+    let mut path_nodes = Vec::new();
+    let mut edge_offsets = vec![0u64];
+    let mut path_edges = Vec::new();
+    let mut hidden_paths = 0u64;
+    for path in &planes.paths {
+        let visible = path.nodes.iter().all(|&n| remap[n] != NONE_U64)
+            && path.edges.iter().all(|&e| edge_remap[e] != NONE_U64);
+        if !visible {
+            hidden_paths += 1;
+            continue;
+        }
+        path_layer.push(path.layer as u32);
+        path_row.push(path.row as u64);
+        path_rank.push(path.rank);
+        path_cost.push(path.cost);
+        path_nodes.extend(path.nodes.iter().map(|&n| remap[n]));
+        node_offsets.push(path_nodes.len() as u64);
+        path_edges.extend(path.edges.iter().map(|&e| edge_remap[e]));
+        edge_offsets.push(path_edges.len() as u64);
+    }
+    out.u32s("path.layer", 0, &path_layer);
+    out.u64s("path.row", 0, &path_row);
+    out.f64s("path.rank", 0, &path_rank);
+    out.f64s("path.cost", 0, &path_cost);
+    out.u64s("path.node_offsets", 0, &node_offsets);
+    out.u64s("path.nodes", 0, &path_nodes);
+    out.u64s("path.edge_offsets", 0, &edge_offsets);
+    out.u64s("path.edges", 0, &path_edges);
 
     for (i, (layer, result)) in layers.iter().zip(&planes.layers).enumerate() {
         let entry = layer.entry();
@@ -1117,15 +1708,23 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             );
         }
         if let (Some(values), Some(rows)) = (&result.edge_values, &result.edge_rows) {
+            // Layers see the edges composed up to themselves; later derived
+            // edges are padded as absent.
             let mut picked = Vec::with_capacity(edges.len() * k);
             for &edge in &edges {
-                picked.extend_from_slice(&values[edge * k..edge * k + k]);
+                match values.get(edge * k..edge * k + k) {
+                    Some(v) => picked.extend_from_slice(v),
+                    None => picked.extend(std::iter::repeat_n(f64::NAN, k)),
+                }
             }
             out.f64s("layer.edge_values", i, &picked);
             out.u64s(
                 "layer.edge_rows",
                 i,
-                &edges.iter().map(|&e| rows[e]).collect::<Vec<_>>(),
+                &edges
+                    .iter()
+                    .map(|&e| rows.get(e).copied().unwrap_or(NONE_U64))
+                    .collect::<Vec<_>>(),
             );
         }
     }
@@ -1133,6 +1732,13 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     encode_legend(&mut out, planes, &nodes, &edges);
 
     let mut decisions = planes.decisions.clone();
+    if hidden_paths > 0 {
+        decisions.push(Decision {
+            code: "GF_COMPOSE_PATHS_HIDDEN",
+            layer: None,
+            count: hidden_paths,
+        });
+    }
     if cascaded > 0 {
         decisions.push(Decision {
             code: "GF_COMPOSE_EDGES_HIDDEN_WITH_NODES",

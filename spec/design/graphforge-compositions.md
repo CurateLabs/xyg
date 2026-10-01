@@ -129,13 +129,14 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `search` | node-layer | node-search | graph | (find) |
 <!-- graphforge-ledger:end -->
 
-**Delivery status.** Node and edge layers (node-score, node-group,
-node-order, node-traversal, node-set, node-search, edge-overlay, edge-group)
-compose today. Derived edges, ordered overlays (paths, walks, cycles, Euler
-trails), table/bar-chart compositions, and embeddings are recognized and
-intent-checked but fail with `GF_COMPOSE_UNSUPPORTED_COMPOSITION` until their
-slices land (xyg#37 follow-up PRs); WASM parity follows them. The ledger,
-recognition, and codes above do not change when they land.
+**Delivery status.** Every graph-intent composition composes today: node
+and edge layers (node-score, node-group, node-order, node-traversal,
+node-set, node-search, edge-overlay, edge-group), derived edges, and ordered
+overlays (paths, walks, cycles, Euler trails). Table/bar-chart compositions
+and embeddings are recognized and intent-checked but fail with
+`GF_COMPOSE_UNSUPPORTED_COMPOSITION` until their slice lands (xyg#37
+follow-up); WASM parity follows it. The ledger, recognition, and codes above
+do not change when it lands.
 
 ## 4. Composition
 
@@ -214,6 +215,9 @@ spanning-tree overlay + articulation points).
 | node-set | node `status` 1 (combined across set layers by maximum) |
 | edge-overlay | relationship `class` 1 for members (or group codes for `tree_id`); `metric` = the schema's metric (flow, capacity, weight); directional overlays (flow, cut edges) set `status` 1, which draws the arrowhead |
 | edge-group | relationship `class` from the group id (edge coloring), bucketed like node groups |
+| derived-edges | one **derived edge** per result row between the two joined nodes (§4.5) with the derived type's `epistemic` code, `status` 1 (arrowhead) for directed types, and `metric` = similarity / flow / cut value |
+| paths, walks, cycles | one derived **step** edge per consecutive node pair (cycles add the closing step), `status` 1 in travel direction, `edge.order` = step index, `edge.path` = overlay index; nodes on the overlay get node `status` 2 and path/walk endpoints `status` 3 (combined by maximum). A layer that composes exactly one overlay labels its nodes with their first 0-based position (owning node labels); several overlays stay unlabeled (`GF_COMPOSE_PATH_LABELS_OMITTED`) |
+| euler-trail | the persisted relationships named by `edge_path`, in order: relationship `class` 1, `status` 1, `edge.order`/edge label = step index, reoriented to the travel direction (`GF_COMPOSE_EDGE_REORIENTED`); each step must connect consecutive `node_path` nodes (`GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`); no derived edges |
 
 Base elements start at class/epistemic/status 0 and metric NaN. Node labels
 default to the base display name. Missing elements under `dim` carry the
@@ -229,7 +233,36 @@ shape, and the light and dark palette colors. Hosts render them as the
 chart legend (marker swatches, like the semantic legend) instead of the
 generic `Class n` rows.
 
-### 4.5 Decisions (never silent)
+### 4.5 Derived edges
+
+Derived edges are analytical relationships a result asserts between base
+nodes; they are never persisted relationships. They are appended after the
+base relationships, carry no UUID (`edge.derived` = 1, `edge.uuid` nil,
+`edge.base_row` = `u64::MAX`, `edge.layer` = the owning layer), and are
+identified by their layer and result row (`layer.edge_rows`). They paint
+visibly apart: every derived type has a nonzero epistemic code, which draws
+the epistemic halo and a screen-space dash (code 4 is skipped because the v1
+dash table makes it solid).
+
+| Derived type | Epistemic | Arrowhead | Legend |
+|---|---|---|---|
+| `SIMILAR` (similarity) | 1 | no | similar (derived) |
+| `REACHES` (transitive closure) | 2 | yes | reaches (derived) |
+| `MAX_FLOW`, `MIN_COST_FLOW` | 3 | yes | source-to-sink flow (derived) |
+| `MIN_CUT` | 5 | yes | source-to-sink cut (derived) |
+| `CUT_TREE` (Gomory–Hu) | 6 | no | cut tree (derived) |
+| `PATH_STEP`, `WALK_STEP`, `CYCLE_STEP` | 7 | yes | path / walk / cycle step (derived) |
+
+Endpoints that are not base nodes follow the layer's `extra` policy (a path
+through an absent node drops as a whole); endpoints naming base relationships
+fail with `GF_COMPOSE_IDENTITY_KIND`. Derived edges and steps across all
+layers are bounded to 5,000,000 (`GF_COMPOSE_TOO_LARGE`; select rows with
+`rows`). Hidden nodes take their derived edges with them, and an overlay that
+loses any node or step leaves the `path.*` sections
+(`GF_COMPOSE_PATHS_HIDDEN`). Paths with fewer than two nodes (no route) are
+kept without steps and counted as `GF_COMPOSE_EMPTY_PATHS`.
+
+### 4.6 Decisions (never silent)
 
 Every reduction or policy outcome is a recorded decision `(code, layer,
 count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIED`,
@@ -237,7 +270,9 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_EDGES_HIDDEN_WITH_NODES`, `GF_COMPOSE_GROUPS_BUCKETED`,
 `GF_COMPOSE_UNASSIGNED_GROUP`, `GF_COMPOSE_NULL_VALUES`,
 `GF_COMPOSE_EDGE_REVERSED`, `GF_COMPOSE_EDGE_REORIENTED`,
-`GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_BASE_MERGED_ENTITIES`.
+`GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
+`GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
+`GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
 
@@ -297,13 +332,15 @@ optionally `error.field`. A graph composition holds:
 | `node.uuid`, `node.base_row`, `node.name`, `node.type` | identity (hidden nodes removed; `base_row` maps back) |
 | `node.class`, `node.epistemic`, `node.status`, `node.metric`, `node.flags`, `node.label`, `node.label_priority` | semantic planes |
 | `edge.uuid`, `edge.base_row`, `edge.source`, `edge.target`, `edge.type`, `edge.derived`, `edge.layer` | identity and dense endpoints (`edge.derived` 1 marks derived edges; persisted edges keep their UUID) |
-| `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags` | semantic planes |
+| `edge.order` (i64, −1 none), `edge.path` (u64) | step index and overlay index of ordered steps and Euler trail edges |
+| `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags`, `edge.label`, `edge.label_priority` | semantic planes and edge labels (Euler step indices) |
+| `path.layer`, `path.row`, `path.rank`, `path.cost` (NaN when absent), `path.node_offsets` / `path.nodes`, `path.edge_offsets` / `path.edges` | ordered overlays as composed node and edge indices |
 | `layer.schema`, `layer.schema_version`, `layer.verb`, `layer.algorithm`, `layer.disposition`, `layer.composition`, `layer.intent`, `layer.missing_policy`, `layer.extra_policy`, `layer.result_id`, `layer.generation`, `layer.derived_type` [i] | layer provenance |
 | `layer.counts` [i] | u64 ×5: result rows, selected rows, matched, missing, extra |
-| `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection. Node layers list the canonical value fields first, then the numeric node properties rank/cluster/find results carry |
+| `layer.value_names`, `layer.node_values` / `layer.edge_values`, `layer.node_rows` / `layer.edge_rows` [i] | exact result values joined per element (row-major, NaN absent) and the result row per element (`u64::MAX` absent), for tooltips and table ↔ chart selection. Node layers list the canonical value fields first, then the numeric node properties rank/cluster/find results carry; derived edges and path steps carry their layer's row (rank/cost for steps) |
 | `layer.text_names`, `layer.node_texts` [i] | text node properties of node layers, joined per node (row-major, empty when absent); at most 32 property columns per layer (`GF_COMPOSE_PROPERTIES_TRUNCATED`) |
 | `legend.*` | Rust legend rows (§4.4) |
-| `decision.code`, `decision.layer`, `decision.count` | §4.5 |
+| `decision.code`, `decision.layer`, `decision.count` | §4.6 |
 
 Output is deterministic for identical request bytes, so native and WASM hosts
 are compared byte for byte.
@@ -334,6 +371,8 @@ const composition = composeGraphForge({
 const fig = graphforgeChart(composition, { width: 800, height: 600, theme: "dark" });
 fig.toHtml();                         // or toPng()/toSvg()/payload
 composition.identify("node", i);      // { uuid, layers: [{ layer, resultId, row }] }
+composition.identify("edge", j);      // + derived, type, source/target UUIDs, order/path for steps
+composition.paths;                    // [{ layer, row, rank, cost, nodes: [i], edges: [j] }]
 composition.select([uuid, ...]);      // { nodes: [i], edges: [j] } for highlight
 composition.diagnostics();            // schema ids, counts, decision codes only
 ```
@@ -358,9 +397,15 @@ mark for custom figures; `graphforgeLedger()` returns the Rust ledger.
   every node/edge layer fixture; generation, extra, missing, conflict,
   endpoint, identity-kind, and intent negatives; determinism; value-free
   diagnostics.
+- Rust (ordered/derived): every graph-intent fixture (78 algorithms) composes
+  onto its base; similarity/closure/flow/cut/cut-tree style and direction;
+  single-path order, labels, and cost; ranked and all-pairs paths; cycle
+  closing steps; walks; Euler trails over persisted edges with reorientation;
+  coexistence and metric conflicts; hide cascades; extra policy for paths.
 - Node: joins checked against the independent expectations for node and edge
-  layers, selection round trips, error codes, chart paint and legend, the
-  edge visual-state flags; Python asserts the same edge-flag resolution.
+  layers, selection round trips (including derived edges by layer and row and
+  path steps), error codes, chart paint, legend, and edge labels, the edge
+  visual-state flags; Python asserts the same edge-flag resolution.
 
 ## 8. Privacy
 

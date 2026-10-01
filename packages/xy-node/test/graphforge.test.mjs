@@ -267,3 +267,46 @@ test("the Rust ledger covers every GraphForge 0.5.2 contract", () => {
   assert.deepEqual(embedding.intents, ["embedding-coordinates", "parallel-coordinates"]);
   assert.equal(ledger.find((row) => row.schema === "search").composition, "node-search");
 });
+
+test("derived pairs are identified by layer and result row, never a persisted UUID", () => {
+  const c = compose("node_similarity");
+  const derived = [...c.edges.derived].map((d, i) => (d ? i : -1)).filter((i) => i >= 0);
+  assert.ok(derived.length > 0);
+  const data = graphforgeGraphData(c);
+  for (const i of derived) {
+    assert.equal(c.edges.uuid[i], null);
+    assert.equal(c.edges.epistemic[i], 1, "derived edges dash and halo");
+    const identity = c.identify("edge", i);
+    assert.equal(identity.derived, true);
+    assert.equal(identity.type, "SIMILAR");
+    assert.equal(identity.layers.length, 1);
+    assert.equal(data.edgeIds[i], `derived:0:${identity.layers[0].row}`);
+  }
+  assert.ok(c.legend.rows.some((row) => row.side === "edge" && row.field === 1 && row.text === "similar (derived)"));
+});
+
+test("ordered overlays expose paths, step order, and position labels", () => {
+  const c = compose("dijkstra");
+  assert.equal(c.paths.length, 1);
+  const [path] = c.paths;
+  assert.equal(path.edges.length + 1, path.nodes.length);
+  path.edges.forEach((edge, k) => {
+    const identity = c.identify("edge", edge);
+    assert.equal(identity.order, k);
+    assert.equal(identity.path, 0);
+    assert.equal(identity.source, c.nodes.uuid[path.nodes[k]]);
+    assert.equal(identity.target, c.nodes.uuid[path.nodes[k + 1]]);
+  });
+  path.nodes.forEach((node, k) => assert.equal(c.nodes.label[node], String(k)));
+  const fig = graphforgeChart(c);
+  const edges = fig.traces[fig._graphMeta[0].edge_trace];
+  assert.ok(edges.tooltip_rows.some((row) => row.step === 0));
+  const ids = graphforgeGraphData(c).edgeIds.filter((id) => id.startsWith("derived:"));
+  assert.equal(new Set(ids).size, ids.length, "every derived step has its own id");
+
+  const euler = compose("euler_circuit");
+  assert.equal(euler.paths.length, 1);
+  assert.ok([...euler.edges.derived].every((d) => d === 0), "Euler trails name persisted edges");
+  const trail = graphforgeChart(euler, { width: 480, height: 360 });
+  assert.ok(trail._graphMeta[0].edge_label_text.includes("0"), "step labels paint on edges");
+});
