@@ -84,6 +84,11 @@ Internal architecture: how the engine is built and why.
   result compositions: Rust Arrow IPC ingress, metadata recognition and the
   coverage ledger, UUID joins, identity/generation policy, and the `XYGQ`/`XYGF`
   contract every host consumes.
+- [`graphforge-product-boundaries.md`](design/graphforge-product-boundaries.md) —
+  generated public copy of GraphForge ADR 0054: what XYG owns relative to
+  GraphForge Core, the editor, and the Hub (result mapping, compatibility
+  checks, plain-graph defaults, PNG/SVG export as the published form). Do not
+  edit the copy by hand.
 - [`scene-ir.md`](design/scene-ir.md) — versioned, bounded canonical scene
   records and the #58 vertical-slice migration from host render policy to Rust.
 - [`browser-wasm.md`](design/browser-wasm.md) — direct-browser Rust/WASM
