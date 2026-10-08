@@ -85,7 +85,7 @@ def test_wrap_requires_explicit_boolean(value: object) -> None:
 
 
 def test_typed_geoarrow_descriptor_prefix_preserves_source_bits_and_identity() -> None:
-    import pyarrow as pa
+    pa = pytest.importorskip("pyarrow")
 
     from xyg import _geoarrow
 
