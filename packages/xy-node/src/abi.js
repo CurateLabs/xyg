@@ -70,8 +70,11 @@ import {
   xyGeoColumnCrs,
   xyGeoColumnFree,
   xyGeoColumnGeometry,
+  xyGeoColumnCopy,
   xyGeoColumnLen,
+  xyGeoColumnMetadata,
   xyGeoColumnNew,
+  xyGeoColumnPlaneLens,
   xyGeoColumnVertexCount,
   xyTemporalControllerApplyEvent,
   xyTemporalControllerCreate,
@@ -425,6 +428,10 @@ const GEO_MESSAGES = Object.freeze({
   [-8]: "polygon ring is too short or not closed",
   [-9]: "geometry exceeds feature, vertex, or byte limits",
   [-10]: "geographic column handle is stale or freed",
+  [-11]: "interior ring is not contained by its exterior ring",
+  [-12]: "line part has one vertex or ring has zero area",
+  [-13]: "host output buffer is smaller than the column",
+  [-14]: "null feature must not own vertices or parts",
 });
 
 export class GeoNativeError extends Error {
@@ -684,6 +691,80 @@ export function geoColumnMeta(handle) {
   const crs = xyGeoColumnCrs(h) >>> 0;
   if (geometry === 0 || crs === 0) throw new GeoNativeError(-10);
   return { length, vertexCount: vertices, geometry, crs };
+}
+
+/**
+ * Canonical `XYGM` v1 metadata document for a geographic column (#47).
+ * Produced by Rust; byte-identical to the Python host for the same column.
+ * @param {bigint | number} handle
+ * @returns {Uint8Array}
+ */
+export function geoColumnMetadata(handle) {
+  const h = toU64(handle, "handle");
+  const needed = BigInt(xyGeoColumnMetadata(h, null, 0n));
+  if (needed === U64_MAX) throw new GeoNativeError(-10);
+  const out = new Uint8Array(toLength(needed, "metadata length"));
+  const wrote = BigInt(
+    xyGeoColumnMetadata(h, out.length > 0 ? pointer(out, "uint8_t *") : null, needed),
+  );
+  if (wrote === U64_MAX) throw new GeoNativeError(-10);
+  if (wrote !== needed) throw new GeoNativeError(-13);
+  return out;
+}
+
+/**
+ * Element counts of every retained plane, in ABI order.
+ * @param {bigint | number} handle
+ * @returns {{ xy: number, validity: number, featureIds: number, offsets0: number,
+ *   offsets1: number, offsets2: number, orientations: number }}
+ */
+export function geoColumnPlaneLens(handle) {
+  const lens = new BigUint64Array(7);
+  const code = xyGeoColumnPlaneLens(toU64(handle, "handle"), u64Ptr(lens));
+  if (code !== 0) throw new GeoNativeError(code);
+  const [xy, validity, featureIds, offsets0, offsets1, offsets2, orientations] = Array.from(
+    lens,
+    (n) => toLength(n, "plane length"),
+  );
+  return { xy, validity, featureIds, offsets0, offsets1, offsets2, orientations };
+}
+
+/**
+ * Copy every retained plane of a geographic column out of Rust (#47).
+ * Source f64 values come back bit-for-bit; orientation is 1 = CCW, 2 = CW per
+ * polygon ring. All planes are owned typed arrays.
+ * @param {bigint | number} handle
+ */
+export function geoColumnRead(handle) {
+  const h = toU64(handle, "handle");
+  const lens = geoColumnPlaneLens(h);
+  const xy = new Float64Array(lens.xy);
+  const validity = new Uint8Array(lens.validity);
+  const featureIds = new BigUint64Array(lens.featureIds);
+  const offsets0 = new Uint32Array(lens.offsets0);
+  const offsets1 = new Uint32Array(lens.offsets1);
+  const offsets2 = new Uint32Array(lens.offsets2);
+  const orientations = new Uint8Array(lens.orientations);
+  const ptr = (view, type) => (view.length > 0 ? pointer(view, type) : null);
+  const code = xyGeoColumnCopy(
+    h,
+    ptr(xy, "double *"),
+    BigInt(xy.length),
+    ptr(validity, "uint8_t *"),
+    BigInt(validity.length),
+    ptr(featureIds, "uint64_t *"),
+    BigInt(featureIds.length),
+    ptr(offsets0, "uint32_t *"),
+    BigInt(offsets0.length),
+    ptr(offsets1, "uint32_t *"),
+    BigInt(offsets1.length),
+    ptr(offsets2, "uint32_t *"),
+    BigInt(offsets2.length),
+    ptr(orientations, "uint8_t *"),
+    BigInt(orientations.length),
+  );
+  if (code !== 0) throw new GeoNativeError(code);
+  return { xy, validity, featureIds, offsets0, offsets1, offsets2, orientations };
 }
 
 export function geoColumnFree(handle) {

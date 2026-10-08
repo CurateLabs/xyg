@@ -1403,6 +1403,7 @@ The exhaustive per-file application of these rules is
 | JS render client | One bundled WebGL client (`@curatelabs/xyg`: `index.js` / `standalone.js`); Python copies into the wheel |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
 | Temporal foundation (#43) | Same `TemporalColumn` / interval visibility for identical Arrow-like fixtures ([temporal.md](temporal.md)) |
+| GeoColumn ingest (#47) | Same typed descriptor, Rust validation (CRS, offsets, holes, null parts, budgets), retained f64 planes, and `XYGM` v1 canonical metadata bytes for identical GeoArrow inputs; host adapters only decode Arrow / typed arrays ([geospatial.md](geospatial.md)) |
 | Temporal controller (#44) | Same `TemporalController` commands, exact u64 stable-ID replacement selection, revisions, atomic apply, and coordination reject rules ([temporal-controller.md](temporal-controller.md)) |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
@@ -1525,6 +1526,23 @@ client must not grow a parallel “JS layout/LOD” product path.
   Python's `Figure.next_series_color`, over `palette=` or the Rust built-in
   palette, so graph nodes (one slot per graph) match with custom palettes
   too. Pinned by `tests/fixtures/series_palette_cross_host.json`.
+- **REQ-HOSTPARITY-2h (MUST).** GeoArrow / GeoColumn ingest (#47) is a thin
+  host adapter over the shared `xyg_geo_column_*` C ABI (ABI 379). Python
+  (`xyg._geoarrow.ingest_geoarrow` and `_native.geo_column_*`) and Node
+  (`geoDescriptorFromGeoArrow` in `packages/xy-node/src/geoarrow.js`, and
+  `geoColumn*` in `abi.js`) decode GeoArrow-shaped buffers and extension
+  metadata into the same typed descriptor, with the same CRS parsing and the
+  same null-Point packing rule (a null point contributes no vertex), and
+  forward feature IDs unchanged. Rust owns validation, CRS, source f64
+  geometry, offsets, validity, identity, resource limits, and ring orientation
+  (recorded, never rewritten); neither host reimplements geometry checks or
+  carries a fallback. Both hosts MUST read back the same planes and the same
+  `XYGM` canonical metadata bytes, pinned by
+  `tests/fixtures/geo_cross_host.json` (`tests/test_geo_cross_host.py` and
+  `packages/xy-node/test/geo-cross-host.test.mjs`). Node takes no Arrow
+  dependency; parity runs through the Python-authored golden. Error *messages*
+  may differ; the stable `XYG_GEO_*` codes (-1..-14) may not. Direct-browser
+  WASM descriptor ingest is the follow-on slice of #47.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

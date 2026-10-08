@@ -14,6 +14,18 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 379: GeoColumn closure (#47). Rust now also rejects holes outside their
+  exterior ring (`-11`), one-vertex line parts and zero-area rings (`-12`), and
+  null features that own vertices or parts (`-14`), checks the byte budget
+  before per-vertex work, and records ring orientation (`1` CCW / `2` CW)
+  without rewriting source vertices. New exports `xyg_geo_column_metadata`
+  (canonical `XYGM` v1 metadata, byte-identical across hosts),
+  `xyg_geo_column_plane_lens`, and all-or-nothing `xyg_geo_column_copy`
+  (`-13` on undersized output) let Python and Node read back the retained f64
+  geometry, offsets, validity, and feature IDs. `GeoViewport::project_column`
+  adds an engine-level rebuildable f32 cache keyed by camera plus `XYGM`
+  digest. Specs: `geospatial.md`, `wire-protocol.md`, `host-parity.md`,
+  `dual-host-parity-matrix.md`, `rust-engine.md`.
 - ABI 60: Rust-owned canonical GraphForge identity/topology projection handles,
   including opaque node/edge UUIDs, dense endpoints, and optional parents.
 - ABI 59: Rust-owned canonical f64 stream store (`xyg_stream_new` /

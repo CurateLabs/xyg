@@ -141,6 +141,13 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/xyts-conformance.test.mjs
 
+      # GeoColumn ingest (#47): Python-authored golden XYGM metadata must be
+      # byte-identical through the Node descriptor path on this exact core.
+      - name: GeoColumn Python/Node parity
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs
+
       - name: Build JS client
         run: |
           # Browser probes exercise the real fail-closed Rust tick attachment;

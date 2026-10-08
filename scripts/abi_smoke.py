@@ -2998,6 +2998,35 @@ def load() -> ctypes.CDLL:
     lib.xyg_geo_column_geometry.argtypes = [ctypes.c_uint64]
     lib.xyg_geo_column_crs.restype = ctypes.c_uint32
     lib.xyg_geo_column_crs.argtypes = [ctypes.c_uint64]
+    lib.xyg_geo_column_metadata.restype = ctypes.c_size_t
+    lib.xyg_geo_column_metadata.argtypes = [
+        ctypes.c_uint64,
+        ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_size_t,
+    ]
+    lib.xyg_geo_column_plane_lens.restype = ctypes.c_int32
+    lib.xyg_geo_column_plane_lens.argtypes = [
+        ctypes.c_uint64,
+        ctypes.POINTER(ctypes.c_uint64),
+    ]
+    lib.xyg_geo_column_copy.restype = ctypes.c_int32
+    lib.xyg_geo_column_copy.argtypes = [
+        ctypes.c_uint64,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint64),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_size_t,
+    ]
     lib.xyg_pyramid_build_from_stream.restype = ctypes.c_uint64
     lib.xyg_pyramid_build_from_stream.argtypes = [
         ctypes.c_uint64,
@@ -9156,6 +9185,101 @@ def main() -> None:
         ctypes.byref(err),
     )
     ok(bad == 0 and err.value == -2, "geo_column_new rejects unsupported CRS")
+
+    # Geographic column read-back, canonical metadata, and new validation codes
+    # (ABI 379): CCW shell + CW hole polygon with an explicit feature id.
+    def _sq(x0, y0, x1, y1, ccw):
+        if ccw:
+            return [x0, y0, x1, y0, x1, y1, x0, y1, x0, y0]
+        return [x0, y0, x0, y1, x1, y1, x1, y0, x0, y0]
+
+    poly_xy = _sq(0.0, 0.0, 10.0, 10.0, True) + _sq(2.0, 2.0, 4.0, 4.0, False)
+    p_xy = (ctypes.c_double * 20)(*poly_xy)
+    p_validity = (ctypes.c_uint8 * 1)(1)
+    p_ids = (ctypes.c_uint64 * 1)(77)
+    p_o0 = (ctypes.c_uint32 * 2)(0, 2)
+    p_o1 = (ctypes.c_uint32 * 3)(0, 5, 10)
+    ph = lib.xyg_geo_column_new(
+        3, 4326, p_xy, 20, p_validity, 1, p_ids, p_o0, 2, p_o1, 3, None, 0, ctypes.byref(err)
+    )
+    ok(ph != 0 and err.value == 0, "geo_column_new polygon with hole")
+    lens = (ctypes.c_uint64 * 7)()
+    ok(lib.xyg_geo_column_plane_lens(ctypes.c_uint64(ph), lens) == 0, "geo plane_lens")
+    ok(list(lens) == [20, 1, 1, 2, 3, 0, 2], f"geo plane_lens values {list(lens)}")
+    ok(lib.xyg_geo_column_plane_lens(ctypes.c_uint64(ph), None) == -1, "geo plane_lens null out")
+    need = int(lib.xyg_geo_column_metadata(ctypes.c_uint64(ph), None, 0))
+    ok(need > 0 and need % 8 == 0 and need != 2**64 - 1, "geo metadata size query")
+    meta = (ctypes.c_uint8 * need)()
+    ok(int(lib.xyg_geo_column_metadata(ctypes.c_uint64(ph), meta, need)) == need, "geo metadata")
+    meta_bytes = bytes(meta)
+    ok(meta_bytes[:4] == b"XYGM", "geo metadata magic")
+    ok(int.from_bytes(meta_bytes[4:8], "little") == 1, "geo metadata version")
+    ok(int.from_bytes(meta_bytes[8:12], "little") == 3, "geo metadata geometry")
+    ok(int.from_bytes(meta_bytes[12:16], "little") == 4326, "geo metadata crs")
+    ok(int.from_bytes(meta_bytes[64:72], "little") == 2, "geo metadata ring count")
+    short = (ctypes.c_uint8 * (need - 1))(*([0xAA] * (need - 1)))
+    ok(
+        int(lib.xyg_geo_column_metadata(ctypes.c_uint64(ph), short, need - 1)) == need
+        and bytes(short) == b"\xaa" * (need - 1),
+        "geo metadata undersized buffer untouched",
+    )
+    o_xy = (ctypes.c_double * 20)()
+    o_val = (ctypes.c_uint8 * 1)()
+    o_ids = (ctypes.c_uint64 * 1)()
+    o_o0 = (ctypes.c_uint32 * 2)()
+    o_o1 = (ctypes.c_uint32 * 3)()
+    o_orient = (ctypes.c_uint8 * 2)()
+    st = lib.xyg_geo_column_copy(
+        ctypes.c_uint64(ph), o_xy, 20, o_val, 1, o_ids, 1, o_o0, 2, o_o1, 3, None, 0, o_orient, 2
+    )
+    ok(st == 0, "geo_column_copy")
+    ok(list(o_xy) == poly_xy, "geo copy xy bitwise equals input (source order kept)")
+    ok(
+        list(o_val) == [1] and list(o_ids) == [77] and list(o_o0) == [0, 2],
+        "geo copy validity/ids/offsets0",
+    )
+    ok(list(o_o1) == [0, 5, 10] and list(o_orient) == [1, 2], "geo copy offsets1/orientations")
+    u_xy = (ctypes.c_double * 20)(*([-1.0] * 20))
+    u_val = (ctypes.c_uint8 * 1)(7)
+    st = lib.xyg_geo_column_copy(
+        ctypes.c_uint64(ph), u_xy, 20, u_val, 1, o_ids, 1, o_o0, 2, o_o1, 3, None, 0, o_orient, 1
+    )
+    ok(st == -13, "geo_column_copy undersized plane -> OutputCapacity")
+    ok(
+        all(v == -1.0 for v in u_xy) and list(u_val) == [7],
+        "geo_column_copy undersized leaves buffers untouched",
+    )
+    ok(lib.xyg_geo_column_free(ctypes.c_uint64(ph)) == 1, "geo free polygon")
+    ok(
+        int(lib.xyg_geo_column_metadata(ctypes.c_uint64(ph), None, 0)) == 2**64 - 1,
+        "geo metadata stale handle",
+    )
+    ok(lib.xyg_geo_column_plane_lens(ctypes.c_uint64(ph), lens) == -10, "geo plane_lens stale")
+    st = lib.xyg_geo_column_copy(
+        ctypes.c_uint64(ph), o_xy, 20, o_val, 1, o_ids, 1, o_o0, 2, o_o1, 3, None, 0, o_orient, 2
+    )
+    ok(st == -10, "geo copy stale handle")
+
+    hole_xy = (ctypes.c_double * 20)(
+        *(_sq(0.0, 0.0, 10.0, 10.0, True) + _sq(20.0, 20.0, 22.0, 22.0, False))
+    )
+    gbad = lib.xyg_geo_column_new(
+        3, 4326, hole_xy, 20, p_validity, 1, None, p_o0, 2, p_o1, 3, None, 0, ctypes.byref(err)
+    )
+    ok(gbad == 0 and err.value == -11, "geo_column_new hole outside shell -> -11")
+    one_xy = (ctypes.c_double * 2)(-105.0, 39.7)
+    one_o0 = (ctypes.c_uint32 * 2)(0, 1)
+    gbad = lib.xyg_geo_column_new(
+        2, 4326, one_xy, 2, p_validity, 1, None, one_o0, 2, None, 0, None, 0, ctypes.byref(err)
+    )
+    ok(gbad == 0 and err.value == -12, "geo_column_new one-vertex line -> -12")
+    null_validity = (ctypes.c_uint8 * 1)(0)
+    line_xy = (ctypes.c_double * 4)(-105.0, 39.7, -104.9, 39.8)
+    line_o0 = (ctypes.c_uint32 * 2)(0, 2)
+    gbad = lib.xyg_geo_column_new(
+        2, 4326, line_xy, 4, null_validity, 1, None, line_o0, 2, None, 0, None, 0, ctypes.byref(err)
+    )
+    ok(gbad == 0 and err.value == -14, "geo_column_new null feature with vertices -> -14")
 
     # Mean-color density (LOD doc §2): per-cell mean point color + count-only
     # alpha. One red and one blue point per side of a 2x1 grid, then both in

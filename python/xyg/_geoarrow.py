@@ -46,6 +46,8 @@ def _parse_crs(metadata: dict[str, str]) -> int:
         payload = json.loads(meta_json)
     except json.JSONDecodeError as exc:
         raise _native.GeoNativeError(-1) from exc
+    if not isinstance(payload, dict):
+        raise _native.GeoNativeError(-2)
     crs = payload.get("crs")
     if not isinstance(crs, str):
         raise _native.GeoNativeError(-2)
@@ -96,24 +98,40 @@ def _as_array(column: Any) -> Any:
     raise TypeError("GeoArrow ingest expects a pyarrow Array or ChunkedArray")
 
 
-def _coordinate_xy(coords: Any) -> np.ndarray:
-    """Interleave Struct<x:f64, y:f64> into a contiguous f64 [x0,y0,…]."""
-    if coords is None or len(coords) == 0:
-        return np.empty(0, dtype=np.float64)
-    x = np.ascontiguousarray(coords.field("x").to_numpy(zero_copy_only=False), dtype=np.float64)
-    y = np.ascontiguousarray(coords.field("y").to_numpy(zero_copy_only=False), dtype=np.float64)
-    if len(x) != len(y):
-        raise _native.GeoNativeError(-1)
-    out = np.empty(len(x) * 2, dtype=np.float64)
-    out[0::2] = x
-    out[1::2] = y
+def _coordinate_xy(coords: Any, validity: np.ndarray | None = None) -> np.ndarray:
+    """Pack certified separated XY f64, preserving nullable point alignment."""
+    pa = _require_pyarrow()
+    if (
+        not pa.types.is_struct(coords.type)
+        or coords.type.names != ["x", "y"]
+        or any(coords.type.field(name).type != pa.float64() for name in ("x", "y"))
+    ):
+        raise _native.GeoNativeError(-3)
+    present = np.ones(len(coords), dtype=bool) if validity is None else validity.astype(bool)
+    if validity is None and coords.null_count:
+        raise _native.GeoNativeError(-5)
+    for name in ("x", "y"):
+        child = coords.field(name)
+        if child.null_count and np.any(child.is_null().to_numpy(zero_copy_only=False) & present):
+            raise _native.GeoNativeError(-5)
+    x = coords.field("x").to_numpy(zero_copy_only=False)
+    y = coords.field("y").to_numpy(zero_copy_only=False)
+    out = np.empty(int(present.sum()) * 2, dtype=np.float64)
+    out[0::2] = x[present]
+    out[1::2] = y[present]
     return out
 
 
-def _list_offsets(array: Any) -> np.ndarray:
-    # Arrow list offsets are int32; copy to owned u32 for the descriptor.
+def _list_children(array: Any) -> tuple[np.ndarray, Any]:
+    """Rebase one Arrow List slice and retain only its referenced children."""
+    pa = _require_pyarrow()
+    if not pa.types.is_list(array.type):
+        raise _native.GeoNativeError(-3)
     offsets = array.offsets.to_numpy(zero_copy_only=False)
-    return np.ascontiguousarray(offsets, dtype=np.uint32)
+    start, end = int(offsets[0]), int(offsets[-1])
+    return np.ascontiguousarray(offsets - start, dtype=np.uint32), array.values.slice(
+        start, end - start
+    )
 
 
 def _validity(array: Any) -> np.ndarray:
@@ -124,8 +142,43 @@ def _validity(array: Any) -> np.ndarray:
     return np.ascontiguousarray(bits.to_numpy(zero_copy_only=False), dtype=np.uint8)
 
 
-def descriptor_from_geoarrow(column: Any, field: Any) -> dict[str, Any]:
-    """Decode a GeoArrow array into keyword args for ``geo_column_new``."""
+def _feature_ids(feature_ids: Any, n_features: int) -> np.ndarray | None:
+    """Normalise explicit feature identity to a contiguous u64 array.
+
+    Accepts a pyarrow ``Array`` / ``ChunkedArray`` (int64 or uint64, no nulls),
+    a numpy array, or any sequence of non-negative integers. Length must equal
+    the feature count; anything else is the Rust-stable ``-1`` (incomplete or
+    inconsistent descriptor), never a silent truncation or re-numbering.
+    """
+    if feature_ids is None:
+        return None
+    if hasattr(feature_ids, "null_count") or hasattr(feature_ids, "num_chunks"):
+        arrow_ids = feature_ids
+        if hasattr(arrow_ids, "num_chunks"):
+            arrow_ids = _as_array(arrow_ids)
+        if arrow_ids.null_count:
+            raise _native.GeoNativeError(-1)
+        raw = np.asarray(arrow_ids.to_numpy(zero_copy_only=False))
+    else:
+        raw = np.asarray(feature_ids)
+    if raw.ndim != 1 or len(raw) != n_features:
+        raise _native.GeoNativeError(-1)
+    if raw.dtype.kind == "u":
+        return np.ascontiguousarray(raw, dtype=np.uint64)
+    if raw.dtype.kind != "i":
+        raise _native.GeoNativeError(-1)
+    if len(raw) and int(raw.min()) < 0:
+        raise _native.GeoNativeError(-1)
+    return np.ascontiguousarray(raw, dtype=np.uint64)
+
+
+def descriptor_from_geoarrow(column: Any, field: Any, feature_ids: Any = None) -> dict[str, Any]:
+    """Decode a GeoArrow array into keyword args for ``geo_column_new``.
+
+    ``feature_ids`` (optional) carries producer feature identity (for example
+    GraphForge row IDs) through to Rust unchanged. The returned dict always
+    holds a ``feature_ids`` key: ``None`` when absent, else a ``uint64`` array.
+    """
     array = _as_array(column)
     if field is None:
         raise TypeError("GeoArrow ingest requires an Arrow Field carrying extension metadata")
@@ -133,78 +186,41 @@ def descriptor_from_geoarrow(column: Any, field: Any) -> dict[str, Any]:
     geometry = _geometry_kind(field)
     crs = _parse_crs(_field_metadata_str(field))
     validity = _validity(array)
+    ids = _feature_ids(feature_ids, len(array))
 
-    if geometry == _native.GEO_GEOMETRY_POINT:
-        # Null points contribute no vertices; pack only present rows.
-        if array.null_count == 0:
-            xy = _coordinate_xy(array)
-        else:
-            present = [array[i].as_py() for i in range(len(array)) if array[i].is_valid]
-            if not present:
-                xy = np.empty(0, dtype=np.float64)
-            else:
-                xs = np.array([p["x"] for p in present], dtype=np.float64)
-                ys = np.array([p["y"] for p in present], dtype=np.float64)
-                xy = np.empty(len(xs) * 2, dtype=np.float64)
-                xy[0::2] = xs
-                xy[1::2] = ys
-        return {
-            "geometry": geometry,
-            "crs": crs,
-            "xy": xy,
-            "validity": validity,
-            "offsets0": None,
-            "offsets1": None,
-            "offsets2": None,
-        }
-
-    if geometry in (_native.GEO_GEOMETRY_LINESTRING, _native.GEO_GEOMETRY_MULTIPOINT):
-        offsets0 = _list_offsets(array)
-        xy = _coordinate_xy(array.values)
-        return {
-            "geometry": geometry,
-            "crs": crs,
-            "xy": xy,
-            "validity": validity,
-            "offsets0": offsets0,
-            "offsets1": None,
-            "offsets2": None,
-        }
-
-    if geometry in (_native.GEO_GEOMETRY_POLYGON, _native.GEO_GEOMETRY_MULTILINESTRING):
-        offsets0 = _list_offsets(array)
-        rings = array.values
-        offsets1 = _list_offsets(rings)
-        xy = _coordinate_xy(rings.values)
-        return {
-            "geometry": geometry,
-            "crs": crs,
-            "xy": xy,
-            "validity": validity,
-            "offsets0": offsets0,
-            "offsets1": offsets1,
-            "offsets2": None,
-        }
-
-    # MultiPolygon
-    offsets0 = _list_offsets(array)
-    polygons = array.values
-    offsets1 = _list_offsets(polygons)
-    rings = polygons.values
-    offsets2 = _list_offsets(rings)
-    xy = _coordinate_xy(rings.values)
+    if array.type != field.type:
+        raise _native.GeoNativeError(-3)
+    depth = {
+        _native.GEO_GEOMETRY_POINT: 0,
+        _native.GEO_GEOMETRY_LINESTRING: 1,
+        _native.GEO_GEOMETRY_MULTIPOINT: 1,
+        _native.GEO_GEOMETRY_POLYGON: 2,
+        _native.GEO_GEOMETRY_MULTILINESTRING: 2,
+        _native.GEO_GEOMETRY_MULTIPOLYGON: 3,
+    }[geometry]
+    planes: list[np.ndarray | None] = [None, None, None]
+    children = array
+    for level in range(depth):
+        if level > 0 and children.null_count:
+            raise _native.GeoNativeError(-5)
+        planes[level], children = _list_children(children)
+    xy = _coordinate_xy(children, validity if depth == 0 else None)
     return {
         "geometry": geometry,
         "crs": crs,
         "xy": xy,
         "validity": validity,
-        "offsets0": offsets0,
-        "offsets1": offsets1,
-        "offsets2": offsets2,
+        "feature_ids": ids,
+        "offsets0": planes[0],
+        "offsets1": planes[1],
+        "offsets2": planes[2],
     }
 
 
-def ingest_geoarrow(column: Any, field: Any) -> int:
-    """Decode GeoArrow and publish a Rust-owned ``GeoColumn`` handle."""
-    desc = descriptor_from_geoarrow(column, field)
+def ingest_geoarrow(column: Any, field: Any, feature_ids: Any = None) -> int:
+    """Decode GeoArrow and publish a Rust-owned ``GeoColumn`` handle.
+
+    ``feature_ids`` is forwarded to Rust so producer identity survives ingest.
+    """
+    desc = descriptor_from_geoarrow(column, field, feature_ids=feature_ids)
     return _native.geo_column_new(**desc)

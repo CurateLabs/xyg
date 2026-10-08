@@ -322,10 +322,15 @@ crates/
                         #   memory; xyg-core exposes them as opaque u64 handles
                         #   over the ABI (§3.3).
     geo.rs              # GeoColumn / GeoArrow descriptor ingest, CRS + geometry
-                        #   validation (EPSG:4326/3857); opaque handles (#47)
+                        #   validation (EPSG:4326/3857, offsets, holes, null parts,
+                        #   degenerate parts, budgets), ring orientation record,
+                        #   canonical XYGM v1 metadata, opaque handles; ABI 379
+                        #   `xyg_geo_column_metadata` / `_plane_lens` / `_copy`
+                        #   read-back (#47; see geospatial.md).
     geo_viewport.rs     # GeoViewport camera/projection authority: Web Mercator,
-                        #   fit/pan/zoom/bearing, f32 offset encode (#48)
-                        #   validation, feature identity (#47; see geospatial.md).
+                        #   fit/pan/zoom/bearing, f32 offset encode (#48);
+                        #   `project_column` rebuildable derived cache keyed by
+                        #   `GeoDerivedKey` (camera + XYGM digest; §27).
     edge_route.rs       # directed multigraph paint routing (parallels/loops/arrows)
     graph.rs            # graph display layouts, progressive force ticks, CSR,
                         #   graph LOD/cluster/render-graph decisions

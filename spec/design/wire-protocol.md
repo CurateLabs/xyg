@@ -27,6 +27,21 @@ u8 validity plane ([temporal.md](temporal.md), ABI 71). Hosts must not encode
 temporal samples as f64 milliseconds or JSON numbers on the product wire; timezone
 and precision travel as explicit metadata beside the i64 buffers.
 
+### Canonical geographic values
+
+Geographic source geometry ([geospatial.md](geospatial.md), ABI 379) is a
+host/native boundary, never a browser Arrow or GeoJSON feature. Canonical
+geometry moves as raw typed buffers: interleaved f64 `xy` (source CRS units,
+EPSG:4326 or EPSG:3857, bit-exact), u32 offset planes, a u8 validity plane, u64
+feature IDs, and a u8 ring-orientation plane. The canonical `XYGM` v1 metadata
+document (geometry, CRS, counts, per-plane digests, GeoArrow extension name and
+metadata) travels beside the buffers; hosts must return the same `XYGM` bytes
+for the same column. Geographic coordinates and IDs are never encoded as JSON
+numbers. Anything the browser paints is a derived offset-encoded f32 cache with
+source feature IDs, rebuildable from the f64 column and keyed by camera plus
+`XYGM` digest (§4/§16/§27/§29); the browser receives typed buffers and metadata
+only, never imported Arrow modules or full JSON geometry rows.
+
 ### Temporal coordination (#44)
 
 Linked-view scrubbing uses revisioned `CoordinationEvent` payloads
