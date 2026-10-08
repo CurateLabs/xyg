@@ -8,6 +8,8 @@ and frozen point/outline scene lowering (`XYGP` to canonical `XYGS`) with native
 Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
 zero-pitch frozen camera scope; live camera transitions remain #48, layer/fill
 surfaces #49, and LOD/export #50.
+Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
+mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
 ## Product rule
 
