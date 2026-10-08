@@ -1,14 +1,17 @@
 # Geospatial data contract — GeoColumn, GeoArrow ingress, GeoViewport
 
 **Status:** GeoColumn native validation, canonical metadata, host read-back
-and derived-cache inputs (#47; current ABI 380) + GeoViewport perspective camera (#48).
-MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
-Direct-browser WASM ABI 30 shares typed descriptor ingestion (`XYGD` to `XYGM`)
-and frozen point/outline scene lowering (`XYGP` to canonical `XYGS`) with native
-Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
-frozen camera scope. Rust now supplies perspective camera transitions, clipped
-route/polygon caches and geometric visible membership (#48); layer/fill surfaces
-remain #49 and LOD/export #50.
+and derived-cache inputs (#47; current ABI 381), GeoViewport perspective camera
+(#48), and the seven-family geographic catalog/interaction processor (#49).
+Direct-browser WASM ABI 31 shares typed descriptor ingestion (`XYGD` to `XYGM`),
+frozen point/outline scene lowering (`XYGP` to canonical `XYGS`), perspective
+camera transitions and catalog/interaction lowering (`XYLK` to `XYLM`) with
+native Rust. Scene32/painter15 supplies explicit Triangle/Segment records and
+instanced style planes. See [geographic-layers.md](geographic-layers.md),
+[geo-layer-protocol.md](geo-layer-protocol.md) and the
+[geographic capability matrix](geographic-capabilities.md) for the catalog,
+interaction, optional MapLibre and bounded conformance scope. Geographic LOD,
+retained massive sources, tiles and frozen spatiotemporal export remain #50.
 Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
 mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
