@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 29,
+  "abi_version": 30,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -129,6 +129,7 @@
     "max_nodes": 1024
   },
   "exports": [
+    {"name": "xyg_wasm_geo_viewport_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {
       "name": "xyg_wasm_abi_version",
       "params": [],

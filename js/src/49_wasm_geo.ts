@@ -15,7 +15,7 @@ export function encodeWasmGeoDescriptor(input: XygGeoDescriptor): ArrayBuffer {
   return encodeGeoPlanes(input, 0);
 }
 
-function encodeGeoPlanes(input: XygGeoDescriptor, prefix: number): ArrayBuffer {
+export function encodeGeoPlanes(input: XygGeoDescriptor, prefix: number): ArrayBuffer {
   if (!(input.xy instanceof Float64Array) || !(input.validity instanceof Uint8Array)
       || input.xy.length % 2 || (input.featureIds != null && !(input.featureIds instanceof BigUint64Array))) {
     throw new TypeError("geographic source planes must be typed arrays");
@@ -67,6 +67,7 @@ export interface XygFrozenGeoScene {
 
 /** Frames an authoring camera/style snapshot; Rust owns all admission/lowering. */
 export function encodeWasmGeoSceneRequest(input: XygGeoDescriptor, camera: XygFrozenGeoScene): ArrayBuffer {
+  if (camera.worldWrap !== undefined && typeof camera.worldWrap !== "boolean") throw new TypeError("worldWrap must be a boolean");
   const result = encodeGeoPlanes(input, 128), bytes = new Uint8Array(result), view = new DataView(result);
   bytes.set([88, 89, 71, 80]); view.setUint32(4, 1, true); view.setUint32(8, 128, true);
   let flags = camera.worldWrap ? 1 : 0;

@@ -601,7 +601,12 @@ export class XygWasmWorker {
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const requestId = this.allocateRequest(), result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
     this.worker.postMessage({ type: "geo.ingest", requestId, sequence, request }, [request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer geographic request");
+    }
     return { requestId, sequence, result, cancel: () => {
       const pending = this.pending.get(requestId); if (!pending) return;
       this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "geographic ingestion was cancelled", 6));
@@ -617,12 +622,34 @@ export class XygWasmWorker {
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const requestId = this.allocateRequest(), result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
     this.worker.postMessage({ type: "geo.scene", requestId, sequence, request }, [request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer geographic request");
+    }
     return { requestId, sequence, result, cancel: () => {
       const pending = this.pending.get(requestId); if (!pending) return;
       this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "geographic Scene compilation was cancelled", 6));
       if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
     } };
+  }
+
+  /** Execute one sequenced Rust-owned geographic camera command. */
+  geoViewportExecute(request: ArrayBuffer, options: {sequence?:number} = {}): XygWasmTask<ArrayBuffer> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength < 128 || request.byteLength > this.maxArenaBytes) throw new TypeError("camera request must be a bounded ArrayBuffer");
+    const sequence=options.sequence??this.nextSequence++;
+    if(!Number.isInteger(sequence)||sequence<=0||sequence>0xffffffff)throw new RangeError("sequence must be a nonzero u32");
+    this.nextSequence=Math.max(this.nextSequence,sequence+1);
+    const requestId=this.allocateRequest(), result=this.promiseFor<ArrayBuffer>(requestId);
+    try {
+      this.worker.postMessage({type:"geo.viewport",requestId,sequence,request},[request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer camera request");
+    }
+    return {requestId,sequence,result,cancel:()=>{const pending=this.pending.get(requestId);if(!pending)return;this.pending.delete(requestId);pending.reject(new XygWasmError("XYG_WASM_CANCELLED","camera command was cancelled",6));if(!this.disposed)this.worker.postMessage({type:"cancel",requestId,sequence});}};
   }
 
   /** Submit one packed temporal command to the shared Rust state machine. */
