@@ -690,6 +690,7 @@ Forbidden:
 | `crates/xyg-wasm/src/lib.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 25 exports engine-owned default-palette version/rows/indexed RGBA8 for #868 | #59 |
 | `crates/xyg-wasm/src/compound.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/graphforge.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 27 GraphForge `XYGQ` → `XYGF` compose | #59 |
+| `crates/xyg-wasm/src/geo.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 28 GeoColumn `XYGD` → `XYGM` ingest | #59 |
 | `crates/xyg-wasm/src/dashboard.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/compile.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/bin/xyts_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
@@ -817,6 +818,7 @@ Forbidden:
 | `js/src/48_wasm_scene.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_compound.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graphforge.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GraphForge request framing, document decoding, stable-ID identity, text-only tables | #59 |
+| `js/src/49_wasm_geo.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
 | `js/src/49_wasm_dashboard.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_columns.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |

@@ -544,3 +544,12 @@ installed `xyg` distribution, repairing a stale link if the install moved.
 Node `toHtml` / VS Code webviews load the same host-neutral artifact, not the
 Python tree. The protocol check exists for the case that survives this: a
 browser holding a cached bundle against a restarted kernel.
+
+### Packed browser geographic authoring ingress
+
+`XYGD` v1 transfers little-endian raw f64 source coordinates, u8 validity,
+u64 identities and u32 offset planes into the shared WASM `GeoColumn` validator.
+It returns the native-equivalent `XYGM` metadata document. This source ingest
+is separate from live offset-f32 painter buffers; no JSON coordinate numbers
+enter the paint/data wire. Header, padding, lifecycle and peak admission are
+specified in [browser-wasm.md](browser-wasm.md#geocolumn-descriptor-ingestion-xygd-to-xygm).

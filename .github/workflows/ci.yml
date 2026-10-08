@@ -162,6 +162,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
+          node --test packages/xy-node/test/geo-wasm-parity.test.mjs
 
       - name: JS parses (ESM + IIFE)
         run: |
@@ -423,6 +424,9 @@ jobs:
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
         run: node scripts/wasm_foundation_smoke.mjs
+      - name: Strict-CSP GeoColumn ingestion smoke
+        timeout-minutes: 10
+        run: node scripts/geo_wasm_smoke.mjs
       - name: Strict-CSP GraphForge composition smoke
         timeout-minutes: 10
         run: node scripts/graphforge_wasm_smoke.mjs

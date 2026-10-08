@@ -1882,3 +1882,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   coalesce into serialized calls through that same Rust boundary. The watcher
   performs no ranking, and its controller can be disposed without destroying
   any chart or canonical state.
+
+### Direct-browser GeoColumn ingress
+
+WASM ABI 28 `XYGD` → `XYGM` shares Rust validation and canonical metadata with
+Python/Node ABI 379. The browser's `encodeWasmGeoDescriptor` and
+`XygWasmWorker.geoColumnIngest` frame/transfer typed planes only. Source
+geometry, CRS, null topology, identity and limit policy remain Rust-owned.
+The committed six-kind goldens and stable failures run against the actual
+wasm32 module in `packages/xy-node/test/geo-wasm-parity.test.mjs`. Geographic
+scene projection remains the GeoViewport/layer follow-on (#48/#49).

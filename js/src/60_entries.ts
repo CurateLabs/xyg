@@ -365,3 +365,6 @@ export type { XygWasmSemanticGraphInput } from "./49_wasm_semantic_graph";
 export type { XygCompoundAction, XygWasmCompoundTransitionInput, XygWasmCompoundTransitionResult } from "./49_wasm_compound";
 export type { XygGraphForgeInput, XygGraphForgeLayerInput, XygGraphForgeIdentity, XygGraphForgeIntent, XygWasmGraphForgeView } from "./49_wasm_graphforge";
 export default { render, decodeFrame };
+
+export { encodeWasmGeoDescriptor } from "./49_wasm_geo";
+export type { XygGeoDescriptor } from "./49_wasm_geo";

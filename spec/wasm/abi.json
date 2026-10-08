@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 27,
+  "abi_version": 28,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -201,6 +201,16 @@
         "usize"
       ],
       "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_geo_column_ingest",
+      "params": ["u32", "u32", "usize", "usize"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_geo_metadata_version",
+      "params": [],
+      "result": "u32"
     },
     {
       "name": "xyg_wasm_graphforge_compose",
