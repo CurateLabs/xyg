@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 29
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 30
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -65,7 +65,7 @@ deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
 
 M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
-current WASM ABI 29 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+current WASM ABI 30 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
 was introduced in WASM ABI 23/native ABI 360. The native function
 uses the capacity-aware probe/write contract and returns `usize::MAX` for an
 invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
@@ -214,8 +214,23 @@ interactive path:
 | `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
 | `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
 
+ABI 30 camera transport and closed polygon caches make the default O3 artifact
+1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
+one codegen unit and stripping, while setting LLVM's inline threshold to 150.
+Native builds remain unchanged. The shipped artifact is 1,028,586 raw bytes and
+376,783 gzip bytes, below the unchanged 1 MiB gate. This is a measured size/runtime
+tradeoff, not a claim of a speedup: four ABBA pairs at 100/10,000/100,000 rows
+produced byte-identical outputs across GraphForge composition, geographic Scene
+compile and camera-column projection. At 10k/100k rows, median candidate costs
+were 0.8–4.8% above baseline (about 1.89ms at the largest GraphForge case); the
+100-row GraphForge case costs about 4.5µs more. These synthetic Arrow contracts
+measure XYG composition, not GraphForge algorithm execution, browser paint or
+massive-data behavior. Raw samples, environment, input generator and reproduction
+commands are recorded in `spec/benchmarks/wasm-inline-150-local.json`.
+The earlier global size-optimized profiles remain rejected.
+
 `js/package-wasm.mjs` fails the build above a 1 MiB budget, so further growth
-is a recorded decision rather than drift.
+requires a recorded decision rather than drift.
 
 `XYTS` magic, header and descriptor offsets, flags, and mark-kind codes are
 owned by `spec/wasm/abi.json` and emitted into generated TypeScript and Rust
@@ -314,7 +329,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 29. ABI 29 adds frozen geographic `XYGP` → `XYGS` compilation
+`WASM_ABI_VERSION` is 30. ABI 30 adds the stateless typed camera protocol
+(`xyg_wasm_geo_viewport_execute`; [contract](geo-viewport-protocol.md)). ABI 29 adds frozen geographic `XYGP` → `XYGS` compilation
 (`xyg_wasm_geo_scene_compile`). ABI 28 adds sequenced single-use GeoColumn
 ingestion (`xyg_wasm_geo_column_ingest`) and `xyg_wasm_geo_metadata_version`.
 ABI 27 adds `xyg_wasm_graphforge_compose` and
@@ -528,7 +544,12 @@ reinterpreted with the wider descriptor contract.
   therefore drop the staging allocation rather than retaining either `Vec`
   capacity across operations; a large rejected request cannot inflate a later
   small request's unaccounted resident baseline.
-- Sequence zero is reserved. Lower/repeated sequences fail as stale. Cancelled
+- Sequence zero is reserved. Lower/repeated sequences fail as stale. Worker
+  aggregate-stream begin participates in the same operation watermark as
+  geographic/camera, scene, aggregate, and graph requests. Deferred operations
+  recheck admission before cancelling lanes or staging bytes, so a stale or
+  zero camera call preserves a newer stream and a current camera supersedes it.
+  Cancelled
   sequences fail with a stable cancelled status. ABI 11 starts `XYTS`/`XYCC`
   compiles with `xyg_wasm_scene_compile_begin` and advances real Rust geometry
   decode/validation in 4,096-record Worker checkpoints. Progress reports the
@@ -794,8 +815,9 @@ the encoder copies them. The worker defers one task turn so immediate cancel
 can suppress execution. Requests share the worker's operation sequence lane;
 zero/stale/cancelled sequences fail, and disposal rejects pending tasks. A
 synchronous call cannot be interrupted mid-validation; shared geometry and
-hole-work ceilings bound its work. Frozen geographic point/outline scene lowering is specified below; live camera
-transitions remain #48, map layer/fill programs #49, and LOD/export #50.
+hole-work ceilings bound its work. Frozen geographic point/outline Scene lowering
+is specified below; live camera transitions use XYVC/XYVR. Map layer/fill programs
+remain #49, and LOD/export #50.
 
 Rust rejects before allocating typed planes when simultaneous transferred JS
 request bytes, staging capacity,
@@ -863,8 +885,9 @@ Only output survives execution; no canonical source is retained indefinitely.
 The native `geo_scene_conformance` executable bounds stdin to budget + 1 before
 reading and uses exactly the same processor. Resource failures use status 3 and
 `XYG_GEO_RESOURCE_LIMIT`; invalid geometry/framing/style uses status 2 and the
-shared `XYG_GEO_*` code. Nonzero pitch returns status 2 with
-`XYG_GEO_SCENE_UNSUPPORTED`. Zero/stale/cancelled sequences preserve newer active
+shared `XYG_GEO_*` code. Pitch within the certified −60°..60° ground-plane
+range uses the shared frustum processor; out-of-range pitch fails admission.
+Zero/stale/cancelled sequences preserve newer active
 operations; accepted calls supersede them and release staging on every outcome.
 
 `packages/xy-node/test/geo-scene-wasm-parity.test.mjs` compares native executable
@@ -880,6 +903,15 @@ full u64 identity, independent outline runs, cancellation and recovery. The
 hydrated deep-zoom upload independently retains the same separation within
 1e-4 CSS pixel (the existing painter stores screen coordinates as f32).
 
-This bounded frozen zero-pitch point/outline path supplies #47's actual derived
-scene parity evidence. Live camera transitions/frustum policy remain #48;
+The bounded frozen point/outline path supplies #47's actual derived Scene parity
+evidence. ABI 30 also supports certified perspective pitch through the same
+GeoViewport frustum processor; live transitions use XYVC/XYVR below;
 MapLibre/layers/fills remain #49 and geographic LOD/export remains #50.
+
+
+The camera protocol is a separate sequenced geographic command in the existing
+Worker lane. `XygWasmWorker.geoViewportExecute` transfers `XYVC` and resolves
+with aligned `XYVR` typed planes. The shared Rust processor owns normalization,
+transitions, inverse/projection, visible IDs/bounds, and closed ring topology.
+[The exact byte and allocation contract](geo-viewport-protocol.md) is normative.
+Actual wasm32/native/C-ABI parity is `geo-viewport-wasm-parity.test.mjs`.

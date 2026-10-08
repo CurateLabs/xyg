@@ -558,6 +558,14 @@ specified in [browser-wasm.md](browser-wasm.md#geocolumn-descriptor-ingestion-xy
 through the same Rust engine to ordinary `XYGS`. WASM ABI 29 exposes the
 sequenced `geoSceneCompile` worker task; a bounded native conformance executable
 proves the same output. This adds no geographic painter schema or JSON geometry
-rows. Its zero-pitch point/outline scope, framing, defaults, admission and parity
+rows. Its flat-ground perspective point/outline scope, framing, defaults, admission and parity
 tolerances are specified in [browser-wasm.md](browser-wasm.md) and
-[geospatial.md](geospatial.md). Live cameras and fills remain #48/#49.
+[geospatial.md](geospatial.md). Live cameras use XYVC/XYVR below; fills remain #49.
+
+
+`XYVC` v1 geographic camera requests transport seven f64 camera fields and up to
+five f64 operation arguments, optionally followed by XYGD source ingress.
+`XYVR` v1 replies use a 256-byte canonical header and eight-byte-aligned f32
+geometry/u64 identity/u32 offset/u8 ring-role planes. No camera/projection numeric
+arrays move as JSON. [The camera contract](geo-viewport-protocol.md) pins exact
+framing, bounds presence, normalized bit keys and atomic error behavior.

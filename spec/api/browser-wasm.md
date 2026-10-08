@@ -322,3 +322,21 @@ remain owned by the caller. Feed those bytes to `worker.prepareScene` and
 `view.sceneStableId(traceIndex, rowIndex)` recovers full u64 feature identities
 from hydrated marks. Camera/style framing, lifecycle and bounds are specified
 in [the WASM design contract](../design/browser-wasm.md#frozen-geographic-scene-ingress-wasm-abi-29-47).
+
+
+## Geographic camera commands
+
+`encodeGeoViewportRequest(camera, operation, args, optionalXYGD)` frames a
+stateless Rust-owned camera command. For typed source planes,
+`encodeGeoViewportColumnRequest(camera, descriptor)` writes the camera and XYGD
+planes into one transferable buffer. Submit it with
+`worker.geoViewportExecute(request)` and read the result using
+`decodeGeoViewportResponse(await task.result)`. The request is transferred;
+caller camera objects/source buffers remain owned by the caller. Operations are
+listed in `GEO_VIEWPORT_OPERATIONS`; `normalize`, `project`, `inverse`, `pan`,
+`zoom`, `resize`, `bearing`, `pitch`, `center`, `fit`, and `column` share native
+and WASM semantics. Every response includes a normalized camera and exact rebuild
+key; column responses also expose source IDs, visible bounds and typed geometry.
+Full-u64 identities remain BigUint64Array values. These engine adapters do not
+add a public chart-building surface. Exact framing, limits, errors and topology
+are in [the camera protocol](../design/geo-viewport-protocol.md).

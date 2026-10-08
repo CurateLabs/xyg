@@ -22,7 +22,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 29;
+pub const WASM_ABI_VERSION: u32 = 30;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -80,6 +80,20 @@ pub extern "C" fn xyg_wasm_geo_scene_compile(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         geo::execute_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Execute one bounded typed camera request with shared native semantics.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_viewport_execute(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute_viewport(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }

@@ -163,8 +163,8 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs
-          cargo build -p xyg-wasm --bin geo_scene_conformance
-          node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs
+          cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance
+          node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs
 
       - name: JS parses (ESM + IIFE)
         run: |

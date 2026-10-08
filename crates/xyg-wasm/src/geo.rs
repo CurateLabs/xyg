@@ -25,12 +25,29 @@ pub(super) fn execute_scene(
     })
 }
 
+pub(super) fn execute_viewport(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_viewport_protocol::execute(request, budget)
+            .map_err(|error| (error.code(), error == GeoError::ResourceLimit))
+    })
+}
+
+// One lifecycle body serves all geographic processors. Only the bounded
+// request-level dispatch is indirect; Rust geometry loops retain normal O3.
+type GeoProcessor = fn(&[u8], usize) -> Result<Vec<u8>, (&'static str, bool)>;
+
+#[inline(never)]
 fn execute_with(
     instance: &mut Instance,
     sequence: u32,
     offset: usize,
     length: usize,
-    processor: impl FnOnce(&[u8], usize) -> Result<Vec<u8>, (&'static str, bool)>,
+    processor: GeoProcessor,
 ) -> i32 {
     // Rejected old calls must not consume the staging owned by a newer
     // aggregate, streamed aggregate, graph or compile operation.
@@ -185,6 +202,57 @@ mod tests {
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
     #[test]
+    fn viewport_output_cancel_recovery_and_dispose_are_atomic() {
+        let mut request = vec![0u8; 128];
+        request[..4].copy_from_slice(b"XYVC");
+        for (offset, value) in [(4, 1u32), (12, 4326)] {
+            request[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        for (offset, value) in [(48, 800f64), (56, 600.0)] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        let handle = xyg_wasm_instance_new(65536);
+        stage(handle, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_viewport_execute(handle, 1, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYVR");
+            assert_eq!(instance.arena.capacity(), 0);
+        })
+        .unwrap();
+        stage(handle, &request);
+        assert_eq!(crate::xyg_wasm_cancel(handle, 2), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_viewport_execute(handle, 2, 0, request.len()),
+            STATUS_CANCELLED
+        );
+        stage(handle, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_viewport_execute(handle, 3, 0, request.len()),
+            STATUS_OK
+        );
+        let mut bad = request.clone();
+        bad[48..56].copy_from_slice(&f64::MAX.to_le_bytes());
+        stage(handle, &bad);
+        assert_eq!(
+            crate::xyg_wasm_geo_viewport_execute(handle, 4, 0, bad.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert_eq!(instance.output.capacity(), 0);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_viewport_execute(handle, 5, 0, request.len()),
+            crate::STATUS_INVALID_HANDLE
+        );
+    }
+
+    #[test]
     fn scene_framing_rejects_all_truncation_before_projection() {
         let request = scene_request();
         for end in 0..request.len() {
@@ -276,6 +344,10 @@ mod tests {
             );
             assert_eq!(
                 crate::xyg_wasm_geo_scene_compile(handle, sequence, usize::MAX, 0),
+                status
+            );
+            assert_eq!(
+                crate::xyg_wasm_geo_viewport_execute(handle, sequence, usize::MAX, 0),
                 status
             );
             with_instance_mut(handle, |instance| {

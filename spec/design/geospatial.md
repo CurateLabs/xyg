@@ -1,13 +1,14 @@
 # Geospatial data contract — GeoColumn, GeoArrow ingress, GeoViewport
 
 **Status:** GeoColumn native validation, canonical metadata, host read-back
-and derived-cache inputs (#47; ABI 379) + GeoViewport camera foundation (#48).
+and derived-cache inputs (#47; current ABI 380) + GeoViewport perspective camera (#48).
 MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
-Direct-browser WASM ABI 29 shares typed descriptor ingestion (`XYGD` to `XYGM`)
+Direct-browser WASM ABI 30 shares typed descriptor ingestion (`XYGD` to `XYGM`)
 and frozen point/outline scene lowering (`XYGP` to canonical `XYGS`) with native
 Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
-zero-pitch frozen camera scope; live camera transitions remain #48, layer/fill
-surfaces #49, and LOD/export #50.
+frozen camera scope. Rust now supplies perspective camera transitions, clipped
+route/polygon caches and geometric visible membership (#48); layer/fill surfaces
+remain #49 and LOD/export #50.
 Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
 mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
@@ -128,7 +129,11 @@ before any per-vertex work or owning copy:
 Hole containment is deliberately not full polygon topology. Each hole's bbox
 must sit inside the exterior bbox and the hole's first vertex must pass a
 boundary-inclusive even-odd ray cast against the exterior (f64), so a hole may
-touch its shell. Hole/hole overlap and edge crossings are not checked in v1. The
+touch its shell. If the shell crosses the world boundary, containment is checked
+in a bounded, temporary short-edge unwrapped f64 copy (period 360 degrees or
+the EPSG:3857 world extent), aligning each hole to that shell. The canonical
+coordinates, offsets and original winding metadata remain bitwise unchanged.
+An unwrapped ring spanning more than one world fails as degenerate. Hole/hole overlap and edge crossings are not checked in v1. The
 work is bounded: one shell-edge sweep per hole against a total budget of
 `max_vertices * 64` edge visits, exceeding which fails with `-9`.
 
@@ -219,8 +224,9 @@ unit tests.
 ## Derived caches (rebuildable, §27)
 
 `GeoViewport::project_column(&GeoColumn) -> ProjectedGeoColumn` lowers a
-retained column into f32 scene inputs. It is an engine-level seam only in this
-issue: no C ABI, host, or WASM projection export exists (that is #48/#49).
+retained column into f32 scene inputs. Native ABI 380 and WASM ABI 30 expose
+this processor through typed XYVC/XYVR requests, with thin Python, Node and
+browser adapters described in [geo-viewport-protocol.md](geo-viewport-protocol.md).
 
 - Output is a rebuildable cache keyed by
   `GeoDerivedKey { rebuild: GeoViewportRebuildKey, metadata_digest }` (exact
@@ -351,75 +357,130 @@ input slices or reading any geometry buffer.
 
 | Field | Contract |
 | --- | --- |
-| `crs` | Same certified profile: EPSG:4326 or EPSG:3857 for center/fit units |
-| `center_x/y` | Lon/lat° or easting/northing m |
-| `zoom` | MapLibre-style; world width = `512 * 2^zoom` CSS pixels |
-| `width/height` | CSS pixels; must be > 0 |
-| `bearing_deg` | Clockwise degrees; 0 = north up |
-| `pitch_deg` | Degrees in `[-60, 60]`; stored for shell parity (orthographic project for now) |
-| `world_wrap` | Prefer shorter longitudinal span across ±180° on fit |
+| `crs` | EPSG:4326 or EPSG:3857 for center/fit units |
+| `center_x/y` | Lon/lat degrees or easting/northing metres, with Mercator polar clamp |
+| `zoom` | `[0,24]`; world width = `512 * 2^zoom` CSS pixels |
+| `width/height` | Positive finite CSS pixels that remain positive and finite as f32 |
+| `bearing_deg` | Clockwise degrees normalized to `(-180,180]`; 0 = north up |
+| `pitch_deg` | Ground-plane perspective in `[-60,60]` degrees |
+| `world_wrap` | Short longitudinal edges and one coherent visible world copy per source part |
 
-Projection policy:
+The flat-ground perspective camera follows MapLibre's default Mercator vertical
+FOV (`0.6435011087932844` radians): camera distance `d = 1.5 * height`.
+The reference equations and matrix order are independently specified in
+[MapLibre's Mercator transform](https://github.com/maplibre/maplibre-gl-js/blob/379b3673a4f0982472ae91d774db5bd42931583d/src/geo/projection/mercator_transform.ts)
+and [transform helper](https://github.com/maplibre/maplibre-gl-js/blob/379b3673a4f0982472ae91d774db5bd42931583d/src/geo/transform_helper.ts).
+This profile has zero terrain elevation, roll and padding. Negative pitch is an
+explicit symmetric extension; MapLibre's usual shell configuration uses
+nonnegative pitch. Tile lifecycle and elevation-aware cameras belong to #49.
 
-- Lon/lat ↔ Web Mercator uses spherical R = 6 378 137 m with polar clamp at
-  ±85.0511287798066° / ±20 037 508.342789244 m.
-- Screen mapping is CSS top-left origin. Bearing is a MapLibre-compatible
-  clockwise camera heading, so positive bearing rotates map content by the
-  opposite angle around center (`+90°` puts east at screen-top).
-- Derived f32 screen buffers are **offset-encoded** from an f64 origin so deep
-  zoom never drops source precision (§4/§16); NaN never reaches the buffer (§19).
-- Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
-  `1e-6` px (`geo_viewport::tolerances`).
+Lon/lat to Mercator uses spherical radius 6,378,137 metres and clamps latitude
+to ±85.0511287798066 degrees (northing ±20,037,508.342789244 metres). The
+bearing-rotated, camera-relative ground coordinates `(x,y)` use CSS world pixels
+with y pointing south. With `W = d - y*sin(pitch)`, projection is
+`(width/2 + d*x/W, height/2 + d*y*cos(pitch)/W)`. Inversion solves this same
+perspective ground plane; it fails with `XYG_GEO_INVALID_ARGUMENT` beyond the
+ground horizon. A point behind the near plane receives a finite offscreen
+sentinel, and has no visible membership. Such a sentinel is not an invertible
+projection. Projection/inverse goldens certify front-facing ground points.
 
-Camera transitions are Rust-owned and transactional. `fit_bounds`, `set_center`, `set_zoom`,
-`resize`, `set_bearing`, and `set_pitch` validate a complete candidate before
-publishing it; an error leaves the prior camera intact. Bearings normalize to
-`(-180, 180]` at construction, updates, rebuild identity, and projection, so a
-restored full-turn or extreme finite bearing cannot diverge from its canonical
-camera or overflow trigonometric projection. Fit and pixel-pan operations validate
-restored/public-field cameras before work, including a zero-pixel pan; rejected
-operations preserve the complete prior state bitwise. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
-gesture seam: positive X moves the camera centre toward screen-right and
-positive Y toward screen-bottom, after applying the current bearing. Wrapped
-EPSG:4326 cameras cross the dateline continuously; non-wrapped cameras stop at
-the world boundary, and latitude/easting/northing stop at the certified Web
-Mercator limits. A zero-pixel pan is bitwise inert.
+Routes are clipped against linear ground-space viewport and depth half-planes
+before perspective division. Near depth is `height/50`; the far ground envelope
+is `d*cos(abs(pitch))/(cos(abs(pitch))-sin(abs(pitch))/3)*1.01`. This contains the
+visible flat-ground footprint with the reference precision margin; it does not
+claim MapLibre's terrain-aware far-plane value. All certified pitches keep the
+viewport's ground footprint in front of the horizon. `bounds()` returns its
+source-CRS bounding box; wrapped longitude intervals can extend beyond ±180.
 
-`GeoViewport::rebuild_key()` freezes the complete validated camera as exact
-IEEE-754 identities plus CRS and world-wrap state. It canonicalizes signed zero,
-equivalent wrapped `-180/+180` centres, and full-turn bearings. Native/headless
-hosts can therefore reuse or reject rebuildable painter buffers without JSON,
-formatted floats, or host-local camera comparisons. Any meaningful resize,
-zoom, centre, bearing, pitch, CRS, or wrap-policy change changes the key.
-Projection, unprojection, painter lowering, and rebuild-key entry points
-revalidate the complete camera first. A malformed restored/public-field camera
-therefore fails closed before trigonometry, f32 emission, or cache identity.
+Canonical data stays f64. Projected points, independent route segments and
+closed polygon rings use f32 offsets from the f64 viewport-center CSS origin
+(§4/§16). An arbitrary first, offscreen source vertex never becomes the origin.
+Every narrowing is checked before publishing a cache, and no NaN reaches the
+painter (§19). Golden tolerances are `1e-9` degrees, `1e-6` metres and `1e-6`
+CSS pixels; native/WASM f32 cache comparisons allow `1e-4` pixels.
 
-The first geometry lowering slice is `GeoViewport::project_line_features`.
-It accepts canonical interleaved f64 coordinates, Arrow-style offsets, and
-u64 source feature IDs. Rust validates the complete descriptor before derived
-output work, then splits EPSG:4326 routes at paired `+180/-180` endpoints when
-world wrap is active, projects in f64, clips every segment to the CSS viewport,
-and only then emits centre-offset f32 painter geometry. Output ranges are
-independent two-point segments: a dateline or clipped-away interval can never
-be reconnected accidentally. Each visible segment carries its original
-feature ID; wholly invisible features emit neither geometry nor an ID. This
-projection selects one coherent wrapped-world copy for both endpoints of each
-segment, including when a `+180/-180` endpoint is opposite the camera centre;
-the dateline split therefore cannot turn a short edge segment into a line
-across the world. Consecutive source segments carry that selected copy across
-their shared vertex. Empty and single-vertex feature ranges emit nothing.
-Budget ceilings are the engine-owned `GeoLimits::default()` values in this
-slice; callers cannot override them. Returned failures use
-`XYG_GEO_OFFSET_MISMATCH`, `XYG_GEO_NON_FINITE_COORDINATE`,
-`XYG_GEO_COORDINATE_OUT_OF_RANGE`, or `XYG_GEO_RESOURCE_LIMIT`. Each feature
-is emitted in one wrapped-world copy even if a low-zoom viewport spans multiple
-worlds. This is intentionally a line/route slice. Ring splitting and fill
-topology remain required before polygon layers can claim the same contract.
+Camera transitions are Rust-owned and transactional. Setters validate a complete
+candidate before publication. Fit and pan also validate the complete restored
+camera before work; transport commands validate the initial snapshot before any
+operation. Errors preserve all prior fields bitwise, including zero-pixel pan on
+an invalid restored camera.
+An admitted zero-pixel pan is inert. Positive pan x/y moves the camera toward
+screen right/bottom using the current bearing and perspective inverse. Wrapped
+centres cross the dateline continuously; non-wrapped centres stop at the world
+boundary. Latitude/northing remain within the Mercator clamp. Fit chooses the
+short wrapped span, resets bearing to zero, retains pitch and finds the largest
+zoom fitting all four bounds corners within the requested CSS padding. If no
+fit exists even at zoom zero it fails atomically.
 
-Follow-ons on this camera: polygon antimeridian splitting and fill topology,
-pitched frustum matching MapLibre, C ABI / host wrappers for the transition and
-rebuild-key seams, and native↔WASM goldens (#59).
+`rebuild_key()` freezes CRS, wrap and every validated camera field as exact f64
+identities, canonicalizing signed zero, equivalent wrapped ±180 centres and
+full-turn bearings. Camera, source metadata digest and source geometry changes
+invalidate `ProjectedGeoColumn.key`; caches are rebuildable. Projection,
+inversion, lowering and identity entry points revalidate the complete camera.
+
+`project_line_features` validates the descriptor before output allocation,
+splits both CRS profiles at the world boundary, selects coherent endpoint
+copies, clips in f64, then emits independent two-point segments carrying full
+source u64 IDs. Empty/single-vertex ranges and wholly invisible segments emit
+nothing. Dateline and clipped-away intervals cannot reconnect accidentally.
+One copy is emitted even when a low-zoom viewport spans multiple worlds.
+
+For Polygon/MultiPolygon, `project_column` additionally produces a closed-ring
+cache (`ProjectedGeoPolygons`): offset f32 coordinates, ring-to-vertex offsets,
+polygon-to-ring offsets, one source u64 ID per fragment, explicit ring roles
+(`0` shell, `1` hole), and the f64 origin. A directed boundary graph intersects
+source rings with the convex ground footprint and wrapped world strips. A
+concave source intersection can produce multiple independent closed shells;
+synthetic clipping boundaries cannot bridge disconnected fragments. Clipped
+holes remain attached to their exterior fragment, including border contacts.
+A viewport wholly inside a hole emits no filled-feature membership. Geometry
+with a zero-area intersection is omitted; ambiguous coincident branching at a
+clipping boundary fails with `XYG_GEO_INVALID_ARGUMENT` rather than publishing
+incorrect topology. Boundary nodes are reconciled within `1e-7` camera-relative
+ground pixels; canonical source coordinates and winding are never rewritten.
+
+The existing outline cache retains only clipped source edges, rather than the
+synthetic closing edges intended for filling. Point/outline XYGS lowering uses
+the same perspective camera; polygon fill styling/painting is #49. Visible
+membership is geometric: points require a center inside the viewport, routes
+require a visible source segment, and polygons require positive shell-minus-
+hole intersection area. Source-order IDs are deduplicated by value. Null
+features contribute nothing; CSS visible bounds and source metadata digest
+accompany the membership. This does not include mark diameter or stroke width
+in membership calculations.
+
+Admission uses `GeoLimits::default()` ceilings. Before any polygon outline or
+topology allocation, a conservative `4096*vertices + 512*features` byte peak
+must fit the 256 MiB engine ceiling; transport adapters also check their smaller
+instance budget before canonical allocation. Ring graph edge/storage bounds
+are checked before graph arrays, and shell/hole association work has a shared
+4,000,000 edge-visit ceiling. Exceeding a ceiling fails with
+`XYG_GEO_RESOURCE_LIMIT`, leaving prior host state and canonical source intact.
+The short wrapped-ring convention spans at most one world, including EPSG:3857
+periodic eastings; literal full-world edges remain full-world edges.
+
+Rust fixtures cover reference perspective values, inverse/horizon behavior,
+atomic pitched fit/pan/resize, poles, dateline shell/hole association in both
+CRSs, two disjoint concave fragments, holes touching the viewport border,
+viewport-inside-hole invisibility, deep-zoom 2.386-pixel separation, full u64
+identity and allocation admission. The independent browser reference runner
+`tests/browser/geo_viewport_maplibre_reference.mjs` compares native executable
+and actual wasm32 projection/inverse/resize/bearing/pitch outputs with locally
+supplied MapLibre 6.13.0 (blank style, no remote tiles). It freezes the actual
+reference camera after shell constraints, compares wrapped longitude modulo
+360 degrees, and applies the certified Mercator latitude clamp to reference
+inverse/bounds outputs. Reference shell constraints near the pole may move the
+centre after resize; the shell must forward its actual camera snapshot:
+
+```sh
+XYG_MAPLIBRE_DIST=/path/to/maplibre-gl-6.13.0/package/dist \
+  CHROMIUM=/path/to/chromium \
+  node tests/browser/geo_viewport_maplibre_reference.mjs
+```
+
+The stateless camera transport and host adapters are specified separately in
+`spec/design/geo-viewport-protocol.md`. Optional browser shell events feed this
+Rust camera; the shell does not own projected geographic scene geometry.
 
 ## Module and follow-ons
 
@@ -438,13 +499,15 @@ rebuild-key seams, and native↔WASM goldens (#59).
   descriptor/Rust publication behavior without field renaming or row-wise
   WKB, WKT, or GeoJSON reconstruction.
 - GeoViewport: `crates/xyg-engine/src/geo_viewport.rs` (camera foundation;
-  `project_column` derived-cache seam; projection ABI/hosts next).
+  perspective camera, closed polygon topology and `project_column` cache seam).
 - Browser ingress: sequenced `XYGD` → `XYGM` through WASM ABI 28 and
   `XygWasmWorker.geoColumnIngest`; actual native/WASM goldens and stable errors
   in `packages/xy-node/test/geo-wasm-parity.test.mjs`, strict-CSP transfer and
   lifecycle proof in `scripts/geo_wasm_smoke.mjs`.
-- Next: GeoViewport ABI + host ergonomics (#48 follow-on); geographic layer
-  programs and fill topology (#49); LOD/export (#50).
+- Camera ingress: ABI 380/30 XYVC → XYVR provides transitions, footprint bounds,
+  visible membership and closed polygon caches; actual native/WASM and MapLibre
+  reference goldens are in the camera protocol tests.
+- Next: geographic layer programs and fill tessellation (#49); LOD/export (#50).
 
 ## Related
 
@@ -463,6 +526,6 @@ this product processor. The native/WASM parity suite checks all six geometry
 kinds, holes/nulls, CRS, source precision, deep zoom, dateline splitting, limits
 and failures; the packaged strict-CSP Worker proof exercises hydration, painted
 pixels and GPU picking. This closes the derived Scene proof within the frozen
-zero-pitch point/outline scope. The complete framing and allocation contract is
+flat-ground perspective point/outline scope. The complete framing and allocation contract is
 in [browser-wasm.md](browser-wasm.md#frozen-geographic-scene-ingress-wasm-abi-29-47).
-Live camera transitions remain #48 and geographic fills/layers remain #49.
+Live camera transitions use XYVC/XYVR; geographic fills/layers remain #49.

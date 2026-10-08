@@ -478,3 +478,5 @@ export {
   polarChart,
   facetChart,
 } from "./charts.js";
+
+export {geoViewport,geoViewportExecute,encodeGeoViewportRequest,encodeGeoViewportColumnRequest,decodeGeoViewportResponse,GEO_VIEWPORT_OPERATIONS} from "./geoviewport.js";
