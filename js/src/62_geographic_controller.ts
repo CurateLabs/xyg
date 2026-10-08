@@ -1,4 +1,5 @@
 /** Browser event/DOM adapter. Rust owns feature hits, state transitions and paint. */
+import { captureGesturePointer } from "./50_chartview";
 import { XygWasmWorker } from "./47_wasm";
 import { hydrateWasmPainter, type XygWasmSceneView } from "./48_wasm_scene";
 import { encodeGeoCatalogRequest, decodeGeoCatalogResponse, type XygGeoCatalogRequest,
@@ -31,6 +32,19 @@ export class XygGeographicChart {
   private readonly surface: HTMLElement;
   private readonly surfaceAttributes: Map<string, string | null>;
   private brushPointer: number | null = null;
+  private brushCapture: ReturnType<typeof captureGesturePointer> | null = null;
+  private readonly captureListeners = new Map<(event: PointerEvent) => void, HTMLElement>();
+  private readonly captureContext = {
+    _listen: (owner: HTMLElement, type: string, handler: (event: PointerEvent) => void) => {
+      owner.addEventListener(type, handler as EventListener);
+      this.captureListeners.set(handler, owner);
+      return handler;
+    },
+    _unlisten: (handler: (event: PointerEvent) => void) => {
+      this.captureListeners.get(handler)?.removeEventListener("lostpointercapture", handler as EventListener);
+      this.captureListeners.delete(handler);
+    },
+  };
   private hover: [number, number] | null = null;
   private hoverRunning = false;
   private brushStart: [number, number] | null = null;
@@ -50,7 +64,6 @@ export class XygGeographicChart {
     this.surface.addEventListener("pointerdown", this.pointerDown);
     this.surface.addEventListener("pointerup", this.pointerUp);
     this.surface.addEventListener("pointercancel", this.cancelBrush);
-    this.surface.addEventListener("lostpointercapture", this.cancelBrush);
     this.surface.addEventListener("keydown", this.keyDown);
     this.ready = this.enqueue().catch(error => { this.dispose(); throw error; });
   }
@@ -62,11 +75,20 @@ export class XygGeographicChart {
     // Observer callbacks cannot turn an accepted Rust transition into a failed operation.
     try { this.options.onError?.(error); } catch { /* Observer isolation. */ }
   }
-  private cancelBrush = () => { this.brushStart = null; this.brushPointer = null; };
+  private cancelBrush = (event?: PointerEvent) => {
+    if (event && event.pointerId !== this.brushPointer) return;
+    const capture = this.brushCapture;
+    this.brushCapture = null; this.brushStart = null; this.brushPointer = null;
+    capture?.release();
+  };
   private submit(event: XygGeoInteractionEvent) {
-    void this.enqueue(event).catch(error => this.report(error));
+    void this.enqueue(event).catch(error => { if (!this.disposed) this.report(error); });
   }
   private pointerMove = (event: PointerEvent) => {
+    if (this.brushPointer !== null) {
+      if (event.pointerId === this.brushPointer) this.brushCapture?.guard(event);
+      return;
+    }
     if (!this.brushStart) {
       this.hover = this.coordinates(event);
       if (!this.hoverRunning) void this.drainHover();
@@ -83,20 +105,21 @@ export class XygGeographicChart {
     } finally { this.hoverRunning = false; }
   }
   private pointerDown = (event: PointerEvent) => {
+    if (this.brushPointer !== null) return;
     if (event.button === 0 && event.shiftKey) {
       this.brushStart = this.coordinates(event);
       this.brushPointer = event.pointerId;
-      this.surface.setPointerCapture(event.pointerId);
+      this.brushCapture = captureGesturePointer(this.captureContext, this.surface, event, this.cancelBrush);
     }
   };
   private pointerUp = (event: PointerEvent) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || (this.brushPointer !== null && event.pointerId !== this.brushPointer)) return;
     const mode = event.ctrlKey || event.metaKey ? 2 : 0;
     const end = this.coordinates(event);
     if (this.brushStart) {
-      const start = this.brushStart; this.brushStart = null; this.brushPointer = null;
+      if (!this.brushCapture?.guard(event)) return;
+      const start = this.brushStart; this.cancelBrush();
       this.submit({operation: 3, mode, coordinates: [Math.min(start[0], end[0]), Math.min(start[1], end[1]), Math.max(start[0], end[0]), Math.max(start[1], end[1])]});
-      if (this.surface.hasPointerCapture(event.pointerId)) this.surface.releasePointerCapture(event.pointerId);
     } else this.submit({operation: 2, mode, coordinates: end});
   };
   private keyDown = (event: KeyboardEvent) => {
@@ -193,8 +216,6 @@ export class XygGeographicChart {
     this.surface.removeEventListener("pointerdown", this.pointerDown);
     this.surface.removeEventListener("pointerup", this.pointerUp);
     this.surface.removeEventListener("pointercancel", this.cancelBrush);
-    this.surface.removeEventListener("lostpointercapture", this.cancelBrush);
-    if (this.brushPointer !== null && this.surface.hasPointerCapture(this.brushPointer)) this.surface.releasePointerCapture(this.brushPointer);
     this.cancelBrush();
     for (const [name, value] of this.surfaceAttributes) {
       if (value === null) this.surface.removeAttribute(name); else this.surface.setAttribute(name, value);
