@@ -4,19 +4,41 @@ Issue [#58](https://github.com/CurateLabs/xyg/issues/58) moves parity-affecting
 scene and static-export decisions into `xyg-engine` in bounded vertical slices.
 This document is the version contract for that migration.
 
+Scene v32 adds `Triangle=6` and `Segment=7` as explicit primitive kinds.
+Three consecutive Triangle records or two consecutive Segment records form one
+primitive regardless of repeated identity/style. Each primitive must share its
+full identity, style reference, annotation tag (ordinary zero or literal-ID
+0x80), and visibility. Symbol/diameter/reserved coordinates follow polygon/line
+vertex rules. Constructors, the allocation-free raw validator, and the owned
+Scene decoder reject incomplete or mismatched primitive frames. Pixel mapping
+makes visibility atomic across each primitive. Compact `TriangleFace` and
+`SegmentPair` expansion now emit these explicit kinds; general polygons,
+hexagons, and connected paths retain PolyFill/Polyline.
+
+Adjacent fill-only, non-gradient triangles of the same source identity/style
+are exported as separate normalized-winding subpaths in one SVG fill and one
+raster union command. Invisible source boundaries or any other primitive end
+the union. This preserves holes and source draw order while avoiding alpha
+seams along tessellation edges. Raster opcode 19 carries `n:u32`, `fill:RGBA8`,
+and `n*6` contiguous little-endian f32 coordinates; coverage is unioned and
+blended once. Stroke/gradient triangles retain fixed three-vertex traversal.
+The browser painter batches explicit triangles and segments into existing
+instanced mesh/segment programs; it never infers primitive framing from a
+polygon's vertex count. See `browser-wasm.md` for XYPB v15 derived planes.
+
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 31 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 32 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v31, so additive emission is not safe.
+bitmap or schema negotiation in Scene v32, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v31 batch layout,
+WASM lifecycle foundation; it validates the current Scene v32 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
@@ -87,7 +109,7 @@ Image+XYPL exception (one screen-space inverse-raster blit). Labeled-annotation 
 still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. ABI 145 admits constant
 validated `marker_path` contours: hosts pack XYMP on the extras dash slot and
 Rust tessellates each scatter centre to PolyFill (filled) or Polyline
-(stroke-only) after pixel mapping. Encoded Scene v31 is unchanged and does
+(stroke-only) after pixel mapping. Encoded Scene v32 is unchanged and does
 not keep XYMP. ABI 170 admits constant `marker_glyph` markers:
 hosts pack UTF-8 in the XYTR marker blob (`FLAG_HAS_GLYPH`) and Rust keeps XYMG
 on the encoded Scene so SVG emits `<text font-family="DejaVu Sans" …>` and
@@ -113,7 +135,7 @@ two-ended ribbon `color2_ch` from packed XYHP kind 5 onto Band `style_ref`s
 plus XYGR mark-space `dir=right`. ABI 146 admits constant
 validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
 slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
-`mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
+`mark` or `plot` space). Encoded Scene v32 keeps XYGR so SVG emits
 `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
 rewrite to the adjacent opaque hue. Per-item two-ended ribbon `color2_ch` is
 ABI 190 intern from packed source/target RGBA8. Data-driven scatter `color_ch`,
@@ -424,9 +446,10 @@ for `segments`, error-bar stems/caps, and `stem` with its immediate generated
 built-in constant marker; at most 1,024 finite unjoined `triangle_mesh` faces
 with a constant fill and scalar overall opacity; plus finite literal solid-color
 ribbons whose two-row host ingress Rust-expands after axis transformation. Each
-mesh face is one three-row PolyFill group, matching the Rust browser painter's
-1,024-group bound; public selection also asks that authoritative consumer to
-validate the complete mixed-figure group budget before routing. Joined fills,
+mesh face is one explicitly framed three-row Triangle primitive. XYPB v15
+batches adjacent compatible faces into a single trace; the public route retains
+its bounded 1,024-face eligibility policy and also asks the authoritative
+consumer to validate the complete mixed-figure trace budget before routing. Joined fills,
 component alpha, authored outlines, per-face
 paint/style, alternate axes, and larger meshes stay on the compatibility route.
 The geometry records are
@@ -600,7 +623,7 @@ admits flattened `curve="smooth"` polylines: hosts pack the same compact knots
 as a linear line with pack `step_mode=4`, which Rust maps to expansion
 `CurveFlatten=11` and densifies through `geom::curve_flatten` (`SCENE_CURVE_STEPS=16`
 samples per increasing span; `n<3` stays identity). The public-export style
-allowlist includes `curve` for `KIND_LINE`. ABI 141 / Scene v31 admits flattened
+allowlist includes `curve` for `KIND_LINE`. ABI 141 / Scene v32 admits flattened
 cartesian `area(curve="smooth")` bands: hosts pack the same compact Band knots
 with pack `step_mode=4`, which Rust maps to expansion `BandFlatten=12` and
 densifies top and base through `geom::curve_flatten`. The public-export style
@@ -631,10 +654,10 @@ XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`
 ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
-includes `marker_path` and `marker_glyph` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
+includes `marker_path` and `marker_glyph` for `KIND_SCATTER`; encoded Scene v32 is unchanged).
 ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
 sidecar (public allowlist already includes `fill` for area/bar/column/histogram;
-encoded Scene v31 keeps XYGR). ABI 147 does not change Scene records;
+encoded Scene v32 keeps XYGR). ABI 147 does not change Scene records;
 `xyg_scene_pack_product_facts` owns flags, `step_mode`, and extra0/extra1 from
 packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch cannot
 drift. ABI 148 does not change Scene records;
@@ -1254,7 +1277,7 @@ Eligible polar kinds: `line` (including step-line), `scatter`, `area`,
 and `contour` use existing SegmentPair polylines through `polar_project` (chords, matching
 §5). Polar `heatmap` constant-style lattices use the same Rect→PolyFill tessellation.
 Polar painted heatmap (colormap / truecolor / rgba_grid) inverse-rasters at
-encode to one plot-covering Image (ABI 192); encoded Scene v31 is unchanged.
+encode to one plot-covering Image (ABI 192); encoded Scene v32 is unchanged.
 ABI 143 polar density uses the same occupied-cell Rect→PolyFill path
 (no XYIM). `XYG_SCENE_UNSUPPORTED_POLAR` remains for other
 kinds. Hidden Cartesian chrome is never inferred
@@ -1627,17 +1650,17 @@ tessellates occupied cells to PolyFill wedges. ABI 138 / Scene v28 adds the XYDS
 dashed polylines compile on Scene. ABI 139 / Scene v29 adds the XYLC
 constant-linecap sidecar so butt/square caps compile on Scene. ABI 140 /
 Scene v30 adds `CurveFlatten=11` so cartesian `curve="smooth"` polylines
-compile as denser Scene polylines; ABI 141 / Scene v31 adds `BandFlatten=12`
+compile as denser Scene polylines; ABI 141 / Scene v32 adds `BandFlatten=12`
 so cartesian `area(curve="smooth")` compiles as denser Scene Bands. ABI 142
 admits cartesian mean-color density as XYHP kind 4 on the existing
-`DensityBlit` Image blit (encoded Scene v31 is unchanged). ABI 143 polar
+`DensityBlit` Image blit (encoded Scene v32 is unchanged). ABI 143 polar
 `DensityBlit` intern occupied cells as Rects that `with_polar` tessellates
-to PolyFill wedges (encoded Scene v31 is unchanged). ABI 144 admits cartesian
+to PolyFill wedges (encoded Scene v32 is unchanged). ABI 144 admits cartesian
 `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
-`curve="smooth"` as identity chords (encoded Scene v31 is unchanged). ABI 145
+`curve="smooth"` as identity chords (encoded Scene v32 is unchanged). ABI 145
 admits constant scatter `marker_path` as XYMP extras tessellated to
-PolyFill/Polyline after pixel mapping (encoded Scene v31 is unchanged). ABI 146
-admits constant mark `fill` linear-gradients as XYGR extras (encoded Scene v31
+PolyFill/Polyline after pixel mapping (encoded Scene v32 is unchanged). ABI 146
+admits constant mark `fill` linear-gradients as XYGR extras (encoded Scene v32
 keeps XYGR). ABI 147 does not change Scene records either;
 `xyg_scene_pack_product_facts` owns flags/`step_mode`/extras from packed XYPK v1.
 ABI 148 does not change Scene records either;

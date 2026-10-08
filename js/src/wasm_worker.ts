@@ -1139,7 +1139,7 @@ function runGeoIngest(message: any) {
   if (!admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : message.type === "geo.viewport" ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1166,7 +1166,9 @@ function runGeoIngest(message: any) {
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid geographic staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-    status = message.type === "geo.viewport"
+    status = message.type === "geo.catalog"
+      ? exports.xyg_wasm_geo_catalog_compile(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.viewport"
       ? exports.xyg_wasm_geo_viewport_execute(handle, message.sequence, 0, message.request.byteLength)
       : message.type === "geo.scene"
       ? exports.xyg_wasm_geo_scene_compile(handle, message.sequence, 0, message.request.byteLength)
@@ -1212,7 +1214,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
     || message?.type === "compound.transition"
-    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport";
+    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog";
   if (sequenced && !admitOperationSequence(message)) return;
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (
@@ -1243,7 +1245,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport") {
+  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog") {
     const timer = setTimeout(() => runGeoIngest(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;

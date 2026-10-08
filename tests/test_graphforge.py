@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import re
+import struct
 from pathlib import Path
 
 import pytest
@@ -75,6 +76,35 @@ def test_python_reproduces_the_cross_host_bytes_for_every_case() -> None:
         assert hashlib.sha256(request).hexdigest() == case["request_sha256"], case["name"]
         document = compose_graphforge_request(request)
         assert hashlib.sha256(document).hexdigest() == case["document_sha256"], case["name"]
+
+
+def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
+    gen = _generator()
+    case = next(case for case in gen.cases() if case["name"] == "multi-layer + render + select")
+    document = bytearray(compose_graphforge_request(gen.build_request(case)))
+    count = struct.unpack_from("<I", document, 8)[0]
+    names = 32 + count * 40
+    changed = set()
+    for i in range(count):
+        name_offset, name_length, _, _, offset, _, _ = struct.unpack_from(
+            "<IIIIQQQ", document, 32 + i * 40
+        )
+        name = document[names + name_offset : names + name_offset + name_length].decode()
+        if name == "scene.version":
+            assert struct.unpack_from("<I", document, offset)[0] == 32
+            struct.pack_into("<I", document, offset, 31)
+            changed.add(name)
+        elif name == "scene.canonical":
+            assert document[offset : offset + 4] == b"XYGS"
+            assert struct.unpack_from("<I", document, offset + 4)[0] == 32
+            struct.pack_into("<I", document, offset + 4, 31)
+            changed.add(name)
+    assert changed == {"scene.version", "scene.canonical"}
+    refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
+    assert (
+        hashlib.sha256(document).hexdigest()
+        == refresh["graphforge_render_previous_document_sha256"]
+    )
 
 
 def test_pagerank_joins_by_uuid_with_provenance() -> None:

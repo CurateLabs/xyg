@@ -71,6 +71,8 @@ __all__ = [
     "Component",
     "ExportConfig",
     "FacetChart",
+    "GeoChart",
+    "GeoLayer",
     "Interaction",
     "Legend",
     "Mark",
@@ -101,6 +103,8 @@ __all__ = [
     "errorbar_chart",
     "export_config",
     "facet_chart",
+    "geo_chart",
+    "geo_layer",
     "graph",
     "graph_chart",
     "heatmap",
@@ -7343,3 +7347,113 @@ def facet_chart(
         gap=gap,
         **props,
     )
+
+
+@dataclass(frozen=True)
+class GeoLayer:
+    """A geographic mark specification; Rust resolves geometry and styling."""
+
+    kind: str
+    source: Any
+    layer_id: int
+    properties: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class GeoChart:
+    """Compose geographic marks around one explicit Rust-owned camera."""
+
+    layers: tuple[GeoLayer, ...]
+    camera: Mapping[str, Any]
+    legend: Mapping[str, Any] | None = None
+    budget: int = 384 * 1024 * 1024
+
+    def compile(self, *, event: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        """Compile source columns and optional interaction through native Rust."""
+        from . import _geocatalog
+
+        kinds = {
+            "points": 1,
+            "bubbles": 2,
+            "routes": 3,
+            "arcs": 4,
+            "polygons": 5,
+            "choropleth": 6,
+            "density": 7,
+        }
+        request = dict(
+            camera=dict(self.camera),
+            layers=[
+                dict(
+                    layer.properties,
+                    kind=kinds[layer.kind],
+                    source=layer.source,
+                    layer_id=layer.layer_id,
+                )
+                for layer in self.layers
+            ],
+        )
+        if self.legend is not None:
+            request["legend"] = dict(self.legend)
+        if event is not None:
+            request["event"] = dict(event)
+        encoded = _geocatalog.encode_request(request, self.budget)
+        return _geocatalog.decode_response(_geocatalog.execute(encoded, self.budget))
+
+    def to_image(self, format: str = "png", *, scale: float = 1.0, quality: int = 90) -> bytes:
+        """Export the same Rust Scene, including labels, legend and layer order."""
+        from . import _native
+
+        result = self.compile()
+        camera = result["camera"]
+        return _native.scene_static_export(
+            result["scene"],
+            format,
+            scale=scale,
+            width=math.ceil(camera["width"]),
+            height=math.ceil(camera["height"]),
+            quality=quality,
+        )
+
+    def to_svg(self) -> str:
+        return self.to_image("svg").decode("utf-8")
+
+    def write_image(
+        self, path: str | PathLike[str], *, scale: float = 1.0, quality: int = 90
+    ) -> None:
+        from pathlib import Path
+
+        destination = Path(path)
+        destination.write_bytes(
+            self.to_image(destination.suffix.lstrip("."), scale=scale, quality=quality)
+        )
+
+
+def geo_layer(
+    kind: Literal["points", "bubbles", "routes", "arcs", "polygons", "choropleth", "density"],
+    *,
+    source: Any,
+    layer_id: int,
+    **properties: Any,
+) -> GeoLayer:
+    """Declare a geographic layer using exact GeoColumn descriptor planes.
+
+    ``source`` is an existing GeoArrow descriptor or packed XYGD source.
+    Style/channel properties follow the shared geographic catalog contract;
+    coordinates, IDs, nulls, values and state remain authoritative in Rust.
+    """
+    if kind not in {"points", "bubbles", "routes", "arcs", "polygons", "choropleth", "density"}:
+        raise ValueError("unknown geographic layer kind")
+    return GeoLayer(kind, source, layer_id, properties)
+
+
+def geo_chart(
+    *layers: GeoLayer,
+    camera: Mapping[str, Any],
+    legend: Mapping[str, Any] | None = None,
+    budget: int = 384 * 1024 * 1024,
+) -> GeoChart:
+    """Compose geographic marks with explicit CRS, viewport and resource budget."""
+    if any(not isinstance(layer, GeoLayer) for layer in layers):
+        raise TypeError("geo_chart children must be geo_layer specifications")
+    return GeoChart(tuple(layers), camera, legend, budget)

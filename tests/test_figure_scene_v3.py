@@ -941,7 +941,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 31
+    assert int.from_bytes(encoded[4:8], "little") == 32
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -991,7 +991,7 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
 
     figure.coords = "polar"
     polar = figure.to_scene()
-    assert polar[4:8] == (31).to_bytes(4, "little")
+    assert polar[4:8] == (32).to_bytes(4, "little")
     assert polar[-92:-88] == b"XYPL"
 
 
@@ -1015,7 +1015,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -1091,7 +1091,7 @@ def test_python_scene_compiles_constant_ribbon_color2() -> None:
         [0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#34d399"
     )
     scene = gradient.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYGR" in scene
     svg = _native.scene_svg(scene)
     assert '<linearGradient id="xy-scene-g0"' in svg
@@ -1120,7 +1120,7 @@ def test_python_scene_compiles_constant_ribbon_color2() -> None:
         color_target=["#34d399", "#f59e0b"],
     )
     scene = per_item.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYGR" in scene
     svg = _native.scene_svg(scene)
     assert svg.count("<linearGradient") == 2
@@ -1257,7 +1257,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
         expected = FIXTURE["band_outlines"][mode]
         assert scene == base64.b64decode(expected["scene_base64"])
         assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
-        assert scene[4:8] == (31).to_bytes(4, "little")
+        assert scene[4:8] == (32).to_bytes(4, "little")
         assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
         assert scene[160 + 16 + 2] == symbol
         svg = _native.scene_svg(scene)
@@ -1404,7 +1404,7 @@ def test_python_scene_attached_label_background_uses_xyal_v3_and_rust_box() -> N
     figure = representative_figure()
     figure.marker(2.0, 2.0, text="threshold", style={"label_background": "#ffffff"})
     scene = figure.to_scene()
-    assert scene[:8] == b"XYGS\x1f\x00\x00\x00"
+    assert scene[:8] == b"XYGS\x20\x00\x00\x00"
     assert b"XYLB\x03\x00\x00\x00" in scene
     svg = _native.scene_svg(scene)
     assert "threshold" in svg
@@ -1421,7 +1421,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (32).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
@@ -1433,7 +1433,7 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
     rounded.axis_options["y"]["domain"] = (0.0, 3.0)
     rounded.bar([0, 1], [1, 2], corner_radius=4.0)
     scene = rounded.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert svg.count('<path d="M') == 2
     assert _scene_v3.figure_svg(rounded) == svg
@@ -1443,7 +1443,7 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
     polar.axis_options["y"]["domain"] = (0.0, 1.0)
     polar.bar([0.0], [1.0], corner_radius=4.0)
     pie = polar.to_scene()
-    assert pie[4:8] == (31).to_bytes(4, "little")
+    assert pie[4:8] == (32).to_bytes(4, "little")
     pie_svg = _native.scene_svg(pie)
     assert pie_svg.count('<path d="M') == 1
     assert _scene_v3.figure_svg(polar) == pie_svg
@@ -1478,7 +1478,7 @@ def test_python_scene_compiles_violin_box_corner_radius() -> None:
     )
     violin.traces[-1].style["corner_radius"] = 6.0
     violin_scene = violin.to_scene()
-    assert violin_scene[4:8] == (31).to_bytes(4, "little")
+    assert violin_scene[4:8] == (32).to_bytes(4, "little")
     violin_svg = _native.scene_svg(violin_scene)
     assert '<path d="M' in violin_svg
     assert _scene_v3.figure_svg(violin) == violin_svg
@@ -1748,7 +1748,7 @@ def test_python_scene_compiles_polar_hexbin() -> None:
         mincnt=1,
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
     assert _scene_v3.figure_svg(figure) == svg
@@ -1928,7 +1928,7 @@ def test_python_scene_compiles_polar_corner_radius() -> None:
     donut.axis_options["y"]["domain"] = (0.0, 1.0)
     donut.bar([0.0, 1.5], [1.0, 0.8], base=0.25, corner_radius=14.0, color="#2563eb")
     scene = donut.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert svg.count('<path d="M') == 2
     assert _scene_v3.figure_svg(donut) == svg
@@ -1956,7 +1956,7 @@ def test_python_scene_compiles_polar_wedge_gap() -> None:
     gapped.axis_options["y"]["domain"] = (0.0, 1.0)
     gapped.bar([0.0, 1.5], [1.0, 0.8], wedge_gap=12.0, color="#2563eb")
     scene = gapped.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert svg.count('<path d="M') == 2
     assert _scene_v3.figure_svg(gapped) == svg
@@ -1975,7 +1975,7 @@ def test_python_scene_compiles_polar_density_tessellation() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
     figure.scatter([0.0, math.pi / 2], [0.5, 1.0], density=True, color="#3987e5")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
     assert b"XYIM" not in scene
     svg = _native.scene_svg(scene)
@@ -1992,7 +1992,7 @@ def test_python_scene_compiles_cartesian_density_blit() -> None:
     figure.axis_options["y"]["domain"] = (-1.0, 1.0)
     figure.scatter([0.0] * 200_000, [0.0] * 200_000, density=True, color="#3987e5")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
     assert svg.count("<image") == 1
@@ -2010,7 +2010,7 @@ def test_python_scene_compiles_cartesian_mean_color_density() -> None:
     figure.scatter(x, y, color=color, density=True)
     assert _scene_v3.scene_export_support_reason(figure) is None
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
     assert svg.count("<image") == 1
@@ -2102,7 +2102,7 @@ def test_python_scene_compiles_constant_dash_polylines() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color="#ef4444", width=2.0, dash="dashed")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYDS" in scene
     svg = _native.scene_svg(scene)
     assert 'stroke-dasharray="6,4"' in svg
@@ -2126,7 +2126,7 @@ def test_python_scene_compiles_constant_linecap_polylines() -> None:
         style={"stroke-linecap": "butt"},
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYLC" in scene
     svg = _native.scene_svg(scene)
     assert 'stroke-linecap="butt"' in svg
@@ -2164,7 +2164,7 @@ def test_python_scene_compiles_constant_marker_paths() -> None:
         _marker_path=_DIAMOND_MARKER_PATH,
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYMP" not in scene
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
@@ -2203,7 +2203,7 @@ def test_python_scene_compiles_constant_marker_glyphs() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="A")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYMG" in scene
     svg = _native.scene_svg(scene)
     assert 'font-family="DejaVu Sans"' in svg
@@ -2256,7 +2256,7 @@ def test_python_scene_compiles_constant_linear_gradient_fills() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 3.0)
     figure.bar([0.0, 1.0], [1.0, 2.0], fill="linear-gradient(to bottom, #000000, #ffffff)")
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYGR" in scene
     svg = _native.scene_svg(scene)
     assert '<linearGradient id="xy-scene-g0"' in svg
@@ -2322,7 +2322,7 @@ def test_python_scene_compiles_smooth_polylines() -> None:
         curve="smooth",
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     linear = Figure(width=240, height=160)
     linear.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -2473,7 +2473,7 @@ def test_python_scene_compiles_smooth_areas() -> None:
         curve="smooth",
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     linear = Figure(width=240, height=160)
     linear.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -2514,7 +2514,7 @@ def test_python_scene_compiles_smooth_error_bands() -> None:
     figure.error_band([0.0, 1.0, 2.0], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], color="#22c55e")
     figure.traces[0].style["curve"] = "smooth"
     scene = figure.to_scene()
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     linear = Figure(width=240, height=160)
     linear.axis_options["x"]["domain"] = (0.0, 2.0)

@@ -1,0 +1,108 @@
+import {createXygWasmWorker, XygGeographicChart} from '/packages/xy-client/dist/index.js';
+const worker=createXygWasmWorker({wasm:'/packages/xy-client/dist/xyg-wasm.wasm',workerUrl:'/packages/xy-client/dist/wasm-worker.js',maxArenaBytes:128<<20});
+const assert=(ok,message)=>{if(!ok)throw Error(message);};
+const camera={crs:4326,centerX:0,centerY:0,zoom:0,width:800,height:600,worldWrap:true};
+const count=101,ids=BigUint64Array.from({length:count},(_,i)=>i===0?0xffffffffffffffffn:BigInt(i));
+const xy=Float64Array.from({length:count*2},(_,i)=>i%2?0:i===0?0:179);
+const source={geometry:1,crs:4326,xy,validity:Uint8Array.from({length:count},()=>1),featureIds:ids};
+const before=xy.slice();
+const host=document.createElement('div');document.body.append(host);
+let chart;
+try {
+ const flags=new Uint8Array(count);flags[0]=8;
+ chart=new XygGeographicChart({el:host,worker,catalog:{camera,layers:[{layerId:0xffffffffffffffffn,kind:1,source,stateFlags:flags,style:{fill:Uint8Array.of(255,0,0,255),diameter:16},legendLabel:'Locations',labels:[{featureIndex:0,anchor:0,fontSize:12,coordinate:[0,0],rgba:Uint8Array.of(0,0,0,255),text:'Origin'}]}],legend:{title:'Geographic catalog',location:0,fontSize:12}}});
+ await chart.ready;
+ assert(chart.snapshot().focus?.featureId===ids[0],'initial Rust focus not exposed');
+ assert(host.textContent.includes('Origin')&&host.textContent.includes('Locations'),'label/legend missing');
+ assert(host.querySelectorAll('tbody tr').length===50,'bounded companion firstpage');
+ host.querySelectorAll('button').forEach(button=>{if(button.textContent==='Next')button.click();});
+ assert(host.querySelectorAll('tbody tr').length===50,'companion secondpage');
+ host.querySelectorAll('button').forEach(button=>{if(button.textContent==='Next')button.click();});
+ assert(host.querySelectorAll('tbody tr').length===1,'companion allfeatures reachable');
+ const focused=await chart.interact({operation:6,layerId:0xffffffffffffffffn,featureId:ids[0]});
+ assert(focused.focus.featureId===ids[0],'fullu64focus');
+ const updated=await chart.updateCamera({...camera,zoom:1});
+ assert(updated.focus?.featureId===ids[0],'camera focuscontinuity');
+ const surface=host.firstElementChild;
+ surface.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+ await chart.interact({operation:1,coordinates:[400,300]});
+ assert(chart.snapshot().layers[0].stateFlags[0]&2,'Enter selection lost aftercamera');
+ surface.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+ await chart.interact({operation:1,coordinates:[400,300]});
+ assert(chart.snapshot().focus?.featureId===ids[1],'keyboard covers offscreenfeature');
+ const selected=await chart.interact({operation:3,coordinates:[390,290,410,310],mode:0});
+ assert(selected.hits.some(h=>h.featureId===ids[0]),'Rust brushmembership');
+ const oldFlags=selected.layers[0].stateFlags.slice(), oldKey=selected.rebuildKey.slice();
+ const gl=chart.view.gl,canvas=gl.canvas,ext=gl.getExtension('WEBGL_lose_context');
+ assert(ext,'contextloss extension');
+ const lost=new Promise(resolve=>canvas.addEventListener('webglcontextlost',resolve,{once:true}));
+ window.__controller_stage="losing";ext.loseContext();await lost;window.__controller_stage="lost";
+ await new Promise(resolve=>setTimeout(resolve,100));
+ const restored=new Promise(resolve=>canvas.addEventListener('webglcontextrestored',resolve,{once:true}));
+ window.__controller_stage="restoring";ext.restoreContext();await restored;window.__controller_stage="restored";await new Promise(resolve=>setTimeout(resolve,100));
+ assert(chart.snapshot().layers[0].stateFlags.every((f,i)=>f===oldFlags[i]),'contextrestoredselection');
+ assert(chart.snapshot().rebuildKey.every((f,i)=>f===oldKey[i]),'contextrestoredcamera');
+ const post=await chart.interact({operation:2,coordinates:[400,300],mode:2});
+ assert(post.hits[0]?.featureId===ids[0],'contextrestoredpicking');
+ assert(source.xy.every((f,i)=>f===before[i])&&flags[0]===8&&ids[0]===0xffffffffffffffffn,'source/state mutated');
+ let rejected=false;try{await chart.interact({operation:7,layerId:9n,featureId:99n});}catch{rejected=true;}
+ assert(rejected,'unknownselection accepted');
+ const recovered=await chart.interact({operation:6,layerId:0xffffffffffffffffn,featureId:ids[0]});
+ assert(recovered.focus.featureId===ids[0],'recovery');
+ chart.dispose();assert(!host.children.length,'disposeDOM');
+ const borrowed=document.createElement('canvas');borrowed.setAttribute('role','img');borrowed.setAttribute('aria-label','Owned map');borrowed.tabIndex=7;document.body.append(borrowed);
+ let commits=0;
+ chart=new XygGeographicChart({el:host,worker,pointerSurface:borrowed,catalog:{camera,layers:[{layerId:1n,kind:1,source}]},layer:{setPrepared(){commits++;}},onChange(){throw Error('application callback');},onError(){throw Error('error observer');}});
+ await chart.ready;const toggled=await chart.interact({operation:7,layerId:1n,featureId:ids[0],mode:2});
+ assert(commits===2&&(toggled.layers[0].stateFlags[0]&2),'callback caused false transition failure');
+ chart.dispose();assert(borrowed.getAttribute('role')==='img'&&borrowed.getAttribute('aria-label')==='Owned map'&&borrowed.tabIndex===7,'borrowed surface attributes leaked');borrowed.remove();
+
+ // Independent ownership negative controls use real packaged controller/Worker
+ // transitions, with instrumented capture because synthetic events have no
+ // browser-active pointer to capture. No controller internals are consulted.
+ const pointerSurface=document.createElement('div');document.body.append(pointerSurface);
+ const captures=new Set(), listeners=new Map(), errors=[];
+ const add=pointerSurface.addEventListener.bind(pointerSurface), remove=pointerSurface.removeEventListener.bind(pointerSurface);
+ pointerSurface.addEventListener=(type,handler,options)=>{if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(handler);add(type,handler,options);};
+ pointerSurface.removeEventListener=(type,handler,options)=>{listeners.get(type)?.delete(handler);remove(type,handler,options);};
+ let rejectCapture=true,captureAttempts=0,pointerCommits=0;
+ pointerSurface.setPointerCapture=id=>{captureAttempts++;if(rejectCapture)throw new DOMException('No active synthetic pointer','NotFoundError');captures.add(id);};
+ pointerSurface.hasPointerCapture=id=>captures.has(id);
+ pointerSurface.releasePointerCapture=id=>captures.delete(id);
+ const uncaught=event=>errors.push(event.message);window.addEventListener('error',uncaught);
+ const dispatch=(type,id,x=390,y=290)=>{const box=pointerSurface.getBoundingClientRect();pointerSurface.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'mouse',button:0,buttons:type==='pointerdown'?1:0,shiftKey:true,clientX:box.left+x,clientY:box.top+y}));};
+ chart=new XygGeographicChart({el:host,worker,pointerSurface,catalog:{camera,layers:[{layerId:1n,kind:1,source}]},layer:{setPrepared(){pointerCommits++;}}});
+ await chart.ready;
+ const barrier=()=>chart.interact({operation:1,coordinates:[799,599]});
+ dispatch('pointerdown',1);dispatch('pointerup',1,410,310);await barrier();
+ assert(captureAttempts===1&&errors.length===0,'synthetic capture rejection escaped');
+ assert(pointerCommits===3&&(chart.snapshot().layers[0].stateFlags[0]&2),'capture rejection prevented actual Rust brush');
+ assert(!captures.size&&!listeners.get('lostpointercapture')?.size,'synthetic rejected capture listener leaked');
+ rejectCapture=false;await chart.interact({operation:4});
+ const beforeOwnership=pointerCommits;
+ dispatch('pointerdown',1);
+ assert(captures.size===1&&captures.has(1),'brush owner not captured');
+ dispatch('pointerup',2,410,310);dispatch('pointercancel',2);dispatch('lostpointercapture',2);dispatch('pointerdown',2);
+ await barrier();
+ assert(pointerCommits===beforeOwnership+1&&!(chart.snapshot().layers[0].stateFlags[0]&2),'unrelated pointer committed Rust brush');
+ assert(captures.size===1&&captures.has(1)&&captureAttempts===2,'unrelated pointer replaced or released owner');
+ dispatch('pointerup',1,410,310);await barrier();
+ assert(pointerCommits===beforeOwnership+3&&(chart.snapshot().layers[0].stateFlags[0]&2),'owner pointer did not commit exactly one brush');
+ assert(!captures.size&&!listeners.get('lostpointercapture')?.size,'completed brush retained capture/listener');
+ // Matching cancellation and capture loss abort without a stale next brush.
+ await chart.interact({operation:4});
+ for(const type of ['pointercancel','lostpointercapture']) {
+   const beforeAbort=pointerCommits;dispatch('pointerdown',1);dispatch(type,1);await barrier();
+   assert(pointerCommits===beforeAbort+1&&!(chart.snapshot().layers[0].stateFlags[0]&2),'aborted brush committed selection');
+   assert(!captures.size&&!listeners.get('lostpointercapture')?.size,`${type} retained ownership`);
+ }
+ dispatch('pointerdown',1);const beforeDispose=pointerCommits;
+ chart.dispose();
+ assert(!captures.size&&[...listeners.values()].every(set=>!set.size),'dispose retained captures/handlers');
+ dispatch('pointerup',1,410,310);dispatch('pointermove',1);await new Promise(resolve=>setTimeout(resolve,30));
+ assert(pointerCommits===beforeDispose&&worker.pending.size===0,'disposed pointer handlers submitted work');
+ assert(errors.length===0,'pointer ownership handler threw');
+ window.removeEventListener('error',uncaught);pointerSurface.remove();
+ worker.dispose();
+ window.__controller={ok:true,sourceRows:count,companionPages:3,contextRestored:true,pointerOwnership:true};
+} catch(error) {chart?.dispose();worker.dispose();window.__controller={ok:false,code:error?.code,message:error?.message};}

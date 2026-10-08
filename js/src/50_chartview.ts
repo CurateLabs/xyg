@@ -3,10 +3,46 @@ import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
 import { fmtValue } from "./30_ticks";
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
-import { acquireGLHost } from "./42_glhost";
+import { acquireGLHost, type BorrowedGLSurface } from "./42_glhost";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
 import { applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget } from "./49_wasm_dashboard";
 import { markOf } from "./55_marks";
+
+// Shared capture/loss policy for every capture-owning chart gesture.
+export function captureGesturePointer(context, owner, event, onLost) {
+    const pointerId = event.pointerId;
+    let active = true;
+    const release = () => {
+      if (!active) return;
+      active = false;
+      context._unlisten(lost);
+      // Guarded, so this is a no-op when the browser already took capture back
+      // (a real `lostpointercapture`, or the implicit release after pointerup).
+      try {
+        if (owner.hasPointerCapture(pointerId)) owner.releasePointerCapture(pointerId);
+      } catch (_err) { /* synthetic event */ }
+    };
+    const lost = (lostEvent) => {
+      if (!active || lostEvent.pointerId !== pointerId) return;
+      release();
+      onLost(lostEvent);
+    };
+    const guard = (moveEvent) => {
+      if (!active || moveEvent.pointerId !== pointerId) return false;
+      // Pointer capture cannot cross a browsing-context boundary. A mouse
+      // released outside an iframe can return without pointerup; treat the
+      // first trusted buttonless move as the missing capture-loss signal.
+      if (moveEvent.type === "pointermove" && moveEvent.isTrusted
+          && moveEvent.pointerType === "mouse" && !(moveEvent.buttons & 1)) {
+        lost(moveEvent);
+        return false;
+      }
+      return true;
+    };
+    context._listen(owner, "lostpointercapture", lost);
+    try { owner.setPointerCapture(pointerId); } catch (_err) { /* synthetic event */ }
+    return { guard, release };
+  }
 
 // ---------------------------------------------------------------------------
 // ChartView
@@ -484,7 +520,8 @@ const GRAPH_LABEL_PLAN_STRIDE = 5;
 const COMPOUND_FRAME_STRIDE = 10;
 
 export class ChartView {
-  constructor(el, spec, buffer, comm) {
+  constructor(el, spec, buffer, comm, borrowedSurface?: BorrowedGLSurface) {
+    this._borrowedSurface = borrowedSurface || null;
     if (spec.protocol !== PROTOCOL) {
       el.textContent =
         `xy: protocol mismatch (client speaks ${PROTOCOL}, kernel sent ${spec.protocol}). ` +
@@ -545,8 +582,8 @@ export class ChartView {
     // dense pyplot subplot grids legitimately build sub-120px panels whose
     // plot boxes must land exactly on their matplotlib rects.
     this.size = {
-      w: Math.max(this.fluid ? 120 : 48, cw),
-      h: Math.max(this.fluidH ? 120 : 48, ch),
+      w: Math.max(this._borrowedSurface ? 1 : this.fluid ? 120 : 48, cw),
+      h: Math.max(this._borrowedSurface ? 1 : this.fluidH ? 120 : 48, ch),
     };
     this._layout();
 
@@ -598,6 +635,10 @@ export class ChartView {
       }
       this._glHost?.release(this);
       this._glHost = null;
+      if (this._borrowedSurface) {
+        try { this._destroyGlResources(); } catch (_cleanupError) {}
+        this.root.remove();
+      }
       if (String(err && err.message || err) === "webgl2 unavailable") {
         this.root.textContent = "xy: WebGL2 unavailable in this browser.";
       }
@@ -608,6 +649,12 @@ export class ChartView {
       ranges: Object.fromEntries(Object.entries(this.axes).map(([id, axis]: any) => [id, [...axis.range]])),
     });
     this.view = this._copyView(this.view0);
+    // Borrowed surfaces are painted only by their owner. No chart gesture,
+    // resize, animation, or context governor may mutate that owner's camera
+    // or canvas. The detached DOM is bookkeeping for existing mark builders.
+    if (this._borrowedSurface) {
+      return;
+    }
     this.dragMode = this._resolveDefaultDragAction();
     this._initA11y();
     this.root.dataset.xyContextState = "ready";
@@ -1472,38 +1519,7 @@ export class ChartView {
   }
 
   _captureGesturePointer(owner, event, onLost) {
-    const pointerId = event.pointerId;
-    let active = true;
-    const release = () => {
-      if (!active) return;
-      active = false;
-      this._unlisten(lost);
-      // Guarded, so this is a no-op when the browser already took capture back
-      // (a real `lostpointercapture`, or the implicit release after pointerup).
-      try {
-        if (owner.hasPointerCapture(pointerId)) owner.releasePointerCapture(pointerId);
-      } catch (_err) { /* synthetic event */ }
-    };
-    const lost = (lostEvent) => {
-      if (!active || lostEvent.pointerId !== pointerId) return;
-      release();
-      onLost(lostEvent);
-    };
-    const guard = (moveEvent) => {
-      if (!active || moveEvent.pointerId !== pointerId) return false;
-      // Pointer capture cannot cross a browsing-context boundary. A mouse
-      // released outside an iframe can return without pointerup; treat the
-      // first trusted buttonless move as the missing capture-loss signal.
-      if (moveEvent.type === "pointermove" && moveEvent.isTrusted
-          && moveEvent.pointerType === "mouse" && !(moveEvent.buttons & 1)) {
-        lost(moveEvent);
-        return false;
-      }
-      return true;
-    };
-    this._listen(owner, "lostpointercapture", lost);
-    try { owner.setPointerCapture(pointerId); } catch (_err) { /* synthetic event */ }
-    return { guard, release };
+    return captureGesturePointer(this, owner, event, onLost);
   }
 
   _interactionFlag(name, fallback = false) {
@@ -2357,7 +2373,7 @@ export class ChartView {
     if (!this.gl || this._glLost) return;
     const dpr = this.dpr;
     const rescale = (record) => {
-      if (!record) return;
+      if (!record || record._styleCss) return;
       const previous = Number(record._styleDpr);
       if (!(previous > 0) || previous === dpr) return;
       // Repair in place ONLY while the CPU mirrors still cover every row the
@@ -3867,10 +3883,10 @@ export class ChartView {
   }
 
   _initGl(buffer) {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = this._borrowedSurface?.pixelRatio || window.devicePixelRatio || 1;
     this.dpr = dpr;
-    this.canvas.width = this.plot.w * dpr;
-    this.canvas.height = this.plot.h * dpr;
+    this.canvas.width = this._borrowedSurface?.gl.drawingBufferWidth ?? this.plot.w * dpr;
+    this.canvas.height = this._borrowedSurface?.gl.drawingBufferHeight ?? this.plot.h * dpr;
     this.chrome.width = this.size.w * dpr;
     this.chrome.height = this.size.h * dpr;
     this.chrome.style.width = this.size.w + "px";
@@ -3884,7 +3900,7 @@ export class ChartView {
     // owns the one WebGL2 context for every ChartView in this document. Keep a
     // guarded native path for child frames, explicit rollback, and host
     // allocation failure — that path retains the proven context governor.
-    if (!this._sharedGlAttempted) {
+    if (!this._borrowedSurface && !this._sharedGlAttempted) {
       this._sharedGlAttempted = true;
       const host = acquireGLHost(document, this);
       if (host) {
@@ -3900,7 +3916,10 @@ export class ChartView {
     }
 
     let gl;
-    if (this._glHost) {
+    if (this._borrowedSurface) {
+      gl = this._borrowedSurface.gl;
+      if (!gl || gl.isContextLost()) throw new Error("webgl2 unavailable");
+    } else if (this._glHost) {
       gl = this._glHost.gl;
       if (!gl || gl.isContextLost()) throw new Error("webgl2 unavailable");
     } else {
@@ -3941,6 +3960,7 @@ export class ChartView {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
       this.quadVao = gl.createVertexArray();
+      if (!this.quadVao) throw new Error("xy: vertex array allocation failed");
       gl.bindVertexArray(this.quadVao);
       gl.enableVertexAttribArray(ATTR_SLOTS.a_corner);
       gl.vertexAttribPointer(ATTR_SLOTS.a_corner, 2, gl.FLOAT, false, 0, 0);
@@ -4113,74 +4133,78 @@ export class ChartView {
       // assign this in `_buildRibbonMark` (same value).
       tooltipRows: this._tooltipRowSource(t, buffer),
     };
-
-    if (t.tier === "density") {
-      const d = t.density;
-      const meta = this.spec.columns[d.buf];
-      const raw = this._columnView(buffer, meta);
-      const grid = d.enc === "log-u8" ? lodDecodeLogU8(raw, d.max) : raw;
-      // Mean point color plane (LOD doc §2), copied because exposure
-      // re-encodes outlive the payload buffer; absent for constant-color
-      // traces, which tint the count texture instead.
-      const rgba = d.rgba !== undefined
-        ? new Uint8Array(this._columnView(buffer, this.spec.columns[d.rgba]))
-        : null;
-      g.densityNormMax = d.max;
-      const filter = d.filter || "linear";
-      g.density = {
-        w: d.w, h: d.h, max: d.max, normMax: d.max, colormap: d.colormap,
-        color: d.color ? parseColor(this.root, d.color, [0.3, 0.47, 0.66, 1]) : null,
-        xRange: d.x_range, yRange: d.y_range,
-        // The home window's count seeds lodAggregateStands (T13): every
-        // zoom's points-band estimate starts from this until a closer
-        // window's reply recalibrates it.
-        visible: t.visible,
-        grid: lodCopyGrid(grid),
-        rgba,
-        filter,
-        tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style)),
-        lut: this._lut(d.colormap),
-      };
-      g.sampleOverlay = this._buildDensitySample(t, d.sample, buffer);
-      // The overlay rides its density window (T9 pairing): the home sample
-      // belongs to the home grid, so a deep zoom-out that falls back to the
-      // home texture brings the full-extent point sample back with it.
-      g.density.overlay = g.sampleOverlay;
-      g._shownSampleOverlay = g.sampleOverlay;
-      g._shownDensity = g.density;
-      lodRememberDensity(this, g, g.density);
-      return g;
-    }
-
-    // Per-mark GPU setup is dispatched through MARK_KINDS (55_marks.js) so a
-    // new chart kind is an entry in that registry, not another branch here.
-    markOf(t.kind).build(this, g, t, buffer);
-    if (t.tier === "decimated") {
-      // T1 covering representation for M4 traces.  Density has its texture
-      // cache; decimated line/area traces need the same guarantee while a
-      // window-specific re-decimation is in flight.  Keep the initial (home)
-      // buffers in a separate drawable so refined replies never overwrite
-      // the only geometry that covers the full initial domain.
-      g._homeDecimated = {
-        ...g, _vaos: null, _homeDecimated: null, _decimatedWindow: null,
-      };
-      g._decimatedWindow = [...this._axisRange(g.xAxis)];
-      g._decimatedRefined = false;
-    }
-    if (t.keys && Number.isInteger(t.keys.lo) && Number.isInteger(t.keys.hi)) {
-      const lo = this._columnView(buffer, this.spec.columns[t.keys.lo]);
-      const hi = this._columnView(buffer, this.spec.columns[t.keys.hi]);
-      const count = Math.min(g.n || 0, lo.length, hi.length);
-      g._transitionKeys = new Array(count);
-      g._transitionKeyIndex = new Map();
-      for (let i = 0; i < count; i++) {
-        const key = `${hi[i]}:${lo[i]}`;
-        if (g._transitionKeyIndex.has(key)) throw new Error("xy: duplicate binary animation key");
-        g._transitionKeys[i] = key;
-        g._transitionKeyIndex.set(key, i);
+    try {
+      if (t.tier === "density") {
+        const d = t.density;
+        const meta = this.spec.columns[d.buf];
+        const raw = this._columnView(buffer, meta);
+        const grid = d.enc === "log-u8" ? lodDecodeLogU8(raw, d.max) : raw;
+        // Mean point color plane (LOD doc §2), copied because exposure
+        // re-encodes outlive the payload buffer; absent for constant-color
+        // traces, which tint the count texture instead.
+        const rgba = d.rgba !== undefined
+          ? new Uint8Array(this._columnView(buffer, this.spec.columns[d.rgba]))
+          : null;
+        g.densityNormMax = d.max;
+        const filter = d.filter || "linear";
+        g.density = {
+          w: d.w, h: d.h, max: d.max, normMax: d.max, colormap: d.colormap,
+          color: d.color ? parseColor(this.root, d.color, [0.3, 0.47, 0.66, 1]) : null,
+          xRange: d.x_range, yRange: d.y_range,
+          // The home window's count seeds lodAggregateStands (T13): every
+          // zoom's points-band estimate starts from this until a closer
+          // window's reply recalibrates it.
+          visible: t.visible,
+          grid: lodCopyGrid(grid),
+          rgba,
+          filter,
+          tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style)),
+          lut: this._lut(d.colormap),
+        };
+        g.sampleOverlay = this._buildDensitySample(t, d.sample, buffer);
+        // The overlay rides its density window (T9 pairing): the home sample
+        // belongs to the home grid, so a deep zoom-out that falls back to the
+        // home texture brings the full-extent point sample back with it.
+        g.density.overlay = g.sampleOverlay;
+        g._shownSampleOverlay = g.sampleOverlay;
+        g._shownDensity = g.density;
+        lodRememberDensity(this, g, g.density);
+        return g;
       }
+
+      // Per-mark GPU setup is dispatched through MARK_KINDS (55_marks.js) so a
+      // new chart kind is an entry in that registry, not another branch here.
+      markOf(t.kind).build(this, g, t, buffer);
+      if (t.tier === "decimated") {
+        // T1 covering representation for M4 traces.  Density has its texture
+        // cache; decimated line/area traces need the same guarantee while a
+        // window-specific re-decimation is in flight.  Keep the initial (home)
+        // buffers in a separate drawable so refined replies never overwrite
+        // the only geometry that covers the full initial domain.
+        g._homeDecimated = {
+          ...g, _vaos: null, _homeDecimated: null, _decimatedWindow: null,
+        };
+        g._decimatedWindow = [...this._axisRange(g.xAxis)];
+        g._decimatedRefined = false;
+      }
+      if (t.keys && Number.isInteger(t.keys.lo) && Number.isInteger(t.keys.hi)) {
+        const lo = this._columnView(buffer, this.spec.columns[t.keys.lo]);
+        const hi = this._columnView(buffer, this.spec.columns[t.keys.hi]);
+        const count = Math.min(g.n || 0, lo.length, hi.length);
+        g._transitionKeys = new Array(count);
+        g._transitionKeyIndex = new Map();
+        for (let i = 0; i < count; i++) {
+          const key = `${hi[i]}:${lo[i]}`;
+          if (g._transitionKeyIndex.has(key)) throw new Error("xy: duplicate binary animation key");
+          g._transitionKeys[i] = key;
+          g._transitionKeyIndex.set(key, i);
+        }
+      }
+      return g;
+    } catch (error) {
+      this._destroyTraceResources(g, new Set());
+      throw error;
     }
-    return g;
   }
 
   // Shared (x,y) geometry setup for xy-shaped marks (scatter, line, area, …).
@@ -4199,10 +4223,16 @@ export class ChartView {
 
   _buildInstanceStyleChannels(g, t, buffer, widthName) {
     const channel = (name) => t.channels && t.channels[name];
+    const packedCss=channel("packed_style_css");
+    if (packedCss) {
+      const values=this._columnView(buffer,this.spec.columns[packedCss.buf]);
+      if (packedCss.components!==4 || values.length!==g.n*4) throw new Error("xy: packed CSS style plane has invalid length");
+      g._styleCss=true; g._cpuStyle=values; g.styleBuf=this._upload(values);
+    }
     const artistScalar = Number(t.style && t.style.artist_alpha);
     const hasStyle = channel("opacity") || channel("artist_alpha") ||
       channel(widthName) || channel("symbol") || Number.isFinite(artistScalar);
-    if (hasStyle) {
+    if (hasStyle && !packedCss) {
       const values = new Float32Array(g.n * 4);
       for (let i = 0; i < g.n; i++) {
         values[i * 4] = 1;
@@ -5356,10 +5386,11 @@ export class ChartView {
 
   _buildHeatmapMark(g, t, buffer) {
     const h = t.heatmap;
-    const truecolor = Array.isArray(h.rgba_bufs);
-    const grid = truecolor
-      ? h.rgba_bufs.map((index) => this._columnView(buffer, this.spec.columns[index]))
-      : this._columnView(buffer, this.spec.columns[h.buf]);
+    const packedRgba = Number.isInteger(h.rgba_buf);
+    const truecolor = packedRgba || Array.isArray(h.rgba_bufs);
+    const grid = packedRgba ? this._columnView(buffer, this.spec.columns[h.rgba_buf])
+      : truecolor ? h.rgba_bufs.map((index) => this._columnView(buffer, this.spec.columns[index]))
+        : this._columnView(buffer, this.spec.columns[h.buf]);
     g.heatmap = {
       w: h.w,
       h: h.h,
@@ -5367,6 +5398,7 @@ export class ChartView {
       yRange: h.y_range,
       colormap: h.colormap,
       truecolor,
+      imageTopFirst: h.image_top_first === true,
       tex: truecolor ? this._uploadRgbaGrid(grid, h.w, h.h) : this._uploadHeatmapGrid(grid, h.w, h.h),
       lut: truecolor ? null : this._lut(h.colormap),
     };
@@ -5376,18 +5408,27 @@ export class ChartView {
   _uploadRgbaGrid(channels, w, h) {
     const gl = this.gl;
     const tex = gl.createTexture();
-    const data = new Uint8Array(w * h * 4);
-    for (let index = 0; index < w * h; index++) {
-      for (let channel = 0; channel < 4; channel++) {
-        data[index * 4 + channel] = Math.round(255 * Math.max(0, Math.min(1, channels[channel][index])));
+    if (!tex) throw new Error("xy: texture allocation failed");
+    // Scene images are already Rust-resolved RGBA8; upload their exact view.
+    const data = channels instanceof Uint8Array ? channels : new Uint8Array(w * h * 4);
+    if (!(channels instanceof Uint8Array)) {
+      for (let index = 0; index < w * h; index++) {
+        for (let channel = 0; channel < 4; channel++) {
+          data[index * 4 + channel] = Math.round(255 * Math.max(0, Math.min(1, channels[channel][index])));
+        }
       }
     }
+    try {
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } catch (error) {
+      gl.deleteTexture(tex);
+      throw error;
+    }
     return tex;
   }
 
@@ -5463,8 +5504,13 @@ export class ChartView {
     // drill swap) gets a new id, so any VAO built over the old one rebuilds.
     buf._fcId = ++this._bufSeq;
     buf._fcType = view instanceof Uint8Array ? gl.UNSIGNED_BYTE : gl.FLOAT;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, view, gl.STATIC_DRAW);
+    try {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, view, gl.STATIC_DRAW);
+    } catch (error) {
+      gl.deleteBuffer(buf);
+      throw error;
+    }
     return buf;
   }
 
@@ -5485,10 +5531,11 @@ export class ChartView {
     const sig = parts.join("|");
     let entry = g._vaos.get(key);
     if (!entry || entry.sig !== sig) {
-      if (entry) gl.deleteVertexArray(entry.vao);
       const vao = gl.createVertexArray();
+      if (!vao) throw new Error("xy: vertex array allocation failed");
       gl.bindVertexArray(vao);
-      setup();
+      try { setup(); } catch (error) { gl.deleteVertexArray(vao); throw error; }
+      if (entry) gl.deleteVertexArray(entry.vao);
       entry = { vao, sig };
       g._vaos.set(key, entry);
     } else {
@@ -6127,6 +6174,11 @@ export class ChartView {
 
   draw(keepPick = false) {
     if (this._destroyed || this._glLost || !this.gl) return;
+    if (this._borrowedSurface) {
+      if (!keepPick) this._pickDirty = true;
+      this._borrowedSurface.requestRepaint();
+      return;
+    }
     this._updateZoomMenuLabel?.();
     if (this._raf) {
       this._rafKeepPick = this._rafKeepPick && keepPick;
@@ -6156,14 +6208,16 @@ export class ChartView {
     this._authoredScatterDraws = [];
     const gl = this.gl;
     const { x0, x1, y0, y1 } = this.view;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (!this._borrowedSurface) gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     // Always transparent: this canvas sits ABOVE the chrome canvas over the
     // plot rect, so an opaque --chart-bg clear here would occlude everything
     // chrome draws inside the plot (grid, bands, rules, arrows). The plot
     // background paints at the bottom of the stack in _drawChrome instead.
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    if (!this._borrowedSurface) {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
 
     const drawTrace = (g) => {
       if (g._legendHidden) return; // legend click-toggle (interaction spec §10)
@@ -6202,6 +6256,10 @@ export class ChartView {
 
   _drawNow() {
     if (this._destroyed || !this.gl || this._glLost) return;
+    if (this._borrowedSurface) {
+      this._borrowedSurface.requestRepaint();
+      return;
+    }
     let rendered;
     if (this._glHost) {
       rendered = this._glHost.render(
@@ -6311,6 +6369,7 @@ export class ChartView {
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
     this._setPolarUniforms(prog);
     gl.uniform1f(u("u_dpr"), this.dpr);
+    gl.uniform1i(u("u_instanceStyleCss"), g._styleCss ? 1 : 0);
     const zoomStyle = this._pointZoomStyle(g);
     const transitionOn = !!(g._transitionPrevXBuf && g._transitionPrevYBuf);
     gl.uniform1i(u("u_transitionActive"), transitionOn ? 1 : 0);
@@ -6517,6 +6576,7 @@ export class ChartView {
     );
     gl.uniform1f(u("u_dpr"), this.dpr);
     gl.uniform1f(u("u_size"), size);
+    gl.uniform1i(u("u_instanceStyleCss"), 0);
     gl.uniform1i(u("u_sizeMode"), 0);
     gl.uniform2f(u("u_sizeRange"), size, size);
     gl.uniform1i(u("u_colorMode"), 0);
@@ -6620,7 +6680,7 @@ export class ChartView {
     gl.uniform4f(
       u("u_gridRange"),
       h.xRange[xrev ? 1 : 0], h.xRange[xrev ? 0 : 1],
-      h.yRange[yrev ? 1 : 0], h.yRange[yrev ? 0 : 1],
+      h.yRange[h.imageTopFirst ? 0 : yrev ? 1 : 0], h.yRange[h.imageTopFirst ? 1 : yrev ? 0 : 1],
     );
     gl.uniform1f(u("u_opacity"), this._fillOpacity(g.trace.style) * (g._transitionOpacity ?? 1) * (g._legendDim ?? 1));
     gl.uniform1i(u("u_truecolor"), h.truecolor ? 1 : 0);
@@ -6706,6 +6766,8 @@ export class ChartView {
     this._setPolarUniforms(prog);
     gl.uniform2f(u("u_res"), this.canvas.width, this.canvas.height);
     gl.uniform1f(u("u_width"), (g.trace.style.width ?? 1.5) * this.dpr);
+    gl.uniform1i(u("u_instanceStyleCss"), g._styleCss ? 1 : 0);
+    gl.uniform1f(u("u_dpr"), this.dpr);
     gl.uniform1f(u("u_animationProgress"), g._transitionScale ?? 1);
     const [r, gg, b, a] = g.color;
     gl.uniform4f(u("u_color"), r, gg, b, a);
@@ -8962,7 +9024,7 @@ export class ChartView {
       const host = this._glHost;
       this._glHost = null;
       host.release(this);
-    } else {
+    } else if (!this._borrowedSurface) {
       const loseExt = this.gl && this.gl.getExtension("WEBGL_lose_context");
       if (loseExt) loseExt.loseContext();
     }

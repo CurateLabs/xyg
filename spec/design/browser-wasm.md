@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 30
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 31
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -216,8 +216,8 @@ interactive path:
 
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
-one codegen unit and stripping, while setting LLVM's inline threshold to 150.
-Native builds remain unchanged. The shipped artifact is 1,028,586 raw bytes and
+one codegen unit and stripping; ABI30 set LLVM's inline threshold to 150.
+Native builds remain unchanged. The ABI30 artifact was 1,028,586 raw bytes and
 376,783 gzip bytes, below the unchanged 1 MiB gate. This is a measured size/runtime
 tradeoff, not a claim of a speedup: four ABBA pairs at 100/10,000/100,000 rows
 produced byte-identical outputs across GraphForge composition, geographic Scene
@@ -228,6 +228,29 @@ measure XYG composition, not GraphForge algorithm execution, browser paint or
 massive-data behavior. Raw samples, environment, input generator and reproduction
 commands are recorded in `spec/benchmarks/wasm-inline-150-local.json`.
 The earlier global size-optimized profiles remain rejected.
+
+
+ABI31's complete geographic catalog and interactions use the same O3 profile,
+with a target-specific inline threshold of 100 and a build-only pinned
+Binaryen132.0.0 `wasm-opt -O3 --all-features` post-link pass. Packaging reads the
+source once, optimizes an isolated temporary copy, validates the exact optimized
+export/import/signature and ABI/Scene version contract (start functions are rejected; painter version is verified by the real painter conformance tests), applies the unchanged 1MiB gate, then
+publishes those validated bytes and their deterministic inline digest. The
+optimizer is an Apache2.0 npm devDependency; no Binaryen code or dependency
+enters the browser runtime. Native builds remain unchanged.
+
+The measured artifact is 1,034,845 raw / 418,362 level9 gzip bytes. The
+same-source inline150 raw baseline is 1,172,316 / 431,903 bytes. Four ABBA
+pairs compare byte-identical admitted GraphForge, Scene, camera, catalog and
+interaction results at 100/10k/100k rows. Geographic medians range from 6.0%
+faster to unchanged. GraphForge costs about 9µs more at100 rows, 0.067ms more
+at10k and 1.64ms more at100k (+3.6%). Both artifacts explicitly reject the
+100k interaction request under the existing processor peak policy; no latency
+is assigned to that rejected operation. Fresh-process Node startup medians
+were 27.73ms versus26.92ms, with compilation1.09ms versus1.01ms. These local
+measurements do not establish browser paint, production or massive-scale wins.
+Raw samples, hashes, environment, source files and commands are committed in
+`spec/benchmarks/wasm-geographic-profile-local.json`.
 
 `js/package-wasm.mjs` fails the build above a 1 MiB budget, so further growth
 requires a recorded decision rather than drift.
@@ -367,7 +390,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 31 for this contract.
+`SCENE_VERSION` remains independently versioned and is 32 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -393,8 +416,8 @@ split connected line/area geometry. Painter v14 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v14 begins with `XYPB`, independent painter version 14, canonical
-Scene v31 (`SCENE_VERSION = 31`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v15 begins with `XYPB`, independent painter version 15, canonical
+Scene v32 (`SCENE_VERSION = 32`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v23
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
@@ -426,8 +449,50 @@ same Scene SHA-256. The browser consumes the bytes only through the WASM
 worker, then verifies chart/plot backgrounds, top/right axes and labels,
 legend, literal colorbar ticks, and the callout-label background. This keeps
 browser chrome consumption structural rather than host-layout-derived.
-Each trace descriptor identifies scatter/polyline/rect,
-style, count, and absolute packed-column offsets. Rust derives default numeric
+Each 64-byte trace descriptor starts with kind/symbol/annotation/reserved bytes,
+then a u32 primitive count. Kinds 0–4 retain their prior scatter/polyline/rect/
+band/three-vertex polygon layouts. All offsets are absolute and all data planes
+are emitted contiguously in the order below; metadata views consume the planes
+without JavaScript gathering, sorting, triangulation, color resolution, or size
+normalization. Canonical Image records are consumed rather than omitted.
+
+| Derived kind | Coordinate offsets | Identity offsets | Additional planes |
+| --- | --- | --- | --- |
+| 5, Image (`count=1`) | 8/12/16/20: one f32 x0/y0/x1/y1 | 24/28: u32 low/high | 48/52: width/height values; 56: raw RGBA8 offset; 60: exact byte length `width*height*4` |
+| 7, triangle instances | 8/12/16/20/48/52: f32 x0/y0/x1/y1/x2/y2 | 24/28: u32 low/high per triangle | 56: RGBA8 fill plane; 60: byte length `count*4` |
+| 8, marker instances | 8/12: f32 x/y; 16: u32 source style refs; 20: zero | 24/28: u32 low/high per marker | 48: raw f32 CSS diameter; 52/56: RGBA8 fill/stroke; 60: four-f32 CSS style rows |
+| 9, segment instances | 8/12/16/20: f32 x0/y0/x1/y1 | 24/28: u32 low/high per segment | 48: RGBA8 stroke; 52: four-f32 CSS style rows; 56: u32 source style refs; 60: zero |
+
+Kinds 5/8/9 reserve bytes 32–47 as zero. Kind 7 reserves its scalar fill
+32–35 as zero and retains common stroke RGBA/width at 36–43, with zero diameter.
+New kinds have zero symbol and annotation bytes. Kind 7 batches only explicit
+Scene Triangle primitives, splitting on a visible primitive of another kind,
+an invisible source boundary, annotation tag, or differing stroke paint/width.
+Each instance carries its own resolved fill and complete u64 identity. Kind 8
+batches adjacent ordinary visible Scatter records across color, width, diameter,
+and symbol changes. Kind 9 batches only explicit Scene Segment primitives;
+an arbitrary Polyline is never reinterpreted as independent segments. Paint
+order is retained. Marker/segment planes use 48 bytes per instance; triangles
+use 36. Rust includes every plane and image byte in preallocation admission.
+
+The CSS style row is `[1,-1,resolved_width,symbol]` (segment symbol is -1).
+The marker width includes Rust's line-only-symbol default. The existing GPU
+program applies only CSS-to-device width conversion through
+`u_instanceStyleCss` and `u_dpr`; the client uploads the exact plane, never
+rebakes it on DPR changes. Raw marker diameters use the existing size channel
+with unit range `[0,1]`, preserving the Rust float values for paint and picking.
+Packed canonical segments retain the native round-cap policy within the
+existing segment program, including DPR scaling. Generic authored channels and
+segments keep their existing units and behavior.
+
+Image pixels are straight-alpha RGBA8 in image-top-first order. They upload
+directly into the existing nearest-filtered true-color texture program. The
+image's screen y range anchors row zero at its top; no host pixel transform is
+performed. Positive dimensions, positive bounds, exact byte length, kind-specific
+reserved fields, count, and contiguous offsets fail closed before hydration.
+Per-instance planes retain complete identities, with no synthesized feature IDs.
+
+Rust derives default numeric
 ticks or consumes bounded authored major/minor positions, formats major labels,
 maps positions to painter coordinates, and emits fixed 16-byte records whose
 last u32 distinguishes major from minor. TypeScript validates the three chrome
@@ -906,7 +971,7 @@ hydrated deep-zoom upload independently retains the same separation within
 The bounded frozen point/outline path supplies #47's actual derived Scene parity
 evidence. ABI 30 also supports certified perspective pitch through the same
 GeoViewport frustum processor; live transitions use XYVC/XYVR below;
-MapLibre/layers/fills remain #49 and geographic LOD/export remains #50.
+MapLibre/catalog/fills/interaction use the ABI31 catalog below; geographic LOD and frozen massive-source export remain #50.
 
 
 The camera protocol is a separate sequenced geographic command in the existing

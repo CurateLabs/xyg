@@ -1,5 +1,13 @@
 import { ATTR_SLOTS } from "./40_gl";
 
+/** A caller-owned context. Its owner alone schedules paint and owns the canvas,
+ * framebuffer, context loss, and lifetime. Never register it with GLHost. */
+export interface BorrowedGLSurface {
+  readonly gl: WebGL2RenderingContext;
+  readonly pixelRatio: number;
+  requestRepaint(): void;
+}
+
 // ---------------------------------------------------------------------------
 // Shared WebGL2 host
 // ---------------------------------------------------------------------------

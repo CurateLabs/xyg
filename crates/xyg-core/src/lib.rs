@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 380;
+pub const ABI_VERSION: u32 = 381;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -27252,6 +27252,50 @@ pub unsafe extern "C" fn xyg_geo_viewport_execute(
     })
 }
 
+/// Execute bounded XYLK layer catalog request and copy canonical XYLM output (ABI 381).
+/// A null output with zero capacity queries the required size. Successful calls
+/// write out_length; insufficient capacity returns -13 with all destinations untouched.
+/// All failures preserve every caller destination. Budget is at most 384 MiB.
+///
+/// # Safety
+/// request addresses request_len readable bytes; non-null out addresses cap writable
+/// bytes, and out_length addresses one writable usize. These regions do not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_catalog_compile(
+    request: *const u8,
+    request_len: usize,
+    budget: usize,
+    out: *mut u8,
+    cap: usize,
+    out_length: *mut usize,
+) -> i32 {
+    ffi_guard(geo::GeoError::InvalidArgument as i32, || {
+        if request_len > budget || budget > xyg_engine::geo_layers_protocol::MAX_PROTOCOL_BYTES {
+            return geo::GeoError::ResourceLimit as i32;
+        }
+        if request.is_null()
+            || request_len < xyg_engine::geo_layers_protocol::HEADER_BYTES
+            || out_length.is_null()
+            || (out.is_null() && cap != 0)
+        {
+            return geo::GeoError::InvalidArgument as i32;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let result = match xyg_engine::geo_layers_protocol::execute(bytes, budget) {
+            Ok(result) => result,
+            Err(error) => return error as i32,
+        };
+        if !out.is_null() && cap < result.len() {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if !out.is_null() {
+            std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        }
+        *out_length = result.len();
+        0
+    })
+}
+
 /// Free a geographic column handle. Returns 1 if it existed, 0 if stale.
 ///
 /// # Safety
@@ -28461,7 +28505,7 @@ mod tests {
         assert_eq!(&encoded_out[..4], b"XYGS");
         assert_eq!(
             u32::from_le_bytes(encoded_out[4..8].try_into().unwrap()),
-            31
+            scene::SCENE_VERSION
         );
         let mut sidecar_encoded = vec![0u8; 65536];
         let sidecar_code = unsafe {

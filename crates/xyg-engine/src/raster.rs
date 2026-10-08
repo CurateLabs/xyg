@@ -1,20 +1,15 @@
-//! Anti-aliased 2D rasterizer for the native PNG export path
-//! (design dossier Phase 3). Python computes all chart geometry (reusing the SVG
-//! exporter's scales/ticks/colormaps) and hands over a flat *display list* — a
-//! tagged command stream — which this module paints into a straight-alpha RGBA8
-//! framebuffer the caller owns.
+//! Anti-aliased native Scene export rasterizer (design dossier §19/§27).
+//! Rust lowers authoritative Scene geometry into a tagged display list, then
+//! this module paints into a caller-owned straight-alpha RGBA8 framebuffer.
 //!
-//! Shapes are tessellated to polygons on the Python side, so the core here is a
-//! small, general set: coverage-based scanline **polygon fill** (flat + linear
-//! gradient), distance-based **stroke** and **point/symbol** rasterization (which
-//! gets round caps/joins and AA for free), **image blit** (density/heatmap
-//! rasters), and **text** blitted from the baked font atlas (`font.rs`). PNG
-//! compression uses `png`/fdeflate; text needs no FreeType.
+//! Coverage-based polygon/triangle-union fills, distance-based strokes and
+//! symbols, image blits, and the baked text atlas share the native export path.
+//! PNG compression uses `png`/fdeflate; text needs no FreeType.
 
 use crate::font;
 use std::io::Cursor;
 
-// ---- command opcodes (must match python/xyg/_raster.py) --------------
+// ---- command opcodes (Rust Scene lowering; triangle-coverage.md) --------
 const OP_CLIP: u8 = 0;
 const OP_FILL_POLY: u8 = 1;
 const OP_FILL_POLY_GRAD: u8 = 2;
@@ -34,6 +29,10 @@ const OP_AFFINE_CHANNEL_POINTS: u8 = 15;
 const OP_STROKED_TRIANGLES: u8 = 16;
 const OP_STYLED_TEXT: u8 = 17;
 const OP_POLAR_CLIP: u8 = 18;
+// One coverage union for adjacent triangles of one feature and literal paint.
+const OP_UNION_TRIANGLES: u8 = 19;
+const MAX_UNION_TRIANGLES: usize = 65_536;
+const MAX_UNION_EDGE_WORK: usize = 64_000_000;
 
 const SS: usize = 4; // vertical supersamples per scanline for polygon AA
 
@@ -538,12 +537,18 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
 /// Per-row coverage in [0,1] over the polygon's x-span, with `color_at` giving
 /// the paint per pixel (flat or gradient). Non-zero winding, `SS` vertical
 /// samples, analytic horizontal endpoint coverage.
-fn fill_poly(
+fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], color_at: impl FnMut(f32, f32) -> [f32; 4]) {
+    fill_contours(cv, pts, pts.len(), false, color_at);
+}
+
+fn fill_contours(
     cv: &mut Canvas<'_>,
     pts: &[(f32, f32)],
+    contour_size: usize,
+    canonical_edges: bool,
     mut color_at: impl FnMut(f32, f32) -> [f32; 4],
 ) {
-    if pts.len() < 3 {
+    if contour_size < 3 || pts.len() < contour_size || pts.len() % contour_size != 0 {
         return;
     }
     let mut ymin = f32::INFINITY;
@@ -574,11 +579,19 @@ fn fill_poly(
             let n = pts.len();
             for i in 0..n {
                 let (x0, y0) = pts[i];
-                let (x1, y1) = pts[(i + 1) % n];
+                let (x1, y1) = pts[(i / contour_size) * contour_size + (i + 1) % contour_size];
                 if (y0 <= sy && y1 > sy) || (y1 <= sy && y0 > sy) {
-                    let t = (sy - y0) / (y1 - y0);
-                    let x = x0 + t * (x1 - x0);
-                    xs.push((x, if y1 > y0 { 1 } else { -1 }));
+                    // Opposite copies of one shared edge use identical arithmetic.
+                    // Its wind still follows the original contour orientation.
+                    let wind = if y1 > y0 { 1 } else { -1 };
+                    let (ax, ay, bx, by) = if canonical_edges && y1 < y0 {
+                        (x1, y1, x0, y0)
+                    } else {
+                        (x0, y0, x1, y1)
+                    };
+                    let t = (sy - ay) / (by - ay);
+                    let x = ax + t * (bx - ax);
+                    xs.push((x, wind));
                 }
             }
             if xs.len() < 2 {
@@ -1146,140 +1159,7 @@ fn stroke_segments_band(
 
 // ---- point / symbol (signed distance field) ---------------------------------
 
-#[inline]
-fn segment_distance(p: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
-    let e = (b.0 - a.0, b.1 - a.1);
-    let v = (p.0 - a.0, p.1 - a.1);
-    let h = ((v.0 * e.0 + v.1 * e.1) / (e.0 * e.0 + e.1 * e.1)).clamp(0.0, 1.0);
-    ((v.0 - e.0 * h).powi(2) + (v.1 - e.1 * h).powi(2)).sqrt()
-}
-
-#[inline]
-fn triangle_sdf(p: (f32, f32), a: (f32, f32), b: (f32, f32), c: (f32, f32)) -> f32 {
-    let cross = |u: (f32, f32), v: (f32, f32), q: (f32, f32)| {
-        (v.0 - u.0) * (q.1 - u.1) - (v.1 - u.1) * (q.0 - u.0)
-    };
-    let (c0, c1, c2) = (cross(a, b, p), cross(b, c, p), cross(c, a, p));
-    let inside = (c0 >= 0.0 && c1 >= 0.0 && c2 >= 0.0) || (c0 <= 0.0 && c1 <= 0.0 && c2 <= 0.0);
-    let d = segment_distance(p, a, b)
-        .min(segment_distance(p, b, c))
-        .min(segment_distance(p, c, a));
-    if inside {
-        -d
-    } else {
-        d
-    }
-}
-
-#[inline]
-fn pentagon_sdf(p: (f32, f32), r: f32) -> f32 {
-    // Matplotlib Path.unit_regular_polygon(5), scaled to the marker radius.
-    let vertices = [
-        (0.0, -r),
-        (-0.951_056_54 * r, -0.309_017 * r),
-        (-0.587_785_24 * r, 0.809_017 * r),
-        (0.587_785_24 * r, 0.809_017 * r),
-        (0.951_056_54 * r, -0.309_017 * r),
-    ];
-    let mut distance = f32::INFINITY;
-    let mut has_positive = false;
-    let mut has_negative = false;
-    for index in 0..5 {
-        let a = vertices[index];
-        let b = vertices[(index + 1) % 5];
-        distance = distance.min(segment_distance(p, a, b));
-        let cross = (b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0);
-        has_positive |= cross > 0.0;
-        has_negative |= cross < 0.0;
-    }
-    if has_positive && has_negative {
-        distance
-    } else {
-        -distance
-    }
-}
-
-#[inline]
-fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
-    match sym {
-        1 => px.abs().max(py.abs()) - r,                           // square
-        2 => (px.abs() + py.abs()) - r * std::f32::consts::SQRT_2, // diamond
-        3 | 8 | 9 | 10 => {
-            // Matplotlib's normalized triangle: apex at one edge and a
-            // full-width base at the opposite edge.
-            let d = match sym {
-                8 => (-px, -py), // down
-                9 => (-py, px),  // left
-                10 => (py, -px), // right
-                _ => (px, py),
-            };
-            triangle_sdf(d, (0.0, -r), (-r, r), (r, r))
-        }
-        4 => {
-            // plus / cross
-            let (ax, ay) = (px.abs(), py.abs());
-            (ax - 0.34 * r).max(ay - r).min((ax - r).max(ay - 0.34 * r))
-        }
-        11 => {
-            // diagonal cross (matplotlib's x/X), distinct from the plus glyph
-            let qx = (px + py) * std::f32::consts::FRAC_1_SQRT_2;
-            let qy = (py - px) * std::f32::consts::FRAC_1_SQRT_2;
-            let (ax, ay) = (qx.abs(), qy.abs());
-            (ax - 0.34 * r).max(ay - r).min((ax - r).max(ay - 0.34 * r))
-        }
-        13 => px.abs().max(py.abs()) - r, // snapped pixel
-        14 => (px.abs() / 0.6 + py.abs()) - r * std::f32::consts::SQRT_2, // thin diamond
-        15 => {
-            // Unfilled plus: its width comes from markeredgewidth below.
-            let (ax, ay) = (px.abs(), py.abs());
-            (ax - r).max(ay).min((ay - r).max(ax))
-        }
-        16 => {
-            // Unfilled x: rotate the same two line segments by 45 degrees.
-            let qx = (px + py) * std::f32::consts::FRAC_1_SQRT_2;
-            let qy = (py - px) * std::f32::consts::FRAC_1_SQRT_2;
-            let (ax, ay) = (qx.abs(), qy.abs());
-            (ax - r).max(ay).min((ay - r).max(ax))
-        }
-        17 => (px.abs() - r).max(py.abs()), // unfilled horizontal line
-        18 => px.abs().max(py.abs() - r),   // unfilled vertical line
-        5 => {
-            // regular hexagon, pointy top (IQ SDF, x/y swapped for a top vertex)
-            let (k0, k1, k2) = (-0.866_025_4_f32, 0.5_f32, 0.577_350_3_f32);
-            let mut p = (py.abs(), px.abs());
-            let m = (k0 * p.0 + k1 * p.1).min(0.0);
-            p = (p.0 - 2.0 * m * k0, p.1 - 2.0 * m * k1);
-            p = (p.0 - p.0.clamp(-k2 * r, k2 * r), p.1 - r);
-            (p.0 * p.0 + p.1 * p.1).sqrt() * p.1.signum()
-        }
-        6 => pentagon_sdf((px, py), r),
-        7 => {
-            // five-pointed star, apex up (IQ SDF)
-            let rf = 0.45_f32;
-            let (k1x, k1y) = (0.809_017_f32, -0.587_785_25_f32);
-            let (k2x, k2y) = (-k1x, k1y);
-            let mut p = (px.abs(), -py); // flip y so a point faces up
-            let d1 = k1x * p.0 + k1y * p.1;
-            let m1 = d1.max(0.0);
-            p = (p.0 - 2.0 * m1 * k1x, p.1 - 2.0 * m1 * k1y);
-            let d2 = k2x * p.0 + k2y * p.1;
-            let m2 = d2.max(0.0);
-            p = (p.0 - 2.0 * m2 * k2x, p.1 - 2.0 * m2 * k2y);
-            p = (p.0.abs(), p.1 - r);
-            let ba = (rf * -k1y - 0.0, rf * k1x - 1.0);
-            let h = (p.0 * ba.0 + p.1 * ba.1) / (ba.0 * ba.0 + ba.1 * ba.1);
-            let h = h.clamp(0.0, r);
-            let q = (p.0 - ba.0 * h, p.1 - ba.1 * h);
-            (q.0 * q.0 + q.1 * q.1).sqrt() * (p.1 * ba.0 - p.0 * ba.1).signum()
-        }
-        _ => (px * px + py * py).sqrt() - r, // circle
-    }
-}
-
-#[inline]
-fn symbol_extent(r: f32, sym: u8) -> f32 {
-    crate::scene::marker_symbol_extent(f64::from(r), sym) as f32
-}
+use crate::marker_geometry::{symbol_extent, symbol_sdf};
 
 #[allow(clippy::too_many_arguments)]
 fn point(
@@ -3011,6 +2891,53 @@ fn rasterize_with_spans<'a>(
                         }
                     }
                 }
+                OP_UNION_TRIANGLES => {
+                    let n = r.u32()? as usize;
+                    if n == 0 || n > MAX_UNION_TRIANGLES {
+                        return None;
+                    }
+                    let color = r.rgba()?;
+                    let bytes = r.bytes(n.checked_mul(24)?)?;
+                    // Bound scanline work before allocating coverage/edge arrays.
+                    let mut ymin = f32::INFINITY;
+                    let mut ymax = f32::NEG_INFINITY;
+                    for i in 0..n * 3 {
+                        let x = f32_at(bytes, i * 2);
+                        let y = f32_at(bytes, i * 2 + 1);
+                        if !x.is_finite() || !y.is_finite() {
+                            return None;
+                        }
+                        ymin = ymin.min(y);
+                        ymax = ymax.max(y);
+                    }
+                    let (_, by0, _, by1) = cv.bbox(0.0, ymin, cv.w as f32, ymax);
+                    if n.checked_mul(3)?
+                        .checked_mul(by1.saturating_sub(by0))?
+                        .checked_mul(SS)?
+                        > MAX_UNION_EDGE_WORK
+                    {
+                        return None;
+                    }
+                    let mut points = Vec::with_capacity(n * 3);
+                    for i in 0..n {
+                        let mut triangle = [(0.0f32, 0.0f32); 3];
+                        for (j, point) in triangle.iter_mut().enumerate() {
+                            *point = (
+                                f32_at(bytes, i * 6 + j * 2),
+                                f32_at(bytes, i * 6 + j * 2 + 1),
+                            );
+                        }
+                        let (a, b, c) = (triangle[0], triangle[1], triangle[2]);
+                        let cross = (f64::from(b.0) - f64::from(a.0))
+                            * (f64::from(c.1) - f64::from(a.1))
+                            - (f64::from(b.1) - f64::from(a.1)) * (f64::from(c.0) - f64::from(a.0));
+                        if cross < 0.0 {
+                            triangle.swap(1, 2);
+                        }
+                        points.extend_from_slice(&triangle);
+                    }
+                    fill_contours(&mut cv, &points, 3, true, |_, _| color);
+                }
                 OP_TRIANGLES | OP_STROKED_TRIANGLES => {
                     let n = r.u32()? as usize;
                     let (stroke_width, stroke_color) = if op == OP_STROKED_TRIANGLES {
@@ -4445,5 +4372,71 @@ mod tests {
         short.extend([0, 0, 0, 0]);
         short.extend(f32le(1.0)); // far too few bytes for 1000 marks
         assert!(!rasterize_into(&short, 10, 10, &mut out));
+    }
+    fn union_command(triangles: &[[f32; 6]], alpha: u8) -> Vec<u8> {
+        let mut cmd = vec![OP_UNION_TRIANGLES];
+        cmd.extend(u32le(triangles.len() as u32));
+        cmd.extend([255, 0, 0, alpha]);
+        for triangle in triangles {
+            for value in triangle {
+                cmd.extend(f32le(*value));
+            }
+        }
+        cmd
+    }
+
+    #[test]
+    fn triangle_union_shared_edges_blend_once_for_both_windings() {
+        for alpha in [128, 255] {
+            for reverse in [false, true] {
+                let mut triangles = [[1., 1., 9., 1., 9., 9.], [1., 1., 9., 9., 1., 9.]];
+                if reverse {
+                    for t in &mut triangles {
+                        t.swap(2, 4);
+                        t.swap(3, 5);
+                    }
+                }
+                let out = rasterize_to_vec(&union_command(&triangles, alpha), &[], 10, 10, false)
+                    .unwrap();
+                for y in 1..9 {
+                    for x in 1..9 {
+                        assert_eq!(
+                            px(&out, 10, x, y),
+                            [255, 0, 0, alpha],
+                            "({x},{y}) reverse={reverse}"
+                        );
+                    }
+                }
+                assert_eq!(px(&out, 10, 0, 0), [0; 4]);
+            }
+        }
+    }
+
+    #[test]
+    fn triangle_union_overlapping_contours_do_not_double_alpha() {
+        let t = [1., 1., 9., 1., 1., 9.];
+        let out = rasterize_to_vec(&union_command(&[t, t], 128), &[], 10, 10, false).unwrap();
+        assert_eq!(px(&out, 10, 2, 2), [255, 0, 0, 128]);
+        assert_eq!(px(&out, 10, 8, 8), [0; 4]);
+    }
+
+    #[test]
+    fn triangle_union_rejects_malformed_and_excess_scan_work() {
+        let good = union_command(&[[1., 1., 9., 1., 1., 9.]], 255);
+        assert!(rasterize_to_vec(&good[..good.len() - 1], &[], 10, 10, false).is_none());
+        assert!(rasterize_to_vec(&union_command(&[], 255), &[], 10, 10, false).is_none());
+        assert!(rasterize_to_vec(
+            &union_command(&[[f32::NAN, 1., 9., 1., 1., 9.]], 255),
+            &[],
+            10,
+            10,
+            false
+        )
+        .is_none());
+        let mut excessive = vec![OP_UNION_TRIANGLES];
+        excessive.extend(u32le(MAX_UNION_TRIANGLES as u32 + 1));
+        assert!(rasterize_to_vec(&excessive, &[], 10, 10, false).is_none());
+        let work = union_command(&vec![[0., 0., 10., 0., 0., 100.]; MAX_UNION_TRIANGLES], 255);
+        assert!(rasterize_to_vec(&work, &[], 10, 100, false).is_none());
     }
 }

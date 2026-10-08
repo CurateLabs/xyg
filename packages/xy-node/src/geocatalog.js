@@ -1,0 +1,79 @@
+/** Typed framing for the shared Rust geographic catalog. No layout or style defaults. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+const MAX=384*1024*1024, pad=(n       )=>Math.ceil(n/8)*8;
+function uint(n       ){if(!Number.isInteger(n)||n<0||n>0xffffffff)throw new TypeError('expected u32');return n;}
+function id(n       ){if(typeof n!=='bigint'||n<0n||n>0xffffffffffffffffn)throw new TypeError('layerId must be u64 bigint');return n;}
+function rgba(n           ){if(!(n instanceof Uint8Array)||n.length!==4)throw new TypeError('paint must be RGBA8');return n;}
+function utf(n       ){if(typeof n!=='string'||n.length>8192)throw new TypeError('text exceeds catalog framing');const b=new TextEncoder().encode(n);if(b.length>8192)throw new RangeError('text exceeds catalog framing');return b;}
+function descriptor(source                             ){
+ if(source instanceof ArrayBuffer)return {size:source.byteLength,write:(b           ,_v         ,at       )=>b.set(new Uint8Array(source),at)};
+ uint(source.geometry);uint(source.crs);
+ if(!(source.xy instanceof Float64Array)||source.xy.length%2||!(source.validity instanceof Uint8Array)||source.featureIds!=null&&(!(source.featureIds instanceof BigUint64Array)||source.featureIds.length!==source.validity.length))throw new TypeError('source requires exact typed planes');
+ const offsets=[source.offsets0,source.offsets1,source.offsets2].map(x=>x??new Uint32Array());if(offsets.some(x=>!(x instanceof Uint32Array)))throw new TypeError('source offsets require u32');
+ const planes=[source.xy,source.validity,source.featureIds??new BigUint64Array(),...offsets];const size=64+planes.reduce((n,p)=>n+pad(p.byteLength),0);
+ if(size>256*1024*1024)throw new RangeError('source exceeds column framing');
+ return {size,write:(b           ,v         ,at       )=>{b.set([88,89,71,68],at);[[4,1],[8,source.geometry],[12,source.crs],[16,source.featureIds==null?0:1]].forEach(([o,n])=>v.setUint32(at+o,n,true));[source.validity.length,source.xy.length/2,...offsets.map(p=>p.length)].forEach((n,i)=>v.setBigUint64(at+24+i*8,BigInt(n),true));let c=at+64;planes.forEach((p,i)=>{for(let j=0;j<p.length;j++){if(i===0)v.setFloat64(c+j*8,Number(p[j]),true);else if(i===1)v.setUint8(c+j,Number(p[j]));else if(i===2)v.setBigUint64(c+j*8,BigInt(p[j]),true);else v.setUint32(c+j*4,Number(p[j]),true);}c+=pad(p.byteLength);});}};
+}
+function patch(v         ,b           ,at       ,p                 ={}){let mask=0;for(const[key,bit,off]of [['fill',1,8],['stroke',2,12]]         ){if(p[key]!==undefined){mask|=bit;b.set(rgba(p[key]),at+off);}}for(const[key,bit,off]of [['strokeWidth',4,16],['diameter',8,24],['opacity',16,32]]         ){if(p[key]!==undefined){if(typeof p[key]!=='number')throw new TypeError('style field must be f64');mask|=bit;v.setFloat64(at+off,p[key],true);}}if(p.symbol!==undefined){mask|=32;if(uint(p.symbol)>255)throw new TypeError('symbol must be u8');v.setUint32(at+4,p.symbol,true);}v.setUint32(at,mask,true);}
+export function encodeGeoCatalogRequest(input                     ,budget=MAX)            {
+ if(!Number.isSafeInteger(budget)||budget<65536||budget>MAX||input.layers.length>64)throw new RangeError('invalid catalog budget/count');
+ const c=input.camera;if(c.worldWrap!==undefined&&typeof c.worldWrap!=='boolean')throw new TypeError('worldWrap must be boolean');uint(c.crs);
+ const title=input.legend?utf(input.legend.title):new Uint8Array();
+ const frames=input.layers.map(l=>{id(l.layerId);uint(l.kind);const src=descriptor(l.source),patches=l.featureStyles??[],values=l.values??new Float64Array(),stops=l.colorStops??new Uint8Array(),state=l.stateFlags??new Uint8Array(),labels=l.labels??[];
+ if(!(values instanceof Float64Array)||!(stops instanceof Uint8Array)||stops.length%3||stops.length>768||!(state instanceof Uint8Array)||labels.length>128)throw new TypeError('invalid catalog planes');
+ for(const pair of [l.valueDomain,l.bubbleDiameters])if(pair!==undefined&&(!Array.isArray(pair)||pair.length!==2))throw new TypeError('option range requires two f64 values');if(labels.some(x=>!Array.isArray(x.coordinate)||x.coordinate.length!==2))throw new TypeError('label coordinate requires two f64 values');
+ const legend=l.legendLabel===undefined?new Uint8Array():utf(l.legendLabel);const texts=labels.map(x=>utf(x.text));const textLength=texts.reduce((n,x)=>n+x.length,0);if(textLength>8192)throw new RangeError('label text exceeds framing');
+ const lengths=[src.size,patches.length*48,values.byteLength,stops.length,state.length,labels.length*48,legend.length,textLength];return {l,src,patches,values,stops,state,labels,legend,texts,textLength,lengths};});
+ const length=128+pad(title.length)+(input.event?64:0)+frames.reduce((n,f)=>n+384+f.lengths.reduce((s,x)=>s+pad(x),0),0);
+ // Host packet plus worker transfer/staging/decode reserve. Reject before packet allocation.
+ if(!Number.isSafeInteger(length)||3*length+32768>budget)throw new RangeError('catalog packet exceeds peak framing budget');
+ const out=new ArrayBuffer(length),b=new Uint8Array(out),v=new DataView(out);b.set([88,89,76,75]);v.setUint32(4,1,true);v.setUint32(8,frames.length,true);v.setUint32(12,(input.legend?1:0)|(input.event?2:0),true);v.setUint32(16,c.crs,true);v.setUint32(20,c.worldWrap?1:0,true);
+ [c.centerX,c.centerY,c.zoom,c.width,c.height,c.bearing??0,c.pitch??0].forEach((n,i)=>v.setFloat64(24+i*8,n,true));if(input.legend){v.setUint32(80,uint(input.legend.location),true);v.setUint32(84,title.length,true);v.setFloat64(88,input.legend.fontSize,true);}b.set(title,128);let cursor=128+pad(title.length);
+ if(input.event){const e=input.event,coords=e.coordinates??[];uint(e.operation);if(coords.length!==([1,2].includes(e.operation)?2:e.operation===3?4:0))throw new TypeError("event coordinates have invalid count");v.setUint32(cursor,e.operation,true);v.setUint32(cursor+4,uint(e.mode??0),true);const delta=e.delta??0;if(!Number.isInteger(delta)||delta< -2147483648||delta>2147483647)throw new TypeError("delta must be i32");v.setInt32(cursor+8,delta,true);v.setBigUint64(cursor+16,id(e.layerId??0n),true);v.setBigUint64(cursor+24,id(e.featureId??0n),true);coords.forEach((n,i)=>v.setFloat64(cursor+32+i*8,n,true));cursor+=64;}
+ for(const f of frames){const {l}=f,at=cursor;v.setBigUint64(at,id(l.layerId),true);v.setUint32(at+8,l.kind,true);let flags=0;patch(v,b,at+16,l.style);[['selected',32,64],['hovered',64,112],['focused',128,160]].forEach(([k,bit,off])=>{if(l[k]!==undefined){flags|=Number(bit);patch(v,b,at+Number(off),l[k]);}});
+ if(l.valueDomain){flags|=1;l.valueDomain.forEach((n,i)=>v.setFloat64(at+208+i*8,n,true));}if(l.bubbleDiameters){flags|=2;l.bubbleDiameters.forEach((n,i)=>v.setFloat64(at+224+i*8,n,true));}if(l.arc){flags|=4;v.setFloat64(at+240,l.arc.bend,true);v.setUint32(at+248,uint(l.arc.steps),true);}if(l.density){flags|=8;v.setUint32(at+252,uint(l.density.columns),true);v.setUint32(at+256,uint(l.density.rows),true);}if(l.legendLabel!==undefined)flags|=16;v.setUint32(at+12,flags,true);
+ [f.src.size,f.patches.length,f.values.length,f.stops.length/3,f.state.length,f.labels.length,f.legend.length,f.textLength].forEach((n,i)=>v.setBigUint64(at+264+i*8,BigInt(n),true));cursor+=384;
+ f.src.write(b,v,cursor);cursor+=pad(f.src.size);f.patches.forEach((p,i)=>patch(v,b,cursor+i*48,p));cursor+=pad(f.patches.length*48);f.values.forEach((n,i)=>v.setFloat64(cursor+i*8,n,true));cursor+=pad(f.values.byteLength);b.set(f.stops,cursor);cursor+=pad(f.stops.length);b.set(f.state,cursor);cursor+=pad(f.state.length);
+ let textAt=0;f.labels.forEach((l,i)=>{const q=cursor+i*48;v.setUint32(q,uint(l.featureIndex),true);v.setUint32(q+4,uint(l.anchor),true);[l.fontSize,...l.coordinate].forEach((n,j)=>v.setFloat64(q+8+j*8,n,true));b.set(rgba(l.rgba),q+32);v.setUint32(q+40,textAt,true);v.setUint32(q+44,f.texts[i].length,true);textAt+=f.texts[i].length;});cursor+=pad(f.labels.length*48);b.set(f.legend,cursor);cursor+=pad(f.legend.length);f.texts.forEach(t=>{b.set(t,cursor);cursor+=t.length;});cursor=pad(cursor);
+ }return out;
+}
+export function decodeGeoCatalogResponse(buffer            ){
+ const bad=()=>new TypeError('malformed Rust geographic catalog response');if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<128||buffer.byteLength>MAX)throw bad();const b=new Uint8Array(buffer),v=new DataView(buffer),u=(at       )=>v.getUint32(at,true),f=(at       )=>v.getFloat64(at,true),zero=(start       ,end       )=>{if(b.subarray(start,end).some(n=>n!==0))throw bad();},count=(at       )=>{const n=v.getBigUint64(at,true);if(n>BigInt(MAX))throw bad();return Number(n);};
+ if(String.fromCharCode(...b.subarray(0,4))!=='XYLM'||u(4)!==1||![4326,3857].includes(u(8))||u(12)>1)throw bad();if(u(96)>1)throw bad();zero(100,104);if(!u(96))zero(104,120);const hitCount=count(120);const layerCount=count(80),ownerCount=count(88);if(layerCount>64)throw bad();let cursor=128;
+ function plane(n       ,size       ,type       ){const end=cursor+n*size,padded=pad(end);if(!Number.isSafeInteger(end)||padded>buffer.byteLength)throw bad();zero(end,padded);const at=cursor;cursor=padded;if(type==='bytes')return b.slice(at,end);if(type==='id'){const out=new BigUint64Array(n);for(let i=0;i<n;i++)out[i]=v.getBigUint64(at+i*8,true);return out;}const out=new Uint32Array(n);for(let i=0;i<n;i++)out[i]=u(at+i*4);return out;}
+ const scene=plane(count(72),1,'bytes')              ;if(scene.length<160||Number(new DataView(scene.buffer,scene.byteOffset,scene.byteLength).getBigUint64(24,true))!==ownerCount||String.fromCharCode(...scene.subarray(0,4))!=='XYGS')throw bad();const owners=plane(ownerCount,4,'u32')               ;if(owners.some(x=>x!==0xffffffff&&x>=layerCount))throw bad();const layers=[];
+ for(let i=0;i<layerCount;i++){const at=cursor;if(at+128>buffer.byteLength)throw bad();cursor+=128;const flags=u(at+12),kind=u(at+8),n=count(at+24),visible=count(at+32),cells=count(at+48),members=count(at+56);if(flags&~3||kind<1||kind>7||u(at+64)&~7)throw bad();zero(at+68,at+72);zero(at+104,at+128);const bounds=[72,80,88,96].map(o=>f(at+o));if(bounds.some(x=>!Number.isFinite(x)))throw bad();if(!(flags&1))zero(at+72,at+104);
+ const featureIds=plane(n,8,'id'),validity=plane(n,1,'bytes')              ,stateFlags=plane(n,1,'bytes')              ,visibleFeatureIndices=plane(visible,4,'u32')               ;if(validity.some(x=>x>1)||stateFlags.some(x=>x&~15)||visibleFeatureIndices.some(x=>x>=n))throw bad();let density=null;
+ if(flags&2){const columns=u(at+40),rows=u(at+44);if(!columns||!rows||columns*rows!==cells||columns>4096||rows>4096)throw bad();const counts=plane(cells,4,'u32')               ,offsets=plane(cells+1,4,'u32')               ,featureIndices=plane(members,4,'u32')               ;if(offsets[0]!==0||offsets[cells]!==members||featureIndices.some(x=>x>=n))throw bad();for(let j=0;j<cells;j++)if(offsets[j]>offsets[j+1]||offsets[j+1]-offsets[j]>counts[j]||(offsets[j+1]===offsets[j])!==(counts[j]===0))throw bad();density={columns,rows,counts,offsets,featureIndices};}else zero(at+40,at+64);
+ layers.push({layerId:v.getBigUint64(at,true),kind,sourceDigest:b.slice(at+16,at+24),featureIds,validity,stateFlags,visibleFeatureIndices,bounds:flags&1?bounds:null,density,droppedChannels:u(at+64)});
+ }const focus=u(96)?{layerId:v.getBigUint64(104,true),featureId:v.getBigUint64(112,true)}:null;
+ const hits=[];if(hitCount>1000000)throw bad();for(let i=0;i<hitCount;i++){if(cursor+24>buffer.byteLength)throw bad();const layerId=v.getBigUint64(cursor,true),featureId=v.getBigUint64(cursor+8,true),n=count(cursor+16);cursor+=24;const featureIndices=plane(n,4,'u32')               ,layer=layers.find(l=>l.layerId===layerId);if(!layer||featureIndices.some(r=>r>=layer.featureIds.length||layer.featureIds[r]!==featureId))throw bad();hits.push({layerId,featureId,featureIndices});}if(focus&&!layers.some(l=>l.layerId===focus.layerId&&l.featureIds.some(id=>id===focus.featureId)))throw bad();
+ if(cursor!==buffer.byteLength)throw bad();const values=[16,24,32,40,48,56,64].map(f);if(values.some(x=>!Number.isFinite(x)))throw bad();return {camera:{crs:u(8),worldWrap:!!u(12),centerX:values[0],centerY:values[1],zoom:values[2],width:values[3],height:values[4],bearing:values[5],pitch:values[6]},rebuildKey:b.slice(8,72),scene:scene.buffer,styleOwners:owners,layers,focus,hits};
+}
+/** Thin C-ABI adapter; same catalog framing as the browser. */
+import {xyGeoCatalogCompile,pointer} from './native.js';
+import {GeoNativeError} from './abi.js';
+export function geoCatalogCompile(request,budget=384*1024*1024){
+ if(!(request instanceof ArrayBuffer)||!Number.isSafeInteger(budget)||budget<65536||budget>384*1024*1024)throw new TypeError('invalid catalog request/budget');
+ if(request.byteLength>budget)throw new GeoNativeError(-9);
+ if(request.byteLength<128)throw new GeoNativeError(-1);
+ const input=new Uint8Array(request),length=new BigUint64Array(1);
+ let code=xyGeoCatalogCompile(pointer(input,'uint8_t *'),BigInt(input.length),BigInt(budget),null,0n,pointer(length,'size_t *'));
+ if(code!==0)throw new GeoNativeError(code);
+ if(length[0]>BigInt(budget))throw new GeoNativeError(-9);
+ const out=new Uint8Array(Number(length[0]));
+ code=xyGeoCatalogCompile(pointer(input,'uint8_t *'),BigInt(input.length),BigInt(budget),pointer(out,'uint8_t *'),BigInt(out.length),pointer(length,'size_t *'));
+ if(code!==0)throw new GeoNativeError(code);return out.buffer;
+}

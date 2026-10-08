@@ -713,6 +713,7 @@ Forbidden:
 | `crates/xyg-engine/src/compat_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 126 static-export padding/colorbar/polar recut; ABI 127 pyplot tight-layout; ABI 198 `_svg.layout()` combination + tight figure extras | — |
 | `crates/xyg-engine/src/edge_route.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_viewport.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_fill.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_viewport_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geom.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -817,12 +818,14 @@ Forbidden:
 | `js/src/30_ticks.ts` | Shared TypeScript browser presentation | `browser-tick-presentation` | `keep-shared-client`; tooltip/presentation formatting only | — |
 | `js/src/40_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/43_external_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/47_wasm.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; #868 diagnostics report and init fails closed on a mismatched direct-WASM palette contract | #59 |
 | `js/src/48_wasm_scene.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_compound.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graphforge.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GraphForge request framing, document decoding, stable-ID identity, text-only tables | #59 |
 | `js/src/49_wasm_geo.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
+| `js/src/59_maplibre_geo.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
 | `js/src/49_wasm_geoviewport.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
 | `js/src/49_wasm_dashboard.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
@@ -1040,6 +1043,15 @@ Forbidden:
 | `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_graph.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
+| `crates/xyg-engine/src/geo_layers.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_layers_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_interaction.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/marker_geometry.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-wasm/src/bin/geo_layers_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `python/xyg/_geocatalog.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geocatalog.js` | Node host | `node-host` | `keep-host` | — |
+| `js/src/61_geo_catalog.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/62_geographic_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 
 ## Contributor rule
 
@@ -1052,3 +1064,9 @@ section that authorizes host ownership. Repeating the policy's generic
 reclassification is valid only when that evidence shows the product code was
 already marshal/coerce-only; otherwise the same change must move the policy to
 Rust or carry a numbered migration issue.
+
+## Geographic catalog and interaction additions
+
+Rust owns catalog compilation, source identity, glyph predicates, bounded picking
+and state transitions. Browser code captures events, paints the shared Scene
+and presents paged companion rows; the shell supplies its WebGL context.

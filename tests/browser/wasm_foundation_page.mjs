@@ -30,7 +30,7 @@ import {
 } from "/packages/xy-client/dist/index.js";
 
 /** Encoded Scene version. Keep in lockstep with `scene::SCENE_VERSION`. */
-const CANONICAL_SCENE_VERSION = 31;
+const CANONICAL_SCENE_VERSION = 32;
 
 function directDensityFixture(host, comm = null, multi = false, fullSource = false, colorbar = null) {
   const width = 16, height = 16;
@@ -269,22 +269,24 @@ function primaryAnnotationSceneV10() {
 
 function fragmentedScene(count) {
   const records = 176;
-  const body = records + count * 56;
+  const body = records + count * 2 * 56;
   const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
   view.setUint32(4, CANONICAL_SCENE_VERSION, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
-  view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
+  view.setBigUint64(16, BigInt(count * 2), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
   [0, 1, 0, 1, 1, 1].forEach((value, index) => view.setFloat64(112 + index * 8, value, true));
-  bytes.set([37, 99, 235, 255, 0, 0, 0, 0], 160); view.setFloat64(168, 0, true);
+  bytes.set([37, 99, 235, 255, 37, 99, 235, 255], 160); view.setFloat64(168, 1, true);
   for (let index = 0; index < count; index++) {
-    const record = records + index * 56;
-    bytes[record] = 0; bytes[record + 1] = 1; bytes[record + 2] = index % 2;
-    view.setUint32(record + 4, 0, true); view.setBigUint64(record + 8, 7n, true);
-    view.setFloat64(record + 16, 50, true); view.setFloat64(record + 24, 40, true);
-    view.setFloat64(record + 48, 8, true);
+    for (let vertex = 0; vertex < 2; vertex++) {
+      const record = records + (index * 2 + vertex) * 56;
+      bytes[record] = 1; bytes[record + 1] = 1;
+      view.setBigUint64(record + 8, BigInt(index), true);
+      view.setFloat64(record + 16, 40 + vertex * 20, true);
+      view.setFloat64(record + 24, 40, true);
+    }
   }
   writeDefaultSceneV9Chrome(bytes, view, body);
   return bytes;
@@ -333,7 +335,7 @@ async function fixtureModule({
   cancelTrap = false,
   graphStepTrap = false,
   paletteVersion = 1,
-  abiVersion = 30,
+  abiVersion = 31,
   sceneVersion = CANONICAL_SCENE_VERSION,
 } = {}) {
   const names = [
@@ -387,6 +389,7 @@ async function fixtureModule({
     "xyg_wasm_geo_metadata_version",
     "xyg_wasm_geo_scene_compile",
     "xyg_wasm_geo_viewport_execute",
+    "xyg_wasm_geo_catalog_compile",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -400,7 +403,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1, 3, 0, 4, 0, 4, 4,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1, 3, 0, 4, 0, 4, 4, 4,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -422,7 +425,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0, 0, 1, 0, 1, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0, 0, 1, 0, 1, 0, 0, 0,
   ];
   if (names.length !== functionTypes.length || names.length !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
@@ -520,7 +523,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 30,
+    expectedAbiVersion: 31,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -2184,7 +2187,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 30 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== 31 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -3848,9 +3851,9 @@ async function run() {
   });
   await fragmentationWorker.ready;
   const fragmentedChartSeries = Array.from({ length: 1025 }, (_, index) => ({
-    kind: "scatter",
-    x: new Float64Array([(index + 0.5) / 1025]),
-    y: new Float64Array([(index + 0.5) / 1025]),
+    kind: "line",
+    x: new Float64Array([(index + 0.25) / 1025, (index + 0.75) / 1025]),
+    y: new Float64Array([(index + 0.25) / 1025, (index + 0.75) / 1025]),
   }));
   const fragmentedRequest = frameWasmChart({
     width: 320,
@@ -3868,7 +3871,7 @@ async function run() {
     const failure = error.diagnostics;
     if (!failure || failure.copyCount !== 1 || failure.copyBytesHi !== 0
         || failure.copyBytesLo !== fragmentedRequest.byteLength
-        || failure.arenaBytes !== 0 || failure.records !== 1025 || failure.styles !== 1025) {
+        || failure.arenaBytes !== 0 || failure.records !== 2050 || failure.styles !== 1025) {
       throw new Error(`fragmentation failure omitted Rust transfer diagnostics: ${JSON.stringify(failure)}`);
     }
   }

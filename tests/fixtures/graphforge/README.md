@@ -21,3 +21,32 @@ XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen
 ```
 
 Omit `--write` in the second command to verify the committed semantic hashes.
+
+## Scene32 / XYPB15 contract refresh (#945)
+
+`scene32_refresh.json` retains the previous Scene31/XYPB14 digests as contract
+evidence, separate from performance measurements. With native ABI381:
+
+- all 99 GraphForge request digests and 98 document digests are unchanged;
+- the render document changes only its `scene.version` value and the version
+  word in its embedded canonical Scene;
+- light/dark semantic Scene bytes change only their version word, while SVG,
+  raster-command, and PNG bytes are unchanged;
+- the semantic browser painter now contains derived kind8 marker batching
+  with Rust-packed per-instance style planes, so its change includes payload
+  layout rather than just version words; and
+- public hexbin count/mean/sum and heatmap Scene digests change only their
+  version word. Their current canonical authoring is checked against both
+  current digests and the retained Scene31 digests.
+
+The tests restore the old version words and require the exact previous SHA-256
+values, proving these bounded claims. They do not admit old product input.
+Historical hosted and local benchmark artifacts retain their original output
+digests, timings, memory, and size measurements. This refresh supplies no new
+performance measurement and does not imply a benchmark rerun or improvement.
+
+```bash
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen_graphforge_cross_host.py
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen_graphforge_semantic_fixture.py --write
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run pytest tests/test_graphforge.py tests/test_graphforge_semantic_evidence.py tests/test_m2_wave_b_evidence.py -q
+```

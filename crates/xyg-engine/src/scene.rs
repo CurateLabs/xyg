@@ -19,7 +19,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 31;
+pub const SCENE_VERSION: u32 = 32;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -37,7 +37,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 14;
+pub const BROWSER_PAINTER_VERSION: u32 = 15;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 300;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -1510,12 +1510,14 @@ fn push_raster_polyline_dash(
 
 /// Axis-aligned half extent of a scatter marker of `radius` (half its
 /// diameter): diamonds (2) and thin diamonds (14) reach `radius * sqrt(2)`
-/// along the axes, every other symbol stays within `radius`. Shared by the
-/// raster and the graph home view (#910).
+/// along the axes; hexagons reach `2 * radius / sqrt(3)` vertically. Shared
+/// by raster bounds, Scene clipping, geographic picking and graph home (#910).
 #[inline]
 pub(crate) fn marker_symbol_extent(radius: f64, symbol: u8) -> f64 {
     if matches!(symbol, 2 | 14) {
         radius * std::f64::consts::SQRT_2
+    } else if symbol == 5 {
+        radius * 2. / 3f64.sqrt()
     } else {
         radius
     }
@@ -2080,7 +2082,7 @@ pub enum ScatterSymbol {
 }
 
 impl ScatterSymbol {
-    fn from_code(value: u8) -> Self {
+    pub(crate) fn from_code(value: u8) -> Self {
         match value {
             1 => Self::Square,
             2 => Self::Diamond,
@@ -2113,11 +2115,11 @@ impl ScatterSymbol {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-struct MarkerGeometry {
-    radius: f64,
-    stroke_width: f64,
-    extent_x: f64,
-    extent_y: f64,
+pub(crate) struct MarkerGeometry {
+    pub(crate) radius: f64,
+    pub(crate) stroke_width: f64,
+    pub(crate) extent_x: f64,
+    pub(crate) extent_y: f64,
 }
 
 impl MarkerGeometry {
@@ -2125,7 +2127,7 @@ impl MarkerGeometry {
     /// clipping. `diameter` is the authored outer size. Line-only symbols get
     /// the historical implicit 1px stroke when the authored stroke is zero.
     #[inline(always)]
-    fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
+    pub(crate) fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
         let stroke_width = if symbol.is_line() && authored_stroke <= 0.0 {
             1.0
         } else {
@@ -2137,6 +2139,7 @@ impl MarkerGeometry {
                 let extent = std::f64::consts::SQRT_2 * radius;
                 (extent, extent)
             }
+            ScatterSymbol::Hexagon => (radius, radius * 2. / 3f64.sqrt()),
             ScatterSymbol::ThinDiamond => (
                 std::f64::consts::SQRT_2 * radius * 0.6,
                 std::f64::consts::SQRT_2 * radius,
@@ -2157,6 +2160,47 @@ impl MarkerGeometry {
             extent_y: path_y + stroke_extent,
         }
     }
+}
+
+pub(crate) fn interaction_marker_extent(symbol: u8, diameter: f64, stroke: f64) -> [f64; 2] {
+    let geometry = MarkerGeometry::new(ScatterSymbol::from_code(symbol), diameter, stroke);
+    [geometry.extent_x, geometry.extent_y]
+}
+
+pub(crate) fn interaction_marker_hit(
+    symbol: u8,
+    diameter: f64,
+    stroke: f64,
+    fill: bool,
+    outline: bool,
+    x: f64,
+    y: f64,
+) -> bool {
+    let geometry = MarkerGeometry::new(ScatterSymbol::from_code(symbol), diameter, stroke);
+    // Relative marker coordinates retain viewport f64 precision before the
+    // canonical painter SDF's local f32 arithmetic.
+    let d = crate::marker_geometry::symbol_sdf(x as f32, y as f32, geometry.radius as f32, symbol);
+    let line = ScatterSymbol::from_code(symbol).is_line();
+    (!line && fill && d <= 0.)
+        || (outline && geometry.stroke_width > 0. && (d as f64).abs() <= geometry.stroke_width / 2.)
+}
+pub(crate) fn interaction_marker_rect(
+    symbol: u8,
+    diameter: f64,
+    stroke: f64,
+    fill: bool,
+    outline: bool,
+    rect: [f64; 4],
+) -> bool {
+    let geometry = MarkerGeometry::new(ScatterSymbol::from_code(symbol), diameter, stroke);
+    crate::marker_geometry::rect_hit(
+        symbol,
+        geometry.radius,
+        geometry.stroke_width / 2.,
+        fill,
+        outline,
+        rect,
+    )
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -3748,9 +3792,7 @@ fn resolved_colorbar_bands(colorbar: &SceneColorbar) -> Vec<(f64, f64, [u8; 4])>
             if span.is_finite() {
                 (value - colorbar.domain[0]) / span
             } else {
-                let scale = colorbar.domain[0]
-                    .abs()
-                    .max(colorbar.domain[1].abs());
+                let scale = colorbar.domain[0].abs().max(colorbar.domain[1].abs());
                 let lo = colorbar.domain[0] / scale;
                 (value / scale - lo) / (colorbar.domain[1] / scale - lo)
             }
@@ -3760,9 +3802,7 @@ fn resolved_colorbar_bands(colorbar: &SceneColorbar) -> Vec<(f64, f64, [u8; 4])>
         return colorbar
             .stops
             .windows(2)
-            .map(|pair| {
-                (normalized(pair[0].0), normalized(pair[1].0), pair[0].1)
-            })
+            .map(|pair| (normalized(pair[0].0), normalized(pair[1].0), pair[0].1))
             .collect();
     }
 
@@ -3970,7 +4010,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
-            SceneRecordKind::Polyline => {
+            SceneRecordKind::Polyline | SceneRecordKind::Segment => {
                 if symbol != 0 || diameter != 0.0 || coords[2] != 0.0 || coords[3] != 0.0 {
                     return Err(SceneError::Length);
                 }
@@ -4000,12 +4040,38 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
-            SceneRecordKind::PolyFill => {
+            SceneRecordKind::PolyFill | SceneRecordKind::Triangle => {
                 if symbol != 0 || diameter != 0.0 || coords[2] != 0.0 || coords[3] != 0.0 {
                     return Err(SceneError::Length);
                 }
             }
         }
+    }
+    let mut triangle_cursor = 0;
+    while triangle_cursor < records {
+        let first = records_offset + triangle_cursor * SCENE_BATCH_RECORD_BYTES;
+        if !matches!(
+            SceneRecordKind::from_code(bytes[first])?,
+            SceneRecordKind::Triangle | SceneRecordKind::Segment
+        ) {
+            triangle_cursor += 1;
+            continue;
+        }
+        let arity = if bytes[first] == SceneRecordKind::Triangle as u8 {
+            3
+        } else {
+            2
+        };
+        if triangle_cursor + arity > records
+            || !matches!(bytes[first + 3], 0 | 0x80)
+            || (1..arity).any(|vertex| {
+                let next = first + vertex * SCENE_BATCH_RECORD_BYTES;
+                bytes[next..next + 16] != bytes[first..first + 16]
+            })
+        {
+            return Err(SceneError::Length);
+        }
+        triangle_cursor += arity;
     }
     // Polar painted heatmap (ABI 192) encodes one screen-space Image blit plus
     // XYPL. Polar density still tessellates occupied cells and never shares
@@ -4169,12 +4235,19 @@ pub enum SceneRecordKind {
     /// stable-id/style_ref runs form a closed polygon (tops forward, bases reverse).
     Band = 3,
     /// Filled polygon vertex: consecutive same stable-id/style_ref runs with
-    /// at least three vertices form one closed fill (triangle mesh hosts emit
-    /// one three-vertex run per triangle).
+    /// at least three vertices form one closed fill. Primitive triangles use
+    /// the explicit Triangle kind so repeated feature identities never join fills.
     PolyFill = 4,
     /// One axis-aligned image blit. Coordinates are the screen rectangle;
     /// pixels live in the trailing XYIM sidecar keyed by stable id (Scene v27).
     Image = 5,
+    /// Exactly three consecutive vertices form one independent triangle.
+    /// Every triple shares visibility, style and identity; the next triple
+    /// starts a new primitive even when those fields are identical (Scene v32).
+    Triangle = 6,
+    /// Exactly two consecutive vertices form one independent straight segment.
+    /// Each pair shares visibility, style and identity (Scene v32).
+    Segment = 7,
 }
 
 /// Rust-owned outline topology for a Scene Band run (Scene v25).
@@ -4219,6 +4292,8 @@ impl SceneRecordKind {
             3 => Ok(Self::Band),
             4 => Ok(Self::PolyFill),
             5 => Ok(Self::Image),
+            6 => Ok(Self::Triangle),
+            7 => Ok(Self::Segment),
             _ => Err(SceneError::Length),
         }
     }
@@ -4228,7 +4303,7 @@ impl SceneRecordKind {
 /// deliberately not serialized into Scene: Rust expands compact step,
 /// ribbon, hex-cell, heatmap-lattice, painted-heatmap, segment-pair,
 /// triangle-face, density-blit, curve-flatten, and band-flatten inputs to
-/// ordinary canonical records before Scene v31 encoding.
+/// ordinary canonical records before Scene v32 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -6257,6 +6332,16 @@ impl ExpandedSceneRecords {
         self.y1.push(0.0);
     }
 
+    fn push_segment_vertex(&mut self, stable_id: u64, style_ref: u32, x: f64, y: f64) {
+        self.push_step(stable_id, style_ref, x, y);
+        *self.kinds.last_mut().expect("pushed vertex") = SceneRecordKind::Segment as u8;
+    }
+
+    fn push_triangle_vertex(&mut self, stable_id: u64, style_ref: u32, x: f64, y: f64) {
+        self.push_hex_vertex(stable_id, style_ref, x, y);
+        *self.kinds.last_mut().expect("pushed vertex") = SceneRecordKind::Triangle as u8;
+    }
+
     fn push_heatmap_cell(
         &mut self,
         stable_id: u64,
@@ -6899,8 +6984,8 @@ pub fn expand_scene_records_painted(
             continue;
         }
         if mode == SceneExpansionMode::SegmentPair {
-            output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
-            output.push_step(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
+            output.push_segment_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
+            output.push_segment_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
             cursor = run_end;
             continue;
         }
@@ -6942,9 +7027,9 @@ pub fn expand_scene_records_painted(
                     }
                 }
             }
-            output.push_hex_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
-            output.push_hex_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
-            output.push_hex_vertex(
+            output.push_triangle_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
+            output.push_triangle_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
+            output.push_triangle_vertex(
                 stable_id,
                 style_ref,
                 input.x0[cursor + 1],
@@ -8064,6 +8149,58 @@ impl<'a> SceneBatch<'a> {
         )
     }
 
+    /// Geographic decoration attachment preserves literal feature identities.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_chrome_literal_ids_and_decorations(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        legend: Option<SceneLegend>,
+        labels: Vec<SceneLabel>,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            None,
+            labels,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            false,
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn new_with_decorations_impl(
         layout: PlotLayout,
@@ -8181,6 +8318,34 @@ impl<'a> SceneBatch<'a> {
                 }
                 _ => {}
             }
+        }
+        let mut triangle_cursor = 0;
+        while triangle_cursor < len {
+            if !matches!(
+                SceneRecordKind::from_code(kinds[triangle_cursor])?,
+                SceneRecordKind::Triangle | SceneRecordKind::Segment
+            ) {
+                triangle_cursor += 1;
+                continue;
+            }
+            let arity = if kinds[triangle_cursor] == SceneRecordKind::Triangle as u8 {
+                3
+            } else {
+                2
+            };
+            let end = triangle_cursor
+                .checked_add(arity)
+                .ok_or(SceneError::Limit)?;
+            if end > len
+                || (triangle_cursor..end).any(|row| {
+                    kinds[row] != kinds[triangle_cursor]
+                        || stable_ids[row] != stable_ids[triangle_cursor]
+                        || style_refs[row] != style_refs[triangle_cursor]
+                })
+            {
+                return Err(SceneError::Length);
+            }
+            triangle_cursor = end;
         }
         // Scene v12 annotation records use ordinary paint primitives but a
         // reserved identity namespace. Validate their complete geometry here,
@@ -8550,7 +8715,9 @@ impl<'a> SceneBatch<'a> {
                 match kind {
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
-                    | SceneRecordKind::PolyFill => {
+                    | SceneRecordKind::PolyFill
+                    | SceneRecordKind::Triangle
+                    | SceneRecordKind::Segment => {
                         match polar.project(self.x0[index], self.y0[index]) {
                             Some((px, py)) => [px, py, 0.0, 0.0],
                             None => [f64::NAN, f64::NAN, 0.0, 0.0],
@@ -8588,7 +8755,9 @@ impl<'a> SceneBatch<'a> {
                     }
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
-                    | SceneRecordKind::PolyFill => [
+                    | SceneRecordKind::PolyFill
+                    | SceneRecordKind::Triangle
+                    | SceneRecordKind::Segment => [
                         self.x_scale.pixel(self.x0[index]),
                         self.y_scale.pixel(self.y0[index]),
                         0.0,
@@ -8616,7 +8785,9 @@ impl<'a> SceneBatch<'a> {
                 && match kind {
                     SceneRecordKind::Polyline
                     | SceneRecordKind::Band
-                    | SceneRecordKind::PolyFill => true,
+                    | SceneRecordKind::PolyFill
+                    | SceneRecordKind::Triangle
+                    | SceneRecordKind::Segment => true,
                     SceneRecordKind::Scatter => {
                         let style = self.style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
@@ -8672,7 +8843,9 @@ impl<'a> SceneBatch<'a> {
                     }
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
-                    | SceneRecordKind::PolyFill => [mapped[0], mapped[1], 0.0, 0.0],
+                    | SceneRecordKind::PolyFill
+                    | SceneRecordKind::Triangle
+                    | SceneRecordKind::Segment => [mapped[0], mapped[1], 0.0, 0.0],
                     SceneRecordKind::Rect | SceneRecordKind::Image => [
                         mapped[0].min(mapped[2]),
                         mapped[1].min(mapped[3]),
@@ -8763,6 +8936,29 @@ impl<'a> SceneBatch<'a> {
                 coordinates,
                 diameter: self.diameter[index],
             });
+        }
+        let mut triangle_cursor = 0;
+        while triangle_cursor < out.len() {
+            if !matches!(
+                out[triangle_cursor].kind,
+                SceneRecordKind::Triangle | SceneRecordKind::Segment
+            ) {
+                triangle_cursor += 1;
+                continue;
+            }
+            let arity = if out[triangle_cursor].kind == SceneRecordKind::Triangle {
+                3
+            } else {
+                2
+            };
+            let triangle = &mut out[triangle_cursor..triangle_cursor + arity];
+            if triangle.iter().any(|record| !record.visible) {
+                for record in triangle {
+                    record.visible = false;
+                    record.coordinates = [0.0; 4];
+                }
+            }
+            triangle_cursor += arity;
         }
         let head_style_base =
             (self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u32;
@@ -9231,15 +9427,50 @@ fn trim_graph_edge_ends(
 }
 
 #[derive(Clone, Copy)]
-struct EncodedRecord {
-    kind: SceneRecordKind,
-    visible: bool,
-    symbol: u8,
-    style_ref: usize,
-    stable_id: u64,
-    coordinates: [f64; 4],
-    diameter: f64,
-    annotation_tag: u8,
+pub(crate) struct EncodedRecord {
+    pub(crate) kind: SceneRecordKind,
+    pub(crate) visible: bool,
+    pub(crate) symbol: u8,
+    pub(crate) style_ref: usize,
+    pub(crate) stable_id: u64,
+    pub(crate) coordinates: [f64; 4],
+    pub(crate) diameter: f64,
+    pub(crate) annotation_tag: u8,
+}
+
+fn validate_primitive_records(records: &[EncodedRecord]) -> Result<(), SceneError> {
+    let mut cursor = 0;
+    while cursor < records.len() {
+        let first = records[cursor];
+        if !matches!(
+            first.kind,
+            SceneRecordKind::Triangle | SceneRecordKind::Segment
+        ) {
+            cursor += 1;
+            continue;
+        }
+        let arity = if first.kind == SceneRecordKind::Triangle {
+            3
+        } else {
+            2
+        };
+        let triangle = records
+            .get(cursor..cursor + arity)
+            .ok_or(SceneError::Length)?;
+        if !matches!(first.annotation_tag, 0 | 0x80)
+            || triangle.iter().any(|record| {
+                record.kind != first.kind
+                    || record.stable_id != first.stable_id
+                    || record.style_ref != first.style_ref
+                    || record.annotation_tag != first.annotation_tag
+                    || record.visible != first.visible
+            })
+        {
+            return Err(SceneError::Length);
+        }
+        cursor += arity;
+    }
+    Ok(())
 }
 
 /// Bounded authoring input for one canonical straight-arrow annotation.
@@ -10432,6 +10663,46 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Borrow authoritative decoded geometry for Rust interaction policy.
+    pub(crate) fn interaction_records(&self) -> &[EncodedRecord] {
+        &self.records
+    }
+
+    pub(crate) fn interaction_style(&self, style_ref: usize) -> Option<([u8; 4], [u8; 4], f64)> {
+        self.styles
+            .get(style_ref)
+            .map(|style| (style.fill, style.stroke, style.stroke_width))
+    }
+
+    pub(crate) fn interaction_image(&self, stable_id: u64) -> Option<&SceneImage> {
+        scene_image_by_id(&self.images, stable_id)
+    }
+
+    // Group only subtriangles of the same source fill. An invisible boundary,
+    // source identity/style change, or any other primitive ends the union.
+    fn triangle_fill_run_end(&self, start: usize) -> usize {
+        let first = self.records[start];
+        let mut end = start + 3;
+        if self.styles[first.style_ref].stroke_width != 0.0
+            || self.style_gradient(first.style_ref).is_some()
+        {
+            return end;
+        }
+        while end < self.records.len() {
+            let next = self.records[end];
+            if next.kind != SceneRecordKind::Triangle
+                || !next.visible
+                || next.stable_id != first.stable_id
+                || next.style_ref != first.style_ref
+                || next.annotation_tag != first.annotation_tag
+            {
+                break;
+            }
+            end += 3;
+        }
+        end
+    }
+
     /// Parts a graph rebuild keeps. Polar, image, colorbar, gradient, and
     /// authored-label Scenes are not graph charts and fail closed, as do
     /// authored annotations: the rebuild re-emits only the graph, so it
@@ -10498,10 +10769,12 @@ impl SceneDocument {
                 self.chrome.y_axis.tick_length,
             );
             let _ = major_in;
-            let offset =
-                self.chrome
-                    .y_axis
-                    .tick_label_offset(false, 0, major_out, self.chrome.label_font_size);
+            let offset = self.chrome.y_axis.tick_label_offset(
+                false,
+                0,
+                major_out,
+                self.chrome.label_font_size,
+            );
             self.layout.left - offset - extent
         });
         let gap = 0.4 * label_size;
@@ -11423,6 +11696,8 @@ impl SceneDocument {
                     SceneRecordKind::Scatter
                         | SceneRecordKind::Polyline
                         | SceneRecordKind::PolyFill
+                        | SceneRecordKind::Triangle
+                        | SceneRecordKind::Segment
                 ) && coordinates[2..] != [0.0, 0.0])
                 || (visible
                     && matches!(kind, SceneRecordKind::Rect | SceneRecordKind::Image)
@@ -11436,7 +11711,9 @@ impl SceneDocument {
             if visible {
                 let record_capacity = match kind {
                     SceneRecordKind::Scatter => 26,
-                    SceneRecordKind::Polyline => 27 + styles[style_ref].dash_count as usize * 4,
+                    SceneRecordKind::Polyline | SceneRecordKind::Segment => {
+                        27 + styles[style_ref].dash_count as usize * 4
+                    }
                     SceneRecordKind::Rect => {
                         41 + if styles[style_ref].stroke_width > 0.0 {
                             51
@@ -11454,7 +11731,7 @@ impl SceneDocument {
                         }
                     }
                     // Three-vertex fill is 33 bytes; reserve 11 per vertex (+stroke share).
-                    SceneRecordKind::PolyFill => {
+                    SceneRecordKind::PolyFill | SceneRecordKind::Triangle => {
                         11 + if styles[style_ref].stroke_width > 0.0 {
                             18
                         } else {
@@ -11483,6 +11760,7 @@ impl SceneDocument {
             });
             offset += SCENE_BATCH_RECORD_BYTES;
         }
+        validate_primitive_records(&records)?;
         let mut annotation_cursor = 0;
         let mut annotations_started = false;
         while annotation_cursor < records.len() {
@@ -12372,7 +12650,10 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
-                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
+                    push_svg_dasharray(
+                        out,
+                        grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)),
+                    );
                     out.push_str("\"/>");
                 } else if polar.full_sector() {
                     out.push_str("<circle data-xy-grid=\"ring\" cx=\"");
@@ -12385,7 +12666,10 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
-                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
+                    push_svg_dasharray(
+                        out,
+                        grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)),
+                    );
                     out.push_str("\"/>");
                 } else {
                     let a0 = polar.sector_a0();
@@ -12416,7 +12700,10 @@ impl SceneDocument {
                     out.push_str(&rgba_css(r_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, r_style.grid_width);
-                    push_svg_dasharray(out, grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)));
+                    push_svg_dasharray(
+                        out,
+                        grid_dash_pattern(r_style.static_grid_dash.unwrap_or(0)),
+                    );
                     out.push_str("\"/>");
                 }
             }
@@ -12438,7 +12725,10 @@ impl SceneDocument {
                     out.push_str(&rgba_css(t_style.grid_rgba));
                     out.push_str("\" stroke-width=\"");
                     push_num(out, t_style.grid_width);
-                    push_svg_dasharray(out, grid_dash_pattern(t_style.static_grid_dash.unwrap_or(0)));
+                    push_svg_dasharray(
+                        out,
+                        grid_dash_pattern(t_style.static_grid_dash.unwrap_or(0)),
+                    );
                     out.push_str("\"/>");
                 }
             }
@@ -12876,12 +13166,49 @@ impl SceneDocument {
                         }
                     }
                 }
+                SceneRecordKind::Triangle => {
+                    let end = self.triangle_fill_run_end(index);
+                    out.push_str("<path d=\"");
+                    for triangle in self.records[index..end].chunks_exact(3) {
+                        // Nonzero union requires matching winding; retain each
+                        // independent subpath so holes between primitives stay empty.
+                        let a = triangle[0].coordinates;
+                        let b = triangle[1].coordinates;
+                        let c = triangle[2].coordinates;
+                        let reverse =
+                            (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) < 0.0;
+                        for (vertex, row) in
+                            [0, if reverse { 2 } else { 1 }, if reverse { 1 } else { 2 }]
+                                .into_iter()
+                                .enumerate()
+                        {
+                            out.push_str(if vertex == 0 { "M " } else { " L " });
+                            push_num(&mut out, triangle[row].coordinates[0]);
+                            out.push(' ');
+                            push_num(&mut out, triangle[row].coordinates[1]);
+                        }
+                        out.push_str(" Z ");
+                    }
+                    out.push('"');
+                    self.push_svg_fill(&mut out, style, record.style_ref);
+                    if style.stroke_width > 0.0 {
+                        push_paint(&mut out, "stroke", style.stroke, None);
+                        out.push_str(" stroke-width=\"");
+                        push_num(&mut out, style.stroke_width);
+                        out.push('"');
+                    } else {
+                        out.push_str(" stroke=\"none\"");
+                    }
+                    out.push_str("/>");
+                    index = end;
+                }
                 SceneRecordKind::PolyFill => {
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
                         let point = self.records[index];
-                        if point.kind != SceneRecordKind::PolyFill
+                        if point.kind != record.kind
+                            || (record.kind == SceneRecordKind::Triangle && index - start == 3)
                             || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
@@ -12915,12 +13242,14 @@ impl SceneDocument {
                         out.push_str("/>");
                     }
                 }
-                SceneRecordKind::Polyline => {
+                SceneRecordKind::Polyline | SceneRecordKind::Segment => {
                     out.push_str("<polyline points=\"");
+                    let start = index;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
-                        if point.kind != SceneRecordKind::Polyline
+                        if point.kind != record.kind
+                            || (record.kind == SceneRecordKind::Segment && index - start == 2)
                             || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
@@ -14171,12 +14500,47 @@ impl SceneDocument {
                         }
                     }
                 }
+                SceneRecordKind::Triangle => {
+                    let end = self.triangle_fill_run_end(index);
+                    if style.stroke_width == 0.0 && self.style_gradient(record.style_ref).is_none()
+                    {
+                        out.push(19); // OP_UNION_TRIANGLES: blend the complete source fill once.
+                        out.extend_from_slice(&(((end - index) / 3) as u32).to_le_bytes());
+                        out.extend_from_slice(&style.fill);
+                        for point in &self.records[index..end] {
+                            push_raster_f32(out, point.coordinates[0], scale)?;
+                            push_raster_f32(out, point.coordinates[1], scale)?;
+                        }
+                    } else {
+                        let run = &self.records[index..end];
+                        let points: Vec<_> = run
+                            .iter()
+                            .map(|point| (point.coordinates[0], point.coordinates[1]))
+                            .collect();
+                        self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
+                        if style.stroke_width > 0.0 {
+                            out.push(3);
+                            out.extend_from_slice(&3u32.to_le_bytes());
+                            for point in run {
+                                push_raster_f32(out, point.coordinates[0], scale)?;
+                                push_raster_f32(out, point.coordinates[1], scale)?;
+                            }
+                            push_raster_f32(out, style.stroke_width, scale)?;
+                            out.extend_from_slice(&style.stroke);
+                            out.push(1);
+                            out.extend_from_slice(&0u32.to_le_bytes());
+                            out.push(1);
+                        }
+                    }
+                    index = end;
+                }
                 SceneRecordKind::PolyFill => {
                     let start = index;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
-                        if point.kind != SceneRecordKind::PolyFill
+                        if point.kind != record.kind
+                            || (record.kind == SceneRecordKind::Triangle && index - start == 3)
                             || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
@@ -14208,12 +14572,13 @@ impl SceneDocument {
                         }
                     }
                 }
-                SceneRecordKind::Polyline => {
+                SceneRecordKind::Polyline | SceneRecordKind::Segment => {
                     let start = index;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
-                        if point.kind != SceneRecordKind::Polyline
+                        if point.kind != record.kind
+                            || (record.kind == SceneRecordKind::Segment && index - start == 2)
                             || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
@@ -14316,13 +14681,14 @@ impl SceneDocument {
         Ok(out)
     }
 
-    /// Lower Scene v9 to the browser painter's column model.
+    /// Lower the canonical Scene to the browser painter's column model.
     ///
     /// The fixed descriptor table is O(trace runs); all O(record) coordinate
     /// and stable-id work happens here in Rust and lands directly in packed
     /// little-endian f32/u32 columns. TypeScript only creates descriptor-sized
     /// views and never decodes or re-encodes individual Scene records.
     pub fn to_browser_painter(&self, max_bytes: usize) -> Result<Vec<u8>, SceneError> {
+        validate_primitive_records(&self.records)?;
         #[derive(Clone, Copy)]
         struct Group {
             start: usize,
@@ -14391,6 +14757,19 @@ impl SceneDocument {
                         index += 1;
                     }
                 }
+                SceneRecordKind::Segment => {
+                    index = start + 2;
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Segment
+                            || next.annotation_tag != record.annotation_tag
+                        {
+                            break;
+                        }
+                        index += 2;
+                    }
+                }
                 SceneRecordKind::Scatter => {
                     if self.style_glyph(record.style_ref).is_some() {
                         continue;
@@ -14399,10 +14778,9 @@ impl SceneDocument {
                         let next = self.records[index];
                         if !next.visible
                             || next.kind != SceneRecordKind::Scatter
-                            || next.style_ref != record.style_ref
-                            || next.symbol != record.symbol
-                            || next.diameter.to_bits() != record.diameter.to_bits()
-                            || !same_record_run(record, next)
+                            || self.style_glyph(next.style_ref).is_some()
+                            || (record.annotation_tag <= 6 && record.annotation_tag != 0)
+                            || next.annotation_tag != record.annotation_tag
                         {
                             break;
                         }
@@ -14422,7 +14800,33 @@ impl SceneDocument {
                         index += 1;
                     }
                 }
-                SceneRecordKind::Image => continue,
+                SceneRecordKind::Image => {
+                    if scene_image_by_id(&self.images, record.stable_id).is_none() {
+                        return Err(SceneError::Length);
+                    }
+                    let bounds = record.coordinates.map(f32_value);
+                    let [x0, y0, x1, y1] = [bounds[0]?, bounds[1]?, bounds[2]?, bounds[3]?];
+                    if x0 >= x1 || y0 >= y1 {
+                        return Err(SceneError::Length);
+                    }
+                }
+                SceneRecordKind::Triangle => {
+                    index = start + 3;
+                    let style = self.styles[record.style_ref];
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Triangle
+                            || next.annotation_tag != record.annotation_tag
+                            || self.styles[next.style_ref].stroke != style.stroke
+                            || self.styles[next.style_ref].stroke_width.to_bits()
+                                != style.stroke_width.to_bits()
+                        {
+                            break;
+                        }
+                        index += 3;
+                    }
+                }
                 SceneRecordKind::Band => {
                     if record.coordinates[0] != record.coordinates[2] {
                         return Err(SceneError::Length);
@@ -14483,18 +14887,31 @@ impl SceneDocument {
             .checked_add(descriptors)
             .ok_or(SceneError::Limit)?;
         for group in &groups {
-            let columns = if matches!(group.kind, SceneRecordKind::Rect | SceneRecordKind::Band) {
-                6
+            let count = group.end - group.start;
+            let bytes = if group.kind == SceneRecordKind::Segment {
+                (count / 2).checked_mul(48).ok_or(SceneError::Limit)?
+            } else if group.kind == SceneRecordKind::Scatter
+                && matches!(group.annotation_tag, 0 | 0x80)
+            {
+                count.checked_mul(48).ok_or(SceneError::Limit)?
+            } else if group.kind == SceneRecordKind::Triangle {
+                (count / 3).checked_mul(36).ok_or(SceneError::Limit)?
+            } else if group.kind == SceneRecordKind::Image {
+                let image = scene_image_by_id(&self.images, self.records[group.start].stable_id)
+                    .ok_or(SceneError::Length)?;
+                24usize
+                    .checked_add(image.rgba.len())
+                    .ok_or(SceneError::Limit)?
             } else {
-                4
+                let columns = if matches!(group.kind, SceneRecordKind::Rect | SceneRecordKind::Band)
+                {
+                    6
+                } else {
+                    4
+                };
+                count.checked_mul(columns * 4).ok_or(SceneError::Limit)?
             };
-            required = required
-                .checked_add(
-                    (group.end - group.start)
-                        .checked_mul(columns * 4)
-                        .ok_or(SceneError::Limit)?,
-                )
-                .ok_or(SceneError::Limit)?;
+            required = required.checked_add(bytes).ok_or(SceneError::Limit)?;
         }
         let tick_count = x_ticks
             .len()
@@ -14554,34 +14971,83 @@ impl SceneDocument {
         for (group_index, group) in groups.iter().enumerate() {
             let descriptor =
                 BROWSER_PAINTER_HEADER_BYTES + group_index * BROWSER_PAINTER_TRACE_BYTES;
-            out[descriptor] = group.kind as u8;
-            out[descriptor + 1] = group.symbol;
+            let triangle = group.kind == SceneRecordKind::Triangle;
+            let segment = group.kind == SceneRecordKind::Segment;
+            let scatter_batch =
+                group.kind == SceneRecordKind::Scatter && matches!(group.annotation_tag, 0 | 0x80);
+            out[descriptor] = if triangle {
+                7
+            } else if segment {
+                9
+            } else if scatter_batch {
+                8
+            } else {
+                group.kind as u8
+            };
+            out[descriptor + 1] = if scatter_batch { 0 } else { group.symbol };
             out[descriptor + 2] = if group.annotation_tag <= 6 {
                 group.annotation_tag
             } else {
                 0
             };
-            let count = group.end - group.start;
+            let stride = if triangle {
+                3
+            } else if segment {
+                2
+            } else {
+                1
+            };
+            let count = (group.end - group.start) / stride;
             out[descriptor + 4..descriptor + 8].copy_from_slice(&(count as u32).to_le_bytes());
-            let coordinate_columns =
-                if matches!(group.kind, SceneRecordKind::Rect | SceneRecordKind::Band) {
-                    4
-                } else {
-                    2
-                };
+            let coordinate_columns = if triangle {
+                6
+            } else if segment {
+                4
+            } else if matches!(
+                group.kind,
+                SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::Image
+            ) {
+                4
+            } else {
+                2
+            };
             for column in 0..coordinate_columns {
+                let slot = if column < 4 {
+                    8 + column * 4
+                } else {
+                    48 + (column - 4) * 4
+                };
                 let column_offset = out.len();
-                out[descriptor + 8 + column * 4..descriptor + 12 + column * 4]
+                out[descriptor + slot..descriptor + slot + 4]
                     .copy_from_slice(&(column_offset as u32).to_le_bytes());
+                if triangle || segment {
+                    for primitive in self.records[group.start..group.end].chunks_exact(stride) {
+                        out.extend_from_slice(
+                            &f32_value(primitive[column / 2].coordinates[column % 2])?
+                                .to_le_bytes(),
+                        );
+                    }
+                } else {
+                    for record in &self.records[group.start..group.end] {
+                        out.extend_from_slice(
+                            &f32_value(record.coordinates[column])?.to_le_bytes(),
+                        );
+                    }
+                }
+            }
+            if scatter_batch {
+                let offset = out.len();
+                out[descriptor + 16..descriptor + 20]
+                    .copy_from_slice(&(offset as u32).to_le_bytes());
                 for record in &self.records[group.start..group.end] {
-                    out.extend_from_slice(&f32_value(record.coordinates[column])?.to_le_bytes());
+                    out.extend_from_slice(&(record.style_ref as u32).to_le_bytes());
                 }
             }
             for (column, high) in [false, true].into_iter().enumerate() {
                 let column_offset = out.len();
                 out[descriptor + 24 + column * 4..descriptor + 28 + column * 4]
                     .copy_from_slice(&(column_offset as u32).to_le_bytes());
-                for record in &self.records[group.start..group.end] {
+                for record in self.records[group.start..group.end].iter().step_by(stride) {
                     let word = if high {
                         (record.stable_id >> 32) as u32
                     } else {
@@ -14590,8 +15056,99 @@ impl SceneDocument {
                     out.extend_from_slice(&word.to_le_bytes());
                 }
             }
+            if scatter_batch || segment {
+                if scatter_batch {
+                    let offset = out.len();
+                    out[descriptor + 48..descriptor + 52]
+                        .copy_from_slice(&(offset as u32).to_le_bytes());
+                    for record in &self.records[group.start..group.end] {
+                        out.extend_from_slice(&f32_value(record.diameter)?.to_le_bytes());
+                    }
+                }
+                let rgba_slot = if scatter_batch { 52 } else { 48 };
+                let offset = out.len();
+                out[descriptor + rgba_slot..descriptor + rgba_slot + 4]
+                    .copy_from_slice(&(offset as u32).to_le_bytes());
+                for record in self.records[group.start..group.end].iter().step_by(stride) {
+                    out.extend_from_slice(&if scatter_batch {
+                        self.styles[record.style_ref].fill
+                    } else {
+                        self.styles[record.style_ref].stroke
+                    });
+                }
+                if scatter_batch {
+                    let offset = out.len();
+                    out[descriptor + 56..descriptor + 60]
+                        .copy_from_slice(&(offset as u32).to_le_bytes());
+                    for record in &self.records[group.start..group.end] {
+                        out.extend_from_slice(&self.styles[record.style_ref].stroke);
+                    }
+                }
+                let style_slot = if scatter_batch { 60 } else { 52 };
+                let offset = out.len();
+                out[descriptor + style_slot..descriptor + style_slot + 4]
+                    .copy_from_slice(&(offset as u32).to_le_bytes());
+                for record in self.records[group.start..group.end].iter().step_by(stride) {
+                    let width = if scatter_batch {
+                        MarkerGeometry::new(
+                            ScatterSymbol::from_code(record.symbol),
+                            record.diameter,
+                            self.styles[record.style_ref].stroke_width,
+                        )
+                        .stroke_width
+                    } else {
+                        self.styles[record.style_ref].stroke_width
+                    };
+                    for value in [
+                        1.0,
+                        -1.0,
+                        width,
+                        if scatter_batch {
+                            record.symbol as f64
+                        } else {
+                            -1.0
+                        },
+                    ] {
+                        out.extend_from_slice(&f32_value(value)?.to_le_bytes());
+                    }
+                }
+                if segment {
+                    let offset = out.len();
+                    out[descriptor + 56..descriptor + 60]
+                        .copy_from_slice(&(offset as u32).to_le_bytes());
+                    for record in self.records[group.start..group.end].iter().step_by(2) {
+                        out.extend_from_slice(&(record.style_ref as u32).to_le_bytes());
+                    }
+                }
+                continue; // Every per-instance paint field is Rust-resolved above.
+            }
+            if triangle {
+                let rgba_offset = out.len();
+                out[descriptor + 56..descriptor + 60]
+                    .copy_from_slice(&(rgba_offset as u32).to_le_bytes());
+                out[descriptor + 60..descriptor + 64]
+                    .copy_from_slice(&((count * 4) as u32).to_le_bytes());
+                for primitive in self.records[group.start..group.end].chunks_exact(3) {
+                    out.extend_from_slice(&self.styles[primitive[0].style_ref].fill);
+                }
+            }
+            if group.kind == SceneRecordKind::Image {
+                let image = scene_image_by_id(&self.images, self.records[group.start].stable_id)
+                    .ok_or(SceneError::Length)?;
+                out[descriptor + 48..descriptor + 52].copy_from_slice(&image.width.to_le_bytes());
+                out[descriptor + 52..descriptor + 56].copy_from_slice(&image.height.to_le_bytes());
+                let rgba_offset = out.len();
+                out[descriptor + 56..descriptor + 60]
+                    .copy_from_slice(&(rgba_offset as u32).to_le_bytes());
+                out[descriptor + 60..descriptor + 64]
+                    .copy_from_slice(&(image.rgba.len() as u32).to_le_bytes());
+                out.extend_from_slice(&image.rgba);
+                continue; // Image paint is already fully resolved in its RGBA plane.
+            }
             let style = self.styles[group.style_ref];
-            out[descriptor + 32..descriptor + 36].copy_from_slice(&style.fill);
+            if !triangle {
+                out[descriptor + 32..descriptor + 36].copy_from_slice(&style.fill);
+            }
             out[descriptor + 36..descriptor + 40].copy_from_slice(&style.stroke);
             let stroke_width = if group.kind == SceneRecordKind::Scatter {
                 MarkerGeometry::new(
@@ -15465,6 +16022,365 @@ mod tests {
         assert_eq!(inside[2].coordinates[0], 10.0);
     }
     use super::*;
+
+    fn explicit_triangle_fixture() -> (Vec<u8>, SceneDocument) {
+        let layout = PlotLayout::new(100.0, 100.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let mut triangles = vec![
+            ([[10.0, 10.0], [40.0, 10.0], [40.0, 40.0]], u64::MAX, 0u32),
+            ([[10.0, 10.0], [40.0, 40.0], [10.0, 40.0]], u64::MAX, 0),
+            (
+                [[50.0, 10.0], [80.0, 10.0], [80.0, 40.0]],
+                0x8000_0000_0000_0001,
+                1,
+            ),
+            (
+                [[50.0, 10.0], [80.0, 40.0], [50.0, 40.0]],
+                0x8000_0000_0000_0001,
+                1,
+            ),
+        ];
+        let outer = [[10.0, 50.0], [40.0, 50.0], [40.0, 80.0], [10.0, 80.0]];
+        let inner = [[20.0, 60.0], [30.0, 60.0], [30.0, 70.0], [20.0, 70.0]];
+        for edge in 0..4 {
+            let next = (edge + 1) % 4;
+            triangles.push(([outer[edge], outer[next], inner[next]], 7, 0));
+            triangles.push(([outer[edge], inner[next], inner[edge]], 7, 0));
+        }
+        let mut ids = Vec::new();
+        let mut styles = Vec::new();
+        let mut x = Vec::new();
+        let mut y = Vec::new();
+        for (vertices, id, style) in triangles {
+            for [px, py] in vertices {
+                ids.push(id);
+                styles.push(style);
+                x.push(px);
+                y.push(100.0 - py);
+            }
+        }
+        let n = ids.len();
+        let mut chrome = SceneChromeStyle {
+            x_major_ticks: Some(Vec::new()),
+            y_major_ticks: Some(Vec::new()),
+            ..SceneChromeStyle::default()
+        };
+        chrome.x_axis.axis_rgba = [0; 4];
+        chrome.y_axis.axis_rgba = [0; 4];
+        let scene = SceneBatch::new_with_chrome_literal_ids(
+            layout,
+            1,
+            2,
+            AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 0.0, 100.0, 1.0, false).unwrap(),
+            AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 100.0, 0.0, 1.0, false).unwrap(),
+            chrome,
+            SceneChromeText::default(),
+            &vec![6; n],
+            &ids,
+            &styles,
+            &[255, 0, 0, 255, 0, 255, 0, 128],
+            &[0; 8],
+            &[0.0; 2],
+            &vec![0.0; n],
+            &vec![0; n],
+            &x,
+            &y,
+            &vec![0.0; n],
+            &vec![0.0; n],
+        )
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&scene).unwrap();
+        (scene, document)
+    }
+
+    #[test]
+    fn explicit_triangle_boundaries_preserve_same_feature_style_and_reject_malformed_frames() {
+        let (scene, document) = explicit_triangle_fixture();
+        assert!(validate_scene_batch(&scene).is_ok());
+        assert_eq!(document.to_svg().matches(" Z ").count(), 12);
+        let mut commands = Vec::new();
+        document.append_raster_marks(&mut commands, 1.0).unwrap();
+        let mut cursor = 0;
+        let mut primitives = 0;
+        let mut groups = 0;
+        while cursor < commands.len() {
+            assert_eq!(commands[cursor], 19);
+            let count =
+                u32::from_le_bytes(commands[cursor + 1..cursor + 5].try_into().unwrap()) as usize;
+            primitives += count;
+            groups += 1;
+            cursor += 9 + count * 24;
+        }
+        assert_eq!((primitives, groups), (12, 3));
+        let at = SCENE_BATCH_HEADER_BYTES + 2 * SCENE_STYLE_RECORD_BYTES;
+        for slot in [0, 1, 3, 4, 8] {
+            let mut malformed = scene.clone();
+            malformed[at + SCENE_BATCH_RECORD_BYTES + slot] ^= 1;
+            assert!(
+                validate_scene_batch(&malformed).is_err(),
+                "batch slot{slot}"
+            );
+            assert!(
+                SceneDocument::decode(&malformed).is_err(),
+                "decode slot{slot}"
+            );
+        }
+        // A genuine six-vertex PolyFill remains one polygon; it is not interpreted as two triangles.
+        let mut polygon = SceneDocument::decode(&scene).unwrap();
+        polygon.records.truncate(6);
+        for record in &mut polygon.records {
+            record.kind = SceneRecordKind::PolyFill;
+            record.stable_id = 7;
+            record.style_ref = 0;
+        }
+        assert_eq!(polygon.to_svg().matches(" Z\"").count(), 1);
+        let painter = polygon.to_browser_painter(65536).unwrap();
+        assert_eq!(painter[BROWSER_PAINTER_HEADER_BYTES], 4);
+        assert_eq!(
+            &painter[BROWSER_PAINTER_HEADER_BYTES + 4..BROWSER_PAINTER_HEADER_BYTES + 8],
+            &6u32.to_le_bytes()
+        );
+    }
+
+    #[test]
+    fn packed_marker_and_segment_styles_admit_ten_thousand_without_trace_fragmentation() {
+        let (_, mut document) = explicit_triangle_fixture();
+        document.records.clear();
+        document.styles[0] = EncodedStyle::solid([255, 0, 0, 255], [0, 0, 255, 255], 2.0);
+        document.styles[1] = EncodedStyle::solid([0, 255, 0, 128], [255, 0, 255, 128], 4.0);
+        for index in 0..10_000 {
+            document.records.push(EncodedRecord {
+                kind: SceneRecordKind::Scatter,
+                visible: true,
+                symbol: (index % 19) as u8,
+                style_ref: index % 2,
+                stable_id: u64::MAX - index as u64,
+                coordinates: [20.0, 20.0, 0.0, 0.0],
+                diameter: 2.0 + (index % 97) as f64,
+                annotation_tag: 0x80,
+            });
+        }
+        for index in 0..10_000 {
+            for [x, y] in [[30.0, 50.0], [70.0, 50.0]] {
+                document.records.push(EncodedRecord {
+                    kind: SceneRecordKind::Segment,
+                    visible: true,
+                    symbol: 0,
+                    style_ref: index % 2,
+                    stable_id: u64::MAX - index as u64,
+                    coordinates: [x, y, 0.0, 0.0],
+                    diameter: 0.0,
+                    annotation_tag: 0x80,
+                });
+            }
+        }
+        let painter = document.to_browser_painter(1_000_000).unwrap();
+        assert_eq!(&painter[20..24], &2u32.to_le_bytes());
+        assert_eq!(painter[BROWSER_PAINTER_HEADER_BYTES], 8);
+        assert_eq!(
+            painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES],
+            9
+        );
+        assert_eq!(
+            document.to_browser_painter(painter.len() - 1),
+            Err(SceneError::Limit)
+        );
+        let styles = u32::from_le_bytes(
+            painter[BROWSER_PAINTER_HEADER_BYTES + 60..BROWSER_PAINTER_HEADER_BYTES + 64]
+                .try_into()
+                .unwrap(),
+        ) as usize;
+        assert_eq!(
+            f32::from_le_bytes(painter[styles + 24..styles + 28].try_into().unwrap()),
+            4.0
+        );
+        assert_eq!(
+            f32::from_le_bytes(painter[styles + 28..styles + 32].try_into().unwrap()),
+            1.0
+        );
+        // A two-vertex record loses neither its boundary nor its source id.
+        let (_, mut malformed) = explicit_triangle_fixture();
+        malformed.records = document.records[10_000..10_002].to_vec();
+        malformed.records.pop();
+        assert!(malformed.to_browser_painter(65536).is_err());
+    }
+
+    #[test]
+    fn triangle_batch_and_image_painter_preserve_planes_order_identity_and_admission() {
+        let (_, mut document) = explicit_triangle_fixture();
+        document.records.push(EncodedRecord {
+            kind: SceneRecordKind::Image,
+            visible: true,
+            symbol: 0,
+            style_ref: 0,
+            stable_id: 99,
+            coordinates: [50.0, 50.0, 80.0, 80.0],
+            diameter: 0.0,
+            annotation_tag: 0x80,
+        });
+        document.images.push(SceneImage {
+            stable_id: 99,
+            width: 2,
+            height: 2,
+            rgba: vec![
+                255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 128, 255, 255, 0, 255,
+            ],
+        });
+        let painter = document.to_browser_painter(65536).unwrap();
+        assert_eq!(&painter[20..24], &2u32.to_le_bytes());
+        let d = BROWSER_PAINTER_HEADER_BYTES;
+        assert_eq!(painter[d], 7);
+        assert_eq!(&painter[d + 4..d + 8], &12u32.to_le_bytes());
+        let lo = u32::from_le_bytes(painter[d + 24..d + 28].try_into().unwrap()) as usize;
+        let hi = u32::from_le_bytes(painter[d + 28..d + 32].try_into().unwrap()) as usize;
+        assert_eq!(&painter[lo..lo + 8], &[255; 8]);
+        assert_eq!(&painter[hi..hi + 8], &[255; 8]);
+        let rgba = u32::from_le_bytes(painter[d + 56..d + 60].try_into().unwrap()) as usize;
+        assert_eq!(
+            &painter[rgba..rgba + 16],
+            &[255, 0, 0, 255, 255, 0, 0, 255, 0, 255, 0, 128, 0, 255, 0, 128]
+        );
+        let image = d + BROWSER_PAINTER_TRACE_BYTES;
+        assert_eq!(painter[image], 5);
+        assert_eq!(&painter[image + 48..image + 56], &[2, 0, 0, 0, 2, 0, 0, 0]);
+        let image_rgba =
+            u32::from_le_bytes(painter[image + 56..image + 60].try_into().unwrap()) as usize;
+        assert_eq!(
+            &painter[image_rgba..image_rgba + 16],
+            document.images[0].rgba.as_slice()
+        );
+        assert_eq!(
+            document.to_browser_painter(painter.len() - 1),
+            Err(SceneError::Limit)
+        );
+        // Rust rejects empty/reversed bounds and extents lost by f32 lowering,
+        // before emitting an image descriptor the browser cannot consume.
+        let image_record = document.records.len() - 1;
+        let bounds = document.records[image_record].coordinates;
+        for invalid in [
+            [50.0, 50.0, 50.0, 80.0],
+            [80.0, 50.0, 50.0, 80.0],
+            [50.0, 50.0, 50.0 + 1e-8, 80.0],
+        ] {
+            document.records[image_record].coordinates = invalid;
+            assert_eq!(document.to_browser_painter(65536), Err(SceneError::Length));
+        }
+        document.records[image_record].coordinates = bounds;
+        // One batch also admits more triangles than the browser trace object ceiling.
+        let primitive = document.records[..3].to_vec();
+        document.records = primitive.repeat(2048);
+        document.images.clear();
+        let large = document.to_browser_painter(1024 * 1024).unwrap();
+        assert_eq!(&large[20..24], &1u32.to_le_bytes());
+        if let Ok(path) = std::env::var("XYG_M6_PAINTER_FIXTURE") {
+            let (_, mut fixture) = explicit_triangle_fixture();
+            fixture.records.push(EncodedRecord {
+                kind: SceneRecordKind::Image,
+                visible: true,
+                symbol: 0,
+                style_ref: 0,
+                stable_id: 99,
+                coordinates: [50.0, 50.0, 80.0, 80.0],
+                diameter: 0.0,
+                annotation_tag: 0x80,
+            });
+            fixture.images.push(SceneImage {
+                stable_id: 99,
+                width: 2,
+                height: 2,
+                rgba: vec![
+                    255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 128, 255, 255, 0, 255,
+                ],
+            });
+            fixture.styles.push(EncodedStyle::solid(
+                [0, 0, 255, 128],
+                [255, 0, 255, 255],
+                2.0,
+            ));
+            fixture
+                .styles
+                .push(EncodedStyle::solid([255, 0, 0, 255], [255, 0, 0, 255], 8.0));
+            for (x, id, diameter, style_ref) in [(20.0, u64::MAX, 12.0, 2usize), (35.0, 42, 2.0, 0)]
+            {
+                fixture.records.push(EncodedRecord {
+                    kind: SceneRecordKind::Scatter,
+                    visible: true,
+                    symbol: 0,
+                    style_ref,
+                    stable_id: id,
+                    coordinates: [x, 90.0, 0.0, 0.0],
+                    diameter,
+                    annotation_tag: 0x80,
+                });
+            }
+            for [x, y] in [[50.0, 90.0], [70.0, 90.0]] {
+                fixture.records.push(EncodedRecord {
+                    kind: SceneRecordKind::Segment,
+                    visible: true,
+                    symbol: 0,
+                    style_ref: 3,
+                    stable_id: 123,
+                    coordinates: [x, y, 0.0, 0.0],
+                    diameter: 0.0,
+                    annotation_tag: 0x80,
+                });
+            }
+            #[cfg(feature = "raster")]
+            for ratio in [1usize, 2] {
+                let commands = fixture.to_raster_commands(ratio as f64).unwrap();
+                let mut pixels = vec![0; 100 * 100 * ratio * ratio * 4];
+                assert!(crate::raster::rasterize_into(
+                    &commands,
+                    100 * ratio,
+                    100 * ratio,
+                    &mut pixels
+                ));
+                let pixel = |x: usize, y: usize| {
+                    &pixels[(y * ratio * 100 * ratio + x * ratio) * 4
+                        ..(y * ratio * 100 * ratio + x * ratio) * 4 + 4]
+                };
+                assert_eq!(pixel(25, 25), [255, 0, 0, 255]);
+                assert_eq!(pixel(65, 25), [0, 255, 0, 128]);
+                assert_eq!(pixel(48, 90), [255, 0, 0, 255]);
+                assert_eq!(pixel(20, 90), [0, 0, 255, 128]);
+            }
+            std::fs::write(&path, fixture.to_browser_painter(65536).unwrap()).unwrap();
+            fixture.labels.push(SceneLabel {
+                stable_id: u64::MAX,
+                x: 10.0,
+                y: 48.0,
+                font_size: 8.0,
+                rgba: [0, 0, 0, 255],
+                anchor: 0,
+                rotation: 0.0,
+                text: "Feature".into(),
+            });
+            fixture.label_backgrounds.push(None);
+            fixture.legend = Some(SceneLegend {
+                location: LegendLocation::UpperRight,
+                title: "Layers".into(),
+                font_size: 6.0,
+                title_font_size: 6.0,
+                text_rgba: [0, 0, 0, 255],
+                frame_fill_rgba: [255, 255, 255, 230],
+                frame_stroke_rgba: [0, 0, 0, 255],
+                entries: vec![SceneLegendEntry {
+                    style_ref: 0,
+                    kind: SceneRecordKind::Triangle,
+                    symbol: 0,
+                    fill_rgba: [255, 0, 0, 255],
+                    stroke_rgba: [0; 4],
+                    label: "Fill".into(),
+                }],
+            });
+            std::fs::write(
+                format!("{path}.decor"),
+                fixture.to_browser_painter(65536).unwrap(),
+            )
+            .unwrap();
+        }
+    }
+
     use std::collections::HashSet;
 
     fn test_linear_x_scale() -> AxisScale {
@@ -16449,10 +17365,7 @@ mod tests {
         assert_eq!((images[0].width, images[0].height), (1, 2));
         // Image bytes are top-row-first while authored heatmap row zero maps
         // to y0 (the bottom row).
-        assert_eq!(
-            images[0].rgba,
-            [255, 255, 255, 180, 0, 0, 0, 180]
-        );
+        assert_eq!(images[0].rgba, [255, 255, 255, 180, 0, 0, 0, 180]);
     }
 
     #[test]
@@ -16482,10 +17395,7 @@ mod tests {
         .unwrap();
         assert_eq!(expanded.kinds, [SceneRecordKind::Image as u8]);
         assert_eq!((images[0].width, images[0].height), (2, 1));
-        assert_eq!(
-            images[0].rgba,
-            [255, 255, 255, 200, 0, 0, 0, 200]
-        );
+        assert_eq!(images[0].rgba, [255, 255, 255, 200, 0, 0, 0, 200]);
     }
 
     #[test]
@@ -16632,7 +17542,7 @@ mod tests {
         .with_dashes(&xyds)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYDS"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -16665,7 +17575,7 @@ mod tests {
         )
         .unwrap()
         .encode();
-        assert_eq!(&undashed[4..8], &31u32.to_le_bytes());
+        assert_eq!(&undashed[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(!undashed.windows(4).any(|window| window == b"XYDS"));
     }
 
@@ -16705,7 +17615,7 @@ mod tests {
         .with_dashes(&xylc)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYLC"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -16783,7 +17693,7 @@ mod tests {
         .with_dashes(&diamond)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(!encoded.windows(4).any(|window| window == b"XYMP"));
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("<path d=\"M "));
@@ -16871,7 +17781,7 @@ mod tests {
         .with_dashes(&xymg)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYMG"));
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("font-family=\"DejaVu Sans\""));
@@ -16963,7 +17873,7 @@ mod tests {
         .with_dashes(&xygr)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &SCENE_VERSION.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYGR"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -17017,7 +17927,7 @@ mod tests {
     }
 
     #[test]
-    fn compact_segment_pair_emits_two_polyline_vertices() {
+    fn compact_segment_pair_emits_two_explicit_segment_vertices() {
         let expanded = expand_scene_records(
             SceneExpansionInput {
                 kinds: &[1],
@@ -17035,7 +17945,7 @@ mod tests {
             test_linear_y_scale(),
         )
         .unwrap();
-        assert_eq!(expanded.kinds, [1, 1]);
+        assert_eq!(expanded.kinds, [7, 7]);
         assert_eq!(expanded.stable_ids, [11, 11]);
         assert_eq!(expanded.style_refs, [4, 4]);
         assert_eq!(expanded.x0, [0.25, 1.25]);
@@ -17073,7 +17983,7 @@ mod tests {
             test_linear_y_scale(),
         )
         .unwrap();
-        assert_eq!(expanded.kinds, [1, 1, 0, 0]);
+        assert_eq!(expanded.kinds, [7, 7, 0, 0]);
         assert_eq!(expanded.stable_ids, [1, 1, 1, 1]);
         assert_eq!(expanded.x0, [0.0, 0.0, 0.0, 1.0]);
         assert_eq!(expanded.y0, [0.0, 1.0, 1.0, 2.0]);
@@ -17114,7 +18024,7 @@ mod tests {
     }
 
     #[test]
-    fn compact_triangle_face_emits_three_polyfill_vertices() {
+    fn compact_triangle_face_emits_three_explicit_triangle_vertices() {
         let kinds = [4u8, 4];
         let ids = [21u64, 21];
         let styles = [2u32, 2];
@@ -17142,7 +18052,7 @@ mod tests {
             test_linear_y_scale(),
         )
         .unwrap();
-        assert_eq!(expanded.kinds, [4, 4, 4]);
+        assert_eq!(expanded.kinds, [6, 6, 6]);
         assert_eq!(expanded.stable_ids, [21, 21, 21]);
         assert_eq!(expanded.x0, [-0.25, 0.75, 0.25]);
         assert_eq!(expanded.y0, [0.25, 0.25, 1.25]);
@@ -17681,7 +18591,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 31);
+        assert_eq!(SCENE_VERSION, 32);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -18276,32 +19186,20 @@ mod tests {
                 painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES],
                 painter[BROWSER_PAINTER_HEADER_BYTES + 2 * BROWSER_PAINTER_TRACE_BYTES],
             ],
-            [0, 1, 2]
+            [8, 1, 2]
         );
-        assert_eq!(
-            u32::from_le_bytes(
-                painter[BROWSER_PAINTER_HEADER_BYTES + 200..BROWSER_PAINTER_HEADER_BYTES + 204]
+        for (group, id) in [10u32, 20, 30].into_iter().enumerate() {
+            let descriptor = BROWSER_PAINTER_HEADER_BYTES + group * BROWSER_PAINTER_TRACE_BYTES;
+            let lo = u32::from_le_bytes(
+                painter[descriptor + 24..descriptor + 28]
                     .try_into()
-                    .unwrap()
-            ),
-            10
-        );
-        assert_eq!(
-            u32::from_le_bytes(
-                painter[BROWSER_PAINTER_HEADER_BYTES + 224..BROWSER_PAINTER_HEADER_BYTES + 228]
-                    .try_into()
-                    .unwrap()
-            ),
-            20
-        );
-        assert_eq!(
-            u32::from_le_bytes(
-                painter[BROWSER_PAINTER_HEADER_BYTES + 256..BROWSER_PAINTER_HEADER_BYTES + 260]
-                    .try_into()
-                    .unwrap()
-            ),
-            30
-        );
+                    .unwrap(),
+            ) as usize;
+            assert_eq!(
+                u32::from_le_bytes(painter[lo..lo + 4].try_into().unwrap()),
+                id
+            );
+        }
         assert!(u32::from_le_bytes(painter[48..52].try_into().unwrap()) >= 3);
         assert!(u32::from_le_bytes(painter[52..56].try_into().unwrap()) >= 3);
         assert_eq!(
@@ -18329,7 +19227,7 @@ mod tests {
             let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
             let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 110.0, 1.0, false).unwrap();
             let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 90.0, 10.0, 1.0, false).unwrap();
-            let symbols: Vec<u8> = (0..count).map(|index| (index % 2) as u8).collect();
+            let symbols: Vec<u8> = vec![0; count];
             let coordinates = vec![0.5; count];
             let zeros = vec![0.0; count];
             let encoded = SceneBatch::new(
@@ -18338,13 +19236,13 @@ mod tests {
                 2,
                 sx,
                 sy,
-                &vec![0; count],
-                &vec![7; count],
+                &vec![1; count],
+                &(0..count as u64).collect::<Vec<_>>(),
                 &vec![0; count],
                 &[57, 135, 229, 255],
                 &[0, 0, 0, 0],
                 &[0.0],
-                &vec![4.0; count],
+                &vec![0.0; count],
                 &symbols,
                 &coordinates,
                 &coordinates,
@@ -18914,7 +19812,7 @@ mod tests {
         let document = SceneDocument::decode(&encoded).unwrap();
         let commands = document.to_raster_commands(1.0).unwrap();
         let painter = document.to_browser_painter(64 * 1024).unwrap();
-        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 19);
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 1);
         let grid_count = linear_ticks(0.0, 18.0, 3).unwrap().ticks.len()
             + linear_ticks(0.0, 1.0, 3).unwrap().ticks.len();
         let mut offset = 82 + 17 + grid_count * 35; // two backgrounds, clip, grid
@@ -18929,16 +19827,20 @@ mod tests {
                     0.0
                 }
             );
-            let descriptor =
-                BROWSER_PAINTER_HEADER_BYTES + code as usize * BROWSER_PAINTER_TRACE_BYTES;
-            assert_eq!(painter[descriptor], SceneRecordKind::Scatter as u8);
-            assert_eq!(painter[descriptor + 1], code);
+            let descriptor = BROWSER_PAINTER_HEADER_BYTES;
+            assert_eq!(painter[descriptor], 8);
+            let styles = u32::from_le_bytes(
+                painter[descriptor + 60..descriptor + 64]
+                    .try_into()
+                    .unwrap(),
+            ) as usize;
+            let row = styles + code as usize * 16;
             assert_eq!(
-                f32::from_le_bytes(
-                    painter[descriptor + 40..descriptor + 44]
-                        .try_into()
-                        .unwrap()
-                ),
+                f32::from_le_bytes(painter[row + 12..row + 16].try_into().unwrap()),
+                code as f32
+            );
+            assert_eq!(
+                f32::from_le_bytes(painter[row + 8..row + 12].try_into().unwrap()),
                 if code >= ScatterSymbol::PlusLine as u8 {
                     1.0
                 } else {
@@ -21139,7 +22041,14 @@ mod tests {
         assert_eq!(bands.first().unwrap().0, 0.0);
         assert_eq!(bands.last().unwrap().1, 1.0);
         assert!(bands.windows(2).all(|pair| pair[0].1 == pair[1].0));
-        assert!(bands.iter().map(|band| band.2).collect::<HashSet<_>>().len() > 16);
+        assert!(
+            bands
+                .iter()
+                .map(|band| band.2)
+                .collect::<HashSet<_>>()
+                .len()
+                > 16
+        );
 
         let colorbar = scene.colorbar.as_mut().unwrap();
         colorbar.domain = [1.0, f64::from_bits(1.0f64.to_bits() + 1)];
@@ -21147,12 +22056,14 @@ mod tests {
             (colorbar.domain[0], [0, 0, 0, 255]),
             (colorbar.domain[1], [255, 255, 255, 255]),
         ];
-        assert!(resolved_colorbar_bands(colorbar)
-            .iter()
-            .map(|band| band.2)
-            .collect::<HashSet<_>>()
-            .len()
-            > 32);
+        assert!(
+            resolved_colorbar_bands(colorbar)
+                .iter()
+                .map(|band| band.2)
+                .collect::<HashSet<_>>()
+                .len()
+                > 32
+        );
         colorbar.domain = [-1.7e308, 1.7e308];
         colorbar.stops = vec![
             (colorbar.domain[0], [0, 0, 0, 255]),
@@ -21160,8 +22071,17 @@ mod tests {
             (colorbar.domain[1], [255, 255, 255, 255]),
         ];
         let extreme = resolved_colorbar_bands(colorbar);
-        assert!(extreme.iter().all(|band| band.0.is_finite() && band.1.is_finite()));
-        assert!(extreme.iter().map(|band| band.2).collect::<HashSet<_>>().len() > 32);
+        assert!(extreme
+            .iter()
+            .all(|band| band.0.is_finite() && band.1.is_finite()));
+        assert!(
+            extreme
+                .iter()
+                .map(|band| band.2)
+                .collect::<HashSet<_>>()
+                .len()
+                > 32
+        );
 
         let mut svg = String::new();
         scene.append_svg_colorbar(&mut svg);
@@ -21265,7 +22185,8 @@ mod tests {
     fn static_explicit_cax_colorbar_fills_scene_plot_bounds() {
         let mut scene = static_colorbar_scene(false);
         scene.apply_static_colorbar_layout(None, true).unwrap();
-        let bounds = resolved_colorbar_bounds(scene.layout, scene.colorbar.as_ref().unwrap()).unwrap();
+        let bounds =
+            resolved_colorbar_bounds(scene.layout, scene.colorbar.as_ref().unwrap()).unwrap();
         assert_eq!(
             bounds,
             (
