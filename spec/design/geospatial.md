@@ -1,10 +1,13 @@
 # Geospatial data contract — GeoColumn, GeoArrow ingress, GeoViewport
 
-**Status:** GeoColumn closure (#47: validation, canonical metadata, host
-read-back, derived-cache seam; ABI 379) + GeoViewport camera foundation (#48).
+**Status:** GeoColumn native validation, canonical metadata, host read-back
+and derived-cache inputs (#47; ABI 379) + GeoViewport camera foundation (#48).
 MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
-The direct-browser WASM descriptor ingest (`XYGD` to `XYGM`) is the next slice
-of #47 and is not shipped yet (see "Module and follow-ons").
+Direct-browser WASM ABI 28 descriptor ingestion (`XYGD` to `XYGM`) now shares
+Rust validation and canonical metadata. GeoViewport projection and geographic
+scene surfaces remain #48/#49; ingestion does not claim scene parity. Actual
+native-versus-wasm32 derived scene parity remains an open #47 amendment
+requirement.
 
 ## Product rule
 
@@ -164,7 +167,7 @@ must not rewrite the code.
 ## Canonical metadata (`XYGM` v1)
 
 `GeoColumn::canonical_metadata()` is the projection-independent, host-neutral
-document every host (and, in the follow-on slice, WASM) must return
+document every host, including WASM, must return
 byte-identically for the same column. It is built lazily, cached on the column,
 and little-endian throughout; offsets below are from the start of the document.
 
@@ -258,9 +261,11 @@ issue: no C ABI, host, or WASM projection export exists (that is #48/#49).
   (`packages/xy-node/src/geoarrow.js`) mirrors the Python adapter decisions
   (same CRS parsing, same null-Point packing) from typed arrays; Node takes no
   Arrow dependency.
-- Browser/WASM (#59): the same descriptor semantics through typed memory; the
-  TypeScript painter never imports Arrow or reconstructs rows. Not shipped in
-  this slice (see follow-ons).
+- Browser/WASM: `encodeWasmGeoDescriptor` frames typed `XYGD` v1 planes;
+  `XygWasmWorker.geoColumnIngest(request)` returns the shared `XYGM` bytes
+  through sequenced WASM ABI 28. Rust validates canonical geometry; no column
+  survives the call. The TypeScript painter never imports Arrow or rebuilds
+  rows. Framing, resource and lifecycle details are in [browser-wasm.md](browser-wasm.md).
 
 ```python
 import numpy as np
@@ -425,11 +430,12 @@ rebuild-key seams, and native↔WASM goldens (#59).
   WKB, WKT, or GeoJSON reconstruction.
 - GeoViewport: `crates/xyg-engine/src/geo_viewport.rs` (camera foundation;
   `project_column` derived-cache seam; projection ABI/hosts next).
-- Next: WASM descriptor ingest (packed `XYGD` request to `XYGM` output, native
-  vs WASM parity; the rest of #47's Rust/WASM amendment, no TypeScript worker
-  op until #49 consumes geometry); GeoViewport ABI + host ergonomics (#48
-  follow-on); geographic layer programs and fill topology (#49); LOD/export
-  (#50).
+- Browser ingress: sequenced `XYGD` → `XYGM` through WASM ABI 28 and
+  `XygWasmWorker.geoColumnIngest`; actual native/WASM goldens and stable errors
+  in `packages/xy-node/test/geo-wasm-parity.test.mjs`, strict-CSP transfer and
+  lifecycle proof in `scripts/geo_wasm_smoke.mjs`.
+- Next: GeoViewport ABI + host ergonomics (#48 follow-on); geographic layer
+  programs and fill topology (#49); LOD/export (#50).
 
 ## Related
 

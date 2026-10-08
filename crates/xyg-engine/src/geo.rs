@@ -233,6 +233,136 @@ pub struct GeoDescriptor<'a> {
     pub limits: GeoLimits,
 }
 
+/// Decode the bounded `XYGD` v1 ingress without alignment assumptions or unsafe casts.
+/// Header: magic, version/kind/CRS/flags/reserved u32, followed by five u64
+/// lengths (features, vertices, offsets0/1/2). Each plane starts at 8-byte alignment.
+/// Rust validates the exact framing and peak budget before allocating typed planes.
+pub fn column_from_descriptor_bytes(
+    bytes: &[u8],
+    peak_budget: usize,
+) -> Result<GeoColumn, GeoError> {
+    let invalid = GeoError::InvalidArgument;
+    if bytes.len() < 64 || &bytes[..4] != b"XYGD" {
+        return Err(invalid);
+    }
+    let u32_at = |i| u32::from_le_bytes(bytes[i..i + 4].try_into().unwrap());
+    if u32_at(4) != 1 || u32_at(16) > 1 || u32_at(20) != 0 {
+        return Err(invalid);
+    }
+    let geometry = GeoGeometry::from_u32(u32_at(8)).ok_or(GeoError::TypeMismatch)?;
+    let crs = GeoCrs::from_u32(u32_at(12)).ok_or(GeoError::UnsupportedCrs)?;
+    let mut lengths = [0usize; 5];
+    for (i, value) in lengths.iter_mut().enumerate() {
+        *value = usize::try_from(u64::from_le_bytes(
+            bytes[24 + i * 8..32 + i * 8].try_into().unwrap(),
+        ))
+        .map_err(|_| invalid)?;
+    }
+    let [features, vertices, o0, o1, o2] = lengths;
+    let xy_len = vertices.checked_mul(2).ok_or(invalid)?;
+    validate_descriptor_lengths(
+        geometry,
+        xy_len,
+        features,
+        [o0, o1, o2],
+        GeoLimits::default(),
+    )?;
+    let counts = [
+        xy_len,
+        features,
+        if u32_at(16) == 1 { features } else { 0 },
+        o0,
+        o1,
+        o2,
+    ];
+    let sizes = [8usize, 1, 8, 4, 4, 4];
+    let mut cursor = 64usize;
+    let mut ranges = [(0usize, 0usize); 6];
+    for i in 0..6 {
+        let end = counts[i]
+            .checked_mul(sizes[i])
+            .and_then(|n| cursor.checked_add(n))
+            .ok_or(invalid)?;
+        let padded = end.checked_add(7).map(|n| n & !7).ok_or(invalid)?;
+        if padded > bytes.len() || bytes[end..padded].iter().any(|&b| b != 0) {
+            return Err(invalid);
+        }
+        ranges[i] = (cursor, end);
+        cursor = padded;
+    }
+    if cursor != bytes.len() {
+        return Err(invalid);
+    }
+    // Transferred JavaScript source + Rust staging + decoded numeric planes + retained column. IDs
+    // generated for omitted source identities still cost eight bytes per
+    // feature, including all-null Point columns with no coordinate plane.
+    let numeric = xy_len
+        .checked_mul(8)
+        .and_then(|n| {
+            [o0, o1, o2].into_iter().try_fold(n, |sum, len| {
+                len.checked_mul(4).and_then(|n| sum.checked_add(n))
+            })
+        })
+        .ok_or(GeoError::ResourceLimit)?;
+    let decoded = numeric
+        .checked_add(if u32_at(16) == 1 {
+            features.checked_mul(8).ok_or(GeoError::ResourceLimit)?
+        } else {
+            0
+        })
+        .ok_or(GeoError::ResourceLimit)?;
+    let rings = match geometry {
+        GeoGeometry::Polygon => o1.saturating_sub(1),
+        GeoGeometry::MultiPolygon => o2.saturating_sub(1),
+        _ => 0,
+    };
+    let retained = features
+        .checked_mul(9)
+        .and_then(|n| n.checked_add(numeric))
+        .and_then(|n| n.checked_add(rings))
+        .ok_or(GeoError::ResourceLimit)?;
+    // Fixed allowance covers metadata cache + returned clone, validation stack
+    // (including digest chunk buffers), and small Vec / extension strings.
+    let peak = bytes
+        .len()
+        .checked_mul(2)
+        .and_then(|n| n.checked_add(decoded))
+        .and_then(|n| n.checked_add(retained))
+        .and_then(|n| n.checked_add(8192))
+        .ok_or(GeoError::ResourceLimit)?;
+    if peak > peak_budget {
+        return Err(GeoError::ResourceLimit);
+    }
+    let plane = |i: usize| &bytes[ranges[i].0..ranges[i].1];
+    let xy: Vec<f64> = plane(0)
+        .chunks_exact(8)
+        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+        .collect();
+    let ids: Vec<u64> = plane(2)
+        .chunks_exact(8)
+        .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
+        .collect();
+    let offsets: Vec<Vec<u32>> = (3..6)
+        .map(|i| {
+            plane(i)
+                .chunks_exact(4)
+                .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+                .collect()
+        })
+        .collect();
+    GeoColumn::from_descriptor(GeoDescriptor {
+        geometry,
+        crs,
+        xy: &xy,
+        validity: plane(1),
+        feature_ids: if u32_at(16) == 1 { Some(&ids) } else { None },
+        offsets0: &offsets[0],
+        offsets1: &offsets[1],
+        offsets2: &offsets[2],
+        limits: GeoLimits::default(),
+    })
+}
+
 /// Validated, retained geographic column (canonical f64 geometry).
 #[derive(Debug, Clone)]
 pub struct GeoColumn {

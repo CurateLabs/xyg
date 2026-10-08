@@ -593,6 +593,22 @@ export class XygWasmWorker {
     } };
   }
 
+  /** Submit `XYGD` f64 source planes; resolves with shared `XYGM` metadata. */
+  geoColumnIngest(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength < 64 || request.byteLength > this.maxArenaBytes) throw new TypeError("geographic descriptor must be a bounded ArrayBuffer");
+    const sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest(), result = this.promiseFor<ArrayBuffer>(requestId);
+    this.worker.postMessage({ type: "geo.ingest", requestId, sequence, request }, [request]);
+    return { requestId, sequence, result, cancel: () => {
+      const pending = this.pending.get(requestId); if (!pending) return;
+      this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "geographic ingestion was cancelled", 6));
+      if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+    } };
+  }
+
   /** Submit one packed temporal command to the shared Rust state machine. */
   temporalCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
     this.assertLive();

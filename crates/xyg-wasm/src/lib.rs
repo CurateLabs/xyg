@@ -12,6 +12,7 @@ pub mod compile;
 mod compound;
 mod dashboard;
 mod graph;
+mod geo;
 mod graphforge;
 mod temporal;
 mod temporal_graph;
@@ -21,7 +22,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 27;
+pub const WASM_ABI_VERSION: u32 = 28;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -49,6 +50,25 @@ pub const DENSITY_FIRST_PAINT_ATTACH_SAMPLE: u32 = 16;
 pub const DENSITY_FIRST_PAINT_SHIP_WASM_SOURCE: u32 = 32;
 /// Shift of the screen-bounded density mark count in the packed result.
 pub const DENSITY_FIRST_PAINT_MARKS_SHIFT: u32 = 8;
+
+/// Validate one single-use geographic descriptor and return shared `XYGM` metadata.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_column_ingest(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_metadata_version() -> u32 {
+    xyg_engine::geo::GEO_METADATA_VERSION
+}
 
 /// Version of the shared Rust-engine default palette consumed by this module.
 #[no_mangle]

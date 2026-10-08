@@ -99,7 +99,7 @@ def _as_array(column: Any) -> Any:
 
 
 def _coordinate_xy(coords: Any, validity: np.ndarray | None = None) -> np.ndarray:
-    """Pack certified separated XY f64, preserving nullable point alignment."""
+    """Pack certified separated x/y f64, preserving nullable point alignment."""
     pa = _require_pyarrow()
     if (
         not pa.types.is_struct(coords.type)

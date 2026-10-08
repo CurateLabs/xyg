@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 27
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 28
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -65,7 +65,7 @@ deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
 
 M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
-current WASM ABI 27 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+current WASM ABI 28 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
 was introduced in WASM ABI 23/native ABI 360. The native function
 uses the capacity-aware probe/write contract and returns `usize::MAX` for an
 invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
@@ -198,7 +198,9 @@ shared painter. The raw module must request no ambient WebAssembly imports.
 
 **Artifact size.** `dist/xyg-wasm.wasm` is built with the workspace release
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
-921 KiB raw and 336 KiB gzipped at WASM ABI 27. GraphForge compositions
+921 KiB raw and 336 KiB gzipped at WASM ABI 27. ABI 28 with GeoColumn
+ingestion measures 968137 raw bytes and 352160 gzip bytes (level 9), within
+the unchanged 1 MiB raw artifact budget. GraphForge compositions
 (composition, views, request/base decoding) and the Arrow IPC reader account
 for about 224 KiB of code; there is no single outlier. A size-optimized
 profile was measured and rejected, since the module's compute is on users'
@@ -310,7 +312,9 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 27. ABI 27 adds `xyg_wasm_graphforge_compose` and
+`WASM_ABI_VERSION` is 28. ABI 28 adds sequenced single-use GeoColumn
+ingestion (`xyg_wasm_geo_column_ingest`) and `xyg_wasm_geo_metadata_version`.
+ABI 27 adds `xyg_wasm_graphforge_compose` and
 `xyg_wasm_graphforge_composition_version`: one staged GraphForge `XYGQ`
 request in, the native host's byte-identical `XYGF` document out
 ([graphforge-compositions.md](graphforge-compositions.md) §6.3). ABI 23 introduced the bounded `XYTK`/`XYTO` tick
@@ -759,3 +763,57 @@ Stable codes: `XYG_WASM_UNAVAILABLE`, `XYG_WASM_SOURCE_UNAVAILABLE`, and
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps
 domain scans in Rust inside the Worker.
+
+## GeoColumn descriptor ingestion (`XYGD` to `XYGM`)
+
+WASM ABI 28 exposes `xyg_wasm_geo_column_ingest(handle, sequence, offset,
+length) -> i32`. It reads one `XYGD` v1 typed descriptor and returns the shared
+engine's byte-identical `XYGM` v1 metadata through the instance output. The
+column is temporary: neither whole source nor canonical geometry is retained
+past the call. All six two-dimensional geometry kinds, null features, polygon holes, exact
+f64 coordinates, and full u64 identities use `GeoColumn` validation. There is
+no Arrow dependency or TypeScript geometry/topology engine.
+
+`XYGD` is little-endian with a 64-byte header: magic at 0, version u32 at 4,
+geometry u32 at 8, CRS u32 at 12, flags u32 at 16 (bit 0: explicit identities),
+reserved zero u32 at 20, feature count u64 at 24, vertex count u64 at 32, and
+three offset-plane lengths u64 at 40/48/56. Planes follow in order: interleaved
+f64 coordinates, per-feature u8 validity, optional u64 identities, then three
+u32 offset planes. Every plane is padded with zero bytes to eight-byte
+alignment. Unknown flags, nonzero reserved/padding bytes, truncation, overflow,
+and trailing bytes fail closed. This canonical authoring ingress carries raw
+f64; it is never a live painter payload (§29).
+
+`encodeWasmGeoDescriptor` frames typed arrays without interpreting CRS or
+geometry. `XygWasmWorker.geoColumnIngest` transfers the resulting request and
+returns metadata; original typed source buffers stay with the caller because
+the encoder copies them. The worker defers one task turn so immediate cancel
+can suppress execution. Requests share the worker's operation sequence lane;
+zero/stale/cancelled sequences fail, and disposal rejects pending tasks. A
+synchronous call cannot be interrupted mid-validation; shared geometry and
+hole-work ceilings bound its work. Actual native-versus-wasm32 derived scene parity remains an open #47
+amendment requirement. No geographic scene or projection API is
+claimed here: GeoViewport projection surfaces belong to #48, map layer/fill
+programs to #49, and LOD/export to #50.
+
+Rust rejects before allocating typed planes when simultaneous transferred JS
+request bytes, staging capacity,
+decoded numeric planes, retained canonical planes (including generated IDs and
+ring winding), plus 8192 fixed scratch/metadata bytes exceed the instance
+budget. Retained staging capacity outside the request is subtracted too.
+`GeoLimits` also enforces feature/vertex/canonical-byte limits. Accepted sequences release staging capacity on success or geometry/framing
+failure and clear previous output. Rejected zero/stale/cancelled sequences
+preserve an active newer operation and its staging; idle rejections release it. Only the
+small metadata output survives until the next operation or disposal; linear
+WASM memory itself cannot shrink. Resource failures return WASM status 3;
+geometry/framing failures status 2 with the exact value-safe `XYG_GEO_*` code
+in `last_error`; lifecycle statuses keep their existing meanings.
+
+Evidence: `packages/xy-node/test/geo-wasm-parity.test.mjs` sends the committed
+Python/GraphForge goldens through the actual wasm32 artifact and native ABI,
+comparing metadata bytes and stable failures for six kinds, nulls, holes,
+3857, exact f64 and u64 identity planes. It also proves allocation admission,
+nonzero request offsets, malformed framing, cancellation, stale sequences,
+recovery, and disposal. `crates/xyg-wasm/src/geo.rs` tests generated-identity
+peak accounting and released backing allocations. The strict-CSP browser
+probe is `scripts/geo_wasm_smoke.mjs`.
