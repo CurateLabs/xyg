@@ -460,6 +460,7 @@ function supersedeCompile(sequence: number, label: string): boolean {
 
 function runIsolatedCompile(message: any) {
   queued.delete(message.requestId);
+  if (!admitOperationSequence(message, true)) return;
   if (!initializedModule || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   const sequence = Number(message.sequence);
   if (!supersedeCompile(sequence, "a newer request")) {
@@ -545,6 +546,7 @@ function advanceGraph(message: any) {
 
 function runGraph(message: any) {
   queued.delete(message.requestId);
+  if (!admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
     if (!supersedeCompile(Number(message.sequence), "graph layout")) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "graph request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
@@ -575,6 +577,7 @@ function runGraph(message: any) {
 
 function runSceneOp(message: any) {
   queued.delete(message.requestId);
+  if (!admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
     return;
@@ -1083,6 +1086,7 @@ function runCompoundTransition(message: any) {
 
 function runGraphforgeCompose(message: any) {
   queued.delete(message.requestId);
+  if (!admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
     if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 32 || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graphforge request is malformed"); return; }
@@ -1116,11 +1120,26 @@ function runGraphforgeCompose(message: any) {
   }
 }
 
+// Admission at receipt and again before deferred execution protects every shared
+// lane: an older queued timer must not cancel/stage over a newer stream/job.
+function admitOperationSequence(message: any, deferred = false): boolean {
+  const sequence = Number(message.sequence);
+  if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "sequence must be a nonzero u32", XYG_WASM_STATUS.INVALID_ARGUMENT); return false;
+  }
+  if (deferred ? sequence !== operationSequenceWatermark : sequence <= operationSequenceWatermark) {
+    error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return false;
+  }
+  if (!deferred) operationSequenceWatermark = sequence;
+  return true;
+}
+
 function runGeoIngest(message: any) {
   queued.delete(message.requestId);
+  if (!admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : message.type === "geo.viewport" ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1147,7 +1166,9 @@ function runGeoIngest(message: any) {
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid geographic staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-    status = message.type === "geo.scene"
+    status = message.type === "geo.viewport"
+      ? exports.xyg_wasm_geo_viewport_execute(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.scene"
       ? exports.xyg_wasm_geo_scene_compile(handle, message.sequence, 0, message.request.byteLength)
       : exports.xyg_wasm_geo_column_ingest(handle, message.sequence, 0, message.request.byteLength);
     if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); rustError(message.requestId, detail.startsWith("XYG_GEO_") ? detail : statusCode(status), detail, status); return; }
@@ -1167,7 +1188,6 @@ scope.onmessage = (event: MessageEvent<any>) => {
     return;
   }
   if (message?.type === "evidence.lifecycle") { evidenceLifecycle(message); return; }
-  if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_push") { pushAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_finish") { finishAggregateStream(message); return; }
   if (message?.type === "ticks.resolve") { queueTicks(message); return; }
@@ -1187,22 +1207,14 @@ scope.onmessage = (event: MessageEvent<any>) => {
     }
     return;
   }
-  const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
+  const sequenced = message?.type === "aggregate.stream_begin" || message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
     || message?.type === "compound.transition"
-    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene";
-  if (sequenced) {
-    const sequence = Number(message.sequence);
-    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
-      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "sequence must be a nonzero u32", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
-    }
-    if (sequence <= operationSequenceWatermark) {
-      error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return;
-    }
-    operationSequenceWatermark = sequence;
-  }
+    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport";
+  if (sequenced && !admitOperationSequence(message)) return;
+  if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (
     message?.type === "scene.validate"
     || message?.type === "scene.paint"
@@ -1231,7 +1243,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "geo.ingest" || message?.type === "geo.scene") {
+  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport") {
     const timer = setTimeout(() => runGeoIngest(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;

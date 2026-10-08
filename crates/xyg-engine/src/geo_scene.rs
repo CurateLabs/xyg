@@ -79,11 +79,8 @@ pub fn compile_geo_scene(bytes: &[u8], budget: usize) -> Result<Vec<u8>, GeoScen
         f64_at(72),
         u32_at(12) & 1 != 0,
     )?;
-    // Frozen orthographic projection is certified here; perspective, fills,
-    // basemaps, multiple layers and live camera state belong to #48/#49.
-    if viewport.pitch_deg != 0.0 {
-        return Err(GeoSceneError::Unsupported);
-    }
+    // Terrain/elevation, roll, basemap and layer fills remain #49. Ground
+    // perspective uses the same certified GeoViewport as native hosts.
     let diameter = if f64_at(80).is_nan() { 6.0 } else { f64_at(80) };
     let width = if f64_at(88).is_nan() { 1.0 } else { f64_at(88) };
     if !diameter.is_finite()
@@ -116,13 +113,19 @@ pub fn compile_geo_scene(bytes: &[u8], budget: usize) -> Result<Vec<u8>, GeoScen
     if records > MAX_SCENE_MARKS {
         return Err(GeoError::ResourceLimit.into());
     }
-    let peak = bytes
+    let mut peak = bytes
         .len()
         .checked_mul(3)
         .and_then(|n| features.checked_mul(16).and_then(|v| n.checked_add(v)))
         .and_then(|n| records.checked_mul(512).and_then(|v| n.checked_add(v)))
         .and_then(|n| n.checked_add(32768))
         .ok_or(GeoError::ResourceLimit)?;
+    if matches!(geometry, GeoGeometry::Polygon | GeoGeometry::MultiPolygon) {
+        peak = peak
+            .checked_add(vertices.checked_mul(4096).ok_or(GeoError::ResourceLimit)?)
+            .and_then(|n| features.checked_mul(512).and_then(|f| n.checked_add(f)))
+            .ok_or(GeoError::ResourceLimit)?;
+    }
     if peak > budget {
         return Err(GeoError::ResourceLimit.into());
     }

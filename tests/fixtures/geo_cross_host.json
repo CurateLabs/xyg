@@ -1,7 +1,7 @@
 {
   "schema": "xyg.geo-cross-host/v1",
   "authority": "python/xyg/_geoarrow.py + crates/xyg-engine/src/geo.rs (XYGM v1)",
-  "abi_version": 379,
+  "abi_version": 380,
   "encoding": {
     "f64": "16 hex digits, big-endian IEEE-754 bit pattern",
     "u64": "decimal string"

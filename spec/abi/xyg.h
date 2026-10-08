@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 379
-#define XYG_ABI_SIGNATURE_SHA256 "bdf4a2890a259516cc19660006fac85c8b0c1ef6c2b862e68c75257d45e68caf"
+#define XYG_ABI_VERSION 380
+#define XYG_ABI_SIGNATURE_SHA256 "114509676368ee046eb03fa663458488c296c348087147ed453c752be342aa19"
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,6 +142,7 @@ size_t xyg_geo_column_metadata(uint64_t handle, uint8_t * out, size_t cap);
 uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, size_t xy_len, const uint8_t * validity, size_t validity_len, const uint64_t * feature_ids, const uint32_t * offsets0, size_t offsets0_len, const uint32_t * offsets1, size_t offsets1_len, const uint32_t * offsets2, size_t offsets2_len, int32_t * out_error);
 int32_t xyg_geo_column_plane_lens(uint64_t handle, uint64_t * out_lens);
 size_t xyg_geo_column_vertex_count(uint64_t handle);
+int32_t xyg_geo_viewport_execute(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out_offset);
 int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len);
 int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept, uint64_t * out_edge_member_offsets, uint64_t * out_edge_members);

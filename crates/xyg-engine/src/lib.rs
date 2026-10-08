@@ -55,6 +55,7 @@ pub mod geo;
 pub mod geo_fill;
 pub mod geo_scene;
 pub mod geo_viewport;
+pub mod geo_viewport_protocol;
 pub mod geom;
 pub mod graph;
 pub mod graph_scale;

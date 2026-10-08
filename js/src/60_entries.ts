@@ -368,3 +368,6 @@ export default { render, decodeFrame };
 
 export { encodeWasmGeoDescriptor, encodeWasmGeoSceneRequest } from "./49_wasm_geo";
 export type { XygGeoDescriptor, XygFrozenGeoScene } from "./49_wasm_geo";
+
+export { GEO_VIEWPORT_OPERATIONS, encodeGeoViewportRequest, encodeGeoViewportColumnRequest, decodeGeoViewportResponse } from "./49_wasm_geoviewport";
+export type { XygGeoCamera } from "./49_wasm_geoviewport";

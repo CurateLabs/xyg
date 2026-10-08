@@ -827,6 +827,58 @@ fn ring_bbox(ring: &[f64]) -> [f64; 4] {
     bbox
 }
 
+/// Temporary validation/projection cache; canonical x/y bits never change.
+/// Literal opposite world-edge endpoints retain an intentional full-world edge.
+pub(crate) fn unwrap_ring_xy(
+    ring: &[f64],
+    period: f64,
+    anchor: Option<f64>,
+) -> Result<Vec<f64>, GeoError> {
+    if ring
+        .len()
+        .checked_mul(size_of::<f64>())
+        .ok_or(GeoError::ResourceLimit)?
+        > GeoLimits::default().max_bytes
+    {
+        return Err(GeoError::ResourceLimit);
+    }
+    let mut cache = Vec::with_capacity(ring.len());
+    let mut previous_raw: Option<f64> = None;
+    let mut previous: Option<f64> = None;
+    let (mut low, mut high) = (f64::INFINITY, f64::NEG_INFINITY);
+    for pair in ring.chunks_exact(2) {
+        let mut x = pair[0];
+        if let (Some(raw), Some(prior)) = (previous_raw, previous) {
+            if (x - raw).abs() != period {
+                x += ((prior - x) / period).round() * period;
+            }
+        }
+        previous_raw = Some(pair[0]);
+        previous = Some(x);
+        low = low.min(x);
+        high = high.max(x);
+        cache.extend([x, pair[1]]);
+    }
+    if high - low > period + period * 1e-12
+        || cache.first() != cache.get(cache.len().saturating_sub(2))
+    {
+        return Err(GeoError::DegenerateGeometry);
+    }
+    if let Some(anchor) = anchor {
+        let shift = ((anchor - (low + high) * 0.5) / period).round() * period;
+        for pair in cache.chunks_exact_mut(2) {
+            pair[0] += shift;
+        }
+    }
+    Ok(cache)
+}
+fn ring_crosses_world_edge(ring: &[f64], period: f64) -> bool {
+    ring.windows(4).step_by(2).any(|pair| {
+        let delta = (pair[2] - pair[0]).abs();
+        delta > period * 0.5 && delta < period
+    })
+}
+
 /// Validate ring closure / area, record orientations, and require holes to
 /// lie inside their exterior ring. Returns one orientation code per ring.
 fn validate_rings(desc: GeoDescriptor<'_>) -> Result<Vec<u8>, GeoError> {
@@ -885,11 +937,29 @@ fn validate_rings(desc: GeoDescriptor<'_>) -> Result<Vec<u8>, GeoError> {
         if end.saturating_sub(first) < 2 {
             continue;
         }
-        let shell = ring(first);
+        let shell_source = ring(first);
+        let period = match desc.crs {
+            GeoCrs::Epsg4326 => 360.0,
+            GeoCrs::Epsg3857 => 2.0 * WEB_MERCATOR_MAX,
+        };
+        let unwrap = ring_crosses_world_edge(shell_source, period);
+        let shell_cache = if unwrap {
+            Some(unwrap_ring_xy(shell_source, period, None)?)
+        } else {
+            None
+        };
+        let shell = shell_cache.as_deref().unwrap_or(shell_source);
+        let anchor = (ring_bbox(shell)[0] + ring_bbox(shell)[2]) * 0.5;
         let shell_edges = shell.len() / 2 - 1;
         let shell_box = ring_bbox(shell);
         for hole_index in first + 1..end {
-            let hole = ring(hole_index);
+            let hole_source = ring(hole_index);
+            let hole_cache = if unwrap {
+                Some(unwrap_ring_xy(hole_source, period, Some(anchor))?)
+            } else {
+                None
+            };
+            let hole = hole_cache.as_deref().unwrap_or(hole_source);
             let hole_box = ring_bbox(hole);
             if hole_box[0] < shell_box[0]
                 || hole_box[1] < shell_box[1]
@@ -1339,6 +1409,63 @@ mod tests {
         .unwrap();
         assert_eq!(col.ring_orientations(), &[GEO_RING_CW, GEO_RING_CCW]);
         assert_eq!(col.xy(), flipped.as_slice());
+    }
+
+    #[test]
+    fn dateline_holes_validate_in_temporary_cache_without_changing_canonical_planes() {
+        let degrees = [
+            170.0, -10.0, -170.0, -10.0, -170.0, 10.0, 170.0, 10.0, 170.0, -10.0, 175.0, -5.0,
+            175.0, 5.0, -175.0, 5.0, -175.0, -5.0, 175.0, -5.0,
+        ];
+        for crs in [GeoCrs::Epsg4326, GeoCrs::Epsg3857] {
+            let xy = degrees
+                .chunks_exact(2)
+                .flat_map(|p| {
+                    if crs == GeoCrs::Epsg4326 {
+                        [p[0], p[1]]
+                    } else {
+                        let (x, y) = crate::geo_viewport::lonlat_to_mercator(p[0], p[1]);
+                        [x, y]
+                    }
+                })
+                .collect::<Vec<_>>();
+            let make = |xy: &[f64]| {
+                GeoColumn::from_descriptor(GeoDescriptor {
+                    geometry: GeoGeometry::Polygon,
+                    crs,
+                    xy,
+                    validity: &[1],
+                    feature_ids: Some(&[u64::MAX]),
+                    offsets0: &[0, 2],
+                    offsets1: &[0, 5, 10],
+                    offsets2: &[],
+                    limits: GeoLimits::default(),
+                })
+            };
+            let column = make(&xy).unwrap();
+            assert_eq!(
+                column.xy().iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                xy.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
+            );
+            assert_eq!(column.feature_ids(), [u64::MAX]);
+            assert_eq!(column.offsets1(), [0, 5, 10]);
+            assert_eq!(column.ring_orientations(), [GEO_RING_CW, GEO_RING_CCW]);
+            let mut outside = xy.clone();
+            for pair in outside[10..].chunks_exact_mut(2) {
+                pair[0] = 0.0;
+            }
+            assert_eq!(make(&outside).unwrap_err(), GeoError::DegenerateGeometry);
+            let mut outside = xy.clone();
+            let shift = if crs == GeoCrs::Epsg4326 {
+                20.0
+            } else {
+                crate::geo_viewport::lonlat_to_mercator(0.0, 20.0).1
+            };
+            for pair in outside[10..].chunks_exact_mut(2) {
+                pair[1] += shift;
+            }
+            assert_eq!(make(&outside).unwrap_err(), GeoError::HoleOutsideShell);
+        }
     }
 
     #[test]

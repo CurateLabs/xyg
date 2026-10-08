@@ -1,5 +1,5 @@
 // Strict-CSP native-golden descriptor ingest through the packaged browser Worker.
-import {createXygWasmWorker,encodeWasmGeoDescriptor,encodeWasmGeoSceneRequest,hydrateWasmPainter} from "/packages/xy-client/dist/index.js";
+import {createXygWasmWorker,encodeWasmGeoDescriptor,encodeWasmGeoSceneRequest,encodeGeoViewportRequest,encodeGeoViewportColumnRequest,decodeGeoViewportResponse,hydrateWasmPainter} from "/packages/xy-client/dist/index.js";
 try {
  const golden=await(await fetch("/tests/fixtures/geo_cross_host.json")).json();
  const kinds={point:1,linestring:2,polygon:3,multipoint:4,multilinestring:5,multipolygon:6};
@@ -46,7 +46,16 @@ try {
  const gl=view.gl,pixels=new Uint8Array(view.canvas.width*view.canvas.height*4);view._drawNow();gl.readPixels(0,0,view.canvas.width,view.canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
  let red=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]>200&&pixels[i+1]<50&&pixels[i+2]<50)red++;
  if(red<100)throw Error("geographic scene did not paint expected pixels");
+ if(!pixels.some((v,i)=>i%4===0&&v===255&&pixels[i+1]===0&&pixels[i+2]===0&&pixels[i+3]===255))throw Error("resolved opaque Rust RGBA was dimmed during hydration");
  view.destroy();host.remove();
+ const halfScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,{...camera,fillRgba:Uint8Array.of(255,0,0,128)})).result;
+ const halfPrepared=await worker.prepareScene(halfScene).result;
+ const halfHost=document.createElement("div");halfHost.style.cssText="width:800px;height:600px";document.body.appendChild(halfHost);
+ const halfView=hydrateWasmPainter(halfHost,halfPrepared);halfView._drawNow();
+ const halfPixels=new Uint8Array(halfView.canvas.width*halfView.canvas.height*4),halfGl=halfView.gl;
+ halfGl.readPixels(0,0,halfView.canvas.width,halfView.canvas.height,halfGl.RGBA,halfGl.UNSIGNED_BYTE,halfPixels);
+ if(!halfPixels.some((v,i)=>i%4===0&&v===128&&halfPixels[i+1]===0&&halfPixels[i+2]===0&&halfPixels[i+3]===128))throw Error("resolved half-alpha Rust RGBA was dimmed during hydration");
+ halfView.destroy();halfHost.remove();
  const lineId=0x5859060000000042n;
  const lineScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest({geometry:2,crs:4326,xy:Float64Array.of(170,-10,-170,10),offsets0:Uint32Array.of(0,2),validity:Uint8Array.of(1),featureIds:BigUint64Array.of(lineId)},{...camera,strokeWidth:2})).result;
  const linePrepared=await worker.prepareScene(lineScene).result;
@@ -68,8 +77,57 @@ try {
  let sceneCancelled;try{await sceneCancel.result;}catch(error){sceneCancelled=error.code;}
  if(sceneCancelled!=="XYG_WASM_CANCELLED")throw Error("scene cancellation published");
  await worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,camera)).result;
+ const cameraState={crs:4326,centerX:0,centerY:0,zoom:0,width:800,height:600,worldWrap:true};
+ // WASM memory buffers are ArrayBuffers but cannot transfer; failed submission
+ // must expose a typed error and retire the otherwise unreachable pending task.
+ for(const method of["geoViewportExecute","geoColumnIngest","geoSceneCompile"]){
+  const memory=new WebAssembly.Memory({initial:1});
+  try{worker[method](memory.buffer);throw Error("non-detachable geographic buffer was accepted");}
+  catch(error){if(error.code!=="XYG_WASM_INVALID_ARGUMENT")throw error;}
+  if(worker.pending.size!==0)throw Error("failed geographic transfer retained pending task");
+ }
+ await worker.geoViewportExecute(encodeGeoViewportRequest(cameraState)).result;
+ if(hex(await worker.geoColumnIngest(encodeWasmGeoDescriptor(desc(c))).result)!==c.metadata_hex)throw Error("transfer failure broke geographic recovery");
+ await worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,camera)).result;
+ // Exercise malformed raw messages on the packaged Worker, beyond proxy guards.
+ let rawRequestId=900000;
+ const rawCamera=sequence=>new Promise((resolve,reject)=>{
+  const requestId=rawRequestId++,request=encodeGeoViewportRequest(cameraState),raw=worker.worker;
+  const timer=setTimeout(()=>{raw.removeEventListener("message",receive);reject(Error("raw camera reply timed out"));},5000);
+  const receive=event=>{if(event.data.requestId!==requestId)return;clearTimeout(timer);raw.removeEventListener("message",receive);resolve(event.data);};
+  raw.addEventListener("message",receive);raw.postMessage({type:"geo.viewport",requestId,sequence,request},[request]);
+ });
+ const guardedStream=worker.aggregateStream({x:new Float64Array(1000000),y:new Float64Array(1000000)},{width:4,height:4,x0:-1,x1:1,y0:-1,y1:1},{sequence:100000});
+ const guardedResult=guardedStream.result.then(()=>"published",error=>error.code);
+ for(let i=0;i<100&&!worker.evidenceStreamObservations().some(o=>o.requestId===guardedStream.requestId&&o.phase==="begin");i++)await new Promise(r=>setTimeout(r,1));
+ if(!worker.evidenceStreamObservations().some(o=>o.requestId===guardedStream.requestId&&o.phase==="begin"))throw Error("guarded stream did not begin");
+ for(const[sequence,code]of[[99999,"XYG_WASM_STALE_SEQUENCE"],[0,"XYG_WASM_INVALID_ARGUMENT"]]){
+  const response=await rawCamera(sequence);if(response.ok||response.error?.code!==code)throw Error("stale/zero camera was not rejected before supersession");
+  if(worker.evidenceStreamObservations().some(o=>o.requestId===guardedStream.requestId&&o.phase==="cancelled"))throw Error("rejected camera cancelled a newer stream");
+ }
+ await worker.geoViewportExecute(encodeGeoViewportRequest(cameraState),{sequence:100001}).result;
+ if(await guardedResult!=="XYG_WASM_CANCELLED")throw Error("current camera failed to supersede stream");
+ // A newer declaration may arrive after camera receipt but before its timer.
+ const deferredCamera=rawCamera(100002);
+ const newerStream=worker.aggregateStream({x:Float64Array.of(0),y:Float64Array.of(0)},{width:4,height:4,x0:-1,x1:1,y0:-1,y1:1},{sequence:100003});
+ const deferredResponse=await deferredCamera;
+ if(!deferredResponse.ok&&deferredResponse.error?.code!=="XYG_WASM_STALE_SEQUENCE")throw Error("deferred camera returned an unexpected status");
+ if(!(await newerStream.result).aggregate)throw Error("deferred older camera destroyed newer stream");
+ const normalizeReq=encodeGeoViewportRequest(cameraState),normalizeTask=worker.geoViewportExecute(normalizeReq);
+ if(normalizeReq.byteLength!==0)throw Error("camera request ownership was not transferred");
+ const normalizedCamera=decodeGeoViewportResponse(await normalizeTask.result);
+ const point=decodeGeoViewportResponse(await worker.geoViewportExecute(encodeGeoViewportRequest(cameraState,1,[10,20])).result);
+ const inverse=decodeGeoViewportResponse(await worker.geoViewportExecute(encodeGeoViewportRequest(point.camera,2,point.result)).result);
+ if(Math.abs(inverse.result[0]-10)>1e-9||Math.abs(inverse.result[1]-20)>1e-9||normalizedCamera.rebuildKey.length!==64)throw Error("camera inverse/key failed");
+ const polygon={geometry:3,crs:4326,xy:Float64Array.of(-170,-80,170,-80,170,80,-170,80,-170,-80),validity:Uint8Array.of(1),featureIds:BigUint64Array.of(ids[1]),offsets0:Uint32Array.of(0,1),offsets1:Uint32Array.of(0,5)};
+ const topology=decodeGeoViewportResponse(await worker.geoViewportExecute(encodeGeoViewportColumnRequest({...cameraState,worldWrap:false,zoom:3},polygon)).result);
+ if(topology.visibleFeatureIds.length!==1||topology.visibleFeatureIds[0]!==ids[1]||!topology.bounds||!topology.polygonFeatureIds.length||topology.ringIsHole.some(n=>n!==0))throw Error("covering polygon topology/identity lost");
+ const cameraCancelled=worker.geoViewportExecute(encodeGeoViewportRequest(cameraState));cameraCancelled.cancel();
+ let cameraCancel;try{await cameraCancelled.result;}catch(error){cameraCancel=error.code;}
+ if(cameraCancel!=="XYG_WASM_CANCELLED")throw Error("camera cancellation published");
+ await worker.geoViewportExecute(encodeGeoViewportRequest(cameraState)).result;
  const active=worker.geoColumnIngest(encodeWasmGeoDescriptor(desc(c)));worker.dispose();
  let disposed;try{await active.result;}catch(error){disposed=error.code;}
  if(disposed!=="XYG_WASM_DISPOSED")throw Error("dispose allowed publication");
- window.__geo={ok:true,compared,stable,cancel,disposed,scenePicks:2,scenePaintPixels:red,outlineSegments:2,sceneCancelled,deepzoomDelta:delta};
+ window.__geo={ok:true,compared,stable,cancel,disposed,scenePicks:2,scenePaintPixels:red,outlineSegments:2,sceneCancelled,deepzoomDelta:delta,cameraInverse:true,cameraCancel,polygonFragments:topology.polygonFeatureIds.length};
 }catch(error){window.__geo={ok:false,message:error.message,code:error.code};}

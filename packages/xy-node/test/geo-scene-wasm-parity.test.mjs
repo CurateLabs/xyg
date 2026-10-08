@@ -49,10 +49,10 @@ test("dateline outlines stay independent with both endpoint identities and finit
  const request=encodeWasmGeoSceneRequest(input,camera),browser=await wasm();
  try{const a=native(request),b=browser.run(request);assert.equal(b.status,0);sameScene(a.bytes,b.bytes);const rows=records(b.bytes);assert.equal(rows.length,6);for(let i=0;i<6;i+=3){assert.deepEqual(rows.slice(i,i+3).map(r=>r.visible),[1,1,0]);assert.ok(rows.slice(i,i+3).every(r=>r.id===id));assert.equal(rows[i+2].x,0);assert.equal(rows[i+2].y,0);}}finally{browser.dispose();}
 });
-test("camera, styles, framing, unsupported pitch and allocation fail identically before output",async()=>{
+test("camera, styles, framing, invalid pitch and allocation fail identically before output",async()=>{
  const input=descriptor(golden.cases.find(c=>c.status===0));let sequence=0;const browser=await wasm();
  try{
-  for(const changes of [{pitch:20},{centerX:NaN},{zoom:25},{width:0},{strokeWidth:-1},{strokeWidth:Number.MAX_VALUE},{diameter:Number.MAX_VALUE},{width:Number.MAX_VALUE},{height:Number.MAX_VALUE},{crs:3857}]){const request=encodeWasmGeoSceneRequest(input,{...camera,...changes}),a=native(request),b=browser.run(request,++sequence);assert.notEqual(a.status,0);assert.equal(b.status,a.status);assert.equal(b.error,a.error);assert.equal(b.bytes.length,0);}
+  for(const changes of [{pitch:61},{centerX:NaN},{zoom:25},{width:0},{strokeWidth:-1},{strokeWidth:Number.MAX_VALUE},{diameter:Number.MAX_VALUE},{width:Number.MAX_VALUE},{height:Number.MAX_VALUE},{crs:3857}]){const request=encodeWasmGeoSceneRequest(input,{...camera,...changes}),a=native(request),b=browser.run(request,++sequence);assert.notEqual(a.status,0);assert.equal(b.status,a.status);assert.equal(b.error,a.error);assert.equal(b.bytes.length,0);}
   const base=encodeWasmGeoSceneRequest(input,camera),bad=base.slice(0);new DataView(bad).setUint32(12,8,true);
   for(const request of [bad,base.slice(0,-1)]){const a=native(request),b=browser.run(request,++sequence);assert.equal(a.status,2);assert.equal(b.error,a.error);}
  }finally{browser.dispose();}
@@ -70,4 +70,10 @@ test("actual WASM scene cancellation, stale sequence, recovery, release and disp
  assert.equal(browser.run(request(),3).status,0);
  browser.dispose();
  assert.equal(x.xyg_wasm_geo_scene_compile(h,4,0,0),1);
+});
+
+test("pitched camera scene parity uses shared frustum lowering",async()=>{
+ const input={geometry:2,crs:4326,xy:Float64Array.of(-20,-10,20,10),validity:Uint8Array.of(1),featureIds:BigUint64Array.of(0xffffffffffffffffn),offsets0:Uint32Array.of(0,2)};
+ const request=encodeWasmGeoSceneRequest(input,{...camera,zoom:2,pitch:40,bearing:23}),browser=await wasm();
+ try{const a=native(request),b=browser.run(request);assert.equal(a.status,0);assert.equal(b.status,0);sameScene(a.bytes,b.bytes);assert.ok(records(b.bytes).some(row=>row.visible&&row.id===0xffffffffffffffffn));}finally{browser.dispose();}
 });

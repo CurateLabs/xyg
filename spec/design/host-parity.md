@@ -1901,3 +1901,14 @@ are pinned by `packages/xy-node/test/geo-scene-wasm-parity.test.mjs`.
 paint and GPU picking. This is the #47 derived-scene parity proof, not a
 Python/Node geographic chart-building API. Live camera transitions, pitched
 projection and geographic fills/layers remain #48/#49.
+
+
+### Geographic camera transport (#48)
+
+Native C ABI 380 and WASM ABI 30 execute the same `XYVC` → `XYVR` Rust camera
+processor. Python `xyg._geoviewport.geo_viewport` and Node `geoViewport` only
+pack/unpack typed values; browser `geoViewportExecute` uses the same byte
+contract. Camera transitions, projection/inverse, normalized rebuild keys,
+visible identities/bounds and polygon ring topology are Rust-owned. See
+[the exact protocol](geo-viewport-protocol.md) and the executable actual-wasm32
+parity proof `packages/xy-node/test/geo-viewport-wasm-parity.test.mjs`.
