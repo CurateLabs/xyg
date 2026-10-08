@@ -371,12 +371,14 @@ Projection policy:
 - Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
   `1e-6` px (`geo_viewport::tolerances`).
 
-Camera transitions are Rust-owned and transactional. `set_center`, `set_zoom`,
+Camera transitions are Rust-owned and transactional. `fit_bounds`, `set_center`, `set_zoom`,
 `resize`, `set_bearing`, and `set_pitch` validate a complete candidate before
 publishing it; an error leaves the prior camera intact. Bearings normalize to
 `(-180, 180]` at construction, updates, rebuild identity, and projection, so a
 restored full-turn or extreme finite bearing cannot diverge from its canonical
-camera or overflow trigonometric projection. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
+camera or overflow trigonometric projection. Fit and pixel-pan operations validate
+restored/public-field cameras before work, including a zero-pixel pan; rejected
+operations preserve the complete prior state bitwise. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
 gesture seam: positive X moves the camera centre toward screen-right and
 positive Y toward screen-bottom, after applying the current bearing. Wrapped
 EPSG:4326 cameras cross the dateline continuously; non-wrapped cameras stop at
