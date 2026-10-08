@@ -1,5 +1,7 @@
 """Native camera semantics and no-write C ABI failures (#48)."""
 
+from __future__ import annotations
+
 import ctypes
 
 import numpy as np
