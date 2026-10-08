@@ -694,6 +694,7 @@ Forbidden:
 | `crates/xyg-wasm/src/dashboard.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/compile.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/bin/xyts_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `crates/xyg-wasm/src/bin/geo_scene_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/aggregate.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/temporal.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
@@ -706,6 +707,7 @@ Forbidden:
 | `crates/xyg-engine/src/dashboard.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/font.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/chunked_columns.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/compat_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 126 static-export padding/colorbar/polar recut; ABI 127 pyplot tight-layout; ABI 198 `_svg.layout()` combination + tight figure extras | — |
 | `crates/xyg-engine/src/edge_route.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

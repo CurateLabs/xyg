@@ -298,6 +298,45 @@ def test_non_object_crs_metadata_has_stable_error(metadata: str) -> None:
     assert exc.value.status == -2
 
 
+@pytest.mark.parametrize("crs", ["EPSG:" + "9" * 5000, "EPSG:\uff14\uff13\uff12\uff16"])
+def test_malformed_crs_digits_have_stable_error(crs: str) -> None:
+    field = _point_field(crs)
+    array = pa.array([{"x": 0.0, "y": 0.0}], type=field.type)
+    with pytest.raises(_native.GeoNativeError) as exc:
+        _geoarrow.descriptor_from_geoarrow(array, field)
+    assert exc.value.status == -2
+
+
+def test_crs_leading_zeroes_do_not_require_unbounded_integer_conversion() -> None:
+    field = _point_field("EPSG:" + "0" * 5000 + "4326")
+    array = pa.array([{"x": 0.0, "y": 0.0}], type=field.type)
+    assert _geoarrow.descriptor_from_geoarrow(array, field)["crs"] == 4326
+
+
+@pytest.mark.parametrize(
+    "key,status", [(b"ARROW:extension:name", -3), (b"ARROW:extension:metadata", -1)]
+)
+def test_invalid_extension_utf8_has_stable_error(key: bytes, status: int) -> None:
+    field = _point_field()
+    metadata = dict(field.metadata)
+    metadata[key] = b"\xff"
+    field = field.with_metadata(metadata)
+    array = pa.array([{"x": 0.0, "y": 0.0}], type=field.type)
+    with pytest.raises(_native.GeoNativeError) as exc:
+        _geoarrow.descriptor_from_geoarrow(array, field)
+    assert exc.value.status == status
+
+
+def test_unrelated_binary_arrow_metadata_is_opaque() -> None:
+    field = _point_field()
+    array = pa.array([{"x": 1.0, "y": 2.0}], type=field.type)
+    expected = _geoarrow.descriptor_from_geoarrow(array, field)
+    field = field.with_metadata({**field.metadata, b"producer:binary": b"\xff", b"\xff": b"\xfe"})
+    actual = _geoarrow.descriptor_from_geoarrow(array, field)
+    for name in expected:
+        np.testing.assert_equal(actual[name], expected[name])
+
+
 @pytest.mark.parametrize(
     "storage",
     [

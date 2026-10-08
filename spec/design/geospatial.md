@@ -3,11 +3,13 @@
 **Status:** GeoColumn native validation, canonical metadata, host read-back
 and derived-cache inputs (#47; ABI 379) + GeoViewport camera foundation (#48).
 MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
-Direct-browser WASM ABI 28 descriptor ingestion (`XYGD` to `XYGM`) now shares
-Rust validation and canonical metadata. GeoViewport projection and geographic
-scene surfaces remain #48/#49; ingestion does not claim scene parity. Actual
-native-versus-wasm32 derived scene parity remains an open #47 amendment
-requirement.
+Direct-browser WASM ABI 29 shares typed descriptor ingestion (`XYGD` to `XYGM`)
+and frozen point/outline scene lowering (`XYGP` to canonical `XYGS`) with native
+Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
+zero-pitch frozen camera scope; live camera transitions remain #48, layer/fill
+surfaces #49, and LOD/export #50.
+Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
+mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
 ## Product rule
 
@@ -333,6 +335,11 @@ sliced offset planes and slices the corresponding children at each level;
 unreferenced child buffers do not enter the descriptor. Nested list/coordinate
 nulls fail with `XYG_GEO_NULL_CHILD`, while top-level null points discard their
 masked children. Non-object CRS metadata fails with `XYG_GEO_UNSUPPORTED_CRS`.
+CRS authority codes use ASCII decimal digits; leading zeros are accepted without
+unbounded integer conversion. Invalid UTF-8 extension names fail with
+`XYG_GEO_TYPE_MISMATCH`, and invalid UTF-8 extension metadata fails with
+`XYG_GEO_INVALID_ARGUMENT`. Unrelated Arrow field metadata remains opaque bytes
+and does not affect geometry ingestion.
 Node rejects fractional, negative, or overflowing offsets before u32 packing
 and rejects excess nesting planes rather than narrowing or discarding them.
 Native ingress applies the shared length/byte preflight before constructing
@@ -445,3 +452,17 @@ rebuild-key seams, and native↔WASM goldens (#59).
 - Upstream producer: GraphForge #797 (canonical GeoArrow spatial values)
 - Dossier: §4/§16 (f64 vs f32), §19 (NaN never reaches GPU), §27 (rebuildable
   caches), §29 (typed buffers on the wire)
+
+### Frozen cross-target derived Scene evidence (#47)
+
+`geo_scene::compile_geo_scene` lowers a checked XYGD source and frozen XYGP
+camera/style snapshot through the same GeoViewport projected cache into existing
+XYGS Scatter/Polyline records. Source identities remain literal full u64 values.
+Actual wasm32 and the bounded native `geo_scene_conformance` executable share
+this product processor. The native/WASM parity suite checks all six geometry
+kinds, holes/nulls, CRS, source precision, deep zoom, dateline splitting, limits
+and failures; the packaged strict-CSP Worker proof exercises hydration, painted
+pixels and GPU picking. This closes the derived Scene proof within the frozen
+zero-pitch point/outline scope. The complete framing and allocation contract is
+in [browser-wasm.md](browser-wasm.md#frozen-geographic-scene-ingress-wasm-abi-29-47).
+Live camera transitions remain #48 and geographic fills/layers remain #49.

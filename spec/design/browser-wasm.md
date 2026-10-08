@@ -2,7 +2,7 @@
 
 ## Dynamic viewport ticks (`XYTK` to `XYTO`)
 
-The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 28
+The tick operation introduced in WASM ABI 23 is carried by current WASM ABI 29
 and makes tick resolution one bounded Rust-owned Worker operation.
 Axes carry explicit scale family and `automatic`, `authored_values`, or
 `authored_empty` provenance; symlog constants, log masking, angular units,
@@ -65,7 +65,7 @@ deferred/follow-up boundaries are recorded below. Related to #59; dedicated
 follow-up issues track work outside that claimed subset.
 
 M2 #869 makes `xyg-engine::packed_ticks` the single packed resolver called by
-current WASM ABI 28 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
+current WASM ABI 29 and native ABI 361 `xyg_tick_resolve_packed`. The boundary
 was introduced in WASM ABI 23/native ABI 360. The native function
 uses the capacity-aware probe/write contract and returns `usize::MAX` for an
 invalid `XYTK`. `packed_ticks_cross_host.json` proves byte-identical `XYTO`
@@ -200,7 +200,9 @@ shared painter. The raw module must request no ambient WebAssembly imports.
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
 921 KiB raw and 336 KiB gzipped at WASM ABI 27. ABI 28 with GeoColumn
 ingestion measures 968137 raw bytes and 352160 gzip bytes (level 9), within
-the unchanged 1 MiB raw artifact budget. GraphForge compositions
+the unchanged 1 MiB raw artifact budget. ABI 29 with frozen geographic
+Scene lowering measures 994525 raw bytes and 362640 gzip bytes (level 9).
+GraphForge compositions
 (composition, views, request/base decoding) and the Arrow IPC reader account
 for about 224 KiB of code; there is no single outlier. A size-optimized
 profile was measured and rejected, since the module's compute is on users'
@@ -312,7 +314,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 28. ABI 28 adds sequenced single-use GeoColumn
+`WASM_ABI_VERSION` is 29. ABI 29 adds frozen geographic `XYGP` → `XYGS` compilation
+(`xyg_wasm_geo_scene_compile`). ABI 28 adds sequenced single-use GeoColumn
 ingestion (`xyg_wasm_geo_column_ingest`) and `xyg_wasm_geo_metadata_version`.
 ABI 27 adds `xyg_wasm_graphforge_compose` and
 `xyg_wasm_graphforge_composition_version`: one staged GraphForge `XYGQ`
@@ -791,10 +794,8 @@ the encoder copies them. The worker defers one task turn so immediate cancel
 can suppress execution. Requests share the worker's operation sequence lane;
 zero/stale/cancelled sequences fail, and disposal rejects pending tasks. A
 synchronous call cannot be interrupted mid-validation; shared geometry and
-hole-work ceilings bound its work. Actual native-versus-wasm32 derived scene parity remains an open #47
-amendment requirement. No geographic scene or projection API is
-claimed here: GeoViewport projection surfaces belong to #48, map layer/fill
-programs to #49, and LOD/export to #50.
+hole-work ceilings bound its work. Frozen geographic point/outline scene lowering is specified below; live camera
+transitions remain #48, map layer/fill programs #49, and LOD/export #50.
 
 Rust rejects before allocating typed planes when simultaneous transferred JS
 request bytes, staging capacity,
@@ -817,3 +818,68 @@ nonzero request offsets, malformed framing, cancellation, stale sequences,
 recovery, and disposal. `crates/xyg-wasm/src/geo.rs` tests generated-identity
 peak accounting and released backing allocations. The strict-CSP browser
 probe is `scripts/geo_wasm_smoke.mjs`.
+
+### Frozen geographic Scene ingress (WASM ABI 29, #47)
+
+`xyg_wasm_geo_scene_compile(handle, sequence, offset, length)` runs the shared
+`xyg-engine::geo_scene::compile_geo_scene` processor. Its `XYGP` v1 authoring
+frame contains a frozen camera, a single point/outline style, and a checked
+`XYGD` descriptor. Output is ordinary canonical `XYGS`, consumed by the
+existing Rust Scene preparation and WebGL paint/pick path. No geographic
+geometry policy is implemented in TypeScript.
+
+The 128-byte little-endian header contains: magic at 0, version u32 at 4,
+header length u32 at 8, flags u32 at 12 (world wrap bit 0, authored fill bit 1,
+authored stroke bit 2), camera CRS u32 at 16, zero reserved u32 at 20; nine f64
+values at 24 through 88 (center x/y, zoom, width/height, bearing/pitch in degrees,
+point diameter, stroke width); fill/stroke RGBA8 at 96/100; descriptor length
+u64 at 104; zero reserved bytes 112–127. The exact descriptor follows at 128.
+Camera and source CRS must agree. NaN diameter/width select Rust defaults 6/1;
+otherwise styles must be finite, nonnegative, and representable as finite f32.
+Canvas dimensions must likewise narrow to finite f32, and satisfy GeoViewport
+validation. Missing paints select the engine default palette row. Unknown
+flags, reserved bytes, framing errors and non-paintable fields fail atomically.
+
+Points retain the shared projected origin before lowering to screen-space
+Scatter records. Offscreen centers are culled by the canonical marker bounds,
+including diameter/stroke extent. Outlines use GeoViewport's dateline splitting
+and viewport segment clipping. A transparent zero-size offscreen Scatter record
+separates clipped Polyline runs, without nonfinite authoring coordinates or
+connections between independent segments. Both segment endpoints and the
+invisible separator retain the source u64 identity with literal Scene metadata;
+annotation-shaped identities and u64::MAX have no alternate interpretation.
+Null geometry contributes no marks. Polygon holes are outline rings; fills are
+not part of this ingress. Screen identity axes preserve projection orientation.
+Chrome has explicitly empty major ticks and transparent axis/label paints.
+
+Admission precedes variable engine allocations. At most one point record per
+source vertex or six outline records per source vertex is admitted, also capped
+by `MAX_SCENE_MARKS`. The conservative simultaneous peak ceiling is three times
+request bytes + 16 bytes per feature + 512 bytes per maximum record + 32768 bytes
+fixed scratch. This covers transfer/staging, canonical planes, projection,
+compact input columns, prepared marks and encoded Scene, including capacity
+slack. Additional retained arena capacity is subtracted by the lifecycle shell.
+Only output survives execution; no canonical source is retained indefinitely.
+The native `geo_scene_conformance` executable bounds stdin to budget + 1 before
+reading and uses exactly the same processor. Resource failures use status 3 and
+`XYG_GEO_RESOURCE_LIMIT`; invalid geometry/framing/style uses status 2 and the
+shared `XYG_GEO_*` code. Nonzero pitch returns status 2 with
+`XYG_GEO_SCENE_UNSUPPORTED`. Zero/stale/cancelled sequences preserve newer active
+operations; accepted calls supersede them and release staging on every outcome.
+
+`packages/xy-node/test/geo-scene-wasm-parity.test.mjs` compares native executable
+output with the actual wasm32 export for all six geometry kinds, nulls, holes,
+EPSG:3857, f64 source precision, full u64 identities, independent wrapped
+segments, framing and allocation failures. Scene structure, IDs, paints and
+sidecars are byte-identical; projected coordinates permit at most 1e-6 CSS pixel
+cross-target difference. The offscreen-first zoom-24 regression independently
+requires the expected 2.386092942 CSS-pixel separation. The strict-CSP
+`scripts/geo_wasm_smoke.mjs` submits transferred requests through the packaged
+Worker, hydrates ordinary Scene paint, verifies painted pixels, GPU picks and
+full u64 identity, independent outline runs, cancellation and recovery. The
+hydrated deep-zoom upload independently retains the same separation within
+1e-4 CSS pixel (the existing painter stores screen coordinates as f32).
+
+This bounded frozen zero-pitch point/outline path supplies #47's actual derived
+scene parity evidence. Live camera transitions/frustum policy remain #48;
+MapLibre/layers/fills remain #49 and geographic LOD/export remains #50.

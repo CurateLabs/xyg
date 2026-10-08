@@ -304,3 +304,21 @@ chrome text; direct-browser hydration must expose the chrome/a11y slots and a
 nonblank WebGL readback within one device pixel of resolved-coordinate rounding.
 These are reproducible evidence artifacts, not a widening of the supported
 public export predicate.
+
+## Frozen geographic point/outline scenes
+
+`encodeWasmGeoSceneRequest(descriptor, camera)` copies typed source planes into
+an `XYGP` authoring request. `camera` supplies centerX/centerY, zoom, width/height,
+optional crs (defaults to descriptor CRS), bearing/pitch (defaults zero),
+worldWrap (defaults false), diameter/strokeWidth (Rust defaults 6/1), and optional
+four-byte fillRgba/strokeRgba paints. Rust owns validation, projection, clipping,
+style defaults and Scene lowering. Only zero pitch is supported; nonzero pitch
+fails with `XYG_GEO_SCENE_UNSUPPORTED`. Polygons produce outlines, including holes.
+
+`worker.geoSceneCompile(request, {sequence})` transfers the request and returns
+a cancellable task whose result is canonical `XYGS` bytes. Source typed arrays
+remain owned by the caller. Feed those bytes to `worker.prepareScene` and
+`hydrateWasmPainter`, or `renderWasmScene`, for the existing paint/pick path.
+`view.sceneStableId(traceIndex, rowIndex)` recovers full u64 feature identities
+from hydrated marks. Camera/style framing, lifecycle and bounds are specified
+in [the WASM design contract](../design/browser-wasm.md#frozen-geographic-scene-ingress-wasm-abi-29-47).

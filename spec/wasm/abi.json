@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 28,
+  "abi_version": 29,
   "scene_version": 31,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -200,6 +200,11 @@
         "usize",
         "usize"
       ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_geo_scene_compile",
+      "params": ["u32", "u32", "usize", "usize"],
       "result": "i32"
     },
     {

@@ -333,7 +333,7 @@ async function fixtureModule({
   cancelTrap = false,
   graphStepTrap = false,
   paletteVersion = 1,
-  abiVersion = 28,
+  abiVersion = 29,
   sceneVersion = CANONICAL_SCENE_VERSION,
 } = {}) {
   const names = [
@@ -385,6 +385,7 @@ async function fixtureModule({
     "xyg_wasm_graphforge_composition_version",
     "xyg_wasm_geo_column_ingest",
     "xyg_wasm_geo_metadata_version",
+    "xyg_wasm_geo_scene_compile",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -398,7 +399,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1, 3, 0, 4, 0,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1, 3, 0, 4, 0, 4,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -420,7 +421,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0, 0, 1, 0, 1,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0, 0, 1, 0, 1, 0,
   ];
   if (names.length !== functionTypes.length || names.length !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
@@ -518,7 +519,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 28,
+    expectedAbiVersion: 29,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -2182,7 +2183,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 28 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== 29 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");

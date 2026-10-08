@@ -473,6 +473,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/geo_scene.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/geo_viewport.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1194,6 +1202,14 @@
     },
     {
       "path": "crates/xyg-wasm/src/bin/xyts_conformance.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "policy": "rust-wasm-abi",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
+      "path": "crates/xyg-wasm/src/bin/geo_scene_conformance.rs",
       "current_owner": "Rust WASM lifecycle adapter",
       "policy": "rust-wasm-abi",
       "disposition": "implement-rust-wasm",

@@ -16,7 +16,7 @@ function descriptor(c) {
 }
 async function instance(budget=1<<20) {
   const {instance}=await WebAssembly.instantiate(fs.readFileSync(artifact),{}),x=instance.exports;
-  assert.equal(x.xyg_wasm_abi_version(),28);assert.equal(x.xyg_wasm_geo_metadata_version(),1);
+  assert.equal(x.xyg_wasm_abi_version(),29);assert.equal(x.xyg_wasm_geo_metadata_version(),1);
   const h=x.xyg_wasm_instance_new(budget);assert.ok(h>0);
   return {x,h,run(bytes,sequence=1,prefix=0) {
     assert.equal(x.xyg_wasm_arena_resize(h,bytes.byteLength+prefix),0);

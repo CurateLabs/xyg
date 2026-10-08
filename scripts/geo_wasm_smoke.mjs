@@ -55,10 +55,11 @@ try {
   const fail = (message) => { throw new Error(`geo WASM smoke: ${message}\n${JSON.stringify(result).slice(0, 2000)}`); };
   if (!result.ok) fail(`ingestion failed (${result.code})`);
   if (result.compared < 16 || result.stable !== "XYG_GEO_HOLE_OUTSIDE_SHELL" || result.cancel !== "XYG_WASM_CANCELLED" || result.disposed !== "XYG_WASM_DISPOSED") fail("golden/lifecycle contract");
+  if (!Number.isFinite(result.deepzoomDelta) || Math.abs(result.deepzoomDelta - 2.386092942222222) > 1e-4 || result.scenePicks !== 2 || result.scenePaintPixels < 100 || result.outlineSegments !== 2 || result.sceneCancelled !== "XYG_WASM_CANCELLED") fail("scene paint/pick/lifecycle contract");
   if (violations.length) fail(`CSP violations: ${violations.join(" | ")}`);
   const unexpected = served.filter((p) => p !== "/" && !allowed(p));
   if (unexpected.length) fail(`unexpected requests: ${unexpected.join(", ")}`);
-  console.log(`geo WASM smoke: ${result.compared} byte-identical goldens, typed source preserved, request transferred, stable error, cancel/recovery/dispose; strict CSP`);
+  console.log(`geo WASM smoke: ${result.compared} byte-identical goldens, typed source preserved, request transferred, stable error, cancel/recovery/dispose; Scene paint/full-u64 picks, dateline outlines, deepzoom; strict CSP`);
 } finally {
   await browser.close();
   server.close();

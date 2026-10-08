@@ -553,3 +553,11 @@ It returns the native-equivalent `XYGM` metadata document. This source ingest
 is separate from live offset-f32 painter buffers; no JSON coordinate numbers
 enter the paint/data wire. Header, padding, lifecycle and peak admission are
 specified in [browser-wasm.md](browser-wasm.md#geocolumn-descriptor-ingestion-xygd-to-xygm).
+
+`XYGP` v1 wraps `XYGD` in a frozen camera/style authoring header and lowers
+through the same Rust engine to ordinary `XYGS`. WASM ABI 29 exposes the
+sequenced `geoSceneCompile` worker task; a bounded native conformance executable
+proves the same output. This adds no geographic painter schema or JSON geometry
+rows. Its zero-pitch point/outline scope, framing, defaults, admission and parity
+tolerances are specified in [browser-wasm.md](browser-wasm.md) and
+[geospatial.md](geospatial.md). Live cameras and fills remain #48/#49.
