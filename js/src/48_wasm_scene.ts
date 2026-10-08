@@ -1,16 +1,22 @@
 import { PROTOCOL } from "./00_header";
 import { XygWasmError, XygWasmWorker, type XygWasmScenePaint } from "./47_wasm";
 import { ChartView } from "./50_chartview";
+import type { BorrowedGLSurface } from "./42_glhost";
 import { XYG_WASM_PAINTER_HEADER_BYTES, XYG_WASM_PAINTER_MAX_LEGEND_BYTES, XYG_WASM_PAINTER_MAX_TRACES, XYG_WASM_PAINTER_TICK_BYTES, XYG_WASM_PAINTER_TRACE_BYTES, XYG_WASM_PAINTER_VERSION, XYG_WASM_SCENE_VERSION } from "./wasm_abi_generated";
 
 const HEADER_BYTES = XYG_WASM_PAINTER_HEADER_BYTES, TRACE_BYTES = XYG_WASM_PAINTER_TRACE_BYTES;
 const SYMBOLS = ["circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star", "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel", "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line"] as const;
 
-function rgba(bytes: Uint8Array): string {
+function cssRgba(bytes: Uint8Array): string {
   return `rgba(${bytes[0]} ${bytes[1]} ${bytes[2]} / ${bytes[3] / 255})`;
 }
 
-function compilePainter(painter: ArrayBuffer) {
+function compilePainter(painter: ArrayBuffer, detachedColors = false) {
+  // Rust has already resolved these bytes. Detached borrowed surfaces need
+  // hex input to avoid computed CSS; ordinary hydration keeps its DOM format.
+  const rgba = (bytes: Uint8Array) => detachedColors
+    ? `#${Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("")}`
+    : cssRgba(bytes);
   if (!(painter instanceof ArrayBuffer) || painter.byteLength < HEADER_BYTES) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter output is truncated");
   const bytes = new Uint8Array(painter), view = new DataView(painter);
   const u32 = (offset: number) => view.getUint32(offset, true);
@@ -92,6 +98,9 @@ function compilePainter(painter: ArrayBuffer) {
         style: { color: fill, stroke, stroke_width: strokeWidth },
       };
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
+    // Opacity is already included in Rust's RGBA, including scatter records;
+    // the ordinary chart defaults must not multiply that resolved alpha.
+    trace.style.opacity = 1;
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
     if (annotationKind) {
       const px = (columnIndex: number, item = 0) => view.getFloat32(columns[columnIndex].byte_offset + item * 4, true);
@@ -316,10 +325,17 @@ export function hydrateWasmPainter(
   el: HTMLElement,
   prepared: XygWasmScenePaint,
   timing: { workerPrepareMs: number } = { workerPrepareMs: 0 },
+  borrowedSurface?: BorrowedGLSurface,
 ): XygWasmSceneView {
   const preparedAt = performance.now();
-  const compiled = compilePainter(prepared.painter);
-  const view = new ChartView(el, compiled.spec, compiled.payload, null);
+  const compiled = compilePainter(prepared.painter, !!borrowedSurface);
+  if (borrowedSurface && (compiled.spec.padding.some((value: number) => value !== 0))) {
+    throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic paint requires a full-viewport Rust Scene");
+  }
+  if (borrowedSurface && (compiled.sceneLabels.length || compiled.spec.title || compiled.spec.legend || compiled.spec.colorbar || compiled.spec.annotations.length)) {
+    throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic surfaces currently support GL marks without chart decorations");
+  }
+  const view = new ChartView(el, compiled.spec, compiled.payload, null, borrowedSurface);
   if (compiled.sceneLabels.length) {
     const layer = document.createElement("div");
     Object.assign(layer.style, {position:"absolute", inset:"0", pointerEvents:"none"});

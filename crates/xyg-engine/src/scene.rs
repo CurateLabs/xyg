@@ -8064,6 +8064,58 @@ impl<'a> SceneBatch<'a> {
         )
     }
 
+    /// Geographic decoration attachment preserves literal feature identities.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_chrome_literal_ids_and_decorations(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        legend: Option<SceneLegend>,
+        labels: Vec<SceneLabel>,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            None,
+            labels,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            false,
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn new_with_decorations_impl(
         layout: PlotLayout,

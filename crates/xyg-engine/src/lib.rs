@@ -52,6 +52,7 @@ pub mod density_emit;
 pub mod density_grid_materialize;
 pub mod edge_route;
 pub mod geo;
+pub mod geo_fill;
 pub mod geo_scene;
 pub mod geo_viewport;
 pub mod geom;

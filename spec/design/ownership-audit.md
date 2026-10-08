@@ -712,6 +712,7 @@ Forbidden:
 | `crates/xyg-engine/src/compat_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 126 static-export padding/colorbar/polar recut; ABI 127 pyplot tight-layout; ABI 198 `_svg.layout()` combination + tight figure extras | — |
 | `crates/xyg-engine/src/edge_route.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_viewport.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_fill.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geom.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -815,12 +816,14 @@ Forbidden:
 | `js/src/30_ticks.ts` | Shared TypeScript browser presentation | `browser-tick-presentation` | `keep-shared-client`; tooltip/presentation formatting only | — |
 | `js/src/40_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/43_external_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/47_wasm.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; #868 diagnostics report and init fails closed on a mismatched direct-WASM palette contract | #59 |
 | `js/src/48_wasm_scene.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_compound.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graphforge.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GraphForge request framing, document decoding, stable-ID identity, text-only tables | #59 |
 | `js/src/49_wasm_geo.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
+| `js/src/59_maplibre_geo.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; GeoColumn typed-plane framing only; shared Rust owns validation and limits | #59 |
 | `js/src/49_wasm_dashboard.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_columns.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
