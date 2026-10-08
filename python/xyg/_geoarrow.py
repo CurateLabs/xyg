@@ -25,7 +25,7 @@ _EXTENSION_TO_GEOMETRY = {
     "geoarrow.multipolygon": _native.GEO_GEOMETRY_MULTIPOLYGON,
 }
 
-_CRS_RE = re.compile(r"^EPSG:(\d+)$")
+_CRS_RE = re.compile(r"^EPSG:([0-9]+)$")
 
 
 def _require_pyarrow() -> Any:
@@ -54,10 +54,11 @@ def _parse_crs(metadata: dict[str, str]) -> int:
     match = _CRS_RE.match(crs.strip())
     if match is None:
         raise _native.GeoNativeError(-2)
-    code = int(match.group(1))
-    if code not in (_native.GEO_CRS_EPSG_4326, _native.GEO_CRS_EPSG_3857):
+    # Compare bounded supported spellings without converting untrusted big integers.
+    code = match.group(1).lstrip("0")
+    if code not in ("4326", "3857"):
         raise _native.GeoNativeError(-2)
-    return code
+    return int(code)
 
 
 def _geometry_kind(field: Any) -> int:
@@ -66,7 +67,10 @@ def _geometry_kind(field: Any) -> int:
         # pyarrow may expose str keys depending on construction path
         extension = field.metadata.get("ARROW:extension:name")
     if isinstance(extension, bytes):
-        extension = extension.decode("utf-8")
+        try:
+            extension = extension.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise _native.GeoNativeError(-3) from exc
     if not isinstance(extension, str):
         raise _native.GeoNativeError(-3)
     kind = _EXTENSION_TO_GEOMETRY.get(extension)
@@ -77,12 +81,16 @@ def _geometry_kind(field: Any) -> int:
 
 def _field_metadata_str(field: Any) -> dict[str, str]:
     meta = field.metadata or {}
-    out: dict[str, str] = {}
-    for key, value in meta.items():
-        k = key.decode("utf-8") if isinstance(key, bytes) else str(key)
-        v = value.decode("utf-8") if isinstance(value, bytes) else str(value)
-        out[k] = v
-    return out
+    # Arrow's unrelated producer metadata is opaque bytes, not a UTF-8 contract.
+    name = "ARROW:extension:metadata"
+    value = meta.get(name.encode(), meta.get(name))
+    if value is None:
+        return {}
+    try:
+        text = value.decode("utf-8") if isinstance(value, bytes) else str(value)
+    except UnicodeDecodeError as exc:
+        raise _native.GeoNativeError(-1) from exc
+    return {name: text}
 
 
 def _as_array(column: Any) -> Any:

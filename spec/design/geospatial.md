@@ -333,6 +333,11 @@ sliced offset planes and slices the corresponding children at each level;
 unreferenced child buffers do not enter the descriptor. Nested list/coordinate
 nulls fail with `XYG_GEO_NULL_CHILD`, while top-level null points discard their
 masked children. Non-object CRS metadata fails with `XYG_GEO_UNSUPPORTED_CRS`.
+CRS authority codes use ASCII decimal digits; leading zeros are accepted without
+unbounded integer conversion. Invalid UTF-8 extension names fail with
+`XYG_GEO_TYPE_MISMATCH`, and invalid UTF-8 extension metadata fails with
+`XYG_GEO_INVALID_ARGUMENT`. Unrelated Arrow field metadata remains opaque bytes
+and does not affect geometry ingestion.
 Node rejects fractional, negative, or overflowing offsets before u32 packing
 and rejects excess nesting planes rather than narrowing or discarding them.
 Native ingress applies the shared length/byte preflight before constructing
