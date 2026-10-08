@@ -113,8 +113,8 @@ pub struct GeoDerivedKey {
 /// Offset-encoded point vertices projected from a Point / MultiPoint column.
 ///
 /// One entry per retained vertex (null points own no vertex), each tagged
-/// with the source feature ID. `xy` is `f32` relative to the first projected
-/// vertex (`origin_x`, `origin_y` in f64 screen pixels).
+/// with the source feature ID. `xy` is `f32` relative to the viewport centre
+/// (`origin_x`, `origin_y` in f64 screen pixels).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProjectedGeoPoints {
     pub xy: Vec<f32>,
