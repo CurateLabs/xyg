@@ -2,9 +2,9 @@
 
 These examples cover the currently implemented 2D chart families. They are
 short on purpose: each one should be copyable into a notebook or script after
-`pip install xyg`. The Python snippets in this file are executed by
-`tests/test_docs_examples.py`, so docs changes should fail fast if the public
-API drifts.
+`pip install xyg`. The geographic catalog section explicitly identifies its
+feature-branch status and source-checkout requirement; its regression fixtures
+include `tests/test_geo_components.py` and the native/WASM catalog parity suite.
 
 The library is optimized for large data, but ordinary charts should stay boring
 to build. The first section below is intentionally small business-style data;
@@ -73,6 +73,7 @@ resolving to a browser engine for SVG — by `engine=Engine.chromium` or by
 | Independent segments | `xyg.segments_chart(xyg.segments(x0=..., y0=..., x1=..., y1=...))` |
 | Triangle mesh | `xyg.triangle_mesh_chart(xyg.triangle_mesh(...))` |
 | Facets | `xyg.facet_chart(xyg.scatter(...), by="group", data=data)` |
+| Geographic catalog (#49 feature branch; pending integration) | `xyg.geo_chart(xyg.geo_layer(...), camera=...)` |
 
 ## Axes And Scales
 
@@ -471,6 +472,145 @@ png/jpeg/webp/svg/csv, in the given order — an empty list hides the menu) and
 supplies the `width`/`height`/`scale`/`background`/`quality` defaults for any
 of those arguments omitted from `to_image`, `write_image`, or that chart's
 files in `write_images`. Explicit arguments override them.
+
+## Geographic Catalog
+
+The following API is implemented on the #49 feature branch and is pending
+pull-request integration. It is not a claim about an already published package.
+Seven families share the Rust compiler: `points`, `bubbles`, `routes`, `arcs`,
+`polygons`, `choropleth` and `density`. Labels and legend entries are layer
+properties. See the [geographic contract](../design/geographic-layers.md) and
+[capability matrix](../design/geographic-capabilities.md) for source semantics,
+admission limits and remaining #50 scale work.
+
+This Python example needs the feature branch's native core. Coordinates are
+canonical f64 longitude/latitude; colors are explicit RGBA8 and dimensions are
+CSS pixels. Full u64 feature and layer IDs retain every bit.
+
+```python
+import numpy as np
+import xyg
+
+source = dict(
+    geometry=1,  # Point
+    crs=4326,
+    xy=np.array([-110.0, 40.0, -90.0, 30.0], dtype="<f8"),
+    validity=np.array([1, 1], dtype="u1"),
+    feature_ids=np.array([2**64 - 1, 2**63], dtype="<u8"),
+)
+geography = xyg.geo_chart(
+    xyg.geo_layer(
+        "bubbles",
+        source=source,
+        layer_id=7,
+        values=np.array([1.0, 6.0], dtype="<f8"),
+        value_domain=[0.0, 6.0],
+        bubble_diameters=[8.0, 28.0],
+        style=dict(fill=bytes([18, 110, 135, 255]), opacity=0.8),
+        selected=dict(fill=bytes([227, 124, 46, 255])),
+        legend_label="Locations",
+    ),
+    camera=dict(
+        crs=4326, center_x=-100.0, center_y=35.0,
+        zoom=2.0, width=800.0, height=600.0,
+    ),
+    legend=dict(title="Geography", location=0, font_size=12.0),
+)
+compiled = geography.compile()
+assert compiled["layers"][0]["feature_ids"][0] == 2**64 - 1
+svg = geography.to_svg()
+png = geography.to_image("png", scale=2.0)
+```
+
+Bubble area interpolates over the explicit value domain. Choropleth uses
+`values`, `value_domain` and optional flat RGB8 `color_stops`. Routes/arcs
+require line geometry; polygons/choropleth require polygon geometry with exact
+u32 offset planes. Arcs are sampled Mercator cubics, not geodesic paths.
+`density=dict(columns=80, rows=60)` selects direct screen bins and retains
+complete source-row contributors; its aggregate reports dropped size, symbol
+and stroke channels. Neither this family nor the example establishes massive-
+source performance or automatic spatial tiers.
+
+`GeoChart.compile(event=...)` applies one Rust interaction event to the authored
+state. For example, a full-ID selection is:
+
+```python
+selection = geography.compile(
+    event=dict(operation=7, mode=0, layer_id=7, feature_id=2**64 - 1)
+)
+assert selection["layers"][0]["state_flags"][0] & 2
+```
+
+The frozen Python composition is not mutated by that call. Returned state
+planes can be supplied as `state_flags` when composing the next chart. Browser
+controllers retain accepted flags automatically. Duplicate feature IDs within
+one layer select the union of matching eligible rows; the layer ID distinguishes
+identical source IDs across layers.
+
+Node uses the same packed Rust processor with camelCase fields and bigint IDs:
+
+```javascript
+import {
+  encodeGeoCatalogRequest, geoCatalogCompile, decodeGeoCatalogResponse,
+} from "@curatelabs/xyg-node";
+
+const catalog = {
+  camera: {crs: 4326, centerX: 0, centerY: 0, zoom: 0, width: 800, height: 600},
+  layers: [{
+    layerId: 7n, kind: 1, // Points
+    source: {
+      geometry: 1, crs: 4326, xy: new Float64Array([0, 0]),
+      validity: new Uint8Array([1]),
+      featureIds: new BigUint64Array([0xffffffffffffffffn]),
+    },
+    style: {fill: new Uint8Array([18, 110, 135, 255]), diameter: 12},
+  }],
+};
+const output = decodeGeoCatalogResponse(
+  geoCatalogCompile(encodeGeoCatalogRequest(catalog)),
+);
+```
+
+Browser authoring uses that same `catalog` object with the host-neutral client:
+
+```javascript
+import {createXygWasmWorker, XygGeographicChart} from "@curatelabs/xyg";
+
+const el = document.createElement("div");
+document.body.append(el);
+const worker = createXygWasmWorker({
+  wasm: "/assets/xyg-wasm.wasm", workerUrl: "/assets/wasm-worker.js",
+});
+const chart = new XygGeographicChart({el, worker, catalog});
+await chart.ready;
+await chart.interact({operation: 7, mode: 0, layerId: 7n,
+  featureId: 0xffffffffffffffffn});
+const current = chart.snapshot();
+chart.dispose();
+worker.dispose();
+```
+
+The application serves its packaged Worker/WASM assets; no CDN or map provider
+is selected. The controller forwards hover/click/Shift-drag brush events,
+Ctrl/Meta selection toggles, arrow-key focus, Enter/Space selection and Escape
+clear to Rust. Its 50-row paged companion table exposes valid nonhidden source
+rows, including offscreen features. `updateCamera(camera)` rebuilds derived
+paint while retaining flags and focus. Optional `createMapLibreGeoLayer` accepts
+an already prepared Scene and an application-owned MapLibre shell; pass that
+layer and its `pointerSurface` to the controller to reuse the supplied GL
+framebuffer and preserve provider attribution. The default bundle imports no
+MapLibre and creates no basemap or second geographic renderer.
+
+The reproducible seven-family checkout example is
+[examples/geographic_catalog.py](../../examples/geographic_catalog.py):
+
+```sh
+uv run python examples/geographic_catalog.py
+```
+
+It writes the [SVG](../assets/geographic-catalog.svg) and
+[PNG](../assets/geographic-catalog.png) visual examples, including a polygon
+hole, routes, arcs, bubbles, choropleth, density, labels and legend.
 
 ## Live Data On A Composed Chart
 

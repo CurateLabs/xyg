@@ -39,17 +39,17 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
   let expectedOffset = HEADER_BYTES + traceCount * TRACE_BYTES;
   let awaitingCalloutHead = false;
   const column = (descriptor: number, slot: number, count: number, dtype = "f32") => {
-    const offset = u32(descriptor + slot), end = offset + count * 4;
+    const offset = u32(descriptor + slot), end = offset + count * (dtype === "u8" ? 1 : 4);
     if (offset !== expectedOffset || !Number.isSafeInteger(end) || end > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter column range is invalid");
     expectedOffset = end;
     const index = columns.length;
-    columns.push({ byte_offset: offset, len: count, ...(dtype === "u32" ? { dtype } : {}) });
+    columns.push({ byte_offset: offset, len: count, ...(dtype !== "f32" ? { dtype } : {}) });
     return index;
   };
   for (let index = 0; index < traceCount; index++) {
     const descriptor = HEADER_BYTES + index * TRACE_BYTES;
     const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], count = u32(descriptor + 4);
-    if (annotationKind > 6 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    if (annotationKind > 6 || bytes[descriptor + 3] !== 0 || ((kind !== 5 && kind !== 7 && kind !== 8 && kind !== 9) && bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0)) || !count || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
     if (awaitingCalloutHead && !(annotationKind === 6 && kind === 4 && count === 3)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
     const fill = rgba(bytes.subarray(descriptor + 32, descriptor + 36)), stroke = rgba(bytes.subarray(descriptor + 36, descriptor + 40));
     const strokeWidth = f32(descriptor + 40), diameter = f32(descriptor + 44);
@@ -83,7 +83,7 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
       };
       void x1;
     } else if (kind === 4) {
-      if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill descriptor is invalid");
+      if (symbol !== 0 || diameter !== 0 || u32(descriptor + 16) !== 0 || u32(descriptor + 20) !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill descriptor is invalid");
       if (count !== 3) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill browser paint currently requires three vertices");
       const at = (colIndex: number, i: number) => {
         const source = columns[colIndex];
@@ -97,11 +97,45 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
         color: { mode: "constant", color: fill },
         style: { color: fill, stroke, stroke_width: strokeWidth },
       };
+    } else if (kind === 8) {
+      if (!count || symbol !== 0 || annotationKind !== 0 || u32(descriptor+20)!==0 || bytes.subarray(descriptor+32,descriptor+48).some(value=>value!==0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust scatter batch descriptor is invalid");
+      trace={kind:"scatter",x,y,scene_style_refs:column(descriptor,16,count,"u32"),style:{symbol:"circle"}};
+    } else if (kind === 9) {
+      if (!count || symbol !== 0 || annotationKind !== 0 || u32(descriptor+60)!==0 || bytes.subarray(descriptor+32,descriptor+48).some(value=>value!==0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust segment batch descriptor is invalid");
+      trace={kind:"segments",x0:x,y0:y,x1:column(descriptor,16,count),y1:column(descriptor,20,count),style:{width:0}};
+    } else if (kind === 7) {
+      if (!count || symbol !== 0 || annotationKind !== 0 || diameter !== 0 || bytes.subarray(descriptor + 32, descriptor + 36).some(value => value !== 0) || u32(descriptor + 60) !== count * 4) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust triangle batch descriptor is invalid");
+      trace = { kind: "triangle_mesh", x0: x, y0: y,
+        x1: column(descriptor, 16, count), y1: column(descriptor, 20, count),
+        x2: column(descriptor, 48, count), y2: column(descriptor, 52, count),
+        style: {stroke, stroke_width: strokeWidth} };
+    } else if (kind === 5) {
+      const imageWidth = u32(descriptor + 48), imageHeight = u32(descriptor + 52);
+      if (count !== 1 || symbol !== 0 || annotationKind !== 0 || !imageWidth || !imageHeight || imageWidth * imageHeight * 4 !== u32(descriptor + 60) || bytes.subarray(descriptor + 32, descriptor + 48).some(value => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust image descriptor is invalid");
+      const x1 = column(descriptor, 16, 1), y1 = column(descriptor, 20, 1);
+      const px = (index: number) => f32(columns[index].byte_offset);
+      const xRange = [px(x), px(x1)], yRange = [px(y), px(y1)];
+      if (!(xRange[0] < xRange[1] && yRange[0] < yRange[1])) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust image bounds are invalid");
+      trace = {kind: "heatmap", heatmap: {w: imageWidth, h: imageHeight,
+        x_range: xRange, y_range: yRange, image_top_first: true}, style: {}};
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
     // Opacity is already included in Rust's RGBA, including scatter records;
     // the ordinary chart defaults must not multiply that resolved alpha.
     trace.style.opacity = 1;
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
+    if (kind === 7) trace.color = {mode: "direct_rgba", buf: column(descriptor, 56, count * 4, "u8")};
+    if (kind === 8) {
+      trace.size={mode:"continuous",buf:column(descriptor,48,count),range_px:[0,1]};
+      trace.color={mode:"direct_rgba",buf:column(descriptor,52,count*4,"u8")};
+      trace.stroke={mode:"direct_rgba",buf:column(descriptor,56,count*4,"u8")};
+      trace.channels={packed_style_css:{buf:column(descriptor,60,count*4),components:4}};
+    }
+    if (kind === 9) {
+      trace.color={mode:"direct_rgba",buf:column(descriptor,48,count*4,"u8")};
+      trace.channels={packed_style_css:{buf:column(descriptor,52,count*4),components:4}};
+      trace.scene_style_refs=column(descriptor,56,count,"u32");
+    }
+    if (kind === 5) trace.heatmap.rgba_buf = column(descriptor, 56, u32(descriptor + 60), "u8");
     if (annotationKind) {
       const px = (columnIndex: number, item = 0) => view.getFloat32(columns[columnIndex].byte_offset + item * 4, true);
       if (annotationKind === 1 && kind === 1 && count === 2) {
@@ -198,9 +232,9 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
     const title = decodeLegend(0, titleLength), items: any[] = []; let expected = titleLength;
     for (let index = 0; index < entryCount; index++) {
       const item = start + 48 + index * 24, kind = bytes[item + 4], symbol = bytes[item + 5], labelOffset = u32(item + 8), labelLength = u32(item + 12);
-      if (kind > 4 || symbol >= SYMBOLS.length || (kind !== 0 && symbol !== 0) || bytes.subarray(item + 6, item + 8).some((value) => value !== 0) || labelOffset !== expected || labelLength === 0 || labelOffset + labelLength > textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend entry is invalid");
+      if (kind > 7 || symbol >= SYMBOLS.length || (kind !== 0 && symbol !== 0) || bytes.subarray(item + 6, item + 8).some((value) => value !== 0) || labelOffset !== expected || labelLength === 0 || labelOffset + labelLength > textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend entry is invalid");
       const fill = rgba(bytes.subarray(item + 16, item + 20)), stroke = rgba(bytes.subarray(item + 20, item + 24));
-      items.push({ name: decodeLegend(labelOffset, labelLength), kind: kind === 0 ? "scatter" : kind === 1 ? "line" : "bar", style: { color: kind === 1 ? stroke : fill, fill, stroke, symbol: kind === 0 ? SYMBOLS[symbol] : undefined } });
+      items.push({ name: decodeLegend(labelOffset, labelLength), kind: kind === 0 ? "scatter" : (kind === 1 || kind === 7) ? "line" : "bar", style: { color: (kind === 1 || kind === 7) ? stroke : fill, fill, stroke, symbol: kind === 0 ? SYMBOLS[symbol] : undefined } });
       expected += labelLength;
     }
     if (expected !== textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend entry is invalid");
@@ -332,10 +366,18 @@ export function hydrateWasmPainter(
   if (borrowedSurface && (compiled.spec.padding.some((value: number) => value !== 0))) {
     throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic paint requires a full-viewport Rust Scene");
   }
-  if (borrowedSurface && (compiled.sceneLabels.length || compiled.spec.title || compiled.spec.legend || compiled.spec.colorbar || compiled.spec.annotations.length)) {
-    throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic surfaces currently support GL marks without chart decorations");
+  if (borrowedSurface && (compiled.spec.title || compiled.spec.colorbar || compiled.spec.annotations.length)) {
+    throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic surfaces support Rust labels and legends; other chart decorations require an ordinary Scene view");
   }
   const view = new ChartView(el, compiled.spec, compiled.payload, null, borrowedSurface);
+  if (borrowedSurface) {
+    // Only Rust-final DOM/SVG decorations attach to the map container. The
+    // existing painter canvases remain detached bookkeeping, never overlays.
+    view.canvas.remove(); view.chrome.remove(); view.overlay.remove();
+    view.root.style.background = "transparent";
+    view.root.style.pointerEvents = "none";
+    view._initA11y();
+  }
   if (compiled.sceneLabels.length) {
     const layer = document.createElement("div");
     Object.assign(layer.style, {position:"absolute", inset:"0", pointerEvents:"none"});

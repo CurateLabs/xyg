@@ -17,6 +17,11 @@ unsupported boundaries (including rich/wrapped/custom typography) are
 specified in [scene-ir.md](../design/scene-ir.md), not inferred from a
 slot's renderer support here.
 
+Geographic composition uses a separate literal-RGBA catalog contract:
+[geographic capabilities and evidence](../design/geographic-capabilities.md).
+Its seven layer families reuse the same Rust Scene renderers; the CSS
+property table below does not imply geographic CSS input support.
+
 ## In one line
 
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.

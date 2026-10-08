@@ -617,7 +617,6 @@ export class ChartView {
     // resize, animation, or context governor may mutate that owner's camera
     // or canvas. The detached DOM is bookkeeping for existing mark builders.
     if (this._borrowedSurface) {
-      this.draw();
       return;
     }
     this.dragMode = this._resolveDefaultDragAction();
@@ -2369,7 +2368,7 @@ export class ChartView {
     if (!this.gl || this._glLost) return;
     const dpr = this.dpr;
     const rescale = (record) => {
-      if (!record) return;
+      if (!record || record._styleCss) return;
       const previous = Number(record._styleDpr);
       if (!(previous > 0) || previous === dpr) return;
       // Repair in place ONLY while the CPU mirrors still cover every row the
@@ -4219,10 +4218,16 @@ export class ChartView {
 
   _buildInstanceStyleChannels(g, t, buffer, widthName) {
     const channel = (name) => t.channels && t.channels[name];
+    const packedCss=channel("packed_style_css");
+    if (packedCss) {
+      const values=this._columnView(buffer,this.spec.columns[packedCss.buf]);
+      if (packedCss.components!==4 || values.length!==g.n*4) throw new Error("xy: packed CSS style plane has invalid length");
+      g._styleCss=true; g._cpuStyle=values; g.styleBuf=this._upload(values);
+    }
     const artistScalar = Number(t.style && t.style.artist_alpha);
     const hasStyle = channel("opacity") || channel("artist_alpha") ||
       channel(widthName) || channel("symbol") || Number.isFinite(artistScalar);
-    if (hasStyle) {
+    if (hasStyle && !packedCss) {
       const values = new Float32Array(g.n * 4);
       for (let i = 0; i < g.n; i++) {
         values[i * 4] = 1;
@@ -5376,10 +5381,11 @@ export class ChartView {
 
   _buildHeatmapMark(g, t, buffer) {
     const h = t.heatmap;
-    const truecolor = Array.isArray(h.rgba_bufs);
-    const grid = truecolor
-      ? h.rgba_bufs.map((index) => this._columnView(buffer, this.spec.columns[index]))
-      : this._columnView(buffer, this.spec.columns[h.buf]);
+    const packedRgba = Number.isInteger(h.rgba_buf);
+    const truecolor = packedRgba || Array.isArray(h.rgba_bufs);
+    const grid = packedRgba ? this._columnView(buffer, this.spec.columns[h.rgba_buf])
+      : truecolor ? h.rgba_bufs.map((index) => this._columnView(buffer, this.spec.columns[index]))
+        : this._columnView(buffer, this.spec.columns[h.buf]);
     g.heatmap = {
       w: h.w,
       h: h.h,
@@ -5387,6 +5393,7 @@ export class ChartView {
       yRange: h.y_range,
       colormap: h.colormap,
       truecolor,
+      imageTopFirst: h.image_top_first === true,
       tex: truecolor ? this._uploadRgbaGrid(grid, h.w, h.h) : this._uploadHeatmapGrid(grid, h.w, h.h),
       lut: truecolor ? null : this._lut(h.colormap),
     };
@@ -5396,18 +5403,27 @@ export class ChartView {
   _uploadRgbaGrid(channels, w, h) {
     const gl = this.gl;
     const tex = gl.createTexture();
-    const data = new Uint8Array(w * h * 4);
-    for (let index = 0; index < w * h; index++) {
-      for (let channel = 0; channel < 4; channel++) {
-        data[index * 4 + channel] = Math.round(255 * Math.max(0, Math.min(1, channels[channel][index])));
+    if (!tex) throw new Error("xy: texture allocation failed");
+    // Scene images are already Rust-resolved RGBA8; upload their exact view.
+    const data = channels instanceof Uint8Array ? channels : new Uint8Array(w * h * 4);
+    if (!(channels instanceof Uint8Array)) {
+      for (let index = 0; index < w * h; index++) {
+        for (let channel = 0; channel < 4; channel++) {
+          data[index * 4 + channel] = Math.round(255 * Math.max(0, Math.min(1, channels[channel][index])));
+        }
       }
     }
+    try {
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } catch (error) {
+      gl.deleteTexture(tex);
+      throw error;
+    }
     return tex;
   }
 
@@ -6348,6 +6364,7 @@ export class ChartView {
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
     this._setPolarUniforms(prog);
     gl.uniform1f(u("u_dpr"), this.dpr);
+    gl.uniform1i(u("u_instanceStyleCss"), g._styleCss ? 1 : 0);
     const zoomStyle = this._pointZoomStyle(g);
     const transitionOn = !!(g._transitionPrevXBuf && g._transitionPrevYBuf);
     gl.uniform1i(u("u_transitionActive"), transitionOn ? 1 : 0);
@@ -6554,6 +6571,7 @@ export class ChartView {
     );
     gl.uniform1f(u("u_dpr"), this.dpr);
     gl.uniform1f(u("u_size"), size);
+    gl.uniform1i(u("u_instanceStyleCss"), 0);
     gl.uniform1i(u("u_sizeMode"), 0);
     gl.uniform2f(u("u_sizeRange"), size, size);
     gl.uniform1i(u("u_colorMode"), 0);
@@ -6657,7 +6675,7 @@ export class ChartView {
     gl.uniform4f(
       u("u_gridRange"),
       h.xRange[xrev ? 1 : 0], h.xRange[xrev ? 0 : 1],
-      h.yRange[yrev ? 1 : 0], h.yRange[yrev ? 0 : 1],
+      h.yRange[h.imageTopFirst ? 0 : yrev ? 1 : 0], h.yRange[h.imageTopFirst ? 1 : yrev ? 0 : 1],
     );
     gl.uniform1f(u("u_opacity"), this._fillOpacity(g.trace.style) * (g._transitionOpacity ?? 1) * (g._legendDim ?? 1));
     gl.uniform1i(u("u_truecolor"), h.truecolor ? 1 : 0);
@@ -6743,6 +6761,8 @@ export class ChartView {
     this._setPolarUniforms(prog);
     gl.uniform2f(u("u_res"), this.canvas.width, this.canvas.height);
     gl.uniform1f(u("u_width"), (g.trace.style.width ?? 1.5) * this.dpr);
+    gl.uniform1i(u("u_instanceStyleCss"), g._styleCss ? 1 : 0);
+    gl.uniform1f(u("u_dpr"), this.dpr);
     gl.uniform1f(u("u_animationProgress"), g._transitionScale ?? 1);
     const [r, gg, b, a] = g.color;
     gl.uniform4f(u("u_color"), r, gg, b, a);

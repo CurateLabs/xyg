@@ -1,0 +1,1924 @@
+{
+  "schema": "xyg-wasm-profile-abba-v1",
+  "environment": {
+    "node": "v26.6.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4"
+  },
+  "artifacts": {
+    "A": {
+      "path": "/tmp/xyg-geolayers-final150-raw.wasm",
+      "sha256": "1ff468dd0f45ad62d0d188ff9b4f08dc94e2dfd4118508723862ae93b4fb7dad",
+      "rawBytes": 1172316,
+      "gzipBytes": 431903
+    },
+    "B": {
+      "path": "/tmp/xyg-geolayers-final100-opt.wasm",
+      "sha256": "bdf907f6fdfdceb87017c38a8f99bb4d971fefdb6f3fe6103299f7f9ce36a712",
+      "rawBytes": 1034845,
+      "gzipBytes": 418362
+    }
+  },
+  "measurements": [
+    {
+      "name": "graphforge",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 16384,
+      "outputBytes": 25632,
+      "outputSha256": "eb04ecd3879cf15913b4296c3fa997492e47a516abc3828d2239388d764d6665",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.13796790999999986
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1197637499999999
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.07895333999999991
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.06552583999999996
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.06523791999999987
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.07881707999999975
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.08155583000000007
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.06095459000000005
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05724624999999975
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05374582999999973
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.0537545799999998
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05690833999999995
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05548041999999981
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05643790999999993
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.055201659999999604
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.056185409999999936
+        }
+      ],
+      "medianA": 0.059100419999999904,
+      "medianB": 0.06762749499999984,
+      "ratio": 1.1442811235520822
+    },
+    {
+      "name": "scene",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 1896,
+      "outputBytes": 6040,
+      "outputSha256": "701c774efda48ceb3245ad06c4ff1b20df703ca71791d37e9b5ba8aaf5aeb3d6",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.058259580000000144
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.0340300000000002
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03831208000000004
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05568124999999952
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.02267749999999978
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.019239580000000273
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.019189160000000243
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.020131250000000024
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.019790409999999953
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.020070420000000127
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.01873917000000006
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.01925333000000023
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.01949041999999963
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.018513340000000086
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.018698340000000258
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.01946624999999983
+        }
+      ],
+      "medianA": 0.01996082999999999,
+      "medianB": 0.019214370000000258,
+      "ratio": 0.9626037594629216
+    },
+    {
+      "name": "viewport",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 1896,
+      "outputBytes": 2656,
+      "outputSha256": "a02f3df90fd7b394a53b5fe8adceac8da2271bbb0195b74049fcace7aae4ab54",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.016923329999999622
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.016554160000000026
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.016679579999999986
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.016746249999999917
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.018258330000000454
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.017295420000000377
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.015752919999999903
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.020981250000000385
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.015801249999999527
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.015166249999999763
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.015360829999999624
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.015924999999999728
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.015844999999999915
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.015731250000000044
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.015528749999999718
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.015989169999999716
+        }
+      ],
+      "medianA": 0.016367709999999817,
+      "medianB": 0.015742084999999975,
+      "ratio": 0.9617768765453537
+    },
+    {
+      "name": "catalog",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 2280,
+      "outputBytes": 7768,
+      "outputSha256": "c790229607bf667ce0d3721880328f307a5fe0dcfe8e3bc6bfe8ac2e613e0644",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04576166000000001
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05784749999999974
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.06927416999999991
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03669832999999983
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03295375000000036
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05176541999999983
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03111333000000002
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03201124999999991
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.030593749999999885
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.029123330000000464
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03077666000000022
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.02945666000000017
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03011250000000018
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.030266670000000318
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.028188330000000407
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.02938333
+        }
+      ],
+      "medianA": 0.0313024999999999,
+      "medianB": 0.03094499500000012,
+      "ratio": 0.9885790272342535
+    },
+    {
+      "name": "interaction",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 2344,
+      "outputBytes": 7768,
+      "outputSha256": "c790229607bf667ce0d3721880328f307a5fe0dcfe8e3bc6bfe8ac2e613e0644",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04610334000000023
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03816167000000007
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03694333999999969
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.040276250000000006
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03989125000000002
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.04036875000000009
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.039173329999999854
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04146374999999978
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03842624999999998
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03649083000000019
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03685000000000002
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.03959790999999996
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.039318340000000375
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03748958000000016
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.03720209000000011
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.039380840000000035
+        }
+      ],
+      "medianA": 0.03974457999999999,
+      "medianB": 0.03734583500000013,
+      "ratio": 0.9396459844336044
+    },
+    {
+      "name": "graphforge",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 1370880,
+      "outputBytes": 2210800,
+      "outputSha256": "331e37ab0ebc386f11965872c23557f61669d0f170b2d4be3618672fb2cf4633",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.894608399999993
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 3.9434334000000035
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 3.952983200000017
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.0677416
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.044491799999991
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.086899999999991
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.0187415999999985
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.91579999999999
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.806399999999985
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 3.857625000000007
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.068991599999981
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.846683200000007
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.8992832000000135
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 3.845574999999985
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 3.9726582000000006
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 3.8195999999999914
+        }
+      ],
+      "medianA": 3.8969458000000032,
+      "medianB": 3.962820700000009,
+      "ratio": 1.016904238185711
+    },
+    {
+      "name": "scene",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170192,
+      "outputBytes": 560440,
+      "outputSha256": "7b3fef2199f036c61244c122e90909a033448565c60f274c19b601011e139024",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.7343915999999808
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.7128165999999965
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.7104500000000145
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.743133200000011
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.7785249999999906
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.703925000000004
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.6894166000000042
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.754333399999996
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.7586499999999887
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.7511500000000069
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.7392250000000105
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.7652749999999968
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.734733200000005
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.775216599999976
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.7646832000000359
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.7115332000000307
+        }
+      ],
+      "medianA": 1.7487333000000036,
+      "medianB": 1.7260208000000035,
+      "ratio": 0.9870120275058524
+    },
+    {
+      "name": "viewport",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170192,
+      "outputBytes": 240256,
+      "outputSha256": "d6d0e9bfba95e911a078233bc37515c600c227ce942bf346e40e389523a6bce6",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5359583999999813
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5157584000000042
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5400666
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.545074999999997
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5497581999999965
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5076500000000124
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5312334000000192
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5577418000000307
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5692168000000037
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.585783399999991
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5530083999999988
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5907165999999962
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.577975000000015
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5382000000000062
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 1.5196084000000156
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 1.5591832000000068
+        }
+      ],
+      "medianA": 1.5584625000000187,
+      "medianB": 1.5347167000000126,
+      "ratio": 0.9847633164095987
+    },
+    {
+      "name": "catalog",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170576,
+      "outputBytes": 700760,
+      "outputSha256": "9eb44d119b391a66eef5ba85e14e1c1d4bae65eed7c16e5483f70b45eb300c93",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.3821500000000015
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.3266415999999936
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.291216600000007
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.3643918000000212
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.338850000000002
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.3355165999999827
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.3368333999999775
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.3908416000000217
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.2939167999999883
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.3115666000000146
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.253383399999984
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.2508500000000367
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.270066799999995
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.306083399999989
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 2.3209249999999884
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 2.2727750000000015
+        }
+      ],
+      "medianA": 2.316383399999995,
+      "medianB": 2.3162458000000017,
+      "ratio": 0.9999405970531505
+    },
+    {
+      "name": "interaction",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170640,
+      "outputBytes": 700816,
+      "outputSha256": "377ba8ad716bcdb14d6ce3d21b0fac9cd075c33e4edfa2c552a8970331669097",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.198325000000023
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.268733199999997
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.5603749999999765
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.540983400000004
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.297850000000016
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.246266600000036
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.238199999999961
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.342616600000019
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.280683399999998
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.3289084
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.295616799999971
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.317816600000015
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.3320916000000125
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.199624999999969
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.19989999999998
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.229358400000001
+        }
+      ],
+      "medianA": 4.3078333000000155,
+      "medianB": 4.257499900000017,
+      "ratio": 0.988315843140913
+    },
+    {
+      "name": "graphforge",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 13880880,
+      "outputBytes": 22370800,
+      "outputSha256": "115bf85e2b47d28c8c020c1a9357a949abc79b0a2876c71dc38cac23e1234da5",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 40.72135400000002
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 41.4718335
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 41.86941649999994
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 41.94818750000013
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 43.80406249999987
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 45.673229499999934
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 51.96877049999989
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 46.315374999999904
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 45.36360400000012
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 46.568271000000095
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.386625000000095
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 47.944353999999976
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.07158350000009
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 51.501833499999975
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 51.467791499999976
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 51.230125000000044
+        }
+      ],
+      "medianA": 45.83948950000001,
+      "medianB": 47.477448000000095,
+      "ratio": 1.0357324769072762
+    },
+    {
+      "name": "scene",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700192,
+      "outputBytes": 5600440,
+      "outputSha256": "7dbd917d71c43f008701454af724eff7607edafe3d0fdbc41295acdedcfba129",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.496103999999832
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.30358299999989
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.435312500000236
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.9640830000003
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.49645849999979
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.32466650000015
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.71243749999985
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.465603999999985
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.37670849999995
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.702354000000014
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.186291499999697
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.151374999999916
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.25608349999993
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.019395999999688
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 26.066895999999815
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 26.230562499999905
+        }
+      ],
+      "medianA": 26.421156249999967,
+      "medianB": 26.31412475000002,
+      "ratio": 0.9959490228592873
+    },
+    {
+      "name": "viewport",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700192,
+      "outputBytes": 2400256,
+      "outputSha256": "167a58280ea2447be33c52ab8a700974c2df893f77d60e7b42ece3581fa7f83d",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 23.700374999999894
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 23.292291999999634
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 23.228708500000266
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 23.623604500000056
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 22.578292000000147
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 21.50872900000013
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 22.203937500000393
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 21.775041500000043
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 21.76433300000008
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 21.414624999999887
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 21.598707999999988
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 21.88222900000028
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 23.507583000000068
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 23.726041500000065
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 23.393103999999767
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 24.63543750000008
+        }
+      ],
+      "medianA": 23.042937500000107,
+      "medianB": 22.71632300000033,
+      "ratio": 0.9858258305825905
+    },
+    {
+      "name": "catalog",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700576,
+      "outputBytes": 7000760,
+      "outputSha256": "923469b39c0f58d7df3b2d4fc4134f20d039cc42ea45b2e4abea1dc815fba4af",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 38.06297949999998
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 36.764187499999935
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 37.575187500000084
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 41.065062500000295
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 41.034124999999676
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 40.4772710000002
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 40.4611460000001
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 40.60677099999975
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 40.243562499999825
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 40.542999999999665
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 40.662145500000406
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 40.78443750000042
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 41.77295800000047
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 40.59764599999926
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 36.83091700000023
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 37.21020850000059
+        }
+      ],
+      "medianA": 40.69560425000009,
+      "medianB": 40.46920850000015,
+      "ratio": 0.9944368500192514
+    },
+    {
+      "name": "interaction",
+      "count": 100000,
+      "requestBytes": 1700640,
+      "admitted": false,
+      "status": 3,
+      "error": "XYG_GEO_RESOURCE_LIMIT"
+    }
+  ],
+  "startup": {
+    "schema": "xyg-wasm-cold-start-abba-v1",
+    "environment": {
+      "node": "v26.6.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpu": "Apple M4"
+    },
+    "artifacts": {
+      "A": "/tmp/xyg-geolayers-final150-raw.wasm",
+      "B": "/tmp/xyg-geolayers-final100-opt.wasm"
+    },
+    "samples": [
+      {
+        "pair": 0,
+        "label": "A",
+        "readMs": 0.14912499999999973,
+        "compileMs": 1.0846669999999996,
+        "instantiateMs": 0.2522500000000001,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 52133888,
+        "childWallMs": 29.888458999999997
+      },
+      {
+        "pair": 0,
+        "label": "B",
+        "readMs": 0.13687499999999986,
+        "compileMs": 1.0167920000000006,
+        "instantiateMs": 0.2248329999999985,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51658752,
+        "childWallMs": 28.425958
+      },
+      {
+        "pair": 0,
+        "label": "B",
+        "readMs": 0.12395800000000001,
+        "compileMs": 1.0204160000000009,
+        "instantiateMs": 0.22241599999999906,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51838976,
+        "childWallMs": 26.532458000000005
+      },
+      {
+        "pair": 0,
+        "label": "A",
+        "readMs": 0.14033300000000004,
+        "compileMs": 1.1048749999999998,
+        "instantiateMs": 0.24191700000000083,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 52084736,
+        "childWallMs": 30.14733299999999
+      },
+      {
+        "pair": 1,
+        "label": "A",
+        "readMs": 0.14033400000000107,
+        "compileMs": 1.0924580000000006,
+        "instantiateMs": 0.2410420000000002,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 52019200,
+        "childWallMs": 27.93029200000001
+      },
+      {
+        "pair": 1,
+        "label": "B",
+        "readMs": 0.12112500000000104,
+        "compileMs": 1.0030840000000012,
+        "instantiateMs": 0.22654200000000024,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51838976,
+        "childWallMs": 29.371459000000016
+      },
+      {
+        "pair": 1,
+        "label": "B",
+        "readMs": 0.12054099999999934,
+        "compileMs": 1.0362920000000013,
+        "instantiateMs": 0.23291599999999946,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51773440,
+        "childWallMs": 26.526167000000015
+      },
+      {
+        "pair": 1,
+        "label": "A",
+        "readMs": 0.13374999999999915,
+        "compileMs": 1.0856250000000003,
+        "instantiateMs": 0.23816599999999966,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51970048,
+        "childWallMs": 27.596666999999997
+      },
+      {
+        "pair": 2,
+        "label": "A",
+        "readMs": 0.13329099999999983,
+        "compileMs": 1.091125,
+        "instantiateMs": 0.2557500000000008,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 52117504,
+        "childWallMs": 27.862957999999992
+      },
+      {
+        "pair": 2,
+        "label": "B",
+        "readMs": 0.12191699999999983,
+        "compileMs": 1.009500000000001,
+        "instantiateMs": 0.22654199999999847,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51675136,
+        "childWallMs": 26.582916999999952
+      },
+      {
+        "pair": 2,
+        "label": "B",
+        "readMs": 0.12608400000000053,
+        "compileMs": 0.9933750000000003,
+        "instantiateMs": 0.2192500000000006,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51609600,
+        "childWallMs": 26.654165999999975
+      },
+      {
+        "pair": 2,
+        "label": "A",
+        "readMs": 0.1337079999999986,
+        "compileMs": 1.104458000000001,
+        "instantiateMs": 0.2426250000000003,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51970048,
+        "childWallMs": 26.587582999999995
+      },
+      {
+        "pair": 3,
+        "label": "A",
+        "readMs": 0.13625000000000043,
+        "compileMs": 1.0924169999999993,
+        "instantiateMs": 0.24433300000000102,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51986432,
+        "childWallMs": 26.930082999999968
+      },
+      {
+        "pair": 3,
+        "label": "B",
+        "readMs": 0.1247910000000001,
+        "compileMs": 1.0001249999999988,
+        "instantiateMs": 0.228333000000001,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51707904,
+        "childWallMs": 27.78145900000004
+      },
+      {
+        "pair": 3,
+        "label": "B",
+        "readMs": 0.12191699999999983,
+        "compileMs": 1.026333000000001,
+        "instantiateMs": 0.23591699999999882,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 51773440,
+        "childWallMs": 27.190499999999986
+      },
+      {
+        "pair": 3,
+        "label": "A",
+        "readMs": 0.13387499999999974,
+        "compileMs": 1.3155000000000001,
+        "instantiateMs": 0.24504099999999873,
+        "memoryBytes": 1245184,
+        "maxRssBytes": 52019200,
+        "childWallMs": 27.561958000000004
+      }
+    ]
+  },
+  "source": {
+    "sha256": "786d89fbc9fb22b79190ed93e54e235a02298efc5e40f74b97d304d183a98bfc",
+    "files": [
+      ".cargo/config.toml",
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/xyg-engine/src/arrow_geom.rs",
+      "crates/xyg-engine/src/arrow_ipc.rs",
+      "crates/xyg-engine/src/autorange.rs",
+      "crates/xyg-engine/src/chunked_columns.rs",
+      "crates/xyg-engine/src/colormap.rs",
+      "crates/xyg-engine/src/compat_layout.rs",
+      "crates/xyg-engine/src/css.rs",
+      "crates/xyg-engine/src/dashboard.rs",
+      "crates/xyg-engine/src/density_emit.rs",
+      "crates/xyg-engine/src/density_grid_materialize.rs",
+      "crates/xyg-engine/src/edge_route.rs",
+      "crates/xyg-engine/src/font.rs",
+      "crates/xyg-engine/src/geo.rs",
+      "crates/xyg-engine/src/geo_fill.rs",
+      "crates/xyg-engine/src/geo_interaction.rs",
+      "crates/xyg-engine/src/geo_layers.rs",
+      "crates/xyg-engine/src/geo_layers_protocol.rs",
+      "crates/xyg-engine/src/geo_scene.rs",
+      "crates/xyg-engine/src/geo_viewport.rs",
+      "crates/xyg-engine/src/geo_viewport_protocol.rs",
+      "crates/xyg-engine/src/geom.rs",
+      "crates/xyg-engine/src/graph.rs",
+      "crates/xyg-engine/src/graph_scale.rs",
+      "crates/xyg-engine/src/graph_scene.rs",
+      "crates/xyg-engine/src/graph_style.rs",
+      "crates/xyg-engine/src/graphforge/base.rs",
+      "crates/xyg-engine/src/graphforge/columns.rs",
+      "crates/xyg-engine/src/graphforge/compose/tests.rs",
+      "crates/xyg-engine/src/graphforge/compose.rs",
+      "crates/xyg-engine/src/graphforge/container.rs",
+      "crates/xyg-engine/src/graphforge/ledger.rs",
+      "crates/xyg-engine/src/graphforge/mod.rs",
+      "crates/xyg-engine/src/graphforge/recognize.rs",
+      "crates/xyg-engine/src/graphforge/request.rs",
+      "crates/xyg-engine/src/graphforge/scene.rs",
+      "crates/xyg-engine/src/graphforge/views.rs",
+      "crates/xyg-engine/src/hexbin.rs",
+      "crates/xyg-engine/src/jpeg.rs",
+      "crates/xyg-engine/src/kernels.rs",
+      "crates/xyg-engine/src/layout_rooms.rs",
+      "crates/xyg-engine/src/legend_fit.rs",
+      "crates/xyg-engine/src/legend_layout.rs",
+      "crates/xyg-engine/src/lib.rs",
+      "crates/xyg-engine/src/lod_plan.rs",
+      "crates/xyg-engine/src/marker_geometry.rs",
+      "crates/xyg-engine/src/packed_ticks.rs",
+      "crates/xyg-engine/src/payload_channel_materialize.rs",
+      "crates/xyg-engine/src/payload_column_gather_materialize.rs",
+      "crates/xyg-engine/src/payload_emit.rs",
+      "crates/xyg-engine/src/payload_trace_emit_materialize.rs",
+      "crates/xyg-engine/src/pdf.rs",
+      "crates/xyg-engine/src/png_encode.rs",
+      "crates/xyg-engine/src/polar.rs",
+      "crates/xyg-engine/src/projection.rs",
+      "crates/xyg-engine/src/raster.rs",
+      "crates/xyg-engine/src/sankey.rs",
+      "crates/xyg-engine/src/scene.rs",
+      "crates/xyg-engine/src/scene_annotation_splice.rs",
+      "crates/xyg-engine/src/scene_annotations.rs",
+      "crates/xyg-engine/src/scene_chrome.rs",
+      "crates/xyg-engine/src/scene_chrome_pack.rs",
+      "crates/xyg-engine/src/scene_colorbar.rs",
+      "crates/xyg-engine/src/scene_density.rs",
+      "crates/xyg-engine/src/scene_encode_assembled.rs",
+      "crates/xyg-engine/src/scene_export.rs",
+      "crates/xyg-engine/src/scene_extras.rs",
+      "crates/xyg-engine/src/scene_figure_support_materialize.rs",
+      "crates/xyg-engine/src/scene_figure_support_pack.rs",
+      "crates/xyg-engine/src/scene_heatmap.rs",
+      "crates/xyg-engine/src/scene_legend.rs",
+      "crates/xyg-engine/src/scene_pack.rs",
+      "crates/xyg-engine/src/scene_pack_orchestrate.rs",
+      "crates/xyg-engine/src/scene_polar_input_pack.rs",
+      "crates/xyg-engine/src/scene_static.rs",
+      "crates/xyg-engine/src/scene_style.rs",
+      "crates/xyg-engine/src/scene_style_sidecars.rs",
+      "crates/xyg-engine/src/scene_trace_attach.rs",
+      "crates/xyg-engine/src/scene_trace_compile.rs",
+      "crates/xyg-engine/src/scene_trace_rows.rs",
+      "crates/xyg-engine/src/scene_trace_sidecars.rs",
+      "crates/xyg-engine/src/scene_xyaf_bulk_pack.rs",
+      "crates/xyg-engine/src/scene_xyaf_pack.rs",
+      "crates/xyg-engine/src/scene_xycf_pack.rs",
+      "crates/xyg-engine/src/scene_xyta_trace_observations_materialize.rs",
+      "crates/xyg-engine/src/scene_xyta_trace_pack.rs",
+      "crates/xyg-engine/src/scene_xytc_trace_observations_materialize.rs",
+      "crates/xyg-engine/src/scene_xytc_trace_pack.rs",
+      "crates/xyg-engine/src/simd.rs",
+      "crates/xyg-engine/src/static_annotation_style.rs",
+      "crates/xyg-engine/src/static_document.rs",
+      "crates/xyg-engine/src/static_document_labels.rs",
+      "crates/xyg-engine/src/static_document_layout.rs",
+      "crates/xyg-engine/src/static_document_legend.rs",
+      "crates/xyg-engine/src/static_export_registry.rs",
+      "crates/xyg-engine/src/static_legend_fit.rs",
+      "crates/xyg-engine/src/static_panel_chrome.rs",
+      "crates/xyg-engine/src/stats.rs",
+      "crates/xyg-engine/src/stream.rs",
+      "crates/xyg-engine/src/svg.rs",
+      "crates/xyg-engine/src/temporal.rs",
+      "crates/xyg-engine/src/temporal_controller.rs",
+      "crates/xyg-engine/src/temporal_graph.rs",
+      "crates/xyg-engine/src/textblock.rs",
+      "crates/xyg-engine/src/tick_layout.rs",
+      "crates/xyg-engine/src/tile_store.rs",
+      "crates/xyg-engine/src/tiles.rs",
+      "crates/xyg-engine/src/transition.rs",
+      "crates/xyg-engine/src/webp.rs",
+      "crates/xyg-wasm/src/aggregate.rs",
+      "crates/xyg-wasm/src/bin/geo_layers_conformance.rs",
+      "crates/xyg-wasm/src/bin/geo_scene_conformance.rs",
+      "crates/xyg-wasm/src/bin/geo_viewport_conformance.rs",
+      "crates/xyg-wasm/src/bin/xyts_conformance.rs",
+      "crates/xyg-wasm/src/compile.rs",
+      "crates/xyg-wasm/src/compound.rs",
+      "crates/xyg-wasm/src/dashboard.rs",
+      "crates/xyg-wasm/src/geo.rs",
+      "crates/xyg-wasm/src/graph.rs",
+      "crates/xyg-wasm/src/graphforge.rs",
+      "crates/xyg-wasm/src/lib.rs",
+      "crates/xyg-wasm/src/temporal.rs",
+      "crates/xyg-wasm/src/temporal_graph.rs",
+      "crates/xyg-wasm/src/ticks.rs",
+      "crates/xyg-wasm/src/typed_series_abi_generated.rs",
+      "js/optimize-wasm.mjs",
+      "package-lock.json"
+    ],
+    "integrationSha256": "5dc5b1259af850d70e8488f00491ec1bc27d153dd63b3b96cc7581efd7ccc535",
+    "integrationHashAlgorithm": "SHA256 of each listed UTF-8 path, NUL, file bytes, NUL in listed order",
+    "integrationNote": "After measurement, test-only version/draw-limit assertions, build-gate validation and root dev-only MapLibre fixture/transitive security fixes changed. A fresh standard source build and pinned packaging produced the exact measured candidate SHA256 again; the measured source hash above is preserved."
+  },
+  "build": {
+    "rust": "1.96.0",
+    "optLevel": 3,
+    "lto": "fat",
+    "codegenUnits": 1,
+    "baselineInlineThreshold": 150,
+    "candidateInlineThreshold": 100,
+    "binaryen": "132.0.0",
+    "binaryenCommand": [
+      "-O3",
+      "--all-features"
+    ],
+    "nativeUnchanged": true,
+    "gateBytes": 1048576
+  },
+  "scope": {
+    "datasets": "Synthetic deterministic Arrow GraphForge contracts, geographic points; not production GraphForge algorithm execution.",
+    "scales": [
+      100,
+      10000,
+      100000
+    ],
+    "interaction100k": "Both artifacts reject with XYG_GEO_RESOURCE_LIMIT under the unchanged 384MiB processor peak policy. This is admission evidence, not a measured interaction latency.",
+    "unmeasured": [
+      "browser startup/transport/upload/paint",
+      "browser/native process-tree peak RSS",
+      "massive sources",
+      "multi-chart performance"
+    ],
+    "startup": "Fresh Node process per sample; cold compile, instantiation, process wall and process maxRSS; not browser startup."
+  },
+  "reproduction": [
+    "uv run python benchmarks/gen_wasm_profile_inputs.py --out /tmp/xyg-m6-profile-inputs --sizes 100,10000,100000",
+    "CARGO_TARGET_DIR=/tmp/xyg-geolayers-final150 RUSTFLAGS=\"-C llvm-args=--inline-threshold=150\" cargo build --release -p xyg-wasm --target wasm32-unknown-unknown --lib",
+    "cargo build --release -p xyg-wasm --target wasm32-unknown-unknown --lib",
+    "node js/package-wasm.mjs",
+    "XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.dylib\" node benchmarks/bench_wasm_profiles.mjs /tmp/xyg-geolayers-final150/wasm32-unknown-unknown/release/xyg_wasm.wasm packages/xy-client/dist/xyg-wasm.wasm /tmp/xyg-m6-profile-inputs /tmp/xyg-profile.json",
+    "node benchmarks/bench_wasm_startup.mjs /tmp/xyg-geolayers-final150/wasm32-unknown-unknown/release/xyg_wasm.wasm packages/xy-client/dist/xyg-wasm.wasm /tmp/xyg-startup.json"
+  ]
+}

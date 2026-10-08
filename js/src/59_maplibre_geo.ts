@@ -6,6 +6,8 @@ import { withExternalGLState } from "./43_external_gl";
  * never imported, downloaded, or configured by the XYG client. */
 export interface GeoMapShell {
   getCanvas(): HTMLCanvasElement;
+  /** Container for Rust-final SVG/DOM labels and legends. */
+  getContainer?(): HTMLElement;
   triggerRepaint(): void;
   on?(type: string, listener: (event: unknown) => void): unknown;
   off?(type: string, listener: (event: unknown) => void): unknown;
@@ -27,7 +29,9 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
   let map: GeoMapShell | null = null, gl: WebGL2RenderingContext | null = null;
   let view: XygWasmSceneView | null = null;
   let disposed = false;
-  const holder = document.createElement("div"); // Detached mark bookkeeping, never an overlay.
+  const holder = document.createElement("div");
+  holder.style.cssText="position:absolute;inset:0;pointer-events:none;";
+  holder.dataset.xyGeoDecorations=options.id;
   const cameraEvent = (event: unknown) => options.onCameraEvent?.(event);
   const viewportMatches = () => view && gl && view.canvas.width === gl.drawingBufferWidth
     && view.canvas.height === gl.drawingBufferHeight;
@@ -50,11 +54,17 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
     const nextHolder = document.createElement("div");
     const candidate = withExternalGLState(gl, () => hydrateWasmPainter(nextHolder, next,
       { workerPrepareMs: 0 }, { gl, pixelRatio: ratio, requestRepaint: () => map?.triggerRepaint() }));
+    // Scheduling is an application callback and may throw. Keep the prior
+    // Scene alive until it succeeds, and release the uncommitted candidate.
+    try { map.triggerRepaint(); }
+    catch (error) {
+      withExternalGLState(gl, () => candidate.destroy());
+      throw error;
+    }
     releaseView();
     holder.replaceChildren(nextHolder);
     prepared = next;
     view = candidate;
-    map.triggerRepaint();
   };
   const lost = () => releaseView();
   const restored = () => { if (map && !disposed) replace(prepared); };
@@ -64,7 +74,7 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
     map.getCanvas().removeEventListener("webglcontextrestored", restored);
     map.off?.("move", cameraEvent);
     releaseView();
-    holder.replaceChildren();
+    holder.replaceChildren(); holder.remove();
     map = null; gl = null;
   };
   return {
@@ -79,6 +89,8 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
       map = owner; gl = context;
       try {
         replace(prepared);
+        const container=owner.getContainer?.() ?? owner.getCanvas().parentElement;
+        if (container) container.appendChild(holder);
         owner.getCanvas().addEventListener("webglcontextlost", lost);
         owner.getCanvas().addEventListener("webglcontextrestored", restored);
         owner.on?.("move", cameraEvent);

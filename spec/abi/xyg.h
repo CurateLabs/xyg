@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 380
-#define XYG_ABI_SIGNATURE_SHA256 "114509676368ee046eb03fa663458488c296c348087147ed453c752be342aa19"
+#define XYG_ABI_VERSION 381
+#define XYG_ABI_SIGNATURE_SHA256 "c3fda0f09b9da1ef81ab859a1ad9f275f0511b9c64822c00556347f89aa2b194"
 
 #ifdef __cplusplus
 extern "C" {
@@ -133,6 +133,7 @@ int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
 int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out);
+int32_t xyg_geo_catalog_compile(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 int32_t xyg_geo_column_copy(uint64_t handle, double * out_xy, size_t xy_cap, uint8_t * out_validity, size_t validity_cap, uint64_t * out_ids, size_t ids_cap, uint32_t * out_o0, size_t o0_cap, uint32_t * out_o1, size_t o1_cap, uint32_t * out_o2, size_t o2_cap, uint8_t * out_orient, size_t orient_cap);
 uint32_t xyg_geo_column_crs(uint64_t handle);
 int32_t xyg_geo_column_free(uint64_t handle);

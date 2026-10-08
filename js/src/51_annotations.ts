@@ -402,7 +402,7 @@ Object.assign(ChartView.prototype, {
         const strokeWidth = Math.max(
           0,
           itemStyle && itemStyle[2] >= 0
-            ? itemStyle[2] / this.dpr
+            ? itemStyle[2] / (g._styleCss ? 1 : this.dpr)
             : Number(style.stroke_width) || 0,
         );
         let strokeRgba = g.pointStroke || rgba;

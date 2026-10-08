@@ -335,7 +335,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (31).to_bytes(4, "little")
+    assert encoded[4:8] == (32).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -355,7 +355,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[4:8] == (32).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -1191,15 +1191,16 @@ def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers()
     assert figure.to_svg() == document_svg(figure)
 
     painter = _native.scene_browser_painter(scene)
-    assert int.from_bytes(painter[20:24], "little") == 19
-    header_bytes = int.from_bytes(painter[12:16], "little")
-    descriptor_bytes = int.from_bytes(painter[16:20], "little")
-    for code in range(19):
-        descriptor = header_bytes + code * descriptor_bytes
-        assert painter[descriptor] == 0
-        assert painter[descriptor + 1] == code
-        stroke_width = np.frombuffer(painter[descriptor + 40 : descriptor + 44], dtype="<f4")[0]
-        assert stroke_width == (1.0 if code >= 15 else 0.0)
+    assert int.from_bytes(painter[20:24], "little") == 1
+    descriptor = int.from_bytes(painter[12:16], "little")
+    assert painter[descriptor] == 8
+    assert int.from_bytes(painter[descriptor + 4 : descriptor + 8], "little") == 19
+    style_offset = int.from_bytes(painter[descriptor + 60 : descriptor + 64], "little")
+    instance_styles = np.frombuffer(
+        painter[style_offset : style_offset + 19 * 16], dtype="<f4"
+    ).reshape(19, 4)
+    assert instance_styles[:, 3].tolist() == list(range(19))
+    assert instance_styles[:, 2].tolist() == [0.0] * 15 + [1.0] * 4
     assert b"XYLG" in painter
 
 
@@ -1226,16 +1227,12 @@ def test_public_triangle_mesh_matches_exact_cross_host_scene_and_consumers() -> 
 
     painter = _native.scene_browser_painter(scene)
     header_bytes = int.from_bytes(painter[12:16], "little")
-    descriptor_bytes = int.from_bytes(painter[16:20], "little")
-    assert int.from_bytes(painter[20:24], "little") == 2
+    assert int.from_bytes(painter[20:24], "little") == 1
+    assert painter[header_bytes] == 7
+    assert int.from_bytes(painter[header_bytes + 4 : header_bytes + 8], "little") == 2
     plot_left = np.frombuffer(painter[32:36], dtype="<f4")[0]
-    for group in range(2):
-        descriptor = header_bytes + group * descriptor_bytes
-        assert painter[descriptor] == 4
-        assert int.from_bytes(painter[descriptor + 4 : descriptor + 8], "little") == 3
-        if group == 0:
-            x_offset = int.from_bytes(painter[descriptor + 8 : descriptor + 12], "little")
-            assert np.frombuffer(painter[x_offset : x_offset + 4], dtype="<f4")[0] < plot_left
+    x_offset = int.from_bytes(painter[header_bytes + 8 : header_bytes + 12], "little")
+    assert np.frombuffer(painter[x_offset : x_offset + 4], dtype="<f4")[0] < plot_left
     assert b"XYLG" in painter
 
 
@@ -1244,7 +1241,7 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     boundary = _public_triangle_mesh(1024)
     assert scene_export_support_reason(boundary) is None
     painter = _native.scene_browser_painter(figure_scene(boundary))
-    assert int.from_bytes(painter[20:24], "little") == 1024
+    assert int.from_bytes(painter[20:24], "little") == 1
     assert (
         scene_export_support_reason(_public_triangle_mesh(1025))
         == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"

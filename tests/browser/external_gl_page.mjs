@@ -24,6 +24,9 @@ try {
     assert(Array.from(rgba).every((v,i)=>v===legacy[i]),`legacy alpha proof differs: ${rgba}`);
     alphaPixels.push({resolved:expected,legacy});ordinary.destroy();host.remove();
   }
+  const replacementScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest(
+    {...source,featureIds:BigUint64Array.of(7n)},camera)).result;
+  const replacementPrepared=await worker.prepareScene(replacementScene).result;
   const canvas = document.createElement("canvas");canvas.width=800;canvas.height=600;document.body.append(canvas);
   const gl=canvas.getContext("webgl2",{preserveDrawingBuffer:true,antialias:false});assert(gl,"WebGL2 required");
   const caps=[gl.BLEND,gl.CULL_FACE,gl.DEPTH_TEST,gl.STENCIL_TEST,gl.SCISSOR_TEST,gl.POLYGON_OFFSET_FILL,gl.RASTERIZER_DISCARD,gl.SAMPLE_ALPHA_TO_COVERAGE,gl.SAMPLE_COVERAGE,gl.DITHER];
@@ -104,6 +107,27 @@ try {
   for(const [method,original] of resourceMethods)gl[method]=original;
   assert(pending.size===0,"failed upload leaked owned GL objects");
   unchanged("surviving draw",()=>layer.render(gl,{}));assert(unchanged("surviving pick",()=>layer.pick(400,300))===id,"failed upload replaced the prior scene");
+  const callbackLeaks=new Set(),callbackMethods=[];
+  for(const kind of ["Buffer","Texture","Framebuffer","VertexArray","Program","Shader"]){
+    for(const prefix of ["create","delete"]){
+      const method=prefix+kind,original=gl[method];callbackMethods.push([method,original]);
+      gl[method]=function(...args){const result=original.apply(this,args);if(prefix==="create"&&result)callbackLeaks.add(result);if(prefix==="delete")callbackLeaks.delete(args[0]);return result;};
+    }
+  }
+  const originalRepaint=shell.triggerRepaint;
+  shell.triggerRepaint=()=>{throw Error("injected repaint failure");};
+  const repaintFails=action=>unchanged("failed repaint",()=>{try{action();throw Error("repaint failure missing");}catch(error){assert(error.message==="injected repaint failure",`wrong repaint failure: ${error.message}`);}});
+  repaintFails(()=>layer.setPrepared(replacementPrepared));
+  assert(callbackLeaks.size===0,"failed repaint leaked candidate GL objects");
+  assert(unchanged("prior scene after repaint failure",()=>layer.pick(400,300))===id,"failed repaint replaced the prior scene");
+  const mountFailure=createMapLibreGeoLayer({id:"failed-mount",prepared:replacementPrepared});
+  repaintFails(()=>mountFailure.onAdd(shell,gl));
+  assert(callbackLeaks.size===0,"failed initial repaint leaked candidate GL objects");
+  shell.triggerRepaint=originalRepaint;
+  for(const[method,original]of callbackMethods)gl[method]=original;
+  const beforeSchedule=scheduled;
+  unchanged("successful replacement after repaint failure",()=>layer.setPrepared(prepared));
+  assert(scheduled===beforeSchedule+1,"borrowed constructor scheduled an extra repaint");
   listeners.get("move")?.({});assert(moves===1,"camera event not forwarded");
   unchanged("destruction",()=>layer.onRemove());assert(!gl.isContextLost()&&listeners.size===0&&extraContexts===0,"removal damaged the shell or leaked listener");
   assert(Array.from(gl.getUniform(foreignProgram,ownerUniform)).every((v,i)=>Math.abs(v-[.2,.3,.4,.5][i])<1e-6),"owner program uniforms changed");
@@ -136,5 +160,5 @@ try {
   // Picking uses only its own FBO; the prior color frame remains intact.
   assert(mapPixel(400,300)[0]>240&&mapPixel(10,10)[1]>240,"actual MapLibre basemap/mark pixels failed");
   map.removeLayer(mapLayer.id);assert(!mapGl.isContextLost()&&extraContexts===0,"actual MapLibre removal damaged context");map.remove();HTMLCanvasElement.prototype.getContext=realGet;
-  worker.dispose();window.__externalGL={ok:true,stateChecks:checked,extraContexts,fullU64Pick:true,errorRestore:true,failedUploadResources:pending.size,lostRemoval:true,ownerRestore:true,maplibre:"6.13.0",mapFrames:frames,strictCsp:true,alphaPixels};
+  worker.dispose();window.__externalGL={ok:true,stateChecks:checked,extraContexts,fullU64Pick:true,errorRestore:true,failedUploadResources:pending.size,failedRepaintResources:callbackLeaks.size,repaintFailurePreservesScene:true,lostRemoval:true,ownerRestore:true,maplibre:"6.13.0",mapFrames:frames,strictCsp:true,alphaPixels};
 }catch(error){window.__externalGL={ok:false,message:error.message,stack:error.stack};}

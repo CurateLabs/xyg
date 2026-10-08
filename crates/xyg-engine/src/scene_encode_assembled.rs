@@ -1073,7 +1073,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 31);
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            crate::scene::SCENE_VERSION
+        );
         let expected = cartesian_scene_margins(CartesianLayoutRequest {
             viewport_width: 400.0,
             viewport_height: 300.0,

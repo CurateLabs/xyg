@@ -17,7 +17,7 @@ supplies its own map object to `map.addLayer(layer)`. `prepared` is the existing
 - `render(gl, options)` paints only when the map schedules a frame. It paints
   into the incoming draw framebuffer without clearing its color/depth/stencil.
 - `setPrepared(prepared)` replaces the Scene transactionally and requests a
-  map repaint. Failed validation/upload retains the previous Scene.
+  map repaint. Failed validation/upload or repaint scheduling retains the previous Scene.
 - `pick(cssX, cssY)` uses the existing direct-point pick framebuffer and returns
   the full Rust source identity as `bigint`, or `null`. Polygon/line policy
   interaction is not provided by this point-pick method.
@@ -30,12 +30,12 @@ supplies its own map object to `map.addLayer(layer)`. `prepared` is the existing
 The Rust viewport dimensions must match the drawing buffer through a uniform
 pixel ratio, allowing one device pixel of CSS size rounding. An owner resize
 suppresses stale paint/picks until a matching replacement is prepared.
-The Scene must use a full viewport and GL marks without DOM
-decorations; labels, legends, colorbars, annotations, or padded chart layouts
-are explicitly rejected. Separate geographic decoration/interaction and camera
-policy remain requirements of #49/#48. This shell alone does not close them.
-
-The internal DOM stays detached and provides existing mark bookkeeping only.
+The Scene uses a full viewport. Rust-final labels and resolved SVG legends
+attach to the optional `map.getContainer()` (or the canvas's parent) in a
+pointer-transparent DOM holder. Their coordinates, swatches, text and source
+identities come directly from Scene sidecars; no host layout/projection runs.
+Title/colorbar/annotation decorations and padded chart layouts fail closed.
+The detached bookkeeping canvases are removed before the holder is attached.
 No displayed overlay canvas, second WebGL context, resize observer, chart
 gestures, independent animation frame, or context-governor registration is
 created for a borrowed surface. Only the owner may resize or lose its canvas.
@@ -73,18 +73,15 @@ XYG supplies and restores the remaining state it needs.
 ## Reproduction and bounded evidence
 
 The product never imports MapLibre or fetches a CDN. The test supplies the
-official npm package, pinned to 6.13.0, from an isolated local directory. Keep
+official npm package, pinned to 6.13.0 as a root build/test devDependency, from a local directory. Keep
 its BSD-3-Clause `LICENSE.txt` with any redistributed fixture. The test package
-is not part of the default bundle or dependency manifest.
+is not part of the shipped client bundle or runtime dependency manifest. CI installs it through the lockfile, then serves its local files under strict CSP.
 
 ```sh
 npm ci
 node js/build.mjs
 npm run build:wasm
-mkdir -p /tmp/xyg-maplibre613
-npm pack maplibre-gl@6.13.0 --pack-destination /tmp/xyg-maplibre613
-tar -xzf /tmp/xyg-maplibre613/maplibre-gl-6.13.0.tgz -C /tmp/xyg-maplibre613
-XYG_MAPLIBRE_DIST=/tmp/xyg-maplibre613/package/dist \
+XYG_MAPLIBRE_DIST="$PWD/node_modules/maplibre-gl/dist" \
   XYG_CHROMIUM=/path/to/chromium node tests/browser/external_gl_test.mjs
 ```
 
@@ -93,7 +90,10 @@ without changing the product export entry. It serves only local ESM/worker/WASM
 assets under strict CSP (`worker-src 'self'`, no blob/eval/CDN). The real Chromium
 WebGL2 probe asserts hostile owner state survives construction, paint, picks,
 replacement, upload failures, callback exceptions, teardown and owner context
-restoration. Failed uploads leave no allocated XYG objects. Separate foreign
+restoration. Failed uploads and repaint callbacks leave no allocated candidate
+XYG objects; a failed replacement preserves the prior Scene and its literal
+source picks. Borrowed construction does not schedule a repaint; the shell
+replacement schedules once before committing its candidate. Separate foreign
 draw/read/default targets prove XYG paints the supplied target and preserves
 basemap pixels. An actual MapLibre blank green map proves its scheduling,
 same-context mark paint, source picks and removal without network map assets.
@@ -107,3 +107,26 @@ worker 508,314 raw (144,092 gzip), and its shared module empty. These costs are
 borne by applications choosing MapLibre; XYG adds none of them to its bundle.
 This is ownership/correctness evidence, not a geographic scale/performance
 benchmark, pitched-camera proof, or polygon interaction/decoration proof.
+
+The XYPB v15 primitive/image proof is separate from the worker lifecycle probe:
+
+```sh
+XYG_M6_PAINTER_FIXTURE=/tmp/xyg-m6-painter.bin \
+  cargo test -p xyg-engine triangle_batch_and_image
+XYG_PAINTER_FIXTURE=/tmp/xyg-m6-painter.bin \
+  XYG_MAPLIBRE_DIST=/tmp/xyg-maplibre613/package/dist \
+  XYG_CHROMIUM=/path/to/chromium node tests/browser/geo_painter_test.mjs
+```
+
+The Rust fixture exports both GL-only and decorated painter frames. It checks
+native opaque/half-alpha tessellation coverage and off-endpoint round caps at
+DPR 1 and 2. Native pixels use straight-alpha RGBA, while GL readback uses
+premultiplied RGBA; both proofs assert the exact corresponding colors and alpha.
+The real Chromium proof additionally asserts an empty
+polygon hole, top-first RGBA image bytes, unchanged CSS style rows, a two-pixel
+marker source pick, 16 malformed metadata controls, and zero allocations after
+an injected image-upload failure. Actual local MapLibre 6.13 consumes the
+Rust label and resolved SVG legend while preserving basemap pixels; its
+container contains exactly one canvas and removal detaches the decoration DOM.
+The Rust scale proof admits 10,000 varied markers and 10,000 explicit segments
+in two traces, preserving the byte admission ceiling.

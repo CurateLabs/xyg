@@ -371,3 +371,12 @@ export type { XygGeoDescriptor, XygFrozenGeoScene } from "./49_wasm_geo";
 
 export { GEO_VIEWPORT_OPERATIONS, encodeGeoViewportRequest, encodeGeoViewportColumnRequest, decodeGeoViewportResponse } from "./49_wasm_geoviewport";
 export type { XygGeoCamera } from "./49_wasm_geoviewport";
+
+export { encodeGeoCatalogRequest, decodeGeoCatalogResponse } from "./61_geo_catalog";
+export type { XygGeoCatalogRequest, XygGeoCatalogLayer, XygGeoStylePatch } from "./61_geo_catalog";
+export { createMapLibreGeoLayer } from "./59_maplibre_geo";
+export type { GeoMapShell, MapLibreGeoLayerOptions } from "./59_maplibre_geo";
+
+export { XygGeographicChart } from "./62_geographic_controller";
+export type { GeographicChartOptions } from "./62_geographic_controller";
+export type { XygGeoInteractionEvent } from "./61_geo_catalog";

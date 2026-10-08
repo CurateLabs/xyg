@@ -3191,6 +3191,78 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_layers.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_layers_protocol.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_interaction.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/marker_geometry.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-wasm/src/bin/geo_layers_conformance.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "policy": "rust-wasm-abi",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
+      "path": "python/xyg/_geocatalog.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "packages/xy-node/src/geocatalog.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "js/src/61_geo_catalog.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "js/src/62_geographic_controller.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     }
   ]
 }

@@ -37,6 +37,18 @@ pub(super) fn execute_viewport(
     })
 }
 
+pub(super) fn execute_catalog(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_layers_protocol::execute(request, budget)
+            .map_err(|error| (error.code(), error == GeoError::ResourceLimit))
+    })
+}
+
 // One lifecycle body serves all geographic processors. Only the bounded
 // request-level dispatch is indirect; Rust geometry loops retain normal O3.
 type GeoProcessor = fn(&[u8], usize) -> Result<Vec<u8>, (&'static str, bool)>;
@@ -150,6 +162,71 @@ mod tests {
         request[104..112].copy_from_slice(&(descriptor.len() as u64).to_le_bytes());
         request.extend(descriptor);
         request
+    }
+    #[test]
+    fn catalog_output_resource_cancel_recovery_and_dispose() {
+        let descriptor = point_request(2);
+        let mut request = vec![0u8; 512];
+        request[..4].copy_from_slice(b"XYLK");
+        for (at, n) in [(4, 1u32), (8, 1), (16, 4326), (136, 1)] {
+            request[at..at + 4].copy_from_slice(&n.to_le_bytes());
+        }
+        for (at, n) in [(48, 800f64), (56, 600f64)] {
+            request[at..at + 8].copy_from_slice(&n.to_le_bytes());
+        }
+        request[392..400].copy_from_slice(&(descriptor.len() as u64).to_le_bytes());
+        request.extend_from_slice(&descriptor);
+        let h = xyg_wasm_instance_new(8 << 20);
+        stage(h, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 1, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(h, |i| {
+            assert_eq!(&i.output[..4], b"XYLM");
+            assert_eq!(i.arena.capacity(), 0);
+        })
+        .unwrap();
+        stage(h, &request);
+        assert_eq!(crate::xyg_wasm_cancel(h, 2), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 2, 0, request.len()),
+            STATUS_CANCELLED
+        );
+        stage(h, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 3, 0, request.len()),
+            STATUS_OK
+        );
+        let mut bad = request.clone();
+        bad[96] = 1;
+        stage(h, &bad);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 4, 0, bad.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(h, |i| {
+            assert_eq!(i.arena.capacity(), 0);
+            assert_eq!(i.output.capacity(), 0);
+        })
+        .unwrap();
+        stage(h, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 5, 0, request.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 6, 0, request.len()),
+            crate::STATUS_INVALID_HANDLE
+        );
+        let h = xyg_wasm_instance_new(65536);
+        stage(h, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_catalog_compile(h, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
     }
     #[test]
     fn scene_output_resource_cancel_recovery_and_dispose_are_atomic() {

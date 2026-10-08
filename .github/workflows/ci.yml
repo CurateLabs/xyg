@@ -163,8 +163,8 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs
-          cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance
-          node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs
+          cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance
+          node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs
 
       - name: JS parses (ESM + IIFE)
         run: |
@@ -416,6 +416,7 @@ jobs:
         run: |
           npm ci
           node js/build.mjs
+          node --test js/test/package-wasm-contract.test.mjs
           node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
       - name: Install Chromium
         timeout-minutes: 10
@@ -429,6 +430,20 @@ jobs:
       - name: Strict-CSP GeoColumn ingestion smoke
         timeout-minutes: 10
         run: node scripts/geo_wasm_smoke.mjs
+      - name: Geographic catalog and controller lifecycle
+        timeout-minutes: 10
+        run: |
+          node scripts/geo_catalog_wasm_smoke.mjs
+          node scripts/geo_controller_wasm_smoke.mjs
+      - name: Geographic painter and borrowed MapLibre context
+        timeout-minutes: 10
+        run: |
+          export XYG_MAPLIBRE_DIST="$GITHUB_WORKSPACE/node_modules/maplibre-gl/dist"
+          export XYG_M6_PAINTER_FIXTURE="$RUNNER_TEMP/xyg-m6-painter.bin"
+          export XYG_PAINTER_FIXTURE="$XYG_M6_PAINTER_FIXTURE"
+          cargo test -p xyg-engine triangle_batch_and_image
+          node tests/browser/geo_painter_test.mjs
+          node tests/browser/external_gl_test.mjs
       - name: Strict-CSP GraphForge composition smoke
         timeout-minutes: 10
         run: node scripts/graphforge_wasm_smoke.mjs

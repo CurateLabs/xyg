@@ -22,7 +22,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 30;
+pub const WASM_ABI_VERSION: u32 = 31;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -94,6 +94,20 @@ pub extern "C" fn xyg_wasm_geo_viewport_execute(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         geo::execute_viewport(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Execute one bounded typed geographic catalog request with shared native semantics.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_catalog_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute_catalog(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
@@ -1708,7 +1722,8 @@ mod tests {
         typed_series_points(1)
     }
 
-    fn fragmented_typed_series(series_count: usize) -> Vec<u8> {
+    fn fragmented_typed_series(series_count: usize, kind: u32) -> Vec<u8> {
+        let vertices = if kind == compile::KIND_LINE { 2u32 } else { 1 };
         let data_start =
             compile::COMPILE_HEADER_BYTES + series_count * compile::SERIES_DESCRIPTOR_BYTES;
         let mut out = vec![0u8; data_start];
@@ -1717,7 +1732,7 @@ mod tests {
         out[8..12].copy_from_slice(&(compile::COMPILE_HEADER_BYTES as u32).to_le_bytes());
         out[12..16].copy_from_slice(&3u32.to_le_bytes());
         out[16..20].copy_from_slice(&(series_count as u32).to_le_bytes());
-        out[20..24].copy_from_slice(&(series_count as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&((series_count as u32) * vertices).to_le_bytes());
         for (offset, value) in [
             (40, 100.0f64),
             (48, 80.0),
@@ -1736,9 +1751,11 @@ mod tests {
         for series_index in 0..series_count {
             let descriptor =
                 compile::COMPILE_HEADER_BYTES + series_index * compile::SERIES_DESCRIPTOR_BYTES;
+            out[descriptor + compile::DESCRIPTOR_KIND..descriptor + compile::DESCRIPTOR_KIND + 4]
+                .copy_from_slice(&kind.to_le_bytes());
             out[descriptor + compile::DESCRIPTOR_RECORD_COUNT
                 ..descriptor + compile::DESCRIPTOR_RECORD_COUNT + 4]
-                .copy_from_slice(&1u32.to_le_bytes());
+                .copy_from_slice(&vertices.to_le_bytes());
             out[descriptor + compile::DESCRIPTOR_DIAMETER
                 ..descriptor + compile::DESCRIPTOR_DIAMETER + 8]
                 .copy_from_slice(&f64::NAN.to_le_bytes());
@@ -1747,15 +1764,19 @@ mod tests {
                 .copy_from_slice(&f64::NAN.to_le_bytes());
             out[descriptor + compile::DESCRIPTOR_X..descriptor + compile::DESCRIPTOR_X + 4]
                 .copy_from_slice(&(column_offset as u32).to_le_bytes());
-            column_offset += 8;
+            column_offset += vertices as usize * 8;
             out[descriptor + compile::DESCRIPTOR_Y..descriptor + compile::DESCRIPTOR_Y + 4]
                 .copy_from_slice(&(column_offset as u32).to_le_bytes());
-            column_offset += 8;
+            column_offset += vertices as usize * 8;
         }
         for series_index in 0..series_count {
             let value = (series_index as f64 + 0.5) / series_count as f64;
-            out.extend_from_slice(&value.to_le_bytes());
-            out.extend_from_slice(&value.to_le_bytes());
+            for _ in 0..2 {
+                out.extend_from_slice(&value.to_le_bytes());
+                if vertices == 2 {
+                    out.extend_from_slice(&(value * 0.5).to_le_bytes());
+                }
+            }
         }
         out
     }
@@ -1792,11 +1813,17 @@ mod tests {
         };
         let handle = xyg_wasm_instance_new(64 << 20);
         for bytes in [
-            request(&["pagerank", "louvain", "node_similarity", "dijkstra"], true),
+            request(
+                &["pagerank", "louvain", "node_similarity", "dijkstra"],
+                true,
+            ),
             request(&["pagerank"], false),
         ] {
             write_arena(handle, &bytes);
-            assert_eq!(xyg_wasm_graphforge_compose(handle, 0, bytes.len()), STATUS_OK);
+            assert_eq!(
+                xyg_wasm_graphforge_compose(handle, 0, bytes.len()),
+                STATUS_OK
+            );
             let wasm = with_instance_mut(handle, |instance| instance.output.clone()).unwrap();
             let mut native_handle = 0u64;
             let status = unsafe {
@@ -1807,14 +1834,24 @@ mod tests {
             unsafe { xyg_core::xyg_graphforge_document_len(native_handle, &mut len) };
             let mut native = vec![0u8; len as usize];
             unsafe {
-                xyg_core::xyg_graphforge_document_copy(native_handle, native.as_mut_ptr(), native.len());
+                xyg_core::xyg_graphforge_document_copy(
+                    native_handle,
+                    native.as_mut_ptr(),
+                    native.len(),
+                );
                 xyg_core::xyg_graphforge_document_destroy(native_handle);
             }
             assert_eq!(wasm, native);
         }
-        assert_eq!(xyg_wasm_graphforge_composition_version(), xyg_core::xyg_graphforge_composition_version());
+        assert_eq!(
+            xyg_wasm_graphforge_composition_version(),
+            xyg_core::xyg_graphforge_composition_version()
+        );
         // Staging is single-use and a bad range fails without output.
-        assert_eq!(xyg_wasm_graphforge_compose(handle, 0, 64), STATUS_INVALID_ARGUMENT);
+        assert_eq!(
+            xyg_wasm_graphforge_compose(handle, 0, 64),
+            STATUS_INVALID_ARGUMENT
+        );
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
@@ -1934,28 +1971,38 @@ mod tests {
         assert_eq!(xyg_wasm_instance_dispose(bounded), STATUS_OK);
     }
 
-    fn fragmented_scene(count: usize) -> Vec<u8> {
+    fn fragmented_scene(count: usize, kind: scene::SceneRecordKind) -> Vec<u8> {
         let layout = scene::PlotLayout::new(100.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap();
         let x = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 10.0, 90.0, 1.0, false)
             .unwrap();
         let y = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false)
             .unwrap();
-        let coordinates = vec![0.5; count];
-        let zeros = vec![0.0; count];
-        let symbols: Vec<u8> = (0..count).map(|index| (index % 2) as u8).collect();
+        let scatter = kind == scene::SceneRecordKind::Scatter;
+        let vertices = if scatter { 1 } else { 2 };
+        let records = count * vertices;
+        let coordinates: Vec<f64> = (0..records)
+            .map(|index| if scatter || index % 2 == 0 { 0.5 } else { 0.75 })
+            .collect();
+        let zeros = vec![0.0; records];
+        let symbols: Vec<u8> = (0..records)
+            .map(|index| if scatter { (index % 2) as u8 } else { 0 })
+            .collect();
+        let ids: Vec<u64> = (0..records)
+            .map(|index| (index / vertices) as u64)
+            .collect();
         scene::SceneBatch::new(
             layout,
             1,
             2,
             x,
             y,
-            &vec![0; count],
-            &vec![7; count],
-            &vec![0; count],
+            &vec![kind as u8; records],
+            &ids,
+            &vec![0; records],
             &[1, 2, 3, 255],
-            &[0, 0, 0, 0],
-            &[0.0],
-            &vec![4.0; count],
+            &[1, 2, 3, 255],
+            &[if scatter { 0.0 } else { 1.5 }],
+            &vec![if scatter { 4.0 } else { 0.0 }; records],
             &symbols,
             &coordinates,
             &coordinates,
@@ -2507,9 +2554,15 @@ mod tests {
         write_arena(handle, &bytes);
         assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
         assert_ne!(xyg_wasm_output_ptr(handle), 0);
-        assert_eq!(xyg_wasm_output_len(handle), 494);
+        let expected = scene::SceneDocument::decode(&bytes)
+            .unwrap()
+            .to_browser_painter(4096)
+            .unwrap();
+        let painter_len = expected.len();
+        assert_eq!(xyg_wasm_output_len(handle), painter_len);
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         with_instance_mut(handle, |instance| {
+            assert_eq!(instance.output, expected);
             assert_eq!(&instance.output[..4], b"XYPB");
             assert_eq!(
                 u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
@@ -2519,23 +2572,43 @@ mod tests {
                 u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
                 1
             );
+            let descriptor = scene::BROWSER_PAINTER_HEADER_BYTES;
+            let planes = descriptor + scene::BROWSER_PAINTER_TRACE_BYTES;
+            let word = |at| u32::from_le_bytes(instance.output[at..at + 4].try_into().unwrap());
+            let float = |at| f32::from_le_bytes(instance.output[at..at + 4].try_into().unwrap());
+            assert_eq!(instance.output[descriptor], 8);
+            assert_eq!(word(descriptor + 4), 1);
+            for (slot, delta) in [
+                (8, 0),
+                (12, 4),
+                (16, 8),
+                (24, 12),
+                (28, 16),
+                (48, 20),
+                (52, 24),
+                (56, 28),
+                (60, 32),
+            ] {
+                assert_eq!(word(descriptor + slot) as usize, planes + delta);
+            }
+            assert_eq!(float(planes), 50.0);
+            assert_eq!(float(planes + 4), 40.0);
+            assert_eq!(word(planes + 8), 0); // Rust style owner
+            assert_eq!(word(planes + 12), 7);
+            assert_eq!(word(planes + 16), 0);
+            assert_eq!(float(planes + 20), 8.0); // Raw CSS diameter
+            assert_eq!(&instance.output[planes + 24..planes + 28], &[1, 2, 3, 255]);
+            assert_eq!(&instance.output[planes + 28..planes + 32], &[0; 4]);
             assert_eq!(
-                u32::from_le_bytes(
-                    instance.output[scene::BROWSER_PAINTER_HEADER_BYTES
-                        + scene::BROWSER_PAINTER_TRACE_BYTES
-                        + 8
-                        ..scene::BROWSER_PAINTER_HEADER_BYTES
-                            + scene::BROWSER_PAINTER_TRACE_BYTES
-                            + 12]
-                        .try_into()
-                        .unwrap()
-                ),
-                7
+                [
+                    float(planes + 32),
+                    float(planes + 36),
+                    float(planes + 40),
+                    float(planes + 44)
+                ],
+                [1.0, -1.0, 0.0, 0.0]
             );
-            assert_eq!(
-                u32::from_le_bytes(instance.output[340..344].try_into().unwrap()),
-                0
-            );
+            assert_eq!(word(56) as usize, planes + 48);
             assert_eq!(
                 u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
                 3
@@ -2573,6 +2646,32 @@ mod tests {
         assert!(xyg_wasm_output_len(handle) > 0);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
         assert_eq!(xyg_wasm_output_len(handle), 0);
+
+        // One byte is a real admission boundary, independent of style batching.
+        assert!(bytes.len() < painter_len);
+        for (budget, status) in [
+            (painter_len, STATUS_OK),
+            (painter_len - 1, STATUS_RESOURCE_LIMIT),
+        ] {
+            let bounded = xyg_wasm_instance_new(budget);
+            write_arena(bounded, &bytes);
+            assert_eq!(xyg_wasm_scene_prepare(bounded, 1, 0, bytes.len()), status);
+            assert_eq!(
+                xyg_wasm_output_len(bounded),
+                if status == STATUS_OK { painter_len } else { 0 }
+            );
+            assert_eq!(xyg_wasm_arena_len(bounded), 0);
+            if status == STATUS_RESOURCE_LIMIT {
+                with_instance_mut(bounded, |instance| {
+                    assert_eq!(
+                        instance.last_error,
+                        "canonical scene output exceeds the instance byte budget"
+                    )
+                })
+                .unwrap();
+            }
+            assert_eq!(xyg_wasm_instance_dispose(bounded), STATUS_OK);
+        }
     }
 
     #[test]
@@ -2647,14 +2746,65 @@ mod tests {
 
     #[test]
     fn fragmented_scene_returns_stable_resource_limit_without_output() {
-        let bytes = fragmented_scene(scene::MAX_BROWSER_PAINTER_TRACES + 1);
-        let handle = xyg_wasm_instance_new(bytes.len());
+        let count = scene::MAX_BROWSER_PAINTER_TRACES + 1;
+        let scatter = fragmented_scene(count, scene::SceneRecordKind::Scatter);
+        let handle = xyg_wasm_instance_new(8 * 1024 * 1024);
+        write_arena(handle, &scatter);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 1, 0, scatter.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            let d = scene::BROWSER_PAINTER_HEADER_BYTES;
+            let word = |at| u32::from_le_bytes(instance.output[at..at + 4].try_into().unwrap());
+            assert_eq!(word(20), 1);
+            assert_eq!(instance.output[d], 8);
+            assert_eq!(word(d + 4) as usize, count);
+            let ids = word(d + 24) as usize;
+            let styles = word(d + 60) as usize;
+            assert_eq!(word(ids + (count - 1) * 4) as usize, count - 1);
+            // Alternating symbols are retained in Rust's per-instance CSS rows.
+            assert_eq!(
+                f32::from_le_bytes(
+                    instance.output[styles + 28..styles + 32]
+                        .try_into()
+                        .unwrap()
+                ),
+                1.0
+            );
+        })
+        .unwrap();
+
+        // Distinct literal Polyline runs remain distinct traces. The exact
+        // trace ceiling succeeds; one additional run fails with no stale output.
+        let boundary = fragmented_scene(
+            scene::MAX_BROWSER_PAINTER_TRACES,
+            scene::SceneRecordKind::Polyline,
+        );
+        write_arena(handle, &boundary);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 2, 0, boundary.len()),
+            STATUS_OK
+        );
+        assert_eq!(
+            xyg_wasm_last_scene_records(handle),
+            scene::MAX_BROWSER_PAINTER_TRACES * 2
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(
+                u32::from_le_bytes(instance.output[20..24].try_into().unwrap()) as usize,
+                scene::MAX_BROWSER_PAINTER_TRACES
+            )
+        })
+        .unwrap();
+        let bytes = fragmented_scene(count, scene::SceneRecordKind::Polyline);
         write_arena(handle, &bytes);
         assert_eq!(
-            xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()),
+            xyg_wasm_scene_prepare(handle, 3, 0, bytes.len()),
             STATUS_RESOURCE_LIMIT
         );
         assert_eq!(xyg_wasm_output_len(handle), 0);
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
         with_instance_mut(handle, |instance| {
             assert_eq!(
                 instance.last_error,
@@ -2667,13 +2817,63 @@ mod tests {
 
     #[test]
     fn fragmented_typed_series_returns_stable_resource_limit_without_output() {
-        let request = fragmented_typed_series(scene::MAX_BROWSER_PAINTER_TRACES + 1);
+        let count = scene::MAX_BROWSER_PAINTER_TRACES + 1;
+        let scatter = fragmented_typed_series(count, compile::KIND_SCATTER);
         let handle = xyg_wasm_instance_new(8 * 1024 * 1024);
-        write_arena(handle, &request);
-        assert_eq!(xyg_wasm_copy_count(handle), 1);
-        assert_eq!(xyg_wasm_copy_bytes_lo(handle), request.len() as u32);
+        write_arena(handle, &scatter);
         assert_eq!(
-            xyg_wasm_scene_compile_prepare(handle, 1, 0, request.len()),
+            xyg_wasm_scene_compile_prepare(handle, 1, 0, scatter.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            let d = scene::BROWSER_PAINTER_HEADER_BYTES;
+            assert_eq!(
+                u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
+                1
+            );
+            assert_eq!(instance.output[d], 8);
+            assert_eq!(
+                u32::from_le_bytes(instance.output[d + 4..d + 8].try_into().unwrap()) as usize,
+                count
+            );
+            let compiled =
+                compile::compile_scene_request(&scatter, instance.max_arena_bytes).unwrap();
+            assert_eq!(
+                instance.output,
+                scene::SceneDocument::decode(&compiled.bytes)
+                    .unwrap()
+                    .to_browser_painter(instance.max_arena_bytes)
+                    .unwrap()
+            );
+        })
+        .unwrap();
+        let boundary =
+            fragmented_typed_series(scene::MAX_BROWSER_PAINTER_TRACES, compile::KIND_LINE);
+        write_arena(handle, &boundary);
+        assert_eq!(
+            xyg_wasm_scene_compile_prepare(handle, 2, 0, boundary.len()),
+            STATUS_OK
+        );
+        assert_eq!(
+            xyg_wasm_last_scene_records(handle),
+            scene::MAX_BROWSER_PAINTER_TRACES * 2
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(
+                u32::from_le_bytes(instance.output[20..24].try_into().unwrap()) as usize,
+                scene::MAX_BROWSER_PAINTER_TRACES
+            )
+        })
+        .unwrap();
+        let request = fragmented_typed_series(count, compile::KIND_LINE);
+        write_arena(handle, &request);
+        assert_eq!(xyg_wasm_copy_count(handle), 3);
+        assert_eq!(
+            xyg_wasm_copy_bytes_lo(handle),
+            (scatter.len() + boundary.len() + request.len()) as u32
+        );
+        assert_eq!(
+            xyg_wasm_scene_compile_prepare(handle, 3, 0, request.len()),
             STATUS_RESOURCE_LIMIT
         );
         assert_eq!(xyg_wasm_output_len(handle), 0);

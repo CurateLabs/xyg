@@ -1,5 +1,7 @@
 """Native camera semantics and no-write C ABI failures (#48)."""
 
+from __future__ import annotations
+
 import ctypes
 
 import numpy as np
@@ -83,7 +85,7 @@ def test_wrap_requires_explicit_boolean(value: object) -> None:
 
 
 def test_typed_geoarrow_descriptor_prefix_preserves_source_bits_and_identity() -> None:
-    import pyarrow as pa
+    pa = pytest.importorskip("pyarrow")
 
     from xyg import _geoarrow
 

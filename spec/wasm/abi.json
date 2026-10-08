@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "abi_version": 30,
-  "scene_version": 31,
-  "painter_version": 14,
+  "abi_version": 31,
+  "scene_version": 32,
+  "painter_version": 15,
   "painter_header_bytes": 300,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,
@@ -130,6 +130,7 @@
   },
   "exports": [
     {"name": "xyg_wasm_geo_viewport_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_catalog_compile", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {
       "name": "xyg_wasm_abi_version",
       "params": [],
