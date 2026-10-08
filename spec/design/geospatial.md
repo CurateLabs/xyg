@@ -9,6 +9,8 @@ Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
 frozen camera scope. Rust now supplies perspective camera transitions, clipped
 route/polygon caches and geometric visible membership (#48); layer/fill surfaces
 remain #49 and LOD/export #50.
+Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
+mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
 ## Product rule
 

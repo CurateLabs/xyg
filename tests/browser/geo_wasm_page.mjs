@@ -46,7 +46,16 @@ try {
  const gl=view.gl,pixels=new Uint8Array(view.canvas.width*view.canvas.height*4);view._drawNow();gl.readPixels(0,0,view.canvas.width,view.canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
  let red=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]>200&&pixels[i+1]<50&&pixels[i+2]<50)red++;
  if(red<100)throw Error("geographic scene did not paint expected pixels");
+ if(!pixels.some((v,i)=>i%4===0&&v===255&&pixels[i+1]===0&&pixels[i+2]===0&&pixels[i+3]===255))throw Error("resolved opaque Rust RGBA was dimmed during hydration");
  view.destroy();host.remove();
+ const halfScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,{...camera,fillRgba:Uint8Array.of(255,0,0,128)})).result;
+ const halfPrepared=await worker.prepareScene(halfScene).result;
+ const halfHost=document.createElement("div");halfHost.style.cssText="width:800px;height:600px";document.body.appendChild(halfHost);
+ const halfView=hydrateWasmPainter(halfHost,halfPrepared);halfView._drawNow();
+ const halfPixels=new Uint8Array(halfView.canvas.width*halfView.canvas.height*4),halfGl=halfView.gl;
+ halfGl.readPixels(0,0,halfView.canvas.width,halfView.canvas.height,halfGl.RGBA,halfGl.UNSIGNED_BYTE,halfPixels);
+ if(!halfPixels.some((v,i)=>i%4===0&&v===128&&halfPixels[i+1]===0&&halfPixels[i+2]===0&&halfPixels[i+3]===128))throw Error("resolved half-alpha Rust RGBA was dimmed during hydration");
+ halfView.destroy();halfHost.remove();
  const lineId=0x5859060000000042n;
  const lineScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest({geometry:2,crs:4326,xy:Float64Array.of(170,-10,-170,10),offsets0:Uint32Array.of(0,2),validity:Uint8Array.of(1),featureIds:BigUint64Array.of(lineId)},{...camera,strokeWidth:2})).result;
  const linePrepared=await worker.prepareScene(lineScene).result;

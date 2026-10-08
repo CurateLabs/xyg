@@ -92,6 +92,8 @@ function compilePainter(painter: ArrayBuffer) {
         style: { color: fill, stroke, stroke_width: strokeWidth },
       };
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
+    // Rust already resolved RGBA alpha; ordinary mark defaults must not dim it again.
+    trace.style.opacity = 1;
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
     if (annotationKind) {
       const px = (columnIndex: number, item = 0) => view.getFloat32(columns[columnIndex].byte_offset + item * 4, true);
