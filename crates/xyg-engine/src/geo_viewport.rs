@@ -466,6 +466,7 @@ impl GeoViewport {
         max_y: f64,
         padding_px: f64,
     ) -> Result<(), GeoError> {
+        self.validate()?;
         for value in [min_x, min_y, max_x, max_y, padding_px] {
             if !value.is_finite() {
                 return Err(GeoError::NonFiniteCoordinate);
@@ -525,23 +526,26 @@ impl GeoViewport {
         let avail_h = self.height - 2.0 * padding_px;
         let zoom_x = (avail_w * (2.0 * WEB_MERCATOR_MAX) / (span_x * TILE_SIZE)).log2();
         let zoom_y = (avail_h * (2.0 * WEB_MERCATOR_MAX) / (span_y * TILE_SIZE)).log2();
-        self.zoom = zoom_x.min(zoom_y).clamp(0.0, 24.0);
+        let mut next = *self;
+        next.zoom = zoom_x.min(zoom_y).clamp(0.0, 24.0);
 
         let mid_mx = 0.5 * (min_mx + max_mx);
         let mid_my = 0.5 * (min_my + max_my);
         match self.crs {
             GeoCrs::Epsg4326 => {
                 let (lon, lat) = mercator_to_lonlat(mid_mx, mid_my);
-                self.center_x = normalize_lon(lon);
-                self.center_y = lat;
+                next.center_x = normalize_lon(lon);
+                next.center_y = lat;
             }
             GeoCrs::Epsg3857 => {
-                self.center_x = mid_mx;
-                self.center_y = mid_my;
+                next.center_x = mid_mx;
+                next.center_y = mid_my;
             }
         }
-        self.bearing_deg = 0.0;
-        self.validate()
+        next.bearing_deg = 0.0;
+        next.validate()?;
+        *self = next;
+        Ok(())
     }
 
     /// Pan so `center` becomes the camera center (source CRS units).
@@ -610,6 +614,7 @@ impl GeoViewport {
     /// a non-wrapped camera and both Mercator axes stop at the certified world
     /// bounds. The transition is atomic and allocation-free.
     pub fn pan_by_pixels(&mut self, delta_x: f64, delta_y: f64) -> Result<(), GeoError> {
+        self.validate()?;
         if !delta_x.is_finite() || !delta_y.is_finite() {
             return Err(GeoError::NonFiniteCoordinate);
         }
@@ -1054,6 +1059,56 @@ mod tests {
         let (lon, lat) = vp.unproject(sx, sy).unwrap();
         assert!((lon - (-104.9903 + 0.1)).abs() < 1e-7);
         assert!((lat - 39.7392).abs() < 1e-7);
+    }
+
+    #[test]
+    fn fit_and_pan_reject_restored_invalid_cameras_without_mutation() {
+        for invalid in [f64::NAN, f64::INFINITY, 61.0] {
+            let mut vp = denver();
+            vp.pitch_deg = invalid;
+            let before = [
+                vp.center_x.to_bits(),
+                vp.center_y.to_bits(),
+                vp.zoom.to_bits(),
+                vp.bearing_deg.to_bits(),
+                vp.pitch_deg.to_bits(),
+            ];
+            assert!(vp.fit_bounds(-105.1, 39.6, -104.8, 39.9, 40.0).is_err());
+            assert_eq!(
+                [
+                    vp.center_x.to_bits(),
+                    vp.center_y.to_bits(),
+                    vp.zoom.to_bits(),
+                    vp.bearing_deg.to_bits(),
+                    vp.pitch_deg.to_bits()
+                ],
+                before
+            );
+            for delta in [(0.0, 0.0), (10.0, 20.0)] {
+                assert!(vp.pan_by_pixels(delta.0, delta.1).is_err());
+                assert_eq!(
+                    [
+                        vp.center_x.to_bits(),
+                        vp.center_y.to_bits(),
+                        vp.zoom.to_bits(),
+                        vp.bearing_deg.to_bits(),
+                        vp.pitch_deg.to_bits()
+                    ],
+                    before
+                );
+            }
+        }
+        let mut vp = denver();
+        vp.center_x = 181.0;
+        assert_eq!(
+            vp.pan_by_pixels(0.0, 0.0),
+            Err(GeoError::CoordinateOutOfRange)
+        );
+        assert_eq!(
+            vp.fit_bounds(-10.0, -10.0, 10.0, 10.0, 0.0),
+            Err(GeoError::CoordinateOutOfRange)
+        );
+        assert_eq!(vp.center_x, 181.0);
     }
 
     #[test]
