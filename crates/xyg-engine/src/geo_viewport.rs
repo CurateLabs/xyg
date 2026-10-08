@@ -8,7 +8,7 @@
 //! Basemap tile lifecycle is out of scope (#49). This module lowers and clips
 //! antimeridian-safe route segments; polygon fill topology remains a follow-on.
 
-use crate::geo::{GeoCrs, GeoError, GeoLimits};
+use crate::geo::{GeoColumn, GeoCrs, GeoError, GeoGeometry, GeoLimits};
 use std::mem::size_of;
 
 /// Spherical Web Mercator radius used by EPSG:3857 (metres).
@@ -98,6 +98,46 @@ pub struct ProjectedGeoLines {
     pub origin_x: f64,
     /// Viewport-centre f64 Y origin used to decode `xy`.
     pub origin_y: f64,
+}
+
+/// Cache identity for a derived scene buffer: exact camera identity plus the
+/// digest of the source column's canonical `XYGM` metadata. Two projections
+/// with equal keys are bit-identical, so a host may keep or drop the buffers
+/// freely (§27: derived buffers are rebuildable caches).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct GeoDerivedKey {
+    pub rebuild: GeoViewportRebuildKey,
+    pub metadata_digest: [u8; 8],
+}
+
+/// Offset-encoded point vertices projected from a Point / MultiPoint column.
+///
+/// One entry per retained vertex (null points own no vertex), each tagged
+/// with the source feature ID. `xy` is `f32` relative to the first projected
+/// vertex (`origin_x`, `origin_y` in f64 screen pixels).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectedGeoPoints {
+    pub xy: Vec<f32>,
+    pub feature_ids: Vec<u64>,
+    pub origin_x: f64,
+    pub origin_y: f64,
+}
+
+/// Projected payload for one column; the variant follows the geometry kind.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProjectedGeoGeometry {
+    /// Point / MultiPoint vertices.
+    Points(ProjectedGeoPoints),
+    /// LineString / MultiLineString lines and Polygon / MultiPolygon ring
+    /// outlines as clipped two-point segments (fill topology is #49).
+    Outlines(ProjectedGeoLines),
+}
+
+/// A derived, rebuildable projection of a [`GeoColumn`] with its cache key.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectedGeoColumn {
+    pub key: GeoDerivedKey,
+    pub geometry: ProjectedGeoGeometry,
 }
 
 impl GeoViewport {
@@ -267,16 +307,12 @@ impl GeoViewport {
             return Err(GeoError::InvalidArgument);
         }
         let mut out = Vec::with_capacity(xy.len());
-        let mut origin_x = 0.0;
-        let mut origin_y = 0.0;
-        let mut have_origin = false;
+        // Recenter on the visible camera, never on an arbitrary offscreen
+        // source vertex whose magnitude would erase visible f32 detail.
+        let origin_x = self.width * 0.5;
+        let origin_y = self.height * 0.5;
         for pair in xy.chunks_exact(2) {
             let (sx, sy) = self.project_validated(pair[0], pair[1])?;
-            if !have_origin {
-                origin_x = sx;
-                origin_y = sy;
-                have_origin = true;
-            }
             out.push((sx - origin_x) as f32);
             out.push((sy - origin_y) as f32);
         }
@@ -373,6 +409,48 @@ impl GeoViewport {
             }
         }
         Ok(out)
+    }
+
+    /// Project a retained [`GeoColumn`] into offset-encoded f32 scene inputs.
+    ///
+    /// The result is a rebuildable cache keyed by [`GeoDerivedKey`]; the
+    /// canonical f64 column is never modified. Point kinds emit one vertex
+    /// per retained point; line kinds emit each line part and polygon kinds
+    /// emit each ring (exterior and holes) as closed outlines through
+    /// [`Self::project_line_features`], so null features are absent, source
+    /// feature IDs are preserved, and no NaN reaches the output. A column
+    /// whose CRS differs from the camera is rejected (`InvalidArgument`);
+    /// an invalid camera fails before any output is built.
+    pub fn project_column(&self, col: &GeoColumn) -> Result<ProjectedGeoColumn, GeoError> {
+        let rebuild = self.rebuild_key()?;
+        if col.crs() != self.crs {
+            return Err(GeoError::InvalidArgument);
+        }
+        let key = GeoDerivedKey {
+            rebuild,
+            metadata_digest: col.metadata_digest(),
+        };
+        let geometry = match col.geometry() {
+            GeoGeometry::Point | GeoGeometry::MultiPoint => {
+                let feature_ids = point_vertex_feature_ids(col);
+                let (xy, origin_x, origin_y) = self.project_offset_f32(col.xy())?;
+                ProjectedGeoGeometry::Points(ProjectedGeoPoints {
+                    xy,
+                    feature_ids,
+                    origin_x,
+                    origin_y,
+                })
+            }
+            _ => {
+                let (offsets, feature_ids) = outline_parts(col);
+                ProjectedGeoGeometry::Outlines(self.project_line_features(
+                    col.xy(),
+                    &offsets,
+                    &feature_ids,
+                )?)
+            }
+        };
+        Ok(ProjectedGeoColumn { key, geometry })
     }
 
     /// Fit the camera to an axis-aligned source-CRS bounding box.
@@ -688,6 +766,66 @@ impl GeoViewport {
             dy = ry;
         }
         (self.width * 0.5 + dx, self.height * 0.5 + dy)
+    }
+}
+
+/// Source feature ID for every retained Point / MultiPoint vertex.
+fn point_vertex_feature_ids(col: &GeoColumn) -> Vec<u64> {
+    let ids = col.feature_ids();
+    if col.geometry() == GeoGeometry::Point {
+        // Null points contribute no vertex.
+        return col
+            .validity()
+            .iter()
+            .zip(ids)
+            .filter(|(&flag, _)| flag == 1)
+            .map(|(_, &id)| id)
+            .collect();
+    }
+    let offsets = col.offsets0();
+    let mut out = Vec::with_capacity(col.vertex_count());
+    for (feature, &id) in ids.iter().enumerate() {
+        let count = (offsets[feature + 1] - offsets[feature]) as usize;
+        out.extend(std::iter::repeat_n(id, count));
+    }
+    out
+}
+
+/// Flatten a line / polygon column into `(part_offsets, part_feature_ids)`:
+/// one part per line (LineString feature, MultiLineString line) or ring, with
+/// the owning feature ID, over the column's unmodified vertex plane.
+fn outline_parts(col: &GeoColumn) -> (Vec<u32>, Vec<u64>) {
+    let ids = col.feature_ids();
+    let (o0, o1) = (col.offsets0(), col.offsets1());
+    match col.geometry() {
+        GeoGeometry::LineString => (o0.to_vec(), ids.to_vec()),
+        GeoGeometry::MultiLineString => {
+            let mut parts = Vec::with_capacity(o1.len().saturating_sub(1));
+            for (feature, &id) in ids.iter().enumerate() {
+                let lines = (o0[feature + 1] - o0[feature]) as usize;
+                parts.extend(std::iter::repeat_n(id, lines));
+            }
+            (o1.to_vec(), parts)
+        }
+        GeoGeometry::Polygon => {
+            let mut parts = Vec::with_capacity(o1.len().saturating_sub(1));
+            for (feature, &id) in ids.iter().enumerate() {
+                let rings = (o0[feature + 1] - o0[feature]) as usize;
+                parts.extend(std::iter::repeat_n(id, rings));
+            }
+            (o1.to_vec(), parts)
+        }
+        GeoGeometry::MultiPolygon => {
+            let o2 = col.offsets2();
+            let mut parts = Vec::with_capacity(o2.len().saturating_sub(1));
+            for (feature, &id) in ids.iter().enumerate() {
+                let first_ring = o1[o0[feature] as usize] as usize;
+                let end_ring = o1[o0[feature + 1] as usize] as usize;
+                parts.extend(std::iter::repeat_n(id, end_ring - first_ring));
+            }
+            (o2.to_vec(), parts)
+        }
+        GeoGeometry::Point | GeoGeometry::MultiPoint => (vec![0], Vec::new()),
     }
 }
 
@@ -1338,6 +1476,248 @@ mod tests {
                 &[1, 2],
             ),
             Err(GeoError::NonFiniteCoordinate)
+        );
+    }
+
+    fn column(
+        geometry: GeoGeometry,
+        xy: &[f64],
+        validity: &[u8],
+        ids: Option<&[u64]>,
+        offsets: [&[u32]; 3],
+    ) -> GeoColumn {
+        GeoColumn::from_descriptor(crate::geo::GeoDescriptor {
+            geometry,
+            crs: GeoCrs::Epsg4326,
+            xy,
+            validity,
+            feature_ids: ids,
+            offsets0: offsets[0],
+            offsets1: offsets[1],
+            offsets2: offsets[2],
+            limits: GeoLimits::default(),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn project_column_points_are_offset_encoded_and_keep_feature_ids() {
+        let vp = denver();
+        let xy = [-104.9903, 39.7392, -104.9902, 39.7393];
+        // Null point in the middle contributes no vertex and no ID.
+        let col = column(
+            GeoGeometry::Point,
+            &xy,
+            &[1, 0, 1],
+            Some(&[10, 11, 12]),
+            [&[], &[], &[]],
+        );
+        let projected = vp.project_column(&col).unwrap();
+        let ProjectedGeoGeometry::Points(points) = &projected.geometry else {
+            panic!("points expected");
+        };
+        assert_eq!(points.feature_ids, [10, 12]);
+        assert_eq!(points.xy.len(), 4);
+        assert_eq!((points.xy[0], points.xy[1]), (0.0, 0.0));
+        let (sx, sy) = vp.project(xy[2], xy[3]).unwrap();
+        assert!(((points.xy[2] as f64) - (sx - points.origin_x)).abs() < 1e-3);
+        assert!(((points.xy[3] as f64) - (sy - points.origin_y)).abs() < 1e-3);
+        assert!(points.xy.iter().all(|v| v.is_finite()));
+        assert_eq!(projected.key.rebuild, vp.rebuild_key().unwrap());
+        assert_eq!(projected.key.metadata_digest, col.metadata_digest());
+    }
+
+    #[test]
+    fn offscreen_first_point_does_not_erase_visible_deep_zoom_detail() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            0.0,
+            0.0,
+            24.0,
+            800.0,
+            600.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let col = column(
+            GeoGeometry::Point,
+            &[-180.0, 0.0, 0.0, 0.0, 1e-7, 0.0],
+            &[1, 1, 1],
+            Some(&[1, 2, 3]),
+            [&[], &[], &[]],
+        );
+        let ProjectedGeoGeometry::Points(points) = vp.project_column(&col).unwrap().geometry else {
+            panic!("points expected")
+        };
+        let separation = vp.project(1e-7, 0.0).unwrap().0 - vp.project(0.0, 0.0).unwrap().0;
+        assert!(separation > 2.0);
+        assert!(((points.xy[4] - points.xy[2]) as f64 - separation).abs() < 1e-6);
+        assert_eq!((points.origin_x, points.origin_y), (400.0, 300.0));
+        assert_eq!(points.feature_ids, [1, 2, 3]);
+    }
+
+    #[test]
+    fn project_column_multipoint_repeats_owner_id_per_vertex() {
+        let vp = denver();
+        let xy = [-105.0, 39.7, -104.9, 39.8, -104.8, 39.9];
+        let col = column(
+            GeoGeometry::MultiPoint,
+            &xy,
+            &[1, 0, 1],
+            Some(&[5, 6, 7]),
+            [&[0, 2, 2, 3], &[], &[]],
+        );
+        let projected = vp.project_column(&col).unwrap();
+        let ProjectedGeoGeometry::Points(points) = &projected.geometry else {
+            panic!("points expected");
+        };
+        assert_eq!(points.feature_ids, [5, 5, 7]);
+        assert_eq!(points.xy.len(), 6);
+    }
+
+    #[test]
+    fn project_column_outlines_cover_lines_and_every_ring_with_ids() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            0.0,
+            0.0,
+            3.0,
+            400.0,
+            300.0,
+            0.0,
+            0.0,
+            false,
+        )
+        .unwrap();
+        // LineString: null feature is absent, IDs preserved.
+        let line = column(
+            GeoGeometry::LineString,
+            &[-10.0, 0.0, 10.0, 0.0],
+            &[0, 1],
+            Some(&[3, 4]),
+            [&[0, 0, 2], &[], &[]],
+        );
+        let ProjectedGeoGeometry::Outlines(lines) = vp.project_column(&line).unwrap().geometry
+        else {
+            panic!("outlines expected");
+        };
+        assert_eq!(lines.feature_ids, [4]);
+        assert_eq!(lines.offsets, [0, 2]);
+
+        // Polygon with a hole: 4 shell edges + 4 hole edges, all tagged 9.
+        let mut xy = vec![
+            -10.0, -10.0, 10.0, -10.0, 10.0, 10.0, -10.0, 10.0, -10.0, -10.0,
+        ];
+        xy.extend([-2.0, -2.0, -2.0, 2.0, 2.0, 2.0, 2.0, -2.0, -2.0, -2.0]);
+        let polygon = column(
+            GeoGeometry::Polygon,
+            &xy,
+            &[1],
+            Some(&[9]),
+            [&[0, 2], &[0, 5, 10], &[]],
+        );
+        let ProjectedGeoGeometry::Outlines(lines) = vp.project_column(&polygon).unwrap().geometry
+        else {
+            panic!("outlines expected");
+        };
+        assert_eq!(lines.feature_ids, [9; 8]);
+        assert_eq!(lines.xy.len(), 8 * 4);
+        assert!(lines.xy.iter().all(|v| v.is_finite()));
+
+        // MultiPolygon: ids follow the owning feature across polygons.
+        let mut xy = vec![
+            -15.0, -10.0, -5.0, -10.0, -5.0, 10.0, -15.0, 10.0, -15.0, -10.0,
+        ];
+        xy.extend([5.0, -10.0, 15.0, -10.0, 15.0, 10.0, 5.0, 10.0, 5.0, -10.0]);
+        let multi = column(
+            GeoGeometry::MultiPolygon,
+            &xy,
+            &[1, 1],
+            Some(&[70, 71]),
+            [&[0, 1, 2], &[0, 1, 2], &[0, 5, 10]],
+        );
+        let ProjectedGeoGeometry::Outlines(lines) = vp.project_column(&multi).unwrap().geometry
+        else {
+            panic!("outlines expected");
+        };
+        assert_eq!(lines.feature_ids, [70, 70, 70, 70, 71, 71, 71, 71]);
+
+        // MultiLineString: lines carry their feature id.
+        let mls = column(
+            GeoGeometry::MultiLineString,
+            &[-10.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0, 5.0],
+            &[1],
+            Some(&[8]),
+            [&[0, 2], &[0, 2, 4], &[]],
+        );
+        let ProjectedGeoGeometry::Outlines(lines) = vp.project_column(&mls).unwrap().geometry
+        else {
+            panic!("outlines expected");
+        };
+        assert_eq!(lines.feature_ids, [8, 8]);
+    }
+
+    #[test]
+    fn project_column_is_bit_reproducible_from_its_key() {
+        let vp = denver();
+        let col = column(
+            GeoGeometry::LineString,
+            &[-105.0, 39.7, -104.9, 39.8, -104.8, 39.75],
+            &[1],
+            None,
+            [&[0, 3], &[], &[]],
+        );
+        let a = vp.project_column(&col).unwrap();
+        let b = vp.project_column(&col.clone()).unwrap();
+        assert_eq!(a.key, b.key);
+        assert_eq!(a, b);
+
+        // A moved camera changes the key; a changed column changes the key.
+        let mut moved = vp;
+        moved.set_zoom(11.0).unwrap();
+        assert_ne!(moved.project_column(&col).unwrap().key, a.key);
+        let other = column(
+            GeoGeometry::LineString,
+            &[-105.0, 39.7, -104.9, 39.8, -104.8, 39.76],
+            &[1],
+            None,
+            [&[0, 3], &[], &[]],
+        );
+        assert_ne!(vp.project_column(&other).unwrap().key, a.key);
+    }
+
+    #[test]
+    fn project_column_fails_before_output_on_bad_camera_or_crs() {
+        let col = column(
+            GeoGeometry::Point,
+            &[-104.9903, 39.7392],
+            &[1],
+            None,
+            [&[], &[], &[]],
+        );
+        let mut broken = denver();
+        broken.zoom = f64::NAN;
+        assert_eq!(
+            broken.project_column(&col),
+            Err(GeoError::NonFiniteCoordinate)
+        );
+        let mercator = GeoViewport::new(
+            GeoCrs::Epsg3857,
+            0.0,
+            0.0,
+            2.0,
+            100.0,
+            100.0,
+            0.0,
+            0.0,
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            mercator.project_column(&col),
+            Err(GeoError::InvalidArgument)
         );
     }
 }

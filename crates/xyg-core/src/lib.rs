@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 378;
+pub const ABI_VERSION: u32 = 379;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -27141,6 +27141,16 @@ pub unsafe extern "C" fn xyg_geo_column_new(
             write_geo_error(out_error, geo::GeoError::UnsupportedCrs);
             return 0;
         };
+        if let Err(error) = geo::validate_descriptor_lengths(
+            geometry,
+            xy_len,
+            validity_len,
+            [offsets0_len, offsets1_len, offsets2_len],
+            geo::GeoLimits::default(),
+        ) {
+            write_geo_error(out_error, error);
+            return 0;
+        }
         let Some(xy) = geo_slice_f64(xy, xy_len) else {
             write_geo_error(out_error, geo::GeoError::InvalidArgument);
             return 0;
@@ -27247,6 +27257,130 @@ pub unsafe extern "C" fn xyg_geo_column_geometry(handle: u64) -> u32 {
 #[no_mangle]
 pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
     ffi_guard(0, || geo::reg_with(handle, |c| c.crs() as u32).unwrap_or(0))
+}
+
+/// Copy the canonical `XYGM` v1 metadata document (ABI 379).
+///
+/// Returns the required byte length. Bytes are written only when
+/// `cap >= required`; an undersized destination is left untouched. A null
+/// `out` with `cap == 0` is a size query. A null `out` with `cap > 0`, or a
+/// stale handle, returns `usize::MAX`. Layout: `spec/design/geospatial.md`.
+///
+/// # Safety
+/// `out` addresses `cap` writable bytes when `cap > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_metadata(handle: u64, out: *mut u8, cap: usize) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(meta) = geo::reg_with(handle, |c| c.canonical_metadata()) else {
+            return usize::MAX;
+        };
+        if cap == 0 {
+            return meta.len();
+        }
+        if out.is_null() {
+            return usize::MAX;
+        }
+        if cap >= meta.len() {
+            std::ptr::copy_nonoverlapping(meta.as_ptr(), out, meta.len());
+        }
+        meta.len()
+    })
+}
+
+/// Write the retained plane element counts as seven `u64` values:
+/// xy (f64 values), validity, feature ids, offsets0, offsets1, offsets2,
+/// ring orientations (ABI 379). Returns `0`, or a negative `GeoError` code
+/// (`-1` null `out_lens`, `-10` stale handle). `out_lens` is untouched on
+/// failure.
+///
+/// # Safety
+/// `out_lens` addresses seven writable `u64` values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_plane_lens(handle: u64, out_lens: *mut u64) -> i32 {
+    ffi_guard(geo::GeoError::InvalidArgument as i32, || {
+        if out_lens.is_null() {
+            return geo::GeoError::InvalidArgument as i32;
+        }
+        match geo::reg_with(handle, |c| c.plane_lens()) {
+            Some(lens) => {
+                std::ptr::copy_nonoverlapping(lens.as_ptr(), out_lens, lens.len());
+                0
+            }
+            None => geo::GeoError::StaleHandle as i32,
+        }
+    })
+}
+
+unsafe fn geo_copy_plane<T: Copy>(dst: *mut T, src: &[T]) {
+    if !src.is_empty() {
+        std::ptr::copy_nonoverlapping(src.as_ptr(), dst, src.len());
+    }
+}
+
+/// Copy every retained plane out of a geographic column (ABI 379).
+///
+/// All capacities are element counts (not bytes). The call is all-or-nothing:
+/// a stale handle returns `-10`; any capacity smaller than the plane returns
+/// `-13` (`OutputCapacity`); a null destination for a non-empty plane returns
+/// `-1`. Nothing is written unless every plane fits, so a failed call leaves
+/// every destination untouched. Planes copied: interleaved f64 `xy`,
+/// `validity`, `feature_ids`, `offsets0..2`, and per-ring `orientations`.
+/// Use `xyg_geo_column_plane_lens` to size the buffers.
+///
+/// # Safety
+/// Each non-null destination addresses its stated capacity of writable
+/// elements.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_copy(
+    handle: u64,
+    out_xy: *mut f64,
+    xy_cap: usize,
+    out_validity: *mut u8,
+    validity_cap: usize,
+    out_ids: *mut u64,
+    ids_cap: usize,
+    out_o0: *mut u32,
+    o0_cap: usize,
+    out_o1: *mut u32,
+    o1_cap: usize,
+    out_o2: *mut u32,
+    o2_cap: usize,
+    out_orient: *mut u8,
+    orient_cap: usize,
+) -> i32 {
+    ffi_guard(geo::GeoError::InvalidArgument as i32, || {
+        geo::reg_with(handle, |c| {
+            let fits = c.xy().len() <= xy_cap
+                && c.validity().len() <= validity_cap
+                && c.feature_ids().len() <= ids_cap
+                && c.offsets0().len() <= o0_cap
+                && c.offsets1().len() <= o1_cap
+                && c.offsets2().len() <= o2_cap
+                && c.ring_orientations().len() <= orient_cap;
+            if !fits {
+                return geo::GeoError::OutputCapacity as i32;
+            }
+            let missing = (!c.xy().is_empty() && out_xy.is_null())
+                || (!c.validity().is_empty() && out_validity.is_null())
+                || (!c.feature_ids().is_empty() && out_ids.is_null())
+                || (!c.offsets0().is_empty() && out_o0.is_null())
+                || (!c.offsets1().is_empty() && out_o1.is_null())
+                || (!c.offsets2().is_empty() && out_o2.is_null())
+                || (!c.ring_orientations().is_empty() && out_orient.is_null());
+            if missing {
+                return geo::GeoError::InvalidArgument as i32;
+            }
+            geo_copy_plane(out_xy, c.xy());
+            geo_copy_plane(out_validity, c.validity());
+            geo_copy_plane(out_ids, c.feature_ids());
+            geo_copy_plane(out_o0, c.offsets0());
+            geo_copy_plane(out_o1, c.offsets1());
+            geo_copy_plane(out_o2, c.offsets2());
+            geo_copy_plane(out_orient, c.ring_orientations());
+            0
+        })
+        .unwrap_or(geo::GeoError::StaleHandle as i32)
+    })
 }
 
 #[cfg(test)]
@@ -30647,6 +30781,300 @@ mod tests {
         };
         assert_eq!(bad, 0);
         assert_eq!(err, -2);
+    }
+
+    #[test]
+    fn geo_column_abi_rejects_over_budget_lengths_before_reading() {
+        let limits = geo::GeoLimits::default();
+        for (xy_len, features, offsets) in [
+            (2 * (limits.max_vertices + 1), 1, 0),
+            (2, limits.max_features + 1, 0),
+            (2, 1, limits.max_bytes / 4 + 1),
+            (usize::MAX - 1, 1, 0),
+        ] {
+            let mut error = 0;
+            let handle = unsafe {
+                xyg_geo_column_new(
+                    1,
+                    4326,
+                    std::ptr::null(),
+                    xy_len,
+                    std::ptr::null(),
+                    features,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    offsets,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    &mut error,
+                )
+            };
+            assert_eq!((handle, error), (0, -9));
+        }
+    }
+
+    unsafe fn geo_new_polygon_with_hole() -> u64 {
+        // CCW 10x10 shell with a CW 2x2 hole; explicit feature id 77.
+        let xy = [
+            0.0_f64, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0, 0.0, 0.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0,
+            4.0, 2.0, 2.0, 2.0,
+        ];
+        let validity = [1_u8];
+        let ids = [77_u64];
+        let o0 = [0_u32, 2];
+        let o1 = [0_u32, 5, 10];
+        let mut err = 0_i32;
+        let handle = xyg_geo_column_new(
+            3,
+            4326,
+            xy.as_ptr(),
+            xy.len(),
+            validity.as_ptr(),
+            validity.len(),
+            ids.as_ptr(),
+            o0.as_ptr(),
+            o0.len(),
+            o1.as_ptr(),
+            o1.len(),
+            std::ptr::null(),
+            0,
+            &mut err,
+        );
+        assert_eq!((err, handle != 0), (0, true));
+        handle
+    }
+
+    #[test]
+    fn geo_column_abi_reads_back_planes_metadata_and_fails_closed() {
+        let handle = unsafe { geo_new_polygon_with_hole() };
+
+        let mut lens = [9_u64; 7];
+        assert_eq!(
+            unsafe { xyg_geo_column_plane_lens(handle, lens.as_mut_ptr()) },
+            0
+        );
+        assert_eq!(lens, [20, 1, 1, 2, 3, 0, 2]);
+        assert_eq!(
+            unsafe { xyg_geo_column_plane_lens(handle, std::ptr::null_mut()) },
+            -1
+        );
+
+        // Metadata: size query, undersized (untouched), exact copy.
+        let need = unsafe { xyg_geo_column_metadata(handle, std::ptr::null_mut(), 0) };
+        assert!(need >= 120 && need % 8 == 0);
+        let mut small = vec![0xAA_u8; need - 1];
+        assert_eq!(
+            unsafe { xyg_geo_column_metadata(handle, small.as_mut_ptr(), small.len()) },
+            need
+        );
+        assert!(small.iter().all(|&b| b == 0xAA));
+        let mut meta = vec![0_u8; need];
+        assert_eq!(
+            unsafe { xyg_geo_column_metadata(handle, meta.as_mut_ptr(), meta.len()) },
+            need
+        );
+        assert_eq!(&meta[..4], b"XYGM");
+        assert_eq!(
+            unsafe { xyg_geo_column_metadata(handle, std::ptr::null_mut(), 8) },
+            usize::MAX
+        );
+        let expected = geo::reg_with(handle, |c| c.canonical_metadata()).unwrap();
+        assert_eq!(meta, expected);
+
+        // Copy: exact capacities round-trip every plane.
+        let (mut xy, mut validity, mut ids) = ([0.0_f64; 20], [9_u8; 1], [0_u64; 1]);
+        let (mut o0, mut o1, mut o2, mut orient) = ([0_u32; 2], [0_u32; 3], [0_u32; 1], [0_u8; 2]);
+        let status = unsafe {
+            xyg_geo_column_copy(
+                handle,
+                xy.as_mut_ptr(),
+                xy.len(),
+                validity.as_mut_ptr(),
+                validity.len(),
+                ids.as_mut_ptr(),
+                ids.len(),
+                o0.as_mut_ptr(),
+                o0.len(),
+                o1.as_mut_ptr(),
+                o1.len(),
+                o2.as_mut_ptr(),
+                0,
+                orient.as_mut_ptr(),
+                orient.len(),
+            )
+        };
+        assert_eq!(status, 0);
+        assert_eq!(xy[10], 2.0);
+        assert_eq!((validity, ids, o0, o1), ([1], [77], [0, 2], [0, 5, 10]));
+        assert_eq!(orient, [1, 2]);
+        assert_eq!(o2, [0], "empty plane untouched");
+
+        // One undersized plane fails the whole call with nothing written.
+        let mut xy2 = [-1.0_f64; 20];
+        let mut validity2 = [7_u8; 1];
+        let mut ids2 = [7_u64; 1];
+        let (mut a0, mut a1, mut a2) = ([7_u32; 2], [7_u32; 3], [7_u32; 1]);
+        let mut orient2 = [7_u8; 1];
+        let status = unsafe {
+            xyg_geo_column_copy(
+                handle,
+                xy2.as_mut_ptr(),
+                xy2.len(),
+                validity2.as_mut_ptr(),
+                1,
+                ids2.as_mut_ptr(),
+                1,
+                a0.as_mut_ptr(),
+                2,
+                a1.as_mut_ptr(),
+                3,
+                a2.as_mut_ptr(),
+                0,
+                orient2.as_mut_ptr(),
+                orient2.len(),
+            )
+        };
+        assert_eq!(status, -13);
+        assert!(xy2.iter().all(|&v| v == -1.0));
+        assert_eq!(
+            (validity2, ids2, a0, a1, orient2),
+            ([7], [7], [7, 7], [7, 7, 7], [7])
+        );
+
+        // Null destination for a non-empty plane is rejected untouched.
+        let status = unsafe {
+            xyg_geo_column_copy(
+                handle,
+                std::ptr::null_mut(),
+                20,
+                validity2.as_mut_ptr(),
+                1,
+                ids2.as_mut_ptr(),
+                1,
+                a0.as_mut_ptr(),
+                2,
+                a1.as_mut_ptr(),
+                3,
+                a2.as_mut_ptr(),
+                0,
+                orient.as_mut_ptr(),
+                2,
+            )
+        };
+        assert_eq!(status, -1);
+
+        assert_eq!(unsafe { xyg_geo_column_free(handle) }, 1);
+        // Stale handle on every new entry point.
+        assert_eq!(
+            unsafe { xyg_geo_column_metadata(handle, std::ptr::null_mut(), 0) },
+            usize::MAX
+        );
+        assert_eq!(
+            unsafe { xyg_geo_column_plane_lens(handle, lens.as_mut_ptr()) },
+            -10
+        );
+        let status = unsafe {
+            xyg_geo_column_copy(
+                handle,
+                xy.as_mut_ptr(),
+                xy.len(),
+                validity.as_mut_ptr(),
+                1,
+                ids.as_mut_ptr(),
+                1,
+                o0.as_mut_ptr(),
+                2,
+                o1.as_mut_ptr(),
+                3,
+                o2.as_mut_ptr(),
+                1,
+                orient.as_mut_ptr(),
+                2,
+            )
+        };
+        assert_eq!(status, -10);
+    }
+
+    #[test]
+    fn geo_column_abi_rejects_new_validation_codes() {
+        // Hole outside the shell (-11).
+        let xy = [
+            0.0_f64, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0, 0.0, 0.0, 20.0, 20.0, 20.0, 22.0, 22.0,
+            22.0, 22.0, 20.0, 20.0, 20.0,
+        ];
+        let validity = [1_u8];
+        let o0 = [0_u32, 2];
+        let o1 = [0_u32, 5, 10];
+        let mut err = 0_i32;
+        let handle = unsafe {
+            xyg_geo_column_new(
+                3,
+                4326,
+                xy.as_ptr(),
+                xy.len(),
+                validity.as_ptr(),
+                1,
+                std::ptr::null(),
+                o0.as_ptr(),
+                2,
+                o1.as_ptr(),
+                3,
+                std::ptr::null(),
+                0,
+                &mut err,
+            )
+        };
+        assert_eq!((handle, err), (0, -11));
+
+        // Null linestring that owns vertices (-14).
+        let line = [-105.0_f64, 39.7, -104.9, 39.8];
+        let validity = [0_u8];
+        let o0 = [0_u32, 2];
+        let handle = unsafe {
+            xyg_geo_column_new(
+                2,
+                4326,
+                line.as_ptr(),
+                line.len(),
+                validity.as_ptr(),
+                1,
+                std::ptr::null(),
+                o0.as_ptr(),
+                2,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                &mut err,
+            )
+        };
+        assert_eq!((handle, err), (0, -14));
+
+        // One-vertex linestring (-12).
+        let one = [-105.0_f64, 39.7];
+        let validity = [1_u8];
+        let o0 = [0_u32, 1];
+        let handle = unsafe {
+            xyg_geo_column_new(
+                2,
+                4326,
+                one.as_ptr(),
+                one.len(),
+                validity.as_ptr(),
+                1,
+                std::ptr::null(),
+                o0.as_ptr(),
+                2,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                &mut err,
+            )
+        };
+        assert_eq!((handle, err), (0, -12));
     }
 
     #[test]

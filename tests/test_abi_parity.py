@@ -257,6 +257,8 @@ def test_abi_version_matches_native_core() -> None:
     assert any(item["name"] == "xyg_temporal_controller_create" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_scene_plot_layout" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_geo_column_new" for item in manifest["symbols"])
+    for name in ("xyg_geo_column_metadata", "xyg_geo_column_plane_lens", "xyg_geo_column_copy"):
+        assert any(item["name"] == name for item in manifest["symbols"])
     assert any(item["name"] == "xyg_pyramid_spill" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_tile_store_compose" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_graph_label_accept" for item in manifest["symbols"])

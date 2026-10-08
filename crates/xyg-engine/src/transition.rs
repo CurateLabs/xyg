@@ -50,7 +50,7 @@ const BLAKE2S_SIGMA: [[usize; 16]; 10] = [
 ///
 /// The parameter block is fixed to an eight-byte digest with the seven-byte
 /// personalization `xykeyv1` (NUL-padded to BLAKE2s' eight-byte field).
-struct Blake2s8 {
+pub(crate) struct Blake2s8 {
     state: [u32; 8],
     buffer: [u8; 64],
     buffered: usize,
@@ -58,7 +58,7 @@ struct Blake2s8 {
 }
 
 impl Blake2s8 {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let mut parameter = [0u8; 32];
         parameter[0] = 8; // digest length
         parameter[2] = 1; // fanout
@@ -76,7 +76,7 @@ impl Blake2s8 {
         }
     }
 
-    fn update(&mut self, mut input: &[u8]) {
+    pub(crate) fn update(&mut self, mut input: &[u8]) {
         if self.buffered != 0 {
             let available = 64 - self.buffered;
             if input.len() <= available {
@@ -101,7 +101,7 @@ impl Blake2s8 {
         self.buffered = input.len();
     }
 
-    fn finish(mut self) -> [u8; 8] {
+    pub(crate) fn finish(mut self) -> [u8; 8] {
         self.count += self.buffered as u64;
         self.buffer[self.buffered..].fill(0);
         let block = self.buffer;

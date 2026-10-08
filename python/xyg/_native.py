@@ -621,6 +621,10 @@ class GeoNativeError(ValueError):
         -8: "polygon ring is too short or not closed",
         -9: "geometry exceeds feature, vertex, or byte limits",
         -10: "geographic column handle is stale or freed",
+        -11: "interior ring is not contained by its exterior ring",
+        -12: "line part has one vertex or ring has zero area",
+        -13: "host output buffer is smaller than the column",
+        -14: "null feature must not own vertices or parts",
     }
 
     def __init__(self, status: int):
@@ -11640,6 +11644,83 @@ def geo_column_meta(handle: int) -> tuple[int, int, int, int]:
     if geometry == 0 or crs == 0:
         raise GeoNativeError(-10)
     return length, vertices, geometry, crs
+
+
+def geo_column_metadata(handle: int) -> bytes:
+    """Return the canonical `XYGM` v1 metadata document for a geographic column.
+
+    The bytes are produced by Rust and are byte-identical across hosts for the
+    same column (see ``spec/design/geospatial.md``).
+    """
+    h = ctypes.c_uint64(handle)
+    needed = int(_lib.xyg_geo_column_metadata(h, None, 0))
+    if needed == _USIZE_MAX:
+        raise GeoNativeError(-10)
+    buf = np.empty(needed, dtype=np.uint8)
+    wrote = int(_lib.xyg_geo_column_metadata(h, buf.ctypes.data if needed else None, needed))
+    if wrote == _USIZE_MAX:
+        raise GeoNativeError(-10)
+    if wrote != needed:
+        raise GeoNativeError(-13)
+    return buf.tobytes()
+
+
+def geo_column_plane_lens(handle: int) -> tuple[int, int, int, int, int, int, int]:
+    """Return element counts `(xy, validity, ids, o0, o1, o2, orientations)`."""
+    lens = np.zeros(7, dtype=np.uint64)
+    status = int(_lib.xyg_geo_column_plane_lens(ctypes.c_uint64(handle), lens.ctypes.data))
+    if status != 0:
+        raise GeoNativeError(status)
+    a, b, c, d, e, f, g = (int(v) for v in lens)
+    return a, b, c, d, e, f, g
+
+
+def geo_column_read(handle: int) -> dict[str, npt.NDArray[Any]]:
+    """Copy every retained plane of a geographic column out of Rust.
+
+    Returns owned numpy arrays: ``xy`` (f64 interleaved), ``validity`` (u8),
+    ``feature_ids`` (u64), ``offsets0/1/2`` (u32), and ``orientations`` (u8,
+    one per polygon ring: 1 = CCW, 2 = CW). Source f64 values are returned
+    bit-for-bit.
+    """
+    n_xy, n_valid, n_ids, n_o0, n_o1, n_o2, n_orient = geo_column_plane_lens(handle)
+    xy = np.empty(n_xy, dtype=np.float64)
+    validity = np.empty(n_valid, dtype=np.uint8)
+    ids = np.empty(n_ids, dtype=np.uint64)
+    o0 = np.empty(n_o0, dtype=np.uint32)
+    o1 = np.empty(n_o1, dtype=np.uint32)
+    o2 = np.empty(n_o2, dtype=np.uint32)
+    orient = np.empty(n_orient, dtype=np.uint8)
+    status = int(
+        _lib.xyg_geo_column_copy(
+            ctypes.c_uint64(handle),
+            xy.ctypes.data if n_xy else None,
+            n_xy,
+            validity.ctypes.data if n_valid else None,
+            n_valid,
+            ids.ctypes.data if n_ids else None,
+            n_ids,
+            o0.ctypes.data if n_o0 else None,
+            n_o0,
+            o1.ctypes.data if n_o1 else None,
+            n_o1,
+            o2.ctypes.data if n_o2 else None,
+            n_o2,
+            orient.ctypes.data if n_orient else None,
+            n_orient,
+        )
+    )
+    if status != 0:
+        raise GeoNativeError(status)
+    return {
+        "xy": xy,
+        "validity": validity,
+        "feature_ids": ids,
+        "offsets0": o0,
+        "offsets1": o1,
+        "offsets2": o2,
+        "orientations": orient,
+    }
 
 
 def geo_column_free(handle: int) -> bool:

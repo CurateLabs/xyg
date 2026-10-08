@@ -150,6 +150,8 @@ export {
   graphforgeWebviewPayload,
 } from "./graphforge.js";
 
+export { geoDescriptorFromGeoArrow } from "./geoarrow.js";
+
 export {
   nativeLibraryPath,
   GRAPH_LAYOUT_PRESET,
@@ -223,6 +225,9 @@ export {
   temporalEventsInRange,
   geoColumnNew,
   geoColumnMeta,
+  geoColumnMetadata,
+  geoColumnPlaneLens,
+  geoColumnRead,
   geoColumnFree,
   temporalControllerCreate,
   temporalControllerState,

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 378
-#define XYG_ABI_SIGNATURE_SHA256 "52354c2b196ad21f9b1a3ff1a1aec34b0a2dbd7e94453418e75ee30235302304"
+#define XYG_ABI_VERSION 379
+#define XYG_ABI_SIGNATURE_SHA256 "bdf4a2890a259516cc19660006fac85c8b0c1ef6c2b862e68c75257d45e68caf"
 
 #ifdef __cplusplus
 extern "C" {
@@ -133,11 +133,14 @@ int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
 int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out);
+int32_t xyg_geo_column_copy(uint64_t handle, double * out_xy, size_t xy_cap, uint8_t * out_validity, size_t validity_cap, uint64_t * out_ids, size_t ids_cap, uint32_t * out_o0, size_t o0_cap, uint32_t * out_o1, size_t o1_cap, uint32_t * out_o2, size_t o2_cap, uint8_t * out_orient, size_t orient_cap);
 uint32_t xyg_geo_column_crs(uint64_t handle);
 int32_t xyg_geo_column_free(uint64_t handle);
 uint32_t xyg_geo_column_geometry(uint64_t handle);
 size_t xyg_geo_column_len(uint64_t handle);
+size_t xyg_geo_column_metadata(uint64_t handle, uint8_t * out, size_t cap);
 uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, size_t xy_len, const uint8_t * validity, size_t validity_len, const uint64_t * feature_ids, const uint32_t * offsets0, size_t offsets0_len, const uint32_t * offsets1, size_t offsets1_len, const uint32_t * offsets2, size_t offsets2_len, int32_t * out_error);
+int32_t xyg_geo_column_plane_lens(uint64_t handle, uint64_t * out_lens);
 size_t xyg_geo_column_vertex_count(uint64_t handle);
 int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out_offset);
 int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len);
