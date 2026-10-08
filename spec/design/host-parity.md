@@ -1885,10 +1885,19 @@ client must not grow a parallel “JS layout/LOD” product path.
 
 ### Direct-browser GeoColumn ingress
 
-WASM ABI 28 `XYGD` → `XYGM` shares Rust validation and canonical metadata with
+WASM ABI 29 `XYGD` → `XYGM` shares Rust validation and canonical metadata with
 Python/Node ABI 379. The browser's `encodeWasmGeoDescriptor` and
 `XygWasmWorker.geoColumnIngest` frame/transfer typed planes only. Source
 geometry, CRS, null topology, identity and limit policy remain Rust-owned.
 The committed six-kind goldens and stable failures run against the actual
-wasm32 module in `packages/xy-node/test/geo-wasm-parity.test.mjs`. Geographic
-scene projection remains the GeoViewport/layer follow-on (#48/#49).
+wasm32 module in `packages/xy-node/test/geo-wasm-parity.test.mjs`.
+
+The frozen zero-pitch `XYGP` processor also lowers that geometry through
+`GeoViewport` to ordinary `XYGS` point/outline records. The native conformance
+executable and actual wasm32 module run the same engine processor; their
+scene parity, full u64 identities, finite run separators and deep-zoom geometry
+are pinned by `packages/xy-node/test/geo-scene-wasm-parity.test.mjs`.
+`scripts/geo_wasm_smoke.mjs` additionally proves packaged strict-CSP hydration,
+paint and GPU picking. This is the #47 derived-scene parity proof, not a
+Python/Node geographic chart-building API. Live camera transitions, pitched
+projection and geographic fills/layers remain #48/#49.

@@ -1120,7 +1120,7 @@ function runGeoIngest(message: any) {
   queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 64 || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1147,7 +1147,9 @@ function runGeoIngest(message: any) {
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid geographic staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-    status = exports.xyg_wasm_geo_column_ingest(handle, message.sequence, 0, message.request.byteLength);
+    status = message.type === "geo.scene"
+      ? exports.xyg_wasm_geo_scene_compile(handle, message.sequence, 0, message.request.byteLength)
+      : exports.xyg_wasm_geo_column_ingest(handle, message.sequence, 0, message.request.byteLength);
     if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); rustError(message.requestId, detail.startsWith("XYG_GEO_") ? detail : statusCode(status), detail, status); return; }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0, outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
     if (!outputPtr || outputLen < 64 || outputLen > operationBudgetBytes || outputPtr + outputLen > exports.memory.buffer.byteLength) throw new Error("Rust geographic ingestion returned an invalid range");
@@ -1190,7 +1192,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
     || message?.type === "compound.transition"
-    || message?.type === "graphforge.compose" || message?.type === "geo.ingest";
+    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene";
   if (sequenced) {
     const sequence = Number(message.sequence);
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
@@ -1229,7 +1231,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "geo.ingest") {
+  if (message?.type === "geo.ingest" || message?.type === "geo.scene") {
     const timer = setTimeout(() => runGeoIngest(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;

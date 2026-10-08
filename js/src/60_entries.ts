@@ -366,5 +366,5 @@ export type { XygCompoundAction, XygWasmCompoundTransitionInput, XygWasmCompound
 export type { XygGraphForgeInput, XygGraphForgeLayerInput, XygGraphForgeIdentity, XygGraphForgeIntent, XygWasmGraphForgeView } from "./49_wasm_graphforge";
 export default { render, decodeFrame };
 
-export { encodeWasmGeoDescriptor } from "./49_wasm_geo";
-export type { XygGeoDescriptor } from "./49_wasm_geo";
+export { encodeWasmGeoDescriptor, encodeWasmGeoSceneRequest } from "./49_wasm_geo";
+export type { XygGeoDescriptor, XygFrozenGeoScene } from "./49_wasm_geo";

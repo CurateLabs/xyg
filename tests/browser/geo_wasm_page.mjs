@@ -1,5 +1,5 @@
 // Strict-CSP native-golden descriptor ingest through the packaged browser Worker.
-import {createXygWasmWorker,encodeWasmGeoDescriptor} from "/packages/xy-client/dist/index.js";
+import {createXygWasmWorker,encodeWasmGeoDescriptor,encodeWasmGeoSceneRequest,hydrateWasmPainter} from "/packages/xy-client/dist/index.js";
 try {
  const golden=await(await fetch("/tests/fixtures/geo_cross_host.json")).json();
  const kinds={point:1,linestring:2,polygon:3,multipoint:4,multilinestring:5,multipolygon:6};
@@ -30,8 +30,46 @@ try {
  if(await streamResult!=="XYG_WASM_CANCELLED"||!worker.evidenceStreamObservations().some(o=>o.requestId===stream.requestId&&o.phase==="cancelled"))throw Error("stream promise/lifecycle was not cancelled");
  const replay=await worker.aggregateStream({x:new Float64Array([0]),y:new Float64Array([0])},{width:4,height:4,x0:-1,x1:1,y0:-1,y1:1}).result;
  if(!(replay.aggregate instanceof ArrayBuffer))throw Error("stream did not recover after geographic supersession");
+ const camera={centerX:0,centerY:0,zoom:0,width:800,height:600,worldWrap:true,diameter:12,strokeWidth:0,fillRgba:Uint8Array.of(255,0,0,255)};
+ const ids=BigUint64Array.of(0x5859040000000001n,0xffffffffffffffffn);
+ const sceneSource={geometry:1,crs:4326,xy:Float64Array.of(-60,0,60,0),validity:Uint8Array.of(1,1),featureIds:ids};
+ const sceneRequest=encodeWasmGeoSceneRequest(sceneSource,camera),sceneTask=worker.geoSceneCompile(sceneRequest);
+ if(sceneRequest.byteLength!==0||sceneSource.xy.byteLength!==32)throw Error("scene source/transfer ownership");
+ const scene=await sceneTask.result,prepared=await worker.prepareScene(scene).result;
+ const host=document.createElement("div");host.style.cssText="width:800px;height:600px";document.body.appendChild(host);
+ const view=hydrateWasmPainter(host,prepared);view._drawNow();
+ for(let i=0;i<2;i++){
+  if(view.sceneStableId(0,i)!==ids[i])throw Error("full u64 scene identity lost in hydration");
+  const hit=view._pickAt(400+(i?1:-1)*512/6,300);
+  if(!hit||view.sceneStableId(view.gpuTraces.findIndex(t=>t.trace.id===hit.trace),hit.index)!==ids[i])throw Error(`full u64 scene identity lost in GPU picking: ${JSON.stringify({hit:hit?{trace:hit.trace,index:hit.index}:null,plot:view.plot,traces:view.gpuTraces.map(t=>({id:t.trace.id,n:t.pickCount}))})}`);
+ }
+ const gl=view.gl,pixels=new Uint8Array(view.canvas.width*view.canvas.height*4);view._drawNow();gl.readPixels(0,0,view.canvas.width,view.canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+ let red=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]>200&&pixels[i+1]<50&&pixels[i+2]<50)red++;
+ if(red<100)throw Error("geographic scene did not paint expected pixels");
+ view.destroy();host.remove();
+ const lineId=0x5859060000000042n;
+ const lineScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest({geometry:2,crs:4326,xy:Float64Array.of(170,-10,-170,10),offsets0:Uint32Array.of(0,2),validity:Uint8Array.of(1),featureIds:BigUint64Array.of(lineId)},{...camera,strokeWidth:2})).result;
+ const linePrepared=await worker.prepareScene(lineScene).result;
+ const lineHost=document.createElement("div");lineHost.style.cssText="width:800px;height:600px";document.body.appendChild(lineHost);
+ const lineView=hydrateWasmPainter(lineHost,linePrepared);lineView._drawNow();
+ if(lineView.gpuTraces.length!==2)throw Error("dateline segments reconnected during hydration");
+ for(let trace=0;trace<2;trace++)for(let row=0;row<2;row++)if(lineView.sceneStableId(trace,row)!==lineId)throw Error("outline endpoint identity lost");
+ lineView.destroy();lineHost.remove();
+ const deepSource={geometry:1,crs:4326,xy:Float64Array.of(-180,0,0,0,1e-7,0),validity:Uint8Array.of(1,1,1),featureIds:BigUint64Array.of(1n,ids[0],ids[1])};
+ const deepScene=await worker.geoSceneCompile(encodeWasmGeoSceneRequest(deepSource,{...camera,zoom:24,diameter:1})).result;
+ const deepPrepared=await worker.prepareScene(deepScene).result;
+ const deepHost=document.createElement("div");deepHost.style.cssText="width:800px;height:600px";document.body.appendChild(deepHost);
+ const deepView=hydrateWasmPainter(deepHost,deepPrepared),cpu=deepView.gpuTraces[0]._cpu;
+ const delta=cpu.x[1]-cpu.x[0];
+ if(cpu.x.length!==2||!Number.isFinite(delta)||Math.abs(delta-2.386092942222222)>1e-4)throw Error(`deepzoom separation lost in painter upload: delta=${delta}, n=${cpu.x.length}, meta=${JSON.stringify(cpu.xMeta)}`);
+ if(deepView.sceneStableId(0,0)!==ids[0]||deepView.sceneStableId(0,1)!==ids[1])throw Error("deepzoom visible identities lost");
+ deepView.destroy();deepHost.remove();
+ const sceneCancel=worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,camera));sceneCancel.cancel();
+ let sceneCancelled;try{await sceneCancel.result;}catch(error){sceneCancelled=error.code;}
+ if(sceneCancelled!=="XYG_WASM_CANCELLED")throw Error("scene cancellation published");
+ await worker.geoSceneCompile(encodeWasmGeoSceneRequest(sceneSource,camera)).result;
  const active=worker.geoColumnIngest(encodeWasmGeoDescriptor(desc(c)));worker.dispose();
  let disposed;try{await active.result;}catch(error){disposed=error.code;}
  if(disposed!=="XYG_WASM_DISPOSED")throw Error("dispose allowed publication");
- window.__geo={ok:true,compared,stable,cancel,disposed};
+ window.__geo={ok:true,compared,stable,cancel,disposed,scenePicks:2,scenePaintPixels:red,outlineSegments:2,sceneCancelled,deepzoomDelta:delta};
 }catch(error){window.__geo={ok:false,message:error.message,code:error.code};}

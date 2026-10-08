@@ -6,6 +6,32 @@ use super::{
 use xyg_engine::geo::{column_from_descriptor_bytes, GeoError};
 
 pub(super) fn execute(instance: &mut Instance, sequence: u32, offset: usize, length: usize) -> i32 {
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        column_from_descriptor_bytes(request, budget)
+            .map(|column| column.canonical_metadata())
+            .map_err(|error| (error.code(), error == GeoError::ResourceLimit))
+    })
+}
+
+pub(super) fn execute_scene(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_scene::compile_geo_scene(request, budget)
+            .map_err(|error| (error.code(), error.is_resource()))
+    })
+}
+
+fn execute_with(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+    processor: impl FnOnce(&[u8], usize) -> Result<Vec<u8>, (&'static str, bool)>,
+) -> i32 {
     // Rejected old calls must not consume the staging owned by a newer
     // aggregate, streamed aggregate, graph or compile operation.
     let newest = instance
@@ -53,8 +79,7 @@ pub(super) fn execute(instance: &mut Instance, sequence: u32, offset: usize, len
     let budget = instance
         .max_arena_bytes
         .saturating_sub(arena.capacity().saturating_sub(length));
-    let result =
-        column_from_descriptor_bytes(request, budget).map(|column| column.canonical_metadata());
+    let result = processor(request, budget);
     drop(arena);
     match result {
         Ok(output) => {
@@ -62,14 +87,14 @@ pub(super) fn execute(instance: &mut Instance, sequence: u32, offset: usize, len
             instance.last_error.clear();
             STATUS_OK
         }
-        Err(error) => fail(
+        Err((code, resource)) => fail(
             instance,
-            if error == GeoError::ResourceLimit {
+            if resource {
                 STATUS_RESOURCE_LIMIT
             } else {
                 STATUS_INVALID_ARGUMENT
             },
-            error.code(),
+            code,
         ),
     }
 }
@@ -94,6 +119,77 @@ mod tests {
     fn stage(handle: u32, request: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, request.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(request)).unwrap();
+    }
+    fn scene_request() -> Vec<u8> {
+        let descriptor = point_request(2);
+        let mut request = vec![0u8; 128];
+        request[..4].copy_from_slice(b"XYGP");
+        for (offset, value) in [(4, 1u32), (8, 128), (16, 4326)] {
+            request[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        for (offset, value) in [(48, 800f64), (56, 600.0), (80, 6.0), (88, 1.0)] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        request[104..112].copy_from_slice(&(descriptor.len() as u64).to_le_bytes());
+        request.extend(descriptor);
+        request
+    }
+    #[test]
+    fn scene_output_resource_cancel_recovery_and_dispose_are_atomic() {
+        let request = scene_request();
+        let handle = xyg_wasm_instance_new(65536);
+        stage(handle, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 1, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYGS");
+            assert_eq!(instance.arena.capacity(), 0);
+        })
+        .unwrap();
+        stage(handle, &request);
+        assert_eq!(crate::xyg_wasm_cancel(handle, 2), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 2, 0, request.len()),
+            STATUS_CANCELLED
+        );
+        stage(handle, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 3, 0, request.len()),
+            STATUS_OK
+        );
+        let mut bad = request.clone();
+        bad[80..88].copy_from_slice(&f64::MAX.to_le_bytes());
+        stage(handle, &bad);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 4, 0, bad.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert_eq!(instance.output.capacity(), 0);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 5, 0, request.len()),
+            crate::STATUS_INVALID_HANDLE
+        );
+        let handle = xyg_wasm_instance_new(8192);
+        stage(handle, &request);
+        assert_eq!(
+            crate::xyg_wasm_geo_scene_compile(handle, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+    #[test]
+    fn scene_framing_rejects_all_truncation_before_projection() {
+        let request = scene_request();
+        for end in 0..request.len() {
+            assert!(xyg_engine::geo_scene::compile_geo_scene(&request[..end], 65536).is_err());
+        }
     }
     #[test]
     fn packed_and_typed_ingress_feed_identical_rebuildable_caches() {
@@ -176,6 +272,10 @@ mod tests {
         ] {
             assert_eq!(
                 xyg_wasm_geo_column_ingest(handle, sequence, usize::MAX, 0),
+                status
+            );
+            assert_eq!(
+                crate::xyg_wasm_geo_scene_compile(handle, sequence, usize::MAX, 0),
                 status
             );
             with_instance_mut(handle, |instance| {

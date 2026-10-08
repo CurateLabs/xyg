@@ -3,11 +3,11 @@
 **Status:** GeoColumn native validation, canonical metadata, host read-back
 and derived-cache inputs (#47; ABI 379) + GeoViewport camera foundation (#48).
 MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
-Direct-browser WASM ABI 28 descriptor ingestion (`XYGD` to `XYGM`) now shares
-Rust validation and canonical metadata. GeoViewport projection and geographic
-scene surfaces remain #48/#49; ingestion does not claim scene parity. Actual
-native-versus-wasm32 derived scene parity remains an open #47 amendment
-requirement.
+Direct-browser WASM ABI 29 shares typed descriptor ingestion (`XYGD` to `XYGM`)
+and frozen point/outline scene lowering (`XYGP` to canonical `XYGS`) with native
+Rust. Actual native-versus-wasm32 derived scene parity covers the bounded,
+zero-pitch frozen camera scope; live camera transitions remain #48, layer/fill
+surfaces #49, and LOD/export #50.
 
 ## Product rule
 
@@ -443,3 +443,17 @@ rebuild-key seams, and native↔WASM goldens (#59).
 - Upstream producer: GraphForge #797 (canonical GeoArrow spatial values)
 - Dossier: §4/§16 (f64 vs f32), §19 (NaN never reaches GPU), §27 (rebuildable
   caches), §29 (typed buffers on the wire)
+
+### Frozen cross-target derived Scene evidence (#47)
+
+`geo_scene::compile_geo_scene` lowers a checked XYGD source and frozen XYGP
+camera/style snapshot through the same GeoViewport projected cache into existing
+XYGS Scatter/Polyline records. Source identities remain literal full u64 values.
+Actual wasm32 and the bounded native `geo_scene_conformance` executable share
+this product processor. The native/WASM parity suite checks all six geometry
+kinds, holes/nulls, CRS, source precision, deep zoom, dateline splitting, limits
+and failures; the packaged strict-CSP Worker proof exercises hydration, painted
+pixels and GPU picking. This closes the derived Scene proof within the frozen
+zero-pitch point/outline scope. The complete framing and allocation contract is
+in [browser-wasm.md](browser-wasm.md#frozen-geographic-scene-ingress-wasm-abi-29-47).
+Live camera transitions remain #48 and geographic fills/layers remain #49.
