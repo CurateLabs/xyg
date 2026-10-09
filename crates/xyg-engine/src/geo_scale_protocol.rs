@@ -518,14 +518,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             return Err(SourceError::InvalidFrame);
         }
         let operation_budget = budget(request)?;
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -654,14 +647,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             max_hits: u32at(payload, 76) as usize,
         };
         crate::geo_lod_hit::reservation_bytes(query)?;
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -752,14 +738,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -813,14 +792,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -872,14 +844,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         return Ok(out);
     }
     if matches!(command, 11 | 19) {
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -1233,6 +1198,21 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         _ => return Err(SourceError::InvalidFrame),
     }
     Ok(out)
+}
+
+// Publication-only check shared by every immutable Data producer. Keep one
+// body in the constrained WASM artifact; this is outside row/vertex hot loops.
+#[inline(never)]
+fn admit_data_slot(r: &Registry) -> Result<()> {
+    if r.entries
+        .iter()
+        .filter(|(_, e)| matches!(e, Entry::Data { .. }))
+        .count()
+        >= MAX_DATA_HANDLES
+    {
+        return Err(SourceError::ResourceLimit);
+    }
+    Ok(())
 }
 
 /// Pure bounded authoring/read operation. Native two-call length discovery is safe.

@@ -93,9 +93,19 @@ wasm32 artifact; it does not package or waive the artifact size gate. Explicit `
 notebook/Reflex/VS Code journey are subsequent work; this document does not claim
 that those hosts already accept indexed sources.
 
-The packaged current cmd26 artifact is 1,277,035 raw bytes and 522,210 bytes
+The initial local cmd26 checkpoint artifact is 1,277,035 raw bytes and 522,210 bytes
 with Node `gzipSync` defaults, below the unchanged 1,310,720 / 524,288-byte
 gates. SHA-256: `312c41122d6d61c38eece8e6fbf0691ba8d45e7562d2ee4f49e3b82b2ad31ed4`.
 This uses the existing O3/inline100/Binaryen132 profile; package signatures
 remain native383/WASM33. The packaged artifact passed the conformance command
 above, not just the unoptimized compiler output.
+
+CI on Linux measured that checkpoint at 524,462 gzip bytes, 174 bytes above
+the unchanged 524,288-byte gate. Data-slot admission is now one shared cold
+function for all five Data producers, with inlining disabled for that function
+only. The release optimizer profile and quotas are unchanged. The revised local
+artifact is 1,276,353 raw / 522,046 Node-default gzip bytes, SHA-256
+`06403229aa9ff7df71f4527aef97c52a58bc6cd093879e374a4c8bd8e7cee4f8`.
+Fresh native and packaged-WASM conformance and all23 protocol tests pass.
+Linux exact-head CI remains the platform size decision; the local result alone
+does not establish that gate. No runtime speedup is claimed.
