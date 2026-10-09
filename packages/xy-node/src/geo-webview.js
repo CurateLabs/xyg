@@ -1,4 +1,5 @@
 /** Native one-mount geographic host facade. No browser imports or source serialization. */
+import {isHierarchyFrame} from './geo-hierarchy.js';
 import {GeoSelectedScope} from './geo-selected.js';
 import {GeoLiveCandidate} from './geo-live-host.js';
 import {sceneBrowserPainter} from './scene.js';
@@ -23,7 +24,7 @@ export class GeoHostAdapter {
   if(frame){
    const expected=encodeGeoScaleRequest({command:5,sequence,budget:this.source.budget,query:this.query});let actual=frame._queryPacket?.slice(0);
    if(!actual)throw new TypeError('explicit frame lacks trusted query authority');
-   const actualOp=new DataView(actual).getUint32(8,true);if([35,36].includes(actualOp)){if(actual.byteLength!==264||new DataView(actual).getBigUint64(232,true)!==8n||!frame.data.selection)throw TypeError('selected frame requires exact issued query framing');actual=actual.slice(0,256);new DataView(actual).setBigUint64(232,0n,true);}
+   const actualOp=new DataView(actual).getUint32(8,true);if(actualOp===43&&!isHierarchyFrame(frame))throw TypeError("selected hierarchy frame requires private provenance");if([35,36,43].includes(actualOp)){if(actual.byteLength!==264||new DataView(actual).getBigUint64(232,true)!==8n||!frame.data.selection)throw TypeError('selected frame requires exact issued query framing');actual=actual.slice(0,256);new DataView(actual).setBigUint64(232,0n,true);}
    new Uint8Array(actual).set(new Uint8Array(expected,8,4),8);
    new Uint8Array(actual).set(new Uint8Array(expected,16,8),16);
    const packet=frame.data.packet,pv=new DataView(packet),ev=new DataView(expected),info=this.source.info;
