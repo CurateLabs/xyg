@@ -8,6 +8,7 @@ import weakref
 import pytest
 
 from test_geoscale import BUDGET, I64, U64, query, source_fixture
+from test_static_export_cross_host import _decode_png
 from xyg import _geo_mixed as mixed
 from xyg import _geo_tiles as tiles
 from xyg import _geocatalog as catalog
@@ -198,18 +199,20 @@ def test_actual_native_python_mixed_scene_freeze_and_original_disposal(raster_co
             scale.execute(scale.encode_request(dict(command=10, handle=retained["handle"])))
             artifact = frame.export("png")
             try:
-                from io import BytesIO
+                width, height, channels, pixels = _decode_png(artifact.bytes)
+                assert (width, height) == (64, 64) and channels in (3, 4)
 
-                from PIL import Image
+                def pixel(x, y):
+                    offset = (y * width + x) * channels
+                    color = tuple(pixels[offset : offset + channels])
+                    return color if channels == 4 else (*color, 255)
 
-                image = Image.open(BytesIO(artifact.bytes)).convert("RGBA")
-                assert image.getpixel((32, 32)) == (255, 0, 0, 255)
-                assert image.getpixel((2, 2)) == raster_color
-                footer = [image.getpixel((x, y)) for y in range(51, 63) for x in range(41, 61)]
+                assert pixel(32, 32) == (255, 0, 0, 255)
+                assert pixel(2, 2) == raster_color
+                footer = [pixel(x, y) for y in range(51, 63) for x in range(41, 61)]
                 assert any(max(p[:3]) < 64 and p[3] == 255 for p in footer)
                 assert (255, 255, 255, 255) in footer
                 assert b"Tiles" in artifact.snapshot
-                image.close()
             finally:
                 artifact.close()
             artifact = frame.export("html")

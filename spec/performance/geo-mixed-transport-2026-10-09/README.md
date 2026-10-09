@@ -16,6 +16,8 @@ literal attribution remain, with zero scripts/provider requests. Black and white
 raster variants prove actual screenshot glyph pixels within Rust's opaque white
 XYLB footer box, and native PNG/offline HTML preserve that contrast. The old
 black-text-only footer failed the black-raster negative control.
+The native PNG pixel assertions use the existing standard-library RGB/RGBA
+decoder, so the Python floor proof requires no Pillow dependency or skipped control.
 
 The shared fixture is `tests/browser/geo_mixed_fixture.mjs`: a retained source
 Point IDu64MAX/generationu64MAX, half-open window at i64MIN, opaque256² raster,
