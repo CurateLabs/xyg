@@ -11,9 +11,10 @@ try{
  const result=spawnSync(process.execPath,[new URL('node_modules/typescript/bin/tsc',root).pathname,source.pathname,'--declaration','--emitDeclarationOnly','--outDir',directory,'--target','ES2022','--module','ESNext','--moduleResolution','bundler','--skipLibCheck'],{encoding:'utf8'});
  if(result.error)throw result.error;
  if(result.status!==0)throw Error(result.stdout+result.stderr);
+ const clean=s=>s.split('\n').map(line=>line.trimEnd()).join('\n');
  const imports=s=>s.replaceAll("'./63_geo_source'","'./geoscale.js'");
  const outputs={
-  'geo-overview.js':'// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+imports(stripTypeScriptTypes(readFileSync(source,'utf8'))),
+  'geo-overview.js':'// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+imports(clean(stripTypeScriptTypes(readFileSync(source,'utf8')))),
   'geo-overview.d.ts':imports(readFileSync(join(directory,'67_geo_overview.d.ts'),'utf8')),
  };
  for(const [name,text] of Object.entries(outputs)){

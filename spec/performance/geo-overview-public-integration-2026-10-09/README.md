@@ -31,3 +31,7 @@ Set `XYG_NATIVE_LIB` to the matching explicit native artifact for Node/Python. R
 ## Limits
 
 This is bounded public temporal-domain overview evidence. Counts are spatially nonfinal. Public domain-membership adapters, accepted-frame browser export, native live-host overview routing, uncertain allocation recovery, concurrent five-overview replacement and massive/competitor latency remain open. This does not close#50,#39 or M6.
+
+## Generated codec normalization repair
+
+First combined Direct WASM run37966616488 failed at the existing wire-generator check: its type stripping retained whitespace-only declaration lines, while the newer host generator removes trailing whitespace. The wire generator now uses the same per-line `trimEnd` normalization. Both generators pass `--check`; actually running the wire generator and then checking the host generator produces no tracked output change. No codec policy or artifact input changes.
