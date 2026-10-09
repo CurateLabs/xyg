@@ -13,6 +13,26 @@ from . import _geoscale as scale
 COMMANDS = (6, 7, 8, 9, 10, 23, 27, 28, 29, 30, 31)
 
 
+class GeoOverviewUnsupportedSelected(RuntimeError):
+    """The temporal index cannot retain sparse selected-frame authority."""
+
+
+def builder_request(frame, *, budget, max_vertices):
+    """Internal frame-aware ingress; raw numeric framing cannot inspect intent."""
+    if frame.data.selection is not None:
+        raise GeoOverviewUnsupportedSelected("Temporal overview does not retain selected authority")
+    sequence = frame.data.identity["sequence"]
+    if not scale._uint(max_vertices):
+        raise ValueError("nonzero u64 overview vertex ceiling required")
+    return request(
+        27,
+        frame.handle,
+        sequence,
+        budget=budget,
+        payload=struct.pack("<Q", max_vertices),
+    )
+
+
 def request(command, handle, sequence, *, budget=None, query=None, payload=b""):
     """Frame shared headers; Rust owns all temporal and geometry decisions."""
     if command not in COMMANDS or (query is not None and command != 28):
@@ -41,7 +61,7 @@ def reply(packet):
     if len(b) != 256 or struct.unpack_from("<4sI", b) != (b"XYGZ", 1):
         raise ValueError("fixed overview reply required")
     code = struct.unpack_from("<I", b, 8)[0]
-    if code not in (0, 1, 2, 7, 9, 13, 14, 15, 16):
+    if code not in (0, 1, 2, 7, 9, 13, 14, 15, 16, 17):
         raise ValueError("invalid overview reply")
     scale._zero(b, 12, 16)
     scale._zero(b, 192, 256)

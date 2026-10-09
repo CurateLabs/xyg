@@ -126,6 +126,13 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         if sequence != s.sequence {
             return Err(SourceError::StaleSource);
         }
+        // The temporal index retains canonical source authority, not sparse
+        // selected intent/counts (§34). Empty intent is still selected authority.
+        if s.result.selection.is_some() || s.scope.is_some() {
+            let mut out = reply(handle, sequence);
+            put32(&mut out, 8, 17);
+            return Ok(out);
+        }
         let lease = GeoProcessorLease::acquire(4096)?;
         let session = GeoOverviewBuildSession::new(&s.source, budget(request)?, u64at(payload, 0))
             .map_err(error)?;

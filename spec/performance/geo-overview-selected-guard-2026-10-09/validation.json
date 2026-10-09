@@ -1,0 +1,29 @@
+{
+  "ordinary_baseline": "spec/performance/geo-overview-transport-2026-10-09/conformance.json",
+  "ordinary_cases_compared": 8,
+  "ordinary_counts_scene_contracts_identical": true,
+  "workspace_tests": {
+    "core": 53,
+    "engine": 1436,
+    "wasm": 65,
+    "doctests": 2
+  },
+  "rust_protocol_tests": 6,
+  "node_native_wasm_tests": 4,
+  "python_overview_tests": 8,
+  "claims": [
+    "full/empty private selected rejection before builder admission",
+    "None wire and8 count/Scene output contracts unchanged"
+  ],
+  "limitations": [
+    "no new overview painter/export/membership",
+    "no new package quota, ABI or chart constructor",
+    "M6 issue50 remains open"
+  ],
+  "ci_test_modes": {
+    "native_default": 2,
+    "explicit_native_wasm": 4,
+    "root_and_package_cwd": "both modes passed",
+    "explicit_missing_wasm": "required failure ENOENT,2 native pass/2 wasm fail"
+  }
+}
