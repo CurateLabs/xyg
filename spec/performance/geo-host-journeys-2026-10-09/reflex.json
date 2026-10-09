@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "journey": "actual production Reflex + React client + socket.io binary namespace + Rust native painter",
+  "browser": "155.0.8059.40",
+  "redPixels": 47,
+  "identity": "u64MAX/i64MIN",
+  "pick": true,
+  "websocketReconnect": true,
+  "sameFrameOnReconnect": true,
+  "releaseAcknowledged": true,
+  "canvasesAfterRelease": 0,
+  "external": [],
+  "errors": []
+}

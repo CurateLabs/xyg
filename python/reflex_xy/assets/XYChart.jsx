@@ -40,7 +40,7 @@ import io from "socket.io-client";
 import env from "$/env.json";
 import reflexEnvironment from "$/reflex.json";
 import { getBackendURL, getToken } from "$/utils/state";
-import { ChartView, decodeFrame, renderStandalone, attachHostWasmTicks } from "./xy_client.js";
+import { ChartView, decodeFrame, renderStandalone, attachHostWasmTicks, XygGeoHostView } from "./xy_client.js";
 
 // Opt-in console tracing: localStorage.setItem("xy_debug", "1")
 const DEBUG = globalThis.localStorage?.getItem?.("xy_debug") === "1";
@@ -567,7 +567,14 @@ export function XYChart(props) {
     };
 
     const comm = {
-      send: (m) => {
+      send: (m, buffers) => {
+        if (m?.type === "geo_host") {
+          if (!socket.connected) throw new Error("geographic host transport disconnected");
+          const payload = { fig: token, mid, m: { ...m, buffer: buffers?.[0] } };
+          if (payloadVersion !== null) payload.v = payloadVersion;
+          socket.emit("msg", payload);
+          return;
+        }
         if (!m || destroyed) return;
         if (m.type === "view_change") {
           // Semantic event, resolved locally — the kernel round-trip would
@@ -692,6 +699,19 @@ export function XYChart(props) {
       // Direct subscription replies are mount-addressed; room-wide rebuild
       // broadcasts intentionally omit mid and remain visible to every mount.
       if (data.mid !== undefined && data.mid !== null && data.mid !== mid) return;
+      if (data.spec?.geo_host === true) {
+        payloadVersion = Number.isInteger(data.version) ? data.version : null;
+        awaitingPayload = false;
+        // Reconnect to the same immutable owner keeps the existing view;
+        // it does not create a second unaccounted frontend packet copy.
+        if (!(view instanceof XygGeoHostView)) {
+          if (view) view.destroy();
+          view = new XygGeoHostView(el, comm);
+          (window.__xy_views ||= new Map()).set(outerRef.current?.id || mid, view);
+          view.ready.catch((error) => dbg("geographic host", error.message));
+        }
+        return;
+      }
       const rowsSelectionMounted =
         view?.root?.xy?.state?.()?.selection?.rows === true;
       if (
@@ -797,6 +817,10 @@ export function XYChart(props) {
     };
 
     const onMsg = (data) => {
+      if (data?.fig === token && data.mid === mid && data.message?.type === "geo_host") {
+        for (const callback of viewCallbacks.slice()) callback(data.message, data.buffers || []);
+        return;
+      }
       if (destroyed || !data || data.fig !== token) return;
       // Replies are mount-addressed; pushes (append) carry no mid.
       if (data.mid !== undefined && data.mid !== null && data.mid !== mid) return;
@@ -946,6 +970,24 @@ export function XYChart(props) {
     if (tracksClickInput) el.addEventListener("click", rememberClick, true);
 
     return () => {
+      if (view instanceof XygGeoHostView) {
+        destroyed = true;
+        if (tracksClickInput) el.removeEventListener("click", rememberClick, true);
+        socket.off("payload", onPayload);
+        socket.off("err", onErr);
+        socket.off("disconnect", onDisconnect);
+        socket.off("connect", subscribe);
+        window.__xy_views?.delete(outerRef.current?.id || mid);
+        const retiring = view; view = null;
+        // Keep only the response listener until buffer-drop/release ACK.
+        void retiring.dispose().finally(() => {
+          socket.off("msg", onMsg);
+          const remaining = (subCounts.get(token) || 1) - 1;
+          if (remaining <= 0) { subCounts.delete(token); if (socket.connected) socket.emit("unsub", {fig:token,mid}); }
+          else subCounts.set(token, remaining);
+        }).catch((error) => dbg("geographic dispose", error.message));
+        return;
+      }
       destroyed = true;
       if (tracksClickInput) el.removeEventListener("click", rememberClick, true);
       resetEpoch();

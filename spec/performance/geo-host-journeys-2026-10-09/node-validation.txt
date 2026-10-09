@@ -1,0 +1,12 @@
+✔ native host rejects other source kinds before protocol or bridge access (0.441625ms)
+✔ @curatelabs/xyg-node modules do not reference browser globals (9.127625ms)
+✔ vscode.js points webviews at the host-neutral paint client (0.393709ms)
+✔ vscode.js exposes the background force scheduler (36.797542ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.732875

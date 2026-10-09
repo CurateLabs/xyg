@@ -77,3 +77,6 @@ export {
   pyramidFree,
   shouldUsePyramid,
 } from "./index.js";
+
+export { GeoChart, geoLayer, geoChart, RetainedGeoSource, GeoTileSession } from "./index.js";
+export { attachGeoWebview } from "./geo-webview.js";
