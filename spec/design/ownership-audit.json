@@ -1969,6 +1969,14 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/67_geo_overview.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
       "path": "js/src/wasm_abi_generated.ts",
       "current_owner": "Generated cross-host WASM contract binding",
       "policy": "browser-wasm-generated",
@@ -2071,6 +2079,22 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-overview.d.ts",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-overview.js",
+      "policy": "node-host"
     },
     {
       "path": "packages/xy-node/src/geo-retained.d.ts",

@@ -1,0 +1,22 @@
+{
+  "sourceBaseline": "8ddb7e71a88b85180c3fe774f227e226c6e66bd1",
+  "nativeBuildSource": "21515eab6",
+  "artifactReuseProof": "engine/core/Cargo/config trees equal native build source; transport-only changes",
+  "nativeLibrarySha256": "cd703147ca5089a7ebd293e97439a8c2ef0a65eef3836d31c01e80eb1cf3dc43",
+  "transportSha256": {
+    "js/src/67_geo_overview.ts": "11f6ed901406b5a114e59b2d3a1f48846b133748fc9c59418956d732f7c1d4bb",
+    "packages/xy-node/src/geo-overview.js": "cce4300bb6bc68caca3e6c6301fab65be80c82156ccfafd0ac83c82df569e240",
+    "packages/xy-node/src/geo-overview.d.ts": "8832feba12e5c41d49085575416091f96726050f80ccca376e5d80d7775be789",
+    "scripts/geo_overview_conformance.mjs": "1c1f2437eda203aa0d1d5f1dd585b61ba61cc2b7456bac4a90cdfad31dd6a90f",
+    "scripts/gen_geo_overview_wire.mjs": "13107f4856ca846c8ca676f54e77ce9214cd1f8f7954163c71b8d945b04b37da"
+  },
+  "host": "macOS arm64",
+  "node": "v26.6.0",
+  "limits": [
+    "typed internal transport only",
+    "no browser overview paint",
+    "no typed Python overview host",
+    "no overview membership or frozen snapshot",
+    "no massive data latency"
+  ]
+}
