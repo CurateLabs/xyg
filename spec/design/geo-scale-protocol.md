@@ -575,5 +575,25 @@ Legacy commands5/18/19 and None packets retain their behavior and wire bytes;
 Scene and Rows packets use explicit XYGZ v2 with XYSE intent/count provenance,
 not a silently extended v1. Scope disposal refuses while private authority
 remains. Existing16 total handles,8 sessions,8 Data,128/384 MiB budgets remain.
-Frozen selected export and public typed host orchestration are separate gates;
-no selected-export coverage or #50 closure is claimed by this core slice.
+Selected immutable Data freezes through existing XYGX v3 full-XYSE authority.
+Public selected hierarchy orchestration and massive execution remain separate
+gates; this foundation does not close #50.
+
+
+## Paged hierarchy commands37–44
+
+`geo-hierarchy-protocol.md` specifies the private paged hierarchy child. It shares
+this registry, quotas, canonical SceneData serializer and lifecycle exports.
+Commands37/38 create bounded authenticated build/query sessions,39 publishes
+independent immutable SceneData,40 purely reads exact pending write bytes and41
+ACKs their private ticket. Build37 retains linked Scope authority from selected
+SceneData, while38 rejects scoped roots instead of dropping selection.
+Command42 forks an independently versioned lane from immutable creation history.
+Command43 consumes an issued private State into the admitted query handle;
+command44 replaces its completed query with fully owned selected SceneData at
+the same handle. Preflight failure preserves State; admitted fallback/cancel
+preserves transition history and requires explicit exact-intent reissue.
+Reply17 means unsupported selected query on an unscoped index and does not
+consume State;18 is a privately completed hierarchy and19 an exact completed
+query. Ordinary None packets and independent39 publication retain their bytes
+and ownership semantics. No C ABI/WASM signatures or resource caps change.

@@ -10,7 +10,6 @@ from test_geoscale import BUDGET, U64, query
 from xyg import _geoscale as g
 from xyg._geo_retained import RetainedGeoSource
 from xyg._geo_selected import GeoSelectedScope
-from xyg._geo_snapshot import GeoSnapshotError
 from xyg._native import GeoNativeError
 
 
@@ -46,8 +45,13 @@ def test_native_selected_frame_retains_full_intent_and_rows_after_source_disposa
             assert page.data.record(0)["selected"]
         finally:
             page.close()
-        with pytest.raises(GeoSnapshotError, match="UNSUPPORTED"):
-            frame.export("svg")  # Explicit Unsupported until full snapshot intent.
+        artifact = frame.export("svg")
+        try:
+            assert bytes(artifact.snapshot[:8]) == b"XYGX\x03\0\0\0"
+            assert b"XYSE" in bytes(artifact.snapshot)
+            assert bytes(artifact.bytes).startswith(b"<svg")
+        finally:
+            artifact.close()
         with pytest.raises(GeoNativeError):
             scope.close()  # Live immutable selected frame still owns scope.
     finally:

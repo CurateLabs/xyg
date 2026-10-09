@@ -1,0 +1,64 @@
+{
+  "ordinary": {
+    "bytes": 1344,
+    "selectedRecord": 568,
+    "sceneBytes": 480,
+    "tileBytes": 0
+  },
+  "mixed": {
+    "bytes": 36995,
+    "selectedRecord": 568,
+    "sceneBytes": 17209,
+    "tileBytes": 18913
+  },
+  "formats": {
+    "svg": {
+      "bytes": 50698,
+      "sha256": "a02ba31badf812dccbe6218e30936675ba0159a7587e44cc805a19ee55c46ec9"
+    },
+    "png": {
+      "bytes": 50404,
+      "sha256": "f10629a2bd4590d8fcb9f0c6f3085007b209bd1dffece3d579018db441272c0d"
+    },
+    "pdf": {
+      "bytes": 1312,
+      "sha256": "4fc885fae951d4393d6b2be9cc28ff5319dc15332e6842511b512495f8e1d966"
+    },
+    "jpeg": {
+      "bytes": 1881,
+      "sha256": "93f11a8ffd8dd572599626c46e9adfa2ec19b1d9b93106518e8df8fb74e622c8"
+    },
+    "webp": {
+      "bytes": 530,
+      "sha256": "5b393b3eabeb75aa4a62d44de0be05d88d38467dca5c26b1514a9c23bcf4771f"
+    },
+    "html": {
+      "bytes": 117359,
+      "sha256": "e280b954f1d1a99cfdccae84f55f979bad303196d4806ef389b1101a72ba8dad"
+    }
+  },
+  "replay": {
+    "center": [
+      0,
+      255,
+      0,
+      255
+    ],
+    "background": [
+      0,
+      0,
+      255,
+      255
+    ],
+    "dark": 8,
+    "white": 162,
+    "scripts": 0,
+    "attribution": true
+  },
+  "wasm": {
+    "rawBytes": 1397787,
+    "gzipBytes": 573961,
+    "sha256": "65b61556250da8979517c41b7e4c2f8ecb1d20b658f07b2f2e7aab5ae19f19b8"
+  },
+  "scope": "Actual native/packaged WASM ordinary+mixed selected XYGX v3 and exact live XYSE footer parity, original source/tile/coord disposal, six native formats, actual offline strict-CSP HTML pixels/attribution with no scripts/network; WASM raster Unsupported; small fixture, no live imported-source authority or interactive/performance claim."
+}

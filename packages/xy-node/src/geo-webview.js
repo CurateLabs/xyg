@@ -1,4 +1,6 @@
 /** Native one-mount geographic host facade. No browser imports or source serialization. */
+import {GeoSelectedScope} from './geo-selected.js';
+import {GeoLiveCandidate} from './geo-live-host.js';
 import {sceneBrowserPainter} from './scene.js';
 import {RetainedGeoSource} from './geo-retained.js';
 import {encodeGeoScaleRequest,prepareGeoSceneData,geoScaleExecute} from './geoscale.js';
@@ -10,15 +12,18 @@ function buffer(value){
 function tag(op,owner=0n,sequence=0n){const b=new ArrayBuffer(32),v=new DataView(b);new Uint8Array(b).set([88,89,71,72]);v.setUint32(4,1,true);v.setUint32(8,op,true);v.setBigUint64(16,owner,true);v.setBigUint64(24,sequence,true);return b;}
 function same(a,b){a=new Uint8Array(a);b=new Uint8Array(b);return a.length===b.length&&a.every((n,i)=>n===b[i]);}
 export class GeoHostAdapter {
- constructor(chart,{frame}={}){
+ constructor(chart,{frame,selectedScope}={}){
   const layer=chart._retained();if(!layer||chart.tileSession||(!(layer.source instanceof RetainedGeoSource)||(!frame&&layer.source.constructor!==RetainedGeoSource)))throw new TypeError('native host requires one canonical RetainedGeoSource; indexed hosts are pending');
   if(layer.source.bridge.execute!==geoScaleExecute)throw new TypeError('native geographic host requires the native source bridge');
   const {query,sequence,style}=chart._inputs(layer);
   this.source=layer.source;this.query={...query,camera:{...query.camera},time:{...query.time},sourceDigest:query.sourceDigest.slice()};this.sequence=sequence;this.style=style.slice();this.budget=chart.budget;
+  if(selectedScope!==undefined&&(!(selectedScope instanceof GeoSelectedScope)||selectedScope.bridge!==layer.source.bridge))throw TypeError('issued selected scope required');
+  this.selectedScope=selectedScope;this.liveCandidate=new GeoLiveCandidate(this);
   this.chain=Promise.resolve();this.queued=0;this.closing=false;
   if(frame){
-   const expected=encodeGeoScaleRequest({command:5,sequence,budget:this.source.budget,query:this.query}),actual=frame._queryPacket?.slice(0);
+   const expected=encodeGeoScaleRequest({command:5,sequence,budget:this.source.budget,query:this.query});let actual=frame._queryPacket?.slice(0);
    if(!actual)throw new TypeError('explicit frame lacks trusted query authority');
+   const actualOp=new DataView(actual).getUint32(8,true);if([35,36].includes(actualOp)){if(actual.byteLength!==264||new DataView(actual).getBigUint64(232,true)!==8n||!frame.data.selection)throw TypeError('selected frame requires exact issued query framing');actual=actual.slice(0,256);new DataView(actual).setBigUint64(232,0n,true);}
    new Uint8Array(actual).set(new Uint8Array(expected,8,4),8);
    new Uint8Array(actual).set(new Uint8Array(expected,16,8),16);
    const packet=frame.data.packet,pv=new DataView(packet),ev=new DataView(expected),info=this.source.info;
@@ -33,6 +38,7 @@ export class GeoHostAdapter {
  async open(mount){
   await this.anchorReady;
   if(this.closing||this.mounted)throw new Error('geographic host admits one mount; release before reopening');
+  this.liveCandidate.beginMount();
   const {query,sequence,style,source}=this;
   const queryPacket=encodeGeoScaleRequest({command:5,handle:source.handle,sequence,budget:source.budget,query});
   let frame;
@@ -64,21 +70,33 @@ export class GeoHostAdapter {
    try{
     if(typeof mount!=='string'||mount.length<1||mount.length>96)throw new TypeError('invalid mount identity');
     const v=new DataView(request),op=v.getUint32(8,true),owner=v.getBigUint64(16,true),sequence=v.getBigUint64(24,true);
-    if(v.getUint32(0,true)!==0x48475958||v.getUint32(4,true)!==1||v.getUint32(12,true)||![1,2,3,4,5].includes(op))throw new TypeError('invalid host request');
+    if(v.getUint32(0,true)!==0x48475958||v.getUint32(12,true)||!(v.getUint32(4,true)===1&&[1,2,3,4,5].includes(op)||v.getUint32(4,true)===2&&[6,7,8,9].includes(op)))throw new TypeError('invalid host request');
     let out=[];
+    if(v.getUint32(4,true)===2){
+     const c=this.liveCandidate,repeatedCommit=op===7&&request.byteLength===64&&!new Uint8Array(request,56).some(x=>x)&&c.repeated(7,[owner,sequence,v.getBigUint64(32,true),v.getBigUint64(40,true),v.getBigUint64(48,true)]);
+     if(mount!==this.mount||!this.frame||(this.closing&&(op===6&&!c.replayPrepare(request)||op===7&&!repeatedCommit)))throw Error('unowned live geographic mount');
+     if(op===8){if(request.byteLength!==64||new Uint8Array(request,56).some(x=>x))throw Error('invalid retirement ACK');await c.acknowledge(owner,sequence,v.getBigUint64(32,true),v.getBigUint64(40,true),v.getBigUint64(48,true));}
+     else{
+      if(op===9&&request.byteLength===64&&!new Uint8Array(request,56).some(x=>x)&&c.repeated(9,[owner,sequence,v.getBigUint64(32,true),v.getBigUint64(40,true),v.getBigUint64(48,true)]))return [reply,[]];
+      if(op!==7&&(owner!==this.frame.handle||sequence!==this.sequence)||this.aux)throw Error('stale candidate baseline or outstanding auxiliary');
+      if(op===6){const [packet,painter]=await c.prepare(request),h=new ArrayBuffer(64),hv=new DataView(h);new Uint8Array(h).set(new Uint8Array(request,0,40));hv.setBigUint64(40,c.frame.handle,true);hv.setBigUint64(48,c.sequence,true);out=[h,packet,painter];}
+      else{if(request.byteLength!==64||new Uint8Array(request,56).some(x=>x))throw Error('invalid live ACK');const args=[v.getBigUint64(32,true),v.getBigUint64(40,true),v.getBigUint64(48,true)];if(op===7){await c.commit(owner,sequence,...args);out=[request.slice(0)];}else await c.abort(owner,sequence,...args);}
+     }
+     return [reply,out];
+    }
     if(op===1){if(request.byteLength!==32||owner||sequence)throw new TypeError('invalid open');out=await this.open(mount);}
     else{
      if(mount!==this.mount||!this.frame||sequence!==this.frame.data.identity.sequence)throw new Error('unowned or stale geographic frame');
      if(op===5){if(request.byteLength!==32||!this.aux||this.aux.handle!==owner)throw new Error('unowned auxiliary release');const aux=this.aux;this.aux=undefined;await aux.dispose();}
      else{
       if(owner!==this.frame.handle)throw new Error('unowned geographic frame');
-      if(op===4){if(request.byteLength!==32||this.aux)throw new Error('release auxiliary packets first');await this.release();}
+      if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame)throw new Error('release auxiliary/candidate packets first');await this.release();}
       else if(op===2){if(request.byteLength!==64||this.aux)throw new Error('invalid or concurrent pick');this.aux=await this.frame.pick({style:this.frame._style,x:v.getFloat64(32,true),y:v.getFloat64(40,true),tolerance:v.getFloat64(48,true),mode:v.getUint32(56,true),maxHits:v.getUint32(60,true)});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
       else{if(![48,256].includes(request.byteLength)||this.aux||v.getUint32(36,true)!==Number(request.byteLength===256))throw new Error('invalid or concurrent membership');if(v.getBigUint64(40,true)>new DataView(this.frame._queryPacket).getBigUint64(224,true))throw new Error("membership exceeds committed frame work bound");this.aux=await this.frame.membership(v.getUint32(32,true),{maxProjectedVertices:v.getBigUint64(40,true),cursor:request.byteLength===256?new Uint8Array(request.slice(48)):undefined});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
      }
     }
     return [reply,out];
-   }catch(error){return [{...reply,error:error.message},[]];}
+   }catch(error){return [{...reply,error:error.message,...(new DataView(request).getUint32(4,true)===2&&new DataView(request).getUint32(8,true)===6&&!this.liveCandidate.frame&&!this.liveCandidate.cleanupFrame?{prepareAbsent:true}:{})},[]];}
    finally{request=undefined;}
   });
   this.chain=operation.then(()=>{},()=>{}).finally(()=>{this.queued--;});return operation;
@@ -87,7 +105,7 @@ export class GeoHostAdapter {
  async releaseAnchor(){const anchor=this.anchor;this.anchor=undefined;if(anchor)await anchor.dispose();}
  close(){this.closing=true;this.source=this.query=this.style=undefined;this.cleanup=this.anchorReady.then(()=>this.mounted?undefined:this.releaseAnchor());this.cleanup.catch(()=>{});}
  /** Only a real disposed renderer realm may substitute for a browser release ACK. */
- async realmDestroyed(){this.close();await this.chain;const aux=this.aux;this.aux=undefined;if(aux)await aux.dispose();await this.release();await this.cleanup;}
+ async realmDestroyed(){this.close();await this.chain;await this.liveCandidate.realmDestroyed();const aux=this.aux;this.aux=undefined;if(aux)await aux.dispose();await this.release();await this.cleanup;}
 }
 
 /** Extension-host helper. Caller supplies CSP/resource-local HTML; VS Code >=1.57. */

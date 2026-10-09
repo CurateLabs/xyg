@@ -1,0 +1,36 @@
+{
+  "checkpoint": "source-hashes.json",
+  "change": "Reader exceptions produce a correlated terminal reply; bounded Node/browser CI wiring; Chromium SwiftShader ANGLE flag.",
+  "source_sha256": {
+    "python/xyg/_geo_host.py": "d7a201de426ef95eadc4253cbfd3f2cbd9635cec49a184810154ec9e7c5e6583",
+    "tests/test_geo_live_host.py": "78bff18b8c18736c005d6af84a454bc7de8aa67ff5f2ec6aa5198bd6d4da96aa",
+    "tests/browser/geo_live_host_test.mjs": "ecdd44f60d1c0b2488b8a89b80d83b4582b9754ee10011c04f29c60acb45b208",
+    ".github/workflows/ci.yml": "25cf60317107c424f88249fb93bf10074fb62f7fee0b7f20a3f6078a6c39a932",
+    "packages/xy-node/package.json": "9de71092244e82f0367f284cb608c0dc57336c6f2da45db7300cce098be4fcd1"
+  },
+  "validation": {
+    "python": "11 tests passed; OSError and LookupError preserve old frame and permit higher-sequence recovery",
+    "ty": "passed",
+    "independent_review": "green",
+    "browser": {
+      "ok": true,
+      "fiveMounts": true,
+      "redPixels": [
+        59,
+        47,
+        47,
+        47,
+        47
+      ],
+      "browser": "155.0.8059.40",
+      "checks": [
+        "failed hydration preserves paint",
+        "latest desired",
+        "trusted keyboard",
+        "lost stage/commit/ACK recovery",
+        "definite read failure recovery",
+        "distinct absolute edits compose"
+      ]
+    }
+  }
+}

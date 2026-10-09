@@ -1,5 +1,6 @@
 /** Native immutable geographic host transport. Rust owns Scene and picking.
  * One mounted copy; raw binary replies never confer WASM FrameData authority. */
+import { encodeGeoViewportRequest } from "./49_wasm_geoviewport";
 import { hydrateWasmPainter } from "./48_wasm_scene";
 import type { XygWasmScenePaint } from "./47_wasm";
 import type { XygWasmSceneView } from "./48_wasm_scene";
@@ -25,6 +26,19 @@ function replyHeader(raw: any, op: number) {
   return {owner:v.getBigUint64(16,true), sequence:v.getBigUint64(24,true)};
 }
 
+export interface XygGeoHostUpdate {
+  operation:number; args:readonly number[]; sequence:bigint;
+  cameraRevision:bigint; timeRevision:bigint; stateRevision:bigint;
+  time:{kind:0|1|2;instant?:bigint;start?:bigint;end?:bigint};
+}
+function liveHeader(op:number,old:bigint,oldSequence:bigint,nonce:bigint,owner:bigint,sequence:bigint){
+ const b=header(op,old,oldSequence,32),v=new DataView(b);v.setUint32(4,2,true);v.setBigUint64(32,nonce,true);v.setBigUint64(40,owner,true);v.setBigUint64(48,sequence,true);return b;
+}
+function liveTag(raw:any,op:number){
+ const b=ownedBuffer(raw),v=new DataView(b);if(b.byteLength!==64||v.getUint32(0,true)!==0x48475958||v.getUint32(4,true)!==2||v.getUint32(8,true)!==op||v.getUint32(12,true)||v.getBigUint64(56,true))throw TypeError('invalid live geographic tag');
+ return {old:v.getBigUint64(16,true),oldSequence:v.getBigUint64(24,true),nonce:v.getBigUint64(32,true),owner:v.getBigUint64(40,true),sequence:v.getBigUint64(48,true)};
+}
+
 export class XygGeoHostView {
   readonly ready: Promise<void>;
   readonly mount = crypto.randomUUID();
@@ -35,14 +49,41 @@ export class XygGeoHostView {
   private queued = 0;
   private closing = false;
   private disposal?: Promise<void>;
+  private gestureChain:Promise<void>=Promise.resolve();
+  private gestureQueued=0;
+  private queueGesture(args:readonly number[]){
+    if(this.gestureQueued>=16){this.gestureError(new Error('Geographic gesture queue is full'));return;}
+    this.gestureQueued++;
+    this.gestureChain=this.gestureChain.then(async()=>{
+      if(this.closing)return;
+      const i=this.identity;this.gestureSequence=(this.gestureSequence>i.sequence?this.gestureSequence:i.sequence)+1n;this.gestureCameraRevision=(this.gestureCameraRevision>i.cameraRevision?this.gestureCameraRevision:i.cameraRevision)+1n;
+      await this.update({operation:3,args,sequence:this.gestureSequence,cameraRevision:this.gestureCameraRevision,timeRevision:i.timeRevision,stateRevision:i.stateRevision,time:i.time as XygGeoHostUpdate['time']});
+    }).catch(error=>{if(!this.closing)this.gestureError(error);}).finally(()=>{this.gestureQueued--;});
+  }
+  private gestureError(error:unknown){const alert=document.createElement('p');alert.setAttribute('role','alert');alert.textContent=error instanceof Error?error.message:String(error);this.el.append(alert);}
+  private liveNonce=0n;
+  private updating=false;
+  private activeOperation?:number;
+  private desired?:{input:XygGeoHostUpdate;resolve:()=>void;reject:(e:unknown)=>void};
+  private retirement?:ArrayBuffer;
+  private aborted?:ArrayBuffer;
+  private pendingPrepare?:ArrayBuffer;
+  private pendingCommit?:{tag:ReturnType<typeof liveTag>;holder:HTMLElement;view:XygWasmSceneView;data:ReturnType<typeof parseGeoSceneData>};
   private owner = 0n;
   private sequence = 0n;
   private view?: XygWasmSceneView;
   private data?: ReturnType<typeof parseGeoSceneData>;
   private gestureEvents = ["pointerdown","wheel","dblclick","click","keydown"];
+  private gestureSequence=0n;
+  private gestureCameraRevision=0n;
   private freezeGesture = (event:Event) => {
     if(event instanceof KeyboardEvent && event.key === "Tab") return;
     event.preventDefault();event.stopImmediatePropagation();
+    if(event instanceof KeyboardEvent&&event.isTrusted&&this.data&&!this.closing){
+      const moves:Record<string,readonly number[]>={ArrowLeft:[-40,0],ArrowRight:[40,0],ArrowUp:[0,-40],ArrowDown:[0,40]};
+      const args=moves[event.key];if(args)this.queueGesture(args);
+
+    }
   };
   private dropGestureGuard(){for(const type of this.gestureEvents)this.el.removeEventListener(type,this.freezeGesture,true);}
 
@@ -52,11 +93,23 @@ export class XygGeoHostView {
     // or zoom as a new geographic camera. Hosts author a new Rust frame.
     for(const type of this.gestureEvents)el.addEventListener(type,this.freezeGesture,{capture:true,passive:false});
     this.unsubscribe = comm.onMessage((message, buffers) => {
+      if(message?.type === 'geo_host_update'){
+        const request=message.request;if(typeof request!=='string'||request.length<1||request.length>96)return;
+        try{
+          if(buffers.length!==1)throw TypeError('one binary update required');const raw=ownedBuffer(buffers[0]),v=new DataView(raw);
+          if(raw.byteLength!==128||v.getUint32(0,true)!==0x55485958||v.getUint32(4,true)!==1||v.getUint32(52,true)||new Uint8Array(raw,112).some(x=>x))throw TypeError('invalid XYHU authoring');
+          const count=v.getUint32(12,true);if(count>5)throw TypeError('invalid camera argument count');
+          const args=Array.from({length:count},(_,n)=>v.getFloat64(56+n*8,true));if(new Uint8Array(raw,56+count*8,40-count*8).some(x=>x))throw TypeError('nonzero unused camera arguments');
+          const kind=v.getUint32(48,true) as 0|1|2,start=v.getBigInt64(96,true),end=v.getBigInt64(104,true);if(kind===0&&(start||end)||kind===1&&end)throw TypeError('noncanonical time authoring');
+          const operation=v.getUint32(8,true),input={operation,args,sequence:v.getBigUint64(16,true),cameraRevision:v.getBigUint64(24,true),timeRevision:v.getBigUint64(32,true),stateRevision:v.getBigUint64(40,true),time:{kind,...kind===1?{instant:start}:kind===2?{start,end}:{}}};
+          void this.update(input).then(()=>comm.send({type:'geo_host_updated',request}),error=>comm.send({type:'geo_host_updated',request,error:error instanceof Error?error.message:String(error)}));
+        }catch(error){comm.send({type:'geo_host_updated',request,error:error instanceof Error?error.message:String(error)});}return;
+      }
       if (message?.type === "geo_host_close") { void this.dispose().catch(()=>{}); return; }
       if (message?.type !== "geo_host") return;
       const p = this.pending.get(message.request); if (!p) return;
       this.pending.delete(message.request);
-      if (typeof message.error === "string") p.reject(new Error(message.error)); else p.resolve(buffers || []);
+      if (typeof message.error === "string") p.reject(Object.assign(new Error(message.error),{prepareAbsent:message.prepareAbsent===true})); else p.resolve(buffers || []);
     });
     this.ready = this.enqueue(async () => {
       let buffers: any[] | undefined, data: ReturnType<typeof parseGeoSceneData> | undefined;
@@ -98,6 +151,74 @@ export class XygGeoHostView {
   private live(){if(this.closing || !this.data)throw new Error("native geographic view is not mounted");}
   get identity(){this.live();const i=this.data!.identity;return {...i,camera:{...i.camera},time:{...i.time},sourceDigest:i.sourceDigest.slice()};}
   record(index:number){this.live();return this.data!.record(index);}
+  /** Author exact revisions/time; Rust applies the camera delta and rebuilds. */
+  update(input:XygGeoHostUpdate):Promise<void>{
+    this.live();
+    if(input.operation===3&&this.updating)throw new Error('Incremental geographic pan requires serialized updates');
+    if(this.desired&&this.desired.input.operation!==input.operation)throw new Error('Distinct geographic camera edits require serialized updates');
+    if(!Number.isInteger(input.operation)||input.operation<0||input.operation>9||input.args.length>5||input.args.some(x=>!Number.isFinite(x))||![0,1,2].includes(input.time.kind))throw TypeError('invalid live authoring');
+    for(const n of [input.sequence,input.cameraRevision,input.timeRevision,input.stateRevision])if(typeof n!=='bigint'||n<0n||n>0xffffffffffffffffn)throw TypeError('exact u64 live revisions required');
+    if(input.sequence>this.gestureSequence)this.gestureSequence=input.sequence;if(input.cameraRevision>this.gestureCameraRevision)this.gestureCameraRevision=input.cameraRevision;
+    for(const key of Object.keys(input.time))if(!(['kind',...(input.time.kind===1?['instant']:input.time.kind===2?['start','end']:[])]).includes(key))throw TypeError('unsupported signed time field');
+    for(const n of input.time.kind===1?[input.time.instant]:input.time.kind===2?[input.time.start,input.time.end]:[])if(typeof n!=='bigint'||n< -0x8000000000000000n||n>0x7fffffffffffffffn)throw TypeError('exact signed i64 time required');
+    const snapshot={...input,args:[...input.args],time:{...input.time}};
+    const result=new Promise<void>((resolve,reject)=>{
+      this.desired?.reject(new DOMException('Superseded geographic update','AbortError'));
+      this.desired={input:snapshot,resolve,reject};
+    });
+    if(!this.updating){this.updating=true;void this.enqueue(async()=>{
+      try{while(this.desired&&!this.closing){const next=this.desired;this.desired=undefined;this.activeOperation=next.input.operation;try{await this.replace(next.input);next.resolve();}catch(error){next.reject(error);}finally{this.activeOperation=undefined;}}}
+      finally{this.updating=false;if(this.closing){this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;}}
+    }).catch(error=>{this.updating=false;this.desired?.reject(error);this.desired=undefined;});}
+    return result;
+  }
+  private assertSelected(data:ReturnType<typeof parseGeoSceneData>){
+    const before=this.data!.selection,after=data.selection;
+    if(!!before!==!!after)throw TypeError('candidate lost selected intent');
+    if(before&&after){if(before.namespace!==after.namespace||before.idCount!==after.idCount||before.fill.some((x,n)=>x!==after.fill[n]))throw TypeError('candidate changed selected profile');for(let i=0;i<before.idCount;i++)if(before.id(i)!==after.id(i))throw TypeError('candidate changed selected IDs');}
+  }
+  /** Retry an uncertain exact commit or retirement without issuing another query. */
+  recover():Promise<void>{if(this.closing)throw Error("Geographic view is closing; retry dispose instead");return this.enqueue(async()=>{await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();});}
+  private async recoverPrepare(){
+    const request=this.pendingPrepare;if(!request)return;
+    let buffers:any[]|undefined;try{buffers=await this.rpc(request);}catch(error){if((error as any)?.prepareAbsent===true){this.pendingPrepare=undefined;return;}throw error;}
+    if(buffers.length!==3)throw TypeError('invalid preparation recovery');
+    const tag=liveTag(buffers[0],6),v=new DataView(request);
+    if(tag.old!==v.getBigUint64(16,true)||tag.oldSequence!==v.getBigUint64(24,true)||tag.nonce!==v.getBigUint64(32,true)||tag.sequence!==v.getBigUint64(40,true)||!tag.owner)throw TypeError('unowned preparation recovery');
+    buffers=undefined;this.aborted=liveHeader(9,tag.old,tag.oldSequence,tag.nonce,tag.owner,tag.sequence);this.pendingPrepare=undefined;await this.abortCandidate();
+  }
+  private async recoverCommit(){
+    const pending=this.pendingCommit;if(!pending)return;const {tag}=pending;
+    const response=await this.rpc(liveHeader(7,tag.old,tag.oldSequence,tag.nonce,tag.owner,tag.sequence));
+    if(response.length!==1)throw TypeError('invalid commit confirmation');const h=liveTag(response[0],7);
+    if(h.old!==tag.old||h.oldSequence!==tag.oldSequence||h.nonce!==tag.nonce||h.owner!==tag.owner||h.sequence!==tag.sequence)throw TypeError('mismatched commit confirmation');
+    let previous=this.view;this.el.replaceChildren(pending.holder);this.view=pending.view;this.data=pending.data;this.owner=tag.owner;this.sequence=tag.sequence;this.pendingCommit=undefined;previous?.destroy();previous=undefined;
+    this.retirement=liveHeader(8,tag.old,tag.oldSequence,tag.nonce,tag.owner,tag.sequence);await this.retire();
+  }
+  private async abortCandidate(){if(this.aborted){await this.rpc(this.aborted);this.aborted=undefined;}}
+  private async retire(){if(this.retirement){await this.rpc(this.retirement);this.retirement=undefined;}}
+  private async replace(input:XygGeoHostUpdate){
+    await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();this.live();const baseline=this.identity,old=this.owner,oldSequence=this.sequence,nonce=++this.liveNonce;
+    if(nonce>0xffffffffffffffffn)throw RangeError('geographic candidate nonce exhausted');
+    const request=header(6,old,oldSequence,224),v=new DataView(request);v.setUint32(4,2,true);
+    [nonce,input.sequence,input.cameraRevision,input.timeRevision,input.stateRevision].forEach((n,i)=>v.setBigUint64(32+i*8,n,true));
+    v.setUint32(72,input.time.kind,true);v.setBigInt64(80,input.time.kind===1?input.time.instant!:input.time.kind===2?input.time.start!:0n,true);v.setBigInt64(88,input.time.kind===2?input.time.end!:0n,true);
+    new Uint8Array(request).set(new Uint8Array(encodeGeoViewportRequest(baseline.camera,input.operation,input.args)),96);
+    let buffers:any[]|undefined,data:ReturnType<typeof parseGeoSceneData>|undefined,candidate:XygWasmSceneView|undefined,tag:ReturnType<typeof liveTag>|undefined,committed=false;
+    try{
+      this.pendingPrepare=request;buffers=await this.rpc(request);if(buffers.length!==3)throw TypeError('invalid geographic candidate attachments');const preparedTag=liveTag(buffers[0],6);
+      if(preparedTag.old!==old||preparedTag.oldSequence!==oldSequence||preparedTag.nonce!==nonce||preparedTag.sequence!==input.sequence||!preparedTag.owner)throw TypeError('unowned geographic candidate');
+      tag=preparedTag;this.pendingPrepare=undefined;data=parseGeoSceneData(ownedBuffer(buffers[1]));const i=data.identity;
+      if(i.sequence!==input.sequence||i.cameraRevision!==input.cameraRevision||i.timeRevision!==input.timeRevision||i.stateRevision!==input.stateRevision||i.generation!==baseline.generation||i.layerId!==baseline.layerId||i.layerRevision!==baseline.layerRevision||i.styleRevision!==baseline.styleRevision||i.sourceRows!==baseline.sourceRows||i.sourceCrs!==baseline.sourceCrs||i.geometry!==baseline.geometry||i.sourceDigest.some((x,n)=>x!==baseline.sourceDigest[n])||i.time.kind!==input.time.kind||i.time.kind===1&&i.time.instant!==input.time.instant||i.time.kind===2&&(i.time.start!==input.time.start||i.time.end!==input.time.end))throw TypeError('candidate snapshot differs from authoring');
+      this.assertSelected(data);
+      const holder=document.createElement('div');candidate=hydrateWasmPainter(holder,{painter:ownedBuffer(buffers[2]),memoryBytes:0} as XygWasmScenePaint);candidate.draw();
+      if(this.closing||this.desired&&this.desired.input.operation===input.operation)throw new DOMException('Superseded geographic update','AbortError');
+      this.pendingCommit={tag,holder,view:candidate,data};candidate=undefined;data=undefined;buffers=undefined;
+      await this.recoverCommit();committed=true;
+
+    }catch(error){if((error as any)?.prepareAbsent===true)this.pendingPrepare=undefined;candidate?.destroy();candidate=undefined;data=undefined;buffers=undefined;if(tag&&!committed&&!this.pendingCommit&&!(this.owner===tag.owner&&this.sequence===tag.sequence)){this.aborted=liveHeader(9,old,oldSequence,nonce,tag.owner,tag.sequence);await this.abortCandidate();}throw error;}
+    finally{data=undefined;buffers=undefined;}
+  }
   pick(input:{x:number;y:number;tolerance?:number;mode?:number;maxHits?:number}) {
     this.live();
     if (![input.x,input.y,input.tolerance??0].every(n=>typeof n==="number"&&Number.isFinite(n)) || ![0,1].includes(input.mode??1) || !Number.isInteger(input.maxHits??64) || (input.maxHits??64)<1 || (input.maxHits??64)>4096) throw new TypeError("invalid native pick framing");
@@ -126,12 +247,14 @@ export class XygGeoHostView {
     });
   }
   dispose():Promise<void> {
-    if(this.disposal)return this.disposal;this.closing=true;
+    if(this.disposal)return this.disposal;this.closing=true;this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;
     return this.disposal=this.chain.then(async()=>{
+      await this.gestureChain;
+      await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();
       this.view?.destroy();this.view=undefined;this.data=undefined;this.el.replaceChildren();
       if(this.owner){await this.rpc(header(4,this.owner,this.sequence));this.owner=0n;}
       this.unsubscribe();this.dropGestureGuard();
-    });
+    }).catch(error=>{this.disposal=undefined;throw error;});
   }
   destroy(){void this.dispose().catch(()=>{});}
 }

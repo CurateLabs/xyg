@@ -1,6 +1,6 @@
 //! Trusted retained Scene lowering under an opaque admitted transport phase.
 //! See spec/design/geo-source-session.md; generic authored Scenes are not admitted.
-use crate::geo_lod::{CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT, DIRECT_VERTEX_LIMIT, GeoPointOutput};
+use crate::geo_lod::{GeoPointOutput, CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT, DIRECT_VERTEX_LIMIT};
 use crate::geo_source::SourceError;
 use crate::geo_transport::{GeoTransportPhase, PHASE_BYTES};
 use crate::scene::SceneDocument;
@@ -65,6 +65,31 @@ pub fn prepare_tile_frame_painter(
     epoch: u64,
     phase: &GeoTransportPhase<'_>,
 ) -> Result<GeoPreparedFramePainter, SourceError> {
+    if crate::geo_mixed_protocol::is_mixed_handle(handle) {
+        return crate::geo_mixed_protocol::with_frame_data(handle, epoch, |view| {
+            let peak = view
+                .scene()
+                .len()
+                .checked_mul(32)
+                .and_then(|n| n.checked_add(1 << 20))
+                .ok_or(SourceError::ResourceLimit)?;
+            if phase.budget() > PHASE_BYTES || peak > phase.budget() {
+                return Err(SourceError::ResourceLimit);
+            }
+            let scene =
+                SceneDocument::decode(view.scene()).map_err(|_| SourceError::InvalidFrame)?;
+            let records = scene.record_count();
+            let styles = scene.style_count();
+            let bytes = scene
+                .to_browser_painter(phase.budget())
+                .map_err(|_| SourceError::ResourceLimit)?;
+            Ok(GeoPreparedFramePainter {
+                bytes,
+                records,
+                styles,
+            })
+        })?;
+    }
     crate::geo_tile_protocol::with_frame_data(handle, epoch, |view| {
         let peak = view
             .scene

@@ -31,6 +31,7 @@ supports a length probe: C output must be non-null and have256 bytes first.
 | 10 | Dispose opaque owner | Empty |
 | 21 | Read immutable routing receipt | Empty |
 | 22 | Read immutable SceneData receipt | Empty |
+| 23 | Read immutable exact provenance descriptor | Empty |
 
 Every mutation returns XYGU v1,256 bytes: magic0/version4, kind8u32, zero12u32,
 handle16u64/epoch24u64; remaining fields below are command-specific. Create
@@ -82,9 +83,20 @@ zero33..48. One style per vector layer is required. Successful preparation binds
 its bytes to layer/styleRevision; changed bytes under an existing revision
 reject. Failed preparation creates no binding. The existing XYLK catalog follows
 exactly and shares its one parser/compiler body; interactive-event flags are
-unsupported here. Its camera must match the tile candidate. Visible network
-attribution must be present as an ordinary legible Scene label inside the
-viewport; missing attribution cancels preparation while preserving prior frames.
+unsupported here. Its camera must match the tile candidate. Selected configured network attribution is painted as its exact explicit text.
+Rust appends a footer only when no existing visible literal label satisfies
+`has_visible_attribution`. It deduplicates identical strings in source order,
+uses opaque black upright8 CSS-pixel end-anchored labels at `(width-4,height-4-12*i)`,
+with opaque white XYLB label boxes and1 CSS-pixel padding so black/white tile
+content cannot hide the literal text. Existing SVG, raster and browser DOM
+painters consume the same Rust box bounds; mixed composition preserves them.
+It reserves32xScene+1MiB before decoding/reencoding. Padded boxes must wholly fit using
+shared text-advance bounds; controls, >4096-byte text,128-label/8192-text-byte
+limits or insufficient room reject instead of truncating required text. Their
+decorative stableID0 grants no feature-row authority. Existing visible literal
+labels are unchanged; local/blank-source Scenes skip this operation and preserve
+their bytes. This is a Rust Scene footer, without an auxiliary geographic layer
+or implicit provider. Failure preserves prior frames.
 
 The SceneData receipt is XYGU256 kind1: cache owner16/epoch24/view32;
 XYLM length40u64, selected-key count48u64, attribution count56u64,
@@ -93,7 +105,14 @@ BLAKE2s8 digest136..144,zero144..256. The body contains ordinary XYLM aligned8,
 all selected80-byte keys, then attribution records (length0u32,zero4u32,
 UTF8 at8 padded8). Digest domain `xyg-tile-scene-receipt-v1` binds header0..136
 and complete body. Independent cached payload/configuration digests remain
-available through the trusted borrowed `GeoTileFrameView` for snapshot export.
+available through trusted `GeoTileFrameView` and public read23 for composition.
+Read23 returns XYUP v1:256-byte header with frame handle16/epoch24,cache32/view40,
+stamp count48/total length56, all u64; zero8..16 and64..256. Body is at most64
+exact96-byte provenance stamps: existing key80 plus configuration8/payload8.
+Its stored descriptor and copies are preleased `7*length+65536` before encoding.
+Reads22/23 share the same two lifetime copy slots; probes consume none. Hosts
+that read both have no third read/reload allowance from that original owner.
+Mixed Data owns independent immutable authority and needs no third Tile read.
 Payload digest domain `xyg-tile-payload-v1` binds exact accepted supply bytes;
 configuration domain `xyg-tile-source-config-v1` binds kind/zooms/limits/text
 lengths/location and configured text. These are content linkage, not cryptographic
@@ -111,4 +130,8 @@ mid-instruction host interruption. Registry caps are4 caches,64 read owners,
 
 `cargo test -p xyg-engine geo_tile_protocol --lib` proves actual mixed raster and
 full-u64 vector Scene lowering, receipt digest, stale commit, immutable receipt
-survival/two-read admission, retired ACK and missing attribution failure.
+survival/two-read admission, retired ACK and unfittable attribution failure.
+
+The existing execute/read exports dispatch XYMX requests to the independent
+[mixed transport](geo-mixed-transport.md) before acquiring the tile mutex.
+No ABI signature changes or arbitrary Scene paint authority are introduced.

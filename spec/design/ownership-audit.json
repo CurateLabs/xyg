@@ -401,6 +401,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/bin/geo_hierarchy_bench.rs",
+      "policy": "rust-engine"
+    },
+    {
       "path": "crates/xyg-engine/src/bin/geo_scale_bench.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -503,6 +511,22 @@
       "disposition": "keep-rust",
       "follow_up_issue": null,
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_hierarchy_protocol.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_hierarchy_protocol_tests.rs",
+      "policy": "rust-engine"
     },
     {
       "path": "crates/xyg-engine/src/geo_index_protocol_tests.rs",
@@ -617,6 +641,22 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_mixed_protocol.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_mixed_protocol_tests.rs",
+      "policy": "rust-engine"
+    },
+    {
       "path": "crates/xyg-engine/src/geo_retained_painter.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -658,6 +698,22 @@
     },
     {
       "path": "crates/xyg-engine/src/geo_scene.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_selected_hierarchy_protocol_tests.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_selected_snapshot_tests.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -2021,6 +2077,14 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/66_geo_mixed.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
       "path": "js/src/67_geo_overview.ts",
       "policy": "browser-wasm-adapter"
     },
@@ -2030,6 +2094,14 @@
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
       "path": "js/src/68_geo_selected.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/70_geo_hierarchy.ts",
       "policy": "browser-wasm-adapter"
     },
     {
@@ -2135,6 +2207,62 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-hierarchy-wire.js",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-hierarchy.d.ts",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-hierarchy.js",
+      "policy": "node-host"
+    },
+    {
+      "path": "packages/xy-node/src/geo-live-host.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-mixed-wire.js",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-mixed.d.ts",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-mixed.js",
+      "policy": "node-host"
     },
     {
       "current_owner": "Node host",
@@ -2921,12 +3049,36 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions.",
+      "path": "python/xyg/_geo_hierarchy.py",
+      "policy": "python-host"
+    },
+    {
       "path": "python/xyg/_geo_host.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_geo_live_host.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions.",
+      "path": "python/xyg/_geo_mixed.py",
+      "policy": "python-host"
     },
     {
       "current_owner": "Python host",

@@ -54,7 +54,7 @@ export function encodeGeoTileRequest(
   handle = 0n,
   { epoch = 0n, view = 0n, budget: limit = 0, payload = new Uint8Array() } = {},
 ) {
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 21, 22].includes(command))
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23].includes(command))
     throw new TypeError("unknown tile command");
   const p = bytes(payload);
   if (p.length + 128 > MAX || (limit && p.length + 128 > budget(limit)))

@@ -1,0 +1,33 @@
+{
+  "host_checkpoint": "c162368a9",
+  "artifact_source": "166d08a14",
+  "native_abi": 383,
+  "wasm_abi": 33,
+  "scene_version": 32,
+  "painter_version": 15,
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "native_sha256": "91ebc7ab9b4e6201e49cec3603d4fd68210d7c85d01fb6c30cd38509b96da4da",
+  "wasm_sha256": "ccb209c1d974a1561453c99085937310eb1217c1d82372a3a5d3490c60180bc0",
+  "wasm_bytes": 1399920,
+  "wasm_gzip_bytes": 571860,
+  "source_sha256": {
+    "js/src/70_geo_hierarchy.ts": "ea9d07da1f26870c8b4c3dd4d7067b3ac6a31a9c541d1af516ff15aaf02db1fe",
+    "packages/xy-node/src/geo-hierarchy-wire.js": "fad74fde17cf0d058cb2ba49d440509d322477d2bc83b411621a58d59b048abd",
+    "packages/xy-node/src/geo-hierarchy.js": "5c8fe0ec797888c0c95ca6409366e4112c3cfbd26e7e5e744f2293312cc8236f",
+    "packages/xy-node/src/geo-hierarchy.d.ts": "096779eb8288b4fa5d67d52ac283c8f7eeca846825433749731f24f1c4fa5cd8",
+    "packages/xy-node/src/geo-retained.js": "b35eac53f14a38833e65b8ea2b3cac936804af30188d469e23eea5b4eab78717",
+    "python/xyg/_geo_hierarchy.py": "1df14d050fd87e97d335747390e04c6d44324003004289efd67845b9fc300ac9",
+    "python/xyg/_geo_retained.py": "81eeb74a378250e5e50d6c664ad79ebd824f1b7ad9d05cbc569db9dc6f9d32d3",
+    "scripts/gen_geo_hierarchy_node.mjs": "024397a64d29cc70bb1aa48dac1aab3afd4e25ac38cc9020b779e783450518f6",
+    "packages/xy-node/test/geo-hierarchy.test.mjs": "1f51352beca5e4ebfa4f3b3a24c8cf489a8b9698c0fcc022e13c38ab51860679",
+    "tests/test_geo_hierarchy.py": "9e6cea1fb3aec213a61ea5d3d5ebd185f7952ea50eda5eec4119475dd46d54c0"
+  },
+  "artifact_scope": "All crates are identical to166d08a14; host-only changes, no new build/profile/gate claims",
+  "source_store": "Small bounded fixtures use caller-owned Map/dict, not an adapter page cache",
+  "native_artifact_path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyprotocol/target/release/libxyg_core.dylib",
+  "wasm_artifact_path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyprotocol/packages/xy-client/dist/xyg-wasm.wasm",
+  "wasm_gzip_compression_level": 9,
+  "wasm_gzip_mtime": 0
+}

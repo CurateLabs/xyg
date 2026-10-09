@@ -65,14 +65,15 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(GeoSnapshotError::Invalid);
     }
     let command = u32at(b, 8);
-    if !matches!(command,1..=4|20..=22)
-        || (!matches!(command, 1 | 4) && u64at(b, 24) != 0)
+    if !matches!(command,1..=5|20..=22)
+        || (!matches!(command, 1 | 4 | 5) && u64at(b, 24) != 0)
         || (command != 2 && b[40..56].iter().any(|n| *n != 0))
         || (command == 3 && u64at(b, 32) != 0)
     {
         return Err(GeoSnapshotError::Invalid);
     }
-    if matches!(command, 1 | 4) && (u64at(b, 24) == 0 || u64at(b, 32) > MAX_FROZEN_PEAK as u64) {
+    if matches!(command, 1 | 4 | 5) && (u64at(b, 24) == 0 || u64at(b, 32) > MAX_FROZEN_PEAK as u64)
+    {
         return Err(GeoSnapshotError::Invalid);
     }
     if command == 2
@@ -125,7 +126,7 @@ fn source_error(e: SourceError) -> GeoSnapshotError {
 /// only borrows immutable storage and may not reenter the source registry.
 pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
     let command = frame(b)?;
-    if !matches!(command, 1..=4) {
+    if !matches!(command, 1..=5) {
         return Err(GeoSnapshotError::Invalid);
     }
     let handle = u64at(b, 16);
@@ -147,7 +148,7 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
         return Err(GeoSnapshotError::Limit);
     }
     let result = (|| {
-        if matches!(command, 1 | 4) {
+        if matches!(command, 1 | 4 | 5) {
             if r.entries
                 .iter()
                 .filter(|(_, e)| matches!(e, Entry::Snapshot { .. }))
@@ -157,7 +158,16 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
                 return Err(GeoSnapshotError::Limit);
             }
             let budget = usize::try_from(u64at(b, 32)).map_err(|_| GeoSnapshotError::Limit)?;
-            let value = if command == 4 {
+            let value = if command == 5 {
+                crate::geo_mixed_protocol::with_source_scene(
+                    handle,
+                    sequence,
+                    |frame, foreground| {
+                        GeoFrozenSnapshot::freeze_mixed(cache(&mut r)?, frame, foreground, budget)
+                    },
+                )
+                .map_err(source_error)??
+            } else if command == 4 {
                 crate::geo_tile_protocol::with_frame_data(handle, sequence, |view| {
                     GeoFrozenSnapshot::freeze_tile(cache(&mut r)?, &view, budget)
                 })
@@ -348,7 +358,7 @@ pub fn read_data(b: &[u8], budget: usize) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use crate::geo::{GeoColumn, GeoCrs, GeoDescriptor, GeoGeometry, GeoLimits};
-    use crate::geo_scale_protocol::{HEADER, data_len, execute, read_data};
+    use crate::geo_scale_protocol::{data_len, execute, read_data, HEADER};
     use crate::geo_source::{GeoChunk, GeoIntervals, GeoSourceManifest, SourceError};
     use crate::geo_source_session::test_processor_lock;
     fn u32_at(b: &[u8], at: usize) -> u32 {

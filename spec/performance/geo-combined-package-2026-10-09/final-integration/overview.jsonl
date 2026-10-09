@@ -1,0 +1,1 @@
+overview native/WASM: exact 256-cell temporal counts, nullable i64 extrema, half-open instant/window, full-u64 source/layer, projected Scene/pitch/cross-CRS parity, authenticated external read/write ACKs, typed nonfinal label, old data after source/index/query disposal, two-copy quotas and source-pick rejection PASS

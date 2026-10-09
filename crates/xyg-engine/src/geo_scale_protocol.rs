@@ -1,6 +1,8 @@
 //! Host-neutral retained geographic lifecycle framing (#50, §27/§29).
 //! Mutations return a fixed 256-byte reply: native hosts never execute a
 //! mutation twice to discover output length. Data reads are pure and bind sequence.
+#[path = "geo_hierarchy_protocol.rs"]
+mod hierarchy;
 #[path = "geo_linked_state_protocol.rs"]
 mod linked_state;
 #[path = "geo_temporal_overview_protocol.rs"]
@@ -117,6 +119,7 @@ struct IndexQuery {
     _lease: GeoProcessorLease,
 }
 enum Entry {
+    Hierarchy(hierarchy::Owned),
     Scope(Arc<linked_state::Scope>),
     State(linked_state::State),
     Overview(overview::Owned),
@@ -182,7 +185,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=36) {
+    if !matches!(command, 1..=21 | 23..=44) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -191,9 +194,9 @@ fn frame(b: &[u8]) -> Result<u32> {
         budget(b)?;
     }
     let zero = |start, end| b[start..end].iter().all(|&v| v == 0);
-    if (!matches!(command, 5 | 18 | 28 | 35 | 36)
+    if (!matches!(command, 5 | 18 | 28 | 35 | 36 | 38 | 43)
         && (!zero(12, 16) || !zero(64, 144) || !zero(152, 232)))
-        || (!matches!(command, 3 | 5 | 18 | 28 | 35 | 36) && !zero(144, 152))
+        || (!matches!(command, 3 | 5 | 18 | 28 | 35 | 36 | 38 | 43) && !zero(144, 152))
         || (!matches!(
             command,
             5 | 6
@@ -214,7 +217,7 @@ fn frame(b: &[u8]) -> Result<u32> {
                 | 24
                 | 25
                 | 26
-                | 27..=36
+                | 27..=44
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -334,7 +337,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
     if matches!(
         command,
-        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34
+        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34 | 39
     ) && r.entries.len() >= MAX_HANDLES
         && !(command == 19
             && r.entries.iter().any(|(id, e)| {
@@ -342,6 +345,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             }))
     {
         return Err(SourceError::ResourceLimit);
+    }
+    if matches!(command, 37 | 38 | 42 | 43) {
+        return hierarchy::start(&mut r, request);
     }
     if matches!(command, 32..=36) {
         return linked_state::start(&mut r, request);
@@ -366,19 +372,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     if matches!(command, 17 | 18) {
         if r.entries
             .iter()
-            .filter(|(_, e)| {
-                matches!(
-                    e,
-                    Entry::Session(_)
-                        | Entry::Members(_)
-                        | Entry::Rows(_)
-                        | Entry::IndexBuild(_)
-                        | Entry::Indexed(_)
-                        | Entry::Overview(
-                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
-                        )
-                )
-            })
+            .filter(|(_, e)| overview::is_session(e))
             .count()
             >= MAX_SESSIONS
         {
@@ -547,19 +541,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     if command == 4 {
         if r.entries
             .iter()
-            .filter(|(_, e)| {
-                matches!(
-                    e,
-                    Entry::Session(_)
-                        | Entry::Members(_)
-                        | Entry::Rows(_)
-                        | Entry::IndexBuild(_)
-                        | Entry::Indexed(_)
-                        | Entry::Overview(
-                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
-                        )
-                )
-            })
+            .filter(|(_, e)| overview::is_session(e))
             .count()
             >= MAX_SESSIONS
         {
@@ -585,19 +567,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         }
         if r.entries
             .iter()
-            .filter(|(_, e)| {
-                matches!(
-                    e,
-                    Entry::Session(_)
-                        | Entry::Members(_)
-                        | Entry::Rows(_)
-                        | Entry::IndexBuild(_)
-                        | Entry::Indexed(_)
-                        | Entry::Overview(
-                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
-                        )
-                )
-            })
+            .filter(|(_, e)| overview::is_session(e))
             .count()
             >= MAX_SESSIONS
         {
@@ -721,19 +691,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     if command == 12 {
         if r.entries
             .iter()
-            .filter(|(_, e)| {
-                matches!(
-                    e,
-                    Entry::Session(_)
-                        | Entry::Members(_)
-                        | Entry::Rows(_)
-                        | Entry::IndexBuild(_)
-                        | Entry::Indexed(_)
-                        | Entry::Overview(
-                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
-                        )
-                )
-            })
+            .filter(|(_, e)| overview::is_session(e))
             .count()
             >= MAX_SESSIONS
         {
@@ -985,7 +943,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         put64(&mut out, 40, handle);
         return Ok(out);
     }
-    if matches!(command, 11 | 19) {
+    if matches!(command, 11 | 19 | 39 | 44) {
         admit_data_slot(&r)?;
         let entry = &r
             .entries
@@ -995,9 +953,18 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             .1;
         if (command == 11 && !matches!(entry, Entry::Session(_)))
             || (command == 19 && !matches!(entry, Entry::Indexed(_)))
+            || (matches!(command, 39 | 44) && !matches!(entry, Entry::Hierarchy(_)))
         {
             return Err(SourceError::InvalidFrame);
         }
+        if command == 44 && !hierarchy::selected_complete(entry) {
+            return Err(SourceError::InvalidFrame);
+        }
+        let phase_budget = if matches!(command, 39 | 44) {
+            hierarchy::data_budget(entry, budget(request)?.processor_bytes)?
+        } else {
+            budget(request)?.processor_bytes
+        };
         let (source, result) = semantic_authority(entry, sequence)?;
         read_uniform_style(payload)?;
         let style_bytes: [u8; 48] = payload.try_into().map_err(|_| SourceError::InvalidFrame)?;
@@ -1026,7 +993,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                     .and_then(|s| n.checked_add(s))
             })
             .ok_or(SourceError::ResourceLimit)?;
-        if reserve > budget(request)?.processor_bytes {
+        if reserve > phase_budget {
             return Err(SourceError::ResourceLimit);
         }
 
@@ -1041,7 +1008,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             .ok_or(SourceError::ResourceLimit)?;
         if semantic_bytes
             .checked_add(reserve)
-            .is_none_or(|n| n > budget(request).unwrap().processor_bytes)
+            .is_none_or(|n| n > phase_budget)
         {
             return Err(SourceError::ResourceLimit);
         }
@@ -1072,7 +1039,17 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             .find(|&&(id, _)| id == handle)
             .ok_or(SourceError::StaleSource)?
             .1;
-        let bytes = match render_entry(entry, request, budget(request)?.processor_bytes) {
+        let bytes = match render_entry(
+            entry,
+            request,
+            if matches!(command, 39 | 44) {
+                phase_budget
+                    .checked_sub(semantic_bytes)
+                    .ok_or(SourceError::ResourceLimit)?
+            } else {
+                phase_budget
+            },
+        ) {
             Ok(bytes) => bytes,
             Err(error) => {
                 drop(lease);
@@ -1088,8 +1065,8 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         };
         let len = bytes.len();
         let position = r.entries.iter().position(|(id, _)| *id == handle).unwrap();
-        let replacement =
-            matches!(&r.entries[position].1,Entry::Indexed(q) if q.selected_replacement);
+        let replacement = command == 44
+            || matches!(&r.entries[position].1,Entry::Indexed(q) if q.selected_replacement);
         commit_entry_style(&mut r.entries[position].1, style_bytes)?;
         let data = Entry::Data {
             bytes,
@@ -1117,7 +1094,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         .ok_or(SourceError::StaleSource)?;
     if matches!(command, 7 | 8 | 10)
         && sequence != 0
-        && !matches!(r.entries[index].1, Entry::Overview(_))
+        && !matches!(r.entries[index].1, Entry::Overview(_) | Entry::Hierarchy(_))
     {
         return Err(SourceError::InvalidFrame);
     }
@@ -1125,6 +1102,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         && matches!(command, 6..=10 | 24)
     {
         return execute_index_operation(&mut r, index, request);
+    }
+    if matches!(r.entries[index].1, Entry::Hierarchy(_)) {
+        return hierarchy::operation(&mut r, index, request);
     }
     if matches!(r.entries[index].1, Entry::Overview(_)) {
         return overview::operation(&mut r, index, request);
@@ -1405,6 +1385,15 @@ pub fn read_data(request: &[u8], budget: usize) -> Result<Vec<u8>> {
         .find(|&&(id, _)| id == u64at(request, 16))
         .ok_or(SourceError::StaleSource)?
         .1;
+    if command == 40 {
+        let (bytes, reads) = hierarchy::write_bytes(entry, request, budget)?;
+        reads
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < 2).then_some(n + 1)
+            })
+            .map_err(|_| SourceError::ResourceLimit)?;
+        return Ok(bytes.to_vec());
+    }
     if command == 30 {
         let (bytes, reads) = overview::write_bytes(entry, request, budget)?;
         reads
@@ -1483,8 +1472,8 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
     if command == 20 {
         return Ok(encode_chunk(&request[HEADER..], budget)?.len());
     }
-    if !matches!(command, 21 | 23 | 25 | 30)
-        || (!matches!(command, 25 | 30) && request.len() != HEADER)
+    if !matches!(command, 21 | 23 | 25 | 30 | 40)
+        || (!matches!(command, 25 | 30 | 40) && request.len() != HEADER)
     {
         return Err(SourceError::InvalidFrame);
     }
@@ -1495,6 +1484,9 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
         .find(|&&(id, _)| id == u64at(request, 16))
         .ok_or(SourceError::StaleSource)?
         .1;
+    if command == 40 {
+        return Ok(hierarchy::write_bytes(entry, request, budget)?.0.len());
+    }
     if command == 30 {
         return Ok(overview::write_bytes(entry, request, budget)?.0.len());
     }
@@ -1548,6 +1540,10 @@ fn render_entry(entry: &Entry, request: &[u8], budget: usize) -> Result<Vec<u8>>
             q.snapshot,
             q.sequence,
         ),
+        Entry::Hierarchy(_) => {
+            let (_, result, snapshot) = hierarchy::authority(entry, u64at(request, 24))?;
+            (result, snapshot, u64at(request, 24))
+        }
         _ => return Err(SourceError::InvalidFrame),
     };
     if sequence != u64at(request, 24) {
@@ -2082,6 +2078,10 @@ fn semantic_authority(
     sequence: u64,
 ) -> Result<(&GeoSourceManifest, &GeoPointResult)> {
     match entry {
+        Entry::Hierarchy(_) => {
+            let (source, result, _) = hierarchy::authority(entry, sequence)?;
+            Ok((source, result))
+        }
         Entry::Session(s) => {
             let p = s.published().ok_or(SourceError::StaleSource)?;
             if p.sequence != sequence {
@@ -2173,6 +2173,7 @@ fn index_snapshot(request: &[u8]) -> Result<GeoOperationSnapshot> {
 }
 fn validate_entry_style(entry: &Entry, style: &[u8; 48]) -> Result<()> {
     match entry {
+        Entry::Hierarchy(_) => hierarchy::validate_style(entry, style),
         Entry::Session(s) => s.validate_painted_style(style, false),
         Entry::Indexed(q) => {
             if q.owner
@@ -2201,6 +2202,7 @@ fn validate_entry_style(entry: &Entry, style: &[u8; 48]) -> Result<()> {
 }
 fn commit_entry_style(entry: &mut Entry, style: [u8; 48]) -> Result<()> {
     match entry {
+        Entry::Hierarchy(_) => hierarchy::commit_style(entry, style)?,
         Entry::Session(s) => s.commit_painted_style(style),
         Entry::Indexed(q) => {
             *q.owner
@@ -2595,3 +2597,7 @@ pub fn with_overview_data<T>(
     }
     callback(&bytes[HEADER + 2048..], &s.result, s.camera)
 }
+
+#[cfg(test)]
+#[path = "geo_hierarchy_protocol_tests.rs"]
+mod hierarchy_protocol_tests;

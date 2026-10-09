@@ -81,6 +81,7 @@ mod geo_temporal_overview_tests;
 mod geo_temporal_overview_protocol_tests;
 pub mod geo_lod_scene;
 pub mod geo_mixed_frame;
+pub mod geo_mixed_protocol;
 pub mod geo_lod_hit;
 pub mod geo_tile_cache;
 pub mod geo_tile_scene;

@@ -764,3 +764,25 @@ backend worker. Node uses `chart.host()` with the VS Code subpath's
 `attachGeoWebview(panel, adapter)`. See [geographic-hosts.md](../design/geographic-hosts.md)
 for the actual host fixtures, binary framing, one-mount admission and explicit
 immutable-frame/indexed-host limits. This checkpoint is pending integration.
+
+A displayed native geographic widget can update camera/time without replacing
+the chart recipe. Sequence and revisions must follow the accepted snapshot;
+selected frames additionally require the explicitly issued `selected_scope`.
+In an async notebook cell, wait without blocking widget comm processing:
+
+```python
+import asyncio
+
+await asyncio.wrap_future(widget.update(
+    operation=0, args=(), sequence=2,
+    camera_revision=query["camera_revision"],
+    time_revision=query["time_revision"] + 1,
+    state_revision=query["state_revision"],
+    time={"kind": 1, "instant": 0},
+))
+```
+
+Completion means visual publication and retirement acknowledgment. A hierarchy
+frame supports static mounting; its live update rejects until an explicit
+hierarchy route is available. See [native live hosts](../design/geo-live-host.md)
+and the reproducible notebook, Reflex, VS Code and browser journey fixtures.

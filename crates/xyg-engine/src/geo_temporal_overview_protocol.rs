@@ -93,7 +93,8 @@ pub(super) fn is_session(e: &Entry) -> bool {
             | Entry::Rows(_)
             | Entry::IndexBuild(_)
             | Entry::Indexed(_)
-    ) || matches!(e,Entry::Overview(o) if o.is_session())
+    ) || matches!(e,Entry::Hierarchy(h) if h.is_session())
+        || matches!(e,Entry::Overview(o) if o.is_session())
 }
 pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(request, 8);

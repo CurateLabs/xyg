@@ -32,9 +32,9 @@ class GeoSnapshotError(RuntimeError):
 def request(command, handle, *, sequence=0, budget=0, format="png", scale=1.0, quality=90):
     command = g._uint(command, 32)
     if (
-        command not in (1, 2, 3, 4, 20, 21, 22)
-        or (command not in (1, 4) and sequence != 0)
-        or (command not in (1, 2, 4) and budget != 0)
+        command not in (1, 2, 3, 4, 5, 20, 21, 22)
+        or (command not in (1, 4, 5) and sequence != 0)
+        or (command not in (1, 2, 4, 5) and budget != 0)
     ):
         raise ValueError("field does not belong to snapshot command")
     if command == 2 and (isinstance(scale, bool) or not isinstance(scale, (int, float))):

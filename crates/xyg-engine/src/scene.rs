@@ -10678,6 +10678,153 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Bounded geographic footer for exact configured network attributions.
+    /// Caller admits 32x decode/rebuild storage before this method. Local/complete
+    /// explicit-label Scenes return byte-identically; never invent a provider.
+    pub(crate) fn with_geographic_attributions(
+        bytes: &[u8],
+        required: &[&str],
+    ) -> Result<Vec<u8>, SceneError> {
+        let mut d = Self::decode(bytes)?;
+        let mut missing = Vec::new();
+        for &text in required {
+            if text.trim().is_empty() || text.len() > 4096 || text.chars().any(char::is_control) {
+                return Err(SceneError::Length);
+            }
+            if !d.has_visible_attribution(text) && !missing.contains(&text) {
+                missing.push(text);
+            }
+        }
+        if missing.is_empty() {
+            return Ok(bytes.to_vec());
+        }
+        if d.polar.is_some()
+            || d.colorbar.is_some()
+            || d.label_backgrounds.iter().any(Option::is_some)
+            || d.gradients.iter().any(Option::is_some)
+            || d.marker_glyphs.iter().any(Option::is_some)
+            || d.static_title_style.is_some()
+            || d.static_label_text_flags != 0
+            || d.styles.iter().any(|s| s.dash_count != 0)
+            || d.labels.len() + missing.len() > MAX_SCENE_LABELS
+        {
+            return Err(SceneError::Limit);
+        }
+        let text_bytes = d.labels.iter().try_fold(0usize, |n, l| {
+            n.checked_add(l.text.len()).ok_or(SceneError::Limit)
+        })?;
+        if missing.iter().try_fold(text_bytes, |n, s| {
+            n.checked_add(s.len()).ok_or(SceneError::Limit)
+        })? > MAX_SCENE_LABEL_TEXT_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        for (i, text) in missing.iter().enumerate() {
+            let font_size = 8.;
+            let x = d.layout.viewport_width - 4.;
+            let y = d.layout.viewport_height - 4. - 12. * i as f64;
+            let advance = scene_text_advance(text, font_size);
+            let background = SceneLabelBox {
+                x: x - advance - 1.,
+                y: y - font_size - 1.,
+                width: advance + 2.,
+                height: font_size * 1.3 + 2.,
+                rgba: [255, 255, 255, 255],
+                border: None,
+            };
+            if background.x < 0.
+                || background.y < 0.
+                || background.x + background.width > d.layout.viewport_width
+                || background.y + background.height > d.layout.viewport_height
+            {
+                return Err(SceneError::Limit);
+            }
+            d.labels.push(SceneLabel {
+                stable_id: 0, // Decorative text has no feature-row/picking authority.
+                x,
+                y,
+                font_size,
+                rotation: 0.,
+                rgba: [0, 0, 0, 255],
+                anchor: 2,
+                text: (*text).to_owned(),
+            });
+            // Existing XYLB boxes paint identically in SVG, raster and browser
+            // DOM; opaque contrast remains independent of the underlying tile.
+            d.label_backgrounds.push(Some(background));
+        }
+        let mut fill = Vec::with_capacity(d.styles.len() * 4);
+        let mut stroke = Vec::with_capacity(d.styles.len() * 4);
+        let mut widths = Vec::with_capacity(d.styles.len());
+        for s in &d.styles {
+            fill.extend(s.fill);
+            stroke.extend(s.stroke);
+            widths.push(s.stroke_width);
+        }
+        let kinds: Vec<_> = d.records.iter().map(|r| r.kind as u8).collect();
+        let ids: Vec<_> = d.records.iter().map(|r| r.stable_id).collect();
+        let refs: Vec<_> = d.records.iter().map(|r| r.style_ref as u32).collect();
+        let diameters: Vec<_> = d.records.iter().map(|r| r.diameter).collect();
+        let symbols: Vec<_> = d.records.iter().map(|r| r.symbol).collect();
+        let coords: [Vec<f64>; 4] =
+            std::array::from_fn(|i| d.records.iter().map(|r| r.coordinates[i]).collect());
+        let caps: Vec<_> = d
+            .styles
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.linecap != LINECAP_ROUND)
+            .map(|(i, s)| StyleCap {
+                style_ref: i as u32,
+                cap: s.linecap,
+            })
+            .collect();
+        let sidecar = encode_xylc(&caps)?;
+        let mut batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
+            d.layout,
+            scene_read_u64(bytes, 80)?,
+            scene_read_u64(bytes, 88)?,
+            d.x_scale,
+            d.y_scale,
+            d.chrome,
+            d.text,
+            d.legend,
+            d.labels,
+            &kinds,
+            &ids,
+            &refs,
+            &fill,
+            &stroke,
+            &widths,
+            &diameters,
+            &symbols,
+            &coords[0],
+            &coords[1],
+            &coords[2],
+            &coords[3],
+        )?
+        .with_images(d.images)?
+        .with_dashes(&sidecar)?;
+        batch.label_backgrounds = d.label_backgrounds;
+        let mut out = batch.encode();
+        let offset = SCENE_BATCH_HEADER_BYTES + d.styles.len() * SCENE_STYLE_RECORD_BYTES;
+        for (i, r) in d.records.iter().enumerate() {
+            let at = offset + i * SCENE_BATCH_RECORD_BYTES;
+            out[at + 1] = u8::from(r.visible);
+            out[at + 3] = r.annotation_tag;
+            for (j, value) in r.coordinates.iter().enumerate() {
+                out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
+            }
+        }
+        validate_scene_batch(&out)?;
+        let checked = Self::decode(&out)?;
+        if required
+            .iter()
+            .any(|text| !checked.has_visible_attribution(text))
+        {
+            return Err(SceneError::Length);
+        }
+        Ok(out)
+    }
     /// Compose only the geographic literal profile. Caller preleases decoding,
     /// rebuilding and encoding storage; unsupported authored metadata fails closed.
     pub(crate) fn compose_geographic(
@@ -10689,7 +10836,6 @@ impl SceneDocument {
         let supported = |d: &Self| {
             d.polar.is_none()
                 && d.colorbar.is_none()
-                && d.label_backgrounds.iter().all(Option::is_none)
                 && d.gradients.iter().all(Option::is_none)
                 && d.marker_glyphs.iter().all(Option::is_none)
                 && d.static_title_style.is_none()
@@ -10763,7 +10909,7 @@ impl SceneDocument {
             })
             .collect();
         let sidecar = encode_xylc(&caps)?;
-        let batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
+        let mut batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
             base.layout,
             scene_read_u64(background, 80)?,
             scene_read_u64(background, 88)?,
@@ -10788,6 +10934,7 @@ impl SceneDocument {
         )?
         .with_images(images)?
         .with_dashes(&sidecar)?;
+        batch.label_backgrounds = base.label_backgrounds;
         let mut out = batch.encode();
         if scene_read_u64(&out, 16)? != count as u64
             || scene_read_u64(&out, 24)? != style_count as u64

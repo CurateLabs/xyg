@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 12 tests
+test geo_snapshot::tests::six_formats_share_scene_visible_attribution_and_accountable_binding ... ok
+test geo_snapshot::selected_tests::selected_snapshot_six_native_formats_preserve_v3_and_offline_contract ... ok
+test geo_snapshot::tests::immutable_storage_reservation_survives_cache_drop ... ok
+test geo_snapshot::tests::attribution_requires_bounded_visible_literal_scene_labels ... ok
+test geo_snapshot::tests::compact_full_density_grid_preserves_vertex_counts_above_source_rows ... ok
+test geo_snapshot::tests::malformed_lengths_flags_reserved_utf8_scene_and_exact_budget_fail_atomically ... ok
+test geo_snapshot::tests::deterministic_roundtrip_preserves_exact_scene_identity_time_and_full_ids ... ok
+test geo_snapshot::tests::stale_camera_time_layer_source_style_state_and_provenance_are_rejected ... ok
+test geo_snapshot::selected_tests::selected_snapshot_direct_full_intent_survives_original_authority_and_ordinary_bytes ... ok
+test geo_snapshot::selected_tests::selected_snapshot_empty_intent_keeps_scene_and_rejects_noncanonical_planes ... ok
+test geo_snapshot::selected_tests::selected_snapshot_cluster_density_count_profile_and_binding_negative_controls ... ok
+test geo_snapshot_protocol::tests::immutable_frame_freeze_reads_and_phase_admission_survive_source_disposal ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 1416 filtered out; finished in 1.85s
+

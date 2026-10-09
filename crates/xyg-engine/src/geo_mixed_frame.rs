@@ -93,6 +93,9 @@ impl GeoMixedCandidate {
     pub fn frame(&self) -> &GeoMixedFrame {
         &self.frame
     }
+    pub(crate) fn frame_arc(&self) -> Arc<GeoMixedFrame> {
+        Arc::clone(&self.frame)
+    }
 }
 
 const MAX_TILE_SCOPES: usize = 8;
@@ -242,7 +245,7 @@ impl GeoMixedCoordinator {
             })?
         })?
     }
-    fn prepare_borrowed(
+    pub(crate) fn prepare_borrowed(
         &self,
         ticket: GeoMixedTicket,
         source: GeoSceneDataBorrow<'_>,
@@ -438,7 +441,7 @@ fn follows(next: GeoOperationSnapshot, old: GeoOperationSnapshot) -> bool {
 
 // The tile protocol may include an ordinary authored foreground catalog. Those
 // layers have no signed-time/state attachment; this coordinator refuses them.
-fn basemap_layers(tiles: &GeoTileFrameView<'_>, analysis_layer: u64) -> Result<()> {
+pub(crate) fn basemap_layers(tiles: &GeoTileFrameView<'_>, analysis_layer: u64) -> Result<()> {
     let bytes = tiles.receipt.get(256..).ok_or(SourceError::InvalidFrame)?;
     let read = |at: usize| -> Result<usize> {
         usize::try_from(u64::from_le_bytes(

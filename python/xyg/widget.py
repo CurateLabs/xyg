@@ -8,7 +8,10 @@ no CDN (§33.2, airgapped notebooks).
 
 from __future__ import annotations
 
+import math
 import pathlib
+import struct
+from concurrent.futures import Future
 from typing import TYPE_CHECKING, Any
 
 import anywidget
@@ -207,10 +210,75 @@ class GeoWidget(anywidget.AnyWidget):
     def __init__(self, adapter, **kwargs):
         self._adapter = adapter
         self._close_requested = False
+        self._geo_updates = {}
+        self._geo_update_serial = 0
         super().__init__(spec={"geo_host": True}, buffers=[], **kwargs)
         self.on_msg(self._on_geo_message)
 
+    def update(
+        self, *, operation, args, sequence, camera_revision, time_revision, state_revision, time
+    ):
+        """Return a Future settled after visual commit and exact retirement ACK."""
+        if self._close_requested:
+            raise RuntimeError("geographic widget disposed")
+        if len(self._geo_updates) >= 16:
+            raise RuntimeError("geographic widget update queue is full")
+        args = tuple(args)
+        if (
+            type(operation) is not int
+            or not 0 <= operation <= 9
+            or len(args) > 5
+            or any(type(x) not in (int, float) or not math.isfinite(x) for x in args)
+        ):
+            raise ValueError("invalid camera authoring")
+        revisions = (sequence, camera_revision, time_revision, state_revision)
+        if any(type(n) is not int or not 0 <= n < 1 << 64 for n in revisions):
+            raise ValueError("exact u64 revisions required")
+        kind = time.get("kind")
+        allowed = {"kind"} | (
+            {"instant"} if kind == 1 else {"start", "end"} if kind == 2 else set()
+        )
+        if type(kind) is not int or kind not in (0, 1, 2) or set(time) != allowed:
+            raise ValueError("invalid signed time authoring")
+        start = time["instant"] if kind == 1 else time["start"] if kind == 2 else 0
+        end = time["end"] if kind == 2 else 0
+        if any(type(n) is not int or not -(1 << 63) <= n < 1 << 63 for n in (start, end)):
+            raise ValueError("exact i64 time required")
+        packet = bytearray(128)
+        struct.pack_into(
+            "<4sIII4QI4x5d2q",
+            packet,
+            0,
+            b"XYHU",
+            1,
+            operation,
+            len(args),
+            *revisions,
+            kind,
+            *(args + (0,) * (5 - len(args))),
+            start,
+            end,
+        )
+        self._geo_update_serial += 1
+        request = f"update:{self._geo_update_serial}"
+        future = Future()
+        self._geo_updates[request] = future
+        try:
+            self.send({"type": "geo_host_update", "request": request}, buffers=[bytes(packet)])
+        except BaseException:
+            self._geo_updates.pop(request, None)
+            raise
+        return future
+
     def _on_geo_message(self, widget, content, msg_buffers):
+        if isinstance(content, dict) and content.get("type") == "geo_host_updated":
+            future = self._geo_updates.pop(content.get("request"), None)
+            if future is not None and not future.done():
+                if isinstance(content.get("error"), str):
+                    future.set_exception(RuntimeError(content["error"]))
+                else:
+                    future.set_result(None)
+            return
         reply = self._adapter.handle_host_message(content, msg_buffers)
         if reply is not None:
             message, buffers = reply
@@ -223,6 +291,10 @@ class GeoWidget(anywidget.AnyWidget):
         if adapter is None:
             return super().close()
         self._close_requested = True
+        for future in self._geo_updates.values():
+            if not future.done():
+                future.set_exception(RuntimeError("geographic widget disposed"))
+        self._geo_updates.clear()
         adapter.close()
         if adapter.mounted:
             self.send({"type": "geo_host_close"})

@@ -1,0 +1,40 @@
+{
+  "base": "1f7901235",
+  "native_engine_base": "b583f6ab9",
+  "native_abi": 383,
+  "native_sha256": "31f9f6a6c2938b4e93c8f04df9cd8936a93cc4aa6ba6f1145af5c5aa85f69ed1",
+  "native_source_equivalence": "git diff b583f6ab9 -- crates Cargo.toml Cargo.lock .cargo/config.toml was empty",
+  "source_sha256": {
+    "python/xyg/_geo_host.py": "6c7cac26544f1421866756f12b8a71857e1ba4eadc284cf8ce0bd385b727a7b7",
+    "python/xyg/_geo_live_host.py": "15f13efad2c5be590be9ded899d207fccb64c2e4006b78797f9a10c21c46fdc0",
+    "python/xyg/_geo_retained.py": "e824d17659666498981f404dbdce2251748ffbe1e21ccae441a1ed1fcb5b5ce9",
+    "python/xyg/components.py": "5e0cc98ab1907c4215efe51e77736d310d99b23fb3baabff1a4cc65b0f7740ba",
+    "python/xyg/widget.py": "c94bb6da42846e832386e46a51176e257bae9624d95ff06c34e8df1f08d42159",
+    "packages/xy-node/src/geo-live-host.js": "4b839f4b04690a6b86f284d6aa8b324434a59f56c2971f66ea21cfa2398f8fd2",
+    "packages/xy-node/src/geo-webview.js": "06eeae923a10c610ce3b693e363ab2541db20aca6c801ec4541e17adededd75b",
+    "js/src/65_geo_host.ts": "c2e09d986dbf6ad6a88bb80c47685ba3db738584a31448bf8a81f2268ee9767a",
+    "tests/browser/geo_live_host_test.mjs": "b43ce81620af337910dd82e5eee65d625c4546df4b44261a295bba3446421154",
+    "tests/test_geo_live_host.py": "4af83cd0607c7635eb2509e6c5b9b26034f85255b0cf3ba5e2a9d7d9ba5b4830",
+    "packages/xy-node/test/geo-live-host.test.mjs": "821de74ddc7893d64219f81e2cdaa4dfb549edc984a5b4b86ee85ee1277fc0a1",
+    "packages/xy-node/test/geo-live-host-fixture.mjs": "1b006c0a1af206bd2ad1d908146c505317282f30a1fb27cf0e78e2b453ecd213",
+    "tests/notebook_geo_live.ipynb": "c1e90f89c3dbe440a75bc89b5aee4fb0a86698280fe661ba3cacc05bce347b77",
+    "scripts/geo_notebook_live_smoke.mjs": "907020040116b1f9b3d027c8a49ffaf7db456f299a7112af36ea02e88e1abe5a",
+    "scripts/geo_reflex_live_smoke.mjs": "86ea1ea5819d6764446fab37dfe16a712213a4f183c5ec1a4979aadc73f53c82",
+    "tests/geo_live_fixture.py": "01f17a079e39fba5d590dd3787d9c75d0965b860a4162d5801ab32994cffd0a2",
+    "tests/reflex_geo_live_app/geo_host_app/geo_host_app.py": "7a1fa38282f96fc1b15aec3024d1ba4063f6976efd120cdef6e0299ce60ef50f",
+    "tests/reflex_geo_live_app/rxconfig.py": "8546ab36bed22fcdf8a7d16990591dfcdcbcc9fc162199f1e8b41b2a570e91ec",
+    "tests/vscode_geo_live/page.mjs": "54fb617c56d6bef7b9e6ba4d86f7c8e03901af5402dcf2bf72b7e2d74e5e5271",
+    "tests/vscode_geo_live/test.cjs": "6c42a8f6263520759d3496996fd1b0298330dc3853f62db24962c26103272b47"
+  },
+  "generated_client_sha256": {
+    "packages/xy-client/dist/index.js": "486b2e386ae76c8b4500faf7a16606f16e07ac1fa9d7711f60f93c29aec56ea8",
+    "python/xyg/static/index.js": "486b2e386ae76c8b4500faf7a16606f16e07ac1fa9d7711f60f93c29aec56ea8"
+  },
+  "environment": {
+    "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "python": "Python 3.13.7",
+    "node": "v26.6.0"
+  },
+  "claims": "Small-fixture native lifecycle/correctness and actual frontend usability only; no massive latency or complete OS/GPU memory claim."
+}

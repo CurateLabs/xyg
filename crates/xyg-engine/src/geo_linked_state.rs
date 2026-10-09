@@ -196,7 +196,7 @@ impl GeoLinkedStateAdmission {
     }
 }
 // A deterministic identity hint, not a collision-based authorization check.
-fn fingerprint(
+pub(crate) fn fingerprint(
     binding: GeoStateBinding,
     rows: u64,
     crs: GeoCrs,

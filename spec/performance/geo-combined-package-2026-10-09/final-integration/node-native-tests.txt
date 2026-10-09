@@ -1,0 +1,20 @@
+✔ actual native staged camera/time keeps accepted paint until CAS and exact retired ACK (13.410042ms)
+✔ one process stage slot preserves five mounted frames and recovers after abort ACK (5.0315ms)
+✔ lost stage and commit confirmations recover same candidate while closing (5.428292ms)
+✔ cancellation after actual Data creation drops candidate and preserves accepted paint (1.739709ms)
+✔ accepted private anchor remounts and old realm ACK cannot change new realm (2.068208ms)
+✔ actual indexed live updates preserve ordinary authority (4.196917ms)
+✔ actual indexed live updates preserve selected authority (3.230291ms)
+✔ failed unpublished Data cleanup retains global stage credit until exact retry (1.618708ms)
+✔ actual hierarchy static mount rejects live updates before canonical source reads (4.669041ms)
+✔ actual native selected scope consumes only success and binds exact u64 intent (71.462334ms)
+✔ ordinary native Scene owner retries failed cleanup without resurrecting views (2.8595ms)
+✔ selected native Scene cleanup retries the same independent owner (2.483292ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 292.6805

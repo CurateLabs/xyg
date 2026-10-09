@@ -18,7 +18,7 @@ policy is shared Rust; Python, Node and browser adapters only frame inputs.
 
 This is bounded direct catalog evidence. The explicit density family records
 complete membership and reports its dropped diameter/symbol/stroke channels.
-Retained sources add authenticated chunk paging, time-before-reduction, bounded direct/cluster/density tiers, exact opaque-cursor membership, explicit tile budgets and frozen exports (the companion contracts below). Original source rows now have bounded opaque-cursor pages including null, time-excluded and offscreen rows, with exact keyboard-focus identities. Spatial point indexes now have bounded native/WASM/browser evidence; aggregate pyramids, linked per-row state and all-host live conformance remain #50. No production speedup or billion-
+Retained sources add authenticated chunk paging, time-before-reduction, bounded direct/cluster/density tiers, exact opaque-cursor membership, explicit tile budgets and frozen exports (the companion contracts below). Original source rows now have bounded opaque-cursor pages including null, time-excluded and offscreen rows, with exact keyboard-focus identities. Spatial point indexes now have bounded native/WASM/browser evidence; paged point hierarchies and exact linked selected-state now have bounded Rust/native/WASM proofs; complete all-host live hierarchy and linked-input conformance remain #50. No production speedup or billion-
 row admission is inferred from these fixtures. Existing SVG glyph contours for
 some uncommon symbols differ from the native/browser analytic painter; the
 19-symbol hit fixtures prove the latter's pick policy, not complete vector
@@ -56,12 +56,12 @@ under strict CSP and reject every unexpected request.
 | --- | --- | --- |
 | Authenticated retained point/MultiPoint | XYGK/XYGI, signed-i64 half-open filters, source/session leases | Actual 1k/100k/1M/10M/100M ingest/query; 1B planner-only |
 | Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
-| Native immutable host presentation | Canonical retained points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex WS reconnect and real VS Code reload/dispose; native live updates/indexed remount pending |
+| Native retained host presentation | Canonical/indexed points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex reconnect and VS Code remount/dispose; native staged camera/time updates retain accepted paint until exact retirement ACK |
 | Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
 | Explicit immutable point sidecar index | Rust XYIX/XYIP cross-chunk leaves, bounded canonical-order merge, authenticated import, explicit full-scan fallback | Exact canonical Scene parity through 1M; native/WASM frame+rows+frozen parity; browser corrupt-leaf recovery; 100M narrow grid16 0.79–1.23s, grid32 192–316ms under uncontrolled load; world latency/pyramid remains open |
 | Original source-row companion | Rust-issued continuation, all original rows, explicit temporal/null eligibility | Native/WASM byte parity; Python/Node paging after frame disposal; strict-CSP browser offscreen keyboard focus and failed-read recovery |
 | Explicit raster/vector tiles | Local/network locator receipts, immutable producer generation/time, atomic epoch publication | Actual native mixed raster+vector+foreground; network is opt-in through caller loader, not automatic fetch |
-| Frozen spatiotemporal output | XYGXv2 bound provenance, visible attribution, owned artifacts | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; WASM freeze matches native, raster export is explicit Unsupported |
+| Frozen spatiotemporal output | XYGXv2 ordinary byte identity; selected-only XYGXv3 full sparse intent, profile, exact counts and mixed provenance | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; actual native/WASM selected snapshot and XYSE parity, offline selected pixels and attribution; imported metadata remains inert, WASM raster is explicit Unsupported |
 
 Reproduce using `scripts/bench_geo_scale.py`, `tests/test_geo_retained.py`,
 `tests/test_geo_rows.py`, `tests/test_geo_tiles.py`, `tests/test_geo_snapshot.py`,
@@ -74,4 +74,24 @@ not establish Reflex/VS Code live retained-source parity, linked selection or co
 
 Separate [native host journey evidence](geographic-hosts.md) proves immutable
 retained-points presentation and ownership in notebooks, Reflex and VS Code.
-It does not establish native live camera/query parity or indexed host remounts.
+The additional journey evidence below covers native live camera/time updates and indexed remounts; hierarchy live routing remains open.
+
+## Additional bounded M6 evidence
+
+| Capability | Implemented contract | Evidence and remaining gate |
+| --- | --- | --- |
+| Selected retained/indexed points | Private issued Scope/consumed State; full u64 intent, deterministic selected cluster/density tint and exact Rows | [Selected hosts](geo-selected-hosts.md); native/WASM parity, five-view admission and failed-page/cancellation recovery. Pointer gestures do not yet issue linked state automatically. |
+| Paged point/MultiPoint hierarchy | Authenticated external append pages, independent immutable frames, exact reduced membership | [Hierarchy trace](../performance/geo-hierarchy-2026-10-09/README.md); 100M Point world queries use directories with zero leaf reads and screen-bounded reduction. Native warm query timing excludes transfer/upload/browser paint; default-grid100M, 100M MultiPoint and1B remain gates. |
+| Typed hierarchy hosts | Private source/transport authority, exact read/write ACK, retryable cleanup, independent Rows and static mount | [Host evidence](../performance/geo-hierarchy-hosts-2026-10-09/README.md); actual native/WASM byte pairs and cancellation controls. Hierarchy live preparation rejects before a canonical scan. |
+| Live camera and signed-time updates | XYGHv2 staged hydration/CAS/retirement; selected Scope remains caller-issued | [Actual host journeys](../performance/geo-live-host-journeys-2026-10-09/README.md); JupyterLab, production Reflex, real VS Code and five small native browser views. Massive interaction, playback UI and gesture-to-state mapping remain open. |
+| Temporal overview | Source-domain signed-time predicates and bounded cell counts | Typed XYOVv1 lifecycle parity. Counts are explicitly nonfinal: final browser paint, export and cell membership remain open. |
+
+These rows refine the earlier evidence limits rather than claiming a competitor
+speed win. Full five-view ingestion, transfer, upload, paint, picking and export
+measurements across small through massive inputs remain #50/#39 acceptance gates.
+
+[Selected frozen export evidence](../performance/geo-selected-snapshot-2026-10-09/README.md)
+proves ordinary/mixed full intent and exact visible-count preservation after
+source disposal. The [selected snapshot contract](geo-selected-snapshot.md)
+distinguishes trusted freezing from imported structural consistency; this
+small proof does not establish live linked hosts or massive export latency.

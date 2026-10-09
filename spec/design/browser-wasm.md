@@ -257,8 +257,8 @@ resumable membership, certified simplification, tile cache, frozen snapshots,
 and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
-temporal-overview functionality decision below; packaging enforces its current
-1,408 KiB raw / 576 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
+temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
+packaging enforces 1,472 KiB raw / 608 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -1004,7 +1004,7 @@ Actual wasm32/native/C-ABI parity is `geo-viewport-wasm-parity.test.mjs`.
 
 
 The immutable linked-state and exact temporal-overview extension requires a
-recorded functionality decision: packaging limits are now **1,441,792 raw bytes
+recorded functionality decision: its initial packaging limits were **1,441,792 raw bytes
 (1,408 KiB) and 589,824 gzip bytes (576 KiB, level 6)**. Compiler and pinned
 Binaryen O3 settings remain unchanged. The combined candidate measures
 1,326,010 raw / 543,366 gzip bytes; three fresh Chromium Worker-ready samples
@@ -1020,3 +1020,25 @@ oracle through an owned temporary input-file descriptor. This avoids an OS pipe
 `EPIPE` race when an invalid oracle budget rejects before stdin is consumed.
 Exit status, stable error, complete output and all native/WASM parity assertions
 remain unchanged; temporary descriptors/files are closed and removed per call.
+
+
+The paged hierarchy protocol and complete selected ordinary/mixed snapshots
+require a combined functionality decision. Each extension fit the prior gates
+alone, but their combined unchanged-profile artifact measures **1,454,428 raw /
+597,662 gzip bytes (level 6)**, SHA-256
+`ad68147eb89bbc8b4f1d6039642ee3068e3484243b48ccf6cb4d6359d9780b15`.
+It exceeds the historical gates by12,636 raw and7,838 gzip bytes. The current
+hard packaging limits are **1,507,328 raw bytes (1,472 KiB) and622,592 gzip bytes
+(608 KiB, level 6)**; runtime source, Data, handle, processor and transfer limits
+remain unchanged. Rust release O3/inline100 and pinned Binaryen132 O3 remain
+unchanged. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
+raw size to1,434,576 but increased gzip to598,701, so neither solves the gates.
+No alternate compiler profile is adopted and no runtime speedup is claimed.
+
+Bounded native/WASM selected snapshot and hierarchy membership checks, exact
+artifact hashes, four fresh-process startup ABBA pairs and reproduction commands
+are recorded in
+[combined package evidence](../performance/geo-combined-package-2026-10-09/README.md).
+These local startup measurements exclude browser painting, network delivery and
+massive-source interaction. Future functionality growth still requires a separate
+recorded decision; package checks continue to fail above either current limit.
