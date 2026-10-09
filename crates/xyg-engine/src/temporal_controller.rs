@@ -420,7 +420,7 @@ fn validate_event_shape(event: &CoordinationEvent) -> Result<(), TemporalError> 
     Ok(())
 }
 
-fn canonical_selection(ids: &[u64]) -> Result<Vec<u64>, TemporalError> {
+pub(crate) fn canonical_selection(ids: &[u64]) -> Result<Vec<u64>, TemporalError> {
     if ids.len() > MAX_COORDINATED_SELECTION_IDS {
         return Err(TemporalError::InvalidArgument);
     }

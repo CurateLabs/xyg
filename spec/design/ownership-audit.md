@@ -696,6 +696,8 @@ Forbidden:
 | `crates/xyg-engine/src/geo_temporal_overview_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_temporal_overview_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_temporal_overview_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_linked_state.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 | `crates/xyg-engine/src/geo_rows_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_rows_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_frame_lease_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1071,6 +1073,7 @@ Forbidden:
 | `crates/xyg-engine/src/bin/geo_scale_bench.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_lod.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_lod_hit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_mixed_frame.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_lod_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_membership_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
