@@ -10,6 +10,7 @@ import asyncio
 import ctypes
 import struct
 import traceback
+import weakref
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any, Protocol
@@ -749,6 +750,14 @@ async def drive_session(
                 raise asyncio.CancelledError
 
 
+_SCENE_AUTHORITIES = weakref.WeakKeyDictionary()
+
+
+def scene_data_authority(owner):
+    """Private issuing transport/owner captured by a successful prepare."""
+    return _SCENE_AUTHORITIES.get(owner)
+
+
 class SceneDataLease:
     """Explicit retained-data owner. Drop borrowed copies/painters before dispose."""
 
@@ -763,6 +772,7 @@ class SceneDataLease:
         return self._data
 
     async def dispose(self) -> None:
+        _SCENE_AUTHORITIES.pop(self, None)
         self._data = None
         if self._disposal is None:
             self._disposal = asyncio.create_task(
@@ -783,13 +793,12 @@ async def prepare_scene_data(
 ) -> SceneDataLease:
     if not isinstance(style, bytes) or len(style) != 48:
         raise ValueError("style must be exact 48-byte Rust framing")
-    task = asyncio.create_task(
-        bridge.execute(
-            encode_request(
-                dict(command=11, handle=handle, sequence=sequence, budget=budget, payload=style)
-            )
-        )
+    issuer = bridge
+    limits = dict(budget)
+    captured = encode_request(
+        dict(command=11, handle=handle, sequence=sequence, budget=limits, payload=style)
     )
+    task = asyncio.create_task(issuer.execute(captured))
     raw, interrupted = await _settle(task)
     reply = decode_reply(raw)
     data_handle = reply["handle"]
@@ -815,7 +824,17 @@ async def prepare_scene_data(
         data = parse_scene_data(packet)
         if data.identity["session_handle"] != handle or data.identity["sequence"] != sequence:
             raise ValueError("mismatched leased data identity")
-        return SceneDataLease(bridge, data_handle, data)
+        owner = SceneDataLease(issuer, data_handle, data)
+        _SCENE_AUTHORITIES[owner] = (
+            issuer,
+            data_handle,
+            sequence,
+            handle,
+            captured,
+            bytes(data.packet[:256]),
+            data.selection is not None,
+        )
+        return owner
     except BaseException as error:
         packet = data = task = None
         traceback.clear_frames(error.__traceback__)

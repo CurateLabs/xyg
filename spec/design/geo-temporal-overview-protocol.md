@@ -197,8 +197,9 @@ packaged browser artifact. Eight All/Instant/Window cases include nullable signe
 extrema and half-open boundaries; counts, complete projected Scene bytes and
 full source/layer IDs match across CRSs and pitch. Already-issued typed Data
 survives source/index/query disposal, exhausts exactly two read copies and
-rejects ordinary source picking. This is byte-level protocol evidence; overview
-browser painting, domain-cell source membership and massive latency remain open.
+rejects ordinary source picking. This is byte-level foundation evidence. Subsequent [trusted painter/export](geo-overview-painter-snapshot.md),
+[public browser publication](geo-overview-browser.md) and [domain-member transport](geo-overview-membership-protocol.md)
+have their own bounded proofs; massive latency and final spatial refinement remain open.
 
 The Worker transport reserves its cleanup lane for command31 and extended
 128-byte-ticket command8 ACKs (384-byte framing). Mixed XYMX cancel4/dispose5

@@ -1158,8 +1158,11 @@ See `geo-hierarchy-protocol.md` for the command and authority boundary.
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/71_geo_overview_owner.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-source.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-source.d.ts` | Node host | `node-host` | `keep-host` | — |
 
 
 
@@ -1192,6 +1195,7 @@ temporal counts, source authority, cell geometry and palette policy.
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geo_overview_source.py` | Python host | `python-host` | `keep-host` | — |
 
 
 
@@ -1215,6 +1219,15 @@ its focused test module contains no production policy.
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_overview_membership_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_overview_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+### M6 public temporal overview browser lifecycle
+
+The browser controller validates private Worker/index/frame provenance and owns
+publication, callback settlement, painter retirement and bounded count-table DOM.
+Rust continues to own temporal/domain policy, projection, counts and paint buffers.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/71_geo_overview_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
 ## Contributor rule
 
