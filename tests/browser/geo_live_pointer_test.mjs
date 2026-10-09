@@ -46,6 +46,12 @@ try{
  await page.evaluate(()=>{window.views[0].view.canvas.style.width='400px';window.views[0].view.canvas.style.height='300px';});
  await page.mouse.move(100,100);await page.mouse.down();await page.mouse.move(160,140);await page.mouse.up();await drain();
  assert.deepEqual(preparations.at(-1).args,[-120,-80]);
+ // A real capture loss uses the shared policy and ends dragging immediately.
+ const beforeLoss=preparations.length;
+ await page.mouse.move(180,180);await page.mouse.down();await page.mouse.move(180,180);
+ await page.locator('#c0').evaluate(e=>{e.releasePointerCapture(window.views[0].pointer.id);});
+ await page.mouse.move(200,200);await page.mouse.up();await drain();
+ assert.equal(preparations.length,beforeLoss);
  // A gesture arriving during a programmatic update waits for its accepted
  // camera/time, then serializes keyboard pan and relative wheel zoom in order.
  hold=true;await page.evaluate(()=>{const v=window.views[0],i=v.identity;window.manual=v.update({operation:8,args:[1,0],sequence:i.sequence+1n,cameraRevision:i.cameraRevision+1n,timeRevision:i.timeRevision,stateRevision:i.stateRevision,time:i.time});});await waitHeld();
@@ -85,5 +91,5 @@ try{
  await page.evaluate(()=>{window.pointerDisposed=window.views[0].dispose();});assert.equal(await page.evaluate(()=>window.views[0].pointer),undefined);
  await page.mouse.move(310,250);await page.mouse.up();releaseHold();await page.evaluate(()=>window.pointerDisposed);
  assert.equal(preparations.length,atClose);assert.equal(fixtures[0].adapter.mounted,false);assert.equal(await page.locator('#c0').evaluate(e=>e.style.touchAction),'manipulation');assert.deepEqual(errors,[]);
- console.log(JSON.stringify({ok:true,browser:browser.version(),registrationFailureCleanup:true,untrustedIgnored:true,trustedDrag:true,cssViewportScaling:true,programmaticAndGestureOrdering:true,relativeWheel:true,rustZoomLimitRecovery:true,readFailureRecovery:true,orderedSampleCap:16,oneOverflowAlert:true,closeCaptured:true,touchActionRestored:true,preparations}));
+ console.log(JSON.stringify({ok:true,browser:browser.version(),registrationFailureCleanup:true,sharedCaptureLoss:true,untrustedIgnored:true,trustedDrag:true,cssViewportScaling:true,programmaticAndGestureOrdering:true,relativeWheel:true,rustZoomLimitRecovery:true,readFailureRecovery:true,orderedSampleCap:16,oneOverflowAlert:true,closeCaptured:true,touchActionRestored:true,preparations}));
 }finally{releaseHold?.();await browser.close();await new Promise(resolve=>server.close(resolve));for(const f of fixtures)await release(f);}
