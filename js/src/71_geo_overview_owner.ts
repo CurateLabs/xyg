@@ -3,6 +3,8 @@ import { geoSceneDataAuthority, encodeGeoScaleRequest } from './63_geo_source';
 import type { XygGeoScaleBridge, XygGeoQueryBudget, XygGeoScaleQuery } from './63_geo_source';
 import { encodeGeoOverviewRequest, decodeGeoOverviewReply, driveGeoOverview, parseGeoOverviewData, GeoOverviewUnsupportedSelected, validateGeoOverviewMutation, settleGeoOverviewLoan } from './67_geo_overview';
 import type { GeoOverviewStorage } from './67_geo_overview';
+import {registerOverviewMembers,copyOverviewMembers,dropOverviewMembers,overviewMembers} from './73_geo_overview_members';
+import type {GeoOverviewMembersInput} from './73_geo_overview_members';
 
 export class GeoOverviewUncertainAllocation extends Error {
  readonly owner:GeoOverviewIndex|GeoOverviewQuery|GeoOverviewFrame;readonly cause:unknown;
@@ -12,7 +14,7 @@ export class GeoOverviewCleanupPending extends Error {readonly owner:GeoOverview
 export class GeoOverviewUnsupportedDomain extends Error {constructor(){super('Overview query domain is unsupported; no source scan was substituted');this.name='GeoOverviewUnsupportedDomain';}}
 const closedStorage:GeoOverviewStorage={readChunk:async()=>{throw new Error('Closed overview storage');},readPage:async()=>{throw new Error('Closed overview storage');},writePage:async()=>{throw new Error('Closed overview storage');}};
 const OWNER=Symbol("issued overview owner");
-const indices=new WeakMap<GeoOverviewIndex,{bridge:XygGeoScaleBridge;transport:XygGeoScaleBridge;budget:XygGeoQueryBudget;creationSequence:bigint;handle:bigint;closed:boolean;header:Uint8Array}>();
+const indices=new WeakMap<GeoOverviewIndex,{bridge:XygGeoScaleBridge;transport:XygGeoScaleBridge;budget:XygGeoQueryBudget;creationSequence:bigint;handle:bigint;closed:boolean;header:Uint8Array;reader:GeoOverviewStorage['readChunk']}>();
 function indexOwner(index:GeoOverviewIndex){const a=indices.get(index);if(!a)throw new TypeError("Privately issued overview index required");return a;}
 const frames=new WeakMap<GeoOverviewFrame,{bridge:XygGeoScaleBridge;index:GeoOverviewIndex;handle:bigint;sequence:bigint;query:ArrayBuffer;header:Uint8Array}>();
 export function overviewIndexAuthority(index:GeoOverviewIndex){const a=indices.get(index);return a?Object.freeze({bridge:a.bridge,budget:a.budget,creationSequence:a.creationSequence,handle:a.handle,closed:a.closed,header:a.header.slice()}):undefined;}
@@ -34,7 +36,7 @@ export class GeoOverviewIndex {
   if(typeof input.maxVertices!=='bigint'||input.maxVertices<=0n||input.maxVertices>0xffffffffffffffffn)throw new TypeError('nonzero u64 vertex ceiling required');
   const owner=new GeoOverviewIndex(OWNER,{readChunk:input.readChunk,readPage:input.readPage,writePage:input.writePage},input,a.sequence);
   owner.#transport=Object.freeze({execute:a.execute.bind(a.bridge),read:a.read.bind(a.bridge)});
-  indices.set(owner,{bridge:a.bridge,transport:owner.#transport,budget:owner.#budget,creationSequence:a.sequence,handle:0n,closed:false,header:a.header.slice()});
+  indices.set(owner,{bridge:a.bridge,transport:owner.#transport,budget:owner.#budget,creationSequence:a.sequence,handle:0n,closed:false,header:a.header.slice(),reader:input.readChunk});
   const payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,input.maxVertices,true);
   const request=encodeGeoOverviewRequest({command:27,handle:a.handle,sequence:a.sequence,budget:owner.#budget,payload});
   try{const r=decodeGeoOverviewReply(await owner.#transport.execute(request));if(r.code!==0||r.handle===0n||r.sequence!==a.sequence)throw new TypeError('invalid overview build receipt');owner.#handleValue=r.handle;indexOwner(owner).handle=r.handle;}
@@ -61,7 +63,7 @@ export class GeoOverviewIndex {
   if(this.#state==='uncertain')throw error(this,new Error('Unknown builder owner requires protocol recovery'));
   if(this.#active)await canonicalQueryDispose.call(this.#active);
   await settleGeoOverviewLoan(this.#transport,this.#handleValue,this.#creationSequence);
-  if(!this.#disposal)this.#disposal=this.#transport.execute(encodeGeoOverviewRequest({command:10,handle:this.#handleValue,sequence:this.#creationSequence})).then(packet=>{validateGeoOverviewMutation(packet,this.#handleValue,this.#creationSequence);this.#state='closed';this.#storage=closedStorage;indexOwner(this).closed=true;}).catch(cause=>{this.#disposal=undefined;throw cause;});
+  if(!this.#disposal)this.#disposal=this.#transport.execute(encodeGeoOverviewRequest({command:10,handle:this.#handleValue,sequence:this.#creationSequence})).then(packet=>{validateGeoOverviewMutation(packet,this.#handleValue,this.#creationSequence);this.#state='closed';this.#storage=closedStorage;indexOwner(this).closed=true;indexOwner(this).reader=closedStorage.readChunk;}).catch(cause=>{this.#disposal=undefined;throw cause;});
   return this.#disposal;
  }
 }
@@ -105,11 +107,12 @@ export class GeoOverviewFrame {
   const issuer=indexOwner(this.#index).transport;
   try{const r=decodeGeoOverviewReply(await issuer.execute(request));if(r.code!==expectedCode||r.handle===0n||r.sequence!==this.#sequence||r.sourceHandle!==sourceHandle||r.dataLength>32n*1024n*1024n||4n*r.dataLength>BigInt(indexOwner(this.#index).budget.processorBytes))throw new TypeError('invalid overview Data receipt');expectedLength=r.dataLength;this.#handleValue=r.handle;this.#phase='owned';}
   catch(cause){this.#phase='uncertain';throw error(this,cause);}
-  try{const packet=await issuer.read(encodeGeoOverviewRequest({command:23,handle:this.#handleValue,sequence:this.#sequence}));if(BigInt(packet.byteLength)!==expectedLength)throw new TypeError('overview Data length mismatch');validateSnapshot(packet,this.#query,this.#index);this.#value=parseGeoOverviewData(packet);if(this.#value.identity.queryHandle!==sourceHandle||this.#value.identity.sequence!==this.#sequence)throw new TypeError('overview publication sequence mismatch');frames.set(this,{bridge:indexOwner(this.#index).bridge,index:this.#index,handle:this.#handleValue,sequence:this.#sequence,query:this.#query.slice(0),header:new Uint8Array(packet,0,2304).slice()});}
+  try{const packet=await issuer.read(encodeGeoOverviewRequest({command:23,handle:this.#handleValue,sequence:this.#sequence}));if(BigInt(packet.byteLength)!==expectedLength)throw new TypeError('overview Data length mismatch');validateSnapshot(packet,this.#query,this.#index);this.#value=parseGeoOverviewData(packet);if(this.#value.identity.queryHandle!==sourceHandle||this.#value.identity.sequence!==this.#sequence)throw new TypeError('overview publication sequence mismatch');frames.set(this,{bridge:indexOwner(this.#index).bridge,index:this.#index,handle:this.#handleValue,sequence:this.#sequence,query:this.#query.slice(0),header:new Uint8Array(packet,0,2304).slice()});registerOverviewMembers(this,issuer,indexOwner(this.#index).reader as never,indexOwner(this.#index).budget,new Uint8Array(packet,0,2304),this.#handleValue,this.#sequence);}
   catch(cause){try{await canonicalFrameDispose.call(this);}catch(cleanup){throw new GeoOverviewCleanupPending(this,cleanup);}throw cause;}
  }
- async retain(){void this.data;if(this.#retention?.closed)this.#retention=undefined;if(this.#retention)throw error(this.#retention,new Error('Previous retained allocation remains unresolved'));const copy=new GeoOverviewFrame(OWNER,this.#index,this.#sequence,this.#query.slice(0));this.#retention=copy;await copy.issue(encodeGeoScaleRequest({command:26,handle:this.#handleValue,sequence:this.#sequence,budget:indexOwner(this.#index).budget}),this.#handleValue);this.#retention=undefined;return copy;}
- async dispose(){if(this.#phase==='closed')return;if(this.#phase==='uncertain')throw error(this,new Error('Unknown Data owner requires protocol recovery'));this.#value=undefined;frames.delete(this);if(!this.#disposal)this.#disposal=indexOwner(this.#index).transport.execute(encodeGeoOverviewRequest({command:10,handle:this.#handleValue,sequence:0n})).then(packet=>{validateGeoOverviewMutation(packet,this.#handleValue,0n);this.#phase='closed';}).catch(cause=>{this.#disposal=undefined;throw cause;});return this.#disposal;}
+ members(cell:number,input:GeoOverviewMembersInput){void this.data;return overviewMembers(this,cell,input);}
+ async retain(){void this.data;if(this.#retention?.closed)this.#retention=undefined;if(this.#retention)throw error(this.#retention,new Error('Previous retained allocation remains unresolved'));const copy=new GeoOverviewFrame(OWNER,this.#index,this.#sequence,this.#query.slice(0));this.#retention=copy;await copy.issue(encodeGeoScaleRequest({command:26,handle:this.#handleValue,sequence:this.#sequence,budget:indexOwner(this.#index).budget}),this.#handleValue);copyOverviewMembers(this,copy,copy.handle,copy.sequence);this.#retention=undefined;return copy;}
+ async dispose(){if(this.#phase==='closed')return;if(this.#phase==='uncertain')throw error(this,new Error('Unknown Data owner requires protocol recovery'));this.#value=undefined;frames.delete(this);dropOverviewMembers(this);if(!this.#disposal)this.#disposal=indexOwner(this.#index).transport.execute(encodeGeoOverviewRequest({command:10,handle:this.#handleValue,sequence:0n})).then(packet=>{validateGeoOverviewMutation(packet,this.#handleValue,0n);this.#phase='closed';}).catch(cause=>{this.#disposal=undefined;throw cause;});return this.#disposal;}
 }
 
 // Canonical issued dispatch is captured once; public method edits cannot switch producer policy.

@@ -1238,6 +1238,12 @@ Rust continues to own temporal/domain policy, projection, counts and paint buffe
 | `crates/xyg-engine/src/geo_allocation_recovery.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_allocation_recovery_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `js/src/74_geo_overview_snapshot.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+### Issued overview membership adapters
+
+| `js/src/73_geo_overview_members.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `python/xyg/_geo_overview_members.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-members.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-members.d.ts` | Node host | `node-host` | `keep-host` | — |
 
 ## Contributor rule
 

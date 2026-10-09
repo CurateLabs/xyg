@@ -256,6 +256,8 @@ def test_generator_check_is_nonmutating_and_rejects_stale_output(tmp_path):
         "geo-overview.d.ts",
         "geo-overview-source.js",
         "geo-overview-source.d.ts",
+        "geo-overview-members.js",
+        "geo-overview-members.d.ts",
     ]
     for name in names:
         shutil.copyfile(root / "packages/xy-node/src" / name, destination / name)
