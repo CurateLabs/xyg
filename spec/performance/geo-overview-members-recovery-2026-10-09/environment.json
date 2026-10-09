@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "base": "eb59ec57aae5a7cc83b4d9891051d051bdc8223f",
+  "helperParent": "7f062ada5a34dfbd8da0558ddac8b9c1112f43eb",
+  "artifactDonor": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement",
+  "artifacts": {
+    "target/release/libxyg_core.dylib": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e",
+    "packages/xy-client/dist/xyg-wasm.wasm": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2"
+  },
+  "compilerInputsCompared": 199,
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "Python 3.13.7",
+  "node": "v26.6.0",
+  "nodeCases": 118,
+  "pythonCases": 53,
+  "newNodeCases": 17,
+  "newPythonCases": 8,
+  "claims": [
+    "bounded durable45 public recovery; exactQuery birth; unchangedXYOMv1",
+    "no Rust or ABI change; no quotas increased"
+  ],
+  "limitations": [
+    "no generic MemberData10 absence classifier",
+    "selected overview membership/accessibility UI and massive latency remain separate gates"
+  ]
+}

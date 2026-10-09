@@ -42,10 +42,11 @@ reserved fields. Resolved rejection or malformed cleanup does not close owners.
 before any retry; completed-query21 permits retry, Data receipt0 permits one
 owning23 read. Preparation is single flight; disposal waits for publication/read
 settlement, drops views, and uses Data10 sequence0 after conversion. Pressure
-keeps the completed query and old frame usable. Unknown allocating45 confirmation
-poisons the private operation and blocks further allocation; `error.owner` keeps
-that guard. There is no guessed numeric disposal or allocation-recovery claim.
-Durable45 recovery remains a separate M6 gate.
+keeps the completed query and old frame usable. Unknown allocating45 confirmation retains the private operation and blocks
+further allocation; `error.owner.recover()` / `recover_async()` replays its exact
+issued request through the [durable allocation helper](geo-overview-members-recovery.md).
+There is no guessed numeric disposal. Exact47 Confirm must settle before Query
+I/O or46, and Query birth retirement does not prove MemberData disposal.
 
 ## Memory and copy scope
 
@@ -77,5 +78,5 @@ publication. Python additionally proves synchronous use within a running
 notebook event loop and repeated async cancellation before callback settlement.
 
 These are bounded membership adapters. Public domain-cell accessibility UI,
-selected overview membership, durable unknown45 recovery, massive interactive
+selected overview membership, recovery of lost-successful MemberData10, massive interactive
 latency and complete M6 host journeys remain separate acceptance gates.
