@@ -77,7 +77,7 @@ fn recovery_five_live_retains_confirm_exact_ack_replay_and_parent_disposal() {
         assert_eq!(execute(&b).unwrap(), out);
         confirm(&b, h);
         assert_eq!(execute(&ack(&b, h, 0)).unwrap(), reply_bytes(h, 1));
-        targets.push(h);
+        targets.push((b.clone(), h));
         last = b;
     }
     let mut changed = last.clone();
@@ -85,16 +85,20 @@ fn recovery_five_live_retains_confirm_exact_ack_replay_and_parent_disposal() {
     assert_eq!(execute(&changed), Err(SourceError::StaleSource));
     close(frame, 0);
     let out = execute(&last).unwrap();
-    assert_eq!(u64_at(&out, 16), targets[4]);
-    confirm(&last, targets[4]);
-    close(targets[4], 0);
+    assert_eq!(u64_at(&out, 16), targets[4].1);
+    confirm(&last, targets[4].1);
+    close(targets[4].1, 0);
     assert_eq!(u32_at(&execute(&last).unwrap(), 8), 22);
-    assert_eq!(u32_at(&execute(&ack(&last, targets[4], 0)).unwrap(), 8), 22);
-    forget(&last, targets[4]);
-    forget(&last, targets[4]);
+    assert_eq!(
+        u32_at(&execute(&ack(&last, targets[4].1, 0)).unwrap(), 8),
+        22
+    );
+    forget(&last, targets[4].1);
+    forget(&last, targets[4].1);
     assert_eq!(execute(&last), Err(SourceError::StaleSource));
-    for h in targets[..4].iter() {
+    for (b, h) in targets[..4].iter() {
         close(*h, 0);
+        execute(&ack(b, *h, 2)).unwrap();
     }
 }
 fn reply_bytes(h: u64, s: u64) -> [u8; HEADER] {
@@ -141,12 +145,12 @@ fn recovery_five_indices_and_full_sixteen_handle_same_query_data_publication() {
         let q = finish_query(h, &manifest, None, 2, &pages);
         let d = u64_at(&execute(&with_budget(request(29, q, 2, &[]))).unwrap(), 16);
         close(q, 2);
-        indices.push((h, pages));
+        indices.push((h, pages, b.clone()));
         accepted.push(d);
         lastbuild = b;
     }
     let mut queries = Vec::new();
-    for (i, (index, pages)) in indices.iter().enumerate() {
+    for (i, (index, pages, _)) in indices.iter().enumerate() {
         let b = nonce(query_request(*index, &manifest, None, 3 + i as u64), 1);
         let h = u64_at(&execute(&b).unwrap(), 16);
         confirm(&b, h);
@@ -170,8 +174,9 @@ fn recovery_five_indices_and_full_sixteen_handle_same_query_data_publication() {
     }
     close(frame, 0);
     forget(&lastbuild, indices[4].0);
-    for (i, (h, _)) in indices.iter().enumerate() {
+    for (i, (h, _, birth)) in indices.iter().enumerate() {
         close(*h, 1);
+        execute(&ack(birth, *h, 2)).unwrap();
         let (_, b) = &queries[i];
         assert_eq!(u32_at(&execute(&ack(b, queries[i].0, 0)).unwrap(), 8), 22);
         forget(b, queries[i].0);
@@ -272,6 +277,7 @@ fn recovery_lost_original_retired_zero_confirmation_releases_no_guessed_owner() 
     p64(&mut wrong, 24, 2);
     assert_eq!(execute(&wrong), Err(SourceError::StaleSource));
     assert_eq!(u32_at(&execute(&ack(&b, 0, 0)).unwrap(), 8), 22);
+    execute(&ack(&b, 0, 2)).unwrap();
     let next = nonce(b.clone(), 2);
     let nh = u64_at(&execute(&next).unwrap(), 16);
     confirm(&next, nh);
@@ -289,4 +295,77 @@ fn recovery_lost_original_retired_zero_confirmation_releases_no_guessed_owner() 
     forget(&b, 0);
     forget(&b, 0);
     assert_eq!(execute(&b), Err(SourceError::StaleSource));
+}
+
+#[test]
+fn recovery_historical_retirement_confirm_release_preserves_newer_owner() {
+    let _lock = test_processor_lock();
+    let (parent, _) = source_frame(&[chunk(1, 0, 0.)]);
+    let old = nonce(with_budget(request(26, parent, 1, &[])), 1);
+    let target = u64_at(&execute(&old).unwrap(), 16);
+    confirm(&old, target);
+    let next = nonce(old.clone(), 2);
+    let newer = u64_at(&execute(&next).unwrap(), 16);
+    confirm(&next, newer);
+    assert_eq!(
+        execute(&ack(&old, target, 2)),
+        Err(SourceError::StaleSource)
+    );
+    // The client loses the successful10 reply. Historical Confirm is not replay
+    // of the now stale allocation and cannot revive or dispose the newer Data.
+    close(target, 0);
+    assert_eq!(execute(&old), Err(SourceError::StaleSource));
+    let retired = execute(&ack(&old, target, 0)).unwrap();
+    assert_eq!(u32_at(&retired, 8), 22);
+    assert_eq!(u64_at(&retired, 16), 0);
+    assert_eq!(execute(&ack(&old, target, 0)).unwrap(), retired);
+    let mut forged = ack(&old, target, 0);
+    p64(&mut forged, 24, 2);
+    assert_eq!(execute(&forged), Err(SourceError::StaleSource));
+    assert_eq!(execute(&ack(&old, newer, 0)), Err(SourceError::StaleSource));
+    let release = ack(&old, target, 2);
+    assert_eq!(execute(&release).unwrap(), reply_bytes(0, 1));
+    assert_eq!(execute(&release).unwrap(), reply_bytes(0, 1));
+    assert_eq!(
+        execute(&ack(&old, target, 0)),
+        Err(SourceError::StaleSource)
+    );
+    assert_eq!(u64_at(&execute(&next).unwrap(), 16), newer);
+    assert!(data_len(&request(23, newer, 0, &[]), 128 << 20).unwrap() > 0);
+    close(newer, 0);
+    execute(&ack(&next, newer, 2)).unwrap();
+    // Birth release preserves the issuer's nonce highwater and exact retirement.
+    assert_eq!(u32_at(&execute(&next).unwrap(), 8), 22);
+    assert_eq!(execute(&old), Err(SourceError::StaleSource));
+    close(parent, 0);
+    forget(&next, newer);
+}
+
+#[test]
+fn recovery_historical_stamp_capacity_precedes_mutation_and_releases_exactly() {
+    let _lock = test_processor_lock();
+    let (parent, _) = source_frame(&[chunk(1, 0, 0.)]);
+    let mut births = Vec::new();
+    for n in 1..=16 {
+        let b = nonce(with_budget(request(26, parent, 1, &[])), n);
+        let target = u64_at(&execute(&b).unwrap(), 16);
+        confirm(&b, target);
+        close(target, 0);
+        births.push((b, target));
+    }
+    let next = nonce(with_budget(request(26, parent, 1, &[])), 17);
+    assert_eq!(execute(&next), Err(SourceError::ResourceLimit));
+    assert!(data_len(&request(23, parent, 0, &[]), 128 << 20).unwrap() > 0);
+    let (first, target) = &births[0];
+    assert_eq!(u32_at(&execute(&ack(first, *target, 0)).unwrap(), 8), 22);
+    execute(&ack(first, *target, 2)).unwrap();
+    let live = u64_at(&execute(&next).unwrap(), 16);
+    confirm(&next, live);
+    for (b, target) in births.iter().skip(1) {
+        execute(&ack(b, *target, 2)).unwrap();
+    }
+    close(live, 0);
+    execute(&ack(&next, live, 2)).unwrap();
+    close(parent, 0);
+    forget(&next, live);
 }
