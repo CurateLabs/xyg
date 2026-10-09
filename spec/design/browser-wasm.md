@@ -255,8 +255,10 @@ Raw samples, hashes, environment, source files and commands are committed in
 The original raw artifact gate was 1 MiB. The retained geographic source,
 resumable membership, certified simplification, tile cache, frozen snapshots,
 and transport credit introduced in ABI 33 require an explicit budget decision:
-**1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip bytes (512 KiB)**. Packaging
-fails either gate. The release compiler and pinned Binaryen 132 `-O3
+The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
+bytes (512 KiB)**. They are historical and superseded by the linked-state and
+temporal-overview functionality decision below; packaging enforces its current
+1,408 KiB raw / 576 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
