@@ -132,7 +132,7 @@ export declare class GeoSelectedOperation {
                 layerRevision: bigint;
                 styleRevision: bigint;
                 stateRevision: bigint;
-                time: import("./63_geo_source").XygGeoTime;
+                time: import("./geoscale.js").XygGeoTime;
                 reducedKind: number;
                 sourceRows: bigint;
                 geometry: number;
@@ -163,4 +163,10 @@ export declare class GeoSelectedOperation {
     cancel(): Promise<void>;
     dispose(): Promise<void>;
 }
+/** Internal issued capability: captures original owner/transport, never public wire fields. */
+export declare function claimGeoSelectedState(state: GeoSelectedState, bridge: XygGeoScaleBridge): {
+    handle: bigint;
+    reject(): void;
+    consume(): void;
+};
 export {};

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import weakref
 
 import numpy as np
 
@@ -11,6 +12,7 @@ from . import _geoscale as g
 from ._geo_retained import _aprepare, _attach_frame
 
 _AUTHORITY = object()
+_STATE_AUTHORITIES: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
 def _execute(command, **fields):
@@ -197,6 +199,35 @@ class GeoSelectedState(_Owner):
     def __init__(self, handle, scope, *, _token=None):
         super().__init__(handle, scope._bridge, _token=_token)
         self.scope = scope
+        try:
+            bridge = weakref.ref(self._bridge) if self._bridge is not None else None
+        except TypeError:
+            bridge = None
+        _STATE_AUTHORITIES[self] = dict(
+            handle=handle, bridge=bridge, bridge_id=id(self._bridge), live=True, busy=False
+        )
+
+    def _check(self):
+        super()._check()
+        record = _STATE_AUTHORITIES.get(self)
+        if record is None or not record["live"] or record["busy"]:
+            raise RuntimeError("selected State already consumed or active")
+
+    def close(self):
+        if _STATE_AUTHORITIES.get(self, {}).get("busy"):
+            raise RuntimeError("selected State already active")
+        return super().close()
+
+    async def aclose(self):
+        if _STATE_AUTHORITIES.get(self, {}).get("busy"):
+            raise RuntimeError("selected State already active")
+        return await super().aclose()
+
+    def _consume(self):
+        self._live = False
+        record = _STATE_AUTHORITIES.get(self)
+        if record is not None:
+            record["live"] = False
 
     def begin(self, source, query, *, sequence, indexed=False):
         """Consume only after successful canonical begin; caller drives explicitly."""
@@ -225,7 +256,7 @@ class GeoSelectedState(_Owner):
             or reply["sequence"] != sequence
         ):
             raise ValueError("selected begin ownership reply")
-        self._live = False
+        self._consume()
         source._sequence = sequence
         return GeoSelectedOperation(
             source, sequence, request, self.scope, reply["handle"], indexed, _token=_AUTHORITY
@@ -262,7 +293,7 @@ class GeoSelectedState(_Owner):
             or reply["sequence"] != sequence
         ):
             raise ValueError("selected begin ownership reply")
-        self._live = False
+        self._consume()
         source._sequence = sequence
         operation = GeoSelectedOperation(
             source, sequence, request, self.scope, reply["handle"], indexed, _token=_AUTHORITY
@@ -432,3 +463,36 @@ class GeoSelectedOperation:
         if not self._replaced:
             _execute(10, handle=self.handle)
             self._replaced = True
+
+
+def claim_selected_state(state, bridge):
+    """Internal issued State guard; registry values never pin Scope/Source cycles."""
+    record = _STATE_AUTHORITIES.get(state)
+    if record is None or record["bridge_id"] != id(bridge):
+        raise TypeError("issued selected State belongs to another transport")
+    if record["bridge"] is not None and record["bridge"]() is not bridge:
+        raise TypeError("issued selected State belongs to another transport")
+    state._check()
+    if not record["live"] or record["busy"]:
+        raise RuntimeError("selected State already consumed or active")
+    record["busy"] = True
+    reference = weakref.ref(state)
+
+    class Claim:
+        handle = record["handle"]
+        settled = False
+
+        def reject(self):
+            if not self.settled:
+                self.settled = True
+                record["busy"] = False
+
+        def consume(self):
+            if not self.settled:
+                self.settled = True
+                record["busy"], record["live"] = False, False
+                original = reference()
+                if original is not None:
+                    original._live = False
+
+    return Claim()

@@ -3,6 +3,7 @@ import {encodeGeoScaleRequest,decodeGeoScaleReply,driveGeoSession,driveGeoIndexS
 
 
 const AUTHORITY=Symbol('selected-owner');
+const stateAuthorities=new WeakMap                                                                                         ();
 function u64(n       ){if(typeof n!=='bigint'||n<0n||n>0xffffffffffffffffn)throw new TypeError('expected u64 bigint');return n;}
 function words(values         ){const p=new Uint8Array(values.length*8),v=new DataView(p.buffer);values.forEach((n,i)=>v.setBigUint64(i*8,u64(n),true));return p;}
 async function execute(bridge                  ,request            ){return decodeGeoScaleReply(await bridge.execute(request));}
@@ -34,11 +35,11 @@ export class GeoSelectedScope {
 export class GeoSelectedState {
          owner                         ;
          bridge                  ;         scope                 ;
- constructor(bridge                  ,handle       ,scope                 ,token                 ){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.bridge=bridge;this.scope=scope;this.owner=owned(bridge,handle);}
+ constructor(bridge                  ,handle       ,scope                 ,token                 ){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.bridge=bridge;this.scope=scope;this.owner=owned(bridge,handle);stateAuthorities.set(this,{bridge,owner:this.owner,busy:false});}
  get handle(){return this.owner.handle;}
- check(){this.owner.check();}
+ check(){const authority=stateAuthorities.get(this);if(!authority||authority.busy)throw new Error('selected State already active');authority.owner.check();}
  belongsTo(bridge                  ){return this.bridge===bridge;}
- dispose(){return this.owner.dispose();}
+ dispose(){if(stateAuthorities.get(this)?.busy)return Promise.reject(new Error('selected State already active'));return this.owner.dispose();}
  async begin(input                                                                                              ){
   this.check();const {command,handle,sequence}=input,budget={...input.budget};const request=encodeGeoScaleRequest({...input,budget,payload:words([this.handle])}),result=await execute(this.bridge,request);
   if(result.code===10)return {fallback:true         ,reason:result.fallbackReasonCode,state:this                    };
@@ -64,4 +65,16 @@ export class GeoSelectedOperation {
  }
  async cancel(){if(this.replaced)throw new Error('selected query replaced');await execute(this.bridge,encodeGeoScaleRequest({command:9,handle:this.handle,sequence:this.sequence}));}
  async dispose(){if(!this.indexed)throw new Error('canonical SourceSession remains caller-owned');if(!this.replaced){await execute(this.bridge,encodeGeoScaleRequest({command:10,handle:this.handle}));this.replaced=true;}}
+}
+
+/** Internal issued capability: captures original owner/transport, never public wire fields. */
+export function claimGeoSelectedState(state                 ,bridge                  ){
+ const authority=stateAuthorities.get(state);
+ if(!authority||authority.bridge!==bridge)throw new TypeError('issued selected State belongs to another transport');
+ authority.owner.check();if(authority.busy)throw new Error('selected State already active');authority.busy=true;
+ let settled=false;
+ return {handle:authority.owner.handle,
+  reject(){if(!settled){settled=true;authority.busy=false;}},
+  consume(){if(!settled){settled=true;authority.busy=false;authority.owner.consume();}}
+ };
 }
