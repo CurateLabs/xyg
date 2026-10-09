@@ -491,6 +491,16 @@ impl GeoChunk {
             chunk: self,
             row: 0,
             point_vertex: 0,
+            include_null: false,
+        }
+    }
+    /// Every original source row, including null geometry; no viewport or time filtering.
+    pub fn all_rows(&self) -> FeatureRows<'_> {
+        FeatureRows {
+            chunk: self,
+            row: 0,
+            point_vertex: 0,
+            include_null: true,
         }
     }
 }
@@ -534,6 +544,7 @@ pub struct FeatureRows<'a> {
     chunk: &'a GeoChunk,
     row: usize,
     point_vertex: usize,
+    include_null: bool,
 }
 impl<'a> Iterator for FeatureRows<'a> {
     type Item = FeatureView<'a>;
@@ -563,7 +574,7 @@ impl<'a> Iterator for FeatureRows<'a> {
                     c.offsets2()[a] as usize..c.offsets2()[z] as usize
                 }
             };
-            if !valid {
+            if !valid && !self.include_null {
                 continue;
             }
             let (start, end) = self.chunk.intervals().map_or((None, None), |t| {

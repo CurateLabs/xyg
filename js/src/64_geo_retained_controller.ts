@@ -1,10 +1,11 @@
 /** Scheduling/paint adapter for one retained Rust geographic source. */
 import { XygWasmWorker } from './47_wasm';
 import { hydrateWasmPainter, type XygWasmSceneView } from './48_wasm_scene';
-import { decodeGeoScaleReply, driveGeoSession, encodeGeoScaleRequest, prepareGeoSceneData, prepareGeoAuxData, parseGeoHitData, parseGeoMembershipData,
+import { decodeGeoScaleReply, driveGeoSession, encodeGeoScaleRequest, prepareGeoSceneData, prepareGeoAuxData, parseGeoHitData, parseGeoMembershipData, parseGeoRowsData,
   type XygGeoQueryBudget, type XygGeoReadTicket, type XygGeoScaleQuery } from './63_geo_source';
 
 type SceneLease = Awaited<ReturnType<typeof prepareGeoSceneData>>;
+type RowsLease=Awaited<ReturnType<typeof prepareGeoAuxData<ReturnType<typeof parseGeoRowsData>>>>;
 export type RetainedGeoFrameSummary=Pick<SceneLease['data'],'aggregate'|'visibleVertices'|'projectedVertices'|'columns'|'rows'|'gridCapped'> & {identity:SceneLease['data']['identity']};
 export interface RetainedGeographicChartOptions {
   el: HTMLElement;
@@ -21,6 +22,7 @@ export interface RetainedGeographicChartOptions {
   onChange?: (frame: SceneLease['data']) => void;
   onError?: (error: unknown) => void;
   onPick?: (hits: Array<ReturnType<ReturnType<typeof parseGeoHitData>['record']>>) => void;
+  onSourceRowFocus?: (row:ReturnType<ReturnType<typeof parseGeoRowsData>['record']>)=>void;
 }
 
 /** Constructed by the existing geographic chart surface; this is not a second
@@ -45,6 +47,11 @@ export class RetainedGeographicController {
   private readonly companion = document.createElement('div');
   private readonly previous = document.createElement('button');
   private readonly next = document.createElement('button');
+  private readonly sourcePanel=document.createElement('div');
+  private readonly sourceCompanion=document.createElement('div');
+  private readonly loadSource=document.createElement('button');
+  private readonly nextSource=document.createElement('button');
+  private sourcePage:RowsLease|null=null;
   private companionOffset = 0;
   private auxiliaryAbort: AbortController | null = null;
   private pointerPending = false;
@@ -73,11 +80,17 @@ export class RetainedGeographicController {
     this.previous.type='button';this.next.type='button';this.previous.textContent='Previous 50';this.next.textContent='Next 50';
     this.previous.onclick=()=>{this.companionOffset=Math.max(0,this.companionOffset-50);this.renderCompanion();};
     this.next.onclick=()=>{this.companionOffset+=50;this.renderCompanion();};
+    this.sourceCompanion.setAttribute('role','list');this.sourceCompanion.setAttribute('aria-label','Original geographic source rows');
+    this.loadSource.type='button';this.loadSource.textContent='Source rows from beginning';
+    this.nextSource.type='button';this.nextSource.textContent='Next source rows';this.nextSource.disabled=true;
+    this.loadSource.onclick=()=>{void this.sourceRows().catch(error=>this.report(error));};
+    this.nextSource.onclick=()=>{void this.sourceRows(true).catch(error=>this.report(error));};
+    this.sourcePanel.append(this.loadSource,this.nextSource,this.sourceCompanion);
     (this.options.pointerSurface??this.paint).addEventListener('pointermove',this.pointer);
-    options.el.append(this.paint,this.status,this.companion,this.previous,this.next);
+    options.el.append(this.paint,this.status,this.companion,this.sourcePanel,this.previous,this.next);
     this.initialization = this.initialize().catch(error=>{this.releaseManifest?.();this.releaseManifest=null;this.options={...this.options,manifest:new Uint8Array()};this.initializationFailed=true;throw error;});
     this.ready = this.update(options.query).then(()=>{}).catch(async error=>{if(this.initializationFailed)await this.dispose();throw error;});
-    }catch(error){this.releaseManifest?.();this.releaseManifest=null;this.paint.remove();this.status.remove();this.companion.remove();this.previous.remove();this.next.remove();throw error;}
+    }catch(error){this.releaseManifest?.();this.releaseManifest=null;this.paint.remove();this.status.remove();this.companion.remove();this.sourcePanel.remove();this.previous.remove();this.next.remove();throw error;}
   }
   private async initialize() {
     if (this.disposed) throw new Error('Geographic chart disposed');
@@ -126,6 +139,8 @@ export class RetainedGeographicController {
         const previous = this.frame;
         this.companion.replaceChildren();this.companionOffset=0;
         this.frame = candidate;this.frameProjectedBudget=frozen.maxProjectedVertices; candidate = null;
+        this.sourceCompanion.replaceChildren();this.nextSource.disabled=true;
+        const oldPage=this.sourcePage;this.sourcePage=null;if(oldPage)await oldPage.dispose();
         if(previous)await previous.dispose();
         this.preparation = null;
         const frame = this.frame.data;
@@ -142,6 +157,44 @@ export class RetainedGeographicController {
     });
     this.chain = operation.then(()=>{},()=>{});
     return operation;
+  }
+
+  /** Rust pages original rows regardless of visibility or temporal eligibility.
+   * The next-page capability remains in a privately leased Data handle. */
+  sourceRows(next=false){
+    const abort=new AbortController();this.auxiliaryAbort?.abort();this.auxiliaryAbort=abort;
+    const operation=this.chain.then(async()=>{
+      if(this.disposed||abort.signal.aborted||!this.frame)throw new DOMException('Geographic operation cancelled','AbortError');
+      const frame=this.frame,sequence=frame.data.identity.sequence;
+      const prior=this.sourcePage;
+      if(next&&(!prior||!prior.data.hasNext||prior.data.sequence!==sequence))throw new Error('No original-row continuation');
+      const owner=next?prior!.handle:frame.handle,budget={...this.options.budget,pageRows:Math.min(50,this.options.budget.pageRows)};
+      const reply=decodeGeoScaleReply(await this.bridge.execute(encodeGeoScaleRequest({command:15,handle:owner,sequence,budget}))),handle=reply.handle;
+      let candidate:RowsLease|null=null;
+      try{
+        if(reply.sequence!==sequence)throw new TypeError('Original-row session mismatch');
+        await driveGeoSession(this.bridge,{handle,sequence,budget,readChunk:this.options.readChunk,signal:abort.signal});
+        candidate=await prepareGeoAuxData(this.bridge,{command:16,handle,sequence,budget},parseGeoRowsData);
+        if(candidate.data.owner!==handle||candidate.data.sequence!==sequence)throw new TypeError('Original-row page mismatch');
+        if(this.disposed||abort.signal.aborted)throw new DOMException('Geographic operation cancelled','AbortError');
+        const records=Array.from({length:candidate.data.length},(_,i)=>candidate!.data.record(i));
+        this.sourceCompanion.replaceChildren();
+        for(const row of records){
+          const button=document.createElement('button');button.type='button';button.setAttribute('role','listitem');
+          button.textContent=`Feature ${row.featureId}, source row ${row.sourceRow}; ${row.geometryNull?'null geometry':row.timeEligible?'time eligible':'outside time predicate'}`;
+          button.onfocus=()=>{this.status.textContent=`Source row ${row.sourceRow}, feature ${row.featureId}`;try{this.options.onSourceRowFocus?.(row);}catch(error){this.report(error);}};
+          this.sourceCompanion.append(button);
+        }
+        this.nextSource.disabled=!candidate.data.hasNext;
+        this.sourcePage=candidate;candidate=null;
+        if(prior)await prior.dispose();
+        return records;
+      }finally{
+        if(candidate)await candidate.dispose();
+        await this.bridge.execute(encodeGeoScaleRequest({command:10,handle}));
+        if(this.auxiliaryAbort===abort)this.auxiliaryAbort=null;
+      }
+    });this.chain=operation.then(()=>{},()=>{});return operation;
   }
   private report(error:unknown){if(error instanceof DOMException&&error.name==='AbortError')return;try{this.options.onError?.(error);}catch{/* Observer isolation. */}}
   private renderCompanion(){
@@ -204,10 +257,12 @@ export class RetainedGeographicController {
       this.view?.destroy(); this.view = null;
       (this.options.pointerSurface??this.paint).removeEventListener('pointermove',this.pointer);this.companion.replaceChildren();
       this.paint.remove(); this.status.remove();this.companion.remove();this.previous.remove();this.next.remove();
+      this.sourceCompanion.replaceChildren();this.sourcePanel.remove();
+      const page=this.sourcePage;this.sourcePage=null;if(page)await page.dispose();
       const frame = this.frame; this.frame = null;
       if(frame)await frame.dispose();
       if(this.handle!==0n){await this.bridge.execute(encodeGeoScaleRequest({command:10,handle:this.handle}));this.handle=0n;}
-      this.options={...this.options,manifest:new Uint8Array(),style:new Uint8Array(),readChunk:async()=>{throw new Error('Geographic chart disposed');},onChange:undefined,onPick:undefined,onError:undefined};
+      this.options={...this.options,manifest:new Uint8Array(),style:new Uint8Array(),readChunk:async()=>{throw new Error('Geographic chart disposed');},onChange:undefined,onPick:undefined,onSourceRowFocus:undefined,onError:undefined};
     })();
   }
 }

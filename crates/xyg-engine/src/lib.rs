@@ -57,6 +57,7 @@ pub mod geo_interaction;
 pub mod geo_source;
 pub mod geo_source_session;
 pub mod geo_membership_session;
+pub mod geo_rows_session;
 pub mod geo_snapshot;
 pub mod geo_scale_protocol;
 #[cfg(test)]

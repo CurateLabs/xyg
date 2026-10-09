@@ -8,6 +8,7 @@ use crate::geo_lod::{
     GeoPointResult, GeoReducedKind,
 };
 use crate::geo_membership_session::{GeoMembershipSession, GeoPublishedMembership};
+use crate::geo_rows_session::{GeoPublishedRows, GeoRowsCursor, GeoRowsKey, GeoRowsSession};
 use crate::geo_source::{
     GeoChunk, GeoIntervals, GeoManifestBuilder, GeoSourceManifest, MAX_CHUNK_BYTES,
     MAX_MANIFEST_BYTES, MAX_PROCESSOR_BYTES, QueryBudget, QueryCursor, QuerySpec, ReadRequest,
@@ -34,6 +35,13 @@ struct GeoSceneSemantic {
     sequence: u64,
     _lease: GeoProcessorLease,
 }
+struct GeoRowsAuthority {
+    source: GeoSourceManifest,
+    key: GeoRowsKey,
+    cursor: Option<GeoRowsCursor>,
+    sequence: u64,
+    _lease: GeoProcessorLease,
+}
 enum Entry {
     Builder {
         value: GeoManifestBuilder,
@@ -45,11 +53,13 @@ enum Entry {
     },
     Session(Box<GeoSourceSession>),
     Members(Box<GeoMembershipSession>),
+    Rows(Box<GeoRowsSession>),
     Data {
         bytes: Vec<u8>,
         _lease: GeoDerivedLease,
         reads: AtomicU8,
         semantic: Option<Box<GeoSceneSemantic>>,
+        rows: Option<Box<GeoRowsAuthority>>,
     },
 }
 struct Registry {
@@ -91,7 +101,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=14 | 20 | 21 | 23) {
+    if !matches!(command, 1..=16 | 20 | 21 | 23) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -102,7 +112,7 @@ fn frame(b: &[u8]) -> Result<u32> {
     let zero = |start, end| b[start..end].iter().all(|&v| v == 0);
     if (command != 5 && (!zero(12, 16) || !zero(64, 144) || !zero(152, 232)))
         || (!matches!(command, 3 | 5) && !zero(144, 152))
-        || (!matches!(command, 5 | 6 | 9 | 11 | 12 | 13 | 14) && !zero(24, 32))
+        || (!matches!(command, 5 | 6 | 9 | 11 | 12 | 13 | 14 | 15 | 16) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
     }
@@ -219,7 +229,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let sequence = u64at(request, 24);
     let payload = &request[HEADER..];
     let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
-    if matches!(command, 1 | 4 | 11 | 12 | 13 | 14) && r.entries.len() >= MAX_HANDLES {
+    if matches!(command, 1 | 4 | 11 | 12 | 13 | 14 | 15 | 16) && r.entries.len() >= MAX_HANDLES {
         return Err(SourceError::ResourceLimit);
     }
     if command == 1 {
@@ -240,7 +250,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     if command == 4 {
         if r.entries
             .iter()
-            .filter(|(_, e)| matches!(e, Entry::Session(_) | Entry::Members(_)))
+            .filter(|(_, e)| matches!(e, Entry::Session(_) | Entry::Members(_) | Entry::Rows(_)))
             .count()
             >= MAX_SESSIONS
         {
@@ -254,10 +264,109 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         let id = insert(&mut r, Entry::Session(Box::new(s)))?;
         return Ok(reply(id, 0));
     }
+    if command == 15 {
+        if !payload.is_empty() {
+            return Err(SourceError::InvalidFrame);
+        }
+        if r.entries
+            .iter()
+            .filter(|(_, e)| matches!(e, Entry::Session(_) | Entry::Members(_) | Entry::Rows(_)))
+            .count()
+            >= MAX_SESSIONS
+        {
+            return Err(SourceError::ResourceLimit);
+        }
+        let entry = &r
+            .entries
+            .iter()
+            .find(|&&(id, _)| id == handle)
+            .ok_or(SourceError::StaleSource)?
+            .1;
+        let (source, key, cursor) = row_authority(entry, sequence)?;
+        let rows = GeoRowsSession::create(source, sequence, key, cursor, budget(request)?)?;
+        let id = insert(&mut r, Entry::Rows(Box::new(rows)))?;
+        return Ok(reply(id, sequence));
+    }
+    if command == 16 {
+        if !payload.is_empty() {
+            return Err(SourceError::InvalidFrame);
+        }
+        let operation_budget = budget(request)?;
+        if r.entries
+            .iter()
+            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
+            .count()
+            >= MAX_DATA_HANDLES
+        {
+            return Err(SourceError::ResourceLimit);
+        }
+        let entry = &r
+            .entries
+            .iter()
+            .find(|&&(id, _)| id == handle)
+            .ok_or(SourceError::StaleSource)?
+            .1;
+        let Entry::Rows(rows) = entry else {
+            return Err(SourceError::InvalidFrame);
+        };
+        let published = rows.published().ok_or(SourceError::StaleSource)?;
+        if published.sequence != sequence {
+            return Err(SourceError::StaleSource);
+        }
+        let source = rows.source().ok_or(SourceError::StaleSource)?;
+        let semantic_bytes = source
+            .clone_reserved_bytes()
+            .checked_add(std::mem::size_of::<GeoRowsAuthority>())
+            .ok_or(SourceError::ResourceLimit)?;
+        // Original serialized storage, two transfer copies, typed host page and
+        // framing scratch all remain charged while the Data authority is live.
+        let reserve = published
+            .page
+            .records
+            .len()
+            .checked_mul(2048)
+            .and_then(|n| n.checked_add(8192))
+            .ok_or(SourceError::ResourceLimit)?;
+        if reserve
+            .checked_add(semantic_bytes)
+            .is_none_or(|n| n > operation_budget.processor_bytes)
+        {
+            return Err(SourceError::ResourceLimit);
+        }
+        let semantic_lease = GeoProcessorLease::acquire(semantic_bytes)?;
+        let authority = Box::new(GeoRowsAuthority {
+            source: source.clone_validated(),
+            key: published.key,
+            cursor: published.page.next,
+            sequence,
+            _lease: semantic_lease,
+        });
+        let lease = reserve_data(&mut r, reserve)?;
+        let entry = &r.entries.iter().find(|&&(id, _)| id == handle).unwrap().1;
+        let Entry::Rows(rows) = entry else {
+            unreachable!()
+        };
+        let bytes = render_rows(rows.published().unwrap(), handle);
+        let len = bytes.len();
+        let id = insert(
+            &mut r,
+            Entry::Data {
+                bytes,
+                _lease: lease,
+                reads: AtomicU8::new(0),
+                semantic: None,
+                rows: Some(authority),
+            },
+        )?;
+        let mut out = reply(id, sequence);
+        put64(&mut out, 32, len as u64);
+        put64(&mut out, 40, handle);
+        return Ok(out);
+    }
     if command == 12 {
         if r.entries
             .iter()
-            .filter(|(_, e)| matches!(e, Entry::Session(_) | Entry::Members(_)))
+            .filter(|(_, e)| matches!(e, Entry::Session(_) | Entry::Members(_) | Entry::Rows(_)))
             .count()
             >= MAX_SESSIONS
         {
@@ -396,6 +505,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 _lease: lease,
                 reads: AtomicU8::new(0),
                 semantic: None,
+                rows: None,
             },
         )?;
         let mut out = reply(id, sequence);
@@ -453,6 +563,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 _lease: lease,
                 reads: AtomicU8::new(0),
                 semantic: None,
+                rows: None,
             },
         )?;
         let mut out = reply(id, sequence);
@@ -562,6 +673,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 _lease: lease,
                 reads: AtomicU8::new(0),
                 semantic: Some(semantic),
+                rows: None,
             },
         )?;
         let Entry::Session(source) = &mut r
@@ -687,6 +799,12 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                     }
                     s.step()?
                 }
+                Entry::Rows(s) => {
+                    if sequence != s.current_sequence() {
+                        return Err(SourceError::StaleSource);
+                    }
+                    s.step()?
+                }
                 _ => return Err(SourceError::InvalidFrame),
             };
             let code = match step {
@@ -726,6 +844,18 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                     put32(&mut out, 172, p.cell);
                 }
             }
+            if let Entry::Rows(s) = entry {
+                let key = s.key();
+                put64(&mut out, 32, key.generation);
+                out[40..48].copy_from_slice(&key.source_digest);
+                put64(&mut out, 48, key.source_rows);
+                put32(&mut out, 56, key.geometry as u32);
+                put32(&mut out, 60, key.crs as u32);
+                if let Some(p) = s.published() {
+                    put64(&mut out, 160, p.page.records.len() as u64);
+                    put32(&mut out, 168, u32::from(p.page.next.is_some()));
+                }
+            }
         }
         7 => {
             if payload.len() < 96 {
@@ -735,6 +865,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             match entry {
                 Entry::Session(s) => s.supply(t, &payload[96..], &mut || false)?,
                 Entry::Members(s) => s.supply(t, &payload[96..], &mut || false)?,
+                Entry::Rows(s) => s.supply(t, &payload[96..], &mut || false)?,
                 _ => return Err(SourceError::InvalidFrame),
             }
         }
@@ -746,6 +877,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             match entry {
                 Entry::Session(s) => s.release_read(t)?,
                 Entry::Members(s) => s.release_read(t)?,
+                Entry::Rows(s) => s.release_read(t)?,
                 _ => return Err(SourceError::InvalidFrame),
             }
         }
@@ -756,6 +888,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             match entry {
                 Entry::Session(s) => s.cancel(sequence)?,
                 Entry::Members(s) => s.cancel(sequence)?,
+                Entry::Rows(s) => s.cancel(sequence)?,
                 _ => return Err(SourceError::InvalidFrame),
             }
         }
@@ -772,6 +905,13 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 }
             }
             if let Entry::Members(s) = entry {
+                s.dispose()?;
+                if s.has_outstanding_reads() {
+                    put32(&mut out, 8, 2);
+                    return Ok(out);
+                }
+            }
+            if let Entry::Rows(s) = entry {
                 s.dispose()?;
                 if s.has_outstanding_reads() {
                     put32(&mut out, 8, 2);
@@ -1250,6 +1390,106 @@ fn render_members(published: &GeoPublishedMembership, owner: u64) -> Vec<u8> {
         put64(&mut out, at + 8, f.source_row);
         put32(&mut out, at + 16, f.chunk_index);
         put32(&mut out, at + 20, f.row);
+    }
+    out
+}
+
+fn row_authority(
+    entry: &Entry,
+    sequence: u64,
+) -> Result<(&GeoSourceManifest, GeoRowsKey, Option<GeoRowsCursor>)> {
+    match entry {
+        Entry::Data {
+            rows: Some(authority),
+            ..
+        } => {
+            if sequence != authority.sequence {
+                return Err(SourceError::StaleSource);
+            }
+            let cursor = authority.cursor.ok_or(SourceError::InvalidFrame)?;
+            Ok((&authority.source, authority.key, Some(cursor)))
+        }
+        Entry::Data {
+            bytes,
+            semantic: Some(authority),
+            ..
+        } => {
+            if sequence != authority.sequence {
+                return Err(SourceError::StaleSource);
+            }
+            let identity = authority.result.key.identity;
+            Ok((
+                &authority.source,
+                GeoRowsKey {
+                    source_digest: identity.source_digest,
+                    generation: identity.generation,
+                    source_rows: identity.source_rows,
+                    geometry: identity.geometry,
+                    crs: identity.crs,
+                    layer_id: identity.layer_id,
+                    layer_revision: u64at(bytes, 184),
+                    state_revision: identity.state_revision,
+                    time_revision: u64at(bytes, 176),
+                    time: authority.result.key.time,
+                },
+                None,
+            ))
+        }
+        _ => Err(SourceError::InvalidFrame),
+    }
+}
+
+fn render_rows(published: &GeoPublishedRows, owner: u64) -> Vec<u8> {
+    let page = &published.page;
+    let key = published.key;
+    let mut out = vec![0; HEADER + page.records.len() * 64];
+    out[..HEADER].copy_from_slice(&reply(owner, published.sequence));
+    put32(&mut out, 8, 4);
+    put64(&mut out, 32, page.records.len() as u64);
+    put32(&mut out, 40, u32::from(page.next.is_some()));
+    put64(&mut out, 48, page.rows_examined);
+    put64(&mut out, 56, page.bytes_read);
+    put32(&mut out, 64, page.chunks_read as u32);
+    put32(&mut out, 68, page.chunks_considered as u32);
+    put64(&mut out, 80, owner);
+    out[88..96].copy_from_slice(&key.source_digest);
+    put64(&mut out, 96, key.generation);
+    put64(&mut out, 104, key.source_rows);
+    put32(&mut out, 112, key.geometry as u32);
+    put32(&mut out, 116, key.crs as u32);
+    put64(&mut out, 120, key.layer_id);
+    put64(&mut out, 128, key.layer_revision);
+    put64(&mut out, 136, key.state_revision);
+    put64(&mut out, 144, key.time_revision);
+    match key.time {
+        TimePredicate::All => {}
+        TimePredicate::Instant(t) => {
+            put32(&mut out, 152, 1);
+            put64(&mut out, 160, t as u64);
+        }
+        TimePredicate::Window { start, end } => {
+            put32(&mut out, 152, 2);
+            put64(&mut out, 160, start as u64);
+            put64(&mut out, 168, end as u64);
+        }
+    }
+    for (i, row) in page.records.iter().enumerate() {
+        let at = HEADER + i * 64;
+        put64(&mut out, at, row.feature.feature_id);
+        put64(&mut out, at + 8, row.feature.source_row);
+        put32(&mut out, at + 16, row.feature.chunk_index);
+        put32(&mut out, at + 20, row.feature.row);
+        let flags = u32::from(row.geometry_null)
+            | (u32::from(row.time_eligible) << 1)
+            | (u32::from(row.eligible) << 2)
+            | (u32::from(row.intervals_present) << 3)
+            | (u32::from(row.interval_start.is_some()) << 4)
+            | (u32::from(row.interval_end.is_some()) << 5)
+            | (u32::from(row.value.is_some()) << 6);
+        put32(&mut out, at + 24, flags);
+        put64(&mut out, at + 32, row.interval_start.unwrap_or(0) as u64);
+        put64(&mut out, at + 40, row.interval_end.unwrap_or(0) as u64);
+        put64(&mut out, at + 48, row.value.map_or(0, f64::to_bits));
     }
     out
 }
