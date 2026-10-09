@@ -61,3 +61,7 @@ Rust receipt and selected authority credits use the existing global ledger.
 No source-sized masks or new memory pools are introduced. Initial hook setup
 needed the ignored docs codespell environment; final hooks passed after that
 environment was available. No production source was changed by hook setup.
+
+The full-suite cleanup follow-up is recorded in `full-suite-cleanup/`. The
+updated test hash in `environment.json` includes that test-only release-order
+correction; every production source hash and paired artifact hash is unchanged.

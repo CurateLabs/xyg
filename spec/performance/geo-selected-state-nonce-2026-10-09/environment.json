@@ -16,7 +16,7 @@
   },
   "source_sha256": {
     "crates/xyg-engine/src/geo_linked_state_protocol.rs": "5e1f718ecf10479b3139bb1a1acf882c4e534785ebdbf81f65605ea3e751423c",
-    "crates/xyg-engine/src/geo_linked_state_protocol_tests.rs": "8f40f3ee662905b1a9739d54b0cbc44997a51b5356b9b345b860dc2170856124",
+    "crates/xyg-engine/src/geo_linked_state_protocol_tests.rs": "42e94e82f1f7761b64eccdb995cf541cbc09f8d779f0ea346cc87a4f81012b65",
     "crates/xyg-engine/src/geo_scale_protocol.rs": "29db300c4b68e524fc66d997f48e58709e9bd18709e6be05614953329b4ac942",
     "js/src/68_geo_selected.ts": "686b374dea966412e2e3a696892296a2c58691c1a1316a9e50cd1fd1647d85b1",
     "packages/xy-node/src/geo-selected.js": "29e73d787275d63509228b19b9cdfebfef2f9f14d52efd5e90ef391747ae0eee",
@@ -30,5 +30,6 @@
     "packages/xy-node/package.json": "6a1f39aec8a4a2f52a1e5dd581ff36ccdef3a435efd0b03b39c8354d4c51d822"
   },
   "limits": "Existing Source128MiB/Derived384MiB,16handles/8Scopes unchanged; no OS/GPU/linear-memory residency claim",
-  "claims": "Bounded nonce/reply recovery and legacy semantic compatibility; no performance or issue50/39 closure claim"
+  "claims": "Bounded nonce/reply recovery and legacy semantic compatibility; no performance or issue50/39 closure claim",
+  "test_only_followup": "full-suite-cleanup: explicit child-before-Scope disposal; all1439 engine tests pass; production/artifact sources unchanged"
 }

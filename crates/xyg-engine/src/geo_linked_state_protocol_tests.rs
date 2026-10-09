@@ -730,6 +730,7 @@ fn state_nonce_replay_tombstone_and_failure_atomic_admission() {
 fn state_nonce_replays_at_full_handle_cap_and_consumption_never_reconstructs() {
     let _cpu = test_processor_lock();
     let _tile = test_process_lock();
+    let initial_handles = registry().lock().unwrap().entries.len();
     let f = fixture(1);
     let pressure_scope = scope(f.frame.0, 902);
     let scope = scope(f.frame.0, 901);
@@ -754,6 +755,13 @@ fn state_nonce_replays_at_full_handle_cap_and_consumption_never_reconstructs() {
     execute(&req(9, f.source.0, 2, &[])).unwrap();
     let next = Handle(u64at(&execute(&newer).unwrap(), 16));
     assert_ne!(next.0, state);
+    // The canonical query retains the selected Scope after consuming State.
+    // Release children before Scope; Handle::drop deliberately ignores errors.
+    drop(next);
+    drop(f);
+    drop(scope);
+    drop(pressure_scope);
+    assert_eq!(registry().lock().unwrap().entries.len(), initial_handles);
 }
 
 #[test]
