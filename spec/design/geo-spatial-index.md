@@ -6,10 +6,14 @@ validated XYGI source manifest remain authoritative. It preserves existing
 screen-bin direct/cluster/density policy; it does not introduce a geographic
 aggregate pyramid or an approximate temporal tier.
 
-The current product protocol, host storage adapters, actual native/WASM indexed
-parity and massive warm-query evidence are subsequent integration gates. This
-engine implementation alone does not establish interactive 100M/1B performance
-or close #50. Whole-world queries still visit all eligible vertices. Directory
+The shared native/WASM product protocol and Python/Node/browser storage adapters
+are integrated; see `geo-scale-protocol.md` and `geo-spatial-hosts.md`. Actual
+indexed SceneData, original-row pages and frozen snapshots have native/WASM byte
+parity; the packaged browser proves publication, corrupt-leaf recovery and
+unsettled-write cancellation. Raw native warm-query observations through 100M
+live in `../performance/geo-index-2026-10-09/README.md`. These bounded proofs do
+not establish interactive 100M/1B performance or close #50. Whole-world queries
+still visit all eligible vertices. Directory
 selection scans bounded page metadata; the current cost is O(directory pages +
 candidate vertices), not a demonstrated O(visible tiles) product path.
 
