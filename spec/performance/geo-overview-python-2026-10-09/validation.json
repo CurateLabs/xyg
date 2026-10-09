@@ -1,0 +1,16 @@
+{
+  "source_base": "67b93dfd5121d031b55dc47a3ce5df2d8dc1c4ed",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "Python 3.13.7",
+  "sha256": {
+    "python/xyg/_geo_overview.py": "0706fffbb93962feb491e932d4d2dd50cd4d55c8c397e360d08139695f699be0",
+    "tests/test_geo_overview.py": "881f6ddc229f269f72606590e87693eeae30a7d08a66d771bc7288d16732d6e2",
+    "target/release/libxyg_core.dylib": "e23d880f4580d4b02da2699c3f192cc36e0d86cc48843750be2064acd7a02caa"
+  },
+  "tests": {
+    "command": "uv run pytest tests/test_geo_overview.py -q",
+    "passed": 6,
+    "elapsed_seconds": 1.1
+  },
+  "limits": "Native small-fixture lifecycle and packet correctness only; no massive latency, browser paint, frozen export or source-membership completion claim."
+}
