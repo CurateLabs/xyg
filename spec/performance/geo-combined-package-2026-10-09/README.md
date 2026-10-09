@@ -52,13 +52,14 @@ node node_modules/binaryen/bin/wasm-opt target/wasm32-unknown-unknown/release/xy
 
 For the offline replay, install Playwright Chromium or set `CHROMIUM` to an
 explicit installed browser. The packaged artifact remains generated and is not
-committed. Selection on hierarchy, product hierarchy controllers, massive
-five-view paint/interaction and1B-class admission remain separate open gates.
+committed. Public selected hierarchy controllers, massive five-view
+paint/interaction and1B-class admission remain separate open gates.
 
 CI follow-up: the Python 3.11 floor exposed a Pillow-only test dependency,
 and the offline selected snapshot probe failed its combined footer assertion.
 The latter now includes exact pixel/DOM values in its failure output; no
-assertion or product behavior is relaxed. These CI gates remain pending repair.
+assertion or product behavior is relaxed. The local repairs below preserve
+these gates; Linux hosted confirmation remains pending.
 
 The bounded [footer follow-up](selected-footer-followup.json) records the exact CI
 failure and local repair proof. Frozen geographic SVG/HTML now declares its
@@ -66,3 +67,30 @@ default sans-serif face on the SVG root; other Scene exports and PDF are unchang
 All six native formats, exact native/WASM frozen bytes and12 snapshot tests pass;
 offline Chromium reads seven dark glyph pixels and162 white backplate pixels.
 The dark threshold is unchanged. Linux CI confirmation remains pending.
+
+## Final combined integration checkpoint
+
+[Final integration](final-integration/environment.json) supersedes the earlier
+artifact checkpoint for source revision `90149f0c333fc5bb3ae12d045aaf6cf192a30814`.
+It includes reviewed mixed transport, selected frozen snapshots, hierarchy
+protocol and typed hosts, live host recovery, and selected hierarchy commands42–44.
+The freshly rebuilt ABI383 native library and ABI33 WASM artifact pass all60
+selected hierarchy and34 legacy packet comparisons. The WASM artifact is
+1,458,129 raw /599,346 gzip-level6 bytes, SHA-256
+`d5de5c18285a18162a823fdd07ea4c8aaf7a068220e34b0b8b7e448b09cfde29`.
+Runtime limits and compiler settings remain unchanged.
+
+The directory retains the complete Rust workspace log (53 core,1435 engine,
+65 WASM tests and two doctests), strict Clippy,35 Python tests,12 native Node
+selected/live tests,21 native/WASM typed hierarchy tests, four package-contract
+tests, type checking, source hashes, and raw conformance reports. The fresh
+offline six-format snapshot replay again reports seven dark glyph pixels and
+162 white pixels. The five-view browser test preserves old paint on failed
+hydration and recovers lost stage/commit acknowledgments; each view has visible
+red pixels. Independent combined source review found no blocker.
+
+The native/WASM reports are bounded correctness evidence. The earlier startup
+ABBA and100M trace reports remain their own checkpoints and were not rerun for
+this artifact. Public selected hierarchy typed/live routing, massive five-view
+performance, default-grid100M MultiPoint and1B execution remain open gates.
+Linux CI confirmation is required before this combined branch integrates.

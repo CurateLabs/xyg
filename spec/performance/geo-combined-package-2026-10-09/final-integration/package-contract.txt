@@ -1,0 +1,12 @@
+✔ packaging rejects wrong ABI before publication (620.543042ms)
+✔ packaging rejects wrong Scene before publication (739.360292ms)
+✔ packaging rejects wrong u64 signature before publication (670.251209ms)
+✔ packaging rejects start function before publication (544.714916ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2974.581417
