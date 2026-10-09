@@ -1211,6 +1211,17 @@ its focused test module contains no production policy.
 | `crates/xyg-engine/src/geo_temporal_overview_membership.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_temporal_overview_membership_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+
+### M6 public temporal overview browser lifecycle
+
+The browser controller validates private Worker/index/frame provenance and owns
+publication, callback settlement, painter retirement and bounded count-table DOM.
+Rust continues to own temporal/domain policy, projection, counts and paint buffers.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/71_geo_overview_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

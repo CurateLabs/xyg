@@ -12,6 +12,7 @@ import {
 } from "./wasm_abi_generated";
 import type { XygWasmTypedSeriesRequest } from "./49_wasm_chart";
 import type { XygWasmGraphCheckpoint } from "./49_wasm_graph";
+import type { XygGeoScaleBridge } from "./63_geo_source";
 
 export type XygWasmSource = string | URL | ArrayBuffer | Uint8Array | WebAssembly.Module;
 
@@ -204,6 +205,24 @@ function sceneMessage(scene: ArrayBuffer | Uint8Array, transfer: boolean) {
  * column compile/paint run in the Worker; unsupported work fails closed with
  * no JavaScript algorithm fallback.
  */
+interface GeographicWorkerOrigin {
+  worker: Worker;
+  post(message: unknown, transfer?: Transferable[]): void;
+  ready: Promise<XygWasmDiagnostics> | null;
+  maxArenaBytes: number;
+  bridge: XygGeoScaleBridge;
+}
+// Issuers and dispatch are private. Numeric handles and public lookalike
+// closures cannot identify the WASM registry which owns a retained frame.
+const geographicWorkerOrigins = new WeakMap<XygWasmWorker, GeographicWorkerOrigin>();
+function geographicOrigin(owner: XygWasmWorker): GeographicWorkerOrigin {
+  const origin = geographicWorkerOrigins.get(owner);
+  if (!origin || origin.worker !== owner["worker"]) {
+    throw new TypeError("Retained geographic Worker origin changed");
+  }
+  return origin;
+}
+
 export class XygWasmWorker {
   private worker: Worker;
   private pending = new Map<number, Pending>();
@@ -253,24 +272,34 @@ export class XygWasmWorker {
     this.worker = inline
       ? new Worker(blobUrl!, { name: "xyg-wasm-inline" })
       : new Worker(String((options as XygWasmWorkerOptions).workerUrl), { type: "module", name: "xyg-wasm" });
-    this.worker.onmessage = (event) => this.onMessage(event.data);
+    const actualWorker = this.worker;
+    const bridge = Object.freeze({
+      execute: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.scale.execute", request),
+      read: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.scale.read", request),
+    });
+    geographicWorkerOrigins.set(this, {
+      worker: actualWorker, post: actualWorker.postMessage.bind(actualWorker),
+      ready: null, maxArenaBytes, bridge,
+    });
+    this.worker.onmessage = (event) => geographicDispatch.onMessage.call(this, event.data);
     this.worker.onerror = (event) => {
-      this.failAll(new XygWasmError("XYG_WASM_WORKER_TRAP", event.message || "worker trapped"));
-      this.worker.terminate();
+      geographicDispatch.failAll.call(this,new XygWasmError("XYG_WASM_WORKER_TRAP", event.message || "worker trapped"));
+      actualWorker.terminate();
       this.disposed = true;
     };
     this.worker.onmessageerror = () => {
-      this.failAll(new XygWasmError(
+      geographicDispatch.failAll.call(this,new XygWasmError(
         "XYG_WASM_MESSAGE_ERROR",
         "worker returned an unreadable message",
       ));
-      this.worker.terminate();
+      actualWorker.terminate();
       this.disposed = true;
     };
-    const requestId = this.allocateRequest();
-    this.ready = this.promiseFor<XygWasmDiagnostics>(requestId);
+    const requestId = geographicDispatch.allocateRequest.call(this);
+    this.ready = geographicDispatch.promiseFor.call(this, requestId) as Promise<XygWasmDiagnostics>;
+    geographicWorkerOrigins.get(this)!.ready = this.ready;
     try {
-      this.worker.postMessage(
+      geographicOrigin(this).post(
         {
           type: "init",
           requestId,
@@ -311,8 +340,8 @@ export class XygWasmWorker {
    * product inputs. This Worker then uses the bounded retained execution mode. */
   acquireGeoTransport():Promise<void>{
     return this.geoTransportAdmission??=(async()=>{
-      await this.ready;this.assertLive(true);const requestId=this.allocateRequest(),result=this.promiseFor<unknown>(requestId);
-      try{this.worker.postMessage({type:'geo.transport.acquire',requestId});}
+      await geographicOrigin(this).ready;geographicDispatch.assertLive.call(this,true);const requestId=geographicDispatch.allocateRequest.call(this),result=geographicDispatch.promiseFor.call(this,requestId) as Promise<unknown>;
+      try{geographicOrigin(this).post({type:'geo.transport.acquire',requestId});}
       catch(cause){this.pending.delete(requestId);throw cause;}
       await result;this.geoTransportAdmitted=true;
     })();
@@ -322,12 +351,12 @@ export class XygWasmWorker {
   prepareGeoFrame(frameHandle:bigint,publicationSequence:bigint,tile=false):Pick<XygWasmTask<XygWasmScenePaint>,'result'|'cancel'>{
     if([frameHandle,publicationSequence].some(value=>typeof value!=='bigint'||value<0n||value>0xffffffffffffffffn))throw new TypeError('Retained frame identity requires u64 bigint');
     let cancelled=false;
-    const result=this.queueOwnedGeo(async()=>{
-      await this.acquireGeoTransport();
+    const result=geographicDispatch.queue.call(this,async()=>{
+      await geographicDispatch.acquire.call(this);
       if(cancelled)throw new XygWasmError('XYG_WASM_CANCELLED','geographic preparation cancelled',6);
-      this.assertLive(true);const sequence=this.nextSequence++,requestId=this.allocateRequest(),result=this.promiseFor<XygWasmScenePaint>(requestId);
+      geographicDispatch.assertLive.call(this,true);const sequence=this.nextSequence++,requestId=geographicDispatch.allocateRequest.call(this),result=geographicDispatch.promiseFor.call(this,requestId) as Promise<XygWasmScenePaint>;
       if(sequence>0xffffffff){this.pending.delete(requestId);throw new RangeError('Worker sequence exhausted');}
-      try{this.worker.postMessage({type:tile?'geo.tile.frame.prepare':'geo.frame.prepare',requestId,sequence,frameHandle,publicationSequence});}
+      try{geographicOrigin(this).post({type:tile?'geo.tile.frame.prepare':'geo.frame.prepare',requestId,sequence,frameHandle,publicationSequence});}
       catch(cause){this.pending.delete(requestId);throw cause;}
       const paint=await result;
       if(cancelled)throw new XygWasmError('XYG_WASM_CANCELLED','geographic preparation cancelled',6);
@@ -339,16 +368,16 @@ export class XygWasmWorker {
    * Release after dropping those inputs and before handing off the framed request. */
   reserveGeoInput(bytes:number):()=>void{
     if(!this.geoTransportAdmitted)throw new XygWasmError("XYG_WASM_NOT_READY","Geographic transport must be admitted before framing");
-    this.checkOwnedGeoCapacity(bytes);this.ownedGeoBytes+=bytes;
+    geographicDispatch.capacity.call(this,bytes);this.ownedGeoBytes+=bytes;
     let released=false;return ()=>{if(!released){released=true;this.ownedGeoBytes-=bytes;}};
   }
   private checkOwnedGeoCapacity(retainedBytes:number,cleanup=false){
-    this.assertLive(true);const limit=Math.min(this.maxArenaBytes,32*1024*1024),reserve=Math.min(32768,Math.floor(limit/4));
+    geographicDispatch.assertLive.call(this,true);const limit=Math.min(geographicOrigin(this).maxArenaBytes,32*1024*1024),reserve=Math.min(32768,Math.floor(limit/4));
     if(!Number.isSafeInteger(retainedBytes)||retainedBytes<0||this.ownedGeoBytes+retainedBytes>limit-(cleanup?0:reserve)||(cleanup?this.ownedGeoCleanupJobs>=64:this.ownedGeoJobs>=16))throw new XygWasmError('XYG_WASM_BUDGET_EXCEEDED','geographic ownership queue exceeds its bounded admission');
   }
   private queueOwnedGeo<T>(operation:()=>Promise<T>,retainedBytes:number,cleanup=false):Promise<T>{
-    this.assertLive(true);
-    this.checkOwnedGeoCapacity(retainedBytes,cleanup);
+    geographicDispatch.assertLive.call(this,true);
+    geographicDispatch.capacity.call(this,retainedBytes,cleanup);
     this.ownedGeoBytes+=retainedBytes;if(cleanup)this.ownedGeoCleanupJobs++;else this.ownedGeoJobs++;
     const result=this.ownedGeoChain.then(operation).finally(()=>{this.ownedGeoBytes-=retainedBytes;if(cleanup)this.ownedGeoCleanupJobs--;else this.ownedGeoJobs--;});
     this.ownedGeoChain=result.then(()=>{},()=>{});return result;
@@ -724,6 +753,10 @@ export class XygWasmWorker {
     return {requestId,sequence,result,cancel:()=>{const pending=this.pending.get(requestId);if(!pending)return;this.pending.delete(requestId);pending.reject(new XygWasmError("XYG_WASM_CANCELLED","catalog command was cancelled",6));if(!this.disposed)this.worker.postMessage({type:"cancel",requestId,sequence});}};
   }
 
+  /** Stable transport issuer for independently owned geographic data/indexes.
+   * This exposes no layout, projection, LOD or chart-building policy. */
+  geoScaleBridge(): XygGeoScaleBridge { return geographicOrigin(this).bridge; }
+
   /** Retained geographic lifecycle mutations always return their ownership reply.
    * Cancellation is an explicit Rust protocol command, never a dropped transport. */
   geoScaleExecute(request: ArrayBuffer): Promise<ArrayBuffer> {
@@ -738,25 +771,25 @@ export class XygWasmWorker {
   geoSnapshotExecute(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.snapshot.execute',request);}
   geoSnapshotRead(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.snapshot.read',request);}
   private async geoScaleTransport(type: "geo.scale.execute" | "geo.scale.read" | "geo.tile.execute" | "geo.tile.read" | "geo.snapshot.execute" | "geo.snapshot.read", request: ArrayBuffer): Promise<ArrayBuffer> {
-    this.assertLive(true);
+    geographicDispatch.assertLive.call(this,true);
     const minimum=type.startsWith("geo.tile.")?128:256;
-    if (!(request instanceof ArrayBuffer) || request.byteLength < minimum || request.byteLength > Math.min(this.maxArenaBytes,32*1024*1024)) {
+    if (!(request instanceof ArrayBuffer) || request.byteLength < minimum || request.byteLength > Math.min(geographicOrigin(this).maxArenaBytes,32*1024*1024)) {
       throw new TypeError("retained geographic request must be a bounded ArrayBuffer");
     }
-    if(request.byteLength<minimum||request.byteLength>Math.min(this.maxArenaBytes,32*1024*1024))throw new TypeError('retained request changed before admission');
-    if(!this.geoTransportAdmitted)await this.acquireGeoTransport();this.assertLive(true);
+    if(request.byteLength<minimum||request.byteLength>Math.min(geographicOrigin(this).maxArenaBytes,32*1024*1024))throw new TypeError('retained request changed before admission');
+    if(!this.geoTransportAdmitted)await geographicDispatch.acquire.call(this);geographicDispatch.assertLive.call(this,true);
     // Transfer ownership without a second allocation; waiting in the
     // FIFO must not expose mutable authoring bytes to a later caller.
     const length=request.byteLength,header=new DataView(request),command=header.getUint32(8,true);
     const mixedCleanup=type==="geo.tile.execute" && header.getUint32(0,true)===0x584d5958 && length===256 && (command===4||command===5);
     const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3]:[8,9,10,24,31]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
-    this.checkOwnedGeoCapacity(length,cleanup);
+    geographicDispatch.capacity.call(this,length,cleanup);
     const owned=structuredClone(request,{transfer:[request]});
-    return this.queueOwnedGeo(async()=>{
-      await this.acquireGeoTransport();this.assertLive(true);const sequence=this.nextSequence++;
+    return geographicDispatch.queue.call(this,async()=>{
+      await geographicDispatch.acquire.call(this);geographicDispatch.assertLive.call(this,true);const sequence=this.nextSequence++;
       if(sequence>0xffffffff)throw new RangeError("Worker sequence exhausted");
-      const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
-      try{this.worker.postMessage({type,requestId,sequence,request:owned},[owned]);}
+      const requestId=geographicDispatch.allocateRequest.call(this),result=geographicDispatch.promiseFor.call(this,requestId) as Promise<ArrayBuffer>;
+      try{geographicOrigin(this).post({type,requestId,sequence,request:owned},[owned]);}
       catch(cause){this.pending.delete(requestId);throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT",cause instanceof Error?cause.message:"could not transfer retained geographic request");}
       return await result;
     },length,cleanup);
@@ -906,15 +939,15 @@ export class XygWasmWorker {
     const disposedError = new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
     // Reject application work before waiting for the worker acknowledgement;
     // a short synchronous WASM operation must not win disposal's lifecycle race.
-    this.failAll(disposedError);
+    geographicDispatch.failAll.call(this,disposedError);
     // Drain every retained closure/reference before Rust releases the persistent
     // transport credit. New ownership admission is already disabled.
     await this.ownedGeoChain;
-    const requestId = this.allocateRequest();
-    const complete = this.promiseFor<void>(requestId);
+    const requestId = geographicDispatch.allocateRequest.call(this);
+    const complete = geographicDispatch.promiseFor.call(this,requestId) as Promise<void>;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      this.worker.postMessage({ type: "dispose", requestId });
+      geographicWorkerOrigins.get(this)!.post({ type: "dispose", requestId });
       // A trapped or wedged worker must not make application teardown hang.
       await Promise.race([
         complete,
@@ -926,9 +959,9 @@ export class XygWasmWorker {
       // Termination below is the bounded fallback when messaging is broken.
     } finally {
       if (timeout !== undefined) clearTimeout(timeout);
-    this.worker.terminate();
+    geographicWorkerOrigins.get(this)!.worker.terminate();
     if (this.inlineBlobUrl) URL.revokeObjectURL(this.inlineBlobUrl);
-      this.failAll(disposedError);
+      geographicDispatch.failAll.call(this,disposedError);
     }
     })();
   }
@@ -991,9 +1024,51 @@ export class XygWasmWorker {
   }
 
   private assertLive(retained=false) {
+    if (retained) geographicOrigin(this);
     if (this.disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
     if(!retained&&this.geoTransportAdmission)throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT","Ordinary operations require a separate Worker from retained geographic transport");
   }
+}
+
+// Capture at module initialization, before application code can replace public
+// or TypeScript-private dispatch methods. No mutable method lookup can retag an
+// issued bridge to another Worker after a ready/queue await.
+const geographicDispatch = Object.freeze({
+  transport: XygWasmWorker.prototype["geoScaleTransport"],
+  acquire: XygWasmWorker.prototype.acquireGeoTransport,
+  prepare: XygWasmWorker.prototype.prepareGeoFrame,
+  reserve: XygWasmWorker.prototype.reserveGeoInput,
+  queue: XygWasmWorker.prototype["queueOwnedGeo"],
+  capacity: XygWasmWorker.prototype["checkOwnedGeoCapacity"],
+  assertLive: XygWasmWorker.prototype["assertLive"],
+  allocateRequest: XygWasmWorker.prototype["allocateRequest"],
+  promiseFor: XygWasmWorker.prototype["promiseFor"],
+  onMessage: XygWasmWorker.prototype["onMessage"],
+  failAll: XygWasmWorker.prototype["failAll"],
+});
+/** @internal Stable exact issuer for geographic typed owners. */
+export function getGeoWorkerBridge(worker: XygWasmWorker): XygGeoScaleBridge {
+  return geographicOrigin(worker).bridge;
+}
+/** @internal Weak provenance, never structural/numeric handle equivalence. */
+export function isGeoWorkerBridge(worker: XygWasmWorker, bridge: XygGeoScaleBridge): boolean {
+  const origin = geographicWorkerOrigins.get(worker);
+  return !!origin && origin.worker === worker["worker"] && origin.bridge === bridge;
+}
+/** @internal Admission through the same immutable issuer dispatch. */
+export function acquireGeoWorkerTransport(worker: XygWasmWorker, bridge: XygGeoScaleBridge): Promise<void> {
+  if (!isGeoWorkerBridge(worker, bridge)) throw new TypeError("Overview requires its issuing Worker");
+  return geographicDispatch.acquire.call(worker);
+}
+/** @internal Prepare only through the producer's original Worker dispatch. */
+export function prepareGeoWorkerFrame(worker: XygWasmWorker, bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint) {
+  if (!isGeoWorkerBridge(worker, bridge)) throw new TypeError("Overview requires its issuing Worker");
+  return geographicDispatch.prepare.call(worker, handle, sequence);
+}
+/** @internal Charge controller framing before it copies queued queries. */
+export function reserveGeoWorkerInput(worker: XygWasmWorker, bridge: XygGeoScaleBridge, bytes: number): () => void {
+  if (!isGeoWorkerBridge(worker, bridge)) throw new TypeError("Overview requires its issuing Worker");
+  return geographicDispatch.reserve.call(worker, bytes);
 }
 
 export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions): XygWasmWorker {
