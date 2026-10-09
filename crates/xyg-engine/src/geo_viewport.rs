@@ -1410,12 +1410,17 @@ impl RingGraph {
     fn edge(&mut self, a: ScreenPoint, b: ScreenPoint) {
         // Only polygon clipping intersections are welded at a fraction of the
         // documented screen tolerance. Canonical source stays exact f64.
-        let snap = |p: ScreenPoint| {
-            (
-                (p.0 / TOPOLOGY_EPS).round() * TOPOLOGY_EPS,
-                (p.1 / TOPOLOGY_EPS).round() * TOPOLOGY_EPS,
-            )
+        let snap_coordinate = |value: f64| {
+            let snapped = (value / TOPOLOGY_EPS).round() * TOPOLOGY_EPS;
+            // Numeric equality welds both signed zeros. Normalize the derived
+            // node so total-order sorting and endpoint lookup agree with it.
+            if snapped == 0.0 {
+                0.0
+            } else {
+                snapped
+            }
         };
+        let snap = |p: ScreenPoint| (snap_coordinate(p.0), snap_coordinate(p.1));
         let (a, b) = (snap(a), snap(b));
         if a != b {
             self.edges.push((a, b));
@@ -1935,6 +1940,27 @@ mod tests {
             Some(&[0xffffffffffffffff]),
             [&[0, rings.len() as u32], &offsets, &[]],
         )
+    }
+    #[test]
+    fn clipping_graph_welds_signed_zero_endpoints_into_one_closed_ring() {
+        for origin in [(-0.0, 0.0), (0.0, -0.0), (-0.0, -0.0), (0.0, 0.0)] {
+            let mut graph = RingGraph::default();
+            graph.edge(origin, (1.0, 0.0));
+            graph.edge((1.0, 0.0), (1.0, 1.0));
+            graph.edge((1.0, 1.0), (0.0, 1.0));
+            graph.edge((0.0, 1.0), (0.0, 0.0));
+            let rings = graph.cycles(4).unwrap();
+            assert_eq!(rings.len(), 1);
+            assert_eq!(rings[0].first(), rings[0].last());
+            assert_eq!(signed_area(&rings[0]), 1.0);
+            for &(x, y) in &rings[0] {
+                for coordinate in [x, y] {
+                    if coordinate == 0.0 {
+                        assert_eq!(coordinate.to_bits(), 0);
+                    }
+                }
+            }
+        }
     }
     #[test]
     fn concave_clip_preserves_two_closed_components_without_boundary_bridge() {

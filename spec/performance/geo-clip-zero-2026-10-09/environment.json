@@ -1,0 +1,20 @@
+{
+  "base": "a259706967dc03e1a688d8f88e72583c105131cf",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "sourceSha256": {
+    "crates/xyg-engine/src/geo_viewport.rs": "0d413673710cea0b7231f5dbed0a6762812dbefb8258dfb57dc47e1a8d4d9982",
+    "spec/design/geospatial.md": "8698b5f81843f40ee169ada30804a35124de96ce53408baf3ef7bcd29710ea47"
+  },
+  "before": "Original clipping implementation plus new regression panicked at binary_search unwrap1439",
+  "after": {
+    "viewportTests": 40,
+    "geographicTests": 313,
+    "clippy": "all targets warnings denied PASS",
+    "independentSourceReview": "GREEN; derived zero normalization preserves canonical source and topology tolerance"
+  },
+  "limitations": [
+    "No native/WASM artifact or performance result is inferred from these source Rust tests",
+    "Actual all256 overview camera fixture remains in the separate painter/export slice"
+  ]
+}
