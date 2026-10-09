@@ -206,10 +206,10 @@ class RetainedGeoSource:
                 raise ValueError("mismatched retained packet length")
             data = (
                 g.parse_scene_data(packet)
-                if command in (11, 19)
+                if command in (11, 19, 26)
                 else _parse_aux(command, packet, handle, sequence)
             )
-            if command in (11, 19) and (
+            if command in (11, 19, 26) and (
                 data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
             ):
                 raise ValueError("mismatched Scene identity")
@@ -521,10 +521,10 @@ async def _aprepare(self, command, handle, sequence, payload=b""):
             raise ValueError("invalid retained packet length")
         data = (
             g.parse_scene_data(packet)
-            if command == 19
+            if command in (19, 26)
             else _parse_aux(command, packet, handle, sequence)
         )
-        if command == 19 and (
+        if command in (19, 26) and (
             data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
         ):
             raise ValueError("mismatched Scene identity")
@@ -680,6 +680,27 @@ def _attach_frame(source, frame, sequence, query_packet, style):
 
         return await export_frame_async(frame, sequence, format, **options)
 
+    def retain():
+        if source._bridge is not None:
+            raise RuntimeError("use retain_async for an asynchronous owner")
+        _ = frame.data
+        owned = source._prepare(26, frame.handle, sequence)
+        _attach_frame(source, owned, sequence, query_packet, style)
+        if hasattr(frame, "index_stats"):
+            owned.index_stats = dict(frame.index_stats)
+        return owned
+
+    async def retain_async():
+        _ = frame.data
+        if source._bridge is None:
+            return retain()
+        owned = await _aprepare(source, 26, frame.handle, sequence)
+        _attach_frame(source, owned, sequence, query_packet, style)
+        if hasattr(frame, "index_stats"):
+            owned.index_stats = dict(frame.index_stats)
+        return owned
+
+    frame.retain, frame.retain_async = retain, retain_async
     frame._source = source
     frame._query_packet = query_packet
     frame._style = bytes(style)

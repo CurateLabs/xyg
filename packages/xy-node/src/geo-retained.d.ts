@@ -10,6 +10,7 @@ export interface OwnedGeoData<T> {
   dispose(): Promise<void>;
 }
 export interface OwnedGeoFrame<T> extends OwnedGeoData<T> {
+  retain(): Promise<OwnedGeoFrame<T>>;
   rows(): Promise<OwnedGeoRows>;
   spatialIndex(options: import("./geo-spatial.js").GeoSpatialStorage): Promise<import("./geo-spatial.js").GeoSpatialIndex>;
   readonly indexStats?: {pagesRead: bigint;bytesRead: bigint;candidateVertices: bigint;passes: number};
