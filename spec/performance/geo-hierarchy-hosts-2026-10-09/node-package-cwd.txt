@@ -1,0 +1,29 @@
+✔ native hierarchy exact Scene, independent frame/Rows/retain after disposal (58.91775ms)
+✔ native mutated callback authority settles exact ACK and failed query retains old frame (5.207417ms)
+✔ native cancel pending write awaits callback settlement and exact private ACK (15.078333ms)
+✔ native local budget/forged ticket rejects and exact fallback retains current frame (2.803209ms)
+✔ wasm hierarchy exact Scene, independent frame/Rows/retain after disposal (33.234709ms)
+✔ wasm mutated callback authority settles exact ACK and failed query retains old frame (10.52825ms)
+✔ wasm cancel pending write awaits callback settlement and exact private ACK (22.654625ms)
+✔ wasm local budget/forged ticket rejects and exact fallback retains current frame (8.515541ms)
+✔ native cancelled canonical read settles before ACK and terminal reply cannot publish (15.115541ms)
+✔ wasm cancelled canonical read settles before ACK and terminal reply cannot publish (46.370208ms)
+✔ native authentic selected Scene returns typed Unsupported and preserves old frame (1.888125ms)
+✔ wasm authentic selected Scene returns typed Unsupported and preserves old frame (8.583792ms)
+✔ native Point reduced complete membership/full IDs/nulls after owner disposal (240.013042ms)
+✔ native MultiPoint reduced complete membership/full IDs/nulls after owner disposal (164.722875ms)
+✔ wasm Point reduced complete membership/full IDs/nulls after owner disposal (319.11675ms)
+✔ wasm MultiPoint reduced complete membership/full IDs/nulls after owner disposal (304.773458ms)
+✔ two actual wasm modules with colliding Data handles cannot cross source authority (46.125541ms)
+✔ native failed Scene and hierarchy disposal retries once after coalesced pending cleanup (3.79975ms)
+✔ wasm failed Scene and hierarchy disposal retries once after coalesced pending cleanup (12.815375ms)
+✔ native public static host accepts independently retained hierarchy frame (45.384625ms)
+✔ strict hierarchy reply parser rejects reserved bytes and native/wasm packets match (0.407083ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1582.612208

@@ -7371,7 +7371,7 @@ class GeoChart:
     tile_vector_styles: Any = None
     tile_image_id: int | None = None
 
-    def host(self, *, frame=None):
+    def host(self, *, frame=None, selected_scope=None):
         """Create a single-mount native host adapter for a retained point chart.
 
         Pass an owned compiled frame for an indexed source. The adapter retains
@@ -7380,13 +7380,13 @@ class GeoChart:
         """
         from ._geo_host import GeoHostAdapter
 
-        return GeoHostAdapter(self, frame=frame)
+        return GeoHostAdapter(self, frame=frame, selected_scope=selected_scope)
 
-    def widget(self, *, frame=None, **kwargs):
+    def widget(self, *, frame=None, selected_scope=None, **kwargs):
         """Mount this retained composition in a notebook, including a running loop."""
         from .widget import GeoWidget
 
-        return GeoWidget(self.host(frame=frame), **kwargs)
+        return GeoWidget(self.host(frame=frame, selected_scope=selected_scope), **kwargs)
 
     def show(self, **kwargs):
         from IPython.display import display

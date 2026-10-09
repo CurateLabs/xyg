@@ -1,0 +1,195 @@
+{
+  "status": "passed",
+  "packets": [
+    {
+      "host": "native",
+      "kind": "rows",
+      "hash": "673afc2522d97c7170fd56ea6307a6f831f2057e5cbdbf649a8fd78cafc88b5c"
+    },
+    {
+      "host": "native",
+      "kind": "scene",
+      "hash": "8930bea3da03571b6fe7cecdf27324630a4c39aaa43665b0f858484fbbcc8325"
+    },
+    {
+      "host": "wasm",
+      "kind": "rows",
+      "hash": "673afc2522d97c7170fd56ea6307a6f831f2057e5cbdbf649a8fd78cafc88b5c"
+    },
+    {
+      "host": "wasm",
+      "kind": "scene",
+      "hash": "8930bea3da03571b6fe7cecdf27324630a4c39aaa43665b0f858484fbbcc8325"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-0",
+      "hash": "8bdbcefefbcc2195d5031c8c40e9581a8126d80012f4071e7e85a3e3c904b922"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-1",
+      "hash": "b880b184db4c874b6aa7c6b8f69ae65c5f4c6a4f7fddfa5d4da3a3059f337a91"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-2",
+      "hash": "207735ae96f5de2228c4ae63c02653c0a5a0f29e1b1711c48c91f11175962535"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-3",
+      "hash": "252e22477ea5e1d6a964502c7470037fa930e888861665b0cff733239bfc3685"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-4",
+      "hash": "277f19284561935fda451b66af50e6baa05943cd184c96404abae2b04cd5cd21"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-5",
+      "hash": "2d216f253cacd5671b983123859d985709a1c889e9f1ee32a689baffbc648ce3"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-6",
+      "hash": "9039a45ff5d2661f55e499ca392690b599fa0c4ac339675e92378c1bc89ef787"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-7",
+      "hash": "0b7d0cd701361252e1054d6745e5b840f02095f79fb66c2aca1f38504c460c44"
+    },
+    {
+      "host": "native",
+      "kind": "members-false-8",
+      "hash": "5b821d8844f1bed3bbd8612a4c253768a1d8ec15f9e0d5a750504fc66b02d705"
+    },
+    {
+      "host": "native",
+      "kind": "reduced-false",
+      "hash": "e277bf8f923957e4a2861638bb01d90cf75891f31ee7daae5baa55dcc08940dd"
+    },
+    {
+      "host": "native",
+      "kind": "members-true-0",
+      "hash": "d646586ee20eaea28dca1035b1b162ff5cb1665f117bdb4ff93584e2654ff4af"
+    },
+    {
+      "host": "native",
+      "kind": "members-true-1",
+      "hash": "7e371a4d5c91b2141cc878eabff3f062309e0f743c37576e50a395b617a6cbbc"
+    },
+    {
+      "host": "native",
+      "kind": "members-true-2",
+      "hash": "2735d3f19358d117469e0e9375cc1e9022b407a3e346d489cc69a7c5c80ec741"
+    },
+    {
+      "host": "native",
+      "kind": "members-true-3",
+      "hash": "f9bb8e3d490e5209ad26c09602aa59b3269049777f59bddd1141a236e8a34fa0"
+    },
+    {
+      "host": "native",
+      "kind": "members-true-4",
+      "hash": "6272e1d40deaa773e87552af5b2ef55a579fb00bdf3a8a135994a5a34cf2faa6"
+    },
+    {
+      "host": "native",
+      "kind": "reduced-true",
+      "hash": "e277bf8f923957e4a2861638bb01d90cf75891f31ee7daae5baa55dcc08940dd"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-0",
+      "hash": "8bdbcefefbcc2195d5031c8c40e9581a8126d80012f4071e7e85a3e3c904b922"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-1",
+      "hash": "b880b184db4c874b6aa7c6b8f69ae65c5f4c6a4f7fddfa5d4da3a3059f337a91"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-2",
+      "hash": "207735ae96f5de2228c4ae63c02653c0a5a0f29e1b1711c48c91f11175962535"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-3",
+      "hash": "252e22477ea5e1d6a964502c7470037fa930e888861665b0cff733239bfc3685"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-4",
+      "hash": "277f19284561935fda451b66af50e6baa05943cd184c96404abae2b04cd5cd21"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-5",
+      "hash": "2d216f253cacd5671b983123859d985709a1c889e9f1ee32a689baffbc648ce3"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-6",
+      "hash": "9039a45ff5d2661f55e499ca392690b599fa0c4ac339675e92378c1bc89ef787"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-7",
+      "hash": "0b7d0cd701361252e1054d6745e5b840f02095f79fb66c2aca1f38504c460c44"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-false-8",
+      "hash": "5b821d8844f1bed3bbd8612a4c253768a1d8ec15f9e0d5a750504fc66b02d705"
+    },
+    {
+      "host": "wasm",
+      "kind": "reduced-false",
+      "hash": "e277bf8f923957e4a2861638bb01d90cf75891f31ee7daae5baa55dcc08940dd"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-true-0",
+      "hash": "d646586ee20eaea28dca1035b1b162ff5cb1665f117bdb4ff93584e2654ff4af"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-true-1",
+      "hash": "7e371a4d5c91b2141cc878eabff3f062309e0f743c37576e50a395b617a6cbbc"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-true-2",
+      "hash": "2735d3f19358d117469e0e9375cc1e9022b407a3e346d489cc69a7c5c80ec741"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-true-3",
+      "hash": "f9bb8e3d490e5209ad26c09602aa59b3269049777f59bddd1141a236e8a34fa0"
+    },
+    {
+      "host": "wasm",
+      "kind": "members-true-4",
+      "hash": "6272e1d40deaa773e87552af5b2ef55a579fb00bdf3a8a135994a5a34cf2faa6"
+    },
+    {
+      "host": "wasm",
+      "kind": "reduced-true",
+      "hash": "e277bf8f923957e4a2861638bb01d90cf75891f31ee7daae5baa55dcc08940dd"
+    }
+  ],
+  "claims": [
+    "actual native and packaged wasm32 thin hierarchy driver",
+    "exact Scene/Rows IDs and immutable lifetime",
+    "cancelled callback settlement/private ACK",
+    "mutation/backing budget rejection and old-frame recovery"
+  ],
+  "limitations": [
+    "no selected hierarchy",
+    "no massive host latency or browser paint claim"
+  ]
+}

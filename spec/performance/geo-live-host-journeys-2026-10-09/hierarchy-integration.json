@@ -1,0 +1,33 @@
+{
+  "ancestor_live": "9a3f6f9c5cedd97f3a7c915b75b2b8fe4356805c",
+  "ancestor_hierarchy": "c638516346fc795d25e875caaaf7e319ad37a51b",
+  "native": "target/release/libxyg_core.dylib",
+  "native_sha256": "0ba54dea1b2673ecefd2e69e57c3104a06c04b29e4bbb5822cabcfe4ce2f6c81",
+  "source_sha256": {
+    "python/xyg/_geo_live_host.py": "b720156e6312613aa244ee48f369bdea73f5b0247d57141bc8423b3fe4fd82d5",
+    "packages/xy-node/src/geo-live-host.js": "76e7e42d758c6f744616da580c227836b749c69dd6939a7dcd78e282ed18650e",
+    "tests/test_geo_live_host.py": "a431d8a688ace73671f4e0883da588a74c0ab055246587cc804db94ea9aab8db",
+    "packages/xy-node/test/geo-live-host.test.mjs": "2139a8234fe8a2a05c7d3818f14d7cd9d3d74703bca49af8524d993491862f71",
+    "python/xyg/_geo_hierarchy.py": "e07a5d5b635395d1e3e797c28444cf591af4a89ad41183bee9bfd463bd3eb95b",
+    "packages/xy-node/src/geo-hierarchy.js": "2dd995e518444b0b0963408a25a64104027432064de6d718da27bd28f4a16c3c"
+  },
+  "validation": {
+    "python": "24 passed (12 live, 12 hierarchy)",
+    "node": "9 live tests passed",
+    "ty": "passed",
+    "typescript_build": "passed",
+    "browser": {
+      "ok": true,
+      "fiveMounts": true,
+      "pixels": [
+        59,
+        47,
+        47,
+        47,
+        47
+      ],
+      "browser": "155.0.8059.40"
+    }
+  },
+  "claim": "Authentic hierarchy static mount is retained; live prepare fails before canonical read or replacement credit. Dedicated hierarchy live route pending."
+}
