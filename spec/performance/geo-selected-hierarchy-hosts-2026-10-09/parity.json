@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "comparison": "Only process-local owner16..24 and Rows continuation owner80..88 are normalized; complete remaining packet bytes compared.",
+  "cases": [
+    {
+      "host": "native",
+      "case": "Point",
+      "kind": "Scene",
+      "sha256": "144b1d6bdb55d6c301e49c434ec7489ffa26eff8aef5f9727580f2cbd42567ae"
+    },
+    {
+      "host": "native",
+      "case": "Point",
+      "kind": "Rows",
+      "sha256": "61fe4a21afabdb12bcddf0326934440aecfafdf65153e814488c1b80f8fe2d75"
+    },
+    {
+      "host": "native",
+      "case": "Point",
+      "kind": "Frozen",
+      "sha256": "e30687e522d94425018ae648d6f00b9f62c2c78e4a8330ffcdc98f425cab7f69"
+    },
+    {
+      "host": "native",
+      "case": "MultiPoint",
+      "kind": "Scene",
+      "sha256": "d1fd66dae0d508c945eededd66e47acfa11eb4d82ccf2d385db5aee812351eb9"
+    },
+    {
+      "host": "native",
+      "case": "MultiPoint",
+      "kind": "Rows",
+      "sha256": "472dff015b8b96f20d3deda412cdf1da344282271f33ce1cbe170965b8c8f1dd"
+    },
+    {
+      "host": "native",
+      "case": "MultiPoint",
+      "kind": "Frozen",
+      "sha256": "42d990f6caec5bda3a9faae8d9eb4a86a3ef78966c7f8473bcf5407fa3a2d5eb"
+    },
+    {
+      "host": "wasm",
+      "case": "Point",
+      "kind": "Scene",
+      "sha256": "144b1d6bdb55d6c301e49c434ec7489ffa26eff8aef5f9727580f2cbd42567ae"
+    },
+    {
+      "host": "wasm",
+      "case": "Point",
+      "kind": "Rows",
+      "sha256": "61fe4a21afabdb12bcddf0326934440aecfafdf65153e814488c1b80f8fe2d75"
+    },
+    {
+      "host": "wasm",
+      "case": "Point",
+      "kind": "Frozen",
+      "sha256": "e30687e522d94425018ae648d6f00b9f62c2c78e4a8330ffcdc98f425cab7f69"
+    },
+    {
+      "host": "wasm",
+      "case": "MultiPoint",
+      "kind": "Scene",
+      "sha256": "d1fd66dae0d508c945eededd66e47acfa11eb4d82ccf2d385db5aee812351eb9"
+    },
+    {
+      "host": "wasm",
+      "case": "MultiPoint",
+      "kind": "Rows",
+      "sha256": "472dff015b8b96f20d3deda412cdf1da344282271f33ce1cbe170965b8c8f1dd"
+    },
+    {
+      "host": "wasm",
+      "case": "MultiPoint",
+      "kind": "Frozen",
+      "sha256": "42d990f6caec5bda3a9faae8d9eb4a86a3ef78966c7f8473bcf5407fa3a2d5eb"
+    }
+  ]
+}

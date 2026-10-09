@@ -1,11 +1,12 @@
 // Generated from js/src/70_geo_hierarchy.ts; run scripts/gen_geo_hierarchy_node.mjs.
 /** Thin hierarchy transport. Rust owns sorting, pruning, time and exact LOD. */
 import {encodeGeoScaleRequest, decodeGeoScaleReply, parseGeoSceneData,
-                                                                        } from './geoscale.js';
+                                                                                               } from './geoscale.js';
+import {claimGeoSelectedState,                     } from './geo-selected.js';
 
 export function encodeGeoHierarchyRequest(input                   )             {
- if(![6,7,8,9,10,37,38,39,40,41].includes(input.command))throw new TypeError('unknown hierarchy command');
- const request=encodeGeoScaleRequest({...input,command:input.command===38?5:6});
+ if(![6,7,8,9,10,37,38,39,40,41,42,43,44].includes(input.command))throw new TypeError('unknown hierarchy command');
+ const request=encodeGeoScaleRequest({...input,command:[38,43].includes(input.command)?5:6});
  const view=new DataView(request);view.setUint32(8,input.command,true);return request;
 }
 function zero(bytes           ,start       ,end       ){if(bytes.subarray(start,end).some(n=>n!==0))throw new TypeError('nonzero hierarchy reserved bytes');}
@@ -57,12 +58,80 @@ export async function driveGeoHierarchy(bridge                  ,input          
   finally{borrowed=view=payload=request=undefined;await bridge.execute(encodeGeoHierarchyRequest({command:write?41:8,handle,sequence,payload:authority}));}
  }}catch(error){await cancel().catch(()=>{});throw error;}finally{signal?.removeEventListener('abort',onAbort);if(cancellation)await cancellation.catch(()=>{});}
 }
-export async function prepareGeoHierarchyScene(bridge                  ,input                                                                          ) {
+export async function prepareGeoHierarchyScene(bridge                  ,input                                                                                                                                                     ) {
  if(!(input.style instanceof Uint8Array)||input.style.byteLength!==48||input.style.buffer.byteLength>48)throw new TypeError('exact48-byte style required');
- const r=decodeGeoScaleReply(await bridge.execute(encodeGeoHierarchyRequest({command:39,...input,payload:input.style}))),handle=r.handle;
+ const command=input.command??39;input.onAttempt?.();
+ const r=decodeGeoScaleReply(await bridge.execute(encodeGeoHierarchyRequest({command,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.style})));
+ if(command===44&&(r.code!==0||r.handle!==input.handle||r.sourceHandle!==input.handle||r.sequence!==input.sequence))throw new TypeError('invalid same-handle publication receipt');
+ const handle=r.handle;input.onReceipt?.();
  let packet                      ,data                                               ;
  try{if(r.code!==0||r.sourceHandle!==input.handle||r.sequence!==input.sequence||4n*r.dataLength>BigInt(input.budget.processorBytes))throw new TypeError('invalid hierarchy Scene receipt');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==r.dataLength||packet.byteLength>32*1024*1024)throw new TypeError('invalid Scene length');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched Scene identity');packet=undefined;}
- catch(error){packet=data=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
+ catch(error){packet=data=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));input.onRelease?.();throw error;}
  let disposal                        ;
  return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;if(disposal)return disposal;const task=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});disposal=task;task.catch(()=>{if(disposal===task)disposal=undefined;});return task;}};
+}
+
+const OPERATION=Symbol('selected-hierarchy-operation');
+
+
+export class GeoHierarchyPublicationUncertain extends Error {constructor(){super('hierarchy publication ownership is uncertain; settle and dispose before reuse');this.name='GeoHierarchyPublicationUncertain';}}
+function rustFailure(error        ){const e=error                                                                          ;return typeof e?.nativeCode==='number'||typeof e?.wasmStatus==='number'||e?.name==='XygWasmError'&&typeof e.status==='number';}
+/** One issued State becomes Query then Data. No raw packet manufactures this guard. */
+export class GeoSelectedHierarchyOperation {
+ #phase      ='query';#active                           ;#abort                          ;#disposing                        ;#stats                       =null;
+ #bridge                  ;#handle       ;#sequence       ;#budget                  ;#storage                    ;#request            ;#released         ;#prepared                                                                                    ;
+ constructor(bridge                  ,input                                                                                                                                                                                                                        ,token                 ){
+  if(token!==OPERATION)throw new TypeError('issued selected hierarchy operation required');
+  this.#bridge=bridge;this.#handle=input.handle;this.#sequence=input.sequence;this.#budget={...input.budget};this.#storage=input.storage;this.#request=input.request.slice(0);this.#released=input.released;this.#prepared=input.prepared;
+ }
+ get handle(){return this.#handle;}get sequence(){return this.#sequence;}get hierarchyStats(){return this.#stats;}
+ get request(){return this.#request.slice(0);}get closed(){return this.#phase==='closed';}
+ /** Internal issue failure retains a cleanup guard for the known State/Query handle. */
+ uncertainBegin(){this.#phase='begin-uncertain';}
+ rejectBegin(){this.#phase='closed';this.#released();}
+ #close(){this.#phase='closed';this.#released();}
+ #run   (work                                 ,signal             ){
+  if(this.#phase==='closed'||this.#phase==='data'||this.#active||this.#disposing)throw new Error('selected hierarchy operation unavailable');
+  const abort=new AbortController();this.#abort=abort;const stop=()=>abort.abort();signal?.addEventListener('abort',stop,{once:true});if(signal?.aborted)stop();
+  const task=Promise.resolve().then(async()=>{try{if(abort.signal.aborted)throw aborted();return await work(abort.signal);}finally{signal?.removeEventListener('abort',stop);this.#active=undefined;this.#abort=undefined;}});this.#active=task;return task;
+ }
+ drive(input                      ={}){return this.#run(async signal=>{
+  if(this.#phase!=='query')throw new GeoHierarchyPublicationUncertain();
+  const result=await driveGeoHierarchy(this.#bridge,{...this.#storage,handle:this.#handle,sequence:this.#sequence,budget:this.#budget,signal});
+  if(result.code!==19)throw new Error('selected hierarchy query did not complete');this.#stats=result.hierarchyStats;return result;
+ },input.signal);}
+ prepare(style           ,input                                                ={}){if(!(style instanceof Uint8Array)||style.byteLength!==48||style.buffer.byteLength>48)throw new TypeError('exact48-byte style required');style=style.slice();return this.#run(async signal=>{
+  if(this.#phase==='begin-uncertain')throw new GeoHierarchyPublicationUncertain();
+  if(this.#phase==='publication-uncertain'){
+   // Pure Query kind confirmation: a replaced Data never receives another44.
+   let confirmed;try{confirmed=decodeGeoHierarchyReply(await this.#bridge.execute(encodeGeoHierarchyRequest({command:6,handle:this.#handle,sequence:this.#sequence,budget:this.#budget})));}catch{throw new GeoHierarchyPublicationUncertain();}
+   if(confirmed.code!==19||confirmed.handle!==this.#handle||confirmed.sequence!==this.#sequence)throw new GeoHierarchyPublicationUncertain();
+   this.#phase='query';this.#stats=confirmed.hierarchyStats;
+  }
+  if(!this.#stats)throw new Error('drive must complete before preparing selected hierarchy');
+  if(signal.aborted)throw aborted();
+  const frame=await prepareGeoHierarchyScene(this.#bridge,{handle:this.#handle,sequence:this.#sequence,budget:input.budget??this.#budget,style,command:44,
+   onAttempt:()=>{this.#phase='publication-uncertain';},onReceipt:()=>{this.#phase='data';},onRelease:()=>this.#close()});
+  if(signal.aborted){await frame.dispose();this.#close();throw aborted();}try{this.#prepared(frame,style);}catch(error){await frame.dispose();this.#close();throw error;}this.#close();return frame;
+ },input.signal);}
+ async cancel(){this.#abort?.abort();if(this.#active){await this.#active.catch(()=>{});return;}if(this.#phase==='query')await this.#bridge.execute(encodeGeoHierarchyRequest({command:9,handle:this.#handle,sequence:this.#sequence}));}
+ dispose(){if(this.closed)return Promise.resolve();if(this.#disposing)return this.#disposing;
+  const task=(async()=>{this.#abort?.abort();if(this.#active)await this.#active.catch(()=>{});if(this.closed)return;
+   // Attempt ambiguity is kept until Rust accepts exact Data/State0 or Queryseq disposal.
+   if(this.#phase!=='query')try{const r=decodeGeoHierarchyReply(await this.#bridge.execute(encodeGeoHierarchyRequest({command:10,handle:this.#handle})));if(r.code!==0)throw new Error('hierarchy cleanup awaiting release');this.#close();return;}catch(error){if(!rustFailure(error))throw error;}
+   const r=decodeGeoHierarchyReply(await this.#bridge.execute(encodeGeoHierarchyRequest({command:10,handle:this.#handle,sequence:this.#sequence})));if(r.code!==0)throw new Error('hierarchy cleanup awaiting release');this.#close();
+  })();this.#disposing=task;task.catch(()=>{if(this.#disposing===task)this.#disposing=undefined;});return task;
+ }
+}
+export async function beginGeoSelectedHierarchy(bridge                  ,input                                                                                                                                                                                                                                                                                                               ){
+ const claim=claimGeoSelectedState(input.state,bridge);let operation                                        ;
+ try{const payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,claim.handle,true);
+  const request=encodeGeoHierarchyRequest({command:43,handle:input.handle,sequence:input.sequence,query:input.query,budget:input.budget,payload});
+  operation=new GeoSelectedHierarchyOperation(bridge,{handle:claim.handle,sequence:input.sequence,budget:input.budget,storage:input.storage,request,released:input.onReleased,prepared:input.onPrepared},OPERATION);input.onIssued(operation);
+  let raw;try{raw=await bridge.execute(request);}catch(error){if(rustFailure(error)){claim.reject();operation.rejectBegin();}else{claim.consume();operation.uncertainBegin();}throw error;}
+  let reply;try{reply=decodeGeoHierarchyReply(raw);}catch(error){claim.consume();operation.uncertainBegin();throw error;}
+  if(reply.code===17){claim.reject();operation.rejectBegin();throw new GeoHierarchyUnsupportedSelected();}
+  if(reply.code!==0||reply.handle!==claim.handle||reply.sequence!==input.sequence){claim.consume();operation.uncertainBegin();throw new TypeError('selected hierarchy begin ownership reply');}
+  claim.consume();return operation;
+ }catch(error){if(!operation)claim.reject();throw error;}
 }

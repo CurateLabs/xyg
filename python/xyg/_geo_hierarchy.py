@@ -14,6 +14,30 @@ from . import _geoscale as g
 from ._geo_retained import OwnedGeoData, RetainedGeoSource, _attach_frame, retained_frame_authority
 
 _FRAMES: weakref.WeakSet = weakref.WeakSet()
+_LANES: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+
+
+def _register_lane(lane):
+    bridge = weakref.ref(lane._issuer_bridge) if lane._issuer_bridge is not None else None
+    _LANES[lane] = (
+        weakref.ref(lane._origin_source),
+        bridge,
+        id(lane._issuer_bridge),
+        lane._creation_sequence,
+        lane._selected_mode,
+    )
+
+
+def hierarchy_lane_authority(lane):
+    """Read-only captured issuer; values cannot globally pin Source/Frame cycles."""
+    record = _LANES.get(lane)
+    if record is None:
+        return None
+    source = record[0]()
+    bridge = record[1]() if record[1] is not None else None
+    if source is None or id(bridge) != record[2]:
+        return None
+    return source, bridge, record[3], record[4]
 
 
 def is_hierarchy_frame(frame):
@@ -34,11 +58,13 @@ class GeoHierarchyUnsupportedSelected(RuntimeError):
 
 
 def _request(command, handle, sequence=0, **fields):
-    if command not in (6, 7, 8, 9, 10, 37, 38, 39, 40, 41):
+    if command not in (6, 7, 8, 9, 10, 37, 38, 39, 40, 41, 42, 43, 44):
         raise ValueError("unknown hierarchy command")
     request = bytearray(
         g.encode_request(
-            dict(command=5 if command == 38 else 6, handle=handle, sequence=sequence, **fields)
+            dict(
+                command=5 if command in (38, 43) else 6, handle=handle, sequence=sequence, **fields
+            )
         )
     )
     struct.pack_into("<I", request, 8, command)
@@ -306,15 +332,20 @@ class GeoHierarchy(RetainedGeoSource):
     _read_page: Any
     _write_page: Any
     _creation_sequence: int
+    _selected_mode: bool
+    _pending_operation: GeoSelectedHierarchyOperation | None
+    _issuer_bridge: Any
 
     @classmethod
-    def _owner(cls, frame, source, read_page, write_page, bridge):
+    def _owner(cls, frame, source, read_page, write_page, bridge, selected=False):
         _ = frame.data
         authority = retained_frame_authority(frame)
         if authority is None or authority[0] is not source or authority[1] is not source._bridge:
             raise ValueError("frame belongs to another source or transport")
-        if frame.data.selection is not None:
+        if not selected and frame.data.selection is not None:
             raise GeoHierarchyUnsupportedSelected()
+        if selected and frame.data.selection is None:
+            raise ValueError("selected hierarchy requires authentic selected frame")
         if not callable(read_page) or not callable(write_page):
             raise TypeError("explicit immutable page storage required")
         self = cls.__new__(cls)
@@ -323,16 +354,55 @@ class GeoHierarchy(RetainedGeoSource):
         self._read_page, self._write_page = read_page, write_page
         self.info = dict(source.info)
         self.handle = None
+        self._selected_mode, self._pending_operation = selected, None
+        self._issuer_bridge = source._bridge
         self._creation_sequence = frame.data.identity["sequence"]
         return self
 
     @classmethod
-    def from_frame(
-        cls, frame, source, *, grid, max_vertices, max_write_bytes, read_page, write_page
+    def from_frame(cls, frame, source, **options):
+        return cls._from_frame(frame, source, **options)
+
+    @classmethod
+    def from_selected_frame(cls, frame, source, **options):
+        return cls._from_frame(frame, source, selected=True, **options)
+
+    @classmethod
+    async def from_frame_async(cls, frame, source, **options):
+        return await cls._from_frame_async(frame, source, **options)
+
+    @classmethod
+    async def from_selected_frame_async(cls, frame, source, **options):
+        return await cls._from_frame_async(frame, source, selected=True, **options)
+
+    @property
+    def cancel_generation(self):
+        return self._cancel_generation
+
+    @property
+    def pending_operation(self):
+        return self._pending_operation
+
+    @property
+    def selected(self):
+        return self._selected_mode
+
+    @classmethod
+    def _from_frame(
+        cls,
+        frame,
+        source,
+        *,
+        grid,
+        max_vertices,
+        max_write_bytes,
+        read_page,
+        write_page,
+        selected=False,
     ):
         if source._bridge is not None:
             raise RuntimeError("use from_frame_async for an asynchronous transport")
-        self = cls._owner(frame, source, read_page, write_page, None)
+        self = cls._owner(frame, source, read_page, write_page, None, selected)
         payload = struct.pack(
             "<IIQQ", g._uint(grid, 32), 0, g._uint(max_vertices), g._uint(max_write_bytes)
         )
@@ -361,17 +431,27 @@ class GeoHierarchy(RetainedGeoSource):
             )
             if complete["code"] != 18:
                 raise ValueError("hierarchy build did not complete")
+            _register_lane(self)
             return self
         except BaseException:
             g.execute(_request(10, self.handle, self._creation_sequence))
             raise
 
     @classmethod
-    async def from_frame_async(
-        cls, frame, source, *, grid, max_vertices, max_write_bytes, read_page, write_page
+    async def _from_frame_async(
+        cls,
+        frame,
+        source,
+        *,
+        grid,
+        max_vertices,
+        max_write_bytes,
+        read_page,
+        write_page,
+        selected=False,
     ):
         bridge = source._bridge or g.NativeGeoScaleBridge(source.budget["processor_bytes"])
-        self = cls._owner(frame, source, read_page, write_page, bridge)
+        self = cls._owner(frame, source, read_page, write_page, bridge, selected)
         payload = struct.pack(
             "<IIQQ", g._uint(grid, 32), 0, g._uint(max_vertices), g._uint(max_write_bytes)
         )
@@ -412,6 +492,7 @@ class GeoHierarchy(RetainedGeoSource):
             )
             if complete["code"] != 18:
                 raise ValueError("hierarchy build did not complete")
+            _register_lane(self)
             return self
         except BaseException:
             await g._settle(
@@ -421,23 +502,46 @@ class GeoHierarchy(RetainedGeoSource):
             )
             raise
 
-    def _hierarchy_frame(self, handle, sequence, style):
+    def _hierarchy_frame(
+        self,
+        handle,
+        sequence,
+        style,
+        *,
+        command=39,
+        on_attempt=None,
+        on_receipt=None,
+        on_release=None,
+        budget=None,
+    ):
+        phase_budget = self.budget if budget is None else budget
+        if on_attempt:
+            on_attempt()
         reply = decode_reply(
-            g.execute(_request(39, handle, sequence, budget=self.budget, payload=style))
+            g.execute(_request(command, handle, sequence, budget=phase_budget, payload=style))
         )
+        if command == 44 and (
+            reply["code"] != 0
+            or reply["handle"] != handle
+            or reply["source_handle"] != handle
+            or reply["sequence"] != sequence
+        ):
+            raise ValueError("invalid same-handle publication receipt")
         data_handle = reply["handle"]
+        if on_receipt:
+            on_receipt()
         packet = data = None
         try:
             if (
                 reply["code"] != 0
                 or reply["source_handle"] != handle
                 or reply["sequence"] != sequence
-                or 4 * reply["data_length"] > self.budget["processor_bytes"]
+                or 4 * reply["data_length"] > phase_budget["processor_bytes"]
             ):
                 raise ValueError("invalid hierarchy Scene receipt")
             packet = g.read(
                 g.encode_request(dict(command=23, handle=data_handle)),
-                self.budget["processor_bytes"],
+                phase_budget["processor_bytes"],
             )
             if len(packet) != reply["data_length"]:
                 raise ValueError("invalid Scene length")
@@ -445,21 +549,47 @@ class GeoHierarchy(RetainedGeoSource):
             if data.identity["session_handle"] != handle or data.identity["sequence"] != sequence:
                 raise ValueError("mismatched Scene identity")
             return OwnedGeoData(data_handle, data)
-        except BaseException:
+        except BaseException as error:
             packet = data = None
+            traceback.clear_frames(error.__traceback__)
             g.execute(g.encode_request(dict(command=10, handle=data_handle)))
+            if on_release:
+                on_release()
             raise
 
-    async def _hierarchy_frame_async(self, handle, sequence, style):
+    async def _hierarchy_frame_async(
+        self,
+        handle,
+        sequence,
+        style,
+        *,
+        command=39,
+        on_attempt=None,
+        on_receipt=None,
+        on_release=None,
+        budget=None,
+    ):
+        phase_budget = self.budget if budget is None else budget
+        if on_attempt:
+            on_attempt()
         raw, interrupted = await g._settle(
             asyncio.create_task(
                 self._bridge.execute(
-                    _request(39, handle, sequence, budget=self.budget, payload=style)
+                    _request(command, handle, sequence, budget=phase_budget, payload=style)
                 )
             )
         )
         reply = decode_reply(raw)
+        if command == 44 and (
+            reply["code"] != 0
+            or reply["handle"] != handle
+            or reply["source_handle"] != handle
+            or reply["sequence"] != sequence
+        ):
+            raise ValueError("invalid same-handle publication receipt")
         data_handle = reply["handle"]
+        if on_receipt:
+            on_receipt()
         packet = data = None
         try:
             if interrupted:
@@ -468,7 +598,7 @@ class GeoHierarchy(RetainedGeoSource):
                 reply["code"] != 0
                 or reply["source_handle"] != handle
                 or reply["sequence"] != sequence
-                or 4 * reply["data_length"] > self.budget["processor_bytes"]
+                or 4 * reply["data_length"] > phase_budget["processor_bytes"]
             ):
                 raise ValueError("invalid hierarchy Scene receipt")
             packet, interrupted = await g._settle(
@@ -484,17 +614,22 @@ class GeoHierarchy(RetainedGeoSource):
             if data.identity["session_handle"] != handle or data.identity["sequence"] != sequence:
                 raise ValueError("mismatched Scene identity")
             return OwnedGeoData(data_handle, data, self._bridge)
-        except BaseException:
+        except BaseException as error:
             packet = data = None
+            traceback.clear_frames(error.__traceback__)
             await g._settle(
                 asyncio.create_task(
                     self._bridge.execute(g.encode_request(dict(command=10, handle=data_handle)))
                 )
             )
+            if on_release:
+                on_release()
             raise
 
     def update(self, query, *, sequence, style):
         self._check()
+        if self._selected_mode:
+            raise GeoHierarchyUnsupportedSelected()
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("exact48-byte style required")
         request = _request(38, self.handle, sequence, budget=self.budget, query=query)
@@ -527,6 +662,8 @@ class GeoHierarchy(RetainedGeoSource):
 
     async def aupdate(self, query, *, sequence, style):
         self._check(True)
+        if self._selected_mode:
+            raise GeoHierarchyUnsupportedSelected()
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("exact48-byte style required")
         request = _request(38, self.handle, sequence, budget=self.budget, query=query)
@@ -571,15 +708,19 @@ class GeoHierarchy(RetainedGeoSource):
         return frame
 
     def close(self):
+        self._cancel_generation += 1
         if self._bridge is not None:
             raise RuntimeError("use aclose for an asynchronous owner")
         if self._busy:
             raise RuntimeError("hierarchy operation already active")
         if not self._closed:
+            if self._pending_operation is not None:
+                self._pending_operation.close()
             g.execute(_request(10, self.handle, self._creation_sequence))
             self._closed = True
 
     async def aclose(self):
+        self._cancel_generation += 1
         if self._bridge is None:
             self.close()
             return
@@ -588,6 +729,8 @@ class GeoHierarchy(RetainedGeoSource):
             with suppress(BaseException):
                 await g._settle(self._active)
         if not self._closed:
+            if self._pending_operation is not None:
+                await self._pending_operation.aclose()
             if self._disposal is None:
                 self._disposal = asyncio.create_task(
                     self._bridge.execute(_request(10, self.handle, self._creation_sequence))
@@ -604,11 +747,439 @@ class GeoHierarchy(RetainedGeoSource):
                 raise asyncio.CancelledError
 
     def cancel(self):
-        if self._busy:
+        self._cancel_generation += 1
+        if self._busy or (self._pending_operation is not None and self._pending_operation._busy):
             raise RuntimeError("synchronous storage cancellation requires callback failure")
 
     async def acancel(self):
+        self._cancel_generation += 1
+        if self._pending_operation is not None:
+            await self._pending_operation.cancel_async()
         if self._active is not None and self._active is not asyncio.current_task():
             self._active.cancel()
             with suppress(BaseException):
                 await g._settle(self._active)
+
+    def _fork_owner(self, handle):
+        lane = type(self).__new__(type(self))
+        lane._setup(self._reader, self.budget, self._bridge)
+        lane.handle, lane.info = handle, dict(self.info)
+        lane._origin_source, lane._issuer_bridge = self._origin_source, self._issuer_bridge
+        lane._read_page, lane._write_page = self._read_page, self._write_page
+        lane._selected_mode, lane._pending_operation = self._selected_mode, None
+        lane._creation_sequence = self._creation_sequence
+        _register_lane(lane)
+        return lane
+
+    def fork(self):
+        self._check()
+        if self._bridge is not None:
+            raise RuntimeError("use fork_async for asynchronous hierarchy")
+        reply = decode_reply(
+            g.execute(_request(42, self.handle, self._creation_sequence, budget=self.budget))
+        )
+        if reply["code"] != 0 or reply["sequence"] != self._creation_sequence:
+            raise ValueError("invalid hierarchy fork")
+        return self._fork_owner(reply["handle"])
+
+    async def fork_async(self):
+        if self._bridge is None:
+            return self.fork()
+        self._check(True)
+        raw, interrupted = await g._settle(
+            asyncio.create_task(
+                self._bridge.execute(
+                    _request(42, self.handle, self._creation_sequence, budget=self.budget)
+                )
+            )
+        )
+        reply = decode_reply(raw)
+        if reply["code"] != 0 or reply["sequence"] != self._creation_sequence:
+            raise ValueError("invalid hierarchy fork")
+        lane = self._fork_owner(reply["handle"])
+        if interrupted:
+            await lane.aclose()
+            raise asyncio.CancelledError
+        return lane
+
+    def _selected_operation(self, state, query, sequence):
+        from ._geo_selected import claim_selected_state
+
+        if not self._selected_mode:
+            raise GeoHierarchyUnsupportedSelected()
+        if self._pending_operation is not None:
+            raise RuntimeError("selected hierarchy operation still owned")
+        authority = hierarchy_lane_authority(self)
+        if authority is None:
+            raise TypeError("issued hierarchy lane required")
+        claim = claim_selected_state(state, authority[1])
+        try:
+            request = _request(
+                43,
+                self.handle,
+                sequence,
+                query=query,
+                budget=self.budget,
+                payload=struct.pack("<Q", claim.handle),
+            )
+            operation = GeoSelectedHierarchyOperation(
+                self, claim.handle, sequence, request, _token=_OPERATION
+            )
+        except BaseException:
+            claim.reject()
+            raise
+        self._pending_operation = operation
+        return claim, operation
+
+    def begin_selected(self, state, query, *, sequence):
+        self._check()
+        if self._bridge is not None:
+            raise RuntimeError("use begin_selected_async for asynchronous hierarchy")
+        claim, operation = self._selected_operation(state, query, sequence)
+        try:
+            raw = g.execute(operation.request)
+        except BaseException as error:
+            operation._issue_failed(claim, error)
+            raise
+        operation._accept_begin(claim, raw)
+        return operation
+
+    async def begin_selected_async(self, state, query, *, sequence):
+        if self._bridge is None:
+            return self.begin_selected(state, query, sequence=sequence)
+        self._check(True)
+        claim, operation = self._selected_operation(state, query, sequence)
+        try:
+            raw, interrupted = await g._settle(
+                asyncio.create_task(self._bridge.execute(operation.request))
+            )
+        except BaseException as error:
+            operation._issue_failed(claim, error)
+            raise
+        operation._accept_begin(claim, raw)
+        if interrupted:
+            await operation.aclose()
+            raise asyncio.CancelledError
+        return operation
+
+    def update_selected(self, state, query, *, sequence, style):
+        operation = self.begin_selected(state, query, sequence=sequence)
+        try:
+            operation.drive()
+            return operation.prepare(style)
+        finally:
+            operation.close()
+
+    async def aupdate_selected(self, state, query, *, sequence, style):
+        operation = await self.begin_selected_async(state, query, sequence=sequence)
+        try:
+            await operation.drive_async()
+            return await operation.prepare_async(style)
+        finally:
+            await operation.aclose()
+
+
+_OPERATION = object()
+
+
+def _rust_failure(error):
+    from ._native import GeoNativeError
+
+    return isinstance(error, GeoNativeError)
+
+
+class GeoHierarchyPublicationUncertain(RuntimeError):
+    """Successful publication may have replaced Query; never retry44 blindly."""
+
+
+class GeoSelectedHierarchyOperation:
+    """An issued State becomes Query then Data; exact cleanup retains ambiguity."""
+
+    def __init__(self, owner, handle, sequence, request, *, _token=None):
+        if _token is not _OPERATION:
+            raise TypeError("issued selected hierarchy operation required")
+        self._owner, self._handle, self._sequence = owner, handle, sequence
+        self._request, self._phase, self._stats = bytes(request), "query", None
+        self._busy, self._active, self._disposal = False, None, None
+
+    @property
+    def handle(self):
+        return self._handle
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @property
+    def request(self):
+        return self._request
+
+    @property
+    def closed(self):
+        return self._phase == "closed"
+
+    @property
+    def hierarchy_stats(self):
+        return self._stats
+
+    def _closed(self):
+        self._phase = "closed"
+        if self._owner._pending_operation is self:
+            self._owner._pending_operation = None
+
+    def _issue_failed(self, claim, error):
+        if _rust_failure(error):
+            claim.reject()
+            self._closed()
+        else:
+            claim.consume()
+            self._phase = "begin-uncertain"
+
+    def _accept_begin(self, claim, raw):
+        try:
+            reply = decode_reply(raw)
+        except BaseException:
+            claim.consume()
+            self._phase = "begin-uncertain"
+            raise
+        if reply["code"] == 17:
+            claim.reject()
+            self._closed()
+            raise GeoHierarchyUnsupportedSelected()
+        if (
+            reply["code"] != 0
+            or reply["handle"] != self.handle
+            or reply["sequence"] != self.sequence
+        ):
+            claim.consume()
+            self._phase = "begin-uncertain"
+            raise ValueError("selected hierarchy begin ownership reply")
+        claim.consume()
+
+    def _check(self):
+        if self.closed or self._phase == "data" or self._busy or self._disposal is not None:
+            raise RuntimeError("selected hierarchy operation unavailable")
+
+    def drive(self):
+        self._check()
+        if self._owner._bridge is not None:
+            raise RuntimeError("use drive_async for asynchronous operation")
+        if self._phase != "query":
+            raise GeoHierarchyPublicationUncertain()
+        self._busy = True
+        try:
+            complete = drive_hierarchy(
+                self.handle,
+                self.sequence,
+                self._owner.budget,
+                self._owner._reader,
+                self._owner._read_page,
+                self._owner._write_page,
+            )
+            self._stats = complete["hierarchy_stats"]
+            return complete
+        finally:
+            self._busy = False
+
+    async def drive_async(self):
+        if self._owner._bridge is None:
+            return self.drive()
+        self._check()
+        if self._phase != "query":
+            raise GeoHierarchyPublicationUncertain()
+        self._busy, self._active = True, asyncio.current_task()
+        try:
+            complete = await drive_hierarchy_async(
+                self._owner._bridge,
+                self.handle,
+                self.sequence,
+                self._owner.budget,
+                self._owner._reader,
+                self._owner._read_page,
+                self._owner._write_page,
+            )
+            self._stats = complete["hierarchy_stats"]
+            return complete
+        finally:
+            self._busy, self._active = False, None
+
+    def _prepared(self, frame, style):
+        _attach_frame(
+            self._owner._origin_source, frame, self.sequence, self.request, style, _FRAMES.add
+        )
+        frame.hierarchy_stats = self._stats
+        self._owner.current = frame
+        return frame
+
+    def _attempt(self):
+        self._phase = "publication-uncertain"
+
+    def _receipt(self):
+        self._phase = "data"
+
+    def _confirm(self, reply):
+        if (
+            reply["code"] != 19
+            or reply["handle"] != self.handle
+            or reply["sequence"] != self.sequence
+        ):
+            raise GeoHierarchyPublicationUncertain()
+        self._phase, self._stats = "query", reply["hierarchy_stats"]
+
+    def prepare(self, style, *, budget=None):
+        self._check()
+        if self._owner._bridge is not None:
+            raise RuntimeError("use prepare_async for asynchronous operation")
+        if not isinstance(style, bytes) or len(style) != 48:
+            raise ValueError("exact48-byte style required")
+        if self._phase == "begin-uncertain":
+            raise GeoHierarchyPublicationUncertain()
+        if self._phase == "publication-uncertain":
+            try:
+                self._confirm(
+                    decode_reply(
+                        g.execute(
+                            _request(6, self.handle, self.sequence, budget=self._owner.budget)
+                        )
+                    )
+                )
+            except BaseException as error:
+                raise GeoHierarchyPublicationUncertain() from error
+        if self._stats is None:
+            raise RuntimeError("drive must complete before prepare")
+        self._busy = True
+        try:
+            frame = self._owner._hierarchy_frame(
+                self.handle,
+                self.sequence,
+                style,
+                command=44,
+                on_attempt=self._attempt,
+                on_receipt=self._receipt,
+                on_release=self._closed,
+                budget=budget,
+            )
+            self._closed()
+            return self._prepared(frame, style)
+        finally:
+            self._busy = False
+
+    async def prepare_async(self, style, *, budget=None):
+        if self._owner._bridge is None:
+            return self.prepare(style, budget=budget)
+        self._check()
+        if not isinstance(style, bytes) or len(style) != 48:
+            raise ValueError("exact48-byte style required")
+        if self._phase == "begin-uncertain":
+            raise GeoHierarchyPublicationUncertain()
+        self._busy, self._active = True, asyncio.current_task()
+        try:
+            if self._phase == "publication-uncertain":
+                try:
+                    raw, interrupted = await g._settle(
+                        asyncio.create_task(
+                            self._owner._bridge.execute(
+                                _request(6, self.handle, self.sequence, budget=self._owner.budget)
+                            )
+                        )
+                    )
+                    self._confirm(decode_reply(raw))
+                    if interrupted:
+                        raise asyncio.CancelledError
+                except asyncio.CancelledError:
+                    raise
+                except BaseException as error:
+                    raise GeoHierarchyPublicationUncertain() from error
+            if self._stats is None:
+                raise RuntimeError("drive must complete before prepare")
+            frame = await self._owner._hierarchy_frame_async(
+                self.handle,
+                self.sequence,
+                style,
+                command=44,
+                on_attempt=self._attempt,
+                on_receipt=self._receipt,
+                on_release=self._closed,
+                budget=budget,
+            )
+            self._closed()
+            return self._prepared(frame, style)
+        finally:
+            self._busy, self._active = False, None
+
+    def close(self):
+        if self._owner._bridge is not None:
+            raise RuntimeError("use aclose for asynchronous operation")
+        if self._busy:
+            raise RuntimeError("selected hierarchy operation active")
+        if self.closed:
+            return
+        if self._phase != "query":
+            try:
+                reply = decode_reply(g.execute(_request(10, self.handle)))
+                if reply["code"] != 0:
+                    raise RuntimeError("cleanup awaiting release")
+                self._closed()
+                return
+            except BaseException as error:
+                if not _rust_failure(error):
+                    raise
+        reply = decode_reply(g.execute(_request(10, self.handle, self.sequence)))
+        if reply["code"] != 0:
+            raise RuntimeError("cleanup awaiting release")
+        self._closed()
+
+    async def aclose(self):
+        if self._owner._bridge is None:
+            return self.close()
+        active_interrupted = False
+        if self._active is not None and self._active is not asyncio.current_task():
+            active = self._active
+            active.cancel()
+            with suppress(BaseException):
+                _, active_interrupted = await g._settle(active)
+            current = asyncio.current_task()
+            active_interrupted |= current is not None and current.cancelling() > 0
+        if self.closed:
+            if active_interrupted:
+                raise asyncio.CancelledError
+            return
+        if self._disposal is None:
+            self._disposal = asyncio.create_task(self._dispose_async())
+        task = self._disposal
+        try:
+            _, interrupted = await g._settle(task)
+        except BaseException:
+            if self._disposal is task:
+                self._disposal = None
+            raise
+        if interrupted or active_interrupted:
+            raise asyncio.CancelledError
+
+    async def _dispose_async(self):
+        if self._phase != "query":
+            try:
+                raw = await self._owner._bridge.execute(_request(10, self.handle))
+                if decode_reply(raw)["code"] != 0:
+                    raise RuntimeError("cleanup awaiting release")
+                self._closed()
+                return
+            except BaseException as error:
+                if not _rust_failure(error):
+                    raise
+        raw = await self._owner._bridge.execute(_request(10, self.handle, self.sequence))
+        if decode_reply(raw)["code"] != 0:
+            raise RuntimeError("cleanup awaiting release")
+        self._closed()
+
+    async def cancel_async(self):
+        if self._active is not None and self._active is not asyncio.current_task():
+            self._active.cancel()
+            with suppress(BaseException):
+                await g._settle(self._active)
+        elif self._phase == "query":
+            await g._settle(
+                asyncio.create_task(
+                    self._owner._bridge.execute(_request(9, self.handle, self.sequence))
+                )
+            )

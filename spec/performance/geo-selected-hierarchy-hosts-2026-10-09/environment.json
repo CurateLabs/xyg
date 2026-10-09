@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "scope": "Bounded functional selected hierarchy typed hosts; no massive selected latency/browser live/1B claim.",
+  "engine_source": "90149f0c333fc5bb3ae12d045aaf6cf192a30814",
+  "engine_source_diff_to_host_tree": "empty crates/ diff verified",
+  "static_compatibility_source": "88fc691e944ab13209fc15cbdd1fde91e01053b7",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "Python 3.13.7",
+  "node": "v26.6.0",
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geocombined/target/release/libxyg_core.dylib",
+    "sha256": "ef90af7d69a26676ad8ebd535ae5fd37147d9f237f1105ed71a92c4f07790c57"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geocombined/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "d5de5c18285a18162a823fdd07ea4c8aaf7a068220e34b0b8b7e448b09cfde29",
+    "raw_bytes": 1458129,
+    "gzip_level9_mtime0_bytes": 598500
+  },
+  "identities": {
+    "native_abi": 383,
+    "wasm_abi": 33,
+    "scene": 32,
+    "painter": 15
+  },
+  "source_sha256": {
+    "js/src/68_geo_selected.ts": "25fc44774b0fbb2315614a158836f7fde500b1485e4cec5e2db5cbbf3c630acb",
+    "js/src/70_geo_hierarchy.ts": "c54781e1b2782419a82e210ba18610f6dfea1ffcddce42b37f6d571be8d75d5c",
+    "packages/xy-node/src/geo-hierarchy-wire.js": "269f93e39364825ac49c74d8a97e03e2d2fc57c62e74f71a7116df618ba317f0",
+    "packages/xy-node/src/geo-hierarchy.js": "00d86cacf349d9a22cdd52cb80571a4c2be1396bc446d0fe475cf7e543ab8fa3",
+    "packages/xy-node/src/geo-hierarchy.d.ts": "ec7d1526b8208fa51e3daae8f1b7797d77788a08cbd8f218e3abf9bb457d8675",
+    "packages/xy-node/src/geo-selected.js": "515f3e3121aeb69b9e1a6f204722b090683a7719ba66432f167bda16ee46f38f",
+    "packages/xy-node/src/geo-selected.d.ts": "999fe75f90a43110d0593ecbb2554afcf13b863c2e50adbbc37cae4545056c21",
+    "python/xyg/_geo_hierarchy.py": "4fa8eb1da2bee9b72fc169ee4ce2ab4da6700a9404e64afee783b0f569cc2247",
+    "python/xyg/_geo_selected.py": "b9a2eeabc2fe8a45b4179d9b7d0e67695c0e49bad683f6c360601d4dc023496e",
+    "scripts/gen_geo_hierarchy_node.mjs": "88fa6850dd0fb0f5b7d72257e195bf6ef026ef9a188066ff8bf45cfb9bda8007",
+    "scripts/gen_geo_selected_wire.mjs": "7cbd11cd7345fd705ef7603beecbc3b00b6de34d75e876093c5e6e29c7b4d5f6",
+    "packages/xy-node/test/geo-selected-hierarchy.test.mjs": "e203e855700e9106c416b13b03f3540ca3c186cfd2d0a241d6cbb5e5c6f95ead",
+    "tests/test_geo_selected_hierarchy.py": "5326580c0cfda095a97545df9baf346d42bf8c970e743fd92904b33dfcb732f7",
+    "python/xyg/_geo_host.py": "c2a7e6496cb6304b2ac80ef439fc40278d6f2c65619576fcf63f3ae0c15446f0",
+    "packages/xy-node/src/geo-webview.js": "29060fb2c1aca6983a59607b2f22f683ef03bade7982ea4764e542bbf1f0e586"
+  },
+  "tests": {
+    "node_targeted": 61,
+    "node_new_typed": 24,
+    "python_targeted": 40,
+    "python_new_typed": 5,
+    "static_compatibility_native": 1
+  },
+  "normalization": "Complete Scene/Rows/Frozen comparison; process-local owner16..24 only, Rows continuation owner80..88 additionally. No camera/time/selection/source/provenance bytes normalized.",
+  "remaining_gates": [
+    "Selected hierarchy explicit live route and actual browser/notebook/Reflex/VSCode journey",
+    "Massive selected latency and1B interaction",
+    "External page-store durability and application storage capacity remain caller-owned"
+  ]
+}
