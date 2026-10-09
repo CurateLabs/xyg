@@ -1,0 +1,22 @@
+{
+  "baseCommit": "ae336da2733801ca94071ccb281c7707c8ed6d27",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "nativeArtifact": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembershipprotocol/target/release/libxyg_core.dylib",
+    "sha256": "be47dff3ae3b40fc24387b8b8a2d245c492b94c772a325e872696a0571e507da"
+  },
+  "wasmArtifact": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembershipprotocol/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "66e49864b39d1e8fda9d0144a4a229b13bcbdfbc452b697c20f6ce60c6ab0820"
+  },
+  "sourceHashes": {
+    "js/src/47_wasm.ts": "bb94a6e484154f89c6b7aa0b6a38b8f96b8dd23434a3ce5955866d2a7479841a",
+    "js/src/60_entries.ts": "e82e6a02e659ee9137fac82f237bf47587a97928dbcf417383286b3cf889384c",
+    "js/src/71_geo_overview_controller.ts": "86c8f5b06cae4b6eb5751c0d618c6934defb181ec9612dae229c83f9bc9b6b69",
+    "js/src/74_geo_overview_snapshot.ts": "c1713fdb8fc5a9c91c5f13350ce190878a21fc5be1e8c76a7e6b91917720eeb4",
+    "scripts/geo_overview_binary_smoke.mjs": "d993027162e9b6e7be21d4d16423ff94af4bcaa3cb8ae524b12ffaa3b37e5455",
+    "tests/browser/geo_overview_binary_page.mjs": "71869818cd1b04c5869d2b3c3cd3bcbde081e6c48ca8e77227ab89723fc36e98",
+    "spec/design/geo-overview-browser-binary.md": "a8ad1a87210672220728e72754ec53c38a8a7d2a11e6853a374df03724adfeb4"
+  }
+}

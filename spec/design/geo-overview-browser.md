@@ -119,9 +119,10 @@ bounded focus/paging and retryable borrowed cleanup are executable controls.
 No timing comparison or massive claim follows from this fixture. Static/native six-format export and inert XYGXv4
 metadata remain defined by `geo-overview-painter-snapshot.md`; native public composition
 and final geographic issue closure are separate gates. The browser controller
-returns a copied summary; an accepted-frame browser export wrapper is not part
-of this paint slice. Existing native frozen export and raw Worker mode6 remain
-separately specified.
+returns a copied summary. Its subsequent accepted-frame `freezeBinary` wrapper
+is specified in [browser binary ownership](geo-overview-browser-binary.md);
+it exports inert XYGXv4 only. Existing native frozen artifact export and raw
+Worker mode6 remain separately specified.
 
 Actual small-fixture evidence, artifact/source hashes, commands and a visual
 example are committed in [geo-overview-browser-2026-10-09](../performance/geo-overview-browser-2026-10-09/README.md).

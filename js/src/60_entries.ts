@@ -390,3 +390,5 @@ export type { GeoOverviewBuildInput } from './71_geo_overview_owner';
 export { encodeGeoScaleRequest, encodeGeoScaleStyle, encodeGeoChunkRequest, decodeGeoScaleReply, driveGeoSession, prepareGeoSceneData } from './63_geo_source';
 export type { XygGeoScaleBridge, XygGeoScaleQuery, XygGeoQueryBudget, XygGeoTime, XygGeoReadTicket } from './63_geo_source';
 export type { XygGeoInteractionEvent } from "./61_geo_catalog";
+
+export type { GeoOverviewFrozenBinary, OverviewBinaryFreezeOptions } from './74_geo_overview_snapshot';

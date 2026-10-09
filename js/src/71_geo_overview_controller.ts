@@ -1,9 +1,10 @@
 /** Temporal-domain publication adapter; Rust owns cells, colors and projection. */
-import {getGeoWorkerBridge,isGeoWorkerBridge,acquireGeoWorkerTransport,prepareGeoWorkerFrame,reserveGeoWorkerInput,type XygWasmWorker} from './47_wasm';
+import {getGeoWorkerBridge,isGeoWorkerBridge,acquireGeoWorkerTransport,prepareGeoWorkerFrame,reserveGeoWorkerInput,isGeoWorkerTerminated,type XygWasmWorker} from './47_wasm';
 import {hydrateWasmPainter,type XygWasmSceneView} from './48_wasm_scene';
 import {GeoOverviewIndex,GeoOverviewFrame,overviewIndexAuthority,overviewFrameAuthority,updateOverviewIndex} from './71_geo_overview_owner';
 import {encodeGeoOverviewRequest} from './67_geo_overview';
 import type {XygGeoScaleBridge,XygGeoScaleQuery} from './63_geo_source';
+import {beginOverviewBinaryFreeze,disposeOverviewBinary,GeoOverviewBinaryCleanupPending,GeoOverviewBinaryUncertainAllocation,type GeoOverviewFrozenBinary,type OverviewBinaryFreezeOptions} from './74_geo_overview_snapshot';
 
 type Prepared=Awaited<ReturnType<XygWasmWorker['prepareGeoFrame']>['result']>;
 export interface OverviewGeographicChartOptions {
@@ -44,6 +45,8 @@ export class OverviewGeographicController {
  #active:AbortController|undefined;#stage:ReturnType<XygWasmWorker['prepareGeoFrame']>|undefined;
  #frame:GeoOverviewFrame|undefined;#view:XygWasmSceneView|undefined;#summary:OverviewGeoFrameSummary|undefined;
  #cleanup:GeoOverviewFrame|undefined;
+ #freezePin:{frame:GeoOverviewFrame;barrier:Promise<void>;unknown:boolean;release:()=>void}|undefined;
+ #freezeWork:Promise<void>|undefined;#freezeAbort:AbortController|undefined;#binaryCleanup:GeoOverviewFrozenBinary|undefined;
  static async create(options:OverviewGeographicChartOptions){
   if(options.mode!=='temporal-domain-overview'||!(options.el instanceof HTMLElement))throw new TypeError('Explicit overview mode and geographic container required');
   const bridge=getGeoWorkerBridge(options.worker),a=overviewIndexAuthority(options.index);
@@ -68,7 +71,7 @@ export class OverviewGeographicController {
   this.ready=this.update(options.query,{sequence:options.sequence}).then(()=>{}).catch(async error=>{await this.dispose();throw error;});
  }
  #report(error:unknown){try{this.#onError?.(error);}catch{/* Observers do not control publication. */}}
- #assertIssuer(){const a=overviewIndexAuthority(this.#index);if(!a||a.closed||a.bridge!==this.#bridge||!isGeoWorkerBridge(this.#worker,this.#bridge))throw new TypeError('Overview transport/index is unavailable');return a;}
+ #assertIssuer(){if(this.#freezePin?.unknown)throw new GeoOverviewBinaryUncertainAllocation();const a=overviewIndexAuthority(this.#index);if(!a||a.closed||a.bridge!==this.#bridge||!isGeoWorkerBridge(this.#worker,this.#bridge))throw new TypeError('Overview transport/index is unavailable');return a;}
  update(query:XygGeoScaleQuery,input:{sequence:bigint;signal?:AbortSignal}):Promise<OverviewGeoFrameSummary>{
   if(this.#closed)return Promise.reject(new Error('Overview chart disposed'));
   if(this.#pending>=16)return Promise.reject(new RangeError('Overview update queue capacity16 exceeded'));
@@ -78,7 +81,7 @@ export class OverviewGeographicController {
   const sequence=input.sequence,signal=input.signal;this.#pending++;
   const task=this.#chain.then(async()=>{
    if(this.#closed||signal?.aborted)throw aborted();
-   await this.#drainCleanup();if(this.#closed||signal?.aborted)throw aborted();this.#assertIssuer();
+   await this.#drainBinaryCleanup();await this.#drainCleanup();if(this.#closed||signal?.aborted)throw aborted();this.#assertIssuer();
    const abort=new AbortController(),onAbort=()=>{abort.abort();this.#stage?.cancel();};this.#active=abort;signal?.addEventListener('abort',onAbort,{once:true});
    let candidate:GeoOverviewFrame|undefined,candidateView:XygWasmSceneView|undefined,prepared:Prepared|undefined;
    try{
@@ -89,7 +92,7 @@ export class OverviewGeographicController {
     const actual=new Uint8Array(a.query);for(let i=0;i<256;i++)if(actual[i]!==bytes[i])throw new TypeError('Overview frame differs from accepted query');
     const accepted=summary(frozen,sequence,a.header);
     this.#stage=prepareGeoWorkerFrame(this.#worker,this.#bridge,a.handle,sequence);prepared=await this.#stage.result;this.#stage=undefined;
-    if(this.#closed||abort.signal.aborted)throw aborted();this.#assertIssuer();
+    await this.#freezeBarrier();if(this.#closed||abort.signal.aborted)throw aborted();this.#assertIssuer();
     let holder:HTMLElement|undefined;
     if(!this.#layer){holder=document.createElement('div');candidateView=hydrateWasmPainter(holder,prepared);}
     if(this.#layer)this.#layer.setPrepared(prepared);
@@ -105,15 +108,38 @@ export class OverviewGeographicController {
   });
   const settled=task.finally(()=>{this.#pending--;release();});this.#chain=settled.then(()=>{},()=>{});return settled;
  }
- async #drainCleanup(){if(this.#cleanup){const owner=this.#cleanup;await canonicalDispose.call(owner);if(this.#cleanup===owner)this.#cleanup=undefined;}}
+ async #drainCleanup(){if(this.#cleanup){const owner=this.#cleanup;if(this.#freezePin?.frame===owner)await this.#freezeBarrier();await canonicalDispose.call(owner);if(this.#cleanup===owner)this.#cleanup=undefined;}}
  #renderCounts(){
   if(!this.#summary)return;
   const focused=document.activeElement instanceof HTMLElement&&this.#body.contains(document.activeElement)?document.activeElement.dataset.domainCell:undefined;
   const rows=document.createDocumentFragment();for(let i=this.#page*32;i<(this.#page+1)*32;i++){const tr=document.createElement('tr'),cell=document.createElement('th'),value=document.createElement('td');cell.scope='row';cell.textContent=String(i);tr.tabIndex=0;tr.dataset.domainCell=String(i);const count=this.#summary?.counts[i]??0n;value.textContent=String(count);tr.setAttribute('aria-label',`Domain cell ${i}, ${count} exact temporal vertices; spatial refinement pending`);tr.append(cell,value);rows.append(tr);}this.#body.replaceChildren(rows);this.#previous.disabled=this.#page===0;this.#next.disabled=this.#page===7;if(focused)this.#body.querySelector<HTMLElement>(`[data-domain-cell="${focused}"]`)?.focus();
  }
+ async #freezeBarrier(){if(this.#freezePin)await this.#freezePin.barrier;}
+ async #drainBinaryCleanup(){if(this.#binaryCleanup){const owner=this.#binaryCleanup;await disposeOverviewBinary(owner);if(this.#binaryCleanup===owner)this.#binaryCleanup=undefined;}}
+ /** Freeze exactly the accepted immutable frame; binary only, no requery. */
+ freezeBinary(input:OverviewBinaryFreezeOptions={}):Promise<GeoOverviewFrozenBinary>{
+  if(this.#closed||!this.#frame)return Promise.reject(new Error('Accepted overview unavailable'));
+  if(this.#freezePin?.unknown)return Promise.reject(new GeoOverviewBinaryUncertainAllocation());
+  if(this.#freezeWork||this.#binaryCleanup)return Promise.reject(new Error('Previous binary freeze or cleanup remains pending'));
+  if(input.signal?.aborted)return Promise.reject(aborted());
+  let release:()=>void;
+  try{release=reserveGeoWorkerInput(this.#worker,this.#bridge,4096);}catch(error){return Promise.reject(error);}
+  let resolve!:()=>void,reject!:(error:unknown)=>void;
+  const barrier=new Promise<void>((yes,no)=>{resolve=yes;reject=no;});void barrier.catch(()=>{});
+  const pin={frame:this.#frame,barrier,unknown:false,release};this.#freezePin=pin;
+  const abort=new AbortController(),onAbort=()=>abort.abort();this.#freezeAbort=abort;input.signal?.addEventListener('abort',onAbort,{once:true});
+  let result:Promise<GeoOverviewFrozenBinary>;
+  try{result=beginOverviewBinaryFreeze(this.#worker,this.#bridge,pin.frame,{budgetBytes:input.budgetBytes,signal:abort.signal},state=>{
+   if(state==='uncertain'){pin.unknown=true;reject(new GeoOverviewBinaryUncertainAllocation());}
+   else{if(this.#freezePin===pin)this.#freezePin=undefined;release();resolve();}
+  });}catch(error){this.#freezePin=undefined;release();resolve();result=Promise.reject(error);}
+  let work:Promise<void>;
+  const settled=result.catch(error=>{if(error instanceof GeoOverviewBinaryCleanupPending)this.#binaryCleanup=error.owner;throw error;}).finally(()=>{input.signal?.removeEventListener('abort',onAbort);if(this.#freezeAbort===abort)this.#freezeAbort=undefined;if(this.#freezeWork===work)this.#freezeWork=undefined;});
+  work=settled.then(()=>{},()=>{});this.#freezeWork=work;return settled;
+ }
  snapshot():OverviewGeoFrameSummary{if(!this.#summary)throw new Error('Overview frame unavailable');return copySummary(this.#summary);}
  dispose():Promise<void>{
-  this.#closed=true;this.#active?.abort();this.#stage?.cancel();
-  if(!this.#disposal)this.#disposal=(async()=>{await this.#chain;this.#layer?.releasePrepared();this.#view?.destroy();this.#view=undefined;this.#paint.remove();this.#panel.remove();this.#body.replaceChildren();this.#summary=undefined;this.#previous.onclick=this.#next.onclick=null;this.#onChange=this.#onError=undefined;await this.#drainCleanup();if(this.#frame){this.#cleanup=this.#frame;this.#frame=undefined;await this.#drainCleanup();}this.#layer=undefined;})().catch(error=>{this.#disposal=undefined;throw error;});return this.#disposal;
+  this.#closed=true;this.#active?.abort();this.#stage?.cancel();this.#freezeAbort?.abort();
+  if(!this.#disposal)this.#disposal=(async()=>{await this.#chain;await this.#freezeWork;const terminal=isGeoWorkerTerminated(this.#worker,this.#bridge);if(!terminal)await this.#freezeBarrier();this.#layer?.releasePrepared();this.#view?.destroy();this.#view=undefined;this.#paint.remove();this.#panel.remove();this.#body.replaceChildren();this.#summary=undefined;this.#previous.onclick=this.#next.onclick=null;this.#onChange=this.#onError=undefined;if(terminal){this.#freezePin?.release();this.#freezePin=undefined;this.#frame=this.#cleanup=undefined;if(this.#binaryCleanup)await disposeOverviewBinary(this.#binaryCleanup);this.#binaryCleanup=undefined;}else{await this.#drainBinaryCleanup();await this.#drainCleanup();if(this.#frame){this.#cleanup=this.#frame;this.#frame=undefined;await this.#drainCleanup();}}this.#layer=undefined;})().catch(error=>{this.#disposal=undefined;throw error;});return this.#disposal;
  }
 }

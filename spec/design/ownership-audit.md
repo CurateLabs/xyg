@@ -1237,6 +1237,7 @@ Rust continues to own temporal/domain policy, projection, counts and paint buffe
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_allocation_recovery.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_allocation_recovery_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/74_geo_overview_snapshot.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
 ## Contributor rule
 
