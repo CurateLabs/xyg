@@ -574,3 +574,96 @@ fn empty_explicit_intent_keeps_ordinary_scene_bytes_and_only_adds_typed_provenan
     drop(f);
     execute(&req(10, scope.0, 0, &[])).unwrap();
 }
+
+#[test]
+fn selected_direct_pick_matches_effective_painted_alpha() {
+    let _cpu = test_processor_lock();
+    let _tile = test_process_lock();
+    let f = fixture(1);
+    let scope = scope(f.frame.0, 717);
+    for (revision, selected_alpha, ordinary_alpha, expected_id) in
+        [(2, 0, 255, 1u64 << 63), (3, 255, 0, u64::MAX)]
+    {
+        let state = Handle(u64at(
+            &execute(&publish(
+                scope.0,
+                revision,
+                &[u64::MAX],
+                [0, 255, 0, selected_alpha],
+            ))
+            .unwrap(),
+            16,
+        ));
+        execute(&selected(
+            35,
+            f.source.0,
+            revision,
+            &f.manifest,
+            state.0,
+            revision,
+        ))
+        .unwrap();
+        drive_reads(f.source.0, revision, &f.chunks, None);
+        let mut profile = style();
+        profile[3] = ordinary_alpha;
+        let frame = Handle(u64at(
+            &execute(&capped(req(11, f.source.0, revision, &profile))).unwrap(),
+            16,
+        ));
+        with_scene_data(frame.0, revision, |view| {
+            use crate::geo_lod_hit::{hit, GeoLodHit, GeoLodHitMode, GeoLodHitQuery};
+            let hits = hit(view.result, read_uniform_style(view.style).unwrap(), GeoLodHitQuery {x: 400., y: 300., tolerance: 0., mode: GeoLodHitMode::All, max_hits: 16}, 128 << 20).unwrap();
+            assert_eq!(hits.hits.len(), 2);
+            assert!(hits.hits.iter().all(|value| matches!(value, GeoLodHit::Direct(point) if point.identity.feature_id == expected_id)));
+            let mut transparent = read_uniform_style(view.style).unwrap();
+            transparent.opacity = 0.;
+            assert!(hit(view.result, transparent, hits.query, 128 << 20).unwrap().hits.is_empty());
+        }).unwrap();
+    }
+    drop(f);
+    drop(scope);
+}
+
+#[test]
+fn fully_selected_transparent_aggregate_cells_are_not_pickable() {
+    let _cpu = test_processor_lock();
+    let _tile = test_process_lock();
+    let f = fixture(17000);
+    let scope = scope(f.frame.0, 718);
+    for (revision, kind) in [(2, 0), (3, 1)] {
+        let state = Handle(u64at(
+            &execute(&publish(scope.0, revision, &[u64::MAX, 1 << 63], [0; 4])).unwrap(),
+            16,
+        ));
+        let mut begin = selected(35, f.source.0, revision, &f.manifest, state.0, revision);
+        put32(&mut begin, 68, kind);
+        execute(&begin).unwrap();
+        drive_reads(f.source.0, revision, &f.chunks, None);
+        let (frame, _) = data(f.source.0, revision, 11);
+        with_scene_data(frame.0, revision, |view| {
+            use crate::geo_lod_hit::{GeoLodHitMode, GeoLodHitQuery, hit};
+            let query = GeoLodHitQuery {
+                x: 400.,
+                y: 300.,
+                tolerance: 0.,
+                mode: GeoLodHitMode::All,
+                max_hits: 16,
+            };
+            assert!(!view.result.key.direct);
+            assert!(
+                hit(
+                    view.result,
+                    read_uniform_style(view.style).unwrap(),
+                    query,
+                    128 << 20
+                )
+                .unwrap()
+                .hits
+                .is_empty()
+            );
+        })
+        .unwrap();
+    }
+    drop(f);
+    drop(scope);
+}
