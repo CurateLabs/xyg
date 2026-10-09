@@ -10678,6 +10678,136 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Compose only the geographic literal profile. Caller preleases decoding,
+    /// rebuilding and encoding storage; unsupported authored metadata fails closed.
+    pub(crate) fn compose_geographic(
+        background: &[u8],
+        foreground: &[u8],
+    ) -> Result<Vec<u8>, SceneError> {
+        let base = Self::decode(background)?;
+        let front = Self::decode(foreground)?;
+        let supported = |d: &Self| {
+            d.polar.is_none()
+                && d.colorbar.is_none()
+                && d.label_backgrounds.iter().all(Option::is_none)
+                && d.gradients.iter().all(Option::is_none)
+                && d.marker_glyphs.iter().all(Option::is_none)
+                && d.static_title_style.is_none()
+                && d.static_label_text_flags == 0
+                && d.styles.iter().all(|s| s.dash_count == 0)
+        };
+        // Identical canonical layout/scales, no second chrome/decor owner.
+        if !supported(&base)
+            || !supported(&front)
+            || front.legend.is_some()
+            || !front.labels.is_empty()
+            || background[32..160] != foreground[32..160]
+            || !front.text.title.is_empty()
+            || !front.text.x_label.is_empty()
+            || !front.text.y_label.is_empty()
+        {
+            return Err(SceneError::Length);
+        }
+        let count = base
+            .records
+            .len()
+            .checked_add(front.records.len())
+            .ok_or(SceneError::Limit)?;
+        let style_count = base
+            .styles
+            .len()
+            .checked_add(front.styles.len())
+            .ok_or(SceneError::Limit)?;
+        if count > MAX_SCENE_MARKS || style_count > MAX_SCENE_STYLES {
+            return Err(SceneError::Limit);
+        }
+        let mut records = base.records.clone();
+        records.extend(front.records.iter().map(|r| EncodedRecord {
+            style_ref: r.style_ref + base.styles.len(),
+            ..*r
+        }));
+        let mut fill = Vec::with_capacity(style_count * 4);
+        let mut stroke = Vec::with_capacity(style_count * 4);
+        let mut widths = Vec::with_capacity(style_count);
+        for style in base.styles.iter().chain(&front.styles) {
+            fill.extend(style.fill);
+            stroke.extend(style.stroke);
+            widths.push(style.stroke_width);
+        }
+        let kinds: Vec<_> = records.iter().map(|r| r.kind as u8).collect();
+        let ids: Vec<_> = records.iter().map(|r| r.stable_id).collect();
+        let refs: Vec<_> = records.iter().map(|r| r.style_ref as u32).collect();
+        let diameters: Vec<_> = records.iter().map(|r| r.diameter).collect();
+        let symbols: Vec<_> = records.iter().map(|r| r.symbol).collect();
+        let coords: [Vec<f64>; 4] =
+            std::array::from_fn(|i| records.iter().map(|r| r.coordinates[i]).collect());
+        let mut images = base.images.clone();
+        for image in &front.images {
+            if images
+                .iter()
+                .any(|other| other.stable_id == image.stable_id)
+            {
+                return Err(SceneError::Length);
+            }
+            images.push(image.clone());
+        }
+        let caps: Vec<_> = base
+            .styles
+            .iter()
+            .chain(&front.styles)
+            .enumerate()
+            .filter(|(_, s)| s.linecap != LINECAP_ROUND)
+            .map(|(i, s)| StyleCap {
+                style_ref: i as u32,
+                cap: s.linecap,
+            })
+            .collect();
+        let sidecar = encode_xylc(&caps)?;
+        let batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
+            base.layout,
+            scene_read_u64(background, 80)?,
+            scene_read_u64(background, 88)?,
+            base.x_scale,
+            base.y_scale,
+            base.chrome,
+            base.text,
+            base.legend,
+            base.labels,
+            &kinds,
+            &ids,
+            &refs,
+            &fill,
+            &stroke,
+            &widths,
+            &diameters,
+            &symbols,
+            &coords[0],
+            &coords[1],
+            &coords[2],
+            &coords[3],
+        )?
+        .with_images(images)?
+        .with_dashes(&sidecar)?;
+        let mut out = batch.encode();
+        if scene_read_u64(&out, 16)? != count as u64
+            || scene_read_u64(&out, 24)? != style_count as u64
+        {
+            return Err(SceneError::Length);
+        }
+        // Preserve literal CSS geometry, visibility separators and topology tags.
+        // Rebuilding chrome must not reproject already-projected source records.
+        let offset = SCENE_BATCH_HEADER_BYTES + style_count * SCENE_STYLE_RECORD_BYTES;
+        for (i, record) in records.iter().enumerate() {
+            let at = offset + i * SCENE_BATCH_RECORD_BYTES;
+            out[at + 1] = u8::from(record.visible);
+            out[at + 3] = record.annotation_tag;
+            for (j, value) in record.coordinates.iter().enumerate() {
+                out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
+            }
+        }
+        validate_scene_batch(&out)?;
+        Ok(out)
+    }
     /// Frozen geographic attribution must be a legible upright label wholly
     /// inside the viewport. Bounds use the same text advance as Scene layout.
     pub(crate) fn has_visible_attribution(&self, text: &str) -> bool {

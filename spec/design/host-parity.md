@@ -1912,3 +1912,11 @@ contract. Camera transitions, projection/inverse, normalized rebuild keys,
 visible identities/bounds and polygon ring topology are Rust-owned. See
 [the exact protocol](geo-viewport-protocol.md) and the executable actual-wasm32
 parity proof `packages/xy-node/test/geo-viewport-wasm-parity.test.mjs`.
+
+## Native retained geographic presentation
+
+The immutable notebook, Reflex binary namespace and VS Code webview adapters
+are specified in [geographic-hosts.md](geographic-hosts.md), including public
+composition wiring, one-mount admission, release acknowledgment, actual host
+journey evidence and the remaining native live-update/orphan-recovery gates.
+This checkpoint is pending follow-up PR integration.

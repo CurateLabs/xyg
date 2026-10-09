@@ -741,3 +741,26 @@ returns an explicitly owned immutable frame; `frame.export(...)` returns an owne
 artifact with bound provenance. Dispose painters and drop borrowed buffers before
 closing their frame/artifact leases. Native tile sessions are explicitly configured
 and accept only Rust-issued read receipts; they never fetch a provider implicitly.
+
+
+For a canonical retained points composition with an already-authored `source`,
+`query`, and complete `style`, notebook presentation uses the same chart:
+
+```python
+chart = xyg.geo_chart(
+    xyg.geo_layer("points", source=source, layer_id=query["layer_id"],
+                  query=query, sequence=1, style=style),
+    camera=query["camera"],
+)
+widget = chart.widget()  # Also used by notebook display(chart).
+# ... later: browser teardown must acknowledge its native frame ownership.
+widget.close()
+```
+
+Reflex uses a state-owned `@reflex_xy.figure` recipe or a module-scope
+`reflex_xy.inline(chart)` token, then `reflex_xy.chart(token)`. A chart created
+only during page compilation cannot reconstruct its native reader in the
+backend worker. Node uses `chart.host()` with the VS Code subpath's
+`attachGeoWebview(panel, adapter)`. See [geographic-hosts.md](../design/geographic-hosts.md)
+for the actual host fixtures, binary framing, one-mount admission and explicit
+immutable-frame/indexed-host limits. This checkpoint is pending integration.

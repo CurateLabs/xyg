@@ -199,9 +199,13 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     handle: bigint;
     sequence: bigint;
     budget: XygGeoQueryBudget;
-    style: Uint8Array;
+} & ({
+    command: 26;
+    style?: never;
+} | {
     command?: 11 | 19;
-}): Promise<{
+    style: Uint8Array;
+})): Promise<{
     handle: bigint;
     readonly data: {
         packet: ArrayBuffer;

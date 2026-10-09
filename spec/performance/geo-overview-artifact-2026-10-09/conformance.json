@@ -1,0 +1,85 @@
+{
+  "recordedAt": "2026-10-09T08:49:13.126Z",
+  "node": "v26.6.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "abi": {
+    "native": 383,
+    "wasm": 33
+  },
+  "artifactSha256": "452c21d9f5dcb6522a2d3fabfd55e6c5270a6eacda86a07640b5f004d9037285",
+  "scriptSha256": "e8c48169c22bff9a6717e8bc6f311198d5dff8ac97912911ad545b2a797a6e67",
+  "cases": [
+    {
+      "case": 0,
+      "expectedVertices": "3",
+      "countsSha256": "df67bc34a7f2b1a401a974e6a7f12293bc631db2e39af07c693c8eaf7dad0d58",
+      "sceneSha256": "8f1383781b586bbb500d0e619580e121fb9411b9bd7de8c875bb2fc4ce282c27",
+      "bytes": 7885
+    },
+    {
+      "case": 1,
+      "expectedVertices": "1",
+      "countsSha256": "bedd10a6653e75a1f20068b2e4d143abc4671b8fdb9ddbd33f3dfa422ab66aae",
+      "sceneSha256": "c4e295d475a50a0c8b3a7326b3c3391730a620ddc12594975ef2f43b53730178",
+      "bytes": 7213
+    },
+    {
+      "case": 2,
+      "expectedVertices": "1",
+      "countsSha256": "2a7734a971b9665aa95882b9111349dbaa5d58f0ed6c9b03e5f7452f4a33e9e8",
+      "sceneSha256": "8749df740b611ded6dfa99b985e83873134d88b6503e2b202d8d1cc2acaf7d6f",
+      "bytes": 7213
+    },
+    {
+      "case": 3,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "34075666c05a8618553fc2545eebe1f66d3542f2b1d7b0026d037d9bab08cd5c",
+      "bytes": 7213
+    },
+    {
+      "case": 4,
+      "expectedVertices": "1",
+      "countsSha256": "2a7734a971b9665aa95882b9111349dbaa5d58f0ed6c9b03e5f7452f4a33e9e8",
+      "sceneSha256": "8749df740b611ded6dfa99b985e83873134d88b6503e2b202d8d1cc2acaf7d6f",
+      "bytes": 7213
+    },
+    {
+      "case": 5,
+      "expectedVertices": "1",
+      "countsSha256": "bedd10a6653e75a1f20068b2e4d143abc4671b8fdb9ddbd33f3dfa422ab66aae",
+      "sceneSha256": "c4e295d475a50a0c8b3a7326b3c3391730a620ddc12594975ef2f43b53730178",
+      "bytes": 7213
+    },
+    {
+      "case": 6,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "74702bbaa38df61b28341e58e6741a1ab115ac3d74024723bb5a29a3f68c0e4b",
+      "bytes": 7213
+    },
+    {
+      "case": 7,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "34075666c05a8618553fc2545eebe1f66d3542f2b1d7b0026d037d9bab08cd5c",
+      "bytes": 7213
+    }
+  ],
+  "claims": [
+    "byte-identical native/WASM counts and Scene",
+    "typed nonfinal data-domain tier",
+    "full source/layer u64",
+    "nullable i64 MIN/MAX and half-open window",
+    "exact owning read/write ACKs",
+    "old Data after source/index/query disposal",
+    "eight-Data admission",
+    "two-copy quota",
+    "source-pick rejection"
+  ],
+  "limitations": [
+    "not overview browser paint",
+    "not massive data latency"
+  ]
+}

@@ -138,6 +138,15 @@ def test_wrapper_speaks_the_namespace_protocol():
     on_payload = jsx.split("const onPayload = (data) => {", 1)[1].split(
         "const onMsg = (data) => {", 1
     )[0]
+    # Native immutable geographic presentation has its own owner-preserving
+    # reconnect branch; ordinary generation-order checks below apply to the
+    # existing mutable ChartView path.
+    native, on_payload = on_payload.split("const rowsSelectionMounted =", 1)
+    assert "data.spec?.geo_host === true" in native
+    assert "view instanceof XygGeoHostView" in native
+    assert "new XygGeoHostView(el, comm)" in native
+    assert "view?.updatePayload?." not in native
+    on_payload = "const rowsSelectionMounted =" + on_payload
     # Rebuild recovery may deliver both a room payload and a same-generation
     # addressed reply. Generic duplicates are ignored; addressed px-specific
     # replies remain eligible unless a rows selection is mounted, because that

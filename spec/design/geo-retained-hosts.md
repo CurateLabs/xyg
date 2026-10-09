@@ -169,3 +169,11 @@ remains legal after source publication/disposal. Omitting frame raises an action
 compile-then-export error rather than repeating the same sequence. Ordinary static
 geographic charts retain their existing bytes return type. Export never performs
 source reads or chooses a newer invisible frame.
+
+## Native retained geographic presentation
+
+The immutable notebook, Reflex binary namespace and VS Code webview adapters
+are specified in [geographic-hosts.md](geographic-hosts.md), including public
+composition wiring, one-mount admission, release acknowledgment, actual host
+journey evidence and the remaining native live-update/orphan-recovery gates.
+This checkpoint is pending follow-up PR integration.

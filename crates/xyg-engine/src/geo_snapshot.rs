@@ -2249,6 +2249,7 @@ mod tests {
             visible_vertices: 393216,
             projected_vertices: 786432,
             grid_capped: true,
+            selection: None,
         };
         let paint = crate::geo_layers::GeoStyle::default();
         let scene = crate::geo_lod_scene::compile(&result, paint, MAX_FROZEN_PEAK).unwrap();

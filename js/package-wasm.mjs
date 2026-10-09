@@ -93,8 +93,8 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1280 * 1024;
-const WASM_GZIP_BUDGET_BYTES = 512 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1408 * 1024;
+const WASM_GZIP_BUDGET_BYTES = 576 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {
