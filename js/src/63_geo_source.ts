@@ -23,10 +23,10 @@ function response(buffer:ArrayBuffer){if(!(buffer instanceof ArrayBuffer)||buffe
 function count(v:DataView,at:number,max=MAX_PACKET){const n=v.getBigUint64(at,true);if(n>BigInt(max))throw new RangeError('reply count exceeds framing');return Number(n);}
 
 export function encodeGeoScaleRequest(input:XygGeoScaleRequest):ArrayBuffer {
- const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,23,24,25].includes(command))throw new TypeError('unknown geographic command');
+ const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,23,24,25,26].includes(command))throw new TypeError('unknown geographic command');
  const payload=input.payload===undefined?new Uint8Array():bytes(input.payload),length=256+payload.byteLength;
  if(length>MAX_PACKET||input.budget&&length>budgetBytes(input.budget.processorBytes))throw new RangeError('request exceeds framing budget');
- if(input.query!==undefined&&![5,18].includes(command)||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16,17,18,19,24,25].includes(command))throw new TypeError('field does not belong to command');
+ if(input.query!==undefined&&![5,18].includes(command)||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16,17,18,19,24,25,26].includes(command))throw new TypeError('field does not belong to command');
  const out=new ArrayBuffer(length),b=new Uint8Array(out),v=new DataView(out);b.set([88,89,71,81]);v.setUint32(4,1,true);v.setUint32(8,command,true);v.setBigUint64(16,u64(input.handle??0n),true);v.setBigUint64(24,u64(input.sequence??0n),true);
  if(input.budget){const q=input.budget;v.setBigUint64(32,BigInt(budgetBytes(q.processorBytes)),true);v.setBigUint64(40,u64(q.maxRowsExamined),true);v.setBigUint64(48,u64(q.maxReadBytes),true);v.setUint32(56,u32(q.maxChunks),true);v.setUint32(60,u32(q.pageRows),true);}
  if(command===3)v.setBigUint64(144,u64(input.generation??0n),true);
@@ -100,8 +100,9 @@ export async function driveGeoSession(bridge:XygGeoScaleBridge,input:{handle:big
   }}finally{signal?.removeEventListener('abort',onAbort);if(cancelPromise)await cancelPromise;}
 }
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
-export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;style:Uint8Array;command?:11|19}){
- if(!(input.style instanceof Uint8Array)||input.style.length!==48)throw new TypeError('style must be exact 48-byte Rust framing');const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:input.command??11,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.style}))),handle=reply.handle;
+export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget}&({command:26;style?:never}|{command?:11|19;style:Uint8Array})){
+ if(input.command===26&&input.style!==undefined)throw new TypeError('retained frame style is Rust-owned');
+ if(input.command!==26&&(!(input.style instanceof Uint8Array)||input.style.length!==48))throw new TypeError('style must be exact 48-byte Rust framing');const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:input.command??11,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.command===26?undefined:input.style}))),handle=reply.handle;
  let data:ReturnType<typeof parseGeoSceneData>|undefined,packet:ArrayBuffer|undefined;
  try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
  catch(error){data=undefined;packet=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}

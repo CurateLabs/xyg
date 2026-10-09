@@ -97,7 +97,7 @@ enum Entry {
         bytes: Vec<u8>,
         _lease: GeoDerivedLease,
         reads: AtomicU8,
-        semantic: Option<Box<GeoSceneSemantic>>,
+        semantic: Option<Arc<GeoSceneSemantic>>,
         rows: Option<Box<GeoRowsAuthority>>,
         overview: Option<Box<overview::Semantic>>,
     },
@@ -141,7 +141,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=25 | 27..=31) {
+    if !matches!(command, 1..=21 | 23..=31) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -154,8 +154,25 @@ fn frame(b: &[u8]) -> Result<u32> {
         || (!matches!(command, 3 | 5 | 18 | 28) && !zero(144, 152))
         || (!matches!(
             command,
-            5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 23 | 24 | 25 | 27
-                ..=31
+            5 | 6
+                | 7
+                | 8
+                | 9
+                | 10
+                | 11
+                | 12
+                | 13
+                | 14
+                | 15
+                | 16
+                | 17
+                | 18
+                | 19
+                | 23
+                | 24
+                | 25
+                | 26
+                | 27..=31
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -275,7 +292,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
     if matches!(
         command,
-        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 27 | 28 | 29
+        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29
     ) && r.entries.len() >= MAX_HANDLES
     {
         return Err(SourceError::ResourceLimit);
@@ -535,14 +552,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             return Err(SourceError::InvalidFrame);
         }
         let operation_budget = budget(request)?;
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -675,14 +685,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             max_hits: u32at(payload, 76) as usize,
         };
         crate::geo_lod_hit::reservation_bytes(query)?;
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -774,14 +777,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
-        if r.entries
-            .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
-            return Err(SourceError::ResourceLimit);
-        }
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -829,15 +825,67 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         put64(&mut out, 40, handle);
         return Ok(out);
     }
-    if matches!(command, 11 | 19) {
-        if r.entries
+    // Duplicate only trusted immutable SceneData. Its canonical semantic
+    // authority and existing CPU lease are shared; each packet/copy allowance
+    // is separately admitted under the derived ledger (§27/§29).
+    if command == 26 {
+        if !payload.is_empty() {
+            return Err(SourceError::InvalidFrame);
+        }
+        admit_data_slot(&r)?;
+        let entry = &r
+            .entries
             .iter()
-            .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-            .count()
-            >= MAX_DATA_HANDLES
-        {
+            .find(|(id, _)| *id == handle)
+            .ok_or(SourceError::StaleSource)?
+            .1;
+        let Entry::Data {
+            bytes,
+            semantic: Some(authority),
+            ..
+        } = entry
+        else {
+            return Err(SourceError::InvalidFrame);
+        };
+        if sequence != authority.sequence {
+            return Err(SourceError::StaleSource);
+        }
+        let len = bytes.len();
+        let reserve = len
+            .checked_mul(4)
+            .and_then(|n| n.checked_add(std::mem::size_of::<Entry>() + 256))
+            .ok_or(SourceError::ResourceLimit)?;
+        if reserve > budget(request)?.processor_bytes {
             return Err(SourceError::ResourceLimit);
         }
+        let authority = Arc::clone(authority);
+        let lease = reserve_data(&mut r, reserve)?;
+        let Entry::Data { bytes, .. } = &r.entries.iter().find(|(id, _)| *id == handle).unwrap().1
+        else {
+            unreachable!()
+        };
+        let mut bytes = bytes.clone();
+        // New packet addresses the prior immutable Data owner, never a
+        // disposed query session. Every numeric/Scene/provenance byte survives.
+        put64(&mut bytes, 16, handle);
+        let id = insert(
+            &mut r,
+            Entry::Data {
+                bytes,
+                _lease: lease,
+                reads: AtomicU8::new(0),
+                semantic: Some(authority),
+                rows: None,
+                overview: None,
+            },
+        )?;
+        let mut out = reply(id, sequence);
+        put64(&mut out, 32, len as u64);
+        put64(&mut out, 40, handle);
+        return Ok(out);
+    }
+    if matches!(command, 11 | 19) {
+        admit_data_slot(&r)?;
         let entry = &r
             .entries
             .iter()
@@ -873,7 +921,11 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         let semantic_bytes = source
             .clone_reserved_bytes()
             .checked_add(GeoPointLod::output_bytes(result))
-            .and_then(|n| n.checked_add(std::mem::size_of::<GeoSceneSemantic>()))
+            .and_then(|n| {
+                n.checked_add(
+                    std::mem::size_of::<GeoSceneSemantic>() + 2 * std::mem::size_of::<usize>(),
+                )
+            })
             .ok_or(SourceError::ResourceLimit)?;
         if semantic_bytes
             .checked_add(reserve)
@@ -883,7 +935,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         }
         let semantic_lease = GeoProcessorLease::acquire(semantic_bytes)?;
 
-        let semantic = Box::new(GeoSceneSemantic {
+        let semantic = Arc::new(GeoSceneSemantic {
             source: source.clone_validated(),
             result: GeoPointResult {
                 key: result.key,
@@ -1197,6 +1249,21 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         _ => return Err(SourceError::InvalidFrame),
     }
     Ok(out)
+}
+
+// Publication-only check shared by every immutable Data producer. Keep one
+// body in the constrained WASM artifact; this is outside row/vertex hot loops.
+#[inline(never)]
+fn admit_data_slot(r: &Registry) -> Result<()> {
+    if r.entries
+        .iter()
+        .filter(|(_, e)| matches!(e, Entry::Data { .. }))
+        .count()
+        >= MAX_DATA_HANDLES
+    {
+        return Err(SourceError::ResourceLimit);
+    }
+    Ok(())
 }
 
 /// Pure bounded authoring/read operation. Native two-call length discovery is safe.

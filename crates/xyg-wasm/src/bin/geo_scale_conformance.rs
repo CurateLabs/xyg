@@ -1,8 +1,8 @@
 //! Persistent bounded native oracle for the actual retained-source processor.
 //! One hexadecimal XYGQ request per line; replies are hex or ERROR:<stable-code>.
 use std::io::{self, BufRead, Read, Write};
-use xyg_engine::geo_scale_protocol::{execute, read_data, HEADER, MAX_DATA};
-use xyg_engine::geo_source::{SourceError, MAX_PROCESSOR_BYTES};
+use xyg_engine::geo_scale_protocol::{HEADER, MAX_DATA, execute, read_data};
+use xyg_engine::geo_source::{MAX_PROCESSOR_BYTES, SourceError};
 fn nibble(v: u8) -> Option<u8> {
     match v {
         b'0'..=b'9' => Some(v - b'0'),
@@ -30,7 +30,7 @@ fn run(line: &[u8], budget: usize) -> Result<Vec<u8>, SourceError> {
         return Err(SourceError::ResourceLimit);
     }
     let command = u32::from_le_bytes(request[8..12].try_into().unwrap());
-    if command < 20 || command == 24 {
+    if command < 20 || matches!(command, 24 | 26..=29 | 31) {
         execute(&request).map(|reply| reply.to_vec())
     } else {
         read_data(&request, budget)
