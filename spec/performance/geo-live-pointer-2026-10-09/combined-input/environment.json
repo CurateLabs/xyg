@@ -1,0 +1,35 @@
+{
+  "sourceHead": "ebb259e30766129bcb0963e830f0313f05897d10",
+  "mainBase": "eef2377e77ccc1c53d5edb6732cf63f324550e4d",
+  "parents": {
+    "pointer": "81cf46245",
+    "overviewGuard": "edda7b6d748697e51a14de728d540f84f715007c",
+    "selectedTyped": "ee14b45506c23d9da1638a05e09592ee8ed06282"
+  },
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "nativeSha256": "00676474e0f7c4e8858b394ae9e9a965c930c1c556bc58f816de9dd23376c6ad",
+  "wasmSha256": "65fb8bc629b283ab4e021d778f0db1b514ad34e24a73ad723918ffc5cf74cb22",
+  "wasmRawBytes": 1458205,
+  "wasmGzipLevel6Bytes": 599360,
+  "clientSha256": "3b48e75d52a404fd9a0a328b40dc8e2f878516a59074810ea4e048a06b884a7a",
+  "nativeAbi": 383,
+  "wasmAbi": 33,
+  "artifactSourceProof": "crates, Cargo.toml, Cargo.lock and .cargo byte-identical to reviewed overviewGuard edda; fresh paired guard artifacts; client rebuilt from this tree",
+  "verification": {
+    "node": 58,
+    "python": 43,
+    "selectedParity": 60,
+    "ordinaryParity": 34,
+    "snapshotFormats": 6,
+    "pointer": "actual Chrome155",
+    "fiveViews": "actual Chrome155",
+    "independentMergeReview": "GREEN; all parent npm/paired-CI tests retained; reviewed implementations byte-identical to parents"
+  },
+  "limitations": [
+    "Explicit selected hierarchy live route has a separately reproduced State-allocation lost-reply gap and is not included",
+    "No massive end-to-end or competitor speedup claim",
+    "Overview remains nonfinal data-domain counts; no overview painter/export/membership closure"
+  ]
+}
