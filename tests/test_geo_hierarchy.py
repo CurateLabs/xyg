@@ -263,7 +263,7 @@ def test_reduced_exact_membership_nulls_empty_geometry_and_duplicate_ids(multi):
         source.close()
 
 
-def test_authentic_selected_frame_rejects_before_index_admission():
+def test_authentic_selected_frame_rejects_before_index_admission(monkeypatch):
     import struct
 
     from xyg import _geoscale as g
@@ -302,6 +302,13 @@ def test_authentic_selected_frame_rejects_before_index_admission():
         selected = source._prepare(11, source.handle, 2, style())
         _attach_frame(source, selected, 2, extension(35, source.handle, 2, b"", q), style())
         assert selected.data.selection is not None
+        original_execute = g.execute
+
+        def no_hierarchy_admission(request):
+            assert struct.unpack_from("<I", request, 8)[0] != 37
+            return original_execute(request)
+
+        monkeypatch.setattr(g, "execute", no_hierarchy_admission)
         with pytest.raises(GeoHierarchyUnsupportedSelected):
             GeoHierarchy.from_frame(selected, source, **storage({}))
         assert old.data.record(0)["feature_id"] == U64

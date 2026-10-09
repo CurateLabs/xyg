@@ -50,7 +50,10 @@ rules. Cleanup coalesces pending calls and permits retry after a rejected
 pre-Rust cleanup; disposed views remain unavailable during retry. Failure/fallback leaves prior independently leased frames usable and does
 not silently run the canonical path. `GeoHierarchyFallback` reports Rust's
 frontier/work reason. Selected source authority reports
-`GeoHierarchyUnsupportedSelected`; it is never silently unselected.
+`GeoHierarchyUnsupportedSelected`; the adapter checks the authentic parsed
+selection footer before command37 and performs no build dispatch. This preserves
+the import-only unselected API when newer Rust can build scoped hierarchies;
+selected query43/Data44 routing requires a separate typed host integration.
 
 A successful query returns ordinary independently leased SceneData with existing
 Rows, picking, paged membership, retain and frozen export. The original validated
@@ -77,3 +80,7 @@ foundation job also runs raw hierarchy conformance against those artifacts. The
 Node package test command includes the host suite and requires the same paired
 source-checkout artifacts, as do the existing native/WASM package tests. No
 pre-package native-only stage invokes the dual-artifact hierarchy suite.
+
+The hierarchy test artifact defaults to a module-relative packaged WASM URL,
+so repository-root CI and Node-package test execution share the same artifact.
+An explicit XYG_HIERARCHY_WASM override remains supported.

@@ -313,6 +313,8 @@ class GeoHierarchy(RetainedGeoSource):
         authority = retained_frame_authority(frame)
         if authority is None or authority[0] is not source or authority[1] is not source._bridge:
             raise ValueError("frame belongs to another source or transport")
+        if frame.data.selection is not None:
+            raise GeoHierarchyUnsupportedSelected()
         if not callable(read_page) or not callable(write_page):
             raise TypeError("explicit immutable page storage required")
         self = cls.__new__(cls)

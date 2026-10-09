@@ -54,3 +54,10 @@ fixture store and canonical input are explicitly caller-owned small test data,
 not bounded massive storage evidence. No browser framebuffer, GPU latency,
 selected hierarchy, massive host latency,1B runtime or competitor-win claim is
 made. Those remain separate #50 gates.
+
+The default WASM test path resolves relative to the test module, independent of
+the process directory. `node-root-cwd.txt` and `node-package-cwd.txt` each record
+21 passing tests with XYG_HIERARCHY_WASM unset; the copied ignored artifact has
+the same pinned WASM hash. Run `node --test packages/xy-node/test/geo-hierarchy.test.mjs`
+at the repository root or `node --test test/geo-hierarchy.test.mjs` in the Node
+package, with XYG_NATIVE_LIB pointing to the pinned core.
