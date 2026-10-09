@@ -67,6 +67,7 @@ pub mod geo_scale_protocol;
 mod geo_scale_protocol_tests;
 pub mod geo_lod;
 pub mod geo_lod_scene;
+pub mod geo_mixed_frame;
 pub mod geo_lod_hit;
 pub mod geo_tile_cache;
 pub mod geo_tile_scene;
