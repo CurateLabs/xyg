@@ -782,3 +782,11 @@ message protocol is transport-agnostic either way.
   hover event loop, and append streaming against the running demo app
   (stdlib CDP driver, no new deps). Runs locally today; needs a CI story
   (bun + vite in the runner).
+
+## Native retained geographic presentation
+
+The immutable notebook, Reflex binary namespace and VS Code webview adapters
+are specified in [geographic-hosts.md](geographic-hosts.md), including public
+composition wiring, one-mount admission, release acknowledgment, actual host
+journey evidence and the remaining native live-update/orphan-recovery gates.
+This checkpoint is pending follow-up PR integration.

@@ -501,6 +501,17 @@ RetainedGeoSource.prototype._rows = function (owner, sequence) {
 };
 
 export function attachRetainedFrame(source, frame, sequence, queryPacket, style) {
+  frame.retain = async () => {
+    void frame.data;
+    const querySnapshot=queryPacket.slice(0),styleSnapshot=style.slice();
+    const owned = await prepareGeoSceneData(source.bridge, {
+      command:26, handle:frame.handle, sequence, budget:source.budget,
+    });
+    attachRetainedFrame(source, owned, sequence, querySnapshot, styleSnapshot);
+    if(frame.indexStats)owned.indexStats={...frame.indexStats};
+    return owned;
+  };
+
         const rowsOwner = frame.handle;
         frame.rows = (...args) => {
           if (args.length) throw new TypeError("rows accepts no cursor or options");

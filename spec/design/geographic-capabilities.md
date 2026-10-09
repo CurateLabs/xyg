@@ -56,6 +56,7 @@ under strict CSP and reject every unexpected request.
 | --- | --- | --- |
 | Authenticated retained point/MultiPoint | XYGK/XYGI, signed-i64 half-open filters, source/session leases | Actual 1k/100k/1M/10M/100M ingest/query; 1B planner-only |
 | Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
+| Native immutable host presentation | Canonical retained points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex WS reconnect and real VS Code reload/dispose; native live updates/indexed remount pending |
 | Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
 | Explicit immutable point sidecar index | Rust XYIX/XYIP cross-chunk leaves, bounded canonical-order merge, authenticated import, explicit full-scan fallback | Exact canonical Scene parity through 1M; native/WASM frame+rows+frozen parity; browser corrupt-leaf recovery; 100M narrow grid16 0.79–1.23s, grid32 192–316ms under uncontrolled load; world latency/pyramid remains open |
 | Original source-row companion | Rust-issued continuation, all original rows, explicit temporal/null eligibility | Native/WASM byte parity; Python/Node paging after frame disposal; strict-CSP browser offscreen keyboard focus and failed-read recovery |
@@ -70,3 +71,7 @@ include environment, exact source patch and reproduction commands. These tests d
 not establish Reflex/VS Code live retained-source parity, linked selection or complete host accessibility journeys, GPU timing, spatial-pyramid performance, or a competitor speed win.
 
 [Spatial index raw evidence and limits](../performance/geo-index-2026-10-09/README.md) covers separate cold build and warm native queries; no competitor speed win or temporal index performance is inferred.
+
+Separate [native host journey evidence](geographic-hosts.md) proves immutable
+retained-points presentation and ownership in notebooks, Reflex and VS Code.
+It does not establish native live camera/query parity or indexed host remounts.
