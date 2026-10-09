@@ -692,3 +692,6 @@ fn overview_protocol_sessions_and_data_use_existing_shared_caps_and_recover_afte
     close(query, 10);
     close(index, 1);
 }
+
+#[path = "geo_allocation_recovery_tests.rs"]
+mod allocation_recovery_tests;

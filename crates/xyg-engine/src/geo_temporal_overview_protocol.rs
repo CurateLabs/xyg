@@ -316,21 +316,25 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         }
     };
     let length = bytes.len();
-    let id = insert(
-        r,
-        Entry::Data {
-            bytes,
-            _lease: lease,
-            reads: AtomicU8::new(0),
-            semantic: None,
-            rows: None,
-            overview: Some(Box::new(Semantic {
-                result,
-                camera,
-                sequence,
-            })),
-        },
-    )?;
+    let data = Entry::Data {
+        bytes,
+        _lease: lease,
+        reads: AtomicU8::new(0),
+        semantic: None,
+        rows: None,
+        overview: Some(Box::new(Semantic {
+            result,
+            camera,
+            sequence,
+        })),
+    };
+    let id = if u64at(request, 240) != 0 {
+        let index = r.entries.iter().position(|(id, _)| *id == handle).unwrap();
+        r.entries[index].1 = data;
+        handle
+    } else {
+        insert(r, data)?
+    };
     let mut out = reply(id, sequence);
     put32(&mut out, 8, 16);
     put64(&mut out, 32, length as u64);

@@ -1,0 +1,90 @@
+{
+  "recordedAt": "2026-10-09T17:52:39.711Z",
+  "node": "v26.6.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "abi": {
+    "native": 383,
+    "wasm": 33
+  },
+  "artifactSha256": "66e49864b39d1e8fda9d0144a4a229b13bcbdfbc452b697c20f6ce60c6ab0820",
+  "scriptSha256": "1c1f2437eda203aa0d1d5f1dd585b61ba61cc2b7456bac4a90cdfad31dd6a90f",
+  "cases": [
+    {
+      "case": 0,
+      "expectedVertices": "3",
+      "countsSha256": "df67bc34a7f2b1a401a974e6a7f12293bc631db2e39af07c693c8eaf7dad0d58",
+      "sceneSha256": "d7f0f19c43a8452cc4b4d5bf2a4d712ae1eaa81f20e4dc07b55bf828664f3d8a",
+      "bytes": 7941
+    },
+    {
+      "case": 1,
+      "expectedVertices": "1",
+      "countsSha256": "bedd10a6653e75a1f20068b2e4d143abc4671b8fdb9ddbd33f3dfa422ab66aae",
+      "sceneSha256": "957550b5018d1e4f794428aca1e3a75150382638845c44efa97010d11da4a092",
+      "bytes": 7269
+    },
+    {
+      "case": 2,
+      "expectedVertices": "1",
+      "countsSha256": "2a7734a971b9665aa95882b9111349dbaa5d58f0ed6c9b03e5f7452f4a33e9e8",
+      "sceneSha256": "83741a5e1ef5891c1efc8cf4ece5815aefb4135a75c9c522c17808c1d48071b3",
+      "bytes": 7269
+    },
+    {
+      "case": 3,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "3194b477d859e65531e418297b1b3d75b67e5a0a5eacf46f49bac67d8859946d",
+      "bytes": 7269
+    },
+    {
+      "case": 4,
+      "expectedVertices": "1",
+      "countsSha256": "2a7734a971b9665aa95882b9111349dbaa5d58f0ed6c9b03e5f7452f4a33e9e8",
+      "sceneSha256": "83741a5e1ef5891c1efc8cf4ece5815aefb4135a75c9c522c17808c1d48071b3",
+      "bytes": 7269
+    },
+    {
+      "case": 5,
+      "expectedVertices": "1",
+      "countsSha256": "bedd10a6653e75a1f20068b2e4d143abc4671b8fdb9ddbd33f3dfa422ab66aae",
+      "sceneSha256": "957550b5018d1e4f794428aca1e3a75150382638845c44efa97010d11da4a092",
+      "bytes": 7269
+    },
+    {
+      "case": 6,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "1ee9cb5b339b714b90d900ff10ce2ffa1e7ca45db7aa8f15f5974fc4ea3e25bf",
+      "bytes": 7269
+    },
+    {
+      "case": 7,
+      "expectedVertices": "1",
+      "countsSha256": "bc06895fad81448907d751122fcae2ea317fff8f0396a34909dd9adcefd72418",
+      "sceneSha256": "3194b477d859e65531e418297b1b3d75b67e5a0a5eacf46f49bac67d8859946d",
+      "bytes": 7269
+    }
+  ],
+  "claims": [
+    "byte-identical native/WASM counts and Scene",
+    "typed nonfinal data-domain tier",
+    "full source/layer u64",
+    "nullable i64 MIN/MAX and half-open window",
+    "exact owning read/write ACKs",
+    "old Data after source/index/query disposal",
+    "eight-Data admission",
+    "two-copy quota",
+    "source-pick rejection",
+    "typed owning Data disposal and explicit retry after transient bridge rejection",
+    "callback ticket mutation cannot alter private ACK",
+    "cancelled read awaits callback before exact ACK",
+    "abort during real terminal reply rejects completion",
+    "nine malformed typed packet controls"
+  ],
+  "limitations": [
+    "not overview browser paint",
+    "not massive data latency"
+  ]
+}

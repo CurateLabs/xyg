@@ -1,0 +1,13 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 7 tests
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_private_continuation_rejects_foreign_cell_and_sequence ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_same_handle_publication_works_at_total_handle_cap ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_share_eight_data_cap_and_failed_conversion_recovers ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_failed_publish_preserves_query_and_exact_pending_ack ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_multipoint_timefirst_counts_vertices_once_per_original_row ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_protocol_pages_full_ids_and_outlives_all_original_owners ... ok
+test geo_scale_protocol::overview_membership_protocol_tests::domain_members_sessions_cap_and_corrupt_read_never_publish ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1458 filtered out; finished in 0.03s

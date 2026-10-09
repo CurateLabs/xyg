@@ -1,0 +1,8 @@
+{
+  "baseline": {
+    "native": "be47dff3ae3b40fc24387b8b8a2d245c492b94c772a325e872696a0571e507da",
+    "wasm": "66e49864b39d1e8fda9d0144a4a229b13bcbdfbc452b697c20f6ce60c6ab0820"
+  },
+  "legacy_membership": "all five profile records,12 complete normalized packets and raw native/WASM hashes exactly equal",
+  "legacy_overview": "all eight count/Scene hashes and byte lengths exactly equal"
+}

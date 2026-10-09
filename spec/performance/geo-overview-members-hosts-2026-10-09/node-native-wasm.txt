@@ -1,0 +1,35 @@
+✔ native: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts (21.160834ms)
+✔ native: signed-time predicate remains bound through domain pages (3.781167ms)
+✔ native: lost46 probes the known owner once and never repeats conversion (0.661791ms)
+✔ native: lost45 poison blocks reallocation while old frame stays valid (0.661708ms)
+✔ native: callback mutation/backing capacity rejects before supply, exactACK then recovery (0.749083ms)
+✔ native: read cancellation waits callback settlement before ACK and preserves old paint (0.779125ms)
+✔ native: rejected ACK and Data cleanup retain exact retry ownership (0.770583ms)
+✔ native: resolved rejected or malformed terminal disposal never closes a live owner (0.643791ms)
+✔ native: lost successful ACK cancels without inventing pending-loan release (0.655375ms)
+✔ native: eight Data pressure leaves completed Query for exact46 retry (0.912916ms)
+✔ native: public packet mutation and forged owners cannot mint continuation (1.099458ms)
+✔ native: known46 preparation coalesces; dispose waits converted Data read settlement (0.73525ms)
+✔ native: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact (0.432458ms)
+✔ wasm: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts (15.828667ms)
+✔ wasm: signed-time predicate remains bound through domain pages (6.224625ms)
+✔ wasm: lost46 probes the known owner once and never repeats conversion (3.988291ms)
+✔ wasm: lost45 poison blocks reallocation while old frame stays valid (16.114667ms)
+✔ wasm: callback mutation/backing capacity rejects before supply, exactACK then recovery (4.964625ms)
+✔ wasm: read cancellation waits callback settlement before ACK and preserves old paint (4.251375ms)
+✔ wasm: rejected ACK and Data cleanup retain exact retry ownership (5.263166ms)
+✔ wasm: resolved rejected or malformed terminal disposal never closes a live owner (4.342958ms)
+✔ wasm: lost successful ACK cancels without inventing pending-loan release (3.805208ms)
+✔ wasm: eight Data pressure leaves completed Query for exact46 retry (5.4755ms)
+✔ wasm: public packet mutation and forged owners cannot mint continuation (4.652542ms)
+✔ wasm: known46 preparation coalesces; dispose waits converted Data read settlement (4.333042ms)
+✔ wasm: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact (4.518875ms)
+✔ complete normalized native/WASM multi-page XYOM bytes match (0.202ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.915542

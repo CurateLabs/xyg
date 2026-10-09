@@ -1,0 +1,74 @@
+{
+  "recordedAt": "2026-10-09T18:06:58.799Z",
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "artifact": {
+    "sha256": "227b582d0923f88349c5f188aada376828685d7cae10e36087443404dc81b388",
+    "rawBytes": 1496127,
+    "gzipLevel6Bytes": 613427
+  },
+  "proof": {
+    "ok": true,
+    "publicComposition": true,
+    "privateIssuer": true,
+    "collidingWorkers": true,
+    "capturedDispatch": true,
+    "originCheckedAfterQueuedAwait": true,
+    "changedOriginInputAttached": true,
+    "ordinaryPixel": [
+      55,
+      155,
+      255,
+      255
+    ],
+    "borrowedPixel": [
+      55,
+      155,
+      255,
+      255
+    ],
+    "boundedRows": 32,
+    "noUnpublishedZeroCounts": true,
+    "exactCounts": true,
+    "fullU64Ids": true,
+    "fullI64Intervals": true,
+    "timeUpdate": true,
+    "focusPreserved": true,
+    "oversizedDigestNoCopy": true,
+    "extraCameraIgnored": true,
+    "oldPaintTable": true,
+    "callbackCancelAck": true,
+    "serialAccepted": 16,
+    "overflowRejected": true,
+    "borrowedCallbacksCaptured": true,
+    "sourceIndexDisposal": true,
+    "pendingCloseLoan": true,
+    "sharedIndexBusyExplicit": true,
+    "borrowedCandidateOldPaint": true,
+    "privateSnapshotIgnoresDecoration": true,
+    "callerCurrentDisposalIndependent": true,
+    "disposalRetry": true,
+    "uncertainAllocationOldPaint": true,
+    "unknownAllocationRecovery": "pending-protocol-gate",
+    "featurePickingUnavailable": true,
+    "observerIsolated": true
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_overview_controller_page.mjs",
+      "/packages/xy-client/dist/index.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "external": [],
+    "errors": [],
+    "cspViolations": []
+  },
+  "scope": "Small public browser temporal-domain composition; exact temporal counts, flags3 nonfinal, shared ordinary/borrowed Rust painter and bounded accessibility. No domain membership, selected overview, final spatial refinement or massive performance claim."
+}

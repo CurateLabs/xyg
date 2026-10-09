@@ -1,0 +1,25 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewrecovery/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.75s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 6 tests
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_lost_original_retired_zero_confirmation_releases_no_guessed_owner ... ok
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_bank_saturation_no_mutation_and_forget_drop_recovery ... ok
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_unconfirmed_blocks_higher_nonce_and_invalid_ack_preserves_receipt ... ok
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_five_indices_and_full_sixteen_handle_same_query_data_publication ... ok
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_domain_allocation_private_resume_retired_consumption_and_issuer_disposal ... ok
+test geo_temporal_overview_protocol_tests::allocation_recovery_tests::recovery_five_live_retains_confirm_exact_ack_replay_and_parent_disposal ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1459 filtered out; finished in 0.03s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-1e5afb9617cfc1a9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-cee34e46c45b23c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
