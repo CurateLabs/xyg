@@ -241,6 +241,7 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
           node tests/browser/geo_live_host_test.mjs
+          node tests/browser/geo_live_pointer_test.mjs
 
       - name: Static PNG export smoke (stdlib + Chromium)
         run: XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py

@@ -1,0 +1,9 @@
+{
+  "js/src/65_geo_host.ts": "c9b7c7d3860999446b546e476906950469e910e9dc1087abe1ff25bb12350a5d",
+  "tests/browser/geo_live_pointer_test.mjs": "ac4042dadabe5fdad897bb48cf8c947c1e8f5a80ecf63585846bf844ae2fb2da",
+  "tests/browser/geo_live_host_test.mjs": "ecdd44f60d1c0b2488b8a89b80d83b4582b9754ee10011c04f29c60acb45b208",
+  ".github/workflows/ci.yml": "26624d1922e4a62d9105ab6970c188508ee9af1eddbdd489abfa79739e4ef388",
+  "spec/design/geo-live-host.md": "765ea80bbfd3917025f6d3f9b464956b052c4d5f9167ec2df162adda72a0a3e4",
+  "spec/design/geographic-hosts.md": "bec9e1dd8fedec50ef4eed32b19f1a9fb6bf591e91b50167f3b080a90f081664",
+  "spec/design/geographic-capabilities.md": "bdfb38df51357875553c2c5d5ac4c073343e9e649d2c601cbcd1cad71293eeeb"
+}
