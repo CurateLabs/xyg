@@ -23,8 +23,8 @@ Every original row, including null geometry and time-excluded rows, produces one
 full-u64 feature ID), geometry-null, time-eligible and eligible booleans, interval
 presence and optional signed endpoints, and optional scalar f64. `eligible` means
 non-null geometry AND the shared half-open temporal predicate. It does not assert
-visibility, hidden-state eligibility or selection. State revision binds the page
-identity without inventing a per-row state plane. Missing interval attachment is
+visibility or hidden-state eligibility. Explicit selected intent is described
+below; state revision binds page identity without a source-sized state plane. Missing interval attachment is
 distinguished from attached unbounded endpoints; scalar bits including signed
 zero/NaN/infinity are preserved CPU metadata, never GPU vertices.
 
@@ -139,3 +139,20 @@ rejects malformed rows framing, and recovers from failed reads. Five shared
 painted views retain one WebGL2 context. Shared quota refusal remains explicit;
 this evidence does not claim every possible collection of active pages is
 admitted simultaneously.
+
+## Sparse selected original rows
+
+`create_with_state(..., Option<Arc<GeoLinkedState>>)` validates complete source,
+layer and state identity before cloning metadata or issuing a read. Legacy
+`create` passes `None`. Every emitted original row has a `selected` boolean from
+the sparse exact-ID set, including null, offscreen and time-excluded rows; this
+is intent, not geometry/time eligibility. Duplicate IDs share intent while
+retaining separate original rows. There is no viewport predicate or N-row mask.
+
+Private issued cursors retain the immutable State Arc. Continuation compares
+complete binding, canonical IDs and fill profile, never only a fingerprint.
+Removing state or changing contents at the same revision rejects before I/O.
+Published pages retain state ownership; shared128 MiB and local session admission
+include the already leased sparse state. Selected protocol rows are explicit
+XYGZ v2 with flag bit7 and a sparse-intent footer; ordinary None rows retain v1.
+See [the exact selected wire](geo-linked-state-protocol.md).

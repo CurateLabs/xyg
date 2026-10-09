@@ -1,12 +1,15 @@
 //! Bounded original-row companion paging. Dossier §20/§27; see geo-rows-session.md.
 use crate::geo::{GeoCrs, GeoGeometry};
+use crate::geo_linked_state::GeoLinkedState;
+use crate::geo_lod::GeoLodIdentity;
 use crate::geo_source::{
-    parse_authenticated, FeatureRef, GeoSourceManifest, QueryBudget, QueryCursor, QuerySpec,
-    SourceError, TimePredicate, MAX_CHUNK_PEAK,
+    FeatureRef, GeoSourceManifest, MAX_CHUNK_PEAK, QueryBudget, QueryCursor, QuerySpec,
+    SourceError, TimePredicate, parse_authenticated,
 };
 use crate::geo_source_session::{
-    next_session_identity, GeoProcessorLease, GeoReadTicket, GeoSessionStep,
+    GeoProcessorLease, GeoReadTicket, GeoSessionStep, next_session_identity,
 };
+use std::sync::Arc;
 type Result<T> = std::result::Result<T, SourceError>;
 const OVERHEAD: usize = 16_384;
 const RETIRED_LIMIT: usize = 64;
@@ -46,22 +49,43 @@ impl GeoRowsKey {
     }
 }
 /// Issued only by a completed page. No public ordinal/decode constructor grants skips.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct GeoRowsCursor {
     key: GeoRowsKey,
     position: QueryCursor,
+    state: Option<Arc<GeoLinkedState>>,
 }
 impl GeoRowsCursor {
-    pub fn key(self) -> GeoRowsKey {
+    pub fn key(&self) -> GeoRowsKey {
         self.key
     }
-    pub fn position(self) -> QueryCursor {
+    pub fn position(&self) -> QueryCursor {
         self.position
+    }
+}
+impl PartialEq for GeoRowsCursor {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+            && self.position == other.position
+            && same_state(self.state.as_ref(), other.state.as_ref())
+    }
+}
+impl Eq for GeoRowsCursor {}
+fn same_state(a: Option<&Arc<GeoLinkedState>>, b: Option<&Arc<GeoLinkedState>>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => {
+            a.binding() == b.binding()
+                && a.selected_ids() == b.selected_ids()
+                && a.style() == b.style()
+        }
+        _ => false,
     }
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeoRowsRecord {
     pub feature: FeatureRef,
+    pub selected: bool,
     pub geometry_null: bool,
     pub time_eligible: bool,
     pub eligible: bool,
@@ -85,6 +109,7 @@ pub struct GeoPublishedRows {
     pub sequence: u64,
     pub key: GeoRowsKey,
     pub page: GeoRowsPage,
+    pub state: Option<Arc<GeoLinkedState>>,
     lease: GeoProcessorLease,
 }
 impl GeoPublishedRows {
@@ -101,6 +126,7 @@ pub struct GeoRowsSession {
     id: u64,
     sequence: u64,
     key: GeoRowsKey,
+    state: Option<Arc<GeoLinkedState>>,
     next_read: u64,
     source: Option<GeoSourceManifest>,
     cursor: QueryCursor,
@@ -124,13 +150,38 @@ impl GeoRowsSession {
         cursor: Option<GeoRowsCursor>,
         budget: QueryBudget,
     ) -> Result<Self> {
+        Self::create_with_state(source, sequence, key, cursor, budget, None)
+    }
+    /// Sparse intent applies to every original row, independently of time/geometry eligibility.
+    pub fn create_with_state(
+        source: &GeoSourceManifest,
+        sequence: u64,
+        key: GeoRowsKey,
+        cursor: Option<GeoRowsCursor>,
+        budget: QueryBudget,
+        state: Option<Arc<GeoLinkedState>>,
+    ) -> Result<Self> {
         if sequence == 0 {
             return Err(SourceError::InvalidFrame);
+        }
+        if let Some(state) = &state {
+            state.validate_identity(GeoLodIdentity {
+                source_digest: key.source_digest,
+                generation: key.generation,
+                source_rows: key.source_rows,
+                geometry: key.geometry,
+                crs: key.crs,
+                layer_id: key.layer_id,
+                state_revision: key.state_revision,
+                style_revision: 0,
+            })?;
         }
         budget.validate()?;
         key.validate(source)?;
         let q = key.query();
-        if cursor.is_some_and(|cursor| cursor.key != key) {
+        if cursor.as_ref().is_some_and(|cursor| {
+            cursor.key != key || !same_state(cursor.state.as_ref(), state.as_ref())
+        }) {
             return Err(SourceError::StaleSource);
         }
         let cursor = cursor.map(|cursor| cursor.position).unwrap_or(QueryCursor {
@@ -167,6 +218,7 @@ impl GeoRowsSession {
             .ok_or(SourceError::ResourceLimit)?;
         if metadata
             .checked_add(page_bytes)
+            .and_then(|n| n.checked_add(state.as_ref().map_or(0, |s| s.retained_bytes())))
             .is_none_or(|n| n > budget.processor_bytes)
         {
             return Err(SourceError::ResourceLimit);
@@ -189,6 +241,7 @@ impl GeoRowsSession {
             id,
             sequence,
             key,
+            state,
             next_read: 1,
             source: Some(source),
             cursor,
@@ -221,7 +274,8 @@ impl GeoRowsSession {
         self.pending.is_some() || !self.retired.is_empty()
     }
     fn live_bytes(&self) -> usize {
-        self.metadata_lease.bytes()
+        self.state.as_ref().map_or(0, |s| s.retained_bytes())
+            + self.metadata_lease.bytes()
             + self.page_lease.as_ref().map_or(0, |l| l.bytes())
             + self.published.as_ref().map_or(0, |p| p.lease.bytes())
             + self.pending.as_ref().map_or(0, |r| r.lease.bytes())
@@ -302,6 +356,7 @@ impl GeoRowsSession {
                 page.next = Some(GeoRowsCursor {
                     key: self.key,
                     position: self.cursor,
+                    state: self.state.clone(),
                 });
                 self.ready = true;
                 break 'admit;
@@ -324,6 +379,7 @@ impl GeoRowsSession {
                 page.next = Some(GeoRowsCursor {
                     key: self.key,
                     position: self.cursor,
+                    state: self.state.clone(),
                 });
                 self.ready = true;
                 break 'admit;
@@ -374,6 +430,7 @@ impl GeoRowsSession {
             sequence: self.sequence,
             key: self.key,
             page,
+            state: self.state.clone(),
             lease: self.page_lease.take().unwrap(),
         });
         self.active = false;
@@ -436,6 +493,10 @@ impl GeoRowsSession {
             let geometry_null = f.column.validity()[f.row] == 0;
             self.cursor.row = (f.row + 1) as u32;
             page.records.push(GeoRowsRecord {
+                selected: self
+                    .state
+                    .as_ref()
+                    .is_some_and(|s| s.contains(f.column.feature_ids()[f.row])),
                 feature: FeatureRef {
                     chunk_index: ticket.request.chunk_index,
                     row: f.row as u32,
@@ -463,6 +524,7 @@ impl GeoRowsSession {
                     Some(GeoRowsCursor {
                         key: self.key,
                         position: self.cursor,
+                        state: self.state.clone(),
                     })
                 };
                 self.ready = true;
@@ -566,6 +628,90 @@ mod tests {
         t
     }
     #[test]
+    fn sparse_selection_marks_null_time_excluded_duplicates_and_binds_private_cursor() {
+        let _lock = test_processor_lock();
+        let baseline = GeoProcessorLease::live_bytes();
+        let (source, bytes, key) = fixture();
+        let state = GeoLinkedState::new(
+            &source,
+            77,
+            key.layer_id,
+            key.state_revision,
+            &[7, 1 << 63, u64::MAX],
+            crate::geo_linked_state::GeoSelectedStyle {
+                fill: [1, 2, 3, 255],
+            },
+        )
+        .unwrap();
+        let budget = QueryBudget {
+            page_rows: 3,
+            ..QueryBudget::default()
+        };
+        let mut s =
+            GeoRowsSession::create_with_state(&source, 10, key, None, budget, Some(state.clone()))
+                .unwrap();
+        drive(&mut s, &bytes);
+        let page = &s.published().unwrap().page;
+        assert_eq!(
+            page.records.iter().map(|r| r.selected).collect::<Vec<_>>(),
+            [true, true, true]
+        );
+        assert!(page.records[2].geometry_null);
+        assert!(!page.records[0].time_eligible);
+        let cursor = page.next.clone();
+        let changed = GeoLinkedState::new(
+            &source,
+            77,
+            key.layer_id,
+            key.state_revision,
+            &[9],
+            crate::geo_linked_state::GeoSelectedStyle {
+                fill: [1, 2, 3, 255],
+            },
+        )
+        .unwrap();
+        assert!(matches!(
+            GeoRowsSession::create_with_state(
+                &source,
+                11,
+                key,
+                cursor.clone(),
+                budget,
+                Some(changed.clone())
+            ),
+            Err(SourceError::StaleSource)
+        ));
+        assert!(matches!(
+            GeoRowsSession::create(&source, 11, key, cursor.clone(), budget),
+            Err(SourceError::StaleSource)
+        ));
+        let mut next = GeoRowsSession::create_with_state(
+            &source,
+            11,
+            key,
+            cursor,
+            budget,
+            Some(state.clone()),
+        )
+        .unwrap();
+        drive(&mut next, &bytes);
+        assert_eq!(
+            next.published()
+                .unwrap()
+                .page
+                .records
+                .iter()
+                .map(|r| (r.feature.source_row, r.selected))
+                .collect::<Vec<_>>(),
+            [(3, true), (4, false), (5, true)]
+        );
+        drop(next);
+        drop(s);
+        drop(changed);
+        drop(state);
+        assert_eq!(GeoProcessorLease::live_bytes(), baseline);
+    }
+    #[test]
     fn original_null_offscreen_multipoint_rows_and_duplicate_full_ids_page_exactly_once() {
         let _lock = test_processor_lock();
         let baseline = GeoProcessorLease::live_bytes();
@@ -583,7 +729,7 @@ mod tests {
             let page = &s.published().unwrap().page;
             sizes.push(page.records.len());
             records.extend(page.records.iter().cloned());
-            cursor = page.next;
+            cursor = page.next.clone();
             if cursor.is_none() {
                 break;
             }
@@ -716,10 +862,11 @@ mod tests {
                 .collect::<Vec<_>>(),
             [9, 8, 7, 6]
         );
-        assert!(page
-            .records
-            .iter()
-            .all(|r| !r.intervals_present && r.value.is_none()));
+        assert!(
+            page.records
+                .iter()
+                .all(|r| !r.intervals_present && r.value.is_none())
+        );
     }
     #[test]
     fn cursor_source_time_state_and_layer_changes_reject_before_clone_or_io() {
@@ -737,7 +884,7 @@ mod tests {
         )
         .unwrap();
         drive(&mut s, &bytes);
-        let cursor = s.published().unwrap().page.next;
+        let cursor = s.published().unwrap().page.next.clone();
         let baseline = GeoProcessorLease::live_bytes();
         let variants = [
             GeoRowsKey {
@@ -768,7 +915,7 @@ mod tests {
         ];
         for key in variants {
             assert!(matches!(
-                GeoRowsSession::create(&source, 2, key, cursor, QueryBudget::default()),
+                GeoRowsSession::create(&source, 2, key, cursor.clone(), QueryBudget::default()),
                 Err(SourceError::StaleSource)
             ));
             assert_eq!(GeoProcessorLease::live_bytes(), baseline);
@@ -869,7 +1016,7 @@ mod tests {
         assert_eq!(drive(&mut first, &bytes), [0]);
         let page = &first.published().unwrap().page;
         assert_eq!(page.records.len(), 5);
-        let cursor = page.next;
+        let cursor = page.next.clone();
         let mut next = GeoRowsSession::create(&source, 2, key, cursor, budget).unwrap();
         assert_eq!(drive(&mut next, &bytes), [1]);
         assert!(next.published().unwrap().page.next.is_none());

@@ -110,3 +110,18 @@ a new style requires a new begin/publication with a greater style revision.
 Command-14 picking requires an exact existing painted-style binding, so it cannot
 pick geometry under a style different from the accepted Scene. Independently
 owned old Data packets remain immutable across newer publications.
+
+## Explicit sparse selected state
+
+`begin_with_state(..., Option<Arc<GeoLinkedState>>)` delegates to the same LOD
+fold as indexed queries. Legacy `begin` passes `None` and preserves its bytes.
+Selected identity validates before I/O/allocation. The selected accumulator owns
+its durable base/result/count credit; the source wrapper leases only 1,024 bytes
+for its published metadata and includes retained state, active processor and old
+selected output credit in local peak admission. It does not double-lease the
+accumulator's base reservation. Cancellation retires exact outstanding reads
+under the existing ACK lifetime and preserves old published results.
+
+The [selected protocol](geo-linked-state-protocol.md) owns lineage scopes outside
+this numerical core and consumes a temporary State handle only after successful
+`begin_with_state`. No source-sized selection mask or source scan is introduced.
