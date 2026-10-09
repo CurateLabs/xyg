@@ -65,14 +65,15 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(GeoSnapshotError::Invalid);
     }
     let command = u32at(b, 8);
-    if !matches!(command,1..=5|20..=22)
-        || (!matches!(command, 1 | 4 | 5) && u64at(b, 24) != 0)
+    if !matches!(command,1..=6|20..=22)
+        || (!matches!(command, 1 | 4 | 5 | 6) && u64at(b, 24) != 0)
         || (command != 2 && b[40..56].iter().any(|n| *n != 0))
         || (command == 3 && u64at(b, 32) != 0)
     {
         return Err(GeoSnapshotError::Invalid);
     }
-    if matches!(command, 1 | 4 | 5) && (u64at(b, 24) == 0 || u64at(b, 32) > MAX_FROZEN_PEAK as u64)
+    if matches!(command, 1 | 4 | 5 | 6)
+        && (u64at(b, 24) == 0 || u64at(b, 32) > MAX_FROZEN_PEAK as u64)
     {
         return Err(GeoSnapshotError::Invalid);
     }
@@ -126,7 +127,7 @@ fn source_error(e: SourceError) -> GeoSnapshotError {
 /// only borrows immutable storage and may not reenter the source registry.
 pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
     let command = frame(b)?;
-    if !matches!(command, 1..=5) {
+    if !matches!(command, 1..=6) {
         return Err(GeoSnapshotError::Invalid);
     }
     let handle = u64at(b, 16);
@@ -148,7 +149,7 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
         return Err(GeoSnapshotError::Limit);
     }
     let result = (|| {
-        if matches!(command, 1 | 4 | 5) {
+        if matches!(command, 1 | 4 | 5 | 6) {
             if r.entries
                 .iter()
                 .filter(|(_, e)| matches!(e, Entry::Snapshot { .. }))
@@ -158,7 +159,33 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
                 return Err(GeoSnapshotError::Limit);
             }
             let budget = usize::try_from(u64at(b, 32)).map_err(|_| GeoSnapshotError::Limit)?;
-            let value = if command == 5 {
+            let value = if command == 6 {
+                crate::geo_scale_protocol::with_overview_data(
+                    handle,
+                    sequence,
+                    |scene, result, camera| {
+                        crate::geo_snapshot::overview_admission(scene, result, camera, budget)
+                            .map_err(|e| match e {
+                                GeoSnapshotError::Limit => SourceError::ResourceLimit,
+                                GeoSnapshotError::Stale => SourceError::StaleSource,
+                                _ => SourceError::InvalidFrame,
+                            })?;
+                        GeoFrozenSnapshot::freeze_overview(
+                            cache(&mut r).map_err(|_| SourceError::ResourceLimit)?,
+                            scene,
+                            result,
+                            camera,
+                            budget,
+                        )
+                        .map_err(|e| match e {
+                            GeoSnapshotError::Limit => SourceError::ResourceLimit,
+                            GeoSnapshotError::Stale => SourceError::StaleSource,
+                            _ => SourceError::InvalidFrame,
+                        })
+                    },
+                )
+                .map_err(source_error)?
+            } else if command == 5 {
                 crate::geo_mixed_protocol::with_source_scene(
                     handle,
                     sequence,

@@ -898,6 +898,51 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             .find(|(id, _)| *id == handle)
             .ok_or(SourceError::StaleSource)?
             .1;
+        if let Entry::Data {
+            bytes,
+            overview: Some(authority),
+            ..
+        } = entry
+        {
+            if sequence == 0 || sequence != authority.sequence {
+                return Err(SourceError::StaleSource);
+            }
+            let reserve = crate::geo_temporal_overview_scene::DATA_CREDIT;
+            if reserve > budget(request)?.processor_bytes {
+                return Err(SourceError::ResourceLimit);
+            }
+            let len = bytes.len();
+            let result = Arc::clone(&authority.result);
+            let camera = authority.camera;
+            let sequence = authority.sequence;
+            let lease = reserve_data(&mut r, reserve)?;
+            let authority = Box::new(overview::Semantic {
+                result,
+                camera,
+                sequence,
+            });
+            let Entry::Data { bytes, .. } = &r.entries.iter().find(|(id, _)| *id == handle).unwrap().1
+            else {
+                unreachable!()
+            };
+            let mut bytes = bytes.clone();
+            put64(&mut bytes, 16, handle);
+            let id = insert(
+                &mut r,
+                Entry::Data {
+                    bytes,
+                    _lease: lease,
+                    reads: AtomicU8::new(0),
+                    semantic: None,
+                    rows: None,
+                    overview: Some(authority),
+                },
+            )?;
+            let mut out = reply(id, sequence);
+            put64(&mut out, 32, len as u64);
+            put64(&mut out, 40, handle);
+            return Ok(out);
+        }
         let Entry::Data {
             bytes,
             semantic: Some(authority),
@@ -2566,6 +2611,28 @@ fn data_snapshot(entry: &Entry) -> Result<GeoOperationSnapshot> {
 #[path = "geo_index_protocol_tests.rs"]
 mod index_protocol_tests;
 
+/// Private retained painter dispatch; a numeric handle does not identify a tier.
+pub(crate) fn is_overview_data(handle: u64, sequence: u64) -> Result<bool> {
+    let r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
+    let entry = &r
+        .entries
+        .iter()
+        .find(|(id, _)| *id == handle)
+        .ok_or(SourceError::StaleSource)?
+        .1;
+    match entry {
+        Entry::Data {
+            overview: Some(value),
+            ..
+        } if sequence != 0 && sequence == value.sequence => Ok(true),
+        Entry::Data {
+            semantic: Some(value),
+            ..
+        } if sequence != 0 && sequence == value.sequence => Ok(false),
+        _ => Err(SourceError::StaleSource),
+    }
+}
+
 /// Borrow immutable overview Scene/count authority. The callback runs under the
 /// registry lock and must not reenter this registry. Source-feature interaction
 /// is intentionally unavailable for these explicitly coarse domain cells.
@@ -2592,7 +2659,13 @@ pub fn with_overview_data<T>(
     else {
         return Err(SourceError::InvalidFrame);
     };
-    if sequence != s.sequence {
+    let snapshot = s.result.snapshot();
+    if sequence == 0 || sequence != s.sequence
+        || snapshot.camera != s.camera.rebuild_key()?
+        || snapshot.source_digest != s.result.source().digest()
+        || snapshot.generation != s.result.source().generation()
+        || !s.result.temporal_exact() || !s.result.data_space() || s.result.final_result()
+    {
         return Err(SourceError::StaleSource);
     }
     callback(&bytes[HEADER + 2048..], &s.result, s.camera)
@@ -2601,3 +2674,7 @@ pub fn with_overview_data<T>(
 #[cfg(test)]
 #[path = "geo_hierarchy_protocol_tests.rs"]
 mod hierarchy_protocol_tests;
+
+#[cfg(test)]
+#[path = "geo_overview_painter_snapshot_tests.rs"]
+mod overview_painter_snapshot_tests;

@@ -1,0 +1,82 @@
+    Blocking waiting for file lock on build directory
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewpaint/crates/xyg-engine)
+warning: function `encode_base64` is never used
+     --> crates/xyg-engine/src/scene.rs:10356:15
+      |
+10356 | pub(crate) fn encode_base64(bytes: &[u8]) -> String {
+      |               ^^^^^^^^^^^^^
+      |
+      = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: multiple methods are never used
+     --> crates/xyg-engine/src/scene.rs:11057:19
+      |
+10680 | impl SceneDocument {
+      | ------------------ methods in this implementation
+...
+11057 |     pub(crate) fn clear_backgrounds(&mut self) {
+      |                   ^^^^^^^^^^^^^^^^^
+...
+11114 |     pub(crate) fn apply_static_chrome_metrics(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11142 |     pub(crate) fn apply_static_axis_sides(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+11166 |     pub(crate) fn apply_static_grid_dash(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+11196 |     pub(crate) fn apply_static_colorbar_layout(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11223 |     pub(crate) fn apply_static_colorbar_style(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11253 |     pub(crate) fn apply_static_annotation_font_size(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11283 |     pub(crate) fn apply_static_annotation_text_flags(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11298 |     pub(crate) fn apply_static_title_style(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11317 |     pub(crate) fn apply_static_annotation_vertical_align(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11348 |     pub(crate) fn apply_static_annotation_padding(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+11385 |     pub(crate) fn apply_static_arrow_metrics(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `level_counts`, `level_color`, `level_dims`, and `domain` are never used
+  --> crates/xyg-engine/src/tiles.rs:84:19
+   |
+57 | impl Pyramid {
+   | ------------ methods in this implementation
+...
+84 |     pub(crate) fn level_counts(&self, level: usize) -> &[u32] {
+   |                   ^^^^^^^^^^^^
+...
+87 |     pub(crate) fn level_color(&self, level: usize) -> Option<&[[u16; 4]]> {
+   |                   ^^^^^^^^^^^
+...
+90 |     pub(crate) fn level_dims(&self) -> &[usize] {
+   |                   ^^^^^^^^^^
+...
+93 |     pub(crate) fn domain(&self) -> (f64, f64, f64, f64) {
+   |                   ^^^^^^
+
+warning: associated function `window` is never used
+   --> crates/xyg-engine/src/tiles.rs:128:19
+    |
+116 | impl<'a> LevelView<'a> {
+    | ---------------------- associated function in this implementation
+...
+128 |     pub(crate) fn window(
+    |                   ^^^^^^
+
+warning: `xyg-engine` (lib) generated 4 warnings
+   Compiling xyg-wasm v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewpaint/crates/xyg-wasm)
+    Finished `release` profile [optimized] target(s) in 2m 12s
