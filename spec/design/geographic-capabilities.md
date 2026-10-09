@@ -61,7 +61,7 @@ under strict CSP and reject every unexpected request.
 | Explicit immutable point sidecar index | Rust XYIX/XYIP cross-chunk leaves, bounded canonical-order merge, authenticated import, explicit full-scan fallback | Exact canonical Scene parity through 1M; native/WASM frame+rows+frozen parity; browser corrupt-leaf recovery; 100M narrow grid16 0.79–1.23s, grid32 192–316ms under uncontrolled load; world latency/pyramid remains open |
 | Original source-row companion | Rust-issued continuation, all original rows, explicit temporal/null eligibility | Native/WASM byte parity; Python/Node paging after frame disposal; strict-CSP browser offscreen keyboard focus and failed-read recovery |
 | Explicit raster/vector tiles | Local/network locator receipts, immutable producer generation/time, atomic epoch publication | Actual native mixed raster+vector+foreground; network is opt-in through caller loader, not automatic fetch |
-| Frozen spatiotemporal output | XYGXv2 bound provenance, visible attribution, owned artifacts | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; WASM freeze matches native, raster export is explicit Unsupported |
+| Frozen spatiotemporal output | XYGXv2 ordinary byte identity; selected-only XYGXv3 full sparse intent, profile, exact counts and mixed provenance | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; actual native/WASM selected snapshot and XYSE parity, offline selected pixels and attribution; imported metadata remains inert, WASM raster is explicit Unsupported |
 
 Reproduce using `scripts/bench_geo_scale.py`, `tests/test_geo_retained.py`,
 `tests/test_geo_rows.py`, `tests/test_geo_tiles.py`, `tests/test_geo_snapshot.py`,
@@ -75,3 +75,9 @@ not establish Reflex/VS Code live retained-source parity, linked selection or co
 Separate [native host journey evidence](geographic-hosts.md) proves immutable
 retained-points presentation and ownership in notebooks, Reflex and VS Code.
 It does not establish native live camera/query parity or indexed host remounts.
+
+[Selected frozen export evidence](../performance/geo-selected-snapshot-2026-10-09/README.md)
+proves ordinary/mixed full intent and exact visible-count preservation after
+source disposal. The [selected snapshot contract](geo-selected-snapshot.md)
+distinguishes trusted freezing from imported structural consistency; this
+small proof does not establish live linked hosts or massive export latency.
