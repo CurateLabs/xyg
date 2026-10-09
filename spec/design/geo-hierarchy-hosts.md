@@ -17,6 +17,12 @@ membership mask. Source chunk callbacks remain caller-owned even after source
 registry disposal and must remain usable while admitted queries or rows need
 canonical bytes.
 
+Before command37, an internal producer registry verifies the original source
+and transport identity. Mutable frame metadata and equal numeric handles do not
+authorize a frame from another source or WASM instance. Node captures the
+producer bridge once; Python registry values use weak references so source/frame
+cycles can be collected.
+
 The typed codec reuses canonical command5/6 framing and changes only the command
 number. It validates hierarchy reply reserved fields,128-byte ticket shape,
 full u64 ownership/namespace/serials and exact authorized lengths; signed i64
@@ -40,15 +46,17 @@ not grant trust in durability: future Rust reads authenticate every page.
 Build creation sequence is retained separately from newer query sequences. Owner
 cleanup uses that creation sequence; each query session is disposed using its
 own sequence. SceneData uses existing zero-sequence disposal and lifetime-copy
-rules. Failure/fallback leaves prior independently leased frames usable and does
+rules. Cleanup coalesces pending calls and permits retry after a rejected
+pre-Rust cleanup; disposed views remain unavailable during retry. Failure/fallback leaves prior independently leased frames usable and does
 not silently run the canonical path. `GeoHierarchyFallback` reports Rust's
 frontier/work reason. Selected source authority reports
 `GeoHierarchyUnsupportedSelected`; it is never silently unselected.
 
 A successful query returns ordinary independently leased SceneData with existing
 Rows, picking, paged membership, retain and frozen export. The original validated
-source remains `frame._source` for these immutable operations. Its authoring
-request is retained for exact identity comparison; this does not assert that the
+source remains `frame._source` for these immutable operations. Its actual command38/index-handle authoring
+request is retained for exact identity comparison; static hosts normalize only
+the operation and process-local source handle. This does not assert that the
 original mutable SourceSession executed the hierarchy query. Private WeakSet
 provenance marks authentic hierarchy frames and all retained clones.
 `is_hierarchy_frame` / `isHierarchyFrame` are internal read-only dispatch checks.

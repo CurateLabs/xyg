@@ -63,5 +63,5 @@ export async function prepareGeoHierarchyScene(bridge:XygGeoScaleBridge,input:{h
  try{if(r.code!==0||r.sourceHandle!==input.handle||r.sequence!==input.sequence||4n*r.dataLength>BigInt(input.budget.processorBytes))throw new TypeError('invalid hierarchy Scene receipt');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==r.dataLength||packet.byteLength>32*1024*1024)throw new TypeError('invalid Scene length');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched Scene identity');packet=undefined;}
  catch(error){packet=data=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
  let disposal:Promise<void>|undefined;
- return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});}};
+ return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;if(disposal)return disposal;const task=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});disposal=task;task.catch(()=>{if(disposal===task)disposal=undefined;});return task;}};
 }

@@ -11,7 +11,7 @@ from contextlib import suppress
 from typing import Any
 
 from . import _geoscale as g
-from ._geo_retained import OwnedGeoData, RetainedGeoSource, _attach_frame
+from ._geo_retained import OwnedGeoData, RetainedGeoSource, _attach_frame, retained_frame_authority
 
 _FRAMES: weakref.WeakSet = weakref.WeakSet()
 
@@ -310,6 +310,9 @@ class GeoHierarchy(RetainedGeoSource):
     @classmethod
     def _owner(cls, frame, source, read_page, write_page, bridge):
         _ = frame.data
+        authority = retained_frame_authority(frame)
+        if authority is None or authority[0] is not source or authority[1] is not source._bridge:
+            raise ValueError("frame belongs to another source or transport")
         if not callable(read_page) or not callable(write_page):
             raise TypeError("explicit immutable page storage required")
         self = cls.__new__(cls)
@@ -493,15 +496,7 @@ class GeoHierarchy(RetainedGeoSource):
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("exact48-byte style required")
         request = _request(38, self.handle, sequence, budget=self.budget, query=query)
-        attachment = g.encode_request(
-            dict(
-                command=5,
-                handle=self._origin_source.handle,
-                sequence=sequence,
-                budget=self.budget,
-                query=query,
-            )
-        )
+        attachment = request
         self._busy = True
         handle = frame = None
         try:
@@ -533,15 +528,7 @@ class GeoHierarchy(RetainedGeoSource):
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("exact48-byte style required")
         request = _request(38, self.handle, sequence, budget=self.budget, query=query)
-        attachment = g.encode_request(
-            dict(
-                command=5,
-                handle=self._origin_source.handle,
-                sequence=sequence,
-                budget=self.budget,
-                query=query,
-            )
-        )
+        attachment = request
         self._busy, self._active = True, asyncio.current_task()
         handle = frame = None
         try:
@@ -603,8 +590,16 @@ class GeoHierarchy(RetainedGeoSource):
                 self._disposal = asyncio.create_task(
                     self._bridge.execute(_request(10, self.handle, self._creation_sequence))
                 )
-            await g._settle(self._disposal)
+            task = self._disposal
+            try:
+                _, interrupted = await g._settle(task)
+            except BaseException:
+                if self._disposal is task:
+                    self._disposal = None
+                raise
             self._closed = True
+            if interrupted:
+                raise asyncio.CancelledError
 
     def cancel(self):
         if self._busy:
