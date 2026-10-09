@@ -23,12 +23,43 @@ state patches and geographic decor are not added by this slice. Additional
 views require separate adapters and independent immutable Data handles, within
 the underlying protocol's eight-Data limit. Each adapter admits one mount.
 
-The canonical `RetainedGeoSource` type is checked before any native host
-protocol access. `GeoSpatialIndex` and other producer kinds are rejected on
-this presentation path. Indexed compile/static export remains its separate
-public contract; indexed native-host remount requires a new independently
-owned Data duplication seam rather than command-11 preparation or borrowing
-and disposing a caller's current frame. That seam is pending.
+Without an explicit frame, only the canonical `RetainedGeoSource` producer is
+admitted. Indexed compositions use Python `chart.host(frame=frame)` or
+`chart.widget(frame=frame)`, and Node `chart.host({frame})`. The supplied frame
+must belong to the composition's exact source object and match its publication
+sequence, full camera/time/source/layer/style/state query and uniform style.
+Comparison normalizes only the operation and process-local source handle:
+indexed command 18 and canonical command 5 express the same authored snapshot.
+Camera, time, source identity and revisions are additionally checked directly
+against the immutable binary SceneData header, rather than its mutable parsed
+convenience metadata. Source info must match that exact header. Private frame
+query/style attachment fields are internal adapter metadata, not a supported
+public mutation surface. No source query, index read or command-11 preparation
+occurs on this path.
+A disposed source/index is legal while its immutable frame remains owned.
+
+Construction issues command 26 to create an independent private anchor. Python
+construction completes synchronously; Node starts the duplication immediately
+and `adapter.anchorReady` resolves void when ownership is acquired. Each mount
+uses that private anchor as its active frame, without another native read or
+Data-handle allocation. The caller's original
+frame remains caller-owned and may close immediately after construction.
+Mount release ACK drops frontend views, painter and active mount references,
+permitting remount of the same immutable anchor after source/index disposal.
+The exact mount string is checked on every ACK; a late ACK from a prior mount
+cannot release the new mount even though its Data owner and sequence are equal. Adapter close rejects further mounts and
+releases an unmounted anchor; when mounted, the anchor remains charged until
+mount release ACK. Node `realmDestroyed()` settles pending work and cleanup.
+Each explicit adapter therefore uses one independently charged Data handle,
+in addition to the caller's original, within the shared eight-Data cap. Five
+adapters plus a caller frame use six handles, leaving two auxiliary slots.
+ACK permits no simultaneous frontend copies: each adapter refuses another open
+until its old frontend teardown and publication/auxiliary send settlement.
+Backend packet remains the original admitted read; one frontend copy per active
+mount and its painter retain the existing local transfer ceiling and separate
+remote-memory accounting.
+Admission failure preserves the caller frame and existing mounted frames.
+Other producer kinds and implicit indexed queries remain rejected.
 
 The adapter snapshots the small authored query/style; it never serializes the
 whole retained source or canonical source chunks into widget metadata, HTML or
@@ -168,6 +199,10 @@ registry-miss rebuild and reconnect in addition to the production frontend.
 
 These are bounded correctness and lifecycle proofs, not quiet-host latency
 comparisons, massive interactive evidence or a competitor performance win.
+[Explicit indexed-frame mounting evidence](../performance/geo-indexed-host-journeys-2026-10-09/README.md)
+adds actual journeys after canonical source, query/index and caller-frame disposal.
+This proves adapter ownership independent of the caller and exclusive acknowledged mounts, not new indexed query policy.
+
 Native live updates, cross-worker orphan recovery, multiple retained layer
-composition, browser indexed processing and the full #50 scale gate remain
+composition and the full #50 scale gate remain
 separately tracked requirements.
