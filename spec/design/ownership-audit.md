@@ -1141,6 +1141,7 @@ Forbidden:
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_hierarchy_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_hierarchy_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_selected_hierarchy_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 The hierarchy protocol child reuses the shared private GeoScale registry, canonical
 Scene encoder, owning source/result leases and common quotas. Its tests exercise

@@ -490,7 +490,7 @@ fn hierarchy_protocol_eight_data_handles_and_style_failure_preserve_old_authorit
     close(frame, 0);
 }
 #[test]
-fn hierarchy_protocol_selected_source_explicitly_unsupported_without_admission() {
+fn hierarchy_protocol_selected_source_build_retains_full_scope_authority() {
     let _serial = test_processor_lock();
     let chunks = vec![chunk(u64::MAX, 0, 0.)];
     let (mh, bytes) = finish_manifest(&chunks);
@@ -534,24 +534,21 @@ fn hierarchy_protocol_selected_source_explicitly_unsupported_without_admission()
     execute(&b).unwrap();
     assert_eq!(drive(source, 2, &chunks).0, 4);
     let selected = u64_at(&execute(&scene_request(source, 2)).unwrap(), 16);
-    let before = crate::geo_source_session::GeoProcessorLease::live_bytes();
     let mut b = build_request(selected, 64 << 20);
     p64(&mut b, 24, 2);
-    let rejected = execute(&b).unwrap();
-    assert_eq!(u32_at(&rejected, 8), 17);
-    assert_eq!(u64_at(&rejected, 16), selected);
-    assert_eq!(
-        crate::geo_source_session::GeoProcessorLease::live_bytes(),
-        before
-    );
-    assert!(rejected[32..].iter().all(|v| *v == 0));
-    assert!(
-        !read_data(&request(23, selected, 0, &[]), 128 << 20)
-            .unwrap()
-            .is_empty()
-    );
-    close(source, 0);
+    let built = u64_at(&execute(&b).unwrap(), 16);
     close(selected, 0);
+    close(source, 0);
+    let mut store = BTreeMap::new();
+    assert_eq!(
+        u32_at(&drive_hierarchy(built, 2, &chunks, &mut store), 8),
+        18
+    );
+    assert_eq!(
+        execute(&request(10, scope, 0, &[])).unwrap_err(),
+        SourceError::ResourceLimit
+    );
+    close(built, 2);
     close(scope, 0);
     close(frame, 0);
     drop(mh);
@@ -804,3 +801,6 @@ fn hierarchy_protocol_local_control_budget_exact_boundary_and_one_byte_under() {
     close(h, 1);
     close(frame, 0);
 }
+
+#[path = "geo_selected_hierarchy_protocol_tests.rs"]
+mod selected;

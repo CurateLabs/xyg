@@ -11,6 +11,9 @@ use crate::geo_spatial_hierarchy_query::{
 pub(super) struct Owner {
     index: Arc<ValidatedGeoHierarchy>,
     sequence: u64,
+    created_snapshot: GeoOperationSnapshot,
+    created_style: [u8; 48],
+    scope: Option<Arc<linked_state::Scope>>,
     transition: Mutex<(u64, GeoOperationSnapshot)>,
     painted: Mutex<(u64, [u8; 48])>,
     _lease: GeoProcessorLease,
@@ -25,6 +28,7 @@ pub(super) enum Owned {
         sequence: u64,
         snapshot: GeoOperationSnapshot,
         style: [u8; 48],
+        scope: Option<Arc<linked_state::Scope>>,
         pending: Option<Pending>,
         _lease: GeoProcessorLease,
     },
@@ -36,6 +40,8 @@ pub(super) enum Owned {
         snapshot: GeoOperationSnapshot,
         pending: Option<Pending>,
         result: Option<Box<GeoHierarchyResult>>,
+        state: Option<Arc<crate::geo_linked_state::GeoLinkedState>>,
+        selected_replacement: bool,
         _lease: GeoProcessorLease,
     },
 }
@@ -91,11 +97,50 @@ fn remaining(bytes: usize, held: usize) -> Result<usize> {
         .filter(|v| *v > 0)
         .ok_or(SourceError::ResourceLimit)
 }
+pub(super) fn scope(owned: &Owned) -> Option<Arc<linked_state::Scope>> {
+    match owned {
+        Owned::Build { scope, .. } => scope.clone(),
+        Owned::Index(o) | Owned::Query { owner: o, .. } => o.scope.clone(),
+    }
+}
+pub(super) fn selected_complete(entry: &Entry) -> bool {
+    matches!(entry,Entry::Hierarchy(Owned::Query{selected_replacement:true,result:Some(_),session,pending:None,..}) if !session.has_outstanding_io())
+}
+fn same_source(a: &GeoSourceManifest, b: &GeoSourceManifest) -> bool {
+    a.digest() == b.digest()
+        && a.generation() == b.generation()
+        && a.rows() == b.rows()
+        && a.geometry() == b.geometry()
+        && a.crs() == b.crs()
+        && a.chunks() == b.chunks()
+}
+// Shared references do not clone metadata/IDs; count each distinct live State lease.
+fn scope_charge(
+    scope: Option<&Arc<linked_state::Scope>>,
+    state: Option<&Arc<crate::geo_linked_state::GeoLinkedState>>,
+) -> Result<usize> {
+    let Some(scope) = scope else { return Ok(0) };
+    let admission = scope
+        .admission
+        .lock()
+        .map_err(|_| SourceError::ResourceLimit)?;
+    let current = admission.current();
+    scope
+        ._lease
+        .bytes()
+        .checked_add(
+            current
+                .filter(|current| state.is_none_or(|s| !Arc::ptr_eq(s, current)))
+                .map_or(0, |s| s.retained_bytes()),
+        )
+        .ok_or(SourceError::ResourceLimit)
+}
 pub(super) fn data_budget(entry: &Entry, bytes: usize) -> Result<usize> {
     let Entry::Hierarchy(Owned::Query {
         owner,
         session,
         result: Some(result),
+        state,
         _lease,
         ..
     }) = entry
@@ -109,6 +154,19 @@ pub(super) fn data_budget(entry: &Entry, bytes: usize) -> Result<usize> {
         .and_then(|n| n.checked_add(_lease.bytes()))
         .and_then(|n| n.checked_add(session.reserved_bytes()))
         .and_then(|n| n.checked_add(result.reserved_bytes()))
+        .ok_or(SourceError::ResourceLimit)?;
+    let held = held
+        .checked_add(scope_charge(owner.scope.as_ref(), state.as_ref())?)
+        .and_then(|n| n.checked_add(state.as_ref().map_or(0, |s| s.retained_bytes())))
+        .and_then(|n| {
+            n.checked_add(
+                result
+                    .result
+                    .selection
+                    .as_ref()
+                    .map_or(0, |s| s.retained_bytes()),
+            )
+        })
         .ok_or(SourceError::ResourceLimit)?;
     remaining(bytes, held)
 }
@@ -139,8 +197,15 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
         if sequence != s.sequence {
             return Err(SourceError::StaleSource);
         }
-        if s.scope.is_some() || s.result.selection.is_some() {
-            return Ok(unsupported(handle, sequence));
+        if s.scope.is_some() != s.result.selection.is_some() {
+            return Err(SourceError::InvalidFrame);
+        }
+        if let Some(scope) = &s.scope {
+            if !same_source(&scope.source, &s.source)
+                || scope.layer_id != s.result.key.identity.layer_id
+            {
+                return Err(SourceError::StaleSource);
+            }
         }
         let snapshot = data_snapshot(entry)?;
         let style = s.style;
@@ -156,7 +221,12 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
             return Err(SourceError::ResourceLimit);
         }
         let mut phase = budget(b)?;
-        phase.processor_bytes = remaining(phase.processor_bytes, CONTROL_BYTES)?;
+        phase.processor_bytes = remaining(
+            phase.processor_bytes,
+            CONTROL_BYTES
+                .checked_add(scope_charge(s.scope.as_ref(), None)?)
+                .ok_or(SourceError::ResourceLimit)?,
+        )?;
         let lease = GeoProcessorLease::acquire(CONTROL_BYTES)?;
         let session = GeoHierarchyBuildSession::new(
             &s.source,
@@ -174,26 +244,94 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
                 sequence,
                 snapshot,
                 style,
+                scope: s.scope.clone(),
                 pending: None,
                 _lease: lease,
             }),
         )?;
         return Ok(reply(id, sequence));
     }
-    if command != 38 || !payload.is_empty() || u32at(b, 12) > 1 || u32at(b, 76) > 1 {
+    if !matches!(command, 38 | 42 | 43)
+        || (command != 43 && !payload.is_empty())
+        || (command == 43 && payload.len() != 8)
+        || u32at(b, 12) > 1
+        || u32at(b, 76) > 1
+    {
         return Err(SourceError::InvalidFrame);
     }
     let Entry::Hierarchy(Owned::Index(owner)) = entry else {
         return Err(SourceError::InvalidFrame);
     };
     let owner = owner.clone();
+    if command == 42 {
+        if sequence != owner.sequence {
+            return Err(SourceError::StaleSource);
+        }
+        if r.entries.len() >= MAX_HANDLES {
+            return Err(SourceError::ResourceLimit);
+        }
+        let held = owner
+            .index
+            .reserved_bytes()
+            .checked_add(2 * CONTROL_BYTES)
+            .and_then(|n| n.checked_add(scope_charge(owner.scope.as_ref(), None).ok()?))
+            .ok_or(SourceError::ResourceLimit)?;
+        remaining(budget(b)?.processor_bytes, held)?;
+        let lease = GeoProcessorLease::acquire(CONTROL_BYTES)?;
+        let fork = Arc::new(Owner {
+            index: owner.index.clone(),
+            sequence: owner.sequence,
+            created_snapshot: owner.created_snapshot,
+            created_style: owner.created_style,
+            scope: owner.scope.clone(),
+            transition: Mutex::new((owner.sequence, owner.created_snapshot)),
+            painted: Mutex::new((owner.created_snapshot.style_revision, owner.created_style)),
+            _lease: lease,
+        });
+        let id = insert(r, Entry::Hierarchy(Owned::Index(fork)))?;
+        return Ok(reply(id, sequence));
+    }
     let snapshot = index_snapshot(b)?;
+    let (state_id, state) = if command == 43 {
+        let state_id = u64at(payload, 0);
+        let Entry::State(state) = &r
+            .entries
+            .iter()
+            .find(|(id, _)| *id == state_id)
+            .ok_or(SourceError::StaleSource)?
+            .1
+        else {
+            return Err(SourceError::InvalidFrame);
+        };
+        let Some(scope) = owner.scope.as_ref() else {
+            return Ok(unsupported(handle, sequence));
+        };
+        if !Arc::ptr_eq(scope, &state.scope)
+            || !same_source(&scope.source, owner.index.source())
+            || scope.layer_id != snapshot.layer_id
+        {
+            return Err(SourceError::StaleSource);
+        }
+        linked_state::validate_current(state, snapshot)?;
+        (Some(state_id), Some(state.value.clone()))
+    } else {
+        if owner.scope.is_some() {
+            return Err(SourceError::StaleSource);
+        }
+        (None, None)
+    };
     let mut transition = owner
         .transition
         .lock()
         .map_err(|_| SourceError::ResourceLimit)?;
     if sequence <= transition.0
         || snapshot.precedes(transition.1)
+        || snapshot.style_revision
+            < owner
+                .painted
+                .lock()
+                .map_err(|_| SourceError::ResourceLimit)?
+                .0
         || snapshot.source_digest != owner.index.source().digest()
         || snapshot.generation != owner.index.source().generation()
     {
@@ -208,8 +346,13 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
         return Err(SourceError::ResourceLimit);
     }
     let mut limits = budget(b)?;
-    limits.processor_bytes =
-        remaining(limits.processor_bytes, CONTROL_BYTES + owner._lease.bytes())?;
+    limits.processor_bytes = remaining(
+        limits.processor_bytes,
+        CONTROL_BYTES
+            .checked_add(owner._lease.bytes())
+            .and_then(|n| n.checked_add(scope_charge(owner.scope.as_ref(), state.as_ref()).ok()?))
+            .ok_or(SourceError::ResourceLimit)?,
+    )?;
     let options = GeoLodOptions {
         kind: match u32at(b, 68) {
             0 => GeoReducedKind::Cluster,
@@ -221,11 +364,11 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
         processor_bytes: limits.processor_bytes,
         max_projected_vertices: u64at(b, 224),
     };
-    if r.entries.len() >= MAX_HANDLES {
+    if state_id.is_none() && r.entries.len() >= MAX_HANDLES {
         return Err(SourceError::ResourceLimit);
     }
     let lease = GeoProcessorLease::acquire(CONTROL_BYTES)?;
-    let session = GeoHierarchyQuerySession::new(
+    let session = GeoHierarchyQuerySession::new_with_state(
         owner.index.clone(),
         camera(b)?,
         snapshot.time,
@@ -240,19 +383,30 @@ pub(super) fn start(r: &mut Registry, b: &[u8]) -> Result<[u8; HEADER]> {
             vertex_records: limits.max_rows_examined,
             read_bytes: limits.max_read_bytes,
         },
+        state.clone(),
     )?;
-    let id = insert(
-        r,
-        Entry::Hierarchy(Owned::Query {
-            session: Box::new(session),
-            owner: owner.clone(),
-            sequence,
-            snapshot,
-            pending: None,
-            result: None,
-            _lease: lease,
-        }),
-    )?;
+    let query = Entry::Hierarchy(Owned::Query {
+        session: Box::new(session),
+        owner: owner.clone(),
+        sequence,
+        snapshot,
+        pending: None,
+        result: None,
+        state,
+        selected_replacement: command == 43,
+        _lease: lease,
+    });
+    let id = if let Some(id) = state_id {
+        let position = r
+            .entries
+            .iter()
+            .position(|(h, _)| *h == id)
+            .ok_or(SourceError::StaleSource)?;
+        r.entries[position].1 = query;
+        id
+    } else {
+        insert(r, query)?
+    };
     *transition = (sequence, snapshot);
     Ok(reply(id, sequence))
 }
@@ -385,6 +539,7 @@ pub(super) fn operation(r: &mut Registry, index: usize, b: &[u8]) -> Result<[u8;
             sequence,
             snapshot,
             style,
+            scope,
             pending,
             _lease,
         } => match command {
@@ -413,6 +568,9 @@ pub(super) fn operation(r: &mut Registry, index: usize, b: &[u8]) -> Result<[u8;
                         *owned = Owned::Index(Arc::new(Owner {
                             index: value,
                             sequence: *sequence,
+                            created_snapshot: *snapshot,
+                            created_style: *style,
+                            scope: scope.clone(),
                             transition: Mutex::new((*sequence, *snapshot)),
                             painted: Mutex::new((snapshot.style_revision, *style)),
                             _lease: lease,

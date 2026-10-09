@@ -138,3 +138,13 @@ transparent cells cannot be picked, and opaque selected points remain pickable
 when the ordinary fill is transparent. Rust validates complete selection binding
 before allocating hit output. Actual protocol regressions cover both direct
 alpha directions, zero opacity, fully selected clusters and density cells.
+
+
+Selected hierarchy integration uses the same private Scope and State grammar:
+Build37 retains scoped immutable Data; Fork42 creates independent transition
+lanes; SelectedQuery43 consumes State on successful admission; SelectedData44
+replaces a completed query at the same handle. Preflight failures preserve
+State, while admitted cancellation/fallback retains sequence history. The full
+contract and unchanged five-view quota accounting are in
+[geo-hierarchy-protocol.md](geo-hierarchy-protocol.md). No public host controller
+support or selected massive-performance claim follows from this core seam.

@@ -12,14 +12,13 @@ publication subtracts the live root, owner/query controls, session/result credit
 and new semantic copy before canonical Scene scratch/output admission. Local
 processor limits therefore do not acquire extra wrapper allowances on top.
 
-This first public integration accepts unselected Point/MultiPoint authority.
-A trusted SceneData with linked scope or selection returns code17
-`UnsupportedSelected` before allocating, advancing state or reading storage.
-Unknown/selected payload flags reject. State revisions alone do not mean a
-selection: monotonic unselected revisions are admitted under normal snapshot
-rules. Exact selected hierarchy folding remains an explicit #50 gap; no state
-is silently discarded and no selected-frame speed claim derives from the
-unselected release tracer.
+Trusted selected Point/MultiPoint SceneData is accepted by Build37. The root
+indexes all canonical vertices, independent of selection/time; it retains the
+private linked Scope Arc. Selected queries fold exactly the existing sparse
+Rust state through the shared time-first LOD accumulator. No source-sized mask,
+ID reconstruction, host filter or implicit ID join is introduced. Ordinary
+unscoped paths keep XYGZ v1 bytes; selected Data uses existing XYGZ v2/XYSE.
+Selected latency and massive selected execution remain separate evidence gates.
 
 ## Commands
 
@@ -33,6 +32,9 @@ be zero. Common budget/camera/time/source/revision grammar is unchanged.
 |39 Data|completed query + exact sequence; uniform style48 bytes|ordinary immutable SceneData receipt, shared cmd11 serialization|
 |40 Write bytes|build + exact sequence + exact128-byte pending write ticket|pure length/copy of admitted pending bytes|
 |41 Write ACK|same private write ticket after host storage/copy settlement|release write loan|
+|42 Fork lane|completed hierarchy + its exact immutable creation sequence; empty payload|new independent lane sharing immutable root and Scope, with creation snapshot/style history|
+|43 Selected query|scoped lane + common query header and exact8-byte issued State handle|consumes State on successful admission, replacing that handle with query authority|
+|44 Selected Data|completed selected query, no outstanding IO, exact sequence and uniform style48|replaces query with independently owned SceneData at the same handle|
 
 Common commands6 Step,7 Supply,8 Read ACK,9 Cancel and10 Dispose operate on
 hierarchy owners using their exact nonzero sequence. Data disposal uses command10
@@ -74,7 +76,7 @@ existing authority after query/hierarchy/source disposal.
 
 ## Replies and tickets
 
-Code17 UnsupportedSelected retains request handle/sequence, with all other
+Code17 UnsupportedSelected applies to command43 on an unscoped root and preserves the issued State. It retains request handle/sequence, with all other
 fields zero. Code18 HierarchyReady uses digest bytes40..48 and namespace u64 at48.
 Code19 HierarchyComplete has directory reads u64 at160, payload reads u64 at168,
 read bytes u64 at176, decoded vertex records u64 at184, passes u32 at192 and
@@ -104,3 +106,45 @@ unverified; sparse cold amplification and broad-frontier fallback are explicit.
 The existing direct-browser WASM CI job runs this bounded native/WASM conformance
 after packaging, inside the existing Release surfaces aggregate. Merge-group
 coverage and the separate scheduled/manual massive-scale policy are unchanged.
+
+## Selected lane authority and resource accounting
+
+A fork initializes transition and painted-style history from the immutable build
+snapshot, never another lane's latest camera/time revisions. Source equality
+includes complete validated chunk descriptors, geometry/CRS/row count/digest and
+generation. Command43 additionally requires identical private Scope Arc, layer,
+current canonical sorted IDs and selected paint profile. Commands38 on scoped
+roots reject, so a caller cannot accidentally drop selection. Preflight errors
+leave State and lane history intact. Successful command43 consumes State and
+advances the lane history even if later directory planning falls back or the
+query is cancelled. The caller may explicitly reissue identical intent via33
+under its existing same-revision equality contract; it must use a newer coherent
+query sequence. No State capability is restored from wire bytes.
+
+Command44 first retains/copies semantic result, source, style, snapshot and Scope
+under the existing SceneData leases, then atomically replaces the completed
+query. Query/session credit is dropped only after new authority owns every
+semantic reference. Failed publication leaves the completed query usable.
+Command39 keeps its independent Data allocation semantics. The existing exact
+pick, membership, original-row paging, retain and frozen selected authority use
+these same private guards after Source/lane/query disposal.
+
+Every lane reserves4KiB before allocation. Shared root/Scope/IDs remain Arc-owned;
+there are no per-fork metadata or sparse-ID copies. Local admission counts root,
+Scope, current state and query state (once if pointer-identical), controls,
+frontier/cache, accumulator, output counts and publication phases. Query credit
+conservatively retains the existing extra LOD-base reservation; selection adds
+at most one u64 count per admitted cell plus the sparse state reservation.
+Distinct old state and current Scope intent are both charged during overlap.
+Global processor128MiB and derived384MiB credits remain independent of local
+preflight, and old Data retains its own credit throughout replacement.
+
+With one shared Scope, five lanes and five displayed Data owners,11 handles are
+live. One issued State uses handle12, command43 replaces it with Query12, and44
+replaces it with candidate Data12. Six Data are temporarily live, below8. Old
+paint is released only after consumer settlement. Five distinct Scope/lane/Data
+triples can instead occupy15 handles: State16→Query16→Data16 still fits. Forking
+uses the original owner as lane0 plus four forks, not an extra sixth root owner.
+Five simultaneous row auxiliaries are not implicitly admitted; pressure fails
+closed, and callers must explicitly park/dispose engine owners while immutable
+frames/pages remain valid. No cap or ABI signature is increased.

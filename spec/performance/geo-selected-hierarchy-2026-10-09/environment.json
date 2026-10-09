@@ -1,0 +1,12 @@
+{
+  "base_commit": "4511b501ac76edec26608e81c22f791a377a599e",
+  "branch": "feature/50-geographic-selected-hierarchy",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "node": "v26.6.0",
+  "native_build": "cargo build --release -p xyg-core",
+  "wasm_build": "cargo build --release -p xyg-wasm --target wasm32-unknown-unknown",
+  "package": "node js/package-wasm.mjs",
+  "policy": "existing O3 + target inline-threshold100 and existing Binaryen postlink; 1472KiB raw/608KiB gzip caps unchanged",
+  "source_manifest_note": "Source capture includes cfg(test) proof code; only test/spec/harness edits followed production source freeze and artifact builds."
+}
