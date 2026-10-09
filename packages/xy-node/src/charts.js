@@ -374,7 +374,7 @@ export class GeoChart {
     )
       throw new TypeError("tile options require tileSession");
   }
-  host() { return new GeoHostAdapter(this); }
+  host(options) { return new GeoHostAdapter(this, options); }
   _retained() {
     const layers = this.layers.filter(
       (x) => x.source instanceof RetainedGeoSource,
