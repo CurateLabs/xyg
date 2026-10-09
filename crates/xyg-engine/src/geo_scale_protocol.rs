@@ -7,6 +7,8 @@ mod hierarchy;
 mod linked_state;
 #[path = "geo_temporal_overview_protocol.rs"]
 mod overview;
+#[path = "geo_overview_membership_protocol.rs"]
+mod overview_members;
 use crate::geo::{GeoCrs, GeoGeometry, column_from_descriptor_bytes};
 use crate::geo_indexed_query_session::{
     GeoIndexedQuerySession, GeoIndexedQueryStep, GeoIndexedReadTicket, GeoIndexedResult,
@@ -123,6 +125,7 @@ enum Entry {
     Scope(Arc<linked_state::Scope>),
     State(linked_state::State),
     Overview(overview::Owned),
+    OverviewMembers(overview_members::Owned),
     Builder {
         value: GeoManifestBuilder,
         _lease: GeoProcessorLease,
@@ -185,7 +188,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=44) {
+    if !matches!(command, 1..=21 | 23..=46) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -217,7 +220,7 @@ fn frame(b: &[u8]) -> Result<u32> {
                 | 24
                 | 25
                 | 26
-                | 27..=44
+                | 27..=46
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -337,7 +340,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
     if matches!(
         command,
-        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34 | 39
+        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34 | 39 | 45
     ) && !(command == 33 && sequence != 0)
         && r.entries.len() >= MAX_HANDLES
         && !(command == 19
@@ -347,6 +350,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     {
         return Err(SourceError::ResourceLimit);
     }
+    if matches!(command,45 | 46) {return overview_members::start(&mut r,request);}
     if matches!(command, 37 | 38 | 42 | 43) {
         return hierarchy::start(&mut r, request);
     }
@@ -781,7 +785,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 if !r
                     .entries
                     .iter()
-                    .any(|(_, e)| matches!(e, Entry::Data { .. }))
+                    .any(|(_, e)| is_data_entry(e))
                 {
                     r.data_cache = None;
                 }
@@ -1102,7 +1106,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 if !r
                     .entries
                     .iter()
-                    .any(|(_, e)| matches!(e, Entry::Data { .. }))
+                    .any(|(_, e)| is_data_entry(e))
                 {
                     r.data_cache = None;
                 }
@@ -1140,7 +1144,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         .ok_or(SourceError::StaleSource)?;
     if matches!(command, 7 | 8 | 10)
         && sequence != 0
-        && !matches!(r.entries[index].1, Entry::Overview(_) | Entry::Hierarchy(_))
+        && !matches!(r.entries[index].1, Entry::Overview(_) | Entry::Hierarchy(_) | Entry::OverviewMembers(_))
     {
         return Err(SourceError::InvalidFrame);
     }
@@ -1148,6 +1152,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         && matches!(command, 6..=10 | 24)
     {
         return execute_index_operation(&mut r, index, request);
+    }
+    if matches!(r.entries[index].1, Entry::OverviewMembers(_)) {
+        return overview_members::operation(&mut r,index,request);
     }
     if matches!(r.entries[index].1, Entry::Hierarchy(_)) {
         return hierarchy::operation(&mut r, index, request);
@@ -1387,7 +1394,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             if !r
                 .entries
                 .iter()
-                .any(|(_, e)| matches!(e, Entry::Data { .. }))
+                .any(|(_, e)| is_data_entry(e))
             {
                 r.data_cache = None;
             }
@@ -1400,10 +1407,14 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
 // Publication-only check shared by every immutable Data producer. Keep one
 // body in the constrained WASM artifact; this is outside row/vertex hot loops.
 #[inline(never)]
+fn is_data_entry(e:&Entry)->bool {
+    matches!(e,Entry::Data{..}) || matches!(e,Entry::OverviewMembers(o) if o.is_data())
+}
+#[inline(never)]
 fn admit_data_slot(r: &Registry) -> Result<()> {
     if r.entries
         .iter()
-        .filter(|(_, e)| matches!(e, Entry::Data { .. }))
+        .filter(|(_, e)| is_data_entry(e))
         .count()
         >= MAX_DATA_HANDLES
     {
@@ -1469,6 +1480,12 @@ pub fn read_data(request: &[u8], budget: usize) -> Result<Vec<u8>> {
             return Err(SourceError::ResourceLimit);
         }
         return Ok(bytes.clone());
+    }
+    if command == 23 && matches!(entry,Entry::OverviewMembers(_)) {
+        let (bytes,reads)=overview_members::read_bytes(entry,request,budget)?;
+        reads.fetch_update(Ordering::AcqRel,Ordering::Acquire,|n|(n<2).then_some(n+1))
+            .map_err(|_|SourceError::ResourceLimit)?;
+        return Ok(bytes.to_vec());
     }
     if command == 23 {
         if u64at(request, 24) != 0
@@ -1538,6 +1555,9 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
     }
     if command == 25 {
         return Ok(index_write_bytes(entry, request, budget)?.0.len());
+    }
+    if command == 23 && matches!(entry,Entry::OverviewMembers(_)) {
+        return Ok(overview_members::read_bytes(entry,request,budget)?.0.len());
     }
     if command == 23 {
         if u64at(request, 24) != 0
@@ -1806,7 +1826,7 @@ fn reserve_data(registry: &mut Registry, bytes: usize) -> Result<GeoDerivedLease
             if !registry
                 .entries
                 .iter()
-                .any(|(_, e)| matches!(e, Entry::Data { .. }))
+                .any(|(_, e)| is_data_entry(e))
             {
                 registry.data_cache = None;
             }
@@ -2679,3 +2699,7 @@ mod hierarchy_protocol_tests;
 #[cfg(test)]
 #[path = "geo_overview_painter_snapshot_tests.rs"]
 mod overview_painter_snapshot_tests;
+
+#[cfg(test)]
+#[path = "geo_overview_membership_protocol_tests.rs"]
+mod overview_membership_protocol_tests;

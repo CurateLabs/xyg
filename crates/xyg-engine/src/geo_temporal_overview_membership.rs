@@ -62,6 +62,9 @@ pub struct GeoPublishedOverviewMembership {
     _credit: GeoProcessorLease,
 }
 impl GeoPublishedOverviewMembership {
+    pub(crate) fn result(&self) -> &Arc<GeoOverviewResult> {
+        &self.result
+    }
     pub fn records(&self) -> &[GeoOverviewMember] {
         &self.records
     }
@@ -177,6 +180,9 @@ pub struct GeoOverviewMembershipSession {
     cancelled: bool,
 }
 impl GeoOverviewMembershipSession {
+    pub(crate) fn retained_bytes(&self) -> usize {
+        self.driver.live_bytes() + self.published.as_ref().map_or(0, |p| p._credit.bytes())
+    }
     pub fn create(
         result: Arc<GeoOverviewResult>,
         cell: u16,

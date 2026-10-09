@@ -113,3 +113,6 @@ interactive latency, browser paint, end-to-end host, selected overview, or issue
 existing command27 guard. Protocol commands45/46 are only a future integration
 proposal, not implemented here; reply20 is already reserved for State nonce
 retirement, and no new wire code is allocated by this engine change.
+
+The private retained byte transport is specified separately in
+[geo-overview-membership-protocol.md](geo-overview-membership-protocol.md).

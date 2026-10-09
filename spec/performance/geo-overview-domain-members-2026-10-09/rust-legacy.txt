@@ -1,0 +1,13 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 6 tests
+test geo_membership_session::tests::cancel_dispose_retire_reads_and_stale_cross_session_ticket_cannot_advance ... ok
+test geo_membership_session::tests::read_and_row_work_publish_progress_but_stalled_chunk_fails_before_read ... ok
+test geo_membership_session::tests::projection_budget_resumes_exact_row_without_empty_same_cursor_loop ... ok
+test geo_membership_session::tests::two_chunks_three_pages_exact_full_ids_multipoint_union_and_sync_parity ... ok
+test geo_membership_session::tests::cursor_style_camera_cell_and_source_revisions_reject_before_allocation ... ok
+test geo_membership_session::tests::global_admission_includes_old_pages_and_clone_and_pending_read ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1453 filtered out; finished in 0.00s
+
