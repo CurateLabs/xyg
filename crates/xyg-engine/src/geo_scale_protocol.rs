@@ -1,6 +1,8 @@
 //! Host-neutral retained geographic lifecycle framing (#50, §27/§29).
 //! Mutations return a fixed 256-byte reply: native hosts never execute a
 //! mutation twice to discover output length. Data reads are pure and bind sequence.
+#[path = "geo_temporal_overview_protocol.rs"]
+mod overview;
 use crate::geo::{GeoCrs, GeoGeometry, column_from_descriptor_bytes};
 use crate::geo_indexed_query_session::{
     GeoIndexedQuerySession, GeoIndexedQueryStep, GeoIndexedReadTicket, GeoIndexedResult,
@@ -76,6 +78,7 @@ struct IndexQuery {
     _lease: GeoProcessorLease,
 }
 enum Entry {
+    Overview(overview::Owned),
     Builder {
         value: GeoManifestBuilder,
         _lease: GeoProcessorLease,
@@ -96,6 +99,7 @@ enum Entry {
         reads: AtomicU8,
         semantic: Option<Box<GeoSceneSemantic>>,
         rows: Option<Box<GeoRowsAuthority>>,
+        overview: Option<Box<overview::Semantic>>,
     },
 }
 struct Registry {
@@ -137,7 +141,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=25) {
+    if !matches!(command, 1..=21 | 23..=25 | 27..=31) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -146,11 +150,12 @@ fn frame(b: &[u8]) -> Result<u32> {
         budget(b)?;
     }
     let zero = |start, end| b[start..end].iter().all(|&v| v == 0);
-    if (!matches!(command, 5 | 18) && (!zero(12, 16) || !zero(64, 144) || !zero(152, 232)))
-        || (!matches!(command, 3 | 5 | 18) && !zero(144, 152))
+    if (!matches!(command, 5 | 18 | 28) && (!zero(12, 16) || !zero(64, 144) || !zero(152, 232)))
+        || (!matches!(command, 3 | 5 | 18 | 28) && !zero(144, 152))
         || (!matches!(
             command,
-            5 | 6 | 9 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 24 | 25
+            5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 23 | 24 | 25 | 27
+                ..=31
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -268,10 +273,15 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let sequence = u64at(request, 24);
     let payload = &request[HEADER..];
     let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
-    if matches!(command, 1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
-        && r.entries.len() >= MAX_HANDLES
+    if matches!(
+        command,
+        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 27 | 28 | 29
+    ) && r.entries.len() >= MAX_HANDLES
     {
         return Err(SourceError::ResourceLimit);
+    }
+    if matches!(command, 27..=29) {
+        return overview::start(&mut r, request);
     }
     if command == 6 {
         if let Some((_, Entry::Index(owner))) = r.entries.iter().find(|(id, _)| *id == handle) {
@@ -298,6 +308,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                         | Entry::Rows(_)
                         | Entry::IndexBuild(_)
                         | Entry::Indexed(_)
+                        | Entry::Overview(
+                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
+                        )
                 )
             })
             .count()
@@ -464,6 +477,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                         | Entry::Rows(_)
                         | Entry::IndexBuild(_)
                         | Entry::Indexed(_)
+                        | Entry::Overview(
+                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
+                        )
                 )
             })
             .count()
@@ -493,6 +509,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                         | Entry::Rows(_)
                         | Entry::IndexBuild(_)
                         | Entry::Indexed(_)
+                        | Entry::Overview(
+                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
+                        )
                 )
             })
             .count()
@@ -580,6 +599,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 reads: AtomicU8::new(0),
                 semantic: None,
                 rows: Some(authority),
+                overview: None,
             },
         )?;
         let mut out = reply(id, sequence);
@@ -598,6 +618,9 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                         | Entry::Rows(_)
                         | Entry::IndexBuild(_)
                         | Entry::Indexed(_)
+                        | Entry::Overview(
+                            overview::Owned::Build { .. } | overview::Owned::Query { .. }
+                        )
                 )
             })
             .count()
@@ -739,6 +762,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 reads: AtomicU8::new(0),
                 semantic: None,
                 rows: None,
+                overview: None,
             },
         )?;
         let mut out = reply(id, sequence);
@@ -797,6 +821,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 reads: AtomicU8::new(0),
                 semantic: None,
                 rows: None,
+                overview: None,
             },
         )?;
         let mut out = reply(id, sequence);
@@ -904,6 +929,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 reads: AtomicU8::new(0),
                 semantic: Some(semantic),
                 rows: None,
+                overview: None,
             },
         )?;
         let entry = &mut r
@@ -923,10 +949,19 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         .iter()
         .position(|&(id, _)| id == handle)
         .ok_or(SourceError::StaleSource)?;
+    if matches!(command, 7 | 8 | 10)
+        && sequence != 0
+        && !matches!(r.entries[index].1, Entry::Overview(_))
+    {
+        return Err(SourceError::InvalidFrame);
+    }
     if matches!(r.entries[index].1, Entry::IndexBuild(_) | Entry::Indexed(_))
         && matches!(command, 6..=10 | 24)
     {
         return execute_index_operation(&mut r, index, request);
+    }
+    if matches!(r.entries[index].1, Entry::Overview(_)) {
+        return overview::operation(&mut r, index, request);
     }
     let entry = &mut r.entries[index].1;
     let mut out = reply(handle, sequence);
@@ -1183,6 +1218,15 @@ pub fn read_data(request: &[u8], budget: usize) -> Result<Vec<u8>> {
         .find(|&&(id, _)| id == u64at(request, 16))
         .ok_or(SourceError::StaleSource)?
         .1;
+    if command == 30 {
+        let (bytes, reads) = overview::write_bytes(entry, request, budget)?;
+        reads
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < 2).then_some(n + 1)
+            })
+            .map_err(|_| SourceError::ResourceLimit)?;
+        return Ok(bytes.to_vec());
+    }
     if command == 25 {
         let (bytes, reads) = index_write_bytes(entry, request, budget)?;
         reads
@@ -1205,6 +1249,25 @@ pub fn read_data(request: &[u8], budget: usize) -> Result<Vec<u8>> {
         return Ok(bytes.clone());
     }
     if command == 23 {
+        if u64at(request, 24) != 0
+            && !matches!(
+                entry,
+                Entry::Data {
+                    overview: Some(_),
+                    ..
+                }
+            )
+        {
+            return Err(SourceError::InvalidFrame);
+        }
+        if let Entry::Data {
+            overview: Some(s), ..
+        } = entry
+        {
+            if u64at(request, 24) != s.sequence {
+                return Err(SourceError::StaleSource);
+            }
+        }
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
@@ -1233,7 +1296,9 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
     if command == 20 {
         return Ok(encode_chunk(&request[HEADER..], budget)?.len());
     }
-    if !matches!(command, 21 | 23 | 25) || (command != 25 && request.len() != HEADER) {
+    if !matches!(command, 21 | 23 | 25 | 30)
+        || (!matches!(command, 25 | 30) && request.len() != HEADER)
+    {
         return Err(SourceError::InvalidFrame);
     }
     let r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
@@ -1243,8 +1308,32 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
         .find(|&&(id, _)| id == u64at(request, 16))
         .ok_or(SourceError::StaleSource)?
         .1;
+    if command == 30 {
+        return Ok(overview::write_bytes(entry, request, budget)?.0.len());
+    }
     if command == 25 {
         return Ok(index_write_bytes(entry, request, budget)?.0.len());
+    }
+    if command == 23 {
+        if u64at(request, 24) != 0
+            && !matches!(
+                entry,
+                Entry::Data {
+                    overview: Some(_),
+                    ..
+                }
+            )
+        {
+            return Err(SourceError::InvalidFrame);
+        }
+        if let Entry::Data {
+            overview: Some(s), ..
+        } = entry
+        {
+            if u64at(request, 24) != s.sequence {
+                return Err(SourceError::StaleSource);
+            }
+        }
     }
     let (bytes, copies) = match (command, entry) {
         (21, Entry::Manifest { bytes, .. }) => (bytes, 3),
@@ -1648,6 +1737,7 @@ fn row_authority(
     match entry {
         Entry::Data {
             rows: Some(authority),
+            overview: None,
             ..
         } => {
             if sequence != authority.sequence {
@@ -2247,3 +2337,35 @@ fn data_snapshot(entry: &Entry) -> Result<GeoOperationSnapshot> {
 #[cfg(test)]
 #[path = "geo_index_protocol_tests.rs"]
 mod index_protocol_tests;
+
+/// Borrow immutable overview Scene/count authority. The callback runs under the
+/// registry lock and must not reenter this registry. Source-feature interaction
+/// is intentionally unavailable for these explicitly coarse domain cells.
+pub fn with_overview_data<T>(
+    handle: u64,
+    sequence: u64,
+    callback: impl FnOnce(
+        &[u8],
+        &crate::geo_temporal_overview::GeoOverviewResult,
+        GeoViewport,
+    ) -> Result<T>,
+) -> Result<T> {
+    let r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
+    let Entry::Data {
+        bytes,
+        overview: Some(s),
+        ..
+    } = &r
+        .entries
+        .iter()
+        .find(|(id, _)| *id == handle)
+        .ok_or(SourceError::StaleSource)?
+        .1
+    else {
+        return Err(SourceError::InvalidFrame);
+    };
+    if sequence != s.sequence {
+        return Err(SourceError::StaleSource);
+    }
+    callback(&bytes[HEADER + 2048..], &s.result, s.camera)
+}

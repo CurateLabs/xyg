@@ -91,7 +91,10 @@ must not advance a newer job or retire its current read. Cancellation through an
 older sequence preserves newer work.
 
 Header sequence is meaningful only for begin, step, cancel and snapshot preparation;
-supply/release use zero in the header and the exact sequence within their ticket.
+ordinary source supply/release use zero in the header and the exact sequence
+within their ticket. Overview supply/release/disposal and pure typed Data reads
+require their exact nonzero operation sequence; their distinct 128-byte ticket
+grammar is defined in [geo-temporal-overview-protocol.md](geo-temporal-overview-protocol.md).
 Reply bytes 16/24 are handle/sequence. A step uses u32 at byte 8: NeedRead 1,
 AwaitRelease 2, SourceReady 3, Complete 4, Idle 5, Disposed 6. Validated source
 metadata occupies generation u64 at 32, digest at 40, rows u64 at 48, geometry
@@ -536,3 +539,15 @@ reads. The planner does not silently assume a particular LOD pass count: runtime
 cumulative record/read/byte caps still apply if an admitted aggregate second pass
 exceeds its allowance. Hosts must explicitly dispatch canonical begin5 on the
 fallback receipt rather than changing screen-bin semantics.
+
+
+## Exact temporal overview extension
+
+Commands 27–31 share this registry and all existing limits. The builder starts
+from trusted immutable source SceneData, reauthenticates canonical chunks, and
+publishes a private temporal overview only after every external write ACK.
+Independent queries produce explicitly nonfinal data-domain count frames in
+`XYOV` v1, with ordinary Rust-projected Scene geometry. They do not produce a
+`GeoPointResult`, exact screen-bin counts, or source-feature interaction. Ticket,
+command, output, admission and remaining parity gates are specified in
+[geo-temporal-overview-protocol.md](geo-temporal-overview-protocol.md).

@@ -66,6 +66,13 @@ pub mod geo_scale_protocol;
 #[cfg(test)]
 mod geo_scale_protocol_tests;
 pub mod geo_lod;
+pub mod geo_temporal_overview;
+pub mod geo_temporal_overview_build;
+pub mod geo_temporal_overview_scene;
+#[cfg(test)]
+mod geo_temporal_overview_tests;
+#[cfg(test)]
+mod geo_temporal_overview_protocol_tests;
 pub mod geo_lod_scene;
 pub mod geo_lod_hit;
 pub mod geo_tile_cache;
