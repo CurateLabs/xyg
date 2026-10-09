@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs
 
       - name: Build JS client
         run: |

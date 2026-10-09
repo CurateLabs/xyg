@@ -223,6 +223,30 @@ try{
   failRows=true;await reject(rowChart.sourceRows(),'failed source row read published');
   assert(sourceList.children.length===2&&sourceList.lastElementChild.textContent.includes('source row 3')&&(await rowChart.pick(400,300))[0]?.featureId===MAX,'failed page changed accepted companion or paint');
   failRows=false;assert((await rowChart.sourceRows())[0].sourceRow===0n,'source paging did not recover');
+  stage('indexed sidecar browser publication and recovery');
+  const canonicalScene=rowChart.snapshot().scene.slice(),sidecar=new Map();let badLeaf=false;
+  const built=await rowChart.buildIndex({grid:16,maxVertices:4n,
+    async writePage(ticket,bytes){assert(sidecar.size<16,'fixture sidecar exceeded explicit storage bound');sidecar.set(ticket.page,bytes.slice());ticket.raw.fill(0);ticket.encodedBytes=1;},
+    async readPage(ticket){const page=sidecar.get(ticket.page);assert(page,'unknown sidecar page');ticket.raw.fill(0);ticket.encodedBytes=1;return badLeaf?page.slice(0,-1):page.slice();}});
+  assert(built.pages>0n&&sidecar.size===Number(built.pages),'real Rust index did not publish bounded sidecar');
+  await rowChart.update(query(companionSource.info,1n,{camera:{...camera,zoom:2}}));
+  assert(rowChart.spatialDecision==='indexed'&&rowChart.spatialStats?.pagesRead>0n,'browser did not execute indexed query');
+  assert(rowChart.snapshot().scene.length===canonicalScene.length&&rowChart.snapshot().scene.every((n,i)=>n===canonicalScene[i]),'indexed Scene differs from canonical Rust Scene');
+  assert((await rowChart.pick(400,300))[0]?.featureId===MAX&&(await rowChart.sourceRows())[0].sourceRow===0n,'indexed frame lost pick/original row authority');
+  const acceptedHandle=rowChart.frame.handle;badLeaf=true;
+  await reject(rowChart.update(query(companionSource.info,2n,{camera:{...camera,zoom:2}})),'corrupt indexed leaf published');
+  assert(rowChart.frame.handle===acceptedHandle&&(await rowChart.pick(400,300))[0]?.featureId===MAX&&red(await pixels(rowsHost.querySelector('canvas[role=img]'))),'failed indexed read changed accepted paint');
+  badLeaf=false;await rowChart.update(query(companionSource.info,3n,{camera:{...camera,zoom:2}}));
+  assert(rowChart.spatialDecision==='indexed'&&(await rowChart.pick(400,300))[0]?.featureId===MAX,'indexed browser failed recovery');
+  stage('indexed unsettled write cancellation');
+  events.length=0;const indexEntered=deferred(),indexGate=deferred();teardownRelease=indexGate.resolve;
+  const abandoned=rowChart.buildIndex({grid:16,maxVertices:4n,async writePage(ticket,bytes,signal){assert(bytes.length===ticket.encodedBytes,'write authority mismatch');indexEntered.resolve(signal);await indexGate.promise;},async readPage(){throw Error('abandoned index must not publish');}});
+  const abandonedRejection=reject(abandoned,'cancelled index build published');const writeSignal=await indexEntered.promise;
+  const resumed=rowChart.update(query(companionSource.info,4n,{camera:{...camera,zoom:2}}));await delay(30);
+  assert(writeSignal.aborted&&!events.some(e=>e.command===24),'write ACK preceded storage settlement');
+  indexGate.resolve();assert((await abandonedRejection).name==='AbortError','cancelled index returned wrong result');await resumed;
+  assert(events.some(e=>e.kind==='settled'&&e.command===24)&&rowChart.spatialDecision==='indexed'&&(await rowChart.pick(400,300))[0]?.featureId===MAX,'cancelled build failed ACK or replaced accepted index');
+  teardownRelease=null;
   await remove(rowChart);
   stage('frozen source snapshot');
   const frozenReply=new DataView(await rawGeo('geo.snapshot.execute',snapshotRequest(1,main.frame.handle,1n))),frozenHandle=frozenReply.getBigUint64(16,true);
@@ -237,7 +261,7 @@ try{
     {const first=new Uint8Array(frozen),second=new Uint8Array(secondFrozen);assert(secondFrozen.byteLength===frozen.byteLength&&second.every((n,i)=>n===first[i]),'unsupported export mutated frozen snapshot');}
     await reject(rawGeo('geo.snapshot.read',snapshotRequest(20,frozenHandle)),'frozen transfer read quota escaped');
   }finally{frozenView=null;frozen=null;secondFrozen=null;await rawGeo('geo.snapshot.execute',snapshotRequest(3,frozenHandle));}
-  stage('cancel unsettled source read');pauseSequence=2n;entered=deferred();gate=deferred();teardownRelease=gate.resolve;
+  stage('cancel unsettled source read');events.length=0;pauseSequence=2n;entered=deferred();gate=deferred();teardownRelease=gate.resolve;
   const stale=main.update(query(direct.info,2n));const staleRejection=reject(stale,'superseded query succeeded');
   await entered.promise;
   const latest=main.update(query(direct.info,3n));
@@ -290,6 +314,6 @@ try{
   assert(stopped.every(r=>r.status==='rejected'&&r.reason.code==='XYG_WASM_DISPOSED'),'shutdown executed or stranded queued mutation');
   assert(worker.pending.size===0,'shutdown retained pending transport');
   assert(parserFamilies.size===4,'parser proof missing actual packet family');
-  result={ok:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,originalRows:true,offscreenKeyboardFocus:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
+  result={ok:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,originalRows:true,indexedSidecar:true,indexedRecovery:true,indexedWriteCancelAck:true,offscreenKeyboardFocus:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
 }catch(error){result={ok:false,stage:window.__retainedStage,code:error.code,message:error.message,stack:error.stack};}
 finally{teardownRelease?.();await Promise.allSettled([...charts].map(c=>c.dispose()));await worker.dispose();hosts.forEach(el=>el.remove());HTMLCanvasElement.prototype.getContext=getContext;window.__retained=result;}

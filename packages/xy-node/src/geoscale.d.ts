@@ -1,6 +1,5 @@
-/** Thin host-neutral retained geography framing; native adapter appended. */
-export interface XygGeoCamera {crs:number;worldWrap?:boolean;centerX:number;centerY:number;zoom:number;width:number;height:number;bearing?:number;pitch?:number}
 /** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
+export interface XygGeoCamera {crs:number;worldWrap?:boolean;centerX:number;centerY:number;zoom:number;width:number;height:number;bearing?:number;pitch?:number}
 export declare const GEO_SCALE_HEADER = 256;
 export interface XygGeoQueryBudget {
     processorBytes: number;
@@ -59,6 +58,8 @@ export declare function encodeGeoScaleStyle(style: {
 }): Uint8Array;
 export interface XygGeoReadTicket {
     raw: Uint8Array;
+    kind: number;
+    page: bigint;
     sessionId: bigint;
     readId: bigint;
     sequence: bigint;
@@ -72,6 +73,7 @@ export interface XygGeoReadTicket {
 }
 export declare function decodeGeoScaleReply(buffer: ArrayBuffer): {
     code: number;
+    fallbackReasonCode: number | null;
     handle: bigint;
     sequence: bigint;
     dataLength: bigint;
@@ -84,6 +86,12 @@ export declare function decodeGeoScaleReply(buffer: ArrayBuffer): {
         crs: number;
     };
     ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
 };
 export declare function encodeGeoChunkRequest(input: {
     descriptor: ArrayBuffer | Uint8Array;
@@ -166,6 +174,7 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
     signal?: AbortSignal;
 }): Promise<{
     code: number;
+    fallbackReasonCode: number | null;
     handle: bigint;
     sequence: bigint;
     dataLength: bigint;
@@ -178,6 +187,12 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
         crs: number;
     };
     ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
 }>;
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
 export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
@@ -185,6 +200,7 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     sequence: bigint;
     budget: XygGeoQueryBudget;
     style: Uint8Array;
+    command?: 11 | 19;
 }): Promise<{
     handle: bigint;
     readonly data: {
@@ -323,6 +339,38 @@ export declare function prepareGeoAuxData<T>(bridge: XygGeoScaleBridge, input: {
     handle: bigint;
     readonly data: T & ({} | null);
     dispose(): Promise<void>;
+}>;
+/** Drive the shared index state machine; external immutable sidecar storage is
+ * explicit. Storage callbacks must bound their cache and settle before ACK. */
+export declare function driveGeoIndexSession(bridge: XygGeoScaleBridge, input: {
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    readChunk?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
+    readPage?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
+    writePage?: (ticket: XygGeoReadTicket, bytes: Uint8Array, signal?: AbortSignal) => Promise<void>;
+    signal?: AbortSignal;
+}): Promise<{
+    code: number;
+    fallbackReasonCode: number | null;
+    handle: bigint;
+    sequence: bigint;
+    dataLength: bigint;
+    sourceHandle: bigint;
+    source: {
+        generation: bigint;
+        digest: Uint8Array<ArrayBuffer>;
+        rows: bigint;
+        geometry: number;
+        crs: number;
+    };
+    ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
 }>;
 export declare function geoScaleExecute(request:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>;
 export declare function geoScaleRead(request:ArrayBuffer|Uint8Array,budget:number):Promise<ArrayBuffer>;

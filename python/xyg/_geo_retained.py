@@ -206,10 +206,10 @@ class RetainedGeoSource:
                 raise ValueError("mismatched retained packet length")
             data = (
                 g.parse_scene_data(packet)
-                if command == 11
+                if command in (11, 19)
                 else _parse_aux(command, packet, handle, sequence)
             )
-            if command == 11 and (
+            if command in (11, 19) and (
                 data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
             ):
                 raise ValueError("mismatched Scene identity")
@@ -519,7 +519,15 @@ async def _aprepare(self, command, handle, sequence, payload=b""):
             raise asyncio.CancelledError
         if len(packet) != reply["data_length"]:
             raise ValueError("invalid retained packet length")
-        data = _parse_aux(command, packet, handle, sequence)
+        data = (
+            g.parse_scene_data(packet)
+            if command == 19
+            else _parse_aux(command, packet, handle, sequence)
+        )
+        if command == 19 and (
+            data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
+        ):
+            raise ValueError("mismatched Scene identity")
         return OwnedGeoData(reply["handle"], data, self._bridge)
     except BaseException as error:
         packet = data = task = None
@@ -689,6 +697,32 @@ def _attach_frame(source, frame, sequence, query_packet, style):
         return await _arows(source, rows_owner, sequence)
 
     frame.rows, frame.rows_async = rows, rows_async
+
+    def spatial_index(*, grid, max_vertices, read_page, write_page):
+        from ._geo_spatial import GeoSpatialIndex
+
+        return GeoSpatialIndex._from_frame(
+            frame,
+            source,
+            grid=grid,
+            max_vertices=max_vertices,
+            read_page=read_page,
+            write_page=write_page,
+        )
+
+    async def spatial_index_async(*, grid, max_vertices, read_page, write_page):
+        from ._geo_spatial import GeoSpatialIndex
+
+        return await GeoSpatialIndex._from_frame_async(
+            frame,
+            source,
+            grid=grid,
+            max_vertices=max_vertices,
+            read_page=read_page,
+            write_page=write_page,
+        )
+
+    frame.spatial_index, frame.spatial_index_async = spatial_index, spatial_index_async
 
 
 def _validate_key(key):

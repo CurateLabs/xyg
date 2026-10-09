@@ -11,6 +11,8 @@ export interface OwnedGeoData<T> {
 }
 export interface OwnedGeoFrame<T> extends OwnedGeoData<T> {
   rows(): Promise<OwnedGeoRows>;
+  spatialIndex(options: import("./geo-spatial.js").GeoSpatialStorage): Promise<import("./geo-spatial.js").GeoSpatialIndex>;
+  readonly indexStats?: {pagesRead: bigint;bytesRead: bigint;candidateVertices: bigint;passes: number};
   export(
     format?: import("./geo-snapshot.js").GeoFrozenFormat,
     options?: import("./geo-snapshot.js").GeoFrozenExportOptions,

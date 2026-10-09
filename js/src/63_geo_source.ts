@@ -23,14 +23,14 @@ function response(buffer:ArrayBuffer){if(!(buffer instanceof ArrayBuffer)||buffe
 function count(v:DataView,at:number,max=MAX_PACKET){const n=v.getBigUint64(at,true);if(n>BigInt(max))throw new RangeError('reply count exceeds framing');return Number(n);}
 
 export function encodeGeoScaleRequest(input:XygGeoScaleRequest):ArrayBuffer {
- const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,21,23].includes(command))throw new TypeError('unknown geographic command');
+ const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,23,24,25].includes(command))throw new TypeError('unknown geographic command');
  const payload=input.payload===undefined?new Uint8Array():bytes(input.payload),length=256+payload.byteLength;
  if(length>MAX_PACKET||input.budget&&length>budgetBytes(input.budget.processorBytes))throw new RangeError('request exceeds framing budget');
- if(input.query!==undefined&&command!==5||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16].includes(command))throw new TypeError('field does not belong to command');
+ if(input.query!==undefined&&![5,18].includes(command)||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16,17,18,19,24,25].includes(command))throw new TypeError('field does not belong to command');
  const out=new ArrayBuffer(length),b=new Uint8Array(out),v=new DataView(out);b.set([88,89,71,81]);v.setUint32(4,1,true);v.setUint32(8,command,true);v.setBigUint64(16,u64(input.handle??0n),true);v.setBigUint64(24,u64(input.sequence??0n),true);
  if(input.budget){const q=input.budget;v.setBigUint64(32,BigInt(budgetBytes(q.processorBytes)),true);v.setBigUint64(40,u64(q.maxRowsExamined),true);v.setBigUint64(48,u64(q.maxReadBytes),true);v.setUint32(56,u32(q.maxChunks),true);v.setUint32(60,u32(q.pageRows),true);}
  if(command===3)v.setBigUint64(144,u64(input.generation??0n),true);
- if(command===5){const q=input.query;if(!q)throw new TypeError('begin requires query');const c=q.camera;if(typeof c.worldWrap!=='boolean'||typeof q.previousDirect!=='boolean'||!(q.sourceDigest instanceof Uint8Array)||q.sourceDigest.length!==8)throw new TypeError('invalid query framing');v.setUint32(12,c.worldWrap?1:0,true);v.setUint32(64,u32(c.crs),true);v.setUint32(68,u32(q.reducedKind),true);v.setUint32(72,u32(q.maxCells),true);v.setUint32(76,q.previousDirect?1:0,true);
+ if(command===5||command===18){const q=input.query;if(!q)throw new TypeError('begin requires query');const c=q.camera;if(typeof c.worldWrap!=='boolean'||typeof q.previousDirect!=='boolean'||!(q.sourceDigest instanceof Uint8Array)||q.sourceDigest.length!==8)throw new TypeError('invalid query framing');v.setUint32(12,c.worldWrap?1:0,true);v.setUint32(64,u32(c.crs),true);v.setUint32(68,u32(q.reducedKind),true);v.setUint32(72,u32(q.maxCells),true);v.setUint32(76,q.previousDirect?1:0,true);
   [c.centerX,c.centerY,c.zoom,c.width,c.height,c.bearing,c.pitch].forEach((n,i)=>{if(typeof n!=='number')throw new TypeError('camera requires explicit f64 values');v.setFloat64(80+i*8,n,true);});b.set(q.sourceDigest,136);
   [q.generation,q.layerId,q.cameraRevision,q.timeRevision,q.layerRevision,q.styleRevision,q.stateRevision].forEach((n,i)=>v.setBigUint64(144+i*8,u64(n),true));
   v.setUint32(200,u32(q.time.kind),true);if(q.time.kind===1)v.setBigInt64(208,i64(q.time.instant),true);else if(q.time.kind===2){v.setBigInt64(208,i64(q.time.start),true);v.setBigInt64(216,i64(q.time.end),true);}else if(q.time.kind!==0)throw new TypeError('unknown time predicate');v.setBigUint64(224,u64(q.maxProjectedVertices),true);
@@ -39,9 +39,25 @@ export function encodeGeoScaleRequest(input:XygGeoScaleRequest):ArrayBuffer {
 export function encodeGeoScaleStyle(style:{fill:Uint8Array;stroke:Uint8Array;strokeWidth:number;diameter:number;opacity:number;symbol:number}):Uint8Array {
  const b=new Uint8Array(48),v=new DataView(b.buffer);if(!(style.fill instanceof Uint8Array)||style.fill.length!==4||!(style.stroke instanceof Uint8Array)||style.stroke.length!==4||u32(style.symbol)>255)throw new TypeError('invalid exact style framing');b.set(style.fill);b.set(style.stroke,4);[style.strokeWidth,style.diameter,style.opacity].forEach((n,i)=>{if(typeof n!=='number')throw new TypeError('style requires f64');v.setFloat64(8+i*8,n,true);});b[32]=style.symbol;return b;
 }
-export interface XygGeoReadTicket {raw:Uint8Array;sessionId:bigint;readId:bigint;sequence:bigint;pass:number;generation:bigint;chunkIndex:number;rows:number;firstRow:bigint;encodedBytes:number;digest:Uint8Array}
-function readTicket(raw:Uint8Array):XygGeoReadTicket {const v=new DataView(raw.buffer,raw.byteOffset,raw.byteLength);zero(raw,28,32);zero(raw,72,96);return {raw,sessionId:v.getBigUint64(0,true),readId:v.getBigUint64(8,true),sequence:v.getBigUint64(16,true),pass:v.getUint32(24,true),generation:v.getBigUint64(32,true),chunkIndex:v.getUint32(40,true),rows:v.getUint32(44,true),firstRow:v.getBigUint64(48,true),encodedBytes:count(v,56,16*1024*1024),digest:raw.subarray(64,72)};}
-export function decodeGeoScaleReply(buffer:ArrayBuffer){const {b,v}=response(buffer);if(buffer.byteLength!==256)throw new TypeError('mutation reply must be fixed size');const code=v.getUint32(8,true);if(code>6)throw new TypeError('invalid step code');zero(b,12,16);if(code===4){if(v.getBigUint64(160,true)>4096n||v.getUint32(168,true)>1)throw new TypeError('invalid membership reply');zero(b,176,256);}else zero(b,160,256);return {code,handle:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),dataLength:v.getBigUint64(32,true),sourceHandle:v.getBigUint64(40,true),source:{generation:v.getBigUint64(32,true),digest:b.subarray(40,48),rows:v.getBigUint64(48,true),geometry:v.getUint32(56,true),crs:v.getUint32(60,true)},ticket:code===1||code===2?readTicket(b.subarray(64,160)):null};}
+export interface XygGeoReadTicket {raw:Uint8Array;kind:number;page:bigint;sessionId:bigint;readId:bigint;sequence:bigint;pass:number;generation:bigint;chunkIndex:number;rows:number;firstRow:bigint;encodedBytes:number;digest:Uint8Array}
+function readTicket(raw:Uint8Array):XygGeoReadTicket {
+ const v=new DataView(raw.buffer,raw.byteOffset,raw.byteLength),kind=v.getUint32(28,true),pass=v.getUint32(24,true);
+ if(kind>3)throw new TypeError('invalid geographic ticket kind');zero(raw,72,96);
+ const encodedBytes=count(v,56,kind>=2?65536:16*1024*1024);
+ if(kind===1&&(pass!==0||v.getBigUint64(8,true)!==BigInt(v.getUint32(40,true))))throw new TypeError('invalid index source ticket');
+ if(kind>=2){zero(raw,32,56);if(encodedBytes<64||kind===2&&![1,2].includes(pass)||kind===3&&pass!==0)throw new TypeError('invalid leaf ticket');}
+ return {raw,kind,page:v.getBigUint64(8,true),sessionId:v.getBigUint64(0,true),readId:v.getBigUint64(8,true),sequence:v.getBigUint64(16,true),pass,generation:v.getBigUint64(32,true),chunkIndex:v.getUint32(40,true),rows:v.getUint32(44,true),firstRow:v.getBigUint64(48,true),encodedBytes,digest:raw.subarray(64,72)};
+}
+export function decodeGeoScaleReply(buffer:ArrayBuffer){
+ const {b,v}=response(buffer);if(buffer.byteLength!==256)throw new TypeError('mutation reply must be fixed size');const code=v.getUint32(8,true);if(code>12)throw new TypeError('invalid step code');zero(b,12,16);
+ if(code===4){if(v.getBigUint64(160,true)>4096n||v.getUint32(168,true)>1)throw new TypeError('invalid membership reply');zero(b,176,256);}
+ else if(code===12){if(![1,2].includes(v.getUint32(184,true)))throw new TypeError('invalid indexed pass count');zero(b,188,256);}
+ else zero(b,160,256);
+ if(code===10){if(![1,2].includes(v.getUint32(48,true)))throw new TypeError('invalid indexed fallback reason');zero(b,52,160);}
+ const ticket=[1,2,7,8].includes(code)?readTicket(b.subarray(64,160)):null;
+ if(ticket&&([7,8].includes(code)?ticket.kind!==3:ticket.kind===3))throw new TypeError('ticket does not match step');
+ return {code,fallbackReasonCode:code===10?v.getUint32(48,true):null,handle:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),dataLength:v.getBigUint64(32,true),sourceHandle:v.getBigUint64(40,true),source:{generation:v.getBigUint64(32,true),digest:b.subarray(40,48),rows:v.getBigUint64(48,true),geometry:v.getUint32(56,true),crs:v.getUint32(60,true)},ticket,indexStats:code===12?{pagesRead:v.getBigUint64(160,true),bytesRead:v.getBigUint64(168,true),candidateVertices:v.getBigUint64(176,true),passes:v.getUint32(184,true)}:null};
+}
 
 export function encodeGeoChunkRequest(input:{descriptor:ArrayBuffer|Uint8Array;rows:number;intervals?:{starts:BigInt64Array;ends:BigInt64Array;startValidity:Uint8Array;endValidity:Uint8Array};values?:Float64Array},budget:number):ArrayBuffer {
  budgetBytes(budget);const d=bytes(input.descriptor),n=u32(input.rows),t=input.intervals,s=input.values;
@@ -84,8 +100,8 @@ export async function driveGeoSession(bridge:XygGeoScaleBridge,input:{handle:big
   }}finally{signal?.removeEventListener('abort',onAbort);if(cancelPromise)await cancelPromise;}
 }
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
-export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;style:Uint8Array}){
- if(!(input.style instanceof Uint8Array)||input.style.length!==48)throw new TypeError('style must be exact 48-byte Rust framing');const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:11,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.style}))),handle=reply.handle;
+export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;style:Uint8Array;command?:11|19}){
+ if(!(input.style instanceof Uint8Array)||input.style.length!==48)throw new TypeError('style must be exact 48-byte Rust framing');const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:input.command??11,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.style}))),handle=reply.handle;
  let data:ReturnType<typeof parseGeoSceneData>|undefined,packet:ArrayBuffer|undefined;
  try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
  catch(error){data=undefined;packet=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
@@ -142,4 +158,39 @@ export async function prepareGeoAuxData<T>(bridge:XygGeoScaleBridge,input:{comma
  catch(error){packet=undefined;data=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
  let disposal:Promise<void>|undefined;
  return {handle,get data(){if(data===undefined)throw new Error('Geographic data disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});}};
+}
+
+/** Drive the shared index state machine; external immutable sidecar storage is
+ * explicit. Storage callbacks must bound their cache and settle before ACK. */
+export async function driveGeoIndexSession(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;readChunk?:(ticket:XygGeoReadTicket,signal?:AbortSignal)=>Promise<ArrayBuffer|Uint8Array>;readPage?:(ticket:XygGeoReadTicket,signal?:AbortSignal)=>Promise<ArrayBuffer|Uint8Array>;writePage?:(ticket:XygGeoReadTicket,bytes:Uint8Array,signal?:AbortSignal)=>Promise<void>;signal?:AbortSignal}) {
+ const {handle,sequence,budget,signal}=input;let cancellation:Promise<ArrayBuffer>|undefined;
+ const cancel=()=>cancellation??=bridge.execute(encodeGeoScaleRequest({command:9,handle,sequence}));
+ const aborted=()=>new DOMException('Geographic index operation cancelled','AbortError');
+ try {for(;;){
+  if(signal?.aborted){await cancel();throw aborted();}
+  const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:6,handle,sequence,budget})));
+  if(reply.handle!==handle||reply.sequence!==sequence)throw new TypeError('mismatched index session reply');
+  if([11,12].includes(reply.code))return reply;
+  if(![1,7].includes(reply.code)||!reply.ticket)throw new TypeError('unexpected index session step');
+  const ticket=reply.ticket,authority=ticket.raw.slice(),authorizedBytes=ticket.encodedBytes,write=reply.code===7;
+  let borrowed:ArrayBuffer|Uint8Array|undefined,chunk:Uint8Array|undefined,supply:ArrayBuffer|undefined;
+  try {
+   if(4*(352+authorizedBytes)>budget.processorBytes)throw new RangeError('index transfer exceeds peak budget');
+   if(write){
+    if(ticket.kind!==3||!input.writePage)throw new TypeError('index write storage required');
+    borrowed=await bridge.read(encodeGeoScaleRequest({command:25,handle,sequence,budget,payload:authority}));chunk=bytes(borrowed);
+    if(chunk.byteLength!==authorizedBytes||chunk.byteLength!==chunk.buffer.byteLength)throw new TypeError('exact owning leaf storage required');
+    await input.writePage(ticket,chunk,signal);
+   }else{
+    const reader=ticket.kind===1?input.readChunk:ticket.kind===2?input.readPage:undefined;
+    if(!reader)throw new TypeError('index read storage required');borrowed=await reader(ticket,signal);chunk=bytes(borrowed);
+    if(chunk.byteLength!==authorizedBytes||chunk.byteLength!==chunk.buffer.byteLength)throw new TypeError('exact owning input storage required');
+    if(4*(352+chunk.byteLength)>budget.processorBytes)throw new RangeError('index transfer exceeds peak budget');
+    let payload:Uint8Array|undefined=new Uint8Array(96+chunk.byteLength);payload.set(authority);payload.set(chunk,96);supply=encodeGeoScaleRequest({command:7,handle,payload});payload=undefined;
+    await bridge.execute(supply);
+   }
+   if(signal?.aborted){await cancel();throw aborted();}
+  }catch(error){borrowed=undefined;chunk=undefined;supply=undefined;await cancel();throw error;}
+  finally{borrowed=undefined;chunk=undefined;supply=undefined;if(cancellation)await cancellation;await bridge.execute(encodeGeoScaleRequest({command:write?24:8,handle,...(write?{sequence}:{}),payload:authority}));}
+ }}catch(error){await cancel();throw error;}
 }

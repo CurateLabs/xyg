@@ -229,35 +229,7 @@ export class RetainedGeoSource {
           await frame.dispose();
           throw new Error("operation aborted");
         }
-        const rowsOwner = frame.handle;
-        frame.rows = (...args) => {
-          if (args.length) throw new TypeError("rows accepts no cursor or options");
-          void frame.data;
-          return this._rows(rowsOwner, sequence);
-        };
-        frame.membership = (cell, options) => {
-          void frame.data;
-          return this.membership(cell, {
-            ...options,
-            sequence,
-            _owner: frame.handle,
-          });
-        };
-        frame.pick = (options) => {
-          void frame.data;
-          return this.pick({ ...options, sequence, _owner: frame.handle });
-        };
-        frame._source = this;
-        frame._queryPacket = queryPacket;
-        frame._style = style.slice();
-        frame.export = async (format = "png", options = {}) => {
-          if (this.bridge.execute !== geoScaleExecute && !options.bridge)
-            throw new TypeError(
-              "remote frame requires its matching snapshot bridge",
-            );
-          const { exportGeoFrame } = await import("./geo-snapshot.js");
-          return exportGeoFrame(frame, sequence, format, options);
-        };
+        attachRetainedFrame(this, frame, sequence, queryPacket, style);
         this.current = frame;
         return frame;
       } finally {
@@ -527,3 +499,40 @@ RetainedGeoSource.prototype._rows = function (owner, sequence) {
     }
   }, true);
 };
+
+export function attachRetainedFrame(source, frame, sequence, queryPacket, style) {
+        const rowsOwner = frame.handle;
+        frame.rows = (...args) => {
+          if (args.length) throw new TypeError("rows accepts no cursor or options");
+          void frame.data;
+          return source._rows(rowsOwner, sequence);
+        };
+        frame.membership = (cell, options) => {
+          void frame.data;
+          return source.membership(cell, {
+            ...options,
+            sequence,
+            _owner: frame.handle,
+          });
+        };
+        frame.pick = (options) => {
+          void frame.data;
+          return source.pick({ ...options, sequence, _owner: frame.handle });
+        };
+        frame._source = source;
+        frame._queryPacket = queryPacket;
+        frame._style = style.slice();
+        frame.export = async (format = "png", options = {}) => {
+          if (source.bridge.execute !== geoScaleExecute && !options.bridge)
+            throw new TypeError(
+              "remote frame requires its matching snapshot bridge",
+            );
+          const { exportGeoFrame } = await import("./geo-snapshot.js");
+          return exportGeoFrame(frame, sequence, format, options);
+        };
+  frame.spatialIndex = async (options) => {
+    void frame.data;
+    const { GeoSpatialIndex } = await import("./geo-spatial.js");
+    return GeoSpatialIndex._fromFrame(frame, source, options);
+  };
+}
