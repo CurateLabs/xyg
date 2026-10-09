@@ -1096,6 +1096,7 @@ Forbidden:
 | `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-live-host.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-webview.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-webview.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-spatial.d.ts` | Node host | `node-host` | `keep-host` | — |
