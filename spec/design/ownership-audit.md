@@ -1158,8 +1158,11 @@ See `geo-hierarchy-protocol.md` for the command and authority boundary.
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/71_geo_overview_owner.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-source.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-source.d.ts` | Node host | `node-host` | `keep-host` | — |
 
 
 
@@ -1192,6 +1195,7 @@ temporal counts, source authority, cell geometry and palette policy.
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geo_overview_source.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule
 

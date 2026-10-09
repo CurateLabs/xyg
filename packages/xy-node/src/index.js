@@ -485,3 +485,5 @@ export {GeoChart,geoLayer,geoChart} from './charts.js';
 export {RetainedGeoSource} from './geo-retained.js';
 
 export {GeoTileSource,GeoTileSession} from './geo-tiles.js';
+
+export {GeoOverviewIndex} from './geo-overview-source.js';
