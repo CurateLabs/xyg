@@ -1,0 +1,13 @@
+Final browser controller implementation checkpoint
+node js/build.mjs: PASS (expected existing Vite bundle/import-meta warnings recorded)
+node --check scripts/geo_overview_controller_smoke.mjs: PASS
+node --check tests/browser/geo_overview_controller_page.mjs: PASS
+actual public overview strict-CSP Worker/ordinary+borrowed GL fixture: PASS
+existing actual retained Worker five-view regression: PASS
+python3 scripts/verify_ownership.py: PASS (464 classified tracked production files)
+uv run --with pre-commit pre-commit run --all-files: PASS
+uv run ruff check .: PASS
+uv run ruff format --check .: PASS (847 files formatted)
+197 Rust/Cargo/.cargo/vendor/toolchain/build inputs: byte equal to owner and artifact producer trees
+No native test was executed as part of this browser-only checkpoint.
+No massive performance or five overview view claim.

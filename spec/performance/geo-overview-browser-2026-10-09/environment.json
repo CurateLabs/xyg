@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-10-09T17:17:41Z",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "cpu": "Apple M4",
+  "logicalCpus": 10,
+  "physicalMemoryBytes": 34359738368,
+  "node": "v26.6.0",
+  "browserExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "browserParent": "dd10007afa331b01e9f5a0a03f1d64094ffa1381",
+  "typedOwnerParent": "55d371551b589e55a9a409a0a38b91f7a984a094",
+  "artifactSourceFreeze": "12c0d096",
+  "borrowedNative": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/target/release/libxyg_core.dylib",
+    "sha256": "11665749c798c80c4fbd7a6d18c03e064430c943530b2fc326090c89ed550e06",
+    "usedInThisBrowserRun": false
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "c18c639a22106ca7dad370b28454f6fd50cca3e2f77c6d10beab22e0454f040b",
+      "bytes": 705763
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "286c9433a84a950dce08d7ab8e9c1e5b06836731d68c6c64ba0eb71f93b7f664",
+      "bytes": 705776
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "189b99b3f602a6b93d5026413cd5cbfeb0789b7c02802a08dbedb17dba7c9fe1",
+      "bytes": 52693
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "f5c3cd1f86f35445bf72c445ddf603f6f85a3b4a5c6abe6b312209908f86c469",
+      "bytes": 1468284
+    }
+  },
+  "load": "Concurrent development load uncontrolled; no comparative or massive latency claim",
+  "runtimeQuotaScope": "Live owned CPU per WASM module; excludes OS RSS, committed linear memory, GPU/DOM and arbitrary application copies"
+}

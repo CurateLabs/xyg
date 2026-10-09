@@ -1,0 +1,3 @@
+(node:33972) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+retained geographic WASM smoke: ABI33, actual chunk/manifest/auth/query/Scene, concurrent ownership+5shared painted views, exactu64/i64, immutable-frame pick, paged membership+original rows+offscreen keyboard focus, frozenXYGX+rasterUnsupported, unsettled-read cancellation/ACK, error recovery, realGL/contextrestore, boundedDOM and cleanup; 63 malformed controls; startup19.600ms; offline strict CSP

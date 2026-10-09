@@ -1219,6 +1219,15 @@ its focused test module contains no production policy.
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_overview_membership_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_overview_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+### M6 public temporal overview browser lifecycle
+
+The browser controller validates private Worker/index/frame provenance and owns
+publication, callback settlement, painter retirement and bounded count-table DOM.
+Rust continues to own temporal/domain policy, projection, counts and paint buffers.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/71_geo_overview_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
 ## Contributor rule
 

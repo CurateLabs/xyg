@@ -2157,6 +2157,14 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/71_geo_overview_controller.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
       "path": "js/src/71_geo_overview_owner.ts",
       "policy": "browser-wasm-adapter"
     },
