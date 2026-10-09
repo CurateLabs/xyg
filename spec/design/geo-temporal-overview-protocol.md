@@ -182,3 +182,35 @@ also use that bounded lane; ordinary XYGT supply4 retains normal admission.
 Actual strict-CSP retained-browser tests fill normal input capacity and verify
 these cleanup requests reach Rust without early ownership loss, while ordinary
 supply rejects before transfer. Malformed authority remains rejected by Rust.
+
+## Internal Python transport
+
+`python/xyg/_geo_overview.py` implements the same framing and callback settlement
+contract as the typed Node/browser adapter. It is an internal transport adapter;
+there is no new public chart constructor, host geometry/count policy, painter
+mount or domain-cell source-membership API. Commands are forwarded through the
+existing native bridge. Counts remain exact u64 Python integers and signed time
+retains both i64 extrema.
+
+The async driver captures immutable128-byte ticket authority and primitive kind
+and authorized length before handing a separate dictionary to a storage callback.
+It checks logical and owning backing capacity before supply, drops all borrowed
+views before ACK, and waits for pending callbacks even under repeated task
+cancellation. Read and write loans settle with their original command8/31 ticket;
+cancellation cannot forge an early ACK. An obsolete completed terminal response
+also observes cancellation before publication.
+
+`OverviewLease` owns one immutable Data handle and drops parsed views before
+cleanup. Concurrent cleanup coalesces, a rejected cleanup can be retried, and
+successful cleanup remains idempotent. Cancellation during Data creation or read
+waits for the operation to settle, then disposes the unreturned Data owner.
+Actual-native tests exercise eight temporal cases, exact independent cell counts,
+malformed packets, callback ticket mutation, repeated read/write cancellation,
+receipt/read cancellation, source/index/query disposal, eight-Data admission,
+two-copy lifetime quotas and transient cleanup failure/recovery:
+
+```sh
+cargo build -p xyg-core --release
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" \
+  uv run pytest tests/test_geo_overview.py -q
+```

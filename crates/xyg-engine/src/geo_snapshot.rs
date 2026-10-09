@@ -1218,6 +1218,11 @@ impl GeoFrozenSnapshot {
         style: &[u8; 48],
         budget: usize,
     ) -> Result<Self> {
+        // XYGX currently lacks the full XYSE intent/profile/count authority.
+        // Reject before frozen allocation rather than silently lose selection.
+        if result.selection.is_some() {
+            return Err(GeoSnapshotError::Unsupported);
+        }
         let k = result.key;
         if snapshot.source_digest != k.identity.source_digest
             || snapshot.generation != k.identity.generation

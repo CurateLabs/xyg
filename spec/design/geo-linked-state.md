@@ -2,9 +2,9 @@
 
 This specification extends the Rust retained-point and indexed-query cores in
 [`geo-lod.md`](geo-lod.md) and [`geo-spatial-index.md`](geo-spatial-index.md).
-It follows dossier §17, §27, §28 and §34. This is an independently reviewed bounded engine slice. Existing transport,
-row, frozen-export and browser contracts do not yet carry this selected-state
-authority. Their integration remains part of #50.
+It follows dossier §17, §27, §28 and §34. This is an independently reviewed bounded engine slice. The [selected-state protocol](geo-linked-state-protocol.md) now carries this
+authority through canonical/indexed sessions and original rows. Frozen-export,
+typed host and browser integration remain part of #50.
 
 ## State identity and explicit joins
 

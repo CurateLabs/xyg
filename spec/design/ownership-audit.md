@@ -1130,6 +1130,22 @@ Forbidden:
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/bin/geo_hierarchy_bench.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
+
+
+### M6 internal Python overview transport
+
+The adapter forwards Rust commands and validates typed framing, capacity and
+callback lifetime under `geo-temporal-overview-protocol.md`. Rust retains all
+temporal counts, source authority, cell geometry and palette policy.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule
 

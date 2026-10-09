@@ -564,3 +564,16 @@ Independent queries produce explicitly nonfinal data-domain count frames in
 command, output, admission and remaining parity gates are specified in
 [geo-temporal-overview-protocol.md](geo-temporal-overview-protocol.md).
 
+
+## Explicit linked-state scopes (commands32–36)
+
+The [selected-state protocol](geo-linked-state-protocol.md) defines bounded
+namespace/source/layer scopes, full sparse-u64 intent, success-only State
+consumption and the selected indexed Query-to-Data replacement lifecycle.
+Legacy commands5/18/19 and None packets retain their behavior and wire bytes;
+5/18 reject on a lane already bound to an explicit selected scope. Selected
+Scene and Rows packets use explicit XYGZ v2 with XYSE intent/count provenance,
+not a silently extended v1. Scope disposal refuses while private authority
+remains. Existing16 total handles,8 sessions,8 Data,128/384 MiB budgets remain.
+Frozen selected export and public typed host orchestration are separate gates;
+no selected-export coverage or #50 closure is claimed by this core slice.

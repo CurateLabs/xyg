@@ -498,3 +498,6 @@ fn index_protocol_candidate_record_and_leaf_read_caps_admit_before_io() {
         old
     );
 }
+
+#[path = "geo_linked_state_protocol_tests.rs"]
+mod linked_state_protocol_tests;
