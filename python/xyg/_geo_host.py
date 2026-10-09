@@ -17,7 +17,7 @@ _HEADER = struct.Struct("<4sIIIQQ")
 class GeoHostAdapter:
     """Private host-neutral facade used by notebook and Reflex transports."""
 
-    def __init__(self, chart):
+    def __init__(self, chart, *, frame=None):
         from ._geo_retained import RetainedGeoSource
 
         layer = chart._retained_layer()
@@ -25,6 +25,7 @@ class GeoHostAdapter:
             layer is None
             or chart.tile_session is not None
             or not isinstance(layer.source, RetainedGeoSource)
+            or (frame is None and type(layer.source) is not RetainedGeoSource)
         ):
             raise ValueError(
                 "live native hosts require one canonical RetainedGeoSource; indexed hosts are pending"
@@ -59,6 +60,38 @@ class GeoHostAdapter:
         self._mount = None
         self._aux = None
         self._closing = False
+        self._anchor = None
+        if frame is not None:
+            packet = frame.data.packet
+            expected = bytearray(identity)
+            actual = bytearray(frame._query_packet)
+            # Only operation and process-local source handle differ for indexed queries.
+            actual[8:12] = expected[8:12]
+            actual[16:24] = expected[16:24]
+            if (
+                frame._source is not layer.source
+                or len(packet) < 256
+                or packet[24:32] != expected[24:32]
+                or packet[80:84] != expected[64:68]
+                or packet[84:88] != expected[12:16]
+                or packet[88:208] != expected[80:200]
+                or packet[208:212] != expected[200:204]
+                or packet[212:216] != expected[68:72]
+                or packet[216:232] != expected[208:224]
+                or bytes(layer.source.info["digest"]) != packet[144:152]
+                or struct.pack("<Q", g._uint(layer.source.info["generation"])) != packet[152:160]
+                or struct.pack(
+                    "<QII",
+                    g._uint(layer.source.info["rows"]),
+                    g._uint(layer.source.info["geometry"], 32),
+                    g._uint(layer.source.info["crs"], 32),
+                )
+                != packet[232:248]
+                or actual != expected
+                or frame._style != style
+            ):
+                raise ValueError("explicit frame does not match this geographic composition")
+            self._anchor = frame.retain()
 
     def build_payload_split(self, px=None):
         return {"geo_host": True}, []
@@ -72,15 +105,36 @@ class GeoHostAdapter:
         return ()
 
     def _open(self, mount):
-        from . import _geoscale as g
         from . import _native
-        from ._geo_retained import _attach_frame
 
         if self._closing or self._mount is not None:
             raise RuntimeError("geographic host admits one mount; release it before reopening")
         source, query, sequence, style = self._source, self._query, self._sequence, self._style
         if source is None:
             raise RuntimeError("geographic host authoring disposed")
+        if self._anchor is not None:
+            frame = self._anchor
+        else:
+            frame = self._prepare_source(source, query, sequence, style)
+        try:
+            painter = _native.scene_browser_painter(bytes(frame.data.scene), self._budget)
+            if len(frame.data.packet) * 2 + len(painter) > source.budget["processor_bytes"]:
+                raise ValueError("native geographic host packet and painter exceed transfer budget")
+            outgoing = frame.data.packet.obj
+            if not isinstance(outgoing, bytes) or len(outgoing) != len(frame.data.packet):
+                raise ValueError("native frame must have exact immutable packet backing")
+        except BaseException:
+            if frame is not self._anchor:
+                frame.close()
+            raise
+        self._frame, self._painter, self._mount = frame, painter, mount
+        return [_HEADER.pack(b"XYGH", 1, 1, 0, frame.handle, sequence), outgoing, painter]
+
+    @staticmethod
+    def _prepare_source(source, query, sequence, style):
+        from . import _geoscale as g
+        from ._geo_retained import _attach_frame
+
         packet = g.encode_request(
             dict(
                 command=5,
@@ -98,19 +152,7 @@ class GeoHostAdapter:
             _attach_frame(source, frame, sequence, packet, style)
         else:
             frame = source.update(query, sequence=sequence, style=style)
-        try:
-            painter = _native.scene_browser_painter(bytes(frame.data.scene), self._budget)
-            if len(frame.data.packet) * 2 + len(painter) > source.budget["processor_bytes"]:
-                raise ValueError("native geographic host packet and painter exceed transfer budget")
-            # One frontend packet copy. The native frame owns the first read.
-            outgoing = frame.data.packet.obj
-            if not isinstance(outgoing, bytes) or len(outgoing) != len(frame.data.packet):
-                raise ValueError("native frame must have exact immutable packet backing")
-        except BaseException:
-            frame.close()
-            raise
-        self._frame, self._painter, self._mount = frame, painter, mount
-        return [_HEADER.pack(b"XYGH", 1, 1, 0, frame.handle, sequence), outgoing, painter]
+        return frame
 
     def handle_host_message(self, content: Any, buffers=None):
         if not isinstance(content, dict) or content.get("type") != "geo_host":
@@ -159,8 +201,11 @@ class GeoHostAdapter:
                             if len(raw) != 32 or self._aux is not None:
                                 raise ValueError("drop auxiliary packets before releasing frame")
                             self._painter = None
-                            frame.close()
+                            if frame is not self._anchor:
+                                frame.close()
                             self._frame = self._mount = None
+                            if self._closing:
+                                self._release_anchor()
                             outgoing = []
                         elif op == 2:
                             if len(raw) != 64 or self._aux is not None:
@@ -206,6 +251,13 @@ class GeoHostAdapter:
         with self._lock:
             self._closing = True
             self._query = self._identity = self._source = self._style = None
+            if not self.mounted:
+                self._release_anchor()
+
+    def _release_anchor(self):
+        anchor, self._anchor = self._anchor, None
+        if anchor is not None:
+            anchor.close()
 
     @property
     def mounted(self):
