@@ -6,8 +6,11 @@ contract is [geo-overview-hosts](../../design/geo-overview-hosts.md).
 
 `source-sha256.json` binds the complete current Rust/Cargo source and the relevant
 canonical and generated host sources. `environment.json` identifies the fresh
-native383/WASM33 pair and current baseline. The product source differs from that
-baseline by this owned adapter slice; these exact file hashes bind the proof.
+native383/WASM33 pair and current combined checkpoint. The borrowed parent
+artifact source freeze is byte-identical to this checkpoint for all Rust/Cargo
+sources; these exact file hashes bind the host proof.
+`pre-membership-checkpoint/` preserves the original reviewed adapter proof before
+the parent membership engine merge. The current tests rerun on the combined pair.
 No Rust or ABI signature was changed by this slice. Build outputs are ignored.
 
 `node-native-wasm.txt` records 24 actual tests. The shared typed owner runs against
