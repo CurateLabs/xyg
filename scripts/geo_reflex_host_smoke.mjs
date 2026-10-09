@@ -27,6 +27,6 @@ try{
   return {redPixels:red,identity:'u64MAX/i64MIN',pick:true,websocketReconnect:true,sameFrameOnReconnect:true,releaseAcknowledged:true,canvasesAfterRelease:document.querySelectorAll('#geo-native-host canvas').length};
  });
  if(external.length||errors.length)throw Error(JSON.stringify({external,errors}));
- const report={ok:true,journey:'actual production Reflex + React client + socket.io binary namespace + Rust native painter',browser:browser.version(),...result,external,errors};
+ const report={ok:true,journey:'actual production Reflex + React client + socket.io binary namespace + Rust native painter',browser:browser.version(),indexedAuthority:true,callerAndIndexDisposedBeforeMount:true,...result,external,errors};
  if(process.env.XYG_GEO_REFLEX_REPORT)await writeFile(process.env.XYG_GEO_REFLEX_REPORT,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }catch(e){throw Error(JSON.stringify({error:e.message,errors,body:await page.locator('body').innerText()}));}finally{await browser.close();}

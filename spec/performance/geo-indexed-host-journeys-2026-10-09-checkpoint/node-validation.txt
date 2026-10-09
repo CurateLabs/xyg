@@ -1,0 +1,25 @@
+✔ retained frame is independent after original and source disposal (26.120084ms)
+✔ indexed retained frame never depends on disposed query/index handles (2.135167ms)
+✔ duplicate pressure drains without altering source current (1.066417ms)
+✔ failed duplicate read disposes unreturned owner and preserves old paint (0.515041ms)
+✔ native host rejects other source kinds before protocol or bridge access (0.958542ms)
+✔ indexed explicit mount retains anchor before caller disposal and remounts after ACK (5.436792ms)
+✔ query/style/sequence mismatch rejects before retain and preserves caller (1.189583ms)
+✔ anchor admission pressure preserves caller and unmounted close drains leases (2.327625ms)
+✔ indexed frames retain full IDs, rows, picking and export after source/index disposal (29.880583ms)
+✔ failed writes and authenticated reads preserve old frame and recover (2.300666ms)
+✔ pending durable write cancellation waits for storage settlement before ACK (11.926375ms)
+✔ callback mutation cannot authorize larger leaf storage (0.690417ms)
+✔ public composition compiles indexed source and exports exact owned frame (15.899875ms)
+✔ leaf work fallback reports explicit reason and does not advance query sequence (0.534542ms)
+✔ @curatelabs/xyg-node modules do not reference browser globals (13.989542ms)
+✔ vscode.js points webviews at the host-neutral paint client (0.857834ms)
+✔ vscode.js exposes the background force scheduler (42.796625ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.125083
