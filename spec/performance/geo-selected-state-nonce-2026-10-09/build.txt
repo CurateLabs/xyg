@@ -1,0 +1,39 @@
+
+new URL("./wasm-worker.js", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
+
+new URL("./xyg-wasm.wasm", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
+[plugin builtin:vite-reporter]
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+new URL("./wasm-worker.js", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
+
+new URL("./xyg-wasm.wasm", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
+[EMPTY_IMPORT_META] `import.meta` may not be a valid syntax with the `iife` output format.
+    ╭─[ js/src/49_wasm_density.ts:16:47 ]
+    │
+ 16 │        workerUrl: new URL("./wasm-worker.js", '' + import.meta.url),
+    │                                                    ─────┬─────
+    │                                                         ╰─────── This `import.meta` will be replaced with an empty object (`{}`) automatically. If this is desired, you can suppress this warning by adding `transform.define: { 'import.meta': {} }`. If `import.meta` needs to be kept as-is, you need to set the output format to `esm`.
+    │
+    │ Help: If you want to polyfill `import.meta.url` like Rollup does, check out the Document: https://rolldown.rs/in-depth/non-esm-output-formats#well-known-import-meta-properties
+────╯
+
+[plugin builtin:vite-reporter]
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[EMPTY_IMPORT_META] `import.meta` may not be a valid syntax with the `iife` output format.
+    ╭─[ js/src/49_wasm_density.ts:17:41 ]
+    │
+ 17 │        wasm: new URL("./xyg-wasm.wasm", '' + import.meta.url),
+    │                                              ─────┬─────
+    │                                                   ╰─────── This `import.meta` will be replaced with an empty object (`{}`) automatically. If this is desired, you can suppress this warning by adding `transform.define: { 'import.meta': {} }`. If `import.meta` needs to be kept as-is, you need to set the output format to `esm`.
+    │
+    │ Help: If you want to polyfill `import.meta.url` like Rollup does, check out the Document: https://rolldown.rs/in-depth/non-esm-output-formats#well-known-import-meta-properties
+────╯
+
+built minified @curatelabs/xyg plus static WASM worker; copied paint and tick-worker bundles into python/xyg/static
