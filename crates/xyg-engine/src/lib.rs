@@ -65,6 +65,7 @@ pub mod geo_snapshot;
 pub mod geo_scale_protocol;
 #[cfg(test)]
 mod geo_scale_protocol_tests;
+pub mod geo_linked_state;
 pub mod geo_lod;
 pub mod geo_lod_scene;
 pub mod geo_lod_hit;

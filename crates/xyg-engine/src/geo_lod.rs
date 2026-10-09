@@ -1,5 +1,6 @@
 //! Bounded retained geographic point LOD. See spec/design/geo-lod.md.
 use crate::geo::{GeoCrs, GeoError, GeoGeometry};
+use crate::geo_linked_state::{GeoLinkedState, GeoPointSelection, GeoSelectionAccumulator};
 use crate::geo_source::{
     FeatureRef, FeatureView, GeoChunk, GeoChunkReader, GeoSourceManifest, MAX_PROCESSOR_BYTES,
     MembershipPage, QueryBudget, QueryCursor, QuerySpec, SourceError, TimePredicate,
@@ -9,6 +10,7 @@ use crate::geo_viewport::{
 };
 use crate::lod_plan;
 use std::cell::RefCell;
+use std::sync::Arc;
 
 pub const DIRECT_VERTEX_LIMIT: usize = 32_768;
 pub const CLUSTER_CELL_LIMIT: usize = 32_768;
@@ -88,6 +90,8 @@ pub struct GeoPointResult {
     pub visible_vertices: u64,
     pub projected_vertices: u64,
     pub grid_capped: bool,
+    /// Shared charged sparse state and exact selected counts; absent on legacy paths.
+    pub selection: Option<Arc<GeoPointSelection>>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GeoLodPass {
@@ -119,6 +123,7 @@ pub struct GeoPointLod {
     rows: u32,
     grid_capped: bool,
     reserve: usize,
+    selection: Option<GeoSelectionAccumulator>,
 }
 fn invalid() -> SourceError {
     SourceError::Geometry(GeoError::InvalidArgument)
@@ -138,6 +143,15 @@ impl GeoPointLod {
         time: TimePredicate,
         options: GeoLodOptions,
     ) -> Result<Self> {
+        Self::new_with_state(identity, camera, time, options, None)
+    }
+    pub fn new_with_state(
+        identity: GeoLodIdentity,
+        camera: GeoViewport,
+        time: TimePredicate,
+        options: GeoLodOptions,
+        state: Option<Arc<GeoLinkedState>>,
+    ) -> Result<Self> {
         camera.validate()?;
         time.validate()?;
         if !matches!(
@@ -147,7 +161,19 @@ impl GeoPointLod {
         {
             return Err(invalid());
         }
-        let reserve = Self::reservation_bytes(options)?;
+        if let Some(state) = &state {
+            state.validate_identity(identity)?;
+        }
+        let reserve = Self::reservation_bytes_with_state(options, state.as_deref())?;
+        let selection = state
+            .map(|state| {
+                GeoSelectionAccumulator::new(
+                    state,
+                    Self::reservation_bytes(options)?,
+                    options.max_cells,
+                )
+            })
+            .transpose()?;
         Ok(Self {
             identity,
             camera,
@@ -166,6 +192,7 @@ impl GeoPointLod {
             rows: 0,
             grid_capped: false,
             reserve,
+            selection,
         })
     }
     /// Allocation-free peak admission for the accumulator and output transition.
@@ -198,6 +225,28 @@ impl GeoPointLod {
             return Err(SourceError::ResourceLimit);
         }
         Ok(reserve)
+    }
+    /// Local complete-phase admission; state and selected LOD storage own separate
+    /// existing-ledger credits. None retains the old isolated-caller contract.
+    pub fn reservation_bytes_with_state(
+        options: GeoLodOptions,
+        state: Option<&GeoLinkedState>,
+    ) -> Result<usize> {
+        let base = Self::reservation_bytes(options)?;
+        let extra = state
+            .map(|state| {
+                GeoSelectionAccumulator::extra_bytes(options.max_cells, state).and_then(|n| {
+                    n.checked_add(state.retained_bytes())
+                        .ok_or(SourceError::ResourceLimit)
+                })
+            })
+            .transpose()?
+            .unwrap_or(0);
+        let total = base.checked_add(extra).ok_or(SourceError::ResourceLimit)?;
+        if total > options.processor_bytes {
+            return Err(SourceError::ResourceLimit);
+        }
+        Ok(total)
     }
     /// Allocation-free binding for session pre-I/O and post-output checks. The
     /// Count phase's direct/grid fields are provisional until end_pass.
@@ -363,8 +412,15 @@ impl GeoPointLod {
         if !visible(&self.camera, x, y) {
             return Ok(());
         }
+        let selected = self
+            .selection
+            .as_ref()
+            .is_some_and(|s| s.selected(r.feature_id));
         match self.phase {
             Phase::Count => {
+                if selected {
+                    self.selection.as_mut().unwrap().count_visible()?;
+                }
                 self.visible = self
                     .visible
                     .checked_add(1)
@@ -386,6 +442,9 @@ impl GeoPointLod {
                     .checked_add(1)
                     .ok_or(SourceError::ResourceLimit)?;
                 let index = cell_index(&self.camera, self.columns, self.rows, x, y);
+                if selected {
+                    self.selection.as_mut().unwrap().count_cell(index)?;
+                }
                 let cell = &mut self.cells[index];
                 cell.count = cell
                     .count
@@ -436,6 +495,9 @@ impl GeoPointLod {
                 }
                 self.columns = w as u32;
                 self.rows = h as u32;
+                if let Some(selection) = &mut self.selection {
+                    selection.begin_aggregate(w * h);
+                }
                 self.cells = vec![GeoPointCell::default(); w * h];
                 self.phase = Phase::Aggregate;
                 self.last_row = None;
@@ -443,7 +505,12 @@ impl GeoPointLod {
                 Ok(GeoLodPass::Repeat)
             }
             Phase::Aggregate => {
-                if self.aggregate_visible != self.visible {
+                if self.aggregate_visible != self.visible
+                    || self
+                        .selection
+                        .as_ref()
+                        .is_some_and(|s| s.visible != s.aggregate_visible)
+                {
                     return Err(SourceError::StaleSource);
                 }
                 for cell in &mut self.cells {
@@ -463,7 +530,7 @@ impl GeoPointLod {
             return Err(invalid());
         }
         let direct = self.columns == 0;
-        Ok(GeoPointResult {
+        let mut result = GeoPointResult {
             key: GeoLodKey {
                 identity: self.identity,
                 camera: self.camera.rebuild_key()?,
@@ -481,7 +548,16 @@ impl GeoPointLod {
             visible_vertices: self.visible,
             projected_vertices: self.projected,
             grid_capped: self.grid_capped,
-        })
+            selection: None,
+        };
+        if let Some(selection) = self.selection {
+            result.selection = Some(selection.finish(
+                result.key,
+                Self::output_bytes(&result),
+                result.visible_vertices,
+            )?);
+        }
+        Ok(result)
     }
     pub fn output_bytes(output: &GeoPointResult) -> usize {
         std::mem::size_of::<GeoPointResult>()
@@ -540,6 +616,34 @@ pub fn process<R: GeoChunkReader>(
     budget: QueryBudget,
     c: &mut impl FnMut() -> bool,
 ) -> Result<GeoPointResult> {
+    process_with_state(
+        manifest,
+        reader,
+        camera,
+        time,
+        layer_id,
+        style_revision,
+        state_revision,
+        options,
+        budget,
+        None,
+        c,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+pub fn process_with_state<R: GeoChunkReader>(
+    manifest: &GeoSourceManifest,
+    reader: &mut R,
+    camera: GeoViewport,
+    time: TimePredicate,
+    layer_id: u64,
+    style_revision: u64,
+    state_revision: u64,
+    options: GeoLodOptions,
+    budget: QueryBudget,
+    state: Option<Arc<GeoLinkedState>>,
+    c: &mut impl FnMut() -> bool,
+) -> Result<GeoPointResult> {
     let budget = QueryBudget {
         processor_bytes: budget.processor_bytes.min(options.processor_bytes),
         ..budget
@@ -552,11 +656,12 @@ pub fn process<R: GeoChunkReader>(
             .ok_or(SourceError::ResourceLimit)?,
         ..options
     };
-    let mut lod = GeoPointLod::new(
+    let mut lod = GeoPointLod::new_with_state(
         identity(manifest, layer_id, style_revision, state_revision),
         camera,
         time,
         options,
+        state,
     )?;
     let q = QuerySpec { bounds: None, time };
     let shared = RefCell::new(c);

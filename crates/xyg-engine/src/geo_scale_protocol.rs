@@ -869,6 +869,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 visible_vertices: result.visible_vertices,
                 projected_vertices: result.projected_vertices,
                 grid_capped: result.grid_capped,
+                selection: result.selection.clone(),
             },
             style: style_bytes,
             sequence,
