@@ -345,6 +345,8 @@ function geoCameraBytes(camera) {
   return b;
 }
 /** Geographic composition. Static compile returns a catalog; compileRetained returns an owned frame. */
+import { GeoHostAdapter } from "./geo-webview.js";
+
 export class GeoChart {
   constructor(
     layers,
@@ -372,6 +374,7 @@ export class GeoChart {
     )
       throw new TypeError("tile options require tileSession");
   }
+  host() { return new GeoHostAdapter(this); }
   _retained() {
     const layers = this.layers.filter(
       (x) => x.source instanceof RetainedGeoSource,
