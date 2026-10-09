@@ -471,3 +471,6 @@ fn direct_hit_packet_preserves_literal_ids_source_rows_and_overlapping_vertices(
     );
     drop(scene);
 }
+
+#[path = "geo_frame_lease_tests.rs"]
+mod frame_lease_tests;

@@ -536,3 +536,15 @@ reads. The planner does not silently assume a particular LOD pass count: runtime
 cumulative record/read/byte caps still apply if an admitted aggregate second pass
 exceeds its allowance. Hosts must explicitly dispatch canonical begin5 on the
 fallback receipt rather than changing screen-bin semantics.
+
+## Independent immutable frame ownership
+
+Command 26 duplicates an admitted immutable SceneData using its exact handle,
+publication sequence and explicit budget, with no payload. The new Data owns a
+separately admitted packet and two-read quota while sharing the existing privately
+leased immutable source/result/style authority. Only packet owner bytes16–23
+change to the input Data handle; all source/camera/time/revision/Scene bytes remain
+identical. Source, RowsData and auxiliary handles cannot supply this authority.
+The command preserves the source's current frame and works after query/source/
+index disposal. See [geo-frame-leases.md](geo-frame-leases.md) for precise admission,
+copy costs, disposal and thin-host methods. No C/WASM signature changes are made.
