@@ -13,6 +13,43 @@ from typing import Any
 
 from . import _geoscale as g
 
+_OWNED_DATA_IDENTITIES = weakref.WeakKeyDictionary()
+
+
+class _OwnedDataIdentity:
+    def __init__(self, handle, bridge):
+        self.handle, self.bridge = handle, bridge
+        self.execute = g.execute if bridge is None else bridge.execute
+        self.disposed = False
+        self.hooks = []
+
+
+def on_owned_geo_data_disposed(owner, callback, callback_async):
+    """Internal notification on a genuine frame's confirmed original disposal."""
+    if retained_frame_issued_authority(owner) is None:
+        raise ValueError("Privately issued retained frame required")
+    token = _OWNED_DATA_IDENTITIES[owner]()
+    if token is None or token.disposed:
+        raise RuntimeError("Data disposal already admitted")
+    token.hooks.append((callback, callback_async))
+
+
+def _owned_data_identity(owner):
+    token = _OWNED_DATA_IDENTITIES[owner]()
+    if token is None:
+        raise RuntimeError("Original Data issuer expired")
+    return token
+
+
+def _confirm_data_disposal(packet, handle):
+    raw = bytes(g._bytes(packet))
+    if (
+        len(raw) != 256
+        or struct.unpack_from("<4sIIIQQ", raw) != (b"XYGZ", 1, 0, 0, handle, 0)
+        or any(raw[32:])
+    ):
+        raise ValueError("Data disposal acknowledgement mismatch")
+
 
 class OwnedGeoData:
     """Drop all borrowed views and painters before close/aclose releases the lease."""
@@ -21,6 +58,8 @@ class OwnedGeoData:
         self.handle, self._data, self._bridge = handle, data, bridge
         self._closed = False
         self._disposal = None
+        self._disposal_identity = _OwnedDataIdentity(handle, bridge)
+        _OWNED_DATA_IDENTITIES[self] = weakref.ref(self._disposal_identity)
 
     @property
     def data(self):
@@ -29,31 +68,49 @@ class OwnedGeoData:
         return self._data
 
     def close(self):
-        if self._bridge is not None:
+        identity = _owned_data_identity(self)
+        if identity.bridge is not None:
             raise RuntimeError("use aclose for an asynchronous owner")
         if not self._closed:
             self._data = None
-            g.execute(g.encode_request(dict(command=10, handle=self.handle)))
+            if not identity.disposed:
+                _confirm_data_disposal(
+                    identity.execute(g.encode_request(dict(command=10, handle=identity.handle))),
+                    identity.handle,
+                )
+                identity.disposed = True
+            for callback, _ in identity.hooks:
+                callback()
+            identity.hooks.clear()
             self._closed = True
 
     async def dispose(self):
         await self.aclose()
 
     async def aclose(self):
-        if self._bridge is None:
+        identity = _owned_data_identity(self)
+        if identity.bridge is None:
             self.close()
         elif not self._closed:
             self._data = None
-            if self._disposal is None:
-                self._disposal = asyncio.create_task(
-                    self._bridge.execute(g.encode_request(dict(command=10, handle=self.handle)))
-                )
-            try:
-                _, interrupted = await g._settle(self._disposal)
-            except BaseException:
-                if self._disposal.done():
-                    self._disposal = None
-                raise
+            if not identity.disposed:
+                if self._disposal is None:
+                    self._disposal = asyncio.create_task(
+                        identity.execute(g.encode_request(dict(command=10, handle=identity.handle)))
+                    )
+                try:
+                    raw, interrupted = await g._settle(self._disposal)
+                    _confirm_data_disposal(raw, identity.handle)
+                    identity.disposed = True
+                except BaseException:
+                    if self._disposal.done():
+                        self._disposal = None
+                    raise
+            else:
+                interrupted = False
+            for _, callback_async in identity.hooks:
+                await callback_async()
+            identity.hooks.clear()
             self._closed = True
             if interrupted:
                 raise asyncio.CancelledError

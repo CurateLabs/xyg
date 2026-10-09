@@ -1,0 +1,17 @@
+{
+  "reviewedBase": "c63513770133d2bd94a8526f2ae18d2b2efb83a0",
+  "sourceSha256": {
+    "crates/xyg-engine/src/geo_allocation_recovery.rs": "e3fc2481bf91498a4736aa91324db4c426525f38650a4698cb9d2ca0b4c76c17",
+    "crates/xyg-engine/src/geo_allocation_recovery_tests.rs": "c7037080082c6676a74d2bed1cdf5cbe4f1d62e54784aa083267239182e302ba",
+    "scripts/geo_allocation_recovery_conformance.mjs": "a36afb61b24959f5bcdcb6fb913803791272d789de028a7d9ca2a5ec30141546"
+  },
+  "nativePath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/target/release/libxyg_core.dylib",
+  "nativeSha256": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e",
+  "wasmSha256": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2",
+  "rawBytes": 1494781,
+  "gzip6Mtime0Bytes": 613121,
+  "abi": 383,
+  "wasmAbi": 33,
+  "bankSlots": 16,
+  "controlBytes": 8192
+}

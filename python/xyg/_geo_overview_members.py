@@ -12,6 +12,7 @@ from types import MappingProxyType
 from . import _geoscale as g
 
 _CONTEXTS = weakref.WeakKeyDictionary()
+_CAPTURED_CONTEXTS = weakref.WeakKeyDictionary()
 _PENDING = weakref.WeakKeyDictionary()
 _OPS = weakref.WeakKeyDictionary()
 _PAGES = weakref.WeakKeyDictionary()
@@ -27,17 +28,50 @@ class _Context:
         self.header = bytes(header)
 
 
+class _ContextCapture:
+    def __init__(self, context, cap):
+        if cap is not _CAP:
+            raise TypeError("Private membership context capture required")
+        self._context = context
+        _CAPTURED_CONTEXTS[self] = weakref.ref(context)
+
+
+def _context(owner):
+    reference = _CONTEXTS.get(owner)
+    return None if reference is None else reference()
+
+
+def _attach_context(owner, context):
+    owner._issued_membership_context = context
+    _CONTEXTS[owner] = weakref.ref(context)
+
+
 def register(frame, transport, reader, budget, header, handle, sequence):
-    _CONTEXTS[frame] = _Context(transport, reader, budget, header, handle, sequence)
+    _attach_context(frame, _Context(transport, reader, budget, header, handle, sequence))
+
+
+def capture_context(original):
+    context = _context(original)
+    if context is None:
+        raise TypeError("Issued overview membership context required")
+    return _ContextCapture(context, _CAP)
+
+
+def install_context(token, copy, handle, sequence):
+    reference = _CAPTURED_CONTEXTS.get(token)
+    c = None if reference is None else reference()
+    if c is None or not g._uint(handle) or not g._uint(sequence):
+        raise TypeError("Issued retained membership capture required")
+    _attach_context(copy, _Context(c.transport, c.reader, c.budget, c.header, handle, sequence))
 
 
 def copy_context(original, copy, handle, sequence):
-    c = _CONTEXTS[original]
-    _CONTEXTS[copy] = _Context(c.transport, c.reader, c.budget, c.header, handle, sequence)
+    install_context(capture_context(original), copy, handle, sequence)
 
 
 def drop_context(frame):
     _CONTEXTS.pop(frame, None)
+    frame._issued_membership_context = None
 
 
 def request(command, handle, sequence, budget=None, payload=b""):
@@ -148,14 +182,14 @@ def _new(
 
 
 def members(frame, cell, *, sequence, max_vertices):
-    c = _CONTEXTS.get(frame)
+    c = _context(frame)
     if c is None:
         raise ValueError("Privately issued overview frame required")
     return _run(frame, c, c.handle, c.sequence, cell, sequence, max_vertices)
 
 
 async def members_async(frame, cell, *, sequence, max_vertices):
-    c = _CONTEXTS.get(frame)
+    c = _context(frame)
     if c is None:
         raise ValueError("Privately issued overview frame required")
     return await _arun(frame, c, c.handle, c.sequence, cell, sequence, max_vertices)

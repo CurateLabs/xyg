@@ -6,6 +6,10 @@ const HEADER=256, COOKIE=128, MAX=HEADER+4096*32, CAP=Symbol('issued members');
 
 const contexts=new WeakMap                ();
 export function registerOverviewMembers(frame       ,transport                  ,reader                  ,budget                  ,header           ,handle       ,sequence       ){contexts.set(frame,Object.freeze({handle,sequence,transport,reader,budget:Object.freeze({...budget}),header:header.slice()}));}
+const capturedContexts=new WeakMap                ();
+/** Opaque private callback/snapshot capture before asynchronous retained allocation. */
+export function captureOverviewMembers(from       )       {const context=contexts.get(from);if(!context)throw new TypeError('Issued overview membership context required');const token=Object.freeze({});capturedContexts.set(token,context);return token;}
+export function installOverviewMembers(token       ,to       ,handle       ,sequence       ){const context=capturedContexts.get(token);if(!context||handle===0n||sequence===0n)throw new TypeError('Issued retained membership capture required');contexts.set(to,Object.freeze({...context,handle,sequence}));}
 export function copyOverviewMembers(from       ,to       ,handle       ,sequence       ){const c=contexts.get(from);if(!c)throw new TypeError('Issued overview membership context required');contexts.set(to,Object.freeze({...c,handle,sequence}));}
 export function dropOverviewMembers(frame       ){contexts.delete(frame);}
 function zeros(b           ,a       ,z       ){if(b.subarray(a,z).some(n=>n!==0))throw new TypeError('Nonzero domain-member reserved bytes');}
