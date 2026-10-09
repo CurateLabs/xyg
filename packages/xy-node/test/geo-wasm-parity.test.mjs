@@ -4,6 +4,7 @@ import fs from "node:fs";
 import test from "node:test";
 import { geoColumnNew, geoColumnMetadata, geoColumnFree } from "../src/index.js";
 import { encodeWasmGeoDescriptor } from "../../xy-client/dist/index.js";
+const abi = JSON.parse(fs.readFileSync(new URL("../../../spec/wasm/abi.json", import.meta.url)));
 const golden = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/geo_cross_host.json", import.meta.url)));
 const artifact = new URL("../../xy-client/dist/xyg-wasm.wasm", import.meta.url);
 const kinds = {point:1,linestring:2,polygon:3,multipoint:4,multilinestring:5,multipolygon:6};
@@ -16,7 +17,7 @@ function descriptor(c) {
 }
 async function instance(budget=1<<20) {
   const {instance}=await WebAssembly.instantiate(fs.readFileSync(artifact),{}),x=instance.exports;
-  assert.equal(x.xyg_wasm_abi_version(),31);assert.equal(x.xyg_wasm_geo_metadata_version(),1);
+  assert.equal(x.xyg_wasm_abi_version(),abi.abi_version);assert.equal(x.xyg_wasm_geo_metadata_version(),1);
   const h=x.xyg_wasm_instance_new(budget);assert.ok(h>0);
   return {x,h,run(bytes,sequence=1,prefix=0) {
     assert.equal(x.xyg_wasm_arena_resize(h,bytes.byteLength+prefix),0);

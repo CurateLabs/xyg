@@ -18,8 +18,7 @@ policy is shared Rust; Python, Node and browser adapters only frame inputs.
 
 This is bounded direct catalog evidence. The explicit density family records
 complete membership and reports its dropped diameter/symbol/stroke channels.
-Automatic multiscale spatial tiers, disk-backed massive sources, temporal
-filtering and network-tile budgets remain #50. No production speedup or billion-
+Retained sources add authenticated chunk paging, time-before-reduction, bounded direct/cluster/density tiers, exact opaque-cursor membership, explicit tile budgets and frozen exports (the companion contracts below). Spatial indexes/pyramids, full-source retained accessibility, linked per-row state and all-host live conformance remain #50. No production speedup or billion-
 row admission is inferred from these fixtures. Existing SVG glyph contours for
 some uncommon symbols differ from the native/browser analytic painter; the
 19-symbol hit fixtures prove the latter's pick policy, not complete vector
@@ -39,7 +38,7 @@ claims about untested extensions.
 | [Bokeh](https://docs.bokeh.org/en/latest/docs/user_guide/topics/geo.html) | Web Mercator tile plotting and provider attribution | XYG receives an explicitly configured app shell; integrated tile configuration/budgets belong to #50. |
 | [Altair](https://altair-viz.github.io/user_guide/marks/geoshape.html) | Geoshape marks and geographic projections | XYG covers polygon/choropleth authoring; broad projection vocabulary and declarative geographic transforms remain gaps. |
 | [Datashader](https://datashader.org/user_guide/index.html) | Large spatial rasterization | XYG direct density does not establish massive-scale performance parity; bounded out-of-core and scale evidence remain #50. |
-| [HoloViews](https://holoviews.org/user_guide/Interactive_Hover_for_Big_Data.html) / [hvPlot](https://hvplot.holoviz.org/en/docs/latest/user_guide/Geographic_Data.html) | Geographic ecosystem, large-data rasterization and selector hover | XYG preserves complete direct density contributors, but persistent aggregate membership queries and massive-source paging remain #50. |
+| [HoloViews](https://holoviews.org/user_guide/Interactive_Hover_for_Big_Data.html) / [hvPlot](https://hvplot.holoviz.org/en/docs/latest/user_guide/Geographic_Data.html) | Geographic ecosystem, large-data rasterization and selector hover | XYG preserves complete direct density contributors, but retained exact aggregate membership and chunk paging now have native/WASM proofs; interactive massive-source latency remains #50. |
 | [pydeck](https://deckgl.readthedocs.io/en/latest/layer.html) / [deck.gl](https://deck.gl/docs/api-reference/layers/polygon-layer) | Multilayer GPU geographic rendering | Compare layer breadth and customization, source identity, local operation, startup/payload and interaction at identical data scales; no performance lead claimed here. |
 
 Reproduction paths: `tests/test_geo_components.py`,
@@ -49,3 +48,22 @@ Reproduction paths: `tests/test_geo_components.py`,
 `tests/browser/geo_painter_test.mjs`, and
 `tests/browser/external_gl_test.mjs`. Browser probes use packaged local assets
 under strict CSP and reject every unexpected request.
+
+
+## Retained-source and tile evidence
+
+| Capability | Implemented contract | Bounded evidence and limit |
+| --- | --- | --- |
+| Authenticated retained point/MultiPoint | XYGK/XYGI, signed-i64 half-open filters, source/session leases | Actual 1k/100k/1M/10M/100M ingest/query; 1B planner-only |
+| Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
+| Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
+| Explicit raster/vector tiles | Local/network locator receipts, immutable producer generation/time, atomic epoch publication | Actual native mixed raster+vector+foreground; network is opt-in through caller loader, not automatic fetch |
+| Frozen spatiotemporal output | XYGXv2 bound provenance, visible attribution, owned artifacts | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; WASM freeze matches native, raster export is explicit Unsupported |
+
+Reproduce using `scripts/bench_geo_scale.py`, `tests/test_geo_retained.py`,
+`tests/test_geo_tiles.py`, `tests/test_geo_snapshot.py`,
+`packages/xy-node/test/geo-scale-wasm-parity.test.mjs`, and
+`scripts/geo_retained_wasm_smoke.mjs`. [Raw scale outputs](../performance/geo-scale-2026-10-08/README.md)
+include environment, exact source patch and reproduction commands. These tests do
+not establish Reflex/VS Code live retained-source parity, complete offscreen
+accessibility, GPU timing, spatial-pyramid performance, or a competitor speed win.

@@ -1,9 +1,9 @@
 //! Single-use GeoColumn ingress; product validation stays in the shared engine.
 use super::{
-    fail, Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
-    STATUS_STALE_SEQUENCE,
+    Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
+    STATUS_STALE_SEQUENCE, fail,
 };
-use xyg_engine::geo::{column_from_descriptor_bytes, GeoError};
+use xyg_engine::geo::{GeoError, column_from_descriptor_bytes};
 
 pub(super) fn execute(instance: &mut Instance, sequence: u32, offset: usize, length: usize) -> i32 {
     execute_with(instance, sequence, offset, length, |request, budget| {
@@ -49,6 +49,295 @@ pub(super) fn execute_catalog(
     })
 }
 
+fn scale_error(error: xyg_engine::geo_source::SourceError) -> (&'static str, bool) {
+    use xyg_engine::geo_source::SourceError;
+    (
+        error.code(),
+        matches!(
+            error,
+            SourceError::ResourceLimit | SourceError::Geometry(GeoError::ResourceLimit)
+        ),
+    )
+}
+pub(super) fn execute_scale(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        if request
+            .len()
+            .checked_add(xyg_engine::geo_scale_protocol::HEADER)
+            .is_none_or(|n| n > budget)
+        {
+            return Err((
+                xyg_engine::geo_source::SourceError::ResourceLimit.code(),
+                true,
+            ));
+        }
+        xyg_engine::geo_scale_protocol::execute(request)
+            .map(|reply| reply.to_vec())
+            .map_err(scale_error)
+    })
+}
+pub(super) fn read_scale(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    let previous = std::mem::take(&mut instance.output);
+    let max_arena_bytes = instance.max_arena_bytes;
+    instance.max_arena_bytes = max_arena_bytes.saturating_sub(previous.capacity());
+    let status = execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_scale_protocol::read_data(
+            request,
+            budget
+                .saturating_sub(request.len())
+                .min(xyg_engine::geo_source::MAX_PROCESSOR_BYTES),
+        )
+        .map_err(scale_error)
+    });
+    instance.max_arena_bytes = max_arena_bytes;
+    if status != STATUS_OK {
+        instance.output = previous;
+    }
+    status
+}
+
+fn tile_error(error: xyg_engine::geo_tile_protocol::TileProtocolError) -> (&'static str, bool) {
+    match error {
+        xyg_engine::geo_tile_protocol::TileProtocolError::Geo(error) => {
+            (error.code(), error == GeoError::ResourceLimit)
+        }
+        xyg_engine::geo_tile_protocol::TileProtocolError::Cancelled => ("XYG_GEO_CANCELLED", false),
+    }
+}
+fn snapshot_error(error: xyg_engine::geo_snapshot::GeoSnapshotError) -> (&'static str, bool) {
+    use xyg_engine::geo_snapshot::GeoSnapshotError;
+    match error {
+        GeoSnapshotError::Limit => ("XYG_GEO_RESOURCE_LIMIT", true),
+        GeoSnapshotError::Stale => ("XYG_GEO_STALE_HANDLE", false),
+        GeoSnapshotError::Unsupported => ("XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT", false),
+        _ => ("XYG_GEO_INVALID_ARGUMENT", false),
+    }
+}
+pub(super) fn execute_tile(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    execute_with(instance, sequence, offset, length, |request, _budget| {
+        xyg_engine::geo_tile_protocol::execute(request)
+            .map(|reply| reply.to_vec())
+            .map_err(tile_error)
+    })
+}
+pub(super) fn read_tile(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    let previous = std::mem::take(&mut instance.output);
+    let maximum = instance.max_arena_bytes;
+    instance.max_arena_bytes = maximum.saturating_sub(previous.capacity());
+    let status = execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_tile_protocol::read_data(request, budget.saturating_sub(request.len()))
+            .map_err(tile_error)
+    });
+    instance.max_arena_bytes = maximum;
+    if status != STATUS_OK {
+        instance.output = previous;
+    }
+    status
+}
+pub(super) fn execute_snapshot(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    execute_with(instance, sequence, offset, length, |request, _budget| {
+        xyg_engine::geo_snapshot_protocol::execute(request)
+            .map(|reply| reply.to_vec())
+            .map_err(snapshot_error)
+    })
+}
+pub(super) fn read_snapshot(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    if eligible_retained_sequence(instance, sequence) {
+        let status = crate::acquire_geo_transport(instance, true);
+        if status != STATUS_OK {
+            return status;
+        }
+    }
+    let previous = std::mem::take(&mut instance.output);
+    let maximum = instance.max_arena_bytes;
+    instance.max_arena_bytes = maximum.saturating_sub(previous.capacity());
+    let status = execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::geo_snapshot_protocol::read_data(request, budget.saturating_sub(request.len()))
+            .map_err(snapshot_error)
+    });
+    instance.max_arena_bytes = maximum;
+    if status != STATUS_OK {
+        instance.output = previous;
+    }
+    status
+}
+pub(super) fn prepare_frame(
+    instance: &mut Instance,
+    sequence: u32,
+    handle: u64,
+    publication: u64,
+) -> i32 {
+    prepare_frame_with(
+        instance,
+        sequence,
+        handle,
+        publication,
+        xyg_engine::geo_retained_painter::prepare_frame_painter,
+    )
+}
+pub(super) fn prepare_tile_frame(
+    instance: &mut Instance,
+    sequence: u32,
+    handle: u64,
+    publication: u64,
+) -> i32 {
+    prepare_frame_with(
+        instance,
+        sequence,
+        handle,
+        publication,
+        xyg_engine::geo_retained_painter::prepare_tile_frame_painter,
+    )
+}
+fn prepare_frame_with(
+    instance: &mut Instance,
+    sequence: u32,
+    handle: u64,
+    publication: u64,
+    processor: fn(
+        u64,
+        u64,
+        &xyg_engine::geo_transport::GeoTransportPhase<'_>,
+    ) -> Result<
+        xyg_engine::geo_retained_painter::GeoPreparedFramePainter,
+        xyg_engine::geo_source::SourceError,
+    >,
+) -> i32 {
+    if let Some((status, message)) = rejected_sequence(instance, sequence) {
+        return fail(instance, status, message);
+    }
+    instance.arena = Vec::new();
+    instance.output = Vec::new();
+    let status = crate::acquire_geo_transport(instance, true);
+    if status != STATUS_OK {
+        return status;
+    }
+    instance.clear_aggregate();
+    instance.graph_job = None;
+    instance.compile_job = None;
+    instance.latest_sequence = sequence;
+    let result = instance
+        .geo_transport
+        .as_ref()
+        .unwrap()
+        .with_phase(instance.max_arena_bytes, |phase| {
+            processor(handle, publication, phase)
+        });
+    match result {
+        Ok(Ok(prepared)) => {
+            instance.output = prepared.bytes;
+            instance.last_scene_records = prepared.records;
+            instance.last_scene_styles = prepared.styles;
+            instance.last_error.clear();
+            STATUS_OK
+        }
+        Ok(Err(error)) => {
+            let (code, resource) = scale_error(error);
+            let status = match code {
+                "XYG_GEO_SOURCE_STALE" => STATUS_STALE_SEQUENCE,
+                "XYG_GEO_SOURCE_CANCELLED" => STATUS_CANCELLED,
+                _ if resource => STATUS_RESOURCE_LIMIT,
+                _ => STATUS_INVALID_ARGUMENT,
+            };
+            fail(instance, status, code)
+        }
+        Err(_) => fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "retained frame phase exceeds its admitted transport credit",
+        ),
+    }
+}
+
+fn rejected_sequence(instance: &Instance, sequence: u32) -> Option<(i32, &'static str)> {
+    // Rejected old calls must not consume the staging owned by a newer
+    // aggregate, streamed aggregate, graph or compile operation.
+    let newest = instance
+        .latest_sequence
+        .max(instance.aggregate_sequence)
+        .max(instance.compile_job.as_ref().map_or(0, |job| job.sequence))
+        .max(instance.graph_job.as_ref().map_or(0, |job| job.sequence));
+    if sequence == 0 {
+        Some((STATUS_INVALID_ARGUMENT, GeoError::InvalidArgument.code()))
+    } else if sequence <= instance.cancelled_through {
+        Some((STATUS_CANCELLED, "request was cancelled"))
+    } else if sequence <= newest {
+        Some((STATUS_STALE_SEQUENCE, "request sequence is stale"))
+    } else {
+        None
+    }
+}
+fn eligible_retained_sequence(instance: &Instance, sequence: u32) -> bool {
+    sequence > 0
+        && sequence > instance.cancelled_through
+        && sequence
+            > instance
+                .latest_sequence
+                .max(instance.aggregate_sequence)
+                .max(instance.compile_job.as_ref().map_or(0, |j| j.sequence))
+                .max(instance.graph_job.as_ref().map_or(0, |j| j.sequence))
+}
+
 // One lifecycle body serves all geographic processors. Only the bounded
 // request-level dispatch is indirect; Rust geometry loops retain normal O3.
 type GeoProcessor = fn(&[u8], usize) -> Result<Vec<u8>, (&'static str, bool)>;
@@ -61,22 +350,7 @@ fn execute_with(
     length: usize,
     processor: GeoProcessor,
 ) -> i32 {
-    // Rejected old calls must not consume the staging owned by a newer
-    // aggregate, streamed aggregate, graph or compile operation.
-    let newest = instance
-        .latest_sequence
-        .max(instance.aggregate_sequence)
-        .max(instance.compile_job.as_ref().map_or(0, |job| job.sequence))
-        .max(instance.graph_job.as_ref().map_or(0, |job| job.sequence));
-    let rejected = if sequence == 0 {
-        Some((STATUS_INVALID_ARGUMENT, GeoError::InvalidArgument.code()))
-    } else if sequence <= instance.cancelled_through {
-        Some((STATUS_CANCELLED, "request was cancelled"))
-    } else if sequence <= newest {
-        Some((STATUS_STALE_SEQUENCE, "request sequence is stale"))
-    } else {
-        None
-    };
+    let rejected = rejected_sequence(instance, sequence);
     if let Some((status, message)) = rejected {
         if instance.aggregate_job.is_none()
             && instance.stream_aggregate_job.is_none()
@@ -118,10 +392,11 @@ fn execute_with(
         }
         Err((code, resource)) => fail(
             instance,
-            if resource {
-                STATUS_RESOURCE_LIMIT
-            } else {
-                STATUS_INVALID_ARGUMENT
+            match code {
+                "XYG_GEO_SOURCE_CANCELLED" => STATUS_CANCELLED,
+                "XYG_GEO_SOURCE_STALE" => STATUS_STALE_SEQUENCE,
+                _ if resource => STATUS_RESOURCE_LIMIT,
+                _ => STATUS_INVALID_ARGUMENT,
             },
             code,
         ),
@@ -163,8 +438,13 @@ mod tests {
         request.extend(descriptor);
         request
     }
+    fn transport_test_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
     #[test]
     fn catalog_output_resource_cancel_recovery_and_dispose() {
+        let _transport_test = transport_test_lock();
         let descriptor = point_request(2);
         let mut request = vec![0u8; 512];
         request[..4].copy_from_slice(b"XYLK");
@@ -230,6 +510,7 @@ mod tests {
     }
     #[test]
     fn scene_output_resource_cancel_recovery_and_dispose_are_atomic() {
+        let _transport_test = transport_test_lock();
         let request = scene_request();
         let handle = xyg_wasm_instance_new(65536);
         stage(handle, &request);
@@ -280,6 +561,7 @@ mod tests {
     }
     #[test]
     fn viewport_output_cancel_recovery_and_dispose_are_atomic() {
+        let _transport_test = transport_test_lock();
         let mut request = vec![0u8; 128];
         request[..4].copy_from_slice(b"XYVC");
         for (offset, value) in [(4, 1u32), (12, 4326)] {
@@ -331,6 +613,7 @@ mod tests {
 
     #[test]
     fn scene_framing_rejects_all_truncation_before_projection() {
+        let _transport_test = transport_test_lock();
         let request = scene_request();
         for end in 0..request.len() {
             assert!(xyg_engine::geo_scene::compile_geo_scene(&request[..end], 65536).is_err());
@@ -338,6 +621,7 @@ mod tests {
     }
     #[test]
     fn packed_and_typed_ingress_feed_identical_rebuildable_caches() {
+        let _transport_test = transport_test_lock();
         use xyg_engine::geo::{GeoColumn, GeoCrs, GeoDescriptor, GeoGeometry, GeoLimits};
         use xyg_engine::geo_viewport::GeoViewport;
         let xy = [-104.9903f64, 39.7392, -104.9902, 39.7393];
@@ -392,6 +676,7 @@ mod tests {
 
     #[test]
     fn rejected_old_geo_calls_preserve_newer_aggregate_staging() {
+        let _transport_test = transport_test_lock();
         let mut aggregate = vec![0u8; 64];
         aggregate[..4].copy_from_slice(b"XYAG");
         for (offset, value) in [(4, 1u32), (8, 64), (16, 2), (20, 4), (24, 4)] {
@@ -440,6 +725,7 @@ mod tests {
 
     #[test]
     fn pending_compile_sequence_is_protected_before_publication() {
+        let _transport_test = transport_test_lock();
         let handle = xyg_wasm_instance_new(65536);
         let request = point_request(2);
         stage(handle, &request);
@@ -470,6 +756,7 @@ mod tests {
 
     #[test]
     fn generated_identity_plane_is_in_peak_budget() {
+        let _transport_test = transport_test_lock();
         let request = point_request(1024);
         let handle = xyg_wasm_instance_new(10000);
         stage(handle, &request);
@@ -487,6 +774,7 @@ mod tests {
     }
     #[test]
     fn source_is_released_on_success_error_cancel_and_stale() {
+        let _transport_test = transport_test_lock();
         let request = point_request(2);
         let handle = xyg_wasm_instance_new(65536);
         stage(handle, &request);
@@ -531,6 +819,7 @@ mod tests {
     }
     #[test]
     fn bounded_parser_rejects_every_truncation_and_reserved_bit() {
+        let _transport_test = transport_test_lock();
         let request = point_request(2);
         for length in 0..request.len() {
             assert!(column_from_descriptor_bytes(&request[..length], 65536).is_err());
@@ -552,5 +841,62 @@ mod tests {
             column_from_descriptor_bytes(&bad, 65536).unwrap_err(),
             GeoError::InvalidArgument
         );
+    }
+
+    fn stage_scale(handle: u32, request: &[u8]) {
+        assert_eq!(xyg_wasm_arena_resize(handle, request.len()), STATUS_OK);
+        with_instance_mut(handle, |instance| instance.arena.copy_from_slice(request)).unwrap();
+    }
+    #[test]
+    fn retained_scale_uses_shared_registry_and_rejects_ordinary_lanes() {
+        let _transport_test = transport_test_lock();
+        let handle = xyg_wasm_instance_new(65536);
+        let mut create = vec![0u8; 256];
+        create[..4].copy_from_slice(b"XYGQ");
+        create[4..8].copy_from_slice(&1u32.to_le_bytes());
+        create[8..12].copy_from_slice(&1u32.to_le_bytes());
+        stage_scale(handle, &create);
+        assert_eq!(
+            crate::xyg_wasm_geo_scale_execute(handle, 1, 0, create.len()),
+            STATUS_OK
+        );
+        let reply = with_instance_mut(handle, |instance| instance.output.clone()).unwrap();
+        let source_handle = u64::from_le_bytes(reply[16..24].try_into().unwrap());
+        assert!(source_handle > 0);
+        let mut release = create.clone();
+        release[8..12].copy_from_slice(&10u32.to_le_bytes());
+        release[16..24].copy_from_slice(&source_handle.to_le_bytes());
+        // Shared registry sees the same handle outside the WASM instance wrapper.
+        xyg_engine::geo_scale_protocol::execute(&release).unwrap();
+        stage_scale(handle, &release);
+        assert_eq!(
+            crate::xyg_wasm_geo_scale_read(handle, 2, 0, release.len()),
+            STATUS_STALE_SEQUENCE
+        );
+        let mut aggregate = vec![0u8; 64];
+        aggregate[..4].copy_from_slice(b"XYAG");
+        for (offset, value) in [(4, 1u32), (8, 64), (16, 2), (20, 4), (24, 4)] {
+            aggregate[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        for (offset, value) in [(32, 0f64), (40, 1.), (48, 0.), (56, 1.)] {
+            aggregate[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        for _ in 0..4 {
+            aggregate.extend_from_slice(&0.5f64.to_le_bytes());
+        }
+        stage_scale(handle, &aggregate);
+        assert_eq!(
+            crate::xyg_wasm_aggregate_bin2d(handle, 10, 0, aggregate.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(handle, |instance| assert!(instance.arena.is_empty())).unwrap();
+        // With no newer active job, rejected stale staging is consumed.
+        stage_scale(handle, &create);
+        assert_eq!(
+            crate::xyg_wasm_geo_scale_execute(handle, 1, 0, create.len()),
+            STATUS_STALE_SEQUENCE
+        );
+        with_instance_mut(handle, |instance| assert!(instance.arena.is_empty())).unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 }

@@ -5,6 +5,7 @@ import { hydrateWasmPainter, type XygWasmSceneView } from "./48_wasm_scene";
 import { encodeGeoCatalogRequest, decodeGeoCatalogResponse, type XygGeoCatalogRequest,
   type XygGeoInteractionEvent } from "./61_geo_catalog";
 import type { XygGeoCamera } from "./49_wasm_geoviewport";
+import { RetainedGeographicController, type RetainedGeographicChartOptions } from './64_geo_retained_controller';
 
 type Output = ReturnType<typeof decodeGeoCatalogResponse>;
 export interface GeographicChartOptions {
@@ -19,6 +20,11 @@ export interface GeographicChartOptions {
 }
 
 export class XygGeographicChart {
+  /** Retained data uses the same geographic chart surface and Rust painter. */
+  static async fromSource(options:RetainedGeographicChartOptions):Promise<RetainedGeographicController> {
+    await options.worker.acquireGeoTransport();
+    return new RetainedGeographicController(options);
+  }
   readonly ready: Promise<Output>;
   private catalog: XygGeoCatalogRequest;
   private output: Output | null = null;

@@ -209,8 +209,15 @@ export class XygWasmWorker {
   private pending = new Map<number, Pending>();
   private nextRequestId = 1;
   private nextSequence = 1;
+  private ownedGeoChain: Promise<void> = Promise.resolve();
+  private geoTransportAdmission: Promise<void>|null=null;
+  private geoTransportAdmitted=false;
+  private ownedGeoBytes=0;
+  private ownedGeoJobs=0;
+  private ownedGeoCleanupJobs=0;
   private nextTickSequence = 1;
   private disposed = false;
+  private disposal:Promise<void>|null=null;
   private readonly maxArenaBytes: number;
   private readonly inline: boolean;
   private readonly inlineBlobUrl: string | null;
@@ -300,12 +307,60 @@ export class XygWasmWorker {
     return this.sceneTask("scene.paint", scene, options);
   }
 
+  /** Admit the fixed geographic transport credit before copying/framing retained
+   * product inputs. This Worker then uses the bounded retained execution mode. */
+  acquireGeoTransport():Promise<void>{
+    return this.geoTransportAdmission??=(async()=>{
+      await this.ready;this.assertLive(true);const requestId=this.allocateRequest(),result=this.promiseFor<unknown>(requestId);
+      try{this.worker.postMessage({type:'geo.transport.acquire',requestId});}
+      catch(cause){this.pending.delete(requestId);throw cause;}
+      await result;this.geoTransportAdmitted=true;
+    })();
+  }
+  /** Paint only an immutable Rust-authorized retained frame, without a Scene
+   * round trip or accepting arbitrary unaccounted Scene decoder allocations. */
+  prepareGeoFrame(frameHandle:bigint,publicationSequence:bigint,tile=false):Pick<XygWasmTask<XygWasmScenePaint>,'result'|'cancel'>{
+    if([frameHandle,publicationSequence].some(value=>typeof value!=='bigint'||value<0n||value>0xffffffffffffffffn))throw new TypeError('Retained frame identity requires u64 bigint');
+    let cancelled=false;
+    const result=this.queueOwnedGeo(async()=>{
+      await this.acquireGeoTransport();
+      if(cancelled)throw new XygWasmError('XYG_WASM_CANCELLED','geographic preparation cancelled',6);
+      this.assertLive(true);const sequence=this.nextSequence++,requestId=this.allocateRequest(),result=this.promiseFor<XygWasmScenePaint>(requestId);
+      if(sequence>0xffffffff){this.pending.delete(requestId);throw new RangeError('Worker sequence exhausted');}
+      try{this.worker.postMessage({type:tile?'geo.tile.frame.prepare':'geo.frame.prepare',requestId,sequence,frameHandle,publicationSequence});}
+      catch(cause){this.pending.delete(requestId);throw cause;}
+      const paint=await result;
+      if(cancelled)throw new XygWasmError('XYG_WASM_CANCELLED','geographic preparation cancelled',6);
+      return paint;
+    },32);
+    return {result,cancel:()=>{cancelled=true;}};
+  }
+  /** Charge synchronous framing temporaries to the same shared host credit.
+   * Release after dropping those inputs and before handing off the framed request. */
+  reserveGeoInput(bytes:number):()=>void{
+    if(!this.geoTransportAdmitted)throw new XygWasmError("XYG_WASM_NOT_READY","Geographic transport must be admitted before framing");
+    this.checkOwnedGeoCapacity(bytes);this.ownedGeoBytes+=bytes;
+    let released=false;return ()=>{if(!released){released=true;this.ownedGeoBytes-=bytes;}};
+  }
+  private checkOwnedGeoCapacity(retainedBytes:number,cleanup=false){
+    this.assertLive(true);const limit=Math.min(this.maxArenaBytes,32*1024*1024),reserve=Math.min(32768,Math.floor(limit/4));
+    if(!Number.isSafeInteger(retainedBytes)||retainedBytes<0||this.ownedGeoBytes+retainedBytes>limit-(cleanup?0:reserve)||(cleanup?this.ownedGeoCleanupJobs>=64:this.ownedGeoJobs>=16))throw new XygWasmError('XYG_WASM_BUDGET_EXCEEDED','geographic ownership queue exceeds its bounded admission');
+  }
+  private queueOwnedGeo<T>(operation:()=>Promise<T>,retainedBytes:number,cleanup=false):Promise<T>{
+    this.assertLive(true);
+    this.checkOwnedGeoCapacity(retainedBytes,cleanup);
+    this.ownedGeoBytes+=retainedBytes;if(cleanup)this.ownedGeoCleanupJobs++;else this.ownedGeoJobs++;
+    const result=this.ownedGeoChain.then(operation).finally(()=>{this.ownedGeoBytes-=retainedBytes;if(cleanup)this.ownedGeoCleanupJobs--;else this.ownedGeoJobs--;});
+    this.ownedGeoChain=result.then(()=>{},()=>{});return result;
+  }
+
   /** Lower one complete canonical Scene with bounded Rust-projected XYAT/XYAL labels. */
   prepareSceneAnnotations(
     scene: ArrayBuffer | Uint8Array,
     annotations: ArrayBuffer | Uint8Array,
     options: SceneTaskOptions = {},
   ): XygWasmTask<XygWasmScenePaint> {
+    this.assertLive();
     const sceneBytes = new Uint8Array(scene instanceof Uint8Array ? scene.buffer.slice(scene.byteOffset, scene.byteOffset + scene.byteLength) : scene);
     const annotationBytes = new Uint8Array(annotations instanceof Uint8Array ? annotations.buffer.slice(annotations.byteOffset, annotations.byteOffset + annotations.byteLength) : annotations);
     const length = 16 + sceneBytes.byteLength + annotationBytes.byteLength;
@@ -473,7 +528,7 @@ export class XygWasmWorker {
 
   /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
   evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource", sequence?: number): Promise<never> {
-    this.assertLive();
+    this.assertLive(true);
     if (!this.evidenceCapability) {
       throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled");
     }
@@ -669,6 +724,42 @@ export class XygWasmWorker {
     return {requestId,sequence,result,cancel:()=>{const pending=this.pending.get(requestId);if(!pending)return;this.pending.delete(requestId);pending.reject(new XygWasmError("XYG_WASM_CANCELLED","catalog command was cancelled",6));if(!this.disposed)this.worker.postMessage({type:"cancel",requestId,sequence});}};
   }
 
+  /** Retained geographic lifecycle mutations always return their ownership reply.
+   * Cancellation is an explicit Rust protocol command, never a dropped transport. */
+  geoScaleExecute(request: ArrayBuffer): Promise<ArrayBuffer> {
+    return this.geoScaleTransport("geo.scale.execute", request);
+  }
+  /** Read an immutable retained packet or author one bounded canonical chunk. */
+  geoScaleRead(request: ArrayBuffer): Promise<ArrayBuffer> {
+    return this.geoScaleTransport("geo.scale.read", request);
+  }
+  geoTileExecute(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.tile.execute',request);}
+  geoTileRead(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.tile.read',request);}
+  geoSnapshotExecute(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.snapshot.execute',request);}
+  geoSnapshotRead(request:ArrayBuffer):Promise<ArrayBuffer>{return this.geoScaleTransport('geo.snapshot.read',request);}
+  private async geoScaleTransport(type: "geo.scale.execute" | "geo.scale.read" | "geo.tile.execute" | "geo.tile.read" | "geo.snapshot.execute" | "geo.snapshot.read", request: ArrayBuffer): Promise<ArrayBuffer> {
+    this.assertLive(true);
+    const minimum=type.startsWith("geo.tile.")?128:256;
+    if (!(request instanceof ArrayBuffer) || request.byteLength < minimum || request.byteLength > Math.min(this.maxArenaBytes,32*1024*1024)) {
+      throw new TypeError("retained geographic request must be a bounded ArrayBuffer");
+    }
+    if(request.byteLength<minimum||request.byteLength>Math.min(this.maxArenaBytes,32*1024*1024))throw new TypeError('retained request changed before admission');
+    if(!this.geoTransportAdmitted)await this.acquireGeoTransport();this.assertLive(true);
+    // Transfer ownership without a second allocation; waiting in the
+    // FIFO must not expose mutable authoring bytes to a later caller.
+    const length=request.byteLength,command=new DataView(request).getUint32(8,true),cleanup=(type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3]:[8,9,10]).includes(command)&&length<=352;
+    this.checkOwnedGeoCapacity(length,cleanup);
+    const owned=structuredClone(request,{transfer:[request]});
+    return this.queueOwnedGeo(async()=>{
+      await this.acquireGeoTransport();this.assertLive(true);const sequence=this.nextSequence++;
+      if(sequence>0xffffffff)throw new RangeError("Worker sequence exhausted");
+      const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
+      try{this.worker.postMessage({type,requestId,sequence,request:owned},[owned]);}
+      catch(cause){this.pending.delete(requestId);throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT",cause instanceof Error?cause.message:"could not transfer retained geographic request");}
+      return await result;
+    },length,cleanup);
+  }
+
   /** Submit one packed temporal command to the shared Rust state machine. */
   temporalCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
     this.assertLive();
@@ -806,13 +897,17 @@ export class XygWasmWorker {
     };
   }
 
-  async dispose(): Promise<void> {
-    if (this.disposed) return;
+  dispose(): Promise<void> {
+    if(this.disposal)return this.disposal;
     this.disposed = true;
+    return this.disposal=(async()=>{
     const disposedError = new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
     // Reject application work before waiting for the worker acknowledgement;
     // a short synchronous WASM operation must not win disposal's lifecycle race.
     this.failAll(disposedError);
+    // Drain every retained closure/reference before Rust releases the persistent
+    // transport credit. New ownership admission is already disabled.
+    await this.ownedGeoChain;
     const requestId = this.allocateRequest();
     const complete = this.promiseFor<void>(requestId);
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -833,6 +928,7 @@ export class XygWasmWorker {
     if (this.inlineBlobUrl) URL.revokeObjectURL(this.inlineBlobUrl);
       this.failAll(disposedError);
     }
+    })();
   }
 
   private allocateRequest(): number {
@@ -892,8 +988,9 @@ export class XygWasmWorker {
     this.pending.clear();
   }
 
-  private assertLive() {
+  private assertLive(retained=false) {
     if (this.disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
+    if(!retained&&this.geoTransportAdmission)throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT","Ordinary operations require a separate Worker from retained geographic transport");
   }
 }
 

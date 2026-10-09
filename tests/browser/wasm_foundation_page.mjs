@@ -29,8 +29,12 @@ import {
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
-/** Encoded Scene version. Keep in lockstep with `scene::SCENE_VERSION`. */
-const CANONICAL_SCENE_VERSION = 32;
+// Test identities and mock signatures follow the tracked source ABI contract.
+const wasmManifestResponse = await fetch("/spec/wasm/abi.json");
+if (!wasmManifestResponse.ok) throw new Error("WASM ABI test manifest unavailable");
+const WASM_MANIFEST = await wasmManifestResponse.json();
+const CANONICAL_ABI_VERSION = WASM_MANIFEST.abi_version;
+const CANONICAL_SCENE_VERSION = WASM_MANIFEST.scene_version;
 
 function directDensityFixture(host, comm = null, multi = false, fullSource = false, colorbar = null) {
   const width = 16, height = 16;
@@ -335,7 +339,7 @@ async function fixtureModule({
   cancelTrap = false,
   graphStepTrap = false,
   paletteVersion = 1,
-  abiVersion = 31,
+  abiVersion = CANONICAL_ABI_VERSION,
   sceneVersion = CANONICAL_SCENE_VERSION,
 } = {}) {
   const names = [
@@ -391,20 +395,26 @@ async function fixtureModule({
     "xyg_wasm_geo_viewport_execute",
     "xyg_wasm_geo_catalog_compile",
   ];
-  const arities = [0, 1, 2, 3, 4, 5];
+  const originalExportCount = names.length;
+  for (const entry of WASM_MANIFEST.exports) {
+    if (!names.includes(entry.name)) names.push(entry.name);
+  }
+  const signatures = new Map(WASM_MANIFEST.exports.map(entry => [entry.name, entry]));
+  const wasmType = type => {
+    if (type === "u64" || type === "i64") return 0x7e;
+    if (["u32", "i32", "usize"].includes(type)) return 0x7f;
+    throw new Error(`Unhandled mock WASM type: ${type}`);
+  };
   const types = [
-    ...u32(arities.length),
-    ...arities.flatMap((arity) => [
-      0x60,
-      ...u32(arity),
-      ...Array(arity).fill(0x7f),
-      1,
-      0x7f,
-    ]),
+    ...u32(names.length),
+    ...names.flatMap(name => {
+      const signature = signatures.get(name);
+      if (!signature) throw new Error(`Mock export missing from ABI manifest: ${name}`);
+      return [0x60, ...u32(signature.params.length), ...signature.params.map(wasmType),
+        1, wasmType(signature.result)];
+    }),
   ];
-  const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3, 4, 0, 0, 1, 3, 0, 4, 0, 4, 4, 4,
-  ];
+  const functionTypes = names.map((_, index) => index);
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
   const exports = [
@@ -427,9 +437,10 @@ async function fixtureModule({
     highBitDiagnostics ? 1 : 0,
     0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, paletteVersion, 8, 0, 0, 1, 0, 1, 0, 0, 0,
   ];
-  if (names.length !== functionTypes.length || names.length !== values.length) {
+  if (originalExportCount !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
   }
+  values.push(...Array(names.length - originalExportCount).fill(0));
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
       || (cancelTrap && index === 8)
@@ -523,7 +534,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 31,
+    expectedAbiVersion: CANONICAL_ABI_VERSION,
     expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
@@ -2187,7 +2198,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 31 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
+  if (ready.abiVersion !== CANONICAL_ABI_VERSION || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -4381,7 +4392,7 @@ async function run() {
 
   // Protocol mismatches are distinct, stable codes (not one generic failure).
   for (const [options, code] of [
-    [{ abiVersion: 25 }, "XYG_WASM_ABI_MISMATCH"],
+    [{ abiVersion: CANONICAL_ABI_VERSION - 1 }, "XYG_WASM_ABI_MISMATCH"],
     [{ sceneVersion: CANONICAL_SCENE_VERSION - 1 }, "XYG_WASM_SCENE_MISMATCH"],
   ]) {
     const mismatched = createXygWasmWorker({

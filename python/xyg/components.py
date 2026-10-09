@@ -7367,9 +7367,153 @@ class GeoChart:
     camera: Mapping[str, Any]
     legend: Mapping[str, Any] | None = None
     budget: int = 384 * 1024 * 1024
+    tile_session: Any = None
+    tile_vector_styles: Any = None
+    tile_image_id: int | None = None
 
-    def compile(self, *, event: Mapping[str, Any] | None = None) -> dict[str, Any]:
-        """Compile source columns and optional interaction through native Rust."""
+    def _retained_layer(self):
+        # Source construction loads its data adapter; ordinary composition does not.
+        import sys
+
+        module = sys.modules.get(f"{__package__}._geo_retained")
+        source_type = getattr(module, "RetainedGeoSource", ())
+        retained = [layer for layer in self.layers if isinstance(layer.source, source_type)]
+        if not retained:
+            return None
+        if len(self.layers) != 1 or self.legend is not None:
+            raise ValueError("retained geography requires one layer and no legend")
+        layer = retained[0]
+        if layer.kind != "points":
+            raise ValueError("retained geography initially supports only points layers")
+        return layer
+
+    def _retained_inputs(self, layer):
+        import struct
+
+        from . import _geoscale as g
+
+        props = layer.properties
+        if set(props) != {"query", "sequence", "style"}:
+            raise ValueError("retained layer requires exactly query, sequence and uniform style")
+        query = props["query"]
+        query_fields = {
+            "camera",
+            "reduced_kind",
+            "max_cells",
+            "previous_direct",
+            "source_digest",
+            "generation",
+            "layer_id",
+            "camera_revision",
+            "time_revision",
+            "layer_revision",
+            "style_revision",
+            "state_revision",
+            "time",
+            "max_projected_vertices",
+        }
+        if not isinstance(query, Mapping) or set(query) != query_fields:
+            raise ValueError("retained query must supply the complete typed query")
+        camera_fields = {
+            "crs",
+            "world_wrap",
+            "center_x",
+            "center_y",
+            "zoom",
+            "width",
+            "height",
+            "bearing",
+            "pitch",
+        }
+
+        def camera_bytes(camera):
+            if not isinstance(camera, Mapping) or set(camera) != camera_fields:
+                raise ValueError("retained camera must supply every typed field")
+            if not isinstance(camera["world_wrap"], bool):
+                raise TypeError("world_wrap must be boolean")
+            values = [
+                camera[k]
+                for k in ("center_x", "center_y", "zoom", "width", "height", "bearing", "pitch")
+            ]
+            if any(
+                isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+                for v in values
+            ):
+                raise ValueError("camera fields must be finite numbers")
+            return struct.pack(
+                "<II7d", g._uint(camera["crs"], 32), int(camera["world_wrap"]), *values
+            )
+
+        if camera_bytes(self.camera) != camera_bytes(query["camera"]):
+            raise ValueError("GeoChart camera must exactly match its retained query")
+        if g._uint(layer.layer_id) != g._uint(query["layer_id"]):
+            raise ValueError("retained query layer_id must match geo_layer")
+        if (
+            isinstance(self.budget, bool)
+            or not isinstance(self.budget, int)
+            or not layer.source.budget["processor_bytes"] <= self.budget <= 384 * 1024 * 1024
+        ):
+            raise ValueError("chart budget must cover the source's explicit processor budget")
+        style = props["style"]
+        if isinstance(style, Mapping):
+            if set(style) != {"fill", "stroke", "stroke_width", "diameter", "opacity", "symbol"}:
+                raise ValueError("retained uniform style must supply every field")
+            style = g.encode_style(dict(style))
+        if not isinstance(style, bytes) or len(style) != 48:
+            raise ValueError(
+                "retained style requires exact 48-byte framing or a complete style mapping"
+            )
+        return dict(query), g._uint(props["sequence"]), style
+
+    def compile(self, *, event: Mapping[str, Any] | None = None) -> Any:
+        """Return a static catalog dict, or an explicitly owned retained Scene frame."""
+        retained = self._retained_layer()
+        if retained is not None:
+            if self.tile_session is not None:
+                raise ValueError(
+                    "retained point and tile compilation require separate explicit frames"
+                )
+            if event is not None:
+                raise ValueError("retained compile does not accept catalog interaction events")
+            query, sequence, style = self._retained_inputs(retained)
+            return retained.source.update(query, sequence=sequence, style=style)
+        from . import _geocatalog
+
+        encoded = self._catalog_packet(event)
+        if self.tile_session is not None:
+            if event is not None:
+                raise ValueError("tile compilation does not accept catalog events")
+            self._check_tiles()
+
+            def stage(frame):
+                artifact = frame.export("svg", budget=self.budget)
+                artifact.close()
+
+            return self.tile_session.update(
+                self.camera,
+                catalog=encoded,
+                vector_styles=self.tile_vector_styles,
+                image_id=self.tile_image_id,
+                stage=stage,
+            )
+        return _geocatalog.decode_response(_geocatalog.execute(encoded, self.budget))
+
+    def _check_tiles(self):
+        import sys
+
+        source_type = getattr(sys.modules.get(f"{__package__}._geo_tiles"), "GeoTileSession", ())
+        if (
+            not isinstance(self.tile_session, source_type)
+            or self.tile_vector_styles is None
+            or self.tile_image_id is None
+        ):
+            raise ValueError(
+                "tile_session requires explicit native session, tile_vector_styles and tile_image_id"
+            )
+        if not self.tile_session.budget <= self.budget <= 384 * 1024 * 1024:
+            raise ValueError("chart budget must cover tile session processor budget")
+
+    def _catalog_packet(self, event=None):
         from . import _geocatalog
 
         kinds = {
@@ -7398,10 +7542,67 @@ class GeoChart:
         if event is not None:
             request["event"] = dict(event)
         encoded = _geocatalog.encode_request(request, self.budget)
-        return _geocatalog.decode_response(_geocatalog.execute(encoded, self.budget))
+        return encoded
 
-    def to_image(self, format: str = "png", *, scale: float = 1.0, quality: int = 90) -> bytes:
-        """Export the same Rust Scene, including labels, legend and layer order."""
+    async def compile_async(self) -> Any:
+        """Compile the same retained composition with an async source reader."""
+        retained = self._retained_layer()
+        if self.tile_session is not None or retained is None:
+            return self.compile()
+        query, sequence, style = self._retained_inputs(retained)
+        return await retained.source.aupdate(query, sequence=sequence, style=style)
+
+    def to_image(
+        self, format: str = "png", *, scale: float = 1.0, quality: int = 90, frame: Any = None
+    ) -> Any:
+        """Ordinary output is bytes; retained output is an owned accountable artifact."""
+        retained = self._retained_layer()
+        if self.tile_session is not None:
+            import hashlib
+
+            from . import _geo_tiles
+
+            self._check_tiles()
+            if frame is None:
+                raise ValueError("compile the tile chart, then pass frame= or call frame.export")
+            preparation = _geo_tiles.encode_prepare(
+                self._catalog_packet(), self.tile_vector_styles, self.tile_image_id
+            )
+            if (
+                getattr(frame, "_session", None) is not self.tile_session
+                or frame._camera_packet != _geo_tiles.encode_begin(self.camera, [])[:64]
+                or frame._prepare_digest != hashlib.sha256(preparation).digest()
+            ):
+                raise ValueError("frame must match this tile chart's session, camera and catalog")
+            return frame.export(format, scale=scale, quality=quality, budget=self.budget)
+        if retained is not None:
+            if frame is None:
+                raise ValueError(
+                    "compile the retained chart, then pass frame= or call frame.export"
+                )
+            from . import _geoscale as g
+
+            query, sequence, style = self._retained_inputs(retained)
+            packet = g.encode_request(
+                dict(
+                    command=5,
+                    handle=retained.source.handle,
+                    sequence=sequence,
+                    budget=retained.source.budget,
+                    query=query,
+                )
+            )
+            if (
+                getattr(frame, "_source", None) is not retained.source
+                or frame._query_packet[12:13] != packet[12:13]
+                or frame._query_packet[24:32] != packet[24:32]
+                or frame._query_packet[64:232] != packet[64:232]
+                or frame._style != style
+            ):
+                raise ValueError("frame must match this retained chart's source, query and style")
+            return frame.export(format, scale=scale, quality=quality, budget=self.budget)
+        if frame is not None:
+            raise ValueError("frame is only accepted for retained geography")
         from . import _native
 
         result = self.compile()
@@ -7438,7 +7639,9 @@ def geo_layer(
 ) -> GeoLayer:
     """Declare a geographic layer using exact GeoColumn descriptor planes.
 
-    ``source`` is an existing GeoArrow descriptor or packed XYGD source.
+    ``source`` is an existing GeoArrow descriptor, packed XYGD source, or an
+    explicit RetainedGeoSource. Retained layers require complete query, sequence
+    and uniform style properties; their compile result is an owned frame.
     Style/channel properties follow the shared geographic catalog contract;
     coordinates, IDs, nulls, values and state remain authoritative in Rust.
     """
@@ -7452,8 +7655,15 @@ def geo_chart(
     camera: Mapping[str, Any],
     legend: Mapping[str, Any] | None = None,
     budget: int = 384 * 1024 * 1024,
+    tile_session: Any = None,
+    tile_vector_styles: Any = None,
+    tile_image_id: int | None = None,
 ) -> GeoChart:
     """Compose geographic marks with explicit CRS, viewport and resource budget."""
     if any(not isinstance(layer, GeoLayer) for layer in layers):
         raise TypeError("geo_chart children must be geo_layer specifications")
-    return GeoChart(tuple(layers), camera, legend, budget)
+    if tile_session is None and (tile_vector_styles is not None or tile_image_id is not None):
+        raise ValueError("tile options require tile_session")
+    return GeoChart(
+        tuple(layers), camera, legend, budget, tile_session, tile_vector_styles, tile_image_id
+    )

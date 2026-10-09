@@ -29,6 +29,7 @@ let handle = 0;
 type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed";
 let lifecycle: Lifecycle = "idle";
 let operationBudgetBytes = 0;
+let retainedGeoMode=false;
 let evidenceCapability: string | null = null;
 let initializedModule: WebAssembly.Module | null = null;
 let compileLeaf = false;
@@ -1134,12 +1135,12 @@ function admitOperationSequence(message: any, deferred = false): boolean {
   return true;
 }
 
-function runGeoIngest(message: any) {
+function runGeoIngest(message: any, owned = false) {
   queued.delete(message.requestId);
-  if (!admitOperationSequence(message, true)) return;
+  if (!owned && !admitOperationSequence(message, true)) return;
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type === "geo.scene" ? 192 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type.startsWith("geo.scale.") || message.type.startsWith("geo.snapshot.") ? 256 : message.type.startsWith("geo.tile.") ? 128 : message.type === "geo.scene" ? 192 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1166,7 +1167,19 @@ function runGeoIngest(message: any) {
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid geographic staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-    status = message.type === "geo.catalog"
+    status = message.type === "geo.scale.execute"
+      ? exports.xyg_wasm_geo_scale_execute(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.scale.read"
+      ? exports.xyg_wasm_geo_scale_read(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.tile.execute"
+      ? exports.xyg_wasm_geo_tile_execute(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.tile.read"
+      ? exports.xyg_wasm_geo_tile_read(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.snapshot.execute"
+      ? exports.xyg_wasm_geo_snapshot_execute(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.snapshot.read"
+      ? exports.xyg_wasm_geo_snapshot_read(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "geo.catalog"
       ? exports.xyg_wasm_geo_catalog_compile(handle, message.sequence, 0, message.request.byteLength)
       : message.type === "geo.viewport"
       ? exports.xyg_wasm_geo_viewport_execute(handle, message.sequence, 0, message.request.byteLength)
@@ -1185,8 +1198,33 @@ function runGeoIngest(message: any) {
 
 scope.onmessage = (event: MessageEvent<any>) => {
   const message = event.data;
+  if(retainedGeoMode&&!['dispose','cancel','evidence.lifecycle','geo.transport.acquire','geo.frame.prepare','geo.tile.frame.prepare','geo.scale.execute','geo.scale.read','geo.tile.execute','geo.tile.read','geo.snapshot.execute','geo.snapshot.read'].includes(message?.type)){
+    error(message?.requestId,'XYG_WASM_INVALID_ARGUMENT','This retained geographic Worker requires a separate ordinary chart Worker for other product lanes',XYG_WASM_STATUS.INVALID_ARGUMENT);return;
+  }
   if (message?.type === "init") {
     void initialize(message);
+    return;
+  }
+  if(message?.type === 'geo.transport.acquire'){
+    if(!exports||!handle||lifecycle!=='initialized'){error(message.requestId,'XYG_WASM_NOT_READY','Worker not initialized');return;}
+    try{
+      const status=exports.xyg_wasm_geo_transport_acquire(handle);
+      if(status!==XYG_WASM_STATUS.OK){rustError(message.requestId,statusCode(status),readXygWasmError(exports,handle),status);return;}
+      retainedGeoMode=true;operationBudgetBytes=Math.min(operationBudgetBytes,128*1024*1024);reply(message.requestId,diagnostics());
+    }catch(cause){error(message.requestId,'XYG_WASM_TRAP',cause instanceof Error?cause.message:'geographic transport admission trapped');}
+    return;
+  }
+  if(message?.type==='geo.frame.prepare'||message?.type==='geo.tile.frame.prepare'){
+    if(!admitOperationSequence(message))return;
+    if(!exports||!handle||lifecycle!=='initialized'){error(message.requestId,'XYG_WASM_NOT_READY','Worker not initialized');return;}
+    try{
+      const status=message.type==='geo.tile.frame.prepare'?exports.xyg_wasm_geo_tile_frame_prepare(handle,message.sequence,message.frameHandle,message.publicationSequence):exports.xyg_wasm_geo_frame_prepare(handle,message.sequence,message.frameHandle,message.publicationSequence);
+      if(status!==XYG_WASM_STATUS.OK){rustError(message.requestId,statusCode(status),readXygWasmError(exports,handle),status);return;}
+      const ptr=exports.xyg_wasm_output_ptr(handle)>>>0,length=exports.xyg_wasm_output_len(handle)>>>0;
+      if(!ptr||length<64||length>operationBudgetBytes||ptr+length>exports.memory.buffer.byteLength)throw new Error('Invalid retained painter range');
+      const painter=new Uint8Array(exports.memory.buffer,ptr,length).slice().buffer;
+      reply(message.requestId,{...diagnostics(),sequence:message.sequence,painter},[painter]);
+    }catch(cause){lifecycle='failed';disposeRust();error(message.requestId,'XYG_WASM_TRAP',cause instanceof Error?cause.message:'retained painter trapped');}
     return;
   }
   if (message?.type === "evidence.lifecycle") { evidenceLifecycle(message); return; }
@@ -1214,8 +1252,12 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
     || message?.type === "compound.transition"
-    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog";
+    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read" || ["geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type);
   if (sequenced && !admitOperationSequence(message)) return;
+  // Ownership mutations and immutable reads cannot be discarded by a later
+  // request. Execute at receipt; the main-thread ownership FIFO sequences them.
+  // Session cancellation remains the explicit Rust command9.
+  if(["geo.scale.execute","geo.scale.read","geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type)) {runGeoIngest(message,true);return;}
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (
     message?.type === "scene.validate"
@@ -1245,7 +1287,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog") {
+  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read") {
     const timer = setTimeout(() => runGeoIngest(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;

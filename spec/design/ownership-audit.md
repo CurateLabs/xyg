@@ -1053,6 +1053,43 @@ Forbidden:
 | `js/src/61_geo_catalog.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/62_geographic_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/bin/geo_scale_bench.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_lod.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_lod_hit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_lod_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_membership_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_retained_painter.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_scale_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_scale_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_simplify.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_snapshot.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_snapshot_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_source.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_source_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_tile_cache.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_tile_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_tile_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_tile_scene_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_transport.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-wasm/src/bin/geo_scale_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `js/src/63_geo_source.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-snapshot.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-snapshot.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-tiles.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-tiles.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geoscale.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geoscale.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_retained.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geo_snapshot.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geo_tiles.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geoscale.py` | Python host | `python-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1070,3 +1107,40 @@ Rust or carry a numbered migration issue.
 Rust owns catalog compilation, source identity, glyph predicates, bounded picking
 and state transitions. Browser code captures events, paints the shared Scene
 and presents paged companion rows; the shell supplies its WebGL context.
+
+## Retained geographic source and tile ownership
+
+- `crates/xyg-engine/src/bin/geo_scale_bench.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_lod.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_lod_hit.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_lod_scene.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_membership_protocol_tests.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_membership_session.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_retained_painter.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_scale_protocol.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_scale_protocol_tests.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_simplify.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_snapshot.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_snapshot_protocol.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_source.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_source_session.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_tile_cache.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_tile_protocol.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_tile_scene.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_tile_scene_tests.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-engine/src/geo_transport.rs`: **rust-engine**. Retained geographic source, LOD, membership, tile, snapshot, and quota decisions are shared engine policy; see spec/design/geo-retained-source.md, geo-scale-protocol.md, geo-tile-protocol.md, and geo-frozen-export.md.
+- `crates/xyg-wasm/src/bin/geo_scale_conformance.rs`: **rust-wasm-abi**. Bounded WASM retained-source oracle and marshaling use the shared geographic engine; see spec/design/geo-transport.md.
+- `js/src/63_geo_source.ts`: **browser-wasm-adapter**. Browser retained geographic framing, DOM provenance, cancellation, and Worker ownership call Rust for projection, reduction, picking, and membership; see spec/design/geo-transport.md and geo-retained-hosts.md.
+- `js/src/64_geo_retained_controller.ts`: **browser-wasm-adapter**. Browser retained geographic framing, DOM provenance, cancellation, and Worker ownership call Rust for projection, reduction, picking, and membership; see spec/design/geo-transport.md and geo-retained-hosts.md.
+- `packages/xy-node/src/geo-retained.d.ts`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geo-retained.js`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geo-snapshot.d.ts`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geo-snapshot.js`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geo-tiles.d.ts`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geo-tiles.js`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geoscale.d.ts`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `packages/xy-node/src/geoscale.js`: **node-host**. Node geographic ownership and typed binary framing call the shared native engine; see spec/design/geo-retained-hosts.md and geo-tile-protocol.md.
+- `python/xyg/_geo_retained.py`: **python-host**. Python geographic ownership, asynchronous reader lifecycle, and typed binary framing call the native engine without reimplementing geographic policy; see spec/design/geo-retained-hosts.md and geo-frozen-export.md.
+- `python/xyg/_geo_snapshot.py`: **python-host**. Python geographic ownership, asynchronous reader lifecycle, and typed binary framing call the native engine without reimplementing geographic policy; see spec/design/geo-retained-hosts.md and geo-frozen-export.md.
+- `python/xyg/_geo_tiles.py`: **python-host**. Python geographic ownership, asynchronous reader lifecycle, and typed binary framing call the native engine without reimplementing geographic policy; see spec/design/geo-retained-hosts.md and geo-frozen-export.md.
+- `python/xyg/_geoscale.py`: **python-host**. Python geographic ownership, asynchronous reader lifecycle, and typed binary framing call the native engine without reimplementing geographic policy; see spec/design/geo-retained-hosts.md and geo-frozen-export.md.

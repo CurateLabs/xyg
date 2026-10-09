@@ -15,7 +15,7 @@ export interface GeoMapShell {
 
 export interface MapLibreGeoLayerOptions {
   id: string;
-  prepared: XygWasmScenePaint;
+  prepared?: XygWasmScenePaint|null;
   /** Forward shell camera events to the application's Rust/WASM camera seam. */
   onCameraEvent?: (event: unknown) => void;
 }
@@ -25,14 +25,15 @@ export interface MapLibreGeoLayerOptions {
  * The shell provides scheduling and its current framebuffer only. */
 export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
   if (!options || typeof options.id !== "string" || !options.id) throw new TypeError("A geographic layer id is required");
-  let prepared = options.prepared;
+  const id=options.id,cameraObserver=options.onCameraEvent;
+  let prepared:XygWasmScenePaint|null = options.prepared??null;
   let map: GeoMapShell | null = null, gl: WebGL2RenderingContext | null = null;
   let view: XygWasmSceneView | null = null;
   let disposed = false;
   const holder = document.createElement("div");
   holder.style.cssText="position:absolute;inset:0;pointer-events:none;";
-  holder.dataset.xyGeoDecorations=options.id;
-  const cameraEvent = (event: unknown) => options.onCameraEvent?.(event);
+  holder.dataset.xyGeoDecorations=id;
+  const cameraEvent = (event: unknown) => cameraObserver?.(event);
   const viewportMatches = () => view && gl && view.canvas.width === gl.drawingBufferWidth
     && view.canvas.height === gl.drawingBufferHeight;
   const releaseView = () => {
@@ -67,7 +68,7 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
     view = candidate;
   };
   const lost = () => releaseView();
-  const restored = () => { if (map && !disposed) replace(prepared); };
+  const restored = () => { if (map && !disposed && prepared) replace(prepared); };
   const detach = () => {
     if (!map) return;
     map.getCanvas().removeEventListener("webglcontextlost", lost);
@@ -78,7 +79,7 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
     map = null; gl = null;
   };
   return {
-    id: options.id,
+    id,
     type: "custom" as const,
     renderingMode: "2d" as const,
     onAdd(owner: GeoMapShell, context: WebGL2RenderingContext) {
@@ -88,7 +89,7 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
       }
       map = owner; gl = context;
       try {
-        replace(prepared);
+        if(prepared)replace(prepared);
         const container=owner.getContainer?.() ?? owner.getCanvas().parentElement;
         if (container) container.appendChild(holder);
         owner.getCanvas().addEventListener("webglcontextlost", lost);
@@ -106,6 +107,12 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
       if (disposed) throw new Error("The geographic layer is disposed");
       replace(next);
     },
+    /** Release the retained consumer before its SceneData authority is disposed.
+     * The shell-owned context and custom layer remain available for a later frame. */
+    releasePrepared(){
+      releaseView();prepared=null;holder.replaceChildren();
+      try{map?.triggerRepaint();}catch{/* Scheduling observers do not retain a frame. */}
+    },
     /** Existing direct-point picking only; feature-policy interaction is Rust-owned. */
     pick(x: number, y: number): bigint | null {
       if (!view || !gl || gl.isContextLost() || !viewportMatches()) return null;
@@ -117,6 +124,6 @@ export function createMapLibreGeoLayer(options: MapLibreGeoLayerOptions) {
       });
     },
     onRemove() { detach(); },
-    dispose() { detach(); disposed = true; },
+    dispose() { detach();prepared=null;disposed = true; },
   };
 }

@@ -55,7 +55,7 @@ fn crc32_parts(parts: &[&[u8]]) -> u32 {
     c ^ 0xFFFF_FFFF
 }
 
-fn push_chunk(out: &mut Vec<u8>, tag: &[u8; 4], data: &[u8]) {
+pub(crate) fn push_chunk(out: &mut Vec<u8>, tag: &[u8; 4], data: &[u8]) {
     out.extend_from_slice(&(data.len() as u32).to_be_bytes());
     out.extend_from_slice(tag);
     out.extend_from_slice(data);

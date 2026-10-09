@@ -11,6 +11,7 @@ const browserPackage = process.env.XYG_BROWSER_DIST ? resolve(process.env.XYG_BR
 const browserDist = browserPackage ? join(browserPackage, "dist") : join(root, "packages/xy-client/dist");
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
+  "/spec/wasm/abi.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
@@ -27,6 +28,11 @@ const packagedAssets = new Map([
   ["/packages/xy-client/dist/wasm-worker.js", "wasm-worker.js"],
   ["/packages/xy-client/dist/xyg-wasm.wasm", "xyg-wasm.wasm"],
 ]);
+// Hold the ABI manifest until the harness observes navigation without the
+// module's foundation promise. This deterministically exercises top-level-await
+// startup rather than relying on network timing on one machine.
+let releaseManifest;
+const manifestGate = new Promise(resolve => { releaseManifest = resolve; });
 const requests = [];
 const delayedResponses = [];
 const delayedWaiters = [];
@@ -100,7 +106,9 @@ const server = createServer(async (request, response) => {
     const packaged = packagedAssets.get(url.pathname);
     const path = packaged ? join(browserDist, packaged) : join(root, url.pathname);
     response.setHeader("Content-Type", contentType[extname(path)] ?? "application/octet-stream");
-    response.end(await readFile(path));
+    const bytes = await readFile(path);
+    if (url.pathname === "/spec/wasm/abi.json") await manifestGate;
+    response.end(bytes);
   } catch (error) {
     response.statusCode = 500;
     response.end(error instanceof Error ? error.message : String(error));
@@ -122,11 +130,29 @@ try {
     const url = new URL(request.url());
     if (url.hostname !== "127.0.0.1") external.push(request.url());
   });
-  await page.goto(`http://127.0.0.1:${address.port}/`);
-  const result = await Promise.race([
-    page.evaluate(async () => globalThis.__xygWasmFoundation),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 60_000)),
-  ]);
+  const manifestRequested = page.waitForRequest(
+    request => new URL(request.url()).pathname === "/spec/wasm/abi.json",
+  );
+  await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: "commit" });
+  await manifestRequested;
+  if (await page.evaluate(() => globalThis.__xygWasmFoundation) !== undefined) {
+    throw new Error("delayed manifest did not exercise asynchronous foundation startup");
+  }
+  releaseManifest();
+  await page.waitForFunction(() => typeof globalThis.__xygWasmFoundation?.then === "function",
+    null, { timeout: 60_000 });
+  let timeout;
+  let result;
+  try {
+    result = await Promise.race([
+      page.evaluate(async () => globalThis.__xygWasmFoundation),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("browser foundation smoke timed out")), 60_000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   if (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2) {
@@ -144,6 +170,7 @@ try {
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
   console.log(`strict-CSP local-only WASM worker lifecycle smoke passed (${browserPackage ? "published package" : "source dist"})`);
 } finally {
+  releaseManifest();
   await browser.close();
   await new Promise((resolve) => server.close(resolve));
 }

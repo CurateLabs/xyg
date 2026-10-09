@@ -1,0 +1,41 @@
+{
+  "build_max_rss_bytes": 391380992,
+  "build_ms": 188.22329211980104,
+  "dataset_array_bytes": 48000000,
+  "dataset_max_rss_bytes": 285589504,
+  "dataset_ms": 23.528166580945253,
+  "dataset_sha256": "98afe0cfff3dde2921fb41c3545b70cfae55cebca3345e7e33eed4567c1636c5",
+  "export_max_rss_bytes": 395149312,
+  "export_ms": 70.23983262479305,
+  "file_type": "png",
+  "image_dimensions": [
+    800,
+    600
+  ],
+  "library": "seaborn",
+  "maximum_resident_bytes": 395149312,
+  "output_contract": "static_png_all_projected_points",
+  "payload_bytes": 21360,
+  "payload_sha256": "2f4bc87d6da9463cfc48c71a1f5f61d62c6ef9ed7c823be58b7932924697fd82",
+  "rows": 1000000,
+  "startup_import_ms": 611.3839163444936,
+  "startup_max_rss_bytes": 165904384,
+  "status": "complete",
+  "total_child_ms": 894.4929162971675,
+  "verify_and_write_ms": 0.21125003695487976,
+  "iteration": 1,
+  "command": [
+    "/tmp/xyg-m6-competitors/bin/python",
+    "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoscale/scripts/bench_geo_competitors.py",
+    "--child",
+    "seaborn",
+    "--child-rows",
+    "1000000",
+    "--artifact",
+    "/var/folders/qn/rntm81jj49g_nhf97pw1_3j40000gn/T/xyg-geo-competitor-9wtdo72v/output.html"
+  ],
+  "subprocess_elapsed_ms": 1071.3416668586433,
+  "returncode": 0,
+  "safety_stop": null,
+  "sampled_max_rss_bytes": 393773056
+}

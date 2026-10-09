@@ -198,7 +198,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 381;
+pub const ABI_VERSION: u32 = 383;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -27294,6 +27294,391 @@ pub unsafe extern "C" fn xyg_geo_catalog_compile(
         *out_length = result.len();
         0
     })
+}
+
+/// Shared retained geographic lifecycle status mapping (ABI 382).
+/// Invalid framing/time=-1, resource=-9, stale=-10, cancelled=-15, reader=-16.
+/// Geometry validation retains its existing geographic status codes.
+fn geo_scale_status(error: xyg_engine::geo_source::SourceError) -> i32 {
+    use xyg_engine::geo_source::SourceError;
+    match error {
+        SourceError::InvalidFrame | SourceError::InvalidTime => -1,
+        SourceError::ResourceLimit => -9,
+        SourceError::StaleSource => -10,
+        SourceError::Cancelled => -15,
+        SourceError::Reader => -16,
+        SourceError::Geometry(error) => error as i32,
+    }
+}
+
+/// Execute one XYGQ retained-source mutation, returning its fixed 256-byte reply.
+/// This endpoint never supports an output-size query: output admission precedes
+/// every registry mutation. Null output returns -1; capacity below 256 returns
+/// -13. All validation failures preserve caller destinations.
+/// Opaque registry handles require explicit lifecycle release/disposal.
+///
+/// # Safety
+/// request addresses request_len readable bytes; out addresses cap writable
+/// bytes. The regions must not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_scale_execute(
+    request: *const u8,
+    request_len: usize,
+    out: *mut u8,
+    cap: usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if out.is_null()
+            || request.is_null()
+            || request_len < xyg_engine::geo_scale_protocol::HEADER
+        {
+            return -1;
+        }
+        if cap < xyg_engine::geo_scale_protocol::HEADER {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if request_len > xyg_engine::geo_scale_protocol::MAX_DATA {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let result = match xyg_engine::geo_scale_protocol::execute(bytes) {
+            Ok(result) => result,
+            Err(error) => return geo_scale_status(error),
+        };
+        std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        0
+    })
+}
+
+/// Pure bounded XYGQ retained-source data read (ABI 382).
+/// Null output plus zero capacity queries required size; successful calls set
+/// out_length. Size queries and insufficient-capacity calls consume no transfer
+/// allowance. Immutable SceneData permits two successful ownership transfers;
+/// subsequent reads return -9. Insufficient capacity returns -13 unchanged.
+/// Scene materialization is an explicit mutation yielding a durable leased data
+/// handle; this endpoint only reads immutable data/manifest or packs canonical chunks.
+///
+/// # Safety
+/// request addresses request_len readable bytes; non-null out addresses cap
+/// writable bytes and out_length addresses one writable usize. Regions do not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_scale_read(
+    request: *const u8,
+    request_len: usize,
+    budget: usize,
+    out: *mut u8,
+    cap: usize,
+    out_length: *mut usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if request.is_null()
+            || request_len < xyg_engine::geo_scale_protocol::HEADER
+            || out_length.is_null()
+            || (out.is_null() && cap != 0)
+        {
+            return -1;
+        }
+        if request_len > budget
+            || request_len > xyg_engine::geo_scale_protocol::MAX_DATA
+            || budget > xyg_engine::geo_source::MAX_PROCESSOR_BYTES
+        {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let length = match xyg_engine::geo_scale_protocol::data_len(bytes, budget) {
+            Ok(length) => length,
+            Err(error) => return geo_scale_status(error),
+        };
+        if out.is_null() {
+            *out_length = length;
+            return 0;
+        }
+        if cap < length {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        let result = match xyg_engine::geo_scale_protocol::read_data(bytes, budget) {
+            Ok(result) => result,
+            Err(error) => return geo_scale_status(error),
+        };
+        if !out.is_null() && cap < result.len() {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if !out.is_null() {
+            std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        }
+        *out_length = result.len();
+        0
+    })
+}
+/// Execute one geographic tile mutation, returning its fixed 256-byte reply.
+/// This endpoint never supports an output-size query: output admission precedes
+/// every registry mutation. Null output returns -1; capacity below 256 returns
+/// -13. All validation failures preserve caller destinations.
+/// Opaque registry handles require explicit lifecycle release/disposal.
+///
+/// # Safety
+/// request addresses request_len readable bytes; out addresses cap writable
+/// bytes. The regions must not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_tile_execute(
+    request: *const u8,
+    request_len: usize,
+    out: *mut u8,
+    cap: usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if out.is_null() || request.is_null() || request_len < xyg_engine::geo_tile_protocol::HEADER
+        {
+            return -1;
+        }
+        if cap < 256 {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if request_len > xyg_engine::geo_tile_protocol::MAX_REQUEST {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let result = match xyg_engine::geo_tile_protocol::execute(bytes) {
+            Ok(result) => result,
+            Err(error) => return geo_tile_status(error),
+        };
+        std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        0
+    })
+}
+
+/// Pure bounded geographic tile data read (ABI 383).
+/// Null output plus zero capacity queries required size; successful calls set
+/// out_length. Size queries and insufficient-capacity calls consume no transfer
+/// allowance. Immutable SceneData permits two successful ownership transfers;
+/// subsequent reads return -9. Insufficient capacity returns -13 unchanged.
+/// Scene materialization is an explicit mutation yielding a durable leased data
+/// handle; this endpoint only reads immutable data/manifest or packs canonical chunks.
+///
+/// # Safety
+/// request addresses request_len readable bytes; non-null out addresses cap
+/// writable bytes and out_length addresses one writable usize. Regions do not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_tile_read(
+    request: *const u8,
+    request_len: usize,
+    budget: usize,
+    out: *mut u8,
+    cap: usize,
+    out_length: *mut usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if request.is_null()
+            || request_len < xyg_engine::geo_tile_protocol::HEADER
+            || out_length.is_null()
+            || (out.is_null() && cap != 0)
+        {
+            return -1;
+        }
+        if request_len > budget
+            || request_len > xyg_engine::geo_tile_protocol::MAX_REQUEST
+            || budget > xyg_engine::geo_source::MAX_PROCESSOR_BYTES
+        {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let length = match xyg_engine::geo_tile_protocol::data_len(bytes, budget) {
+            Ok(length) => length,
+            Err(error) => return geo_tile_status(error),
+        };
+        if out.is_null() {
+            *out_length = length;
+            return 0;
+        }
+        if cap < length {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        let result = match xyg_engine::geo_tile_protocol::read_data(bytes, budget) {
+            Ok(result) => result,
+            Err(error) => return geo_tile_status(error),
+        };
+        if !out.is_null() && cap < result.len() {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if !out.is_null() {
+            std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        }
+        *out_length = result.len();
+        0
+    })
+}
+/// Execute one geographic snapshot mutation, returning its fixed 256-byte reply.
+/// This endpoint never supports an output-size query: output admission precedes
+/// every registry mutation. Null output returns -1; capacity below 256 returns
+/// -13. All validation failures preserve caller destinations.
+/// Opaque registry handles require explicit lifecycle release/disposal.
+///
+/// # Safety
+/// request addresses request_len readable bytes; out addresses cap writable
+/// bytes. The regions must not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_snapshot_execute(
+    request: *const u8,
+    request_len: usize,
+    out: *mut u8,
+    cap: usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if out.is_null()
+            || request.is_null()
+            || request_len < xyg_engine::geo_snapshot_protocol::HEADER
+        {
+            return -1;
+        }
+        if cap < 256 {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if request_len > xyg_engine::geo_snapshot_protocol::MAX_REQUEST {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let result = match xyg_engine::geo_snapshot_protocol::execute(bytes) {
+            Ok(result) => result,
+            Err(error) => return geo_snapshot_status(error),
+        };
+        std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        0
+    })
+}
+
+/// Pure bounded geographic snapshot data read (ABI 383).
+/// Null output plus zero capacity queries required size; successful calls set
+/// out_length. Size queries and insufficient-capacity calls consume no transfer
+/// allowance. Immutable SceneData permits two successful ownership transfers;
+/// subsequent reads return -9. Insufficient capacity returns -13 unchanged.
+/// Scene materialization is an explicit mutation yielding a durable leased data
+/// handle; this endpoint only reads immutable data/manifest or packs canonical chunks.
+///
+/// # Safety
+/// request addresses request_len readable bytes; non-null out addresses cap
+/// writable bytes and out_length addresses one writable usize. Regions do not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_snapshot_read(
+    request: *const u8,
+    request_len: usize,
+    budget: usize,
+    out: *mut u8,
+    cap: usize,
+    out_length: *mut usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        if request.is_null()
+            || request_len < xyg_engine::geo_snapshot_protocol::HEADER
+            || out_length.is_null()
+            || (out.is_null() && cap != 0)
+        {
+            return -1;
+        }
+        if request_len > budget
+            || request_len > xyg_engine::geo_snapshot_protocol::MAX_REQUEST
+            || budget > 384 * 1024 * 1024
+        {
+            return -9;
+        }
+        let bytes = std::slice::from_raw_parts(request, request_len);
+        let length = match xyg_engine::geo_snapshot_protocol::data_len(bytes, budget) {
+            Ok(length) => length,
+            Err(error) => return geo_snapshot_status(error),
+        };
+        if out.is_null() {
+            *out_length = length;
+            return 0;
+        }
+        if cap < length {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        let result = match xyg_engine::geo_snapshot_protocol::read_data(bytes, budget) {
+            Ok(result) => result,
+            Err(error) => return geo_snapshot_status(error),
+        };
+        if !out.is_null() && cap < result.len() {
+            return geo::GeoError::OutputCapacity as i32;
+        }
+        if !out.is_null() {
+            std::ptr::copy_nonoverlapping(result.as_ptr(), out, result.len());
+        }
+        *out_length = result.len();
+        0
+    })
+}
+
+fn geo_tile_status(error: xyg_engine::geo_tile_protocol::TileProtocolError) -> i32 {
+    match error {
+        xyg_engine::geo_tile_protocol::TileProtocolError::Geo(error) => error as i32,
+        xyg_engine::geo_tile_protocol::TileProtocolError::Cancelled => -15,
+    }
+}
+fn geo_snapshot_status(error: xyg_engine::geo_snapshot::GeoSnapshotError) -> i32 {
+    use xyg_engine::geo_snapshot::GeoSnapshotError;
+    match error {
+        GeoSnapshotError::Limit => -9,
+        GeoSnapshotError::Stale => -10,
+        GeoSnapshotError::Unsupported => -15,
+        _ => -1,
+    }
+}
+
+#[cfg(test)]
+mod geo_scale_abi_tests {
+    use super::*;
+    fn request(command: u32, handle: u64) -> [u8; 256] {
+        let mut b = [0; 256];
+        b[..4].copy_from_slice(b"XYGQ");
+        b[4..8].copy_from_slice(&1u32.to_le_bytes());
+        b[8..12].copy_from_slice(&command.to_le_bytes());
+        b[16..24].copy_from_slice(&handle.to_le_bytes());
+        b
+    }
+    #[test]
+    fn output_admission_precedes_registry_mutation() {
+        unsafe {
+            let create = request(1, 0);
+            let mut out = [91u8; 256];
+            // A rejected size query must not fill any of the eight registry slots.
+            for _ in 0..16 {
+                assert_eq!(
+                    xyg_geo_scale_execute(create.as_ptr(), create.len(), std::ptr::null_mut(), 0),
+                    -1
+                );
+                assert_eq!(
+                    xyg_geo_scale_execute(create.as_ptr(), create.len(), out.as_mut_ptr(), 255),
+                    -13
+                );
+                assert_eq!(out, [91; 256]);
+            }
+            assert_eq!(
+                xyg_geo_scale_execute(create.as_ptr(), create.len(), out.as_mut_ptr(), 256),
+                0
+            );
+            let handle = u64::from_le_bytes(out[16..24].try_into().unwrap());
+            assert!(handle > 0);
+            let release = request(10, handle);
+            assert_eq!(
+                xyg_geo_scale_execute(release.as_ptr(), release.len(), out.as_mut_ptr(), 256),
+                0
+            );
+            let mut length = 999;
+            out.fill(91);
+            assert_eq!(
+                xyg_geo_scale_read(
+                    request(23, handle).as_ptr(),
+                    256,
+                    65536,
+                    out.as_mut_ptr(),
+                    256,
+                    &mut length
+                ),
+                -10
+            );
+            assert_eq!(length, 999);
+            assert_eq!(out, [91; 256]);
+        }
+    }
 }
 
 /// Free a geographic column handle. Returns 1 if it existed, 0 if stale.

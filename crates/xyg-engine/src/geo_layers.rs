@@ -149,6 +149,7 @@ pub struct GeoLegend<'a> {
     pub font_size: f64,
 }
 
+#[derive(Clone)]
 pub struct GeoLayer<'a> {
     pub layer_id: u64,
     pub kind: GeoLayerKind,
@@ -379,7 +380,7 @@ fn point_kind(kind: GeoGeometry) -> bool {
 fn polygon_kind(kind: GeoGeometry) -> bool {
     matches!(kind, GeoGeometry::Polygon | GeoGeometry::MultiPolygon)
 }
-fn validate_style(style: GeoStyle) -> Result<(), GeoError> {
+pub(crate) fn validate_style(style: GeoStyle) -> Result<(), GeoError> {
     if [style.stroke_width, style.diameter, style.opacity]
         .iter()
         .any(|v| !v.is_finite())
@@ -712,7 +713,40 @@ fn single_polygon(source: &GeoColumn, index: usize) -> Result<GeoColumn, GeoErro
 
 /// Compile the entire source-ordered catalog atomically to the ordinary Scene.
 pub fn compile(input: &GeoCatalog<'_>) -> Result<GeoCompiled, GeoError> {
-    let base_peak = admission(input)?;
+    compile_with_background(input, None)
+}
+
+/// A Rust-warped, top-first basemap image, below every analysis layer.
+/// Its literal sidecar ID must not alias a source layer ID.
+pub fn compile_with_background(
+    input: &GeoCatalog<'_>,
+    background: Option<SceneImage>,
+) -> Result<GeoCompiled, GeoError> {
+    let image_bytes = background.as_ref().map_or(0, |image| image.rgba.capacity());
+    if let Some(image) = &background {
+        let expected = (image.width as usize)
+            .checked_mul(image.height as usize)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(GeoError::ResourceLimit)?;
+        if image.width == 0
+            || image.height == 0
+            || expected != image.rgba.len()
+            || expected > 8 * 1024 * 1024
+            || input
+                .layers
+                .iter()
+                .any(|layer| layer.layer_id == image.stable_id)
+        {
+            return Err(GeoError::InvalidArgument);
+        }
+    }
+    // Borrowed/staged RGBA, encoded image and painter/export copies coexist.
+    let base_peak = admission(input)?
+        .checked_add(image_bytes.checked_mul(5).ok_or(GeoError::ResourceLimit)?)
+        .ok_or(GeoError::ResourceLimit)?;
+    if base_peak > input.budget {
+        return Err(GeoError::ResourceLimit);
+    }
     let vp = input.viewport;
     let mut builder = Builder {
         marks: Marks::default(),
@@ -726,6 +760,17 @@ pub fn compile(input: &GeoCatalog<'_>) -> Result<GeoCompiled, GeoError> {
         base_peak,
         budget: input.budget,
     };
+    if let Some(image) = background {
+        builder.mark(
+            SceneRecordKind::Image,
+            image.stable_id,
+            0,
+            [0., 0., vp.width, vp.height],
+            0.,
+            0,
+        )?;
+        builder.images.push(image);
+    }
     let mut layers = Vec::with_capacity(input.layers.len());
     for (layer_index, layer) in input.layers.iter().enumerate() {
         let mut metadata = GeoCompiledLayer {

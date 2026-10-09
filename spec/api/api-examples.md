@@ -73,7 +73,7 @@ resolving to a browser engine for SVG — by `engine=Engine.chromium` or by
 | Independent segments | `xyg.segments_chart(xyg.segments(x0=..., y0=..., x1=..., y1=...))` |
 | Triangle mesh | `xyg.triangle_mesh_chart(xyg.triangle_mesh(...))` |
 | Facets | `xyg.facet_chart(xyg.scatter(...), by="group", data=data)` |
-| Geographic catalog (#49 feature branch; pending integration) | `xyg.geo_chart(xyg.geo_layer(...), camera=...)` |
+| Geographic catalog (#49 integrated) | `xyg.geo_chart(xyg.geo_layer(...), camera=...)` |
 
 ## Axes And Scales
 
@@ -733,3 +733,11 @@ Leaving it at the default keeps the safe built-in fallback for notebooks and
 standalone `.html` export.
 The returned chrome object is a keyed slot map; framework adapters should mount
 `chrome["legend"]` and `chrome["tooltip"]` by name beside the chart container.
+
+
+Retained geographic authoring uses the same `geo_chart(geo_layer(...))` surface:
+see [retained host composition](../design/geo-retained-hosts.md). A retained compile
+returns an explicitly owned immutable frame; `frame.export(...)` returns an owned
+artifact with bound provenance. Dispose painters and drop borrowed buffers before
+closing their frame/artifact leases. Native tile sessions are explicitly configured
+and accept only Rust-issued read receipts; they never fetch a provider implicitly.

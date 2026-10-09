@@ -1,6 +1,6 @@
 //! Bounded XYLK/XYLM v1 transport for the shared geographic catalog (#49).
 //! Byte framing is host-neutral; all defaults and presentation policy remain Rust-owned.
-use crate::geo::{column_from_descriptor_bytes, GeoCrs, GeoError};
+use crate::geo::{GeoCrs, GeoError, column_from_descriptor_bytes};
 use crate::geo_interaction::{
     GeoFeatureKey, GeoInteractionEvent, GeoInteractionResult, GeoInteractionState, GeoPickIndex,
     GeoSelectionMode,
@@ -244,6 +244,18 @@ fn event(b: &[u8]) -> Result<GeoInteractionEvent, GeoError> {
 
 /// Parse the complete framing and its conservative peak before allocating source/option planes.
 pub fn execute(bytes: &[u8], budget: usize) -> Result<Vec<u8>, GeoError> {
+    execute_with_compiler(bytes, budget, &mut compile)
+}
+
+/// One framing/options policy serves ordinary catalogs and geographic tile
+/// composition. The callback returns the same ordinary compiled catalog.
+/// A normalization retry drops its previous compiled result before calling it.
+#[inline(never)]
+pub(crate) fn execute_with_compiler(
+    bytes: &[u8],
+    budget: usize,
+    compiler: &mut dyn FnMut(&GeoCatalog<'_>) -> Result<GeoCompiled, GeoError>,
+) -> Result<Vec<u8>, GeoError> {
     if budget > MAX_PROTOCOL_BYTES || bytes.len() > budget || budget < 65536 {
         return Err(GeoError::ResourceLimit);
     }
@@ -518,7 +530,7 @@ pub fn execute(bytes: &[u8], budget: usize) -> Result<Vec<u8>, GeoError> {
     } else {
         None
     };
-    let baseline = compile(&GeoCatalog {
+    let baseline = compiler(&GeoCatalog {
         viewport,
         layers: &inputs,
         legend,
@@ -546,7 +558,7 @@ pub fn execute(bytes: &[u8], budget: usize) -> Result<Vec<u8>, GeoError> {
         for (layer, flags) in inputs.iter_mut().zip(&i.state.layer_flags) {
             layer.state_flags = flags;
         }
-        compile(&GeoCatalog {
+        compiler(&GeoCatalog {
             viewport,
             layers: &inputs,
             legend,
@@ -578,16 +590,11 @@ fn append<T: Copy, const N: usize>(out: &mut Vec<u8>, values: &[T], f: fn(T) -> 
         out.push(0)
     }
 }
-fn encode(
-    result: GeoCompiled,
-    mut interaction: Option<GeoInteractionResult>,
-    budget: usize,
-) -> Result<Vec<u8>, GeoError> {
-    // Input state has already been rebuilt into result metadata/Scene. Release
-    // normalization clones before admitting the encoded output allocation.
-    if let Some(i) = &mut interaction {
-        i.state.layer_flags = Vec::new();
-    }
+/// Allocation-free encoded-size admission shared with immutable tile receipts.
+pub(crate) fn encoded_size(
+    result: &GeoCompiled,
+    interaction: Option<&GeoInteractionResult>,
+) -> Result<usize, GeoError> {
     let mut length = add(128, add(result.scene.len(), 7)? & !7)?;
     length = add(length, add(mul(result.style_owners.len(), 4)?, 7)? & !7)?;
     for l in &result.layers {
@@ -606,7 +613,7 @@ fn encode(
             }
         }
     }
-    if let Some(i) = &interaction {
+    if let Some(i) = interaction {
         for hit in &i.hits {
             length = add(
                 length,
@@ -614,6 +621,20 @@ fn encode(
             )?;
         }
     }
+    Ok(length)
+}
+
+fn encode(
+    result: GeoCompiled,
+    mut interaction: Option<GeoInteractionResult>,
+    budget: usize,
+) -> Result<Vec<u8>, GeoError> {
+    // Input state has already been rebuilt into result metadata/Scene. Release
+    // normalization clones before admitting the encoded output allocation.
+    if let Some(i) = &mut interaction {
+        i.state.layer_flags = Vec::new();
+    }
+    let length = encoded_size(&result, interaction.as_ref())?;
     if mul(length, 2)? > budget {
         return Err(GeoError::ResourceLimit);
     }

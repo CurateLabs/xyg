@@ -1,0 +1,28 @@
+rows=10000000 phase=first_scene completed=372/0 live_processor=4852536
+rows=10000000 phase=pan completed=771/0 live_processor=5328496
+rows=10000000 phase=zoom completed=1168/0 live_processor=5573776
+rows=10000000 phase=revision_update completed=1561/0 live_processor=5573776
+rows=10000000 phase=five_views_validate completed=2048/0 live_processor=739208
+rows=10000000 phase=five_views_compute completed=2497/0 live_processor=35221016
+rows=10000000 phase=five_views_compute completed=2850/0 live_processor=57799192
+rows=10000000 phase=five_views_compute completed=3160/0 live_processor=57799192
+rows=10000000 phase=five_views_compute completed=3480/0 live_processor=57799192
+rows=10000000 phase=five_views_compute completed=3789/0 live_processor=69088280
+       51.84 real        50.02 user         0.41 sys
+            39731200  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                4463  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+               87255  involuntary context switches
+       1151753944821  instructions retired
+        188790802032  cycles elapsed
+            33096064  peak memory footprint

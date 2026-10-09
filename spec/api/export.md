@@ -321,3 +321,13 @@ writer sees it (`_svg.legend_options_with_slot`), so spellings that agree in the
 browser agree in a PNG. An explicit `background` paints **opaque**, matching the
 browser's `background:var(--chart-legend-bg, …)`; `--xy-legend-frame-alpha`
 remains the separate knob for the default grey frame.
+
+
+Retained geographic export is specified in [geo-frozen-export.md](../design/geo-frozen-export.md)
+and [geo-snapshot-protocol.md](../design/geo-snapshot-protocol.md). Native frozen
+frames support SVG/PNG/PDF/JPEG/WebP and static offline HTML with visible network
+attribution and a bound XYGXv2 provenance companion. `GeoChart.to_image` requires
+an explicit retained frame, so export cannot silently switch to a newer query.
+The result is an owned artifact, requiring explicit close/dispose after borrowed
+buffers are dropped. Direct-browser WASM can freeze/read the same snapshot;
+no-raster WASM rejects native image rendering with stable Unsupported.

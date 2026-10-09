@@ -4,7 +4,7 @@
 //! document the native C ABI returns for the same bytes (compositions and
 //! error documents alike), so native/WASM equivalence is a byte comparison.
 
-use super::{fail, Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT};
+use super::{Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT, fail};
 use xyg_engine::graphforge::compose::compose_bytes;
 
 pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {

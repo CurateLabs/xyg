@@ -2,7 +2,7 @@
   "schema": "xyg.density-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js buildPayload density wire metadata",
   "protocol": 13,
-  "abi_version": 381,
+  "abi_version": 383,
   "cases": [
     {
       "name": "scatter_density_colormap",
@@ -484,6 +484,36 @@
       "density_max": 2,
       "density_binning": "exact",
       "density_reduction": "bin2d"
+    }
+  ],
+  "massive_policy": [
+    {
+      "point_count": 1000000,
+      "tier": "density",
+      "n_marks": 196608,
+      "pyramid_eligible": false,
+      "wasm_eligible": true,
+      "attach_sample": true,
+      "ship_wasm_source": false,
+      "density_grid_bytes_max": 196608,
+      "sample_geometry_bytes_max": 69632,
+      "canonical_f64_bytes": 0,
+      "other_bytes": 0,
+      "total_bytes_max": 266240
+    },
+    {
+      "point_count": 100000000,
+      "tier": "density",
+      "n_marks": 196608,
+      "pyramid_eligible": true,
+      "wasm_eligible": false,
+      "attach_sample": true,
+      "ship_wasm_source": false,
+      "density_grid_bytes_max": 196608,
+      "sample_geometry_bytes_max": 69632,
+      "canonical_f64_bytes": 0,
+      "other_bytes": 0,
+      "total_bytes_max": 266240
     }
   ]
 }

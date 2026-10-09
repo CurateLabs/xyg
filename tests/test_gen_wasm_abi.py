@@ -194,3 +194,11 @@ def test_streaming_aggregate_manifest_is_count_only_and_generated() -> None:
         "WASM_AGGREGATE_MAX_POINTS = 8000000"
         in (ROOT / "python/xyg/_wasm_aggregate_generated.py").read_text()
     )
+
+
+def test_retained_frame_identity_uses_wasm_bigint_not_lossy_number() -> None:
+    generated = GEN.render(manifest())
+    for name in ("xyg_wasm_geo_frame_prepare", "xyg_wasm_geo_tile_frame_prepare"):
+        assert (
+            f"{name}(arg0: number, arg1: number, arg2: bigint, arg3: bigint): number;" in generated
+        )

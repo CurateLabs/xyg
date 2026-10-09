@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "source_rows": 1000000000,
+  "iteration": 1,
+  "planner_only": true,
+  "command": [
+    "/usr/bin/time",
+    "-l",
+    "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoscale/target/release/geo_scale_bench",
+    "--plan-only",
+    "1000000000"
+  ],
+  "elapsed_seconds": 0.006376666948199272,
+  "returncode": 0,
+  "maximum_resident_bytes": 1622016,
+  "metrics": [
+    {
+      "event": "planner_only",
+      "source_rows": 1000000000,
+      "chunks": 15259,
+      "manifest_bytes": 1953216,
+      "processor_bytes": 134217728,
+      "data_rows_generated": 0,
+      "measured_ingest": false
+    }
+  ],
+  "completed": false,
+  "resource_limit": false
+}

@@ -6,8 +6,8 @@ use xyg_engine::temporal_controller::{
 };
 
 use crate::{
-    fail, Instance, STATUS_DISPOSED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
-    STATUS_SELF_ECHO, STATUS_STALE_REVISION,
+    Instance, STATUS_DISPOSED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
+    STATUS_SELF_ECHO, STATUS_STALE_REVISION, fail,
 };
 
 const COMMAND_MAGIC: &[u8; 4] = b"XYTC";
@@ -195,7 +195,7 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
                     instance,
                     status(error),
                     "invalid temporal controller descriptor",
-                )
+                );
             }
         }
     } else if instance.temporal.is_none() {
@@ -264,7 +264,7 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
                 instance,
                 status(error),
                 "temporal controller command failed",
-            )
+            );
         }
     };
     let event = controller.take_outbound();
@@ -302,6 +302,7 @@ mod tests {
             arena: vec![0; 88],
             output: vec![],
             max_arena_bytes: 4096,
+            declared_arena_bytes: 4096,
             last_error: String::new(),
             latest_sequence: 0,
             cancelled_through: 0,
@@ -317,6 +318,7 @@ mod tests {
             temporal_graph: None,
             graph_job: None,
             compile_job: None,
+            geo_transport: None,
         };
         instance.arena[..4].copy_from_slice(COMMAND_MAGIC);
         put_u32(&mut instance.arena, 4, VERSION);

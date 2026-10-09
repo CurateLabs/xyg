@@ -2176,14 +2176,30 @@ pub(crate) fn interaction_marker_hit(
     x: f64,
     y: f64,
 ) -> bool {
+    interaction_marker_hit_with_tolerance(symbol, diameter, stroke, fill, outline, x, y, 0.)
+}
+
+pub(crate) fn interaction_marker_hit_with_tolerance(
+    symbol: u8,
+    diameter: f64,
+    stroke: f64,
+    fill: bool,
+    outline: bool,
+    x: f64,
+    y: f64,
+    tolerance: f64,
+) -> bool {
     let geometry = MarkerGeometry::new(ScatterSymbol::from_code(symbol), diameter, stroke);
     // Relative marker coordinates retain viewport f64 precision before the
     // canonical painter SDF's local f32 arithmetic.
     let d = crate::marker_geometry::symbol_sdf(x as f32, y as f32, geometry.radius as f32, symbol);
     let line = ScatterSymbol::from_code(symbol).is_line();
-    (!line && fill && d <= 0.)
-        || (outline && geometry.stroke_width > 0. && (d as f64).abs() <= geometry.stroke_width / 2.)
+    (!line && fill && (d as f64) <= tolerance)
+        || (outline
+            && geometry.stroke_width > 0.
+            && (d as f64).abs() <= geometry.stroke_width / 2. + tolerance)
 }
+
 pub(crate) fn interaction_marker_rect(
     symbol: u8,
     diameter: f64,
@@ -10337,8 +10353,7 @@ pub fn resolve_numeric_tick_formats(
     Ok(())
 }
 
-#[cfg(feature = "raster")]
-fn encode_base64(bytes: &[u8]) -> String {
+pub(crate) fn encode_base64(bytes: &[u8]) -> String {
     const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     let mut index = 0usize;
@@ -10663,6 +10678,32 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Frozen geographic attribution must be a legible upright label wholly
+    /// inside the viewport. Bounds use the same text advance as Scene layout.
+    pub(crate) fn has_visible_attribution(&self, text: &str) -> bool {
+        self.labels.iter().any(|label| {
+            if label.text != text
+                || label.rotation != 0.
+                || label.font_size < 8.
+                || label.rgba[3] < 128
+                || text.chars().any(|c| c.is_control())
+            {
+                return false;
+            }
+            let width = scene_text_advance(text, label.font_size);
+            let left = match label.anchor {
+                0 => label.x,
+                1 => label.x - width * 0.5,
+                2 => label.x - width,
+                _ => return false,
+            };
+            left >= 0.
+                && left + width <= self.layout.viewport_width
+                && label.y - label.font_size >= 0.
+                && label.y + label.font_size * 0.3 <= self.layout.viewport_height
+        })
+    }
+
     /// Borrow authoritative decoded geometry for Rust interaction policy.
     pub(crate) fn interaction_records(&self) -> &[EncodedRecord] {
         &self.records

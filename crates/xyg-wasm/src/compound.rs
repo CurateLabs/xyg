@@ -1,6 +1,6 @@
 //! Packed thin-WASM compound disclosure transition framing (#34).
 
-use crate::{fail, Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT};
+use crate::{Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT, fail};
 use xyg_engine::graph_style::compound_collapse_transition;
 
 const REQUEST_MAGIC: &[u8; 4] = b"XYGC";

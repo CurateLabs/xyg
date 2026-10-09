@@ -1,0 +1,43 @@
+{
+  "aggregate_total": 1000,
+  "build_max_rss_bytes": 212549632,
+  "build_ms": 326.1180832050741,
+  "dataset_array_bytes": 48000,
+  "dataset_max_rss_bytes": 136265728,
+  "dataset_ms": 0.27233315631747246,
+  "dataset_sha256": "c50b6eac8cfefc6d46101ac9ba355465cbab95ce1a1c2e139803e36c6fa04c9a",
+  "export_max_rss_bytes": 217350144,
+  "export_ms": 12.980291154235601,
+  "file_type": "png",
+  "image_dimensions": [
+    800,
+    600
+  ],
+  "library": "datashader",
+  "maximum_resident_bytes": 217350144,
+  "occupied_cells": 1000,
+  "output_contract": "static_png_fixed_800x600_exact_counts_no_individual_ids",
+  "payload_bytes": 4017,
+  "payload_sha256": "7e867d27ecf55b5f7ba3a67e3d47cf189ec3a23f93b68165848c4cf83ef5e6d2",
+  "rows": 1000,
+  "startup_import_ms": 376.0029999539256,
+  "startup_max_rss_bytes": 135806976,
+  "status": "complete",
+  "total_child_ms": 715.6172911636531,
+  "verify_and_write_ms": 0.1939591020345688,
+  "iteration": 1,
+  "command": [
+    "/tmp/xyg-m6-competitors/bin/python",
+    "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoscale/scripts/bench_geo_competitors.py",
+    "--child",
+    "datashader",
+    "--child-rows",
+    "1000",
+    "--artifact",
+    "/var/folders/qn/rntm81jj49g_nhf97pw1_3j40000gn/T/xyg-geo-competitor-6t9d8doz/output.html"
+  ],
+  "subprocess_elapsed_ms": 864.2841670662165,
+  "returncode": 0,
+  "safety_stop": null,
+  "sampled_max_rss_bytes": 216809472
+}
