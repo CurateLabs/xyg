@@ -1,0 +1,11 @@
+ABI artifacts current (516 symbols, v383)
+(node:15758) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15760) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15762) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+.venv/bin/python scripts/verify_local.py --only ci_workflow
+Workflow verification OK: /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/.github/workflows/ci.yml, /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/.github/workflows/codspeed.yml, /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/.github/workflows/bazel.yml, /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/.github/workflows/publish.yaml
+RUN  ci_workflow: CI/release workflow production gates
+OK: 1 check(s) passed

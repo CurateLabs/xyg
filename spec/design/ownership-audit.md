@@ -1078,6 +1078,7 @@ Forbidden:
 | `crates/xyg-engine/src/geo_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_membership_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_retained_painter.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_overview_painter_snapshot_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_scale_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_scale_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_simplify.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1096,6 +1097,7 @@ Forbidden:
 | `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-live-host.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-webview.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-webview.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-spatial.d.ts` | Node host | `node-host` | `keep-host` | — |
@@ -1190,6 +1192,20 @@ temporal counts, source authority, cell geometry and palette policy.
 | File | Current owner | Policy | Disposition | Follow-up issue |
 | --- | --- | --- | --- | --- |
 | `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
+
+
+
+### M6 exact overview domain-cell membership
+
+The private source driver reuses one canonical authenticated scan/ACK lifecycle.
+The overview matcher owns domain-cell policy and immutable continuation authority;
+its focused test module contains no production policy.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_source_membership_driver.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_membership.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_membership_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 ## Contributor rule
 

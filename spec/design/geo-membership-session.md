@@ -7,6 +7,12 @@ synchronous filesystem/browser callbacks. This is the engine foundation for
 async picking; public transport/controller integration and massive scale evidence
 remain #50 gates.
 
+The private `SourceMembershipDriver` now shares authenticated parsing, bounded
+source iteration, page admission, and read/cancel/ACK mechanics with the separate
+[overview domain-cell membership engine](geo-temporal-overview-membership.md).
+The public projected membership API, `GeoCellQuery` predicate, cursor grammar,
+record layout, and protocol bytes are unchanged.
+
 `create(validated_source, sequence, GeoLodKey, cell, optional GeoCellCursor,
 QueryBudget, max_projected_vertices)` validates before copying or reading. It
 uses the shared allocation-free `GeoCellQuery` constructor and exact predicate;

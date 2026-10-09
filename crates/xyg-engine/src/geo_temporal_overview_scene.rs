@@ -4,7 +4,7 @@ use crate::geo_source::SourceError;
 use crate::geo_temporal_overview::GeoOverviewResult;
 use crate::geo_viewport::{GeoViewport, WEB_MERCATOR_MAX};
 use crate::scene::{
-    AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText,
+    AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneLabel,
     SceneRecordKind,
 };
 
@@ -12,6 +12,11 @@ pub const LABEL: &str = "Exact temporal counts by data-domain cell; spatial refi
 pub const MAX_RECORDS: usize = 12_288;
 pub const SCRATCH_BYTES: usize = 8 * 1024 * 1024;
 pub const DATA_CREDIT: usize = 16 * 1024 * 1024;
+pub const MAX_ENCODED_SCENE_BYTES: usize = crate::scene::SCENE_BATCH_HEADER_BYTES
+    + 256 * crate::scene::SCENE_STYLE_RECORD_BYTES
+    + MAX_RECORDS * crate::scene::SCENE_BATCH_RECORD_BYTES
+    + 65_536; // fixed chrome and one bounded label, with ample framing margin
+
 /// Caller reserves SCRATCH_BYTES before entry. IDs here are explicit domain-cell
 /// ordinals, never source-feature identities; the typed result is their authority.
 pub(crate) fn compile(
@@ -21,14 +26,32 @@ pub(crate) fn compile(
     if camera.rebuild_key()? != result.snapshot().camera {
         return Err(SourceError::StaleSource);
     }
+    compile_counts(result.counts(), camera)
+}
+
+/// Pure lowering of inert domain counts; never reconstructs source/query authority.
+/// Caller admits SCRATCH_BYTES before allocation.
+pub(crate) fn compile_counts(
+    counts: &[u64; 256],
+    camera: GeoViewport,
+) -> Result<Vec<u8>, SourceError> {
+    camera.rebuild_key()?;
+    // Explicit output decoration cannot change the projected plot rectangle.
+    // Fail closed if the exact nonfinal notice cannot fit; never truncate it.
+    let label_font = 8.;
+    if crate::scene::scene_text_advance(LABEL, label_font) + 8. > camera.width
+        || label_font * 1.3 + 8. > camera.height
+    {
+        return Err(SourceError::ResourceLimit);
+    }
     let mut kinds = Vec::new();
     let mut ids = Vec::new();
     let mut refs = Vec::new();
     let mut fill = Vec::new();
     let mut xs = Vec::new();
     let mut ys = Vec::new();
-    let maximum = *result.counts().iter().max().unwrap();
-    for (cell, &count) in result.counts().iter().enumerate() {
+    let maximum = *counts.iter().max().unwrap();
+    for (cell, &count) in counts.iter().enumerate() {
         if count == 0 {
             continue;
         }
@@ -96,7 +119,7 @@ pub(crate) fn compile(
             }
         }
     }
-    for &count in result.counts() {
+    for &count in counts {
         let strength = if count == 0 {
             0
         } else {
@@ -121,7 +144,7 @@ pub(crate) fn compile(
         axis.tick_label_sides = 0;
         axis.axis_rgba = [0; 4];
     }
-    let scene = SceneBatch::new_with_chrome_literal_ids(
+    let scene = SceneBatch::new_with_chrome_literal_ids_and_decorations(
         PlotLayout::new(camera.width, camera.height, 0., 0., 0., 0.)
             .map_err(|_| SourceError::InvalidFrame)?,
         1,
@@ -129,7 +152,18 @@ pub(crate) fn compile(
         axis(camera.width)?,
         axis(camera.height)?,
         chrome,
-        SceneChromeText::from_parts(LABEL, "", "").map_err(|_| SourceError::InvalidFrame)?,
+        SceneChromeText::from_parts("", "", "").map_err(|_| SourceError::InvalidFrame)?,
+        None,
+        vec![SceneLabel {
+            stable_id: 0,
+            x: 4.,
+            y: camera.height - 4.,
+            font_size: label_font,
+            rgba: [0, 0, 0, 255],
+            anchor: 0,
+            rotation: 0.,
+            text: LABEL.to_owned(),
+        }],
         &kinds,
         &ids,
         &refs,
@@ -145,7 +179,7 @@ pub(crate) fn compile(
     )
     .map_err(|_| SourceError::InvalidFrame)?
     .encode();
-    if scene.len() * 4 > DATA_CREDIT {
+    if scene.len() > MAX_ENCODED_SCENE_BYTES {
         return Err(SourceError::ResourceLimit);
     }
     Ok(scene)

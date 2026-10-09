@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 3 tests
+test geo_scale_protocol::overview_painter_snapshot_tests::overview_painter_duplicate_uses_shared_eight_data_cap_without_consuming_owner ... ok
+test geo_scale_protocol::overview_painter_snapshot_tests::overview_painter_snapshot_private_ownership_quota_and_atomic_admission ... ok
+test geo_scale_protocol::overview_painter_snapshot_tests::overview_painter_profile_worstcase_fits_persistent_credit ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 1437 filtered out; finished in 0.04s
+
