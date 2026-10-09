@@ -1197,6 +1197,20 @@ temporal counts, source authority, cell geometry and palette policy.
 | `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_overview_source.py` | Python host | `python-host` | `keep-host` | — |
 
+
+
+### M6 exact overview domain-cell membership
+
+The private source driver reuses one canonical authenticated scan/ACK lifecycle.
+The overview matcher owns domain-cell policy and immutable continuation authority;
+its focused test module contains no production policy.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_source_membership_driver.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_membership.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_membership_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

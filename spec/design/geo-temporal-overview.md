@@ -13,8 +13,10 @@ remain those of `geo_spatial_index::cell`. The complete plane describes source
 domain cells; it does not describe exact viewport-visible populations or
 projected screen-bin centroids. Pitch, clipping and viewport projection do not
 change these source-domain counts. A renderer must label this tier and project
-its domain cells in Rust. The core result provides no painter or membership
-policy and never approximates count scaling. The separate typed extension in
+its domain cells in Rust. The core result never approximates count scaling.
+The separate [exact domain-cell membership engine](geo-temporal-overview-membership.md)
+scans authenticated canonical rows under the frozen temporal predicate; it retains
+this data-domain/nonfinal identity. The separate typed extension in
 `geo-temporal-overview-protocol.md` supplies Rust Scene lowering while retaining
 this data-domain/nonfinal identity.
 
