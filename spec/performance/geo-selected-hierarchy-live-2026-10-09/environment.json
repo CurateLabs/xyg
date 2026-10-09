@@ -40,7 +40,7 @@
   "ipykernel": "7.4.0",
   "anywidget": "0.11.0",
   "claims": "Bounded native/live ownership and functional journeys; no massive latency, OS/GPU ledger or issue50 closure claim.",
-  "dependency_head": "c3d7848382705e5ce5209c5e80b62e16031627b6",
+  "dependency_head": "512e156ff5a73ad956f97aecf01093619daa0ad5",
   "nonce_implementation": "02d5639a1ed0983e1021ca0ef36a7236043fd0bd",
   "head_before_owned_commit": "aa2f615d9a1869a04ade9bdbec0e4f5bb5b746fa",
   "tests": {
@@ -51,5 +51,6 @@
     "focused_node": 18,
     "nonce_native_wasm": 23
   },
-  "artifact_equivalence": "Engine/core/WASM/Cargo/config diff against02d5639a is empty; no own Rust builds."
+  "artifact_equivalence": "Production Engine/core/WASM/Cargo/config matches02d5639a;512e156ff changes only cfgtest teardown and evidence. Artifacts unchanged; no own Rust builds.",
+  "live_implementation": "1b40a5119"
 }
