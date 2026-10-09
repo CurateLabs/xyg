@@ -70,3 +70,10 @@ callback mutation and cancelled durable writes. These are bounded functional
 proofs, not massive host/browser latency or1B evidence. Selected hierarchy,
 provider durability, live controller routing and massive end-to-end interaction
 remain explicit #50 gates.
+
+CI checks mechanical codec generation and executes the hierarchy host suite only
+after the fresh native core and paired packaged WASM are available. The WASM
+foundation job also runs raw hierarchy conformance against those artifacts. The
+Node package test command includes the host suite and requires the same paired
+source-checkout artifacts, as do the existing native/WASM package tests. No
+pre-package native-only stage invokes the dual-artifact hierarchy suite.
