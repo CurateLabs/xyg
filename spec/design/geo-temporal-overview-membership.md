@@ -110,9 +110,10 @@ projected-membership tests remain unchanged and exercise the extracted driver.
 This is a bounded canonical scan, with linear source work. It makes no massive
 interactive latency, browser paint, end-to-end host, selected overview, or issue
 #50/#39 closure claim. Selected overview remains explicitly unsupported by the
-existing command27 guard. Protocol commands45/46 are only a future integration
-proposal, not implemented here; reply20 is already reserved for State nonce
-retirement, and no new wire code is allocated by this engine change.
+existing command27 guard. Protocol commands45/46 are now implemented in the separate private transport
+slice linked below, with complete native/WASM packet evidence. This engine
+foundation itself allocates no wire code; reply20 remains reserved for State
+nonce retirement. Public adapters and uncertain45 recovery remain separate gates.
 
 The private retained byte transport is specified separately in
 [geo-overview-membership-protocol.md](geo-overview-membership-protocol.md).

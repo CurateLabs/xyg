@@ -96,8 +96,11 @@ The dense256-cell Rust control includes bearing120°,pitch60°,worldWrap=false.
 It depends on the independently reviewed snapped-topology signed-zero fix54a29314a;
 canonical source coordinates are unchanged. Raw proof, artifact hashes and
 commands live in [the evidence folder](../performance/geo-overview-painter-snapshot-2026-10-09/README.md).
-Public overview composition, final spatial refinement, cell-domain membership,
-selected overview input and the massive interactive gate remain open.
+Public overview composition and browser publication are now documented in
+[typed hosts](geo-overview-hosts.md) and [browser ownership](geo-overview-browser.md).
+Exact cell-domain membership has a separate [private transport](geo-overview-membership-protocol.md).
+Final spatial refinement, public membership adapters, selected overview input
+and the massive interactive gate remain open.
 
 The direct browser Rust/WASM CI lane runs the packaged overview conformance
 script after fresh native/WASM builds and Chromium installation, including
