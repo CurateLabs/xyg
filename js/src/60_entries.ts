@@ -1,3 +1,6 @@
+import { renderGeoHost } from "./65_geo_host";
+export { XygGeoHostView } from "./65_geo_host";
+export type { XygGeoHostComm } from "./65_geo_host";
 import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent } from "./00_header";
 import { ChartView } from "./50_chartview";
 import { MARK_KINDS, markOf } from "./55_marks";
@@ -116,6 +119,7 @@ function attachHostWasmTicks(view: ChartView & { _dispatchChartEvent?: Function 
 
 export function render({ model, el }) {
   const spec = model.get("spec");
+  if (spec?.geo_host === true) return renderGeoHost({model,el});
   const buffer = payloadBuffers(spec, model.get("buffers"));
   const comm = {
     send: (msg) => model.send(msg),

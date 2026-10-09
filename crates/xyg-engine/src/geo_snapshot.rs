@@ -2,14 +2,14 @@
 //! Immutable XYGX carries Scene32 and exact source/camera/time/revision facts.
 use crate::geo::{GeoCrs, GeoGeometry};
 use crate::geo_lod::{
-    GeoLodIdentity, GeoLodKey, GeoPointCell, GeoPointOutput, GeoPointResult, GeoReducedKind,
-    CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT,
+    CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT, GeoLodIdentity, GeoLodKey, GeoPointCell,
+    GeoPointOutput, GeoPointResult, GeoReducedKind,
 };
-use crate::geo_source::{QueryCursor, TimePredicate, MAX_CHUNK_ROWS, MAX_SOURCE_ROWS};
+use crate::geo_source::{MAX_CHUNK_ROWS, MAX_SOURCE_ROWS, QueryCursor, TimePredicate};
 use crate::geo_source_session::GeoOperationSnapshot;
 use crate::geo_tile_cache::{GeoDerivedLease, GeoTileCache};
 use crate::geo_viewport::{GeoViewport, GeoViewportRebuildKey};
-use crate::scene::{SceneDocument, SCENE_VERSION};
+use crate::scene::{SCENE_VERSION, SceneDocument};
 use crate::transition::Blake2s8;
 use std::ops::Range;
 
@@ -1265,6 +1265,11 @@ impl GeoFrozenSnapshot {
         attributions: &[String],
         tile: &[u8],
     ) -> Result<Self> {
+        // XYGX currently lacks the full XYSE intent/profile/count authority.
+        // Reject before frozen allocation rather than silently lose selection.
+        if result.selection.is_some() {
+            return Err(GeoSnapshotError::Unsupported);
+        }
         let k = result.key;
         if snapshot.source_digest != k.identity.source_digest
             || snapshot.generation != k.identity.generation
@@ -1987,7 +1992,7 @@ fn validate_tile_blob(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::geo_tile_cache::{test_process_lock, GeoTileLimits};
+    use crate::geo_tile_cache::{GeoTileLimits, test_process_lock};
     use crate::scene::{
         AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneLabel,
     };
@@ -2240,16 +2245,18 @@ mod tests {
                 Err(GeoSnapshotError::Attribution)
             ));
         }
-        assert!(GeoFrozenSnapshot::freeze(
-            &cache,
-            &scene(vec![label("Owner")]),
-            &id,
-            &[],
-            &[],
-            &attrs,
-            MAX_FROZEN_PEAK
-        )
-        .is_ok());
+        assert!(
+            GeoFrozenSnapshot::freeze(
+                &cache,
+                &scene(vec![label("Owner")]),
+                &id,
+                &[],
+                &[],
+                &attrs,
+                MAX_FROZEN_PEAK
+            )
+            .is_ok()
+        );
     }
     #[test]
     fn malformed_lengths_flags_reserved_utf8_scene_and_exact_budget_fail_atomically() {
@@ -2378,9 +2385,11 @@ mod tests {
                     let mut reader = decoder.read_info().unwrap();
                     let mut rgba = vec![0; reader.output_buffer_size().unwrap()];
                     let info = reader.next_frame(&mut rgba).unwrap();
-                    assert!(rgba[..info.buffer_size()]
-                        .chunks_exact(info.color_type.samples())
-                        .any(|p| p[..3] == [20, 40, 80]));
+                    assert!(
+                        rgba[..info.buffer_size()]
+                            .chunks_exact(info.color_type.samples())
+                            .any(|p| p[..3] == [20, 40, 80])
+                    );
                     reader.finish().unwrap();
                     assert_eq!(reader.info().utf8_text.len(), 1);
                     assert_eq!(reader.info().utf8_text[0].keyword, "XYG frozen snapshot");
@@ -2489,6 +2498,7 @@ mod tests {
             visible_vertices: 393216,
             projected_vertices: 786432,
             grid_capped: true,
+            selection: None,
         };
         let paint = crate::geo_layers::GeoStyle::default();
         let scene = crate::geo_lod_scene::compile(&result, paint, MAX_FROZEN_PEAK).unwrap();

@@ -116,9 +116,9 @@
     ]
   },
   "artifact": {
-    "rawBytes": 1323023,
-    "gzipBytes": 542873,
-    "sha256": "8f0aecce9ca00c197af0370e5e80ca2948e6c7b335bb5a66e5f781bf42d0149d"
+    "rawBytes": 1388710,
+    "gzipBytes": 570579,
+    "sha256": "28b2708399eac39bb750eaf69569131505b24c84b79ee55509c2f57a793801f2"
   },
   "network": {
     "served": [

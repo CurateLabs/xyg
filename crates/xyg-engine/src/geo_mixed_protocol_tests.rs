@@ -269,7 +269,17 @@ fn descriptor(x: f64, id: u64) -> Vec<u8> {
     b
 }
 fn prepare_packet(coord: u64, source: u64, tile: u64, epoch: u64) -> Vec<u8> {
-    let snapshot = crate::geo_scale_protocol::with_scene_data(source, 1, |v| v.snapshot).unwrap();
+    prepare_packet_sequence(coord, source, 1, tile, epoch)
+}
+fn prepare_packet_sequence(
+    coord: u64,
+    source: u64,
+    sequence: u64,
+    tile: u64,
+    epoch: u64,
+) -> Vec<u8> {
+    let snapshot =
+        crate::geo_scale_protocol::with_scene_data(source, sequence, |v| v.snapshot).unwrap();
     let (cache, view, stamps) = crate::geo_tile_protocol::with_frame_data(tile, epoch, |v| {
         (
             u64at(v.receipt, 16),
@@ -280,7 +290,7 @@ fn prepare_packet(coord: u64, source: u64, tile: u64, epoch: u64) -> Vec<u8> {
     .unwrap();
     let mut b = mixed_cmd(2, coord, 0);
     p64(&mut b, 64, source);
-    p64(&mut b, 72, 1);
+    p64(&mut b, 72, sequence);
     p64(&mut b, 80, tile);
     p64(&mut b, 88, epoch);
     p64(&mut b, 96, cache);
@@ -348,10 +358,11 @@ fn mixed_transport_actual_authority_staging_disposal_and_frozen_whole_scene() {
     let scene_len = u64at(&bytes, 32) as usize;
     let scene = &bytes[HEADER..HEADER + scene_len];
     let doc = SceneDocument::decode(scene).unwrap();
-    assert!(doc
-        .interaction_records()
-        .iter()
-        .any(|r| r.kind == SceneRecordKind::Image));
+    assert!(
+        doc.interaction_records()
+            .iter()
+            .any(|r| r.kind == SceneRecordKind::Image)
+    );
     assert!(doc.has_visible_attribution("Tiles"));
     let range = u64at(&bytes, 48) as usize..u64at(&bytes, 56) as usize;
     assert_eq!(range.len(), 1);
@@ -429,9 +440,11 @@ fn mixed_transport_actual_authority_staging_disposal_and_frozen_whole_scene() {
                 BUDGET,
             )
             .unwrap();
-        assert!(std::str::from_utf8(artifact.bytes())
-            .unwrap()
-            .contains("Tiles"));
+        assert!(
+            std::str::from_utf8(artifact.bytes())
+                .unwrap()
+                .contains("Tiles")
+        );
     }
 }
 
@@ -484,12 +497,14 @@ fn mixed_transport_stale_cancel_resource_failure_preserve_old_scene() {
                     .unwrap();
             assert_eq!(&painted.bytes[..4], b"XYPB");
             assert!(painted.records > 1);
-            assert!(crate::geo_retained_painter::prepare_tile_frame_painter(
-                MIXED_HANDLE_TAG | u64::MAX,
-                nonce,
-                phase
-            )
-            .is_err());
+            assert!(
+                crate::geo_retained_painter::prepare_tile_frame_painter(
+                    MIXED_HANDLE_TAG | u64::MAX,
+                    nonce,
+                    phase
+                )
+                .is_err()
+            );
         })
         .unwrap();
 }
@@ -632,19 +647,23 @@ fn geographic_attribution_footer_is_literal_bounded_and_preserves_existing_and_l
         scene
     );
     let one = SceneDocument::with_geographic_attributions(&scene, &["Tiles", "Tiles"]).unwrap();
-    assert!(SceneDocument::decode(&one)
-        .unwrap()
-        .has_visible_attribution("Tiles"));
+    assert!(
+        SceneDocument::decode(&one)
+            .unwrap()
+            .has_visible_attribution("Tiles")
+    );
     assert_eq!(
         SceneDocument::with_geographic_attributions(&one, &["Tiles"]).unwrap(),
         one
     );
     let escaped = SceneDocument::with_geographic_attributions(&scene, &["A<&"]).unwrap();
     #[cfg(feature = "raster")]
-    assert!(SceneDocument::decode(&escaped)
-        .unwrap()
-        .to_svg()
-        .contains("A&lt;&amp;"));
+    assert!(
+        SceneDocument::decode(&escaped)
+            .unwrap()
+            .to_svg()
+            .contains("A&lt;&amp;")
+    );
     for text in ["", "\n", &"x".repeat(4096), &"x".repeat(4097)] {
         assert!(SceneDocument::with_geographic_attributions(&scene, &[text]).is_err());
     }
@@ -678,9 +697,11 @@ fn geographic_footer_keeps_contrast_on_black_and_white_rasters() {
                 .flat_map(|y| (41..61).map(move |x| (y * 64 + x) * 4))
                 .map(|at| &pixels[at..at + 4])
                 .collect();
-            assert!(footer
-                .iter()
-                .any(|p| p[0] < 64 && p[1] < 64 && p[2] < 64 && p[3] == 255));
+            assert!(
+                footer
+                    .iter()
+                    .any(|p| p[0] < 64 && p[1] < 64 && p[2] < 64 && p[3] == 255)
+            );
             assert!(footer.contains(&[255, 255, 255, 255].as_slice()));
         })
         .unwrap();
@@ -699,11 +720,10 @@ fn mixed_public_tile_descriptor_preserves_exact_authority_and_shared_copy_quota(
             448
         );
     }
-    assert!(crate::geo_tile_protocol::data_len(
-        &tile_cmd(23, tile.handle, epoch + 1, 0, &[]),
-        BUDGET
-    )
-    .is_err());
+    assert!(
+        crate::geo_tile_protocol::data_len(&tile_cmd(23, tile.handle, epoch + 1, 0, &[]), BUDGET)
+            .is_err()
+    );
     let bytes = crate::geo_tile_protocol::read_data(&descriptor, BUDGET).unwrap();
     assert_eq!(&bytes[..4], b"XYUP");
     assert_eq!(u64at(&bytes, 16), tile.handle);
@@ -733,4 +753,116 @@ fn mixed_public_tile_descriptor_preserves_exact_authority_and_shared_copy_quota(
     assert!(
         crate::geo_tile_protocol::data_len(&tile_cmd(23, handle, epoch, 0, &[]), BUDGET).is_err()
     );
+}
+
+#[test]
+fn selected_mixed_anchor_preserves_intent_and_freeze_fails_closed_after_source_disposal() {
+    let _p = crate::geo_source_session::test_processor_lock();
+    let _d = crate::geo_tile_cache::test_process_lock();
+    let (original, owners) = source_frame();
+    let snapshot =
+        crate::geo_scale_protocol::with_scene_data(original.handle, 1, |v| v.snapshot).unwrap();
+    let mut binding = [0; 16];
+    p64(&mut binding, 0, u64::MAX);
+    p64(&mut binding, 8, u64::MAX);
+    let scope = u64at(
+        &source_execute(&source_cmd(32, original.handle, 1, &binding)),
+        16,
+    );
+    let mut intent = [0; 32];
+    p64(&mut intent, 0, 2);
+    intent[8..12].copy_from_slice(&[0, 255, 0, 255]);
+    p64(&mut intent, 16, 1);
+    p64(&mut intent, 24, u64::MAX);
+    let state = u64at(&source_execute(&source_cmd(33, scope, 0, &intent)), 16);
+    let mut begin = source_cmd(35, owners[0].handle, 2, &state.to_le_bytes());
+    p32(&mut begin, 64, 4326);
+    p32(&mut begin, 72, 32768);
+    p32(&mut begin, 76, 1);
+    p64(&mut begin, 104, 64f64.to_bits());
+    p64(&mut begin, 112, 64f64.to_bits());
+    begin[136..144].copy_from_slice(&snapshot.source_digest);
+    p64(&mut begin, 144, snapshot.generation);
+    p64(&mut begin, 152, u64::MAX);
+    for at in [160, 168, 176, 184] {
+        p64(&mut begin, at, 1);
+    }
+    p64(&mut begin, 192, 2);
+    p32(&mut begin, 200, 2);
+    p64(&mut begin, 208, i64::MIN as u64);
+    p64(&mut begin, 216, (i64::MIN + 1) as u64);
+    p64(&mut begin, 224, 100);
+    source_execute(&begin);
+    let chunks = [GeoChunk::encode(
+        &column(0., u64::MAX),
+        Some(GeoIntervals {
+            starts: &[i64::MIN],
+            ends: &[i64::MIN + 10],
+            start_validity: &[1],
+            end_validity: &[1],
+        }),
+    )
+    .unwrap()];
+    drive(owners[0].handle, 2, &chunks);
+    let mut style = [0; 48];
+    style[..4].copy_from_slice(&[255, 0, 0, 255]);
+    p64(&mut style, 16, 8f64.to_bits());
+    p64(&mut style, 24, 1f64.to_bits());
+    let source = Owner {
+        handle: u64at(
+            &source_execute(&source_cmd(11, owners[0].handle, 2, &style)),
+            16,
+        ),
+        kind: 0,
+    };
+    let (tile, cache, epoch) = tile_frame();
+    let coord = Owner {
+        handle: u64at(&execute(&mixed_cmd(1, 0, 0)).unwrap(), 16),
+        kind: 2,
+    };
+    let prepared = execute(&prepare_packet_sequence(
+        coord.handle,
+        source.handle,
+        2,
+        tile.handle,
+        epoch,
+    ))
+    .unwrap();
+    let data = Owner {
+        handle: u64at(&prepared, 16),
+        kind: 2,
+    };
+    let nonce = u64at(&prepared, 24);
+    execute(&mixed_cmd(3, data.handle, nonce)).unwrap();
+    drop(source);
+    drop(original);
+    drop(owners);
+    drop(tile);
+    drop(cache);
+    assert!(matches!(
+        crate::geo_scale_protocol::execute(&source_cmd(10, scope, 0, &[])),
+        Err(SourceError::ResourceLimit)
+    ));
+    let retained = execute(&mixed_cmd(6, data.handle, nonce)).unwrap();
+    let anchor = Owner {
+        handle: u64at(&retained, 16),
+        kind: 0,
+    };
+    crate::geo_scale_protocol::with_scene_data(anchor.handle, 2, |v| {
+        let selected = v.result.selection.as_ref().unwrap();
+        assert_eq!(selected.state().selected_ids(), &[u64::MAX]);
+        assert_eq!(selected.state().binding().namespace, u64::MAX);
+        assert_eq!(selected.state().style().fill, [0, 255, 0, 255]);
+        assert_eq!(selected.visible_selected_vertices(), 1);
+        selected.validate_result(v.result).unwrap();
+    })
+    .unwrap();
+    assert!(matches!(
+        crate::geo_snapshot_protocol::execute(&snapshot_cmd(5, data.handle, nonce)),
+        Err(crate::geo_snapshot::GeoSnapshotError::Unsupported)
+    ));
+    drop(anchor);
+    drop(data);
+    drop(coord);
+    source_execute(&source_cmd(10, scope, 0, &[]));
 }

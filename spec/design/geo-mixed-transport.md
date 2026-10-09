@@ -18,7 +18,9 @@ source → tile; borrowed callbacks cannot perform I/O or reenter those registri
 
 Preparing retains one independently charged SourceData owner through source
 command26. Its immutable semantic authority supplies picking, rows and membership
-without re-querying or forging a SceneData packet. Source-row/membership reads
+without re-querying or forging a SceneData packet. The anchor also retains the
+private linked-selection authority, canonical selected IDs and profile through
+source/tile disposal and subsequent retain operations. Source-row/membership reads
 still require the caller's explicitly retained exact-source reader and Rust-issued
 tickets; the registry introduces no file/network reader. Mixed history continues to
 name the **original** source Data handle/publication sequence. Each mixed Data
@@ -124,7 +126,13 @@ notebook/Reflex/VS Code/controller mixed mounting is not supplied by these helpe
 
 ## Frozen whole-frame binding and proof
 
-Snapshot command5 freezes the trusted complete mixed authority. XYGX v2 tile
+Snapshot command5 freezes the trusted complete ordinary mixed authority.
+Selected mixed frames explicitly return `Unsupported` before allocating a
+Frozen owner: XYGX has not yet acquired the full XYSE selected-content authority.
+This preserves selected intent rather than exporting an incomplete snapshot.
+The actual protocol regression selects IDu64MAX, disposes the original source
+and tile, retains the mixed anchor, verifies the selected ID/profile, and checks
+this export rejection. XYGX v2 tile
 blob mode2 retains the original Tile receipt, original retained foreground Scene,
 complete source identity/time/style/state revision, tile temporal policy, exact
 record/style ranges and required literal attribution. Decode re-runs exact Scene
@@ -164,5 +172,5 @@ CI and normal merge-queue integration finish.
 
 Candidate packaging uses the separately approved recorded size decision
 `3b11dfd4b`:1408 KiB raw/576 KiB gzip, without an optimization-profile change.
-Its two package-gate constants are copied mechanically here; root integration
-must include the authoritative browser-wasm decision/ancestry before landing.
+The authoritative browser-wasm decision and linked-state/overview ancestry are
+included in this integrated branch; optimization profiles remain unchanged.

@@ -690,6 +690,14 @@ Forbidden:
 | `crates/xyg-engine/src/geo_spatial_build_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_index_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_indexed_query_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_build.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_temporal_overview_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_linked_state.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 | `crates/xyg-engine/src/geo_rows_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_rows_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_frame_lease_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1084,8 +1092,10 @@ Forbidden:
 | `crates/xyg-engine/src/geo_transport.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-wasm/src/bin/geo_scale_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `js/src/63_geo_source.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/65_geo_host.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-webview.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-spatial.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-snapshot.d.ts` | Node host | `node-host` | `keep-host` | — |
@@ -1095,6 +1105,7 @@ Forbidden:
 | `packages/xy-node/src/geo-tiles.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_host.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_retained.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_spatial.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_snapshot.py` | Python host | `python-host` | `keep-host` | — |
@@ -1114,6 +1125,8 @@ Forbidden:
 | `packages/xy-node/src/geo-mixed.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-mixed.js` | Node host | `node-host` | `keep-host` | — |
 | `python/xyg/_geo_mixed.py` | Python host | `python-host` | `keep-host` | — |
+| `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 ## Contributor rule
 

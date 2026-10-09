@@ -146,7 +146,8 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs
+
 
       - name: Build JS client
         run: |
@@ -418,6 +419,15 @@ jobs:
           node js/build.mjs
           node --test js/test/package-wasm-contract.test.mjs
           node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
+      - name: Retained frame and typed overview native/WASM conformance
+        run: |
+          cargo build --release -p xyg-core
+          npm ci --prefix packages/xy-node
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          export XYG_FRAME_LEASE_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm"
+          node scripts/geo_frame_leases_conformance.mjs
+          node scripts/geo_overview_conformance.mjs
+
       - name: Install Chromium
         timeout-minutes: 10
         run: |

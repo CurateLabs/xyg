@@ -195,3 +195,36 @@ class FigureWidget(anywidget.AnyWidget):
         if reply is not None:
             msg, buffers = reply
             self.send(msg, buffers=buffers)
+
+
+class GeoWidget(anywidget.AnyWidget):
+    """Binary native geographic frame transport with release acknowledgements."""
+
+    _esm = _STATIC / "index.js"
+    spec = traitlets.Dict().tag(sync=True)
+    buffers = traitlets.Any().tag(sync=True)
+
+    def __init__(self, adapter, **kwargs):
+        self._adapter = adapter
+        self._close_requested = False
+        super().__init__(spec={"geo_host": True}, buffers=[], **kwargs)
+        self.on_msg(self._on_geo_message)
+
+    def _on_geo_message(self, widget, content, msg_buffers):
+        reply = self._adapter.handle_host_message(content, msg_buffers)
+        if reply is not None:
+            message, buffers = reply
+            self.send(message, buffers=buffers)
+        if self._close_requested and not self._adapter.mounted:
+            super().close()
+
+    def close(self):
+        adapter = getattr(self, "_adapter", None)
+        if adapter is None:
+            return super().close()
+        self._close_requested = True
+        adapter.close()
+        if adapter.mounted:
+            self.send({"type": "geo_host_close"})
+        else:
+            super().close()

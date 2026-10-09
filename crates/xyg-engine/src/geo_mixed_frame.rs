@@ -1,16 +1,16 @@
 //! Atomic immutable retained-source + tile composition. §27; see geo-mixed-frame.md.
 use crate::geo_lod::{GeoPointOutput, GeoPointResult};
-use crate::geo_scale_protocol::{with_scene_data, GeoSceneDataBorrow};
+use crate::geo_scale_protocol::{GeoSceneDataBorrow, with_scene_data};
 use crate::geo_source::{GeoSourceManifest, SourceError, TimePredicate};
 use crate::geo_source_session::{GeoOperationSnapshot, GeoProcessorLease};
 use crate::geo_tile_cache::{
     GeoDerivedLease, GeoTileCache, GeoTileLimits, GeoTileSource, TILE_CACHE_PROCESS_BYTES,
 };
-use crate::geo_tile_protocol::{with_frame_data, GeoTileFrameView, GeoTileProvenance};
+use crate::geo_tile_protocol::{GeoTileFrameView, GeoTileProvenance, with_frame_data};
 use crate::scene::SceneDocument;
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc, Mutex,
+    atomic::{AtomicU64, Ordering},
 };
 static NEXT_OWNER: AtomicU64 = AtomicU64::new(1);
 type Result<T> = std::result::Result<T, SourceError>;
@@ -353,6 +353,7 @@ impl GeoMixedCoordinator {
             visible_vertices: source.result.visible_vertices,
             projected_vertices: source.result.projected_vertices,
             grid_capped: source.result.grid_capped,
+            selection: source.result.selection.clone(),
         };
         let frame = GeoMixedFrame {
             scene,
@@ -619,6 +620,7 @@ mod tests {
                 visible_vertices: 1,
                 projected_vertices: 1,
                 grid_capped: false,
+                selection: None,
             };
             let style = style_bytes(GeoStyle::default());
             let front = crate::geo_lod_scene::compile(&result, GeoStyle::default(), 128 << 20)

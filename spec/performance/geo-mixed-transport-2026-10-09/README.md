@@ -48,18 +48,22 @@ XYG_MIXED_BROWSER_REPORT=spec/performance/geo-mixed-transport-2026-10-09/browser
 node scripts/geo_mixed_wasm_smoke.mjs
 ```
 
-The wasm32 artifact measures1,323,023 raw/542,873 gzip bytes, SHA256
-`8f0aecce9ca00c197af0370e5e80ca2948e6c7b335bb5a66e5f781bf42d0149d`.
+The integrated linked-state/overview/mixed wasm32 artifact measures1,388,710
+raw/570,579 gzip bytes, SHA256
+`28b2708399eac39bb750eaf69569131505b24c84b79ee55509c2f57a793801f2`.
+The original mixed-only candidate measured1,323,023 raw/542,873 gzip bytes,
+SHA256 `8f0aecce9ca00c197af0370e5e80ca2948e6c7b335bb5a66e5f781bf42d0149d`.
 Packaging depends on the separately approved recorded `3b11dfd4b` size decision
-(1408 KiB raw/576 KiB gzip); its two constants are copied here without changing
-optimization profiles. Root must integrate that authoritative decision/ancestry
-before landing. The older1280/512 KiB gate correctly rejected this candidate.
+(1408 KiB raw/576 KiB gzip); the authoritative decision and ancestry are now integrated without changing
+optimization profiles. The older1280/512 KiB gate correctly rejected this candidate.
 Chrome155 needs `--use-angle=swiftshader` in this environment: the older
 `--use-gl=swiftshader` flag lost the initial foreign GL context before any XYG
 paint mutation. This was diagnosed by loss events and an empty GL-binding trace.
 
-Validation: seven focused mixed Rust tests, three Tile protocol tests,1357 full
-engine tests and the full workspace suite pass. Engine all-target/all-feature
+Integrated validation: eight mixed protocol tests, three Tile protocol tests,
+1395 engine tests and the full workspace suite pass. The selected mixed regression
+retains the complete selected-ID/profile authority after original owner disposal
+and explicitly rejects Frozen export before allocation, pending XYGX/XYSE support. Engine all-target/all-feature
 Clippy, source/client typecheck, shared Node-wire identity, full hooks/Ruff and
 no-raster wasm32 compile pass (the latter retains existing dead-code warnings).
 Ten Python tests include five real-native mixed cases: original disposal
