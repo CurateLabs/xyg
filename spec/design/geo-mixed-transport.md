@@ -174,3 +174,9 @@ Candidate packaging uses the separately approved recorded size decision
 `3b11dfd4b`:1408 KiB raw/576 KiB gzip, without an optimization-profile change.
 The authoritative browser-wasm decision and linked-state/overview ancestry are
 included in this integrated branch; optimization profiles remain unchanged.
+
+Frozen geographic SVG/HTML attribution inherits an explicit SVG-root sans-serif
+font default. This avoids an implicit browser serif choice differing from the
+Rust label box/native atlas. The configured literal text and opaque black ink
+on an opaque white backplate remain the same; system font antialiasing differs
+from the native baked atlas and is checked in real offline browser output.

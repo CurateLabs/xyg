@@ -1181,6 +1181,11 @@ impl GeoFrozenSnapshot {
         let base64 = crate::scene::encode_base64(&unbound);
         if matches!(format, GeoFrozenFormat::Svg | GeoFrozenFormat::Html) {
             let mut svg = String::from_utf8(bytes).map_err(|_| GeoSnapshotError::Export)?;
+            // Frozen geographic labels use the native atlas face rather than
+            // an implicit browser serif; this presentation default remains
+            // overridable by explicit SVG text/group styles.
+            let root = svg.find("<svg ").ok_or(GeoSnapshotError::Export)?;
+            svg.insert_str(root + 4, " font-family=\"DejaVu Sans,sans-serif\"");
             let end = svg.rfind("</svg>").ok_or(GeoSnapshotError::Export)?;
             let attrs = self
                 .attributions
@@ -2827,6 +2832,8 @@ mod tests {
             assert_eq!(paired.verify_artifact(&wrong), Err(GeoSnapshotError::Stale));
             match format {
                 GeoFrozenFormat::Svg => {
+                    assert!(String::from_utf8_lossy(artifact.bytes())
+                        .contains("font-family=\"DejaVu Sans,sans-serif\""));
                     let svg = std::str::from_utf8(artifact.bytes()).unwrap();
                     assert!(svg.contains("xyg-frozen-snapshot"));
                     assert!(svg.contains(

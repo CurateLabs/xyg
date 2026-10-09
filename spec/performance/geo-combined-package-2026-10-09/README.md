@@ -59,3 +59,10 @@ CI follow-up: the Python 3.11 floor exposed a Pillow-only test dependency,
 and the offline selected snapshot probe failed its combined footer assertion.
 The latter now includes exact pixel/DOM values in its failure output; no
 assertion or product behavior is relaxed. These CI gates remain pending repair.
+
+The bounded [footer follow-up](selected-footer-followup.json) records the exact CI
+failure and local repair proof. Frozen geographic SVG/HTML now declares its
+default sans-serif face on the SVG root; other Scene exports and PDF are unchanged.
+All six native formats, exact native/WASM frozen bytes and12 snapshot tests pass;
+offline Chromium reads seven dark glyph pixels and162 white backplate pixels.
+The dark threshold is unchanged. Linux CI confirmation remains pending.

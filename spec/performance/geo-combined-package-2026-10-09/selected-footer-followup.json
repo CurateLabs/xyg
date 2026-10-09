@@ -1,0 +1,94 @@
+{
+  "ordinary": {
+    "bytes": 1344,
+    "selectedRecord": 568,
+    "sceneBytes": 480,
+    "tileBytes": 0
+  },
+  "mixed": {
+    "bytes": 36995,
+    "selectedRecord": 568,
+    "sceneBytes": 17209,
+    "tileBytes": 18913
+  },
+  "formats": {
+    "svg": {
+      "bytes": 50735,
+      "sha256": "c5e8e4f744f5a8ca73cbdb8287071e834dcd118998a863b01ae8a95e95e5fa9a"
+    },
+    "png": {
+      "bytes": 50404,
+      "sha256": "f10629a2bd4590d8fcb9f0c6f3085007b209bd1dffece3d579018db441272c0d"
+    },
+    "pdf": {
+      "bytes": 1312,
+      "sha256": "4fc885fae951d4393d6b2be9cc28ff5319dc15332e6842511b512495f8e1d966"
+    },
+    "jpeg": {
+      "bytes": 1881,
+      "sha256": "93f11a8ffd8dd572599626c46e9adfa2ec19b1d9b93106518e8df8fb74e622c8"
+    },
+    "webp": {
+      "bytes": 530,
+      "sha256": "5b393b3eabeb75aa4a62d44de0be05d88d38467dca5c26b1514a9c23bcf4771f"
+    },
+    "html": {
+      "bytes": 117407,
+      "sha256": "b5cf0eddb6f5f188aa83a6a832226bb88e7ff8e9990717ac5b5c07a5a38f28c7"
+    }
+  },
+  "replay": {
+    "center": [
+      0,
+      255,
+      0,
+      255
+    ],
+    "background": [
+      0,
+      0,
+      255,
+      255
+    ],
+    "dark": 7,
+    "white": 162,
+    "minimumInk": 46,
+    "scripts": 0,
+    "attribution": true
+  },
+  "wasm": {
+    "rawBytes": 1454428,
+    "gzipBytes": 596811,
+    "sha256": "ad68147eb89bbc8b4f1d6039642ee3068e3484243b48ccf6cb4d6359d9780b15"
+  },
+  "scope": "Actual native/packaged WASM ordinary+mixed selected XYGX v3 and exact live XYSE footer parity, original source/tile/coord disposal, six native formats, actual offline strict-CSP HTML pixels/attribution with no scripts/network; WASM raster Unsupported; small fixture, no live imported-source authority or interactive/performance claim.",
+  "ci_before": {
+    "url": "https://github.com/CurateLabs/xyg/actions/runs/37927874251/job/113811457379",
+    "replay": {
+      "center": [
+        0,
+        255,
+        0,
+        255
+      ],
+      "background": [
+        0,
+        0,
+        255,
+        255
+      ],
+      "dark": 0,
+      "white": 174,
+      "scripts": 0,
+      "attribution": true
+    },
+    "interpretation": "Default browser serif was implicit. Explicit frozen geographic SVG-root sans face fixes local replay; Linux CI confirmation pending."
+  },
+  "native_sha256": "c794a1bbd5d95a667fd34b9ceb2d38d222ade8e03de099c758dedef3f20d0573",
+  "source_sha256": {
+    "crates/xyg-engine/src/geo_snapshot.rs": "8a650fad9d7b53ed5e2da0c010eda7e924868cad45d241fb90ce78273be80fad",
+    "scripts/geo_selected_snapshot_conformance.mjs": "e038c1c1946320d0e03f2d27226276057a2908c8b43f751c01f6aedfa839e90e"
+  },
+  "wasm_equivalence": "The only product change is in cfg(feature=raster) GeoFrozenSnapshot.export; the WASM artifact SHA remains ad68147e with raster disabled.",
+  "rust_tests": "12 snapshot tests passed, including all six formats and frozen bound artifact identity."
+}
