@@ -128,3 +128,12 @@ massive latency or M6/#50 completion claim.
 Command 34 admits the complete new canonical ID plane and state owner against the caller processor budget before linking or changing target admission. A failed low-budget link preserves the source State and target revision for an explicit retry.
 
 Selected SceneData freeze returns Unsupported before frozen allocation while XYGX lacks full XYSE intent, profile and count authority. Ordinary unselected snapshots retain their existing contract. This rejection is a release gate until selected export carries and validates the full authority.
+
+Picking uses the effective painted alpha. Direct selected points replace the
+ordinary fill with selected RGBA, with ordinary opacity applied once; stroke
+visibility remains independent. Aggregate Cluster/Density cells use the same
+exact integer selected-fraction alpha blend as Scene compilation. Fully selected
+transparent cells cannot be picked, and opaque selected points remain pickable
+when the ordinary fill is transparent. Rust validates complete selection binding
+before allocating hit output. Actual protocol regressions cover both direct
+alpha directions, zero opacity, fully selected clusters and density cells.

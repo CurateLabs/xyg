@@ -92,6 +92,9 @@ pub fn hit(
     {
         return Err(invalid());
     }
+    if let Some(selection) = &result.selection {
+        selection.validate_result(result)?;
+    }
     let mut out = GeoLodHits {
         key: result.key,
         query,
@@ -101,6 +104,9 @@ pub fn hit(
         return Ok(out);
     }
     let fill = crate::css::apply_opacity_rgba8(style.fill, style.opacity as f32)[3] > 0;
+    let selected_fill = result.selection.as_ref().map(|selection| {
+        crate::css::apply_opacity_rgba8(selection.state().style().fill, style.opacity as f32)[3] > 0
+    });
     let stroke = crate::css::apply_opacity_rgba8(style.stroke, style.opacity as f32)[3] > 0;
     let mut push = |value| -> Result<bool> {
         if out.hits.len() == query.max_hits {
@@ -114,7 +120,7 @@ pub fn hit(
             if !result.key.direct || points.len() > DIRECT_VERTEX_LIMIT {
                 return Err(invalid());
             }
-            if style.diameter == 0. || (!fill && !stroke) {
+            if style.diameter == 0. {
                 return Ok(out);
             }
             // Last painted point is first. All mode preserves this paint order,
@@ -126,11 +132,19 @@ pub fn hit(
                 {
                     return Err(invalid());
                 }
+                let point_fill =
+                    if result.selection.as_ref().is_some_and(|selection| {
+                        selection.state().contains(point.identity.feature_id)
+                    }) {
+                        selected_fill.unwrap()
+                    } else {
+                        fill
+                    };
                 if interaction_marker_hit_with_tolerance(
                     style.symbol,
                     style.diameter,
                     style.stroke_width,
-                    fill,
+                    point_fill,
                     stroke,
                     query.x - point.x,
                     query.y - point.y,
@@ -156,15 +170,34 @@ pub fn hit(
             {
                 return Err(invalid());
             }
-            // Aggregate colors have palette alpha255 modulated once by style opacity.
-            if crate::css::apply_opacity_rgba8([255; 4], style.opacity as f32)[3] == 0 {
-                return Ok(out);
-            }
+            // Paint applies opacity once, then exact integer selection tint.
+            // RGB does not affect picking; alpha follows that identical blend.
+            let base_color = crate::css::apply_opacity_rgba8([255; 4], style.opacity as f32);
+            let selected_color = result.selection.as_ref().map(|selection| {
+                crate::css::apply_opacity_rgba8(
+                    selection.state().style().fill,
+                    style.opacity as f32,
+                )
+            });
+            let visible = |ordinal: usize| {
+                let cell = &cells[ordinal];
+                cell.count != 0
+                    && if let Some(selection) = &result.selection {
+                        crate::geo_linked_state::selected_fraction_color(
+                            base_color,
+                            selected_color.unwrap(),
+                            selection.cell_selected_count(ordinal),
+                            cell.count,
+                        )[3] > 0
+                    } else {
+                        base_color[3] > 0
+                    }
+            };
             match result.key.kind {
                 GeoReducedKind::Cluster => {
                     let maximum = cells.iter().map(|c| c.count).max().unwrap_or(0).max(1) as f64;
                     for (ordinal, cell) in cells.iter().enumerate().rev() {
-                        if cell.count == 0 {
+                        if !visible(ordinal) {
                             continue;
                         }
                         if !cell.x.is_finite() || !cell.y.is_finite() {
@@ -195,7 +228,7 @@ pub fn hit(
                     let row =
                         ((query.y / camera.height * rows as f64).floor() as usize).min(rows - 1);
                     let ordinal = row * columns + column;
-                    if cells[ordinal].count != 0 {
+                    if visible(ordinal) {
                         push(GeoLodHit::Cell {
                             ordinal: ordinal as u32,
                             count: cells[ordinal].count,
