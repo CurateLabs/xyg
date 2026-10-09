@@ -1165,6 +1165,15 @@ See `geo-hierarchy-protocol.md` for the command and authority boundary.
 | `packages/xy-node/src/geo-selected.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-selected.js` | Node host | `node-host` | `keep-host` | — |
 | `python/xyg/_geo_selected.py` | Python host | `python-host` | `keep-host` | — |
+### M6 internal Python overview transport
+
+The adapter forwards Rust commands and validates typed framing, capacity and
+callback lifetime under `geo-temporal-overview-protocol.md`. Rust retains all
+temporal counts, source authority, cell geometry and palette policy.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule
 
