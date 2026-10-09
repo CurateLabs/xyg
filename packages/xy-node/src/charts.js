@@ -274,6 +274,8 @@ import {
   encodeGeoTilePrepare,
 } from "./geo-tiles.js";
 import { RetainedGeoSource } from "./geo-retained.js";
+import {GeoOverviewIndex,overviewIndexAuthority,overviewFrameAuthority} from "./geo-overview-source.js";
+import {encodeGeoOverviewRequest} from "./geo-overview.js";
 import { encodeGeoScaleStyle, encodeGeoScaleRequest } from "./geoscale.js";
 import {
   encodeGeoCatalogRequest,
@@ -374,7 +376,23 @@ export class GeoChart {
     )
       throw new TypeError("tile options require tileSession");
   }
-  host(options) { return new GeoHostAdapter(this, options); }
+  host(options) { if(this._overview())throw new TypeError('overview host needs its distinct domain-count mode; compile/export staticHTML instead');return new GeoHostAdapter(this, options); }
+  _overview(){
+    const layers=this.layers.filter(x=>x.source instanceof GeoOverviewIndex);
+    if(!layers.length)return undefined;
+    if(this.layers.length!==1||this.legend!=null||this.tileSession)throw new TypeError('overview requires one density layer and no legend/tiles');
+    if(layers[0].kind!=='density'||!overviewIndexAuthority(layers[0].source))throw new TypeError('issued overview density source required');
+    return layers[0];
+  }
+  _overviewInputs(layer){
+    const p=layer.properties;exactKeys(p,['query','sequence'],'overview density layer');
+    const q=p.query;exactKeys(q,['camera','reducedKind','maxCells','previousDirect','sourceDigest','generation','layerId','cameraRevision','timeRevision','layerRevision','styleRevision','stateRevision','time','maxProjectedVertices'],'overview query');
+    const a=geoCameraBytes(this.camera),b=geoCameraBytes(q.camera);if(a.some((n,i)=>n!==b[i]))throw new TypeError('GeoChart camera must exactly match its overview query');
+    if(typeof layer.layerId!=='bigint'||layer.layerId!==q.layerId)throw new TypeError('overview layer must match query identity');
+    if(!Number.isSafeInteger(this.budget)||this.budget<layer.source.budget.processorBytes||this.budget>384*1024*1024)throw new RangeError('chart budget must cover explicit overview processor allowance');
+    const packet=encodeGeoOverviewRequest({command:28,handle:layer.source.handle,sequence:p.sequence,budget:layer.source.budget,query:q});
+    return {query:q,sequence:p.sequence,packet};
+  }
   _retained() {
     const layers = this.layers.filter(
       (x) => x.source instanceof RetainedGeoSource,
@@ -444,6 +462,7 @@ export class GeoChart {
     return { query: q, sequence: p.sequence, style };
   }
   compile({ event } = {}) {
+    if(this._overview())throw new TypeError('use compileRetained for an owned overview frame');
     if (this._retained())
       throw new TypeError("use compileRetained for an owned retained frame");
     if (this.tileSession)
@@ -506,6 +525,7 @@ export class GeoChart {
   }
   compileRetained(options = {}) {
     exactKeys(options, [], "retained compile options");
+    const overview=this._overview();if(overview){const {query,sequence}=this._overviewInputs(overview);return overview.source.update(query,{sequence});}
     const layer = this._retained();
     if (this.tileSession)
       throw new TypeError(
@@ -517,6 +537,7 @@ export class GeoChart {
     return layer.source.update(query, { sequence, style });
   }
   toImage(format = "png", { scale = 1, quality = 90, frame } = {}) {
+    const overview=this._overview();if(overview){if(!frame)throw new TypeError('compileRetained first, then pass overview frame');const {packet,sequence}=this._overviewInputs(overview),a=overviewFrameAuthority(frame);if(!a||a.index!==overview.source||a.sequence!==sequence||a.query.byteLength!==packet.byteLength||new Uint8Array(a.query).some((n,i)=>n!==new Uint8Array(packet)[i]))throw new TypeError('frame must match this overview source and exact snapshot');return frame.export(format,{scale,quality,budget:this.budget});}
     const retained = this._retained();
     if (this.tileSession) {
       this._checkTiles();

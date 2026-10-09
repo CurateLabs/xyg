@@ -1,0 +1,39 @@
+{
+  "baseline": "eb559b2b349b6cbe78183da6a46415d3ca463851",
+  "recordedDate": "2026-10-09",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "sourceManifest": "source-sha256.json",
+  "sourceCount": 214,
+  "abi": 383,
+  "wasmAbi": 33,
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewsource/target/release/libxyg_core.dylib",
+    "sha256": "7ec69880b81678cc2321290565975a4cff406722118710b05613215dff5dce77"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewsource/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "6177b39906b3b4e2d8eee356650e0963e6796ebc0e8a3074ab87e7208c9241b2",
+    "rawBytes": 1467736,
+    "gzip6Bytes": 603540
+  },
+  "tests": {
+    "nodeNativeAndActualWasm": 24,
+    "python": 25
+  },
+  "claims": [
+    "issued private source/query/producer and nonfinal count receipts",
+    "five live tiny-fixture overview views with sequential query publication under existing caps",
+    "unknown26/27/28/29 guards preserve old independently owned output; no recovery claim",
+    "known ACK/disposal rejection supports exact guarded cleanup retry",
+    "native six-format immutable overview export and existing density composition"
+  ],
+  "limitations": [
+    "tiny canonical fixtures; no massive frontend performance or CPU/GPU/OS memory claim",
+    "native widget/Reflex/VSCode overview binary host/live routing remains unsupported",
+    "durable unknown allocation recovery remains a protocol gate",
+    "browser public controller evidence is a separate writer slice"
+  ]
+}

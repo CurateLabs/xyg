@@ -41,12 +41,12 @@ export function encodeGeoSnapshotRequest(
 ) {
   if (
     !Number.isInteger(command) ||
-    ![1, 2, 3, 4, 5, 20, 21, 22].includes(command) ||
+    ![1, 2, 3, 4, 5, 6, 20, 21, 22].includes(command) ||
     !Number.isSafeInteger(limit) ||
     limit < 0 ||
     limit > BUDGET ||
-    (![1, 4, 5].includes(command) && sequence !== 0n) ||
-    (![1, 2, 4, 5].includes(command) && limit !== 0)
+    (![1, 4, 5, 6].includes(command) && sequence !== 0n) ||
+    (![1, 2, 4, 5, 6].includes(command) && limit !== 0)
   )
     throw new TypeError("field does not belong to snapshot command");
   if (command === 2 && typeof scale !== "number")

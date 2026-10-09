@@ -6,11 +6,12 @@ import asyncio
 import math
 import struct
 import traceback
+import weakref
 from contextlib import suppress
 
 from . import _geoscale as scale
 
-COMMANDS = (6, 7, 8, 9, 10, 23, 27, 28, 29, 30, 31)
+COMMANDS = (6, 7, 8, 9, 10, 23, 26, 27, 28, 29, 30, 31)
 
 
 class GeoOverviewUnsupportedSelected(RuntimeError):
@@ -151,6 +152,9 @@ class OverviewData:
             or not u64(24)
         ):
             raise ValueError("invalid overview time/publication")
+        total = sum(struct.unpack_from("<256Q", b, 256))
+        if total > (1 << 64) - 1 or (u64(88) == 0 and total) or (u32(76) == 1 and total > u64(88)):
+            raise ValueError("invalid overview source population")
         self.packet, self.scene = b, b[2304:]
         self.identity = dict(
             query_handle=u64(16),
@@ -201,6 +205,60 @@ class OverviewData:
         return struct.unpack_from("<Q", self.packet, 256 + cell * 8)[0]
 
 
+def validate_mutation(raw, handle, sequence):
+    receipt = reply(raw)
+    if any(scale._bytes(raw)[32:256]):
+        raise ValueError("nonzero overview mutation reserved bytes")
+    if (
+        receipt["code"] != 0
+        or receipt["handle"] != handle
+        or receipt["sequence"] != sequence
+        or receipt["ticket"] is not None
+        or receipt["data_length"] != 0
+        or receipt["source_handle"] != 0
+    ):
+        raise ValueError("Overview mutation did not confirm settlement")
+    return receipt
+
+
+_PENDING_LOANS = weakref.WeakKeyDictionary()
+
+
+async def settle_loan(bridge, handle, sequence):
+    loans = _PENDING_LOANS.get(bridge)
+    authority = loans.get((handle, sequence)) if loans is not None else None
+    if authority is None:
+        return
+    command, ticket = authority
+    try:
+        raw, interrupted = await scale._settle(
+            asyncio.create_task(bridge.execute(request(command, handle, sequence, payload=ticket)))
+        )
+        validate_mutation(raw, handle, sequence)
+    except BaseException:
+        raw, interrupted = await scale._settle(
+            asyncio.create_task(bridge.execute(request(9, handle, sequence)))
+        )
+        validate_mutation(raw, handle, sequence)
+        raw, interrupted = await scale._settle(
+            asyncio.create_task(bridge.execute(request(6, handle, sequence)))
+        )
+        terminal = reply(raw)
+        if terminal["code"] == 9 and any(scale._bytes(raw)[32:256]):
+            raise ValueError("nonzero overview cancellation reserved bytes") from None
+        if (
+            terminal["code"] != 9
+            or terminal["handle"] != handle
+            or terminal["sequence"] != sequence
+            or terminal["ticket"] is not None
+        ):
+            raise ValueError("Overview loan settlement remains pending") from None
+    assert loans is not None
+    del loans[handle, sequence]
+    if interrupted:
+        raise asyncio.CancelledError
+
+
 async def drive(
     bridge,
     *,
@@ -225,7 +283,8 @@ async def drive(
         return cancellation
 
     async def cancel():
-        await scale._settle(cancel_now())
+        raw, _ = await scale._settle(cancel_now())
+        validate_mutation(raw, handle, sequence)
 
     def aborted(interrupted=False):
         return interrupted or (cancel_event is not None and cancel_event.is_set())
@@ -237,6 +296,7 @@ async def drive(
 
     watcher = asyncio.create_task(watch()) if cancel_event is not None else None
     try:
+        await settle_loan(bridge, handle, sequence)
         while True:
             if aborted():
                 await cancel()
@@ -260,6 +320,10 @@ async def drive(
                 raise ValueError("overview did not complete")
             private = step["ticket"]
             authority, kind, length = private["raw"], private["kind"], private["encoded_bytes"]
+            _PENDING_LOANS.setdefault(bridge, {})[handle, sequence] = (
+                31 if kind == 3 else 8,
+                bytes(authority),
+            )
             borrowed = view = payload = supply = operation = None
             try:
                 if aborted(interrupted):
@@ -288,8 +352,10 @@ async def drive(
                     supply = encode(7, payload)
                     payload = None
                     operation = asyncio.create_task(bridge.execute(supply))
-                _, interrupted = await scale._settle(operation, cancel_now)
-                operation = None
+                response, interrupted = await scale._settle(operation, cancel_now)
+                if kind != 3:
+                    validate_mutation(response, handle, sequence)
+                response = operation = None
                 if aborted(interrupted):
                     await cancel()
                     raise asyncio.CancelledError
@@ -305,15 +371,7 @@ async def drive(
                     if cancellation is not None:
                         await scale._settle(cancellation)
                 finally:
-                    _, interrupted = await scale._settle(
-                        asyncio.create_task(
-                            bridge.execute(encode(31 if kind == 3 else 8, authority))
-                        ),
-                        cancel_now,
-                    )
-                    if interrupted:
-                        await cancel()
-                        raise asyncio.CancelledError
+                    await settle_loan(bridge, handle, sequence)
     except BaseException:
         with suppress(Exception):
             await cancel()
@@ -346,9 +404,10 @@ class OverviewLease:
             self._disposal = asyncio.create_task(self._bridge.execute(request(10, self.handle, 0)))
         task = self._disposal
         try:
-            _, interrupted = await scale._settle(task)
+            raw, interrupted = await scale._settle(task)
+            validate_mutation(raw, self.handle, 0)
         except BaseException:
-            if task.done() and (task.cancelled() or task.exception() is not None):
+            if task.done():
                 self._disposal = None
             raise
         if interrupted:

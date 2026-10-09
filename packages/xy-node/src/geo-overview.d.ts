@@ -27,6 +27,16 @@ export declare function decodeGeoOverviewReply(packet: ArrayBuffer): {
     sourceHandle: bigint;
     ticket: Uint8Array<ArrayBuffer> | null;
 };
+/** Mutation success is a fixed terminal receipt, never a resolved transport alone. */
+export declare function validateGeoOverviewMutation(packet: ArrayBuffer, handle: bigint, sequence: bigint): {
+    code: number;
+    handle: bigint;
+    sequence: bigint;
+    dataLength: bigint;
+    sourceHandle: bigint;
+    ticket: Uint8Array<ArrayBuffer> | null;
+};
+export declare function settleGeoOverviewLoan(bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint): Promise<void>;
 export declare function parseGeoOverviewData(packet: ArrayBuffer): {
     packet: ArrayBuffer;
     scene: Uint8Array<ArrayBuffer>;
