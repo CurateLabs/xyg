@@ -1,5 +1,6 @@
 /** Native immutable geographic host transport. Rust owns Scene and picking.
  * One mounted copy; raw binary replies never confer WASM FrameData authority. */
+import { captureGesturePointer } from "./50_chartview";
 import { encodeGeoViewportRequest } from "./49_wasm_geoviewport";
 import { hydrateWasmPainter } from "./48_wasm_scene";
 import type { XygWasmScenePaint } from "./47_wasm";
@@ -75,8 +76,8 @@ export class XygGeoHostView {
   private sequence = 0n;
   private view?: XygWasmSceneView;
   private data?: ReturnType<typeof parseGeoSceneData>;
-  private gestureEvents = ["pointerdown","pointermove","pointerup","pointercancel","lostpointercapture","wheel","dblclick","click","keydown"];
-  private pointer?:{id:number;x:number;y:number};
+  private gestureEvents = ["pointerdown","pointermove","pointerup","pointercancel","wheel","dblclick","click","keydown"];
+  private pointer?:{id:number;x:number;y:number;capture:ReturnType<typeof captureGesturePointer>};
   private previousTouchAction:string;
   private gestureSequence=0n;
   private gestureCameraRevision=0n;
@@ -86,9 +87,13 @@ export class XygGeoHostView {
     if(!event.isTrusted||!this.data||this.closing)return;
     if(event instanceof PointerEvent){
       if(event.type==='pointerdown'&&event.isPrimary&&event.button===0){
-        this.pointer={id:event.pointerId,x:event.clientX,y:event.clientY};
-        this.el.setPointerCapture(event.pointerId);
-      }else if(event.pointerId===this.pointer?.id){
+        this.releasePointer();
+        const capture=captureGesturePointer({
+          _listen:(owner:HTMLElement,type:string,listener:EventListener)=>owner.addEventListener(type,listener),
+          _unlisten:(listener:EventListener)=>this.el.removeEventListener('lostpointercapture',listener),
+        },this.el,event,()=>this.releasePointer());
+        this.pointer={id:event.pointerId,x:event.clientX,y:event.clientY,capture};
+      }else if(event.pointerId===this.pointer?.id&&this.pointer.capture.guard(event)){
         if(event.type==='pointermove'&&(event.buttons&1)){
           const rect=this.view!.canvas.getBoundingClientRect(),camera=this.data.identity.camera;
           const dx=this.pointer.x-event.clientX,dy=this.pointer.y-event.clientY;
@@ -109,7 +114,7 @@ export class XygGeoHostView {
 
     }
   };
-  private releasePointer(){const pointer=this.pointer;this.pointer=undefined;if(pointer&&this.el.hasPointerCapture(pointer.id))this.el.releasePointerCapture(pointer.id);}
+  private releasePointer(){const pointer=this.pointer;this.pointer=undefined;pointer?.capture.release();}
   private dropGestureGuard(){this.releasePointer();this.gestureAlert=undefined;if(this.el.style.touchAction==='none')this.el.style.touchAction=this.previousTouchAction;for(const type of this.gestureEvents)this.el.removeEventListener(type,this.freezeGesture,true);}
 
 

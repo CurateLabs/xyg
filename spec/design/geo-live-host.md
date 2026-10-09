@@ -172,3 +172,8 @@ artifacts rather than additional platform jobs. Massive benchmarks stay separate
 Authentic hierarchy frames may mount statically. The private hierarchy marker
 rejects live preparation before acquiring replacement credit or scanning the
 canonical source; dedicated hierarchy routing remains a separate gate.
+
+Native drag input uses the existing shared `captureGesturePointer` acquisition,
+loss, trusted buttonless-move and guarded release policy. Its capture owner is
+the stable host element, so replacing the child painter does not end a drag.
+Actual capture loss ends the drag without issuing another camera request.
