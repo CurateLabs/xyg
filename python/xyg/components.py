@@ -7371,21 +7371,22 @@ class GeoChart:
     tile_vector_styles: Any = None
     tile_image_id: int | None = None
 
-    def host(self):
+    def host(self, *, frame=None):
         """Create a single-mount native host adapter for a retained point chart.
 
-        Each additional view needs its own adapter/immutable frame. Browser
-        release acknowledgements govern frame lifetime.
+        Pass an owned compiled frame for an indexed source. The adapter retains
+        its own anchor and each mount retains an independent frame; the caller
+        keeps ownership of the original. Browser ACK governs mount lifetime.
         """
         from ._geo_host import GeoHostAdapter
 
-        return GeoHostAdapter(self)
+        return GeoHostAdapter(self, frame=frame)
 
-    def widget(self, **kwargs):
+    def widget(self, *, frame=None, **kwargs):
         """Mount this retained composition in a notebook, including a running loop."""
         from .widget import GeoWidget
 
-        return GeoWidget(self.host(), **kwargs)
+        return GeoWidget(self.host(frame=frame), **kwargs)
 
     def show(self, **kwargs):
         from IPython.display import display

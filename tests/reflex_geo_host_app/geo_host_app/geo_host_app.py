@@ -3,10 +3,12 @@
 import reflex as rx
 
 import reflex_xy
-from test_geo_host import chart_fixture
+from test_geo_indexed_host import indexed_chart_fixture
 
-source, authored = chart_fixture()
-TOKEN = reflex_xy.inline(authored)
+index_source, authored, caller_frame = indexed_chart_fixture()
+facade = authored.host(frame=caller_frame)
+caller_frame.close()
+TOKEN = reflex_xy.inline(facade)
 
 
 def index():
