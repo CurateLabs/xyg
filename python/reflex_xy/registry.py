@@ -278,6 +278,18 @@ class FigureRegistry:
         """
         with self._mutex:
             entry = self._entries.get(token)
+            if (
+                entry is not None
+                and entry.figure is not figure
+                and (
+                    getattr(entry.figure, "mounted", False)
+                    or (
+                        callable(getattr(entry.figure, "handle_host_message", None))
+                        and entry.active_operations
+                    )
+                )
+            ):
+                raise RuntimeError("release mounted geographic frame before registry replacement")
             # A cache-miss rebuild inserts its entry before room fan-out. A
             # canonical same-object publish re-authorizes that provisional
             # generation without bumping its version, but must still own a
@@ -387,9 +399,22 @@ class FigureRegistry:
     def release(self, token: str) -> None:
         """Drop a figure while preserving live subscribers' wire continuity."""
         with self._mutex:
+            entry = self._entries.get(token)
+            if entry is not None and (
+                getattr(entry.figure, "mounted", False)
+                or (
+                    callable(getattr(entry.figure, "handle_host_message", None))
+                    and entry.active_operations
+                )
+            ):
+                raise RuntimeError("release mounted geographic frame before registry removal")
             self._invalidate_rebuild_guards_locked(token)
             entry = self._entries.pop(token, None)
             self._retain_removed_version_locked(token, entry)
+            if entry is not None and callable(getattr(entry.figure, "handle_host_message", None)):
+                close = getattr(entry.figure, "close", None)
+                if callable(close):
+                    close()
 
     def remove_if_current(self, token: str, expected: FigureEntry, *, guard: object) -> bool:
         """Remove ``expected`` only while its rebuild guard is still valid.
@@ -403,6 +428,12 @@ class FigureRegistry:
         with self._mutex:
             guards = self._active_rebuild_guards.get(token)
             if guards is None or guard not in guards or self._entries.get(token) is not expected:
+                return False
+            # Failed rebuild fan-out cannot orphan an already opened native
+            # frame or native work that has not yet published its owner.
+            if callable(getattr(expected.figure, "handle_host_message", None)) and (
+                getattr(expected.figure, "mounted", False) or expected.active_operations
+            ):
                 return False
             del self._entries[token]
             self._retain_removed_version_locked(token, expected)
@@ -711,6 +742,7 @@ class FigureRegistry:
                 if (
                     not entry.pinned
                     and not entry.active_operations
+                    and not getattr(entry.figure, "mounted", False)
                     and now - entry.last_access > self._ttl
                 ):
                     self._invalidate_rebuild_guards_locked(token)
@@ -748,6 +780,10 @@ def reset_registry_for_tests() -> FigureRegistry:
 
 def _figure_of(chart: Any) -> "Figure":
     """Accept either a public `xyg.Chart` or an internal Figure."""
+    from xyg.components import GeoChart
+
+    if isinstance(chart, GeoChart):
+        return chart.host()
     figure = getattr(chart, "figure", None)
     if callable(figure):
         return figure()

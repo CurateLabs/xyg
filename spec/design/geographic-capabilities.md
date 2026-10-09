@@ -56,6 +56,7 @@ under strict CSP and reject every unexpected request.
 | --- | --- | --- |
 | Authenticated retained point/MultiPoint | XYGK/XYGI, signed-i64 half-open filters, source/session leases | Actual 1k/100k/1M/10M/100M ingest/query; 1B planner-only |
 | Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
+| Native immutable host presentation | Canonical retained points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex WS reconnect and real VS Code reload/dispose; native live updates/indexed remount pending |
 | Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
 | Explicit raster/vector tiles | Local/network locator receipts, immutable producer generation/time, atomic epoch publication | Actual native mixed raster+vector+foreground; network is opt-in through caller loader, not automatic fetch |
 | Frozen spatiotemporal output | XYGXv2 bound provenance, visible attribution, owned artifacts | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; WASM freeze matches native, raster export is explicit Unsupported |
@@ -67,3 +68,8 @@ Reproduce using `scripts/bench_geo_scale.py`, `tests/test_geo_retained.py`,
 include environment, exact source patch and reproduction commands. These tests do
 not establish Reflex/VS Code live retained-source parity, complete offscreen
 accessibility, GPU timing, spatial-pyramid performance, or a competitor speed win.
+
+Separate [native host journey evidence](geographic-hosts.md) proves immutable
+retained-points presentation and ownership in notebooks, Reflex and VS Code.
+It does not establish native live camera/query parity or indexed host remounts.
+That checkpoint is pending follow-up PR integration.
