@@ -1125,6 +1125,20 @@ Forbidden:
 | `crates/xyg-engine/src/geo_spatial_hierarchy_query.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_hierarchy_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_hierarchy_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
+The hierarchy protocol child reuses the shared private GeoScale registry, canonical
+Scene encoder, owning source/result leases and common quotas. Its tests exercise
+public typed bytes; no host geometry or separate publication policy is introduced.
+See `geo-hierarchy-protocol.md` for the command and authority boundary.
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

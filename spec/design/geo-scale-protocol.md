@@ -577,3 +577,15 @@ not a silently extended v1. Scope disposal refuses while private authority
 remains. Existing16 total handles,8 sessions,8 Data,128/384 MiB budgets remain.
 Frozen selected export and public typed host orchestration are separate gates;
 no selected-export coverage or #50 closure is claimed by this core slice.
+
+
+## Paged hierarchy commands37–41
+
+`geo-hierarchy-protocol.md` specifies the private paged hierarchy child. It shares
+this registry, quotas, canonical SceneData serializer and lifecycle exports.
+Commands37/38 create bounded authenticated build/query sessions,39 publishes
+ordinary immutable SceneData,40 purely reads exact pending write bytes and41
+ACKs their private ticket. Replies17/18/19 respectively mean explicitly unsupported
+selected authority, privately completed hierarchy and exact completed query.
+Selected state is never silently discarded; this first integration accepts None.
+No C ABI/WASM signatures or existing command bytes change.
