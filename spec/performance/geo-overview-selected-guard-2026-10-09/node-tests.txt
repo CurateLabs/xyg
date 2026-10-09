@@ -1,0 +1,12 @@
+✔ native overview rejects full selected authority atomically and before typed dispatch (32.617792ms)
+✔ native overview rejects empty selected authority atomically and before typed dispatch (0.729166ms)
+✔ wasm overview rejects full selected authority atomically and before typed dispatch (14.204ms)
+✔ wasm overview rejects empty selected authority atomically and before typed dispatch (3.150583ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 172.143375

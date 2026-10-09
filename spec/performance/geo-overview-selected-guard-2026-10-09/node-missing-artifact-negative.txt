@@ -1,0 +1,44 @@
+✔ native overview rejects full selected authority atomically and before typed dispatch (17.721208ms)
+✔ native overview rejects empty selected authority atomically and before typed dispatch (0.7105ms)
+✖ wasm overview rejects full selected authority atomically and before typed dispatch (1.120125ms)
+✖ wasm overview rejects empty selected authority atomically and before typed dispatch (1.446833ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 58.767083
+
+✖ failing tests:
+
+test at packages/xy-node/test/geo-overview-selected.test.mjs:20:57
+✖ wasm overview rejects full selected authority atomically and before typed dispatch (1.120125ms)
+  Error: ENOENT: no such file or directory, open '/tmp/xyg-required-overview-artifact-does-not-exist.wasm'
+      at async open (node:internal/fs/promises:1360:25)
+      at async readFile (node:internal/fs/promises:2149:14)
+      at async transport (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/packages/xy-node/test/geo-overview-selected.test.mjs:13:49)
+      at async TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/packages/xy-node/test/geo-overview-selected.test.mjs:21:15)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/tmp/xyg-required-overview-artifact-does-not-exist.wasm'
+  }
+
+test at packages/xy-node/test/geo-overview-selected.test.mjs:20:57
+✖ wasm overview rejects empty selected authority atomically and before typed dispatch (1.446833ms)
+  Error: ENOENT: no such file or directory, open '/tmp/xyg-required-overview-artifact-does-not-exist.wasm'
+      at async open (node:internal/fs/promises:1360:25)
+      at async readFile (node:internal/fs/promises:2149:14)
+      at async transport (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/packages/xy-node/test/geo-overview-selected.test.mjs:13:49)
+      at async TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/packages/xy-node/test/geo-overview-selected.test.mjs:21:15)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/tmp/xyg-required-overview-artifact-does-not-exist.wasm'
+  }
