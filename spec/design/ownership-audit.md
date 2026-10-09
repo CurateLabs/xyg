@@ -1147,6 +1147,14 @@ Scene encoder, owning source/result leases and common quotas. Its tests exercise
 public typed bytes; no host geometry or separate publication policy is introduced.
 See `geo-hierarchy-protocol.md` for the command and authority boundary.
 
+### M6 typed overview transport
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

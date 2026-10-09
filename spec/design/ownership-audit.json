@@ -697,7 +697,7 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
-      "path": "crates/xyg-engine/src/geo_simplify.rs",
+      "path": "crates/xyg-engine/src/geo_selected_snapshot_tests.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -705,7 +705,7 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
-      "path": "crates/xyg-engine/src/geo_selected_snapshot_tests.rs",
+      "path": "crates/xyg-engine/src/geo_simplify.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -2065,6 +2065,14 @@
       "policy": "browser-wasm-adapter"
     },
     {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/67_geo_overview.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
       "path": "js/src/wasm_abi_generated.ts",
       "current_owner": "Generated cross-host WASM contract binding",
       "policy": "browser-wasm-generated",
@@ -2190,6 +2198,22 @@
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
       "path": "packages/xy-node/src/geo-mixed.js",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-overview.d.ts",
+      "policy": "node-host"
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-overview.js",
       "policy": "node-host"
     },
     {
