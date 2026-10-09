@@ -48,9 +48,9 @@ XYG_MIXED_BROWSER_REPORT=spec/performance/geo-mixed-transport-2026-10-09/browser
 node scripts/geo_mixed_wasm_smoke.mjs
 ```
 
-The integrated linked-state/overview/mixed wasm32 artifact measures1,388,710
-raw/570,579 gzip bytes, SHA256
-`28b2708399eac39bb750eaf69569131505b24c84b79ee55509c2f57a793801f2`.
+The integrated linked-state/overview/mixed wasm32 artifact measures1,389,378
+raw/571,015 gzip bytes, SHA256
+`c70153d689c736c70e8206694beae300412e5a581d3cb14a308171785406f227`.
 The original mixed-only candidate measured1,323,023 raw/542,873 gzip bytes,
 SHA256 `8f0aecce9ca00c197af0370e5e80ca2948e6c7b335bb5a66e5f781bf42d0149d`.
 Packaging depends on the separately approved recorded `3b11dfd4b` size decision
