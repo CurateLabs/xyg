@@ -47,6 +47,17 @@ export interface XygGeoScaleBridge {
     execute(request: ArrayBuffer): Promise<ArrayBuffer>;
     read(request: ArrayBuffer): Promise<ArrayBuffer>;
 }
+/** Borrow full XYSE intent. Fingerprints are hints; exact typed IDs are retained. */
+export declare function parseGeoSelectionFooter(packet: Uint8Array, at: number, rows: boolean): {
+    raw: Uint8Array<ArrayBufferLike>;
+    namespace: bigint;
+    fill: Uint8Array<ArrayBufferLike>;
+    idCount: number;
+    cellCount: number;
+    visibleVertices: bigint | null;
+    id(index: number): bigint;
+    cell(index: number): bigint;
+} | null;
 export declare function encodeGeoScaleRequest(input: XygGeoScaleRequest): ArrayBuffer;
 export declare function encodeGeoScaleStyle(style: {
     fill: Uint8Array;
@@ -108,6 +119,16 @@ export declare function encodeGeoChunkRequest(input: {
 export declare function parseGeoSceneData(packet: ArrayBuffer): {
     packet: ArrayBuffer;
     scene: Uint8Array<ArrayBuffer>;
+    selection: {
+        raw: Uint8Array<ArrayBufferLike>;
+        namespace: bigint;
+        fill: Uint8Array<ArrayBufferLike>;
+        idCount: number;
+        cellCount: number;
+        visibleVertices: bigint | null;
+        id(index: number): bigint;
+        cell(index: number): bigint;
+    } | null;
     aggregate: boolean;
     droppedChannels: number;
     visibleVertices: bigint;
@@ -210,6 +231,16 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     readonly data: {
         packet: ArrayBuffer;
         scene: Uint8Array<ArrayBuffer>;
+        selection: {
+            raw: Uint8Array<ArrayBufferLike>;
+            namespace: bigint;
+            fill: Uint8Array<ArrayBufferLike>;
+            idCount: number;
+            cellCount: number;
+            visibleVertices: bigint | null;
+            id(index: number): bigint;
+            cell(index: number): bigint;
+        } | null;
         aggregate: boolean;
         droppedChannels: number;
         visibleVertices: bigint;
@@ -314,6 +345,16 @@ export declare function parseGeoHitData(packet: ArrayBuffer): {
 /** Data readers bind a fixed mutation reply, never probe/re-execute mutations. */
 export declare function parseGeoRowsData(packet: ArrayBuffer): {
     packet: ArrayBuffer;
+    selection: {
+        raw: Uint8Array<ArrayBufferLike>;
+        namespace: bigint;
+        fill: Uint8Array<ArrayBufferLike>;
+        idCount: number;
+        cellCount: number;
+        visibleVertices: bigint | null;
+        id(index: number): bigint;
+        cell(index: number): bigint;
+    } | null;
     length: number;
     hasNext: boolean;
     owner: bigint;
@@ -324,6 +365,7 @@ export declare function parseGeoRowsData(packet: ArrayBuffer): {
         sourceRow: bigint;
         chunkIndex: number;
         chunkRow: number;
+        selected: boolean;
         geometryNull: boolean;
         timeEligible: boolean;
         eligible: boolean;
