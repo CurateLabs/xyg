@@ -39,7 +39,7 @@ try{
  await page.locator('.jp-Notebook .jp-Cell').nth(1).locator('.cm-content').click();await page.keyboard.press('Shift+Enter');
  await page.getByText('XYG geographic browser release acknowledged',{exact:true}).waitFor({timeout:20000});
  if(external.length)throw Error('external requests '+external.join(','));
- const result={ok:true,journey:'actual JupyterLab + live IPython loop + anywidget binary comm + Rust native painter',canvasCount,redPixels:red,browser:browser.version(),external,errors,releaseAcknowledged:true};
+ const result={ok:true,journey:'actual JupyterLab + live IPython loop + anywidget binary comm + Rust native painter',indexedAuthority:true,callerAndIndexDisposedBeforeMount:true,canvasCount,redPixels:red,browser:browser.version(),external,errors,releaseAcknowledged:true};
  if(process.env.XYG_GEO_NOTEBOOK_REPORT)await writeFile(process.env.XYG_GEO_NOTEBOOK_REPORT,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 }catch(error){throw Error(JSON.stringify({error:error.message,errors,body:await page?.locator('body').innerText().catch(()=>''),outputs:await page?.locator('.jp-OutputArea').evaluateAll(els=>els.map(el=>el.innerHTML.slice(-6000))).catch(()=>[]),logs:logs.slice(-6000)}));}
 finally{await browser?.close();server.kill('SIGTERM');}
