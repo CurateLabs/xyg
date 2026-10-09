@@ -1,0 +1,43 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "integration_head": "6a4b22a2a77082309ae0a3774296468214ddc7ee",
+  "abi": {
+    "native": 383,
+    "wasm": 33
+  },
+  "artifacts": {
+    "target/release/libxyg_core.dylib": {
+      "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewrecovery/target/release/libxyg_core.dylib",
+      "sha256": "66c1a0b0404b0e32ea54a42e5e83b45611e4dd179f3aa45a6b4081fe9198ba12",
+      "bytes": 4359568
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "227b582d0923f88349c5f188aada376828685d7cae10e36087443404dc81b388",
+      "bytes": 1496127,
+      "gzip6_mtime0_bytes": 613427,
+      "gzip9_mtime0_bytes": 612592
+    }
+  },
+  "source_sha256": {
+    "crates/xyg-engine/src/geo_allocation_recovery.rs": "2f89e398b19cf7464a1ccec6c6326b26d151647cbee671f09ea4462ed961ce29",
+    "crates/xyg-engine/src/geo_allocation_recovery_tests.rs": "8e7c7cb6e28752e89bc750413a0c978af2ea3949c4b528cde6f13fa23fdf6178",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "4730b953841fc9402201ee3f5cdc1ad99ee4b618162d85383e58fe4e700a3cb7",
+    "crates/xyg-engine/src/geo_temporal_overview_protocol.rs": "560e3734dd132d701e4fa7ded1a08f5f16132c60a7f3f82fe4824906ec5551f7",
+    "crates/xyg-engine/src/geo_temporal_overview_protocol_tests.rs": "f5eb501cff1b046bdf7cd61518454c1773695b12dd4dcad5e67493a63bafb8e0",
+    "scripts/geo_allocation_recovery_conformance.mjs": "161bc36096e580c31c49ad539d45ce9f9c5ffefb0abb93bf380e3e39c5e7fd10",
+    "spec/design/geo-allocation-recovery.md": "322f385a17aec1391850dfce080b268c28d3818275c6f63d7c662d11be7941c4"
+  },
+  "tests": {
+    "new_raw_recovery": 6,
+    "unchanged_domain_protocol": 7,
+    "full_engine": 1465,
+    "native_wasm_packets": 6,
+    "legacy_projected_packets": 12,
+    "legacy_overview_profiles": 8
+  },
+  "budget": "unchanged raw1472KiB / gzip6 608KiB PASS",
+  "public_host_adoption": "not implemented; public owners remain nonce0"
+}

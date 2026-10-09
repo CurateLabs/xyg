@@ -1,0 +1,2 @@
+    Checking xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewrecovery/crates/xyg-engine)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.80s

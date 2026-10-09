@@ -9,6 +9,8 @@ mod linked_state;
 mod overview;
 #[path = "geo_overview_membership_protocol.rs"]
 mod overview_members;
+#[path = "geo_allocation_recovery.rs"]
+mod recovery;
 use crate::geo::{GeoCrs, GeoGeometry, column_from_descriptor_bytes};
 use crate::geo_indexed_query_session::{
     GeoIndexedQuerySession, GeoIndexedQueryStep, GeoIndexedReadTicket, GeoIndexedResult,
@@ -150,6 +152,7 @@ enum Entry {
     },
 }
 struct Registry {
+    recovery: recovery::Bank,
     next: u64,
     entries: Vec<(u64, Entry)>,
     data_cache: Option<GeoTileCache>,
@@ -158,6 +161,7 @@ static REGISTRY: OnceLock<Mutex<Registry>> = OnceLock::new();
 fn registry() -> &'static Mutex<Registry> {
     REGISTRY.get_or_init(|| {
         Mutex::new(Registry {
+            recovery: recovery::Bank::default(),
             next: 1,
             entries: Vec::new(),
             data_cache: None,
@@ -181,14 +185,15 @@ fn frame(b: &[u8]) -> Result<u32> {
         || &b[..4] != b"XYGQ"
         || u32at(b, 4) != 1
         || u64at(b, 232) != (b.len() - HEADER) as u64
-        || b[240..256].iter().any(|&v| v != 0)
+        || b[248..256].iter().any(|&v| v != 0)
+        || (u64at(b, 240) != 0 && !matches!(u32at(b, 8), 26..=29 | 45 | 47))
         || b.len() > MAX_DATA
         || u32at(b, 204) != 0
     {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=46) {
+    if !matches!(command, 1..=21 | 23..=47) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -220,7 +225,7 @@ fn frame(b: &[u8]) -> Result<u32> {
                 | 24
                 | 25
                 | 26
-                | 27..=46
+                | 27..=47
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -334,14 +339,43 @@ fn session(entry: &mut Entry) -> Result<&mut GeoSourceSession> {
 /// Fixed-output mutation. Caller must reserve HEADER output bytes before this call.
 pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     let command = frame(request)?;
+    let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
+    let out = if command == 47 || u64at(request, 240) != 0 {
+        recovery::execute(&mut r, request)
+    } else {
+        execute_locked(&mut r, request)
+    };
+    recovery::collect(&mut r);
+    out
+}
+fn execute_locked(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
+    let command = u32at(request, 8);
     let handle = u64at(request, 16);
     let sequence = u64at(request, 24);
     let payload = &request[HEADER..];
-    let mut r = registry().lock().map_err(|_| SourceError::ResourceLimit)?;
     if matches!(
         command,
-        1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34 | 39 | 45
+        1 | 4
+            | 11
+            | 12
+            | 13
+            | 14
+            | 15
+            | 16
+            | 17
+            | 18
+            | 19
+            | 26
+            | 27
+            | 28
+            | 29
+            | 32
+            | 33
+            | 34
+            | 39
+            | 45
     ) && !(command == 33 && sequence != 0)
+        && !(command == 29 && u64at(request, 240) != 0)
         && r.entries.len() >= MAX_HANDLES
         && !(command == 19
             && r.entries.iter().any(|(id, e)| {
@@ -350,15 +384,17 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     {
         return Err(SourceError::ResourceLimit);
     }
-    if matches!(command,45 | 46) {return overview_members::start(&mut r,request);}
+    if matches!(command, 45 | 46) {
+        return overview_members::start(r, request);
+    }
     if matches!(command, 37 | 38 | 42 | 43) {
-        return hierarchy::start(&mut r, request);
+        return hierarchy::start(r, request);
     }
     if matches!(command, 32..=36) {
-        return linked_state::start(&mut r, request);
+        return linked_state::start(r, request);
     }
     if matches!(command, 27..=29) {
-        return overview::start(&mut r, request);
+        return overview::start(r, request);
     }
     if command == 6 {
         if let Some((_, Entry::Index(owner))) = r.entries.iter().find(|(id, _)| *id == handle) {
@@ -416,7 +452,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             let snapshot = data_snapshot(entry)?;
             let scope = semantic.scope.clone();
             let id = insert(
-                &mut r,
+                r,
                 Entry::IndexBuild(Box::new(IndexBuild {
                     session: Some(session),
                     scope,
@@ -513,7 +549,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             budget(request)?.max_chunks as u64,
         )?;
         let id = insert(
-            &mut r,
+            r,
             Entry::Indexed(Box::new(IndexQuery {
                 owner: owner.clone(),
                 scope: None,
@@ -535,7 +571,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         }
         let lease = GeoProcessorLease::acquire(MAX_MANIFEST_BYTES)?;
         let id = insert(
-            &mut r,
+            r,
             Entry::Builder {
                 value: GeoManifestBuilder::new(),
                 _lease: lease,
@@ -558,7 +594,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         }
         let s = GeoSourceSession::create(payload, budget(request)?)?;
         let id = insert(
-            &mut r,
+            r,
             Entry::Session(SourceOwner {
                 value: Box::new(s),
                 scope: None,
@@ -602,7 +638,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             state,
         )?;
         let id = insert(
-            &mut r,
+            r,
             Entry::Rows(RowsOwner {
                 value: Box::new(rows),
                 scope,
@@ -615,7 +651,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             return Err(SourceError::InvalidFrame);
         }
         let operation_budget = budget(request)?;
-        admit_data_slot(&r)?;
+        admit_data_slot(r)?;
         let entry = &r
             .entries
             .iter()
@@ -670,7 +706,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             sequence,
             _lease: semantic_lease,
         });
-        let lease = reserve_data(&mut r, reserve)?;
+        let lease = reserve_data(r, reserve)?;
         let entry = &r.entries.iter().find(|&&(id, _)| id == handle).unwrap().1;
         let Entry::Rows(rows) = entry else {
             unreachable!()
@@ -678,7 +714,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         let bytes = render_rows(rows.published().unwrap(), handle)?;
         let len = bytes.len();
         let id = insert(
-            &mut r,
+            r,
             Entry::Data {
                 bytes,
                 _lease: lease,
@@ -729,7 +765,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             budget(request)?,
             u64at(payload, 8),
         )?;
-        let id = insert(&mut r, Entry::Members(Box::new(member)))?;
+        let id = insert(r, Entry::Members(Box::new(member)))?;
         return Ok(reply(id, sequence));
     }
     if command == 14 {
@@ -749,7 +785,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             max_hits: u32at(payload, 76) as usize,
         };
         crate::geo_lod_hit::reservation_bytes(query)?;
-        admit_data_slot(&r)?;
+        admit_data_slot(r)?;
         let entry = &r
             .entries
             .iter()
@@ -775,18 +811,14 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if reserve > processor_bytes {
             return Err(SourceError::ResourceLimit);
         }
-        let lease = reserve_data(&mut r, reserve)?;
+        let lease = reserve_data(r, reserve)?;
         let entry = &r.entries.iter().find(|&&(id, _)| id == handle).unwrap().1;
         let (_, result) = semantic_authority(entry, sequence)?;
         let hits = match crate::geo_lod_hit::hit(result, style, query, processor_bytes) {
             Ok(hits) => hits,
             Err(error) => {
                 drop(lease);
-                if !r
-                    .entries
-                    .iter()
-                    .any(|(_, e)| is_data_entry(e))
-                {
+                if !r.entries.iter().any(|(_, e)| is_data_entry(e)) {
                     r.data_cache = None;
                 }
                 return Err(error);
@@ -822,7 +854,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         }
         let len = bytes.len();
         let id = insert(
-            &mut r,
+            r,
             Entry::Data {
                 bytes,
                 _lease: lease,
@@ -841,7 +873,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
-        admit_data_slot(&r)?;
+        admit_data_slot(r)?;
         let entry = &r
             .entries
             .iter()
@@ -866,7 +898,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if reserve > budget(request)?.processor_bytes {
             return Err(SourceError::ResourceLimit);
         }
-        let lease = reserve_data(&mut r, reserve)?;
+        let lease = reserve_data(r, reserve)?;
         let entry = &r.entries.iter().find(|&&(id, _)| id == handle).unwrap().1;
         let Entry::Members(s) = entry else {
             unreachable!()
@@ -874,7 +906,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         let bytes = render_members(s.published().unwrap(), handle);
         let len = bytes.len();
         let id = insert(
-            &mut r,
+            r,
             Entry::Data {
                 bytes,
                 _lease: lease,
@@ -896,7 +928,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         if !payload.is_empty() {
             return Err(SourceError::InvalidFrame);
         }
-        admit_data_slot(&r)?;
+        admit_data_slot(r)?;
         let entry = &r
             .entries
             .iter()
@@ -920,20 +952,21 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             let result = Arc::clone(&authority.result);
             let camera = authority.camera;
             let sequence = authority.sequence;
-            let lease = reserve_data(&mut r, reserve)?;
+            let lease = reserve_data(r, reserve)?;
             let authority = Box::new(overview::Semantic {
                 result,
                 camera,
                 sequence,
             });
-            let Entry::Data { bytes, .. } = &r.entries.iter().find(|(id, _)| *id == handle).unwrap().1
+            let Entry::Data { bytes, .. } =
+                &r.entries.iter().find(|(id, _)| *id == handle).unwrap().1
             else {
                 unreachable!()
             };
             let mut bytes = bytes.clone();
             put64(&mut bytes, 16, handle);
             let id = insert(
-                &mut r,
+                r,
                 Entry::Data {
                     bytes,
                     _lease: lease,
@@ -968,7 +1001,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             return Err(SourceError::ResourceLimit);
         }
         let authority = Arc::clone(authority);
-        let lease = reserve_data(&mut r, reserve)?;
+        let lease = reserve_data(r, reserve)?;
         let Entry::Data { bytes, .. } = &r.entries.iter().find(|(id, _)| *id == handle).unwrap().1
         else {
             unreachable!()
@@ -978,7 +1011,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         // disposed query session. Every numeric/Scene/provenance byte survives.
         put64(&mut bytes, 16, handle);
         let id = insert(
-            &mut r,
+            r,
             Entry::Data {
                 bytes,
                 _lease: lease,
@@ -994,7 +1027,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         return Ok(out);
     }
     if matches!(command, 11 | 19 | 39 | 44) {
-        admit_data_slot(&r)?;
+        admit_data_slot(r)?;
         let entry = &r
             .entries
             .iter()
@@ -1082,7 +1115,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             sequence,
             _lease: semantic_lease,
         });
-        let lease = reserve_data(&mut r, reserve)?;
+        let lease = reserve_data(r, reserve)?;
         let entry = &r
             .entries
             .iter()
@@ -1103,11 +1136,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             Ok(bytes) => bytes,
             Err(error) => {
                 drop(lease);
-                if !r
-                    .entries
-                    .iter()
-                    .any(|(_, e)| is_data_entry(e))
-                {
+                if !r.entries.iter().any(|(_, e)| is_data_entry(e)) {
                     r.data_cache = None;
                 }
                 return Err(error);
@@ -1130,7 +1159,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             r.entries[position].1 = data;
             handle
         } else {
-            insert(&mut r, data)?
+            insert(r, data)?
         };
         let mut out = reply(id, sequence);
         put64(&mut out, 32, len as u64);
@@ -1144,23 +1173,26 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         .ok_or(SourceError::StaleSource)?;
     if matches!(command, 7 | 8 | 10)
         && sequence != 0
-        && !matches!(r.entries[index].1, Entry::Overview(_) | Entry::Hierarchy(_) | Entry::OverviewMembers(_))
+        && !matches!(
+            r.entries[index].1,
+            Entry::Overview(_) | Entry::Hierarchy(_) | Entry::OverviewMembers(_)
+        )
     {
         return Err(SourceError::InvalidFrame);
     }
     if matches!(r.entries[index].1, Entry::IndexBuild(_) | Entry::Indexed(_))
         && matches!(command, 6..=10 | 24)
     {
-        return execute_index_operation(&mut r, index, request);
+        return execute_index_operation(r, index, request);
     }
     if matches!(r.entries[index].1, Entry::OverviewMembers(_)) {
-        return overview_members::operation(&mut r,index,request);
+        return overview_members::operation(r, index, request);
     }
     if matches!(r.entries[index].1, Entry::Hierarchy(_)) {
-        return hierarchy::operation(&mut r, index, request);
+        return hierarchy::operation(r, index, request);
     }
     if matches!(r.entries[index].1, Entry::Overview(_)) {
-        return overview::operation(&mut r, index, request);
+        return overview::operation(r, index, request);
     }
     let entry = &mut r.entries[index].1;
     let mut out = reply(handle, sequence);
@@ -1391,11 +1423,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
                 return Err(SourceError::ResourceLimit);
             }
             r.entries.remove(index);
-            if !r
-                .entries
-                .iter()
-                .any(|(_, e)| is_data_entry(e))
-            {
+            if !r.entries.iter().any(|(_, e)| is_data_entry(e)) {
                 r.data_cache = None;
             }
         }
@@ -1407,17 +1435,12 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
 // Publication-only check shared by every immutable Data producer. Keep one
 // body in the constrained WASM artifact; this is outside row/vertex hot loops.
 #[inline(never)]
-fn is_data_entry(e:&Entry)->bool {
-    matches!(e,Entry::Data{..}) || matches!(e,Entry::OverviewMembers(o) if o.is_data())
+fn is_data_entry(e: &Entry) -> bool {
+    matches!(e, Entry::Data { .. }) || matches!(e,Entry::OverviewMembers(o) if o.is_data())
 }
 #[inline(never)]
 fn admit_data_slot(r: &Registry) -> Result<()> {
-    if r.entries
-        .iter()
-        .filter(|(_, e)| is_data_entry(e))
-        .count()
-        >= MAX_DATA_HANDLES
-    {
+    if r.entries.iter().filter(|(_, e)| is_data_entry(e)).count() >= MAX_DATA_HANDLES {
         return Err(SourceError::ResourceLimit);
     }
     Ok(())
@@ -1481,10 +1504,13 @@ pub fn read_data(request: &[u8], budget: usize) -> Result<Vec<u8>> {
         }
         return Ok(bytes.clone());
     }
-    if command == 23 && matches!(entry,Entry::OverviewMembers(_)) {
-        let (bytes,reads)=overview_members::read_bytes(entry,request,budget)?;
-        reads.fetch_update(Ordering::AcqRel,Ordering::Acquire,|n|(n<2).then_some(n+1))
-            .map_err(|_|SourceError::ResourceLimit)?;
+    if command == 23 && matches!(entry, Entry::OverviewMembers(_)) {
+        let (bytes, reads) = overview_members::read_bytes(entry, request, budget)?;
+        reads
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < 2).then_some(n + 1)
+            })
+            .map_err(|_| SourceError::ResourceLimit)?;
         return Ok(bytes.to_vec());
     }
     if command == 23 {
@@ -1556,8 +1582,10 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
     if command == 25 {
         return Ok(index_write_bytes(entry, request, budget)?.0.len());
     }
-    if command == 23 && matches!(entry,Entry::OverviewMembers(_)) {
-        return Ok(overview_members::read_bytes(entry,request,budget)?.0.len());
+    if command == 23 && matches!(entry, Entry::OverviewMembers(_)) {
+        return Ok(overview_members::read_bytes(entry, request, budget)?
+            .0
+            .len());
     }
     if command == 23 {
         if u64at(request, 24) != 0
@@ -1823,11 +1851,7 @@ fn reserve_data(registry: &mut Registry, bytes: usize) -> Result<GeoDerivedLease
         Err(error) => {
             // A rejected first snapshot must not retain an empty cache's fixed
             // process charge. Existing successful data retains its owner cache.
-            if !registry
-                .entries
-                .iter()
-                .any(|(_, e)| is_data_entry(e))
-            {
+            if !registry.entries.iter().any(|(_, e)| is_data_entry(e)) {
                 registry.data_cache = None;
             }
             Err(error.into())
@@ -2681,11 +2705,14 @@ pub fn with_overview_data<T>(
         return Err(SourceError::InvalidFrame);
     };
     let snapshot = s.result.snapshot();
-    if sequence == 0 || sequence != s.sequence
+    if sequence == 0
+        || sequence != s.sequence
         || snapshot.camera != s.camera.rebuild_key()?
         || snapshot.source_digest != s.result.source().digest()
         || snapshot.generation != s.result.source().generation()
-        || !s.result.temporal_exact() || !s.result.data_space() || s.result.final_result()
+        || !s.result.temporal_exact()
+        || !s.result.data_space()
+        || s.result.final_result()
     {
         return Err(SourceError::StaleSource);
     }
