@@ -1,0 +1,43 @@
+{
+  "sourceFreeze": "12c0d09636d389a3fb96b5ff197cc240093e88be",
+  "implementationCommit": "57299ec2c",
+  "dependencies": [
+    "52a7a719b27ab9fc4b688d7b72adb7eaacdb2c19",
+    "9c2d82151cafcdd33b1eb0f901bcb1cc7a230250",
+    "453c66c2771937fddca001dd70c9854c843ea2e3",
+    "20b3b20de47f9dc27f6c2ef8e908299028d3f4e9"
+  ],
+  "environment": {
+    "node": "v26.6.0",
+    "os": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "concurrentLoad": "Development workload uncontrolled; elapsed tests/build times are not product latency evidence."
+  },
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/target/release/libxyg_core.dylib",
+    "sha256": "11665749c798c80c4fbd7a6d18c03e064430c943530b2fc326090c89ed550e06"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "f5c3cd1f86f35445bf72c445ddf603f6f85a3b4a5c6abe6b312209908f86c469",
+    "rawBytes": 1468284,
+    "gzipLevel6Bytes": 603987,
+    "gzipLevel9Bytes": 603219,
+    "rawGateBytes": 1507328,
+    "gzipLevel6GateBytes": 622592
+  },
+  "sourceHashes": {
+    "crates/xyg-engine/src/geo_membership_session.rs": "657e8dbafc5e03ebab0b2ac4483ec7408dd84f16a6ce34345d91f683b785c36a",
+    "crates/xyg-engine/src/geo_source_membership_driver.rs": "924e7208ae55e5dde0d65030c13d65283849b4315e9f15b4b68c9d128b7dc3c2",
+    "crates/xyg-engine/src/geo_temporal_overview_membership.rs": "63b71e2bfcdc425f5184c25c8b2d631b3f50b822be82a17ff0ccbdb1b0042f69",
+    "crates/xyg-engine/src/geo_temporal_overview_membership_tests.rs": "62eadc6c98207a6688d5c588c7abe70598a8b4c7ec19c13129d84508c5213767",
+    "crates/xyg-engine/src/geo_temporal_overview.rs": "681fa21926a25136bad0b02dc22b5ad995868393b75a7a9cecf614c6044fded8",
+    "crates/xyg-engine/src/lib.rs": "e57775e52eb4936c6e4008f6c94f30f7609a8e260182eed3c25174c744d52ae0",
+    "scripts/geo_overview_membership_engine_conformance.mjs": "045b3932f4d111aad872cfe8b4929bb3ebd20b97649a7f93360efa0eefafe601",
+    ".github/workflows/ci.yml": "c7b544bdac7587b0e990440209a9a25c7380550f912a0625f7af65027d53a8b6",
+    "spec/design/geo-temporal-overview-membership.md": "a8ecbf51346e6d0583b7970578109d86ea345a1da05a37c0473606c7a2246f81"
+  },
+  "scope": "New domain membership engine9Rust tests; native/WASM proof ONLY existing projected membership through extracted generic lifecycle. No45/46transport or massive claim."
+}

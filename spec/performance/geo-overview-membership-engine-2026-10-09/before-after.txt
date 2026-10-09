@@ -1,0 +1,1 @@
+5 temporal profiles and 12 full normalized packets identical BEFORE/AFTER shared-driver extraction; only validated membership owner fields normalized.

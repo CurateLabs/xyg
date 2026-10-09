@@ -97,6 +97,8 @@ bytes, or failed admission.
 
 ## Evidence and remaining integration
 
+[Recorded engine and legacy before/after artifact proof](../performance/geo-overview-membership-engine-2026-10-09/README.md)
+provides exact source/artifact hashes, complete raw packet evidence, and reproduction.
 Focused Rust tests cover independent temporal/CRS/domain-cell goldens, i64
 extremes and null endpoints, full-u64 duplicate IDs, MultiPoint vertex-count/row
 membership, private continuation rejection, source/index disposal lifetime,

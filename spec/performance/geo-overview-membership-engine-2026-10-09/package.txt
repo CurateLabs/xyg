@@ -1,0 +1,3 @@
+packaged optimized xyg-wasm artifact at /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/packages/xy-client/dist/xyg-wasm.wasm
+copied optimized xyg-wasm artifact to /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/python/xyg/static/xyg-wasm.wasm
+packaged deterministic inline WASM artifact at /Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/packages/xy-client/dist/xyg-wasm-inline.js

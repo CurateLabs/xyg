@@ -1,0 +1,33 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.47s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 26 tests
+test geo_temporal_overview_membership::tests::three_pages_private_continuation_source_order_duplicates_and_disposal ... ok
+test geo_temporal_overview_membership::tests::final_vertex_cancel_ack_retains_ticket_and_old_result ... ok
+test geo_temporal_overview_build::bounded_failure_tests::overview_write_page_limit_cannot_publish_after_failed_ack ... ok
+test geo_temporal_overview_membership::tests::vertex_budget_is_row_atomic_progress_then_no_progress_rejection ... ok
+test geo_temporal_overview_membership::tests::time_before_geometry_and_final_count_reconciliation_and_cancel_publication ... ok
+test geo_temporal_overview_membership::tests::owning_loan_cancel_drop_exact_ack_and_corruption_preserve_old_page ... ok
+test geo_temporal_overview_membership::tests::continuation_rejects_other_result_cell_sequence_without_allocating ... ok
+test geo_temporal_overview_membership::tests::temporal_cells_goldens_all_instant_window_extrema_and_crs ... ok
+test geo_temporal_overview_membership::tests::exact_local_admission_global_pressure_and_ticket_drop_lifetime ... ok
+test geo_temporal_overview_membership::tests::point_all_cells_partition_exact_counts_and_full_ids_across_crs ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_bad_page_and_invalid_snapshot_cannot_replace_previous_typed_data ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_cancelled_write_requires_exact_ack_and_retains_old_frame ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_exact_counts_scene_and_old_data_survive_source_index_disposal ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_multipoint_population_and_projected_scene_match_both_camera_crss ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_rejects_full_and_empty_selected_authority_without_admission ... ok
+test geo_temporal_overview_protocol_tests::overview_protocol_sessions_and_data_use_existing_shared_caps_and_recover_after_drop ... ok
+test geo_temporal_overview_tests::cancellation_retired_read_write_and_bad_digest_preserve_old_output ... ok
+test geo_temporal_overview_tests::canonical_rebuild_verification_rejects_omitted_or_forged_import_digest ... ok
+test geo_temporal_overview_tests::corrupted_canonical_read_and_cancelled_prefix_never_replace_owned_counts ... ok
+test geo_temporal_overview_tests::decoded_chunk_retains_charge_after_read_ack_and_blocks_unadmitted_parallel_build ... ok
+test geo_temporal_overview_tests::million_row_external_merge_and_prefix_tracer ... ok
+test geo_temporal_overview_tests::multipoint_vertex_population_empty_and_null_rows ... ok
+test geo_temporal_overview_tests::nullable_endpoints_at_signed_extrema_do_not_overflow_or_change_half_open_policy ... ok
+test geo_temporal_overview_tests::prefix_read_admission_failure_is_retry_atomic_and_never_skips_boundary ... ok
+test geo_temporal_overview_tests::snapshot_identity_domain_fallback_and_global_pressure_are_explicit ... ok
+test geo_temporal_overview_tests::temporal_goldens_nulls_dateline_full_ids_and_half_open_extrema ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 1426 filtered out; finished in 41.15s
