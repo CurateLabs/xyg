@@ -1,0 +1,51 @@
+{
+  "recorded_at": "2026-10-09T09:43:16Z",
+  "revision": "61867587aebeb059fb873a9facea9b7da0eb1495",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "binary_sha256": "27d370ba23f350157135a72babed09c45eb0630c2873f83b444a187bbbe7418c",
+  "source_sha256": {
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "crates/xyg-engine/src/bin/geo_hierarchy_bench.rs": "935b2b825d9fe32065bf41fad83dc5e052589a8717c0787a24e97d0bf4fa73f5",
+    "scripts/bench_geo_hierarchy.py": "9db05f85201d21515700d3e8026d58f893468c2081e6d4311c3b99f6cc6cefd5",
+    "crates/xyg-engine/src/geo_spatial_hierarchy.rs": "47cfc9f673aa7e5b95dd0e87cdd1bfdfa61fc1694051c351d06e4e01912bc108",
+    "crates/xyg-engine/src/geo_spatial_hierarchy_build.rs": "0f500f1660d2c6f253c11adcf1afe28b95c42a3cbc310fcbf7b7b3499b0f4ab4",
+    "crates/xyg-engine/src/geo_spatial_hierarchy_query.rs": "bdfc06b2d8a4d4ce5dd058a0faa2dfa32abbce50deee55af86f5f567401271ca"
+  },
+  "build": [
+    "cargo",
+    "build",
+    "--release",
+    "-p",
+    "xyg-engine",
+    "--bin",
+    "geo_hierarchy_bench"
+  ],
+  "invocation": [
+    "scripts/bench_geo_hierarchy.py",
+    "--rows",
+    "100000",
+    "--grids",
+    "1024",
+    "--kinds",
+    "point",
+    "multipoint",
+    "--distribution",
+    "dense",
+    "--reduced-kind",
+    "density",
+    "--label",
+    "dense-density",
+    "--write-cap-gib",
+    "1"
+  ],
+  "load": "uncontrolled local load; serial children",
+  "resident_policy": "existing global128MiB engine ledger; external disk store and caller canonical bytes excluded",
+  "selection": "None; no linked selection performance claimed",
+  "paint": "not measured",
+  "formula": "existing geo_index_bench SplitMix64 lon/lat; row%1000==999 geometry null; MultiPoint two near vertices; nullable signed intervals; fullu64 IDs with duplicates",
+  "cleanup": "TemporaryDirectory owner removes all source/page/Scene artifacts after child settlement"
+}

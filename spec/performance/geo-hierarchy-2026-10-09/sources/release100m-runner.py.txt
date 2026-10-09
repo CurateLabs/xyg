@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+"""Serial, bounded release evidence with ephemeral external hierarchy storage."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import platform
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+GIB = 1 << 30
+EVIDENCE = ROOT / "spec/performance/geo-hierarchy-2026-10-09"
+
+
+def command(*args: str) -> str:
+    return subprocess.check_output(args, cwd=ROOT, text=True).strip()
+
+
+def forecast(rows: int, multi: bool, grid: int) -> dict[str, int]:
+    vertices = rows * (2 if multi else 1)
+    runs = math.ceil(vertices / 262144)
+    passes = 1
+    while runs > 1:
+        runs = math.ceil(runs / 8)
+        passes += 1
+    cells = min(vertices, grid * grid)
+    # Full temporary pages, per-cell payload tails/wrappers/tree nodes; upper
+    # bound includes sparse cells rather than treating every page as dense.
+    temporary_pages = math.ceil(vertices / 682) * passes + 8192
+    payload_pages = math.ceil(vertices / 818) + cells
+    nodes = cells + math.ceil(payload_pages / 127) + math.ceil(cells / 127) + 24
+    page_count = temporary_pages + payload_pages + nodes
+    write_bytes = (
+        temporary_pages * 65536
+        + vertices * 80
+        + payload_pages * 64
+        + cells * 192
+        + (nodes - cells) * (64 + 128 * 128)
+    )
+    return {
+        "vertex_ceiling": vertices,
+        "temporary_passes": passes,
+        "estimated_write_upper_bytes": write_bytes,
+        "offset_index_upper_bytes": page_count * 16,
+    }
+
+
+def run(args: argparse.Namespace) -> None:
+    EVIDENCE.mkdir(parents=True, exist_ok=True)
+    build = ["cargo", "build", "--release", "-p", "xyg-engine", "--bin", "geo_hierarchy_bench"]
+    subprocess.run(build, cwd=ROOT, check=True)
+    binary = ROOT / "target/release/geo_hierarchy_bench"
+    sources = [
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "crates/xyg-engine/src/bin/geo_hierarchy_bench.rs",
+        "scripts/bench_geo_hierarchy.py",
+        "crates/xyg-engine/src/geo_spatial_hierarchy.rs",
+        "crates/xyg-engine/src/geo_spatial_hierarchy_build.rs",
+        "crates/xyg-engine/src/geo_spatial_hierarchy_query.rs",
+    ]
+    environment = {
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "revision": command("git", "rev-parse", "HEAD"),
+        "platform": platform.platform(),
+        "python": sys.version,
+        "rust": command("rustc", "--version"),
+        "cargo": command("cargo", "--version"),
+        "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "source_sha256": {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in sources},
+        "build": build,
+        "invocation": sys.argv,
+        "load": "uncontrolled local load; serial children",
+        "resident_policy": "existing global128MiB engine ledger; external disk store and caller canonical bytes excluded",
+        "selection": "None; no linked selection performance claimed",
+        "paint": "not measured",
+        "formula": "existing geo_index_bench SplitMix64 lon/lat; row%1000==999 geometry null; MultiPoint two near vertices; nullable signed intervals; fullu64 IDs with duplicates",
+        "cleanup": "TemporaryDirectory owner removes all source/page/Scene artifacts after child settlement",
+    }
+    (EVIDENCE / f"environment-{args.label}.json").write_text(
+        json.dumps(environment, indent=2) + "\n"
+    )
+    for rows in args.rows:
+        for grid in args.grids:
+            for geometry in args.kinds:
+                name = f"{rows}-{grid}-{geometry}-{args.label}"
+                cap = args.write_cap_gib * GIB
+                estimate = forecast(rows, geometry == "multipoint", grid)
+                free = shutil.disk_usage(args.temp_root).free
+                admission = {
+                    "rows": rows,
+                    "grid": grid,
+                    "geometry": geometry,
+                    "write_cap_bytes": cap,
+                    "free_bytes_before": free,
+                    "headroom_bytes": 8 * GIB,
+                    "forecast": estimate,
+                }
+                # Reserve actual caller cap + disk offset-index bound +8GiB.
+                if (
+                    estimate["estimated_write_upper_bytes"] > cap
+                    or free < cap + 8 * GIB + estimate["offset_index_upper_bytes"]
+                ):
+                    admission.update(
+                        status="pre-io-rejected",
+                        reason="write-cap"
+                        if estimate["estimated_write_upper_bytes"] > cap
+                        else "disk-headroom",
+                    )
+                    (EVIDENCE / f"{name}.admission.json").write_text(
+                        json.dumps(admission, indent=2) + "\n"
+                    )
+                    print(json.dumps(admission), flush=True)
+                    continue
+                with tempfile.TemporaryDirectory(
+                    prefix="xyg-hierarchy-", dir=args.temp_root
+                ) as temporary:
+                    cmd = [
+                        str(binary),
+                        str(rows),
+                        str(grid),
+                        geometry,
+                        str(args.iterations),
+                        temporary,
+                        str(cap),
+                        args.distribution,
+                        args.reduced_kind,
+                    ]
+                    if platform.system() == "Darwin":
+                        cmd = ["/usr/bin/time", "-l", *cmd]
+                    admission.update(command=cmd)
+                    started = time.monotonic()
+                    try:
+                        result = subprocess.run(
+                            cmd, cwd=ROOT, text=True, capture_output=True, timeout=args.timeout
+                        )
+                        (EVIDENCE / f"{name}.raw.jsonl").write_text(result.stdout)
+                        (EVIDENCE / f"{name}.stderr.txt").write_text(result.stderr)
+                        records = [
+                            json.loads(line)
+                            for line in result.stdout.splitlines()
+                            if line.startswith("{")
+                        ]
+                        for record in records:
+                            if "scene_path" in record:
+                                scene = Path(record.pop("scene_path"))
+                                record["scene_sha256"] = hashlib.sha256(
+                                    scene.read_bytes()
+                                ).hexdigest()
+                        admission.update(
+                            status="passed" if result.returncode == 0 else "failed",
+                            returncode=result.returncode,
+                            elapsed_seconds=time.monotonic() - started,
+                            records=records,
+                        )
+                        if result.returncode == 0:
+                            assert records[-1] == {"phase": "cleanup", "engine_ledger_bytes": 0}
+                            for r in records:
+                                if r["phase"] == "query-summary":
+                                    assert r["iterations"] >= 20 and len(r["samples_ms"]) >= 20
+                        print(
+                            json.dumps(
+                                {
+                                    "case": name,
+                                    "status": admission["status"],
+                                    "seconds": admission["elapsed_seconds"],
+                                }
+                            ),
+                            flush=True,
+                        )
+                    except subprocess.TimeoutExpired as exc:
+                        admission.update(status="timeout", timeout_seconds=args.timeout)
+                        (EVIDENCE / f"{name}.stderr.txt").write_text(str(exc) + "\n")
+                admission["external_artifacts_removed"] = not Path(temporary).exists()
+                admission["free_bytes_after_cleanup"] = shutil.disk_usage(args.temp_root).free
+                (EVIDENCE / f"{name}.result.json").write_text(
+                    json.dumps(admission, indent=2) + "\n"
+                )
+                if admission["status"] != "passed":
+                    raise SystemExit(f"bounded trace failed: {name}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rows", nargs="+", type=int, default=[10_000_000, 100_000_000])
+    parser.add_argument("--grids", nargs="+", type=int, default=[1024, 256])
+    parser.add_argument(
+        "--kinds", nargs="+", choices=["point", "multipoint"], default=["point", "multipoint"]
+    )
+    parser.add_argument("--iterations", type=int, default=20)
+    parser.add_argument("--write-cap-gib", type=int, default=48)
+    parser.add_argument("--timeout", type=int, default=1800)
+    parser.add_argument("--temp-root", type=Path, default=Path(tempfile.gettempdir()))
+    parser.add_argument("--label", default="release")
+    parser.add_argument("--distribution", choices=["world", "dense"], default="world")
+    parser.add_argument("--reduced-kind", choices=["cluster", "density"], default="cluster")
+    args = parser.parse_args()
+    if (
+        any(g < 16 or g > 4096 or g & (g - 1) for g in args.grids)
+        or any(r <= 0 or r > 100_000_000 for r in args.rows)
+        or args.iterations < 20
+        or args.iterations > 100
+        or args.write_cap_gib <= 0
+        or args.timeout <= 0
+    ):
+        parser.error("explicit bounded rows/iterations/storage/timeout required")
+    run(args)
+
+
+if __name__ == "__main__":
+    main()

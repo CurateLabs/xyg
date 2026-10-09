@@ -1,0 +1,19 @@
+{
+  "scope": "diagnostic cold vertices field only; raw outputs retained unchanged",
+  "measured_source_snapshot": "sources/release10m-bench.rs.txt",
+  "reason": "the10M cold formatter printed source validrowcount for both kinds; MultiPoint canonically emits two vertices per validrow",
+  "artifacts": {
+    "10000000-1024-multipoint-release10m.raw.jsonl": {
+      "raw_vertices": 9990000,
+      "actual_canonical_vertices": 19980000,
+      "source_rows": 10000000,
+      "null_source_rows": 10000
+    },
+    "10000000-256-multipoint-release10m.raw.jsonl": {
+      "raw_vertices": 9990000,
+      "actual_canonical_vertices": 19980000,
+      "source_rows": 10000000,
+      "null_source_rows": 10000
+    }
+  }
+}

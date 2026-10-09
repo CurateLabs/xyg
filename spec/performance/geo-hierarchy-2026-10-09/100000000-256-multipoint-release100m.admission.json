@@ -1,0 +1,16 @@
+{
+  "rows": 100000000,
+  "grid": 256,
+  "geometry": "multipoint",
+  "write_cap_bytes": 51539607552,
+  "free_bytes_before": 82234851328,
+  "headroom_bytes": 8589934592,
+  "forecast": {
+    "vertex_ceiling": 200000000,
+    "temporary_passes": 5,
+    "estimated_write_upper_bytes": 112712486528,
+    "offset_index_upper_bytes": 29648416
+  },
+  "status": "pre-io-rejected",
+  "reason": "write-cap"
+}
