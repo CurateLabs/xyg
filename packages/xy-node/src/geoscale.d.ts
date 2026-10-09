@@ -1,5 +1,6 @@
-/** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
+/** Thin host-neutral retained geography framing; native adapter appended. */
 export interface XygGeoCamera {crs:number;worldWrap?:boolean;centerX:number;centerY:number;zoom:number;width:number;height:number;bearing?:number;pitch?:number}
+/** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
 export declare const GEO_SCALE_HEADER = 256;
 export interface XygGeoQueryBudget {
     processorBytes: number;
@@ -248,7 +249,81 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     };
     dispose(): Promise<void>;
 }>;
-
+/** Raw immutable key/cursor bytes retain Rust's exact f64/i64/u64 identity. */
+export declare function parseGeoMembershipData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    key: Uint8Array<ArrayBuffer>;
+    cursor: Uint8Array<ArrayBuffer> | null;
+    length: number;
+    cell: number;
+    owner: bigint;
+    sequence: bigint;
+    record(index: number): {
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+    };
+};
+export declare function parseGeoHitData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    key: Uint8Array<ArrayBuffer>;
+    length: number;
+    owner: bigint;
+    sequence: bigint;
+    record(index: number): {
+        featureId?: undefined;
+        sourceRow?: undefined;
+        chunkIndex?: undefined;
+        chunkRow?: undefined;
+        vertex?: undefined;
+        kind: 'cell';
+        cell: number;
+        count: bigint;
+    } | {
+        count?: undefined;
+        cell?: undefined;
+        kind: 'direct';
+        vertex: number;
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+    };
+};
+/** Data readers bind a fixed mutation reply, never probe/re-execute mutations. */
+export declare function parseGeoRowsData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    length: number;
+    hasNext: boolean;
+    owner: bigint;
+    sequence: bigint;
+    key: Uint8Array<ArrayBuffer>;
+    record(index: number): {
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+        geometryNull: boolean;
+        timeEligible: boolean;
+        eligible: boolean;
+        intervalsPresent: boolean;
+        intervalStart: bigint | null;
+        intervalEnd: bigint | null;
+        value: number | null;
+    };
+};
+export declare function prepareGeoAuxData<T>(bridge: XygGeoScaleBridge, input: {
+    command: 13 | 14 | 16;
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    payload?: Uint8Array;
+}, parse: (packet: ArrayBuffer) => T): Promise<{
+    handle: bigint;
+    readonly data: T & ({} | null);
+    dispose(): Promise<void>;
+}>;
 export declare function geoScaleExecute(request:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>;
 export declare function geoScaleRead(request:ArrayBuffer|Uint8Array,budget:number):Promise<ArrayBuffer>;
 export declare function nativeGeoScaleBridge(budget:number):XygGeoScaleBridge;

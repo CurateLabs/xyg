@@ -23,10 +23,10 @@ function response(buffer:ArrayBuffer){if(!(buffer instanceof ArrayBuffer)||buffe
 function count(v:DataView,at:number,max=MAX_PACKET){const n=v.getBigUint64(at,true);if(n>BigInt(max))throw new RangeError('reply count exceeds framing');return Number(n);}
 
 export function encodeGeoScaleRequest(input:XygGeoScaleRequest):ArrayBuffer {
- const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,20,21,23].includes(command))throw new TypeError('unknown geographic command');
+ const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,21,23].includes(command))throw new TypeError('unknown geographic command');
  const payload=input.payload===undefined?new Uint8Array():bytes(input.payload),length=256+payload.byteLength;
  if(length>MAX_PACKET||input.budget&&length>budgetBytes(input.budget.processorBytes))throw new RangeError('request exceeds framing budget');
- if(input.query!==undefined&&command!==5||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14].includes(command))throw new TypeError('field does not belong to command');
+ if(input.query!==undefined&&command!==5||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16].includes(command))throw new TypeError('field does not belong to command');
  const out=new ArrayBuffer(length),b=new Uint8Array(out),v=new DataView(out);b.set([88,89,71,81]);v.setUint32(4,1,true);v.setUint32(8,command,true);v.setBigUint64(16,u64(input.handle??0n),true);v.setBigUint64(24,u64(input.sequence??0n),true);
  if(input.budget){const q=input.budget;v.setBigUint64(32,BigInt(budgetBytes(q.processorBytes)),true);v.setBigUint64(40,u64(q.maxRowsExamined),true);v.setBigUint64(48,u64(q.maxReadBytes),true);v.setUint32(56,u32(q.maxChunks),true);v.setUint32(60,u32(q.pageRows),true);}
  if(command===3)v.setBigUint64(144,u64(input.generation??0n),true);
@@ -121,7 +121,21 @@ export function parseGeoHitData(packet:ArrayBuffer){
  return {packet,key,length,owner:v.getBigUint64(80,true),sequence:v.getBigUint64(24,true),record(index:number){if(!Number.isInteger(index)||index<0||index>=length)throw new RangeError('hit index');const p=256+index*48;return v.getUint32(p,true)===1?{kind:'cell' as const,cell:v.getUint32(p+32,true),count:v.getBigUint64(p+40,true)}:{kind:'direct' as const,vertex:v.getUint32(p+4,true),featureId:v.getBigUint64(p+8,true),sourceRow:v.getBigUint64(p+16,true),chunkIndex:v.getUint32(p+24,true),chunkRow:v.getUint32(p+28,true)};}};
 }
 /** Data readers bind a fixed mutation reply, never probe/re-execute mutations. */
-export async function prepareGeoAuxData<T>(bridge:XygGeoScaleBridge,input:{command:13|14;handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;payload?:Uint8Array},parse:(packet:ArrayBuffer)=>T){
+export function parseGeoRowsData(packet:ArrayBuffer){
+ const {b,v}=response(packet),length=count(v,32,4096),hasNext=v.getUint32(40,true);
+ if(v.getUint32(8,true)!==4||hasNext>1||packet.byteLength!==256+length*64||v.getBigUint64(16,true)===0n||v.getBigUint64(24,true)===0n||v.getBigUint64(80,true)!==v.getBigUint64(16,true)||v.getBigUint64(96,true)===0n||v.getBigUint64(104,true)>1000000000n||v.getUint32(64,true)>65536||v.getUint32(68,true)>65536||![1,2,3,4,5,6].includes(v.getUint32(112,true))||![4326,3857].includes(v.getUint32(116,true)))throw new TypeError('invalid original-row packet');
+ zero(b,12,16);zero(b,44,48);zero(b,72,80);zero(b,156,160);zero(b,176,256);
+ const timeKind=v.getUint32(152,true);if(timeKind===0)zero(b,160,176);else if(timeKind===1)zero(b,168,176);else if(timeKind!==2||v.getBigInt64(160,true)>=v.getBigInt64(168,true))throw new TypeError('invalid original-row time');
+ let previous=-1n;
+ for(let i=0;i<length;i++){
+  const p=256+i*64,ordinal=v.getBigUint64(p+8,true),flags=v.getUint32(p+24,true);
+  if(ordinal<=previous||ordinal>=v.getBigUint64(104,true)||v.getUint32(p+16,true)>=65536||v.getUint32(p+20,true)>=65536||flags>127||Boolean(flags&4)!==(!(flags&1)&&Boolean(flags&2))||!(flags&8)&&Boolean(flags&48))throw new TypeError('invalid original-row record');previous=ordinal;
+  zero(b,p+28,p+32);zero(b,p+56,p+64);if(!(flags&16))zero(b,p+32,p+40);if(!(flags&32))zero(b,p+40,p+48);if(!(flags&64))zero(b,p+48,p+56);if((flags&48)===48&&v.getBigInt64(p+32,true)>=v.getBigInt64(p+40,true))throw new TypeError('invalid row interval');
+ }
+ return {packet,length,hasNext:Boolean(hasNext),owner:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),key:b.subarray(88,176),
+  record(index:number){if(!Number.isInteger(index)||index<0||index>=length)throw new RangeError('original-row index');const p=256+index*64,flags=v.getUint32(p+24,true);return {featureId:v.getBigUint64(p,true),sourceRow:v.getBigUint64(p+8,true),chunkIndex:v.getUint32(p+16,true),chunkRow:v.getUint32(p+20,true),geometryNull:Boolean(flags&1),timeEligible:Boolean(flags&2),eligible:Boolean(flags&4),intervalsPresent:Boolean(flags&8),intervalStart:flags&16?v.getBigInt64(p+32,true):null,intervalEnd:flags&32?v.getBigInt64(p+40,true):null,value:flags&64?v.getFloat64(p+48,true):null};}};
+}
+export async function prepareGeoAuxData<T>(bridge:XygGeoScaleBridge,input:{command:13|14|16;handle:bigint;sequence:bigint;budget:XygGeoQueryBudget;payload?:Uint8Array},parse:(packet:ArrayBuffer)=>T){
  const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest(input))),handle=reply.handle;
  let packet:ArrayBuffer|undefined,data:T|undefined;
  try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid auxiliary data lease');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('auxiliary length mismatch');data=parse(packet);packet=undefined;}

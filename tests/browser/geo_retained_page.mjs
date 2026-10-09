@@ -1,5 +1,5 @@
 import {createXygWasmWorker, XygGeographicChart, encodeGeoScaleRequest, encodeGeoScaleStyle, encodeGeoChunkRequest, encodeGeoViewportColumnRequest} from '/packages/xy-client/dist/index.js';
-import {parseGeoSceneData,parseGeoMembershipData,parseGeoHitData} from '/tests/browser/geo_source_parser.mjs';
+import {parseGeoSceneData,parseGeoMembershipData,parseGeoHitData,parseGeoRowsData} from '/tests/browser/geo_source_parser.mjs';
 
 const assert=(ok,message)=>{if(!ok)throw Error(message);};
 const red=p=>p[0]>240&&p[1]<20&&p[2]<20&&p[3]>250;
@@ -49,9 +49,9 @@ function malformed(packet,parser,mutate,label){
 }
 function parserProof(packet){
   if(packet.byteLength<=256||String.fromCharCode(...new Uint8Array(packet,0,4))!=='XYGZ')return;
-  const v=new DataView(packet),tag=v.getUint32(8,true),family=tag<2?'scene':tag===2?'membership':tag===3?'hit':null;
+  const v=new DataView(packet),tag=v.getUint32(8,true),family=tag<2?'scene':tag===2?'membership':tag===3?'hit':tag===4?'rows':null;
   if(!family||parserFamilies.has(family))return;parserFamilies.add(family);
-  const parser=family==='scene'?parseGeoSceneData:family==='membership'?parseGeoMembershipData:parseGeoHitData;
+  const parser=family==='scene'?parseGeoSceneData:family==='membership'?parseGeoMembershipData:family==='rows'?parseGeoRowsData:parseGeoHitData;
   parser(packet);
   for(const [label,mutate]of[
     ['magic',(v,b)=>b[0]^=1],['version',v=>v.setUint32(4,99,true)],
@@ -80,6 +80,17 @@ function parserProof(packet){
       ['record reserved',(v,b)=>b[at+24]=1],['record source ordinal',v=>v.setBigUint64(at+8,v.getBigUint64(104,true),true)],
       ['cursor key',(v,b)=>b[256]^=1],['cursor reserved',(v,b)=>b[420]=1],
     ])malformed(packet,parser,mutate,`membership ${label}`);
+  }else if(family==='rows'){
+    for(const[label,mutate]of[
+      ['owner mismatch',v=>v.setBigUint64(80,v.getBigUint64(16,true)+1n,true)],
+      ['next flag',v=>v.setUint32(40,2,true)],['key geometry',v=>v.setUint32(112,99,true)],
+      ['key CRS',v=>v.setUint32(116,0,true)],['time kind',v=>v.setUint32(152,99,true)],
+      ['record flags',v=>v.setUint32(280,128,true)],['record reserved',(v,b)=>b[284]=1],
+      ['ordinal',v=>v.setBigUint64(264,v.getBigUint64(104,true),true)],
+      ['eligibility',v=>v.setUint32(280,v.getUint32(280,true)^4,true)],
+      ['chunk index',v=>v.setUint32(272,65536,true)],
+      ['chunk row',v=>v.setUint32(276,65536,true)],
+    ])malformed(packet,parser,mutate,`rows ${label}`);
   }else{
     for(const[label,mutate]of[
       ['owner mismatch',v=>v.setBigUint64(80,v.getBigUint64(16,true)+1n,true)],
@@ -115,12 +126,14 @@ function query(info,revision=1n,extra={}){
 }
 // The fixture frames source planes through the existing public adapter and real
 // Rust pure20 authoring; it never hashes, projects, selects a cell or computes LOD.
-async function source(rows,coincident=false){
+async function source(rows,coincident=false,companion=false){
   const ids=BigUint64Array.from({length:rows},(_,i)=>i===0?MAX:0x20000000000000n+BigInt(i));
   const xy=Float64Array.from({length:rows*2},(_,i)=>i%2?0:coincident||i===0?0:179);
   const column={geometry:1,crs:4326,xy,validity:new Uint8Array(rows).fill(1),featureIds:ids};
+  if(companion){column.validity[2]=0;column.xy=Float64Array.from([...xy.slice(0,4),...xy.slice(6)]);ids[2]=MAX;ids[3]=MAX;}
   const descriptor=encodeGeoViewportColumnRequest(camera,column).slice(128);
   const starts=new BigInt64Array(rows).fill(MIN),ends=new BigInt64Array(rows).fill(MIN+1n),validity=new Uint8Array(rows).fill(1);
+  if(companion){starts[1]=MIN+1n;ends[1]=MIN+2n;}
   const chunk=new Uint8Array(await worker.geoScaleRead(encodeGeoChunkRequest({descriptor,rows,intervals:{starts,ends,startValidity:validity,endValidity:validity}},budget.processorBytes)));
   const builder=(await mutation({command:1})).getBigUint64(16,true);
   let manifest;
@@ -194,6 +207,23 @@ try{
   const initialPixel=await pixels(canvas);assert(red(initialPixel),`origin not visibly painted: ${Array.from(initialPixel)}, canvas ${canvas.width}x${canvas.height}`);
   assert((await main.pick(400,300))[0]?.featureId===MAX,'Rust full-ID pick');
   bufferProof(main);
+  stage('original source rows and keyboard focus');
+  const companionSource=await source(4,false,true);let failRows=false,focused=null;
+  const rowsHost=host(),rowChart=await chart({el:rowsHost,worker,manifest:companionSource.manifest,budget,
+    query:query(companionSource.info,1n,{camera:{...camera,zoom:2}}),style,
+    readChunk:async()=>failRows?companionSource.chunk.slice(0,-1):companionSource.chunk.slice(),
+    onSourceRowFocus(row){focused=row;}});
+  await rowChart.ready;assert(rowChart.snapshot().length===1,'companion fixture did not exclude offscreen/null/time rows from paint');
+  const firstRows=await rowChart.sourceRows();
+  assert(firstRows.length===2&&firstRows[0].featureId===MAX&&firstRows[0].sourceRow===0n&&firstRows[0].eligible&&firstRows[1].sourceRow===1n&&!firstRows[1].timeEligible,'original rows lost first-page identity/eligibility');
+  const finalRows=await rowChart.sourceRows(true),sourceList=rowsHost.querySelector('[aria-label="Original geographic source rows"]');
+  assert(finalRows.length===2&&finalRows[0].geometryNull&&finalRows[0].sourceRow===2n&&finalRows[1].sourceRow===3n&&finalRows[1].featureId===MAX&&finalRows[1].eligible,'null/offscreen/duplicate original rows not paged');
+  assert(sourceList.children.length===2,'source companion DOM was not page bounded');
+  sourceList.lastElementChild.focus();assert(document.activeElement===sourceList.lastElementChild&&focused?.sourceRow===3n&&focused.featureId===MAX,'keyboard focus did not expose exact offscreen row');
+  failRows=true;await reject(rowChart.sourceRows(),'failed source row read published');
+  assert(sourceList.children.length===2&&sourceList.lastElementChild.textContent.includes('source row 3')&&(await rowChart.pick(400,300))[0]?.featureId===MAX,'failed page changed accepted companion or paint');
+  failRows=false;assert((await rowChart.sourceRows())[0].sourceRow===0n,'source paging did not recover');
+  await remove(rowChart);
   stage('frozen source snapshot');
   const frozenReply=new DataView(await rawGeo('geo.snapshot.execute',snapshotRequest(1,main.frame.handle,1n))),frozenHandle=frozenReply.getBigUint64(16,true);
   let frozen=null,secondFrozen=null,frozenView=null;
@@ -259,7 +289,7 @@ try{
   const stopped=await settled;await Promise.all([stopping,stoppingAgain]);
   assert(stopped.every(r=>r.status==='rejected'&&r.reason.code==='XYG_WASM_DISPOSED'),'shutdown executed or stranded queued mutation');
   assert(worker.pending.size===0,'shutdown retained pending transport');
-  assert(parserFamilies.size===3,'parser proof missing actual packet family');
-  result={ok:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
+  assert(parserFamilies.size===4,'parser proof missing actual packet family');
+  result={ok:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,originalRows:true,offscreenKeyboardFocus:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
 }catch(error){result={ok:false,stage:window.__retainedStage,code:error.code,message:error.message,stack:error.stack};}
 finally{teardownRelease?.();await Promise.allSettled([...charts].map(c=>c.dispose()));await worker.dispose();hosts.forEach(el=>el.remove());HTMLCanvasElement.prototype.getContext=getContext;window.__retained=result;}

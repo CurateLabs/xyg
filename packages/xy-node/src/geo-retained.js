@@ -6,6 +6,7 @@ import {
   prepareGeoSceneData,
   nativeGeoScaleBridge,
   geoScaleExecute,
+  parseGeoRowsData,
 } from "./geoscale.js";
 const HEADER = 256;
 function uint(n, bits = 64) {
@@ -228,6 +229,12 @@ export class RetainedGeoSource {
           await frame.dispose();
           throw new Error("operation aborted");
         }
+        const rowsOwner = frame.handle;
+        frame.rows = (...args) => {
+          if (args.length) throw new TypeError("rows accepts no cursor or options");
+          void frame.data;
+          return this._rows(rowsOwner, sequence);
+        };
         frame.membership = (cell, options) => {
           void frame.data;
           return this.membership(cell, {
@@ -469,3 +476,54 @@ function validateKey(b) {
   )
     throw new TypeError("invalid typed geographic key");
 }
+
+
+RetainedGeoSource.prototype._rows = function (owner, sequence) {
+  return this._run(async (signal) => {
+    let session, page;
+    try {
+      const issued = decode(await this.bridge.execute(encode({
+        command: 15, handle: owner, sequence, budget: this.budget,
+      })));
+      session = issued.handle;
+      if (issued.sequence !== sequence) throw new TypeError("mismatched row sequence");
+      if (signal.aborted) throw new Error("operation aborted");
+      const completed = await driveGeoSession(this.bridge, {
+        handle: session, sequence, budget: this.budget, readChunk: this.readChunk, signal,
+      });
+      if (completed.code !== 4) throw new Error("geographic rows did not complete");
+      page = await prepare(this.bridge, {
+        command: 16, handle: session, sequence, budget: this.budget,
+        parse(packet, handle, sequence) {
+          const data = parseGeoRowsData(packet);
+          data.records = new Uint8Array(packet, 256);
+          const v = new DataView(packet);
+          data.stats = {rowsExamined: v.getBigUint64(48, true), bytesRead: v.getBigUint64(56, true), chunksRead: v.getUint32(64, true), chunksConsidered: v.getUint32(68, true)};
+          if (data.owner !== handle || data.sequence !== sequence) throw new TypeError("mismatched row packet identity");
+          return data;
+        },
+      });
+      if (signal.aborted) throw new Error("operation aborted");
+      const pageOwner = page.handle;
+      page.nextPage = (...args) => {
+        if (args.length) throw new TypeError("nextPage accepts no cursor or options");
+        if (!page.data.hasNext) throw new Error("no next geographic row page");
+        return this._rows(pageOwner, sequence);
+      };
+      return page;
+    } catch (error) {
+      if (page) await page.dispose();
+      throw error;
+    } finally {
+      if (session !== undefined) {
+        try {
+          await this.bridge.execute(encode({command: 10, handle: session}));
+          if (signal.aborted) throw new Error("operation aborted");
+        } catch (error) {
+          if (page) await page.dispose();
+          throw error;
+        }
+      }
+    }
+  }, true);
+};

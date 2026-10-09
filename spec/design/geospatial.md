@@ -16,7 +16,7 @@ Painter hydration preserves Rust-resolved RGBA alpha without applying ordinary
 mark opacity defaults again; strict-CSP pixels pin opaque and half-alpha points.
 
 Retained contracts: [source/session](geo-retained-source.md),
-[LOD and scale evidence](geo-lod.md), [public host composition](geo-retained-hosts.md),
+[original-row paging](geo-rows-session.md), [LOD and scale evidence](geo-lod.md), [public host composition](geo-retained-hosts.md),
 [tile protocol](geo-tile-protocol.md), [frozen export](geo-frozen-export.md), and
 [admitted browser transport](geo-transport.md). Scene and snapshot byte parity
 uses the actual packaged ABI 33 artifact, not a native build presented as WASM.
