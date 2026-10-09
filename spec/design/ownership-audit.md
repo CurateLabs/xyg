@@ -1122,6 +1122,9 @@ Forbidden:
 | `crates/xyg-engine/src/geo_spatial_hierarchy_build.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_spatial_hierarchy_query.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
 
 ## Contributor rule
 
