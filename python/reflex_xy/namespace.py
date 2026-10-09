@@ -99,6 +99,9 @@ def _build_entry_payload(
 def _handle_entry_message(entry: FigureEntry, content: Any) -> Any:
     """Dispatch under ``sync_lock``; the async caller already holds ``lock``."""
     with entry.sync_lock:
+        host_message = getattr(entry.figure, "handle_host_message", None)
+        if callable(host_message):
+            return host_message(content)
         return handle_message(entry.figure, content, None)
 
 
@@ -290,6 +293,9 @@ class XYNamespace(AsyncNamespace):
             # shared attempt already re-primed the room; never resolve its old
             # coordinates even if another waiter rebuilt or versions match.
             return
+        if callable(getattr(entry.figure, "handle_host_message", None)):
+            await self._on_geo_message(sid, token, entry, data, message_version)
+            return
         content = data.get("m") if isinstance(data, dict) else None
         async with entry.lock:
             if not self.registry.is_current(token, entry):
@@ -329,6 +335,62 @@ class XYNamespace(AsyncNamespace):
         if mid is not None:
             envelope["mid"] = mid
         await self.emit("msg", envelope, to=sid)
+
+    async def _on_geo_message(self, sid, token, entry, data, message_version):
+        """Retain sender packet references and its generation through emit."""
+        lease = self.registry._acquire_operation(token)
+        if lease is not entry or entry.active_operations > 16:
+            if lease is not None:
+                self.registry._release_operation(lease)
+            return
+
+        async def publish():
+            reply = buffers = wire_buffers = envelope = None
+            try:
+                async with entry.lock:
+                    if not self.registry.is_current(token, entry):
+                        return
+                    version = entry.version
+                    if message_version is not None and message_version != version:
+                        return
+                    reply = await asyncio.to_thread(_handle_entry_message, entry, data.get("m"))
+                    if reply is None:
+                        return
+                    message, buffers = reply
+                    wire_buffers = _buffer_bytes(buffers)
+                    envelope = {
+                        "fig": token,
+                        "version": version,
+                        "message": message,
+                        "buffers": wire_buffers,
+                    }
+                    mid = self._mid_of(data)
+                    if mid is not None:
+                        envelope["mid"] = mid
+                    await self.emit("msg", envelope, to=sid)
+                    # Publication settles before the next ACK can take this lock.
+                    reply = buffers = wire_buffers = envelope = None
+            finally:
+                reply = buffers = wire_buffers = envelope = None
+
+        # Cancelling a socket handler cannot stop its native thread. Settle the
+        # complete native/publication task, including repeated cancellation,
+        # before releasing generation credit or accepting a queued buffer ACK.
+        publication = asyncio.create_task(publish())
+        interrupted = False
+        try:
+            while True:
+                try:
+                    await asyncio.shield(publication)
+                    break
+                except asyncio.CancelledError:
+                    if publication.done() and publication.cancelled():
+                        raise
+                    interrupted = True
+        finally:
+            self.registry._release_operation(lease)
+        if interrupted:
+            raise asyncio.CancelledError
 
     # -- server-side pushes (append/refresh fan-out) ---------------------------
 

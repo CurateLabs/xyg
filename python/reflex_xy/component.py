@@ -305,6 +305,12 @@ def chart(
         props["token"] = source
         if tailwind_manifest:
             props["tailwind_class_tokens"] = _tailwind_scan_literal(tailwind_manifest)
+    elif callable(getattr(source, "host", None)):
+        raise TypeError(
+            "retained GeoChart requires a @reflex_xy.figure token or "
+            "reflex_xy.inline(chart) at module scope; page-only registration "
+            "cannot rebuild its source reader in a backend worker"
+        )
     elif _is_chart_like(source):
         # Build a public Chart once, then reuse the cached Figure for both the
         # payload and its Tailwind scan manifest.  In particular, do not call
