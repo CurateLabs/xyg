@@ -1,5 +1,7 @@
 /** Native one-mount geographic host facade. No browser imports or source serialization. */
 import {hierarchyLaneAuthority,isHierarchyFrame} from './geo-hierarchy.js';
+import {retainOverviewFrame,closeOverviewOwner,getOverviewFrameData,overviewFrameAuthority,overviewIndexAuthority,updateOverviewIndex,isNativeOverviewIndex} from './geo-overview-source.js';
+import {encodeGeoOverviewRequest} from './geo-overview.js';
 import {GeoSelectedScope} from './geo-selected.js';
 import {GeoLiveCandidate} from './geo-live-host.js';
 import {sceneBrowserPainter} from './scene.js';
@@ -12,15 +14,18 @@ function buffer(value){
 }
 function tag(op,owner=0n,sequence=0n){const b=new ArrayBuffer(32),v=new DataView(b);new Uint8Array(b).set([88,89,71,72]);v.setUint32(4,1,true);v.setUint32(8,op,true);v.setBigUint64(16,owner,true);v.setBigUint64(24,sequence,true);return b;}
 function same(a,b){a=new Uint8Array(a);b=new Uint8Array(b);return a.length===b.length&&a.every((n,i)=>n===b[i]);}
-const laneClaims=new WeakMap();
+const laneClaims=new WeakMap(),overviewHosts=new WeakMap(),overviewData=new WeakMap();
 export class GeoHostAdapter {
+ #overviewMode=false;#overviewProcessorBytes;
+ get overviewMode(){return this.#overviewMode;}
  constructor(chart,{frame,selectedScope,hierarchyLane}={}){
+  const overview=chart._overview?.();if(overview){this.initOverview(chart,overview,{frame,selectedScope,hierarchyLane});return;}this.#overviewMode=false;
   const layer=chart._retained();if(!layer||chart.tileSession||(!(layer.source instanceof RetainedGeoSource)||(!frame&&layer.source.constructor!==RetainedGeoSource)))throw new TypeError('native host requires one canonical RetainedGeoSource; indexed hosts are pending');
   if(layer.source.bridge.execute!==geoScaleExecute)throw new TypeError('native geographic host requires the native source bridge');
   const {query,sequence,style}=chart._inputs(layer);
   this.source=layer.source;this.query={...query,camera:{...query.camera},time:{...query.time},sourceDigest:query.sourceDigest.slice()};this.sequence=sequence;this.style=style.slice();this.budget=chart.budget;
   if(selectedScope!==undefined&&(!(selectedScope instanceof GeoSelectedScope)||selectedScope.bridge!==layer.source.bridge))throw TypeError('issued selected scope required');
-  this.selectedScope=selectedScope;this.liveCandidate=new GeoLiveCandidate(this);
+  this.selectedScope=selectedScope;this.liveCandidate=new GeoLiveCandidate(this,{data:frame=>this.#ownerData(frame),packet:frame=>this.#wirePacket(frame),close:owner=>this.#closeOwner(owner)});
   this.chain=Promise.resolve();this.queued=0;this.closing=false;
   if(frame){
    const expected=encodeGeoScaleRequest({command:5,sequence,budget:this.source.budget,query:this.query});let actual=frame._queryPacket?.slice(0);
@@ -42,15 +47,30 @@ export class GeoHostAdapter {
    this.anchorReady.catch(()=>{});
   }else{if(hierarchyLane!==undefined)throw TypeError("hierarchy live route requires an explicit selected frame");this.anchorReady=Promise.resolve();}
  }
+ initOverview(chart,layer,{frame,selectedScope,hierarchyLane}){
+  if(selectedScope!==undefined||hierarchyLane!==undefined)throw TypeError('Overview does not accept selected/hierarchy authority');
+  if(!isNativeOverviewIndex(layer.source))throw TypeError('Overview host requires its genuine native issuing producer');
+  const {query,sequence,packet}=chart._overviewInputs(layer);this.source=layer.source;this.query={...query,camera:{...query.camera},time:query.time.kind===0?{kind:0}:query.time.kind===1?{kind:1,instant:query.time.instant}:{kind:2,start:query.time.start,end:query.time.end},sourceDigest:query.sourceDigest.slice()};this.sequence=sequence;this.style=new Uint8Array(0);this.budget=chart.budget;this.#overviewMode=true;overviewHosts.set(this,{source:layer.source,packet:packet.slice(0),authority:overviewIndexAuthority(layer.source)});overviewData.set(this,new WeakMap());this.#overviewProcessorBytes=overviewHosts.get(this).authority.budget.processorBytes;
+  this.liveCandidate=new GeoLiveCandidate(this,{overview:true,processorBytes:this.#overviewProcessorBytes,overviewBudget:overviewHosts.get(this).authority.budget,data:frame=>this.#ownerData(frame),packet:frame=>this.#wirePacket(frame),close:owner=>this.#closeOwner(owner)});this.chain=Promise.resolve();this.queued=0;this.closing=false;
+  if(frame){const a=overviewFrameAuthority(frame);if(!a||a.index!==layer.source||a.sequence!==sequence||frame.handle!==a.handle||!same(a.query,packet))throw TypeError('Overview frame differs from its issued composition');const initialQuery=this.query;this.anchorReady=this.retainOverview(frame).then(async owned=>{this.anchor=owned;try{this.validateOverviewFrame(owned,initialQuery,sequence);this.liveCandidate.cleanupFrame=undefined;}catch(error){await this.releaseAnchor();throw error;}});this.anchorReady.catch(()=>{});}else this.anchorReady=Promise.resolve();
+ }
+ overviewSource(){const source=overviewHosts.get(this)?.source;if(!source||source!==this.source)throw TypeError('Overview issuing source changed');return source;}
+ validateOverviewFrame(frame,query,sequence){const original=overviewHosts.get(this),a=overviewFrameAuthority(frame);const expected=encodeGeoOverviewRequest({command:28,handle:original.authority.handle,sequence,budget:original.authority.budget,query});if(!a||a.index!==original.source||a.handle!==frame.handle||a.sequence!==sequence||!same(a.query,expected)||!same(new Uint8Array(this.#ownerData(frame).packet,0,2304),a.header))throw TypeError('Overview private frame authority changed');}
+ #ownerData(frame){if(!this.#overviewMode)return frame.data;const cache=overviewData.get(this);if(!cache.has(frame))cache.set(frame,getOverviewFrameData(frame));return cache.get(frame);}
+ #wirePacket(frame){const packet=this.#ownerData(frame).packet;return this.#overviewMode?packet.slice(0):packet;}
+ #closeOwner(owner){if(!this.#overviewMode)return owner.dispose();overviewData.get(this)?.delete(owner);return closeOverviewOwner(owner);}
+ async retainOverview(frame){const owned=await retainOverviewFrame(frame,copy=>{this.liveCandidate.cleanupOperation=copy;});this.liveCandidate.cleanupFrame=owned;this.liveCandidate.cleanupOperation=undefined;return owned;}
+ async prepareOverview(query,sequence){const source=this.overviewSource();try{const frame=await updateOverviewIndex(source,query,{sequence,onIssued:operation=>{this.liveCandidate.cleanupOperation=operation;}});this.liveCandidate.cleanupFrame=frame;this.validateOverviewFrame(frame,query,sequence);return frame;}finally{await this.liveCandidate.settleOperation();}}
  get mounted(){return this.mount!==undefined;}
  async open(mount){
   await this.anchorReady;
   if(this.closing||this.mounted)throw new Error('geographic host admits one mount; release before reopening');
   this.liveCandidate.beginMount();
   const {query,sequence,style,source}=this;
-  const queryPacket=encodeGeoScaleRequest({command:5,handle:source.handle,sequence,budget:source.budget,query});
+  const queryPacket=this.#overviewMode?undefined:encodeGeoScaleRequest({command:5,handle:source.handle,sequence,budget:source.budget,query});
   let frame;
   if(this.anchor)frame=this.anchor;
+  else if(this.#overviewMode){const current=this.overviewSource().current,a=current&&overviewFrameAuthority(current);const expected=overviewHosts.get(this).packet;if(a&&a.index===source&&a.sequence===sequence&&same(a.query,expected))frame=await this.retainOverview(current);else frame=await this.prepareOverview(query,sequence);}
   else if(source.current&&source.sequence===sequence){
    if(!same(source.current._queryPacket,queryPacket)||!same(source.current._style,style))throw new Error('published query differs from geographic composition');
    frame=await prepareGeoSceneData(source.bridge,{handle:source.handle,sequence,budget:source.budget,style});
@@ -60,11 +80,12 @@ export class GeoHostAdapter {
   }else frame=await source.update(query,{sequence,style});
   try{
    if(this.closing)throw new Error('geographic host authoring disposed');
-   const painter=sceneBrowserPainter(frame.data.scene,this.budget);
-   if(2*frame.data.packet.byteLength+painter.byteLength>source.budget.processorBytes)throw new RangeError('geographic host exceeds transfer budget');
-   this.frame=frame;this.painter=buffer(painter);this.mount=mount;
-   return [tag(1,frame.handle,sequence),frame.data.packet,this.painter];
-  }catch(error){if(frame!==this.anchor)await frame.dispose();throw error;}
+   if(this.#overviewMode)this.validateOverviewFrame(frame,query,sequence);
+   const data=this.#ownerData(frame),painter=sceneBrowserPainter(data.scene,this.budget);
+   if((this.#overviewMode?4:2)*data.packet.byteLength+painter.byteLength>(this.#overviewMode?this.#overviewProcessorBytes:source.budget.processorBytes))throw new RangeError('geographic host exceeds transfer budget');
+   if(this.#overviewMode){this.anchor=frame;this.liveCandidate.cleanupFrame=undefined;}this.frame=frame;this.painter=buffer(painter);this.mount=mount;
+   return [tag(1,frame.handle,sequence),this.#wirePacket(frame),this.painter];
+  }catch(error){if(this.#overviewMode){this.anchor=frame;this.liveCandidate.cleanupFrame=undefined;}else if(frame!==this.anchor)await frame.dispose();throw error;}
  }
  handle(message,buffers){
   if(message?.type!=='geo_host'||typeof message.request!=='string'||message.request.length<1||message.request.length>96)return Promise.resolve(undefined);
@@ -94,11 +115,12 @@ export class GeoHostAdapter {
     }
     if(op===1){if(request.byteLength!==32||owner||sequence)throw new TypeError('invalid open');out=await this.open(mount);}
     else{
-     if(mount!==this.mount||!this.frame||sequence!==this.frame.data.identity.sequence)throw new Error('unowned or stale geographic frame');
+     if(mount!==this.mount||!this.frame||sequence!==this.#ownerData(this.frame).identity.sequence)throw new Error('unowned or stale geographic frame');
      if(op===5){if(request.byteLength!==32||!this.aux||this.aux.handle!==owner)throw new Error('unowned auxiliary release');const aux=this.aux;this.aux=undefined;await aux.dispose();}
      else{
       if(owner!==this.frame.handle)throw new Error('unowned geographic frame');
       if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame||this.liveCandidate.cleanupOperation||this.liveCandidate.cleanupState||this.liveCandidate.cleanupAllocation)throw new Error('release auxiliary/candidate packets first');await this.release();}
+      else if(this.#overviewMode)throw Error('Overview has domain counts, not source feature picking/membership');
       else if(op===2){if(request.byteLength!==64||this.aux)throw new Error('invalid or concurrent pick');this.aux=await this.frame.pick({style:this.frame._style,x:v.getFloat64(32,true),y:v.getFloat64(40,true),tolerance:v.getFloat64(48,true),mode:v.getUint32(56,true),maxHits:v.getUint32(60,true)});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
       else{if(![48,256].includes(request.byteLength)||this.aux||v.getUint32(36,true)!==Number(request.byteLength===256))throw new Error('invalid or concurrent membership');if(v.getBigUint64(40,true)>new DataView(this.frame._queryPacket).getBigUint64(224,true))throw new Error("membership exceeds committed frame work bound");this.aux=await this.frame.membership(v.getUint32(32,true),{maxProjectedVertices:v.getBigUint64(40,true),cursor:request.byteLength===256?new Uint8Array(request.slice(48)):undefined});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
      }
@@ -109,10 +131,10 @@ export class GeoHostAdapter {
   });
   this.chain=operation.then(()=>{},()=>{}).finally(()=>{this.queued--;});return operation;
  }
- async release(){this.painter=undefined;const frame=this.frame;this.frame=undefined;this.mount=undefined;if(frame&&frame!==this.anchor)await frame.dispose();if(this.closing)await this.releaseAnchor();}
+ async release(){this.painter=undefined;const frame=this.frame;this.frame=undefined;this.mount=undefined;if(frame&&frame!==this.anchor)await this.#closeOwner(frame);if(this.closing)await this.releaseAnchor();}
  releaseLane(){const lane=this.hierarchyLane;if(lane&&laneClaims.get(lane)?.deref()===this)laneClaims.delete(lane);this.hierarchyLane=this.hierarchyAuthority=undefined;}
- async releaseAnchor(){const anchor=this.anchor;if(anchor)await anchor.dispose();this.anchor=undefined;this.releaseLane();}
- close(){this.closing=true;this.source=this.query=this.style=undefined;this.cleanup=this.anchorReady.then(()=>this.mounted?undefined:this.releaseAnchor());this.cleanup.catch(()=>{});}
+ async releaseAnchor(){if(this.#overviewMode){await this.liveCandidate.settleOperation();if(this.liveCandidate.cleanupFrame){await this.#closeOwner(this.liveCandidate.cleanupFrame);this.liveCandidate.cleanupFrame=undefined;}}const anchor=this.anchor;if(anchor)await this.#closeOwner(anchor);this.anchor=undefined;this.releaseLane();if(this.closing){overviewHosts.delete(this);overviewData.delete(this);}}
+ close(){this.closing=true;this.source=this.query=this.style=undefined;this.cleanup=(this.#overviewMode?Promise.all([this.anchorReady.catch(()=>{}),this.chain]):this.anchorReady).then(()=>this.mounted?undefined:this.releaseAnchor());this.cleanup.catch(()=>{});}
  /** Only a real disposed renderer realm may substitute for a browser release ACK. */
  async realmDestroyed(){this.close();await this.chain;await this.liveCandidate.realmDestroyed();const aux=this.aux;this.aux=undefined;if(aux)await aux.dispose();await this.release();await this.cleanup;}
 }
