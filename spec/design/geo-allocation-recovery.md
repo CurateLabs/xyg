@@ -88,6 +88,13 @@ wire stamp, digest or numeric handle can mint a private owner.
 
 ## Separate gates
 
+The existing Direct browser Rust/WASM foundation job runs
+`scripts/geo_allocation_recovery_conformance.mjs` alongside the retained-frame
+and typed-overview native/WASM proofs. Its existing foundation artifact includes
+`geo-allocation-recovery-ci.json`, containing six complete normalized packet
+comparisons and the bounded allocation/confirmation controls. This is engine
+opt-in evidence; it does not establish public-owner adoption.
+
 35 mutates an existing Source and consumes State;36 replaces the known State
 handle with IndexedQuery, while fallback preserves State. Recovering either
 requires exact consumed State plus operation/birth authority. Nonce33's retired

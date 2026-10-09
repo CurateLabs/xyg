@@ -439,6 +439,7 @@ jobs:
           node scripts/geo_frame_leases_conformance.mjs
           node scripts/geo_overview_membership_engine_conformance.mjs
           XYG_GEO_DOMAIN_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-domain-members-ci.json" node scripts/geo_overview_domain_members_conformance.mjs
+          XYG_GEO_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-allocation-recovery-ci.json" node scripts/geo_allocation_recovery_conformance.mjs
           node scripts/gen_geo_overview_wire.mjs --check
           node scripts/geo_overview_conformance.mjs
           node scripts/gen_geo_selected_wire.mjs --check
@@ -520,6 +521,7 @@ jobs:
             packages/xy-client/dist/wasm-worker.js
             geo-overview-painter-ci.json
             geo-overview-domain-members-ci.json
+            geo-allocation-recovery-ci.json
             geo-overview-controller-ci.json
 
   browser_conformance:
