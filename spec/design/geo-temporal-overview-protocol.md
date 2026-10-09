@@ -165,3 +165,20 @@ drop recovery, and old typed Data after source/index/query disposal. The frozen
 native/wasm32/client parity, trusted painter/snapshot integration and measured
 first-density/refinement latency remain separate gates; this foundation does not
 claim #50 completion or billion-row interactive performance.
+
+
+Actual packaged native383/WASM33 conformance is now reproduced with
+`node scripts/geo_overview_conformance.mjs` after building the native core and
+packaged browser artifact. Eight All/Instant/Window cases include nullable signed
+extrema and half-open boundaries; counts, complete projected Scene bytes and
+full source/layer IDs match across CRSs and pitch. Already-issued typed Data
+survives source/index/query disposal, exhausts exactly two read copies and
+rejects ordinary source picking. This is byte-level protocol evidence; overview
+browser painting, domain-cell source membership and massive latency remain open.
+
+The Worker transport reserves its cleanup lane for command31 and extended
+128-byte-ticket command8 ACKs (384-byte framing). Mixed XYMX cancel4/dispose5
+also use that bounded lane; ordinary XYGT supply4 retains normal admission.
+Actual strict-CSP retained-browser tests fill normal input capacity and verify
+these cleanup requests reach Rust without early ownership loss, while ordinary
+supply rejects before transfer. Malformed authority remains rejected by Rust.

@@ -183,6 +183,18 @@ try{
     const denied=await Promise.allSettled(deniedHosts.map(el=>XygGeographicChart.fromSource({el,worker,manifest:direct.manifest,budget,query:query(direct.info),style,readChunk:async()=>direct.chunk.slice()})));
     assert(denied.every(r=>r.status==='rejected'&&r.reason.code==='XYG_WASM_BUDGET_EXCEEDED'),'concurrent constructors copied without shared host credit');
     assert(deniedHosts.every(el=>!el.children.length),'rejected constructor created DOM');
+    // Settlement must use the bounded cleanup reserve even when normal
+    // retained input admission is full. Malformed authority reaches Rust and
+    // rejects there; it must not be stranded by host queue admission.
+    for(const [command,length,mixed] of [[8,384,false],[31,384,false],[4,256,true]]){
+      const raw=new ArrayBuffer(length),header=new DataView(raw);new Uint8Array(raw).set(mixed?[88,89,77,88]:[88,89,71,81]);header.setUint32(4,1,true);header.setUint32(8,command,true);
+      const error=await reject(mixed?worker.geoTileExecute(raw):worker.geoScaleExecute(raw),'invalid cleanup authority accepted');
+      assert(error.code!=='XYG_WASM_BUDGET_EXCEEDED'&&raw.byteLength===0,'cleanup reserve did not admit exact extended ACK/cancel framing');
+    }
+    const ordinary=new ArrayBuffer(128);new Uint8Array(ordinary).set([88,89,71,84]);new DataView(ordinary).setUint32(8,4,true);
+    const ordinaryError=await reject(worker.geoTileExecute(ordinary),'ordinary tile supply escaped admission');
+    assert(ordinaryError.code==='XYG_WASM_BUDGET_EXCEEDED'&&ordinary.byteLength===128,'tile supply was incorrectly granted cleanup reserve');
+
   }finally{releaseCredit();}
   assert(worker.ownedGeoBytes===beforeInputCredit,'constructor reservation leak');
   const malformedHost=host(),malformedQuery={...query(direct.info),sourceDigest:null};
