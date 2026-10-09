@@ -70,7 +70,7 @@ class GeoLiveCandidate:
                 raise RuntimeError("Candidate cleanup requires exact preparation retry")
             self._settle_operation()
             if self.cleanup_frame is not None:
-                self.cleanup_frame.close()
+                self.adapter._close_owner(self.cleanup_frame)
                 self.cleanup_frame = None
             self._release_slot()
             raise RuntimeError("Geographic preparation cancelled")
@@ -78,7 +78,7 @@ class GeoLiveCandidate:
             frame = self.frame
             if frame is None:
                 raise RuntimeError("Missing prepared candidate")
-            return frame.data.packet.obj, self.painter
+            return self.adapter._owner_data(frame).packet.obj, self.painter
         a = self.adapter
         from ._geo_hierarchy import is_hierarchy_frame
 
@@ -113,7 +113,7 @@ class GeoLiveCandidate:
             or any(camera_request[120:128])
         ):
             raise ValueError("invalid camera delta framing")
-        accepted_camera = a._frame.data.identity["camera"]
+        accepted_camera = a._owner_data(a._frame).identity["camera"]
         baseline = viewport.encode_request(accepted_camera, operation)
         if camera_request[:8] != baseline[:8] or camera_request[12:80] != baseline[12:80]:
             raise ValueError("camera delta does not name accepted camera")
@@ -150,11 +150,15 @@ class GeoLiveCandidate:
             self.cleanup_frame = None
             from . import _native
 
-            painter = _native.scene_browser_painter(bytes(frame.data.scene), a._budget)
-            if 2 * len(frame.data.packet) + len(painter) > source.budget["processor_bytes"]:
+            data = a._owner_data(frame)
+            painter = _native.scene_browser_painter(bytes(data.scene), a._budget)
+            processor_bytes = (a._overview_budget() if a._overview_mode else source.budget)[
+                "processor_bytes"
+            ]
+            if (3 if a._overview_mode else 2) * len(data.packet) + len(painter) > processor_bytes:
                 raise ValueError("candidate exceeds geographic transfer ceiling")
-            packet = frame.data.packet.obj
-            if not isinstance(packet, bytes) or len(packet) != len(frame.data.packet):
+            packet = data.packet.obj
+            if not isinstance(packet, bytes) or len(packet) != len(data.packet):
                 raise ValueError("candidate requires exact immutable packet backing")
             self.frame, self.query, self.painter = frame, query, painter
             self.nonce, self.sequence, self.committed = nonce, sequence, False
@@ -166,7 +170,7 @@ class GeoLiveCandidate:
             if frame is not None:
                 self.cleanup_frame = frame
             if self.cleanup_frame is not None:
-                self.cleanup_frame.close()
+                self.adapter._close_owner(self.cleanup_frame)
                 self.cleanup_frame = None
             self._release_slot()
             raise
@@ -184,7 +188,7 @@ class GeoLiveCandidate:
 
     def _settle_operation(self):
         if self.cleanup_operation is not None:
-            self.cleanup_operation.close()
+            self.adapter._close_owner(self.cleanup_operation)
             self.cleanup_operation = None
         if self.cleanup_allocation is not None:
             self.cleanup_allocation.close()
@@ -223,6 +227,13 @@ class GeoLiveCandidate:
             self._settle_operation()
 
     def _build(self, source, query, sequence, style):
+        if self.adapter._overview_mode:
+            frame = self.adapter._prepare_overview(query, sequence)
+            if self.adapter._closing:
+                self.adapter._close_owner(frame)
+                self.cleanup_frame = None
+                raise RuntimeError("Geographic preparation cancelled")
+            return frame
         if self.adapter._hierarchy_lane is not None:
             return self._build_hierarchy(self.adapter._hierarchy_lane, query, sequence, style)
         from ._geo_spatial import GeoSpatialFullScanRequired, GeoSpatialIndex, drive_index
@@ -348,7 +359,7 @@ class GeoLiveCandidate:
         ):
             raise ValueError("unowned geographic retirement ACK")
         retired = self.retired
-        retired.close()
+        a._close_owner(retired)
         a._anchor = self.frame
         self.receipts[8] = receipt
         self.retired = self.frame = self.query = self.painter = None
@@ -366,7 +377,7 @@ class GeoLiveCandidate:
             or (nonce, owner, sequence) != (self.nonce, self.frame.handle, self.sequence)
         ):
             raise ValueError("unowned geographic candidate abort ACK")
-        self.frame.close()
+        self.adapter._close_owner(self.frame)
         self.receipts[9] = receipt
         self.frame = self.query = self.painter = None
         self._release_slot()

@@ -5,6 +5,10 @@ const HEADER=256, COOKIE=128, MAX=HEADER+4096*32, CAP=Symbol('issued members');
 interface Context {handle:bigint;sequence:bigint;transport:XygGeoScaleBridge;reader:(ticket:Record<string,unknown>,signal?:AbortSignal)=>Promise<ArrayBuffer|Uint8Array>;budget:XygGeoQueryBudget;header:Uint8Array}
 const contexts=new WeakMap<object,Context>();
 export function registerOverviewMembers(frame:object,transport:XygGeoScaleBridge,reader:Context['reader'],budget:XygGeoQueryBudget,header:Uint8Array,handle:bigint,sequence:bigint){contexts.set(frame,Object.freeze({handle,sequence,transport,reader,budget:Object.freeze({...budget}),header:header.slice()}));}
+const capturedContexts=new WeakMap<object,Context>();
+/** Opaque private callback/snapshot capture before asynchronous retained allocation. */
+export function captureOverviewMembers(from:object):object{const context=contexts.get(from);if(!context)throw new TypeError('Issued overview membership context required');const token=Object.freeze({});capturedContexts.set(token,context);return token;}
+export function installOverviewMembers(token:object,to:object,handle:bigint,sequence:bigint){const context=capturedContexts.get(token);if(!context||handle===0n||sequence===0n)throw new TypeError('Issued retained membership capture required');contexts.set(to,Object.freeze({...context,handle,sequence}));}
 export function copyOverviewMembers(from:object,to:object,handle:bigint,sequence:bigint){const c=contexts.get(from);if(!c)throw new TypeError('Issued overview membership context required');contexts.set(to,Object.freeze({...c,handle,sequence}));}
 export function dropOverviewMembers(frame:object){contexts.delete(frame);}
 function zeros(b:Uint8Array,a:number,z:number){if(b.subarray(a,z).some(n=>n!==0))throw new TypeError('Nonzero domain-member reserved bytes');}

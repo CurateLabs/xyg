@@ -1,0 +1,2 @@
+{"host":"native","creation":"rejected","close":"fulfilled","closed":true,"authority":false,"data":false}
+{"host":"wasm","creation":"rejected","close":"fulfilled","closed":true,"authority":false,"data":false}

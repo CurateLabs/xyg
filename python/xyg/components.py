@@ -7372,16 +7372,12 @@ class GeoChart:
     tile_image_id: int | None = None
 
     def host(self, *, frame=None, selected_scope=None, hierarchy_lane=None):
-        """Create a single-mount native host adapter for a retained point chart.
+        """Create a single-mount native host adapter for retained points or overview.
 
         Pass an owned compiled frame for an indexed source. The adapter retains
         its own anchor, reused across mounts; the caller
         keeps ownership of the original. Browser ACK governs mount lifetime.
         """
-        if self._overview_layer() is not None:
-            raise NotImplementedError(
-                "overview host/widget needs its distinct domain-count mode; compile/export static HTML instead"
-            )
         from ._geo_host import GeoHostAdapter
 
         return GeoHostAdapter(

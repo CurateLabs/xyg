@@ -22,8 +22,8 @@ camera, source digest/generation, layer, all five revisions, signed time,
 `max_projected_vertices=0`. Rust returns temporal-exact counts on its fixed
 16×16 **data-domain** grid. Counts measure vertices, including MultiPoint
 vertices, and are explicitly nonfinal spatial output. Cell ordinals are not
-source feature IDs. There is no source pick, membership, Rows, selection or
-screen refinement authority attached to these frames.
+source feature IDs. Exact original-row domain membership uses the separate issued member adapter.
+There is no source pick, Rows, selection or screen refinement authority.
 
 The only chart-building surface remains `geo_chart(geo_layer('density',
 source=index, layer_id=..., query=query, sequence=...), camera=query['camera'])`.
@@ -59,35 +59,32 @@ handle/sequence. Rejected cleanup remains retryable and drops views before the
 first attempt. A private pending ticket survives failed ACK; exact retry, or
 validated cancellation followed by terminal code 9 without a loan, confirms
 release. Deferred query admission settles before disposal, so no handle-zero
-cleanup is sent. An index blocks new queries once closing starts. The five-view typed proof keeps five accepted views live and publishes queries
-sequentially; it does not prove five simultaneous replacement publications.
-Five indices, five old Data owners and one retained seed use eleven handles;
-five simultaneously admitted Queries exhaust the sixteen-handle cap, so legacy
-command 29 cannot allocate a seventeenth publication owner. Concurrent pressure
-fails closed with the same unresolved-allocation guard and does not imply
-recovery. A future same-known-Query publication/durable receipt seam is a
-separate protocol gate, without increasing quotas. The existing
+cleanup is sent. An index blocks new queries once closing starts. The recovery adoption proof admits five Queries beside five indices, five old
+Data owners and one retained seed (sixteen handles). Opt-in command29 replaces
+its known Query handle with Data. Each accepted replacement retires its
+corresponding old Data before later publication, preserving the combined eight
+Data cap. This proves handle admission and atomic ownership, not five-view
+browser latency. The existing
 128 MiB processor, 384 MiB derived, 16 total handles, eight sessions and eight
 Data owners remain unchanged; storage retained by callbacks is external storage
 and is not claimed as part of the engine ledger.
 
-## Unresolved allocation confirmations
+## Durable allocation ownership
 
-Commands 27, 28, 29 and 26 allocate new numeric owners without a durable nonce
-receipt. If dispatch succeeds but the receipt is lost or malformed, the issued
-guard remains reachable in `GeoOverviewUncertainAllocation.owner`. No numeric
-owner is guessed, no allocation is retried, and no cleanup absence is claimed.
-An unknown query blocks new index allocations. An unknown duplicate blocks
-another retain on its original frame; the original immutable packet remains
-valid. Unknown build/publication owners require a future durable protocol
-recovery seam. Actual fault tests may observe the authentic receipt privately
-for test teardown; product cleanup has no such authority.
+Automatically issued overview owners now use the private bounded allocation
+attempt described in [overview recovery](geo-overview-recovery-hosts.md).
+Commands26–29 carry private per-issuer nonces; exact replay recovers a lost
+allocation receipt and command47 confirms its birth before another nonce may
+be issued. Public recovery methods settle the complete drive/read continuation,
+not only the allocation ACK. Cancellation and disposal retain the guard until
+callbacks, exact ticket ACKs, Data disposal and birth release settle. Raw nonce0
+packets retain their legacy behavior.
 
-This bounded slice does **not** complete #50 or #39. Durable unknown-allocation
-recovery, public overview native widget/Reflex/VS Code binary host routing,
-interactive native overview camera/time updates, feature-level refinement and
-massive end-to-end interaction performance remain acceptance gates. `host` and
-`widget` reject overview composition rather than invoke the point adapter.
+This bounded slice does **not** complete #50 or #39. Unknown snapshot6,
+mutations35/36, domain45 host adoption, public native overview live routing,
+feature refinement and massive end-to-end interaction remain separate gates.
+`host` and `widget` still reject overview composition until their independent
+native routing slice integrates.
 
 ## Reproduction
 
