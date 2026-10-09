@@ -7378,6 +7378,10 @@ class GeoChart:
         its own anchor, reused across mounts; the caller
         keeps ownership of the original. Browser ACK governs mount lifetime.
         """
+        if self._overview_layer() is not None:
+            raise NotImplementedError(
+                "overview host/widget needs its distinct domain-count mode; compile/export static HTML instead"
+            )
         from ._geo_host import GeoHostAdapter
 
         return GeoHostAdapter(
@@ -7396,10 +7400,106 @@ class GeoChart:
     def show(self, **kwargs):
         from IPython.display import display
 
+        if self._overview_layer() is not None:
+            if kwargs:
+                raise ValueError("static overview display accepts no live widget options")
+            display(self._overview_html(), raw=True)
+            return
         display(self.widget(**kwargs))
 
+    def _overview_html(self):
+        frame = self.compile()
+        artifact = None
+        try:
+            artifact = self.to_image("html", frame=frame)
+            return {"text/html": artifact.bytes.decode("utf-8")}
+        finally:
+            if artifact is not None:
+                artifact.close()
+            frame.close()
+
     def _repr_mimebundle_(self, **kwargs):
+        if self._overview_layer() is not None:
+            return self._overview_html()
         return self.widget()._repr_mimebundle_(**kwargs)
+
+    def _overview_layer(self):
+        import sys
+
+        module = sys.modules.get(f"{__package__}._geo_overview_source")
+        source_type = getattr(module, "GeoOverviewIndex", ())
+        layers = [layer for layer in self.layers if isinstance(layer.source, source_type)]
+        if not layers:
+            return None
+        if len(self.layers) != 1 or self.legend is not None or self.tile_session is not None:
+            raise ValueError("overview geography requires one density layer, no legend or tiles")
+        layer = layers[0]
+        if (
+            module is None
+            or layer.kind != "density"
+            or module.overview_index_authority(layer.source) is None
+        ):
+            raise ValueError("overview source requires an issued density layer")
+        return layer
+
+    def _overview_inputs(self, layer):
+        from . import _geo_overview as wire
+        from . import _geoscale as g
+        from . import _geoviewport as viewport
+
+        props = layer.properties
+        if set(props) != {"query", "sequence"}:
+            raise ValueError(
+                "overview density requires exactly query and sequence; Rust owns palette"
+            )
+        query = props["query"]
+        if not isinstance(query, Mapping) or set(query) != {
+            "camera",
+            "reduced_kind",
+            "max_cells",
+            "previous_direct",
+            "source_digest",
+            "generation",
+            "layer_id",
+            "camera_revision",
+            "time_revision",
+            "layer_revision",
+            "style_revision",
+            "state_revision",
+            "time",
+            "max_projected_vertices",
+        }:
+            raise ValueError("overview query requires every explicit typed snapshot field")
+        fields = {
+            "crs",
+            "world_wrap",
+            "center_x",
+            "center_y",
+            "zoom",
+            "width",
+            "height",
+            "bearing",
+            "pitch",
+        }
+        if set(self.camera) != fields or set(query["camera"]) != fields:
+            raise ValueError("overview camera requires exact explicit fields")
+        if viewport.encode_request(
+            {key: self.camera[key] for key in fields}
+        ) != viewport.encode_request(query["camera"]):
+            raise ValueError("GeoChart camera must exactly match its overview query")
+        if g._uint(layer.layer_id) != g._uint(query["layer_id"]):
+            raise ValueError("overview layer identity must match its query")
+        if (
+            isinstance(self.budget, bool)
+            or not isinstance(self.budget, int)
+            or not (layer.source.budget["processor_bytes"] <= self.budget <= 384 * 1024 * 1024)
+        ):
+            raise ValueError("chart budget must cover the overview's explicit processor allowance")
+        sequence = g._uint(props["sequence"])
+        packet = wire.request(
+            28, layer.source.handle, sequence, budget=layer.source.budget, query=query
+        )
+        return dict(query), sequence, packet
 
     def _retained_layer(self):
         # Source construction loads its data adapter; ordinary composition does not.
@@ -7497,6 +7597,12 @@ class GeoChart:
 
     def compile(self, *, event: Mapping[str, Any] | None = None) -> Any:
         """Return a static catalog dict, or an explicitly owned retained Scene frame."""
+        overview = self._overview_layer()
+        if overview is not None:
+            if event is not None:
+                raise ValueError("overview compile does not grant source interaction authority")
+            query, sequence, _ = self._overview_inputs(overview)
+            return overview.source.update(query, sequence=sequence)
         retained = self._retained_layer()
         if retained is not None:
             if self.tile_session is not None:
@@ -7576,6 +7682,10 @@ class GeoChart:
 
     async def compile_async(self) -> Any:
         """Compile the same retained composition with an async source reader."""
+        overview = self._overview_layer()
+        if overview is not None:
+            query, sequence, _ = self._overview_inputs(overview)
+            return await overview.source.update_async(query, sequence=sequence)
         retained = self._retained_layer()
         if self.tile_session is not None or retained is None:
             return self.compile()
@@ -7586,6 +7696,24 @@ class GeoChart:
         self, format: str = "png", *, scale: float = 1.0, quality: int = 90, frame: Any = None
     ) -> Any:
         """Ordinary output is bytes; retained output is an owned accountable artifact."""
+        overview = self._overview_layer()
+        if overview is not None:
+            from ._geo_overview_source import overview_frame_authority
+
+            if frame is None:
+                raise ValueError(
+                    "compile the overview chart, then pass frame= or call frame.export"
+                )
+            _, sequence, packet = self._overview_inputs(overview)
+            authority = overview_frame_authority(frame)
+            if (
+                authority is None
+                or authority[0] is not overview.source
+                or authority[3] != sequence
+                or authority[4] != packet
+            ):
+                raise ValueError("frame must match this overview source and exact query snapshot")
+            return frame.export(format, scale=scale, quality=quality, budget=self.budget)
         retained = self._retained_layer()
         if self.tile_session is not None:
             import hashlib

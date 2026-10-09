@@ -1,0 +1,10 @@
+{
+  ".github/workflows/ci.yml": "3fd8ffd0fd9ef595f5f26f0bce37637c946efcc1f7125847777660d18f76b790",
+  "packages/xy-node/package.json": "e51b256749c594c87976059e0ad9e84a662ca021b69572b43ab99ada8c62ff59",
+  "spec/design/geographic-capabilities.md": "a44ee9ef3dc4f628d5cb79b22076b58006778d9c4b176ba7b549780e058ceda8",
+  "js/src/47_wasm.ts": "b208c6603c3e67aa5895c4961917e66399d07048fb0c982c197469f99566d348",
+  "js/src/71_geo_overview_owner.ts": "fb2fe59e10877e0c915419216db1eedb829fc571fa1993976e9cccc688ee00ea",
+  "js/src/71_geo_overview_controller.ts": "3dd0b7637e0e3a1a920fe40d51cad102af593f84a655460be8603850bef865e2",
+  "scripts/geo_overview_controller_smoke.mjs": "54b19910ef85ea9b2d95c0eac3a1cdc6cf0b0857b649fe132cb908ae4128b7cb",
+  "scripts/gen_geo_overview_hosts.mjs": "09ae35a5f7699658a508557654a6db4268ad186503c2cc2a615a0221dc5a1981"
+}

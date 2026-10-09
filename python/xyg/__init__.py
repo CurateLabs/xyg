@@ -47,6 +47,7 @@ _EXPORTS = {
     "GeoChart": ".components",
     "GeoLayer": ".components",
     "RetainedGeoSource": "._geo_retained",
+    "GeoOverviewIndex": "._geo_overview_source",
     "GeoTileSource": "._geo_tiles",
     "GeoTileSession": "._geo_tiles",
     "geo_chart": ".components",
@@ -179,6 +180,7 @@ __all__ = [
     "FacetChart",
     "GeoChart",
     "GeoLayer",
+    "GeoOverviewIndex",
     "GeoTileSession",
     "GeoTileSource",
     "GraphData",
@@ -344,6 +346,7 @@ def __dir__() -> list[str]:
 
 if TYPE_CHECKING:
     from ._figure import Selection
+    from ._geo_overview_source import GeoOverviewIndex
     from ._geo_retained import RetainedGeoSource
     from ._geo_tiles import GeoTileSession, GeoTileSource
     from ._graph import GraphData, GraphProjectionError, from_graphforge_tables

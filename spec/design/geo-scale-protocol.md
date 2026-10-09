@@ -597,3 +597,9 @@ Reply17 means unsupported selected query on an unscoped index and does not
 consume State;18 is a privately completed hierarchy and19 an exact completed
 query. Ordinary None packets and independent39 publication retain their bytes
 and ownership semantics. No C ABI/WASM signatures or resource caps change.
+
+Exact temporal overview domain-cell members use distinct private Query/MemberData
+entries and commands45/46; see
+[geo-overview-membership-protocol.md](geo-overview-membership-protocol.md).
+Their Data entries share the existing eight Data ceiling and do not grant Scene,
+LOD, Rows, or snapshot capabilities.

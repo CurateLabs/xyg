@@ -634,9 +634,7 @@ def _frame_owner(source, owner):
     return owner
 
 
-_FRAME_AUTHORITIES: weakref.WeakKeyDictionary[Any, tuple[Any, Any, int]] = (
-    weakref.WeakKeyDictionary()
-)
+_FRAME_AUTHORITIES: weakref.WeakKeyDictionary[Any, tuple[Any, ...]] = weakref.WeakKeyDictionary()
 
 
 def retained_frame_authority(frame):
@@ -652,12 +650,30 @@ def retained_frame_authority(frame):
     return source, source._bridge
 
 
+def retained_frame_issued_authority(frame):
+    """Private immutable numeric/publication framing; never public attribute authority."""
+    producer = retained_frame_authority(frame)
+    record = _FRAME_AUTHORITIES.get(frame)
+    if producer is None or record is None:
+        return None
+    return (*producer, *record[3:])
+
+
 def _attach_frame(source, frame, sequence, query_packet, style, _provenance=None):
     try:
         bridge = weakref.ref(source._bridge) if source._bridge is not None else None
     except TypeError:
         bridge = None
-    _FRAME_AUTHORITIES[frame] = (weakref.ref(source), bridge, id(source._bridge))
+    _FRAME_AUTHORITIES[frame] = (
+        weakref.ref(source),
+        bridge,
+        id(source._bridge),
+        frame.handle,
+        sequence,
+        bytes(query_packet),
+        frame.data.selection is not None,
+        bytes(frame.data.packet[:256]),
+    )
     if _provenance is not None:
         _provenance(frame)
 

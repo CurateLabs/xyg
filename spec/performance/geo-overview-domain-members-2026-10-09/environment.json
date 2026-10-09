@@ -1,0 +1,41 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "base": "f6edf9122607c8bb1ff8225c8d7af0347a725281",
+  "abi": {
+    "native": 383,
+    "wasm": 33
+  },
+  "artifacts": {
+    "target/release/libxyg_core.dylib": {
+      "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembershipprotocol/target/release/libxyg_core.dylib",
+      "sha256": "be47dff3ae3b40fc24387b8b8a2d245c492b94c772a325e872696a0571e507da",
+      "bytes": 4343040
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembershipprotocol/packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "66e49864b39d1e8fda9d0144a4a229b13bcbdfbc452b697c20f6ce60c6ab0820",
+      "bytes": 1484593,
+      "gzip6_mtime0_bytes": 610671,
+      "gzip9_mtime0_bytes": 609806
+    }
+  },
+  "source_sha256": {
+    "crates/xyg-engine/src/geo_overview_membership_protocol.rs": "f5fcfc8f5260f6087dda2ac46b2559459abd28ec78baa3c067f88f06d61706f7",
+    "crates/xyg-engine/src/geo_overview_membership_protocol_tests.rs": "5a06a124ea5e716fd5cbeb9e9ad558a648a3da23814080b17c381aa296f902ce",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "7abe0cebb912d4380a8fc91953f45c11231d39deafbaf72e6cd91818918cd9f5",
+    "crates/xyg-engine/src/geo_source_membership_driver.rs": "0ebaf315e208bf58c12487a15db343347569532fbe546668d6ad2c7b36d44418",
+    "crates/xyg-engine/src/geo_temporal_overview_membership.rs": "0d5edce923a6ac2aec1fc132e9eaf94615e61ae9fb036d367cece1bb1aee0d58",
+    "crates/xyg-engine/src/geo_temporal_overview_protocol.rs": "1f4d2201a0fbcfe088b24a9cb2fe7b651f89a7efe47ed88d4ef85ec31bfa6aee",
+    "scripts/geo_overview_domain_members_conformance.mjs": "740f65947a667d402560eff9783a4b52119ffffa0c285c590a6bf13c6dcf7096"
+  },
+  "tests": {
+    "new_protocol": 7,
+    "unchanged_projected_membership": 6,
+    "native_wasm_profiles": 5,
+    "native_wasm_packets": 15,
+    "full_engine": 1459
+  },
+  "package_gate": "unchanged raw1472KiB / gzip6 608KiB PASS"
+}

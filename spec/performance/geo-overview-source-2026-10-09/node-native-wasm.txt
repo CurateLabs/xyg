@@ -1,0 +1,32 @@
+✔ private issued producer survives public method edits and immutable copies survive index disposal (76.655833ms)
+✔ resolved rejected Data disposal retains known handle and explicit retry succeeds (0.941417ms)
+✔ deferred28 admission is settled before index cleanup, with no handle-zero mutation (0.766541ms)
+✔ lost28 blocks reallocation while original Data remains usable (0.810125ms)
+✔ transferred wire requests never detach privately retained overview query authority (3.053833ms)
+✔ rejected ACK retains exact private loan until retry; old paint and next query recover (0.866833ms)
+✔ lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats (1.250459ms)
+✔ lost27 retains builder guard; no guessed disposal and seed/other index remain valid (0.454416ms)
+✔ lost29 retains publication guard and blocks new query; old immutable Data survives (0.611125ms)
+✔ foreign bridge and mutable public seed handle reject before allocation (0.501708ms)
+✔ five issued views keep independent snapshots within existing Data/handle caps (1.489875ms)
+✔ private issued producer survives public method edits and immutable copies survive index disposal (18.869292ms)
+✔ resolved rejected Data disposal retains known handle and explicit retry succeeds (4.196417ms)
+✔ deferred28 admission is settled before index cleanup, with no handle-zero mutation (3.077917ms)
+✔ lost28 blocks reallocation while original Data remains usable (3.626416ms)
+✔ transferred wire requests never detach privately retained overview query authority (3.0325ms)
+✔ rejected ACK retains exact private loan until retry; old paint and next query recover (3.638916ms)
+✔ lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats (5.96525ms)
+✔ lost27 retains builder guard; no guessed disposal and seed/other index remain valid (4.58025ms)
+✔ lost29 retains publication guard and blocks new query; old immutable Data survives (3.572542ms)
+✔ foreign bridge and mutable public seed handle reject before allocation (3.733833ms)
+✔ five issued views keep independent snapshots within existing Data/handle caps (4.352375ms)
+✔ public native density composition exports immutable nonfinal receipt in six formats (42.743417ms)
+✔ public WASM bridge retagging cannot claim native export provenance (4.279416ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 250.686792

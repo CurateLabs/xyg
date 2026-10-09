@@ -169,7 +169,7 @@ impl<M: SourceMatcher> SourceMembershipDriver<M> {
     pub fn has_outstanding_reads(&self) -> bool {
         self.pending.is_some() || !self.retired.is_empty()
     }
-    fn live_bytes(&self) -> usize {
+    pub(crate) fn live_bytes(&self) -> usize {
         self.retained_bytes
             + self.metadata_lease.bytes()
             + self.page_lease.as_ref().map_or(0, |l| l.bytes())

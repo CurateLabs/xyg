@@ -215,7 +215,17 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
         passes: number;
     } | null;
 }>;
-/** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
+export declare function geoSceneDataAuthority(owner: object): Readonly<{
+    bridge: XygGeoScaleBridge;
+    execute: XygGeoScaleBridge["execute"];
+    read: XygGeoScaleBridge["read"];
+    handle: bigint;
+    sequence: bigint;
+    sourceHandle: bigint;
+    selected: boolean;
+    request: ArrayBuffer;
+    header: Uint8Array<ArrayBuffer>;
+}> | undefined;
 export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     handle: bigint;
     sequence: bigint;
