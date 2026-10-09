@@ -441,6 +441,7 @@ jobs:
           node scripts/geo_selected_conformance.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/geo_hierarchy_conformance.mjs
+          node scripts/geo_selected_hierarchy_conformance.mjs
           node --test packages/xy-node/test/geo-hierarchy.test.mjs
 
       - name: Install Chromium

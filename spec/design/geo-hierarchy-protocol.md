@@ -148,3 +148,7 @@ uses the original owner as lane0 plus four forks, not an extra sixth root owner.
 Five simultaneous row auxiliaries are not implicitly admitted; pressure fails
 closed, and callers must explicitly park/dispose engine owners while immutable
 frames/pages remain valid. No cap or ABI signature is increased.
+
+The existing paired native/WASM CI step also runs selected hierarchy conformance
+for commands42–44. It reuses freshly built core/artifact and the existing Release
+surfaces gate; no separate performance/platform job or quota is introduced.
