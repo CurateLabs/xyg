@@ -455,6 +455,12 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node scripts/geo_selected_snapshot_conformance.mjs
+      - name: Temporal overview painter and frozen export conformance
+        timeout-minutes: 10
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          export XYG_OVERVIEW_PAINT_REPORT="$GITHUB_WORKSPACE/geo-overview-painter-ci.json"
+          node scripts/geo_overview_painter_snapshot_conformance.mjs
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
         run: node scripts/wasm_foundation_smoke.mjs
@@ -507,6 +513,7 @@ jobs:
           path: |
             packages/xy-client/dist/xyg-wasm.wasm
             packages/xy-client/dist/wasm-worker.js
+            geo-overview-painter-ci.json
 
   browser_conformance:
     name: Accessibility + cross-browser conformance

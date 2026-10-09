@@ -98,3 +98,10 @@ canonical source coordinates are unchanged. Raw proof, artifact hashes and
 commands live in [the evidence folder](../performance/geo-overview-painter-snapshot-2026-10-09/README.md).
 Public overview composition, final spatial refinement, cell-domain membership,
 selected overview input and the massive interactive gate remain open.
+
+The direct browser Rust/WASM CI lane runs the packaged overview conformance
+script after fresh native/WASM builds and Chromium installation, including
+ordinary and borrowed-layer WebGL pixels, six native export formats, frozen
+v4 parity, and offline CSP replay. Its JSON report is retained with the direct
+browser foundation artifact. The existing merge-group Release surfaces gate
+continues to require this lane.
