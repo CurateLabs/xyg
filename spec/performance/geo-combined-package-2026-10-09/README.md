@@ -54,3 +54,8 @@ For the offline replay, install Playwright Chromium or set `CHROMIUM` to an
 explicit installed browser. The packaged artifact remains generated and is not
 committed. Selection on hierarchy, product hierarchy controllers, massive
 five-view paint/interaction and1B-class admission remain separate open gates.
+
+CI follow-up: the Python 3.11 floor exposed a Pillow-only test dependency,
+and the offline selected snapshot probe failed its combined footer assertion.
+The latter now includes exact pixel/DOM values in its failure output; no
+assertion or product behavior is relaxed. These CI gates remain pending repair.
