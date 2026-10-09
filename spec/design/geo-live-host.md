@@ -88,7 +88,32 @@ through an alert. Absolute operations each edit a component; different operation
 kinds serialize, and only pending requests of the same kind may supersede each
 other. A time-only operation (0) followed by center (8) preserves both edits in
 order. A superseded Promise rejects with AbortError. This does not implement
-pointer/wheel gesture camera updates or time playback UI.
+time playback UI.
+
+Trusted primary-pointer dragging and vertical wheel input also use these Rust
+operations. Each accepted drag sample sends the opposite screen delta through
+pan (3), scaled from the actual canvas CSS rectangle to the authored camera CSS
+viewport. Pointer capture persists across painter replacement and clears on
+up, cancel, lost capture or close. The container temporarily uses
+`touch-action:none`; disposal restores its prior value unless a caller changed
+it while mounted. Synthetic events cannot issue geographic updates.
+
+Wheel input sends set-zoom (4), computing the target from the latest accepted
+camera after prior programmatic/gesture updates settle. Pixel, line and page
+delta modes normalize to pixels (one line=16 CSS pixels, one page=canvas CSS
+height);480 pixels correspond to one zoom unit. Zoom is centered on the
+accepted camera center; there is no cursor-anchor inference. Rust validates
+camera limits. A rejected zoom leaves old paint accepted and reports an alert;
+the next valid input can recover.
+
+At most16 ordered gesture samples are admitted, including the active sample.
+Accepted pan samples are not summed or reordered: Rust wrap/polar policy applies
+to each. Further samples at capacity are rejected with one reused alert;
+they are not silently admitted as a different path. Gesture dispatch waits for
+the existing programmatic update chain, retaining exact signed time/state
+revisions. Closing releases pointer capture immediately, prevents new dispatch,
+then settles the existing candidate/CAS/ACK ownership before destroying paint.
+This is bounded input plumbing, not same-frame or massive interaction evidence.
 
 `GeoWidget.update(...)` returns a concurrent Future. Its success means visual CAS
 and exact retirement ACK have completed, not merely native preparation. It works
@@ -126,7 +151,13 @@ latest desired intent. Actual JupyterLab, production Reflex and VS Code journeys
 are recorded in [the report directory](../performance/geo-live-host-journeys-2026-10-09/README.md).
 These small fixtures establish ownership and usability, not 100M latency, massive
 five-view memory, all geometries, automatic linked selection, full-source
-accessibility, mixed time filtering, pointer gestures or playback completion.
+accessibility, mixed time filtering or playback completion.
+
+The bounded [pointer/wheel report](../performance/geo-live-pointer-2026-10-09/README.md)
+adds actual Chromium primary dragging, CSS viewport scaling, trusted wheel input,
+programmatic/gesture ordering, Rust zoom-limit/read-failure recovery,16-sample
+overflow and close during a held reply. It does not establish touch/pen behavior,
+all browser delta modes, cursor-centered zoom or massive p95 latency.
 
 The Python transport converts ordinary source-reader exceptions, including I/O
 and lookup failures, into correlated error replies after callback/loan cleanup.
@@ -141,3 +172,8 @@ artifacts rather than additional platform jobs. Massive benchmarks stay separate
 Authentic hierarchy frames may mount statically. The private hierarchy marker
 rejects live preparation before acquiring replacement credit or scanning the
 canonical source; dedicated hierarchy routing remains a separate gate.
+
+Native drag input uses the existing shared `captureGesturePointer` acquisition,
+loss, trusted buttonless-move and guarded release policy. Its capture owner is
+the stable host element, so replacing the child painter does not end a drag.
+Actual capture loss ends the drag without issuing another camera request.

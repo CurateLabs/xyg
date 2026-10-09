@@ -1,8 +1,20 @@
 /** Typed nonfinal data-domain counts. All temporal/geometry policy is Rust-owned. */
-import { encodeGeoScaleRequest } from './63_geo_source';
+import { encodeGeoScaleRequest, type prepareGeoSceneData } from './63_geo_source';
 import type { XygGeoQueryBudget, XygGeoScaleBridge, XygGeoScaleQuery } from './63_geo_source';
 
 const MAX_PACKET=32*1024*1024, HEADER=256, TICKET=128;
+export class GeoOverviewUnsupportedSelected extends Error {
+  constructor(){super('Temporal overview does not retain selected authority');this.name='GeoOverviewUnsupportedSelected';}
+}
+/** Internal frame-aware ingress: the raw codec has only a numeric handle and
+ * cannot detect selected authority before dispatch. Rust rechecks the owner. */
+export function encodeGeoOverviewBuild(frame:Awaited<ReturnType<typeof prepareGeoSceneData>>,input:{budget:XygGeoQueryBudget;maxVertices:bigint}):ArrayBuffer{
+  if(frame.data.selection!==null)throw new GeoOverviewUnsupportedSelected();
+  const sequence=frame.data.identity.sequence;
+  if(typeof input.maxVertices!=='bigint'||input.maxVertices<=0n||input.maxVertices>0xffffffffffffffffn)throw new TypeError('nonzero u64 overview vertex ceiling required');
+  const payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,input.maxVertices,true);
+  return encodeGeoOverviewRequest({command:27,handle:frame.handle,sequence,budget:input.budget,payload});
+}
 export interface GeoOverviewRequest {command:number;handle:bigint;sequence:bigint;budget?:XygGeoQueryBudget;query?:XygGeoScaleQuery;payload?:Uint8Array}
 export function encodeGeoOverviewRequest(input:GeoOverviewRequest):ArrayBuffer {
   if(![6,7,8,9,10,23,27,28,29,30,31].includes(input.command))throw new TypeError('unknown overview command');
@@ -17,7 +29,7 @@ function raw(value:ArrayBuffer|Uint8Array):Uint8Array {if(value instanceof Array
 export function decodeGeoOverviewReply(packet:ArrayBuffer) {
   if(!(packet instanceof ArrayBuffer)||packet.byteLength!==HEADER)throw new TypeError('fixed overview reply required');
   const b=new Uint8Array(packet),v=new DataView(packet),code=v.getUint32(8,true);
-  if(v.getUint32(0,true)!==0x5a475958||v.getUint32(4,true)!==1||![0,1,2,7,9,13,14,15,16].includes(code))throw new TypeError('invalid overview reply');
+  if(v.getUint32(0,true)!==0x5a475958||v.getUint32(4,true)!==1||![0,1,2,7,9,13,14,15,16,17].includes(code))throw new TypeError('invalid overview reply');
   zeros(b,12,16);zeros(b,192,256);
   const ticket=([1,7].includes(code)||code===2&&b.subarray(64,192).some(x=>x!==0))?b.slice(64,192):null;
   if(ticket){const t=new DataView(ticket.buffer),kind=t.getUint32(32,true),length=t.getBigUint64(48,true);zeros(ticket,36,40);zeros(ticket,104,128);if(![1,2,3].includes(kind)||length>BigInt(kind===1?16*1024*1024:65536)||length<64n||code===7&&kind!==3||code===1&&kind===3)throw new TypeError('invalid overview ticket');if(kind!==1)zeros(ticket,64,104);}

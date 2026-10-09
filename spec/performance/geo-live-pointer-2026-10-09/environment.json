@@ -1,0 +1,20 @@
+{
+  "baseHead": "3cb13bb9a878e01fa55e2243647680851e8519f9",
+  "verifiedMain": "eef2377e77ccc1c53d5edb6732cf63f324550e4d",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "python": "3.14.6",
+  "nativeAbi": 383,
+  "nativeSha256": "0d3e46ce29f06574330d921d512405161db0fcd82aaacaca019b05a30341f565",
+  "nativeSourceReference": "90149f0c333fc5bb3ae12d045aaf6cf192a30814; crates/Cargo/.cargo byte-identical; editable setup rebuilt the library in this owned tree",
+  "clientSha256": "3b48e75d52a404fd9a0a328b40dc8e2f878516a59074810ea4e048a06b884a7a",
+  "clientBytes": 680177,
+  "clientGzipLevel6Bytes": 192895,
+  "sampleCap": 16,
+  "review": "Independent source and actual Chromium review green; constructor registration failure repaired and verified",
+  "limitations": [
+    "small native-host fixture, not massive p95 or all-host pointer journey evidence",
+    "actual Chromium pixel-mode wheel and mouse; touch/pen and other browser delta modes unverified",
+    "wheel zoom at accepted camera center, no cursor-anchor inference"
+  ]
+}

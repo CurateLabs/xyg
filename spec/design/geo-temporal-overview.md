@@ -218,6 +218,13 @@ and source-feature membership are not substituted.
 
 ## Typed lifecycle adapter
 
+Selected-frame input is explicitly unsupported by this source-only index.
+Command27 rejects privately retained selection/Scope authority, including empty
+selection intent, before construction. Internal host frame-aware encoders reject
+the same presence before dispatch; numeric raw ingress still receives the Rust
+guard. Ordinary unselected count/Scene bytes retain their established contract.
+Proof and reproduction: [selected authority guard](../performance/geo-overview-selected-guard-2026-10-09/README.md).
+
 `js/src/67_geo_overview.ts` owns binary framing, private ticket copies and asynchronous transport settlement. Rust remains the sole implementation of counts, source authentication, cell geometry and temporal policy. `scripts/gen_geo_overview_wire.mjs` mechanically strips types and emits declarations into the Node host; its check rejects drift. This is an internal adapter, with no second chart-building API.
 
 The typed packet is explicitly temporal-exact, data-domain and nonfinal. It retains full u64 identities and signed i64 time, offers 256 bounded u64 counts, and never fabricates source IDs. Count and Scene views are borrowed from the immutable Data owner; dispose drops them before Rust disposal. Pending disposal coalesces; a transient bridge rejection permits an explicit retry while views stay invalid. Parsed bytes are not a substitute for the private Rust owner in trusted paint, membership or export.

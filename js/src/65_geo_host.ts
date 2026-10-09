@@ -1,5 +1,6 @@
 /** Native immutable geographic host transport. Rust owns Scene and picking.
  * One mounted copy; raw binary replies never confer WASM FrameData authority. */
+import { captureGesturePointer } from "./50_chartview";
 import { encodeGeoViewportRequest } from "./49_wasm_geoviewport";
 import { hydrateWasmPainter } from "./48_wasm_scene";
 import type { XygWasmScenePaint } from "./47_wasm";
@@ -51,16 +52,18 @@ export class XygGeoHostView {
   private disposal?: Promise<void>;
   private gestureChain:Promise<void>=Promise.resolve();
   private gestureQueued=0;
-  private queueGesture(args:readonly number[]){
+  private queueGesture(args:readonly number[],operation:3|4=3){
     if(this.gestureQueued>=16){this.gestureError(new Error('Geographic gesture queue is full'));return;}
     this.gestureQueued++;
     this.gestureChain=this.gestureChain.then(async()=>{
+      await this.chain;
       if(this.closing)return;
       const i=this.identity;this.gestureSequence=(this.gestureSequence>i.sequence?this.gestureSequence:i.sequence)+1n;this.gestureCameraRevision=(this.gestureCameraRevision>i.cameraRevision?this.gestureCameraRevision:i.cameraRevision)+1n;
-      await this.update({operation:3,args,sequence:this.gestureSequence,cameraRevision:this.gestureCameraRevision,timeRevision:i.timeRevision,stateRevision:i.stateRevision,time:i.time as XygGeoHostUpdate['time']});
+      await this.update({operation,args:operation===4?[i.camera.zoom+args[0]]:args,sequence:this.gestureSequence,cameraRevision:this.gestureCameraRevision,timeRevision:i.timeRevision,stateRevision:i.stateRevision,time:i.time as XygGeoHostUpdate['time']});
     }).catch(error=>{if(!this.closing)this.gestureError(error);}).finally(()=>{this.gestureQueued--;});
   }
-  private gestureError(error:unknown){const alert=document.createElement('p');alert.setAttribute('role','alert');alert.textContent=error instanceof Error?error.message:String(error);this.el.append(alert);}
+  private gestureAlert?:HTMLElement;
+  private gestureError(error:unknown){if(!this.gestureAlert?.isConnected){this.gestureAlert=document.createElement('p');this.gestureAlert.setAttribute('role','alert');this.el.append(this.gestureAlert);}this.gestureAlert.textContent=error instanceof Error?error.message:String(error);}
   private liveNonce=0n;
   private updating=false;
   private activeOperation?:number;
@@ -73,26 +76,54 @@ export class XygGeoHostView {
   private sequence = 0n;
   private view?: XygWasmSceneView;
   private data?: ReturnType<typeof parseGeoSceneData>;
-  private gestureEvents = ["pointerdown","wheel","dblclick","click","keydown"];
+  private gestureEvents = ["pointerdown","pointermove","pointerup","pointercancel","wheel","dblclick","click","keydown"];
+  private pointer?:{id:number;x:number;y:number;capture:ReturnType<typeof captureGesturePointer>};
+  private previousTouchAction:string;
   private gestureSequence=0n;
   private gestureCameraRevision=0n;
   private freezeGesture = (event:Event) => {
     if(event instanceof KeyboardEvent && event.key === "Tab") return;
     event.preventDefault();event.stopImmediatePropagation();
+    if(!event.isTrusted||!this.data||this.closing)return;
+    if(event instanceof PointerEvent){
+      if(event.type==='pointerdown'&&event.isPrimary&&event.button===0){
+        this.releasePointer();
+        const capture=captureGesturePointer({
+          _listen:(owner:HTMLElement,type:string,listener:EventListener)=>owner.addEventListener(type,listener),
+          _unlisten:(listener:EventListener)=>this.el.removeEventListener('lostpointercapture',listener),
+        },this.el,event,()=>this.releasePointer());
+        this.pointer={id:event.pointerId,x:event.clientX,y:event.clientY,capture};
+      }else if(event.pointerId===this.pointer?.id&&this.pointer.capture.guard(event)){
+        if(event.type==='pointermove'&&(event.buttons&1)){
+          const rect=this.view!.canvas.getBoundingClientRect(),camera=this.data.identity.camera;
+          const dx=this.pointer.x-event.clientX,dy=this.pointer.y-event.clientY;
+          this.pointer.x=event.clientX;this.pointer.y=event.clientY;
+          if(rect.width>0&&rect.height>0&&(dx||dy))this.queueGesture([dx*camera.width/rect.width,dy*camera.height/rect.height]);
+        }else if(event.type!=='pointermove'||!(event.buttons&1)){
+          this.releasePointer();
+        }
+      }
+    }else if(event instanceof WheelEvent&&event.deltaY){
+      const rect=this.view!.canvas.getBoundingClientRect();
+      const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?rect.height:1);
+      this.queueGesture([-pixels/480],4);
+    }
     if(event instanceof KeyboardEvent&&event.isTrusted&&this.data&&!this.closing){
       const moves:Record<string,readonly number[]>={ArrowLeft:[-40,0],ArrowRight:[40,0],ArrowUp:[0,-40],ArrowDown:[0,40]};
       const args=moves[event.key];if(args)this.queueGesture(args);
 
     }
   };
-  private dropGestureGuard(){for(const type of this.gestureEvents)this.el.removeEventListener(type,this.freezeGesture,true);}
+  private releasePointer(){const pointer=this.pointer;this.pointer=undefined;pointer?.capture.release();}
+  private dropGestureGuard(){this.releasePointer();this.gestureAlert=undefined;if(this.el.style.touchAction==='none')this.el.style.touchAction=this.previousTouchAction;for(const type of this.gestureEvents)this.el.removeEventListener(type,this.freezeGesture,true);}
 
 
   constructor(private el: HTMLElement, private comm: XygGeoHostComm) {
-    // An immutable native frame cannot reinterpret ordinary ChartView pan
-    // or zoom as a new geographic camera. Hosts author a new Rust frame.
+    // Native frames route trusted input through Rust camera authoring; the
+    // ordinary ChartView must never reinterpret their immutable geometry.
+    this.previousTouchAction=el.style.touchAction;el.style.touchAction='none';
     for(const type of this.gestureEvents)el.addEventListener(type,this.freezeGesture,{capture:true,passive:false});
-    this.unsubscribe = comm.onMessage((message, buffers) => {
+    try{this.unsubscribe = comm.onMessage((message, buffers) => {
       if(message?.type === 'geo_host_update'){
         const request=message.request;if(typeof request!=='string'||request.length<1||request.length>96)return;
         try{
@@ -110,7 +141,7 @@ export class XygGeoHostView {
       const p = this.pending.get(message.request); if (!p) return;
       this.pending.delete(message.request);
       if (typeof message.error === "string") p.reject(Object.assign(new Error(message.error),{prepareAbsent:message.prepareAbsent===true})); else p.resolve(buffers || []);
-    });
+    });}catch(error){this.dropGestureGuard();throw error;}
     this.ready = this.enqueue(async () => {
       let buffers: any[] | undefined, data: ReturnType<typeof parseGeoSceneData> | undefined;
       let candidate: XygWasmSceneView | undefined;
@@ -247,7 +278,7 @@ export class XygGeoHostView {
     });
   }
   dispose():Promise<void> {
-    if(this.disposal)return this.disposal;this.closing=true;this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;
+    if(this.disposal)return this.disposal;this.closing=true;this.releasePointer();this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;
     return this.disposal=this.chain.then(async()=>{
       await this.gestureChain;
       await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();

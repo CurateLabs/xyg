@@ -165,7 +165,7 @@ jobs:
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
-          node --test packages/xy-node/test/geo-hierarchy.test.mjs
+          XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs
           cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance
           node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs
 
@@ -241,6 +241,7 @@ jobs:
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
           node tests/browser/geo_live_host_test.mjs
+          node tests/browser/geo_live_pointer_test.mjs
 
       - name: Static PNG export smoke (stdlib + Chromium)
         run: XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py
@@ -442,7 +443,7 @@ jobs:
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/geo_hierarchy_conformance.mjs
           node scripts/geo_selected_hierarchy_conformance.mjs
-          node --test packages/xy-node/test/geo-hierarchy.test.mjs
+          XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs
 
       - name: Install Chromium
         timeout-minutes: 10

@@ -1,0 +1,30 @@
+{
+  "base_commit": "3cb13bb9a878e01fa55e2243647680851e8519f9",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "native_path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/target/release/libxyg_core.dylib",
+  "native_sha256": "00676474e0f7c4e8858b394ae9e9a965c930c1c556bc58f816de9dd23376c6ad",
+  "wasm_path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewguard/packages/xy-client/dist/xyg-wasm.wasm",
+  "wasm_sha256": "65fb8bc629b283ab4e021d778f0db1b514ad34e24a73ad723918ffc5cf74cb22",
+  "wasm_raw_bytes": 1458205,
+  "wasm_gzip6_bytes": 599360,
+  "policy": "existing O3/postlink/profile, 1472KiB raw/608KiB gzip unchanged",
+  "source_sha256": {
+    "crates/xyg-engine/src/geo_temporal_overview_protocol.rs": "fb27325789dc94b53be6dbef0be76b0f117b781af0b22c6e985c0fa990ba7f46",
+    "crates/xyg-engine/src/geo_temporal_overview_protocol_tests.rs": "28f5d27045b84763a93be43ae0cfb6d892814f731a17515c85d6e160097d0853",
+    "js/src/67_geo_overview.ts": "e03b7d2fa7ff6908b9ce388ed7992ef81617341c43ba13c03f63b1b37958fb35",
+    "python/xyg/_geo_overview.py": "78e2edbb58c6627ab077e02dba2cd0834c06208c0e7c12d471a508c9d0dad3a7",
+    "packages/xy-node/src/geo-overview.js": "6665cf6460864a315a0b996a46d154dcaa10cc7879397b7c3c0b7127fc296a13",
+    "packages/xy-node/src/geo-overview.d.ts": "444867557bb5f0aa3cd2b30c7cd6529e10918ace6eb6627e286103d664111411",
+    "packages/xy-node/test/geo-overview-selected.test.mjs": "0cdbaa7cdb99cd440a62badf1f5f5a925bc4cae23b255186582d1e01d2dfa528",
+    "tests/test_geo_overview_selected.py": "7779790bc28fe7c420f19dcb8096a18ac9664c14e738807c188a9995288810de",
+    ".github/workflows/ci.yml": "fe6bded33d0ef2aeb729b894460a3c6150e611baadd187be2bd6ca5b0a01d581",
+    "packages/xy-node/package.json": "b9a2f5c5cd3cf88ed2b60ef3d0d597ca6d75c9c95c85f8cf96856b1b36148b99",
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    ".cargo/config.toml": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "js/package-wasm.mjs": "49a3568515091bd9de5c76685f381075df4215c80af2abe4153c3ec23305143a"
+  }
+}

@@ -17,5 +17,5 @@ try{
  const path='packages/xy-node/src/geoscale.d.ts',old=fs.readFileSync(path,'utf8'),start=old.indexOf('export interface XygGeoCamera'),end=old.indexOf('export declare const GEO_SCALE_HEADER'),suffix=old.indexOf('export declare function geoScaleExecute');
  if(start<0||end<start||suffix<end)throw new Error('missing Node declaration boundaries');
  write(path,fs.readFileSync(join(directory,'63_geo_source.d.ts'),'utf8').replace("import type { XygGeoCamera } from './49_wasm_geoviewport';",old.slice(start,end).trimEnd())+old.slice(suffix));
- write('packages/xy-node/src/geo-selected.d.ts',fs.readFileSync(join(directory,'68_geo_selected.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'"));
+ write('packages/xy-node/src/geo-selected.d.ts',fs.readFileSync(join(directory,'68_geo_selected.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll('"./63_geo_source"','"./geoscale.js"'));
 }finally{fs.rmSync(directory,{recursive:true,force:true});}

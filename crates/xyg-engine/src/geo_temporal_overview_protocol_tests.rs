@@ -259,6 +259,99 @@ fn finish_query(
     }
 }
 #[test]
+fn overview_protocol_rejects_full_and_empty_selected_authority_without_admission() {
+    let _lock = test_processor_lock();
+    let baseline = crate::geo_source_session::GeoProcessorLease::live_bytes();
+    for ids in [vec![u64::MAX, u64::MAX], Vec::new()] {
+        let chunks = [chunk(u64::MAX, -5, 0.)];
+        let (ordinary, manifest) = source_frame(&chunks);
+        let (builder, bytes) = finish_manifest(&chunks);
+        let source = u64_at(
+            &execute(&with_budget(request(4, 0, 0, &bytes))).unwrap(),
+            16,
+        );
+        assert_eq!(drive(source, 0, &chunks).0, 3);
+        execute(&begin(source, 1, &manifest, None, 1000000)).unwrap();
+        assert_eq!(drive(source, 1, &chunks).0, 4);
+        let mut binding = [0; 16];
+        p64(&mut binding, 0, 777);
+        p64(&mut binding, 8, u64::MAX);
+        let scope = u64_at(
+            &execute(&with_budget(request(32, ordinary, 1, &binding))).unwrap(),
+            16,
+        );
+        let issue = || {
+            let mut payload = vec![0; 24];
+            p64(&mut payload, 0, 2);
+            payload[8..12].copy_from_slice(&[0, 255, 0, 255]);
+            p64(&mut payload, 16, ids.len() as u64);
+            for id in &ids {
+                payload.extend(id.to_le_bytes());
+            }
+            u64_at(
+                &execute(&with_budget(request(33, scope, 0, &payload))).unwrap(),
+                16,
+            )
+        };
+        let selected_begin = |state: u64, sequence| {
+            let mut b = begin(source, sequence, &manifest, None, 1000000);
+            p32(&mut b, 8, 35);
+            p64(&mut b, 192, 2);
+            p64(&mut b, 232, 8);
+            b.extend(state.to_le_bytes());
+            b
+        };
+        execute(&selected_begin(issue(), 2)).unwrap();
+        assert_eq!(drive(source, 2, &chunks).0, 4);
+        let selected = u64_at(&execute(&scene_request(source, 2)).unwrap(), 16);
+        let old = read_data(&request(23, selected, 0, &[]), 128 << 20).unwrap();
+        assert_eq!(u32_at(&old, 4), 2);
+        let issued = issue();
+        let live = crate::geo_source_session::GeoProcessorLease::live_bytes();
+        let reject = with_budget(request(27, selected, 2, &1000000u64.to_le_bytes()));
+        let answer = execute(&reject).unwrap();
+        assert_eq!(u32_at(&answer, 8), 17);
+        assert_eq!(u64_at(&answer, 16), selected);
+        assert_eq!(u64_at(&answer, 24), 2);
+        assert!(answer[32..].iter().all(|b| *b == 0));
+        assert_eq!(execute(&reject).unwrap(), answer);
+        let mut low_budget = reject.clone();
+        p64(&mut low_budget, 32, 4096);
+        assert_eq!(execute(&low_budget).unwrap(), answer);
+        assert_eq!(
+            crate::geo_source_session::GeoProcessorLease::live_bytes(),
+            live
+        );
+        assert_eq!(
+            read_data(&request(23, selected, 0, &[]), 128 << 20).unwrap(),
+            old
+        );
+        // Rejection neither consumes independently issued intent nor advances source history.
+        execute(&selected_begin(issued, 3)).unwrap();
+        assert_eq!(drive(source, 3, &chunks).0, 4);
+        let ordinary_build = u64_at(
+            &execute(&with_budget(request(
+                27,
+                ordinary,
+                1,
+                &1000000u64.to_le_bytes(),
+            )))
+            .unwrap(),
+            16,
+        );
+        close(ordinary_build, 1);
+        close(selected, 0);
+        close(source, 0);
+        close(scope, 0);
+        close(ordinary, 0);
+        drop(builder);
+    }
+    assert_eq!(
+        crate::geo_source_session::GeoProcessorLease::live_bytes(),
+        baseline
+    );
+}
+#[test]
 fn overview_protocol_exact_counts_scene_and_old_data_survive_source_index_disposal() {
     let _lock = test_processor_lock();
     let before = crate::geo_source_session::GeoProcessorLease::live_bytes();
