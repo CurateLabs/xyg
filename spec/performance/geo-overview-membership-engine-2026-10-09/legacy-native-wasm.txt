@@ -1,0 +1,1 @@
+frame leases: native383/WASM33 direct+reduced exact bytes, full-u64, source/original disposal, picking, exact membership, full-source rows independent copy quotas, exact frozen snapshots, native six-format exports/WASM unsupported export PASS

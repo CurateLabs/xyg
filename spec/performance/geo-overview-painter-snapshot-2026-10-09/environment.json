@@ -1,6 +1,6 @@
 {
   "sourceBase": "ebb259e30766129bcb0963e830f0313f05897d10",
-  "sourceState": "Uncommitted reviewed overview slice; source hashes identify exact tested inputs. geo_viewport is exact independently reviewed54a29314a until normal ancestry merge.",
+  "sourceState": "Reviewed implementation15f91a27f plus actual clipping8be6d99ce and main52a7a719b ancestry; CI wiringffa712509 changes workflow/documentation only. Production, test, browser and artifact source hashes remain exact.",
   "dependency": {
     "viewportCommit": "54a29314a",
     "actualBranchHead": "8be6d99ce204f5b7ea184875acacb74faba9589f"
@@ -25,7 +25,7 @@
     "scripts/geo_overview_painter_snapshot_conformance.mjs": "aeaf0ca959d512f3e1f59b92c324db87dfb8516fef71e6de0602453548130f00",
     "tests/browser/geo_overview_painter_fixture.mjs": "0a5faf290ea5a09a5946ff9a006cac1fdff505f0e3a8b7f157143465359f9c99",
     "tests/browser/geo_overview_painter_page.mjs": "47ddd4cbafed0e5987cb9e0721d39e4d6f3212209d889e479942ff560b7010bb",
-    "spec/design/geo-overview-painter-snapshot.md": "0e233d949ec9c52ee6cb3c648bd5dda19e19c99fde8eb4da4ecd875fb13d3c71"
+    "spec/design/geo-overview-painter-snapshot.md": "dc4f31dc1f36a8dd4cee76b358b68170f0dbda697d781b46c81ef64aca7241c3"
   },
   "native": {
     "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewpaint/target/release/libxyg_core.dylib",
@@ -39,5 +39,6 @@
     "ruff": "check+format838 files PASS",
     "ownership": "455 tracked PASS",
     "selectedV3Compression": "selected-v3-regression.json uses level9; release artifact/parity uses level6."
-  }
+  },
+  "ciWorkflowSha256": "da0e672f9c81dda63a091f1058f0987bcdc458c863c8d18a508b735976894ee4"
 }

@@ -358,6 +358,9 @@ pub struct GeoOverviewResult {
     _credit: GeoProcessorLease,
 }
 impl GeoOverviewResult {
+    pub(crate) fn retained_bytes(&self) -> usize {
+        self._credit.bytes() + self.index._credit.bytes()
+    }
     pub fn snapshot(&self) -> GeoOperationSnapshot {
         self.snapshot
     }

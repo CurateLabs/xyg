@@ -1,0 +1,3 @@
+    Blocking waiting for file lock on build directory
+   Compiling xyg-core v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembership/crates/xyg-core)
+    Finished `release` profile [optimized] target(s) in 52.25s

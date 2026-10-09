@@ -1,0 +1,1 @@
+actual native/WASM legacy membership: 5 temporal profiles, 12 exact paged packets, full-u64 duplicate IDs/MultiPoint/source disposal PASS
