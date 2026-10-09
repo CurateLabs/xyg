@@ -1131,6 +1131,17 @@ Forbidden:
 | `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
 
+
+### M6 internal Python overview transport
+
+The adapter forwards Rust commands and validates typed framing, capacity and
+callback lifetime under `geo-temporal-overview-protocol.md`. Rust retains all
+temporal counts, source authority, cell geometry and palette policy.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `python/xyg/_geo_overview.py` | Python host | `python-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

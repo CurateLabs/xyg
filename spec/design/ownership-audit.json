@@ -2929,6 +2929,14 @@
       "policy": "python-host"
     },
     {
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions.",
+      "path": "python/xyg/_geo_overview.py",
+      "policy": "python-host"
+    },
+    {
       "path": "python/xyg/_geo_retained.py",
       "current_owner": "Python host",
       "policy": "python-host",
