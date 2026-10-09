@@ -3,6 +3,8 @@
 This checkpoint normally merges recovery981 `be43986d`, binary982 `060eebd5`,
 and membership983 `555f1dd6` on public composition980 `b4d9f786`.
 The integrated source hashes and raw controls are recorded here.
+`client-build.json` preserves the complete verbatim build log as base64 with its
+SHA256, including ANSI escapes and trailing whitespace.
 
 All199 tracked compiler inputs are byte-identical to the reviewed recovery981
 donor. The explicit native artifact is66c1a0b0404b0e32ea54a42e5e83b45611e4dd179f3aa45a6b4081fe9198ba12;
