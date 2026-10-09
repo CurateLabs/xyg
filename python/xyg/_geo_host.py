@@ -17,7 +17,7 @@ _HEADER = struct.Struct("<4sIIIQQ")
 class GeoHostAdapter:
     """Private host-neutral facade used by notebook and Reflex transports."""
 
-    def __init__(self, chart, *, frame=None):
+    def __init__(self, chart, *, frame=None, selected_scope=None):
         from ._geo_retained import RetainedGeoSource
 
         layer = chart._retained_layer()
@@ -61,10 +61,29 @@ class GeoHostAdapter:
         self._aux = None
         self._closing = False
         self._anchor = None
+        if selected_scope is not None:
+            from ._geo_selected import GeoSelectedScope
+
+            if (
+                not isinstance(selected_scope, GeoSelectedScope)
+                or selected_scope._bridge is not layer.source._bridge
+            ):
+                raise TypeError("live selected scope requires matching issued transport authority")
+        self._selected_scope = selected_scope
         if frame is not None:
             packet = frame.data.packet
             expected = bytearray(identity)
             actual = bytearray(frame._query_packet)
+            actual_operation = struct.unpack_from("<I", actual, 8)[0]
+            if actual_operation in (35, 36):
+                if (
+                    len(actual) != 264
+                    or struct.unpack_from("<Q", actual, 232)[0] != 8
+                    or frame.data.selection is None
+                ):
+                    raise ValueError("selected frame requires exact issued query framing")
+                actual = actual[:256]
+                actual[232:240] = bytes(8)
             # Only operation and process-local source handle differ for indexed queries.
             actual[8:12] = expected[8:12]
             actual[16:24] = expected[16:24]
@@ -93,6 +112,10 @@ class GeoHostAdapter:
                 raise ValueError("explicit frame does not match this geographic composition")
             self._anchor = frame.retain()
 
+        from ._geo_live_host import GeoLiveCandidate
+
+        self._live_candidate = GeoLiveCandidate(self)
+
     def build_payload_split(self, px=None):
         return {"geo_host": True}, []
 
@@ -109,6 +132,7 @@ class GeoHostAdapter:
 
         if self._closing or self._mount is not None:
             raise RuntimeError("geographic host admits one mount; release it before reopening")
+        self._live_candidate.begin_mount()
         source, query, sequence, style = self._source, self._query, self._sequence, self._style
         if source is None:
             raise RuntimeError("geographic host authoring disposed")
@@ -175,9 +199,83 @@ class GeoHostAdapter:
                 raw = memoryview(incoming[0]).cast("B")
                 if len(raw) < _HEADER.size or len(raw) > 256:
                     raise ValueError("invalid geographic host request length")
+                raw = bytes(raw)
                 magic, version, op, reserved, owner, sequence = _HEADER.unpack_from(raw)
-                if magic != b"XYGH" or version != 1 or reserved or op not in (1, 2, 3, 4, 5):
+                if (
+                    magic != b"XYGH"
+                    or reserved
+                    or (version, op)
+                    not in ((1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (2, 8), (2, 9))
+                ):
                     raise ValueError("invalid geographic host request header")
+                if version == 2:
+                    live = self._live_candidate
+                    closing_replay = (
+                        op == 7
+                        and len(raw) == 64
+                        and not any(raw[56:64])
+                        and live.repeated(7, (owner, sequence, *struct.unpack_from("<3Q", raw, 32)))
+                    )
+                    if (
+                        mount != self._mount
+                        or self._frame is None
+                        or (
+                            self._closing
+                            and (
+                                (op == 6 and not live.replay_prepare(raw))
+                                or (op == 7 and not closing_replay)
+                            )
+                        )
+                    ):
+                        raise ValueError("unowned live geographic mount")
+                    if op == 8:
+                        if len(raw) != 64 or any(raw[56:64]):
+                            raise ValueError("invalid retirement ACK")
+                        live.acknowledge(owner, sequence, *struct.unpack_from("<3Q", raw, 32))
+                        outgoing = []
+                    else:
+                        receipt = (
+                            (owner, sequence, *struct.unpack_from("<3Q", raw, 32))
+                            if len(raw) == 64
+                            else None
+                        )
+                        if (
+                            op == 9
+                            and len(raw) == 64
+                            and not any(raw[56:64])
+                            and live.repeated(9, receipt)
+                        ):
+                            return reply, []
+                        if op != 7 and (owner != self._frame.handle or sequence != self._sequence):
+                            raise ValueError("stale geographic candidate baseline")
+                        if self._aux is not None:
+                            raise ValueError("release auxiliary before geographic replacement")
+                        if op == 6:
+                            packet, painter = live.prepare(raw)
+                            candidate = live.frame
+                            if candidate is None:
+                                raise RuntimeError("Missing prepared candidate")
+                            nonce = struct.unpack_from("<Q", raw, 32)[0]
+                            tag = _HEADER.pack(b"XYGH", 2, op, 0, owner, sequence) + struct.pack(
+                                "<3Q8x", nonce, candidate.handle, live.sequence
+                            )
+                            outgoing = [tag, packet, painter]
+                        else:
+                            if len(raw) != 64 or any(raw[56:64]):
+                                raise ValueError("invalid live geographic acknowledgment")
+                            nonce, candidate, candidate_sequence = struct.unpack_from(
+                                "<3Q", raw, 32
+                            )
+                            if op == 7:
+                                live.commit(owner, sequence, nonce, candidate, candidate_sequence)
+                                outgoing = [
+                                    _HEADER.pack(b"XYGH", 2, op, 0, owner, sequence)
+                                    + bytes(raw[32:64])
+                                ]
+                            else:
+                                live.abort(owner, sequence, nonce, candidate, candidate_sequence)
+                                outgoing = []
+                    return reply, outgoing
                 if op == 1:
                     if len(raw) != 32 or owner or sequence:
                         raise ValueError("invalid open request")
@@ -198,7 +296,12 @@ class GeoHostAdapter:
                         if owner != frame.handle:
                             raise ValueError("unowned geographic frame")
                         if op == 4:
-                            if len(raw) != 32 or self._aux is not None:
+                            if (
+                                len(raw) != 32
+                                or self._aux is not None
+                                or self._live_candidate.frame is not None
+                                or self._live_candidate.cleanup_frame is not None
+                            ):
                                 raise ValueError("drop auxiliary packets before releasing frame")
                             self._painter = None
                             if frame is not self._anchor:
@@ -243,8 +346,19 @@ class GeoHostAdapter:
                                 aux.data["packet"].obj,
                             ]
                 return reply, outgoing
-            except (ValueError, TypeError, RuntimeError, OverflowError) as error:
-                return {**reply, "error": str(error)}, []
+            except Exception as error:
+                return {
+                    **reply,
+                    "error": str(error),
+                    **(
+                        {"prepareAbsent": True}
+                        if locals().get("version") == 2
+                        and locals().get("op") == 6
+                        and self._live_candidate.frame is None
+                        and self._live_candidate.cleanup_frame is None
+                        else {}
+                    ),
+                }, []
 
     def close(self):
         """Retire authoring; a mounted immutable frame stays leased until ACK."""

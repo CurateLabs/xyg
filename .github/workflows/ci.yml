@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs
 
 
       - name: Build JS client
@@ -232,6 +232,13 @@ jobs:
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           python3 scripts/append_stream_smoke.py "$CHROME"
+
+      - name: Live geographic host lifecycle (five small views, Chromium)
+        timeout-minutes: 5
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          node tests/browser/geo_live_host_test.mjs
 
       - name: Static PNG export smoke (stdlib + Chromium)
         run: XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py

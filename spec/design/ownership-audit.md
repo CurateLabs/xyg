@@ -1095,6 +1095,7 @@ Forbidden:
 | `js/src/65_geo_host.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-live-host.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-webview.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-spatial.d.ts` | Node host | `node-host` | `keep-host` | — |
@@ -1105,6 +1106,7 @@ Forbidden:
 | `packages/xy-node/src/geo-tiles.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_live_host.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_host.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_retained.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_spatial.py` | Python host | `python-host` | `keep-host` | — |

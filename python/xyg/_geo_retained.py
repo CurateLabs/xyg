@@ -121,6 +121,7 @@ class RetainedGeoSource:
             raise TypeError("read_chunk must be callable")
         self._reader, self.budget, self._bridge = reader, dict(budget), bridge
         self._closed, self._busy, self._sequence = False, False, 0
+        self._cancel_generation = 0
         self.current = None
         self._active = None
         self._disposal = None
@@ -283,6 +284,7 @@ class RetainedGeoSource:
             g.execute(g.encode_request(dict(command=10, handle=member)))
 
     def cancel(self):
+        self._cancel_generation += 1
         if not self._closed:
             g.execute(
                 g.encode_request(dict(command=9, handle=self.handle, sequence=self._sequence))

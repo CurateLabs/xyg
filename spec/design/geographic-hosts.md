@@ -77,11 +77,12 @@ implements projection, LOD, cell membership or pick policy. Pick and membership
 requests address the exact visible native frame Data handle; disposing the
 source or publishing another frame does not invalidate that immutable frame.
 
-Native presentation is deliberately immutable. Capture listeners suppress
+Static native presentation preserves immutable camera authority. Capture listeners suppress
 ChartView's ordinary pan/zoom gestures, which would otherwise move paint without
 updating the native geographic camera used for picking. Tab navigation remains
-available. This slice does not add native live pan, query replacement or retained
-state-driven republishing while a frame is mounted. The existing WASM
+available. The newer [native live update slice](geo-live-host.md) adds explicit
+Rust camera/time replacement and trusted serial keyboard pan; pointer/wheel
+updates remain suppressed. The existing WASM
 `XygGeographicChart.fromSource` controller retains its own live-update contract.
 
 ## XYGH v1 internal host transport
@@ -203,6 +204,15 @@ comparisons, massive interactive evidence or a competitor performance win.
 adds actual journeys after canonical source, query/index and caller-frame disposal.
 This proves adapter ownership independent of the caller and exclusive acknowledged mounts, not new indexed query policy.
 
-Native live updates, cross-worker orphan recovery, multiple retained layer
+Pointer/wheel live gestures, cross-worker orphan recovery, multiple retained layer
 composition and the full #50 scale gate remain
 separately tracked requirements.
+
+## Native live retained updates
+
+The bounded Point/MultiPoint native camera/time replacement path is now specified
+in [geo-live-host.md](geo-live-host.md). Its private candidate/CAS/retirement
+protocol extends these immutable mounting guarantees; source.current remains
+separate from accepted visual authority. Existing static indexed mount proofs
+remain valid. Pointer/wheel geographic updates, playback UI and massive interactive
+acceptance are not established by this small-fixture slice.
