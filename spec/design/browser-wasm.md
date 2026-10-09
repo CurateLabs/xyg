@@ -1013,3 +1013,10 @@ functionality headroom and local startup evidence, without a performance win
 or massive-scale claim. Both gates remain hard packaging failures.
 [Raw hashes, environment, contracts and reproduction commands](../performance/geo-overview-artifact-2026-10-09/README.md)
 record the decision and its limits. Future growth requires separate evidence.
+
+
+The camera parity harness sends each exact binary request to the bounded native
+oracle through an owned temporary input-file descriptor. This avoids an OS pipe
+`EPIPE` race when an invalid oracle budget rejects before stdin is consumed.
+Exit status, stable error, complete output and all native/WASM parity assertions
+remain unchanged; temporary descriptors/files are closed and removed per call.

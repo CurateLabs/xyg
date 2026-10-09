@@ -1151,6 +1151,17 @@ See `geo-hierarchy-protocol.md` for the command and authority boundary.
 | `packages/xy-node/src/geo-hierarchy.js` | Node host | `node-host` | `keep-host` | — |
 | `python/xyg/_geo_hierarchy.py` | Python host | `python-host` | `keep-host` | — |
 
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/68_geo_selected.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-selected.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-selected.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_selected.py` | Python host | `python-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

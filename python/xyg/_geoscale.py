@@ -74,7 +74,7 @@ def _backing_bytes(view: memoryview) -> int:
 def encode_request(input: dict[str, Any]) -> bytes:
     """Frame one fixed-header request; Rust validates every product decision."""
     command = _uint(input["command"], 32)
-    if command not in (*range(1, 22), 23, 24, 25, 26):
+    if command not in (*range(1, 22), 23, 24, 25, 26, 32, 33, 34, 35, 36):
         raise ValueError("unknown geographic command")
     payload = _bytes(input.get("payload", b""))
     length = HEADER + len(payload)
@@ -82,11 +82,11 @@ def encode_request(input: dict[str, Any]) -> bytes:
     if length > MAX_PACKET or (budget and length > _budget(budget["processor_bytes"])):
         raise ValueError("request exceeds framing budget")
     if (
-        ("query" in input and command not in (5, 18))
+        ("query" in input and command not in (5, 18, 35, 36))
         or ("generation" in input and command != 3)
         or (
             "sequence" in input
-            and command not in (5, 6, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26)
+            and command not in (5, 6, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 32, 35, 36)
         )
     ):
         raise ValueError("field does not belong to command")
@@ -106,7 +106,7 @@ def encode_request(input: dict[str, Any]) -> bytes:
         )
     if command == 3:
         struct.pack_into("<Q", out, 144, _uint(input.get("generation", 0)))
-    if command in (5, 18):
+    if command in (5, 18, 35, 36):
         query = input["query"]
         camera = query["camera"]
         if not isinstance(camera["world_wrap"], bool) or not isinstance(
@@ -180,12 +180,12 @@ def encode_style(style: dict[str, Any]) -> bytes:
     return bytes(out)
 
 
-def _reply(data: bytes | bytearray | memoryview) -> memoryview:
+def _reply(data: bytes | bytearray | memoryview, *, selected=False) -> memoryview:
     b = _bytes(data)
     if (
         not HEADER <= len(b) <= MAX_PACKET
         or bytes(b[:4]) != b"XYGZ"
-        or struct.unpack_from("<I", b, 4)[0] != 1
+        or struct.unpack_from("<I", b, 4)[0] not in ((1, 2) if selected else (1,))
     ):
         raise ValueError("invalid geographic reply")
     return b
@@ -331,11 +331,86 @@ def encode_chunk_request(input: dict[str, Any], budget: int) -> bytes:
     return encode_request(dict(command=20, payload=payload))
 
 
+def parse_selection_footer(packet, at, *, rows):
+    """Borrow complete XYSE authority; never authorize using fingerprints alone."""
+    b = _bytes(packet)
+    version = struct.unpack_from("<I", b, 4)[0]
+    size = struct.unpack_from("<Q", b, 248)[0]
+    if version == 1:
+        if size or at != len(b):
+            raise ValueError("unexpected selection footer")
+        return None
+    if version != 2 or size < 128 or at + size != len(b):
+        raise ValueError("missing selected authority")
+    raw = b[at:]
+    flags = struct.unpack_from("<I", raw, 8)[0]
+    namespace, ids, cells, visible = struct.unpack_from("<4Q", raw, 16)
+    if (
+        bytes(raw[:4]) != b"XYSE"
+        or struct.unpack_from("<I", raw, 4)[0] != 1
+        or flags != (1 if rows else 3)
+        or ids > 10000
+        or cells > 196608
+        or size != 128 + 8 * (ids + cells)
+        or any(raw[12:16])
+        or any(raw[52:56])
+        or any(raw[120:128])
+    ):
+        raise ValueError("invalid selection planes")
+    pairs = (
+        ((56, 88), (64, 96), (72, 120), (80, 136), (88, 104))
+        if rows
+        else ((56, 144), (64, 152), (72, 160), (80, 200), (88, 232))
+    )
+    if any(raw[a : a + 8] != b[z : z + 8] for a, z in pairs) or (
+        rows and raw[96:104] != b[112:120]
+    ):
+        raise ValueError("selection source binding")
+    if not rows and raw[96:104] != b[240:248]:
+        raise ValueError("selection geometry binding")
+    id_plane = np.frombuffer(raw, dtype="<u8", count=ids, offset=128)
+    counts = np.frombuffer(raw, dtype="<u8", count=cells, offset=128 + ids * 8)
+    previous = -1
+    for value in id_plane:
+        if int(value) <= previous:
+            raise ValueError("selection IDs must be canonical")
+        previous = int(value)
+    if (
+        (rows and (cells or visible))
+        or (
+            not rows
+            and (
+                visible > struct.unpack_from("<Q", b, 48)[0]
+                or (
+                    cells
+                    and (
+                        cells
+                        != struct.unpack_from("<I", b, 64)[0] * struct.unpack_from("<I", b, 68)[0]
+                        or sum(int(n) for n in counts) != visible
+                    )
+                )
+                or (struct.unpack_from("<I", b, 8)[0] == 0 and cells)
+            )
+        )
+        or (not ids and (cells or visible))
+    ):
+        raise ValueError("selection count binding")
+    return dict(
+        raw=raw,
+        namespace=namespace,
+        ids=id_plane,
+        counts=counts,
+        fill=raw[48:52],
+        visible_vertices=None if rows else visible,
+    )
+
+
 class SceneData:
     """Borrowed binary views of a Rust Scene plus exact direct/reduced metadata."""
 
     def __init__(self, packet: bytes | bytearray | memoryview) -> None:
-        b = _reply(packet)
+        b = _reply(packet, selected=True)
+        footer_len = struct.unpack_from("<Q", b, 248)[0]
         aggregate, self.dropped_channels = struct.unpack_from("<II", b, 8)
         (
             session_handle,
@@ -353,18 +428,20 @@ class SceneData:
             or time_kind > 2
             or reduced_kind > 1
             or self.dropped_channels & ~7
-            or HEADER + scene_len + metadata_len != len(b)
+            or HEADER + scene_len + metadata_len + footer_len != len(b)
             or scene_len < 160
         ):
             raise ValueError("malformed SceneData framing")
         _zero(b, 76, 80)
-        _zero(b, 248, 256)
+        if struct.unpack_from("<I", b, 4)[0] == 1:
+            _zero(b, 248, 256)
+        self.selection = parse_selection_footer(b, HEADER + scene_len + metadata_len, rows=False)
         self.packet, self.scene = b, b[HEADER : HEADER + scene_len]
         if bytes(self.scene[:4]) != b"XYGS" or struct.unpack_from("<I", self.scene, 4)[0] != 32:
             raise ValueError("invalid Scene32 packet")
         self.aggregate, self.grid_capped = bool(aggregate), bool(capped)
         self._stride = 24 if aggregate else 40
-        self.metadata = b[HEADER + scene_len :]
+        self.metadata = b[HEADER + scene_len : HEADER + scene_len + metadata_len]
         self.length = metadata_len // self._stride
         if metadata_len % self._stride or (aggregate and self.columns * self.rows != self.length):
             raise ValueError("invalid provenance framing")
@@ -377,6 +454,24 @@ class SceneData:
                     raise ValueError("invalid reduced coordinates")
             else:
                 _zero(self.metadata, at + 28, at + 40)
+        if self.selection is not None:
+            ids = self.selection["ids"]
+            counts = self.selection["counts"]
+            if aggregate and len(ids) and len(counts) != self.length:
+                raise ValueError("selected grid extent mismatch")
+            selected = 0
+            for i in range(self.length):
+                value = struct.unpack_from("<Q", self.metadata, i * self._stride)[0]
+                if aggregate:
+                    if len(counts) and int(counts[i]) > value:
+                        raise ValueError("selected count exceeds cell")
+                else:
+                    pos = int(np.searchsorted(ids, np.uint64(value)))
+                    selected += pos < len(ids) and int(ids[pos]) == value
+            if (not aggregate and selected != self.selection["visible_vertices"]) or (
+                aggregate and len(ids) and len(counts) != self.length
+            ):
+                raise ValueError("selected visible count mismatch")
         crs, wrap = struct.unpack_from("<II", b, 80)
         camera_values = struct.unpack_from("<7d", b, 88)
         geometry, source_crs = struct.unpack_from("<II", b, 240)
@@ -673,7 +768,12 @@ class SceneDataLease:
             self._disposal = asyncio.create_task(
                 self._bridge.execute(encode_request(dict(command=10, handle=self.handle)))
             )
-        _, interrupted = await _settle(self._disposal)
+        try:
+            _, interrupted = await _settle(self._disposal)
+        except BaseException:
+            if self._disposal.done():
+                self._disposal = None
+            raise
         if interrupted:
             raise asyncio.CancelledError
 
