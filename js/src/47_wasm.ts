@@ -208,9 +208,12 @@ function sceneMessage(scene: ArrayBuffer | Uint8Array, transfer: boolean) {
 interface GeographicWorkerOrigin {
   worker: Worker;
   post(message: unknown, transfer?: Transferable[]): void;
+  terminate(): void;
   ready: Promise<XygWasmDiagnostics> | null;
   maxArenaBytes: number;
   bridge: XygGeoScaleBridge;
+  snapshotBridge: XygGeoScaleBridge;
+  terminal: boolean;
 }
 // Issuers and dispatch are private. Numeric handles and public lookalike
 // closures cannot identify the WASM registry which owns a retained frame.
@@ -273,18 +276,24 @@ export class XygWasmWorker {
       ? new Worker(blobUrl!, { name: "xyg-wasm-inline" })
       : new Worker(String((options as XygWasmWorkerOptions).workerUrl), { type: "module", name: "xyg-wasm" });
     const actualWorker = this.worker;
+    const terminate = actualWorker.terminate.bind(actualWorker);
     const bridge = Object.freeze({
       execute: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.scale.execute", request),
       read: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.scale.read", request),
     });
     geographicWorkerOrigins.set(this, {
-      worker: actualWorker, post: actualWorker.postMessage.bind(actualWorker),
-      ready: null, maxArenaBytes, bridge,
+      worker: actualWorker, post: actualWorker.postMessage.bind(actualWorker), terminate,
+      ready: null, maxArenaBytes, bridge, terminal: false,
+      snapshotBridge: Object.freeze({
+        execute: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.snapshot.execute", request),
+        read: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.snapshot.read", request),
+      }),
     });
     this.worker.onmessage = (event) => geographicDispatch.onMessage.call(this, event.data);
     this.worker.onerror = (event) => {
       geographicDispatch.failAll.call(this,new XygWasmError("XYG_WASM_WORKER_TRAP", event.message || "worker trapped"));
-      actualWorker.terminate();
+      terminate();
+      geographicWorkerOrigins.get(this)!.terminal = true;
       this.disposed = true;
     };
     this.worker.onmessageerror = () => {
@@ -292,7 +301,8 @@ export class XygWasmWorker {
         "XYG_WASM_MESSAGE_ERROR",
         "worker returned an unreadable message",
       ));
-      actualWorker.terminate();
+      terminate();
+      geographicWorkerOrigins.get(this)!.terminal = true;
       this.disposed = true;
     };
     const requestId = geographicDispatch.allocateRequest.call(this);
@@ -959,7 +969,8 @@ export class XygWasmWorker {
       // Termination below is the bounded fallback when messaging is broken.
     } finally {
       if (timeout !== undefined) clearTimeout(timeout);
-    geographicWorkerOrigins.get(this)!.worker.terminate();
+    geographicWorkerOrigins.get(this)!.terminate();
+    geographicWorkerOrigins.get(this)!.terminal = true;
     if (this.inlineBlobUrl) URL.revokeObjectURL(this.inlineBlobUrl);
       geographicDispatch.failAll.call(this,disposedError);
     }
@@ -1064,6 +1075,17 @@ export function acquireGeoWorkerTransport(worker: XygWasmWorker, bridge: XygGeoS
 export function prepareGeoWorkerFrame(worker: XygWasmWorker, bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint) {
   if (!isGeoWorkerBridge(worker, bridge)) throw new TypeError("Overview requires its issuing Worker");
   return geographicDispatch.prepare.call(worker, handle, sequence);
+}
+/** @internal Snapshot transport is issued by the same exact retained producer. */
+export function getGeoWorkerSnapshotTransport(worker: XygWasmWorker, bridge: XygGeoScaleBridge) {
+  if (!isGeoWorkerBridge(worker, bridge)) throw new TypeError("Snapshot requires its issuing Worker");
+  const origin = geographicOrigin(worker);
+  return Object.freeze({bridge: origin.snapshotBridge, budgetBytes: Math.min(origin.maxArenaBytes, 128 * 1024 * 1024)});
+}
+/** @internal Only actual termination by the captured lifecycle grants local teardown. */
+export function isGeoWorkerTerminated(worker: XygWasmWorker, bridge: XygGeoScaleBridge): boolean {
+  const origin = geographicWorkerOrigins.get(worker);
+  return !!origin && origin.bridge === bridge && origin.terminal;
 }
 /** @internal Charge controller framing before it copies queued queries. */
 export function reserveGeoWorkerInput(worker: XygWasmWorker, bridge: XygGeoScaleBridge, bytes: number): () => void {
