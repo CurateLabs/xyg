@@ -65,6 +65,7 @@ pub mod geo_spatial_build_session;
 pub mod geo_indexed_query_session;
 pub mod geo_source_session;
 pub mod geo_membership_session;
+mod geo_source_membership_driver;
 pub mod geo_rows_session;
 pub mod geo_snapshot;
 pub mod geo_scale_protocol;
@@ -74,6 +75,7 @@ pub mod geo_linked_state;
 pub mod geo_lod;
 pub mod geo_temporal_overview;
 pub mod geo_temporal_overview_build;
+pub mod geo_temporal_overview_membership;
 pub mod geo_temporal_overview_scene;
 #[cfg(test)]
 mod geo_temporal_overview_tests;
