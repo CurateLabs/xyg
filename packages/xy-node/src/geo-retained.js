@@ -501,9 +501,10 @@ RetainedGeoSource.prototype._rows = function (owner, sequence) {
 };
 
 const frameAuthorities=new WeakMap();
-export function retainedFrameAuthority(frame){return frameAuthorities.get(frame);}
+export function retainedFrameAuthority(frame){const a=frameAuthorities.get(frame);return a?Object.freeze({source:a.source,bridge:a.bridge}):undefined;}
+export function retainedFrameIssuedAuthority(frame){const a=frameAuthorities.get(frame);return a?Object.freeze({...a,request:a.request.slice(0)}):undefined;}
 export function attachRetainedFrame(source, frame, sequence, queryPacket, style, provenance) {
-  frameAuthorities.set(frame,Object.freeze({source,bridge:source.bridge}));
+  frameAuthorities.set(frame,Object.freeze({source,bridge:source.bridge,handle:frame.handle,sequence,request:queryPacket.slice(0),selected:frame.data.selection!==null}));
   provenance?.(frame);
   frame.retain = async () => {
     void frame.data;

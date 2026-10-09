@@ -12,7 +12,10 @@ from . import _geoscale as g
 from ._geo_retained import _aprepare, _attach_frame
 
 _AUTHORITY = object()
+_BRIDGE_UNSET = object()
 _STATE_AUTHORITIES: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+_SCOPE_NONCES: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+_SCOPE_ISSUERS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
 def _execute(command, **fields):
@@ -96,8 +99,148 @@ class _Owner:
             raise asyncio.CancelledError
 
 
+class GeoSelectedStateAttempt:
+    """Known request retained through unknown allocation or cleanup outcomes."""
+
+    def __init__(self, scope, request, revision, *, _token=None):
+        if _token is not _AUTHORITY:
+            raise TypeError("issued attempt required")
+        self._scope, self._request, self._revision = scope, bytes(request), revision
+        self._bridge = scope._bridge
+        self._state = self._active = self._disposal = None
+        self._closed = self._uncertain = False
+
+    def _accept(self, raw):
+        b = g._bytes(raw)
+        if len(b) != 256 or b[:8] != b"XYGZ\x01\0\0\0" or any(b[12:16]) or any(b[32:]):
+            raise ValueError("state ownership reply")
+        code, handle, revision = struct.unpack_from("<I4xQQ", b, 8)
+        if code not in (0, 20) or revision != self._revision:
+            raise ValueError("state ownership reply")
+        if code == 20:
+            if handle:
+                raise ValueError("retired state handle")
+            authority = _STATE_AUTHORITIES.get(self._state) if self._state else None
+            if authority and authority["busy"]:
+                raise RuntimeError("selected State operation unsettled")
+            if self._state is not None:
+                self._state._consume()
+            self._closed, self._request = True, b""
+            return None
+        if not handle or (self._state is not None and self._state.handle != handle):
+            raise ValueError("state ownership handle")
+        if self._state is None:
+            self._state = GeoSelectedState(
+                handle, self._scope, _token=_AUTHORITY, _captured_bridge=self._bridge
+            )
+        return self._state
+
+    def _failure(self, error):
+        from ._native import GeoNativeError
+
+        if (
+            not self._uncertain
+            and self._state is None
+            and isinstance(error, GeoNativeError)
+            and error.status in (-9, -10, -13)
+        ):
+            self._closed, self._request = True, b""
+        else:
+            self._uncertain = True
+
+    def _issue(self):
+        if self._state is not None and not self._state._live:
+            self._closed, self._request = True, b""
+            return None
+        try:
+            return self._accept(g.execute(self._request))
+        except BaseException as error:
+            self._failure(error)
+            raise
+
+    def recover(self):
+        if self._bridge is not None:
+            raise RuntimeError("use recover_async for asynchronous attempt")
+        if self._closed or self._disposal is not None:
+            raise RuntimeError("state attempt unavailable")
+        state = self._issue()
+        if state is None:
+            raise RuntimeError("state nonce retired")
+        return state
+
+    async def _recover_async(self):
+        if self._state is not None and not self._state._live:
+            self._closed, self._request = True, b""
+            return None
+        if self._active is None:
+            self._active = asyncio.create_task(self._bridge.execute(self._request))
+        task = self._active
+        try:
+            raw, interrupted = await g._settle(task)
+            state = self._accept(raw)
+            if interrupted:
+                raise asyncio.CancelledError
+            return state
+        except BaseException as error:
+            self._failure(error)
+            raise
+        finally:
+            if task.done() and self._active is task:
+                self._active = None
+
+    async def recover_async(self):
+        if self._bridge is None:
+            return self.recover()
+        if self._closed or self._disposal is not None:
+            raise RuntimeError("state attempt unavailable")
+        state = await self._recover_async()
+        if state is None:
+            raise RuntimeError("state nonce retired")
+        return state
+
+    def close(self):
+        if self._bridge is not None:
+            raise RuntimeError("use aclose for asynchronous attempt")
+        if not self._closed:
+            state = self._issue()
+            if state is not None:
+                state.close()
+            self._closed, self._request = True, b""
+
+    async def aclose(self):
+        if self._bridge is None:
+            return self.close()
+        if self._closed:
+            return
+
+        async def cleanup():
+            state = await self._recover_async()
+            if state is not None:
+                await state.aclose()
+            self._closed, self._request = True, b""
+
+        if self._disposal is None:
+            self._disposal = asyncio.create_task(cleanup())
+        task = self._disposal
+        try:
+            _, interrupted = await g._settle(task)
+        finally:
+            if task.done() and self._disposal is task:
+                self._disposal = None
+        if interrupted:
+            raise asyncio.CancelledError
+
+
 class GeoSelectedScope(_Owner):
     """Create from an immutable painted frame; close remains retryable if held."""
+
+    def __init__(self, handle, bridge=None, *, _token=None):
+        super().__init__(handle, bridge, _token=_token)
+        try:
+            reference = weakref.ref(bridge) if bridge is not None else None
+        except TypeError:
+            reference = False
+        _SCOPE_ISSUERS[self] = (handle, reference)
 
     budget: dict
 
@@ -137,6 +280,34 @@ class GeoSelectedScope(_Owner):
         owner = cls(result["handle"], _token=_AUTHORITY)
         owner.budget = dict(source.budget)
         return owner
+
+    def begin_state(self, *, revision, ids, fill, budget=None, nonce=None):
+        """Capture a private replayable allocation attempt before any transport call."""
+        self._check()
+        handle, reference = _SCOPE_ISSUERS[self]
+        if (
+            handle != self.handle
+            or reference is False
+            or (reference() if reference else None) is not self._bridge
+        ):
+            raise TypeError("Scope producer changed or does not support weak ownership")
+        previous = _SCOPE_NONCES.get(self, 0)
+        nonce = g._uint(previous + 1 if nonce is None else nonce)
+        if not nonce or nonce <= previous:
+            raise ValueError("state nonce must advance")
+        request = bytearray(
+            g.encode_request(
+                dict(
+                    command=33,
+                    handle=self.handle,
+                    budget=budget or self.budget,
+                    payload=_state_payload(revision, ids, fill, budget or self.budget),
+                )
+            )
+        )
+        struct.pack_into("<Q", request, 24, nonce)
+        _SCOPE_NONCES[self] = nonce
+        return GeoSelectedStateAttempt(self, request, g._uint(revision), _token=_AUTHORITY)
 
     def state(self, *, revision, ids, fill, budget=None):
         self._check()
@@ -196,8 +367,9 @@ class GeoSelectedScope(_Owner):
 
 
 class GeoSelectedState(_Owner):
-    def __init__(self, handle, scope, *, _token=None):
-        super().__init__(handle, scope._bridge, _token=_token)
+    def __init__(self, handle, scope, *, _token=None, _captured_bridge=_BRIDGE_UNSET):
+        bridge = scope._bridge if _captured_bridge is _BRIDGE_UNSET else _captured_bridge
+        super().__init__(handle, bridge, _token=_token)
         self.scope = scope
         try:
             bridge = weakref.ref(self._bridge) if self._bridge is not None else None

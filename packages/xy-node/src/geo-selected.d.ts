@@ -7,12 +7,28 @@ export declare function createGeoSelectedScope(bridge: XygGeoScaleBridge, input:
     layerId: bigint;
     budget: XygGeoQueryBudget;
 }): Promise<GeoSelectedScope>;
+/** Retains an immutable allocation request before dispatch; recovery never issues a new nonce. */
+export declare class GeoSelectedStateAttempt {
+    #private;
+    constructor(scope: GeoSelectedScope, bridge: XygGeoScaleBridge, request: ArrayBuffer, revision: bigint, token: typeof AUTHORITY);
+    recover(): Promise<GeoSelectedState>;
+    dispose(): Promise<void>;
+}
 export declare class GeoSelectedScope {
+    #private;
     private owner;
     private bridge;
     constructor(bridge: XygGeoScaleBridge, handle: bigint, token: typeof AUTHORITY);
     get handle(): bigint;
     dispose(): Promise<void>;
+    beginState(input: {
+        revision: bigint;
+        ids: BigUint64Array;
+        fill: Uint8Array;
+        budget: XygGeoQueryBudget;
+    }, { nonce }?: {
+        nonce?: bigint;
+    }): GeoSelectedStateAttempt;
     state(input: {
         revision: bigint;
         ids: BigUint64Array;

@@ -1,0 +1,5 @@
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+All checks passed!
+839 files already formatted

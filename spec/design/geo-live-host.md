@@ -136,7 +136,7 @@ completion is `geo_host_updated` with an optional string error. Camera/time
 numbers remain binary. No browser projection or default LOD policy is introduced.
 
 Explicit selected query comparison permits only validated XYSE requests of op
-35/36 with exactly 264 bytes and payload length eight @232: it normalizes the
+35/36, or an explicitly issued selected hierarchy43 route, with exactly 264 bytes and payload length eight @232: it normalizes the
 command/source handle and consumed-State trailer, including length eight→zero,
 against the authored canonical 256-byte query. Other bytes remain exact.
 Ordinary extra/truncated payloads cannot gain this exception.
@@ -169,9 +169,11 @@ The existing Chromium job also runs the bounded five-small-view lifecycle probe;
 notebook, Reflex and actual VS Code journey recordings remain reproducible
 artifacts rather than additional platform jobs. Massive benchmarks stay separate.
 
-Authentic hierarchy frames may mount statically. The private hierarchy marker
-rejects live preparation before acquiring replacement credit or scanning the
-canonical source; dedicated hierarchy routing remains a separate gate.
+Authentic hierarchy frames may mount statically. Without an explicit selected
+hierarchy lane, the private marker rejects live preparation before acquiring
+replacement credit or scanning the canonical source. The explicit lane route is
+specified in [geo-live-hierarchy-host.md](geo-live-hierarchy-host.md); it preserves
+the same XYGHv2 transaction and requires caller-issued Scope/lane authority.
 
 Native drag input uses the existing shared `captureGesturePointer` acquisition,
 loss, trusted buttonless-move and guarded release policy. Its capture owner is

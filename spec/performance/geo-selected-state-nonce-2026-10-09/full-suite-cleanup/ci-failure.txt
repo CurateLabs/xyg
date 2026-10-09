@@ -1,0 +1,15 @@
+2026-10-09T15:33:38.8314342Z test tile_store::tests::spill_fetch_and_compose_match_in_ram_bit_for_bit ... ok
+2026-10-09T15:33:38.8314754Z
+2026-10-09T15:33:38.8314874Z failures:
+2026-10-09T15:33:38.8315024Z
+2026-10-09T15:33:38.8315472Z ---- geo_scale_protocol_tests::registry_cap_stale_handles_and_failed_commands_preserve_manifest stdout ----
+2026-10-09T15:33:38.8315888Z
+2026-10-09T15:33:38.8316637Z thread 'geo_scale_protocol_tests::registry_cap_stale_handles_and_failed_commands_preserve_manifest' (6057) panicked at crates/xyg-engine/src/geo_scale_protocol_tests.rs:44:52:
+2026-10-09T15:33:38.8317494Z called `Result::unwrap()` on an `Err` value: ResourceLimit
+2026-10-09T15:33:38.8318048Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-10-09T15:33:38.8318347Z
+2026-10-09T15:33:38.8318353Z
+2026-10-09T15:33:38.8318444Z failures:
+2026-10-09T15:33:38.8318921Z     geo_scale_protocol_tests::registry_cap_stale_handles_and_failed_commands_preserve_manifest
+2026-10-09T15:33:38.8319510Z
+2026-10-09T15:33:38.8319893Z test result: FAILED. 1438 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 70.77s

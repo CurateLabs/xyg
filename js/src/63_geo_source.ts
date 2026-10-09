@@ -123,14 +123,26 @@ export async function driveGeoSession(bridge:XygGeoScaleBridge,input:{handle:big
   }}finally{signal?.removeEventListener('abort',onAbort);if(cancelPromise)await cancelPromise;}
 }
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
+/** Private issuing transport and publication; parsed numeric fields grant no ownership. */
+const SCENE_OWNERS = new WeakMap<object,{bridge:XygGeoScaleBridge;execute:XygGeoScaleBridge["execute"];read:XygGeoScaleBridge["read"];handle:bigint;sequence:bigint;sourceHandle:bigint;request:ArrayBuffer;header:Uint8Array;selected:boolean}>();
+export function geoSceneDataAuthority(owner:object){
+ const a=SCENE_OWNERS.get(owner);if(!a)return undefined;
+ return Object.freeze({...a,request:a.request.slice(0),header:a.header.slice()});
+}
 export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle:bigint;sequence:bigint;budget:XygGeoQueryBudget}&({command:26;style?:never}|{command?:11|19;style:Uint8Array})){
  if(input.command===26&&input.style!==undefined)throw new TypeError('retained frame style is Rust-owned');
- if(input.command!==26&&(!(input.style instanceof Uint8Array)||input.style.length!==48))throw new TypeError('style must be exact 48-byte Rust framing');const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:input.command??11,handle:input.handle,sequence:input.sequence,budget:input.budget,payload:input.command===26?undefined:input.style}))),handle=reply.handle;
+ if(input.command!==26&&(!(input.style instanceof Uint8Array)||input.style.length!==48))throw new TypeError('style must be exact 48-byte Rust framing');
+ const issuer=bridge,execute=issuer.execute.bind(issuer),read=issuer.read.bind(issuer),originalExecute=issuer.execute,originalRead=issuer.read,sourceHandle=input.handle,sequence=input.sequence,budget={processorBytes:input.budget.processorBytes,maxRowsExamined:input.budget.maxRowsExamined,maxReadBytes:input.budget.maxReadBytes,maxChunks:input.budget.maxChunks,pageRows:input.budget.pageRows};
+ const request=encodeGeoScaleRequest({command:input.command??11,handle:sourceHandle,sequence,budget,payload:input.command===26?undefined:input.style.slice()});
+ const capturedRequest=request.slice(0);
+ const reply=decodeGeoScaleReply(await execute(request)),handle=reply.handle;
  let data:ReturnType<typeof parseGeoSceneData>|undefined,packet:ArrayBuffer|undefined;
- try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
- catch(error){data=undefined;packet=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
+ try{if(reply.sourceHandle!==sourceHandle||reply.sequence!==sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==sourceHandle||data.identity.sequence!==sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
+ catch(error){data=undefined;packet=undefined;await execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
  let disposal:Promise<void>|undefined;
- return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{},error=>{disposal=undefined;throw error;});}};
+ const owner={handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){SCENE_OWNERS.delete(owner);data=undefined;return disposal??=execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{},error=>{disposal=undefined;throw error;});}};
+ SCENE_OWNERS.set(owner,{bridge:issuer,execute:originalExecute,read:originalRead,handle,sequence,sourceHandle,request:capturedRequest,header:new Uint8Array(data.packet,0,256).slice(),selected:data.selection!==null});
+ return owner;
 }
 
 function validateGeoKey(key:Uint8Array){

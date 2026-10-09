@@ -1,0 +1,32 @@
+✔ native explicit selected Point preserves original rows/full IDs/frozen intent (51.217584ms)
+✔ native explicit selected MultiPoint preserves original rows/full IDs/frozen intent (3.693417ms)
+✔ wasm explicit selected Point preserves original rows/full IDs/frozen intent (41.788ms)
+✔ wasm explicit selected MultiPoint preserves original rows/full IDs/frozen intent (8.030916ms)
+✔ native failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (4.596167ms)
+✔ wasm failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (9.861875ms)
+✔ native lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (5.340417ms)
+✔ wasm lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (7.607792ms)
+✔ two actual WASM modules with colliding numeric handles reject foreign State and producer before transport (11.624334ms)
+✔ native cancelled borrowed hierarchy read settles exact private ACK before disposal (14.459958ms)
+✔ wasm cancelled borrowed hierarchy read settles exact private ACK before disposal (39.363166ms)
+✔ native and real WASM exact typed Scene, Rows and frozen selection bytes agree (0.249083ms)
+✔ native five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (4.176083ms)
+✔ wasm five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (11.411417ms)
+✔ native selected reduced Point preserves counts and complete exact membership after owner disposal (216.232125ms)
+✔ native selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (171.906958ms)
+✔ wasm selected reduced Point preserves counts and complete exact membership after owner disposal (326.333042ms)
+✔ wasm selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (215.633208ms)
+✔ native late publication abort with rejected cleanup retains known Data guard for retry (2.873792ms)
+✔ wasm late publication abort with rejected cleanup retains known Data guard for retry (29.835125ms)
+✔ native pre-aborted drive and prepare remain retryable without dispatch (2.12575ms)
+✔ wasm pre-aborted drive and prepare remain retryable without dispatch (6.694ms)
+✔ optional explicit evidence retains complete cross-target parity hashes (0.152709ms)
+✔ native explicit chart static host independently retains actual43 selected frame (35.896ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1420.042417
