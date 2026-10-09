@@ -1,0 +1,61 @@
+{
+  "sourceHead": "b583f6ab9b684f7cbb1d157abce8027b7e8fe93e",
+  "environment": {
+    "node": "v26.6.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "native": {
+    "abi": 383,
+    "sha256": "31f9f6a6c2938b4e93c8f04df9cd8936a93cc4aa6ba6f1145af5c5aa85f69ed1"
+  },
+  "wasm": {
+    "abi": 33,
+    "scene": 32,
+    "painter": 15,
+    "sha256": "c337658a98d09e8d0772822445704eed0ba92e6d062193cd9b31642678e4fc07",
+    "rawBytes": 1343219,
+    "gzipBytes": 550315
+  },
+  "sources": {
+    "crates/xyg-engine/src/geo_linked_state.rs": "ec3bc4ae9bb7382dc6d4270e8160c570c0192fcc712d7d5f29dcdae0308de072",
+    "crates/xyg-engine/src/geo_linked_state_protocol.rs": "f77108bb1b19fee17031747d1a473f8cf211c20b729cc4196134f965a08d4773",
+    "crates/xyg-engine/src/geo_source_session.rs": "c606d959e3b430f020fb85b64365ef7ead4914b29eecaab5c7e35ada245eccb8",
+    "crates/xyg-engine/src/geo_rows_session.rs": "d502856219dbaa15accac3a1c7da00a8bbe2d33e936b7b08efcbd023bfad9cde",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "b765cfbcf6fe38cf38dca09371e39cfb49de01ea568503be221a5c2167c41d69",
+    "crates/xyg-engine/src/geo_lod.rs": "3a5caa51cb470415ccd230e8a9e565036941d5910be2d24a7299075b642a539b",
+    "crates/xyg-engine/src/geo_lod_scene.rs": "c6d7c62320ca4b4e76f6b166763148598c008a7163a334d95f7e3444c04c2ebd",
+    "crates/xyg-engine/src/geo_lod_hit.rs": "68b0c0fed4735e4d2a16bcf7753e78bdc7a0ef27efb23f386dedd8171d8f55f2",
+    "crates/xyg-engine/src/geo_snapshot.rs": "67576c60f9cf88ce49461e88aff749f9488765e8174b06726d60379b86e3333f",
+    "js/src/63_geo_source.ts": "c7865ebae7e08007cd222b44be41139d690a989e99b5202e51e65561550a61e3",
+    "js/src/68_geo_selected.ts": "219c174cb35650a98afd0f817551d63901f30a26b2238e6c5e6cbaa870cf6e43",
+    "scripts/geo_selected_conformance.mjs": "0dc4de5b431f322287611100e8ada1e094f06e59df772c6f2d788fcb9ae8162c"
+  },
+  "cases": [
+    {
+      "vertices": 2,
+      "selectedVertices": 1,
+      "scenePacketSha256": "a558969a7008e6e2c3a66ad4df5c8aa45567fe95291f793c6b0211008a9d69ec",
+      "rowsPacketSha256": "dff72974c994697976e0461d11e33772b80b9eb9d06bc8fa859bfc802d6357ae"
+    },
+    {
+      "vertices": 40000,
+      "selectedVertices": 20000,
+      "scenePacketSha256": "6ca5c0c1553adbfbd2185b69336706138d9cbe60fb2aa98f9f06f4926e6b9247",
+      "rowsPacketSha256": "aca7af8fa40fb4a3490f5cf9a1a8aec2a3934099226118c513dbbb8f73ba25ed"
+    }
+  ],
+  "gates": {
+    "fiveViewsWithinExisting16Handles8Data": true,
+    "parkTwoEnginesForPageOverlap": true,
+    "failedPagePreservesOldPage": true,
+    "outstandingReadSettledBeforeAck": true,
+    "crossInstanceActualHandleCollisionRejected": true,
+    "effectiveSelectedAlphaDirectAndClusterDensity": true
+  },
+  "limitations": [
+    "typed internal foundation; no public selected interaction controller",
+    "no selected frozen export or selected host journey claim",
+    "no massive timing or memory performance claim"
+  ]
+}

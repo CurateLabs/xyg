@@ -19,18 +19,39 @@ function i64(n       ){if(typeof n!=='bigint'||n< -0x8000000000000000n||n>0x7fff
 function budgetBytes(n       ){if(!Number.isSafeInteger(n)||n<256||n>MAX_PROCESSOR)throw new RangeError('invalid processor budget');return n;}
 function bytes(p                       ){if(p instanceof ArrayBuffer)return new Uint8Array(p);if(p instanceof Uint8Array)return p;throw new TypeError('expected raw bytes');}
 function zero(b           ,a       ,z       ){if(b.subarray(a,z).some(v=>v!==0))throw new TypeError('nonzero reserved bytes');}
-function response(buffer            ){if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<256||buffer.byteLength>MAX_PACKET)throw new TypeError('invalid geographic reply size');const b=new Uint8Array(buffer),v=new DataView(buffer);if(String.fromCharCode(...b.subarray(0,4))!=='XYGZ'||v.getUint32(4,true)!==1)throw new TypeError('invalid geographic reply');return {b,v};}
+function response(buffer            ,selected=false){if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<256||buffer.byteLength>MAX_PACKET)throw new TypeError('invalid geographic reply size');const b=new Uint8Array(buffer),v=new DataView(buffer);if(String.fromCharCode(...b.subarray(0,4))!=='XYGZ'||(v.getUint32(4,true)!==1&&!(selected&&v.getUint32(4,true)===2)))throw new TypeError('invalid geographic reply');return {b,v};}
 function count(v         ,at       ,max=MAX_PACKET){const n=v.getBigUint64(at,true);if(n>BigInt(max))throw new RangeError('reply count exceeds framing');return Number(n);}
 
+/** Borrow full XYSE intent. Fingerprints are hints; exact typed IDs are retained. */
+export function parseGeoSelectionFooter(packet           ,at       ,rows        ){
+ const h=new DataView(packet.buffer,packet.byteOffset,packet.byteLength),version=h.getUint32(4,true),size=count(h,248);
+ if(version===1){if(size!==0||at!==packet.length)throw new TypeError('unexpected selection footer');return null;}
+ if(version!==2||size<128||at+size!==packet.length)throw new TypeError('missing selected authority');
+ const raw=packet.subarray(at),v=new DataView(raw.buffer,raw.byteOffset,raw.byteLength),ids=count(v,24,10000),cells=count(v,32,196608),flags=v.getUint32(8,true);
+ if(String.fromCharCode(...raw.subarray(0,4))!=='XYSE'||v.getUint32(4,true)!==1||flags!==(rows?1:3)||128+8*(ids+cells)!==size)throw new TypeError('invalid selection planes');
+ zero(raw,12,16);zero(raw,52,56);zero(raw,120,128);
+ const pairs=rows?[[56,88],[64,96],[72,120],[80,136],[88,104]]:[[56,144],[64,152],[72,160],[80,200],[88,232]];
+ if(pairs.some(([a,b])=>v.getBigUint64(a,true)!==h.getBigUint64(b,true))||v.getUint32(96,true)!==h.getUint32(rows?112:240,true)||v.getUint32(100,true)!==h.getUint32(rows?116:244,true))throw new TypeError('selection source binding');
+ let previous=-1n;for(let i=0;i<ids;i++){const id=v.getBigUint64(128+i*8,true);if(id<=previous)throw new TypeError('selection IDs must be canonical');previous=id;}
+ const visible=v.getBigUint64(40,true);let total=0n;
+ for(let i=0;i<cells;i++)total+=v.getBigUint64(128+(ids+i)*8,true);
+ if(rows&&(cells!==0||visible!==0n)||!rows&&(visible>h.getBigUint64(48,true)||cells!==0&&(cells!==h.getUint32(64,true)*h.getUint32(68,true)||total!==visible)||h.getUint32(8,true)===0&&cells!==0)||ids===0&&(cells!==0||visible!==0n))throw new TypeError('selection count binding');
+ return {raw,namespace:v.getBigUint64(16,true),fill:raw.subarray(48,52),idCount:ids,cellCount:cells,visibleVertices:rows?null:visible,
+  id(index       ){if(!Number.isInteger(index)||index<0||index>=ids)throw new RangeError('selection ID index');return v.getBigUint64(128+index*8,true);},
+  cell(index       ){if(!Number.isInteger(index)||index<0||index>=cells)throw new RangeError('selection cell index');return v.getBigUint64(128+(ids+index)*8,true);}};
+}
+
+function selectionContains(s                                                        ,id       ){let lo=0,hi=s.idCount;while(lo<hi){const mid=(lo+hi)>>>1;if(s.id(mid)<id)lo=mid+1;else hi=mid;}return lo<s.idCount&&s.id(lo)===id;}
+
 export function encodeGeoScaleRequest(input                   )             {
- const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,23,24,25,26].includes(command))throw new TypeError('unknown geographic command');
+ const command=u32(input.command);if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,23,24,25,26,32,33,34,35,36].includes(command))throw new TypeError('unknown geographic command');
  const payload=input.payload===undefined?new Uint8Array():bytes(input.payload),length=256+payload.byteLength;
  if(length>MAX_PACKET||input.budget&&length>budgetBytes(input.budget.processorBytes))throw new RangeError('request exceeds framing budget');
- if(input.query!==undefined&&![5,18].includes(command)||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16,17,18,19,24,25,26].includes(command))throw new TypeError('field does not belong to command');
+ if(input.query!==undefined&&![5,18,35,36].includes(command)||input.generation!==undefined&&command!==3||input.sequence!==undefined&&![5,6,9,11,12,13,14,15,16,17,18,19,24,25,26,32,35,36].includes(command))throw new TypeError('field does not belong to command');
  const out=new ArrayBuffer(length),b=new Uint8Array(out),v=new DataView(out);b.set([88,89,71,81]);v.setUint32(4,1,true);v.setUint32(8,command,true);v.setBigUint64(16,u64(input.handle??0n),true);v.setBigUint64(24,u64(input.sequence??0n),true);
  if(input.budget){const q=input.budget;v.setBigUint64(32,BigInt(budgetBytes(q.processorBytes)),true);v.setBigUint64(40,u64(q.maxRowsExamined),true);v.setBigUint64(48,u64(q.maxReadBytes),true);v.setUint32(56,u32(q.maxChunks),true);v.setUint32(60,u32(q.pageRows),true);}
  if(command===3)v.setBigUint64(144,u64(input.generation??0n),true);
- if(command===5||command===18){const q=input.query;if(!q)throw new TypeError('begin requires query');const c=q.camera;if(typeof c.worldWrap!=='boolean'||typeof q.previousDirect!=='boolean'||!(q.sourceDigest instanceof Uint8Array)||q.sourceDigest.length!==8)throw new TypeError('invalid query framing');v.setUint32(12,c.worldWrap?1:0,true);v.setUint32(64,u32(c.crs),true);v.setUint32(68,u32(q.reducedKind),true);v.setUint32(72,u32(q.maxCells),true);v.setUint32(76,q.previousDirect?1:0,true);
+ if([5,18,35,36].includes(command)){const q=input.query;if(!q)throw new TypeError('begin requires query');const c=q.camera;if(typeof c.worldWrap!=='boolean'||typeof q.previousDirect!=='boolean'||!(q.sourceDigest instanceof Uint8Array)||q.sourceDigest.length!==8)throw new TypeError('invalid query framing');v.setUint32(12,c.worldWrap?1:0,true);v.setUint32(64,u32(c.crs),true);v.setUint32(68,u32(q.reducedKind),true);v.setUint32(72,u32(q.maxCells),true);v.setUint32(76,q.previousDirect?1:0,true);
   [c.centerX,c.centerY,c.zoom,c.width,c.height,c.bearing,c.pitch].forEach((n,i)=>{if(typeof n!=='number')throw new TypeError('camera requires explicit f64 values');v.setFloat64(80+i*8,n,true);});b.set(q.sourceDigest,136);
   [q.generation,q.layerId,q.cameraRevision,q.timeRevision,q.layerRevision,q.styleRevision,q.stateRevision].forEach((n,i)=>v.setBigUint64(144+i*8,u64(n),true));
   v.setUint32(200,u32(q.time.kind),true);if(q.time.kind===1)v.setBigInt64(208,i64(q.time.instant),true);else if(q.time.kind===2){v.setBigInt64(208,i64(q.time.start),true);v.setBigInt64(216,i64(q.time.end),true);}else if(q.time.kind!==0)throw new TypeError('unknown time predicate');v.setBigUint64(224,u64(q.maxProjectedVertices),true);
@@ -50,7 +71,7 @@ function readTicket(raw           )                  {
 }
 export function decodeGeoScaleReply(buffer            ){
  const {b,v}=response(buffer);if(buffer.byteLength!==256)throw new TypeError('mutation reply must be fixed size');const code=v.getUint32(8,true);if(code>12)throw new TypeError('invalid step code');zero(b,12,16);
- if(code===4){if(v.getBigUint64(160,true)>4096n||v.getUint32(168,true)>1)throw new TypeError('invalid membership reply');zero(b,176,256);}
+ if(code===4){if(v.getBigUint64(160,true)>4096n||v.getUint32(168,true)>1)throw new TypeError('invalid membership reply');zero(b,176,248);if(v.getUint32(4,true)===1)zero(b,248,256);}
  else if(code===12){if(![1,2].includes(v.getUint32(184,true)))throw new TypeError('invalid indexed pass count');zero(b,188,256);}
  else zero(b,160,256);
  if(code===10){if(![1,2].includes(v.getUint32(48,true)))throw new TypeError('invalid indexed fallback reason');zero(b,52,160);}
@@ -70,8 +91,8 @@ export function encodeGeoChunkRequest(input                                     
 
 /** Views borrow packet storage; consumers must drop every view/copy before lease disposal. */
 export function parseGeoSceneData(packet            ){
- const {b,v}=response(packet),aggregate=v.getUint32(8,true),droppedChannels=v.getUint32(12,true),sceneLength=count(v,32),metadataLength=count(v,40),columns=v.getUint32(64,true),rows=v.getUint32(68,true),gridCapped=v.getUint32(72,true),timeKind=v.getUint32(208,true),reducedKind=v.getUint32(212,true);
- if(aggregate>1||gridCapped>1||timeKind>2||reducedKind>1||droppedChannels&~7||256+sceneLength+metadataLength!==packet.byteLength||sceneLength<160)throw new TypeError('malformed SceneData framing');zero(b,76,80);zero(b,248,256);
+ const {b,v}=response(packet,true),footerLength=count(v,248),aggregate=v.getUint32(8,true),droppedChannels=v.getUint32(12,true),sceneLength=count(v,32),metadataLength=count(v,40),columns=v.getUint32(64,true),rows=v.getUint32(68,true),gridCapped=v.getUint32(72,true),timeKind=v.getUint32(208,true),reducedKind=v.getUint32(212,true);
+ if(aggregate>1||gridCapped>1||timeKind>2||reducedKind>1||droppedChannels&~7||256+sceneLength+metadataLength+footerLength!==packet.byteLength||sceneLength<160)throw new TypeError('malformed SceneData framing');zero(b,76,80);if(v.getUint32(4,true)===1)zero(b,248,256);
  const scene=b.subarray(256,256+sceneLength),sv=new DataView(packet,256,sceneLength);if(String.fromCharCode(...scene.subarray(0,4))!=='XYGS'||sv.getUint32(4,true)!==32)throw new TypeError('invalid Scene32 packet');
  const stride=aggregate?24:40;if(metadataLength%stride||aggregate&&columns*rows!==metadataLength/stride)throw new TypeError('invalid provenance framing');
  const sourceRows=v.getBigUint64(232,true),geometry=v.getUint32(240,true);if(![1,4].includes(geometry))throw new TypeError('invalid retained source geometry');
@@ -80,7 +101,9 @@ export function parseGeoSceneData(packet            ){
  const crs=v.getUint32(80,true),wrap=v.getUint32(84,true),sourceCrs=v.getUint32(244,true);if(![4326,3857].includes(crs)||![4326,3857].includes(sourceCrs)||wrap>1)throw new TypeError('invalid camera/source CRS');const cameraValues=[88,96,104,112,120,128,136].map(at=>v.getFloat64(at,true));if(cameraValues.some(n=>!Number.isFinite(n)))throw new TypeError('invalid camera values');
  if(timeKind===0){zero(b,216,232);}else if(timeKind===1)zero(b,224,232);else if(v.getBigInt64(216,true)>=v.getBigInt64(224,true))throw new TypeError('invalid time window');
  const time           =timeKind===0?{kind:0}:timeKind===1?{kind:1,instant:v.getBigInt64(216,true)}:{kind:2,start:v.getBigInt64(216,true),end:v.getBigInt64(224,true)};
- return {packet,scene,aggregate:!!aggregate,droppedChannels,visibleVertices:v.getBigUint64(48,true),projectedVertices:v.getBigUint64(56,true),columns,rows,gridCapped:!!gridCapped,metadata,length,
+ const selection=parseGeoSelectionFooter(b,256+sceneLength+metadataLength,false);
+ if(selection){let selected=0n;for(let i=0;i<length;i++){if(aggregate){if(selection.cellCount&&selection.cell(i)>metadata.getBigUint64(i*stride,true))throw new TypeError('selected count exceeds cell');}else if(selectionContains(selection,metadata.getBigUint64(i*stride,true)))selected++;}if(!aggregate&&selected!==selection.visibleVertices||aggregate&&selection.idCount>0&&selection.cellCount!==length)throw new TypeError('selected visible count mismatch');}
+ return {packet,scene,selection,aggregate:!!aggregate,droppedChannels,visibleVertices:v.getBigUint64(48,true),projectedVertices:v.getBigUint64(56,true),columns,rows,gridCapped:!!gridCapped,metadata,length,
   identity:{sessionHandle:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),camera:{crs,worldWrap:!!wrap,centerX:cameraValues[0],centerY:cameraValues[1],zoom:cameraValues[2],width:cameraValues[3],height:cameraValues[4],bearing:cameraValues[5],pitch:cameraValues[6]},sourceDigest:b.subarray(144,152),generation:v.getBigUint64(152,true),layerId:v.getBigUint64(160,true),cameraRevision:v.getBigUint64(168,true),timeRevision:v.getBigUint64(176,true),layerRevision:v.getBigUint64(184,true),styleRevision:v.getBigUint64(192,true),stateRevision:v.getBigUint64(200,true),time,reducedKind,sourceRows:v.getBigUint64(232,true),geometry:v.getUint32(240,true),sourceCrs},
   record(index       ){if(!Number.isInteger(index)||index<0||index>=length)throw new RangeError('provenance index');const at=index*stride;return aggregate?{count:metadata.getBigUint64(at,true),x:metadata.getFloat64(at+8,true),y:metadata.getFloat64(at+16,true)}:{featureId:metadata.getBigUint64(at,true),sourceRow:metadata.getBigUint64(at+8,true),chunkIndex:metadata.getUint32(at+16,true),chunkRow:metadata.getUint32(at+20,true),vertex:metadata.getUint32(at+24,true)};}};
 }
@@ -107,7 +130,7 @@ export async function prepareGeoSceneData(bridge                  ,input        
  try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==input.handle||data.identity.sequence!==input.sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
  catch(error){data=undefined;packet=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
  let disposal                        ;
- return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});}};
+ return {handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{},error=>{disposal=undefined;throw error;});}};
 }
 
 function validateGeoKey(key           ){
@@ -139,18 +162,20 @@ export function parseGeoHitData(packet            ){
 }
 /** Data readers bind a fixed mutation reply, never probe/re-execute mutations. */
 export function parseGeoRowsData(packet            ){
- const {b,v}=response(packet),length=count(v,32,4096),hasNext=v.getUint32(40,true);
- if(v.getUint32(8,true)!==4||hasNext>1||packet.byteLength!==256+length*64||v.getBigUint64(16,true)===0n||v.getBigUint64(24,true)===0n||v.getBigUint64(80,true)!==v.getBigUint64(16,true)||v.getBigUint64(96,true)===0n||v.getBigUint64(104,true)>1000000000n||v.getUint32(64,true)>65536||v.getUint32(68,true)>65536||![1,2,3,4,5,6].includes(v.getUint32(112,true))||![4326,3857].includes(v.getUint32(116,true)))throw new TypeError('invalid original-row packet');
- zero(b,12,16);zero(b,44,48);zero(b,72,80);zero(b,156,160);zero(b,176,256);
+ const {b,v}=response(packet,true),footerLength=count(v,248),length=count(v,32,4096),hasNext=v.getUint32(40,true);
+ if(v.getUint32(8,true)!==4||hasNext>1||packet.byteLength!==256+length*64+footerLength||v.getBigUint64(16,true)===0n||v.getBigUint64(24,true)===0n||v.getBigUint64(80,true)!==v.getBigUint64(16,true)||v.getBigUint64(96,true)===0n||v.getBigUint64(104,true)>1000000000n||v.getUint32(64,true)>65536||v.getUint32(68,true)>65536||![1,2,3,4,5,6].includes(v.getUint32(112,true))||![4326,3857].includes(v.getUint32(116,true)))throw new TypeError('invalid original-row packet');
+ zero(b,12,16);zero(b,44,48);zero(b,72,80);zero(b,156,160);zero(b,176,248);if(v.getUint32(4,true)===1)zero(b,248,256);
  const timeKind=v.getUint32(152,true);if(timeKind===0)zero(b,160,176);else if(timeKind===1)zero(b,168,176);else if(timeKind!==2||v.getBigInt64(160,true)>=v.getBigInt64(168,true))throw new TypeError('invalid original-row time');
  let previous=-1n;
  for(let i=0;i<length;i++){
   const p=256+i*64,ordinal=v.getBigUint64(p+8,true),flags=v.getUint32(p+24,true);
-  if(ordinal<=previous||ordinal>=v.getBigUint64(104,true)||v.getUint32(p+16,true)>=65536||v.getUint32(p+20,true)>=65536||flags>127||Boolean(flags&4)!==(!(flags&1)&&Boolean(flags&2))||!(flags&8)&&Boolean(flags&48))throw new TypeError('invalid original-row record');previous=ordinal;
+  if(ordinal<=previous||ordinal>=v.getBigUint64(104,true)||v.getUint32(p+16,true)>=65536||v.getUint32(p+20,true)>=65536||flags>(v.getUint32(4,true)===2?255:127)||Boolean(flags&4)!==(!(flags&1)&&Boolean(flags&2))||!(flags&8)&&Boolean(flags&48))throw new TypeError('invalid original-row record');previous=ordinal;
   zero(b,p+28,p+32);zero(b,p+56,p+64);if(!(flags&16))zero(b,p+32,p+40);if(!(flags&32))zero(b,p+40,p+48);if(!(flags&64))zero(b,p+48,p+56);if((flags&48)===48&&v.getBigInt64(p+32,true)>=v.getBigInt64(p+40,true))throw new TypeError('invalid row interval');
  }
- return {packet,length,hasNext:Boolean(hasNext),owner:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),key:b.subarray(88,176),
-  record(index       ){if(!Number.isInteger(index)||index<0||index>=length)throw new RangeError('original-row index');const p=256+index*64,flags=v.getUint32(p+24,true);return {featureId:v.getBigUint64(p,true),sourceRow:v.getBigUint64(p+8,true),chunkIndex:v.getUint32(p+16,true),chunkRow:v.getUint32(p+20,true),geometryNull:Boolean(flags&1),timeEligible:Boolean(flags&2),eligible:Boolean(flags&4),intervalsPresent:Boolean(flags&8),intervalStart:flags&16?v.getBigInt64(p+32,true):null,intervalEnd:flags&32?v.getBigInt64(p+40,true):null,value:flags&64?v.getFloat64(p+48,true):null};}};
+ const selection=parseGeoSelectionFooter(b,256+length*64,true);
+ if(selection)for(let i=0;i<length;i++)if(Boolean(v.getUint32(256+i*64+24,true)&128)!==selectionContains(selection,v.getBigUint64(256+i*64,true)))throw new TypeError('selected row intent mismatch');
+ return {packet,selection,length,hasNext:Boolean(hasNext),owner:v.getBigUint64(16,true),sequence:v.getBigUint64(24,true),key:b.subarray(88,176),
+  record(index       ){if(!Number.isInteger(index)||index<0||index>=length)throw new RangeError('original-row index');const p=256+index*64,flags=v.getUint32(p+24,true);return {featureId:v.getBigUint64(p,true),sourceRow:v.getBigUint64(p+8,true),chunkIndex:v.getUint32(p+16,true),chunkRow:v.getUint32(p+20,true),selected:Boolean(flags&128),geometryNull:Boolean(flags&1),timeEligible:Boolean(flags&2),eligible:Boolean(flags&4),intervalsPresent:Boolean(flags&8),intervalStart:flags&16?v.getBigInt64(p+32,true):null,intervalEnd:flags&32?v.getBigInt64(p+40,true):null,value:flags&64?v.getFloat64(p+48,true):null};}};
 }
 export async function prepareGeoAuxData   (bridge                  ,input                                                                                              ,parse                        ){
  const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest(input))),handle=reply.handle;
@@ -158,7 +183,7 @@ export async function prepareGeoAuxData   (bridge                  ,input       
  try{if(reply.sourceHandle!==input.handle||reply.sequence!==input.sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>input.budget.processorBytes)throw new TypeError('invalid auxiliary data lease');packet=await bridge.read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('auxiliary length mismatch');data=parse(packet);packet=undefined;}
  catch(error){packet=undefined;data=undefined;await bridge.execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
  let disposal                        ;
- return {handle,get data(){if(data===undefined)throw new Error('Geographic data disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{});}};
+ return {handle,get data(){if(data===undefined)throw new Error('Geographic data disposed');return data;},dispose(){data=undefined;return disposal??=bridge.execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{},error=>{disposal=undefined;throw error;});}};
 }
 
 /** Drive the shared index state machine; external immutable sidecar storage is
@@ -171,7 +196,7 @@ export async function driveGeoIndexSession(bridge                  ,input       
   if(signal?.aborted){await cancel();throw aborted();}
   const reply=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:6,handle,sequence,budget})));
   if(reply.handle!==handle||reply.sequence!==sequence)throw new TypeError('mismatched index session reply');
-  if([11,12].includes(reply.code))return reply;
+  if([11,12].includes(reply.code)){if(signal?.aborted){await cancel();throw aborted();}return reply;}
   if(![1,7].includes(reply.code)||!reply.ticket)throw new TypeError('unexpected index session step');
   const ticket=reply.ticket,authority=ticket.raw.slice(),authorizedBytes=ticket.encodedBytes,write=reply.code===7;
   let borrowed                                 ,chunk                     ,supply                      ;

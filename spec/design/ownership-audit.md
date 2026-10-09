@@ -1129,6 +1129,15 @@ Forbidden:
 | `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
 
 
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/68_geo_selected.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-selected.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-selected.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_selected.py` | Python host | `python-host` | `keep-host` | — |
 ### M6 internal Python overview transport
 
 The adapter forwards Rust commands and validates typed framing, capacity and
