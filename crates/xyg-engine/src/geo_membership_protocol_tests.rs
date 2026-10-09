@@ -1,10 +1,12 @@
 //! Independent typed membership/ownership proofs through the public protocol.
+#[path = "geo_rows_protocol_tests.rs"]
+mod rows_protocol_tests;
 use crate::geo::{GeoColumn, GeoCrs, GeoDescriptor, GeoError, GeoGeometry, GeoLimits};
 use crate::geo_scale_protocol::{data_len, execute, read_data};
-use crate::geo_source::{GeoChunk, GeoIntervals, GeoManifestBuilder, SourceError, MAX_CHUNK_PEAK};
+use crate::geo_source::{GeoChunk, GeoIntervals, GeoManifestBuilder, MAX_CHUNK_PEAK, SourceError};
 use crate::geo_source_session::test_processor_lock;
 use crate::geo_tile_cache::{
-    test_process_lock, GeoTileCache, GeoTileLimits, TILE_CACHE_PROCESS_BYTES,
+    GeoTileCache, GeoTileLimits, TILE_CACHE_PROCESS_BYTES, test_process_lock,
 };
 fn n32(b: &[u8], at: usize) -> u32 {
     u32::from_le_bytes(b[at..at + 4].try_into().unwrap())

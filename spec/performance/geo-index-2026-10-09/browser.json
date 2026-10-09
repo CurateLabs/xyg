@@ -1,0 +1,120 @@
+{
+  "recordedAt": "2026-10-09T06:27:47.603Z",
+  "artifact": {
+    "rawBytes": 1275872,
+    "gzipBytes": 521067,
+    "gzipLevel": 9,
+    "releaseGateGzipBytes": 521849,
+    "releaseGateGzipLevel": 6,
+    "sha256": "7e2948c94430904144136ad398ced5e863b4f87acd47b037614af33d829e0777"
+  },
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "cpu": "Apple M4",
+    "logicalCpus": 10,
+    "physicalMemoryBytes": 34359738368,
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "load": "Concurrent development load was not controlled; no comparative latency claim"
+  },
+  "startupScope": "Worker constructor to ready in a fresh browser process/profile; raw loopback HTTP without compression, warm OS file cache, excludes main ESM bundle parse; not WAN latency",
+  "proof": {
+    "ok": true,
+    "abiVersion": 33,
+    "concurrentOwnership": true,
+    "sharedViews": 5,
+    "directPages": 3,
+    "fullU64": true,
+    "fullI64": true,
+    "cancelledReadAck": true,
+    "oldFramePreserved": true,
+    "contextRestored": true,
+    "memberCursor": true,
+    "originalRows": true,
+    "indexedSidecar": true,
+    "indexedRecovery": true,
+    "indexedWriteCancelAck": true,
+    "offscreenKeyboardFocus": true,
+    "failedInitializationCleaned": true,
+    "pending": 0,
+    "parserNegativeControls": 63,
+    "frozenSnapshot": true,
+    "wasmRasterExport": "unsupported",
+    "startupMs": 16.40000009536743,
+    "retainedBuffers": [
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5212,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17188,
+        "conservativePersistentBytes": 41140,
+        "rowCharge": 111616
+      }
+    ],
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "hardwareConcurrency": 10,
+      "devicePixelRatio": 1
+    }
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_retained_page.mjs",
+      "/packages/xy-client/dist/index.js",
+      "/tests/browser/geo_source_parser.mjs",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "external": [],
+    "cspViolations": []
+  }
+}

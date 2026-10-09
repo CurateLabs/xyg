@@ -18,7 +18,7 @@ policy is shared Rust; Python, Node and browser adapters only frame inputs.
 
 This is bounded direct catalog evidence. The explicit density family records
 complete membership and reports its dropped diameter/symbol/stroke channels.
-Retained sources add authenticated chunk paging, time-before-reduction, bounded direct/cluster/density tiers, exact opaque-cursor membership, explicit tile budgets and frozen exports (the companion contracts below). Spatial indexes/pyramids, full-source retained accessibility, linked per-row state and all-host live conformance remain #50. No production speedup or billion-
+Retained sources add authenticated chunk paging, time-before-reduction, bounded direct/cluster/density tiers, exact opaque-cursor membership, explicit tile budgets and frozen exports (the companion contracts below). Original source rows now have bounded opaque-cursor pages including null, time-excluded and offscreen rows, with exact keyboard-focus identities. Spatial point indexes now have bounded native/WASM/browser evidence; aggregate pyramids, linked per-row state and all-host live conformance remain #50. No production speedup or billion-
 row admission is inferred from these fixtures. Existing SVG glyph contours for
 some uncommon symbols differ from the native/browser analytic painter; the
 19-symbol hit fixtures prove the latter's pick policy, not complete vector
@@ -58,18 +58,20 @@ under strict CSP and reject every unexpected request.
 | Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
 | Native immutable host presentation | Canonical retained points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex WS reconnect and real VS Code reload/dispose; native live updates/indexed remount pending |
 | Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
+| Explicit immutable point sidecar index | Rust XYIX/XYIP cross-chunk leaves, bounded canonical-order merge, authenticated import, explicit full-scan fallback | Exact canonical Scene parity through 1M; native/WASM frame+rows+frozen parity; browser corrupt-leaf recovery; 100M narrow grid16 0.79–1.23s, grid32 192–316ms under uncontrolled load; world latency/pyramid remains open |
+| Original source-row companion | Rust-issued continuation, all original rows, explicit temporal/null eligibility | Native/WASM byte parity; Python/Node paging after frame disposal; strict-CSP browser offscreen keyboard focus and failed-read recovery |
 | Explicit raster/vector tiles | Local/network locator receipts, immutable producer generation/time, atomic epoch publication | Actual native mixed raster+vector+foreground; network is opt-in through caller loader, not automatic fetch |
 | Frozen spatiotemporal output | XYGXv2 bound provenance, visible attribution, owned artifacts | Native SVG/PNG/PDF/JPEG/WebP/static offline HTML; WASM freeze matches native, raster export is explicit Unsupported |
 
 Reproduce using `scripts/bench_geo_scale.py`, `tests/test_geo_retained.py`,
-`tests/test_geo_tiles.py`, `tests/test_geo_snapshot.py`,
+`tests/test_geo_rows.py`, `tests/test_geo_tiles.py`, `tests/test_geo_snapshot.py`,
 `packages/xy-node/test/geo-scale-wasm-parity.test.mjs`, and
 `scripts/geo_retained_wasm_smoke.mjs`. [Raw scale outputs](../performance/geo-scale-2026-10-08/README.md)
 include environment, exact source patch and reproduction commands. These tests do
-not establish Reflex/VS Code live retained-source parity, complete offscreen
-accessibility, GPU timing, spatial-pyramid performance, or a competitor speed win.
+not establish Reflex/VS Code live retained-source parity, linked selection or complete host accessibility journeys, GPU timing, spatial-pyramid performance, or a competitor speed win.
+
+[Spatial index raw evidence and limits](../performance/geo-index-2026-10-09/README.md) covers separate cold build and warm native queries; no competitor speed win or temporal index performance is inferred.
 
 Separate [native host journey evidence](geographic-hosts.md) proves immutable
 retained-points presentation and ownership in notebooks, Reflex and VS Code.
 It does not establish native live camera/query parity or indexed host remounts.
-That checkpoint is pending follow-up PR integration.

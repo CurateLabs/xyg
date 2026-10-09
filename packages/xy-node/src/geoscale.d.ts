@@ -58,6 +58,8 @@ export declare function encodeGeoScaleStyle(style: {
 }): Uint8Array;
 export interface XygGeoReadTicket {
     raw: Uint8Array;
+    kind: number;
+    page: bigint;
     sessionId: bigint;
     readId: bigint;
     sequence: bigint;
@@ -71,6 +73,7 @@ export interface XygGeoReadTicket {
 }
 export declare function decodeGeoScaleReply(buffer: ArrayBuffer): {
     code: number;
+    fallbackReasonCode: number | null;
     handle: bigint;
     sequence: bigint;
     dataLength: bigint;
@@ -83,6 +86,12 @@ export declare function decodeGeoScaleReply(buffer: ArrayBuffer): {
         crs: number;
     };
     ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
 };
 export declare function encodeGeoChunkRequest(input: {
     descriptor: ArrayBuffer | Uint8Array;
@@ -165,6 +174,7 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
     signal?: AbortSignal;
 }): Promise<{
     code: number;
+    fallbackReasonCode: number | null;
     handle: bigint;
     sequence: bigint;
     dataLength: bigint;
@@ -177,6 +187,12 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
         crs: number;
     };
     ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
 }>;
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
 export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
@@ -184,6 +200,7 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     sequence: bigint;
     budget: XygGeoQueryBudget;
     style: Uint8Array;
+    command?: 11 | 19;
 }): Promise<{
     handle: bigint;
     readonly data: {
@@ -248,7 +265,113 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     };
     dispose(): Promise<void>;
 }>;
-
+/** Raw immutable key/cursor bytes retain Rust's exact f64/i64/u64 identity. */
+export declare function parseGeoMembershipData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    key: Uint8Array<ArrayBuffer>;
+    cursor: Uint8Array<ArrayBuffer> | null;
+    length: number;
+    cell: number;
+    owner: bigint;
+    sequence: bigint;
+    record(index: number): {
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+    };
+};
+export declare function parseGeoHitData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    key: Uint8Array<ArrayBuffer>;
+    length: number;
+    owner: bigint;
+    sequence: bigint;
+    record(index: number): {
+        featureId?: undefined;
+        sourceRow?: undefined;
+        chunkIndex?: undefined;
+        chunkRow?: undefined;
+        vertex?: undefined;
+        kind: 'cell';
+        cell: number;
+        count: bigint;
+    } | {
+        count?: undefined;
+        cell?: undefined;
+        kind: 'direct';
+        vertex: number;
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+    };
+};
+/** Data readers bind a fixed mutation reply, never probe/re-execute mutations. */
+export declare function parseGeoRowsData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    length: number;
+    hasNext: boolean;
+    owner: bigint;
+    sequence: bigint;
+    key: Uint8Array<ArrayBuffer>;
+    record(index: number): {
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+        geometryNull: boolean;
+        timeEligible: boolean;
+        eligible: boolean;
+        intervalsPresent: boolean;
+        intervalStart: bigint | null;
+        intervalEnd: bigint | null;
+        value: number | null;
+    };
+};
+export declare function prepareGeoAuxData<T>(bridge: XygGeoScaleBridge, input: {
+    command: 13 | 14 | 16;
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    payload?: Uint8Array;
+}, parse: (packet: ArrayBuffer) => T): Promise<{
+    handle: bigint;
+    readonly data: T & ({} | null);
+    dispose(): Promise<void>;
+}>;
+/** Drive the shared index state machine; external immutable sidecar storage is
+ * explicit. Storage callbacks must bound their cache and settle before ACK. */
+export declare function driveGeoIndexSession(bridge: XygGeoScaleBridge, input: {
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    readChunk?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
+    readPage?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
+    writePage?: (ticket: XygGeoReadTicket, bytes: Uint8Array, signal?: AbortSignal) => Promise<void>;
+    signal?: AbortSignal;
+}): Promise<{
+    code: number;
+    fallbackReasonCode: number | null;
+    handle: bigint;
+    sequence: bigint;
+    dataLength: bigint;
+    sourceHandle: bigint;
+    source: {
+        generation: bigint;
+        digest: Uint8Array<ArrayBuffer>;
+        rows: bigint;
+        geometry: number;
+        crs: number;
+    };
+    ticket: XygGeoReadTicket | null;
+    indexStats: {
+        pagesRead: bigint;
+        bytesRead: bigint;
+        candidateVertices: bigint;
+        passes: number;
+    } | null;
+}>;
 export declare function geoScaleExecute(request:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>;
 export declare function geoScaleRead(request:ArrayBuffer|Uint8Array,budget:number):Promise<ArrayBuffer>;
 export declare function nativeGeoScaleBridge(budget:number):XygGeoScaleBridge;

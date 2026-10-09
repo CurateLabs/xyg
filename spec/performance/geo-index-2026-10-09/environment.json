@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-10-09",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M4",
+  "load": "Uncontrolled concurrent development; single observations, not paired speedups",
+  "measuredEngineCheckpoint": "7cc5d692",
+  "finalSmallRunSourceSha256": {
+    "crates/xyg-engine/examples/geo_index_bench.rs": "f3bef58e4c6887292e07615dc484af9eac6eb778751fdeca97016e6d77afa7ec",
+    "crates/xyg-engine/src/geo_spatial_index.rs": "f2d987c413cee80742ae6a5e52561b7e04e2d030d098e7c4b73def1a96620c22",
+    "crates/xyg-engine/src/geo_spatial_build_session.rs": "f83144d2744dec36cb2a3c78e1eb05f0e884e19b37c8539338aa4a7ddc21d1e0",
+    "crates/xyg-engine/src/geo_indexed_query_session.rs": "150090477df17d7349ab6a3ef0ff327a6de59b63a545e31f895e14d2d55ec161",
+    "crates/xyg-engine/src/geo_lod.rs": "30982379791426679371b0a6cb0ad9e5d4753c7feca415d2ea87eeec27edfbbf",
+    "crates/xyg-engine/src/geo_viewport.rs": "f8fb2e5e7fa4418eaa4b13d8845ce9659c9dbe0b76a146e907bceb98ef589701",
+    "crates/xyg-engine/src/geo_lod_scene.rs": "8125d973ea7eac22ba1a6b0837593b2b487c3ab1769e7638f2f4790ce4164a9b"
+  }
+}
