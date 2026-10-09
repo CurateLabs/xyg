@@ -49,6 +49,14 @@ pub fn compile(
     if peak > budget || budget > crate::geo_source::MAX_PROCESSOR_BYTES {
         return Err(GeoError::ResourceLimit);
     }
+    if let Some(selection) = &result.selection {
+        selection
+            .validate_result(result)
+            .map_err(|_| GeoError::InvalidArgument)?;
+    }
+    let selected_fill = result.selection.as_ref().map(|selection| {
+        crate::css::apply_opacity_rgba8(selection.state().style().fill, style.opacity as f32)
+    });
     let aggregate = !result.key.direct;
     let mut kinds = Vec::new();
     let mut ids = Vec::new();
@@ -87,7 +95,13 @@ pub fn compile(
                     point.x,
                     point.y,
                     style.diameter,
-                    color,
+                    if result.selection.as_ref().is_some_and(|selection| {
+                        selection.state().contains(point.identity.feature_id)
+                    }) {
+                        selected_fill.unwrap()
+                    } else {
+                        color
+                    },
                     SceneRecordKind::Scatter,
                 );
             }
@@ -108,18 +122,28 @@ pub fn compile(
                 .unwrap_or(0)
                 .max(1) as f64;
             let stops = crate::colormap::colormap_named_stops("viridis");
-            let color = |count: u64| {
+            let color = |count: u64, index: usize| {
                 if count == 0 {
                     [0; 4]
                 } else {
-                    crate::css::apply_opacity_rgba8(
+                    let base = crate::css::apply_opacity_rgba8(
                         crate::kernels::colormap_color(
                             (count as f64).ln_1p() / maximum.ln_1p(),
                             &stops,
                             255,
                         ),
                         style.opacity as f32,
-                    )
+                    );
+                    if let Some(selection) = &result.selection {
+                        crate::geo_linked_state::selected_fraction_color(
+                            base,
+                            selected_fill.unwrap(),
+                            selection.cell_selected_count(index),
+                            count,
+                        )
+                    } else {
+                        base
+                    }
                 }
             };
             match result.key.kind {
@@ -134,7 +158,7 @@ pub fn compile(
                                 cell.x,
                                 cell.y,
                                 cluster_diameter(cell.count, maximum),
-                                color(cell.count),
+                                color(cell.count, index),
                                 SceneRecordKind::Scatter,
                             );
                         }
@@ -144,7 +168,11 @@ pub fn compile(
                     if cells.len() > crate::geo_lod::DENSITY_CELL_LIMIT {
                         return Err(GeoError::ResourceLimit);
                     }
-                    let rgba: Vec<u8> = cells.iter().flat_map(|cell| color(cell.count)).collect();
+                    let rgba: Vec<u8> = cells
+                        .iter()
+                        .enumerate()
+                        .flat_map(|(i, cell)| color(cell.count, i))
+                        .collect();
                     push(
                         result.key.identity.layer_id,
                         0.,
@@ -256,6 +284,7 @@ mod tests {
             visible_vertices: 2,
             projected_vertices: 4,
             grid_capped: false,
+            selection: None,
         }
     }
     #[test]

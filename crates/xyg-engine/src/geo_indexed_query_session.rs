@@ -1,4 +1,5 @@
 //! Exact bounded leaf-stream merge; native and asynchronous WASM share state.
+use crate::geo_linked_state::GeoLinkedState;
 use crate::geo_lod::{GeoLodIdentity, GeoLodOptions, GeoLodPass, GeoPointLod, GeoPointResult};
 use crate::geo_source::{SourceError, TimePredicate};
 use crate::geo_source_session::{GeoProcessorLease, next_session_identity};
@@ -124,23 +125,60 @@ impl GeoIndexedQuerySession {
         state_revision: u64,
         max_read_bytes: u64,
     ) -> Result<Option<Self>> {
+        Self::new_with_state(
+            index,
+            camera,
+            time,
+            options,
+            layer_id,
+            style_revision,
+            state_revision,
+            max_read_bytes,
+            None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_state(
+        index: Arc<ValidatedGeoSpatialIndex>,
+        camera: GeoViewport,
+        time: TimePredicate,
+        options: GeoLodOptions,
+        layer_id: u64,
+        style_revision: u64,
+        state_revision: u64,
+        max_read_bytes: u64,
+        state: Option<Arc<GeoLinkedState>>,
+    ) -> Result<Option<Self>> {
+        let identity = GeoLodIdentity {
+            source_digest: index.source.digest(),
+            generation: index.source.generation(),
+            source_rows: index.source.rows(),
+            crs: index.source.crs(),
+            geometry: index.source.geometry(),
+            layer_id,
+            style_revision,
+            state_revision,
+        };
+        if let Some(state) = &state {
+            state.validate_identity(identity)?;
+        }
         if decision(&index, &camera, time)? == GeoIndexDecision::FullScanFrontier {
             return Ok(None);
         }
         let bounds = camera.point_index_bounds()?;
-        let reserve = GeoPointLod::reservation_bytes(options)?
-            .checked_add(
-                MAX_FRONTIER
-                    * (PAGE_RECORDS * std::mem::size_of::<Vertex>()
-                        + std::mem::size_of::<Stream>()
-                        + 32)
-                    + 4 * PAGE_BYTES
-                    + 16_384,
-            )
+        let frontier = MAX_FRONTIER
+            * (PAGE_RECORDS * std::mem::size_of::<Vertex>() + std::mem::size_of::<Stream>() + 32)
+            + 4 * PAGE_BYTES
+            + 16_384;
+        let total = GeoPointLod::reservation_bytes_with_state(options, state.as_deref())?
+            .checked_add(frontier)
             .ok_or(SourceError::ResourceLimit)?;
-        if reserve > options.processor_bytes || max_read_bytes == 0 {
+        if total > options.processor_bytes || max_read_bytes == 0 {
             return Err(SourceError::ResourceLimit);
         }
+        // Selected LOD/result storage has its own durable shared lease. Legacy
+        // None continues to use this session's existing base/result lease.
+        let reserve = if state.is_some() { frontier } else { total };
         let lease = GeoProcessorLease::acquire(reserve)?;
         let mut streams = Vec::with_capacity(MAX_FRONTIER);
         let mut a = 0;
@@ -163,21 +201,7 @@ impl GeoIndexedQuerySession {
             }
             a = end;
         }
-        let lod = GeoPointLod::new(
-            GeoLodIdentity {
-                source_digest: index.source.digest(),
-                generation: index.source.generation(),
-                source_rows: index.source.rows(),
-                crs: index.source.crs(),
-                geometry: index.source.geometry(),
-                layer_id,
-                style_revision,
-                state_revision,
-            },
-            camera,
-            time,
-            options,
-        )?;
+        let lod = GeoPointLod::new_with_state(identity, camera, time, options, state)?;
         Ok(Some(Self {
             index,
             time,
@@ -311,10 +335,13 @@ impl GeoIndexedQuerySession {
                     if cancel() {
                         return Err(SourceError::Cancelled);
                     }
-                    self.lease
-                        .resize(GeoPointLod::output_bytes(&result) + 16_384)?;
                     self.streams = Vec::new();
                     self.heap = BinaryHeap::new();
+                    self.lease.resize(if result.selection.is_some() {
+                        16_384
+                    } else {
+                        GeoPointLod::output_bytes(&result) + 16_384
+                    })?;
                     self.result = Some(result);
                     return Ok(GeoIndexedQueryStep::Complete);
                 }
@@ -465,7 +492,35 @@ pub fn process_indexed<I: GeoSpatialReader>(
     max_read_bytes: u64,
     cancel: &mut dyn FnMut() -> bool,
 ) -> Result<Option<GeoIndexedResult>> {
-    let Some(mut s) = GeoIndexedQuerySession::new(
+    process_indexed_with_state(
+        index,
+        reader,
+        camera,
+        time,
+        options,
+        layer_id,
+        style_revision,
+        state_revision,
+        max_read_bytes,
+        None,
+        cancel,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+pub fn process_indexed_with_state<I: GeoSpatialReader>(
+    index: Arc<ValidatedGeoSpatialIndex>,
+    reader: &mut I,
+    camera: GeoViewport,
+    time: TimePredicate,
+    options: GeoLodOptions,
+    layer_id: u64,
+    style_revision: u64,
+    state_revision: u64,
+    max_read_bytes: u64,
+    state: Option<Arc<GeoLinkedState>>,
+    cancel: &mut dyn FnMut() -> bool,
+) -> Result<Option<GeoIndexedResult>> {
+    let Some(mut s) = GeoIndexedQuerySession::new_with_state(
         index,
         camera,
         time,
@@ -474,6 +529,7 @@ pub fn process_indexed<I: GeoSpatialReader>(
         style_revision,
         state_revision,
         max_read_bytes,
+        state,
     )?
     else {
         return Ok(None);

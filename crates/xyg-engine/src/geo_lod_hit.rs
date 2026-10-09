@@ -242,6 +242,7 @@ mod tests {
             visible_vertices: 3,
             projected_vertices: 3,
             grid_capped: false,
+            selection: None,
         }
     }
     fn point(id: u64, row: u64, vertex: u32, x: f64) -> GeoDirectPoint {

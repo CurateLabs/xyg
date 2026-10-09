@@ -255,8 +255,10 @@ Raw samples, hashes, environment, source files and commands are committed in
 The original raw artifact gate was 1 MiB. The retained geographic source,
 resumable membership, certified simplification, tile cache, frozen snapshots,
 and transport credit introduced in ABI 33 require an explicit budget decision:
-**1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip bytes (512 KiB)**. Packaging
-fails either gate. The release compiler and pinned Binaryen 132 `-O3
+The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
+bytes (512 KiB)**. They are historical and superseded by the linked-state and
+temporal-overview functionality decision below; packaging enforces its current
+1,408 KiB raw / 576 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -999,3 +1001,22 @@ with aligned `XYVR` typed planes. The shared Rust processor owns normalization,
 transitions, inverse/projection, visible IDs/bounds, and closed ring topology.
 [The exact byte and allocation contract](geo-viewport-protocol.md) is normative.
 Actual wasm32/native/C-ABI parity is `geo-viewport-wasm-parity.test.mjs`.
+
+
+The immutable linked-state and exact temporal-overview extension requires a
+recorded functionality decision: packaging limits are now **1,441,792 raw bytes
+(1,408 KiB) and 589,824 gzip bytes (576 KiB, level 6)**. Compiler and pinned
+Binaryen O3 settings remain unchanged. The combined candidate measures
+1,326,010 raw / 543,366 gzip bytes; three fresh Chromium Worker-ready samples
+are 35.5, 17.4 and 18.7 ms under uncontrolled local load. This is bounded
+functionality headroom and local startup evidence, without a performance win
+or massive-scale claim. Both gates remain hard packaging failures.
+[Raw hashes, environment, contracts and reproduction commands](../performance/geo-overview-artifact-2026-10-09/README.md)
+record the decision and its limits. Future growth requires separate evidence.
+
+
+The camera parity harness sends each exact binary request to the bounded native
+oracle through an owned temporary input-file descriptor. This avoids an OS pipe
+`EPIPE` race when an invalid oracle budget rejects before stdin is consumed.
+Exit status, stable error, complete output and all native/WASM parity assertions
+remain unchanged; temporary descriptors/files are closed and removed per call.
