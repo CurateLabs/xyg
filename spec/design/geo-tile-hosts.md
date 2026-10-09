@@ -17,8 +17,9 @@ Its callback receives the authenticated Rust-issued locator, XYZ and limits.
 Python's native reader and target stage are synchronous and work within a running
 notebook event loop. Node readers/stages are asynchronous and receive an AbortSignal.
 Cancellation waits for outstanding I/O/staging to settle before dropping buffers
-and acknowledging the read ticket. Authorized logical length and backing capacity
-are checked separately; a tiny view of an oversized allocation is rejected.
+and acknowledging the read ticket. The Rust-issued primitive capacity limit is privately captured before calling
+the reader, so mutating a callback receipt cannot widen authority. Authorized
+logical length and backing capacity are checked separately; a tiny view of an oversized allocation is rejected.
 Readers must release their own retained callback buffers before resolving.
 
 `prepare` returns an owned immutable candidate Frame without committing live

@@ -379,3 +379,79 @@ assert.equal(closing.closed,true);releaseDispose();await retired;
         capture_output=True,
         check=True,
     )
+
+
+def test_reader_cannot_mutate_rust_capacity_authority_before_host_copy(monkeypatch):
+    from dataclasses import replace
+
+    camera, sources, point, foreground, styles = fixture()
+    source = replace(sources[1], max_zoom=2)
+    commands = []
+    original_encode = tiles.encode_request
+
+    def encode(command, *args, **kwargs):
+        commands.append(command)
+        return original_encode(command, *args, **kwargs)
+
+    monkeypatch.setattr(tiles, "encode_request", encode)
+    malicious = False
+
+    def reader(receipt):
+        if malicious:
+            receipt["max_bytes"] = 2048
+            return bytes(2048)
+        return point
+
+    session = tiles.GeoTileSession([source], reader, view_id=1, budget=128 << 20)
+    old = session.prepare(camera, catalog=foreground, vector_styles=styles, image_id=42)
+    old.commit()
+    try:
+        old_digest = digest(old.data["scene"])
+        supply, ack = commands.count(4), commands.count(5)
+        malicious = True
+        changed = {**camera, "zoom": 1.0}
+        with pytest.raises(ValueError, match="authorized capacity"):
+            session.prepare(changed, catalog=foreground, vector_styles=styles, image_id=42)
+        assert commands.count(4) == supply  # even packet encoding never started
+        assert commands.count(5) == ack + 1
+        assert session.current is old and digest(old.data["scene"]) == old_digest
+        malicious = False
+        changed_catalog = bytearray(foreground)
+        struct.pack_into("<d", changed_catalog, 40, 1.0)
+        recovered = session.prepare(
+            changed, catalog=changed_catalog, vector_styles=styles, image_id=42
+        )
+        recovered.commit()
+        recovered.close()
+    finally:
+        session.close()
+        old.close()
+    script = r"""
+import assert from 'node:assert/strict';
+import {GeoTileSource,GeoTileSession,nativeGeoTileBridge} from './packages/xy-node/src/geo-tiles.js';
+const f=JSON.parse(process.env.XYG_TILE_FIXTURE),bytes=x=>Uint8Array.from(Buffer.from(x,'hex'));
+const camera={crs:4326,worldWrap:false,centerX:0,centerY:0,zoom:0,width:800,height:600,bearing:0,pitch:0};
+const max=18446744073709551615n,source=new GeoTileSource({sourceId:2n,generation:max,layerId:8n,layerRevision:max,styleRevision:max,kind:1,minZoom:0,maxZoom:2,maxBytes:1024n,maxFeatures:1n,maxVertices:1n,locator:'local/vector',attribution:'',network:false});
+let bad=false;const commands=[],native=nativeGeoTileBridge(128<<20);
+const bridge={execute:p=>{commands.push(new DataView(p).getUint32(8,true));return native.execute(p)},read:p=>native.read(p)};
+const session=await GeoTileSession.create([source],async receipt=>{if(bad){receipt.maxBytes=2048;return new Uint8Array(2048)}return bytes(f.point)}, {viewId:1n,budget:128<<20,bridge});
+const options={catalog:bytes(f.foreground),vectorStyles:[{layerId:8n,kind:1,style:{fill:new Uint8Array([255,0,0,255]),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0}}],imageId:42n};
+const old=await session.prepare(camera,options);await old.commit();
+const supply=commands.filter(c=>c===4).length,ack=commands.filter(c=>c===5).length;
+bad=true;await assert.rejects(session.prepare({...camera,zoom:1},options),/authorized capacity/);
+assert.equal(commands.filter(c=>c===4).length,supply);assert.equal(commands.filter(c=>c===5).length,ack+1);assert.equal(session.current,old);
+bad=false;const changedCatalog=bytes(f.foreground);new DataView(changedCatalog.buffer).setFloat64(40,1,true);const recovered=await session.prepare({...camera,zoom:1},{...options,catalog:changedCatalog});await recovered.commit();
+await session.dispose();await recovered.dispose();assert(old.data.scene.byteLength>0);await old.dispose();
+"""
+    subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        cwd=ROOT,
+        env={
+            **os.environ,
+            "XYG_NATIVE_LIB": str(Path(_native._lib._name).resolve()),
+            "XYG_TILE_FIXTURE": json.dumps(dict(point=point.hex(), foreground=foreground.hex())),
+        },
+        text=True,
+        capture_output=True,
+        check=True,
+    )

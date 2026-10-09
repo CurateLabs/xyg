@@ -11,6 +11,7 @@ const browserPackage = process.env.XYG_BROWSER_DIST ? resolve(process.env.XYG_BR
 const browserDist = browserPackage ? join(browserPackage, "dist") : join(root, "packages/xy-client/dist");
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
+  "/spec/wasm/abi.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",

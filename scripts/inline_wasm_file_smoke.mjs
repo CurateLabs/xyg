@@ -10,6 +10,7 @@ import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 
 const root = new URL("..", import.meta.url);
+const manifest = JSON.parse(await readFile(new URL("spec/wasm/abi.json", root), "utf8"));
 const artifact = await readFile(new URL("packages/xy-client/dist/xyg-wasm-inline.js", root), "utf8");
 const harness = `(async()=>{
 ${artifact}
@@ -19,8 +20,8 @@ const xyag=()=>{const bytes=new Uint8Array(96),view=new DataView(bytes.buffer);b
 const url=URL.createObjectURL(new Blob([globalThis.__xygInlineWasm.classicWorkerSource],{type:"application/javascript"}));
 const worker=new Worker(url);
 try {
-  worker.postMessage({type:"init",requestId:1,base64:globalThis.__xygInlineWasm.base64,expectedAbiVersion:24,expectedSceneVersion:31,maxArenaBytes:1048576});
-  const ready=await wait(worker,1);if(!ready.ok||ready.value?.abiVersion!==24)fail("classic worker init/diagnostics failed");
+  worker.postMessage({type:"init",requestId:1,base64:globalThis.__xygInlineWasm.base64,expectedAbiVersion:${manifest.abi_version},expectedSceneVersion:${manifest.scene_version},maxArenaBytes:1048576});
+  const ready=await wait(worker,1);if(!ready.ok||ready.value?.abiVersion!==${manifest.abi_version})fail("classic worker init/diagnostics failed");
   const request=xyag();worker.postMessage({type:"aggregate.bin2d",requestId:2,sequence:1,request},[request]);
   const aggregate=await wait(worker,2);if(!aggregate.ok||!(aggregate.value?.aggregate instanceof ArrayBuffer))fail("classic worker aggregate failed");
   const output=new Uint8Array(aggregate.value.aggregate);if(output[0]!==88||output[1]!==89||output[2]!==65||output[3]!==79)fail("classic worker did not return XYAO");
@@ -34,7 +35,7 @@ const hash = createHash("sha256").update(harness).digest("base64");
 const directory = await mkdtemp(join(tmpdir(), "xyg-inline-wasm-"));
 const page = join(directory, "offline.html");
 await writeFile(page, `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${hash}' 'wasm-unsafe-eval'; worker-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'"><script>${harness}</script>`);
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.XYG_CHROMIUM ? {executablePath:process.env.XYG_CHROMIUM} : {}) });
 try {
   const tab = await browser.newPage();
   const errors = [];

@@ -467,11 +467,12 @@ export class GeoTileSession {
             epoch,
           );
           check();
+          const authorizedMax = receipt.maxBytes;
           payload = await this.readTile(receipt, signal);
           view = bytes(payload);
           if (
-            view.byteLength > receipt.maxBytes ||
-            view.buffer.byteLength > receipt.maxBytes
+            view.byteLength > authorizedMax ||
+            view.buffer.byteLength > authorizedMax
           )
             throw new RangeError("tile read exceeds authorized capacity");
           check();

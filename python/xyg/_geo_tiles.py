@@ -401,16 +401,14 @@ class GeoTileSession:
                         read_handle,
                         epoch,
                     )
+                    authorized_max = receipt["max_bytes"]
                     data = self._reader(receipt)
                     if inspect.isawaitable(data):
                         if inspect.iscoroutine(data):
                             data.close()
                         raise TypeError("native synchronous tile reader must return bytes")
                     view = _bytes(data)
-                    if (
-                        view.nbytes > receipt["max_bytes"]
-                        or memoryview(view.obj).nbytes > receipt["max_bytes"]
-                    ):
+                    if view.nbytes > authorized_max or memoryview(view.obj).nbytes > authorized_max:
                         raise ValueError("tile read exceeds authorized capacity")
                     execute(encode_request(4, read_handle, epoch=epoch, payload=view))
                     view = None
