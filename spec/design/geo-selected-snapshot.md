@@ -115,3 +115,8 @@ export. Build using the recorded O3/inline100/Binaryen packaging path; measure
 against the existing1408 KiB raw /576 KiB gzip gates, without a profile change.
 This small proof is not evidence of massive interactive performance, live linked
 host events or imported-source query authority.
+
+The existing direct-browser WASM CI job runs this bounded selected snapshot
+conformance after packaging and Chromium installation, within the existing
+Release surfaces aggregate. Merge-group coverage and the scheduled/manual
+massive-scale policy remain unchanged.

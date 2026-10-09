@@ -434,6 +434,10 @@ jobs:
           # Blacksmith's Ubuntu image carries the supported runner-image browser libraries.
           # Keep Chromium artifact installation cached and browser-specific.
           npx playwright install chromium
+      - name: Selected frozen geographic native/WASM conformance
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          node scripts/geo_selected_snapshot_conformance.mjs
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
         run: node scripts/wasm_foundation_smoke.mjs
