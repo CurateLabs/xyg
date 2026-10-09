@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "engineBase": "c5e0aa38a867c3c31fcabdc5d8487cf2b2a108f0",
+  "artifactDonor": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewmembershipprotocol",
+  "donorHead": "9f8f2707e3dfdd5d94dcb8c6792b2c46314b6c18",
+  "compilerInputs": 197,
+  "inputDifferences": [],
+  "artifacts": {
+    "target/release/libxyg_core.dylib": "be47dff3ae3b40fc24387b8b8a2d245c492b94c772a325e872696a0571e507da",
+    "packages/xy-client/dist/xyg-wasm.wasm": "66e49864b39d1e8fda9d0144a4a229b13bcbdfbc452b697c20f6ce60c6ab0820"
+  },
+  "limits": {
+    "pageRecords": 4096,
+    "packetBytes": 131328,
+    "handles": 16,
+    "data": 8,
+    "sessions": 8
+  },
+  "claims": [
+    "bounded domain original-row membership",
+    "signed time exact",
+    "spatially nonfinal",
+    "no massive latency claim",
+    "legacy unknown45 confirmation stays poisoned"
+  ]
+}
