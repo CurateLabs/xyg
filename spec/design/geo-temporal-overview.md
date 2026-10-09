@@ -215,3 +215,13 @@ The typed command and projected Scene extension is documented separately in
 [geo-temporal-overview-protocol.md](geo-temporal-overview-protocol.md). It retains
 this foundation's data-space/nonfinal identity; ordinary screen-bin semantics
 and source-feature membership are not substituted.
+
+## Typed lifecycle adapter
+
+`js/src/67_geo_overview.ts` owns binary framing, private ticket copies and asynchronous transport settlement. Rust remains the sole implementation of counts, source authentication, cell geometry and temporal policy. `scripts/gen_geo_overview_wire.mjs` mechanically strips types and emits declarations into the Node host; its check rejects drift. This is an internal adapter, with no second chart-building API.
+
+The typed packet is explicitly temporal-exact, data-domain and nonfinal. It retains full u64 identities and signed i64 time, offers 256 bounded u64 counts, and never fabricates source IDs. Count and Scene views are borrowed from the immutable Data owner; dispose drops them before Rust disposal. Pending disposal coalesces; a transient bridge rejection permits an explicit retry while views stay invalid. Parsed bytes are not a substitute for the private Rust owner in trusted paint, membership or export.
+
+Each read/write callback receives a separate ticket copy. The driver captures exact private authority, length, namespace and kind before invoking callbacks, admits transfer storage before copying, and drops borrowed payloads before exact ACK. Cancellation waits for pending callback settlement; abort during a delayed terminal reply rejects success. Callback mutation cannot change the ACK authority.
+
+`scripts/geo_overview_conformance.mjs` exercises actual release native Rust and packaged WASM: eight temporal cases with byte-identical counts and Scene, nine malformed-packet controls, callback mutation, cancelled-read disposal while awaiting exact ACK, delayed terminal cancellation, eight retained owners, two-copy quotas, old Data after source/query/index disposal, source-pick rejection and retry after a transport disposal rejection. This foundation does not yet establish overview browser paint, typed Python hosts, exact domain membership or massive latency.
