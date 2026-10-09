@@ -16,6 +16,9 @@ window.addEventListener('message',event=>{const e=event.data;for(const callback 
    await new Promise(resolve=>requestAnimationFrame(resolve));
    canvas=view.view?.canvas;
    if(!canvas||canvas.width===0||canvas.height===0)throw Error('real painter absent');
+   // Default WebGL drawing buffers may be discarded after presentation.
+   // Read in the same turn as an ordinary shared-painter draw.
+   view.view.draw(true);
    let pixels;
    if(view.view._glHost){pixels=view.view._present2d.getImageData(0,0,canvas.width,canvas.height).data;}
    else{const gl=view.view.gl;pixels=new Uint8Array(gl.drawingBufferWidth*gl.drawingBufferHeight*4);gl.readPixels(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight,gl.RGBA,gl.UNSIGNED_BYTE,pixels);}

@@ -116,3 +116,5 @@ indexed processing remain gates. Actual VS Code realm death is independently
 proved; mere socket disappearance does not permit native ownership release.
 See [geographic-hosts.md](../../design/geographic-hosts.md) for the framing,
 copy/lease policy and public integration boundaries.
+
+These are historical canonical-source observations. The tracked runtime fixtures now exercise explicit indexed-frame mounting; current reproduction and capacity-repair evidence are in [geo-indexed-host-journeys-2026-10-09](../geo-indexed-host-journeys-2026-10-09/README.md).
