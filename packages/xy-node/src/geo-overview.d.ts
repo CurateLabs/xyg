@@ -1,4 +1,15 @@
+/** Typed nonfinal data-domain counts. All temporal/geometry policy is Rust-owned. */
+import { type prepareGeoSceneData } from './geoscale.js';
 import type { XygGeoQueryBudget, XygGeoScaleBridge, XygGeoScaleQuery } from './geoscale.js';
+export declare class GeoOverviewUnsupportedSelected extends Error {
+    constructor();
+}
+/** Internal frame-aware ingress: the raw codec has only a numeric handle and
+ * cannot detect selected authority before dispatch. Rust rechecks the owner. */
+export declare function encodeGeoOverviewBuild(frame: Awaited<ReturnType<typeof prepareGeoSceneData>>, input: {
+    budget: XygGeoQueryBudget;
+    maxVertices: bigint;
+}): ArrayBuffer;
 export interface GeoOverviewRequest {
     command: number;
     handle: bigint;

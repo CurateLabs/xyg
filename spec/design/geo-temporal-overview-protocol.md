@@ -22,6 +22,24 @@ immutable authority, not a `GeoPointResult` and not an exact screen-bin tier.
 | 10 | Dispose | None |
 | 23 | Pure immutable typed Data length/read | None |
 
+Command27 rejects privately selected SceneData with code17
+(`UnsupportedSelected`) before a builder/source clone or processor lease exists.
+This includes a selected profile with an empty ID plane: empty intent remains
+selected authority. The current temporal index retains only the canonical source
+and cannot preserve that frame's sparse intent/profile/count plane. Rust checks
+its private selection/Scope authority, rather than trusting host annotations or
+merely inspecting ID count. Rejection does not consume another issued State,
+change Scope/source history, or invalidate prior frames. Existing common handle
+and session-cap admission still applies; ordinary unselected build bytes and
+count/Scene semantics are unchanged.
+
+The raw encoder accepts numeric handles, so internal frame-aware encoding
+helpers `encodeGeoOverviewBuild(frame, ...)` (shared TypeScript/Node) and
+`builder_request(frame, ...)` (Python) reject selection presence before transport
+dispatch. They create no operation, lease or chart-building API. A forged host
+`selection=None` annotation cannot bypass the independent Rust guard. Reply
+decoders admit the fixed code17 receipt without a ticket or output owner.
+
 Commands 27–31 and builder/index/query operations 6–10 require their exact
 nonzero operation sequence in the common header. Overview Data uses the shared
 immutable Data disposal grammar: command 10 has sequence zero, while command 23
@@ -40,7 +58,8 @@ source, index or query does not change an already issued Data frame.
 
 Additional fixed reply codes are 13 (validated overview ready, digest at 40,
 storage namespace at 48), 14 (query complete), 15 (explicit unsupported-domain
-fallback), and 16 (prepared typed Data, byte length at 32 and query owner at 40).
+fallback), 16 (prepared typed Data, byte length at 32 and query owner at 40), and
+17 (unsupported selected input, naming the unchanged source Data and sequence).
 Common codes 1/2/7/9 remain NeedRead/AwaitRelease/NeedWrite/Cancelled. Overview
 replies use ticket bytes 64..192, distinct from the older 96-byte ticket grammar.
 A cancelled read/write prevents disposal until its exact settlement ACK. The
