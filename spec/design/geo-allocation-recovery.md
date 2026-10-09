@@ -1,16 +1,19 @@
 # Recoverable geographic allocations
 
-Dossier §27/§29/§34. This Rust opt-in covers commands26/27/28/29/45.
+Dossier §27/§29/§34. This Rust opt-in covers commands26/27/28/29/35/36/45.
 It adds no ABI signature, memory pool, handle quota or temporal/geometry policy.
 Raw nonce0 remains compatible. Issued overview owners now adopt commands26–29
 through [private host recovery](geo-overview-recovery-hosts.md); domain45 host
-adoption and mutations35/36 remain independent gates.
+adoption remains an independent gate. Selected35/36 mutation phases are defined
+in [selected mutation recovery](geo-selected-mutation-recovery.md).
 
 ## Opt-in and exact replay
 
 XYGQ v1 header240 is a u64 allocation nonce for these commands. Header248–256
 stays zero; nonce0 preserves all legacy requests, replies and publication paths.
 The complete request is at most280 bytes, including budgets and payload.
+Commands35/36 reuse this framing with the distinct logical operation phases
+and complete held-credit rules in [selected mutation recovery](geo-selected-mutation-recovery.md).
 A fixed sixteen-slot private registry bank keys the last receipt by historical
 issuer handle and command. It stores monotonic nonce, exact whole request,
 original reply, confirmed flag and private target birth/phase. Changed request
@@ -126,9 +129,9 @@ and typed-overview native/WASM proofs. Its existing foundation artifact includes
 comparisons and the bounded allocation/confirmation controls. This is engine
 opt-in evidence; it does not establish public-owner adoption.
 
-35 mutates an existing Source and consumes State;36 replaces the known State
-handle with IndexedQuery, while fallback preserves State. Recovering either
-requires exact consumed State plus operation/birth authority. Nonce33's retired
-receipt alone cannot prove which35 Source mutation succeeded. They remain a
-separate mutation-recovery slice. Domain-member owner adoption, unknown transport
+35 journals an exact Source operation and consumes State;36 journals State-to-Query
+replacement, while fallback preserves State. The opt-in engine proof is described
+in [selected mutation recovery](geo-selected-mutation-recovery.md). Nonce33's retired
+receipt alone cannot prove which35 Source mutation succeeded. Public selected
+owner adoption and lost19 publication remain separate gates. Domain-member owner adoption, unknown transport
 reset, browser presentation and massive latency remain separate gates.

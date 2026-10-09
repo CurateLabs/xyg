@@ -143,6 +143,7 @@ struct Validation {
 struct Job {
     processor: GeoPointLod,
     selected_reserve: usize,
+    processor_bytes: usize,
     snapshot: GeoOperationSnapshot,
     query: QuerySpec,
     sequence: u64,
@@ -222,6 +223,18 @@ impl GeoSourceSession {
     pub fn current_sequence(&self) -> u64 {
         self.last_sequence
     }
+    /// An operation birth is not the lifetime of its caller-owned Source.
+    /// Cancellation may retain published results and retired read loans.
+    pub(crate) fn operation_live(&self, sequence: u64) -> bool {
+        !self.disposed
+            && sequence == self.last_sequence
+            && sequence > self.cancelled_through
+            && (self.job.as_ref().is_some_and(|j| j.sequence == sequence)
+                || self
+                    .published
+                    .as_ref()
+                    .is_some_and(|p| p.sequence == sequence))
+    }
     pub fn source(&self) -> Option<&GeoSourceManifest> {
         self.source.as_ref()
     }
@@ -280,8 +293,23 @@ impl GeoSourceSession {
         snapshot: GeoOperationSnapshot,
         camera: GeoViewport,
         query: QuerySpec,
+        options: GeoLodOptions,
+        state: Option<Arc<GeoLinkedState>>,
+    ) -> Result<()> {
+        self.begin_with_state_budget(sequence, snapshot, camera, query, options, state, None)
+    }
+    /// Journal controls share the caller's local phase budget; legacy entry
+    /// points delegate with the original session allowance.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn begin_with_state_budget(
+        &mut self,
+        sequence: u64,
+        snapshot: GeoOperationSnapshot,
+        camera: GeoViewport,
+        query: QuerySpec,
         mut options: GeoLodOptions,
         state: Option<Arc<GeoLinkedState>>,
+        processor_bytes: Option<usize>,
     ) -> Result<()> {
         if self.disposed
             || sequence == 0
@@ -308,13 +336,17 @@ impl GeoSourceSession {
         if let Some(state) = &state {
             state.validate_snapshot(snapshot)?;
         }
+        let processor_bytes = self
+            .budget
+            .processor_bytes
+            .min(processor_bytes.unwrap_or(self.budget.processor_bytes));
         let reserve = GeoPointLod::reservation_bytes_with_state(options, state.as_deref())?;
         let wrapper = if state.is_some() { 1024 } else { 0 };
         if self
             .local_bytes()
             .checked_add(reserve)
             .and_then(|n| n.checked_add(wrapper))
-            .is_none_or(|n| n > self.budget.processor_bytes)
+            .is_none_or(|n| n > processor_bytes)
         {
             return Err(SourceError::ResourceLimit);
         }
@@ -340,6 +372,7 @@ impl GeoSourceSession {
         self.job = Some(Job {
             processor,
             selected_reserve: if wrapper != 0 { reserve } else { 0 },
+            processor_bytes,
             snapshot,
             query,
             sequence,
@@ -541,11 +574,16 @@ impl GeoSourceSession {
             .checked_mul(4)
             .and_then(|n| n.checked_add(16_384))
             .ok_or(SourceError::ResourceLimit)?;
+        let processor_bytes = self
+            .job
+            .as_ref()
+            .filter(|job| job.sequence == sequence)
+            .map_or(self.budget.processor_bytes, |job| job.processor_bytes);
         if peak > MAX_CHUNK_PEAK
             || self
                 .local_bytes()
                 .checked_add(peak)
-                .is_none_or(|n| n > self.budget.processor_bytes)
+                .is_none_or(|n| n > processor_bytes)
         {
             return Err(SourceError::ResourceLimit);
         }

@@ -459,6 +459,10 @@ impl GeoIndexedQuerySession {
         }
         Ok(())
     }
+    /// Receipt liveness does not include cancelled/failed loans retained for ACK.
+    pub(crate) fn operation_live(&self) -> bool {
+        !self.cancelled && !self.failed
+    }
     pub fn cancel(&mut self) {
         self.cancelled = true;
         self.clear_work();
