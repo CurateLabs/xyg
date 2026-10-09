@@ -104,13 +104,31 @@ fn canonical_selected_state_consumption_cancel_baseline_and_immutable_rows() {
     put64(&mut freeze, 16, frame.0);
     put64(&mut freeze, 24, 4);
     put64(&mut freeze, 32, 128 << 20);
-    assert!(matches!(
-        crate::geo_snapshot_protocol::execute(&freeze),
-        Err(crate::geo_snapshot::GeoSnapshotError::Unsupported)
-    ));
+    let selected_frozen = crate::geo_snapshot_protocol::execute(&freeze).unwrap();
+    put32(&mut freeze, 8, 20);
+    put64(&mut freeze, 16, u64at(&selected_frozen, 16));
+    put64(&mut freeze, 24, 0);
+    put64(&mut freeze, 32, 0);
+    let frozen_bytes = crate::geo_snapshot_protocol::read_data(&freeze, 128 << 20).unwrap();
+    let cache = GeoTileCache::new(GeoTileLimits::default(), 0).unwrap();
+    let imported =
+        crate::geo_snapshot::GeoFrozenSnapshot::decode(&cache, &frozen_bytes, 128 << 20).unwrap();
+    assert_eq!(imported.selections()[0].selected_ids(), &[u64::MAX]);
+    assert_eq!(imported.selections()[0].namespace(), 777);
+    assert_eq!(imported.selections()[0].visible_selected_vertices(), 2);
+    assert!(frozen_bytes
+        .windows(selected_footer.len())
+        .any(|bytes| bytes == selected_footer));
+    drop(imported);
+    drop(frozen_bytes);
+    put32(&mut freeze, 8, 3);
+    put64(&mut freeze, 32, 0);
+    crate::geo_snapshot_protocol::execute(&freeze).unwrap();
     // The original ordinary immutable frame still freezes successfully.
     put64(&mut freeze, 16, f.frame.0);
     put64(&mut freeze, 24, 1);
+    put32(&mut freeze, 8, 1);
+    put64(&mut freeze, 32, 128 << 20);
     let frozen = crate::geo_snapshot_protocol::execute(&freeze).unwrap();
     put32(&mut freeze, 8, 3);
     put64(&mut freeze, 16, u64at(&frozen, 16));

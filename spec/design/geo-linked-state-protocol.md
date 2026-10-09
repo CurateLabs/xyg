@@ -118,16 +118,17 @@ rows, five-view handle ceilings, explicit engine parking, failed next-page read
 with old-page preservation and scope draining. Original-row core tests cover
 selected null/time-excluded/offscreen rows and full-content cursor binding.
 
-Native/WASM wrappers, typed host parsers, public linked events and selected
-frozen-export provenance remain later integration gates. Trusted
+Typed host parsers and public linked events remain later integration gates.
+Selected native/WASM binary freeze and native static provenance are covered by
+[the selected-only frozen contract](geo-selected-snapshot.md). Trusted
 `with_scene_data` exposes `result.selection` with full immutable intent/count
-ownership for that integration; selected freeze must fail closed until complete
-XYSE authority is carried. This slice makes no selected export, host-journey,
-massive latency or M6/#50 completion claim.
+ownership for that integration; selected freeze now carries and validates complete XYSE authority without
+constructing live source capabilities on import. The linked-state foundation alone makes no host-journey, massive latency or
+M6/#50 completion claim.
 
 Command 34 admits the complete new canonical ID plane and state owner against the caller processor budget before linking or changing target admission. A failed low-budget link preserves the source State and target revision for an explicit retry.
 
-Selected SceneData freeze returns Unsupported before frozen allocation while XYGX lacks full XYSE intent, profile and count authority. Ordinary unselected snapshots retain their existing contract. This rejection is a release gate until selected export carries and validates the full authority.
+Selected SceneData and mixed freeze use XYGX v3 with full XYSE intent, profile and count authority; imported metadata stays inert and is validated structurally against retained base grids/direct references and captured paint. Ordinary unselected snapshots remain byte-identical XYGX v2. See [selected frozen export](geo-selected-snapshot.md) for exact framing, bounds, native/WASM proof and remaining gates.
 
 Picking uses the effective painted alpha. Direct selected points replace the
 ordinary fill with selected RGBA, with ordinary opacity applied once; stroke

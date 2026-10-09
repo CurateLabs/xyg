@@ -1,0 +1,20 @@
+{
+  "base": "637cc4fde11b7bb8b1b17cdbb08276e45d753ecf",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "node": "v26.6.0",
+  "chrome": "Google Chrome 155.0.8059.40",
+  "wasmProfile": "O3/fatLTO/codegen1/inline100 + pinnedBinaryen132 wasm-opt O3; unchanged recorded gates1408KiBraw/576KiBgzip",
+  "sourceSHA256": {
+    "crates/xyg-engine/src/geo_snapshot.rs": "5a9f124c851347e91eb64ba84004301d943dcf0362974517ee8d379c959ca989",
+    "crates/xyg-engine/src/geo_linked_state.rs": "6e25ef6c9d6873ff6707019f8ae36b3b48f3b6f6c5d874d3ffce68eaa7fbbff0",
+    "crates/xyg-engine/src/geo_lod_scene.rs": "c6d7c62320ca4b4e76f6b166763148598c008a7163a334d95f7e3444c04c2ebd",
+    "crates/xyg-engine/src/geo_linked_state_protocol.rs": "f77108bb1b19fee17031747d1a473f8cf211c20b729cc4196134f965a08d4773",
+    "crates/xyg-engine/src/geo_mixed_frame.rs": "94db530616d6543861f9e4dafffd4a0e8d30613ebad744c5b66ece3be142e01c",
+    "crates/xyg-engine/src/geo_snapshot_protocol.rs": "38ab54f1c1de5f0c8f98b10c3b3d5056355e8f4cedb137116979a4300b3f00b9",
+    "scripts/geo_selected_snapshot_conformance.mjs": "84eeda94176f7225c3bdc04351dfc33d7cd301c1ea9725f7aa60123929e0fa0d",
+    "tests/browser/geo_selected_snapshot_fixture.mjs": "1bcd0a38de520c42e9e4589f1a4a1b7d759ba41fb9a48ec2be9d9578ab852c4b"
+  },
+  "scope": "Small correctness/byte/pixel proof, not quiet-host latency or benchmark. Other development builds may be concurrent. App/test inputs, browser DOM/GPU and committed linear memory/OS RSS are not a per-module product-ledger measurement."
+}

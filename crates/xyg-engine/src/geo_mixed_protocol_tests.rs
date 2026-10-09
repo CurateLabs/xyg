@@ -756,7 +756,7 @@ fn mixed_public_tile_descriptor_preserves_exact_authority_and_shared_copy_quota(
 }
 
 #[test]
-fn selected_mixed_anchor_preserves_intent_and_freeze_fails_closed_after_source_disposal() {
+fn selected_mixed_anchor_preserves_intent_and_frozen_authority_after_source_disposal() {
     let _p = crate::geo_source_session::test_processor_lock();
     let _d = crate::geo_tile_cache::test_process_lock();
     let (original, owners) = source_frame();
@@ -857,10 +857,27 @@ fn selected_mixed_anchor_preserves_intent_and_freeze_fails_closed_after_source_d
         selected.validate_result(v.result).unwrap();
     })
     .unwrap();
-    assert!(matches!(
-        crate::geo_snapshot_protocol::execute(&snapshot_cmd(5, data.handle, nonce)),
-        Err(crate::geo_snapshot::GeoSnapshotError::Unsupported)
-    ));
+    let frozen =
+        crate::geo_snapshot_protocol::execute(&snapshot_cmd(5, data.handle, nonce)).unwrap();
+    let frozen_handle = u64at(&frozen, 16);
+    let frozen_bytes =
+        crate::geo_snapshot_protocol::read_data(&snapshot_cmd(20, frozen_handle, 0), 128 << 20)
+            .unwrap();
+    let cache = crate::geo_tile_cache::GeoTileCache::new(
+        crate::geo_tile_cache::GeoTileLimits::default(),
+        0,
+    )
+    .unwrap();
+    let imported =
+        crate::geo_snapshot::GeoFrozenSnapshot::decode(&cache, &frozen_bytes, 128 << 20).unwrap();
+    assert_eq!(imported.selections()[0].selected_ids(), &[u64::MAX]);
+    assert_eq!(imported.selections()[0].fill(), [0, 255, 0, 255]);
+    assert_eq!(imported.selections()[0].namespace(), u64::MAX);
+    assert_eq!(imported.selections()[0].visible_selected_vertices(), 1);
+    assert_eq!(u32at(imported.tile_provenance().unwrap(), 4), 2);
+    drop(imported);
+    drop(frozen_bytes);
+    crate::geo_snapshot_protocol::execute(&snapshot_cmd(3, frozen_handle, 0)).unwrap();
     drop(anchor);
     drop(data);
     drop(coord);

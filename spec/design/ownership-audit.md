@@ -1127,6 +1127,7 @@ Forbidden:
 | `python/xyg/_geo_mixed.py` | Python host | `python-host` | `keep-host` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_selected_snapshot_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 ## Contributor rule
 

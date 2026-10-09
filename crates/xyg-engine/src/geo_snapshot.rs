@@ -23,6 +23,8 @@ pub const MAX_FROZEN_ATTRIBUTIONS: usize = 64;
 pub const MAX_FROZEN_TEXT_BYTES: usize = 4096;
 pub const MAX_FROZEN_ARTIFACT_BYTES: usize = 64 * 1024 * 1024;
 const HEADER: usize = 192;
+const SELECTED_HEADER: usize = 208;
+const SELECTED_RECORD: usize = 160 + 128;
 const LAYER: usize = 80;
 const DIRECT: usize = 48;
 const GRID: usize = 232;
@@ -92,6 +94,36 @@ pub struct GeoFrozenGrid {
     pub vertex_counts: Vec<u64>,
     pub style: [u8; 48],
 }
+/// Inert frozen intent and exact visible counts, not a live source/query capability.
+#[derive(Debug, PartialEq)]
+pub struct GeoFrozenSelection {
+    key: GeoLodKey,
+    namespace: u64,
+    fill: [u8; 4],
+    ids: Vec<u64>,
+    counts: Vec<u64>,
+    visible: u64,
+}
+impl GeoFrozenSelection {
+    pub fn key(&self) -> GeoLodKey {
+        self.key
+    }
+    pub fn namespace(&self) -> u64 {
+        self.namespace
+    }
+    pub fn fill(&self) -> [u8; 4] {
+        self.fill
+    }
+    pub fn selected_ids(&self) -> &[u64] {
+        &self.ids
+    }
+    pub fn selected_counts(&self) -> &[u64] {
+        &self.counts
+    }
+    pub fn visible_selected_vertices(&self) -> u64 {
+        self.visible
+    }
+}
 #[derive(Clone, Copy)]
 pub enum GeoFrozenGridCounts<'a> {
     Counts(&'a [u64]),
@@ -159,6 +191,7 @@ pub struct GeoFrozenSnapshot {
     direct: Vec<GeoFrozenDirect>,
     membership: Vec<GeoFrozenMembership>,
     grids: Vec<GeoFrozenGrid>,
+    selections: Vec<GeoFrozenSelection>,
     attributions: Vec<String>,
     binding: Option<GeoFrozenArtifactBinding>,
     _charge: GeoDerivedLease,
@@ -451,6 +484,7 @@ impl GeoFrozenSnapshot {
             attributions,
             budget,
             &[],
+            &[],
         )
     }
     fn freeze_full(
@@ -463,6 +497,7 @@ impl GeoFrozenSnapshot {
         attributions: &[String],
         budget: usize,
         tile: &[u8],
+        selections: &[&crate::geo_linked_state::GeoPointSelection],
     ) -> Result<Self> {
         identity_validate(identity)?;
         if scene.len() > MAX_FROZEN_SCENE_BYTES
@@ -475,6 +510,39 @@ impl GeoFrozenSnapshot {
         if grids.len() > MAX_FROZEN_LAYERS {
             return Err(GeoSnapshotError::Limit);
         }
+        if selections.len() > MAX_FROZEN_LAYERS {
+            return Err(GeoSnapshotError::Limit);
+        }
+        if selections.iter().enumerate().any(|(index, selection)| {
+            selections[..index]
+                .iter()
+                .any(|old| old.state().binding().layer_id == selection.state().binding().layer_id)
+        }) {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        let selected_bytes = selections.iter().try_fold(0usize, |n, selection| {
+            let state = selection.state();
+            if state.selected_ids().len() > crate::geo_linked_state::MAX_SELECTED_IDS
+                || selection.selected_counts().len() > MAX_FROZEN_GRID_CELLS
+            {
+                return Err(GeoSnapshotError::Limit);
+            }
+            n.checked_add(SELECTED_RECORD)
+                .and_then(|n| {
+                    state
+                        .selected_ids()
+                        .len()
+                        .checked_add(selection.selected_counts().len())
+                        .and_then(|count| count.checked_mul(8))
+                        .and_then(|bytes| n.checked_add(bytes))
+                })
+                .ok_or(GeoSnapshotError::Limit)
+        })?;
+        let header_size = if selections.is_empty() {
+            HEADER
+        } else {
+            SELECTED_HEADER
+        };
         if grids.iter().enumerate().any(|(i, grid)| {
             grids[..i]
                 .iter()
@@ -495,11 +563,12 @@ impl GeoFrozenSnapshot {
             }
             n.checked_add(4 + v.len()).ok_or(GeoSnapshotError::Limit)
         })?;
-        let total = HEADER
+        let total = header_size
             .checked_add(identity.layers.len() * LAYER)
             .and_then(|n| n.checked_add(direct.len() * DIRECT))
             .and_then(|n| n.checked_add(membership.len() * MEMBERSHIP))
             .and_then(|n| n.checked_add(grids.len() * GRID + grid_cells * 8))
+            .and_then(|n| n.checked_add(selected_bytes))
             .and_then(|n| n.checked_add(text))
             .and_then(|n| n.checked_add(tile.len()))
             .and_then(|n| n.checked_add(scene.len()))
@@ -514,6 +583,12 @@ impl GeoFrozenSnapshot {
             .map_err(|_| GeoSnapshotError::Limit)?;
         let mut b = Vec::with_capacity(total);
         b.extend_from_slice(&identity_header(identity));
+        if !selections.is_empty() {
+            b.resize(SELECTED_HEADER, 0);
+            put32(&mut b, 4, 3);
+            put32(&mut b, 192, selections.len() as u32);
+            put32(&mut b, 196, selected_bytes as u32);
+        }
         put64(&mut b, 16, total as u64);
         put64(&mut b, 24, scene.len() as u64);
         for (at, count) in [
@@ -554,6 +629,14 @@ impl GeoFrozenSnapshot {
                 b.extend_from_slice(&g.counts.count(i).to_le_bytes());
             }
         }
+        for selection in selections {
+            let layer = selection.state().binding().layer_id;
+            let grid = grids
+                .iter()
+                .find(|g| g.key.identity.layer_id == layer)
+                .ok_or(GeoSnapshotError::Invalid)?;
+            append_frozen_selection(&mut b, grid.key, selection);
+        }
         for v in attributions {
             b.extend_from_slice(&(v.len() as u32).to_le_bytes());
             b.extend_from_slice(v.as_bytes());
@@ -588,12 +671,25 @@ impl GeoFrozenSnapshot {
     fn decode_owned(b: Vec<u8>, charge: GeoDerivedLease) -> Result<Self> {
         if b.len() < HEADER
             || &b[..4] != b"XYGX"
-            || u32at(&b, 4) != 2
+            || !matches!(u32at(&b, 4), 2 | 3)
             || u32at(&b, 8) != SCENE_VERSION
             || u32at(&b, 12) > 1
             || u64at(&b, 16) != b.len() as u64
         {
             return Err(GeoSnapshotError::Invalid);
+        }
+        let selected = u32at(&b, 4) == 3;
+        let header_size = if selected { SELECTED_HEADER } else { HEADER };
+        if b.len() < header_size {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        let selection_count = if selected { u32at(&b, 192) as usize } else { 0 };
+        let selection_bytes = if selected { u32at(&b, 196) as usize } else { 0 };
+        if selected && (selection_count == 0 || b[200..208].iter().any(|n| *n != 0)) {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        if selection_count > MAX_FROZEN_LAYERS {
+            return Err(GeoSnapshotError::Limit);
         }
         let scene_len = usize::try_from(u64at(&b, 24)).map_err(|_| GeoSnapshotError::Limit)?;
         let counts = [
@@ -612,7 +708,7 @@ impl GeoFrozenSnapshot {
         {
             return Err(GeoSnapshotError::Limit);
         }
-        let tables = HEADER
+        let tables = header_size
             .checked_add(counts[0] * LAYER)
             .and_then(|n| n.checked_add(counts[1] * DIRECT))
             .and_then(|n| n.checked_add(counts[2] * MEMBERSHIP))
@@ -642,7 +738,45 @@ impl GeoFrozenSnapshot {
                 .filter(|n| *n <= b.len())
                 .ok_or(GeoSnapshotError::Invalid)?;
         }
-        let attribution_end = grid_end
+        let selection_end = grid_end
+            .checked_add(selection_bytes)
+            .filter(|end| *end <= b.len())
+            .ok_or(GeoSnapshotError::Invalid)?;
+        let mut selected_at = grid_end;
+        let mut selected_cells = 0usize;
+        let mut selected_layers = [0u64; MAX_FROZEN_LAYERS];
+        for index in 0..selection_count {
+            let fixed_end = selected_at
+                .checked_add(SELECTED_RECORD)
+                .filter(|end| *end <= selection_end)
+                .ok_or(GeoSnapshotError::Invalid)?;
+            let footer = &b[selected_at + 160..fixed_end];
+            let layer = u64at(&b, selected_at + 32);
+            if selected_layers[..index].contains(&layer) {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            selected_layers[index] = layer;
+            let ids = usize::try_from(u64at(footer, 24)).map_err(|_| GeoSnapshotError::Limit)?;
+            let cells = usize::try_from(u64at(footer, 32)).map_err(|_| GeoSnapshotError::Limit)?;
+            selected_cells = selected_cells
+                .checked_add(cells)
+                .ok_or(GeoSnapshotError::Limit)?;
+            if ids > crate::geo_linked_state::MAX_SELECTED_IDS
+                || selected_cells > MAX_FROZEN_GRID_CELLS
+            {
+                return Err(GeoSnapshotError::Limit);
+            }
+            selected_at = ids
+                .checked_add(cells)
+                .and_then(|n| n.checked_mul(8))
+                .and_then(|n| fixed_end.checked_add(n))
+                .filter(|end| *end <= selection_end)
+                .ok_or(GeoSnapshotError::Invalid)?;
+        }
+        if selected_at != selection_end {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        let attribution_end = selection_end
             .checked_add(counts[4])
             .ok_or(GeoSnapshotError::Limit)?;
         let tile_len = u32at(&b, 188) as usize;
@@ -676,7 +810,7 @@ impl GeoFrozenSnapshot {
             pitch_deg_bits: u64at(&b, 128),
         };
         let mut layers = Vec::with_capacity(counts[0]);
-        let mut at = HEADER;
+        let mut at = header_size;
         for _ in 0..counts[0] {
             let s = &b[at..at + LAYER];
             if s[72..80].iter().any(|v| *v != 0) {
@@ -807,6 +941,18 @@ impl GeoFrozenSnapshot {
             });
             at += cells * 8;
         }
+        let mut selections = Vec::with_capacity(selection_count);
+        for _ in 0..selection_count {
+            let (selection, length) =
+                read_frozen_selection(&b[at..selection_end], &grids, &direct)?;
+            if selections.iter().any(|old: &GeoFrozenSelection| {
+                old.key.identity.layer_id == selection.key.identity.layer_id
+            }) {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            selections.push(selection);
+            at += length;
+        }
         let mut attributions = Vec::with_capacity(counts[3]);
         for _ in 0..counts[3] {
             if at.checked_add(4).is_none_or(|n| n > attribution_end) {
@@ -861,6 +1007,19 @@ impl GeoFrozenSnapshot {
         };
         let document =
             SceneDocument::decode(&b[scene.clone()]).map_err(|_| GeoSnapshotError::Scene)?;
+        if !selections.is_empty() {
+            let foreground = tile.as_ref().and_then(|range| {
+                let blob = &b[range.clone()];
+                (u32at(blob, 4) == 2).then(|| &blob[blob.len() - u32at(blob, 20) as usize..])
+            });
+            if let Some(foreground) = foreground {
+                let foreground =
+                    SceneDocument::decode(foreground).map_err(|_| GeoSnapshotError::Scene)?;
+                validate_selection_paint(&foreground, &selections, &grids, &direct)?;
+            } else {
+                validate_selection_paint(&document, &selections, &grids, &direct)?;
+            }
+        }
         let (scene_width, scene_height) = document.viewport_size();
         if scene_width.to_bits() != key.width_bits || scene_height.to_bits() != key.height_bits {
             return Err(GeoSnapshotError::Stale);
@@ -902,6 +1061,7 @@ impl GeoFrozenSnapshot {
             direct,
             membership,
             grids,
+            selections,
             attributions,
             binding,
             _charge: charge,
@@ -928,6 +1088,9 @@ impl GeoFrozenSnapshot {
     }
     pub fn grids(&self) -> &[GeoFrozenGrid] {
         &self.grids
+    }
+    pub fn selections(&self) -> &[GeoFrozenSelection] {
+        &self.selections
     }
     pub fn attributions(&self) -> &[String] {
         &self.attributions
@@ -1265,10 +1428,10 @@ impl GeoFrozenSnapshot {
         attributions: &[String],
         tile: &[u8],
     ) -> Result<Self> {
-        // XYGX currently lacks the full XYSE intent/profile/count authority.
-        // Reject before frozen allocation rather than silently lose selection.
-        if result.selection.is_some() {
-            return Err(GeoSnapshotError::Unsupported);
+        if let Some(selection) = &result.selection {
+            selection
+                .validate_result(result)
+                .map_err(|_| GeoSnapshotError::Stale)?;
         }
         let k = result.key;
         if snapshot.source_digest != k.identity.source_digest
@@ -1350,8 +1513,295 @@ impl GeoFrozenSnapshot {
             attributions,
             budget.checked_sub(scratch).ok_or(GeoSnapshotError::Limit)?,
             tile,
+            result.selection.as_deref().as_slice(),
         )
     }
+}
+
+// Mechanical XYSE v1 framing, identical to the trusted live SceneData footer.
+fn append_frozen_selection(
+    out: &mut Vec<u8>,
+    key: GeoLodKey,
+    selection: &crate::geo_linked_state::GeoPointSelection,
+) {
+    let state = selection.state();
+    let at = out.len();
+    out.resize(at + SELECTED_RECORD, 0);
+    let b = &mut out[at..];
+    write_grid_key(&mut b[..160], key);
+    let b = &mut b[160..];
+    b[..4].copy_from_slice(b"XYSE");
+    put32(b, 4, 1);
+    put32(b, 8, 3);
+    for (offset, value) in [
+        (16, state.binding().namespace),
+        (24, state.selected_ids().len() as u64),
+        (32, selection.selected_counts().len() as u64),
+        (40, selection.visible_selected_vertices()),
+        (64, key.identity.generation),
+        (72, key.identity.layer_id),
+        (80, key.identity.state_revision),
+        (88, key.identity.source_rows),
+        (104, state.fingerprint()[0]),
+        (112, state.fingerprint()[1]),
+    ] {
+        put64(b, offset, value);
+    }
+    b[48..52].copy_from_slice(&state.style().fill);
+    b[56..64].copy_from_slice(&key.identity.source_digest);
+    put32(b, 96, key.identity.geometry as u32);
+    put32(b, 100, key.identity.crs as u32);
+    for value in state
+        .selected_ids()
+        .iter()
+        .chain(selection.selected_counts())
+    {
+        out.extend_from_slice(&value.to_le_bytes());
+    }
+}
+
+fn read_frozen_selection(
+    bytes: &[u8],
+    grids: &[GeoFrozenGrid],
+    direct: &[GeoFrozenDirect],
+) -> Result<(GeoFrozenSelection, usize)> {
+    if bytes.len() < SELECTED_RECORD {
+        return Err(GeoSnapshotError::Invalid);
+    }
+    let key = read_grid_key(&bytes[..160])?;
+    let grid = grids
+        .iter()
+        .find(|g| g.key == key)
+        .ok_or(GeoSnapshotError::Stale)?;
+    let b = &bytes[160..];
+    if &b[..4] != b"XYSE"
+        || u32at(b, 4) != 1
+        || u32at(b, 8) != 3
+        || b[12..16]
+            .iter()
+            .chain(&b[52..56])
+            .chain(&b[120..128])
+            .any(|n| *n != 0)
+        || b[56..64] != key.identity.source_digest
+        || u64at(b, 64) != key.identity.generation
+        || u64at(b, 72) != key.identity.layer_id
+        || u64at(b, 80) != key.identity.state_revision
+        || u64at(b, 88) != key.identity.source_rows
+        || u32at(b, 96) != key.identity.geometry as u32
+        || u32at(b, 100) != key.identity.crs as u32
+    {
+        return Err(GeoSnapshotError::Stale);
+    }
+    let ids_len = usize::try_from(u64at(b, 24)).map_err(|_| GeoSnapshotError::Limit)?;
+    let counts_len = usize::try_from(u64at(b, 32)).map_err(|_| GeoSnapshotError::Limit)?;
+    if ids_len > crate::geo_linked_state::MAX_SELECTED_IDS || counts_len > MAX_FROZEN_GRID_CELLS {
+        return Err(GeoSnapshotError::Limit);
+    }
+    let length = ids_len
+        .checked_add(counts_len)
+        .and_then(|n| n.checked_mul(8))
+        .and_then(|n| n.checked_add(SELECTED_RECORD))
+        .filter(|n| *n <= bytes.len())
+        .ok_or(GeoSnapshotError::Invalid)?;
+    if (key.direct || ids_len == 0) && counts_len != 0
+        || !key.direct && ids_len != 0 && counts_len != grid.vertex_counts.len()
+    {
+        return Err(GeoSnapshotError::Invalid);
+    }
+    let ids_bytes = &b[128..128 + ids_len * 8];
+    if ids_bytes
+        .chunks_exact(8)
+        .map(|v| u64at(v, 0))
+        .try_fold(None, |previous, id| {
+            if previous.is_some_and(|old| old >= id) {
+                Err(())
+            } else {
+                Ok(Some(id))
+            }
+        })
+        .is_err()
+    {
+        return Err(GeoSnapshotError::Invalid);
+    }
+    let counts_bytes = &b[128 + ids_len * 8..length - 160];
+    let mut total = 0u64;
+    for (index, value) in counts_bytes.chunks_exact(8).enumerate() {
+        let n = u64at(value, 0);
+        if n > grid.vertex_counts[index] {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        total = total.checked_add(n).ok_or(GeoSnapshotError::Limit)?;
+    }
+    let ids: Vec<u64> = ids_bytes.chunks_exact(8).map(|v| u64at(v, 0)).collect();
+    if key.direct {
+        for point in direct
+            .iter()
+            .filter(|p| p.layer_id == key.identity.layer_id)
+        {
+            if ids.binary_search(&point.feature_id).is_ok() {
+                total = total.checked_add(1).ok_or(GeoSnapshotError::Limit)?;
+            }
+        }
+    }
+    let namespace = u64at(b, 16);
+    let fill: [u8; 4] = b[48..52].try_into().unwrap();
+    let fingerprint = crate::geo_linked_state::fingerprint(
+        crate::geo_linked_state::GeoStateBinding {
+            namespace,
+            source_digest: key.identity.source_digest,
+            generation: key.identity.generation,
+            layer_id: key.identity.layer_id,
+            state_revision: key.identity.state_revision,
+        },
+        key.identity.source_rows,
+        key.identity.crs,
+        key.identity.geometry,
+        &ids,
+        crate::geo_linked_state::GeoSelectedStyle { fill },
+    );
+    if fingerprint != [u64at(b, 104), u64at(b, 112)]
+        || total != u64at(b, 40)
+        || total > grid.visible_vertices
+    {
+        return Err(GeoSnapshotError::Stale);
+    }
+    Ok((
+        GeoFrozenSelection {
+            key,
+            namespace,
+            fill,
+            ids,
+            counts: counts_bytes.chunks_exact(8).map(|v| u64at(v, 0)).collect(),
+            visible: total,
+        },
+        length,
+    ))
+}
+
+// Verify the captured style/profile against actual shared Scene paint. Import
+// validates consistency; it cannot authenticate source membership without data.
+fn validate_selection_paint(
+    document: &SceneDocument,
+    selections: &[GeoFrozenSelection],
+    grids: &[GeoFrozenGrid],
+    direct: &[GeoFrozenDirect],
+) -> Result<()> {
+    use crate::scene::SceneRecordKind;
+    let records = document.interaction_records();
+    let mut record_index = 0;
+    for grid in grids {
+        let selection = selections.iter().find(|s| s.key == grid.key);
+        let opacity = f64::from_bits(u64at(&grid.style, 24)) as f32;
+        let selected_fill = selection.map(|s| crate::css::apply_opacity_rgba8(s.fill, opacity));
+        let mut check = |id, fill, stroke, width, diameter, symbol, kind| -> Result<()> {
+            let record = records.get(record_index).ok_or(GeoSnapshotError::Scene)?;
+            record_index += 1;
+            if record.stable_id != id
+                || record.kind != kind
+                || record.diameter != diameter
+                || record.symbol != symbol
+                || document.interaction_style(record.style_ref) != Some((fill, stroke, width))
+            {
+                return Err(GeoSnapshotError::Scene);
+            }
+            Ok(())
+        };
+        if grid.key.direct {
+            let fill =
+                crate::css::apply_opacity_rgba8(grid.style[..4].try_into().unwrap(), opacity);
+            let stroke =
+                crate::css::apply_opacity_rgba8(grid.style[4..8].try_into().unwrap(), opacity);
+            for point in direct
+                .iter()
+                .filter(|p| p.layer_id == grid.key.identity.layer_id)
+            {
+                let fill =
+                    if selection.is_some_and(|s| s.ids.binary_search(&point.feature_id).is_ok()) {
+                        selected_fill.unwrap()
+                    } else {
+                        fill
+                    };
+                check(
+                    point.feature_id,
+                    fill,
+                    stroke,
+                    f64::from_bits(u64at(&grid.style, 8)),
+                    f64::from_bits(u64at(&grid.style, 16)),
+                    grid.style[32],
+                    SceneRecordKind::Scatter,
+                )?;
+            }
+        } else {
+            let maximum = grid.vertex_counts.iter().copied().max().unwrap_or(0).max(1) as f64;
+            let stops = crate::colormap::colormap_named_stops("viridis");
+            let color = |index: usize, count: u64| {
+                if count == 0 {
+                    return [0; 4];
+                }
+                let base = crate::css::apply_opacity_rgba8(
+                    crate::kernels::colormap_color(
+                        (count as f64).ln_1p() / maximum.ln_1p(),
+                        &stops,
+                        255,
+                    ),
+                    opacity,
+                );
+                if let Some(selection) = selection {
+                    crate::geo_linked_state::selected_fraction_color(
+                        base,
+                        selected_fill.unwrap(),
+                        selection.counts.get(index).copied().unwrap_or(0),
+                        count,
+                    )
+                } else {
+                    base
+                }
+            };
+            if grid.key.kind == GeoReducedKind::Cluster {
+                for (index, count) in grid.vertex_counts.iter().copied().enumerate() {
+                    if count != 0 {
+                        check(
+                            index as u64,
+                            color(index, count),
+                            [0; 4],
+                            0.,
+                            crate::geo_lod_scene::cluster_diameter(count, maximum),
+                            0,
+                            SceneRecordKind::Scatter,
+                        )?;
+                    }
+                }
+            } else {
+                check(
+                    grid.key.identity.layer_id,
+                    [255; 4],
+                    [0; 4],
+                    0.,
+                    0.,
+                    0,
+                    SceneRecordKind::Image,
+                )?;
+                let image = document
+                    .interaction_image(grid.key.identity.layer_id)
+                    .ok_or(GeoSnapshotError::Scene)?;
+                if image.width != grid.key.columns
+                    || image.height != grid.key.rows
+                    || image.rgba.len() != grid.vertex_counts.len() * 4
+                    || grid
+                        .vertex_counts
+                        .iter()
+                        .enumerate()
+                        .any(|(i, count)| image.rgba[i * 4..i * 4 + 4] != color(i, *count))
+                {
+                    return Err(GeoSnapshotError::Scene);
+                }
+            }
+        }
+    }
+    if record_index != records.len() {
+        return Err(GeoSnapshotError::Scene);
+    }
+    Ok(())
 }
 
 const TILE_HEADER: usize = 64;
@@ -1634,6 +2084,7 @@ impl GeoFrozenSnapshot {
             &attrs,
             budget - scratch,
             &blob,
+            &[],
         )
     }
 }
@@ -1988,6 +2439,10 @@ fn validate_tile_blob(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "geo_selected_snapshot_tests.rs"]
+mod selected_tests;
 
 #[cfg(test)]
 mod tests {

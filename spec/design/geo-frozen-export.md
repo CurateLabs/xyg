@@ -60,6 +60,11 @@ typed allocations and reruns the same validation. No malformed input is repaired
 
 ## XYGX v2 binary framing
 
+This192-byte framing remains byte-identical for ordinary `None` selection.
+Selected retained/mixed frames use the bounded selected-only v3 extension in
+[geo-selected-snapshot.md](geo-selected-snapshot.md), carrying exact XYSE intent,
+profile and count authority without reconstructing live source capabilities.
+
 All numeric fields are little endian raw integers/f64 bit patterns. There are
 no JSON numeric payloads, platform pointers or implicit fetch instructions.
 The exact concatenation is header192, layer records80 each, direct records48,
@@ -260,7 +265,8 @@ bytes themselves are never normalized.
 ## Mixed tile authority mode2
 
 Snapshot protocol command5 freezes the complete trusted mixed Data/nonce. The
-XYGX v2 outer header is unchanged. Tile blob version1 mode2 starts with64 bytes:
+The ordinary XYGX v2 outer header is unchanged; selected-only v3 adds the
+explicit selection section described above. Tile blob version1 mode2 starts with64 bytes:
 mode2 at4u32; explicit time policy at8u32 (4Timeless,5ProducerWindow); source
 count12/stamp count16/foreground Scene byte count20u32; original receipt bytes24u64;
 retained record start32/end40 and style start48/end56, four u64. It contains the
