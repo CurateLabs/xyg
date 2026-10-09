@@ -30,7 +30,7 @@ fn run(line: &[u8], budget: usize) -> Result<Vec<u8>, SourceError> {
         return Err(SourceError::ResourceLimit);
     }
     let command = u32::from_le_bytes(request[8..12].try_into().unwrap());
-    if command < 20 || matches!(command, 24 | 26..=29 | 31) {
+    if !matches!(command, 20 | 21 | 23 | 25 | 30 | 40) {
         execute(&request).map(|reply| reply.to_vec())
     } else {
         read_data(&request, budget)

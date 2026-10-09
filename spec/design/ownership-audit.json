@@ -505,6 +505,22 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_hierarchy_protocol.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_hierarchy_protocol_tests.rs",
+      "policy": "rust-engine"
+    },
+    {
       "path": "crates/xyg-engine/src/geo_index_protocol_tests.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -735,6 +751,38 @@
       "disposition": "keep-rust",
       "follow_up_issue": null,
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_spatial_hierarchy.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_spatial_hierarchy_build.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_spatial_hierarchy_query.rs",
+      "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs",
+      "policy": "rust-engine"
     },
     {
       "path": "crates/xyg-engine/src/geo_spatial_index.rs",
