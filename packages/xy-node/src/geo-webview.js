@@ -1,5 +1,5 @@
 /** Native one-mount geographic host facade. No browser imports or source serialization. */
-import {isHierarchyFrame} from './geo-hierarchy.js';
+import {hierarchyLaneAuthority,isHierarchyFrame} from './geo-hierarchy.js';
 import {GeoSelectedScope} from './geo-selected.js';
 import {GeoLiveCandidate} from './geo-live-host.js';
 import {sceneBrowserPainter} from './scene.js';
@@ -12,8 +12,9 @@ function buffer(value){
 }
 function tag(op,owner=0n,sequence=0n){const b=new ArrayBuffer(32),v=new DataView(b);new Uint8Array(b).set([88,89,71,72]);v.setUint32(4,1,true);v.setUint32(8,op,true);v.setBigUint64(16,owner,true);v.setBigUint64(24,sequence,true);return b;}
 function same(a,b){a=new Uint8Array(a);b=new Uint8Array(b);return a.length===b.length&&a.every((n,i)=>n===b[i]);}
+const laneClaims=new WeakMap();
 export class GeoHostAdapter {
- constructor(chart,{frame,selectedScope}={}){
+ constructor(chart,{frame,selectedScope,hierarchyLane}={}){
   const layer=chart._retained();if(!layer||chart.tileSession||(!(layer.source instanceof RetainedGeoSource)||(!frame&&layer.source.constructor!==RetainedGeoSource)))throw new TypeError('native host requires one canonical RetainedGeoSource; indexed hosts are pending');
   if(layer.source.bridge.execute!==geoScaleExecute)throw new TypeError('native geographic host requires the native source bridge');
   const {query,sequence,style}=chart._inputs(layer);
@@ -30,10 +31,16 @@ export class GeoHostAdapter {
    const packet=frame.data.packet,pv=new DataView(packet),ev=new DataView(expected),info=this.source.info;
    const identityMatches=packet.byteLength>=256&&pv.getBigUint64(24,true)===sequence&&pv.getUint32(80,true)===ev.getUint32(64,true)&&pv.getUint32(84,true)===ev.getUint32(12,true)&&same(new Uint8Array(packet,88,120),new Uint8Array(expected,80,120))&&pv.getUint32(208,true)===ev.getUint32(200,true)&&pv.getUint32(212,true)===ev.getUint32(68,true)&&same(new Uint8Array(packet,216,16),new Uint8Array(expected,208,16))&&same(info.digest,new Uint8Array(packet,144,8))&&info.generation===pv.getBigUint64(152,true)&&info.rows===pv.getBigUint64(232,true)&&info.geometry===pv.getUint32(240,true)&&info.crs===pv.getUint32(244,true);
    if(frame._source!==this.source||!identityMatches||!same(actual,expected)||!same(frame._style,this.style))throw new TypeError('explicit frame does not match this geographic composition');
-   this.anchorReady=frame.retain().then(async owned=>{if(this.closing)await owned.dispose();else this.anchor=owned;});
+   if(hierarchyLane!==undefined){
+    const authority=hierarchyLaneAuthority(hierarchyLane);
+    if(!authority||authority.source!==this.source||authority.bridge!==this.source.bridge||!authority.selected||!selectedScope||!frame.data.selection||!isHierarchyFrame(frame)||actualOp!==43||hierarchyLane.closed||hierarchyLane.disposing)throw TypeError('issued selected hierarchy lane must match this frame/source');
+    if(laneClaims.get(hierarchyLane)?.deref())throw Error('hierarchy lane already belongs to another live adapter');
+    laneClaims.set(hierarchyLane,new WeakRef(this));this.hierarchyLane=hierarchyLane;this.hierarchyAuthority=authority;
+   }
+   this.anchorReady=frame.retain().then(owned=>{this.anchor=owned;},error=>{this.releaseLane();throw error;});
    // Ready retains void; construction starts ownership transfer before caller disposal.
    this.anchorReady.catch(()=>{});
-  }else this.anchorReady=Promise.resolve();
+  }else{if(hierarchyLane!==undefined)throw TypeError("hierarchy live route requires an explicit selected frame");this.anchorReady=Promise.resolve();}
  }
  get mounted(){return this.mount!==undefined;}
  async open(mount){
@@ -91,19 +98,20 @@ export class GeoHostAdapter {
      if(op===5){if(request.byteLength!==32||!this.aux||this.aux.handle!==owner)throw new Error('unowned auxiliary release');const aux=this.aux;this.aux=undefined;await aux.dispose();}
      else{
       if(owner!==this.frame.handle)throw new Error('unowned geographic frame');
-      if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame)throw new Error('release auxiliary/candidate packets first');await this.release();}
+      if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame||this.liveCandidate.cleanupOperation||this.liveCandidate.cleanupState||this.liveCandidate.cleanupAllocation)throw new Error('release auxiliary/candidate packets first');await this.release();}
       else if(op===2){if(request.byteLength!==64||this.aux)throw new Error('invalid or concurrent pick');this.aux=await this.frame.pick({style:this.frame._style,x:v.getFloat64(32,true),y:v.getFloat64(40,true),tolerance:v.getFloat64(48,true),mode:v.getUint32(56,true),maxHits:v.getUint32(60,true)});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
       else{if(![48,256].includes(request.byteLength)||this.aux||v.getUint32(36,true)!==Number(request.byteLength===256))throw new Error('invalid or concurrent membership');if(v.getBigUint64(40,true)>new DataView(this.frame._queryPacket).getBigUint64(224,true))throw new Error("membership exceeds committed frame work bound");this.aux=await this.frame.membership(v.getUint32(32,true),{maxProjectedVertices:v.getBigUint64(40,true),cursor:request.byteLength===256?new Uint8Array(request.slice(48)):undefined});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
      }
     }
     return [reply,out];
-   }catch(error){return [{...reply,error:error.message,...(new DataView(request).getUint32(4,true)===2&&new DataView(request).getUint32(8,true)===6&&!this.liveCandidate.frame&&!this.liveCandidate.cleanupFrame?{prepareAbsent:true}:{})},[]];}
+   }catch(error){return [{...reply,error:error.message,...(new DataView(request).getUint32(4,true)===2&&new DataView(request).getUint32(8,true)===6&&!this.liveCandidate.frame&&!this.liveCandidate.cleanupFrame&&!this.liveCandidate.cleanupOperation&&!this.liveCandidate.cleanupState&&!this.liveCandidate.cleanupAllocation?{prepareAbsent:true}:{})},[]];}
    finally{request=undefined;}
   });
   this.chain=operation.then(()=>{},()=>{}).finally(()=>{this.queued--;});return operation;
  }
  async release(){this.painter=undefined;const frame=this.frame;this.frame=undefined;this.mount=undefined;if(frame&&frame!==this.anchor)await frame.dispose();if(this.closing)await this.releaseAnchor();}
- async releaseAnchor(){const anchor=this.anchor;this.anchor=undefined;if(anchor)await anchor.dispose();}
+ releaseLane(){const lane=this.hierarchyLane;if(lane&&laneClaims.get(lane)?.deref()===this)laneClaims.delete(lane);this.hierarchyLane=this.hierarchyAuthority=undefined;}
+ async releaseAnchor(){const anchor=this.anchor;if(anchor)await anchor.dispose();this.anchor=undefined;this.releaseLane();}
  close(){this.closing=true;this.source=this.query=this.style=undefined;this.cleanup=this.anchorReady.then(()=>this.mounted?undefined:this.releaseAnchor());this.cleanup.catch(()=>{});}
  /** Only a real disposed renderer realm may substitute for a browser release ACK. */
  async realmDestroyed(){this.close();await this.chain;await this.liveCandidate.realmDestroyed();const aux=this.aux;this.aux=undefined;if(aux)await aux.dispose();await this.release();await this.cleanup;}

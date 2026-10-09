@@ -164,3 +164,8 @@ selection transport, frozen state provenance/export, shared host/browser
 composition and paint proofs, interaction/state event coordination, and
 small/medium/large/massive selected-state performance evidence. #50 remains
 open until those separate gates and its other acceptance requirements pass.
+
+
+Recoverable opt-in command33 allocation uses the private per-Scope nonce and
+RetiredStateNonce receipt described in [geo-selected-state-nonce.md](geo-selected-state-nonce.md).
+Legacy sequence-zero allocation remains unchanged.

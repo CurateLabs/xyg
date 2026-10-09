@@ -1,0 +1,35 @@
+{
+  "base": "ebb259e30766129bcb0963e830f0313f05897d10",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "tested_python": "3.13.7 (main, Sep  2 2025, 14:05:52) [Clang 20.1.4 ]",
+  "node": "v26.6.0",
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geostatenonce/target/release/libxyg_core.dylib",
+    "sha256": "9c653b46acbf43730ebe4536e05b8c0f6cc52ed8058efb03fc5a372a85e31ebd"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geostatenonce/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "30bb72ad6594c8a58d3705f7d6e4c56b171dbda9e7dd57e5ef4614f85151467e",
+    "raw_bytes": 1459498,
+    "node_gzip_level6_bytes": 599989,
+    "node_gzip_level9_bytes": 599138
+  },
+  "source_sha256": {
+    "crates/xyg-engine/src/geo_linked_state_protocol.rs": "5e1f718ecf10479b3139bb1a1acf882c4e534785ebdbf81f65605ea3e751423c",
+    "crates/xyg-engine/src/geo_linked_state_protocol_tests.rs": "42e94e82f1f7761b64eccdb995cf541cbc09f8d779f0ea346cc87a4f81012b65",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "29db300c4b68e524fc66d997f48e58709e9bd18709e6be05614953329b4ac942",
+    "js/src/68_geo_selected.ts": "686b374dea966412e2e3a696892296a2c58691c1a1316a9e50cd1fd1647d85b1",
+    "packages/xy-node/src/geo-selected.js": "29e73d787275d63509228b19b9cdfebfef2f9f14d52efd5e90ef391747ae0eee",
+    "packages/xy-node/src/geo-selected.d.ts": "0c01b475893cd44137916cee89754f3b21b0324a8e2c7e771a8e505c2dc3abc9",
+    "python/xyg/_geo_selected.py": "7b7150736c69c34bde1e651d3abd0af742de4afc4c8f60e07406518773181ad5",
+    "packages/xy-node/test/geo-selected-state-nonce.test.mjs": "14326088049299aa80f36d3fd0d5324cafed0eba6bd16bc241334c7edada9eeb",
+    "tests/test_geo_selected_state_nonce.py": "33f156b35d5efe758ab1cd2d7c1baa2e0b5e9dc4814627267b937270f296b1bb",
+    "spec/design/geo-selected-state-nonce.md": "bec7e36225b4aae68d808a8bba79925010dddbbc6b18774b364b0a6f1d46e8b3",
+    "spec/design/geo-linked-state.md": "e4aaf0a2813c8a42771c01e938821a624ddd1be96e7c7ef7ce6ac65b28a7aca4",
+    ".github/workflows/ci.yml": "28c1547c947f8eaf37085fb3358ff5b43b7bf8b997a18cc1d066f676201b6df4",
+    "packages/xy-node/package.json": "6a1f39aec8a4a2f52a1e5dd581ff36ccdef3a435efd0b03b39c8354d4c51d822"
+  },
+  "limits": "Existing Source128MiB/Derived384MiB,16handles/8Scopes unchanged; no OS/GPU/linear-memory residency claim",
+  "claims": "Bounded nonce/reply recovery and legacy semantic compatibility; no performance or issue50/39 closure claim",
+  "test_only_followup": "full-suite-cleanup: explicit child-before-Scope disposal; all1439 engine tests pass; production/artifact sources unchanged"
+}

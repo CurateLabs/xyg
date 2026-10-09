@@ -24,13 +24,23 @@ class GeoLiveCandidate:
         self.nonce = 0
         self.frame = self.retired = None
         self.cleanup_frame = None
+        self.cleanup_operation = None
+        self.cleanup_state = None
+        self.cleanup_allocation = None
         self.query = None
         self._owns_slot = False
         self.committed = False
         self.receipts = {}
 
     def begin_mount(self):
-        if self.frame is not None or self.retired is not None or self.cleanup_frame is not None:
+        if (
+            self.frame is not None
+            or self.retired is not None
+            or self.cleanup_frame is not None
+            or self.cleanup_operation is not None
+            or self.cleanup_state is not None
+            or self.cleanup_allocation is not None
+        ):
             raise RuntimeError("Outstanding geographic candidate")
         self.nonce = 0
         self.receipts.clear()
@@ -42,15 +52,26 @@ class GeoLiveCandidate:
 
     def replay_prepare(self, raw):
         return (
-            (self.frame is not None and not self.committed) or self.cleanup_frame is not None
+            (self.frame is not None and not self.committed)
+            or self.cleanup_frame is not None
+            or self.cleanup_operation is not None
+            or self.cleanup_state is not None
+            or self.cleanup_allocation is not None
         ) and getattr(self, "prepare_request", None) == bytes(raw)
 
     def prepare(self, raw):
-        if self.cleanup_frame is not None:
+        if (
+            self.cleanup_frame is not None
+            or self.cleanup_operation is not None
+            or self.cleanup_state is not None
+            or self.cleanup_allocation is not None
+        ):
             if not self.replay_prepare(raw):
                 raise RuntimeError("Candidate cleanup requires exact preparation retry")
-            self.cleanup_frame.close()
-            self.cleanup_frame = None
+            self._settle_operation()
+            if self.cleanup_frame is not None:
+                self.cleanup_frame.close()
+                self.cleanup_frame = None
             self._release_slot()
             raise RuntimeError("Geographic preparation cancelled")
         if self.replay_prepare(raw):
@@ -61,7 +82,7 @@ class GeoLiveCandidate:
         a = self.adapter
         from ._geo_hierarchy import is_hierarchy_frame
 
-        if is_hierarchy_frame(a._frame):
+        if is_hierarchy_frame(a._frame) and a._hierarchy_lane is None:
             raise RuntimeError("Hierarchy live updates require an explicit hierarchy route")
         if len(raw) != 256 or any(raw[76:80]) or any(raw[224:256]):
             raise ValueError("invalid live prepare framing")
@@ -141,6 +162,7 @@ class GeoLiveCandidate:
             self.old_owner, self.old_sequence = a._frame.handle, a._sequence
             return packet, painter
         except BaseException:
+            self._settle_operation()
             if frame is not None:
                 self.cleanup_frame = frame
             if self.cleanup_frame is not None:
@@ -149,7 +171,60 @@ class GeoLiveCandidate:
             self._release_slot()
             raise
 
+    def _allocate_state(self, scope, query, selection, budget):
+        self.cleanup_allocation = scope.begin_state(
+            revision=query["state_revision"],
+            ids=selection["ids"],
+            fill=selection["fill"],
+            budget=budget,
+        )
+        state = self.cleanup_allocation.recover()
+        self.cleanup_state = state
+        return state
+
+    def _settle_operation(self):
+        if self.cleanup_operation is not None:
+            self.cleanup_operation.close()
+            self.cleanup_operation = None
+        if self.cleanup_allocation is not None:
+            self.cleanup_allocation.close()
+            self.cleanup_allocation = None
+        if self.cleanup_state is not None:
+            self.cleanup_state.close()
+            self.cleanup_state = None
+
+    def _build_hierarchy(self, lane, query, sequence, style):
+        from ._geo_hierarchy import hierarchy_lane_authority
+
+        if hierarchy_lane_authority(lane) != self.adapter._hierarchy_authority:
+            raise ValueError("hierarchy lane authority changed")
+        lane._check()
+        generation = lane.cancel_generation
+        selection = self.adapter._frame.data.selection
+        state = self._allocate_state(self.adapter._selected_scope, query, selection, lane.budget)
+        operation = None
+        try:
+            if lane._closed or generation != lane.cancel_generation:
+                raise RuntimeError("Geographic preparation cancelled")
+            operation = lane.begin_selected(state, query, sequence=sequence)
+            self.cleanup_operation = operation
+            operation.drive()
+            frame = operation.prepare(style)
+            self.cleanup_frame = frame
+            if lane._closed or generation != lane.cancel_generation:
+                frame.close()
+                self.cleanup_frame = None
+                raise RuntimeError("Geographic preparation cancelled")
+            return frame
+        finally:
+            self.cleanup_operation = operation or lane.pending_operation
+            # Successful44 owns Data and its operation is closed. An uncertain
+            # 43/44 attempt owns its exact cleanup guard until disposal confirms.
+            self._settle_operation()
+
     def _build(self, source, query, sequence, style):
+        if self.adapter._hierarchy_lane is not None:
+            return self._build_hierarchy(self.adapter._hierarchy_lane, query, sequence, style)
         from ._geo_spatial import GeoSpatialFullScanRequired, GeoSpatialIndex, drive_index
 
         generation = source._cancel_generation
@@ -158,12 +233,7 @@ class GeoLiveCandidate:
             scope = self.adapter._selected_scope
             if scope is None:
                 raise ValueError("selected live frames require an explicit selected scope")
-            state = scope.state(
-                revision=query["state_revision"],
-                ids=selection["ids"],
-                fill=selection["fill"],
-                budget=source.budget,
-            )
+            state = self._allocate_state(scope, query, selection, source.budget)
             operation = None
             try:
                 operation = state.begin(
@@ -171,6 +241,8 @@ class GeoLiveCandidate:
                 )
                 if isinstance(operation, dict):
                     raise GeoSpatialFullScanRequired(operation["reason"])
+                if operation.indexed:
+                    self.cleanup_operation = operation
                 operation.drive()
                 frame = operation.prepare(style)
                 self.cleanup_frame = frame
@@ -181,9 +253,7 @@ class GeoLiveCandidate:
                     raise RuntimeError("Geographic preparation cancelled")
                 return frame
             finally:
-                state.close()
-                if operation is not None and not isinstance(operation, dict) and operation.indexed:
-                    operation.close()
+                self._settle_operation()
         source._check()
         indexed = isinstance(source, GeoSpatialIndex)
         request = g.encode_request(

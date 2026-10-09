@@ -2369,6 +2369,14 @@
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
+      "path": "packages/xy-node/src/geo-webview.d.ts",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/geo-webview.js",
       "current_owner": "Node host",
       "policy": "node-host",
