@@ -685,3 +685,125 @@ fn fully_selected_transparent_aggregate_cells_are_not_pickable() {
     drop(f);
     drop(scope);
 }
+
+#[test]
+fn state_nonce_replay_tombstone_and_failure_atomic_admission() {
+    let _cpu = test_processor_lock();
+    let _tile = test_process_lock();
+    let f = fixture(1);
+    let scope = scope(f.frame.0, 900);
+    let mut request = publish(scope.0, 2, &[u64::MAX, 1 << 63], [0, 255, 0, 255]);
+    put64(&mut request, 24, 1);
+    let reply = execute(&request).unwrap();
+    let state = Handle(u64at(&reply, 16));
+    let charged = GeoProcessorLease::live_bytes();
+    assert_eq!(execute(&request).unwrap(), reply);
+    assert_eq!(GeoProcessorLease::live_bytes(), charged);
+    let mut changed = request.clone();
+    changed[HEADER + 8] ^= 1;
+    assert!(matches!(execute(&changed), Err(SourceError::StaleSource)));
+    let mut budget_changed = request.clone();
+    put64(&mut budget_changed, 40, u64at(&request, 40) - 1);
+    assert!(matches!(
+        execute(&budget_changed),
+        Err(SourceError::StaleSource)
+    ));
+    let mut reordered = request.clone();
+    put64(&mut reordered, HEADER + 24, 1 << 63);
+    put64(&mut reordered, HEADER + 32, u64::MAX);
+    assert!(matches!(execute(&reordered), Err(SourceError::StaleSource)));
+    let mut newer = request.clone();
+    put64(&mut newer, 24, 2);
+    assert!(matches!(execute(&newer), Err(SourceError::StaleSource)));
+    execute(&req(10, state.0, 0, &[])).unwrap();
+    std::mem::forget(state);
+    assert_eq!(u32at(&execute(&request).unwrap(), 8), 20);
+    let mut invalid = newer.clone();
+    invalid[HEADER + 12] = 1;
+    assert!(matches!(execute(&invalid), Err(SourceError::InvalidFrame)));
+    let next = Handle(u64at(&execute(&newer).unwrap(), 16));
+    assert!(matches!(execute(&request), Err(SourceError::StaleSource)));
+    assert_ne!(next.0, u64at(&reply, 16));
+}
+
+#[test]
+fn state_nonce_replays_at_full_handle_cap_and_consumption_never_reconstructs() {
+    let _cpu = test_processor_lock();
+    let _tile = test_process_lock();
+    let initial_handles = registry().lock().unwrap().entries.len();
+    let f = fixture(1);
+    let pressure_scope = scope(f.frame.0, 902);
+    let scope = scope(f.frame.0, 901);
+    let mut request = publish(scope.0, 2, &[u64::MAX], [0, 255, 0, 255]);
+    put64(&mut request, 24, 1);
+    let reply = execute(&request).unwrap();
+    let state = u64at(&reply, 16);
+    let mut pressure = Vec::new();
+    while registry().lock().unwrap().entries.len() < MAX_HANDLES {
+        pressure.push(Handle(u64at(
+            &execute(&publish(pressure_scope.0, 2, &[u64::MAX], [0, 255, 0, 255])).unwrap(),
+            16,
+        )));
+    }
+    assert_eq!(execute(&request).unwrap(), reply);
+    let mut newer = request.clone();
+    put64(&mut newer, 24, 2);
+    assert!(matches!(execute(&newer), Err(SourceError::StaleSource)));
+    drop(pressure);
+    execute(&selected(35, f.source.0, 2, &f.manifest, state, 2)).unwrap();
+    assert_eq!(u32at(&execute(&request).unwrap(), 8), 20);
+    execute(&req(9, f.source.0, 2, &[])).unwrap();
+    let next = Handle(u64at(&execute(&newer).unwrap(), 16));
+    assert_ne!(next.0, state);
+    // The canonical query retains the selected Scope after consuming State.
+    // Release children before Scope; Handle::drop deliberately ignores errors.
+    drop(next);
+    drop(f);
+    drop(scope);
+    drop(pressure_scope);
+    assert_eq!(registry().lock().unwrap().entries.len(), initial_handles);
+}
+
+#[test]
+fn state_nonce_receipt_local_boundary_global_pressure_and_legacy_cannot_bypass() {
+    let _cpu = test_processor_lock();
+    let _tile = test_process_lock();
+    let f = fixture(1);
+    let scope = scope(f.frame.0, 903);
+    let mut request = publish(scope.0, 2, &[u64::MAX], [0, 255, 0, 255]);
+    put64(&mut request, 24, 9);
+    let required = request.len() + 128 + (request.len() - HEADER) * 2 + 1024;
+    let before = GeoProcessorLease::live_bytes();
+    put64(&mut request, 32, (required - 1) as u64);
+    assert!(matches!(execute(&request), Err(SourceError::ResourceLimit)));
+    assert_eq!(GeoProcessorLease::live_bytes(), before);
+    put64(&mut request, 32, required as u64);
+    let pressure =
+        GeoProcessorLease::acquire(crate::geo_source::MAX_PROCESSOR_BYTES - before).unwrap();
+    assert!(matches!(execute(&request), Err(SourceError::ResourceLimit)));
+    drop(pressure);
+    assert_eq!(GeoProcessorLease::live_bytes(), before);
+    let reply = execute(&request).unwrap();
+    let state = Handle(u64at(&reply, 16));
+    assert!(matches!(
+        execute(&publish(scope.0, 3, &[1], [1; 4])),
+        Err(SourceError::StaleSource)
+    ));
+    let charged = GeoProcessorLease::live_bytes();
+    let next = {
+        let mut r = registry().lock().unwrap();
+        let next = r.next;
+        r.next = u64::MAX;
+        next
+    };
+    assert_eq!(execute(&request).unwrap(), reply);
+    drop(state);
+    let retired = execute(&request).unwrap();
+    assert_eq!(u32at(&retired, 8), 20);
+    assert_eq!(u64at(&retired, 16), 0);
+    assert_eq!(u64at(&retired, 24), 2);
+    registry().lock().unwrap().next = next;
+    assert_eq!(GeoProcessorLease::live_bytes(), charged);
+    drop(scope);
+    assert!(GeoProcessorLease::live_bytes() < charged);
+}

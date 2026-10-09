@@ -11,7 +11,15 @@ pub(super) struct Scope {
     pub layer_id: u64,
     pub snapshot: GeoOperationSnapshot,
     pub admission: Mutex<GeoLinkedStateAdmission>,
+    nonce_receipt: Mutex<Option<StateReceipt>>,
     pub _lease: GeoProcessorLease,
+}
+struct StateReceipt {
+    nonce: u64,
+    request: Vec<u8>,
+    handle: u64,
+    revision: u64,
+    _lease: GeoProcessorLease,
 }
 pub(super) struct State {
     pub scope: Arc<Scope>,
@@ -106,20 +114,102 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
             layer_id,
             snapshot: data_snapshot(entry)?,
             admission: Mutex::new(GeoLinkedStateAdmission::default()),
+            nonce_receipt: Mutex::new(None),
             _lease: lease,
         });
         let id = insert(r, Entry::Scope(scope))?;
         return Ok(reply(id, sequence));
     }
     if command == 33 || command == 34 {
-        r.next.checked_add(1).ok_or(SourceError::ResourceLimit)?;
-        if sequence != 0 {
+        if command == 34 && sequence != 0 {
             return Err(SourceError::InvalidFrame);
         }
         let Entry::Scope(scope) = &r.entries[index].1 else {
             return Err(SourceError::InvalidFrame);
         };
         let scope = scope.clone();
+        let mut receipt = scope
+            .nonce_receipt
+            .lock()
+            .map_err(|_| SourceError::ResourceLimit)?;
+        if sequence != 0 {
+            if let Some(old) = receipt.as_ref() {
+                if sequence < old.nonce || (sequence == old.nonce && request != old.request) {
+                    return Err(SourceError::StaleSource);
+                }
+                let state_live = r.entries.iter().any(|(id, entry)| {
+                    *id == old.handle
+                        && matches!(entry, Entry::State(s) if Arc::ptr_eq(&s.scope, &scope))
+                });
+                if sequence == old.nonce {
+                    if !state_live {
+                        let mut retired = reply(0, old.revision);
+                        put32(&mut retired, 8, 20);
+                        return Ok(retired);
+                    }
+                    let Entry::State(state) = &r
+                        .entries
+                        .iter()
+                        .find(|(id, _)| *id == old.handle)
+                        .unwrap()
+                        .1
+                    else {
+                        unreachable!()
+                    };
+                    return Ok(reply(old.handle, state.value.binding().state_revision));
+                }
+                if state_live {
+                    return Err(SourceError::StaleSource);
+                }
+            }
+        }
+        if sequence == 0
+            && receipt.as_ref().is_some_and(|old| {
+                r.entries.iter().any(|(id, entry)| {
+                    *id == old.handle
+                        && matches!(entry, Entry::State(s) if Arc::ptr_eq(&s.scope, &scope))
+                })
+            })
+        {
+            return Err(SourceError::StaleSource);
+        }
+        r.next.checked_add(1).ok_or(SourceError::ResourceLimit)?;
+        // Replay above must remain possible at the handle ceiling. Fresh issuance
+        // checks insertion BEFORE changing canonical state admission.
+        if r.entries.len() >= MAX_HANDLES {
+            return Err(SourceError::ResourceLimit);
+        }
+        let receipt_lease = if sequence != 0 {
+            let bytes = request
+                .len()
+                .checked_add(128)
+                .ok_or(SourceError::ResourceLimit)?;
+            let prior = receipt.as_ref().map_or(0, |v| v._lease.bytes());
+            let prior_state = scope
+                .admission
+                .lock()
+                .map_err(|_| SourceError::ResourceLimit)?
+                .current()
+                .map_or(0, |v| v.retained_bytes());
+            let prior = prior
+                .checked_add(prior_state)
+                .ok_or(SourceError::ResourceLimit)?;
+            let state_bytes = payload
+                .len()
+                .checked_mul(2)
+                .and_then(|n| n.checked_add(1024))
+                .ok_or(SourceError::ResourceLimit)?;
+            if bytes
+                .checked_add(prior)
+                .and_then(|n| n.checked_add(state_bytes))
+                .is_none_or(|n| n > budget(request).map_or(0, |v| v.processor_bytes))
+            {
+                return Err(SourceError::ResourceLimit);
+            }
+            Some(GeoProcessorLease::acquire(bytes)?)
+        } else {
+            None
+        };
         let value = if command == 33 {
             if payload.len() < 24 || payload[12..16].iter().any(|&x| x != 0) {
                 return Err(SourceError::InvalidFrame);
@@ -189,7 +279,22 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
             .map_err(|_| SourceError::ResourceLimit)?
             .admit(value.clone(), snapshot)?;
         let revision = value.binding().state_revision;
-        let id = insert(r, Entry::State(State { scope, value }))?;
+        let id = insert(
+            r,
+            Entry::State(State {
+                scope: scope.clone(),
+                value,
+            }),
+        )?;
+        if let Some(lease) = receipt_lease {
+            *receipt = Some(StateReceipt {
+                nonce: sequence,
+                request: request.to_vec(),
+                handle: id,
+                revision,
+                _lease: lease,
+            });
+        }
         return Ok(reply(id, revision));
     }
     if payload.len() != 8 || sequence == 0 {

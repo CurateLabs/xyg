@@ -1,0 +1,21 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geostatenonce/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.37s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 14 tests
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::fully_selected_transparent_aggregate_cells_are_not_pickable ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::five_canonical_frames_keep_quotas_and_original_page_on_explicit_engine_parking ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::five_indexed_frames_replace_at_sixteen_and_fallback_preserves_state ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_direct_pick_matches_effective_painted_alpha ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::empty_explicit_intent_keeps_ordinary_scene_bytes_and_only_adds_typed_provenance ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::indexed_selected_replaces_state_then_query_without_spending_an_extra_handle ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::reduced_canonical_indexed_scene_and_exact_vertex_counts_are_identical ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::raw_id_limit_precedes_dedup_and_explicit_link_binds_target_namespace ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::canonical_selected_state_consumption_cancel_baseline_and_immutable_rows ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_processor_pressure_preserves_state_and_old_paint_before_io ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_query_session_cap_rejects_before_consumption_and_scope_cap_stays_eight ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::state_nonce_receipt_local_boundary_global_pressure_and_legacy_cannot_bypass ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::state_nonce_replay_tombstone_and_failure_atomic_admission ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::state_nonce_replays_at_full_handle_cap_and_consumption_never_reconstructs ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 1425 filtered out; finished in 1.15s

@@ -338,7 +338,8 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     if matches!(
         command,
         1 | 4 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 26 | 27 | 28 | 29 | 32 | 33 | 34 | 39
-    ) && r.entries.len() >= MAX_HANDLES
+    ) && !(command == 33 && sequence != 0)
+        && r.entries.len() >= MAX_HANDLES
         && !(command == 19
             && r.entries.iter().any(|(id, e)| {
                 *id == handle && matches!(e,Entry::Indexed(q) if q.selected_replacement)

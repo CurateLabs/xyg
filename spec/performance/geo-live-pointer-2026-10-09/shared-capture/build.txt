@@ -2,7 +2,7 @@
 new URL("./wasm-worker.js", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
 
 new URL("./xyg-wasm.wasm", import.meta.url) doesn't exist at build time, it will remain unchanged to be resolved at runtime. If this is intended, you can use the /* @vite-ignore */ comment to suppress this warning.
-[plugin builtin:vite-reporter] 
+[plugin builtin:vite-reporter]
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
@@ -15,13 +15,13 @@ new URL("./xyg-wasm.wasm", import.meta.url) doesn't exist at build time, it will
     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m js/src/49_wasm_density.ts:16:47 [38;5;246m][0m
     [38;5;246m│[0m
  [38;5;246m16 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mw[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mk[0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mU[0m[38;5;249mr[0m[38;5;249ml[0m[38;5;249m:[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249me[0m[38;5;249mw[0m[38;5;249m [0m[38;5;249mU[0m[38;5;249mR[0m[38;5;249mL[0m[38;5;249m([0m[38;5;249m"[0m[38;5;249m.[0m[38;5;249m/[0m[38;5;249mw[0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249mm[0m[38;5;249m-[0m[38;5;249mw[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mk[0m[38;5;249me[0m[38;5;249mr[0m[38;5;249m.[0m[38;5;249mj[0m[38;5;249ms[0m[38;5;249m"[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249m'[0m[38;5;249m'[0m[38;5;249m [0m[38;5;249m+[0m[38;5;249m [0mimport.meta[38;5;249m.[0m[38;5;249mu[0m[38;5;249mr[0m[38;5;249ml[0m[38;5;249m)[0m[38;5;249m,[0m
- [38;5;240m   │[0m                                                    ─────┬─────  
+ [38;5;240m   │[0m                                                    ─────┬─────
  [38;5;240m   │[0m                                                         ╰─────── This `import.meta` will be replaced with an empty object (`{}`) automatically. If this is desired, you can suppress this warning by adding `transform.define: { 'import.meta': {} }`. If `import.meta` needs to be kept as-is, you need to set the output format to `esm`.
- [38;5;240m   │[0m 
+ [38;5;240m   │[0m
  [38;5;240m   │[0m [38;5;115mHelp[0m: If you want to polyfill `import.meta.url` like Rollup does, check out the Document: https://rolldown.rs/in-depth/non-esm-output-formats#well-known-import-meta-properties
 [38;5;246m────╯[0m
 
-[plugin builtin:vite-reporter] 
+[plugin builtin:vite-reporter]
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
@@ -30,9 +30,9 @@ new URL("./xyg-wasm.wasm", import.meta.url) doesn't exist at build time, it will
     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m js/src/49_wasm_density.ts:17:41 [38;5;246m][0m
     [38;5;246m│[0m
  [38;5;246m17 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mw[0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249mm[0m[38;5;249m:[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249me[0m[38;5;249mw[0m[38;5;249m [0m[38;5;249mU[0m[38;5;249mR[0m[38;5;249mL[0m[38;5;249m([0m[38;5;249m"[0m[38;5;249m.[0m[38;5;249m/[0m[38;5;249mx[0m[38;5;249my[0m[38;5;249mg[0m[38;5;249m-[0m[38;5;249mw[0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249mm[0m[38;5;249m.[0m[38;5;249mw[0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249mm[0m[38;5;249m"[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249m'[0m[38;5;249m'[0m[38;5;249m [0m[38;5;249m+[0m[38;5;249m [0mimport.meta[38;5;249m.[0m[38;5;249mu[0m[38;5;249mr[0m[38;5;249ml[0m[38;5;249m)[0m[38;5;249m,[0m
- [38;5;240m   │[0m                                              ─────┬─────  
+ [38;5;240m   │[0m                                              ─────┬─────
  [38;5;240m   │[0m                                                   ╰─────── This `import.meta` will be replaced with an empty object (`{}`) automatically. If this is desired, you can suppress this warning by adding `transform.define: { 'import.meta': {} }`. If `import.meta` needs to be kept as-is, you need to set the output format to `esm`.
- [38;5;240m   │[0m 
+ [38;5;240m   │[0m
  [38;5;240m   │[0m [38;5;115mHelp[0m: If you want to polyfill `import.meta.url` like Rollup does, check out the Document: https://rolldown.rs/in-depth/non-esm-output-formats#well-known-import-meta-properties
 [38;5;246m────╯[0m
 
