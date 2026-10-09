@@ -18,9 +18,15 @@ struct Receipt {
     confirmed: bool,
     _lease: GeoProcessorLease,
 }
+#[derive(Clone, Copy)]
+struct Stamp {
+    birth: Birth,
+    confirmed: bool,
+    forgotten: bool,
+}
 pub(super) struct Bank {
     receipts: [Option<Receipt>; SLOTS],
-    stamps: [Option<Birth>; SLOTS],
+    stamps: [Option<Stamp>; SLOTS],
     control: Option<GeoProcessorLease>,
 }
 const _: () = assert!(std::mem::size_of::<Bank>() <= CONTROL);
@@ -34,29 +40,29 @@ impl Default for Bank {
     }
 }
 fn allocation_live(r: &Registry, b: Birth) -> bool {
-    r.recovery.stamps.iter().any(|s| *s == Some(b))
-        && r.entries.iter().any(|(id, e)| {
-            *id == b.target
-                && match b.command {
-                    26 => matches!(e, Entry::Data { .. }),
-                    27 => matches!(
-                        e,
-                        Entry::Overview(
-                            overview::Owned::Build { .. } | overview::Owned::Index { .. }
-                        )
-                    ),
-                    28 => matches!(e, Entry::Overview(overview::Owned::Query { .. })),
-                    29 => matches!(
-                        e,
-                        Entry::Data {
-                            overview: Some(_),
-                            ..
-                        }
-                    ),
-                    45 => matches!(e, Entry::OverviewMembers(o) if o.is_session()),
-                    _ => false,
-                }
-        })
+    r.recovery.stamps.iter().flatten().any(|s| s.birth == b) && phase_live(r, b)
+}
+fn phase_live(r: &Registry, b: Birth) -> bool {
+    r.entries.iter().any(|(id, e)| {
+        *id == b.target
+            && match b.command {
+                26 => matches!(e, Entry::Data { .. }),
+                27 => matches!(
+                    e,
+                    Entry::Overview(overview::Owned::Build { .. } | overview::Owned::Index { .. })
+                ),
+                28 => matches!(e, Entry::Overview(overview::Owned::Query { .. })),
+                29 => matches!(
+                    e,
+                    Entry::Data {
+                        overview: Some(_),
+                        ..
+                    }
+                ),
+                45 => matches!(e, Entry::OverviewMembers(o) if o.is_session()),
+                _ => false,
+            }
+    })
 }
 fn issuer_live(r: &Registry, b: Birth) -> bool {
     r.entries.iter().any(|(id, e)| {
@@ -123,6 +129,14 @@ pub(super) fn execute(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> 
     let slot = slot
         .or_else(|| r.recovery.receipts.iter().position(Option::is_none))
         .ok_or(SourceError::ResourceLimit)?;
+    // Retired births retain exact cleanup authority until their ACK. Admission
+    // must reserve a stamp BEFORE the canonical mutation, including same-handle29.
+    let stamp = r
+        .recovery
+        .stamps
+        .iter()
+        .position(Option::is_none)
+        .ok_or(SourceError::ResourceLimit)?;
     // Prelease controls, exact request and four-copy transfer allowance BEFORE allocation.
     let credit = request
         .len()
@@ -161,20 +175,11 @@ pub(super) fn execute(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> 
         sequence: u64at(&out, 24),
         target: u64at(&out, 16),
     };
-    r.recovery.stamps.iter_mut().for_each(|s| {
-        if s.is_some_and(|v| {
-            v.target == birth.target || !r.entries.iter().any(|(id, _)| *id == v.target)
-        }) {
-            *s = None;
-        }
+    r.recovery.stamps[stamp] = Some(Stamp {
+        birth,
+        confirmed: false,
+        forgotten: false,
     });
-    let stamp = r
-        .recovery
-        .stamps
-        .iter()
-        .position(Option::is_none)
-        .expect("one stamp per admitted handle");
-    r.recovery.stamps[stamp] = Some(birth);
     if let Some(control) = control {
         r.recovery.control = Some(control);
     }
@@ -195,7 +200,7 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(payload, 0);
     let action = u32at(payload, 4);
     let target = u64at(payload, 8);
-    if !matches!(command, 26..=29 | 45) || action > 1 {
+    if !matches!(command, 26..=29 | 45) || action > 2 {
         return Err(SourceError::InvalidFrame);
     }
     let issuer = u64at(request, 16);
@@ -219,10 +224,31 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
             if !r.recovery.receipts[i].as_ref().unwrap().confirmed || issuer_live(r, b) {
                 return Err(SourceError::StaleSource);
             }
+            for stamp in r.recovery.stamps.iter_mut().flatten() {
+                if stamp.birth == b {
+                    stamp.forgotten = true;
+                }
+            }
             r.recovery.receipts[i] = None;
             return Ok(reply(0, sequence));
         }
+        if action == 2 {
+            if !r.recovery.receipts[i].as_ref().unwrap().confirmed || live {
+                return Err(SourceError::StaleSource);
+            }
+            for stamp in &mut r.recovery.stamps {
+                if stamp.is_some_and(|stamp| stamp.birth == b) {
+                    *stamp = None;
+                }
+            }
+            return Ok(reply(0, sequence));
+        }
         r.recovery.receipts[i].as_mut().unwrap().confirmed = true;
+        for stamp in r.recovery.stamps.iter_mut().flatten() {
+            if stamp.birth == b {
+                stamp.confirmed = true;
+            }
+        }
         return Ok(if live {
             reply(target, sequence)
         } else {
@@ -244,16 +270,40 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         sequence,
         target,
     };
-    if allocation_live(r, b) {
-        return Ok(reply(target, sequence));
+    if let Some(index) = r
+        .recovery
+        .stamps
+        .iter()
+        .position(|stamp| stamp.is_some_and(|stamp| stamp.birth == b))
+    {
+        let live = phase_live(r, b);
+        if action == 2 {
+            if live || !r.recovery.stamps[index].as_ref().unwrap().confirmed {
+                return Err(SourceError::StaleSource);
+            }
+            r.recovery.stamps[index] = None;
+            return Ok(reply(0, sequence));
+        }
+        r.recovery.stamps[index].as_mut().unwrap().confirmed = true;
+        return Ok(if live {
+            reply(target, sequence)
+        } else {
+            retired(sequence)
+        });
+    }
+    if action == 2 {
+        return Ok(reply(0, sequence));
     }
     Err(SourceError::StaleSource)
 }
 
 pub(super) fn collect(r: &mut Registry) {
-    for s in &mut r.recovery.stamps {
-        if s.is_some_and(|b| !r.entries.iter().any(|(id, _)| *id == b.target)) {
-            *s = None;
+    let released = std::array::from_fn::<_, SLOTS, _>(|index| {
+        r.recovery.stamps[index].is_some_and(|stamp| stamp.forgotten && !phase_live(r, stamp.birth))
+    });
+    for (stamp, released) in r.recovery.stamps.iter_mut().zip(released) {
+        if released {
+            *stamp = None;
         }
     }
     if r.recovery.receipts.iter().all(Option::is_none)
