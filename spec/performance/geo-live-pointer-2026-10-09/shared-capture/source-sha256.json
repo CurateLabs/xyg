@@ -1,0 +1,9 @@
+{
+  "js/src/65_geo_host.ts": "783d770076a8534dd357ee37cbb36207a40b7e3e6b51b509db2074ffb0d20675",
+  "js/src/50_chartview.ts": "a5eff0ad218318af9638141d156fc12a3400fc48b612c7fc0b5bad7c93bac303",
+  "tests/browser/geo_live_pointer_test.mjs": "631ce0d1d4b653ee78722c98fb0cd8610531a9f63db433b19758dc12cbcd344c",
+  "spec/design/geo-live-host.md": "08f421d50854872bf1e5d661d7b974af71cab531a3728be8a20aca75c1eb3f19",
+  "packages/xy-client/dist/index.js": "e27a166f413ec4096984feceac0ef7bf74947bfad4325ee5c80be4f47e210d3a",
+  "target/release/libxyg_core.dylib": "00676474e0f7c4e8858b394ae9e9a965c930c1c556bc58f816de9dd23376c6ad",
+  "packages/xy-client/dist/xyg-wasm.wasm": "65fb8bc629b283ab4e021d778f0db1b514ad34e24a73ad723918ffc5cf74cb22"
+}
