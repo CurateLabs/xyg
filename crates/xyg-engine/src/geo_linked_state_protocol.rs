@@ -22,6 +22,7 @@ pub(super) fn scope(entry: &Entry) -> Option<Arc<Scope>> {
         Entry::Session(s) => s.scope.clone(),
         Entry::Rows(s) => s.scope.clone(),
         Entry::Indexed(s) => s.scope.clone(),
+        Entry::Hierarchy(hierarchy) => hierarchy::scope(hierarchy),
         Entry::Data {
             semantic: Some(s), ..
         } => s.scope.clone(),
@@ -45,7 +46,7 @@ fn options(request: &[u8]) -> Result<GeoLodOptions> {
         max_projected_vertices: u64at(request, 224),
     })
 }
-fn validate_current(state: &State, snapshot: GeoOperationSnapshot) -> Result<()> {
+pub(super) fn validate_current(state: &State, snapshot: GeoOperationSnapshot) -> Result<()> {
     state.value.validate_snapshot(snapshot)?;
     let admission = state
         .scope

@@ -120,6 +120,31 @@ impl GeoHierarchyQuerySession {
         state_revision: u64,
         limits: GeoHierarchyQueryLimits,
     ) -> Result<Self> {
+        Self::new_with_state(
+            index,
+            camera,
+            time,
+            options,
+            layer_id,
+            style_revision,
+            state_revision,
+            limits,
+            None,
+        )
+    }
+    /// Sparse selected policy uses the canonical LOD fold, never page-local flags.
+    #[expect(clippy::too_many_arguments)]
+    pub fn new_with_state(
+        index: Arc<ValidatedGeoHierarchy>,
+        camera: GeoViewport,
+        time: TimePredicate,
+        options: GeoLodOptions,
+        layer_id: u64,
+        style_revision: u64,
+        state_revision: u64,
+        limits: GeoHierarchyQueryLimits,
+        state: Option<Arc<crate::geo_linked_state::GeoLinkedState>>,
+    ) -> Result<Self> {
         camera.validate()?;
         time.validate()?;
         if limits.processor_bytes > crate::geo_source::MAX_PROCESSOR_BYTES
@@ -138,8 +163,14 @@ impl GeoHierarchyQuerySession {
                     + 262144,
             )
             .ok_or(SourceError::ResourceLimit)?;
+        let selected = state
+            .as_ref()
+            .map(|state| GeoPointLod::reservation_bytes_with_state(options, Some(state)))
+            .transpose()?
+            .unwrap_or(0);
         if base
-            .checked_add(index.reserved_bytes())
+            .checked_add(selected)
+            .and_then(|n| n.checked_add(index.reserved_bytes()))
             .is_none_or(|n| n > limits.processor_bytes)
         {
             return limit();
@@ -155,7 +186,7 @@ impl GeoHierarchyQuerySession {
             style_revision,
             state_revision,
         };
-        let lod = GeoPointLod::new(identity, camera, time, options)?;
+        let lod = GeoPointLod::new_with_state(identity, camera, time, options, state)?;
         let mut stack = Vec::with_capacity(LEVELS * FANOUT);
         if let Some(root) = index.root {
             stack.push(root);

@@ -185,7 +185,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         return Err(SourceError::InvalidFrame);
     }
     let command = u32at(b, 8);
-    if !matches!(command, 1..=21 | 23..=41) {
+    if !matches!(command, 1..=21 | 23..=44) {
         return Err(SourceError::InvalidFrame);
     }
     // Budget words are shared on every operation. Other fields are admitted
@@ -194,9 +194,9 @@ fn frame(b: &[u8]) -> Result<u32> {
         budget(b)?;
     }
     let zero = |start, end| b[start..end].iter().all(|&v| v == 0);
-    if (!matches!(command, 5 | 18 | 28 | 35 | 36 | 38)
+    if (!matches!(command, 5 | 18 | 28 | 35 | 36 | 38 | 43)
         && (!zero(12, 16) || !zero(64, 144) || !zero(152, 232)))
-        || (!matches!(command, 3 | 5 | 18 | 28 | 35 | 36 | 38) && !zero(144, 152))
+        || (!matches!(command, 3 | 5 | 18 | 28 | 35 | 36 | 38 | 43) && !zero(144, 152))
         || (!matches!(
             command,
             5 | 6
@@ -217,7 +217,7 @@ fn frame(b: &[u8]) -> Result<u32> {
                 | 24
                 | 25
                 | 26
-                | 27..=41
+                | 27..=44
         ) && !zero(24, 32))
     {
         return Err(SourceError::InvalidFrame);
@@ -346,7 +346,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
     {
         return Err(SourceError::ResourceLimit);
     }
-    if matches!(command, 37 | 38) {
+    if matches!(command, 37 | 38 | 42 | 43) {
         return hierarchy::start(&mut r, request);
     }
     if matches!(command, 32..=36) {
@@ -943,7 +943,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         put64(&mut out, 40, handle);
         return Ok(out);
     }
-    if matches!(command, 11 | 19 | 39) {
+    if matches!(command, 11 | 19 | 39 | 44) {
         admit_data_slot(&r)?;
         let entry = &r
             .entries
@@ -953,11 +953,14 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
             .1;
         if (command == 11 && !matches!(entry, Entry::Session(_)))
             || (command == 19 && !matches!(entry, Entry::Indexed(_)))
-            || (command == 39 && !matches!(entry, Entry::Hierarchy(_)))
+            || (matches!(command, 39 | 44) && !matches!(entry, Entry::Hierarchy(_)))
         {
             return Err(SourceError::InvalidFrame);
         }
-        let phase_budget = if command == 39 {
+        if command == 44 && !hierarchy::selected_complete(entry) {
+            return Err(SourceError::InvalidFrame);
+        }
+        let phase_budget = if matches!(command, 39 | 44) {
             hierarchy::data_budget(entry, budget(request)?.processor_bytes)?
         } else {
             budget(request)?.processor_bytes
@@ -1039,7 +1042,7 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         let bytes = match render_entry(
             entry,
             request,
-            if command == 39 {
+            if matches!(command, 39 | 44) {
                 phase_budget
                     .checked_sub(semantic_bytes)
                     .ok_or(SourceError::ResourceLimit)?
@@ -1062,8 +1065,8 @@ pub fn execute(request: &[u8]) -> Result<[u8; HEADER]> {
         };
         let len = bytes.len();
         let position = r.entries.iter().position(|(id, _)| *id == handle).unwrap();
-        let replacement =
-            matches!(&r.entries[position].1,Entry::Indexed(q) if q.selected_replacement);
+        let replacement = command == 44
+            || matches!(&r.entries[position].1,Entry::Indexed(q) if q.selected_replacement);
         commit_entry_style(&mut r.entries[position].1, style_bytes)?;
         let data = Entry::Data {
             bytes,
