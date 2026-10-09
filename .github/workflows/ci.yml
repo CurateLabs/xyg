@@ -440,6 +440,7 @@ jobs:
           node scripts/geo_overview_membership_engine_conformance.mjs
           XYG_GEO_DOMAIN_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-domain-members-ci.json" node scripts/geo_overview_domain_members_conformance.mjs
           XYG_GEO_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-allocation-recovery-ci.json" node scripts/geo_allocation_recovery_conformance.mjs
+          XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-recovery-ci.json" XYG_SELECTED_MUTATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-mutation-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_mutation_recovery_conformance.mjs
           node scripts/gen_geo_overview_wire.mjs --check
           node scripts/geo_overview_conformance.mjs
           node scripts/gen_geo_selected_wire.mjs --check
@@ -525,6 +526,7 @@ jobs:
             geo-overview-domain-members-ci.json
             geo-overview-members-hosts-ci.json
             geo-allocation-recovery-ci.json
+            geo-selected-mutation-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
             geo-native-overview-host-ci.json

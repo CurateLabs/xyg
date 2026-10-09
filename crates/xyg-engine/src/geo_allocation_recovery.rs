@@ -59,6 +59,8 @@ fn phase_live(r: &Registry, b: Birth) -> bool {
                         ..
                     }
                 ),
+                35 => matches!(e, Entry::Session(s) if s.operation_live(b.sequence)),
+                36 => matches!(e, Entry::Indexed(q) if q.selected_replacement && q.sequence == b.sequence && (q.published.is_some() || q.session.as_ref().is_some_and(GeoIndexedQuerySession::operation_live))),
                 45 => matches!(e, Entry::OverviewMembers(o) if o.is_session()),
                 _ => false,
             }
@@ -78,6 +80,8 @@ fn issuer_live(r: &Registry, b: Birth) -> bool {
                 ),
                 28 => matches!(e, Entry::Overview(overview::Owned::Index { .. })),
                 29 => matches!(e, Entry::Overview(overview::Owned::Query { .. })),
+                35 => matches!(e, Entry::Session(_)),
+                36 => matches!(e, Entry::Index(_)),
                 45 => {
                     matches!(
                         e,
@@ -200,7 +204,7 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(payload, 0);
     let action = u32at(payload, 4);
     let target = u64at(payload, 8);
-    if !matches!(command, 26..=29 | 45) || action > 2 {
+    if !matches!(command, 26..=29 | 35 | 36 | 45) || action > 2 {
         return Err(SourceError::InvalidFrame);
     }
     let issuer = u64at(request, 16);

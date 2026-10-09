@@ -1,0 +1,56 @@
+{
+  "baseHead": "7f062ada5a34dfbd8da0558ddac8b9c1112f43eb",
+  "worktree": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationrecovery",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "nativeAbi": 383,
+  "wasmAbi": 33,
+  "scene": 32,
+  "painter": 15,
+  "current": {
+    "nativePath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationrecovery/target/release/libxyg_core.dylib",
+    "nativeSha256": "d077dde658282c2babfb1789daecb206878c1d36b9bbb6a21cf4678344ce45fb",
+    "wasmPath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+    "wasmSha256": "fbd1318490cec055d2be07cdfa5a4722aa1bc0029b57eb4244b4c4d507f01cd7",
+    "rawBytes": 1495349,
+    "gzip6Mtime0Bytes": 613335
+  },
+  "baseline": {
+    "nativePath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/target/release/libxyg_core.dylib",
+    "nativeSha256": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e",
+    "wasmPath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/packages/xy-client/dist/xyg-wasm.wasm",
+    "wasmSha256": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2",
+    "rawBytes": 1494781,
+    "gzip6Mtime0Bytes": 613121
+  },
+  "gzipConvention": "level6 mtime0; separate gzip9 provided, not interchangeable",
+  "gzip9Mtime0Bytes": 612520,
+  "caps": {
+    "rawBytes": 1507328,
+    "gzip6Bytes": 622592
+  },
+  "profiles": {
+    "rustReleaseOptLevel": 3,
+    "wasmLlvmInlineThreshold": 100,
+    "configurationSha256": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92"
+  },
+  "tdd": {
+    "initialTests": 3,
+    "initialPassed": 0,
+    "initialFailure": "InvalidFrame at nonzero35/36 nonce whitelist before implementation"
+  },
+  "proof": {
+    "focusedRust": 10,
+    "fullEngineRust": 1477,
+    "pairedCompletePackets": 12,
+    "legacyBeforeAfterCompletePackets": 6,
+    "normalization": "Only16..24 after exact creator+operation sequence validation; Rows80..88 preserved"
+  },
+  "openGates": [
+    "Public35/36 opt-in adoption",
+    "Lost selected19 publication recovery",
+    "Massive interaction latency"
+  ]
+}
