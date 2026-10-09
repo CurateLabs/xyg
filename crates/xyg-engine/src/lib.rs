@@ -56,6 +56,11 @@ pub mod geo_fill;
 pub mod geo_interaction;
 pub mod geo_source;
 pub mod geo_spatial_index;
+pub mod geo_spatial_hierarchy;
+pub mod geo_spatial_hierarchy_build;
+pub mod geo_spatial_hierarchy_query;
+#[cfg(test)]
+mod geo_spatial_hierarchy_tests;
 pub mod geo_spatial_build_session;
 pub mod geo_indexed_query_session;
 pub mod geo_source_session;

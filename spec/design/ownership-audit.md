@@ -1099,6 +1099,17 @@ Forbidden:
 | `python/xyg/_geo_tiles.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geoscale.py` | Python host | `python-host` | `keep-host` | — |
 
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_spatial_hierarchy.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_build.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_query.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
