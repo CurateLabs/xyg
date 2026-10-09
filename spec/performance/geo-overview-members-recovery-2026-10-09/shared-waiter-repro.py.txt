@@ -1,0 +1,98 @@
+import struct
+
+import pytest
+
+from xyg import _geo_overview_members as members
+from xyg._geo_overview_source import _transport
+
+
+def test_root_cancel_one_shared_recover_waiter():
+    import asyncio
+
+    from test_geo_retained import fixture_manifest, style
+    from test_geoscale import BUDGET, query
+    from xyg._geo_overview_source import GeoOverviewIndex
+    from xyg._geo_retained import RetainedGeoSource
+
+    async def notebook():
+        manifest, chunk = fixture_manifest()
+        entered, release = asyncio.Event(), asyncio.Event()
+        gated = False
+        events = []
+
+        async def read_chunk(_):
+            if gated:
+                events.append("read")
+                entered.set()
+                await release.wait()
+                events.append("settled")
+            return chunk
+
+        source = await RetainedGeoSource.create_async(manifest, read_chunk, budget=BUDGET)
+        seed = await source.aupdate(query(source.info), sequence=1, style=style())
+        pages = {}
+
+        async def read_page(t):
+            return pages[t["namespace"], t["page"]]
+
+        async def write_page(t, b):
+            pages[t["namespace"], t["page"]] = bytes(b)
+
+        index = await GeoOverviewIndex.from_frame_async(
+            seed,
+            source,
+            budget=BUDGET,
+            max_vertices=1000,
+            read_chunk=read_chunk,
+            read_page=read_page,
+            write_page=write_page,
+        )
+        q = query(source.info)
+        q.update(max_cells=0, max_projected_vertices=0, previous_direct=False)
+        frame = await index.update_async(q, sequence=2)
+        token, actual = _transport(frame), _transport(frame).execute
+        fail = True
+
+        async def execute(packet):
+            nonlocal fail
+            code = struct.unpack_from("<I", packet, 8)[0]
+            result = await actual(packet)
+            if code == 45 and fail:
+                fail = False
+                raise RuntimeError("lost45")
+            if code == 8:
+                events.append("ack")
+            return result
+
+        token.execute = execute
+        guard = None
+        try:
+            with pytest.raises(members.GeoOverviewMembershipUncertain) as caught:
+                await frame.members_async(136, sequence=10, max_vertices=1000)
+            guard = caught.value.owner
+            gated = True
+            first = asyncio.create_task(guard.recover_async())
+            second = asyncio.create_task(guard.recover_async())
+            await entered.wait()
+            first.cancel()
+            await asyncio.sleep(0)
+            release.set()
+            outcomes = await asyncio.gather(first, second, return_exceptions=True)
+            assert isinstance(outcomes[0], asyncio.CancelledError)
+            assert not isinstance(outcomes[1], BaseException), outcomes[1]
+            page = outcomes[1]
+            assert page.record(0)["feature_id"] == (1 << 64) - 1
+            await page.aclose()
+            gated = False
+            page = await frame.members_async(136, sequence=11, max_vertices=1000)
+            await page.aclose()
+        finally:
+            release.set()
+            if guard is not None:
+                await guard.aclose()
+            await frame.aclose()
+            await index.aclose()
+            await seed.aclose()
+            await source.aclose()
+
+    asyncio.run(notebook())
