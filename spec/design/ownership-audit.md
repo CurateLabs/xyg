@@ -1120,6 +1120,10 @@ Forbidden:
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_build.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_query.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 ## Contributor rule
 
