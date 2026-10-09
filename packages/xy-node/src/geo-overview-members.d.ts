@@ -8,6 +8,9 @@ interface Context {
     header: Uint8Array;
 }
 export declare function registerOverviewMembers(frame: object, transport: XygGeoScaleBridge, reader: Context['reader'], budget: XygGeoQueryBudget, header: Uint8Array, handle: bigint, sequence: bigint): void;
+/** Opaque private callback/snapshot capture before asynchronous retained allocation. */
+export declare function captureOverviewMembers(from: object): object;
+export declare function installOverviewMembers(token: object, to: object, handle: bigint, sequence: bigint): void;
 export declare function copyOverviewMembers(from: object, to: object, handle: bigint, sequence: bigint): void;
 export declare function dropOverviewMembers(frame: object): void;
 export declare function encodeOverviewMembersRequest(command: number, handle: bigint, sequence: bigint, budget?: XygGeoQueryBudget, payload?: Uint8Array): ArrayBuffer;

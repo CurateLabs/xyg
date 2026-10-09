@@ -2189,6 +2189,14 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
+      "path": "js/src/72_geo_allocation_attempt.ts",
+      "policy": "browser-wasm-adapter"
+    },
+    {
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
       "path": "js/src/73_geo_overview_members.ts",
       "policy": "browser-wasm-adapter"
     },
@@ -2303,6 +2311,14 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts.",
+      "path": "packages/xy-node/src/geo-allocation-attempt.js",
+      "policy": "node-host"
     },
     {
       "current_owner": "Node host",
@@ -3183,6 +3199,14 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions.",
+      "path": "python/xyg/_geo_allocation_recovery.py",
+      "policy": "python-host"
     },
     {
       "current_owner": "Python host",

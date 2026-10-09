@@ -17,13 +17,16 @@ if(at<0)throw Error('Canonical Node native suffix missing');
 write(path,clean(stripTypeScriptTypes(fs.readFileSync('js/src/63_geo_source.ts','utf8')))+'\n'+old.slice(at));
 const overview=clean(stripTypeScriptTypes(fs.readFileSync('js/src/67_geo_overview.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'");
 write('packages/xy-node/src/geo-overview.js','// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+overview);
-const members=clean(stripTypeScriptTypes(fs.readFileSync('js/src/73_geo_overview_members.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'");
+write('packages/xy-node/src/geo-allocation-attempt.js','// Mechanical type stripping of shared private allocation recovery.\n'+clean(stripTypeScriptTypes(fs.readFileSync('js/src/72_geo_allocation_attempt.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'"));
+const members=clean(stripTypeScriptTypes(fs.readFileSync('js/src/73_geo_overview_members.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'");
 write('packages/xy-node/src/geo-overview-members.js','// Mechanical type stripping of canonical73; no host policy.\n'+members);
-const shared=clean(stripTypeScriptTypes(fs.readFileSync('js/src/71_geo_overview_owner.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./67_geo_overview'","'./geo-overview.js'").replaceAll("'./73_geo_overview_members'","'./geo-overview-members.js'");
+const shared=clean(stripTypeScriptTypes(fs.readFileSync('js/src/71_geo_overview_owner.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./67_geo_overview'","'./geo-overview.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replaceAll("'./73_geo_overview_members'","'./geo-overview-members.js'");
 write('packages/xy-node/src/geo-overview-source.js','// Mechanical shared71 type stripping; native export is a thin bridge.\n'+shared+`
 import {geoScaleExecute} from './geoscale.js';
 import {exportGeoFrame} from './geo-snapshot.js';
-const nativeIndices=new WeakSet(),fromFrame=GeoOverviewIndex.fromFrame;
+const nativeIndices=new WeakSet();
+export function isNativeOverviewIndex(index){return nativeIndices.has(index);}
+const fromFrame=GeoOverviewIndex.fromFrame;
 GeoOverviewIndex.fromFrame=async(frame,input)=>{const native=geoSceneDataAuthority(frame)?.execute===geoScaleExecute;const index=await fromFrame(frame,input);if(native)nativeIndices.add(index);return index;};
 GeoOverviewFrame.prototype.export=function(format='png',options={}){if(Object.keys(options).some(k=>!['scale','quality','budget'].includes(k)))throw new TypeError('Unsupported overview export option');const a=overviewFrameAuthority(this);if(!a||!nativeIndices.has(a.index))throw new TypeError('Native overview export requires its native issuing transport');return exportGeoFrame({_freezeCommand:6,handle:a.handle,data:this.data},a.sequence,format,options);};
 `);
@@ -35,11 +38,12 @@ const suffix=dold.slice(dold.indexOf('export declare function geoScaleExecute(')
 if(!camera||!suffix.startsWith('export declare function geoScaleExecute('))throw Error('Native declaration suffix missing');
 let declaration=fs.readFileSync(join(output,'63_geo_source.d.ts'),'utf8').replace("import type { XygGeoCamera } from './49_wasm_geoviewport';",camera);
 write(dpath,declaration+suffix);
-write('packages/xy-node/src/geo-overview-members.d.ts',fs.readFileSync(join(output,'73_geo_overview_members.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'"));
+write('packages/xy-node/src/geo-overview-members.d.ts',fs.readFileSync(join(output,'73_geo_overview_members.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'"));
 write('packages/xy-node/src/geo-overview.d.ts',fs.readFileSync(join(output,'67_geo_overview.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'"));
 declaration=fs.readFileSync(join(output,'71_geo_overview_owner.d.ts'),'utf8').replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./67_geo_overview'","'./geo-overview.js'").replaceAll("'./73_geo_overview_members'","'./geo-overview-members.js'");
 write('packages/xy-node/src/geo-overview-source.d.ts',declaration+`
 import type {OwnedGeoArtifact} from './geo-snapshot.js';
+export declare function isNativeOverviewIndex(index:GeoOverviewIndex):boolean;
 export interface GeoOverviewFrame {export(format?:'svg'|'png'|'pdf'|'jpeg'|'webp'|'html',options?:{scale?:number;quality?:number;budget?:number}):Promise<OwnedGeoArtifact>;}
 `);
 

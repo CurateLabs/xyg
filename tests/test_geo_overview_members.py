@@ -92,7 +92,7 @@ def test_lost46_known_probe_and_lost45_poison_oldframe(monkeypatch):
 def test_ticket_mutation_does_not_change_authorized_length_or_ack(monkeypatch):
     source, seed, index, q = build()
     frame = index.update(q, sequence=2)
-    context = members._CONTEXTS[frame]
+    context = members._context(frame)
     reader, token, actual = context.reader, _transport(frame), _transport(frame).native_execute
     calls = []
 

@@ -1245,6 +1245,21 @@ Rust continues to own temporal/domain policy, projection, counts and paint buffe
 | `packages/xy-node/src/geo-overview-members.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-overview-members.d.ts` | Node host | `node-host` | `keep-host` | — |
 
+
+
+### Issued overview allocation recovery
+
+These adapters capture exact requests, private producer identity and canonical
+cleanup before dispatch. Rust owns receipt banks, birth/phase authentication,
+quotas and temporal/domain policy. Node output is mechanically generated from
+TypeScript; Python owns its asynchronous settlement ergonomics.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/72_geo_allocation_attempt.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-allocation-attempt.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_allocation_recovery.py` | Python host | `python-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

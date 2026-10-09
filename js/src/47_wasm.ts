@@ -792,7 +792,7 @@ export class XygWasmWorker {
     // FIFO must not expose mutable authoring bytes to a later caller.
     const length=request.byteLength,header=new DataView(request),command=header.getUint32(8,true);
     const mixedCleanup=type==="geo.tile.execute" && header.getUint32(0,true)===0x584d5958 && length===256 && (command===4||command===5);
-    const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3]:[8,9,10,24,31]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
+    const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3]:[8,9,10,24,31,47]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
     geographicDispatch.capacity.call(this,length,cleanup);
     const owned=structuredClone(request,{transfer:[request]});
     return geographicDispatch.queue.call(this,async()=>{
