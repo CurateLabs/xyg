@@ -1,10 +1,12 @@
 //! Bounded resumable geographic source processor. See spec/design/geo-source-session.md.
+use crate::geo_linked_state::GeoLinkedState;
 use crate::geo_lod::{GeoLodIdentity, GeoLodOptions, GeoLodPass, GeoPointLod, GeoPointResult};
 use crate::geo_source::{
     GeoManifestBuilder, GeoSourceManifest, MAX_CHUNK_PEAK, MAX_PROCESSOR_BYTES, QueryBudget,
     QuerySpec, ReadRequest, SourceError, TimePredicate, UntrustedGeoManifest, parse_authenticated,
 };
 use crate::geo_viewport::{GeoViewport, GeoViewportRebuildKey};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 type Result<T> = std::result::Result<T, SourceError>;
 static PROCESSOR_BYTES: AtomicUsize = AtomicUsize::new(0);
@@ -140,6 +142,7 @@ struct Validation {
 }
 struct Job {
     processor: GeoPointLod,
+    selected_reserve: usize,
     snapshot: GeoOperationSnapshot,
     query: QuerySpec,
     sequence: u64,
@@ -265,7 +268,20 @@ impl GeoSourceSession {
         snapshot: GeoOperationSnapshot,
         camera: GeoViewport,
         query: QuerySpec,
+        options: GeoLodOptions,
+    ) -> Result<()> {
+        self.begin_with_state(sequence, snapshot, camera, query, options, None)
+    }
+    /// Immutable sparse intent is validated and admitted before source I/O.
+    #[allow(clippy::too_many_arguments)]
+    pub fn begin_with_state(
+        &mut self,
+        sequence: u64,
+        snapshot: GeoOperationSnapshot,
+        camera: GeoViewport,
+        query: QuerySpec,
         mut options: GeoLodOptions,
+        state: Option<Arc<GeoLinkedState>>,
     ) -> Result<()> {
         if self.disposed
             || sequence == 0
@@ -289,17 +305,22 @@ impl GeoSourceSession {
         if self.pending.is_some() && self.retired.len() == MAX_RETIRED_READS {
             return Err(SourceError::ResourceLimit);
         }
-        let reserve = GeoPointLod::reservation_bytes(options)?;
+        if let Some(state) = &state {
+            state.validate_snapshot(snapshot)?;
+        }
+        let reserve = GeoPointLod::reservation_bytes_with_state(options, state.as_deref())?;
+        let wrapper = if state.is_some() { 1024 } else { 0 };
         if self
             .local_bytes()
             .checked_add(reserve)
+            .and_then(|n| n.checked_add(wrapper))
             .is_none_or(|n| n > self.budget.processor_bytes)
         {
             return Err(SourceError::ResourceLimit);
         }
-        let lease = GeoProcessorLease::acquire(reserve)?;
+        let lease = GeoProcessorLease::acquire(if state.is_some() { wrapper } else { reserve })?;
         options.processor_bytes = reserve;
-        let processor = GeoPointLod::new(
+        let processor = GeoPointLod::new_with_state(
             GeoLodIdentity {
                 source_digest: source.digest(),
                 generation: source.generation(),
@@ -313,10 +334,12 @@ impl GeoSourceSession {
             camera,
             query.time,
             options,
+            state,
         )?;
         self.retire_pending()?;
         self.job = Some(Job {
             processor,
+            selected_reserve: if wrapper != 0 { reserve } else { 0 },
             snapshot,
             query,
             sequence,
@@ -331,8 +354,16 @@ impl GeoSourceSession {
     }
     fn local_bytes(&self) -> usize {
         self.metadata_lease.bytes()
-            + self.job.as_ref().map_or(0, |j| j.lease.bytes())
-            + self.published.as_ref().map_or(0, |p| p.lease.bytes())
+            + self
+                .job
+                .as_ref()
+                .map_or(0, |j| j.lease.bytes() + j.selected_reserve)
+            + self.published.as_ref().map_or(0, |p| {
+                p.lease.bytes()
+                    + p.result.selection.as_ref().map_or(0, |selection| {
+                        selection.retained_bytes() + selection.state().retained_bytes()
+                    })
+            })
             + self.pending.as_ref().map_or(0, |r| r.lease.bytes())
             + self.retired.iter().map(|r| r.lease.bytes()).sum::<usize>()
     }
@@ -456,9 +487,13 @@ impl GeoSourceSession {
                     }
                     let mut lease = job.lease;
                     lease.resize(
-                        GeoPointLod::output_bytes(&result)
-                            .checked_add(1024)
-                            .ok_or(SourceError::ResourceLimit)?,
+                        (if result.selection.is_some() {
+                            0
+                        } else {
+                            GeoPointLod::output_bytes(&result)
+                        })
+                        .checked_add(1024)
+                        .ok_or(SourceError::ResourceLimit)?,
                     )?;
                     self.published = Some(GeoPublishedResult {
                         snapshot: job.snapshot,
