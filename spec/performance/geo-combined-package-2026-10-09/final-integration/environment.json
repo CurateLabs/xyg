@@ -1,0 +1,16 @@
+{
+  "sourceHead": "90149f0c333fc5bb3ae12d045aaf6cf192a30814",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "nativeSha256": "ef90af7d69a26676ad8ebd535ae5fd37147d9f237f1105ed71a92c4f07790c57",
+  "wasmSha256": "d5de5c18285a18162a823fdd07ea4c8aaf7a068220e34b0b8b7e448b09cfde29",
+  "wasmRawBytes": 1458129,
+  "wasmGzipLevel6Bytes": 599346,
+  "nativeAbi": 383,
+  "wasmAbi": 33,
+  "review": "Independent source review green; no blocker. Linux hosted confirmation pending.",
+  "limitations": [
+    "No massive five-view end-to-end or competitor performance claim",
+    "Public selected hierarchy typed and live routing remain separate work",
+    "Original startup and trace ledgers are prior checkpoints, not rerun measurements"
+  ]
+}
