@@ -1,8 +1,8 @@
 //! Packed direct-browser temporal graph binding and frame transport (#45).
 
 use super::{
-    fail, Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
-    STATUS_STALE_REVISION,
+    Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
+    STATUS_STALE_REVISION, fail,
 };
 use xyg_engine::projection::{GraphProjection, Uuid};
 use xyg_engine::temporal::{CancelFlag, TemporalColumn, TemporalError, TemporalPrecision};

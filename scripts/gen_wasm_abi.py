@@ -459,9 +459,12 @@ def render(manifest: dict[str, object]) -> str:
             raise ValueError(f"{name} params must be a string list")
         if not isinstance(result_spec, str):
             raise ValueError(f"{name} result must be a string")
-        arity = len(params_spec)
-        params = ", ".join(f"arg{index}: number" for index in range(arity))
-        lines.append(f"  {name}({params}): number;")
+        params = ", ".join(
+            f"arg{index}: {'bigint' if kind in {'u64', 'i64'} else 'number'}"
+            for index, kind in enumerate(params_spec)
+        )
+        result_type = "bigint" if result_spec in {"u64", "i64"} else "number"
+        lines.append(f"  {name}({params}): {result_type};")
     lines.extend(
         [
             "}",

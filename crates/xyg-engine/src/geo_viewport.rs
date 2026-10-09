@@ -324,6 +324,16 @@ impl GeoViewport {
         }
     }
 
+    /// Raw Mercator ground ray for Rust tile sampling. Unlike the public
+    /// authoring inverse, this retains rays outside the bounded world.
+    pub(crate) fn unproject_mercator_ray(&self, x: f64, y: f64) -> Result<ScreenPoint, GeoError> {
+        self.validate()?;
+        if !x.is_finite() || !y.is_finite() {
+            return Err(GeoError::NonFiniteCoordinate);
+        }
+        self.screen_to_mercator(x, y)
+    }
+
     /// Project source coordinates to offset-encoded f32 screen pixels.
     ///
     /// Returns interleaved `[sx0,sy0,…]` plus the f64 encode origin used so

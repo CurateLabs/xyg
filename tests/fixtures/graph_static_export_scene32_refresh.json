@@ -1,0 +1,163 @@
+{
+  "schema": "xyg-graph-static-export-scene32-refresh-v1",
+  "case": "composed.compound_collapsed",
+  "environment": {
+    "platform": "Darwin",
+    "machine": "arm64"
+  },
+  "old_renderer": {
+    "abi": 380,
+    "scene_version": 31,
+    "native_artifact_sha256": "9cfb93bc4a6fe845ba516eb998bb73825fd495fc8940c7410f1a16a38b31b175"
+  },
+  "new_renderer": {
+    "abi": 381,
+    "scene_version": 32,
+    "native_artifact_sha256": "00184f624722f51483d5057df2e48c953106e5b4564fbdc71fa6f51a618794a1"
+  },
+  "comparison": {
+    "authoring": "tests/test_graph_static_export.py::_composed_chart(COMPOSED_CASES[compound_collapsed])",
+    "document": "Same current canonical XYST document; only embedded Scene header version changed from 32 to 31 for the old decoder. All other document bytes identical.",
+    "svg_bytes_identical": true,
+    "svg_sha256": "3efe47dad84e20f1b191a336076758b26c905853c9637a9fc049148dfbee018a",
+    "scale1_png_bytes_identical": true,
+    "scale1_png_sha256": "cfa6511cbf208d4ca9553bee7f2123dbfa02a7ba86c73d9c0328ae8d42f09f3c",
+    "scale2_old_png_sha256": "4ced3fbb0a9e430b1298f5fcc578cde3e06e24ec618112a42ab58c18c8655154",
+    "scale2_new_png_sha256": "9f10da63f220f6d3c64fc185c0dcadd06475b240d4f7493dba62b58d271085bd",
+    "scale2_dimensions": [
+      1280,
+      960
+    ],
+    "changed_pixel_count": 5,
+    "maximum_absolute_channel_delta": 7,
+    "alpha_unchanged": true,
+    "pixels": [
+      {
+        "x": 1184,
+        "y": 36,
+        "old_rgba": [
+          193,
+          193,
+          193,
+          255
+        ],
+        "new_rgba": [
+          192,
+          192,
+          192,
+          255
+        ],
+        "channel_delta": [
+          -1,
+          -1,
+          -1,
+          0
+        ]
+      },
+      {
+        "x": 1185,
+        "y": 36,
+        "old_rgba": [
+          193,
+          193,
+          193,
+          255
+        ],
+        "new_rgba": [
+          186,
+          186,
+          187,
+          255
+        ],
+        "channel_delta": [
+          -7,
+          -7,
+          -6,
+          0
+        ]
+      },
+      {
+        "x": 1186,
+        "y": 36,
+        "old_rgba": [
+          193,
+          193,
+          193,
+          255
+        ],
+        "new_rgba": [
+          187,
+          188,
+          188,
+          255
+        ],
+        "channel_delta": [
+          -6,
+          -5,
+          -5,
+          0
+        ]
+      },
+      {
+        "x": 1185,
+        "y": 63,
+        "old_rgba": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "new_rgba": [
+          251,
+          251,
+          252,
+          255
+        ],
+        "channel_delta": [
+          -4,
+          -4,
+          -3,
+          0
+        ]
+      },
+      {
+        "x": 1186,
+        "y": 63,
+        "old_rgba": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "new_rgba": [
+          254,
+          254,
+          254,
+          255
+        ],
+        "channel_delta": [
+          -1,
+          -1,
+          -1,
+          0
+        ]
+      }
+    ]
+  },
+  "embedded_source_marker": {
+    "kind": "Scatter",
+    "symbol_code": 5,
+    "symbol": "Hexagon",
+    "center_css": [
+      592.9300000000001,
+      24.897951615742613
+    ],
+    "diameter_css": 13.5
+  },
+  "rationale": {
+    "observed": "Changed pixels lie around the upper/lower tips of the Hex marker; old renderer exactly reproduces the previous fixture hash. SVG, scale1 PNG and all other graph fixture hashes remain unchanged.",
+    "source_change": "scene::marker_symbol_extent and MarkerGeometry now admit Hex vertical extent 2*r/sqrt(3), consistent with the existing shared pointy-top Hex SDF. The SDF itself was extracted unchanged from raster.rs.",
+    "interpretation": "Evidence supports restoring previously clipped native antialias coverage at Hex tips, rather than a layout or global raster change.",
+    "remaining_limit": "Existing SVG Hex contour differs from native SDF; this refresh does not claim SVG/native glyph appearance parity."
+  }
+}

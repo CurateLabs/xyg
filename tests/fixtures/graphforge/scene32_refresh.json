@@ -1,0 +1,36 @@
+{
+  "schema": "xyg.scene32-contract-refresh/v1",
+  "kind": "contract-only-not-performance-measurement",
+  "native_abi": 381,
+  "scene_version": 32,
+  "painter_version": 15,
+  "previous_scene_version": 31,
+  "previous_painter_version": 14,
+  "semantic_previous_goldens": {
+    "light": {
+      "scene_sha256": "8438642999564b5b476b9df3e907ff1d59c2fb1fb77bb8d1e955a99b2e3253f7",
+      "painter_sha256": "8241dadaea32787058ece1d5b4a7aa320b3883c7f20db2c971b93d7877e847a1",
+      "svg_sha256": "fa7d1d03ab5b02cf96992ef1533b512b4d95d2fee9a35b0b51ece844878030c5",
+      "raster_sha256": "76d4b959cdee20707179a42b57d7af507d503678d544fde36f26d9f9ab038bcf",
+      "png_sha256": "b08e35b392c388007f2d4098a0a90aae3f890d4bd6e74808d6307d686d99b5da"
+    },
+    "dark": {
+      "scene_sha256": "704294c0b256663a148de353b2a3fd2c3987fcdd08af261c3dcdfa58d41f348f",
+      "painter_sha256": "886089824c905e69357200b264fa068ffb7710d7967e39981e41c1285fa178df",
+      "svg_sha256": "80759fb51d39e8b63b7d449b0bbe673ad3cd6ce6a980091f69ccd5ce2a4cb676",
+      "raster_sha256": "f9c87b437ebd6169bf5b51be9cc41789ea17ca1903b9e0f705b776698221d4a1",
+      "png_sha256": "31682582e0f42aedc072c9fbc39c0d982cacb6fb49f925e02af95263a01b0d35"
+    }
+  },
+  "graphforge_render_previous_document_sha256": "9956a594b14bfba19de9925cf5221e97939db6103b8a938af16c2bb0b7facf5e",
+  "public_previous_scene_sha256": {
+    "hexbin_count": "ba88326fe6ab311346f6651a6b2282f760f1e08b417bbf4664296f25ae344ca6",
+    "hexbin_mean": "f3ed9bd6ca388441b8b3fbf68dcd4b6582832d5973f410a4ab4b30e94f0f7055",
+    "hexbin_sum": "f3ed9bd6ca388441b8b3fbf68dcd4b6582832d5973f410a4ab4b30e94f0f7055",
+    "heatmap": "2799a0eea7b268b539843bf32919c01c61c3406531b57e98aad73909186dbc39"
+  },
+  "historical_measurements_preserved": [
+    "spec/benchmarks/hosted-evidence-95adb9de.json",
+    "spec/benchmarks/public-scene-export-local.json"
+  ]
+}

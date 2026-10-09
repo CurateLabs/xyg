@@ -1,0 +1,77 @@
+{
+  "source_reconstruction_verified": true,
+  "source_drift_after_measurement": {},
+  "measured_runs": [
+    {
+      "source_rows": 1000,
+      "completed": true,
+      "processor_cleanup_zero": true,
+      "first_visible_rows_exact": true,
+      "projected_work_exact": true,
+      "CPU_hit_samples_exact": true,
+      "five_retained_views_one_pending_read": true,
+      "maximum_resident_bytes": 7176192,
+      "processor_sampled_peak_bytes": 134217728,
+      "membership_total_returned": null,
+      "membership_cell_total": null,
+      "membership_remaining_cursor": null
+    },
+    {
+      "source_rows": 100000,
+      "completed": true,
+      "processor_cleanup_zero": true,
+      "first_visible_rows_exact": true,
+      "projected_work_exact": true,
+      "CPU_hit_samples_exact": true,
+      "five_retained_views_one_pending_read": true,
+      "maximum_resident_bytes": 28655616,
+      "processor_sampled_peak_bytes": 134217728,
+      "membership_total_returned": 97,
+      "membership_cell_total": 97,
+      "membership_remaining_cursor": false
+    },
+    {
+      "source_rows": 1000000,
+      "completed": true,
+      "processor_cleanup_zero": true,
+      "first_visible_rows_exact": true,
+      "projected_work_exact": true,
+      "CPU_hit_samples_exact": true,
+      "five_retained_views_one_pending_read": true,
+      "maximum_resident_bytes": 44810240,
+      "processor_sampled_peak_bytes": 134217728,
+      "membership_total_returned": 192,
+      "membership_cell_total": 192,
+      "membership_remaining_cursor": false
+    },
+    {
+      "source_rows": 10000000,
+      "completed": true,
+      "processor_cleanup_zero": true,
+      "first_visible_rows_exact": true,
+      "projected_work_exact": true,
+      "CPU_hit_samples_exact": true,
+      "five_retained_views_one_pending_read": true,
+      "maximum_resident_bytes": 45350912,
+      "processor_sampled_peak_bytes": 134217728,
+      "membership_total_returned": 1949,
+      "membership_cell_total": 1949,
+      "membership_remaining_cursor": false
+    },
+    {
+      "source_rows": 100000000,
+      "completed": true,
+      "processor_cleanup_zero": true,
+      "first_visible_rows_exact": true,
+      "projected_work_exact": true,
+      "CPU_hit_samples_exact": true,
+      "five_retained_views_one_pending_read": true,
+      "maximum_resident_bytes": 41189376,
+      "processor_sampled_peak_bytes": 134217728,
+      "membership_total_returned": 12288,
+      "membership_cell_total": 19394,
+      "membership_remaining_cursor": true
+    }
+  ],
+  "billion_row_planner_only": true
+}

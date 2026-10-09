@@ -11,8 +11,8 @@ pub mod aggregate;
 pub mod compile;
 mod compound;
 mod dashboard;
-mod graph;
 mod geo;
+mod graph;
 mod graphforge;
 mod temporal;
 mod temporal_graph;
@@ -22,7 +22,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 31;
+pub const WASM_ABI_VERSION: u32 = 33;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -59,7 +59,7 @@ pub extern "C" fn xyg_wasm_geo_column_ingest(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         geo::execute(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -78,7 +78,7 @@ pub extern "C" fn xyg_wasm_geo_scene_compile(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         geo::execute_scene(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -92,7 +92,7 @@ pub extern "C" fn xyg_wasm_geo_viewport_execute(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         geo::execute_viewport(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -106,12 +106,108 @@ pub extern "C" fn xyg_wasm_geo_catalog_compile(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         geo::execute_catalog(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
+/// Execute one shared retained-source mutation with a fixed typed reply.
+/// Opaque source handles require explicit release/disposal before worker shutdown.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_scale_execute(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute_scale(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Read immutable retained-source data through the shared bounded processor.
+/// SceneData permits two ownership transfers; the host releases its opaque
+/// handle only after dropping retained CPU buffers.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_scale_read(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::read_scale(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Bounded retained geographic tile execute; ownership requires explicit disposal.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_tile_execute(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute_tile(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+/// Bounded retained geographic tile read; ownership requires explicit disposal.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_tile_read(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::read_tile(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+/// Bounded retained geographic snapshot execute; ownership requires explicit disposal.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_snapshot_execute(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::execute_snapshot(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+/// Bounded retained geographic snapshot read; ownership requires explicit disposal.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_snapshot_read(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::read_snapshot(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+/// Paint an immutable tile SceneData receipt under its admitted retained phase.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_tile_frame_prepare(
+    handle: u32,
+    sequence: u32,
+    data_handle: u64,
+    publication_sequence: u64,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::prepare_tile_frame(instance, sequence, data_handle, publication_sequence)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
 /// Version of the shared Rust-engine default palette consumed by this module.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_default_palette_version() -> u32 {
@@ -138,7 +234,7 @@ pub extern "C" fn xyg_wasm_default_palette_rgba8(index: u32) -> u32 {
 /// are deliberately independent of long-running compile/aggregate scheduling.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_ticks_resolve(handle: u32, offset: usize, length: usize) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         instance.output.clear();
         let Some(end) = offset.checked_add(length) else {
             return fail(
@@ -195,6 +291,7 @@ struct Instance {
     arena: Vec<u8>,
     output: Vec<u8>,
     max_arena_bytes: usize,
+    declared_arena_bytes: usize,
     last_error: String,
     latest_sequence: u32,
     cancelled_through: u32,
@@ -210,6 +307,7 @@ struct Instance {
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
     graph_job: Option<graph::GraphJob>,
     compile_job: Option<CompileJob>,
+    geo_transport: Option<xyg_engine::geo_transport::GeoTransportLease>,
 }
 
 #[derive(Debug)]
@@ -221,6 +319,77 @@ struct CompileJob {
     records_processed: usize,
     phase: u32,
     paint: bool,
+}
+
+/// Lower only an immutable Rust-generated, leased geographic Scene receipt.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_frame_prepare(
+    handle: u32,
+    sequence: u32,
+    data_handle: u64,
+    publication_sequence: u64,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        geo::prepare_frame(instance, sequence, data_handle, publication_sequence)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Explicit retained-mode handshake precedes ownership of the browser FIFO.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_geo_transport_acquire(handle: u32) -> i32 {
+    with_instance_mut(handle, |instance| acquire_geo_transport(instance, false))
+        .unwrap_or(STATUS_INVALID_HANDLE)
+}
+fn acquire_geo_transport(instance: &mut Instance, preserve_staging: bool) -> i32 {
+    if instance.geo_transport.is_some() {
+        return STATUS_OK;
+    }
+    if !preserve_staging
+        && (instance.aggregate_job.is_some()
+            || instance.stream_aggregate_job.is_some()
+            || instance.graph_job.is_some()
+            || instance.compile_job.is_some())
+    {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "retained transport acquisition requires settled active jobs",
+        );
+    }
+    instance.output = Vec::new();
+    instance.clear_aggregate();
+    instance.graph_job = None;
+    instance.compile_job = None;
+    instance.temporal = None;
+    instance.temporal_graph = None;
+    let phase = instance
+        .max_arena_bytes
+        .min(xyg_engine::geo_transport::PHASE_BYTES);
+    if !preserve_staging {
+        instance.arena = Vec::new();
+    }
+    if instance.arena.capacity() > phase {
+        instance.arena = Vec::new();
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "retained staging exceeds its128MiB complete phase",
+        );
+    }
+    match xyg_engine::geo_transport::GeoTransportLease::acquire() {
+        Ok(lease) => {
+            instance.geo_transport = Some(lease);
+            instance.max_arena_bytes = phase;
+            instance.last_error.clear();
+            STATUS_OK
+        }
+        Err(_) => fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "retained transport credit is unavailable",
+        ),
+    }
 }
 
 impl Instance {
@@ -260,7 +429,7 @@ impl Registry {
             .iter()
             .filter_map(|slot| slot.instance.as_ref())
             .try_fold(0usize, |total, instance| {
-                total.checked_add(instance.max_arena_bytes)
+                total.checked_add(instance.declared_arena_bytes)
             });
         let Some(reserved_after) = reserved.and_then(|total| total.checked_add(max_arena_bytes))
         else {
@@ -296,6 +465,7 @@ impl Registry {
                 arena: Vec::new(),
                 output: Vec::new(),
                 max_arena_bytes,
+                declared_arena_bytes: max_arena_bytes,
                 last_error: String::new(),
                 latest_sequence: 0,
                 cancelled_through: 0,
@@ -311,6 +481,7 @@ impl Registry {
                 temporal_graph: None,
                 graph_job: None,
                 compile_job: None,
+                geo_transport: None,
             }),
         };
         (generation << HANDLE_SLOT_BITS) | (slot_index as u32 + 1)
@@ -333,6 +504,23 @@ fn registry() -> MutexGuard<'static, Registry> {
     REGISTRY
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+fn with_ordinary_instance_mut(
+    handle: u32,
+    operation: impl FnOnce(&mut Instance) -> i32,
+) -> Result<i32, i32> {
+    with_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "retained transport rejects ordinary product operations",
+            );
+        }
+        operation(instance)
+    })
 }
 
 fn with_instance_mut<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
@@ -444,7 +632,7 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
 /// i64/u64 bytes across the browser boundary; TypeScript never owns policy.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_temporal_execute(handle: u32, offset: usize, length: usize) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         temporal::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -457,7 +645,7 @@ pub extern "C" fn xyg_wasm_temporal_graph_execute(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         temporal_graph::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -466,7 +654,7 @@ pub extern "C" fn xyg_wasm_temporal_graph_execute(
 /// Execute one packed `XYGC` compound disclosure transition and write `XYCO`.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_compound_transition(handle: u32, offset: usize, length: usize) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         compound::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -477,8 +665,10 @@ pub extern "C" fn xyg_wasm_compound_transition(handle: u32, offset: usize, lengt
 /// `xyg_graphforge_compose` document for the same request.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_graphforge_compose(handle: u32, offset: usize, length: usize) -> i32 {
-    with_instance_mut(handle, |instance| graphforge::execute(instance, offset, length))
-        .unwrap_or(STATUS_INVALID_HANDLE)
+    with_ordinary_instance_mut(handle, |instance| {
+        graphforge::execute(instance, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 /// Version of the `XYGF` composition semantics.
@@ -597,7 +787,12 @@ pub extern "C" fn xyg_wasm_scene_compile_begin(
     length: usize,
     paint: u32,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            instance.output = Vec::new();
+            return fail(instance, STATUS_INVALID_ARGUMENT, "retained transport rejects generic Scene compilation");
+        }
         instance.output.clear();
         if sequence == 0 || paint > 1 {
             return fail(
@@ -652,7 +847,7 @@ pub extern "C" fn xyg_wasm_scene_compile_step(
     sequence: u32,
     record_budget: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         if record_budget == 0 {
             return fail(
                 instance,
@@ -729,7 +924,7 @@ pub extern "C" fn xyg_wasm_graph_begin(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         graph::begin(instance, sequence, revision, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -743,7 +938,7 @@ pub extern "C" fn xyg_wasm_graph_step(
     revision: u32,
     steps: u32,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         graph::step(instance, sequence, revision, steps)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -756,7 +951,17 @@ pub extern "C" fn xyg_wasm_scene_validate(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            instance.output = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "retained transport requires immutable trusted frame preparation",
+            );
+        }
+
         instance.output = Vec::new();
         if sequence == 0 {
             return fail(
@@ -830,7 +1035,17 @@ pub extern "C" fn xyg_wasm_scene_prepare(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            instance.output = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "retained transport requires immutable trusted frame preparation",
+            );
+        }
+
         instance.output = Vec::new();
         if sequence == 0 {
             return fail(
@@ -917,7 +1132,17 @@ pub extern "C" fn xyg_wasm_scene_prepare_annotations(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            instance.output = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "retained transport requires immutable trusted frame preparation",
+            );
+        }
+
         instance.output = Vec::new();
         if sequence == 0 {
             return fail(
@@ -1037,6 +1262,11 @@ fn compile_from_arena(
     length: usize,
     paint: bool,
 ) -> i32 {
+    if instance.geo_transport.is_some() {
+        instance.arena = Vec::new();
+        instance.output = Vec::new();
+        return fail(instance, STATUS_INVALID_ARGUMENT, "retained transport rejects generic Scene compilation");
+    }
     instance.output = Vec::new();
     if sequence == 0 {
         return fail(
@@ -1129,7 +1359,7 @@ pub extern "C" fn xyg_wasm_scene_compile(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         compile_from_arena(instance, sequence, offset, length, false)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1143,7 +1373,7 @@ pub extern "C" fn xyg_wasm_scene_compile_prepare(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         compile_from_arena(instance, sequence, offset, length, true)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1157,7 +1387,7 @@ pub extern "C" fn xyg_wasm_dashboard_plan(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         instance.output = Vec::new();
         if sequence == 0 {
             instance.arena = Vec::new();
@@ -1291,7 +1521,7 @@ pub extern "C" fn xyg_wasm_aggregate_bin2d(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         aggregate_from_arena(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1353,7 +1583,7 @@ pub extern "C" fn xyg_wasm_aggregate_stream_begin(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         aggregate_stream_begin_from_arena(instance, sequence, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1369,7 +1599,7 @@ pub extern "C" fn xyg_wasm_aggregate_stream_push(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         instance.output.clear();
         if sequence == 0 {
             return fail(
@@ -1436,7 +1666,7 @@ pub extern "C" fn xyg_wasm_aggregate_stream_push(
 /// an invalid request and drops the bounded accumulator.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_aggregate_stream_finish(handle: u32, sequence: u32) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         instance.output.clear();
         if sequence == 0 {
             return fail(
@@ -1477,7 +1707,7 @@ pub extern "C" fn xyg_wasm_aggregate_stream_finish(handle: u32, sequence: u32) -
 /// the Worker to yield before calling again so cancel/new viewport messages run.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_aggregate_step(handle: u32, sequence: u32, max_points: usize) -> i32 {
-    with_instance_mut(handle, |instance| {
+    with_ordinary_instance_mut(handle, |instance| {
         if sequence == 0 {
             return fail(
                 instance,
@@ -2685,10 +2915,12 @@ mod tests {
             STATUS_OK
         );
         with_instance_mut(handle, |instance| {
-            assert!(instance
-                .output
-                .windows(b"<Rust note>".len())
-                .any(|bytes| bytes == b"<Rust note>"));
+            assert!(
+                instance
+                    .output
+                    .windows(b"<Rust note>".len())
+                    .any(|bytes| bytes == b"<Rust note>")
+            );
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);

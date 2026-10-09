@@ -1,0 +1,254 @@
+/** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
+export interface XygGeoCamera {crs:number;worldWrap?:boolean;centerX:number;centerY:number;zoom:number;width:number;height:number;bearing?:number;pitch?:number}
+export declare const GEO_SCALE_HEADER = 256;
+export interface XygGeoQueryBudget {
+    processorBytes: number;
+    maxRowsExamined: bigint;
+    maxReadBytes: bigint;
+    maxChunks: number;
+    pageRows: number;
+}
+export type XygGeoTime = {
+    kind: 0;
+} | {
+    kind: 1;
+    instant: bigint;
+} | {
+    kind: 2;
+    start: bigint;
+    end: bigint;
+};
+export interface XygGeoScaleQuery {
+    camera: Required<XygGeoCamera>;
+    reducedKind: number;
+    maxCells: number;
+    previousDirect: boolean;
+    sourceDigest: Uint8Array;
+    generation: bigint;
+    layerId: bigint;
+    cameraRevision: bigint;
+    timeRevision: bigint;
+    layerRevision: bigint;
+    styleRevision: bigint;
+    stateRevision: bigint;
+    time: XygGeoTime;
+    maxProjectedVertices: bigint;
+}
+export interface XygGeoScaleRequest {
+    command: number;
+    handle?: bigint;
+    sequence?: bigint;
+    budget?: XygGeoQueryBudget;
+    generation?: bigint;
+    query?: XygGeoScaleQuery;
+    payload?: ArrayBuffer | Uint8Array;
+}
+export interface XygGeoScaleBridge {
+    execute(request: ArrayBuffer): Promise<ArrayBuffer>;
+    read(request: ArrayBuffer): Promise<ArrayBuffer>;
+}
+export declare function encodeGeoScaleRequest(input: XygGeoScaleRequest): ArrayBuffer;
+export declare function encodeGeoScaleStyle(style: {
+    fill: Uint8Array;
+    stroke: Uint8Array;
+    strokeWidth: number;
+    diameter: number;
+    opacity: number;
+    symbol: number;
+}): Uint8Array;
+export interface XygGeoReadTicket {
+    raw: Uint8Array;
+    sessionId: bigint;
+    readId: bigint;
+    sequence: bigint;
+    pass: number;
+    generation: bigint;
+    chunkIndex: number;
+    rows: number;
+    firstRow: bigint;
+    encodedBytes: number;
+    digest: Uint8Array;
+}
+export declare function decodeGeoScaleReply(buffer: ArrayBuffer): {
+    code: number;
+    handle: bigint;
+    sequence: bigint;
+    dataLength: bigint;
+    sourceHandle: bigint;
+    source: {
+        generation: bigint;
+        digest: Uint8Array<ArrayBuffer>;
+        rows: bigint;
+        geometry: number;
+        crs: number;
+    };
+    ticket: XygGeoReadTicket | null;
+};
+export declare function encodeGeoChunkRequest(input: {
+    descriptor: ArrayBuffer | Uint8Array;
+    rows: number;
+    intervals?: {
+        starts: BigInt64Array;
+        ends: BigInt64Array;
+        startValidity: Uint8Array;
+        endValidity: Uint8Array;
+    };
+    values?: Float64Array;
+}, budget: number): ArrayBuffer;
+/** Views borrow packet storage; consumers must drop every view/copy before lease disposal. */
+export declare function parseGeoSceneData(packet: ArrayBuffer): {
+    packet: ArrayBuffer;
+    scene: Uint8Array<ArrayBuffer>;
+    aggregate: boolean;
+    droppedChannels: number;
+    visibleVertices: bigint;
+    projectedVertices: bigint;
+    columns: number;
+    rows: number;
+    gridCapped: boolean;
+    metadata: DataView<ArrayBuffer>;
+    length: number;
+    identity: {
+        sessionHandle: bigint;
+        sequence: bigint;
+        camera: {
+            crs: number;
+            worldWrap: boolean;
+            centerX: number;
+            centerY: number;
+            zoom: number;
+            width: number;
+            height: number;
+            bearing: number;
+            pitch: number;
+        };
+        sourceDigest: Uint8Array<ArrayBuffer>;
+        generation: bigint;
+        layerId: bigint;
+        cameraRevision: bigint;
+        timeRevision: bigint;
+        layerRevision: bigint;
+        styleRevision: bigint;
+        stateRevision: bigint;
+        time: XygGeoTime;
+        reducedKind: number;
+        sourceRows: bigint;
+        geometry: number;
+        sourceCrs: number;
+    };
+    record(index: number): {
+        count: bigint;
+        x: number;
+        y: number;
+        featureId?: undefined;
+        sourceRow?: undefined;
+        chunkIndex?: undefined;
+        chunkRow?: undefined;
+        vertex?: undefined;
+    } | {
+        count?: undefined;
+        x?: undefined;
+        y?: undefined;
+        featureId: bigint;
+        sourceRow: bigint;
+        chunkIndex: number;
+        chunkRow: number;
+        vertex: number;
+    };
+};
+/** Service only Rust-issued reads. Caller begins/validates the source explicitly. */
+export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    readChunk: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
+    signal?: AbortSignal;
+}): Promise<{
+    code: number;
+    handle: bigint;
+    sequence: bigint;
+    dataLength: bigint;
+    sourceHandle: bigint;
+    source: {
+        generation: bigint;
+        digest: Uint8Array<ArrayBuffer>;
+        rows: bigint;
+        geometry: number;
+        crs: number;
+    };
+    ticket: XygGeoReadTicket | null;
+}>;
+/** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
+export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    style: Uint8Array;
+}): Promise<{
+    handle: bigint;
+    readonly data: {
+        packet: ArrayBuffer;
+        scene: Uint8Array<ArrayBuffer>;
+        aggregate: boolean;
+        droppedChannels: number;
+        visibleVertices: bigint;
+        projectedVertices: bigint;
+        columns: number;
+        rows: number;
+        gridCapped: boolean;
+        metadata: DataView<ArrayBuffer>;
+        length: number;
+        identity: {
+            sessionHandle: bigint;
+            sequence: bigint;
+            camera: {
+                crs: number;
+                worldWrap: boolean;
+                centerX: number;
+                centerY: number;
+                zoom: number;
+                width: number;
+                height: number;
+                bearing: number;
+                pitch: number;
+            };
+            sourceDigest: Uint8Array<ArrayBuffer>;
+            generation: bigint;
+            layerId: bigint;
+            cameraRevision: bigint;
+            timeRevision: bigint;
+            layerRevision: bigint;
+            styleRevision: bigint;
+            stateRevision: bigint;
+            time: XygGeoTime;
+            reducedKind: number;
+            sourceRows: bigint;
+            geometry: number;
+            sourceCrs: number;
+        };
+        record(index: number): {
+            count: bigint;
+            x: number;
+            y: number;
+            featureId?: undefined;
+            sourceRow?: undefined;
+            chunkIndex?: undefined;
+            chunkRow?: undefined;
+            vertex?: undefined;
+        } | {
+            count?: undefined;
+            x?: undefined;
+            y?: undefined;
+            featureId: bigint;
+            sourceRow: bigint;
+            chunkIndex: number;
+            chunkRow: number;
+            vertex: number;
+        };
+    };
+    dispose(): Promise<void>;
+}>;
+
+export declare function geoScaleExecute(request:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>;
+export declare function geoScaleRead(request:ArrayBuffer|Uint8Array,budget:number):Promise<ArrayBuffer>;
+export declare function nativeGeoScaleBridge(budget:number):XygGeoScaleBridge;

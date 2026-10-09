@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 31,
+  "abi_version": 33,
   "scene_version": 32,
   "painter_version": 15,
   "painter_header_bytes": 300,
@@ -129,6 +129,15 @@
     "max_nodes": 1024
   },
   "exports": [
+    {"name": "xyg_wasm_geo_tile_frame_prepare", "params": ["u32", "u32", "u64", "u64"], "result": "i32"},
+    {"name": "xyg_wasm_geo_tile_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_tile_read", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_snapshot_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_snapshot_read", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_transport_acquire", "params": ["u32"], "result": "i32"},
+    {"name": "xyg_wasm_geo_frame_prepare", "params": ["u32", "u32", "u64", "u64"], "result": "i32"},
+    {"name": "xyg_wasm_geo_scale_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
+    {"name": "xyg_wasm_geo_scale_read", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_viewport_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_catalog_compile", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {

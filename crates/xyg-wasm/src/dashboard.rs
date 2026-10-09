@@ -1,4 +1,4 @@
-use xyg_engine::dashboard::{plan_dashboard_resources, DashboardResource, MAX_DASHBOARD_RESOURCES};
+use xyg_engine::dashboard::{DashboardResource, MAX_DASHBOARD_RESOURCES, plan_dashboard_resources};
 
 const MAGIC: &[u8; 4] = b"XYDP";
 const VERSION: u32 = 1;

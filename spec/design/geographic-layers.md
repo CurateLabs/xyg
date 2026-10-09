@@ -1,10 +1,9 @@
 # Geographic layer programs (#49)
 
 Status: the seven-family catalog, public adapters, Rust interaction processor,
-browser controller and optional MapLibre shell are implemented and locally
-verified on the #49 feature branch. They are pending pull-request integration;
-this document does not claim a shipped release. Spatial tiers and massive-source
-work in #50 remain pending.
+browser controller and optional MapLibre shell define the #49 implementation.
+The bounded native/WASM and browser conformance scope is recorded below;
+spatial tiers and massive-source work in #50 remain pending.
 
 ## Ownership and reuse
 
@@ -143,7 +142,10 @@ selection modes are Replace, Add and Toggle. Invalid events publish no partial
 Scene or state. State flags are hidden=1, selected=2, hovered=4 and focused=8.
 
 The browser controller forwards pointer hover, click and Shift-drag brush
-events. Ctrl/Meta toggles selection. Arrow keys walk Rust's valid, nonhidden
+events. A brush owns one pointer through the shared capture policy: foreign
+pointer events cannot finish or cancel it, capture loss cancels it, and synthetic
+capture rejection still permits an explicit matching brush completion. Disposal
+suppresses queued DOM-event error callbacks. Ctrl/Meta toggles selection. Arrow keys walk Rust's valid, nonhidden
 feature order, including offscreen features; Enter/Space selects focus and
 Escape clears interaction state. A 50-row paged companion table exposes all
 eligible source rows and exact layer/feature IDs. Camera updates preserve the

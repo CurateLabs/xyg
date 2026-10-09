@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import struct
 from pathlib import Path
 
 import numpy as np
@@ -81,6 +82,28 @@ def test_graphforge_semantic_fixture_has_exact_cross_consumer_goldens() -> None:
         assert b'data-xy-stable-id="1"' not in svg
         pixels = _native.rasterize(raster, int(fixture["width"]), int(fixture["height"]))
         assert np.unique(pixels.reshape(-1, 4), axis=0).shape[0] >= 8
+
+
+def test_scene32_refresh_preserves_native_bytes_and_changes_painter_layout() -> None:
+    refresh = json.loads(FIXTURE.with_name("scene32_refresh.json").read_text())
+    fixture = _fixture()
+    for theme in ("light", "dark"):
+        previous = refresh["semantic_previous_goldens"][theme]
+        scene = _scene(fixture, theme)
+        old_version = bytearray(scene)
+        struct.pack_into("<I", old_version, 4, refresh["previous_scene_version"])
+        assert _sha(old_version) == previous["scene_sha256"]
+        for consumer in ("svg_sha256", "raster_sha256", "png_sha256"):
+            assert fixture["goldens"][theme][consumer] == previous[consumer]
+        painter = _native.scene_browser_painter(scene)
+        assert struct.unpack_from("<II", painter, 4) == (15, 32)
+        header, descriptor, count = struct.unpack_from("<III", painter, 12)
+        assert any(painter[header + i * descriptor] == 8 for i in range(count))
+        old_painter_versions = bytearray(painter)
+        struct.pack_into("<II", old_painter_versions, 4, 14, 31)
+        # XYPB15 packs raw per-instance marker style planes. It is a new
+        # derived layout, so changing the header cannot restore XYPB14 bytes.
+        assert _sha(old_painter_versions) != previous["painter_sha256"]
 
 
 def test_graphforge_fixture_semantics_are_inspectable_and_complete() -> None:

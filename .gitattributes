@@ -5,3 +5,6 @@
 *.js text eol=lf
 *.mjs text eol=lf
 *.ts text eol=lf
+
+# The measured source patch preserves unified-diff context whitespace byte-for-byte.
+spec/performance/geo-scale-2026-10-08/measured-source.patch whitespace=-blank-at-eol,-blank-at-eof

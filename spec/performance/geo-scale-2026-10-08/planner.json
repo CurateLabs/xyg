@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "source_rows": 1000000000,
+  "iteration": 1,
+  "planner_only": true,
+  "command": [
+    "/usr/bin/time",
+    "-l",
+    "/var/folders/qn/rntm81jj49g_nhf97pw1_3j40000gn/T/xyg-geo-bench-binary-iiz8uxfm/geo_scale_bench",
+    "--plan-only",
+    "1000000000"
+  ],
+  "elapsed_seconds": 0.006316666025668383,
+  "returncode": 0,
+  "maximum_resident_bytes": 1605632,
+  "metrics": [
+    {
+      "event": "planner_only",
+      "source_rows": 1000000000,
+      "chunks": 15259,
+      "manifest_bytes": 1953216,
+      "processor_bytes": 134217728,
+      "data_rows_generated": 0,
+      "measured_ingest": false
+    }
+  ],
+  "completed": false,
+  "resource_limit": false
+}

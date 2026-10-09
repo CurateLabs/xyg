@@ -92,7 +92,16 @@ def test_canonical_public_names_come_from_source_exports(tmp_path: Path) -> None
 def test_canonical_public_names_match_the_current_root_contract() -> None:
     names = check_typing._canonical_public_names()
 
-    assert len(names) == 124
+    assert len(names) == 131
+    assert {
+        "GeoChart",
+        "GeoLayer",
+        "geo_chart",
+        "geo_layer",
+        "RetainedGeoSource",
+        "GeoTileSource",
+        "GeoTileSession",
+    } <= set(names)
     assert names == sorted(xyg.__all__)
 
 

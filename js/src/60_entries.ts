@@ -379,4 +379,7 @@ export type { GeoMapShell, MapLibreGeoLayerOptions } from "./59_maplibre_geo";
 
 export { XygGeographicChart } from "./62_geographic_controller";
 export type { GeographicChartOptions } from "./62_geographic_controller";
+export type { RetainedGeographicChartOptions, RetainedGeoFrameSummary } from './64_geo_retained_controller';
+export { encodeGeoScaleRequest, encodeGeoScaleStyle, encodeGeoChunkRequest } from './63_geo_source';
+export type { XygGeoScaleQuery, XygGeoQueryBudget, XygGeoTime, XygGeoReadTicket } from './63_geo_source';
 export type { XygGeoInteractionEvent } from "./61_geo_catalog";

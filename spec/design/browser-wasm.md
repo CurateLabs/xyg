@@ -234,7 +234,7 @@ ABI31's complete geographic catalog and interactions use the same O3 profile,
 with a target-specific inline threshold of 100 and a build-only pinned
 Binaryen132.0.0 `wasm-opt -O3 --all-features` post-link pass. Packaging reads the
 source once, optimizes an isolated temporary copy, validates the exact optimized
-export/import/signature and ABI/Scene version contract (start functions are rejected; painter version is verified by the real painter conformance tests), applies the unchanged 1MiB gate, then
+export/import/signature and ABI/Scene version contract (start functions are rejected; painter version is verified by the real painter conformance tests), applies the recorded raw and gzip size gates, then
 publishes those validated bytes and their deterministic inline digest. The
 optimizer is an Apache2.0 npm devDependency; no Binaryen code or dependency
 enters the browser runtime. Native builds remain unchanged.
@@ -252,8 +252,27 @@ measurements do not establish browser paint, production or massive-scale wins.
 Raw samples, hashes, environment, source files and commands are committed in
 `spec/benchmarks/wasm-geographic-profile-local.json`.
 
-`js/package-wasm.mjs` fails the build above a 1 MiB budget, so further growth
-requires a recorded decision rather than drift.
+The original raw artifact gate was 1 MiB. The retained geographic source,
+resumable membership, certified simplification, tile cache, frozen snapshots,
+and transport credit introduced in ABI 33 require an explicit budget decision:
+**1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip bytes (512 KiB)**. Packaging
+fails either gate. The release compiler and pinned Binaryen 132 `-O3
+--all-features` profile remain unchanged; this decision admits functionality,
+not a compiler optimization or performance win.
+
+The local ABI 33 candidate is 1,230,703 raw / 502,593 gzip bytes, SHA-256
+`b4ef252d2acb7ab0c916cd8e91d966bb3e7c1b1b64d2ec79887bce47cfdf2f72`.
+The ABI 32 predecessor was 1,034,845 raw / 418,362 gzip bytes. This growth is
+18.9% raw and 20.1% gzip. Three fresh-browser-process/profile retained Worker
+startup samples are 28.3, 25.9, and 34.7 ms (median 28.3 ms), accompanied by
+actual five-view GL painting, strict offline CSP, cancellation/ownership, and
+malformed-receipt regressions. [Raw reports and reproduction commands](../performance/geo-scale-browser-2026-10-08/README.md)
+record the artifact, environment, and verified output contracts. Startup is
+Worker construction to ready over raw loopback HTTP with a warm OS file cache;
+it excludes main ESM parsing and was measured under uncontrolled development
+load. These are local samples, not a paired profile comparison, cold disk/WAN
+latency, or massive-scale paint/interaction evidence. Further growth beyond
+either gate requires another recorded decision rather than silent drift.
 
 `XYTS` magic, header and descriptor offsets, flags, and mark-kind codes are
 owned by `spec/wasm/abi.json` and emitted into generated TypeScript and Rust

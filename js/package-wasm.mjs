@@ -5,6 +5,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 import { optimizeWasm } from "./optimize-wasm.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -86,12 +87,16 @@ function rawSignatures(input) {
 
 function wasmType(rustType) {
   if (["i32", "u32", "usize"].includes(rustType)) return 0x7f;
+  if (["i64", "u64"].includes(rustType)) return 0x7e;
   throw new Error(`unsupported Rust ABI type in manifest: ${rustType}`);
 }
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1024 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1280 * 1024;
+const WASM_GZIP_BUDGET_BYTES = 512 * 1024;
+const gzipBytes = gzipSync(bytes).length;
+if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {
   throw new Error(`xyg-wasm is ${bytes.length} bytes, over the ${WASM_SIZE_BUDGET_BYTES}-byte budget (spec/design/browser-wasm.md, "Artifact size")`);
 }

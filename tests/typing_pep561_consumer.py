@@ -29,6 +29,12 @@ def check_root_typing_surface() -> None:
         assert_type(xyg.MarkContext(columns={}, options={}), xyg.MarkContext)
         assert_type(xyg.MarkPlugin(name="consumer_fixture", build=_build_plugin), xyg.MarkPlugin)
 
+        assert_type(xyg.RetainedGeoSource, type[xyg.RetainedGeoSource])
+
+        geographic_layer = xyg.geo_layer("points", source={}, layer_id=1)
+        assert_type(geographic_layer, xyg.GeoLayer)
+        assert_type(xyg.geo_chart(geographic_layer, camera={}), xyg.GeoChart)
+
         assert_type(xyg.animation(), xyg.Animation)
         assert_type(xyg.export_config(), xyg.ExportConfig)
         assert_type(xyg.mark("plugin"), xyg.Mark)

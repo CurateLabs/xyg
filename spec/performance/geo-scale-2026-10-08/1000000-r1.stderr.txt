@@ -1,0 +1,19 @@
+rows=1000000 phase=five_views_compute cumulative_reads=400 live_processor=24358624
+        5.10 real         5.09 user         0.01 sys
+            44810240  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                2908  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                 169  involuntary context switches
+        115886892162  instructions retired
+         17976226422  cycles elapsed
+            34800000  peak memory footprint

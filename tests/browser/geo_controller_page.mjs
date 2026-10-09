@@ -56,6 +56,53 @@ try {
  await chart.ready;const toggled=await chart.interact({operation:7,layerId:1n,featureId:ids[0],mode:2});
  assert(commits===2&&(toggled.layers[0].stateFlags[0]&2),'callback caused false transition failure');
  chart.dispose();assert(borrowed.getAttribute('role')==='img'&&borrowed.getAttribute('aria-label')==='Owned map'&&borrowed.tabIndex===7,'borrowed surface attributes leaked');borrowed.remove();
+
+ // Independent ownership negative controls use real packaged controller/Worker
+ // transitions, with instrumented capture because synthetic events have no
+ // browser-active pointer to capture. No controller internals are consulted.
+ const pointerSurface=document.createElement('div');document.body.append(pointerSurface);
+ const captures=new Set(), listeners=new Map(), errors=[];
+ const add=pointerSurface.addEventListener.bind(pointerSurface), remove=pointerSurface.removeEventListener.bind(pointerSurface);
+ pointerSurface.addEventListener=(type,handler,options)=>{if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(handler);add(type,handler,options);};
+ pointerSurface.removeEventListener=(type,handler,options)=>{listeners.get(type)?.delete(handler);remove(type,handler,options);};
+ let rejectCapture=true,captureAttempts=0,pointerCommits=0;
+ pointerSurface.setPointerCapture=id=>{captureAttempts++;if(rejectCapture)throw new DOMException('No active synthetic pointer','NotFoundError');captures.add(id);};
+ pointerSurface.hasPointerCapture=id=>captures.has(id);
+ pointerSurface.releasePointerCapture=id=>captures.delete(id);
+ const uncaught=event=>errors.push(event.message);window.addEventListener('error',uncaught);
+ const dispatch=(type,id,x=390,y=290)=>{const box=pointerSurface.getBoundingClientRect();pointerSurface.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'mouse',button:0,buttons:type==='pointerdown'?1:0,shiftKey:true,clientX:box.left+x,clientY:box.top+y}));};
+ chart=new XygGeographicChart({el:host,worker,pointerSurface,catalog:{camera,layers:[{layerId:1n,kind:1,source}]},layer:{setPrepared(){pointerCommits++;}}});
+ await chart.ready;
+ const barrier=()=>chart.interact({operation:1,coordinates:[799,599]});
+ dispatch('pointerdown',1);dispatch('pointerup',1,410,310);await barrier();
+ assert(captureAttempts===1&&errors.length===0,'synthetic capture rejection escaped');
+ assert(pointerCommits===3&&(chart.snapshot().layers[0].stateFlags[0]&2),'capture rejection prevented actual Rust brush');
+ assert(!captures.size&&!listeners.get('lostpointercapture')?.size,'synthetic rejected capture listener leaked');
+ rejectCapture=false;await chart.interact({operation:4});
+ const beforeOwnership=pointerCommits;
+ dispatch('pointerdown',1);
+ assert(captures.size===1&&captures.has(1),'brush owner not captured');
+ dispatch('pointerup',2,410,310);dispatch('pointercancel',2);dispatch('lostpointercapture',2);dispatch('pointerdown',2);
+ await barrier();
+ assert(pointerCommits===beforeOwnership+1&&!(chart.snapshot().layers[0].stateFlags[0]&2),'unrelated pointer committed Rust brush');
+ assert(captures.size===1&&captures.has(1)&&captureAttempts===2,'unrelated pointer replaced or released owner');
+ dispatch('pointerup',1,410,310);await barrier();
+ assert(pointerCommits===beforeOwnership+3&&(chart.snapshot().layers[0].stateFlags[0]&2),'owner pointer did not commit exactly one brush');
+ assert(!captures.size&&!listeners.get('lostpointercapture')?.size,'completed brush retained capture/listener');
+ // Matching cancellation and capture loss abort without a stale next brush.
+ await chart.interact({operation:4});
+ for(const type of ['pointercancel','lostpointercapture']) {
+   const beforeAbort=pointerCommits;dispatch('pointerdown',1);dispatch(type,1);await barrier();
+   assert(pointerCommits===beforeAbort+1&&!(chart.snapshot().layers[0].stateFlags[0]&2),'aborted brush committed selection');
+   assert(!captures.size&&!listeners.get('lostpointercapture')?.size,`${type} retained ownership`);
+ }
+ dispatch('pointerdown',1);const beforeDispose=pointerCommits;
+ chart.dispose();
+ assert(!captures.size&&[...listeners.values()].every(set=>!set.size),'dispose retained captures/handlers');
+ dispatch('pointerup',1,410,310);dispatch('pointermove',1);await new Promise(resolve=>setTimeout(resolve,30));
+ assert(pointerCommits===beforeDispose&&worker.pending.size===0,'disposed pointer handlers submitted work');
+ assert(errors.length===0,'pointer ownership handler threw');
+ window.removeEventListener('error',uncaught);pointerSurface.remove();
  worker.dispose();
- window.__controller={ok:true,sourceRows:count,companionPages:3,contextRestored:true};
+ window.__controller={ok:true,sourceRows:count,companionPages:3,contextRestored:true,pointerOwnership:true};
 } catch(error) {chart?.dispose();worker.dispose();window.__controller={ok:false,code:error?.code,message:error?.message};}

@@ -6,11 +6,11 @@
 
 pub use crate::typed_series_abi_generated::*;
 use xyg_engine::auto_domain;
-use xyg_engine::kernels::default_mark_rgba8;
 use xyg_engine::graph_style::{
-    encode_compound_graph_scene, CompoundGraphSceneInput, SemanticGraphSceneInput,
-    MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
+    CompoundGraphSceneInput, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
+    SemanticGraphSceneInput, encode_compound_graph_scene,
 };
+use xyg_engine::kernels::default_mark_rgba8;
 use xyg_engine::scene::{
     self, AxisScale, BandOutline, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch,
     SceneChromeStyle, SceneChromeText, SceneError,
@@ -945,11 +945,7 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
             stroke_rgba.extend_from_slice(&[0, 0, 0, 0]);
         }
         stroke_width.push(if authored_stroke.is_nan() {
-            if kind == KIND_LINE {
-                1.5
-            } else {
-                0.0
-            }
+            if kind == KIND_LINE { 1.5 } else { 0.0 }
         } else {
             authored_stroke
         });
@@ -1473,11 +1469,13 @@ mod tests {
         assert!(first.records > 4);
         let document = scene::SceneDocument::decode(&first.bytes).unwrap();
         assert!(document.to_svg().contains("Graph semantics"));
-        assert!(document
-            .to_browser_painter(1 << 20)
-            .unwrap()
-            .windows(4)
-            .any(|w| w == b"XYLG"));
+        assert!(
+            document
+                .to_browser_painter(1 << 20)
+                .unwrap()
+                .windows(4)
+                .any(|w| w == b"XYLG")
+        );
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
     }
 
@@ -1775,9 +1773,7 @@ mod tests {
             .to_browser_painter(1024 * 1024)
             .unwrap();
         assert_eq!(&painter[..4], b"XYPB");
-        assert!(painter
-            .windows(4)
-            .any(|rgba| rgba == default_mark_rgba8()));
+        assert!(painter.windows(4).any(|rgba| rgba == default_mark_rgba8()));
 
         let mut malformed = pack_typed_series();
         malformed[COMPILE_HEADER_BYTES + 48..COMPILE_HEADER_BYTES + 52]

@@ -234,7 +234,12 @@ const HIDDEN_AXIS_STYLE = Object.freeze({
 export function graphChart(nodes, edges, opts = {}) {
   const { width, height, title, xAxis, yAxis, legend, ...graphOpts } = opts;
   // `legend` is the chart-level legend (Python `graph_chart(..., xyg.legend())`).
-  const fig = figure({ width, height, title, ...(legend != null ? { legend } : {}) });
+  const fig = figure({
+    width,
+    height,
+    title,
+    ...(legend != null ? { legend } : {}),
+  });
   fig.graph(nodes, edges, graphOpts);
   // Node–link charts hide axes by default, matching Python `graph_chart`; an
   // authored `xAxis` / `yAxis` is used as given instead (#909).
@@ -259,3 +264,326 @@ export function sankeyChart(nodes, links, opts = {}) {
 }
 
 export { pieChart, windRoseChart, polarChart, facetChart };
+
+// Geographic composition stays on the shared Rust catalog and retained sessions.
+import { createHash } from "node:crypto";
+import {
+  GeoTileSession,
+  geoTileExecute,
+  encodeGeoTileBegin,
+  encodeGeoTilePrepare,
+} from "./geo-tiles.js";
+import { RetainedGeoSource } from "./geo-retained.js";
+import { encodeGeoScaleStyle, encodeGeoScaleRequest } from "./geoscale.js";
+import {
+  encodeGeoCatalogRequest,
+  decodeGeoCatalogResponse,
+  geoCatalogCompile,
+} from "./geocatalog.js";
+import { sceneStaticExport } from "./scene.js";
+const GEO_KINDS = Object.freeze({
+  points: 1,
+  bubbles: 2,
+  routes: 3,
+  arcs: 4,
+  polygons: 5,
+  choropleth: 6,
+  density: 7,
+});
+class GeoLayer {
+  constructor(kind, source, layerId, properties) {
+    this.kind = kind;
+    this.source = source;
+    this.layerId = layerId;
+    this.properties = Object.freeze({ ...properties });
+    Object.freeze(this);
+  }
+}
+/** Declare a geographic mark; retained inputs require query, sequence and uniform style. */
+export function geoLayer(kind, { source, layerId, ...properties }) {
+  if (!Object.hasOwn(GEO_KINDS, kind))
+    throw new TypeError("unknown geographic layer kind");
+  return new GeoLayer(kind, source, layerId, properties);
+}
+function exactKeys(value, keys, label) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Object.keys(value).length !== keys.length ||
+    keys.some((k) => !Object.hasOwn(value, k))
+  )
+    throw new TypeError(`${label} requires exactly ${keys.join(", ")}`);
+}
+function geoCameraBytes(camera) {
+  const keys = [
+    "crs",
+    "worldWrap",
+    "centerX",
+    "centerY",
+    "zoom",
+    "width",
+    "height",
+    "bearing",
+    "pitch",
+  ];
+  exactKeys(camera, keys, "retained camera");
+  if (
+    typeof camera.worldWrap !== "boolean" ||
+    !Number.isInteger(camera.crs) ||
+    camera.crs < 0 ||
+    camera.crs > 0xffffffff
+  )
+    throw new TypeError("invalid typed camera fields");
+  const values = keys.slice(2).map((k) => camera[k]);
+  if (values.some((n) => typeof n !== "number" || !Number.isFinite(n)))
+    throw new TypeError("camera fields must be finite numbers");
+  const b = new Uint8Array(64),
+    v = new DataView(b.buffer);
+  v.setUint32(0, camera.crs, true);
+  v.setUint32(4, camera.worldWrap ? 1 : 0, true);
+  values.forEach((n, i) => v.setFloat64(8 + i * 8, n, true));
+  return b;
+}
+/** Geographic composition. Static compile returns a catalog; compileRetained returns an owned frame. */
+export class GeoChart {
+  constructor(
+    layers,
+    {
+      camera,
+      legend,
+      budget = 384 * 1024 * 1024,
+      tileSession,
+      tileVectorStyles,
+      tileImageId,
+    },
+  ) {
+    if (!Array.isArray(layers) || layers.some((x) => !(x instanceof GeoLayer)))
+      throw new TypeError("GeoChart layers must be geoLayer specifications");
+    this.layers = Object.freeze([...layers]);
+    this.camera = camera;
+    this.legend = legend;
+    this.budget = budget;
+    this.tileSession = tileSession;
+    this.tileVectorStyles = tileVectorStyles;
+    this.tileImageId = tileImageId;
+    if (
+      !tileSession &&
+      (tileVectorStyles !== undefined || tileImageId !== undefined)
+    )
+      throw new TypeError("tile options require tileSession");
+  }
+  _retained() {
+    const layers = this.layers.filter(
+      (x) => x.source instanceof RetainedGeoSource,
+    );
+    if (!layers.length) return undefined;
+    if (this.layers.length !== 1 || this.legend != null)
+      throw new TypeError(
+        "retained geography requires one layer and no legend",
+      );
+    if (layers[0].kind !== "points")
+      throw new TypeError(
+        "retained geography initially supports only points layers",
+      );
+    return layers[0];
+  }
+  _inputs(layer) {
+    const p = layer.properties;
+    exactKeys(p, ["query", "sequence", "style"], "retained layer");
+    const q = p.query;
+    exactKeys(
+      q,
+      [
+        "camera",
+        "reducedKind",
+        "maxCells",
+        "previousDirect",
+        "sourceDigest",
+        "generation",
+        "layerId",
+        "cameraRevision",
+        "timeRevision",
+        "layerRevision",
+        "styleRevision",
+        "stateRevision",
+        "time",
+        "maxProjectedVertices",
+      ],
+      "retained query",
+    );
+    const a = geoCameraBytes(this.camera),
+      b = geoCameraBytes(q.camera);
+    if (a.some((n, i) => n !== b[i]))
+      throw new TypeError(
+        "GeoChart camera must exactly match its retained query",
+      );
+    if (typeof layer.layerId !== "bigint" || layer.layerId !== q.layerId)
+      throw new TypeError("retained query layerId must match geoLayer");
+    if (
+      !Number.isSafeInteger(this.budget) ||
+      this.budget < layer.source.budget.processorBytes ||
+      this.budget > 384 * 1024 * 1024
+    )
+      throw new RangeError(
+        "chart budget must cover the source's explicit processor budget",
+      );
+    let style = p.style;
+    if (!(style instanceof Uint8Array)) {
+      exactKeys(
+        style,
+        ["fill", "stroke", "strokeWidth", "diameter", "opacity", "symbol"],
+        "retained uniform style",
+      );
+      style = encodeGeoScaleStyle(style);
+    }
+    if (style.length !== 48)
+      throw new TypeError("retained style requires exact48 bytes");
+    return { query: q, sequence: p.sequence, style };
+  }
+  compile({ event } = {}) {
+    if (this._retained())
+      throw new TypeError("use compileRetained for an owned retained frame");
+    if (this.tileSession)
+      throw new TypeError("use compileTiles for an owned tile frame");
+    return decodeGeoCatalogResponse(
+      geoCatalogCompile(this._catalogRequest(event), this.budget),
+    );
+  }
+  _catalogRequest(event) {
+    const request = {
+      camera: this.camera,
+      layers: this.layers.map((l) => ({
+        ...l.properties,
+        kind: GEO_KINDS[l.kind],
+        source: l.source,
+        layerId: l.layerId,
+      })),
+    };
+    if (this.legend != null) request.legend = this.legend;
+    if (event != null) request.event = event;
+    return encodeGeoCatalogRequest(request, this.budget);
+  }
+  _checkTiles() {
+    if (
+      !(this.tileSession instanceof GeoTileSession) ||
+      this.tileVectorStyles === undefined ||
+      this.tileImageId === undefined
+    )
+      throw new TypeError(
+        "tileSession requires explicit tileVectorStyles and tileImageId",
+      );
+    if (this._retained())
+      throw new TypeError(
+        "retained point and tile compilation require separate explicit frames",
+      );
+    if (
+      this.budget < this.tileSession.budget ||
+      this.budget > 384 * 1024 * 1024
+    )
+      throw new RangeError(
+        "chart budget must cover tile session processor budget",
+      );
+  }
+  compileTiles(options = {}) {
+    exactKeys(options, [], "tile compile options");
+    this._checkTiles();
+    if (this.tileSession.bridge.execute !== geoTileExecute)
+      throw new TypeError(
+        "native tile chart staging requires the native bridge; use session.update with an explicit remote stage",
+      );
+    return this.tileSession.update(this.camera, {
+      catalog: this._catalogRequest(),
+      vectorStyles: this.tileVectorStyles,
+      imageId: this.tileImageId,
+      stage: async (frame) => {
+        const artifact = await frame.export("svg", { budget: this.budget });
+        await artifact.dispose();
+      },
+    });
+  }
+  compileRetained(options = {}) {
+    exactKeys(options, [], "retained compile options");
+    const layer = this._retained();
+    if (this.tileSession)
+      throw new TypeError(
+        "retained point and tile compilation require separate explicit frames",
+      );
+    if (!layer)
+      throw new TypeError("compileRetained requires a retained source");
+    const { query, sequence, style } = this._inputs(layer);
+    return layer.source.update(query, { sequence, style });
+  }
+  toImage(format = "png", { scale = 1, quality = 90, frame } = {}) {
+    const retained = this._retained();
+    if (this.tileSession) {
+      this._checkTiles();
+      if (!frame)
+        throw new Error(
+          "compileTiles first, then pass frame or call frame.export",
+        );
+      const packet = encodeGeoTilePrepare(
+          this._catalogRequest(),
+          this.tileVectorStyles,
+          this.tileImageId,
+        ),
+        camera = encodeGeoTileBegin(this.camera, []).subarray(0, 64);
+      if (
+        frame.session !== this.tileSession ||
+        !frame._cameraPacket ||
+        camera.some((n, i) => n !== frame._cameraPacket[i]) ||
+        createHash("sha256").update(packet).digest("hex") !==
+          frame._prepareDigest
+      )
+        throw new TypeError(
+          "frame must match this tile chart's session, camera and catalog",
+        );
+      return frame.export(format, { scale, quality, budget: this.budget });
+    }
+    if (retained) {
+      if (!frame)
+        throw new Error(
+          "compileRetained first, then pass frame or call frame.export",
+        );
+      const { query, sequence, style } = this._inputs(retained);
+      const packet = new Uint8Array(
+        encodeGeoScaleRequest({
+          command: 5,
+          handle: retained.source.handle,
+          sequence,
+          budget: retained.source.budget,
+          query,
+        }),
+      );
+      const original = new Uint8Array(frame._queryPacket ?? new ArrayBuffer());
+      if (
+        frame._source !== retained.source ||
+        original.length !== packet.length ||
+        original[12] !== packet[12] ||
+        original.subarray(24, 32).some((n, i) => n !== packet[24 + i]) ||
+        original.subarray(64, 232).some((n, i) => n !== packet[64 + i]) ||
+        frame._style.some((n, i) => n !== style[i])
+      )
+        throw new TypeError(
+          "frame must match this retained chart's source, query and style",
+        );
+      return frame.export(format, { scale, quality, budget: this.budget });
+    }
+    if (frame)
+      throw new TypeError("frame is only accepted for retained geography");
+    const result = this.compile();
+    return sceneStaticExport(new Uint8Array(result.scene), format, {
+      scale,
+      quality,
+      width: Math.ceil(result.camera.width),
+      height: Math.ceil(result.camera.height),
+    });
+  }
+  toSvg() {
+    return new TextDecoder().decode(this.toImage("svg"));
+  }
+}
+/** Compose geographic layers, followed by the explicit camera/options object. */
+export function geoChart(...children) {
+  const options = children.pop();
+  return new GeoChart(children, options);
+}

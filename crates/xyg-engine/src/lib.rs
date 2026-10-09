@@ -54,6 +54,25 @@ pub mod edge_route;
 pub mod geo;
 pub mod geo_fill;
 pub mod geo_interaction;
+pub mod geo_source;
+pub mod geo_source_session;
+pub mod geo_membership_session;
+pub mod geo_snapshot;
+pub mod geo_scale_protocol;
+#[cfg(test)]
+mod geo_scale_protocol_tests;
+pub mod geo_lod;
+pub mod geo_lod_scene;
+pub mod geo_lod_hit;
+pub mod geo_tile_cache;
+pub mod geo_tile_scene;
+pub mod geo_tile_protocol;
+pub mod geo_transport;
+pub mod geo_retained_painter;
+pub mod geo_snapshot_protocol;
+#[cfg(test)]
+mod geo_tile_scene_tests;
+pub mod geo_simplify;
 mod marker_geometry;
 pub mod geo_layers;
 pub mod geo_layers_protocol;

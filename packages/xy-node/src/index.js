@@ -481,3 +481,7 @@ export {
 
 export {geoViewport,geoViewportExecute,encodeGeoViewportRequest,encodeGeoViewportColumnRequest,decodeGeoViewportResponse,GEO_VIEWPORT_OPERATIONS} from "./geoviewport.js";
 export {encodeGeoCatalogRequest,decodeGeoCatalogResponse,geoCatalogCompile} from './geocatalog.js';
+export {GeoChart,geoLayer,geoChart} from './charts.js';
+export {RetainedGeoSource} from './geo-retained.js';
+
+export {GeoTileSource,GeoTileSession} from './geo-tiles.js';

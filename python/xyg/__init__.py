@@ -46,6 +46,9 @@ _EXPORTS = {
     "FacetChart": ".components",
     "GeoChart": ".components",
     "GeoLayer": ".components",
+    "RetainedGeoSource": "._geo_retained",
+    "GeoTileSource": "._geo_tiles",
+    "GeoTileSession": "._geo_tiles",
     "geo_chart": ".components",
     "geo_layer": ".components",
     "GraphData": "._graph",
@@ -176,6 +179,8 @@ __all__ = [
     "FacetChart",
     "GeoChart",
     "GeoLayer",
+    "GeoTileSession",
+    "GeoTileSource",
     "GraphData",
     "GraphForgeComposition",
     "GraphForgeCompositionError",
@@ -191,6 +196,7 @@ __all__ = [
     "MarkContext",
     "MarkPlugin",
     "Modebar",
+    "RetainedGeoSource",
     "Selection",
     "Spring",
     "TemporalController",
@@ -338,6 +344,8 @@ def __dir__() -> list[str]:
 
 if TYPE_CHECKING:
     from ._figure import Selection
+    from ._geo_retained import RetainedGeoSource
+    from ._geo_tiles import GeoTileSession, GeoTileSource
     from ._graph import GraphData, GraphProjectionError, from_graphforge_tables
     from ._graphforge import (
         GraphForgeComposition,

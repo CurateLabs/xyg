@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "completed_cases": 24,
+  "all_complete": true,
+  "checks": {
+    "all_libraries_share_per_scale_dataset": true,
+    "all_payloads_within_128MiB": true,
+    "all_finished_child_max_rss_within_admitted_limit": true,
+    "datashader_exact_count_sums_match_source_rows": true,
+    "all_png_dimensions_match_frame": true,
+    "script_sha256_matches": true
+  },
+  "per_scale_dataset_sha256": {
+    "1000": [
+      "c50b6eac8cfefc6d46101ac9ba355465cbab95ce1a1c2e139803e36c6fa04c9a"
+    ],
+    "100000": [
+      "f022bc9c014a47df126e50664c5402245e9e59af2e9f9ef40eb5fd0bbd47bebf"
+    ],
+    "1000000": [
+      "98afe0cfff3dde2921fb41c3545b70cfae55cebca3345e7e33eed4567c1636c5"
+    ]
+  },
+  "largest_payload_bytes": 55800338,
+  "largest_finished_child_rss_bytes": 647741440,
+  "source_fingerprint": "little-endian f64 interleaved original lonlat SHA256; not projected/output/identity digest",
+  "verification": "Direct input counts, Altair serialized dataset row count, Datashader aggregate total, PNG dimensions/HTML structure; GPU/browser render unmeasured"
+}

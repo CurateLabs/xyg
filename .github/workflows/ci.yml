@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs
 
       - name: Build JS client
         run: |
@@ -162,7 +162,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
-          node --test packages/xy-node/test/geo-wasm-parity.test.mjs
+          node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance
           node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs
 
@@ -435,6 +435,8 @@ jobs:
         run: |
           node scripts/geo_catalog_wasm_smoke.mjs
           node scripts/geo_controller_wasm_smoke.mjs
+          node scripts/geo_source_parser_smoke.mjs
+          node scripts/geo_retained_wasm_smoke.mjs
       - name: Geographic painter and borrowed MapLibre context
         timeout-minutes: 10
         run: |

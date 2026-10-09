@@ -10,9 +10,10 @@ import binaryen from "binaryen";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const manifest = JSON.parse(readFileSync(join(root, "spec/wasm/abi.json"), "utf8"));
-for (const [name, abi, scene, start, diagnostic] of [
+for (const [name, abi, scene, start, diagnostic, wrong64] of [
   ["wrong ABI", manifest.abi_version - 1, manifest.scene_version, false, "version differs for xyg_wasm_abi_version"],
   ["wrong Scene", manifest.abi_version, manifest.scene_version - 1, false, "version differs for xyg_wasm_scene_version"],
+  ["wrong u64 signature", manifest.abi_version, manifest.scene_version, false, "signature differs for xyg_wasm_geo_frame_prepare", true],
   ["start function", manifest.abi_version, manifest.scene_version, true, "must not contain a start function"],
 ]) test(`packaging rejects ${name} before publication`, () => {
   const directory = mkdtempSync(join(tmpdir(), "xyg-package-contract-"));
@@ -30,7 +31,7 @@ for (const [name, abi, scene, start, diagnostic] of [
     }
     const functions = manifest.exports.map(item => {
       const value = item.name === "xyg_wasm_abi_version" ? abi : item.name === "xyg_wasm_scene_version" ? scene : 0;
-      return `(func (export "${item.name}") ${item.params.map(() => "(param i32)").join(" ")} (result i32) (i32.const ${value}))`;
+      return `(func (export "${item.name}") ${item.params.map((kind,index) => `(param ${wrong64 && item.name === "xyg_wasm_geo_frame_prepare" && index === 2 ? "i32" : ["u64","i64"].includes(kind) ? "i64" : "i32"})`).join(" ")} (result i32) (i32.const ${value}))`;
     }).join("\n");
     const module = binaryen.parseText(`(module (memory (export "memory") 1) ${functions}
       ${start ? "(func $start (loop $forever (br $forever))) (start $start)" : ""})`);

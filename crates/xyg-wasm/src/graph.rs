@@ -1,8 +1,8 @@
 //! Bounded packed graph ingress and progressive Rust layout state for Workers.
 
 use super::{
-    fail, Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_PENDING,
-    STATUS_RESOURCE_LIMIT, STATUS_STALE_REVISION, STATUS_STALE_SEQUENCE,
+    Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_PENDING,
+    STATUS_RESOURCE_LIMIT, STATUS_STALE_REVISION, STATUS_STALE_SEQUENCE, fail,
 };
 use xyg_engine::graph::{CoseOptions, ForceState, LAYOUT_COSE};
 
