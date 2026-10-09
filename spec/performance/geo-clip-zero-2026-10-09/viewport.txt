@@ -1,0 +1,60 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoclipzero/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.76s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 40 tests
+test geo_viewport::tests::bearing_rotates_and_inverts ... ok
+test geo_viewport::tests::camera_setters_normalize_bearing_and_freeze_pitch ... ok
+test geo_viewport::tests::constructor_and_projection_canonicalize_full_turn_bearings ... ok
+test geo_viewport::tests::epsg3857_center_round_trips_through_screen ... ok
+test geo_viewport::tests::fit_bounds_centers_and_zooms ... ok
+test geo_viewport::tests::fit_and_pan_reject_restored_invalid_cameras_without_mutation ... ok
+test geo_viewport::tests::fit_bounds_prefers_antimeridian_short_span ... ok
+test geo_viewport::tests::mercator_round_trip_at_known_points ... ok
+test geo_viewport::tests::line_projection_rejects_bad_offsets_atomically ... ok
+test geo_viewport::tests::offset_f32_encode_keeps_relative_precision ... ok
+test geo_viewport::tests::dateline_route_splits_without_long_world_segment ... ok
+test geo_viewport::tests::line_projection_clips_and_preserves_visible_identity ... ok
+test geo_viewport::tests::empty_and_single_vertex_features_emit_nothing ... ok
+test geo_viewport::tests::dateline_route_uses_coherent_world_copies_away_from_dateline_center ... ok
+test geo_viewport::tests::camera_renderability_failures_are_atomic_and_behind_points_are_not_visible ... ok
+test geo_viewport::tests::perspective_clips_before_dividing_and_rejects_horizon_inverse ... ok
+test geo_viewport::tests::perspective_matches_default_mercator_matrix_goldens_and_inverts ... ok
+test geo_viewport::tests::pitched_fit_and_pan_preserve_complete_transactional_camera ... ok
+test geo_viewport::tests::pixel_pan_moves_center_in_bearing_aware_screen_space ... ok
+test geo_viewport::tests::pixel_pan_wraps_or_stops_at_world_and_polar_limits ... ok
+test geo_viewport::tests::polar_latitudes_clamp_before_mercator ... ok
+test geo_viewport::tests::offscreen_first_point_does_not_erase_visible_deep_zoom_detail ... ok
+test geo_viewport::tests::project_column_multipoint_repeats_owner_id_per_vertex ... ok
+test geo_viewport::tests::project_column_fails_before_output_on_bad_camera_or_crs ... ok
+test geo_viewport::tests::clipping_graph_welds_signed_zero_endpoints_into_one_closed_ring ... ok
+test geo_viewport::tests::project_unproject_round_trip ... ok
+test geo_viewport::tests::rebuild_key_is_complete_canonical_and_noop_stable ... ok
+test geo_viewport::tests::project_column_points_are_offset_encoded_and_keep_feature_ids ... ok
+test geo_viewport::tests::concave_clip_preserves_two_closed_components_without_boundary_bridge ... ok
+test geo_viewport::tests::project_column_is_bit_reproducible_from_its_key ... ok
+test geo_viewport::tests::dateline_polygon_shell_and_hole_remain_closed_and_identified ... ok
+test geo_viewport::tests::rejected_mutations_leave_camera_valid_and_unchanged ... ok
+test geo_viewport::tests::rejects_non_finite_and_bad_size ... ok
+test geo_viewport::tests::pitched_polygon_deep_zoom_preserves_local_f32_detail_and_source ... ok
+test geo_viewport::tests::polygon_inside_hole_is_invisible_and_border_contact_retains_hole_role ... ok
+test geo_viewport::tests::restored_nonfinite_camera_fails_closed_before_projection_or_identity ... ok
+test geo_viewport::tests::world_wrap_projects_across_dateline_by_shortest_path ... ok
+test geo_viewport::tests::wrapped_multi_segment_route_keeps_shared_source_vertex_continuous ... ok
+test geo_viewport::tests::project_column_outlines_cover_lines_and_every_ring_with_ids ... ok
+test geo_viewport::tests::polygon_peak_rejects_before_outline_and_topology_allocations ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 1397 filtered out; finished in 0.02s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-1e5afb9617cfc1a9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-cee34e46c45b23c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
