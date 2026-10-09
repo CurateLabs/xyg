@@ -95,6 +95,7 @@ pub(super) fn is_session(e: &Entry) -> bool {
             | Entry::Indexed(_)
     ) || matches!(e,Entry::Hierarchy(h) if h.is_session())
         || matches!(e,Entry::Overview(o) if o.is_session())
+        || matches!(e,Entry::OverviewMembers(o) if o.is_session())
 }
 pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(request, 8);
@@ -207,12 +208,7 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     if command != 29 || !payload.is_empty() {
         return Err(SourceError::InvalidFrame);
     }
-    if r.entries
-        .iter()
-        .filter(|(_, e)| matches!(e, Entry::Data { .. }))
-        .count()
-        >= MAX_DATA_HANDLES
-    {
+    if r.entries.iter().filter(|(_, e)| is_data_entry(e)).count() >= MAX_DATA_HANDLES {
         return Err(SourceError::ResourceLimit);
     }
     let Entry::Overview(Owned::Query {
@@ -313,11 +309,7 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         Ok(v) => v,
         Err(e) => {
             drop(lease);
-            if !r
-                .entries
-                .iter()
-                .any(|(_, e)| matches!(e, Entry::Data { .. }))
-            {
+            if !r.entries.iter().any(|(_, e)| is_data_entry(e)) {
                 r.data_cache = None;
             }
             return Err(e);

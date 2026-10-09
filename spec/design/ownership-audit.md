@@ -1207,6 +1207,15 @@ its focused test module contains no production policy.
 | `crates/xyg-engine/src/geo_temporal_overview_membership.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_temporal_overview_membership_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_overview_membership_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_overview_membership_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
