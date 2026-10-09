@@ -1127,6 +1127,9 @@ Forbidden:
 | `python/xyg/_geo_mixed.py` | Python host | `python-host` | `keep-host` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/67_geo_overview.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-overview.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview.js` | Node host | `node-host` | `keep-host` | — |
 
 ## Contributor rule
 
