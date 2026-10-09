@@ -15,6 +15,7 @@ from types import MappingProxyType, SimpleNamespace
 from typing import Any
 
 from . import _geo_overview as wire
+from . import _geo_overview_members as members_wire
 from . import _geoscale as g
 from ._geo_retained import retained_frame_issued_authority
 
@@ -600,6 +601,7 @@ class GeoOverviewFrame:
         self._handle, self._phase, self._data = 0, "new", None
         self._disposal = self._retention = None
         self._freeze_command = 6
+        self._membership_reader = index._storage[0] if index._storage is not None else None
 
     @property
     def handle(self):
@@ -666,6 +668,16 @@ class GeoOverviewFrame:
             _REQUESTS[self],
             bytes(data.packet[:2304]),
         )
+        members_wire.register(
+            self,
+            _transport(self),
+            self._membership_reader,
+            _BUDGETS[self],
+            bytes(data.packet[:2304]),
+            self.handle,
+            self.sequence,
+        )
+        self._membership_reader = None
 
     def _issue(self, command, source):
         try:
@@ -749,6 +761,7 @@ class GeoOverviewFrame:
             raise GeoOverviewUncertainAllocation(self._retention)
         copy = self._retention = GeoOverviewFrame(_parent(self), self.sequence, _REQUESTS[self])
         copy._issue(26, self.handle)
+        members_wire.copy_context(self, copy, copy.handle, copy.sequence)
         self._retention = None
         return copy
 
@@ -762,6 +775,7 @@ class GeoOverviewFrame:
             raise GeoOverviewUncertainAllocation(self._retention)
         copy = self._retention = GeoOverviewFrame(_parent(self), self.sequence, _REQUESTS[self])
         await copy._issue_async(26, self.handle)
+        members_wire.copy_context(self, copy, copy.handle, copy.sequence)
         self._retention = None
         return copy
 
@@ -774,6 +788,7 @@ class GeoOverviewFrame:
             raise RuntimeError("use aclose")
         self._data = None
         _FRAME.pop(self, None)
+        members_wire.drop_context(self)
         wire.validate_mutation(
             _transport(self).native_execute(wire.request(10, self.handle, 0)), self.handle, 0
         )
@@ -788,11 +803,22 @@ class GeoOverviewFrame:
             raise GeoOverviewUncertainAllocation(self)
         self._data = None
         _FRAME.pop(self, None)
+        members_wire.drop_context(self)
         await _close_known(
             self,
             _transport(self),
             wire.request(10, self.handle, 0),
             lambda: setattr(self, "_phase", "closed"),
+        )
+
+    def members(self, cell, *, sequence, max_vertices):
+        _ = self.data
+        return members_wire.members(self, cell, sequence=sequence, max_vertices=max_vertices)
+
+    async def members_async(self, cell, *, sequence, max_vertices):
+        _ = self.data
+        return await members_wire.members_async(
+            self, cell, sequence=sequence, max_vertices=max_vertices
         )
 
     def export(self, format="png", **options):

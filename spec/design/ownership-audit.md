@@ -1229,6 +1229,14 @@ Rust continues to own temporal/domain policy, projection, counts and paint buffe
 | --- | --- | --- | --- | --- |
 | `js/src/71_geo_overview_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
+
+### Issued overview membership adapters
+
+| `js/src/73_geo_overview_members.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `python/xyg/_geo_overview_members.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-members.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-overview-members.d.ts` | Node host | `node-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

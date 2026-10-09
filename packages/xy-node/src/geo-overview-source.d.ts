@@ -1,5 +1,6 @@
 import type { XygGeoScaleBridge, XygGeoQueryBudget, XygGeoScaleQuery } from './geoscale.js';
 import type { GeoOverviewStorage } from './geo-overview.js';
+import type { GeoOverviewMembersInput } from './geo-overview-members.js';
 export declare class GeoOverviewUncertainAllocation extends Error {
     readonly owner: GeoOverviewIndex | GeoOverviewQuery | GeoOverviewFrame;
     readonly cause: unknown;
@@ -129,6 +130,7 @@ export declare class GeoOverviewFrame {
     };
     publish(queryHandle: bigint): Promise<void>;
     private issue;
+    members(cell: number, input: GeoOverviewMembersInput): Promise<import("./73_geo_overview_members").GeoOverviewMembershipPage>;
     retain(): Promise<GeoOverviewFrame>;
     dispose(): Promise<void>;
 }

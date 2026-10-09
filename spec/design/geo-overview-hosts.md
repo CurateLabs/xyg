@@ -102,3 +102,9 @@ node scripts/gen_geo_overview_hosts.mjs
 The generator derives Node framing, owner implementation and declarations from
 canonical TypeScript while preserving the native-only geoscale suffix. Node
 native export adds only command-6 artifact ownership, not count/geometry policy.
+
+
+Issued frames now provide bounded exact original-row domain membership through
+[the typed membership adapters](geo-overview-members-hosts.md). The counts remain
+spatially nonfinal; this does not grant camera picking or selected overview
+membership, and unknown45 allocation recovery remains open.
