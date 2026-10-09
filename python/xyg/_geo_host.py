@@ -9,15 +9,18 @@ from __future__ import annotations
 
 import struct
 import threading
+import weakref
 from typing import Any
 
 _HEADER = struct.Struct("<4sIIIQQ")
+_LANES = weakref.WeakKeyDictionary()
+_LANE_LOCK = threading.Lock()
 
 
 class GeoHostAdapter:
     """Private host-neutral facade used by notebook and Reflex transports."""
 
-    def __init__(self, chart, *, frame=None, selected_scope=None):
+    def __init__(self, chart, *, frame=None, selected_scope=None, hierarchy_lane=None):
         from ._geo_retained import RetainedGeoSource
 
         layer = chart._retained_layer()
@@ -70,6 +73,8 @@ class GeoHostAdapter:
             ):
                 raise TypeError("live selected scope requires matching issued transport authority")
         self._selected_scope = selected_scope
+        self._hierarchy_lane = None
+        self._hierarchy_authority = None
         if frame is not None:
             packet = frame.data.packet
             expected = bytearray(identity)
@@ -115,7 +120,35 @@ class GeoHostAdapter:
                 or frame._style != style
             ):
                 raise ValueError("explicit frame does not match this geographic composition")
-            self._anchor = frame.retain()
+            if hierarchy_lane is not None:
+                from ._geo_hierarchy import hierarchy_lane_authority, is_hierarchy_frame
+
+                authority = hierarchy_lane_authority(hierarchy_lane)
+                if (
+                    authority is None
+                    or authority[0] is not layer.source
+                    or authority[1] is not layer.source._bridge
+                    or not authority[3]
+                    or selected_scope is None
+                    or frame.data.selection is None
+                    or not is_hierarchy_frame(frame)
+                    or actual_operation != 43
+                ):
+                    raise ValueError("issued selected hierarchy lane must match this frame/source")
+                hierarchy_lane._check()
+                with _LANE_LOCK:
+                    prior = _LANES.get(hierarchy_lane)
+                    if prior is not None and prior() is not None:
+                        raise RuntimeError("hierarchy lane already belongs to another live adapter")
+                    _LANES[hierarchy_lane] = weakref.ref(self)
+                self._hierarchy_lane, self._hierarchy_authority = hierarchy_lane, authority
+            try:
+                self._anchor = frame.retain()
+            except BaseException:
+                self._release_lane()
+                raise
+        elif hierarchy_lane is not None:
+            raise ValueError("hierarchy live route requires an explicit selected frame")
 
         from ._geo_live_host import GeoLiveCandidate
 
@@ -306,6 +339,9 @@ class GeoHostAdapter:
                                 or self._aux is not None
                                 or self._live_candidate.frame is not None
                                 or self._live_candidate.cleanup_frame is not None
+                                or self._live_candidate.cleanup_operation is not None
+                                or self._live_candidate.cleanup_state is not None
+                                or self._live_candidate.cleanup_allocation is not None
                             ):
                                 raise ValueError("drop auxiliary packets before releasing frame")
                             self._painter = None
@@ -361,6 +397,9 @@ class GeoHostAdapter:
                         and locals().get("op") == 6
                         and self._live_candidate.frame is None
                         and self._live_candidate.cleanup_frame is None
+                        and self._live_candidate.cleanup_operation is None
+                        and self._live_candidate.cleanup_state is None
+                        and self._live_candidate.cleanup_allocation is None
                         else {}
                     ),
                 }, []
@@ -373,10 +412,21 @@ class GeoHostAdapter:
             if not self.mounted:
                 self._release_anchor()
 
+    def _release_lane(self):
+        lane = self._hierarchy_lane
+        if lane is not None:
+            with _LANE_LOCK:
+                prior = _LANES.get(lane)
+                if prior is not None and prior() is self:
+                    del _LANES[lane]
+            self._hierarchy_lane = self._hierarchy_authority = None
+
     def _release_anchor(self):
-        anchor, self._anchor = self._anchor, None
+        anchor = self._anchor
         if anchor is not None:
             anchor.close()
+            self._anchor = None
+        self._release_lane()
 
     @property
     def mounted(self):

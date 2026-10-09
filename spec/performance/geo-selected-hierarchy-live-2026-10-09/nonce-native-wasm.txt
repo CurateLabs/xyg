@@ -1,0 +1,31 @@
+✔ native lost33 recovers same private State and retryable cleanup (30.376958ms)
+✔ native corrupt33 recovers same private State and retryable cleanup (0.927083ms)
+✔ wasm lost33 recovers same private State and retryable cleanup (16.282ms)
+✔ wasm corrupt33 recovers same private State and retryable cleanup (4.960959ms)
+✔ native nonce attempt cleanup before dispatch allocates once and consumes tombstone (0.741291ms)
+✔ wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone (3.618583ms)
+✔ native lost actual10 is settled by retired nonce receipt without a second State (0.623042ms)
+✔ wasm lost actual10 is settled by retired nonce receipt without a second State (3.757542ms)
+✔ native five scopes and five serial shared-scope allocations keep original paint (1.123166ms)
+✔ wasm five scopes and five serial shared-scope allocations keep original paint (4.033917ms)
+✔ native definite allocation-free handle pressure closes attempt without retrying33 (0.789333ms)
+✔ wasm definite allocation-free handle pressure closes attempt without retrying33 (4.518541ms)
+✔ native nonce tombstone cannot reconstruct consumed43 Query or44 Data (3.33075ms)
+✔ wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data (7.213917ms)
+✔ two actual WASM producers with colliding handles reject edited Scope bridge before33 (8.868334ms)
+✔ complete normalized native/WASM nonce controls match after original handle validation (0.612833ms)
+✔ native post-allocation status6 remains uncertain and recovers exact State (0.597708ms)
+✔ native post-allocation status-1 remains uncertain and recovers exact State (0.475083ms)
+✔ wasm post-allocation status6 remains uncertain and recovers exact State (5.522125ms)
+✔ wasm post-allocation status-1 remains uncertain and recovers exact State (3.35425ms)
+✔ delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit (6.260791ms)
+✔ native resource rejection during uncertain replay keeps original allocation recoverable (0.659459ms)
+✔ wasm resource rejection during uncertain replay keeps original allocation recoverable (3.562167ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 203.785625

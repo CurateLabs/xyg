@@ -1,0 +1,35 @@
+✔ actual selected hierarchy live43/44 survives original source disposal (19.402291ms)
+✔ exclusive lane and closed lane fail before losing accepted paint (4.740958ms)
+✔ five independent hierarchy lanes keep15→16 replacement within fixed caps (6.9545ms)
+✔ lost actual33 preserves paint and settles typed replacement before retry (3.1065ms)
+✔ lost actual43 preserves paint and settles typed replacement before retry (3.164625ms)
+✔ lost actual44 preserves paint and settles typed replacement before retry (3.373708ms)
+✔ uncertain33 cleanup failure holds global slot until exact retry confirmation (3.250458ms)
+✔ uncertain43 cleanup failure holds global slot until exact retry confirmation (2.866834ms)
+✔ cancel after real44 publication cleans candidate before accepted paint changes (3.182083ms)
+✔ close during actual26 retains failed disposal owner and retries before releasing lane (2.812334ms)
+✔ canonical lost33 reply resolves one allocation and keeps accepted paint (2.288208ms)
+✔ canonical corrupt33 reply resolves one allocation and keeps accepted paint (3.477833ms)
+✔ indexed lost33 reply resolves one allocation and keeps accepted paint (2.140167ms)
+✔ indexed corrupt33 reply resolves one allocation and keeps accepted paint (1.179125ms)
+✔ hierarchy lost33 reply resolves one allocation and keeps accepted paint (2.354125ms)
+✔ hierarchy corrupt33 reply resolves one allocation and keeps accepted paint (2.199417ms)
+✔ canonical uncertain33 cleanup keeps owner and slot until exact retry (1.203125ms)
+✔ indexed uncertain33 cleanup keeps owner and slot until exact retry (1.313209ms)
+✔ actual native staged camera/time keeps accepted paint until CAS and exact retired ACK (11.60375ms)
+✔ one process stage slot preserves five mounted frames and recovers after abort ACK (3.558959ms)
+✔ lost stage and commit confirmations recover same candidate while closing (2.395375ms)
+✔ cancellation after actual Data creation drops candidate and preserves accepted paint (1.313417ms)
+✔ accepted private anchor remounts and old realm ACK cannot change new realm (1.461083ms)
+✔ actual indexed live updates preserve ordinary authority (3.15775ms)
+✔ actual indexed live updates preserve selected authority (3.032583ms)
+✔ failed unpublished Data cleanup retains global stage credit until exact retry (1.276333ms)
+✔ actual hierarchy static mount rejects live updates before canonical source reads (4.765208ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 267.21275
