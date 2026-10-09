@@ -100,3 +100,7 @@ codec/driver and browser integration remain separate gates. Native release
 performance evidence is `../performance/geo-hierarchy-2026-10-09/README.md`;
 it is not WASM, painter or selected-state latency evidence. 1B runtime remains
 unverified; sparse cold amplification and broad-frontier fallback are explicit.
+
+The existing direct-browser WASM CI job runs this bounded native/WASM conformance
+after packaging, inside the existing Release surfaces aggregate. Merge-group
+coverage and the separate scheduled/manual massive-scale policy are unchanged.
