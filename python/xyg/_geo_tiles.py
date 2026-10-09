@@ -38,7 +38,7 @@ def _budget(value):
 
 def encode_request(command, handle=0, *, epoch=0, view=0, budget=0, payload=b""):
     command = _uint(command, 32)
-    if command not in (*range(1, 11), 21, 22):
+    if command not in (*range(1, 11), 21, 22, 23):
         raise ValueError("unknown tile command")
     data = _bytes(payload)
     if len(data) + HEADER > MAX_PACKET or (budget and len(data) + HEADER > _budget(budget)):

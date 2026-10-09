@@ -120,13 +120,13 @@ fn frame(b: &[u8]) -> Result<u32> {
     zero(&b[12..16])?;
     zero(&b[56..128])?;
     let cmd = u32at(b, 8);
-    if !matches!(cmd, 1..=10 | 21 | 22) {
+    if !matches!(cmd, 1..=10 | 21 | 22 | 23) {
         return Err(invalid());
     }
     if cmd != 2 && cmd != 8 {
         zero(&b[32..40])?;
     }
-    if !matches!(cmd, 2 | 6 | 21 | 22) {
+    if !matches!(cmd, 2 | 6 | 21 | 22 | 23) {
         zero(&b[40..48])?;
     }
     if cmd == 1 {
@@ -170,6 +170,7 @@ struct ReadOwner {
 }
 struct FrameOwner {
     bytes: Vec<u8>,
+    descriptor: Vec<u8>,
     camera: crate::geo_viewport::GeoViewportRebuildKey,
     keys: Vec<GeoTileKey>,
     sources: Vec<GeoTileSource>,
@@ -179,6 +180,7 @@ struct FrameOwner {
     view: u64,
     reads: u8,
     _transfer: GeoDerivedLease,
+    _descriptor_transfer: GeoDerivedLease,
 }
 enum Entry {
     Cache(Box<CacheOwner>),
@@ -446,6 +448,9 @@ fn parse_styles(b: &[u8]) -> Result<(u64, Vec<GeoVectorTileStyle>, &[u8])> {
 }
 /// Fixed response mutations. No size probe may execute these commands.
 pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
+    if crate::geo_mixed_protocol::is_request(request) {
+        return crate::geo_mixed_protocol::execute(request).map_err(Into::into);
+    }
     let command = frame(request)?;
     if command >= 20 {
         return Err(invalid());
@@ -752,6 +757,13 @@ pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
         let attrs: Vec<&str> = frame
             .sources
             .iter()
+            .filter(|source| {
+                keys.iter().any(|key| {
+                    key.source_id == source.source_id
+                        && key.layer_id == source.layer_id
+                        && key.generation == source.generation
+                })
+            })
             .filter_map(|source| match &source.location {
                 GeoTileLocation::Network { attribution, .. } => Some(attribution.as_str()),
                 _ => None,
@@ -785,8 +797,31 @@ pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
                     TileSceneError::Geo(g) => g,
                     TileSceneError::Cancelled => GeoError::InvalidArgument,
                 })?;
-                let (compiled, held) = prepared.into_parts();
+                let (mut compiled, held) = prepared.into_parts();
                 charge = Some(held);
+                if !attrs.is_empty() {
+                    let attribution_peak = compiled
+                        .scene
+                        .len()
+                        .checked_mul(32)
+                        .and_then(|n| n.checked_add(1 << 20))
+                        .ok_or(GeoError::ResourceLimit)?;
+                    if attribution_peak > processor.bytes() {
+                        return Err(GeoError::ResourceLimit);
+                    }
+                    let _attribution = owner.cache.reserve_derived(attribution_peak)?;
+                    compiled.scene = crate::scene::SceneDocument::with_geographic_attributions(
+                        &compiled.scene,
+                        &attrs,
+                    )
+                    .map_err(|e| {
+                        if e == crate::scene::SceneError::Limit {
+                            GeoError::ResourceLimit
+                        } else {
+                            GeoError::InvalidArgument
+                        }
+                    })?;
+                }
                 let doc = crate::scene::SceneDocument::decode(&compiled.scene)
                     .map_err(|_| GeoError::InvalidArgument)?;
                 if attrs.iter().any(|a| !doc.has_visible_attribution(a)) {
@@ -862,11 +897,36 @@ pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
         digest.update(&bytes[..136]);
         digest.update(&bytes[REPLY_BYTES..]);
         bytes[136..144].copy_from_slice(&digest.finish());
+        let descriptor_len = REPLY_BYTES + provenance.len() * 96;
+        let descriptor_peak = checked(
+            descriptor_len
+                .checked_mul(7)
+                .and_then(|n| n.checked_add(65536)),
+        )?;
+        if descriptor_peak > processor.bytes() {
+            return Err(resource());
+        }
+        let descriptor_transfer = owner.cache.reserve_derived(descriptor_peak)?;
+        let mut descriptor = vec![0; descriptor_len];
+        descriptor[..4].copy_from_slice(b"XYUP");
+        p32(&mut descriptor, 4, 1);
+        p64(&mut descriptor, 24, epoch);
+        p64(&mut descriptor, 32, handle);
+        p64(&mut descriptor, 40, view);
+        p64(&mut descriptor, 48, provenance.len() as u64);
+        p64(&mut descriptor, 56, descriptor_len as u64);
+        for (i, stamp) in provenance.iter().enumerate() {
+            let at = REPLY_BYTES + i * 96;
+            write_key(&mut descriptor[at..at + 80], stamp.key);
+            descriptor[at + 80..at + 88].copy_from_slice(&stamp.config_digest);
+            descriptor[at + 88..at + 96].copy_from_slice(&stamp.payload_digest);
+        }
         let len = bytes.len();
         let id = insert(
             &mut r,
             Entry::Frame(Box::new(FrameOwner {
                 bytes,
+                descriptor,
                 camera,
                 keys,
                 sources,
@@ -876,8 +936,13 @@ pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
                 view,
                 reads: 0,
                 _transfer: transfer,
+                _descriptor_transfer: descriptor_transfer,
             })),
         )?;
+        let frame_index = index(&r, id)?;
+        if let Entry::Frame(frame) = &mut r.entries[frame_index].1 {
+            p64(&mut frame.descriptor, 16, id);
+        }
         cache_mut(&mut r, handle)?.styles.extend(proposed_styles);
         let mut out = reply(id, epoch);
         p64(&mut out, 32, len as u64);
@@ -939,8 +1004,11 @@ pub fn execute(request: &[u8]) -> Result<[u8; REPLY_BYTES]> {
 }
 /// Pure size probe does not consume either admitted ownership transfer.
 pub fn data_len(request: &[u8], max: usize) -> Result<usize> {
+    if crate::geo_mixed_protocol::is_request(request) {
+        return crate::geo_mixed_protocol::data_len(request, max).map_err(Into::into);
+    }
     let cmd = frame(request)?;
-    if !matches!(cmd, 21 | 22) || max > MAX_PROCESSOR_BYTES {
+    if !matches!(cmd, 21 | 22 | 23) || max > MAX_PROCESSOR_BYTES {
         return Err(invalid());
     }
     let r = registry().lock().map_err(|_| resource())?;
@@ -952,6 +1020,7 @@ pub fn data_len(request: &[u8], max: usize) -> Result<usize> {
             REPLY_BYTES + a.len() + b.len()
         }
         (Entry::Frame(frame), 22) if frame.epoch == epoch => frame.bytes.len(),
+        (Entry::Frame(frame), 23) if frame.epoch == epoch => frame.descriptor.len(),
         _ => return Err(stale()),
     };
     if checked(n.checked_mul(2))? > max {
@@ -960,6 +1029,9 @@ pub fn data_len(request: &[u8], max: usize) -> Result<usize> {
     Ok(n)
 }
 pub fn read_data(request: &[u8], max: usize) -> Result<Vec<u8>> {
+    if crate::geo_mixed_protocol::is_request(request) {
+        return crate::geo_mixed_protocol::read_data(request, max).map_err(Into::into);
+    }
     let n = data_len(request, max)?;
     let cmd = u32at(request, 8);
     let mut r = registry().lock().map_err(|_| resource())?;
@@ -974,12 +1046,16 @@ pub fn read_data(request: &[u8], max: usize) -> Result<Vec<u8>> {
             debug_assert_eq!(b.len(), n);
             Ok(b)
         }
-        (Entry::Frame(frame), 22) => {
+        (Entry::Frame(frame), 22 | 23) if frame.epoch == u64at(request, 24) => {
             if frame.reads >= 2 {
                 return Err(resource());
             }
             frame.reads += 1;
-            Ok(frame.bytes.clone())
+            Ok(if cmd == 22 {
+                frame.bytes.clone()
+            } else {
+                frame.descriptor.clone()
+            })
         }
         _ => Err(stale()),
     }
@@ -1035,7 +1111,7 @@ mod tests {
         p64(&mut b, 16, handle);
         p64(&mut b, 24, epoch);
         p64(&mut b, 32, view);
-        if matches!(cmd, 2 | 6 | 21 | 22) {
+        if matches!(cmd, 2 | 6 | 21 | 22 | 23) {
             p64(&mut b, 40, MAX_PROCESSOR_BYTES as u64);
         }
         p64(&mut b, 48, payload.len() as u64);
@@ -1052,6 +1128,16 @@ mod tests {
         vector: bool,
         revision: u64,
     ) -> [u8; REPLY_BYTES] {
+        begin_revision_attribution(cache, generation, network, vector, revision, None)
+    }
+    fn begin_revision_attribution(
+        cache: u64,
+        generation: u64,
+        network: bool,
+        vector: bool,
+        revision: u64,
+        attribution: Option<&str>,
+    ) -> [u8; REPLY_BYTES] {
         let mut b = vec![0; 80];
         p32(&mut b, 0, 4326);
         p64(&mut b, 32, 800f64.to_bits());
@@ -1063,7 +1149,11 @@ mod tests {
             } else {
                 "local/tiles"
             };
-            let attr = if network { "Tile attribution" } else { "" };
+            let attr = if network {
+                attribution.unwrap_or("Tile attribution")
+            } else {
+                ""
+            };
             let mut h = vec![0; 112];
             for (at, n) in [
                 (0, kind as u64 + 1),
@@ -1194,13 +1284,16 @@ mod tests {
         execute(&request(10, frame, 0, 0, &[])).unwrap();
     }
     #[test]
-    fn retired_read_ack_and_missing_attribution_fail_closed() {
+    fn retired_read_ack_and_unfittable_attribution_fail_closed() {
         let _source = crate::geo_source_session::test_processor_lock();
         let _tile = crate::geo_tile_cache::test_process_lock();
         let cache = u64at(&execute(&request(1, 0, 0, 0, &[])).unwrap(), 16);
         let old = u64at(&begin(cache, 1, false, false), 24);
         let read = u64at(&execute(&request(3, cache, old, 0, &[])).unwrap(), 16);
-        let new = u64at(&begin(cache, 2, true, false), 24);
+        let new = u64at(
+            &begin_revision_attribution(cache, 2, true, false, 1, Some(&"x".repeat(4096))),
+            24,
+        );
         assert!(execute(&request(4, read, old, 0, &vec![255; 262144])).is_err());
         execute(&request(5, read, old, 0, &[])).unwrap();
         fill(cache, new);

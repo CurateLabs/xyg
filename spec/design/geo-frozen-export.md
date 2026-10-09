@@ -182,8 +182,9 @@ permission is introduced by this module.
 | Scaled dimension | 1..65,535 |
 
 All limits apply together; the peak can reject an envelope below its individual
-byte ceiling. Encode/decode preflight reserves `8*envelope_bytes+65536` before
-copying/decoding. Native export preflights `32*envelope_bytes+64*pixels+1MiB`
+byte ceiling. Legacy encode/decode preflight reserves `8*envelope_bytes+65536` before
+copying/decoding. Mixed tile mode2 requires `32*envelope_bytes+1MiB` because
+decode validates and exactly recomposes both retained source and Tile Scenes. Native export preflights `32*envelope_bytes+64*pixels+1MiB`
 against the supplied budget and the shared 384 MiB tile/derived ledger. The
 bound includes decoded Scene, raster/codec scratch, metadata/base64, old/new
 output copies and fixed font/validation work. Surrounding retained sources,
@@ -255,3 +256,28 @@ receipt preserves private cache handle/epoch as transport context; independently
 created Python/Node frames compare canonical Scene, config/key/payload stamps and
 pixels while excluding only that ephemeral receipt handle context. The frozen
 bytes themselves are never normalized.
+
+## Mixed tile authority mode2
+
+Snapshot protocol command5 freezes the complete trusted mixed Data/nonce. The
+XYGX v2 outer header is unchanged. Tile blob version1 mode2 starts with64 bytes:
+mode2 at4u32; explicit time policy at8u32 (4Timeless,5ProducerWindow); source
+count12/stamp count16/foreground Scene byte count20u32; original receipt bytes24u64;
+retained record start32/end40 and style start48/end56, four u64. It contains the
+existing exact source configuration records and96-byte stamps, original Tile
+receipt, then exact retained foreground Scene32. The final outer Scene is the
+whole mixed Scene. Mode2 requires one bound analysis layer/compact grid, exact
+source time/style/state revision and original direct/reduced provenance. Decode
+validates tile time policy, selected vector layer authority and ranges, then
+requires `compose_geographic(tile_scene,foreground_scene)` to equal the whole
+Scene byte-for-byte. Padding/oversize/unknown modes/source mismatch or point-only
+substitution reject. A ProducerWindow snapshot requires a real Window even when
+no tiles are selected. Mode1 pure Tile and existing source-only contracts retain
+their original framing. See [geo-mixed-transport.md](geo-mixed-transport.md).
+
+Selected network source attribution is now a deterministic bounded literal Rust
+Scene footer when no existing visible exact label exists, as defined in
+[geo-tile-protocol.md](geo-tile-protocol.md). Mixed and pure Tile frozen Scenes
+therefore carry the same visible text naturally; no extra foreground layer is
+required for provider attribution. Native static outputs paint that whole Scene;
+WASM still freezes binary only and refuses its unsupported artifact export.

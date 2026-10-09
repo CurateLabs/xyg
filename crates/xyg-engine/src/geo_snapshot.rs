@@ -2,14 +2,14 @@
 //! Immutable XYGX carries Scene32 and exact source/camera/time/revision facts.
 use crate::geo::{GeoCrs, GeoGeometry};
 use crate::geo_lod::{
-    CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT, GeoLodIdentity, GeoLodKey, GeoPointCell,
-    GeoPointOutput, GeoPointResult, GeoReducedKind,
+    GeoLodIdentity, GeoLodKey, GeoPointCell, GeoPointOutput, GeoPointResult, GeoReducedKind,
+    CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT,
 };
-use crate::geo_source::{MAX_CHUNK_ROWS, MAX_SOURCE_ROWS, QueryCursor, TimePredicate};
+use crate::geo_source::{QueryCursor, TimePredicate, MAX_CHUNK_ROWS, MAX_SOURCE_ROWS};
 use crate::geo_source_session::GeoOperationSnapshot;
 use crate::geo_tile_cache::{GeoDerivedLease, GeoTileCache};
 use crate::geo_viewport::{GeoViewport, GeoViewportRebuildKey};
-use crate::scene::{SCENE_VERSION, SceneDocument};
+use crate::scene::{SceneDocument, SCENE_VERSION};
 use crate::transition::Blake2s8;
 use std::ops::Range;
 
@@ -397,6 +397,16 @@ fn peak(length: usize, budget: usize) -> Result<usize> {
     }
     Ok(required)
 }
+fn mixed_peak(length: usize, budget: usize) -> Result<usize> {
+    let required = length
+        .checked_mul(32)
+        .and_then(|n| n.checked_add(1 << 20))
+        .ok_or(GeoSnapshotError::Limit)?;
+    if length > MAX_FROZEN_BYTES || required > budget || budget > MAX_FROZEN_PEAK {
+        return Err(GeoSnapshotError::Limit);
+    }
+    Ok(required)
+}
 
 impl GeoFrozenSnapshot {
     #[allow(clippy::too_many_arguments)]
@@ -494,7 +504,11 @@ impl GeoFrozenSnapshot {
             .and_then(|n| n.checked_add(tile.len()))
             .and_then(|n| n.checked_add(scene.len()))
             .ok_or(GeoSnapshotError::Limit)?;
-        let required = peak(total, budget)?;
+        let required = if tile.len() >= TILE_HEADER && u32at(tile, 4) == 2 {
+            mixed_peak(total, budget)?
+        } else {
+            peak(total, budget)?
+        };
         let charge = cache
             .reserve_derived(required)
             .map_err(|_| GeoSnapshotError::Limit)?;
@@ -549,7 +563,23 @@ impl GeoFrozenSnapshot {
         Self::decode_owned(b, charge)
     }
     pub fn decode(cache: &GeoTileCache, bytes: &[u8], budget: usize) -> Result<Self> {
-        let required = peak(bytes.len(), budget)?;
+        let mixed = if bytes.len() >= HEADER {
+            let sl = usize::try_from(u64at(bytes, 24)).map_err(|_| GeoSnapshotError::Limit)?;
+            let tl = u32at(bytes, 188) as usize;
+            bytes
+                .len()
+                .checked_sub(sl)
+                .and_then(|n| n.checked_sub(tl))
+                .and_then(|at| bytes.get(at..at.checked_add(TILE_HEADER)?))
+                .is_some_and(|b| tl >= TILE_HEADER && u32at(b, 4) == 2)
+        } else {
+            false
+        };
+        let required = if mixed {
+            mixed_peak(bytes.len(), budget)?
+        } else {
+            peak(bytes.len(), budget)?
+        };
         let charge = cache
             .reserve_derived(required)
             .map_err(|_| GeoSnapshotError::Limit)?;
@@ -806,22 +836,27 @@ impl GeoFrozenSnapshot {
         let tile = if tile_len == 0 {
             None
         } else {
-            if !identity.layers.is_empty()
-                || !direct.is_empty()
-                || !membership.is_empty()
-                || !grids.is_empty()
-                || identity.time != TimePredicate::All
-                || identity.camera_revision != 0
-                || identity.time_revision != 0
+            let blob = &b[attribution_end..scene_start];
+            if blob.len() < TILE_HEADER {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            if u32at(blob, 4) == 1
+                && (!identity.layers.is_empty()
+                    || !direct.is_empty()
+                    || !membership.is_empty()
+                    || !grids.is_empty()
+                    || identity.time != TimePredicate::All
+                    || identity.camera_revision != 0
+                    || identity.time_revision != 0)
             {
                 return Err(GeoSnapshotError::Invalid);
             }
-            validate_tile_blob(
-                &b[attribution_end..scene_start],
-                key,
-                &b[scene.clone()],
-                &attributions,
-            )?;
+            if u32at(blob, 4) == 2
+                && (identity.layers.len() != 1 || grids.len() != 1 || !membership.is_empty())
+            {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            validate_tile_blob(blob, &identity, &b[scene.clone()], &attributions)?;
             Some(attribution_end..scene_start)
         };
         let document =
@@ -1218,6 +1253,18 @@ impl GeoFrozenSnapshot {
         style: &[u8; 48],
         budget: usize,
     ) -> Result<Self> {
+        Self::freeze_lod_full(cache, scene, result, snapshot, style, budget, &[], &[])
+    }
+    fn freeze_lod_full(
+        cache: &GeoTileCache,
+        scene: &[u8],
+        result: &GeoPointResult,
+        snapshot: GeoOperationSnapshot,
+        style: &[u8; 48],
+        budget: usize,
+        attributions: &[String],
+        tile: &[u8],
+    ) -> Result<Self> {
         let k = result.key;
         if snapshot.source_digest != k.identity.source_digest
             || snapshot.generation != k.identity.generation
@@ -1288,15 +1335,16 @@ impl GeoFrozenSnapshot {
                 GeoPointOutput::Direct(_) => GeoFrozenGridCounts::Counts(&[]),
             },
         };
-        Self::freeze_with_grids(
+        Self::freeze_full(
             cache,
             scene,
             &identity,
             &direct,
             &[],
             std::slice::from_ref(&grid),
-            &[],
+            attributions,
             budget.checked_sub(scratch).ok_or(GeoSnapshotError::Limit)?,
+            tile,
         )
     }
 }
@@ -1406,6 +1454,113 @@ fn tile_blob_size(view: &crate::geo_tile_protocol::GeoTileFrameView<'_>) -> Resu
     )
 }
 impl GeoFrozenSnapshot {
+    /// Freeze the complete already-composed mixed Scene and original authorities.
+    /// The trusted caller borrows its retained SourceData anchor, never requeries.
+    pub fn freeze_mixed(
+        cache: &GeoTileCache,
+        frame: &crate::geo_mixed_frame::GeoMixedFrame,
+        foreground: &[u8],
+        budget: usize,
+    ) -> Result<Self> {
+        let request = frame.authority();
+        let receipt = frame.tile_receipt();
+        if receipt.len() < 384 || budget > MAX_FROZEN_PEAK {
+            return Err(GeoSnapshotError::Invalid);
+        }
+        if budget < 8192 {
+            return Err(GeoSnapshotError::Limit);
+        }
+        let _fixed = cache
+            .reserve_derived(8192)
+            .map_err(|_| GeoSnapshotError::Limit)?;
+        let budget = budget - 8192;
+        let scene_len =
+            usize::try_from(u64at(receipt, 256 + 72)).map_err(|_| GeoSnapshotError::Limit)?;
+        let tile_scene = receipt
+            .get(
+                384..384usize
+                    .checked_add(scene_len)
+                    .ok_or(GeoSnapshotError::Limit)?,
+            )
+            .ok_or(GeoSnapshotError::Invalid)?;
+        let keys: Vec<_> = request.tiles.iter().map(|p| p.key).collect();
+        let view = crate::geo_tile_protocol::GeoTileFrameView {
+            receipt,
+            scene: tile_scene,
+            camera: request.snapshot.camera,
+            keys: &keys,
+            sources: frame.tile_sources(),
+            provenance: &request.tiles,
+        };
+        let length = tile_blob_size(&view)?
+            .checked_add(foreground.len())
+            .ok_or(GeoSnapshotError::Limit)?;
+        let scratch = length
+            .checked_mul(32)
+            .and_then(|n| n.checked_add(1 << 20))
+            .ok_or(GeoSnapshotError::Limit)?;
+        if scratch > budget || foreground.len() > MAX_FROZEN_SCENE_BYTES {
+            return Err(GeoSnapshotError::Limit);
+        }
+        let _scratch = cache
+            .reserve_derived(scratch)
+            .map_err(|_| GeoSnapshotError::Limit)?;
+        let mut blob = vec![0; TILE_HEADER];
+        blob.reserve_exact(length - TILE_HEADER);
+        put32(&mut blob, 0, 1);
+        put32(&mut blob, 4, 2);
+        put32(
+            &mut blob,
+            8,
+            match request.tile_time {
+                crate::geo_mixed_frame::GeoMixedTileTime::Timeless => 4,
+                crate::geo_mixed_frame::GeoMixedTileTime::ProducerWindow => 5,
+                _ => return Err(GeoSnapshotError::Invalid),
+            },
+        );
+        put32(&mut blob, 12, view.sources.len() as u32);
+        put32(&mut blob, 16, keys.len() as u32);
+        put32(&mut blob, 20, foreground.len() as u32);
+        put64(&mut blob, 24, receipt.len() as u64);
+        let rr = frame.retained_records();
+        let sr = frame.retained_styles();
+        for (at, n) in [(32, rr.start), (40, rr.end), (48, sr.start), (56, sr.end)] {
+            put64(&mut blob, at, n as u64);
+        }
+        let mut attrs = Vec::new();
+        for source in view.sources {
+            let (h, locator, attr) = tile_source_header(source);
+            blob.extend_from_slice(&h);
+            blob.extend_from_slice(locator.as_bytes());
+            blob.extend_from_slice(attr.as_bytes());
+            if !attr.is_empty()
+                && view.keys.iter().any(|key| {
+                    key.source_id == source.source_id
+                        && key.layer_id == source.layer_id
+                        && key.generation == source.generation
+                })
+            {
+                attrs.push(attr.to_owned());
+            }
+        }
+        for stamp in view.provenance {
+            blob.extend_from_slice(&tile_key_bytes(stamp.key));
+            blob.extend_from_slice(&stamp.config_digest);
+            blob.extend_from_slice(&stamp.payload_digest);
+        }
+        blob.extend_from_slice(receipt);
+        blob.extend_from_slice(foreground);
+        Self::freeze_lod_full(
+            cache,
+            frame.scene(),
+            frame.result(),
+            request.snapshot,
+            frame.style(),
+            budget - scratch,
+            &attrs,
+            &blob,
+        )
+    }
     /// The exact catalog receipt explicitly owns ordinary foreground metadata,
     /// including literal source IDs/styles. It is not a fabricated generation.
     pub fn freeze_tile(
@@ -1438,7 +1593,13 @@ impl GeoFrozenSnapshot {
             blob.extend_from_slice(&h);
             blob.extend_from_slice(locator.as_bytes());
             blob.extend_from_slice(attr.as_bytes());
-            if !attr.is_empty() {
+            if !attr.is_empty()
+                && view.keys.iter().any(|key| {
+                    key.source_id == source.source_id
+                        && key.layer_id == source.layer_id
+                        && key.generation == source.generation
+                })
+            {
                 attrs.push(attr.to_owned());
             }
         }
@@ -1473,21 +1634,30 @@ impl GeoFrozenSnapshot {
 }
 fn validate_tile_blob(
     blob: &[u8],
-    camera: GeoViewportRebuildKey,
+    identity: &GeoFrozenIdentity,
     scene: &[u8],
     attrs: &[String],
 ) -> Result<()> {
     use crate::geo_tile_cache::{GeoTileKind, GeoTileLocation, GeoTileSource, GeoTileTime};
+    let camera = identity.camera;
     if blob.len() < TILE_HEADER
         || u32at(blob, 0) != 1
-        || u32at(blob, 4) != 1
-        || u32at(blob, 8) != 3
-        || blob[20..24]
-            .iter()
-            .chain(blob[32..64].iter())
-            .any(|&v| v != 0)
+        || !matches!(u32at(blob, 4), 1 | 2)
+        || (u32at(blob, 4) == 1
+            && (u32at(blob, 8) != 3
+                || blob[20..24]
+                    .iter()
+                    .chain(blob[32..64].iter())
+                    .any(|&v| v != 0)))
+        || (u32at(blob, 4) == 2 && !matches!(u32at(blob, 8), 4 | 5))
     {
         return Err(GeoSnapshotError::Invalid);
+    }
+    if u32at(blob, 4) == 2
+        && u32at(blob, 8) == 5
+        && !matches!(identity.time, TimePredicate::Window { .. })
+    {
+        return Err(GeoSnapshotError::Stale);
     }
     let source_count = u32at(blob, 12) as usize;
     let key_count = u32at(blob, 16) as usize;
@@ -1589,6 +1759,7 @@ fn validate_tile_blob(
         .ok_or(GeoSnapshotError::Limit)?;
     let keys = blob.get(at..key_end).ok_or(GeoSnapshotError::Invalid)?;
     at = key_end;
+    let mut mixed_keys = Vec::with_capacity(if u32at(blob, 4) == 2 { key_count } else { 0 });
     for (i, k) in keys.chunks_exact(TILE_STAMP).enumerate() {
         if k[76..80].iter().any(|&v| v != 0)
             || u32at(k, 56) > 1
@@ -1629,11 +1800,32 @@ fn validate_tile_blob(
         {
             return Err(GeoSnapshotError::Stale);
         }
+        if u32at(blob, 4) == 2 {
+            mixed_keys.push(key);
+            if key.layer_id == identity.layers[0].layer_id {
+                return Err(GeoSnapshotError::Stale);
+            }
+            match (u32at(blob, 8), identity.time, key.time) {
+                (4, _, None) => (),
+                (5, TimePredicate::Window { start, end }, Some(t))
+                    if t.start == start && t.end == end => {}
+                _ => return Err(GeoSnapshotError::Stale),
+            }
+        }
     }
     let receipt = blob
         .get(at..at.checked_add(receipt_len).ok_or(GeoSnapshotError::Limit)?)
         .ok_or(GeoSnapshotError::Invalid)?;
-    if at + receipt_len != blob.len()
+    let foreground_len = if u32at(blob, 4) == 2 {
+        u32at(blob, 20) as usize
+    } else {
+        0
+    };
+    if foreground_len > MAX_FROZEN_SCENE_BYTES
+        || at
+            .checked_add(receipt_len)
+            .and_then(|n| n.checked_add(foreground_len))
+            != Some(blob.len())
         || receipt.len() < 256
         || &receipt[..4] != b"XYGU"
         || u32at(receipt, 4) != 1
@@ -1676,13 +1868,58 @@ fn validate_tile_blob(
         }
     }
     let catalog = &receipt[256..256 + cat_len];
-    if catalog.len() < 128
-        || &catalog[..4] != b"XYLM"
-        || u32at(catalog, 4) != 1
-        || u64at(catalog, 72) != scene.len() as u64
-        || catalog.get(128..128 + scene.len()) != Some(scene)
-    {
+    if catalog.len() < 128 || &catalog[..4] != b"XYLM" || u32at(catalog, 4) != 1 {
         return Err(GeoSnapshotError::Stale);
+    }
+    let tile_scene_len =
+        usize::try_from(u64at(catalog, 72)).map_err(|_| GeoSnapshotError::Limit)?;
+    let tile_scene = catalog
+        .get(
+            128..128usize
+                .checked_add(tile_scene_len)
+                .ok_or(GeoSnapshotError::Limit)?,
+        )
+        .ok_or(GeoSnapshotError::Invalid)?;
+    if u32at(blob, 4) == 1 {
+        if tile_scene != scene {
+            return Err(GeoSnapshotError::Stale);
+        }
+    } else {
+        let foreground = &blob[at + receipt_len..];
+        let back =
+            crate::scene::validate_scene_batch(tile_scene).map_err(|_| GeoSnapshotError::Scene)?;
+        let front =
+            crate::scene::validate_scene_batch(foreground).map_err(|_| GeoSnapshotError::Scene)?;
+        if [
+            u64at(blob, 32),
+            u64at(blob, 40),
+            u64at(blob, 48),
+            u64at(blob, 56),
+        ] != [
+            back.records as u64,
+            (back.records + front.records) as u64,
+            back.styles as u64,
+            (back.styles + front.styles) as u64,
+        ] || SceneDocument::compose_geographic(tile_scene, foreground)
+            .map_err(|_| GeoSnapshotError::Scene)?
+            != scene
+        {
+            return Err(GeoSnapshotError::Stale);
+        }
+    }
+    if u32at(blob, 4) == 2 {
+        crate::geo_mixed_frame::basemap_layers(
+            &crate::geo_tile_protocol::GeoTileFrameView {
+                receipt,
+                scene: tile_scene,
+                camera,
+                keys: &mixed_keys,
+                sources: &sources,
+                provenance: &[],
+            },
+            identity.layers[0].layer_id,
+        )
+        .map_err(|_| GeoSnapshotError::Stale)?;
     }
     if receipt[256 + cat_len..256 + padded].iter().any(|&v| v != 0) {
         return Err(GeoSnapshotError::Invalid);
@@ -1725,6 +1962,13 @@ fn validate_tile_blob(
     }
     let source_attrs: Vec<&str> = sources
         .iter()
+        .filter(|source| {
+            keys.chunks_exact(TILE_STAMP).any(|key| {
+                u64at(key, 0) == source.source_id
+                    && u64at(key, 16) == source.layer_id
+                    && u64at(key, 8) == source.generation
+            })
+        })
         .filter_map(|s| match &s.location {
             GeoTileLocation::Network { attribution, .. } => Some(attribution.as_str()),
             _ => None,
@@ -1743,7 +1987,7 @@ fn validate_tile_blob(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::geo_tile_cache::{GeoTileLimits, test_process_lock};
+    use crate::geo_tile_cache::{test_process_lock, GeoTileLimits};
     use crate::scene::{
         AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneLabel,
     };
@@ -1996,18 +2240,16 @@ mod tests {
                 Err(GeoSnapshotError::Attribution)
             ));
         }
-        assert!(
-            GeoFrozenSnapshot::freeze(
-                &cache,
-                &scene(vec![label("Owner")]),
-                &id,
-                &[],
-                &[],
-                &attrs,
-                MAX_FROZEN_PEAK
-            )
-            .is_ok()
-        );
+        assert!(GeoFrozenSnapshot::freeze(
+            &cache,
+            &scene(vec![label("Owner")]),
+            &id,
+            &[],
+            &[],
+            &attrs,
+            MAX_FROZEN_PEAK
+        )
+        .is_ok());
     }
     #[test]
     fn malformed_lengths_flags_reserved_utf8_scene_and_exact_budget_fail_atomically() {
@@ -2136,11 +2378,9 @@ mod tests {
                     let mut reader = decoder.read_info().unwrap();
                     let mut rgba = vec![0; reader.output_buffer_size().unwrap()];
                     let info = reader.next_frame(&mut rgba).unwrap();
-                    assert!(
-                        rgba[..info.buffer_size()]
-                            .chunks_exact(info.color_type.samples())
-                            .any(|p| p[..3] == [20, 40, 80])
-                    );
+                    assert!(rgba[..info.buffer_size()]
+                        .chunks_exact(info.color_type.samples())
+                        .any(|p| p[..3] == [20, 40, 80]));
                     reader.finish().unwrap();
                     assert_eq!(reader.info().utf8_text.len(), 1);
                     assert_eq!(reader.info().utf8_text[0].keyword, "XYG frozen snapshot");

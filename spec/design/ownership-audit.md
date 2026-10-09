@@ -1101,6 +1101,20 @@ Forbidden:
 | `python/xyg/_geo_tiles.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geoscale.py` | Python host | `python-host` | `keep-host` | — |
 
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_mixed_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_mixed_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/66_geo_mixed.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-mixed-wire.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-mixed.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-mixed.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_mixed.py` | Python host | `python-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

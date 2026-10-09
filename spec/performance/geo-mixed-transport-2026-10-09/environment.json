@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-09T09:35:40.844412+00:00",
+  "base": "b1aaf1501c7f40b4c6d8606f40315e95dd501d1a",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4",
+  "logicalCpus": 10,
+  "physicalMemoryBytes": 34359738368,
+  "node": "v26.6.0",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "python": "Python 3.13.7",
+  "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "browserVersion": "Google Chrome 155.0.8059.40",
+  "gpuBackend": "ANGLE SwiftShader (--use-angle=swiftshader)",
+  "load": "Concurrent development; correctness evidence only, no latency or competitor comparison",
+  "productScope": "Uncommitted mixed-transport checkpoint; review/CI/merge pending; #50/#39 remain open",
+  "repair": "Opaque existing XYLB footer contrast and retryable coalesced mixed disposal; final packaged/native proof"
+}

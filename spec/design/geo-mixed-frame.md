@@ -1,9 +1,9 @@
 # Immutable mixed geographic frame coordinator
 
 `geo_mixed_frame.rs` adds a Rust-only atomic composition foundation over the
-existing immutable retained SceneData and tile SceneData authorities. It does
-not add a chart API, transport command, ABI signature, host projection/filtering
-policy, or claim completion of #50/#39. See dossier §20/§27, source/session,
+existing immutable retained SceneData and tile SceneData authorities. It does not add a chart API, ABI signature or host projection/filtering policy,
+or claim completion of #50/#39. Its separately layered typed transport is
+[geo-mixed-transport.md](geo-mixed-transport.md). See dossier §20/§27, source/session,
 geo-tile-protocol and geo-scale-protocol.
 
 `GeoMixedCoordinator::begin(GeoMixedRequest)` returns a private owner/monotonic
@@ -29,8 +29,8 @@ only if its ticket/request is still current. New begin, exact cancel or foreign
 coordinator tickets cannot publish stale work. Failed admission/preparation or
 stale commit leaves the previous frame usable. Published frames are borrowed
 through Arc; previously retained Arcs survive coordinator/source/cache disposal.
-This core does not yet couple host staging failure or live controller revisions
-to the existing transport.
+The typed transport now exposes candidate/commit/cancel and immutable whole-frame
+freeze. Public mounted host/controller integration remains pending.
 
 ## Temporal truth and layer scope
 
@@ -92,8 +92,9 @@ decoding and immutable previous-frame ownership. Tests use the private borrowed
 core seam; they do not constitute native/WASM protocol or browser mixed-frame
 conformance. The public preparation path uses existing trusted registry getters.
 
-Remaining work: typed mixed-frame transport/host staging and immutable export
-binding; actual native/WASM/browser parity and pixel proofs; full source-row
+The typed mixed-frame transport and immutable whole-frame export binding have
+separate small native/WASM fixtures. Remaining work: public mounted host staging
+and full source-row
 linked selection/state; engine-filtered temporal attachments for non-timeless
 vector content; and notebook/Reflex/VS Code live journeys. No performance or
 massive interactive mixed-frame claim follows from these small core fixtures.
