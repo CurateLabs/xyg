@@ -109,6 +109,7 @@ pub struct GeoPointLod {
     phase: Phase,
     failed: bool,
     last_row: Option<u64>,
+    last_vertex: Option<(u64, u32)>,
     visible: u64,
     aggregate_visible: u64,
     projected: u64,
@@ -155,6 +156,7 @@ impl GeoPointLod {
             phase: Phase::Count,
             failed: false,
             last_row: None,
+            last_vertex: None,
             visible: 0,
             aggregate_visible: 0,
             projected: 0,
@@ -297,55 +299,105 @@ impl GeoPointLod {
             return Err(invalid());
         }
         for vertex in f.vertices.clone() {
-            cancel(c)?;
-            self.projected = self
-                .projected
-                .checked_add(1)
-                .ok_or(SourceError::ResourceLimit)?;
-            if self.projected > self.options.max_projected_vertices {
-                return Err(SourceError::ResourceLimit);
-            }
             let xy = &f.column.xy()[vertex * 2..vertex * 2 + 2];
-            let (x, y) = project(&self.camera, self.identity.crs, xy[0], xy[1])?;
-            if !visible(&self.camera, x, y) {
-                continue;
-            }
-            match self.phase {
-                Phase::Count => {
-                    self.visible = self
-                        .visible
-                        .checked_add(1)
-                        .ok_or(SourceError::ResourceLimit)?;
-                    if self.visible <= DIRECT_VERTEX_LIMIT as u64 {
-                        self.direct.push(GeoDirectPoint {
-                            identity: r,
-                            vertex: vertex as u32,
-                            x,
-                            y,
-                        });
-                    } else if !self.direct.is_empty() {
-                        self.direct = Vec::new();
-                    }
+            self.fold_vertex_inner(
+                r,
+                vertex as u32,
+                [xy[0], xy[1]],
+                f.interval_start,
+                f.interval_end,
+                c,
+            )?;
+        }
+        Ok(())
+    }
+    /// Private authenticated-index seam. Original chunk-global vertex indices
+    /// and source ordering are retained; no host may manufacture this authority.
+    pub(crate) fn fold_indexed_vertex(
+        &mut self,
+        r: FeatureRef,
+        vertex: u32,
+        xy: [f64; 2],
+        start: Option<i64>,
+        end: Option<i64>,
+        c: &mut dyn FnMut() -> bool,
+    ) -> Result<()> {
+        if self.failed {
+            return Err(SourceError::StaleSource);
+        }
+        let result = self.fold_vertex_inner(r, vertex, xy, start, end, c);
+        if result.is_err() {
+            self.failed = true;
+        }
+        result
+    }
+    fn fold_vertex_inner(
+        &mut self,
+        r: FeatureRef,
+        vertex: u32,
+        xy: [f64; 2],
+        start: Option<i64>,
+        end: Option<i64>,
+        c: &mut dyn FnMut() -> bool,
+    ) -> Result<()> {
+        cancel(c)?;
+        let key = (r.source_row, vertex);
+        if self.phase == Phase::Finished
+            || r.source_row >= self.identity.source_rows
+            || self.last_vertex.is_some_and(|last| key <= last)
+        {
+            return Err(SourceError::StaleSource);
+        }
+        self.last_vertex = Some(key);
+        if !self.time.matches(start, end) {
+            return Ok(());
+        }
+        self.projected = self
+            .projected
+            .checked_add(1)
+            .ok_or(SourceError::ResourceLimit)?;
+        if self.projected > self.options.max_projected_vertices {
+            return Err(SourceError::ResourceLimit);
+        }
+        let (x, y) = project(&self.camera, self.identity.crs, xy[0], xy[1])?;
+        if !visible(&self.camera, x, y) {
+            return Ok(());
+        }
+        match self.phase {
+            Phase::Count => {
+                self.visible = self
+                    .visible
+                    .checked_add(1)
+                    .ok_or(SourceError::ResourceLimit)?;
+                if self.visible <= DIRECT_VERTEX_LIMIT as u64 {
+                    self.direct.push(GeoDirectPoint {
+                        identity: r,
+                        vertex,
+                        x,
+                        y,
+                    });
+                } else if !self.direct.is_empty() {
+                    self.direct = Vec::new();
                 }
-                Phase::Aggregate => {
-                    self.aggregate_visible = self
-                        .aggregate_visible
-                        .checked_add(1)
-                        .ok_or(SourceError::ResourceLimit)?;
-                    let index = cell_index(&self.camera, self.columns, self.rows, x, y);
-                    let cell = &mut self.cells[index];
-                    cell.count = cell
-                        .count
-                        .checked_add(1)
-                        .ok_or(SourceError::ResourceLimit)?;
-                    cell.x += x;
-                    cell.y += y;
-                    if !cell.x.is_finite() || !cell.y.is_finite() {
-                        return Err(SourceError::ResourceLimit);
-                    }
-                }
-                Phase::Finished => return Err(invalid()),
             }
+            Phase::Aggregate => {
+                self.aggregate_visible = self
+                    .aggregate_visible
+                    .checked_add(1)
+                    .ok_or(SourceError::ResourceLimit)?;
+                let index = cell_index(&self.camera, self.columns, self.rows, x, y);
+                let cell = &mut self.cells[index];
+                cell.count = cell
+                    .count
+                    .checked_add(1)
+                    .ok_or(SourceError::ResourceLimit)?;
+                cell.x += x;
+                cell.y += y;
+                if !cell.x.is_finite() || !cell.y.is_finite() {
+                    return Err(SourceError::ResourceLimit);
+                }
+            }
+            Phase::Finished => return Err(invalid()),
         }
         Ok(())
     }
@@ -387,6 +439,7 @@ impl GeoPointLod {
                 self.cells = vec![GeoPointCell::default(); w * h];
                 self.phase = Phase::Aggregate;
                 self.last_row = None;
+                self.last_vertex = None;
                 Ok(GeoLodPass::Repeat)
             }
             Phase::Aggregate => {

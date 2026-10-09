@@ -1137,6 +1137,47 @@ impl GeoViewport {
         Ok(bounds)
     }
 
+    /// Conservative Mercator envelope for authenticated point-index pruning.
+    /// Failed/horizon inverse returns None: readers retain all candidates
+    /// rather than infer a tighter box. Periodic cell selection handles wrap.
+    pub fn point_index_bounds(&self) -> Result<Option<[f64; 4]>, GeoError> {
+        self.validate()?;
+        let mut bounds = [
+            f64::INFINITY,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NEG_INFINITY,
+        ];
+        for (x, y) in [
+            (0., 0.),
+            (self.width, 0.),
+            (self.width, self.height),
+            (0., self.height),
+        ] {
+            let Ok((mx, my)) = self.screen_to_mercator(x, y) else {
+                return Ok(None);
+            };
+            bounds[0] = bounds[0].min(mx);
+            bounds[1] = bounds[1].min(my);
+            bounds[2] = bounds[2].max(mx);
+            bounds[3] = bounds[3].max(my);
+        }
+        if !bounds.iter().all(|n| n.is_finite()) {
+            return Ok(None);
+        }
+        // Small outward error allowance prevents rounding at cell boundaries.
+        let pad = 1e-6
+            + (bounds[2] - bounds[0])
+                .abs()
+                .max((bounds[3] - bounds[1]).abs())
+                * 1e-12;
+        bounds[0] -= pad;
+        bounds[1] -= pad;
+        bounds[2] += pad;
+        bounds[3] += pad;
+        Ok(Some(bounds))
+    }
+
     // Linear half-planes in camera-relative ground pixels, before division.
     fn ground_planes(&self) -> [HalfPlane; 6] {
         let distance = self.camera_distance();
