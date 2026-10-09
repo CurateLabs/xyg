@@ -1,0 +1,20 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 14 tests
+test geo_scale_protocol::membership_protocol_tests::direct_hit_packet_preserves_literal_ids_source_rows_and_overlapping_vertices ... ok
+test geo_scale_protocol::membership_protocol_tests::failed_first_scene_derived_reservation_releases_empty_cache_and_recovers ... ok
+test geo_scale_protocol::membership_protocol_tests::hit_data_binds_reduced_cell_key_and_retains_independent_owned_packet ... ok
+test geo_scale_protocol::membership_protocol_tests::painted_style_identity_rejects_same_revision_mutation_then_accepts_new_publication ... ok
+test geo_scale_protocol::membership_protocol_tests::rows_protocol_tests::malformed_budget_and_cancelled_read_reject_without_panics_or_releasing_host_storage ... ok
+test geo_scale_protocol::membership_protocol_tests::rows_protocol_tests::original_rows_page_after_source_and_scene_disposal_with_private_continuation ... ok
+test geo_scale_protocol::membership_protocol_tests::temporal_pruning_and_retired_membership_ticket_protocol_lifecycle ... ok
+test geo_scale_protocol::membership_protocol_tests::three_pages_full_ids_multipoint_union_immutable_data_and_exact_cursor ... ok
+test geo_scale_protocol_tests::actual_density_snapshot_counts_multipoint_vertices_and_carries_exact_profile ... ok
+test geo_scale_protocol_tests::byte_lifecycle_preserves_full_ids_time_first_and_failure_atomicity ... ok
+test geo_scale_protocol_tests::exact_header_and_retired_ticket_padding_reject_before_mutation ... ok
+test geo_scale_protocol_tests::registry_cap_stale_handles_and_failed_commands_preserve_manifest ... ok
+test geo_scale_protocol_tests::session_and_snapshot_caps_are_independent_and_recover_after_release ... ok
+test geo_scale_protocol_tests::typed_chunk_authoring_preserves_ids_signed_time_and_scalar_and_rejects_bad_lengths ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 1300 filtered out; finished in 1.80s

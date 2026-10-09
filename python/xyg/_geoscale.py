@@ -74,7 +74,7 @@ def _backing_bytes(view: memoryview) -> int:
 def encode_request(input: dict[str, Any]) -> bytes:
     """Frame one fixed-header request; Rust validates every product decision."""
     command = _uint(input["command"], 32)
-    if command not in (*range(1, 15), 20, 21, 23):
+    if command not in (*range(1, 17), 20, 21, 23):
         raise ValueError("unknown geographic command")
     payload = _bytes(input.get("payload", b""))
     length = HEADER + len(payload)
@@ -84,7 +84,7 @@ def encode_request(input: dict[str, Any]) -> bytes:
     if (
         ("query" in input and command != 5)
         or ("generation" in input and command != 3)
-        or ("sequence" in input and command not in (5, 6, 9, 11, 12, 13, 14))
+        or ("sequence" in input and command not in (5, 6, 9, 11, 12, 13, 14, 15, 16))
     ):
         raise ValueError("field does not belong to command")
     out = bytearray(length)

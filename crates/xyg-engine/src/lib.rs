@@ -60,6 +60,7 @@ pub mod geo_spatial_build_session;
 pub mod geo_indexed_query_session;
 pub mod geo_source_session;
 pub mod geo_membership_session;
+pub mod geo_rows_session;
 pub mod geo_snapshot;
 pub mod geo_scale_protocol;
 #[cfg(test)]

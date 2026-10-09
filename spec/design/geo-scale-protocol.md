@@ -341,3 +341,56 @@ Membership/hit packets report the supplied Scene Data handle as their owner.
 Scene Data disposal releases its private source/result lease after those owned
 copies drop. Already-created member sessions retain their separately admitted
 source metadata and remain independent.
+
+## Original source-row companion paging (commands 15/16)
+
+`15` creates a rows session from an immutable command-11 Scene Data handle, or
+an owned command-16 Rows Data handle carrying a private issued continuation.
+The expected nonzero sequence and complete query budget are required; payload
+bytes and host-authored ordinals/cursors are rejected. Rust derives the exact
+source/time/layer/state key from that authority, including layer/time revisions.
+Rows remain available after the original source or Scene handle is disposed.
+An exhausted Rows Data handle cannot create another page.
+
+Commands 6/7/8/9/10 reuse the authenticated read, release-ACK, cancellation and
+disposal lifecycle. Source, membership and rows sessions share the eight-session
+cap and sixteen total handles. Rows pages contain every original source row,
+including null, offscreen and time-ineligible rows; explicit eligibility is
+metadata, not a second host filter. MultiPoint vertices do not duplicate rows.
+
+`16` turns a completed rows page into separately owned immutable Data. It accepts
+no payload and checks the complete budget before allocation. Like Scene and
+membership Data, it counts against eight live Data handles, admits two actual
+command-23 copies, and must be disposed after all borrowed views/copies are
+dropped. It reserves `2048 * record_count + 8192` derived bytes for serialized
+planes, two transfers, bounded host row extraction and framing, plus a separately
+leased validated manifest/private cursor in the shared 128 MiB processor ledger.
+No source-sized mask, new quota pool or silent truncation is introduced.
+Simultaneous pages can be refused under the shared caps while existing frames
+and pages remain usable. Application-retained page collections are outside the
+engine-owned live storage contract.
+
+Rows packets use the existing XYGZ v1 header with tag4 at8, session owner at16,
+sequence24, count u64 at32, next boolean u32 at40, examined/read-byte statistics
+u64 at48/56, read/considered chunks u32 at64/68, and repeated owner u64 at80.
+The key is digest[8] at88, generation96, original rows104, geometry/CRS u32
+at112/116, layer ID120, layer revision128, state revision136, time revision144,
+time kind u32 at152 and signed-i64 start/instant/end at160/168. Unused time
+endpoints and all reserved bytes are zero. The private continuation is never
+serialized into this packet; the owned Data handle is its capability.
+
+Each 64-byte record contains literal u64 feature ID at0, original ordinal8,
+chunk/local row u32 at16/20, and flags u32 at24: null geometry bit0, time
+eligible1, geometry-and-time eligible2, intervals attached3, start valid4, end
+valid5, scalar present6. Signed-i64 endpoints at32/40 and f64 scalar bits at48
+are zero when absent;28..32 and56..64 are zero. Scalar NaN/infinity/signed-zero
+bits remain canonical. Ordinals increase within a page; duplicate IDs remain
+distinct rows.
+
+Proof: `cargo test -p xyg-engine geo_rows --lib`, the typed rows protocol tests,
+Python/Node owned-frame tests, actual packaged native/WASM packet byte parity,
+and the strict-CSP retained browser test cover full original paging, time/null
+eligibility, offscreen keyboard focus, failure/cancellation/ACK, private cursor
+continuation after disposal, and malformed packets. This does not implement
+linked selection transitions, automatic camera focus, mixed-layer temporal
+coordination or the remaining notebook/Reflex/VS Code live journeys.

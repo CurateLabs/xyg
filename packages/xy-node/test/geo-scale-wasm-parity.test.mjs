@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {fixture,budget} from './geoscale-fixture.mjs';
+import {encodeGeoScaleRequest,decodeGeoScaleReply,driveGeoSession,prepareGeoAuxData,parseGeoRowsData} from '../src/geoscale.js';
 import {encodeGeoSnapshotRequest,decodeGeoSnapshotReply,nativeGeoSnapshotBridge} from '../src/geo-snapshot.js';
 const artifact=new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url);
 async function freeze(bridge,frame){
@@ -11,8 +12,26 @@ async function freeze(bridge,frame){
  try{packet=await bridge.read(encodeGeoSnapshotRequest(20,frozen));assert.equal(new TextDecoder().decode(new Uint8Array(packet,0,4)),'XYGX');return Buffer.from(packet).toString('hex');}
  finally{packet=undefined;await bridge.execute(encodeGeoSnapshotRequest(3,frozen));}
 }
+async function rows(frame,{bridge,readChunk}){
+ const b={...budget,pageRows:1},packets=[];let owner=frame.handle,prior=null;
+ try{for(;;){
+  const session=decodeGeoScaleReply(await bridge.execute(encodeGeoScaleRequest({command:15,handle:owner,sequence:1n,budget:b}))).handle;
+  if(prior){await prior.dispose();prior=null;}
+  try{
+   await driveGeoSession(bridge,{handle:session,sequence:1n,budget:b,readChunk});
+   prior=await prepareGeoAuxData(bridge,{command:16,handle:session,sequence:1n,budget:b},parseGeoRowsData);
+  }finally{await bridge.execute(encodeGeoScaleRequest({command:10,handle:session}));}
+  const packet=prior.data.packet.slice(),v=new DataView(packet);
+  assert.equal(prior.data.length,1);assert.equal(v.getBigUint64(144,true),0xffffffffffffffffn);
+  // Only process-local owner handles differ; every semantic byte is exact.
+  v.setBigUint64(16,0n,true);v.setBigUint64(80,0n,true);
+  packets.push(Buffer.from(packet).toString('hex'));
+  if(!prior.data.hasNext)break;owner=prior.handle;
+ }}finally{if(prior)await prior.dispose();}
+ assert.equal(packets.length,2);return packets;
+}
 test('packaged ABI33 retained source and frozen snapshot equal actual native bytes',async()=>{
- let expectedSnapshot;const expected=await fixture(undefined,async frame=>{expectedSnapshot=await freeze(nativeGeoSnapshotBridge(budget.processorBytes),frame);});
+ let expectedSnapshot,expectedRows;const expected=await fixture(undefined,async(frame,source)=>{expectedSnapshot=await freeze(nativeGeoSnapshotBridge(budget.processorBytes),frame);expectedRows=await rows(frame,source);});
  const{instance}=await WebAssembly.instantiate(readFileSync(artifact),{}),x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);let sequence=0;
  assert.ok(h);assert.equal(x.xyg_wasm_geo_transport_acquire(h),0);
  function call(namespace,read,request){
@@ -24,8 +43,9 @@ test('packaged ABI33 retained source and frozen snapshot equal actual native byt
  }
  const bridge=ns=>({async execute(request){return call(ns,false,request);},async read(request){return call(ns,true,request);}});
  try{
- const actual=await fixture(bridge('scale'),async frame=>{
+ const actual=await fixture(bridge('scale'),async(frame,source)=>{
   assert.equal(await freeze(bridge('snapshot'),frame),expectedSnapshot);
+  assert.deepEqual(await rows(frame,source),expectedRows);
   const snapshot=decodeGeoSnapshotReply(await bridge('snapshot').execute(encodeGeoSnapshotRequest(1,frame.handle,{sequence:1n,budget:budget.processorBytes}))).handle;
   try{await assert.rejects(bridge('snapshot').execute(encodeGeoSnapshotRequest(2,snapshot,{budget:budget.processorBytes,format:'png'})),error=>error.message==='XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT');}
   finally{await bridge('snapshot').execute(encodeGeoSnapshotRequest(3,snapshot));}

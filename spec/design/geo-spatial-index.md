@@ -61,9 +61,10 @@ independent of source chunk count. No records are silently thinned.
 `GeoViewport::point_index_bounds` conservatively bounds the front-ground camera
 footprint in Mercator. Failed/horizon inverse bounds retain all cells. Bearing,
 pitch, wrap and outward numerical padding are respected. Both antimeridian
-columns remain candidates after latitude pruning, even without wrap: shared
-cross-CRS conversion can alias -180 to +180. This deliberately overfetches seam
-pages rather than changing shared projection semantics. The overflow sentinel
+columns admit the union of both seam footprints after latitude pruning, even
+without wrap: shared cross-CRS conversion can alias -180 to +180. Distant
+viewports admit neither column; seam-visible views overfetch both rather than
+changing shared projection semantics. The overflow sentinel
 is always a candidate; canonical finite coordinates may exceed the projection domain, so the
 sentinel preserves shared projection/error semantics. Coarse grid cells and conservative bounds can still select much
 more than the visible geometry.
