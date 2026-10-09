@@ -75,7 +75,12 @@ class GeoHostAdapter:
             expected = bytearray(identity)
             actual = bytearray(frame._query_packet)
             actual_operation = struct.unpack_from("<I", actual, 8)[0]
-            if actual_operation in (35, 36):
+            if actual_operation == 43:
+                from ._geo_hierarchy import is_hierarchy_frame
+
+                if not is_hierarchy_frame(frame):
+                    raise ValueError("selected hierarchy frame requires private provenance")
+            if actual_operation in (35, 36, 43):
                 if (
                     len(actual) != 264
                     or struct.unpack_from("<Q", actual, 232)[0] != 8
