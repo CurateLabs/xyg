@@ -500,14 +500,15 @@ RetainedGeoSource.prototype._rows = function (owner, sequence) {
   }, true);
 };
 
-export function attachRetainedFrame(source, frame, sequence, queryPacket, style) {
+export function attachRetainedFrame(source, frame, sequence, queryPacket, style, provenance) {
+  provenance?.(frame);
   frame.retain = async () => {
     void frame.data;
     const querySnapshot=queryPacket.slice(0),styleSnapshot=style.slice();
     const owned = await prepareGeoSceneData(source.bridge, {
       command:26, handle:frame.handle, sequence, budget:source.budget,
     });
-    attachRetainedFrame(source, owned, sequence, querySnapshot, styleSnapshot);
+    attachRetainedFrame(source, owned, sequence, querySnapshot, styleSnapshot, provenance);
     if(frame.indexStats)owned.indexStats={...frame.indexStats};
     return owned;
   };

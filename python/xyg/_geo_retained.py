@@ -620,7 +620,10 @@ def _frame_owner(source, owner):
     return owner
 
 
-def _attach_frame(source, frame, sequence, query_packet, style):
+def _attach_frame(source, frame, sequence, query_packet, style, _provenance=None):
+    if _provenance is not None:
+        _provenance(frame)
+
     def membership(cell, *, max_projected_vertices, cursor=None):
         _ = frame.data
         return source.membership(
@@ -685,7 +688,7 @@ def _attach_frame(source, frame, sequence, query_packet, style):
             raise RuntimeError("use retain_async for an asynchronous owner")
         _ = frame.data
         owned = source._prepare(26, frame.handle, sequence)
-        _attach_frame(source, owned, sequence, query_packet, style)
+        _attach_frame(source, owned, sequence, query_packet, style, _provenance)
         if hasattr(frame, "index_stats"):
             owned.index_stats = dict(frame.index_stats)
         return owned
@@ -695,7 +698,7 @@ def _attach_frame(source, frame, sequence, query_packet, style):
         if source._bridge is None:
             return retain()
         owned = await _aprepare(source, 26, frame.handle, sequence)
-        _attach_frame(source, owned, sequence, query_packet, style)
+        _attach_frame(source, owned, sequence, query_packet, style, _provenance)
         if hasattr(frame, "index_stats"):
             owned.index_stats = dict(frame.index_stats)
         return owned
