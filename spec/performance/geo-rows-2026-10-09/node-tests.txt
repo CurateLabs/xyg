@@ -1,0 +1,21 @@
+✔ all original rows remain pageable after source and frame disposal (25.918833ms)
+✔ failed authenticated read preserves old paint and opaque continuation (1.723791ms)
+✔ cancellation waits for outstanding rows read and recovers without dropping old frame (12.930208ms)
+✔ cancelled read settles and releases unreturned RowsData (12.965292ms)
+✔ cancelled dispose settles and releases unreturned RowsData (12.750625ms)
+✔ packaged ABI33 retained source and frozen snapshot equal actual native bytes (37.527125ms)
+✔ real ABI382 full IDs/time, Data read quota, explicit lifecycle (25.540458ms)
+✔ read lease abort: settle before acknowledgment (0.32975ms)
+✔ read lease giant: settle before acknowledgment (0.140958ms)
+✔ read lease failure: settle before acknowledgment (0.112667ms)
+✔ read lease success: settle before acknowledgment (0.096917ms)
+✔ malformed provenance and exact scalar widths rejected (1.598292ms)
+﹣ parsed identity failure drops packet storage before Data disposal (0.089625ms) # SKIP
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 107.9155

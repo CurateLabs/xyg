@@ -1,16 +1,16 @@
 //! Atomic immutable retained-source + tile composition. §27; see geo-mixed-frame.md.
 use crate::geo_lod::{GeoPointOutput, GeoPointResult};
-use crate::geo_scale_protocol::{GeoSceneDataBorrow, with_scene_data};
+use crate::geo_scale_protocol::{with_scene_data, GeoSceneDataBorrow};
 use crate::geo_source::{GeoSourceManifest, SourceError, TimePredicate};
 use crate::geo_source_session::{GeoOperationSnapshot, GeoProcessorLease};
 use crate::geo_tile_cache::{
     GeoDerivedLease, GeoTileCache, GeoTileLimits, GeoTileSource, TILE_CACHE_PROCESS_BYTES,
 };
-use crate::geo_tile_protocol::{GeoTileFrameView, GeoTileProvenance, with_frame_data};
+use crate::geo_tile_protocol::{with_frame_data, GeoTileFrameView, GeoTileProvenance};
 use crate::scene::SceneDocument;
 use std::sync::{
-    Arc, Mutex,
     atomic::{AtomicU64, Ordering},
+    Arc, Mutex,
 };
 static NEXT_OWNER: AtomicU64 = AtomicU64::new(1);
 type Result<T> = std::result::Result<T, SourceError>;
@@ -758,6 +758,7 @@ mod tests {
     }
     #[test]
     fn admitted_source_order_survives_cancel_and_rejects_older_lod_frames() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -789,6 +790,7 @@ mod tests {
     }
     #[test]
     fn trusted_prepared_style_survives_cancel_before_first_commit_and_newer_cancel() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -839,6 +841,7 @@ mod tests {
     }
     #[test]
     fn failed_preparation_does_not_advance_trusted_style_baseline() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -866,6 +869,7 @@ mod tests {
     }
     #[test]
     fn configured_but_unselected_vector_cannot_authorize_catalog_layer() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -884,6 +888,7 @@ mod tests {
     }
     #[test]
     fn tile_epoch_scopes_reject_regression_swap_and_switch_back_after_cancel() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -925,6 +930,7 @@ mod tests {
     }
     #[test]
     fn trusted_receipt_stamp_must_match_expected_scope_and_scope_history_is_bounded() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -959,6 +965,7 @@ mod tests {
     }
     #[test]
     fn real_raster_vector_and_retained_records_preserve_full_identity_and_bytes() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -991,6 +998,7 @@ mod tests {
     }
     #[test]
     fn time_camera_full_revisions_payload_and_unfiltered_catalog_fail_closed() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -1055,6 +1063,7 @@ mod tests {
     }
     #[test]
     fn private_nonce_cancel_cross_owner_and_failure_keep_old_published_frame() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -1091,6 +1100,7 @@ mod tests {
     }
     #[test]
     fn tiny_budget_rejected_before_scene_decoding_and_old_frame_survives() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let f = Fixture::new();
         let mut c = GeoMixedCoordinator::new().unwrap();
@@ -1123,6 +1133,7 @@ mod tests {
     }
     #[test]
     fn scene_rejects_foreground_decorations_and_conflicting_image_ids() {
+        let _processor = crate::geo_source_session::test_processor_lock();
         let _lock = crate::geo_tile_cache::test_process_lock();
         let mut f = Fixture::new();
         assert!(SceneDocument::compose_geographic(&f.back, &f.back).is_err());

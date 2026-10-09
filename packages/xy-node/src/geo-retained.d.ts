@@ -10,6 +10,9 @@ export interface OwnedGeoData<T> {
   dispose(): Promise<void>;
 }
 export interface OwnedGeoFrame<T> extends OwnedGeoData<T> {
+  rows(): Promise<OwnedGeoRows>;
+  spatialIndex(options: import("./geo-spatial.js").GeoSpatialStorage): Promise<import("./geo-spatial.js").GeoSpatialIndex>;
+  readonly indexStats?: {pagesRead: bigint;bytesRead: bigint;candidateVertices: bigint;passes: number};
   export(
     format?: import("./geo-snapshot.js").GeoFrozenFormat,
     options?: import("./geo-snapshot.js").GeoFrozenExportOptions,
@@ -115,3 +118,11 @@ export interface RetainedGeoSource {
     maxHits: number;
   }): Promise<OwnedGeoData<GeoPickData>>;
 }
+
+export interface OwnedGeoRows extends OwnedGeoData<GeoRowsData> {
+  nextPage(): Promise<OwnedGeoRows>;
+}
+export type GeoRowsData = ReturnType<typeof import("./geoscale.js").parseGeoRowsData> & {
+  records: Uint8Array;
+  stats: { rowsExamined: bigint; bytesRead: bigint; chunksRead: number; chunksConsidered: number };
+};

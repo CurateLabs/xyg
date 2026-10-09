@@ -206,10 +206,10 @@ class RetainedGeoSource:
                 raise ValueError("mismatched retained packet length")
             data = (
                 g.parse_scene_data(packet)
-                if command == 11
-                else (parse_membership if command == 13 else parse_picks)(packet, handle, sequence)
+                if command in (11, 19)
+                else _parse_aux(command, packet, handle, sequence)
             )
-            if command == 11 and (
+            if command in (11, 19) and (
                 data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
             ):
                 raise ValueError("mismatched Scene identity")
@@ -519,7 +519,15 @@ async def _aprepare(self, command, handle, sequence, payload=b""):
             raise asyncio.CancelledError
         if len(packet) != reply["data_length"]:
             raise ValueError("invalid retained packet length")
-        data = (parse_membership if command == 13 else parse_picks)(packet, handle, sequence)
+        data = (
+            g.parse_scene_data(packet)
+            if command == 19
+            else _parse_aux(command, packet, handle, sequence)
+        )
+        if command == 19 and (
+            data.identity["session_handle"] != handle or data.identity["sequence"] != sequence
+        ):
+            raise ValueError("mismatched Scene identity")
         return OwnedGeoData(reply["handle"], data, self._bridge)
     except BaseException as error:
         packet = data = task = None
@@ -678,6 +686,43 @@ def _attach_frame(source, frame, sequence, query_packet, style):
     frame.export, frame.export_async = export, export_async
     frame.membership, frame.pick = membership, pick
     frame.membership_async, frame.pick_async = membership_async, pick_async
+    rows_owner = frame.handle
+
+    def rows():
+        _ = frame.data
+        return _rows(source, rows_owner, sequence)
+
+    async def rows_async():
+        _ = frame.data
+        return await _arows(source, rows_owner, sequence)
+
+    frame.rows, frame.rows_async = rows, rows_async
+
+    def spatial_index(*, grid, max_vertices, read_page, write_page):
+        from ._geo_spatial import GeoSpatialIndex
+
+        return GeoSpatialIndex._from_frame(
+            frame,
+            source,
+            grid=grid,
+            max_vertices=max_vertices,
+            read_page=read_page,
+            write_page=write_page,
+        )
+
+    async def spatial_index_async(*, grid, max_vertices, read_page, write_page):
+        from ._geo_spatial import GeoSpatialIndex
+
+        return await GeoSpatialIndex._from_frame_async(
+            frame,
+            source,
+            grid=grid,
+            max_vertices=max_vertices,
+            read_page=read_page,
+            write_page=write_page,
+        )
+
+    frame.spatial_index, frame.spatial_index_async = spatial_index, spatial_index_async
 
 
 def _validate_key(key):
@@ -694,3 +739,208 @@ def _validate_key(key):
         or not all(math.isfinite(n) for n in struct.unpack_from("<7d", key, 64))
     ):
         raise ValueError("invalid typed geographic key")
+
+
+class GeoRowsData:
+    """Borrowed bounded row planes; record extraction allocates only one row."""
+
+    def __init__(self, packet, owner, sequence):
+        b = g._bytes(packet)
+        bad = "invalid geographic rows packet"
+        if len(b) < 256 or bytes(b[:4]) != b"XYGZ" or struct.unpack_from("<II", b, 4) != (1, 4):
+            raise ValueError(bad)
+
+        def u32(at):
+            return struct.unpack_from("<I", b, at)[0]
+
+        def u64(at):
+            return struct.unpack_from("<Q", b, at)[0]
+
+        def signed(at):
+            return struct.unpack_from("<q", b, at)[0]
+
+        count, flag, source_rows = u64(32), u32(40), u64(104)
+        if (
+            u64(16) != owner
+            or u64(24) != sequence
+            or u64(80) != owner
+            or count > 4096
+            or flag > 1
+            or len(b) != 256 + count * 64
+            or source_rows > 1_000_000_000
+            or not u64(96)
+            or u32(112) not in range(1, 7)
+            or u32(116) not in (4326, 3857)
+            or u32(152) > 2
+            or (u32(152) == 0 and (u64(160) or u64(168)))
+            or (u32(152) == 1 and u64(168))
+            or (u32(152) == 2 and signed(160) >= signed(168))
+            or any(b[12:16])
+            or any(b[44:48])
+            or any(b[72:80])
+            or any(b[156:160])
+            or any(b[176:256])
+            or u32(64) > 65536
+            or u32(68) > 65536
+        ):
+            raise ValueError(bad)
+        previous = -1
+        for i in range(count):
+            at = 256 + i * 64
+            flags = u32(at + 24)
+            row = u64(at + 8)
+            if (
+                flags & ~127
+                or row >= source_rows
+                or row <= previous
+                or u32(at + 16) >= 65536
+                or u32(at + 20) >= 65536
+                or bool(flags & 4) != (not bool(flags & 1) and bool(flags & 2))
+                or (not flags & 8 and flags & 48)
+                or (not flags & 16 and u64(at + 32))
+                or (not flags & 32 and u64(at + 40))
+                or (flags & 48 == 48 and signed(at + 32) >= signed(at + 40))
+                or (not flags & 64 and u64(at + 48))
+                or any(b[at + 28 : at + 32])
+                or any(b[at + 56 : at + 64])
+            ):
+                raise ValueError(bad)
+            previous = row
+        self.packet, self.records = b, b[256:]
+        self.count, self.has_next = count, bool(flag)
+        self.key = b[88:176]
+        self.rows_examined, self.bytes_read = u64(48), u64(56)
+        self.chunks_read, self.chunks_considered = u32(64), u32(68)
+
+    def record(self, index):
+        if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < self.count:
+            raise IndexError("geographic row index")
+        at = index * 64
+        feature, source_row, chunk, row, flags = struct.unpack_from("<QQIII", self.records, at)
+        start, end, value = struct.unpack_from("<qqd", self.records, at + 32)
+        return dict(
+            feature_id=feature,
+            source_row=source_row,
+            chunk_index=chunk,
+            row=row,
+            geometry_null=bool(flags & 1),
+            time_eligible=bool(flags & 2),
+            eligible=bool(flags & 4),
+            intervals_present=bool(flags & 8),
+            interval_start=start if flags & 16 else None,
+            interval_end=end if flags & 32 else None,
+            value=value if flags & 64 else None,
+        )
+
+
+def _parse_aux(command, packet, owner, sequence):
+    parser = {13: parse_membership, 14: parse_picks, 16: GeoRowsData}[command]
+    return parser(packet, owner, sequence)
+
+
+def _attach_rows(source, page, sequence):
+    owner = page.handle
+
+    def next_page():
+        if not page.data.has_next:
+            raise RuntimeError("no next geographic row page")
+        return _rows(source, owner, sequence)
+
+    async def next_page_async():
+        if not page.data.has_next:
+            raise RuntimeError("no next geographic row page")
+        return await _arows(source, owner, sequence)
+
+    page.next_page, page.next_page_async = next_page, next_page_async
+    return page
+
+
+def _rows(source, owner, sequence):
+    if source._bridge is not None:
+        raise RuntimeError("use rows_async for asynchronous sources")
+    _frame_owner(source, owner)
+    session = page = None
+    source._busy = True
+    try:
+        created = g.decode_reply(
+            g.execute(
+                g.encode_request(
+                    dict(
+                        command=15,
+                        handle=owner,
+                        sequence=sequence,
+                        budget=source.budget,
+                    )
+                )
+            )
+        )
+        session = created["handle"]
+        if created["sequence"] != sequence:
+            raise ValueError("mismatched geographic rows sequence")
+        source._drive(sequence, 4, session)
+        page = _attach_rows(source, source._prepare(16, session, sequence), sequence)
+        return page
+    finally:
+        try:
+            if session is not None:
+                try:
+                    g.execute(g.encode_request(dict(command=10, handle=session)))
+                except BaseException:
+                    if page is not None:
+                        page.close()
+                    raise
+        finally:
+            source._busy = False
+
+
+async def _arows(source, owner, sequence):
+    if source._bridge is None:
+        raise RuntimeError("use synchronous rows for this source")
+    _frame_owner(source, owner)
+    source._busy, source._active = True, asyncio.current_task()
+    session = page = None
+    try:
+        raw, interrupted = await g._settle(
+            asyncio.create_task(
+                source._bridge.execute(
+                    g.encode_request(
+                        dict(command=15, handle=owner, sequence=sequence, budget=source.budget)
+                    )
+                )
+            )
+        )
+        created = g.decode_reply(raw)
+        session = created["handle"]
+        if interrupted:
+            raise asyncio.CancelledError
+        if created["sequence"] != sequence:
+            raise ValueError("mismatched geographic rows sequence")
+        completed = await g.drive_session(
+            source._bridge,
+            handle=session,
+            sequence=sequence,
+            budget=source.budget,
+            read_chunk=source._reader,
+        )
+        if completed["code"] != 4:
+            raise RuntimeError("geographic rows did not complete")
+        page = _attach_rows(source, await _aprepare(source, 16, session, sequence), sequence)
+        return page
+    finally:
+        try:
+            if session is not None:
+                _, interrupted = await g._settle(
+                    asyncio.create_task(
+                        source._bridge.execute(g.encode_request(dict(command=10, handle=session)))
+                    )
+                )
+                if interrupted:
+                    if page is not None:
+                        await page.aclose()
+                    raise asyncio.CancelledError
+        except BaseException:
+            if page is not None:
+                await page.aclose()
+            raise
+        finally:
+            source._busy, source._active = False, None

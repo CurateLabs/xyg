@@ -341,3 +341,198 @@ Membership/hit packets report the supplied Scene Data handle as their owner.
 Scene Data disposal releases its private source/result lease after those owned
 copies drop. Already-created member sessions retain their separately admitted
 source metadata and remain independent.
+
+## Original source-row companion paging (commands 15/16)
+
+`15` creates a rows session from an immutable command-11 Scene Data handle, or
+an owned command-16 Rows Data handle carrying a private issued continuation.
+The expected nonzero sequence and complete query budget are required; payload
+bytes and host-authored ordinals/cursors are rejected. Rust derives the exact
+source/time/layer/state key from that authority, including layer/time revisions.
+Rows remain available after the original source or Scene handle is disposed.
+An exhausted Rows Data handle cannot create another page.
+
+Commands 6/7/8/9/10 reuse the authenticated read, release-ACK, cancellation and
+disposal lifecycle. Source, membership and rows sessions share the eight-session
+cap and sixteen total handles. Rows pages contain every original source row,
+including null, offscreen and time-ineligible rows; explicit eligibility is
+metadata, not a second host filter. MultiPoint vertices do not duplicate rows.
+
+`16` turns a completed rows page into separately owned immutable Data. It accepts
+no payload and checks the complete budget before allocation. Like Scene and
+membership Data, it counts against eight live Data handles, admits two actual
+command-23 copies, and must be disposed after all borrowed views/copies are
+dropped. It reserves `2048 * record_count + 8192` derived bytes for serialized
+planes, two transfers, bounded host row extraction and framing, plus a separately
+leased validated manifest/private cursor in the shared 128 MiB processor ledger.
+No source-sized mask, new quota pool or silent truncation is introduced.
+Simultaneous pages can be refused under the shared caps while existing frames
+and pages remain usable. Application-retained page collections are outside the
+engine-owned live storage contract.
+
+Rows packets use the existing XYGZ v1 header with tag4 at8, session owner at16,
+sequence24, count u64 at32, next boolean u32 at40, examined/read-byte statistics
+u64 at48/56, read/considered chunks u32 at64/68, and repeated owner u64 at80.
+The key is digest[8] at88, generation96, original rows104, geometry/CRS u32
+at112/116, layer ID120, layer revision128, state revision136, time revision144,
+time kind u32 at152 and signed-i64 start/instant/end at160/168. Unused time
+endpoints and all reserved bytes are zero. The private continuation is never
+serialized into this packet; the owned Data handle is its capability.
+
+Each 64-byte record contains literal u64 feature ID at0, original ordinal8,
+chunk/local row u32 at16/20, and flags u32 at24: null geometry bit0, time
+eligible1, geometry-and-time eligible2, intervals attached3, start valid4, end
+valid5, scalar present6. Signed-i64 endpoints at32/40 and f64 scalar bits at48
+are zero when absent;28..32 and56..64 are zero. Scalar NaN/infinity/signed-zero
+bits remain canonical. Ordinals increase within a page; duplicate IDs remain
+distinct rows.
+
+Proof: `cargo test -p xyg-engine geo_rows --lib`, the typed rows protocol tests,
+Python/Node owned-frame tests, actual packaged native/WASM packet byte parity,
+and the strict-CSP retained browser test cover full original paging, time/null
+eligibility, offscreen keyboard focus, failure/cancellation/ACK, private cursor
+continuation after disposal, and malformed packets. This does not implement
+linked selection transitions, automatic camera focus, mixed-layer temporal
+coordination or the remaining notebook/Reflex/VS Code live journeys.
+
+## Authenticated external index lifecycle
+
+Commands 17–19, 24 and 25 expose the point/MultiPoint sidecar described in
+`geo-spatial-index.md` through the same native/WASM execute/read exports. No new
+ABI signature or host geometry policy is introduced. This protocol slice does
+not establish actual wasm32 indexed parity or a browser performance claim.
+
+| Command | Authority and payload |
+|---|---|
+| 17 | Create index build from an immutable semantic SceneData handle and exact publication sequence. Payload is 16 bytes: grid u32 at 0, zero bytes 4..8, cumulative vertex ceiling u64 at 8. QueryBudget is required. |
+| 18 | Create indexed query from completed index handle. Uses all command-5 camera, time, identity, revision, LOD and work fields, with empty payload and a new nonzero sequence. |
+| 19 | Prepare indexed query output as ordinary immutable semantic SceneData. Query handle/exact sequence and existing uniform style48 payload. |
+| 24 | Acknowledge exact pending leaf write after durable storage and release of all transient host copies. Build handle/sequence and ticket96 payload. |
+| 25 | Pure pending leaf-wire read. Build handle/sequence and exact write ticket96; native length probes do not consume copy slots. |
+
+Only commands 5 and 18 admit camera/option fields; only 3/5/18 admit generation
+at header 144. Header sequence is meaningful on 17/18/19/24/25 as well as prior
+operations. Supply/release 7/8 retain zero header sequence and bind sequence
+inside the exact ticket. Unknown/reserved header fields remain rejected.
+
+Build/query handles count toward the shared eight active-session ceiling.
+Completed index handles count toward the sixteen total entries. Immutable
+indexed SceneData shares the existing eight Data ceiling and private derived
+leases; accepted source, index, query/result and semantic frame copies coexist
+under the existing global 128 MiB processor ledger. A private 4 KiB protocol
+control reservation accompanies each build/index/query owner, in addition to
+core reservations. No independent index memory pool exists.
+
+Build 6/7/8 drives authenticated canonical reads. A full or final partial leaf
+uses step status 7 `NeedWrite`, with its write ticket at bytes 64..160. Pure 25
+returns immutable exact bytes generated by Rust. At most two successful owned
+wire copies are allowed per pending ticket; size probes are free. The caller
+must retain immutable external page storage, drop transfer buffers, then ACK24.
+A third read returns ResourceLimit without replacing bytes or resetting quota.
+Repeated step replies do not reset the quota. Host claims of durability do not
+change Rust page metadata or checksums; unavailable/changed bytes later fail the
+exact query read rather than authorizing fabricated/pruned output.
+
+Step status 8 `AwaitWriteRelease` retains the exact write loan after cancel or
+failure. Status 9 is Cancelled. Dispose10 cancels a tentative operation, returns
+AwaitRelease2 while any read/write loan remains, and retains its handle and
+charges until the exact ACK8/24. Wrong/stale tickets cannot settle those loans.
+A host must not drop or recycle buffers before acknowledging their ownership
+release; the registry never assumes that cancellation released host memory.
+
+When every canonical chunk and final write is acknowledged, step6 atomically
+replaces the build entry with a private validated index authority and returns
+status 11 `IndexReady`, original handle/creation sequence, page-count u64 at
+32, and otherwise zero fields. Repeating step with that creation sequence
+returns the same receipt. No partial build acquires index authority. Imported
+sidecar publication is not exposed by this first protocol slice.
+
+The index seeds its transition baseline from the exact immutable source frame
+snapshot. Query18 requires sequence greater than that baseline and every prior
+accepted indexed query; source digest/generation must match the validated
+index. It reuses `GeoOperationSnapshot::precedes` from source sessions: decreasing
+camera/time/layer/style/state revisions or changed camera/time/layer values
+under reused corresponding revisions reject before publication. The baseline
+advances only after successful query allocation/handle insertion.
+
+A frontier exceeding 256 candidate leaf streams returns status 10
+`FullScanFrontier`, original index handle and requested sequence, with reason u32 at48 (1: frontier, 2: eligible one-pass leaf count exceeds
+QueryBudget.max_chunks), reserved52..160 zero and all other fields zero. It creates no query and does not advance sequence/revision baseline.
+Hosts may explicitly select canonical source begin5; they must not silently
+thin or change screen-bin policy. A narrower admitted query can reuse the
+rejected sequence with independently valid authoring.
+
+Indexed query 6/7/8 uses exact sidecar read tickets. Status 12
+`IndexedQueryComplete` is distinct from source/member/rows Complete4. It carries
+u64 pages-read, bytes-read and candidate-vertices at 160/168/176, u32 pass count
+at 184, and zero bytes 32..64 and 188..256. Its repeated reply is identical.
+Old query step/prepare calls become stale after a newer query is accepted on the
+same index, while old exact loan release, cancellation and disposal remain
+available. Already published immutable frames remain independently valid.
+
+### Index ticket96
+
+All fields are little endian. Header 28 is the explicit index ticket kind,
+without weakening legacy source ticket28=0 validation.
+
+| Offset | Meaning |
+|---|---|
+| 0 | u64 core session nonce |
+| 8 | u64 canonical chunk index (kind1), or immutable page ID (kind2/3) |
+| 16 | u64 exact operation sequence |
+| 24 | u32 pass: zero for kinds1/3; actual core pass for kind2 |
+| 28 | u32 kind: canonical build read1, indexed leaf read2, build leaf write3 |
+| 32..56 | Standard generation/chunk/rows/first-row fields for kind1; zero for kinds2/3 |
+| 56 | u64 exact encoded byte length |
+| 64..72 | Exact eight-byte digest |
+| 72..96 | Reserved zero |
+
+Kind1 standard fields use generation u64 at 32, chunk u32 at 40, rows u32 at44,
+and first source-row u64 at48. Request payload is ticket96 plus exact read bytes
+for supply7, or ticket96 alone for release8/ACK24/read25. Ticket kind, nonce,
+sequence, pass, length, digest and all identity fields must match; a borrowed
+read cannot settle a write and vice versa.
+
+### Immutable indexed frames
+
+Prepare19 uses the same Scene/metadata encoder and private semantic frame
+ownership as prepare11. It retains the exact source manifest, full LOD key,
+result, painted style and camera/time/layer/style/state snapshot under leases.
+Same-revision changed style bytes reject; a newer accepted style revision can
+bind new bytes only after successful Data creation. Failed prepare leaves the
+prior immutable painted frame and its picking/membership/export authority
+intact. Once prepared, frame semantics remain valid after disposing the source,
+index and query. Existing commands12/14/15/16 and frozen exports consume that
+ordinary immutable authority; membership/rows still use canonical source reads
+and do not yet gain indexed paging acceleration.
+
+Focused native engine execute/read tests exercise byte-identical ordinary/indexed
+Scene and typed identity output with half-open time, source disposal followed by
+original-row paging, two-copy write quota/free probes, cancellation and exact
+retired ACK, corrupt leaves preserving old frames, reused revision rejection,
+new style revision acceptance, explicit frontier fallback and retry receipts.
+Actual C ABI/wasm32/host storage evidence remains a separate integration gate.
+
+For command18, QueryBudget.max_rows_examined explicitly limits cumulative decoded
+leaf **vertex records**, including time-excluded records within a selected page
+and all repeated aggregate passes. QueryBudget.max_chunks limits cumulative
+authenticated **leaf reads**, including repeated passes; it is not a canonical
+chunk count on this path. Both ceilings are checked before each read ticket is
+issued. Exceeding either returns ResourceLimit and cannot publish a partial
+frame; existing immutable painted frames remain valid. max_read_bytes is also
+cumulative across passes. A legal source-wide budget can therefore be too small
+for an indexed whole-world query; hosts must explicitly choose a suitable budget
+or canonical path. No budget field is silently ignored. Core callers can admit
+these same optional limits through set_work_limits before the first ticket;
+the existing direct constructor retains its explicit projection/read ceilings.
+
+Before allocating or advancing an index query, the shared allocation-free
+estimate_work planner counts eligible authenticated leaf pages using the exact
+same conservative camera/time candidate predicate. A one-pass leaf count above
+max_chunks returns FullScanFrontier status10 with reason2 at48; frontier overflow
+returns reason1. Both preserve index sequence/revision baseline. This is an
+explicit recorded canonical-path fallback, independent of global OOM or corrupted
+reads. The planner does not silently assume a particular LOD pass count: runtime
+cumulative record/read/byte caps still apply if an admitted aggregate second pass
+exceeds its allowance. Hosts must explicitly dispatch canonical begin5 on the
+fallback receipt rather than changing screen-bin semantics.

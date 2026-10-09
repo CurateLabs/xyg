@@ -74,7 +74,7 @@ def _backing_bytes(view: memoryview) -> int:
 def encode_request(input: dict[str, Any]) -> bytes:
     """Frame one fixed-header request; Rust validates every product decision."""
     command = _uint(input["command"], 32)
-    if command not in (*range(1, 15), 20, 21, 23):
+    if command not in (*range(1, 22), 23, 24, 25):
         raise ValueError("unknown geographic command")
     payload = _bytes(input.get("payload", b""))
     length = HEADER + len(payload)
@@ -82,9 +82,12 @@ def encode_request(input: dict[str, Any]) -> bytes:
     if length > MAX_PACKET or (budget and length > _budget(budget["processor_bytes"])):
         raise ValueError("request exceeds framing budget")
     if (
-        ("query" in input and command != 5)
+        ("query" in input and command not in (5, 18))
         or ("generation" in input and command != 3)
-        or ("sequence" in input and command not in (5, 6, 9, 11, 12, 13, 14))
+        or (
+            "sequence" in input
+            and command not in (5, 6, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25)
+        )
     ):
         raise ValueError("field does not belong to command")
     out = bytearray(length)
@@ -103,7 +106,7 @@ def encode_request(input: dict[str, Any]) -> bytes:
         )
     if command == 3:
         struct.pack_into("<Q", out, 144, _uint(input.get("generation", 0)))
-    if command == 5:
+    if command in (5, 18):
         query = input["query"]
         camera = query["camera"]
         if not isinstance(camera["world_wrap"], bool) or not isinstance(
@@ -194,13 +197,23 @@ def _zero(data: memoryview, start: int, end: int) -> None:
 
 
 def _ticket(data: memoryview) -> dict[str, Any]:
-    _zero(data, 28, 32)
+    kind = struct.unpack_from("<I", data, 28)[0]
+    if kind > 3:
+        raise ValueError("invalid geographic ticket kind")
     _zero(data, 72, 96)
     session_id, read_id, sequence, pass_ = struct.unpack_from("<QQQI", data)
     generation, chunk_index, rows, first_row, encoded_bytes = struct.unpack_from("<QIIQQ", data, 32)
-    if encoded_bytes > 16 * 1024 * 1024:
+    if encoded_bytes > (65536 if kind >= 2 else 16 * 1024 * 1024):
         raise ValueError("read ticket exceeds framing")
+    if kind == 1 and (pass_ != 0 or read_id != chunk_index):
+        raise ValueError("invalid index source ticket")
+    if kind >= 2:
+        _zero(data, 32, 56)
+        if encoded_bytes < 64 or (kind == 2 and pass_ not in (1, 2)) or (kind == 3 and pass_ != 0):
+            raise ValueError("invalid leaf ticket")
     return dict(
+        kind=kind,
+        page=read_id,
         raw=data,
         session_id=session_id,
         read_id=read_id,
@@ -218,19 +231,31 @@ def _ticket(data: memoryview) -> dict[str, Any]:
 def decode_reply(data: bytes | bytearray | memoryview) -> dict[str, Any]:
     b = _reply(data)
     code = struct.unpack_from("<I", b, 8)[0]
-    if len(b) != HEADER or code > 6:
+    if len(b) != HEADER or code > 12:
         raise ValueError("mutation reply must be fixed size")
     _zero(b, 12, 16)
     if code == 4:
         if struct.unpack_from("<Q", b, 160)[0] > 4096 or struct.unpack_from("<I", b, 168)[0] > 1:
             raise ValueError("invalid membership reply")
         _zero(b, 176, 256)
+    elif code == 12:
+        if struct.unpack_from("<I", b, 184)[0] not in (1, 2):
+            raise ValueError("invalid indexed pass count")
+        _zero(b, 188, 256)
     else:
         _zero(b, 160, 256)
+    if code == 10:
+        if struct.unpack_from("<I", b, 48)[0] not in (1, 2):
+            raise ValueError("invalid indexed fallback reason")
+        _zero(b, 52, 160)
+    ticket = _ticket(b[64:160]) if code in (1, 2, 7, 8) else None
+    if ticket and ((ticket["kind"] != 3) if code in (7, 8) else ticket["kind"] == 3):
+        raise ValueError("ticket does not match step")
     handle, sequence, data_length, source_handle, source_rows = struct.unpack_from("<5Q", b, 16)
     geometry, crs = struct.unpack_from("<II", b, 56)
     return dict(
         code=code,
+        fallback_reason_code=struct.unpack_from("<I", b, 48)[0] if code == 10 else None,
         handle=handle,
         sequence=sequence,
         data_length=data_length,
@@ -238,7 +263,18 @@ def decode_reply(data: bytes | bytearray | memoryview) -> dict[str, Any]:
         source=dict(
             generation=data_length, digest=b[40:48], rows=source_rows, geometry=geometry, crs=crs
         ),
-        ticket=_ticket(b[64:160]) if code in (1, 2) else None,
+        ticket=ticket,
+        index_stats=(
+            dict(
+                zip(
+                    ("pages_read", "bytes_read", "candidate_vertices", "passes"),
+                    struct.unpack_from("<QQQI", b, 160),
+                    strict=True,
+                )
+            )
+            if code == 12
+            else None
+        ),
     )
 
 
