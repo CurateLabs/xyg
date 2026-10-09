@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "vscode": "1.133.0",
+  "states": [
+    {
+      "test": "geo_host",
+      "phase": 1,
+      "ok": true,
+      "redPixels": 161,
+      "canvases": 3,
+      "identity": "u64MAX/i64MIN",
+      "pick": true
+    },
+    {
+      "test": "geo_host",
+      "phase": 2,
+      "ok": true,
+      "redPixels": 161,
+      "canvases": 3,
+      "identity": "u64MAX/i64MIN",
+      "pick": true
+    }
+  ],
+  "reloadReleasedFrontend": true,
+  "remountSamePrivateAnchor": true,
+  "actualPanelDispose": true,
+  "indexedAuthority": true,
+  "callerAndIndexDisposedBeforeMount": true
+}
