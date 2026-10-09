@@ -443,3 +443,39 @@ def test_reader_exception_is_a_terminal_reply_and_higher_sequence_recovers(error
     finally:
         source._reader = reader
         close(source, adapter)
+
+
+def test_hierarchy_static_mount_rejects_live_update_before_canonical_read():
+    from test_geo_hierarchy import storage
+    from test_geo_spatial import setup
+    from xyg._geo_hierarchy import GeoHierarchy
+
+    source, old, _ = setup()
+    index = GeoHierarchy.from_frame(old, source, **storage({}))
+    q = query(index.info)
+    frame = index.update(q, sequence=2, style=style())
+    chart = xyg.geo_chart(
+        xyg.geo_layer("points", source=source, layer_id=U64, query=q, sequence=2, style=style()),
+        camera=q["camera"],
+    )
+    adapter = chart.host(frame=frame)
+    reader = source._reader
+
+    def forbidden(_):
+        raise AssertionError("hierarchy live update must not scan canonical source")
+
+    try:
+        request(adapter, 1)
+        source._reader = forbidden
+        accepted = adapter._frame
+        reply, attachments = prepare(adapter, sequence=3)
+        assert "explicit hierarchy route" in reply["error"]
+        assert reply["prepareAbsent"] is True and not attachments
+        assert adapter._frame is accepted and accepted.data.record(0)["feature_id"] == U64
+        assert adapter._live_candidate.frame is None
+    finally:
+        source._reader = reader
+        close(source, adapter)
+        frame.close()
+        index.close()
+        old.close()

@@ -59,6 +59,10 @@ class GeoLiveCandidate:
                 raise RuntimeError("Missing prepared candidate")
             return frame.data.packet.obj, self.painter
         a = self.adapter
+        from ._geo_hierarchy import is_hierarchy_frame
+
+        if is_hierarchy_frame(a._frame):
+            raise RuntimeError("Hierarchy live updates require an explicit hierarchy route")
         if len(raw) != 256 or any(raw[76:80]) or any(raw[224:256]):
             raise ValueError("invalid live prepare framing")
         nonce, sequence, camera_rev, time_rev, state_rev = struct.unpack_from("<5Q", raw, 32)

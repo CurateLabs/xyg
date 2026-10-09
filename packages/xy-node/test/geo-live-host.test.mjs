@@ -59,3 +59,10 @@ test('failed unpublished Data cleanup retains global stage credit until exact re
   const [settled]=await prepare(a);assert.equal(settled.prepareAbsent,true);assert.equal(a.liveCandidate.cleanupFrame,undefined);assert.equal(a.frame,old);assert.equal((await prepare(a,{sequence:3n}))[0].error,undefined);
  }finally{unblock?.();bridge.execute=execute;await release(f);}
 });
+
+test('actual hierarchy static mount rejects live updates before canonical source reads',async()=>{
+ const {GeoHierarchy}=await import('../src/geo-hierarchy.js');const {geoChart,geoLayer}=await import('../src/charts.js');
+ const f=await liveFixture(),s=f.source,q=f.adapter.query,style=f.adapter.style;let old,index,frame,adapter;const pages=new Map(),reader=s.readChunk;
+ try{old=await s.update(q,{sequence:1n,style});index=await GeoHierarchy.fromFrame(old,s,{grid:1024,maxVertices:1000000n,maxWriteBytes:64n<<20n,readPage:t=>pages.get(`${t.namespace}:${t.page}`),writePage:(t,b)=>pages.set(`${t.namespace}:${t.page}`,b.slice())});frame=await index.update(q,{sequence:2n,style});adapter=geoChart(geoLayer('points',{source:s,layerId:q.layerId,query:q,sequence:2n,style}),{camera:q.camera}).host({frame});await adapter.anchorReady;const [opened]=await request(adapter,1);assert.equal(opened.error,undefined);const accepted=adapter.frame;s.readChunk=()=>{throw Error('must not scan canonical source');};const [reply,attachments]=await prepare(adapter,{sequence:3n});assert.match(reply.error,/explicit hierarchy route/);assert.equal(reply.prepareAbsent,true);assert.equal(attachments.length,0);assert.equal(adapter.frame,accepted);assert.equal(adapter.liveCandidate.frame,undefined);
+ }finally{s.readChunk=reader;if(adapter)await release({adapter,source:s});if(frame)await frame.dispose();if(index)await index.dispose();if(old)await old.dispose();await release(f);}
+});

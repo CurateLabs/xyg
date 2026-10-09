@@ -1122,6 +1122,36 @@ Forbidden:
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_linked_state_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_linked_state_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_build.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_query.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_spatial_hierarchy_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_hierarchy_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_hierarchy_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
+The hierarchy protocol child reuses the shared private GeoScale registry, canonical
+Scene encoder, owning source/result leases and common quotas. Its tests exercise
+public typed bytes; no host geometry or separate publication policy is introduced.
+See `geo-hierarchy-protocol.md` for the command and authority boundary.
+
+
+
+### M6 typed geographic transport and bounded hierarchy
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `js/src/70_geo_hierarchy.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `packages/xy-node/src/geo-hierarchy-wire.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-hierarchy.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-hierarchy.js` | Node host | `node-host` | `keep-host` | — |
+| `python/xyg/_geo_hierarchy.py` | Python host | `python-host` | `keep-host` | — |
 
 
 

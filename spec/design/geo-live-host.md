@@ -137,3 +137,7 @@ The existing native Node CI job runs the live-host lifecycle regression suite.
 The existing Chromium job also runs the bounded five-small-view lifecycle probe;
 notebook, Reflex and actual VS Code journey recordings remain reproducible
 artifacts rather than additional platform jobs. Massive benchmarks stay separate.
+
+Authentic hierarchy frames may mount statically. The private hierarchy marker
+rejects live preparation before acquiring replacement credit or scanning the
+canonical source; dedicated hierarchy routing remains a separate gate.

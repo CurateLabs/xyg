@@ -1,3 +1,4 @@
+import {isHierarchyFrame} from './geo-hierarchy.js';
 /** Private XYGHv2 staging; Rust owns all camera/LOD/selected policy. */
 import {encodeGeoScaleRequest as encode,decodeGeoScaleReply as decode,driveGeoSession,driveGeoIndexSession,prepareGeoSceneData} from './geoscale.js';
 import {encodeGeoViewportRequest,decodeGeoViewportResponse,geoViewportExecute} from './geoviewport.js';
@@ -33,7 +34,7 @@ export class GeoLiveCandidate {
  async prepare(raw){
   if(this.cleanupFrame){if(!same(new Uint8Array(raw),new Uint8Array(this.cleanupRequest)))throw Error("Candidate cleanup requires exact preparation retry");await this.cleanupFrame.dispose();this.cleanupFrame=undefined;this.releaseSlot();throw new DOMException("Geographic preparation cancelled","AbortError");}
   if(this.replayPrepare(raw))return [this.frame.data.packet,this.painter];
-  const a=this.adapter,v=new DataView(raw),b=new Uint8Array(raw);
+  const a=this.adapter;if(isHierarchyFrame(a.frame))throw Error("Hierarchy live updates require an explicit hierarchy route");const v=new DataView(raw),b=new Uint8Array(raw);
   if(raw.byteLength!==256||b.subarray(76,80).some(x=>x)||b.subarray(224).some(x=>x))throw Error('invalid live prepare framing');
   const nonce=v.getBigUint64(32,true),sequence=v.getBigUint64(40,true),cameraRevision=v.getBigUint64(48,true),timeRevision=v.getBigUint64(56,true),stateRevision=v.getBigUint64(64,true),kind=v.getUint32(72,true),start=v.getBigInt64(80,true),end=v.getBigInt64(88,true);
   if(!nonce||nonce<=this.nonce||this.frame||this.retired||sequence<=a.sequence||cameraRevision<a.query.cameraRevision||timeRevision<a.query.timeRevision||stateRevision!==a.query.stateRevision)throw Error('stale or outstanding desired snapshot');

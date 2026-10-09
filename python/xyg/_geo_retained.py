@@ -7,6 +7,7 @@ import inspect
 import math
 import struct
 import traceback
+import weakref
 from contextlib import suppress
 from typing import Any
 
@@ -633,7 +634,33 @@ def _frame_owner(source, owner):
     return owner
 
 
-def _attach_frame(source, frame, sequence, query_packet, style):
+_FRAME_AUTHORITIES: weakref.WeakKeyDictionary[Any, tuple[Any, Any, int]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def retained_frame_authority(frame):
+    """Internal immutable producer/transport provenance; numeric handles are local."""
+    record = _FRAME_AUTHORITIES.get(frame)
+    if record is None:
+        return None
+    source = record[0]()
+    if source is None or id(source._bridge) != record[2]:
+        return None
+    if record[1] is not None and record[1]() is not source._bridge:
+        return None
+    return source, source._bridge
+
+
+def _attach_frame(source, frame, sequence, query_packet, style, _provenance=None):
+    try:
+        bridge = weakref.ref(source._bridge) if source._bridge is not None else None
+    except TypeError:
+        bridge = None
+    _FRAME_AUTHORITIES[frame] = (weakref.ref(source), bridge, id(source._bridge))
+    if _provenance is not None:
+        _provenance(frame)
+
     def membership(cell, *, max_projected_vertices, cursor=None):
         _ = frame.data
         return source.membership(
@@ -698,7 +725,7 @@ def _attach_frame(source, frame, sequence, query_packet, style):
             raise RuntimeError("use retain_async for an asynchronous owner")
         _ = frame.data
         owned = source._prepare(26, frame.handle, sequence)
-        _attach_frame(source, owned, sequence, query_packet, style)
+        _attach_frame(source, owned, sequence, query_packet, style, _provenance)
         if hasattr(frame, "index_stats"):
             owned.index_stats = dict(frame.index_stats)
         return owned
@@ -708,7 +735,7 @@ def _attach_frame(source, frame, sequence, query_packet, style):
         if source._bridge is None:
             return retain()
         owned = await _aprepare(source, 26, frame.handle, sequence)
-        _attach_frame(source, owned, sequence, query_packet, style)
+        _attach_frame(source, owned, sequence, query_packet, style, _provenance)
         if hasattr(frame, "index_stats"):
             owned.index_stats = dict(frame.index_stats)
         return owned

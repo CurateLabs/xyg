@@ -80,3 +80,8 @@ correlated terminal failure after cleanup. Two actual-native regression cases
 prove old-frame preservation, absent candidate/cleanup storage and successful
 higher-sequence recovery. The original frontend journey hashes are preserved
 as their checkpoint; follow-up hashes and validation are recorded separately.
+
+[Hierarchy integration](hierarchy-integration.json) records the fresh native build,
+24 Python tests, nine Node live tests and bounded browser rerun after merging
+typed hierarchy hosts. Authentic hierarchy frames mount statically; live preparation
+rejects before source IO rather than falling back to a canonical full scan.

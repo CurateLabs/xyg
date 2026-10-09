@@ -1,0 +1,26 @@
+{
+  "base": "058c14b31a68f3aec5ac31acc8552ff0ef3b9c5e",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "sourceSha256": {
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    ".cargo/config.toml": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "crates/xyg-engine/src/geo_hierarchy_protocol.rs": "a619985c4192a0580fcc3d8d8adc9c2cf7fa62f3dd89c35858567d26c6d5db8b",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "cd024b3afdce6a39667bfa9f2f17fa297a46fb84afa7a3614e44722ab9dd9e3e",
+    "crates/xyg-engine/src/geo_spatial_hierarchy.rs": "47cfc9f673aa7e5b95dd0e87cdd1bfdfa61fc1694051c351d06e4e01912bc108",
+    "crates/xyg-engine/src/geo_spatial_hierarchy_build.rs": "0f500f1660d2c6f253c11adcf1afe28b95c42a3cbc310fcbf7b7b3499b0f4ab4",
+    "crates/xyg-engine/src/geo_spatial_hierarchy_query.rs": "bdfc06b2d8a4d4ce5dd058a0faa2dfa32abbce50deee55af86f5f567401271ca",
+    "crates/xyg-wasm/src/bin/geo_scale_conformance.rs": "9c9d32f66d39316c92f5b36a198e29739923138ab1f356b27f15cc2999f06f96",
+    "scripts/geo_hierarchy_conformance.mjs": "814730b0a5f571c8223ae38f7767c0c2155d914a1ac70e252cb67e24b7ad0583"
+  },
+  "nativeAbi": 383,
+  "buildCommands": [
+    "cargo build -p xyg-core --release",
+    "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+    "node js/package-wasm.mjs"
+  ],
+  "profile": "repository release O3 / wasm LLVM inline threshold100 / pinned Binaryen O3; unchanged",
+  "scope": "engine/C ABI/realwasm32 typed protocol; no browser paint or host controller",
+  "wasmAbi": 33
+}
