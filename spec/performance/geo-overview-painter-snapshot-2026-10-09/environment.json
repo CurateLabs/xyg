@@ -1,0 +1,44 @@
+{
+  "sourceBase": "ebb259e30766129bcb0963e830f0313f05897d10",
+  "sourceState": "Reviewed implementation15f91a27f plus actual clipping8be6d99ce and main52a7a719b ancestry; CI wiringffa712509 changes workflow/documentation only. Production, test, browser and artifact source hashes remain exact.",
+  "dependency": {
+    "viewportCommit": "54a29314a",
+    "actualBranchHead": "8be6d99ce204f5b7ea184875acacb74faba9589f"
+  },
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "tools": {
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "node": "v24.16.0",
+    "uv": "uv 0.8.16 (2de677b0d 2025-09-09)",
+    "chrome": "Google Chrome 155.0.8059.40"
+  },
+  "sources": {
+    "crates/xyg-engine/src/geo_retained_painter.rs": "c99a17d43c1b0e1ff27f65748c449f3108917967cfdfab0f819b5e46e052c1bf",
+    "crates/xyg-engine/src/geo_scale_protocol.rs": "ee356627aaf0393fee08eb22e366a777daaab6a10db09a2d93b8e985059c8caf",
+    "crates/xyg-engine/src/geo_snapshot.rs": "e3bf185bd6562f841df281ca341d7ff4c2a86cd88f4deabaa1fae6c375bbb38b",
+    "crates/xyg-engine/src/geo_snapshot_protocol.rs": "bf4c4725464d637ea1f1906d48e557bddc2a410da70c19d6b6a197cda9876487",
+    "crates/xyg-engine/src/geo_temporal_overview_scene.rs": "5b912f08bf7dbdb62af69444313abde77cac1cfaa705cbfa5d9d5e545c67fc6b",
+    "crates/xyg-engine/src/geo_viewport.rs": "0d413673710cea0b7231f5dbed0a6762812dbefb8258dfb57dc47e1a8d4d9982",
+    "crates/xyg-engine/src/geo_overview_painter_snapshot_tests.rs": "2bdff8c86f7efeee9dea2d56d760bfaf7148efd6066721ed76d76415701c51ac",
+    "scripts/geo_overview_painter_snapshot_conformance.mjs": "aeaf0ca959d512f3e1f59b92c324db87dfb8516fef71e6de0602453548130f00",
+    "tests/browser/geo_overview_painter_fixture.mjs": "0a5faf290ea5a09a5946ff9a006cac1fdff505f0e3a8b7f157143465359f9c99",
+    "tests/browser/geo_overview_painter_page.mjs": "47ddd4cbafed0e5987cb9e0721d39e4d6f3212209d889e479942ff560b7010bb",
+    "spec/design/geo-overview-painter-snapshot.md": "dc4f31dc1f36a8dd4cee76b358b68170f0dbda697d781b46c81ef64aca7241c3"
+  },
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewpaint/target/release/libxyg_core.dylib",
+    "sha256": "cd909fec769aaf34d230c8ab35a7bd1512006b1dbc8b04316e61b38f566d71dc"
+  },
+  "scope": "Small correctness and byte/pixel/lifecycle proof. No quiet-host timings, massive latency, source-domain membership or final overview refinement claim. WASM raw/gzip6/hash recorded in parity.json after standard packager.",
+  "verification": {
+    "workspace": "53 core +1440 engine +65 WASM +2 docs PASS",
+    "clippy": "strict lib+tests PASS",
+    "hooks": "all-files PASS",
+    "ruff": "check+format838 files PASS",
+    "ownership": "455 tracked PASS",
+    "selectedV3Compression": "selected-v3-regression.json uses level9; release artifact/parity uses level6."
+  },
+  "ciWorkflowSha256": "da0e672f9c81dda63a091f1058f0987bcdc458c863c8d18a508b735976894ee4"
+}

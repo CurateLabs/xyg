@@ -151,8 +151,13 @@ there is no host-side geometry, reduction, palette or style policy.
 under the shared registry lock. Its callback must not reenter that registry.
 Generic source pick, member and row commands reject this distinct Data authority.
 A future exact domain-cell membership predicate must be implemented before source
-hover/member UX is exposed. Trusted painter and snapshot callers must explicitly
-admit this typed overview authority rather than treating it as a point LOD frame.
+hover/member UX is exposed. The trusted retained painter now dispatches on this
+private Data kind, and snapshot command6 preserves its inert domain counts in
+XYGXv4. See [overview painter/export contract](geo-overview-painter-snapshot.md).
+Command26 can duplicate overview Data with a separately admitted16MiB credit and
+fresh two-copy quota. The exact nonfinal notice is an explicit viewport-local
+SceneLabel; it never adds a browser title gutter. Public overview composition,
+domain-cell membership and spatial refinement remain pending.
 
 ## Admission and evidence
 

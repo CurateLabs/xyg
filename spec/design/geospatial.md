@@ -446,7 +446,9 @@ A viewport wholly inside a hole emits no filled-feature membership. Geometry
 with a zero-area intersection is omitted; ambiguous coincident branching at a
 clipping boundary fails with `XYG_GEO_INVALID_ARGUMENT` rather than publishing
 incorrect topology. Boundary nodes are reconciled within `1e-7` camera-relative
-ground pixels; canonical source coordinates and winding are never rewritten.
+ground pixels; snapped zero coordinates use positive zero so total-order node
+sorting and numeric welding agree. Canonical source coordinates and winding
+are never rewritten.
 
 The existing outline cache retains only clipped source edges, rather than the
 synthetic closing edges intended for filling. Point/outline XYGS lowering uses

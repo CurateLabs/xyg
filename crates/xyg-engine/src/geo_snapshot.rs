@@ -25,6 +25,8 @@ pub const MAX_FROZEN_ARTIFACT_BYTES: usize = 64 * 1024 * 1024;
 const HEADER: usize = 192;
 const SELECTED_HEADER: usize = 208;
 const SELECTED_RECORD: usize = 160 + 128;
+const OVERVIEW_HEADER: usize = 208;
+const OVERVIEW_RECORD: usize = 96 + 2048;
 const LAYER: usize = 80;
 const DIRECT: usize = 48;
 const GRID: usize = 232;
@@ -124,6 +126,13 @@ impl GeoFrozenSelection {
         self.visible
     }
 }
+/// Inert source-domain populations; not a screen-bin key or live capability.
+#[derive(Debug, PartialEq)]
+pub struct GeoFrozenOverview {
+    pub layer_id: u64,
+    pub overview_digest: [u8; 8],
+    pub counts: [u64; 256],
+}
 #[derive(Clone, Copy)]
 pub enum GeoFrozenGridCounts<'a> {
     Counts(&'a [u64]),
@@ -192,6 +201,7 @@ pub struct GeoFrozenSnapshot {
     membership: Vec<GeoFrozenMembership>,
     grids: Vec<GeoFrozenGrid>,
     selections: Vec<GeoFrozenSelection>,
+    overview: Option<GeoFrozenOverview>,
     attributions: Vec<String>,
     binding: Option<GeoFrozenArtifactBinding>,
     _charge: GeoDerivedLease,
@@ -658,7 +668,30 @@ impl GeoFrozenSnapshot {
         } else {
             false
         };
-        let required = if mixed {
+        let required = if bytes.len() >= OVERVIEW_HEADER && u32at(bytes, 4) == 4 {
+            let scene_bytes =
+                usize::try_from(u64at(bytes, 24)).map_err(|_| GeoSnapshotError::Limit)?;
+            if scene_bytes > crate::geo_temporal_overview_scene::MAX_ENCODED_SCENE_BYTES {
+                return Err(GeoSnapshotError::Limit);
+            }
+            let record_end = OVERVIEW_HEADER + LAYER + OVERVIEW_RECORD;
+            if bytes.len() < record_end {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            if record_end.checked_add(scene_bytes) != Some(bytes.len())
+                || u64at(bytes, 16) != bytes.len() as u64
+                || u32at(bytes, 32) != 1
+                || bytes[36..52].iter().any(|n| *n != 0)
+                || bytes[184..192].iter().any(|n| *n != 0)
+                || u32at(bytes, 192) != 1
+                || u32at(bytes, 196) as usize != OVERVIEW_RECORD
+                || bytes[200..208].iter().any(|n| *n != 0)
+            {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            preflight_overview_record(&bytes[OVERVIEW_HEADER + LAYER..record_end])?;
+            overview_peak(bytes.len(), budget)?
+        } else if mixed {
             mixed_peak(bytes.len(), budget)?
         } else {
             peak(bytes.len(), budget)?
@@ -671,7 +704,7 @@ impl GeoFrozenSnapshot {
     fn decode_owned(b: Vec<u8>, charge: GeoDerivedLease) -> Result<Self> {
         if b.len() < HEADER
             || &b[..4] != b"XYGX"
-            || !matches!(u32at(&b, 4), 2 | 3)
+            || !matches!(u32at(&b, 4), 2 | 3 | 4)
             || u32at(&b, 8) != SCENE_VERSION
             || u32at(&b, 12) > 1
             || u64at(&b, 16) != b.len() as u64
@@ -679,7 +712,14 @@ impl GeoFrozenSnapshot {
             return Err(GeoSnapshotError::Invalid);
         }
         let selected = u32at(&b, 4) == 3;
-        let header_size = if selected { SELECTED_HEADER } else { HEADER };
+        let has_overview = u32at(&b, 4) == 4;
+        let header_size = if selected {
+            SELECTED_HEADER
+        } else if has_overview {
+            OVERVIEW_HEADER
+        } else {
+            HEADER
+        };
         if b.len() < header_size {
             return Err(GeoSnapshotError::Invalid);
         }
@@ -691,6 +731,16 @@ impl GeoFrozenSnapshot {
         if selection_count > MAX_FROZEN_LAYERS {
             return Err(GeoSnapshotError::Limit);
         }
+        if has_overview
+            && (u32at(&b, 192) != 1
+                || u32at(&b, 196) as usize != OVERVIEW_RECORD
+                || b[200..208].iter().any(|n| *n != 0)
+                || u32at(&b, 32) != 1
+                || b[36..52].iter().any(|n| *n != 0)
+                || b[184..192].iter().any(|n| *n != 0))
+        {
+            return Err(GeoSnapshotError::Invalid);
+        }
         let scene_len = usize::try_from(u64at(&b, 24)).map_err(|_| GeoSnapshotError::Limit)?;
         let counts = [
             u32at(&b, 32) as usize,
@@ -699,7 +749,8 @@ impl GeoFrozenSnapshot {
             u32at(&b, 44) as usize,
             u32at(&b, 48) as usize,
         ];
-        if scene_len > MAX_FROZEN_SCENE_BYTES
+        if (has_overview && scene_len > crate::geo_temporal_overview_scene::MAX_ENCODED_SCENE_BYTES)
+            || scene_len > MAX_FROZEN_SCENE_BYTES
             || counts[0] > MAX_FROZEN_LAYERS
             || counts[1] > MAX_FROZEN_DIRECT
             || counts[2] > MAX_FROZEN_MEMBERSHIP
@@ -776,7 +827,14 @@ impl GeoFrozenSnapshot {
         if selected_at != selection_end {
             return Err(GeoSnapshotError::Invalid);
         }
-        let attribution_end = selection_end
+        let overview_end = selection_end
+            .checked_add(if has_overview { OVERVIEW_RECORD } else { 0 })
+            .filter(|n| *n <= b.len())
+            .ok_or(GeoSnapshotError::Invalid)?;
+        if has_overview {
+            preflight_overview_record(&b[selection_end..overview_end])?;
+        }
+        let attribution_end = overview_end
             .checked_add(counts[4])
             .ok_or(GeoSnapshotError::Limit)?;
         let tile_len = u32at(&b, 188) as usize;
@@ -953,6 +1011,15 @@ impl GeoFrozenSnapshot {
             selections.push(selection);
             at += length;
         }
+        let overview = if has_overview {
+            Some(decode_overview_record(
+                &b[selection_end..overview_end],
+                &identity,
+            )?)
+        } else {
+            None
+        };
+        at = overview_end;
         let mut attributions = Vec::with_capacity(counts[3]);
         for _ in 0..counts[3] {
             if at.checked_add(4).is_none_or(|n| n > attribution_end) {
@@ -1005,6 +1072,16 @@ impl GeoFrozenSnapshot {
             validate_tile_blob(blob, &identity, &b[scene.clone()], &attributions)?;
             Some(attribution_end..scene_start)
         };
+        if let Some(value) = &overview {
+            let expected = crate::geo_temporal_overview_scene::compile_counts(
+                &value.counts,
+                camera(identity.camera),
+            )
+            .map_err(|_| GeoSnapshotError::Scene)?;
+            if expected != b[scene.clone()] {
+                return Err(GeoSnapshotError::Scene);
+            }
+        }
         let document =
             SceneDocument::decode(&b[scene.clone()]).map_err(|_| GeoSnapshotError::Scene)?;
         if !selections.is_empty() {
@@ -1062,6 +1139,7 @@ impl GeoFrozenSnapshot {
             membership,
             grids,
             selections,
+            overview,
             attributions,
             binding,
             _charge: charge,
@@ -1069,6 +1147,9 @@ impl GeoFrozenSnapshot {
     }
     pub fn bytes(&self) -> &[u8] {
         &self.encoded
+    }
+    pub fn overview(&self) -> Option<&GeoFrozenOverview> {
+        self.overview.as_ref()
     }
     pub fn scene(&self) -> &[u8] {
         &self.encoded[self.scene.clone()]
@@ -1411,6 +1492,163 @@ fn grid_validate(
     .map_err(|_| GeoSnapshotError::Invalid)?;
     Ok(())
 }
+fn overview_peak(length: usize, budget: usize) -> Result<usize> {
+    let required = peak(length, MAX_FROZEN_PEAK)?
+        .checked_add(crate::geo_temporal_overview_scene::SCRATCH_BYTES)
+        .ok_or(GeoSnapshotError::Limit)?;
+    if budget > MAX_FROZEN_PEAK || required > budget {
+        return Err(GeoSnapshotError::Limit);
+    }
+    Ok(required)
+}
+fn preflight_overview_record(b: &[u8]) -> Result<()> {
+    if b.len() != OVERVIEW_RECORD
+        || &b[..4] != b"XYOF"
+        || u32at(b, 4) != 1
+        || u32at(b, 8) != 3
+        || u32at(b, 12) != 16
+        || u32at(b, 24) != 1
+        || b[28..32].iter().chain(&b[80..96]).any(|n| *n != 0)
+        || u64at(b, 72) != 2048
+        || !matches!(u32at(b, 68), 1 | 4)
+        || !matches!(u32at(b, 64), 4326 | 3857)
+    {
+        return Err(GeoSnapshotError::Invalid);
+    }
+    let mut total = 0u64;
+    for bytes in b[96..].chunks_exact(8) {
+        total = total
+            .checked_add(u64::from_le_bytes(bytes.try_into().unwrap()))
+            .ok_or(GeoSnapshotError::Limit)?;
+    }
+    if total > 2_000_000_000
+        || (u64at(b, 56) == 0 && total != 0)
+        || (u32at(b, 68) == 1 && total > u64at(b, 56))
+    {
+        return Err(GeoSnapshotError::Invalid);
+    }
+    Ok(())
+}
+fn decode_overview_record(b: &[u8], identity: &GeoFrozenIdentity) -> Result<GeoFrozenOverview> {
+    preflight_overview_record(b)?;
+    let layer = identity.layers.first().ok_or(GeoSnapshotError::Invalid)?;
+    if identity.layers.len() != 1
+        || u64at(b, 16) != layer.layer_id
+        || b[40..48] != layer.source_digest
+        || u64at(b, 48) != layer.source_generation
+        || u64at(b, 56) != layer.source_rows
+        || u32at(b, 64) != layer.crs as u32
+        || u32at(b, 68) != layer.geometry as u32
+    {
+        return Err(GeoSnapshotError::Stale);
+    }
+    let mut counts = [0; 256];
+    for (i, count) in counts.iter_mut().enumerate() {
+        *count = u64at(b, 96 + i * 8);
+    }
+    Ok(GeoFrozenOverview {
+        layer_id: layer.layer_id,
+        overview_digest: b[32..40].try_into().unwrap(),
+        counts,
+    })
+}
+pub(crate) fn overview_admission(
+    scene: &[u8],
+    result: &crate::geo_temporal_overview::GeoOverviewResult,
+    viewport: GeoViewport,
+    budget: usize,
+) -> Result<usize> {
+    let snapshot = result.snapshot();
+    let source = result.source();
+    if snapshot.camera
+        != viewport
+            .rebuild_key()
+            .map_err(|_| GeoSnapshotError::Invalid)?
+        || snapshot.source_digest != source.digest()
+        || snapshot.generation != source.generation()
+        || !result.temporal_exact()
+        || !result.data_space()
+        || result.final_result()
+    {
+        return Err(GeoSnapshotError::Stale);
+    }
+    if scene.len() > crate::geo_temporal_overview_scene::MAX_ENCODED_SCENE_BYTES {
+        return Err(GeoSnapshotError::Limit);
+    }
+    let total = OVERVIEW_HEADER
+        .checked_add(LAYER + OVERVIEW_RECORD)
+        .and_then(|n| n.checked_add(scene.len()))
+        .ok_or(GeoSnapshotError::Limit)?;
+    overview_peak(total, budget)
+}
+impl GeoFrozenSnapshot {
+    /// Freeze private overview authority, retaining domain semantics rather than a fake grid key.
+    pub fn freeze_overview(
+        cache: &GeoTileCache,
+        scene: &[u8],
+        result: &crate::geo_temporal_overview::GeoOverviewResult,
+        viewport: GeoViewport,
+        budget: usize,
+    ) -> Result<Self> {
+        let snapshot = result.snapshot();
+        let source = result.source();
+        let required = overview_admission(scene, result, viewport, budget)?;
+        let total = OVERVIEW_HEADER + LAYER + OVERVIEW_RECORD + scene.len();
+        let charge = cache
+            .reserve_derived(required)
+            .map_err(|_| GeoSnapshotError::Limit)?;
+        let identity = GeoFrozenIdentity {
+            camera: snapshot.camera,
+            time: snapshot.time,
+            camera_revision: snapshot.camera_revision,
+            time_revision: snapshot.time_revision,
+            layers: vec![GeoFrozenLayer {
+                layer_id: snapshot.layer_id,
+                source_id: 0,
+                source_generation: source.generation(),
+                layer_revision: snapshot.layer_revision,
+                style_revision: snapshot.style_revision,
+                state_revision: snapshot.state_revision,
+                source_digest: source.digest(),
+                source_rows: source.rows(),
+                geometry: source.geometry(),
+                crs: source.crs(),
+            }],
+        };
+        identity_validate(&identity)?;
+        let mut b = Vec::with_capacity(total);
+        b.extend(identity_header(&identity));
+        b.resize(OVERVIEW_HEADER, 0);
+        put32(&mut b, 4, 4);
+        put64(&mut b, 16, total as u64);
+        put64(&mut b, 24, scene.len() as u64);
+        put32(&mut b, 32, 1);
+        put32(&mut b, 192, 1);
+        put32(&mut b, 196, OVERVIEW_RECORD as u32);
+        b.extend(layer_bytes(&identity.layers[0]));
+        let mut record = [0u8; 96];
+        record[..4].copy_from_slice(b"XYOF");
+        put32(&mut record, 4, 1);
+        put32(&mut record, 8, 3);
+        put32(&mut record, 12, 16);
+        put64(&mut record, 16, snapshot.layer_id);
+        put32(&mut record, 24, 1);
+        record[32..40].copy_from_slice(&result.overview_digest());
+        record[40..48].copy_from_slice(&source.digest());
+        put64(&mut record, 48, source.generation());
+        put64(&mut record, 56, source.rows());
+        put32(&mut record, 64, source.crs() as u32);
+        put32(&mut record, 68, source.geometry() as u32);
+        put64(&mut record, 72, 2048);
+        b.extend(record);
+        for count in result.counts() {
+            b.extend(count.to_le_bytes());
+        }
+        b.extend(scene);
+        Self::decode_owned(b, charge)
+    }
+}
+
 impl GeoFrozenSnapshot {
     /// Freeze the already-rendered immutable retained frame, never recompile it.
     pub fn freeze_lod(

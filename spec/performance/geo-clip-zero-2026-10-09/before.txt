@@ -1,0 +1,81 @@
+   Compiling libc v0.2.189
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling unicode-ident v1.0.24
+   Compiling bitflags v2.13.0
+   Compiling cfg-if v1.0.4
+   Compiling autocfg v1.5.1
+   Compiling memchr v2.8.0
+   Compiling rustix v1.1.4
+   Compiling serde_core v1.0.228
+   Compiling zmij v1.0.21
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.9
+   Compiling cfg_aliases v0.2.2
+   Compiling nix v0.31.3
+   Compiling cc v1.2.63
+   Compiling anyhow v1.0.104
+   Compiling num-traits v0.2.19
+   Compiling crc32fast v1.5.0
+   Compiling equivalent v1.0.2
+   Compiling winnow v1.0.4
+   Compiling serde v1.0.228
+   Compiling getrandom v0.4.2
+   Compiling serde_json v1.0.151
+   Compiling hashbrown v0.17.1
+   Compiling simd-adler32 v0.3.9
+   Compiling syn v2.0.117
+   Compiling indexmap v2.14.0
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling adler2 v2.0.1
+   Compiling errno v0.3.14
+   Compiling codspeed v5.0.1
+   Compiling approx v0.5.1
+   Compiling clap_lex v1.1.0
+   Compiling itoa v1.0.18
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling anstyle v1.0.14
+   Compiling statrs v0.18.0
+   Compiling toml_edit v0.25.13+spec-1.1.0
+   Compiling miniz_oxide v0.8.9
+   Compiling aho-corasick v1.1.4
+   Compiling terminal_size v0.4.4
+   Compiling glob v0.3.3
+   Compiling clap_builder v4.6.6
+   Compiling regex-syntax v0.8.10
+   Compiling either v1.16.0
+   Compiling colored v3.1.1
+   Compiling itertools v0.14.0
+   Compiling proc-macro-crate v3.5.0
+   Compiling flate2 v1.1.9
+   Compiling fdeflate v0.3.7
+   Compiling regex-lite v0.1.9
+   Compiling condtype v1.3.0
+   Compiling codspeed-divan-compat v5.0.1
+   Compiling png v0.18.1
+   Compiling regex-automata v0.4.14
+   Compiling clap v4.6.6
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoclipzero/crates/xyg-engine)
+   Compiling serde_derive v1.0.228
+   Compiling divan-macros v0.1.17
+   Compiling codspeed-divan-compat-macros v5.0.1
+   Compiling regex v1.12.3
+   Compiling codspeed-divan-compat-walltime v5.0.1
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 54.76s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 1 test
+
+thread 'geo_viewport::tests::clipping_graph_welds_signed_zero_endpoints_into_one_closed_ring' (98728429) panicked at crates/xyg-engine/src/geo_viewport.rs:1439:56:
+called `Result::unwrap()` on an `Err` value: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test geo_viewport::tests::clipping_graph_welds_signed_zero_endpoints_into_one_closed_ring ... FAILED
+
+failures:
+
+failures:
+    geo_viewport::tests::clipping_graph_welds_signed_zero_endpoints_into_one_closed_ring
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1436 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p xyg-engine --lib`
