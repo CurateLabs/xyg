@@ -688,6 +688,7 @@ Forbidden:
 | --- | --- | --- | --- | ---: |
 | `crates/xyg-engine/src/geo_spatial_index.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_spatial_build_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/geo_index_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_indexed_query_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_rows_session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_rows_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1084,13 +1085,16 @@ Forbidden:
 | `js/src/64_geo_retained_controller.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/geo-retained.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-retained.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-spatial.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-snapshot.d.ts` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-spatial.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-snapshot.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-tiles.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-tiles.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.d.ts` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/geoscale.js` | Node host | `node-host` | `keep-host` | — |
 | `python/xyg/_geo_retained.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_geo_spatial.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_snapshot.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geo_tiles.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geoscale.py` | Python host | `python-host` | `keep-host` | — |

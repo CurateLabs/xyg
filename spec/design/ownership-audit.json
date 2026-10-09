@@ -497,6 +497,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/geo_index_protocol_tests.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/geo_indexed_query_session.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -2017,6 +2025,22 @@
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
+      "path": "packages/xy-node/src/geo-spatial.d.ts",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/geo-spatial.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/geo-tiles.d.ts",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -2722,6 +2746,14 @@
     },
     {
       "path": "python/xyg/_geo_snapshot.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_geo_spatial.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",

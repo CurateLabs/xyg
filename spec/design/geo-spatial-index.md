@@ -108,6 +108,15 @@ reservations do not fit; the index does not relax canonical parser bounds.
 Directory wire bytes are capped at 32 MiB. Grid dimensions must be powers of two
 from 1 through 256, but larger partial-buffer promises can reject before I/O.
 
+`estimate_work` is the shared allocation-free camera/time planner for eligible
+one-pass leaf reads, decoded vertex records and populated leaf streams. The
+protocol uses it to record explicit canonical fallback before advancing query
+identity when the leaf-read plan cannot fit its allowance. Core sessions can
+apply optional `set_work_limits` before the first ticket: cumulative decoded
+records and authenticated reads include repeated aggregate passes, and are
+checked before I/O. Existing constructor users retain explicit projection and
+cumulative read-byte ceilings; no temporal approximation is introduced.
+
 Query preflight reserves shared LOD worst-case storage, up to 256 decoded page
 heads, heap/control capacities and input scratch before reading. Cumulative
 read/work counters are u64; page/chunk resident lengths remain usize. Source,

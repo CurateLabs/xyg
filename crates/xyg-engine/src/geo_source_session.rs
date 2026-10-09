@@ -78,7 +78,7 @@ pub struct GeoOperationSnapshot {
     pub state_revision: u64,
 }
 impl GeoOperationSnapshot {
-    fn precedes(self, previous: Self) -> bool {
+    pub(crate) fn precedes(self, previous: Self) -> bool {
         (self.camera_revision == previous.camera_revision && self.camera != previous.camera)
             || (self.time_revision == previous.time_revision && self.time != previous.time)
             || (self.layer_revision == previous.layer_revision

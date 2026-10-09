@@ -1,0 +1,4 @@
+{"phase":"cold","rows":10000000,"manifestMs":421.8755,"indexBuildMs":2850.911041,"pages":12554,"leafDiskBytes":800803456,"directoryReservedBytes":1474144,"chunkRows":65536}
+{"phase":"decision","name":"world","rows":10000000,"grid":32,"fallback":"canonical-full-scan","measuredQuery":false}
+{"phase":"warm-query","name":"zoom","rows":10000000,"queryMs":18.371917,"pagesRead":108,"bytesRead":6958272,"candidates":86892,"passes":1,"visibleVertices":612,"sceneBytes":44472,"referenceMs":0,"parity":"not-run"}
+{"phase":"warm-query","name":"pan","rows":10000000,"queryMs":17.756332999999998,"pagesRead":108,"bytesRead":6958272,"candidates":86892,"passes":1,"visibleVertices":592,"sceneBytes":43032,"referenceMs":0,"parity":"not-run"}

@@ -1,7 +1,7 @@
 /** Scheduling/paint adapter for one retained Rust geographic source. */
 import { XygWasmWorker } from './47_wasm';
 import { hydrateWasmPainter, type XygWasmSceneView } from './48_wasm_scene';
-import { decodeGeoScaleReply, driveGeoSession, encodeGeoScaleRequest, prepareGeoSceneData, prepareGeoAuxData, parseGeoHitData, parseGeoMembershipData, parseGeoRowsData,
+import { decodeGeoScaleReply, driveGeoSession, driveGeoIndexSession, encodeGeoScaleRequest, prepareGeoSceneData, prepareGeoAuxData, parseGeoHitData, parseGeoMembershipData, parseGeoRowsData,
   type XygGeoQueryBudget, type XygGeoReadTicket, type XygGeoScaleQuery } from './63_geo_source';
 
 type SceneLease = Awaited<ReturnType<typeof prepareGeoSceneData>>;
@@ -30,6 +30,13 @@ export interface RetainedGeographicChartOptions {
 export class RetainedGeographicController {
   readonly ready: Promise<void>;
   private handle = 0n;
+  private indexHandle=0n;
+  private indexAbort:AbortController|null=null;
+  private readIndexPage:RetainedGeographicChartOptions['readChunk']|null=null;
+  private indexDecision:'indexed'|'canonical-full-scan'|null=null;
+  private indexedStats:ReturnType<typeof decodeGeoScaleReply>['indexStats']=null;
+  get spatialDecision(){return this.indexDecision;}
+  get spatialStats(){return this.indexedStats?{...this.indexedStats}:null;}
   private sequence = 0n;
   private chain: Promise<unknown> = Promise.resolve();
   private readonly initialization: Promise<void>;
@@ -105,7 +112,7 @@ export class RetainedGeographicController {
    * failure. All source I/O is bounded and authorized by a Rust-issued ticket. */
   update(query:XygGeoScaleQuery):Promise<RetainedGeoFrameSummary> {
     if(this.disposed)return Promise.reject(new Error('Geographic chart disposed'));
-    this.operationAbort?.abort();
+    this.operationAbort?.abort();this.indexAbort?.abort();
     this.auxiliaryAbort?.abort();
     this.preparation?.cancel();
     const abort = new AbortController(), sequence = ++this.sequence;
@@ -115,9 +122,8 @@ export class RetainedGeographicController {
     const operation = this.chain.then(async()=>{
       await this.initialization;
       if(this.disposed||abort.signal.aborted)throw new DOMException('Geographic operation cancelled','AbortError');
-      await this.bridge.execute(encodeGeoScaleRequest({command:5,handle:this.handle,sequence,budget:this.options.budget,query:frozen}));
-      await driveGeoSession(this.bridge,{handle:this.handle,sequence,budget:this.options.budget,readChunk:this.options.readChunk,signal:abort.signal});
-      let candidate:SceneLease|null = await prepareGeoSceneData(this.bridge,{handle:this.handle,sequence,budget:this.options.budget,style:this.options.style});
+      const queryResult=await this.prepareQuery(frozen,sequence,abort.signal);
+      let candidate:SceneLease|null=queryResult.candidate;
       let candidateView:XygWasmSceneView|null = null;
       let staging:ReturnType<XygWasmWorker['prepareGeoFrame']>|null = null;
       let prepared:Awaited<ReturnType<XygWasmWorker['prepareGeoFrame']>['result']>|null = null;
@@ -138,7 +144,7 @@ export class RetainedGeographicController {
         prepared = null;
         const previous = this.frame;
         this.companion.replaceChildren();this.companionOffset=0;
-        this.frame = candidate;this.frameProjectedBudget=frozen.maxProjectedVertices; candidate = null;
+        this.frame = candidate;this.indexDecision=queryResult.decision;this.indexedStats=queryResult.stats;this.frameProjectedBudget=frozen.maxProjectedVertices; candidate = null;
         this.sourceCompanion.replaceChildren();this.nextSource.disabled=true;
         const oldPage=this.sourcePage;this.sourcePage=null;if(oldPage)await oldPage.dispose();
         if(previous)await previous.dispose();
@@ -157,6 +163,53 @@ export class RetainedGeographicController {
     });
     this.chain = operation.then(()=>{},()=>{});
     return operation;
+  }
+
+  private async prepareQuery(query:XygGeoScaleQuery,sequence:bigint,signal:AbortSignal){
+    let handle=this.handle,owned=false,decision:'indexed'|'canonical-full-scan'|null=null,stats:ReturnType<typeof decodeGeoScaleReply>['indexStats']=null;
+    if(this.indexHandle){
+      const reply=decodeGeoScaleReply(await this.bridge.execute(encodeGeoScaleRequest({command:18,handle:this.indexHandle,sequence,budget:this.options.budget,query})));
+      if(reply.sequence!==sequence)throw new TypeError('Indexed query sequence mismatch');
+      if(reply.code===10){if(reply.handle!==this.indexHandle)throw new TypeError('Index fallback authority mismatch');decision='canonical-full-scan';}
+      else if(reply.code===0&&reply.handle!==this.indexHandle){handle=reply.handle;owned=true;decision='indexed';}
+      else throw new TypeError('Invalid indexed query admission');
+    }
+    try{
+      if(owned){
+        const reply=await driveGeoIndexSession(this.bridge,{handle,sequence,budget:this.options.budget,readPage:this.readIndexPage!,signal});
+        if(reply.code!==12)throw new TypeError('Indexed query did not complete');stats=reply.indexStats;
+      }else{
+        await this.bridge.execute(encodeGeoScaleRequest({command:5,handle,sequence,budget:this.options.budget,query}));
+        const reply=await driveGeoSession(this.bridge,{handle,sequence,budget:this.options.budget,readChunk:this.options.readChunk,signal});
+        if(reply.code!==4)throw new TypeError('Canonical query did not complete');
+      }
+      const candidate=await prepareGeoSceneData(this.bridge,{command:owned?19:11,handle,sequence,budget:this.options.budget,style:this.options.style});
+      return {candidate,decision,stats};
+    }finally{if(owned)await this.bridge.execute(encodeGeoScaleRequest({command:10,handle}));}
+  }
+  /** Explicit immutable sidecar storage, separate from the bounded live cache.
+   * Callbacks must settle and drop borrowed page bytes before write ACK. */
+  buildIndex(input:{grid?:number;maxVertices:bigint;writePage:(ticket:XygGeoReadTicket,bytes:Uint8Array,signal?:AbortSignal)=>Promise<void>;readPage:RetainedGeographicChartOptions['readChunk']}){
+    if(this.disposed)return Promise.reject(new Error('Geographic chart disposed'));
+    this.indexAbort?.abort();const abort=new AbortController();this.indexAbort=abort;
+    const grid=input.grid??16,maxVertices=input.maxVertices,writePage=input.writePage,readPage=input.readPage;
+    if(!Number.isInteger(grid)||grid<1||grid>256||typeof maxVertices!=='bigint'||maxVertices<=0n||maxVertices>0xffffffffffffffffn||typeof writePage!=='function'||typeof readPage!=='function')return Promise.reject(new TypeError('Explicit index options and storage required'));
+    const operation=this.chain.then(async()=>{
+      await this.initialization;
+      if(this.disposed||abort.signal.aborted||!this.frame)throw new DOMException('Geographic index cancelled','AbortError');
+      const sequence=this.frame.data.identity.sequence,payload=new Uint8Array(16),v=new DataView(payload.buffer);v.setUint32(0,grid,true);v.setBigUint64(8,maxVertices,true);
+      const created=decodeGeoScaleReply(await this.bridge.execute(encodeGeoScaleRequest({command:17,handle:this.frame.handle,sequence,budget:this.options.budget,payload})));
+      let handle=created.handle;
+      try{
+        if(created.sequence!==sequence||created.code!==0)throw new TypeError('Invalid index build admission');
+        const reply=await driveGeoIndexSession(this.bridge,{handle,sequence,budget:this.options.budget,readChunk:this.options.readChunk,writePage,signal:abort.signal});
+        if(reply.code!==11)throw new TypeError('Index build did not complete');
+        if(this.disposed||abort.signal.aborted)throw new DOMException('Geographic index cancelled','AbortError');
+        const previous=this.indexHandle;this.indexHandle=handle;handle=0n;this.readIndexPage=readPage;
+        if(previous)await this.bridge.execute(encodeGeoScaleRequest({command:10,handle:previous}));
+        return {pages:reply.dataLength,grid,maxVertices};
+      }finally{if(handle)await this.bridge.execute(encodeGeoScaleRequest({command:10,handle}));if(this.indexAbort===abort)this.indexAbort=null;}
+    });this.chain=operation.then(()=>{},()=>{});return operation;
   }
 
   /** Rust pages original rows regardless of visibility or temporal eligibility.
@@ -250,7 +303,7 @@ export class RetainedGeographicController {
   /** Drop painter/packet consumers before acknowledging data/session disposal. */
   dispose():Promise<void> {
     if(this.disposal)return this.disposal;
-    this.disposed = true; this.sourceAbort.abort(); this.operationAbort?.abort();this.auxiliaryAbort?.abort(); this.preparation?.cancel();
+    this.disposed = true; this.indexAbort?.abort(); this.sourceAbort.abort(); this.operationAbort?.abort();this.auxiliaryAbort?.abort(); this.preparation?.cancel();
     return this.disposal = (async()=>{
       await Promise.allSettled([this.initialization,this.chain]);
       this.options.layer?.releasePrepared();
@@ -261,6 +314,7 @@ export class RetainedGeographicController {
       const page=this.sourcePage;this.sourcePage=null;if(page)await page.dispose();
       const frame = this.frame; this.frame = null;
       if(frame)await frame.dispose();
+      if(this.indexHandle){await this.bridge.execute(encodeGeoScaleRequest({command:10,handle:this.indexHandle}));this.indexHandle=0n;this.readIndexPage=null;}
       if(this.handle!==0n){await this.bridge.execute(encodeGeoScaleRequest({command:10,handle:this.handle}));this.handle=0n;}
       this.options={...this.options,manifest:new Uint8Array(),style:new Uint8Array(),readChunk:async()=>{throw new Error('Geographic chart disposed');},onChange:undefined,onPick:undefined,onSourceRowFocus:undefined,onError:undefined};
     })();

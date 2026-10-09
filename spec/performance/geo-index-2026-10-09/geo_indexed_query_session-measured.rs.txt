@@ -35,55 +35,29 @@ pub enum GeoIndexedQueryStep {
     Complete,
     Cancelled,
 }
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct GeoIndexedWorkEstimate {
-    pub leaf_reads: u64,
-    pub vertex_records: u64,
-    pub leaf_streams: usize,
-}
-/// Conservative candidate work for one pass; no I/O, allocation or policy change.
-pub fn estimate_work(
-    index: &ValidatedGeoSpatialIndex,
-    camera: &GeoViewport,
-    time: TimePredicate,
-) -> Result<GeoIndexedWorkEstimate> {
-    time.validate()?;
-    let bounds = camera.point_index_bounds()?;
-    let mut last = None;
-    let mut estimate = GeoIndexedWorkEstimate::default();
-    for page in &index.pages {
-        if !page.time_matches(time) || !candidate(page.cell, index.options, camera, bounds) {
-            continue;
-        }
-        if last != Some(page.cell) {
-            estimate.leaf_streams += 1;
-            last = Some(page.cell);
-        }
-        estimate.leaf_reads = estimate
-            .leaf_reads
-            .checked_add(1)
-            .ok_or(SourceError::ResourceLimit)?;
-        estimate.vertex_records = estimate
-            .vertex_records
-            .checked_add(page.count as u64)
-            .ok_or(SourceError::ResourceLimit)?;
-    }
-    Ok(estimate)
-}
 pub fn decision(
     index: &ValidatedGeoSpatialIndex,
     camera: &GeoViewport,
     time: TimePredicate,
 ) -> Result<GeoIndexDecision> {
-    Ok(
-        if estimate_work(index, camera, time)?.leaf_streams > MAX_FRONTIER {
-            GeoIndexDecision::FullScanFrontier
-        } else {
-            GeoIndexDecision::Indexed
-        },
-    )
+    time.validate()?;
+    let bounds = camera.point_index_bounds()?;
+    let mut last = None;
+    let mut count = 0;
+    for p in &index.pages {
+        if !p.time_matches(time) || !candidate(p.cell, index.options, camera, bounds) {
+            continue;
+        }
+        if last != Some(p.cell) {
+            count += 1;
+            last = Some(p.cell);
+        }
+        if count > MAX_FRONTIER {
+            return Ok(GeoIndexDecision::FullScanFrontier);
+        }
+    }
+    Ok(GeoIndexDecision::Indexed)
 }
-
 struct Stream {
     first: usize,
     end: usize,
@@ -102,8 +76,6 @@ pub struct GeoIndexedQuerySession {
     heap: BinaryHeap<Reverse<(u64, u32, usize)>>,
     pending: Option<(usize, Page, bool)>,
     max_read_bytes: u64,
-    max_records: u64,
-    max_leaf_reads: u64,
     lod: Option<GeoPointLod>,
     result: Option<GeoPointResult>,
     stats: GeoIndexQueryStats,
@@ -187,8 +159,6 @@ impl GeoIndexedQuerySession {
             heap: BinaryHeap::with_capacity(MAX_FRONTIER),
             pending: None,
             max_read_bytes,
-            max_records: u64::MAX,
-            max_leaf_reads: u64::MAX,
             lod: Some(lod),
             result: None,
             stats: GeoIndexQueryStats {
@@ -199,25 +169,6 @@ impl GeoIndexedQuerySession {
             failed: false,
             lease,
         }))
-    }
-    /// Optional cumulative decoded-record and authenticated-read ceilings.
-    /// Admission must precede the first ticket; repeated aggregate passes count.
-    pub fn set_work_limits(&mut self, max_records: u64, max_leaf_reads: u64) -> Result<()> {
-        if max_records == 0 || max_leaf_reads == 0 {
-            return Err(SourceError::ResourceLimit);
-        }
-        if self.pending.is_some()
-            || self.stats.pages_read != 0
-            || self.stats.passes != 1
-            || self.cancelled
-            || self.failed
-            || self.result.is_some()
-        {
-            return Err(SourceError::StaleSource);
-        }
-        self.max_records = max_records;
-        self.max_leaf_reads = max_leaf_reads;
-        Ok(())
     }
     pub fn step(&mut self) -> Result<GeoIndexedQueryStep> {
         self.step_with_cancel(&mut || false)
@@ -343,19 +294,6 @@ impl GeoIndexedQuerySession {
             stream.next += 1;
             if !page.time_matches(self.time) {
                 continue;
-            }
-            if self
-                .stats
-                .pages_read
-                .checked_add(1)
-                .is_none_or(|n| n > self.max_leaf_reads)
-                || self
-                    .stats
-                    .candidate_vertices
-                    .checked_add(page.count as u64)
-                    .is_none_or(|n| n > self.max_records)
-            {
-                return Err(SourceError::ResourceLimit);
             }
             let total = self
                 .stats
