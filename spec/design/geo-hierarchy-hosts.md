@@ -80,3 +80,7 @@ foundation job also runs raw hierarchy conformance against those artifacts. The
 Node package test command includes the host suite and requires the same paired
 source-checkout artifacts, as do the existing native/WASM package tests. No
 pre-package native-only stage invokes the dual-artifact hierarchy suite.
+
+The hierarchy test artifact defaults to a module-relative packaged WASM URL,
+so repository-root CI and Node-package test execution share the same artifact.
+An explicit XYG_HIERARCHY_WASM override remains supported.
