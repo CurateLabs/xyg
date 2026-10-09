@@ -19,7 +19,9 @@ reduced full-ID membership, exact signed time/CRS Scenes, Rows and cancellation,
 forged-ticket, quota and fallback controls. `selected-snapshot.json` records
 ordinary/mixed selected snapshot and live XYSE parity, six native formats,
 offline strict-CSP selected/background pixels and attribution with no scripts
-or network. Stdout files preserve each complete raw report. These are bounded
+or network. The selected snapshot report labels its gzipBytes through the
+script's level9 policy (596,811 bytes); the gate, hierarchy and environment
+reports use level6 (597,662 bytes). Stdout files preserve each complete raw report. These are bounded
 correctness proofs, not massive browser or competitive timing results.
 
 `startup.json` contains four ABBA pairs,16 fresh Node processes. A is the

@@ -47,7 +47,12 @@ class OwnedGeoData:
                 self._disposal = asyncio.create_task(
                     self._bridge.execute(g.encode_request(dict(command=10, handle=self.handle)))
                 )
-            _, interrupted = await g._settle(self._disposal)
+            try:
+                _, interrupted = await g._settle(self._disposal)
+            except BaseException:
+                if self._disposal.done():
+                    self._disposal = None
+                raise
             self._closed = True
             if interrupted:
                 raise asyncio.CancelledError
@@ -149,19 +154,21 @@ class RetainedGeoSource:
                     raise RuntimeError("retained session did not complete")
                 return reply
             ticket = reply["ticket"]
+            authority = bytes(ticket["raw"])
+            authorized_bytes = ticket["encoded_bytes"]
             chunk = payload = request = view = None
             try:
-                chunk = self._reader(ticket)
+                chunk = self._reader({**ticket, "raw": memoryview(authority)})
                 if inspect.isawaitable(chunk):
                     if inspect.iscoroutine(chunk):
                         chunk.close()
                     raise TypeError("synchronous source requires a synchronous reader")
                 view = g._bytes(chunk)
-                if len(view) != ticket["encoded_bytes"] or g._backing_bytes(view) != len(view):
+                if len(view) != authorized_bytes or g._backing_bytes(view) != len(view):
                     raise ValueError("reader must return exact owning chunk storage")
                 if 4 * (352 + len(view)) > self.budget["processor_bytes"]:
                     raise ValueError("read transfer exceeds peak budget")
-                payload = bytearray(ticket["raw"]) + view
+                payload = bytearray(authority) + view
                 request = g.encode_request(dict(command=7, handle=handle, payload=payload))
                 payload = None
                 g.execute(request)
@@ -173,9 +180,9 @@ class RetainedGeoSource:
                 raise
             finally:
                 chunk = payload = request = view = None
-                g.execute(g.encode_request(dict(command=8, handle=handle, payload=ticket["raw"])))
+                g.execute(g.encode_request(dict(command=8, handle=handle, payload=authority)))
 
-    def _prepare(self, command, handle, sequence, style=b""):
+    def _prepare(self, command, handle, sequence, style=b"", *, _on_reply=None):
         reply = g.decode_reply(
             g.execute(
                 g.encode_request(
@@ -189,6 +196,8 @@ class RetainedGeoSource:
                 )
             )
         )
+        if _on_reply is not None:
+            _on_reply(reply)
         data_handle = reply["handle"]
         packet = data = None
         try:
@@ -483,7 +492,7 @@ def _pick(self, *, sequence, style, x, y, tolerance, mode, max_hits, _owner=None
     return self._prepare(14, _owner, sequence, payload)
 
 
-async def _aprepare(self, command, handle, sequence, payload=b""):
+async def _aprepare(self, command, handle, sequence, payload=b"", *, _on_reply=None):
     raw, interrupted = await g._settle(
         asyncio.create_task(
             self._bridge.execute(
@@ -500,6 +509,8 @@ async def _aprepare(self, command, handle, sequence, payload=b""):
         )
     )
     reply = g.decode_reply(raw)
+    if _on_reply is not None:
+        _on_reply(reply)
     packet = data = None
     try:
         if interrupted:
@@ -768,7 +779,14 @@ class GeoRowsData:
     def __init__(self, packet, owner, sequence):
         b = g._bytes(packet)
         bad = "invalid geographic rows packet"
-        if len(b) < 256 or bytes(b[:4]) != b"XYGZ" or struct.unpack_from("<II", b, 4) != (1, 4):
+        if (
+            len(b) < 256
+            or bytes(b[:4]) != b"XYGZ"
+            or (
+                struct.unpack_from("<I", b, 4)[0] not in (1, 2)
+                or struct.unpack_from("<I", b, 8)[0] != 4
+            )
+        ):
             raise ValueError(bad)
 
         def u32(at):
@@ -781,13 +799,14 @@ class GeoRowsData:
             return struct.unpack_from("<q", b, at)[0]
 
         count, flag, source_rows = u64(32), u32(40), u64(104)
+        footer_len = u64(248)
         if (
             u64(16) != owner
             or u64(24) != sequence
             or u64(80) != owner
             or count > 4096
             or flag > 1
-            or len(b) != 256 + count * 64
+            or len(b) != 256 + count * 64 + footer_len
             or source_rows > 1_000_000_000
             or not u64(96)
             or u32(112) not in range(1, 7)
@@ -800,7 +819,8 @@ class GeoRowsData:
             or any(b[44:48])
             or any(b[72:80])
             or any(b[156:160])
-            or any(b[176:256])
+            or any(b[176:248])
+            or (u32(4) == 1 and footer_len)
             or u32(64) > 65536
             or u32(68) > 65536
         ):
@@ -811,7 +831,7 @@ class GeoRowsData:
             flags = u32(at + 24)
             row = u64(at + 8)
             if (
-                flags & ~127
+                flags & ~(255 if u32(4) == 2 else 127)
                 or row >= source_rows
                 or row <= previous
                 or u32(at + 16) >= 65536
@@ -827,7 +847,18 @@ class GeoRowsData:
             ):
                 raise ValueError(bad)
             previous = row
-        self.packet, self.records = b, b[256:]
+        self.selection = g.parse_selection_footer(b, 256 + count * 64, rows=True)
+        if self.selection is not None:
+            import numpy as np
+
+            ids = self.selection["ids"]
+            for i in range(count):
+                feature = u64(256 + i * 64)
+                pos = int(np.searchsorted(ids, np.uint64(feature)))
+                selected = pos < len(ids) and int(ids[pos]) == feature
+                if bool(u32(256 + i * 64 + 24) & 128) != selected:
+                    raise ValueError("selected row intent mismatch")
+        self.packet, self.records = b, b[256 : 256 + count * 64]
         self.count, self.has_next = count, bool(flag)
         self.key = b[88:176]
         self.rows_examined, self.bytes_read = u64(48), u64(56)
@@ -844,6 +875,7 @@ class GeoRowsData:
             source_row=source_row,
             chunk_index=chunk,
             row=row,
+            selected=bool(flags & 128),
             geometry_null=bool(flags & 1),
             time_eligible=bool(flags & 2),
             eligible=bool(flags & 4),
