@@ -9,6 +9,7 @@ export class GeoHierarchy extends RetainedGeoSource {
  static async fromFrame(frame,source,{grid,maxVertices,maxWriteBytes,readPage,writePage,signal}) {
   void frame.data;
   const authority=retainedFrameAuthority(frame);if(!authority||authority.source!==source||authority.bridge!==source.bridge)throw new TypeError('frame belongs to another source or transport');
+  if(frame.data.selection!==null)throw new GeoHierarchyUnsupportedSelected();
   if(typeof readPage!=='function'||typeof writePage!=='function')throw new TypeError('explicit immutable page storage required');
   if(!Number.isInteger(grid)||grid<0||grid>0xffffffff)throw new TypeError('u32 grid required');
   for(const n of[maxVertices,maxWriteBytes])if(typeof n!=='bigint'||n<=0n||n>0xffffffffffffffffn)throw new TypeError('nonzero u64 work/write limits required');

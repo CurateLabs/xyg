@@ -50,7 +50,10 @@ rules. Cleanup coalesces pending calls and permits retry after a rejected
 pre-Rust cleanup; disposed views remain unavailable during retry. Failure/fallback leaves prior independently leased frames usable and does
 not silently run the canonical path. `GeoHierarchyFallback` reports Rust's
 frontier/work reason. Selected source authority reports
-`GeoHierarchyUnsupportedSelected`; it is never silently unselected.
+`GeoHierarchyUnsupportedSelected`; the adapter checks the authentic parsed
+selection footer before command37 and performs no build dispatch. This preserves
+the import-only unselected API when newer Rust can build scoped hierarchies;
+selected query43/Data44 routing requires a separate typed host integration.
 
 A successful query returns ordinary independently leased SceneData with existing
 Rows, picking, paged membership, retain and frozen export. The original validated
