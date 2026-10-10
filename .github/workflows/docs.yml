@@ -61,6 +61,9 @@ jobs:
         with:
           node-version: "22"
       - name: Install docs dependencies
+        # Pinned Reflex source hooks regenerate stubs in a shared uv checkout.
+        env:
+          UV_CONCURRENT_BUILDS: "1"
         run: uv sync --project docs/app --frozen --group dev
       - name: Run docs tests
         run: uv run --project docs/app --no-sync pytest docs/app/tests -v
@@ -96,6 +99,9 @@ jobs:
         with:
           node-version: "22"
       - name: Install docs dependencies
+        # Pinned Reflex source hooks regenerate stubs in a shared uv checkout.
+        env:
+          UV_CONCURRENT_BUILDS: "1"
         run: uv sync --project docs/app --frozen --group dev
       - name: Initialize docs frontend
         working-directory: docs/app
