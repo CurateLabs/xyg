@@ -1,0 +1,143 @@
+{
+  "proof": {
+    "ok": true,
+    "abiVersion": 33,
+    "schedules": 9,
+    "exactPixels": true,
+    "wholeFrozen": true,
+    "callbackFailureOldPaint": true,
+    "literalFooter": true,
+    "externalFramebuffer": true,
+    "remainingGlObjects": 0,
+    "contrastScreenshots": [
+      {
+        "color": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "box": {
+          "x": 41,
+          "y": 51,
+          "width": 20,
+          "height": 12.4
+        },
+        "dark": 6,
+        "white": 171,
+        "background": [
+          0,
+          0,
+          0,
+          255
+        ]
+      },
+      {
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "box": {
+          "x": 41,
+          "y": 51,
+          "width": 20,
+          "height": 12.4
+        },
+        "dark": 6,
+        "white": 171,
+        "background": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    ],
+    "frozenHtmlReplay": [
+      {
+        "path": "/frozen.html",
+        "attribution": true,
+        "red": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "background": [
+          0,
+          0,
+          255,
+          255
+        ],
+        "dark": 7,
+        "white": 162,
+        "scripts": 0
+      },
+      {
+        "path": "/frozen-black.html",
+        "attribution": true,
+        "red": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "background": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "dark": 7,
+        "white": 162,
+        "scripts": 0
+      },
+      {
+        "path": "/frozen-white.html",
+        "attribution": true,
+        "red": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "background": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "dark": 7,
+        "white": 162,
+        "scripts": 0
+      }
+    ]
+  },
+  "artifact": {
+    "rawBytes": 1505822,
+    "gzipBytes": 618706,
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17"
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_mixed_page.mjs",
+      "/packages/xy-client/dist/index.js",
+      "/tests/browser/geo_mixed_fixture.mjs",
+      "/packages/xy-node/src/geoscale.js",
+      "/packages/xy-node/src/geo-mixed-wire.js",
+      "/packages/xy-node/src/geo-snapshot.js",
+      "/packages/xy-node/src/geo-allocation-attempt.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/frozen.html",
+      "/frozen-black.html",
+      "/frozen-white.html"
+    ],
+    "external": [],
+    "errors": []
+  },
+  "scope": "Small actual mixed authority/native-WASM fixture; strict CSP with loopback file bytes and real borrowed WebGL2; black/white footer screenshot and native offline HTML pixel evidence; no provider request or massive interactive/performance claim."
+}
