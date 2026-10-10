@@ -108,9 +108,8 @@ begins, including when a read is still pending.
 Worker request authority is bound at dispatch in a private request-id map owned
 by the captured Worker origin, independently of the public TypeScript-private
 `pending` table. It is removed on terminal delivery, post failure or fail-all;
-the existing FIFO/admission caps bound live entries. Outcome authority is then
-recorded in a private WeakMap from a genuine trusted Worker message before public
-`onmessage` wrappers run. It binds the original
+the existing FIFO/admission caps bound live entries. Outcome authority is then recorded only in active private call scopes from a
+genuine trusted Worker message before public `onmessage` wrappers run. It binds the original
 captured bridge and complete request to a fixed 256-byte reply or primitive
 rejection snapshot. A success getter additionally compares the current returned
 packet with that snapshot; packet edits, arbitrary errors, and unrelated producer
@@ -131,3 +130,41 @@ successful binary can be disposed after a newer freeze becomes uncertain;
 that old notification resolves only its own barrier and must not clear the
 newer pin or recovery owner. Controller close retains the newer attempt until
 its exact Snapshot retirement and release settle.
+
+The Worker outcome getter returns the original returned 256-byte reply only
+after comparing it with the private immutable delivery snapshot. It does not
+copy or expose the private snapshot. Request authority, original receipt,
+private validation snapshot and parsed controls remain within the existing
+fixed request/control allowance; repeated getter validation adds no receipt
+buffer. Consumers validate the returned token synchronously before phase change.
+
+Before dispatch, `beginGeoWorkerMutationCapture` registers one of at most16
+active contexts on the genuine Worker origin. `withGeoWorkerMutationOutcome`
+settles its callback before closing that scope. Each genuine full-request match,
+including cloned identical requests, replaces every matching scope’s latest
+private dispatch token. Only that token’s original delivered response or error
+can validate; a genuine rejection from an earlier call or an earlier dispatch
+within the same call cannot prove current nonadmission after a later success.
+No message text or public error decoration supplies this authority.
+
+Contexts borrow the already-owned bounded canonical request rather than cloning
+it. The existing private request-id map owns one fixed request snapshot per
+pending dispatch; only active latest-token contexts capture one shared256-byte
+reply snapshot. Superseding dispatches and `close()` drop that provenance, and
+raw replies with no active capture get no private receipt copy. The getter
+returns the original returned ArrayBuffer after byte equality, without another
+copy. Sixteen bounded context records fit the existing32KiB controls; request
+and receipt phases remain in the existing1536-byte request allowance.
+
+Snapshot6 birth and7 Confirm/Release receipts are parsed synchronously inside
+the authenticated capture callback, before any promise continuation. Only
+private bounded target/retired scalars cross that await boundary. A public
+wrapper can retain or later edit the original returned buffer for inspection,
+but those edits cannot retag stored phase authority. Prevalidation edits remain
+uncertain and exact replay recovers the original legitimate Snapshot.
+
+Mutation helpers return a fresh private discriminated result containing either
+validated scalars or this scope’s authenticated primitive rejection. No error
+class, including an object retained from an earlier genuine control rejection,
+authorizes nonadmission. A substituted earlier rejection stays uncertain and
+exact replay recovers and retires the actual successful Snapshot allocation.

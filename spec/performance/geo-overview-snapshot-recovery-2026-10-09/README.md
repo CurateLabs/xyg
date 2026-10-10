@@ -62,3 +62,21 @@ The compiler manifest was corrected to include the already-tracked allocation
 recovery implementation and tests. All tracked crates/vendor Rust/Cargo/build
 paths and every recorded input hash were rechecked; this provenance correction
 does not change source code, build outputs or recorded runtime results.
+
+The scoped Worker proof rejects old genuine errors from both a prior call and
+a same-call reject→exact-clone-success sequence. It verifies the original reply
+is returned without an additional inspection copy,16 active contexts reject a
+seventeenth, and closed contexts drop authority. The private test entry is
+bundled in memory by the browser runner; it adds no shipped export or committed
+client artifact. Every matching genuine dispatch replaces the active token, and
+private receipt snapshots are cleared on supersession/close.
+
+Twelve microtask scheduling controls alter a genuine6 reply’s target or retired
+kind through a public Worker wrapper. The authenticated synchronous scalar
+parse preserves the genuine target; early edits recover by exact replay. Each
+case reads and retires that target without retiring the unrelated older binary.
+
+An actual earlier Snapshot7 InvalidArgument rejection is substituted into a
+later successful6 promise. It remains uncertain, then exact recovery reads and
+retires the genuinely allocated target. Fresh scoped discriminated results,
+not externally retained error classes, supply primitive rejection authority.

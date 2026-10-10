@@ -1,5 +1,5 @@
 /** Snapshot-local durable ownership; freezing and all metadata policy stay in Rust. */
-import {getGeoWorkerSnapshotTransport,getGeoWorkerMutationOutcome,isGeoWorkerTerminated,type XygWasmWorker} from './47_wasm';
+import {getGeoWorkerSnapshotTransport,beginGeoWorkerMutationCapture,isGeoWorkerTerminated,type XygWasmWorker} from './47_wasm';
 import {overviewFrameAuthority,type GeoOverviewFrame} from './71_geo_overview_owner';
 import type {XygGeoScaleBridge} from './63_geo_source';
 const HEADER=256,PROFILE_BYTES=2432,MAX_SCENE=757920,MAX_PACKET=PROFILE_BYTES+MAX_SCENE;
@@ -22,11 +22,16 @@ function receipt(packet:ArrayBuffer,sequence:bigint,length:number,handle?:bigint
  const h=v.getBigUint64(16,true);if(!allowZero&&h===0n||handle!==undefined&&h!==handle)throw new TypeError('Snapshot receipt owner mismatch');return h;
 }
 function retired(packet:ArrayBuffer,sequence:bigint){if(!(packet instanceof ArrayBuffer)||packet.byteLength!==HEADER||new DataView(packet).getUint32(8,true)!==2)return false;receipt(packet,sequence,0,0n,true,2);return true;}
-async function mutation(bridge:XygGeoScaleBridge,canonical:ArrayBuffer){
- const packet=await bridge.execute(canonical.slice(0));
- if(!getGeoWorkerMutationOutcome(bridge,canonical,packet)?.reply)throw new TypeError('Snapshot mutation confirmation lacks its genuine issuing Worker outcome');
- return packet;
+type SnapshotMutationResult<T>={ok:true;value:T}|{ok:false;cause:unknown;outcome?:{code?:string;status?:number|null}};
+async function mutation<T>(bridge:XygGeoScaleBridge,canonical:ArrayBuffer,validate:(packet:ArrayBuffer)=>T):Promise<SnapshotMutationResult<T>>{
+ let capture:ReturnType<typeof beginGeoWorkerMutationCapture>|undefined;
+ try{capture=beginGeoWorkerMutationCapture(bridge,canonical);const packet=await bridge.execute(canonical.slice(0));
+  if(!capture.outcome(packet)?.reply)throw new TypeError('Snapshot mutation confirmation lacks its genuine issuing Worker outcome');
+  return {ok:true,value:validate(packet)};
+ }catch(cause){return {ok:false,cause,outcome:capture?.outcome(cause)};}
+ finally{capture?.close();}
 }
+function mutationValue<T>(result:SnapshotMutationResult<T>):T{if(result.ok===false)throw result.cause;return result.value;}
 function aborted(){return new DOMException('Overview binary freeze cancelled','AbortError');}
 function expectedPrefix(source:Uint8Array,length:number){
  const out=new Uint8Array(PROFILE_BYTES),v=new DataView(out.buffer),s=new DataView(source.buffer,source.byteOffset,source.byteLength);
@@ -52,16 +57,14 @@ export class GeoOverviewSnapshotAttempt {
   if(this.#confirmed||this.#retired)return Promise.resolve();
   if(!this.#allocation)this.#allocation=(async()=>{
    if(this.#target===undefined){
-    let packet:ArrayBuffer;
-    try{packet=await mutation(this.#bridge,this.#request);}
-    catch(cause){const outcome=getGeoWorkerMutationOutcome(this.#bridge,this.#request,cause);
-     if(outcome&&['XYG_GEO_INVALID_ARGUMENT','XYG_GEO_RESOURCE_LIMIT','XYG_GEO_STALE_HANDLE','XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT'].includes(outcome.code??'')){this.#rejected=true;this.#closed=true;this.#notify('rejected');throw cause;}
+    const result=await mutation(this.#bridge,this.#request,packet=>retired(packet,this.#sequence)?{retired:true,target:undefined}:{retired:false,target:receipt(packet,this.#sequence,this.#length)});
+    if(result.ok===false){
+     if(result.outcome&&['XYG_GEO_INVALID_ARGUMENT','XYG_GEO_RESOURCE_LIMIT','XYG_GEO_STALE_HANDLE','XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT'].includes(result.outcome.code??'')){this.#rejected=true;this.#closed=true;this.#notify('rejected');throw result.cause;}
      this.#notify('uncertain');throw new GeoOverviewBinaryUncertainAllocation(this);
     }
-    try{if(retired(packet,this.#sequence)){this.#retired=true;}else this.#target=receipt(packet,this.#sequence,this.#length);}
-    catch{this.#notify('uncertain');throw new GeoOverviewBinaryUncertainAllocation(this);}
+    if(result.value.retired)this.#retired=true;else this.#target=result.value.target;
    }
-   try{const packet=await mutation(this.#bridge,this.#control(0));if(retired(packet,this.#sequence))this.#retired=true;else receipt(packet,this.#sequence,0,this.#target);this.#confirmed=true;this.#notify('known');}
+   try{const isRetired=mutationValue(await mutation(this.#bridge,this.#control(0),packet=>{if(retired(packet,this.#sequence))return true;receipt(packet,this.#sequence,0,this.#target);return false;}));if(isRetired)this.#retired=true;this.#confirmed=true;this.#notify('known');}
    catch{this.#notify('uncertain');throw new GeoOverviewBinaryUncertainAllocation(this);}
   })().finally(()=>{this.#allocation=undefined;});return this.#allocation;
  }
@@ -83,11 +86,11 @@ export class GeoOverviewSnapshotAttempt {
    if(!this.#retired){
     let disposalError:unknown;
     try{receipt(await this.#bridge.execute(request(3,this.#target!)),0n,0,this.#target);}catch(cause){disposalError=cause;}
-    const confirmation=await mutation(this.#bridge,this.#control(0));
-    if(!retired(confirmation,this.#sequence))throw disposalError??new TypeError('Snapshot retirement not confirmed');
+    const isRetired=mutationValue(await mutation(this.#bridge,this.#control(0),packet=>retired(packet,this.#sequence)));
+    if(!isRetired)throw disposalError??new TypeError('Snapshot retirement not confirmed');
     this.#retired=true;
    }
-   receipt(await mutation(this.#bridge,this.#control(2)),this.#sequence,0,0n,true);
+   mutationValue(await mutation(this.#bridge,this.#control(2),packet=>receipt(packet,this.#sequence,0,0n,true)));
    this.#closed=true;this.#header=new Uint8Array(0);this.#request=new ArrayBuffer(0);this.#notify('known');
   })().catch(cause=>{this.#disposal=undefined;throw cause;});return this.#disposal;
  }
