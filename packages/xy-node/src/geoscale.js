@@ -271,10 +271,17 @@ let activeNativeMutationScopes=0;
 function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36].includes(v.getUint32(8,true))||input.length===304&&v.getUint32(8,true)===19||input.length===272&&v.getUint32(8,true)===47&&[19,35,36].includes(v.getUint32(256,true));}
 /** Per-call native context; newest matching dispatch wins, never a persistent last-result bank. */
 export async function withGeoNativeMutationOutcome(_bridge,request,run){
- const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');
+ const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');return withNativeCapture(input,run,'mutation');
+}
+function minimalMemberDataRequest(input){if(input.length!==256)return false;const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return v.getUint32(0,true)===0x51475958&&v.getUint32(4,true)===1&&v.getUint32(8,true)===6&&v.getUint32(12,true)===0&&v.getBigUint64(16,true)!==0n&&v.getBigUint64(24,true)!==0n&&!input.subarray(32).some(x=>x!==0);}
+/** Private known46 Data after unresolved attempted10; arbitrary author closures cannot switch registries. */
+export async function withGeoNativeMemberDataOutcome(_bridge,request,run,issuerExecute){
+ const input=bytes(request);if(!minimalMemberDataRequest(input))throw new TypeError('Exact minimal known MemberData probe required');if(issuerExecute!==geoScaleExecute)return;return withNativeCapture(input,run,'known-member-data-retirement');
+}
+async function withNativeCapture(input,run,purpose){
  if(activeNativeMutationScopes>=16)throw new RangeError('Selected mutation capture capacity exhausted');activeNativeMutationScopes++;
  let capture;
- try{capture={request:input.slice(),latest:undefined,outcome:undefined,closed:false};nativeMutationScopes.add(capture);return await run(returned=>{
+ try{capture={purpose,request:input.slice(),latest:undefined,outcome:undefined,closed:false};nativeMutationScopes.add(capture);return await run(returned=>{
   const original=capture.outcome;if(capture.closed||!original||original.token!==capture.latest)return;
   if(original.reply){if(returned!==original.returned||!(returned instanceof ArrayBuffer)||returned.byteLength!==256||new Uint8Array(returned).some((x,i)=>x!==original.reply[i]))return;return Object.freeze({reply:returned});}
   if(returned===original.error)return Object.freeze({status:original.status});

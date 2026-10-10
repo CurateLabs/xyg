@@ -11,7 +11,7 @@ import struct
 import traceback
 import weakref
 from contextlib import suppress
-from types import MappingProxyType, SimpleNamespace
+from types import MappingProxyType, MethodType, SimpleNamespace
 from typing import Any
 
 from . import _geo_overview as wire
@@ -23,6 +23,15 @@ from ._geo_allocation_recovery import (
     forget_geo_allocation_issuer_async,
 )
 from ._geo_retained import on_owned_geo_data_disposed, retained_frame_issued_authority
+
+_CANONICAL_NATIVE_EXECUTE = g.execute
+_CANONICAL_NATIVE_BRIDGE_EXECUTE = g.NativeGeoScaleBridge.execute
+_NATIVE_MEMBER_PRODUCERS = weakref.WeakKeyDictionary()
+
+
+def _native_member_probe(transport):
+    return _NATIVE_MEMBER_PRODUCERS.get(transport, False)
+
 
 _INDEX = weakref.WeakKeyDictionary()
 _FRAME = weakref.WeakKeyDictionary()
@@ -64,6 +73,16 @@ class _IssuedTransport:
         self.execute = bridge.execute if bridge is not None else None
         self.read = bridge.read if bridge is not None else None
         self.native_execute, self.native_read = g.execute, g.read
+        _NATIVE_MEMBER_PRODUCERS[self] = (
+            bridge is None and self.native_execute is _CANONICAL_NATIVE_EXECUTE
+        ) or (
+            bridge is not None
+            and isinstance(bridge, g.NativeGeoScaleBridge)
+            and isinstance(self.execute, MethodType)
+            and self.execute.__self__ is bridge
+            and self.execute.__func__ is _CANONICAL_NATIVE_BRIDGE_EXECUTE
+            and g.execute is _CANONICAL_NATIVE_EXECUTE
+        )
 
 
 def _transport(owner):

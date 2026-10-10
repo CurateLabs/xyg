@@ -1,0 +1,19 @@
+{
+  "js/src/47_wasm.ts": "6a07f47deb8a2df420606e2a0957fa6c742dabf47a8cc2d316cd2223e4fbb5d4",
+  "js/src/71_geo_overview_owner.ts": "a010d07da891d653efa328e691b0b18b5c900e8687ddb6d59ca02dd76251e969",
+  "js/src/73_geo_overview_members.ts": "9f6c7d16076431a466b496bc8c621bbad3517638edf2ca1a0c06308b35cf41d9",
+  "packages/xy-node/src/geo-overview-members.d.ts": "17eca996d454f3b61d651d0f345f1272adf76db18d47734fcea84079eaed240a",
+  "packages/xy-node/src/geo-overview-members.js": "c7b8c365d30c1bdefb788c38ec445c7c75b439e4dea939147c654b7c99955229",
+  "packages/xy-node/src/geo-overview-source.js": "0352d2973166fd6e4d3c5d27d0f72378849b1c2052b387a31c3299013b45e834",
+  "packages/xy-node/src/geoscale.js": "994ff40f2e43835216392d2394f525db0fac49521ecd2f87e9c62f1405bb1848",
+  "packages/xy-node/test/geo-overview-member-retirement.test.mjs": "3722ec8cc8279db14bce7c6a1e3f53b082a8c160416e5ad6a0df68fb5f78cfc3",
+  "python/xyg/_geo_overview_members.py": "a020932a49aa145b0ed38743400ba5e6ff110cf8313793856bf05e5814ae6180",
+  "python/xyg/_geo_overview_source.py": "6994a83d8b0315289863a4026bd0371d599dde5c518257bb2ad8a4d77f71e094",
+  "python/xyg/_geoscale.py": "a7d328143f6d5cfc1c7b61b1daba52df349202644ebe7609a95900af1af63076",
+  "scripts/gen_geo_overview_hosts.mjs": "ad4ee78a73d46195fadd8822e81e8d0efc678056dbe74d29f6bea23d29792097",
+  "scripts/geo_member_retirement_smoke.mjs": "277f499ff14cdda118007086ec93359d59edaf805e8e65b6f3727946102f93a9",
+  "spec/design/geo-member-data-retirement.md": "954d3983b27754e6a6a1d24bc4b6cdccdeb42ac8f9699249e8eef146baa7ff15",
+  "spec/design/geo-overview-members-recovery.md": "3db0dbbd5a0f16554f0944fa1319a839eca5014ca52f2f5c331ed52582b218f8",
+  "tests/browser/geo_member_retirement_entry.mjs": "67a280d329a544f522e49ac1c44cbc3f1ecc73644acfe6deb45f9b68348b0445",
+  "tests/test_geo_overview_member_retirement.py": "e672a40a90c40e2fab9fef9d473f6da25e77a1d92ddb95782db935fb9e311aed"
+}

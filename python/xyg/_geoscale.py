@@ -30,7 +30,8 @@ _NATIVE_MUTATION_CAPTURES: set = set()
 
 
 class _NativeMutationCapture:
-    def __init__(self, request):
+    def __init__(self, request, purpose):
+        self.purpose = purpose
         self.request: bytes | None = bytes(request)
         self.reply = self.error = self.status = None
         self.latest = None
@@ -69,6 +70,27 @@ def _capture_native_mutation(request):
         )
     ):
         raise ValueError("bounded selected mutation request required")
+    with _capture_native_outcome(request, "mutation") as capture:
+        yield capture
+
+
+@contextmanager
+def _capture_native_member_data(request):
+    """Private known46 Data probe after attempted10; never Query-birth evidence."""
+    if not (
+        isinstance(request, bytes)
+        and len(request) == 256
+        and struct.unpack_from("<4sIII", request) == (b"XYGQ", 1, 6, 0)
+        and all(struct.unpack_from("<QQ", request, 16))
+        and not any(request[32:])
+    ):
+        raise ValueError("exact minimal known MemberData probe required")
+    with _capture_native_outcome(request, "known-member-data-retirement") as capture:
+        yield capture
+
+
+@contextmanager
+def _capture_native_outcome(request, purpose):
     global _ACTIVE_NATIVE_MUTATION_CAPTURES
     with _NATIVE_MUTATION_CAPTURE_LOCK:
         if _ACTIVE_NATIVE_MUTATION_CAPTURES >= 16:
@@ -76,7 +98,7 @@ def _capture_native_mutation(request):
         _ACTIVE_NATIVE_MUTATION_CAPTURES += 1
     capture = None
     try:
-        capture = _NativeMutationCapture(request)
+        capture = _NativeMutationCapture(request, purpose)
         with _NATIVE_MUTATION_CAPTURE_LOCK:
             _NATIVE_MUTATION_CAPTURES.add(capture)
         yield capture
