@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-10-10T15:59:51.137Z",
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "artifact": {
+    "sha256": "29e82b1ae89e4ed116799ed6b2040a1c855647ade23119ab8e796827f91a2b49",
+    "rawBytes": 1505665,
+    "gzip6Bytes": 618491
+  },
+  "result": {
+    "ok": true,
+    "proof": {
+      "success19": true,
+      "confirmOriginal19": true,
+      "genuineRejection": true,
+      "clonedLatestDispatch": true,
+      "olderErrorCannotAuthorize": true,
+      "mutatedRepliesRejected": true,
+      "nonmatchingUnbranded": true,
+      "capacity16": true,
+      "finallyCleanup": true,
+      "literalSelectedU64": true
+    }
+  },
+  "network": {
+    "served": [
+      "/",
+      "/page.js",
+      "/proof.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "errors": [],
+    "external": [],
+    "violations": []
+  },
+  "scope": "Exact selected19/304 and GeoScale47/272 original19 Worker provenance only; no public selected19 adoption or massive-performance claim."
+}

@@ -120,20 +120,25 @@ fn scope_charge(
     state: Option<&Arc<crate::geo_linked_state::GeoLinkedState>>,
 ) -> Result<usize> {
     let Some(scope) = scope else { return Ok(0) };
-    let admission = scope
+    if let Some(state) = state {
+        return scope.publication_retained_bytes(state);
+    }
+    // Clone only bounded Arc authority, then release admission before taking the
+    // shared receipt->admission locks. Registry serialization prevents changes.
+    let current = scope
         .admission
         .lock()
-        .map_err(|_| SourceError::ResourceLimit)?;
-    let current = admission.current();
-    scope
-        ._lease
-        .bytes()
-        .checked_add(
-            current
-                .filter(|current| state.is_none_or(|s| !Arc::ptr_eq(s, current)))
-                .map_or(0, |s| s.retained_bytes()),
-        )
-        .ok_or(SourceError::ResourceLimit)
+        .map_err(|_| SourceError::ResourceLimit)?
+        .current()
+        .cloned();
+    match current {
+        Some(current) => scope
+            .publication_retained_bytes(&current)?
+            .checked_add(current.retained_bytes())
+            .ok_or(SourceError::ResourceLimit),
+        // A nonce receipt is installed only after a successful retained admission.
+        None => Ok(scope._lease.bytes()),
+    }
 }
 pub(super) fn data_budget(entry: &Entry, bytes: usize) -> Result<usize> {
     let Entry::Hierarchy(Owned::Query {

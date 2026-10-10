@@ -1,0 +1,21 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 3 tests
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_scope_receipt_delta_and_same_arc_not_double_charged ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_43_exact_local_boundary_receipt_and_failure_atomicity ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_44_newer_intent_receipt_boundary_and_old_data_survives ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 1484 filtered out; finished in 0.69s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-1e5afb9617cfc1a9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-cee34e46c45b23c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

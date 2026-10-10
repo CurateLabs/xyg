@@ -20,6 +20,7 @@ All other framing words follow existing reserved-field rules. Commands32–34
 admit valid explicit QueryBudget words; no unused camera words acquire meaning.
 Commands35/36 validate full source, camera/time/revisions, state binding and
 options before consuming authority. Failure preserves the issued State handle.
+Opt-in nonzero header240 on35/36 provides [exact mutation recovery](geo-selected-mutation-recovery.md); nonce0 is unchanged.
 Canceling accepted work does not recreate its consumed State; the caller may
 publish an identical new handle from the retained Scope.
 
@@ -41,6 +42,8 @@ full query key; they do not create another selection-state scope or apply a
 selected-only geometry filter. Disposal/recreation cannot reset a live baseline.
 
 ### Indexed replacement publication
+
+Nonzero header240 on selected19 provides [durable publication recovery](geo-selected-publication-recovery.md); nonce0 remains unchanged.
 
 Only Queries created by36 opt into command19 replacing the completed Query
 entry with immutable SceneData at the **same handle**. Scene compilation,

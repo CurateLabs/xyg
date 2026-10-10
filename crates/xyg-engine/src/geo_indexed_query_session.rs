@@ -23,6 +23,17 @@ pub struct GeoIndexedResult {
     pub stats: GeoIndexQueryStats,
     _lease: GeoProcessorLease,
 }
+impl GeoIndexedResult {
+    /// Includes separately charged selected output and immutable State authority.
+    pub(crate) fn retained_bytes(&self) -> usize {
+        self._lease.bytes()
+            + self
+                .result
+                .selection
+                .as_ref()
+                .map_or(0, |s| s.retained_bytes() + s.state().retained_bytes())
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GeoIndexedReadTicket {
     pub session: u64,
@@ -458,6 +469,10 @@ impl GeoIndexedQuerySession {
             self.push_head(i);
         }
         Ok(())
+    }
+    /// Receipt liveness does not include cancelled/failed loans retained for ACK.
+    pub(crate) fn operation_live(&self) -> bool {
+        !self.cancelled && !self.failed
     }
     pub fn cancel(&mut self) {
         self.cancelled = true;

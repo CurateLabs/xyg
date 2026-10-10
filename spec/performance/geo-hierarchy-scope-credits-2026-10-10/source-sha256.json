@@ -1,0 +1,7 @@
+{
+  "crates/xyg-engine/src/geo_hierarchy_protocol.rs": "5d7b18f13ce1a8a4bfac40a41e9cb2a91835bc7b0673338bdd8ce7ad80a7a5e4",
+  "crates/xyg-engine/src/geo_hierarchy_scope_credit_tests.rs": "844b8075a518d53b736b3e03a3f2406c948a4b573e78ef8bc2386cb559b95403",
+  "crates/xyg-engine/src/geo_selected_hierarchy_protocol_tests.rs": "279ebc14c92d2b14ed6b91df4cb29bdeba1f7d3d36cd841d8d850301ca916d88",
+  "scripts/geo_hierarchy_scope_credit_conformance.mjs": "aa445a03a7d0ce2fe32f7cd281c6582482c834d97cbfde76a04934ebb4e216e9",
+  "spec/design/geo-hierarchy-protocol.md": "d73427056b1ee4a2677c69b93b509d4a649a0ade85332a2a0c79afed740fa853"
+}

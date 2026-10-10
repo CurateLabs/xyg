@@ -44,64 +44,62 @@ export declare class GeoSelectedState {
     private owner;
     private bridge;
     readonly scope: GeoSelectedScope;
-    constructor(bridge: XygGeoScaleBridge, handle: bigint, scope: GeoSelectedScope, token: typeof AUTHORITY);
+    constructor(bridge: XygGeoScaleBridge, handle: bigint, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt);
     get handle(): bigint;
     check(): void;
     belongsTo(bridge: XygGeoScaleBridge): boolean;
     dispose(): Promise<void>;
+    get pendingOperation(): GeoSelectedMutationAttempt | undefined;
     begin(input: {
         command: 35 | 36;
         handle: bigint;
         sequence: bigint;
         query: XygGeoScaleQuery;
         budget: XygGeoQueryBudget;
-    }): Promise<{
-        fallback: true;
-        reason: number | null;
-        state: GeoSelectedState;
-        operation?: undefined;
-    } | {
-        reason?: undefined;
-        state?: undefined;
-        fallback: false;
-        operation: GeoSelectedOperation;
-    }>;
+    }): Promise<SelectedMutationResult>;
+}
+type SelectedMutationResult = {
+    fallback: true;
+    reason: number;
+    state: GeoSelectedState;
+} | {
+    fallback: false;
+    operation: GeoSelectedOperation;
+} | undefined;
+export declare class GeoSelectedMutationAttempt {
+    #private;
+    constructor(state: GeoSelectedState, input: {
+        command: 35 | 36;
+        handle: bigint;
+        sequence: bigint;
+        query: XygGeoScaleQuery;
+        budget: XygGeoQueryBudget;
+    }, token: typeof AUTHORITY);
+    recover(): Promise<SelectedMutationResult>;
+    retire(): Promise<boolean>;
+    dispose(): Promise<void>;
 }
 export declare class GeoSelectedOperation {
-    private replaced;
-    private bridge;
-    readonly handle: bigint;
-    readonly sequence: bigint;
-    readonly indexed: boolean;
-    readonly budget: XygGeoQueryBudget;
-    readonly scope: GeoSelectedScope;
-    constructor(bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint, indexed: boolean, budget: XygGeoQueryBudget, scope: GeoSelectedScope, token: typeof AUTHORITY);
+    #private;
+    get publicationPending(): boolean;
+    settleDrive(): Promise<void>;
+    get handle(): bigint;
+    get sequence(): bigint;
+    get indexed(): boolean;
+    get budget(): {
+        processorBytes: number;
+        maxRowsExamined: bigint;
+        maxReadBytes: bigint;
+        maxChunks: number;
+        pageRows: number;
+    };
+    get scope(): GeoSelectedScope;
+    constructor(bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint, indexed: boolean, budget: XygGeoQueryBudget, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt);
     drive(input: {
         readChunk?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
         readPage?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
         signal?: AbortSignal;
-    }): Promise<{
-        code: number;
-        fallbackReasonCode: number | null;
-        handle: bigint;
-        sequence: bigint;
-        dataLength: bigint;
-        sourceHandle: bigint;
-        source: {
-            generation: bigint;
-            digest: Uint8Array<ArrayBuffer>;
-            rows: bigint;
-            geometry: number;
-            crs: number;
-        };
-        ticket: XygGeoReadTicket | null;
-        indexStats: {
-            pagesRead: bigint;
-            bytesRead: bigint;
-            candidateVertices: bigint;
-            passes: number;
-        } | null;
-    }>;
+    }): Promise<unknown>;
     prepare(style: Uint8Array): Promise<{
         handle: bigint;
         readonly data: {

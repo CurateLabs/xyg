@@ -14,6 +14,35 @@ pub(super) struct Scope {
     nonce_receipt: Mutex<Option<StateReceipt>>,
     pub _lease: GeoProcessorLease,
 }
+impl Scope {
+    // Dossier §27: Scope retains both a nonce receipt and its latest admission.
+    // Only the exact shared State already credited by the caller is excluded.
+    pub(super) fn publication_retained_bytes(
+        &self,
+        excluded: &Arc<GeoLinkedState>,
+    ) -> Result<usize> {
+        let receipt = self
+            .nonce_receipt
+            .lock()
+            .map_err(|_| SourceError::ResourceLimit)?;
+        let admission = self
+            .admission
+            .lock()
+            .map_err(|_| SourceError::ResourceLimit)?;
+        self._lease
+            .bytes()
+            .checked_add(receipt.as_ref().map_or(0, |r| r._lease.bytes()))
+            .and_then(|n| {
+                n.checked_add(
+                    admission
+                        .current()
+                        .filter(|v| !Arc::ptr_eq(v, excluded))
+                        .map_or(0, |v| v.retained_bytes()),
+                )
+            })
+            .ok_or(SourceError::ResourceLimit)
+    }
+}
 struct StateReceipt {
     nonce: u64,
     request: Vec<u8>,
@@ -316,7 +345,16 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     validate_current(state, snapshot)?;
     let value = state.value.clone();
     let scope = state.scope.clone();
-    let options = options(request)?;
+    let mut options = options(request)?;
+    let journaled = u64at(request, 240) != 0;
+    let phase_budget = if journaled {
+        options
+            .processor_bytes
+            .checked_sub(scope.publication_retained_bytes(&value)?)
+            .ok_or(SourceError::ResourceLimit)?
+    } else {
+        options.processor_bytes
+    };
     if command == 35 {
         let Entry::Session(source) = &mut r.entries[index].1 else {
             return Err(SourceError::InvalidFrame);
@@ -328,7 +366,7 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         {
             return Err(SourceError::StaleSource);
         }
-        source.begin_with_state(
+        source.begin_with_state_budget(
             sequence,
             snapshot,
             camera(request)?,
@@ -338,6 +376,7 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
             },
             options,
             Some(value),
+            journaled.then_some(phase_budget),
         )?;
         source.scope = Some(scope);
         r.entries.remove(state_index);
@@ -395,6 +434,13 @@ pub(super) fn start(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         put32(&mut out, 8, 10);
         put32(&mut out, 48, fallback);
         return Ok(out);
+    }
+    if journaled {
+        options.processor_bytes = phase_budget
+            .checked_sub(owner.index.reserved_bytes())
+            .and_then(|n| n.checked_sub(owner._lease.bytes()))
+            .and_then(|n| n.checked_sub(4096))
+            .ok_or(SourceError::ResourceLimit)?;
     }
     let lease = GeoProcessorLease::acquire(4096)?;
     let Some(mut session) = GeoIndexedQuerySession::new_with_state(

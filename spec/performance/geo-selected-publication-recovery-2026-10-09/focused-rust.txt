@@ -1,0 +1,14 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedpublicationrecovery/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.23s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 7 tests
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_exact_local_boundary_and_nonce_zero_policy_unchanged ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_held_query_stamp_pressure_release_then_atomic_admission ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_five_lanes_publish_at_sixteenth_handle_with_independent_rows ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_eight_data_cap_preserves_query_and_old_scene ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_newer_scope_state_and_large_nonce_receipt_in_local_boundary ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_rejects_ordinary_optin_preserves_completed_query_on_failed_budget ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_replays_data_distinct_from_query_and_retired_lost_disposal ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1477 filtered out; finished in 0.11s

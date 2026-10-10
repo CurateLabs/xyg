@@ -9,6 +9,29 @@ import weakref
 from . import _geoscale as g
 
 _ISSUERS = weakref.WeakKeyDictionary()
+_ORIGINAL_ISSUERS = weakref.WeakKeyDictionary()
+_NATIVE_EXECUTE = g.execute
+
+
+class _OriginalIssuer:
+    def __init__(self, handle, bridge):
+        self.handle, self.bridge = handle, bridge
+        self.execute = bridge.execute if bridge is not None else _NATIVE_EXECUTE
+        self.read = bridge.read if bridge is not None else None
+
+
+def register_geo_allocation_issuer(owner, handle, bridge):
+    original = _OriginalIssuer(g._uint(handle), bridge)
+    owner._geo_allocation_original = original
+    _ORIGINAL_ISSUERS[owner] = weakref.ref(original)
+
+
+def original_geo_allocation_issuer(owner):
+    reference = _ORIGINAL_ISSUERS.get(owner)
+    original = reference() if reference is not None else None
+    if original is None:
+        raise TypeError("Original retained Source/Index issuer required")
+    return original
 
 
 class _IssuerReceipts:
@@ -60,16 +83,24 @@ def _rejection(error):
 class GeoAllocationAttempt:
     """Captured before dispatch; exact confirmation settles before phase advance."""
 
-    def __init__(self, owner, transport, request, operation_sequence=None):
+    def __init__(self, owner, transport, request, operation_sequence=None, *, authenticated=False):
         if not 256 <= len(request) <= 280:
             raise ValueError("Bounded allocation request required")
         raw = bytes(request)
         command = struct.unpack_from("<I", raw, 8)[0]
-        if command not in (26, 27, 28, 29, 45) or struct.unpack_from("<Q", raw, 240)[0]:
+        if command not in (26, 27, 28, 29, 35, 36, 45) or struct.unpack_from("<Q", raw, 240)[0]:
             raise ValueError("Canonical allocation request required")
+        if command in (35, 36) and (len(raw) != 264 or not authenticated):
+            raise ValueError("selected mutations require authenticated exact framing")
         commands = _issuer_receipts(owner, True)
         slot = commands.setdefault(command, {"nonce": 0, "dead": False, "attempt": None})
         prior = slot["attempt"]
+        tracked = slot.setdefault("selected_attempts", [])
+        tracked[:] = [
+            a for a in tracked if not a._released and not a._rejected and a._fallback is None
+        ]
+        if authenticated and len(tracked) >= 16:
+            raise RuntimeError("Selected allocation birth tracking capacity exhausted")
         if slot["dead"] or (prior is not None and not prior.settled):
             raise RuntimeError("Allocation issuer closed or prior confirmation pending")
         nonce = slot["nonce"] + 1
@@ -92,11 +123,18 @@ class GeoAllocationAttempt:
         self._confirmed = self._retired = self._rejected = self._uncertain = False
         self._released = False
         self._active = None
+        self._authenticated, self._fallback = authenticated, None
         slot["nonce"], slot["attempt"] = nonce, self
+        if authenticated:
+            tracked.append(self)
 
     @property
     def settled(self):
-        return self._rejected or (self._confirmed and (not self._retired or self._released))
+        return (
+            self._rejected
+            or self._fallback is not None
+            or (self._confirmed and (not self._retired or self._released))
+        )
 
     @property
     def retired(self):
@@ -126,7 +164,11 @@ class GeoAllocationAttempt:
         if len(view) != 256:
             raise ValueError("Fixed allocation receipt required")
         raw = bytes(view)
-        if len(raw) == 256 and struct.unpack_from("<I", raw, 8)[0] == 22:
+        if self._command == 36 and struct.unpack_from("<I", raw, 8)[0] == 10:
+            if validate(raw) != 0:
+                raise ValueError("nonjournaled fallback requires no target")
+            self._fallback = raw
+        elif len(raw) == 256 and struct.unpack_from("<I", raw, 8)[0] == 22:
             _terminal(raw, self._sequence)
             self._retired = True
         else:
@@ -140,31 +182,72 @@ class GeoAllocationAttempt:
         if _terminal(raw, self._sequence, self._target) == 22:
             self._retired = True
         self._confirmed = True
+        self._slot["journal_nonce"], self._slot["journal_attempt"] = self._nonce, self
         return None if self._retired else self._receipt
 
-    def _failed(self, error):
-        if not self._uncertain and not self._target and not self._retired and _rejection(error):
+    def _failed(self, error, outcome=None):
+        rejected = (
+            outcome is not None and outcome.get("status") in (-9, -10, -13)
+            if self._authenticated
+            else _rejection(error)
+        )
+        if not self._uncertain and not self._target and not self._retired and rejected:
             self._rejected = True
         else:
             self._uncertain = True
 
+    def _call(self, request):
+        if not self._authenticated:
+            return self._native_execute(request)
+        with g._capture_native_mutation(request) as capture:
+            try:
+                raw = self._native_execute(request)
+            except BaseException as error:
+                self._failed(error, capture.outcome(error))
+                raise
+            if capture.outcome(raw) is None:
+                self._uncertain = True
+                raise ValueError("selected mutation lacks genuine native outcome")
+            return raw
+
+    async def _acall(self, request):
+        if not self._authenticated:
+            return await self._execute(request)
+        with g._capture_native_mutation(request) as capture:
+            try:
+                raw = await self._execute(request)
+            except BaseException as error:
+                self._failed(error, capture.outcome(error))
+                raise
+            if capture.outcome(raw) is None:
+                self._uncertain = True
+                raise ValueError("selected mutation lacks genuine native outcome")
+            return raw
+
     def recover(self, validate):
+        if self._fallback is not None:
+            return self._fallback
         if self._rejected:
             return None
         if self._retired and self._confirmed:
             self.release()
             return None
         try:
-            self._accept(self._receipt or self._native_execute(self._request), validate)
-            result = self._confirmed_reply(self._native_execute(self._ack(0)))
+            self._accept(self._receipt or self._call(self._request), validate)
+            if self._fallback is not None:
+                return self._fallback
+            result = self._confirmed_reply(self._call(self._ack(0)))
             if self._retired:
                 self.release()
             return result
         except BaseException as error:
-            self._failed(error)
+            if not self._rejected:
+                self._failed(error)
             raise
 
     async def recover_async(self, validate):
+        if self._fallback is not None:
+            return self._fallback
         if self._rejected:
             return None
         if self._retired and self._confirmed:
@@ -176,14 +259,17 @@ class GeoAllocationAttempt:
                 try:
                     packet = self._receipt
                     if packet is None:
-                        packet = await self._execute(self._request)
+                        packet = await self._acall(self._request)
                     self._accept(packet, validate)
-                    result = self._confirmed_reply(await self._execute(self._ack(0)))
+                    if self._fallback is not None:
+                        return self._fallback
+                    result = self._confirmed_reply(await self._acall(self._ack(0)))
                     if self._retired:
                         await self.release_async()
                     return result
                 except BaseException as error:
-                    self._failed(error)
+                    if not self._rejected:
+                        self._failed(error)
                     raise
 
             self._active = asyncio.create_task(run())
@@ -199,7 +285,7 @@ class GeoAllocationAttempt:
 
     def probe_retirement(self, validate):
         if self._confirmed and self._target:
-            if _terminal(self._native_execute(self._ack(0)), self._sequence, self._target) == 22:
+            if _terminal(self._call(self._ack(0)), self._sequence, self._target) == 22:
                 self._retired = True
                 return None
             return self._receipt
@@ -208,7 +294,7 @@ class GeoAllocationAttempt:
 
     async def probe_retirement_async(self, validate):
         if self._confirmed and self._target:
-            raw, interrupted = await g._settle(asyncio.create_task(self._execute(self._ack(0))))
+            raw, interrupted = await g._settle(asyncio.create_task(self._acall(self._ack(0))))
             if _terminal(raw, self._sequence, self._target) == 22:
                 self._retired = True
                 return None
@@ -219,7 +305,11 @@ class GeoAllocationAttempt:
         return await self.recover_async(validate)
 
     def _forget_request(self):
-        if not self._released or self._rejected or self._slot["nonce"] != self._nonce:
+        if (
+            not self._released
+            or self._rejected
+            or self._slot.get("journal_nonce", self._slot["nonce"]) != self._nonce
+        ):
             return None
         if not self._confirmed:
             raise RuntimeError("Unconfirmed allocation cannot be forgotten")
@@ -228,14 +318,14 @@ class GeoAllocationAttempt:
     def forget(self):
         request = self._forget_request()
         if request is not None:
-            if _terminal(self._native_execute(request), self._sequence, 0) != 0:
+            if _terminal(self._call(request), self._sequence, 0) != 0:
                 raise ValueError("Forget acknowledgement must be successful")
             self._slot["attempt"] = None
 
     async def forget_async(self):
         request = self._forget_request()
         if request is not None:
-            raw, interrupted = await g._settle(asyncio.create_task(self._execute(request)))
+            raw, interrupted = await g._settle(asyncio.create_task(self._acall(request)))
             if _terminal(raw, self._sequence, 0) != 0:
                 raise ValueError("Forget acknowledgement must be successful")
             self._slot["attempt"] = None
@@ -246,7 +336,7 @@ class GeoAllocationAttempt:
         if not self._released and not self._rejected:
             if not self._confirmed:
                 raise RuntimeError("Allocation confirmation unsettled")
-            if _terminal(self._native_execute(self._ack(2)), self._sequence, 0) != 0:
+            if _terminal(self._call(self._ack(2)), self._sequence, 0) != 0:
                 raise ValueError("Release acknowledgement must be successful")
             self._released = True
         if self._slot["dead"]:
@@ -256,7 +346,7 @@ class GeoAllocationAttempt:
         if not self._released and not self._rejected:
             if not self._confirmed:
                 raise RuntimeError("Allocation confirmation unsettled")
-            raw, interrupted = await g._settle(asyncio.create_task(self._execute(self._ack(2))))
+            raw, interrupted = await g._settle(asyncio.create_task(self._acall(self._ack(2))))
             if _terminal(raw, self._sequence, 0) != 0:
                 raise ValueError("Release acknowledgement must be successful")
             self._released = True
@@ -269,7 +359,16 @@ class GeoAllocationAttempt:
 def forget_geo_allocation_issuer(owner):
     for slot in _issuer_receipts(owner).values():
         slot["dead"] = True
-        attempt = slot["attempt"]
+        for attempt in slot.get("selected_attempts", []):
+            if attempt._fallback is not None or attempt._rejected or attempt._released:
+                continue
+            if (
+                attempt.probe_retirement(lambda raw: struct.unpack_from("<Q", raw, 16)[0])
+                is not None
+            ):
+                continue  # Index disposal does not retire independently owned Query births.
+            attempt.release()
+        attempt = slot.get("journal_attempt", slot["attempt"])
         if attempt is not None:
             attempt.forget()
 
@@ -277,6 +376,17 @@ def forget_geo_allocation_issuer(owner):
 async def forget_geo_allocation_issuer_async(owner):
     for slot in _issuer_receipts(owner).values():
         slot["dead"] = True
-        attempt = slot["attempt"]
+        for attempt in slot.get("selected_attempts", []):
+            if attempt._fallback is not None or attempt._rejected or attempt._released:
+                continue
+            if (
+                await attempt.probe_retirement_async(
+                    lambda raw: struct.unpack_from("<Q", raw, 16)[0]
+                )
+                is not None
+            ):
+                continue  # Index disposal does not retire independently owned Query births.
+            await attempt.release_async()
+        attempt = slot.get("journal_attempt", slot["attempt"])
         if attempt is not None:
             await attempt.forget_async()

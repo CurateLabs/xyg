@@ -1,0 +1,15 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "nativeSha256": "90139354a1a33d220a1b1bc67fd38db1b541882fa909823aafe9d237a0e62c37",
+  "wasmSha256": "29e82b1ae89e4ed116799ed6b2040a1c855647ade23119ab8e796827f91a2b49",
+  "rawBytes": 1505665,
+  "gzip6Mtime0Bytes": 618491,
+  "rawCap": 1507328,
+  "gzipCap": 622592,
+  "coreInputs": 204,
+  "abi": 383,
+  "wasmAbi": 33,
+  "profile": "unchanged O3, fat LTO, one codegen unit, inline threshold100"
+}

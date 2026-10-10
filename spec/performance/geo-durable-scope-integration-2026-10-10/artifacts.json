@@ -1,0 +1,10 @@
+{
+  "nativeSha256": "2310768d02d25b56579c3da358cc243f63629798a49cb7e652308d76c5c9d8f0",
+  "wasmSha256": "9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d",
+  "rawBytes": 1505840,
+  "gzip6Mtime0Bytes": 618550,
+  "rawCap": 1507328,
+  "gzipCap": 622592,
+  "inputCount": 205,
+  "immutableArtifactDir": "/tmp/xyg-m6-durable-frozen-artifacts/9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d"
+}

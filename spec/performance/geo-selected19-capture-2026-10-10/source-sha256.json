@@ -1,0 +1,6 @@
+{
+  "js/src/47_wasm.ts": "bb538e0c10deca14b705f2f334cdc6694acc100285fd9f63b0ef595eb7f11692",
+  "tests/browser/geo_selected19_capture_entry.mjs": "f18d55c9a2a3b5974d8ee732f3ee287231b3ecbbba85893edb39e894e8d004c9",
+  "scripts/geo_selected19_capture_smoke.mjs": "4970d3b3f6445c48fc0c21d0c2c7e1343b33c818c2814ab6c93bd10894e3e927",
+  "spec/design/geo-selected-publication-recovery.md": "d04b067cd508a87d46cd483881c45e748463a3f6467c384bb5c918d17c833f9d"
+}

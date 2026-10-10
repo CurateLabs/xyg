@@ -1,0 +1,138 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_async_response_decoration_cannot_rebind_admitted_operation ________
+
+    def test_async_response_decoration_cannot_rebind_admitted_operation():
+        async def run():
+            manifest, chunk = fixture_manifest()
+            native = g.NativeGeoScaleBridge(BUDGET["processor_bytes"])
+            admitted, resume = asyncio.Event(), asyncio.Event()
+            armed = False
+            reads = 0
+    
+            class Bridge:
+                async def execute(self, request):
+                    packet = await native.execute(request)
+                    if armed and struct.unpack_from("<I", request, 8)[0] == 35:
+                        admitted.set()
+                        await resume.wait()
+                    return packet
+    
+                async def read(self, request):
+                    return await native.read(request)
+    
+            bridge = Bridge()
+    
+            async def reader(_):
+                nonlocal reads
+                reads += 1
+                return chunk
+    
+            async def poison(_):
+                raise AssertionError("caller decoration redirected admitted operation")
+    
+            source = await RetainedGeoSource.create_async(
+                manifest, reader, budget=BUDGET, bridge=bridge
+            )
+            q = {**query(source.info), "state_revision": 1}
+            old = await source.aupdate(q, sequence=1, style=style())
+            scope = await GeoSelectedScope.from_frame_async(old, namespace=U64, layer_id=U64)
+            state = await scope.state_async(
+                revision=2, ids=np.array([U64], dtype="<u8"), fill=bytes([0, 255, 0, 255])
+            )
+            frame = None
+            original_execute, original_read = bridge.execute, bridge.read
+            try:
+                armed = True
+                pending = asyncio.create_task(
+                    state.begin_async(source, {**q, "state_revision": 2}, sequence=2)
+                )
+                await admitted.wait()
+                source.budget = {**BUDGET, "processor_bytes": 256}
+                source._reader = source._read_page = source._write_page = poison
+                source._bridge = object()
+                bridge.execute = bridge.read = poison
+                resume.set()
+                operation = await pending
+                before = reads
+                await operation.drive_async()
+                assert reads > before
+                frame = await operation.prepare_async(style())
+                assert frame.data.selection["visible_vertices"] == 1
+                await operation.cancel_async()
+                await state.pending_operation.aclose()
+                assert old.data.record(0)["feature_id"] == U64
+            finally:
+                resume.set()
+                bridge.execute, bridge.read = original_execute, original_read
+                source._bridge, source._reader, source.budget = bridge, reader, dict(BUDGET)
+                if frame is not None:
+                    await frame.aclose()
+                await old.aclose()
+                await source.aclose()
+                await state.aclose()
+                await scope.aclose()
+    
+>       asyncio.run(run())
+
+tests/test_geo_selected_mutation_hosts.py:553: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_geo_selected_mutation_hosts.py:533: in run
+    operation = await pending
+                ^^^^^^^^^^^^^
+python/xyg/_geo_selected.py:426: in begin_async
+    return await attempt.recover_async()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geo_selected.py:552: in recover_async
+    result, interrupted = await g._settle(task)
+                          ^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geoscale.py:695: in _settle
+    return await asyncio.shield(task), interrupted
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geo_selected.py:542: in run
+    return self._accept(await self._attempt.recover_async(self._validate))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geo_selected.py:504: in _accept
+    self._operation = GeoSelectedOperation(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <xyg._geo_selected.GeoSelectedOperation object at 0x10a138050>
+source = <xyg._geo_retained.RetainedGeoSource object at 0x109ecb0e0>
+sequence = 2
+request = b'XYGQ\x01\x00\x00\x00#\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x0...00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00'
+scope = <xyg._geo_selected.GeoSelectedScope object at 0x109ecb4d0>, handle = 2
+indexed = False, _token = <object object at 0x109728550>
+
+    def __init__(self, source, sequence, request, scope, handle, indexed, *, _token=None):
+        if _token is not _AUTHORITY:
+            raise TypeError("issued selected authority required")
+        self._source, self._sequence, self._request, self._scope = source, sequence, request, scope
+        self._handle, self._indexed, self._replaced = handle, indexed, False
+        self._publication_pending = False
+        self._mutation: GeoSelectedMutationAttempt | None = None
+        self._budget = dict(source.budget)
+        self._reader = source._reader
+        self._read_page = getattr(source, "_read_page", None)
+        self._write_page = getattr(source, "_write_page", None)
+        self._bridge = source._bridge
+        self._transport: Any = (
+>           SimpleNamespace(execute=self._bridge.execute, read=self._bridge.read)
+                                    ^^^^^^^^^^^^^^^^^^^^
+            if self._bridge is not None
+            else None
+        )
+E       AttributeError: 'object' object has no attribute 'execute'
+
+python/xyg/_geo_selected.py:636: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_geo_selected_mutation_hosts.py::test_async_response_decoration_cannot_rebind_admitted_operation
+1 failed, 10 deselected in 0.48s

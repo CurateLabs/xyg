@@ -1,0 +1,28 @@
+{
+  "artifactSha256": "29e82b1ae89e4ed116799ed6b2040a1c855647ade23119ab8e796827f91a2b49",
+  "packets": [
+    {
+      "binaryBytes": 7733,
+      "binarySha256": "072813af1d333a20526a1f15aa649db72f65737466f093852f9923d14832daf9",
+      "eightSnapshots": true,
+      "legacyBytesIdentical": true,
+      "replayAfterIssuerGone": true,
+      "strictRequest": true,
+      "confirmBeforeRead": true,
+      "twoReadQuota": true,
+      "lostDisposeAndRelease": true
+    },
+    {
+      "binaryBytes": 7733,
+      "binarySha256": "072813af1d333a20526a1f15aa649db72f65737466f093852f9923d14832daf9",
+      "eightSnapshots": true,
+      "legacyBytesIdentical": true,
+      "replayAfterIssuerGone": true,
+      "strictRequest": true,
+      "confirmBeforeRead": true,
+      "twoReadQuota": true,
+      "lostDisposeAndRelease": true
+    }
+  ],
+  "scope": "small actual native/WASM Snapshot-local6/7 proof; no performance or selected overview claim"
+}

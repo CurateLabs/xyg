@@ -8,7 +8,9 @@ a borrowed authority callback cannot reenter its source or tile registry.
 
 Requests are exactly256 bytes: magic XYGJ0, version u32@4=1, command u32@8,
 zero12..16, handle u64@16, sequence u64@24, budget u64@32, format u32@40,
-quality u32@44, scale f64@48, zero56..256. Unused fields must be zero.
+quality u32@44, scale f64@48, zero56..256. Unused fields must be zero,
+except the optional command6 nonce and snapshot-local command7 control fields
+defined in [snapshot recovery](geo-overview-snapshot-recovery.md).
 
 | Command | Meaning | Active fields |
 | --- | --- | --- |
@@ -16,6 +18,8 @@ quality u32@44, scale f64@48, zero56..256. Unused fields must be zero.
 | 2 | Export frozen snapshot | Snapshot handle, budget≤384MiB, format0SVG/1PNG/2PDF/3JPEG/4WebP/5HTML, quality1..100, finite positive scale |
 | 3 | Dispose owner after dropping all copies/views | Handle |
 | 4 | Freeze immutable mixed TileFrameData | Tile frame handle, exact nonzero epoch, budget≤128MiB |
+| 6 | Freeze immutable Overview Data | Exact Data handle/sequence, budget; optional nonzero nonce@240 |
+| 7 | Snapshot-local birth control | Original issuer/sequence, nonce, exact target, Confirm/Release/Forget; see recovery grammar |
 | 20 | Pure snapshot read | Snapshot handle |
 | 21 | Pure artifact companion read | Artifact handle |
 | 22 | Pure artifact bytes read | Artifact handle |
@@ -70,3 +74,8 @@ Unsupported for static artifact export, including mixed raster Scenes. Tile
 painter preparation uses the same opaque serialized transport phase and
 32×SceneBytes+1MiB preflight; it admits only the trusted catalog-generated Scene.
 Native mixed proof: `uv run pytest tests/test_geo_tiles.py -q`.
+
+Opted-in overview command6 nonce recovery and snapshot-local command7 controls
+are specified in [the snapshot recovery contract](geo-overview-snapshot-recovery.md).
+Nonce0 requests, native format commands and existing owner/read limits retain
+their prior behavior.

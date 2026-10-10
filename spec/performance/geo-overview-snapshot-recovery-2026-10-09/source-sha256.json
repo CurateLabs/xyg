@@ -1,0 +1,61 @@
+{
+  "base": "7f062ada5a34dfbd8da0558ddac8b9c1112f43eb",
+  "files": [
+    {
+      "path": "crates/xyg-engine/src/geo_snapshot_protocol.rs",
+      "sha256": "e45445a05371cac5dec4a194dd4915e4ba785817b0140b7da0d8aa67c40ad270"
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_snapshot_recovery_tests.rs",
+      "sha256": "5307899a13bd06b93443f2dababf06308716558efe7d765692e3a0d8bcf7b0cb"
+    },
+    {
+      "path": "crates/xyg-engine/src/lib.rs",
+      "sha256": "b8e6f90e392d6e8515babd9bdd965ae403a3bdd33c2ade489e81fc3102240bef"
+    },
+    {
+      "path": "js/src/47_wasm.ts",
+      "sha256": "6b41032461c780568b6bc2619232c9673906439c7d2fd2088f6bc54990654e8e"
+    },
+    {
+      "path": "js/src/71_geo_overview_controller.ts",
+      "sha256": "21d9fd0c92296d8381a980f3d640d552849e1e2d2a62df80317b4f777ecacc44"
+    },
+    {
+      "path": "js/src/74_geo_overview_snapshot.ts",
+      "sha256": "c97de3dfcc8c8a36bade46a9f139196a25c9559b1e880b1b54381c42c5c775d1"
+    },
+    {
+      "path": "scripts/geo_overview_binary_smoke.mjs",
+      "sha256": "7bdc803f57e7fe2cc9278707624e490a1adcfe8afe10d0ab1706c4d3f51fc422"
+    },
+    {
+      "path": "scripts/geo_snapshot_recovery_conformance.mjs",
+      "sha256": "02c0bccdcd062b7fbe11b8c6756320f12f4ed6ee72273315784c83f6c8764416"
+    },
+    {
+      "path": "spec/design/geo-overview-snapshot-recovery.md",
+      "sha256": "eb034da221c70e3a29363a06edb58ddffdb26a02c9bea7423ac8515d31d09679"
+    },
+    {
+      "path": "spec/design/geo-snapshot-protocol.md",
+      "sha256": "f0d995ea0522f35f28609c2d48830493ec9e7a9b2be7e3f78831c59f960ba7d4"
+    },
+    {
+      "path": "spec/design/ownership-audit.json",
+      "sha256": "7e9c2905a22593045751ddc0bc44942862685c263ad5ebaa74b91222c7bce4bd"
+    },
+    {
+      "path": "spec/design/ownership-audit.md",
+      "sha256": "56a708068347a907d92c1d0ae1b48a5b4022cea99ccc6ac710a87f5524a3ef93"
+    },
+    {
+      "path": "tests/browser/geo_overview_binary_page.mjs",
+      "sha256": "7794a320075ee54a337190a6083e452c3f260cff8868c0565e21ec5b62f8f81f"
+    },
+    {
+      "path": "tests/browser/geo_snapshot_capture_entry.ts",
+      "sha256": "8e2f42cbbc0ba95a1fe1ec4c757e9ca512a76751e5dddcf0dda4ed863edbda90"
+    }
+  ]
+}

@@ -440,6 +440,9 @@ jobs:
           node scripts/geo_overview_membership_engine_conformance.mjs
           XYG_GEO_DOMAIN_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-domain-members-ci.json" node scripts/geo_overview_domain_members_conformance.mjs
           XYG_GEO_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-allocation-recovery-ci.json" node scripts/geo_allocation_recovery_conformance.mjs
+          XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-recovery-ci.json" XYG_SELECTED_MUTATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-mutation-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_mutation_recovery_conformance.mjs
+          XYG_SELECTED_PUBLICATION_REPORT="$GITHUB_WORKSPACE/geo-selected-publication-recovery-ci.json" XYG_SELECTED_PUBLICATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-publication-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_publication_recovery_conformance.mjs
+          XYG_SNAPSHOT_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-snapshot-recovery-ci.json" node scripts/geo_snapshot_recovery_conformance.mjs
           node scripts/gen_geo_overview_wire.mjs --check
           node scripts/geo_overview_conformance.mjs
           node scripts/gen_geo_selected_wire.mjs --check
@@ -481,6 +484,8 @@ jobs:
           node scripts/geo_retained_wasm_smoke.mjs
           XYG_OVERVIEW_CONTROLLER_REPORT="$GITHUB_WORKSPACE/geo-overview-controller-ci.json" node scripts/geo_overview_controller_smoke.mjs
           XYG_OVERVIEW_BINARY_REPORT="$GITHUB_WORKSPACE/geo-overview-binary-ci.json" node scripts/geo_overview_binary_smoke.mjs
+          XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-hosts-ci.json" node scripts/geo_selected_mutation_hosts_smoke.mjs
+          XYG_SELECTED19_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-selected19-capture-ci.json" node scripts/geo_selected19_capture_smoke.mjs
           XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" XYG_GEO_NATIVE_OVERVIEW_REPORT="$GITHUB_WORKSPACE/geo-native-overview-host-ci.json" node tests/browser/geo_native_overview_host_test.mjs
       - name: Geographic painter and borrowed MapLibre context
         timeout-minutes: 10
@@ -525,8 +530,13 @@ jobs:
             geo-overview-domain-members-ci.json
             geo-overview-members-hosts-ci.json
             geo-allocation-recovery-ci.json
+            geo-selected-mutation-recovery-ci.json
+            geo-selected-publication-recovery-ci.json
+            geo-snapshot-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
+            geo-selected19-capture-ci.json
+            geo-selected-mutation-hosts-ci.json
             geo-native-overview-host-ci.json
 
   browser_conformance:

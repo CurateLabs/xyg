@@ -4,7 +4,7 @@ import {hydrateWasmPainter,type XygWasmSceneView} from './48_wasm_scene';
 import {GeoOverviewIndex,GeoOverviewFrame,overviewIndexAuthority,overviewFrameAuthority,updateOverviewIndex} from './71_geo_overview_owner';
 import {encodeGeoOverviewRequest} from './67_geo_overview';
 import type {XygGeoScaleBridge,XygGeoScaleQuery} from './63_geo_source';
-import {beginOverviewBinaryFreeze,disposeOverviewBinary,GeoOverviewBinaryCleanupPending,GeoOverviewBinaryUncertainAllocation,type GeoOverviewFrozenBinary,type OverviewBinaryFreezeOptions} from './74_geo_overview_snapshot';
+import {beginOverviewBinaryFreeze,disposeOverviewBinary,GeoOverviewBinaryCleanupPending,GeoOverviewBinaryUncertainAllocation,type GeoOverviewFrozenBinary,type GeoOverviewSnapshotAttempt,type OverviewBinaryFreezeOptions} from './74_geo_overview_snapshot';
 
 type Prepared=Awaited<ReturnType<XygWasmWorker['prepareGeoFrame']>['result']>;
 export interface OverviewGeographicChartOptions {
@@ -46,7 +46,7 @@ export class OverviewGeographicController {
  #frame:GeoOverviewFrame|undefined;#view:XygWasmSceneView|undefined;#summary:OverviewGeoFrameSummary|undefined;
  #cleanup:GeoOverviewFrame|undefined;
  #freezePin:{frame:GeoOverviewFrame;barrier:Promise<void>;unknown:boolean;release:()=>void}|undefined;
- #freezeWork:Promise<void>|undefined;#freezeAbort:AbortController|undefined;#binaryCleanup:GeoOverviewFrozenBinary|undefined;
+ #freezeWork:Promise<void>|undefined;#freezeAbort:AbortController|undefined;#binaryCleanup:GeoOverviewFrozenBinary|GeoOverviewSnapshotAttempt|undefined;#snapshotAttempt:GeoOverviewSnapshotAttempt|undefined;
  static async create(options:OverviewGeographicChartOptions){
   if(options.mode!=='temporal-domain-overview'||!(options.el instanceof HTMLElement))throw new TypeError('Explicit overview mode and geographic container required');
   const bridge=getGeoWorkerBridge(options.worker),a=overviewIndexAuthority(options.index);
@@ -131,15 +131,15 @@ export class OverviewGeographicController {
   let result:Promise<GeoOverviewFrozenBinary>;
   try{result=beginOverviewBinaryFreeze(this.#worker,this.#bridge,pin.frame,{budgetBytes:input.budgetBytes,signal:abort.signal},state=>{
    if(state==='uncertain'){pin.unknown=true;reject(new GeoOverviewBinaryUncertainAllocation());}
-   else{if(this.#freezePin===pin)this.#freezePin=undefined;release();resolve();}
+   else{if(this.#freezePin===pin){this.#freezePin=undefined;this.#snapshotAttempt=undefined;release();}resolve();}
   });}catch(error){this.#freezePin=undefined;release();resolve();result=Promise.reject(error);}
   let work:Promise<void>;
-  const settled=result.catch(error=>{if(error instanceof GeoOverviewBinaryCleanupPending)this.#binaryCleanup=error.owner;throw error;}).finally(()=>{input.signal?.removeEventListener('abort',onAbort);if(this.#freezeAbort===abort)this.#freezeAbort=undefined;if(this.#freezeWork===work)this.#freezeWork=undefined;});
+  const settled=result.catch(error=>{if(error instanceof GeoOverviewBinaryUncertainAllocation)this.#snapshotAttempt=error.owner;if(error instanceof GeoOverviewBinaryCleanupPending)this.#binaryCleanup=error.owner;throw error;}).finally(()=>{input.signal?.removeEventListener('abort',onAbort);if(this.#freezeAbort===abort)this.#freezeAbort=undefined;if(this.#freezeWork===work)this.#freezeWork=undefined;});
   work=settled.then(()=>{},()=>{});this.#freezeWork=work;return settled;
  }
  snapshot():OverviewGeoFrameSummary{if(!this.#summary)throw new Error('Overview frame unavailable');return copySummary(this.#summary);}
  dispose():Promise<void>{
   this.#closed=true;this.#active?.abort();this.#stage?.cancel();this.#freezeAbort?.abort();
-  if(!this.#disposal)this.#disposal=(async()=>{await this.#chain;await this.#freezeWork;const terminal=isGeoWorkerTerminated(this.#worker,this.#bridge);if(!terminal)await this.#freezeBarrier();this.#layer?.releasePrepared();this.#view?.destroy();this.#view=undefined;this.#paint.remove();this.#panel.remove();this.#body.replaceChildren();this.#summary=undefined;this.#previous.onclick=this.#next.onclick=null;this.#onChange=this.#onError=undefined;if(terminal){this.#freezePin?.release();this.#freezePin=undefined;this.#frame=this.#cleanup=undefined;if(this.#binaryCleanup)await disposeOverviewBinary(this.#binaryCleanup);this.#binaryCleanup=undefined;}else{await this.#drainBinaryCleanup();await this.#drainCleanup();if(this.#frame){this.#cleanup=this.#frame;this.#frame=undefined;await this.#drainCleanup();}}this.#layer=undefined;})().catch(error=>{this.#disposal=undefined;throw error;});return this.#disposal;
+  if(!this.#disposal)this.#disposal=(async()=>{await this.#chain;await this.#freezeWork;const terminal=isGeoWorkerTerminated(this.#worker,this.#bridge);if(this.#snapshotAttempt){await disposeOverviewBinary(this.#snapshotAttempt);this.#snapshotAttempt=undefined;}if(!terminal)await this.#freezeBarrier();this.#layer?.releasePrepared();this.#view?.destroy();this.#view=undefined;this.#paint.remove();this.#panel.remove();this.#body.replaceChildren();this.#summary=undefined;this.#previous.onclick=this.#next.onclick=null;this.#onChange=this.#onError=undefined;if(terminal){this.#freezePin?.release();this.#freezePin=undefined;this.#frame=this.#cleanup=undefined;if(this.#binaryCleanup)await disposeOverviewBinary(this.#binaryCleanup);this.#binaryCleanup=undefined;}else{await this.#drainBinaryCleanup();await this.#drainCleanup();if(this.#frame){this.#cleanup=this.#frame;this.#frame=undefined;await this.#drainCleanup();}}this.#layer=undefined;})().catch(error=>{this.#disposal=undefined;throw error;});return this.#disposal;
  }
 }

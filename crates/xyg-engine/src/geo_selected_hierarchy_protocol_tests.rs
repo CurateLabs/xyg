@@ -505,3 +505,6 @@ fn reduced_selected_counts_match_canonical_for_duplicate_ids_before_tessellation
     close(d, 0);
     close(scope, 0);
 }
+
+#[path = "geo_hierarchy_scope_credit_tests.rs"]
+mod scope_credits;
