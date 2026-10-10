@@ -5,7 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {RetainedGeoSource,attachRetainedFrame} from '../src/geo-retained.js';
 import {GeoHierarchy,GeoHierarchyUnsupportedSelected,hierarchyLaneAuthority,isHierarchyFrame} from '../src/geo-hierarchy.js';
-import {GeoHierarchyPublicationUncertain} from '../src/geo-hierarchy-wire.js';
+import {GeoHierarchyPublicationUncertain,encodeGeoHierarchyRequest,driveGeoHierarchy,prepareGeoHierarchyScene} from '../src/geo-hierarchy-wire.js';
 import {createGeoSelectedScope,GeoSelectedState} from '../src/geo-selected.js';
 import {encodeGeoScaleRequest as encode,encodeGeoChunkRequest,encodeGeoScaleStyle,decodeGeoScaleReply,nativeGeoScaleBridge,driveGeoSession,prepareGeoSceneData} from '../src/geoscale.js';
 import {encodeGeoSnapshotRequest,decodeGeoSnapshotReply,nativeGeoSnapshotBridge} from '../src/geo-snapshot.js';
@@ -28,7 +28,8 @@ async function setup(bridge,multi=false){
  const issue=()=>scope.state({revision:2n,ids:BigUint64Array.of(MAX,1n<<63n),fill:fill(),budget});
  const state=await issue(),stateHandle=state.handle,selectedQuery={...q,stateRevision:2n},payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,stateHandle,true);let selected;
  // A raw test WebAssembly callback has no canonical host issuer. Author only
- // this prerequisite through Rust nonce0; Scope33/43/44 assertions stay typed.
+ // this prerequisite through Rust nonce0; Scope33 remains typed, while raw
+ // WASM43/44 prerequisites below use direct Rust ingress without host authority.
  if(rawWasmBridges.has(bridge)){await bridge.execute(encode({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget,payload}));await driveGeoSession(bridge,{handle:source.handle,sequence:2n,budget,readChunk:source.readChunk});selected=await prepareGeoSceneData(bridge,{handle:source.handle,sequence:2n,budget,style:style()});}
  else{const begun=await state.begin({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget});assert.equal(begun.fallback,false);await begun.operation.drive({readChunk:source.readChunk});selected=await begun.operation.prepare(style());}
  attachRetainedFrame(source,selected,2n,encode({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget,payload}),style());
@@ -85,7 +86,18 @@ for(const name of ['native','wasm'])test(`${name} nonce tombstone cannot reconst
  const h=await host(name),f=await setup(h.bridge),raw=h.bridge.execute.bind(h.bridge);let captured,root,op,frame;
  h.bridge.execute=r=>{if(new DataView(r).getUint32(8,true)===33)captured=r.slice(0);return raw(r);};
  const attempt=f.scope.beginState({revision:2n,ids:BigUint64Array.of(MAX,1n<<63n),fill:fill(),budget});
- try{const state=await attempt.recover();root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);op=await root.beginSelected(state,f.query,{sequence:3n});let out=await raw(captured);assert.equal(new DataView(out).getUint32(8,true),20);assert.equal(new DataView(out).getBigUint64(16,true),0n);assert.equal(new DataView(out).getBigUint64(24,true),2n);await op.drive();frame=await op.prepare(style());out=await raw(captured);assert.equal(new DataView(out).getUint32(8,true),20);receipt(name,'retiredData',out);await attempt.dispose();const rows=await frame.rows();assert.equal(rows.data.record(0).featureId,MAX);await rows.dispose();}
+ try{const state=await attempt.recover();root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);
+  if(rawWasmBridges.has(h.bridge)){
+   // Only fixture setup uses raw nonce0 Rust ingress. A custom WASM callback
+   // cannot mint the genuine producer capability required by typed43 recovery.
+   const payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,state.handle,true);
+   const request=encodeGeoHierarchyRequest({command:43,handle:root.handle,sequence:3n,query:f.query,budget,payload});
+   assert.equal(new DataView(request).getBigUint64(240,true),0n);await raw(request);
+   op={drive:()=>driveGeoHierarchy(h.bridge,{handle:state.handle,sequence:3n,budget,readChunk:f.source.readChunk,...f.options}),
+    prepare:async()=>{const result=await prepareGeoHierarchyScene(h.bridge,{command:44,handle:state.handle,sequence:3n,budget,style:style()});attachRetainedFrame(f.source,result,3n,request,style());op=undefined;return result;},
+    dispose:()=>raw(encodeGeoHierarchyRequest({command:10,handle:state.handle,sequence:3n}))};
+  }else op=await root.beginSelected(state,f.query,{sequence:3n});
+  let out=await raw(captured);assert.equal(new DataView(out).getUint32(8,true),20);assert.equal(new DataView(out).getBigUint64(16,true),0n);assert.equal(new DataView(out).getBigUint64(24,true),2n);await op.drive();frame=await op.prepare(style());out=await raw(captured);assert.equal(new DataView(out).getUint32(8,true),20);receipt(name,'retiredData',out);await attempt.dispose();const rows=await frame.rows();assert.equal(rows.data.record(0).featureId,MAX);await rows.dispose();}
  finally{h.bridge.execute=raw;if(op)await op.dispose();await attempt.dispose();if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
 test('two actual WASM producers with colliding handles reject edited Scope bridge before33',async()=>{
