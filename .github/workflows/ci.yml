@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs packages/xy-node/test/geo-native-overview-host.test.mjs packages/xy-node/test/geo-selected-publication-hosts.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs packages/xy-node/test/geo-native-overview-host.test.mjs packages/xy-node/test/geo-selected-publication-hosts.test.mjs packages/xy-node/test/geo-overview-member-retirement.test.mjs
 
 
       - name: Build JS client
@@ -487,6 +487,7 @@ jobs:
           XYG_OVERVIEW_BINARY_REPORT="$GITHUB_WORKSPACE/geo-overview-binary-ci.json" node scripts/geo_overview_binary_smoke.mjs
           XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-hosts-ci.json" node scripts/geo_selected_mutation_hosts_smoke.mjs
           XYG_SELECTED_PUBLICATION_REPORT="$GITHUB_WORKSPACE/geo-selected-publication-hosts-ci.json" node scripts/geo_selected_publication_hosts_smoke.mjs
+          XYG_MEMBER_RETIREMENT_REPORT="$GITHUB_WORKSPACE/geo-member-retirement-ci.json" node scripts/geo_member_retirement_smoke.mjs
           XYG_HIERARCHY_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-capture-ci.json" node scripts/geo_hierarchy_capture_smoke.mjs
           XYG_SELECTED19_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-selected19-capture-ci.json" node scripts/geo_selected19_capture_smoke.mjs
           XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" XYG_GEO_NATIVE_OVERVIEW_REPORT="$GITHUB_WORKSPACE/geo-native-overview-host-ci.json" node tests/browser/geo_native_overview_host_test.mjs
@@ -538,6 +539,7 @@ jobs:
             geo-snapshot-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
+            geo-member-retirement-ci.json
             geo-selected-publication-hosts-ci.json
             geo-selected19-capture-ci.json
             geo-hierarchy-recovery-ci.json

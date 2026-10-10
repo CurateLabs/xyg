@@ -17,6 +17,7 @@ from ._geo_allocation_recovery import (
 )
 
 _CONTEXTS = weakref.WeakKeyDictionary()
+_CONTEXT_NATIVE_PRODUCERS = weakref.WeakKeyDictionary()
 _CAPTURED_CONTEXTS = weakref.WeakKeyDictionary()
 _PENDING = weakref.WeakKeyDictionary()
 _OPS = weakref.WeakKeyDictionary()
@@ -27,6 +28,9 @@ MAX_PACKET = 256 + 4096 * 32
 
 class _Context:
     def __init__(self, transport, reader, budget, header, handle, sequence):
+        from ._geo_overview_source import _native_member_probe
+
+        _CONTEXT_NATIVE_PRODUCERS[self] = _native_member_probe(transport)
         self.handle, self.sequence = handle, sequence
         self.transport, self.reader = transport, reader
         self.budget = MappingProxyType(dict(budget))
@@ -88,6 +92,57 @@ def request(command, handle, sequence, budget=None, payload=b""):
     b = bytearray(g.encode_request(fields))
     struct.pack_into("<I", b, 8, command)
     return bytes(b)
+
+
+def _known_data_reply(raw, handle, sequence):
+    r = reply(raw)
+    if (
+        r["code"] != 0
+        or r["handle"] != handle
+        or r["sequence"] != sequence
+        or r["source"] != handle
+        or not 256 <= r["length"] <= MAX_PACKET
+    ):
+        raise ValueError("Known MemberData probe kind/receipt mismatch")
+    return False
+
+
+def _known_data_absent(c, handle, sequence):
+    # Only private known46 Data after unresolved attempted10, never45 birth.
+    if not _CONTEXT_NATIVE_PRODUCERS.get(c, False):
+        return False
+    canonical = request(6, handle, sequence)
+    with g._capture_native_member_data(canonical) as capture:
+        try:
+            raw = c.transport.native_execute(canonical)
+            if capture.outcome(raw) is None:
+                raise ValueError("MemberData probe lacks genuine current producer outcome")
+            return _known_data_reply(raw, handle, sequence)
+        except BaseException as error:
+            proof = capture.outcome(error)
+            if proof is not None and proof.get("status") == -10:
+                return True
+            raise
+
+
+async def _aknown_data_absent(c, handle, sequence):
+    if not _CONTEXT_NATIVE_PRODUCERS.get(c, False):
+        return False
+    canonical = request(6, handle, sequence)
+    with g._capture_native_member_data(canonical) as capture:
+        try:
+            raw, interrupted = await g._settle(asyncio.create_task(c.transport.execute(canonical)))
+            if capture.outcome(raw) is None:
+                raise ValueError("MemberData probe lacks genuine current producer outcome")
+            absent = _known_data_reply(raw, handle, sequence)
+        except BaseException as error:
+            proof = capture.outcome(error)
+            if proof is not None and proof.get("status") == -10:
+                return True
+            raise
+        if interrupted:
+            raise asyncio.CancelledError
+        return absent
 
 
 def _zero(b, a, z):
@@ -720,6 +775,8 @@ class GeoOverviewMembershipOperation:
         if self._phase == "publication":
             self._probe(self._exec(6))
         sequence = 0 if self._phase == "data" else _OPS[self][2]
+        if not sequence and self._dispose_attempted and not self._disposed:
+            self._disposed = _known_data_absent(_OPS[self][0], _OPS[self][1], _OPS[self][2])
         if (
             sequence
             and self._dispose_attempted
@@ -730,8 +787,8 @@ class GeoOverviewMembershipOperation:
         if not self._disposed:
             self._dispose_attempted = True
             mutation(
-                _OPS[self][0].transport.native_execute(request(10, self.handle, sequence)),
-                self.handle,
+                _OPS[self][0].transport.native_execute(request(10, _OPS[self][1], sequence)),
+                _OPS[self][1],
                 sequence,
             )
             self._disposed = True
@@ -772,6 +829,21 @@ class GeoOverviewMembershipOperation:
             self._phase = "closed"
             return
         sequence = 0 if self._phase == "data" else _OPS[self][2]
+        if self._disposal is None:
+            self._disposal = asyncio.create_task(self._finish_close(sequence))
+        task = self._disposal
+        try:
+            _, interrupted = await g._settle(task)
+        except BaseException:
+            if task.done():
+                self._disposal = None
+            raise
+        if interrupted:
+            raise asyncio.CancelledError
+
+    async def _finish_close(self, sequence):
+        if not sequence and self._dispose_attempted and not self._disposed:
+            self._disposed = await _aknown_data_absent(_OPS[self][0], _OPS[self][1], _OPS[self][2])
         if (
             sequence
             and self._dispose_attempted
@@ -779,28 +851,13 @@ class GeoOverviewMembershipOperation:
             and await self._attempt.probe_retirement_async(self._validate_allocation) is None
         ):
             self._disposed = True
-        if self._disposed:
-            await self._attempt.release_async()
-            self._phase = "closed"
-            return
-        if self._disposal is None:
+        if not self._disposed:
             self._dispose_attempted = True
-            self._disposal = asyncio.create_task(
-                _OPS[self][0].transport.execute(request(10, _OPS[self][1], sequence))
-            )
-        task = self._disposal
-        try:
-            raw, interrupted = await g._settle(task)
+            raw = await _OPS[self][0].transport.execute(request(10, _OPS[self][1], sequence))
             mutation(raw, _OPS[self][1], sequence)
-        except BaseException:
-            if task.done():
-                self._disposal = None
-            raise
-        self._disposed = True
+            self._disposed = True
         await self._attempt.release_async()
         self._phase = "closed"
-        if interrupted:
-            raise asyncio.CancelledError
 
 
 class GeoOverviewMembershipPage:
@@ -817,6 +874,7 @@ class GeoOverviewMembershipPage:
         _PAGES[self] = (c, handle, sequence, cell, count, has_next, cumulative, after)
         self._disposal = None
         self._closed = False
+        self._dispose_attempted = False
 
     @property
     def handle(self):
@@ -895,17 +953,16 @@ class GeoOverviewMembershipPage:
         if _PAGES[self][0] is None:
             return
         self._packet = None
-        if self._closed:
-            forget_geo_allocation_issuer(self)
-            a = _PAGES[self]
-            _PAGES[self] = (None, *a[1:])
-            return
-        mutation(
-            _PAGES[self][0].transport.native_execute(request(10, _PAGES[self][1], 0)),
-            _PAGES[self][1],
-            0,
-        )
-        self._closed = True
+        if not self._closed and self._dispose_attempted:
+            self._closed = _known_data_absent(_PAGES[self][0], _PAGES[self][1], _PAGES[self][2])
+        if not self._closed:
+            self._dispose_attempted = True
+            mutation(
+                _PAGES[self][0].transport.native_execute(request(10, _PAGES[self][1], 0)),
+                _PAGES[self][1],
+                0,
+            )
+            self._closed = True
         forget_geo_allocation_issuer(self)
         a = _PAGES[self]
         _PAGES[self] = (None, *a[1:])
@@ -916,29 +973,31 @@ class GeoOverviewMembershipPage:
         if _PAGES[self][0].transport.bridge is None:
             return self.close()
         self._packet = None
-        if self._closed:
-            await forget_geo_allocation_issuer_async(self)
-            a = _PAGES[self]
-            _PAGES[self] = (None, *a[1:])
-            return
         if self._disposal is None:
-            self._disposal = asyncio.create_task(
-                _PAGES[self][0].transport.execute(request(10, _PAGES[self][1], 0))
-            )
+            self._disposal = asyncio.create_task(self._finish_close())
         task = self._disposal
         try:
-            raw, interrupted = await g._settle(task)
-            mutation(raw, _PAGES[self][1], 0)
+            _, interrupted = await g._settle(task)
         except BaseException:
             if task.done():
                 self._disposal = None
             raise
-        self._closed = True
+        if interrupted:
+            raise asyncio.CancelledError
+
+    async def _finish_close(self):
+        if not self._closed and self._dispose_attempted:
+            self._closed = await _aknown_data_absent(
+                _PAGES[self][0], _PAGES[self][1], _PAGES[self][2]
+            )
+        if not self._closed:
+            self._dispose_attempted = True
+            raw = await _PAGES[self][0].transport.execute(request(10, _PAGES[self][1], 0))
+            mutation(raw, _PAGES[self][1], 0)
+            self._closed = True
         await forget_geo_allocation_issuer_async(self)
         a = _PAGES[self]
         _PAGES[self] = (None, *a[1:])
-        if interrupted:
-            raise asyncio.CancelledError
 
 
 def parse(packet, header, handle, sequence, cell, prior, completion=None, after=-1):
