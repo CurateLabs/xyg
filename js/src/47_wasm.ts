@@ -214,10 +214,29 @@ interface GeographicWorkerOrigin {
   bridge: XygGeoScaleBridge;
   snapshotBridge: XygGeoScaleBridge;
   terminal: boolean;
+  mutations:Map<number,{bridge:XygGeoScaleBridge;request:Uint8Array}>;
 }
 // Issuers and dispatch are private. Numeric handles and public lookalike
 // closures cannot identify the WASM registry which owns a retained frame.
 const geographicWorkerOrigins = new WeakMap<XygWasmWorker, GeographicWorkerOrigin>();
+interface GeoWorkerMutationOutcome {
+ readonly bridge:XygGeoScaleBridge; readonly request:Uint8Array;
+ readonly reply?:Uint8Array; readonly code?:string; readonly status?:number|null;
+}
+const geographicMutationOutcomes=new WeakMap<object,GeoWorkerMutationOutcome>();
+const geographicMutationErrors=new WeakMap<object,GeoWorkerMutationOutcome>();
+/** @internal Original captured Worker outcome; mutable public lookalikes grant no authority. */
+export function getGeoWorkerMutationOutcome(bridge:XygGeoScaleBridge,request:ArrayBuffer,value:unknown){
+ if(!(request instanceof ArrayBuffer)||request.byteLength<256||request.byteLength>272||typeof value!=='object'||value===null)return undefined;
+ const outcome=geographicMutationOutcomes.get(value),bytes=new Uint8Array(request);
+ if(!outcome||outcome.bridge!==bridge||outcome.request.length!==bytes.length||bytes.some((b,i)=>b!==outcome.request[i]))return undefined;
+ if(outcome.reply){
+  if(!(value instanceof ArrayBuffer)||value.byteLength!==256)return undefined;
+  const current=new Uint8Array(value);if(current.some((b,i)=>b!==outcome.reply![i]))return undefined;
+  return Object.freeze({reply:outcome.reply.slice().buffer,code:undefined,status:undefined});
+ }
+ return Object.freeze({reply:undefined,code:outcome.code,status:outcome.status});
+}
 function geographicOrigin(owner: XygWasmWorker): GeographicWorkerOrigin {
   const origin = geographicWorkerOrigins.get(owner);
   if (!origin || origin.worker !== owner["worker"]) {
@@ -283,11 +302,21 @@ export class XygWasmWorker {
     });
     geographicWorkerOrigins.set(this, {
       worker: actualWorker, post: actualWorker.postMessage.bind(actualWorker), terminate,
-      ready: null, maxArenaBytes, bridge, terminal: false,
+      ready: null, maxArenaBytes, bridge, terminal: false, mutations:new Map(),
       snapshotBridge: Object.freeze({
         execute: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.snapshot.execute", request),
         read: (request: ArrayBuffer) => geographicDispatch.transport.call(this, "geo.snapshot.read", request),
       }),
+    });
+    // Installed before any public onmessage wrapper. Only genuine browser
+    // Worker delivery can brand an outcome; later packet edits fail equality.
+    actualWorker.addEventListener('message',(event:MessageEvent)=>{
+      if(!event.isTrusted)return;
+      const message=event.data,mutations=geographicWorkerOrigins.get(this)!.mutations,mutation=mutations.get(message?.requestId);
+      if(!mutation||message.progress)return;
+      mutations.delete(message.requestId);
+      if(message.ok&&message.value instanceof ArrayBuffer&&message.value.byteLength===256)geographicMutationOutcomes.set(message.value,{...mutation,reply:new Uint8Array(message.value.slice(0))});
+      else if(!message.ok&&message&&typeof message==='object')geographicMutationErrors.set(message,{...mutation,code:typeof message.error?.code==='string'?message.error.code:'XYG_WASM_WORKER_ERROR',status:Number.isInteger(message.error?.status)?message.error.status:null});
     });
     this.worker.onmessage = (event) => geographicDispatch.onMessage.call(this, event.data);
     this.worker.onerror = (event) => {
@@ -792,15 +821,18 @@ export class XygWasmWorker {
     // FIFO must not expose mutable authoring bytes to a later caller.
     const length=request.byteLength,header=new DataView(request),command=header.getUint32(8,true);
     const mixedCleanup=type==="geo.tile.execute" && header.getUint32(0,true)===0x584d5958 && length===256 && (command===4||command===5);
-    const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3]:[8,9,10,24,31,47]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
+    const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3,7]:[8,9,10,24,31,47]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
     geographicDispatch.capacity.call(this,length,cleanup);
+    const capture=(type==='geo.snapshot.execute'&&[6,7].includes(command)&&length===256)||(type==='geo.scale.execute'&&([35,36].includes(command)&&length===264||command===47&&length===272&&[35,36].includes(header.getUint32(256,true))));
+    const mutation=capture?{bridge:type==='geo.snapshot.execute'?geographicOrigin(this).snapshotBridge:geographicOrigin(this).bridge,request:new Uint8Array(request.slice(0))}:undefined;
     const owned=structuredClone(request,{transfer:[request]});
     return geographicDispatch.queue.call(this,async()=>{
       await geographicDispatch.acquire.call(this);geographicDispatch.assertLive.call(this,true);const sequence=this.nextSequence++;
       if(sequence>0xffffffff)throw new RangeError("Worker sequence exhausted");
       const requestId=geographicDispatch.allocateRequest.call(this),result=geographicDispatch.promiseFor.call(this,requestId) as Promise<ArrayBuffer>;
+      if(mutation)geographicOrigin(this).mutations.set(requestId,mutation);
       try{geographicOrigin(this).post({type,requestId,sequence,request:owned},[owned]);}
-      catch(cause){this.pending.delete(requestId);throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT",cause instanceof Error?cause.message:"could not transfer retained geographic request");}
+      catch(cause){this.pending.delete(requestId);geographicWorkerOrigins.get(this)!.mutations.delete(requestId);throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT",cause instanceof Error?cause.message:"could not transfer retained geographic request");}
       return await result;
     },length,cleanup);
   }
@@ -1025,11 +1057,18 @@ export class XygWasmWorker {
       return;
     }
     this.pending.delete(message.requestId);
-    if (message.ok) pending.resolve(message.value);
-    else pending.reject(workerError(message.error));
+    geographicWorkerOrigins.get(this)?.mutations.delete(message.requestId);
+    if (message.ok) {
+      pending.resolve(message.value);
+    } else {
+      const error=workerError(message.error);
+      const original=geographicMutationErrors.get(message);if(original)geographicMutationOutcomes.set(error,original);
+      pending.reject(error);
+    }
   }
 
   private failAll(error: XygWasmError) {
+    geographicWorkerOrigins.get(this)?.mutations.clear();
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
   }
