@@ -1,0 +1,81 @@
+   Compiling libc v0.2.189
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling unicode-ident v1.0.24
+   Compiling bitflags v2.13.0
+   Compiling autocfg v1.5.1
+   Compiling cfg-if v1.0.4
+   Compiling rustix v1.1.4
+   Compiling serde_core v1.0.228
+   Compiling memchr v2.8.0
+   Compiling shlex v2.0.1
+   Compiling cfg_aliases v0.2.2
+   Compiling zmij v1.0.21
+   Compiling find-msvc-tools v0.1.9
+   Compiling nix v0.31.3
+   Compiling cc v1.2.63
+   Compiling num-traits v0.2.19
+   Compiling getrandom v0.4.2
+   Compiling anyhow v1.0.104
+   Compiling equivalent v1.0.2
+   Compiling serde v1.0.228
+   Compiling winnow v1.0.4
+   Compiling hashbrown v0.17.1
+   Compiling serde_json v1.0.151
+   Compiling indexmap v2.14.0
+   Compiling syn v2.0.117
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling codspeed v5.0.1
+   Compiling errno v0.3.14
+   Compiling itoa v1.0.18
+   Compiling anstyle v1.0.14
+   Compiling simd-adler32 v0.3.9
+   Compiling clap_lex v1.1.0
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling terminal_size v0.4.4
+   Compiling crc32fast v1.5.0
+   Compiling toml_edit v0.25.13+spec-1.1.0
+   Compiling approx v0.5.1
+   Compiling clap_builder v4.6.6
+   Compiling statrs v0.18.0
+   Compiling aho-corasick v1.1.4
+   Compiling glob v0.3.3
+   Compiling adler2 v2.0.1
+   Compiling colored v3.1.1
+   Compiling either v1.16.0
+   Compiling regex-syntax v0.8.10
+   Compiling miniz_oxide v0.8.9
+   Compiling itertools v0.14.0
+   Compiling proc-macro-crate v3.5.0
+   Compiling codspeed-divan-compat v5.0.1
+   Compiling condtype v1.3.0
+   Compiling regex-lite v0.1.9
+   Compiling flate2 v1.1.9
+   Compiling fdeflate v0.3.7
+   Compiling clap v4.6.6
+   Compiling png v0.18.1
+   Compiling serde_derive v1.0.228
+   Compiling divan-macros v0.1.17
+   Compiling regex-automata v0.4.14
+   Compiling codspeed-divan-compat-macros v5.0.1
+   Compiling regex v1.12.3
+   Compiling codspeed-divan-compat-walltime v5.0.1
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewsnapshotrecovery/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 31.89s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 1 test
+
+thread 'geo_snapshot_recovery_tests::snapshot_recovery_exact_replay_confirm_and_two_reads' (99388433) panicked at crates/xyg-engine/src/geo_snapshot_recovery_tests.rs:287:59:
+opt-in6 must allocate: Invalid
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test geo_snapshot_recovery_tests::snapshot_recovery_exact_replay_confirm_and_two_reads ... FAILED
+
+failures:
+
+failures:
+    geo_snapshot_recovery_tests::snapshot_recovery_exact_replay_confirm_and_two_reads
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1467 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p xyg-engine --lib`

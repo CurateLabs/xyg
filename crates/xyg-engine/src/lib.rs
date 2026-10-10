@@ -92,6 +92,8 @@ pub mod geo_transport;
 pub mod geo_retained_painter;
 pub mod geo_snapshot_protocol;
 #[cfg(test)]
+mod geo_snapshot_recovery_tests;
+#[cfg(test)]
 mod geo_tile_scene_tests;
 pub mod geo_simplify;
 mod marker_geometry;
