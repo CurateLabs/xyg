@@ -1277,6 +1277,17 @@ TypeScript; Python owns its asynchronous settlement ergonomics.
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_selected_publication_recovery_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+
+
+### M6 hierarchy Scope local-credit regression
+
+This Rust file is cfg-test-only byte-protocol/resource evidence. The mechanical
+ledger applies the engine policy; it adds no shipped execution path.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_hierarchy_scope_credit_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1333,3 +1344,9 @@ and presents paged companion rows; the shell supplies its WebGL context.
 - `python/xyg/_geoscale.py`: **python-host**. Python geographic ownership, asynchronous reader lifecycle, and typed binary framing call the native engine without reimplementing geographic policy; see spec/design/geo-retained-hosts.md and geo-frozen-export.md.
 
 The temporal overview selected-input repair keeps canonical admission in Rust: command27 rejects private selected/Scope authority before a source-only builder can discard it. Shared typed/Python frame-aware encoders provide pre-dispatch rejection without a new chart constructor or duplicated temporal policy. Empty selected intent remains selected; ordinary None count/Scene contracts are unchanged. [Bounded proof](../performance/geo-overview-selected-guard-2026-10-09/README.md).
+
+Selected19 dispatcher evidence adds only test-owned
+`tests/browser/geo_selected19_capture_entry.mjs` and
+`scripts/geo_selected19_capture_smoke.mjs`; these remain outside the production
+inventory above. The existing browser transport owner for `js/src/47_wasm.ts`
+retains its responsibility; no host geometry or selection policy was added.

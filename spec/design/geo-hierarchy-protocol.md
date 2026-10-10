@@ -131,11 +131,21 @@ these same private guards after Source/lane/query disposal.
 
 Every lane reserves4KiB before allocation. Shared root/Scope/IDs remain Arc-owned;
 there are no per-fork metadata or sparse-ID copies. Local admission counts root,
-Scope, current state and query state (once if pointer-identical), controls,
+Scope control, the complete retained nonce33 request receipt, current state and
+query state (once if pointer-identical), controls,
 frontier/cache, accumulator, output counts and publication phases. Query credit
 conservatively retains the existing extra LOD-base reservation; selection adds
 at most one u64 count per admitted cell plus the sparse state reservation.
 Distinct old state and current Scope intent are both charged during overlap.
+The shared Scope publication-credit helper includes nonce receipt storage even
+after its original State handle is consumed or disposed. Command43 excludes only
+the exact query State Arc credited by its selected LOD reservation; command44
+also retains the existing result/selection credits. This repairs selected local
+admission: tight budgets that previously omitted receipt storage now fail before
+State consumption or Data publication. It changes no packet, geometry, global
+quota or ordinary unselected38/39 policy. Shared no-State Scope admission for
+build/fork also includes its retained intent and receipt; Arc references allocate
+no additional ID plane.
 Global processor128MiB and derived384MiB credits remain independent of local
 preflight, and old Data retains its own credit throughout replacement.
 

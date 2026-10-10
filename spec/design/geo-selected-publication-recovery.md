@@ -80,3 +80,38 @@ Fresh native/WASM and pinned prior nonce0 full-packet controls are recorded
 separately before integration. No massive latency claim follows from this
 bounded journal. Public19 adoption, hierarchy44 recovery and remaining scheduling
 and massive interaction gates remain open.
+
+## Genuine Worker dispatcher provenance
+
+The internal Worker capture envelope accepts at most304 bytes. Its dispatcher
+whitelist adds only exact304-byte GeoScale19 requests and exact272-byte
+GeoScale47 controls embedding original command19. Existing exact264-byte35/36,
+272-byte47 embedding35/36, and256-byte Snapshot6/7 paths are unchanged. Other
+lengths and commands (including44 and MemberData) do not receive provenance.
+
+Every full-request match, including a cloned replay, updates all matching active
+capture contexts to the latest private dispatch token. Only its original genuine
+reply/error can validate. Returned receipt mutation fails byte comparison;
+consumers must parse trusted scalar phase authority synchronously inside the
+capture callback. A previous rejection, even from an earlier dispatch in the
+same callback, cannot establish nonadmission after a successful clone. Capacity
+remains16 contexts; no public testing export or persistent outcome bank is added.
+
+The canonical request is borrowed by each context. One private request snapshot
+per pending dispatch and one shared256-byte receipt snapshot remain within the
+existing `4*request_length+512` credit (1728 bytes for304). Validation returns the
+original reply alias without copying it. Superseding dispatches and scope closure
+drop provenance. This dispatcher extension does not implement public19 adoption,
+change Rust policy/quotas/ABI signatures, or claim massive-data interaction.
+
+Reproduce the bounded actual Worker proof with:
+
+```sh
+CHROMIUM='/path/to/chromium' node scripts/geo_selected19_capture_smoke.mjs
+```
+
+Its four original rows include literal u64MAX duplicate feature IDs and signed
+MIN time. It proves unready19 rejection then exact-clone successful publication
+within one scope, strict47 Confirm, mutable replies, wrong lengths/tags, and
+scope closure/capacity under strict CSP. Evidence is recorded in
+`spec/performance/geo-selected19-capture-2026-10-10/`.

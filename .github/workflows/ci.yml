@@ -442,6 +442,7 @@ jobs:
           XYG_GEO_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-allocation-recovery-ci.json" node scripts/geo_allocation_recovery_conformance.mjs
           XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-recovery-ci.json" XYG_SELECTED_MUTATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-mutation-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_mutation_recovery_conformance.mjs
           XYG_SELECTED_PUBLICATION_REPORT="$GITHUB_WORKSPACE/geo-selected-publication-recovery-ci.json" XYG_SELECTED_PUBLICATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-publication-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_publication_recovery_conformance.mjs
+          XYG_SNAPSHOT_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-snapshot-recovery-ci.json" node scripts/geo_snapshot_recovery_conformance.mjs
           node scripts/gen_geo_overview_wire.mjs --check
           node scripts/geo_overview_conformance.mjs
           node scripts/gen_geo_selected_wire.mjs --check
@@ -529,6 +530,7 @@ jobs:
             geo-allocation-recovery-ci.json
             geo-selected-mutation-recovery-ci.json
             geo-selected-publication-recovery-ci.json
+            geo-snapshot-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
             geo-native-overview-host-ci.json

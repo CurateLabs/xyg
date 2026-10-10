@@ -1,0 +1,36 @@
+{
+  "base": "2f208f8f2fe896b65e2fa330efd9d1c7e6d04dfd",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyscopecredits/target/release/libxyg_core.dylib",
+    "sha256": "09fda121488524e982aaaa8817fe185456e01dac8717db1650156e9415f99d25",
+    "bytes": 4359568
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyscopecredits/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "0cacd36e29aec99a6391684b70d15625c0f9485b331dc562e41427d9e7dbb101",
+    "bytes": 1496726,
+    "gzip_level6_mtime0_bytes": 614737
+  },
+  "baseline_native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/target/release/libxyg_core.dylib",
+    "sha256": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e",
+    "bytes": 4359568
+  },
+  "baseline_wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2",
+    "bytes": 1494781,
+    "gzip_level6_mtime0_bytes": 613121
+  },
+  "compiler_inputs_count": 202,
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "node": "v26.6.0",
+  "caps": {
+    "raw": 1507328,
+    "gzip6": 622592
+  },
+  "profile": "unchanged O3, WASM inline threshold100, pinned Binaryen O3",
+  "legacy_complete_packets": 84,
+  "normalization": "none; full native packets identical across separate baseline/current processes"
+}
