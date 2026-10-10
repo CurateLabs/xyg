@@ -4,13 +4,16 @@ import { createServer } from 'node:http';
 import { readFile,writeFile,mkdir } from 'node:fs/promises';
 import { extname, join,dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { stripTypeScriptTypes } from 'node:module';
+import {build} from 'vite';
 import {createHash} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
 import {cpus,totalmem,platform,arch} from 'node:os';
 import { chromium } from 'playwright';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// Private canonical parser probe; resolve real imports without public exports.
+const bundled=await build({configFile:false,logLevel:'error',build:{write:false,minify:true,rollupOptions:{preserveEntrySignatures:'strict',input:join(root,'js/src/63_geo_source.ts'),output:{format:'es'}}}});
+const parser=bundled.output.find(item=>item.type==='chunk').code;
 const assets = new Set(['/tests/browser/geo_retained_page.mjs',
   '/tests/browser/geo_source_parser.mjs',
   '/packages/xy-client/dist/index.js', '/packages/xy-client/dist/wasm-worker.js',
@@ -26,7 +29,7 @@ const server = createServer(async(request,response)=>{
   // Test-only parser access avoids widening the public product export surface.
   if(path==='/tests/browser/geo_source_parser.mjs'){
     response.setHeader('Content-Type','text/javascript');
-    response.end(stripTypeScriptTypes(await readFile(join(root,'js/src/63_geo_source.ts'),'utf8')));return;
+    response.end(parser);return;
   }
   try{response.setHeader('Content-Type',types[extname(path)]);response.end(await readFile(join(root,path)));}
   catch{response.statusCode=404;response.end();}

@@ -3,8 +3,7 @@
 // The existing cross-host fixture normalizes its process-local owner handle;
 // geometry, time, provenance, literal IDs and all tested fields are untouched.
 import {spawnSync} from 'node:child_process';
-import {readFile} from 'node:fs/promises';
-import {stripTypeScriptTypes} from 'node:module';
+import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -13,7 +12,9 @@ const native=spawnSync('uv',['run','python','-c',
   {cwd:root,encoding:'utf8'});
 if(native.status!==0)throw Error(native.stderr||native.stdout||'native fixture failed');
 const raw=Buffer.from(native.stdout.trim(),'hex'),packet=raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength);
-const source=stripTypeScriptTypes(await readFile(new URL('../js/src/63_geo_source.ts',import.meta.url),'utf8'));
+// Bundle the canonical parser and its real static imports for this private probe.
+const bundled=await build({configFile:false,logLevel:'error',build:{write:false,minify:true,rollupOptions:{preserveEntrySignatures:'strict',input:fileURLToPath(new URL('../js/src/63_geo_source.ts',import.meta.url)),output:{format:'es'}}}});
+const source=bundled.output.find(item=>item.type==='chunk').code;
 const {parseGeoSceneData}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const baseline=parseGeoSceneData(packet);
 if(baseline.length!==2||baseline.record(0).featureId!==0xffffffffffffffffn||baseline.record(1).featureId!==0x20000000000001n||baseline.identity.time.instant!==-0x8000000000000000n)throw Error('actual native literal ID/time baseline failed');
