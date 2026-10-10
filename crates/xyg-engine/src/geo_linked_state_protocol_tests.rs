@@ -810,3 +810,6 @@ fn state_nonce_receipt_local_boundary_global_pressure_and_legacy_cannot_bypass()
 
 #[path = "geo_selected_mutation_recovery_tests.rs"]
 mod selected_mutation_recovery_tests;
+
+#[path = "geo_selected_publication_recovery_tests.rs"]
+mod selected_publication_recovery_tests;

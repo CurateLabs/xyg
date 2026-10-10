@@ -1,0 +1,41 @@
+{
+  "recorded_utc": "2026-10-09T23:01:04.781318+00:00",
+  "base": "33a61d40fc6f382589d439c3bedd8c6cf7dc74e9",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "node": "v26.6.0",
+  "python": "3.14.6",
+  "artifact": {
+    "nativePath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedpublicationrecovery/target/release/libxyg_core.dylib",
+    "nativeSha256": "56e53feb866b2f3ba85461c7b9a8113bef1f91fc8bdeae2e1c5e1ed2eea70ec1",
+    "wasmPath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedpublicationrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+    "wasmSha256": "1633cabd60b15d0301c446159c04ef25bbacc1ab2287b905c073cc573e97e82a",
+    "rawBytes": 1496551,
+    "gzip6Mtime0Bytes": 614681
+  },
+  "caps": {
+    "raw_bytes": 1507328,
+    "gzip6_mtime0_bytes": 622592
+  },
+  "profile": "release O3, wasm-only llvm inline-threshold=100; unchanged .cargo/config.toml",
+  "compiler_inputs": 201,
+  "validation": {
+    "focused_publication": 7,
+    "prior_focused_mutation": 10,
+    "full_engine": 1484,
+    "native_wasm_full_packets": 12,
+    "unchanged_prior_nonce0_packets": 6,
+    "unchanged_prior35_36_packets": 12,
+    "workspace_clippy": "PASS",
+    "hooks_ruff": "PASS"
+  },
+  "baseline_artifact": {
+    "nativePath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationrecovery/target/release/libxyg_core.dylib",
+    "nativeSha256": "d077dde658282c2babfb1789daecb206878c1d36b9bbb6a21cf4678344ce45fb",
+    "wasmPath": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+    "wasmSha256": "fbd1318490cec055d2be07cdfa5a4722aa1bc0029b57eb4244b4c4d507f01cd7",
+    "rawBytes": 1495349,
+    "gzip6Mtime0Bytes": 613335
+  },
+  "scope": "engine opt-in only; no host, ABI, queue, caps or policy migration claim"
+}

@@ -1,0 +1,16 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 10 tests
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_five_indexed_lanes_replace_at_sixteen_without_quota_changes ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_local_budget_exact_boundary_and_one_byte_under_preserve_state ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_indexed_replacement_replay_does_not_grant_data_phase ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_replay_consumed_state_cancel_and_retired_loan_stays_charged ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_stamp_pressure_rejects_before_consumption_then_releases ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_fallback_preserves_state_and_transition_then_same_nonce_admits ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_completed_result_then_newer_operation_never_reclaims_source_phase ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_index_cancel_complete_and_dispose_pending_retire_not_release_loan ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_processing_failure_retires_birth_not_loan_or_old_scene ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_mutation_recovery_tests::selected_mutation_per_call_limit_persists_through_read_admission_without_shrinking_source ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 1474 filtered out; finished in 0.02s
