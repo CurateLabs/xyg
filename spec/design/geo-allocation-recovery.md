@@ -1,17 +1,20 @@
 # Recoverable geographic allocations
 
-Dossier §27/§29/§34. This Rust opt-in covers commands26/27/28/29/35/36/45.
+Dossier §27/§29/§34. This Rust opt-in covers commands19/26/27/28/29/35/36/45.
 It adds no ABI signature, memory pool, handle quota or temporal/geometry policy.
 Raw nonce0 remains compatible. Issued overview owners now adopt commands26–29
 through [private host recovery](geo-overview-recovery-hosts.md); domain45 host
 adoption remains an independent gate. Selected35/36 mutation phases are defined
 in [selected mutation recovery](geo-selected-mutation-recovery.md).
 
+Selected19 uses the distinct Data phase and retained-credit rules in
+[selected publication recovery](geo-selected-publication-recovery.md).
+
 ## Opt-in and exact replay
 
 XYGQ v1 header240 is a u64 allocation nonce for these commands. Header248–256
 stays zero; nonce0 preserves all legacy requests, replies and publication paths.
-The complete request is at most280 bytes, including budgets and payload.
+The complete request is at most304 bytes, including budgets and payload.
 Commands35/36 reuse this framing with the distinct logical operation phases
 and complete held-credit rules in [selected mutation recovery](geo-selected-mutation-recovery.md).
 A fixed sixteen-slot private registry bank keys the last receipt by historical

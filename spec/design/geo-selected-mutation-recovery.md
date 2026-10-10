@@ -63,13 +63,15 @@ consume State or overwrite the prior journal.
 
 The bank subtracts all live receipt controls and the new request allowance before
 calling canonical selected admission. Opt-in35 additionally subtracts the held
-Scope lease; its shared Source policy checks the minimum of constructor budget
+Scope control, nonce receipt and any distinct retained admission State; the
+selected State already included by LOD/result credits is excluded only by exact
+Arc identity. Its shared Source policy checks the minimum of constructor budget
 and this per-call limit. That limit is stored only on the new job and applies
 again before subsequent read/parse loans. It never permanently changes Source's
 constructor budget or legacy operations. Existing Source metadata, old/current
 results, active job and pending/retired read loans remain in its local sum.
 
-Opt-in36 subtracts Scope, retained validated index, IndexOwner and4096-byte Query
+Opt-in36 subtracts the same complete Scope credits, retained validated index, IndexOwner and4096-byte Query
 wrapper before the shared indexed constructor preleases frontier/LOD/result.
 State storage remains in the existing selected LOD reservation. Controls and
 all source/selection/query/read/result credits share128MiB processor; SceneData

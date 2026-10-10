@@ -1,0 +1,25 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 7 tests
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_replays_data_distinct_from_query_and_retired_lost_disposal ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_exact_local_boundary_and_nonce_zero_policy_unchanged ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_eight_data_cap_preserves_query_and_old_scene ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_rejects_ordinary_optin_preserves_completed_query_on_failed_budget ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_five_lanes_publish_at_sixteenth_handle_with_independent_rows ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_newer_scope_state_and_large_nonce_receipt_in_local_boundary ... ok
+test geo_scale_protocol::index_protocol_tests::linked_state_protocol_tests::selected_publication_recovery_tests::selected_publication_held_query_stamp_pressure_release_then_atomic_admission ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1477 filtered out; finished in 0.11s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-1e5afb9617cfc1a9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-cee34e46c45b23c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
