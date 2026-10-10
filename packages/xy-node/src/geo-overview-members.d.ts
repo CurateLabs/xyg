@@ -1,5 +1,7 @@
 import type { XygGeoScaleBridge, XygGeoQueryBudget } from './geoscale.js';
 interface Context {
+    issuer: XygGeoScaleBridge;
+    issuerExecute: XygGeoScaleBridge['execute'];
     handle: bigint;
     sequence: bigint;
     transport: XygGeoScaleBridge;
@@ -7,7 +9,7 @@ interface Context {
     budget: XygGeoQueryBudget;
     header: Uint8Array;
 }
-export declare function registerOverviewMembers(frame: object, transport: XygGeoScaleBridge, reader: Context['reader'], budget: XygGeoQueryBudget, header: Uint8Array, handle: bigint, sequence: bigint): void;
+export declare function registerOverviewMembers(frame: object, transport: XygGeoScaleBridge, reader: Context['reader'], budget: XygGeoQueryBudget, header: Uint8Array, handle: bigint, sequence: bigint, issuer: XygGeoScaleBridge, issuerExecute: XygGeoScaleBridge['execute']): void;
 /** Opaque private callback/snapshot capture before asynchronous retained allocation. */
 export declare function captureOverviewMembers(from: object): object;
 export declare function installOverviewMembers(token: object, to: object, handle: bigint, sequence: bigint): void;

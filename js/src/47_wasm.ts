@@ -220,27 +220,37 @@ interface GeographicWorkerOrigin {
 // Issuers and dispatch are private. Numeric handles and public lookalike
 // closures cannot identify the WASM registry which owns a retained frame.
 const geographicWorkerOrigins = new WeakMap<XygWasmWorker, GeographicWorkerOrigin>();
-interface GeoWorkerMutationCapture {bridge:XygGeoScaleBridge;request:ArrayBuffer;latest?:object;value?:object;reply?:Uint8Array;code?:string;status?:number|null;}
+type GeoWorkerCapturePurpose='mutation'|'known-member-data-retirement';
+interface GeoWorkerMutationCapture {purpose:GeoWorkerCapturePurpose;bridge:XygGeoScaleBridge;request:ArrayBuffer;latest?:object;value?:object;reply?:Uint8Array;code?:string;status?:number|null;}
 const geographicBridgeOrigins=new WeakMap<XygGeoScaleBridge,GeographicWorkerOrigin>();
 const emptyMutationRequest=new ArrayBuffer(0);
 /** @internal Only the latest genuine delivery in a currently active call grants authority. */
-export function getGeoWorkerMutationOutcome(bridge:XygGeoScaleBridge,request:ArrayBuffer,value:unknown){
+function geoWorkerOutcome(bridge:XygGeoScaleBridge,request:ArrayBuffer,value:unknown,purpose:GeoWorkerCapturePurpose){
  if(!(request instanceof ArrayBuffer)||request.byteLength<256||request.byteLength>304||typeof value!=='object'||value===null)return undefined;
  const origin=geographicBridgeOrigins.get(bridge);if(!origin)return undefined;const bytes=new Uint8Array(request);
  for(const context of origin.captures){
-  if(context.bridge!==bridge||context.value!==value||context.request.byteLength!==bytes.length||new Uint8Array(context.request).some((b,i)=>b!==bytes[i]))continue;
+  if(context.purpose!==purpose||context.bridge!==bridge||context.value!==value||context.request.byteLength!==bytes.length||new Uint8Array(context.request).some((b,i)=>b!==bytes[i]))continue;
   if(context.reply){if(!(value instanceof ArrayBuffer)||value.byteLength!==256||new Uint8Array(value).some((b,i)=>b!==context.reply![i]))return undefined;return Object.freeze({reply:value,code:undefined,status:undefined});}
   return Object.freeze({reply:undefined,code:context.code,status:context.status});
  }
  return undefined;
 }
-/** @internal One bounded call scope; clones/replays update every matching scope. */
-export function beginGeoWorkerMutationCapture(bridge:XygGeoScaleBridge,canonical:ArrayBuffer){
+/** @internal Ordinary mutation scopes never authenticate GeoScale operation6. */
+export function getGeoWorkerMutationOutcome(bridge:XygGeoScaleBridge,request:ArrayBuffer,value:unknown){return geoWorkerOutcome(bridge,request,value,'mutation');}
+function minimalMemberDataProbe(request:ArrayBuffer){if(!(request instanceof ArrayBuffer)||request.byteLength!==256)return false;const v=new DataView(request);return v.getUint32(0,true)===0x51475958&&v.getUint32(4,true)===1&&v.getUint32(8,true)===6&&v.getUint32(12,true)===0&&v.getBigUint64(16,true)!==0n&&v.getBigUint64(24,true)!==0n&&!new Uint8Array(request,32).some(b=>b!==0);}
+function beginGeoWorkerCapture(bridge:XygGeoScaleBridge,canonical:ArrayBuffer,purpose:GeoWorkerCapturePurpose){
  const origin=geographicBridgeOrigins.get(bridge);
  if(!origin||origin.terminal||!(canonical instanceof ArrayBuffer)||canonical.byteLength<256||canonical.byteLength>304)throw new TypeError('Genuine bounded Worker mutation capture required');
  if(origin.captures.size>=16)throw new RangeError('Worker mutation capture capacity exceeded');
- const context:GeoWorkerMutationCapture={bridge,request:canonical};origin.captures.add(context);let closed=false;
- return Object.freeze({outcome(value:unknown){if(closed)return undefined;return context.value===value?getGeoWorkerMutationOutcome(bridge,canonical,value):undefined;},close(){if(!closed){closed=true;origin.captures.delete(context);context.request=emptyMutationRequest;context.latest=context.value=context.reply=context.code=context.status=undefined;}}});
+ const context:GeoWorkerMutationCapture={purpose,bridge,request:canonical};origin.captures.add(context);let closed=false;
+ return Object.freeze({outcome(value:unknown){if(closed)return undefined;return context.value===value?geoWorkerOutcome(bridge,canonical,value,purpose):undefined;},close(){if(!closed){closed=true;origin.captures.delete(context);context.request=emptyMutationRequest;context.latest=context.value=context.reply=context.code=context.status=undefined;}}});
+}
+/** @internal One bounded call scope; clones/replays update every matching scope. */
+export function beginGeoWorkerMutationCapture(bridge:XygGeoScaleBridge,canonical:ArrayBuffer){return beginGeoWorkerCapture(bridge,canonical,'mutation');}
+/** @internal Only a known private MemberData receipt after unresolved attempted10 calls this probe. */
+export async function withGeoWorkerMemberDataOutcome<T>(bridge:XygGeoScaleBridge,canonical:ArrayBuffer,run:(outcome:(value:unknown)=>ReturnType<typeof getGeoWorkerMutationOutcome>)=>Promise<T>,issuerExecute?:XygGeoScaleBridge['execute']):Promise<T>{
+ if(geographicBridgeOrigins.get(bridge)?.bridge!==bridge||issuerExecute!==undefined&&issuerExecute!==bridge.execute||!minimalMemberDataProbe(canonical))throw new TypeError('Exact minimal known MemberData probe required');
+ const capture=beginGeoWorkerCapture(bridge,canonical,'known-member-data-retirement');try{return await run(capture.outcome);}finally{capture.close();}
 }
 /** @internal Scope survives until the complete caller callback settles. */
 export async function withGeoWorkerMutationOutcome<T>(bridge:XygGeoScaleBridge,canonical:ArrayBuffer,run:(outcome:(value:unknown)=>ReturnType<typeof getGeoWorkerMutationOutcome>)=>Promise<T>):Promise<T>{
@@ -837,9 +847,12 @@ export class XygWasmWorker {
     const mixedCleanup=type==="geo.tile.execute" && header.getUint32(0,true)===0x584d5958 && length===256 && (command===4||command===5);
     const cleanup=mixedCleanup || (type.startsWith("geo.tile.")?[5,8,9,10]:type.startsWith("geo.snapshot.")?[3,7]:[8,9,10,24,31,47]).includes(command)&&length<=(type.startsWith("geo.scale.")?384:352);
     geographicDispatch.capacity.call(this,length,cleanup);
-    const capture=(type==='geo.snapshot.execute'&&[6,7].includes(command)&&length===256)||(type==='geo.scale.execute'&&([35,36].includes(command)&&length===264||command===19&&length===304||command===47&&length===272&&[19,35,36].includes(header.getUint32(256,true))));
-    const mutation=capture?{bridge:type==='geo.snapshot.execute'?geographicOrigin(this).snapshotBridge:geographicOrigin(this).bridge,request:new Uint8Array(request.slice(0)),token:{}}:undefined;
-    if(mutation){const origin=geographicOrigin(this);for(const context of origin.captures){const bytes=new Uint8Array(context.request);if(context.bridge===mutation.bridge&&bytes.length===mutation.request.length&&bytes.every((b,i)=>b===mutation.request[i])){context.latest=mutation.token;context.value=context.reply=context.code=context.status=undefined;}}}
+    const capture=(type==='geo.snapshot.execute'&&[6,7].includes(command)&&length===256)||(type==='geo.scale.execute'&&([35,36,43].includes(command)&&length===264||[19,44].includes(command)&&length===304||command===47&&length===272&&[19,35,36,43,44].includes(header.getUint32(256,true))));
+    const issuer=type==='geo.snapshot.execute'?geographicOrigin(this).snapshotBridge:geographicOrigin(this).bridge;
+    let memberProbe=false;
+    if(type==='geo.scale.execute'&&minimalMemberDataProbe(request)){for(const context of geographicOrigin(this).captures){if(context.purpose==='known-member-data-retirement'&&context.bridge===issuer&&context.request.byteLength===length&&new Uint8Array(context.request).every((b,i)=>b===new Uint8Array(request)[i])){memberProbe=true;break;}}}
+    const mutation=capture||memberProbe?{bridge:issuer,purpose:(memberProbe?'known-member-data-retirement':'mutation') as GeoWorkerCapturePurpose,request:new Uint8Array(request.slice(0)),token:{}}:undefined;
+    if(mutation){const origin=geographicOrigin(this);for(const context of origin.captures){const bytes=new Uint8Array(context.request);if(context.purpose===mutation.purpose&&context.bridge===mutation.bridge&&bytes.length===mutation.request.length&&bytes.every((b,i)=>b===mutation.request[i])){context.latest=mutation.token;context.value=context.reply=context.code=context.status=undefined;}}}
     const owned=structuredClone(request,{transfer:[request]});
     return geographicDispatch.queue.call(this,async()=>{
       await geographicDispatch.acquire.call(this);geographicDispatch.assertLive.call(this,true);const sequence=this.nextSequence++;
