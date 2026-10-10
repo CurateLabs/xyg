@@ -2,7 +2,7 @@
 
 The source baseline is helper986 `7f062ada5a34dfbd8da0558ddac8b9c1112f43eb`.
 This slice changes Snapshot Rust6/7 and browser ownership, without ABI changes,
-quota increases, another build profile, or chart/geometry policy. All200 compiler
+quota increases, another build profile, or chart/geometry policy. All202 compiler
 input paths and hashes are recorded. The fresh native/WASM pair and full versions
 are in `environment.json`; WASM is1,503,895 raw /616,946 gzip6 bytes, below the
 unchanged1,507,328 /622,592 caps (3,433 raw bytes headroom).
@@ -57,3 +57,8 @@ owner and controller close performed no exact replay. The refreshed browser
 proof verifies matching-pin notifications preserve the newer owner and retire
 its exact Snapshot before releasing accepted Data. Rust/compiler inputs and
 the native/WASM pair are unchanged by this browser-only repair.
+
+The compiler manifest was corrected to include the already-tracked allocation
+recovery implementation and tests. All tracked crates/vendor Rust/Cargo/build
+paths and every recorded input hash were rechecked; this provenance correction
+does not change source code, build outputs or recorded runtime results.

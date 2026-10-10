@@ -1,6 +1,6 @@
 {
-  "scope": "Complete prior199 tracked Rust/Cargo/build/vendor input paths plus new focused test; freshly built from this worktree, no donor substitution.",
-  "inputCount": 200,
+  "scope": "All git-tracked crates/vendor Rust, Cargo and build inputs, plus the recorded root Cargo/toolchain/configuration and packaging inputs; freshly built from this worktree, no donor substitution.",
+  "inputCount": 202,
   "inputs": [
     {
       "path": ".cargo/config.toml",
@@ -113,6 +113,14 @@
     {
       "path": "crates/xyg-engine/src/geo.rs",
       "sha256": "7daa8cd265eb0b264fcc7e98a320753f14ec02ec0a88b283c56fe00a0e3d56cb"
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_allocation_recovery.rs",
+      "sha256": "e3fc2481bf91498a4736aa91324db4c426525f38650a4698cb9d2ca0b4c76c17"
+    },
+    {
+      "path": "crates/xyg-engine/src/geo_allocation_recovery_tests.rs",
+      "sha256": "c7037080082c6676a74d2bed1cdf5cbe4f1d62e54784aa083267239182e302ba"
     },
     {
       "path": "crates/xyg-engine/src/geo_fill.rs",
