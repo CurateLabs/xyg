@@ -1,0 +1,8 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.23s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 1 test
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_same_handle_distinct_births_retained_full_rows ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1494 filtered out; finished in 0.01s

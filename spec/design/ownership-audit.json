@@ -4175,6 +4175,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
       "path": "crates/xyg-engine/src/geo_snapshot_recovery_tests.rs",
       "policy": "rust-engine"
+    },
+    {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior.",
+      "path": "crates/xyg-engine/src/geo_hierarchy_recovery_tests.rs",
+      "policy": "rust-engine"
     }
   ]
 }

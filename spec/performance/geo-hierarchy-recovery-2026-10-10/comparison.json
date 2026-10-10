@@ -1,0 +1,7 @@
+{
+  "legacy_vs_baseline": "exact all84 complete packets including original owner/publication",
+  "optin_vs_baseline": "exact all84 complete packets including original owner/publication",
+  "literal_controls": "original raw fixture asserts full IDs, original rows, nullable signed time, direct/cluster/density counts, selected footers, paged membership, frozen ownership",
+  "raw_packet_storage": "JSON gzip9 mtime0 preserves complete original base64 packet bytes",
+  "limits": "bounded engine recovery only; public43/44 owners remain nonce0 until adopted"
+}

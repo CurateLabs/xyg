@@ -600,6 +600,10 @@ impl GeoHierarchyQuerySession {
         self.cancelled = true;
         self.result = None;
     }
+    // A retired logical operation can retain an authenticated read loan until ACK.
+    pub(crate) fn operation_live(&self) -> bool {
+        !self.cancelled && !self.failed && !matches!(self.phase, Phase::Frontier | Phase::Work)
+    }
     pub fn finish(&mut self) -> Result<GeoHierarchyResult> {
         if self.failed || self.cancelled || self.pending.is_some() {
             return Err(SourceError::Cancelled);

@@ -1,0 +1,4 @@
+    Checking xyg-wasm v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/crates/xyg-wasm)
+    Checking xyg-core v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/crates/xyg-core)
+    Checking xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/crates/xyg-engine)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.85s
