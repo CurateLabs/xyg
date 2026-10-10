@@ -138,3 +138,7 @@ in [selected mutation recovery](geo-selected-mutation-recovery.md). Nonce33's re
 receipt alone cannot prove which35 Source mutation succeeded. Public selected
 owner adoption and lost19 publication remain separate gates. Domain-member owner adoption, unknown transport
 reset, browser presentation and massive latency remain separate gates.
+
+Selected hierarchy43 admission and44 same-handle publication may opt into the
+same fixed bank. Their distinct logical Query/Data births and post-admission
+fallback retirement are defined in [geo-hierarchy-recovery](geo-hierarchy-recovery.md).

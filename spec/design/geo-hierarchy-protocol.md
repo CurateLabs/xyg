@@ -162,3 +162,7 @@ frames/pages remain valid. No cap or ABI signature is increased.
 The existing paired native/WASM CI step also runs selected hierarchy conformance
 for commands42–44. It reuses freshly built core/artifact and the existing Release
 surfaces gate; no separate performance/platform job or quota is introduced.
+
+Nonzero header240 recovery for selected43/44 is specified by
+[Recoverable selected hierarchy phases](geo-hierarchy-recovery.md). Nonce0 and
+ordinary38/39 remain unchanged; engine recovery is separate from typed host adoption.

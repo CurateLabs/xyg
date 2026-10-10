@@ -1288,6 +1288,16 @@ ledger applies the engine policy; it adds no shipped execution path.
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_hierarchy_scope_credit_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+### M6 selected hierarchy recovery proofs
+
+The new cfg(test) file frames byte-level tests only. It reuses canonical hierarchy
+admission, Scene encoding, private registry authorities and the existing receipt
+bank; it introduces no alternate host policy or production constructor.
+
+| File | Current owner | Policy | Disposition | Follow-up issue |
+| --- | --- | --- | --- | --- |
+| `crates/xyg-engine/src/geo_hierarchy_recovery_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

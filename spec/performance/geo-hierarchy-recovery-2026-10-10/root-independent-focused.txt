@@ -1,0 +1,26 @@
+    Blocking waiting for file lock on build directory
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.77s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 6 tests
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_same_handle_distinct_births_retained_full_rows ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_cancel_failure_and_pending_disposal_retire_before_exact_ack ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_newer_lane_operation_retires_old_birth_not_old_data ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_fallback_retires_consumed_query_without_restoring_state ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_budget_and_forgery_preserve_state_query_and_history ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::recovery::hierarchy_recovery_sixteen_birth_cap_before_consumption_and_release_retry ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1494 filtered out; finished in 0.11s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-1e5afb9617cfc1a9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-cee34e46c45b23c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
