@@ -1,0 +1,126 @@
+{
+  "artifact": {
+    "rawBytes": 1505822,
+    "gzipLevel6Bytes": 618706,
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17"
+  },
+  "nativeWasm": {
+    "sceneBytes": 5301,
+    "painterBytes": 633,
+    "painterSha256": "4752dbf9f4dddfb28673bb93b2ea163d7497024b3a50947f5c9e041dac3522a4",
+    "frozenBytes": 7733,
+    "frozenSha256": "072813af1d333a20526a1f15aa649db72f65737466f093852f9923d14832daf9"
+  },
+  "legacyV2": [
+    {
+      "bytes": 1272,
+      "sha256": "398ce251b030fa9917ef2df073af98a82957365c7dc9db0917367eab6c0aaeab"
+    },
+    {
+      "bytes": 1272,
+      "sha256": "398ce251b030fa9917ef2df073af98a82957365c7dc9db0917367eab6c0aaeab"
+    }
+  ],
+  "formats": {
+    "svg": {
+      "bytes": 11448,
+      "sha256": "9dd115be182ddb97aee9f1223d563fc04732a7a77de943b100bb1d14c36e9cce"
+    },
+    "png": {
+      "bytes": 25533,
+      "sha256": "a0fa6b885c9a2992f4e9fce9f027deba3c7435516f233411905993eb9307cc4f"
+    },
+    "pdf": {
+      "bytes": 1081,
+      "sha256": "1af88bcbdc52164063769764bc69cb13dba9f27e2ec98ad51e4ff640453867e2"
+    },
+    "jpeg": {
+      "bytes": 17372,
+      "sha256": "f6283ecbf2cbbe2180db6f9c552406a0f180b78fbef9790824a944207752a76b"
+    },
+    "webp": {
+      "bytes": 2088,
+      "sha256": "cb325e33ba8e779c2142aa086dbb3f2e2bc717d4130eab76522c39c6d30815d3"
+    },
+    "html": {
+      "bytes": 26004,
+      "sha256": "1ed44ac2b86d0def36fd8b0f2cbe1da58aa320938a2d12ffd98291253f5d1553"
+    }
+  },
+  "paint": {
+    "ok": true,
+    "pixels": {
+      "left": [
+        55,
+        155,
+        255,
+        255
+      ],
+      "right": [
+        55,
+        155,
+        255,
+        255
+      ],
+      "empty": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    "ordinals": [
+      "128",
+      "143"
+    ],
+    "nonfinal": true,
+    "malformedStageOldPaint": true,
+    "staleRejected": true,
+    "records": 12,
+    "styles": 256,
+    "painterBytes": 633,
+    "typedBytes": 8238,
+    "sourcePickingUnavailable": true,
+    "borrowedFullViewport": true
+  },
+  "replay": {
+    "left": [
+      56,
+      156,
+      255,
+      255
+    ],
+    "right": [
+      56,
+      156,
+      255,
+      255
+    ],
+    "empty": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "scripts": 0,
+    "template": 10312
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_overview_painter_page.mjs",
+      "/packages/xy-client/dist/index.js",
+      "/tests/browser/geo_overview_painter_fixture.mjs",
+      "/packages/xy-node/src/geoscale.js",
+      "/packages/xy-node/src/geo-overview.js",
+      "/packages/xy-node/src/geo-snapshot.js",
+      "/packages/xy-node/src/geo-allocation-attempt.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/frozen.html"
+    ],
+    "external": [],
+    "errors": []
+  },
+  "scope": "Small actual native Scene compiler / WASM trusted painter parity, private overview Data retain/source+index disposal, exact time-domain counts and flags3, six native formats+WASM binary v4 parity, real WebGL2/offline strict-CSP cells. No source-feature picking, membership, public overview composition, final camera-space refinement or massive latency claim."
+}
