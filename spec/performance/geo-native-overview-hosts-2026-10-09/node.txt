@@ -1,0 +1,26 @@
+✔ native host rejects other source kinds before protocol or bridge access (0.707917ms)
+✔ actual native staged camera/time keeps accepted paint until CAS and exact retired ACK (5.416792ms)
+✔ one process stage slot preserves five mounted frames and recovers after abort ACK (2.030459ms)
+✔ lost stage and commit confirmations recover same candidate while closing (1.472666ms)
+✔ cancellation after actual Data creation drops candidate and preserves accepted paint (0.814916ms)
+✔ accepted private anchor remounts and old realm ACK cannot change new realm (0.970125ms)
+✔ actual indexed live updates preserve ordinary authority (1.708167ms)
+✔ actual indexed live updates preserve selected authority (1.529292ms)
+✔ failed unpublished Data cleanup retains global stage credit until exact retry (0.633417ms)
+✔ actual hierarchy static mount rejects live updates before canonical source reads (1.855458ms)
+✔ native overview stage/CAS/retire has exclusive owners and never updates caller current (9.233709ms)
+✔ native overview accepted anchor survives caller/index/source disposal and exact remount (1.776583ms)
+✔ close during an admitted native page read drains exact cleanup and keeps old mount until release (1.700916ms)
+✔ native-looking closure producer cannot be retagged into native overview host authority (1.440375ms)
+✔ lost native26 current retain keeps genuine pre-dispatch guard (1.020292ms)
+✔ lost native26 supplied retain keeps genuine pre-dispatch guard (0.859917ms)
+✔ public overview decorations and outgoing transfer never retag the private remount (1.0865ms)
+✔ public route and budget shadows cannot redirect overview inspection, update or retirement (1.401125ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5099.346667

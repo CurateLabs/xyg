@@ -1,0 +1,13 @@
+{
+  "crates/xyg-engine/src/geo_allocation_recovery.rs": "04287e81fac4fa6a965373cf64f558920e22b752b2f2287d44bdfb440a8933f0",
+  "crates/xyg-engine/src/geo_scale_protocol.rs": "a59390d16f836b9f945d42354704b3f8dd97bcfc07cd620995342d0df32e82c1",
+  "crates/xyg-engine/src/geo_indexed_query_session.rs": "e13e1ff6008ea9d12b72dbc7b3a991eaa2cd42b18438cf76b855926fb13dd2d7",
+  "crates/xyg-engine/src/geo_linked_state_protocol.rs": "4ffd406bd5df805d25b0e3548e6ef87d8c6a7078b7c50cc43854fdc7a21f92ab",
+  "crates/xyg-engine/src/geo_linked_state_protocol_tests.rs": "962c8df7a33d5b61aacb5414e1daa4beda7b8c22b029e6c39b539a41022ef503",
+  "crates/xyg-engine/src/geo_selected_publication_recovery_tests.rs": "2b64474086fda6a7e27fef8688ba8d343c1dae06bda5dee61956434c315d4ac2",
+  "scripts/geo_selected_publication_recovery_conformance.mjs": "90c44559aa12cb5f4bfd100bb0f42e6b7f59221885a523ec0c2e8b9cb140ecce",
+  "spec/design/geo-selected-publication-recovery.md": "2c9acf08b86a449fe4f5d2d3d9e5e77d4b18704235bddb26d04b9d6c1c77ea23",
+  "spec/design/geo-selected-mutation-recovery.md": "96c5981f25b805dcce7b25c249854a3d32a034891101591287466a89c37a291d",
+  "spec/design/geo-linked-state-protocol.md": "56313094ec1a08c66f94869ab206446a75a850852e94552f66c55984e7eee4ca",
+  "spec/design/geo-allocation-recovery.md": "bdf52001b12b255ff096c20226d30cdfde8534383f1b21f42dc52cc583a5f84c"
+}

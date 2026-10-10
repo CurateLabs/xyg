@@ -186,7 +186,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         || u32at(b, 4) != 1
         || u64at(b, 232) != (b.len() - HEADER) as u64
         || b[248..256].iter().any(|&v| v != 0)
-        || (u64at(b, 240) != 0 && !matches!(u32at(b, 8), 26..=29 | 35 | 36 | 45 | 47))
+        || (u64at(b, 240) != 0 && !matches!(u32at(b, 8), 19 | 26..=29 | 35 | 36 | 45 | 47))
         || b.len() > MAX_DATA
         || u32at(b, 204) != 0
     {
@@ -1045,6 +1045,8 @@ fn execute_locked(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         }
         let phase_budget = if matches!(command, 39 | 44) {
             hierarchy::data_budget(entry, budget(request)?.processor_bytes)?
+        } else if command == 19 && u64at(request, 240) != 0 {
+            selected_publication_budget(entry, budget(request)?.processor_bytes)?
         } else {
             budget(request)?.processor_bytes
         };
@@ -1125,7 +1127,7 @@ fn execute_locked(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
         let bytes = match render_entry(
             entry,
             request,
-            if matches!(command, 39 | 44) {
+            if matches!(command, 39 | 44) || (command == 19 && u64at(request, 240) != 0) {
                 phase_budget
                     .checked_sub(semantic_bytes)
                     .ok_or(SourceError::ResourceLimit)?
@@ -1617,6 +1619,35 @@ pub fn data_len(request: &[u8], budget: usize) -> Result<usize> {
         return Err(SourceError::ResourceLimit);
     }
     Ok(bytes.len())
+}
+
+// Dossier §27: opt-in publication accounts retained Query authority alongside
+// new semantic/output/compile credits; legacy19 retains its existing policy.
+fn selected_publication_budget(entry: &Entry, budget: usize) -> Result<usize> {
+    let Entry::Indexed(q) = entry else {
+        return Err(SourceError::InvalidFrame);
+    };
+    if !q.selected_replacement {
+        return Err(SourceError::InvalidFrame);
+    }
+    let result = q.published.as_ref().ok_or(SourceError::StaleSource)?;
+    let selection = result
+        .result
+        .selection
+        .as_ref()
+        .ok_or(SourceError::StaleSource)?;
+    let scope_bytes = q
+        .scope
+        .as_ref()
+        .ok_or(SourceError::StaleSource)?
+        .publication_retained_bytes(selection.state())?;
+    budget
+        .checked_sub(q.owner.index.reserved_bytes())
+        .and_then(|n| n.checked_sub(q.owner._lease.bytes()))
+        .and_then(|n| n.checked_sub(scope_bytes))
+        .and_then(|n| n.checked_sub(q._lease.bytes()))
+        .and_then(|n| n.checked_sub(result.retained_bytes()))
+        .ok_or(SourceError::ResourceLimit)
 }
 
 fn render_entry(entry: &Entry, request: &[u8], budget: usize) -> Result<Vec<u8>> {

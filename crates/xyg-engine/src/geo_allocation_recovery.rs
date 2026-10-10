@@ -2,7 +2,7 @@
 use super::*;
 const SLOTS: usize = 16;
 const CONTROL: usize = 8192;
-const MAX_REQUEST: usize = HEADER + 24;
+const MAX_REQUEST: usize = HEADER + 48;
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Birth {
     issuer: u64,
@@ -46,6 +46,7 @@ fn phase_live(r: &Registry, b: Birth) -> bool {
     r.entries.iter().any(|(id, e)| {
         *id == b.target
             && match b.command {
+                19 => matches!(e, Entry::Data { semantic: Some(s), .. } if s.sequence == b.sequence && s.scope.is_some() && s.result.selection.is_some()),
                 26 => matches!(e, Entry::Data { .. }),
                 27 => matches!(
                     e,
@@ -70,6 +71,7 @@ fn issuer_live(r: &Registry, b: Birth) -> bool {
     r.entries.iter().any(|(id, e)| {
         *id == b.issuer
             && match b.command {
+                19 => matches!(e, Entry::Indexed(q) if q.selected_replacement && q.sequence == b.sequence),
                 26 => matches!(e, Entry::Data { .. }),
                 27 => matches!(
                     e,
@@ -129,6 +131,14 @@ pub(super) fn execute(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> 
         if !old.confirmed {
             return Err(SourceError::StaleSource);
         }
+    }
+    // Replay above precedes kind lookup: selected19 consumed its Query into Data.
+    if command == 19
+        && !r.entries.iter().any(|(id, e)| {
+            *id == issuer && matches!(e, Entry::Indexed(q) if q.selected_replacement && q.sequence == u64at(request, 24) && q.published.is_some())
+        })
+    {
+        return Err(SourceError::InvalidFrame);
     }
     let slot = slot
         .or_else(|| r.recovery.receipts.iter().position(Option::is_none))
@@ -204,7 +214,7 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(payload, 0);
     let action = u32at(payload, 4);
     let target = u64at(payload, 8);
-    if !matches!(command, 26..=29 | 35 | 36 | 45) || action > 2 {
+    if !matches!(command, 19 | 26..=29 | 35 | 36 | 45) || action > 2 {
         return Err(SourceError::InvalidFrame);
     }
     let issuer = u64at(request, 16);

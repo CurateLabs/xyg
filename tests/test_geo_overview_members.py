@@ -42,7 +42,7 @@ def test_sync_notebook_pages_after_all_producers_and_frame_disposed():
     asyncio.run(notebook())
 
 
-def test_lost46_known_probe_and_lost45_poison_oldframe(monkeypatch):
+def test_lost46_known_probe_and_lost45_exact_cleanup_oldframe(monkeypatch):
     source, seed, index, q = build()
     frame = index.update(q, sequence=2)
     token, actual = _transport(frame), _transport(frame).native_execute
@@ -66,8 +66,10 @@ def test_lost46_known_probe_and_lost45_poison_oldframe(monkeypatch):
         def lose45(packet):
             out = actual(packet)
             if struct.unpack_from("<I", packet, 8)[0] == 45:
+                first = not lost
                 lost.append(members.reply(out)["handle"])
-                raise RuntimeError("lost successful45")
+                if first:
+                    raise RuntimeError("lost successful45")
             return out
 
         monkeypatch.setattr(token, "native_execute", lose45)
@@ -77,12 +79,12 @@ def test_lost46_known_probe_and_lost45_poison_oldframe(monkeypatch):
             frame.members(136, sequence=5, max_vertices=1000)
         assert second.value.owner is caught.value.owner and len(lost) == 1
         assert frame.data.count(136) == 2
-        with pytest.raises(members.GeoOverviewMembershipUncertain):
-            caught.value.owner.close()
+        caught.value.owner.close()
+        assert len(lost) == 2 and lost[0] == lost[1]
     finally:
         monkeypatch.setattr(token, "native_execute", actual)
-        for handle in lost:
-            actual(members.request(10, handle, 4))  # Test-only real-receipt observer.
+        if lost:
+            caught.value.owner.close()
         frame.close()
         index.close()
         seed.close()

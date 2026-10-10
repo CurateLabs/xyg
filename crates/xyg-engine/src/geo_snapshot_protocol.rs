@@ -5,7 +5,9 @@ use crate::geo_snapshot::{
     MAX_FROZEN_ARTIFACT_BYTES, MAX_FROZEN_BYTES, MAX_FROZEN_PEAK,
 };
 use crate::geo_source::SourceError;
-use crate::geo_tile_cache::{GeoTileCache, GeoTileLimits, TILE_CACHE_PROCESS_BYTES};
+use crate::geo_tile_cache::{
+    GeoDerivedLease, GeoTileCache, GeoTileLimits, TILE_CACHE_PROCESS_BYTES,
+};
 use std::sync::{Mutex, OnceLock};
 
 pub const HEADER: usize = 256;
@@ -13,6 +15,9 @@ pub const MAX_REQUEST: usize = HEADER;
 pub const MAX_HANDLES: usize = 16;
 pub const MAX_SNAPSHOTS: usize = 8;
 pub const MAX_ARTIFACTS: usize = 8;
+const RECOVERY_SLOTS: usize = 16;
+const RECOVERY_BYTES: usize = 32768;
+const RECOVERY_REQUEST_BYTES: usize = 4 * HEADER + 512;
 type Result<T> = std::result::Result<T, GeoSnapshotError>;
 enum Entry {
     Snapshot {
@@ -20,6 +25,7 @@ enum Entry {
         #[cfg_attr(not(feature = "raster"), allow(dead_code))]
         sequence: u64,
         reads: u8,
+        birth: Option<Box<Birth>>,
     },
     #[cfg_attr(not(feature = "raster"), allow(dead_code))]
     Artifact {
@@ -32,6 +38,197 @@ struct Registry {
     next: u64,
     entries: Vec<(u64, Entry)>,
     cache: Option<GeoTileCache>,
+    recovery: Option<Recovery>,
+}
+// §27: fixed-capacity receipt storage is preleased before heap allocation.
+#[derive(Clone)]
+struct Birth {
+    request: [u8; HEADER],
+    receipt: [u8; HEADER],
+    confirmed: bool,
+    retired: bool,
+    released: bool,
+}
+impl Birth {
+    fn issuer(&self) -> (u64, u64) {
+        (u64at(&self.request, 16), u64at(&self.request, 24))
+    }
+    fn nonce(&self) -> u64 {
+        u64at(&self.request, 240)
+    }
+    fn target(&self) -> u64 {
+        u64at(&self.receipt, 16)
+    }
+    fn replay(&self) -> [u8; HEADER] {
+        if self.retired {
+            reply(0, self.issuer().1, 2, 0, 0)
+        } else {
+            self.receipt
+        }
+    }
+}
+struct Recovery {
+    current: Vec<Birth>,
+    retired: Vec<Birth>,
+    _lease: GeoDerivedLease,
+}
+fn source_live(issuer: (u64, u64)) -> Result<bool> {
+    match crate::geo_scale_protocol::with_overview_data(issuer.0, issuer.1, |_, _, _| Ok(())) {
+        Ok(()) => Ok(true),
+        Err(SourceError::StaleSource) => Ok(false),
+        Err(e) => Err(source_error(e)),
+    }
+}
+fn recovery_start(r: &mut Registry) -> Result<()> {
+    if r.recovery.is_none() {
+        // Two fixed banks, eight boxed live births, three temporary copies,
+        // their container headers and alignment fit the persistent charge.
+        if (RECOVERY_SLOTS * 2 + MAX_SNAPSHOTS + 3) * std::mem::size_of::<Birth>() + 4096
+            > RECOVERY_BYTES
+        {
+            return Err(GeoSnapshotError::Limit);
+        }
+        let lease = cache(r)?
+            .reserve_derived(RECOVERY_BYTES)
+            .map_err(|_| GeoSnapshotError::Limit)?;
+        r.recovery = Some(Recovery {
+            current: Vec::with_capacity(RECOVERY_SLOTS),
+            retired: Vec::with_capacity(RECOVERY_SLOTS),
+            _lease: lease,
+        });
+    }
+    Ok(())
+}
+fn birth(r: &Registry, issuer: (u64, u64), nonce: u64) -> Option<&Birth> {
+    let matches = |b: &&Birth| b.issuer() == issuer && b.nonce() == nonce;
+    r.recovery
+        .as_ref()
+        .and_then(|bank| {
+            bank.current
+                .iter()
+                .find(matches)
+                .or_else(|| bank.retired.iter().find(matches))
+        })
+        .or_else(|| {
+            r.entries
+                .iter()
+                .filter_map(|(_, e)| match e {
+                    Entry::Snapshot { birth: Some(b), .. } => Some(b.as_ref()),
+                    _ => None,
+                })
+                .find(matches)
+        })
+}
+fn mutate_birth(r: &mut Registry, issuer: (u64, u64), nonce: u64, f: impl Fn(&mut Birth)) {
+    if let Some(bank) = &mut r.recovery {
+        for b in bank.current.iter_mut().chain(bank.retired.iter_mut()) {
+            if b.issuer() == issuer && b.nonce() == nonce {
+                f(b);
+            }
+        }
+    }
+    for (_, e) in &mut r.entries {
+        if let Entry::Snapshot { birth: Some(b), .. } = e {
+            if b.issuer() == issuer && b.nonce() == nonce {
+                f(b);
+            }
+        }
+    }
+}
+fn recovery_collect(r: &mut Registry) -> Result<()> {
+    let Some(bank) = &r.recovery else {
+        return Ok(());
+    };
+    let mut remove = [false; RECOVERY_SLOTS];
+    for (i, current) in bank.current.iter().enumerate() {
+        if current.released
+            && !bank.retired.iter().any(|b|b.issuer()==current.issuer())
+            && !r.entries.iter().any(|(_,e)|matches!(e,Entry::Snapshot{birth:Some(b),..} if b.issuer()==current.issuer()))
+            && !source_live(current.issuer())? {remove[i]=true;}
+    }
+    let bank = r.recovery.as_mut().unwrap();
+    let mut i = 0;
+    bank.current.retain(|_| {
+        let keep = !remove[i];
+        i += 1;
+        keep
+    });
+    if bank.current.is_empty() && bank.retired.is_empty() {
+        r.recovery = None;
+    }
+    Ok(())
+}
+fn recovery_control(r: &mut Registry, q: &[u8]) -> Result<[u8; HEADER]> {
+    let issuer = (u64at(q, 16), u64at(q, 24));
+    let nonce = u64at(q, 240);
+    let target = u64at(q, 40);
+    let action = u32at(q, 48);
+    let Some(b) = birth(r, issuer, nonce).cloned() else {
+        // Release/Forget of an absent stamp grants no owner or absence proof.
+        return if matches!(action, 1 | 2) {
+            Ok(reply(0, issuer.1, 0, 0, 0))
+        } else {
+            Err(GeoSnapshotError::Stale)
+        };
+    };
+    if target != b.target() && !(target == 0 && b.retired) {
+        return Err(GeoSnapshotError::Stale);
+    }
+    match action {
+        0 => {
+            mutate_birth(r, issuer, nonce, |b| b.confirmed = true);
+            Ok(reply(
+                if b.retired { 0 } else { target },
+                issuer.1,
+                if b.retired { 2 } else { 0 },
+                0,
+                0,
+            ))
+        }
+        2 => {
+            if !b.confirmed || !b.retired {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            mutate_birth(r, issuer, nonce, |b| b.released = true);
+            if let Some(bank) = &mut r.recovery {
+                bank.retired
+                    .retain(|b| !(b.issuer() == issuer && b.nonce() == nonce));
+            }
+            Ok(reply(0, issuer.1, 0, 0, 0))
+        }
+        1 => {
+            let bank = r.recovery.as_ref().ok_or(GeoSnapshotError::Stale)?;
+            let current = bank
+                .current
+                .iter()
+                .find(|b| b.issuer() == issuer)
+                .ok_or(GeoSnapshotError::Stale)?;
+            if current.nonce() != nonce
+                || !current.released
+                || !b.retired
+                || !b.confirmed
+                || bank.retired.iter().any(|b| b.issuer() == issuer)
+                || r.entries.iter().any(
+                    |(_, e)| matches!(e,Entry::Snapshot{birth:Some(b),..} if b.issuer()==issuer),
+                )
+                || source_live(issuer)?
+            {
+                return Err(GeoSnapshotError::Invalid);
+            }
+            r.recovery
+                .as_mut()
+                .unwrap()
+                .current
+                .retain(|b| b.issuer() != issuer);
+            if r.recovery.as_ref().unwrap().current.is_empty()
+                && r.recovery.as_ref().unwrap().retired.is_empty()
+            {
+                r.recovery = None;
+            }
+            Ok(reply(0, issuer.1, 0, 0, 0))
+        }
+        _ => Err(GeoSnapshotError::Invalid),
+    }
 }
 static REGISTRY: OnceLock<Mutex<Registry>> = OnceLock::new();
 fn registry() -> &'static Mutex<Registry> {
@@ -40,6 +237,7 @@ fn registry() -> &'static Mutex<Registry> {
             next: 1,
             entries: Vec::new(),
             cache: None,
+            recovery: None,
         })
     })
 }
@@ -60,14 +258,24 @@ fn frame(b: &[u8]) -> Result<u32> {
         || &b[..4] != b"XYGJ"
         || u32at(b, 4) != 1
         || b[12..16].iter().any(|n| *n != 0)
-        || b[56..HEADER].iter().any(|n| *n != 0)
     {
         return Err(GeoSnapshotError::Invalid);
     }
     let command = u32at(b, 8);
-    if !matches!(command,1..=6|20..=22)
-        || (!matches!(command, 1 | 4 | 5 | 6) && u64at(b, 24) != 0)
-        || (command != 2 && b[40..56].iter().any(|n| *n != 0))
+    let nonce = u64at(b, 240);
+    if !matches!(command,1..=7|20..=22)
+        || b[56..240].iter().any(|n| *n != 0)
+        || b[248..].iter().any(|n| *n != 0)
+        || (!matches!(command, 6 | 7) && nonce != 0)
+        || (!matches!(command, 1 | 4 | 5 | 6 | 7) && u64at(b, 24) != 0)
+        || (!matches!(command, 2 | 7) && b[40..56].iter().any(|n| *n != 0))
+        || (command == 7
+            && (nonce == 0
+                || u64at(b, 16) == 0
+                || u64at(b, 24) == 0
+                || u64at(b, 32) != 0
+                || b[52..56].iter().any(|n| *n != 0)
+                || !matches!(u32at(b, 48), 0..=2)))
         || (command == 3 && u64at(b, 32) != 0)
     {
         return Err(GeoSnapshotError::Invalid);
@@ -127,20 +335,123 @@ fn source_error(e: SourceError) -> GeoSnapshotError {
 /// only borrows immutable storage and may not reenter the source registry.
 pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
     let command = frame(b)?;
-    if !matches!(command, 1..=6) {
+    if !matches!(command, 1..=7) {
         return Err(GeoSnapshotError::Invalid);
     }
     let handle = u64at(b, 16);
     let sequence = u64at(b, 24);
     let mut r = registry().lock().map_err(|_| GeoSnapshotError::Limit)?;
+    if command == 7 || (command == 6 && u64at(b, 240) != 0) {
+        recovery_collect(&mut r)?;
+    }
+    if command == 7 {
+        let _request_lease = cache(&mut r)?
+            .reserve_derived(RECOVERY_REQUEST_BYTES)
+            .map_err(|_| GeoSnapshotError::Limit)?;
+        let result = recovery_control(&mut r, b);
+        if result.is_ok() {
+            recovery_collect(&mut r)?;
+        }
+        if r.entries.is_empty() && r.recovery.is_none() {
+            r.cache = None;
+        }
+        return result;
+    }
+    let nonce = if command == 6 { u64at(b, 240) } else { 0 };
+    let issuer = (handle, sequence);
+    let mut new_birth = None;
+    let _request_lease;
+    if nonce != 0 {
+        if let Some(existing) = birth(&r, issuer, nonce) {
+            if existing.request != b {
+                return Err(GeoSnapshotError::Stale);
+            }
+            let out = existing.replay();
+            let _lease = cache(&mut r)?
+                .reserve_derived(RECOVERY_REQUEST_BYTES)
+                .map_err(|_| GeoSnapshotError::Limit)?;
+            return Ok(out);
+        }
+        if let Some(current) = r
+            .recovery
+            .as_ref()
+            .and_then(|bank| bank.current.iter().find(|b| b.issuer() == issuer))
+        {
+            if nonce <= current.nonce() || !current.confirmed {
+                return Err(GeoSnapshotError::Stale);
+            }
+            let bank = r.recovery.as_ref().unwrap();
+            // Older live births own a future historical slot. Displacing this
+            // current birth reserves one too, before allocating the new value.
+            let older_live = r
+                .entries
+                .iter()
+                .filter(|(_, entry)| {
+                    matches!(entry, Entry::Snapshot { birth: Some(b), .. }
+                    if !bank.current.iter().any(|c| c.issuer()==b.issuer() && c.nonce()==b.nonce()))
+                })
+                .count();
+            let displaced = usize::from(!current.released);
+            if bank.retired.len() + older_live + displaced > RECOVERY_SLOTS {
+                return Err(GeoSnapshotError::Limit);
+            }
+        } else if r
+            .recovery
+            .as_ref()
+            .is_some_and(|bank| bank.current.len() >= RECOVERY_SLOTS)
+        {
+            return Err(GeoSnapshotError::Limit);
+        }
+        if !source_live(issuer)? {
+            return Err(GeoSnapshotError::Stale);
+        }
+        if u64at(b, 32) <= (RECOVERY_BYTES + RECOVERY_REQUEST_BYTES) as u64 {
+            return Err(GeoSnapshotError::Limit);
+        }
+        recovery_start(&mut r)?;
+        _request_lease = Some(
+            cache(&mut r)?
+                .reserve_derived(RECOVERY_REQUEST_BYTES)
+                .map_err(|_| GeoSnapshotError::Limit)?,
+        );
+        new_birth = Some(Birth {
+            request: b.try_into().unwrap(),
+            receipt: [0; HEADER],
+            confirmed: false,
+            retired: false,
+            released: false,
+        });
+    } else {
+        _request_lease = None;
+    }
     if command == 3 {
         let at = r
             .entries
             .iter()
             .position(|(id, _)| *id == handle)
             .ok_or(GeoSnapshotError::Stale)?;
+        let retiring = match &r.entries[at].1 {
+            Entry::Snapshot { birth: Some(b), .. } => Some(b.as_ref().clone()),
+            _ => None,
+        };
+        if let Some(mut b) = retiring {
+            let bank = r.recovery.as_mut().ok_or(GeoSnapshotError::Stale)?;
+            let current = bank
+                .current
+                .iter()
+                .position(|c| c.issuer() == b.issuer() && c.nonce() == b.nonce());
+            if let Some(i) = current {
+                bank.current[i].retired = true;
+            } else {
+                if bank.retired.len() >= RECOVERY_SLOTS {
+                    return Err(GeoSnapshotError::Limit);
+                }
+                b.retired = true;
+                bank.retired.push(b);
+            }
+        }
         r.entries.remove(at);
-        if r.entries.is_empty() {
+        if r.entries.is_empty() && r.recovery.is_none() {
             r.cache = None;
         }
         return Ok(reply(handle, 0, 0, 0, 0));
@@ -159,6 +470,13 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
                 return Err(GeoSnapshotError::Limit);
             }
             let budget = usize::try_from(u64at(b, 32)).map_err(|_| GeoSnapshotError::Limit)?;
+            let budget = if nonce != 0 {
+                budget
+                    .checked_sub(RECOVERY_BYTES + RECOVERY_REQUEST_BYTES)
+                    .ok_or(GeoSnapshotError::Limit)?
+            } else {
+                budget
+            };
             let value = if command == 6 {
                 crate::geo_scale_protocol::with_overview_data(
                     handle,
@@ -227,14 +545,30 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
                 .map_err(source_error)??
             };
             let size = value.bytes().len();
+            if let Some(birth) = &mut new_birth {
+                birth.receipt = reply(r.next, sequence, 0, size, 0);
+            }
+
             let id = insert(
                 &mut r,
                 Entry::Snapshot {
                     value: Box::new(value),
                     sequence,
                     reads: 0,
+                    birth: new_birth.clone().map(Box::new),
                 },
             )?;
+            if let Some(birth) = new_birth {
+                let bank = r.recovery.as_mut().unwrap();
+                if let Some(i) = bank.current.iter().position(|c| c.issuer() == issuer) {
+                    let old = std::mem::replace(&mut bank.current[i], birth);
+                    if old.retired && !old.released {
+                        bank.retired.push(old);
+                    }
+                } else {
+                    bank.current.push(birth);
+                }
+            }
             return Ok(reply(id, sequence, 0, size, 0));
         }
         let format = GeoFrozenFormat::from_code(u32at(b, 40))?;
@@ -296,13 +630,26 @@ pub fn execute(b: &[u8]) -> Result<[u8; HEADER]> {
             Ok(out)
         }
     })();
-    if result.is_err() && r.entries.is_empty() {
+    if result.is_ok() && nonce != 0 {
+        recovery_collect(&mut r)?;
+    }
+    if result.is_err()
+        && r.recovery
+            .as_ref()
+            .is_some_and(|bank| bank.current.is_empty())
+    {
+        r.recovery = None;
+    }
+    if result.is_err() && r.entries.is_empty() && r.recovery.is_none() {
         r.cache = None;
     }
     result
 }
 fn bytes(entry: &Entry, command: u32) -> Result<&[u8]> {
     match (entry, command) {
+        (Entry::Snapshot { birth: Some(b), .. }, 20) if !b.confirmed => {
+            Err(GeoSnapshotError::Stale)
+        }
         (Entry::Snapshot { value, .. }, 20) => Ok(value.bytes()),
         (Entry::Artifact { value, .. }, 21) => Ok(value.snapshot()),
         (Entry::Artifact { value, .. }, 22) => Ok(value.bytes()),

@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs packages/xy-node/test/geo-native-overview-host.test.mjs
 
 
       - name: Build JS client
@@ -166,7 +166,7 @@ jobs:
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/gen_geo_overview_hosts.mjs --check
-          XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-members.test.mjs
+          XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs
           cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance
           node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs
 
@@ -440,6 +440,8 @@ jobs:
           node scripts/geo_overview_membership_engine_conformance.mjs
           XYG_GEO_DOMAIN_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-domain-members-ci.json" node scripts/geo_overview_domain_members_conformance.mjs
           XYG_GEO_RECOVERY_REPORT="$GITHUB_WORKSPACE/geo-allocation-recovery-ci.json" node scripts/geo_allocation_recovery_conformance.mjs
+          XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-recovery-ci.json" XYG_SELECTED_MUTATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-mutation-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_mutation_recovery_conformance.mjs
+          XYG_SELECTED_PUBLICATION_REPORT="$GITHUB_WORKSPACE/geo-selected-publication-recovery-ci.json" XYG_SELECTED_PUBLICATION_BASELINE="$GITHUB_WORKSPACE/spec/performance/geo-selected-publication-recovery-2026-10-09/legacy-baseline.json" node scripts/geo_selected_publication_recovery_conformance.mjs
           node scripts/gen_geo_overview_wire.mjs --check
           node scripts/geo_overview_conformance.mjs
           node scripts/gen_geo_selected_wire.mjs --check
@@ -448,7 +450,7 @@ jobs:
           node scripts/gen_geo_overview_hosts.mjs --check
           node scripts/geo_hierarchy_conformance.mjs
           node scripts/geo_selected_hierarchy_conformance.mjs
-          XYG_GEO_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-members-hosts-ci.json" XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-members.test.mjs
+          XYG_GEO_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-members-hosts-ci.json" XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs
 
       - name: Install Chromium
         timeout-minutes: 10
@@ -481,6 +483,7 @@ jobs:
           node scripts/geo_retained_wasm_smoke.mjs
           XYG_OVERVIEW_CONTROLLER_REPORT="$GITHUB_WORKSPACE/geo-overview-controller-ci.json" node scripts/geo_overview_controller_smoke.mjs
           XYG_OVERVIEW_BINARY_REPORT="$GITHUB_WORKSPACE/geo-overview-binary-ci.json" node scripts/geo_overview_binary_smoke.mjs
+          XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" XYG_GEO_NATIVE_OVERVIEW_REPORT="$GITHUB_WORKSPACE/geo-native-overview-host-ci.json" node tests/browser/geo_native_overview_host_test.mjs
       - name: Geographic painter and borrowed MapLibre context
         timeout-minutes: 10
         run: |
@@ -524,8 +527,11 @@ jobs:
             geo-overview-domain-members-ci.json
             geo-overview-members-hosts-ci.json
             geo-allocation-recovery-ci.json
+            geo-selected-mutation-recovery-ci.json
+            geo-selected-publication-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
+            geo-native-overview-host-ci.json
 
   browser_conformance:
     name: Accessibility + cross-browser conformance

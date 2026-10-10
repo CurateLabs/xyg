@@ -139,8 +139,10 @@ def test_public_density_composition_compile_export_and_explicit_host_gate():
             assert b"<svg" in artifact.bytes
         finally:
             artifact.close()
-        with pytest.raises(NotImplementedError, match="overview"):
-            chart.host(frame=frame)
+        adapter = chart.host(frame=frame)
+        assert not adapter.mounted
+        adapter.close()
+        assert frame.data.final is False
         bad = xyg.geo_chart(
             xyg.geo_layer(
                 "density", source=index, layer_id=q["layer_id"], query=q, sequence=3, style={}

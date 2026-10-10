@@ -43,6 +43,8 @@ selected-only geometry filter. Disposal/recreation cannot reset a live baseline.
 
 ### Indexed replacement publication
 
+Nonzero header240 on selected19 provides [durable publication recovery](geo-selected-publication-recovery.md); nonce0 remains unchanged.
+
 Only Queries created by36 opt into command19 replacing the completed Query
 entry with immutable SceneData at the **same handle**. Scene compilation,
 metadata/semantic leases, style checks and output admission complete before

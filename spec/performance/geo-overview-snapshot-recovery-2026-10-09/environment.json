@@ -1,0 +1,20 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewsnapshotrecovery/target/release/libxyg_core.dylib",
+    "sha256": "0ea3b00a48029a1fec7882233ce73591ad5356c1df9926371a99b6baa1734df5"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geooverviewsnapshotrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "974e235824e9978a42ab81997530a01446a7b66f27d5adb362e3b396f29ddd67",
+    "rawBytes": 1503895,
+    "gzip6Bytes": 616946
+  },
+  "profile": "O3 / wasm-only inline-threshold100 / pinned Binaryen132 optimizer; caps unchanged1507328raw622592gzip6",
+  "claims": [
+    "small fixture correctness and lifetime only",
+    "no M6 closure or massive latency claim"
+  ]
+}

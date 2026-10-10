@@ -1,0 +1,14 @@
+{
+  "parents": {
+    "recovery": "7f062ada5a34dfbd8da0558ddac8b9c1112f43eb",
+    "members": "281a4ea061061f23da0fa5e92d6a3b19bd237fae",
+    "host": "04b88cc68b86fb906655528b3a782bb0e7464537"
+  },
+  "compilerInputCount": 199,
+  "artifacts": {
+    "target/release/libxyg_core.dylib": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e",
+    "packages/xy-client/dist/xyg-wasm.wasm": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2"
+  },
+  "browser": "155.0.8059.40",
+  "validation": "136 Node native/WASM,79 Python,216 workflow cases; actual strict-CSP native host browser; existing CI lanes only"
+}

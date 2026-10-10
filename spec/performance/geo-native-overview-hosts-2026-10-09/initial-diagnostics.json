@@ -1,0 +1,41 @@
+{
+  "scope": "Recorded diagnostic explanations; not fabricated raw logs. Final raw reports are separate.",
+  "findings": [
+    {
+      "diagnostic": "Inherited source fixture used maximal revisions then live update authored lower revisions; Rust rejected stale snapshot.",
+      "resolution": "Own fixture sets initial camera/time/state revisions1 before seeding, then monotonic live revisions3+. No production policy change."
+    },
+    {
+      "diagnostic": "All-time overview used fast path and issued no external page read, so a pending-read test timed out.",
+      "resolution": "Canonical authoring now creates two disjoint intervals and partial instant-1 query, requiring a genuine gated page read."
+    },
+    {
+      "diagnostic": "Resetting public transport.native_execute did not redirect captured exact retained-copy recovery.",
+      "resolution": "Fault closure toggles loss off and exact replay26 returns same allocated Data, preserving issuer capture."
+    },
+    {
+      "diagnostic": "Generic first role=status element was empty ChartView status rather than overview notice.",
+      "resolution": "Probe scopes its unchanged notice assertion to data-xy-overview-counts."
+    },
+    {
+      "diagnostic": "A failed Reflex probe closed its browser before release ACK; rerun hit the intentional one-mount guard.",
+      "resolution": "Stopped and restarted only owned8143 process after verifying CWD; final real release ACK passes."
+    },
+    {
+      "diagnostic": "Root review found Node public overviewMode and budget metadata redirected canonical route/ceiling.",
+      "resolution": "Private immutable kind and captured original processor budget, with actual metadata-mutation controls."
+    },
+    {
+      "diagnostic": "Root review found Python public source.budget consulted after admitted preparation.",
+      "resolution": "Module-init canonical budget fget captured original private budget at host construction; real gated-read class-budget mutation passes."
+    },
+    {
+      "diagnostic": "Existing malformed-chart negative lacked the new optional _overview method.",
+      "resolution": "Owned Node constructor probes optional method, preserving original source-kind rejection before bridge/protocol access."
+    },
+    {
+      "diagnostic": "New Python reader gate initially also gated index construction.",
+      "resolution": "Arm only after initial mount so test gates the intended live query, preserving exact callback/ACK checks."
+    }
+  ]
+}
