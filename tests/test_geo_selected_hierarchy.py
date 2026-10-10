@@ -197,6 +197,11 @@ def test_async_lost_corrupt43_44_keeps_retryable_exact_cleanup_guard():
                         await pending.prepare_async(style())
                     assert bridge.publications == previous
                 assert pending is not None
+                if command == 43:
+                    with pytest.raises((RuntimeError, ValueError)):
+                        await pending.recover_async()
+                    assert root.pending_operation is pending
+                    bridge.mode = ""
                 bridge.cleanup_fail = True
                 with pytest.raises(RuntimeError, match="pre-Rust"):
                     await pending.aclose()
@@ -357,3 +362,163 @@ def test_explicit_static_composition_mounts_retained_selected_hierarchy_frame():
         for owner in (host, frame, root, old, original, source, scope):
             if owner is not None:
                 owner.close()
+
+
+def test_issued_operation_uses_captured_lane_transport_storage_and_budget(monkeypatch):
+    source, original, scope, old, q, issue = setup()
+    root = operation = frame = None
+    try:
+        root = GeoHierarchy.from_selected_frame(old, source, **storage({}))
+        operation = root.begin_selected(issue(), q, sequence=3)
+        authored = operation.request
+        saved = (root.handle, root.budget, root._reader, root._read_page, root._origin_source)
+
+        def foreign(*_args, **_kwargs):
+            raise AssertionError("public decoration redirected an issued operation")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(g, "execute", foreign)
+            root.handle = U64
+            root.budget = {"processor_bytes": 1}
+            root._reader = root._read_page = foreign
+            root._origin_source = object()
+            operation.drive()
+            assert operation.request == authored
+        frame = operation.prepare(style())
+        assert frame.data.selection is not None
+        assert frame.data.identity["sequence"] == 3
+        root.handle, root.budget, root._reader, root._read_page, root._origin_source = saved
+    finally:
+        if frame is not None:
+            frame.close()
+        if operation is not None:
+            operation.close()
+        if root is not None:
+            root.close()
+        old.close()
+        original.close()
+        source.close()
+        scope.close()
+
+
+def test_predispatch_capacity_failure_restores_state_and_clears_pending(monkeypatch):
+    from xyg import _geo_hierarchy as h
+
+    source, original, scope, old, q, issue = setup()
+    root = frame = None
+    try:
+        root = GeoHierarchy.from_selected_frame(old, source, **storage({}))
+        state = issue()
+        actual = h.GeoAllocationAttempt
+
+        def capped(*args, **kwargs):
+            raise RuntimeError("bounded host receipt capacity")
+
+        monkeypatch.setattr(h, "GeoAllocationAttempt", capped)
+        with pytest.raises(RuntimeError, match="capacity"):
+            root.begin_selected(state, q, sequence=3)
+        assert root.pending_operation is None
+        state._check()
+        monkeypatch.setattr(h, "GeoAllocationAttempt", actual)
+        frame = root.update_selected(state, q, sequence=3, style=style())
+    finally:
+        if frame:
+            frame.close()
+        if root:
+            root.close()
+        old.close()
+        original.close()
+        source.close()
+        scope.close()
+
+
+def test_twenty_distinct_disposed_lanes_reclaim_receipts():
+    source, original, scope, old, q, issue = setup()
+    root = None
+    try:
+        root = GeoHierarchy.from_selected_frame(old, source, **storage({}))
+        for _ in range(20):
+            lane = root.fork()
+            operation = lane.begin_selected(issue(), q, sequence=3)
+            operation.close()
+            lane.close()
+        assert old.data.record(0)["feature_id"] == U64
+    finally:
+        if root:
+            root.close()
+        old.close()
+        original.close()
+        source.close()
+        scope.close()
+
+
+def test_async_close_waits_admission_confirm_then_reraises_repeated_cancellation():
+    async def run():
+        raw = g.NativeGeoScaleBridge(BUDGET["processor_bytes"])
+        entered, release = asyncio.Event(), asyncio.Event()
+        calls = []
+
+        class Bridge:
+            armed = False
+
+            async def execute(self, request):
+                command = int.from_bytes(request[8:12], "little")
+                calls.append((command, int.from_bytes(request[24:32], "little")))
+                reply = await raw.execute(request)
+                if self.armed and command == 43:
+                    entered.set()
+                    await release.wait()
+                return reply
+
+            async def read(self, request):
+                return await raw.read(request)
+
+        bridge = Bridge()
+        manifest, chunk = fixture_manifest()
+        source = await RetainedGeoSource.create_async(
+            manifest, lambda _: asyncio.sleep(0, result=chunk), bridge=bridge, budget=BUDGET
+        )
+        q = {**query(source.info), "state_revision": 1}
+        original = await source.aupdate(q, sequence=1, style=style())
+        scope = await GeoSelectedScope.from_frame_async(
+            original, namespace=U64, layer_id=q["layer_id"]
+        )
+
+        async def issue():
+            return await scope.state_async(
+                revision=2, ids=np.array([U64], dtype="<u8"), fill=b"\0\xff\0\xff"
+            )
+
+        q["state_revision"] = 2
+        seed_op = await (await issue()).begin_async(source, q, sequence=2)
+        await seed_op.drive_async()
+        old = await seed_op.prepare_async(style())
+        root = await GeoHierarchy.from_selected_frame_async(old, source, **storage({}))
+        try:
+            bridge.armed = True
+            beginning = asyncio.create_task(root.begin_selected_async(await issue(), q, sequence=3))
+            await entered.wait()
+            pending = root.pending_operation
+            closing = asyncio.create_task(pending.aclose())
+            for _ in range(3):
+                await asyncio.sleep(0)
+                closing.cancel()
+            assert not closing.done()
+            assert root.pending_operation is pending
+            assert (10, 3) not in calls
+            release.set()
+            await beginning
+            with pytest.raises(asyncio.CancelledError):
+                await closing
+            assert pending.closed and root.pending_operation is None
+            assert (10, 3) in calls
+            assert old.data.record(0)["feature_id"] == U64
+        finally:
+            release.set()
+            await root.aclose()
+            await old.aclose()
+            await original.aclose()
+            await source.aclose()
+            await scope.aclose()
+
+    asyncio.run(run())

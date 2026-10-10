@@ -1,0 +1,19 @@
+{
+  "js/src/70_geo_hierarchy.ts": "f3452f7bb354b43f1b558c6a0e4cdb8afd7de9704086b5f1f581e80224e734d2",
+  "js/src/72_geo_allocation_attempt.ts": "cbec5c811857283ccf43cb523b7c2e52fce066378d3b9665e2ba6da98054ca9e",
+  "packages/xy-node/src/geo-allocation-attempt.js": "8a24e9c4e22aa6967ef4e55036b796f6ca1f0d21f7299d0d88a40cc88157ba5e",
+  "packages/xy-node/src/geo-hierarchy-wire.js": "59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96",
+  "packages/xy-node/src/geo-hierarchy.d.ts": "74c4f060f01eebb49303c9d5c47744008663efefbf010020bb785d04dfc5999a",
+  "packages/xy-node/src/geo-hierarchy.js": "0c28c07bf1105147fd0eb82edd2b579d219ebffd44ddf318a54762d3e905927d",
+  "packages/xy-node/src/geoscale.js": "a3dd472516e86ccc0e5f840793a591b8dd079f74751287ec2cf4ef0a5ac4c25e",
+  "python/xyg/_geo_allocation_recovery.py": "14af612e6d256052a40a393dcee76f25061e5ad8cbf61a8224f08b5ec92b5e97",
+  "python/xyg/_geo_hierarchy.py": "841a64f1d5302c931457efa6fc0203bf194e243ae538f01b16c04f357f291aba",
+  "python/xyg/_geoscale.py": "74d117a1a2646c3736deb8d204a0c610cd9e4a5c1b0cf8f51d3a7e45ac5dd969",
+  "scripts/gen_geo_hierarchy_node.mjs": "b7b341f92652bb2e57a704ba5e6c7cb0b94c7387fc901d55e79f1ccfb361e4da",
+  "tests/browser/geo_hierarchy_admission_capture_entry.ts": "a10c820bce89a0880c63396e66bda404f7ef8c229122db171544ec40ee83f31b",
+  "tests/browser/geo_hierarchy_admission_hosts_page.mjs": "52f1fd82830a82bded84eede0033281f81f50d3ada9eec727cf9326c355ce160",
+  "scripts/geo_hierarchy_admission_hosts_smoke.mjs": "5581dfbfaf6b79cd0c5db724b72d4714857624bb7ddec6ff4eea6073556f59f6",
+  "tests/test_geo_selected_hierarchy.py": "62f49edde8028312bfd4ff197e0a5d9ad817ddebd1e0e91b5203b100e9b16f24",
+  "packages/xy-node/test/geo-selected-hierarchy.test.mjs": "48e3056ec35c884427236fe5381a6ec16e1519ab5dc1f26eb88cb8e6cbfdedbf",
+  "spec/design/geo-hierarchy-hosts.md": "3c815e15b60beabccd6b0423095dce15aa5f498148f582af7f857df5259135d1"
+}

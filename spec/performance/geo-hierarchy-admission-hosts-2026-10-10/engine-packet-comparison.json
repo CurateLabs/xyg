@@ -1,0 +1,8 @@
+{
+  "full_packets": 84,
+  "equal": true,
+  "normalization": "none",
+  "current_sha256": "c5d3313ea45c5e3f2d192e4d5ba7d57cb487324225189f753e5a518dc84d226e",
+  "baseline": "../geo-hierarchy-recovery-2026-10-10/optin-packets.json.gz",
+  "canonical_snapshot": "All full packet bytes and validated owner/publication relationships match the pinned unchanged-engine oracle."
+}

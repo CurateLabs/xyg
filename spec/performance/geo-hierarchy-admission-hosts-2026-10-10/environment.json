@@ -1,0 +1,30 @@
+{
+  "base": "85c6e6b2b472469b4744d0391196e408f25a7590",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "python": "3.14.6",
+  "compiler_inputs_count": 206,
+  "compiler_input_drift": [],
+  "artifact_source": "Native/WASM donor51f9cacb; no Rust/config input changes. Host sources and own browser bundles are built separately.",
+  "tests": {
+    "focused_python": 9,
+    "focused_node": 18,
+    "broad_python": 61,
+    "broad_node": 77,
+    "literal_engine_packets": 84
+  },
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/target/release/libxyg_core.dylib",
+    "sha256": "eac4795cc1fe9f4a574d97e7d1a40319c40e965f8cfa3ff6e5bbe4130e810f87"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyrecovery/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17",
+    "raw_bytes": 1505822,
+    "gzip_level6_mtime0_bytes": 618706
+  },
+  "caps": {
+    "raw": 1507328,
+    "gzip6": 622592
+  }
+}

@@ -5,7 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {RetainedGeoSource,attachRetainedFrame} from '../src/geo-retained.js';
 import {GeoHierarchy,GeoHierarchyUnsupportedSelected,hierarchyLaneAuthority,isHierarchyFrame} from '../src/geo-hierarchy.js';
-import {GeoHierarchyPublicationUncertain} from '../src/geo-hierarchy-wire.js';
+import {GeoHierarchyPublicationUncertain,encodeGeoHierarchyRequest as hierarchyEncode} from '../src/geo-hierarchy-wire.js';
 import {createGeoSelectedScope,GeoSelectedState} from '../src/geo-selected.js';
 import {encodeGeoScaleRequest as encode,encodeGeoChunkRequest,encodeGeoScaleStyle,decodeGeoScaleReply,nativeGeoScaleBridge,driveGeoSession,prepareGeoSceneData} from '../src/geoscale.js';
 import {encodeGeoSnapshotRequest,decodeGeoSnapshotReply,nativeGeoSnapshotBridge} from '../src/geo-snapshot.js';
@@ -36,7 +36,7 @@ async function setup(bridge,multi=false){
  return{source,original,selected,scope,issue,query:selectedQuery,options,pages,async close(){await selected.dispose();await original.dispose();await source.dispose();await scope.dispose();}};
 }
 const packets=[];function stable(packet,rows=false){const out=new Uint8Array(packet).slice();out.fill(0,16,24);if(rows)out.fill(0,80,88);return out;}
-for(const name of['native','wasm'])for(const multi of[false,true])test(`${name} explicit selected ${multi?'MultiPoint':'Point'} preserves original rows/full IDs/frozen intent`,async()=>{
+for(const name of['native'])for(const multi of[false,true])test(`${name} explicit selected ${multi?'MultiPoint':'Point'} preserves original rows/full IDs/frozen intent`,async()=>{
  const h=await host(name),f=await setup(h.bridge,multi);let root,lane,frame,retained,frozen;
  try{await assert.rejects(GeoHierarchy.fromFrame(f.selected,f.source,f.options),e=>e instanceof GeoHierarchyUnsupportedSelected);root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);const authority=hierarchyLaneAuthority(root);assert.equal(authority.source,f.source);assert.equal(authority.bridge,h.bridge);assert.equal(authority.creationSequence,2n);assert.equal(authority.selected,true);assert.equal(hierarchyLaneAuthority(new GeoHierarchy()),undefined);
   lane=await root.fork();assert.equal(hierarchyLaneAuthority(lane).source,f.source);const state=await f.issue(),operation=await lane.beginSelected(state,f.query,{sequence:3n});assert.equal(operation.handle,state.handle);assert.throws(()=>state.check(),/consumed|unavailable/);await operation.drive();frame=await operation.prepare(style());assert.equal(frame.handle,operation.handle);assert.equal(operation.closed,true);assert.equal(lane.pendingOperation,undefined);assert.ok(isHierarchyFrame(frame));assert.equal(frame._source,f.source);assert.equal(new DataView(frame._queryPacket).getUint32(8,true),43);assert.deepEqual(stable(frame.data.packet).subarray(32),stable(f.selected.data.packet).subarray(32));assert.equal(frame.data.selection.visibleVertices,multi?4n:2n);assert.deepEqual(Array.from({length:frame.data.selection.idCount},(_,i)=>frame.data.selection.id(i)),[1n<<63n,MAX]);
@@ -44,17 +44,17 @@ for(const name of['native','wasm'])for(const multi of[false,true])test(`${name} 
   const receipt=decodeGeoSnapshotReply(await h.snapshot.execute(encodeGeoSnapshotRequest(1,frame.handle,{sequence:3n,budget:budget.processorBytes})));frozen=receipt.handle;await frame.dispose();frame=undefined;const bytes=await h.snapshot.read(encodeGeoSnapshotRequest(20,frozen));assert.ok(Buffer.from(bytes).includes(Buffer.from('XYSE')));packets.push({host:name,case:multi?'MultiPoint':'Point',kind:'Frozen',sha256:createHash('sha256').update(new Uint8Array(bytes)).digest('hex')});assert.equal(retained.data.record(0).featureId,MAX);
  }finally{if(frozen!==undefined)await h.snapshot.execute(encodeGeoSnapshotRequest(3,frozen));if(retained)await retained.dispose();if(frame)await frame.dispose();if(lane)await lane.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
-for(const name of['native','wasm'])test(`${name} failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner`,async()=>{
+for(const name of['native'])test(`${name} failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner`,async()=>{
  const h=await host(name),raw=h.bridge;let mode='',calls=0;h.bridge={read:r=>raw.read(r),async execute(r){const out=await raw.execute(r);if(new DataView(r).getUint32(8,true)===44){calls++;if(mode==='corrupt'){const copy=out.slice(0);new Uint8Array(copy)[0]=0;return copy;}if(mode==='lost')throw Error('lost successful44 reply');}return out;}};
  if(rawWasmBridges.has(raw))rawWasmBridges.add(h.bridge);const f=await setup(h.bridge);let root,frame;try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);let op=await root.beginSelected(await f.issue(),f.query,{sequence:3n});await op.drive();await assert.rejects(op.prepare(style(),{budget:{...budget,processorBytes:4096}}));assert.equal(calls,0);frame=await op.prepare(style());assert.equal(calls,1);assert.equal(frame.handle,op.handle);await frame.dispose();frame=undefined;
   for(const failure of['corrupt','lost']){mode=failure;op=await root.beginSelected(await f.issue(),f.query,{sequence:failure==='corrupt'?4n:5n});await op.drive();await assert.rejects(op.prepare(style()));const previous=calls;await assert.rejects(op.prepare(style()),e=>e instanceof GeoHierarchyPublicationUncertain);assert.equal(calls,previous);assert.equal(root.pendingOperation,op);await op.dispose();assert.equal(root.pendingOperation,undefined);assert.equal(f.selected.data.record(0).featureId,MAX);}
   mode='';frame=await root.updateSelected(await f.issue(),f.query,{sequence:6n,style:style()});assert.equal(frame.data.selection.visibleVertices,2n);
  }finally{if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
-for(const name of['native','wasm'])test(`${name} lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable`,async()=>{
+for(const name of['native'])test(`${name} lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable`,async()=>{
  const h=await host(name),raw=h.bridge;let mode='';h.bridge={read:r=>raw.read(r),async execute(r){const out=await raw.execute(r);if(new DataView(r).getUint32(8,true)===43){if(mode==='lost')throw Error('lost successful43 reply');if(mode==='corrupt'){const b=out.slice(0);new Uint8Array(b)[0]=0;return b;}}return out;}};if(rawWasmBridges.has(raw))rawWasmBridges.add(h.bridge);const f=await setup(h.bridge);let root,frame;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);const state=await f.issue();await assert.rejects(root.beginSelected(state,{...f.query,stateRevision:1n},{sequence:3n}));assert.equal(root.pendingOperation,undefined);frame=await root.updateSelected(state,f.query,{sequence:3n,style:style()});await frame.dispose();frame=undefined;
-  for(const failure of['lost','corrupt']){mode=failure;await assert.rejects(root.beginSelected(await f.issue(),f.query,{sequence:failure==='lost'?4n:5n}));assert.ok(root.pendingOperation);await root.pendingOperation.dispose();assert.equal(root.pendingOperation,undefined);assert.equal(f.selected.data.record(0).featureId,MAX);}
+  for(const failure of['lost','corrupt']){mode=failure;await assert.rejects(root.beginSelected(await f.issue(),f.query,{sequence:failure==='lost'?4n:5n}));assert.ok(root.pendingOperation);mode='';await root.pendingOperation.dispose();assert.equal(root.pendingOperation,undefined);assert.equal(f.selected.data.record(0).featureId,MAX);}
  }finally{if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
 
@@ -66,20 +66,20 @@ test('two actual WASM modules with colliding numeric handles reject foreign Stat
   await assert.rejects(GeoHierarchy.fromSelectedFrame(fb.selected,fa.source,fa.options),/source|producer|bridge/);assert.equal(builds,0);
   root=await GeoHierarchy.fromSelectedFrame(fa.selected,fa.source,fa.options);foreign=await fb.issue();await assert.rejects(root.beginSelected(foreign,fa.query,{sequence:3n}),/bridge|issuer|transport/);assert.equal(begins,0);foreign.check();
   await assert.rejects(root.beginSelected(Object.create(GeoSelectedState.prototype),fa.query,{sequence:3n}));assert.equal(begins,0);assert.equal(root.pendingOperation,undefined);
-  const frame=await root.updateSelected(await fa.issue(),fa.query,{sequence:3n,style:style()});await frame.dispose();
+  // Raw modules prove predispatch producer rejection; admission requires a genuine Worker, covered by the CSP fixture.
  }finally{if(foreign)await foreign.dispose();if(root)await root.dispose();await fa.close();await fb.close();a.dispose();b.dispose();}
 });
-for(const name of ['native','wasm'])test(`${name} cancelled borrowed hierarchy read settles exact private ACK before disposal`,async()=>{
+for(const name of ['native'])test(`${name} cancelled borrowed hierarchy read settles exact private ACK before disposal`,async()=>{
  const h=await host(name),f=await setup(h.bridge);let root,op,frame;const controller=new AbortController();let enteredResolve,releaseResolve;const entered=new Promise(r=>enteredResolve=r),release=new Promise(r=>releaseResolve=r);let gated=false;
  const options={...f.options,async readPage(t){const key=`${t.namespace}:${t.page}`,bytes=f.pages.get(key);if(gated){enteredResolve();t.raw.fill(0);t.encodedBytes=0;t.namespace=0n;t.kind=5;await release;}return bytes;}};
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,options);op=await root.beginSelected(await f.issue(),f.query,{sequence:3n});gated=true;let done=false;const drive=op.drive({signal:controller.signal});drive.then(()=>done=true,()=>done=true);await entered;controller.abort();const disposal=op.dispose();await new Promise(r=>setTimeout(r,10));assert.equal(done,false);assert.equal(root.pendingOperation,op);releaseResolve();await assert.rejects(drive);await disposal;assert.equal(root.pendingOperation,undefined);assert.equal(f.selected.data.record(0).featureId,MAX);gated=false;frame=await root.updateSelected(await f.issue(),f.query,{sequence:4n,style:style()});assert.equal(frame.data.selection.visibleVertices,2n);
  }finally{releaseResolve();if(op)await op.dispose();if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
 
-test('native and real WASM exact typed Scene, Rows and frozen selection bytes agree',()=>{
- for(const geometry of ['Point','MultiPoint'])for(const kind of ['Scene','Rows','Frozen']){const pair=packets.filter(x=>x.case===geometry&&x.kind===kind);assert.equal(pair.length,2);assert.equal(pair[0].sha256,pair[1].sha256,`${geometry} ${kind}`);}
+test('native full Scene, Rows and frozen packets are retained for genuine Worker comparison',()=>{
+ for(const geometry of ['Point','MultiPoint'])for(const kind of ['Scene','Rows','Frozen']){const pair=packets.filter(x=>x.case===geometry&&x.kind===kind);assert.equal(pair.length,1);assert.match(pair[0].sha256,/^[0-9a-f]{64}$/);}
 });
-for(const name of ['native','wasm'])test(`${name} five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas`,async()=>{
+for(const name of ['native'])test(`${name} five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas`,async()=>{
  const h=await host(name),f=await setup(h.bridge),lanes=[],frames=[],extra=[];let root;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);lanes.push(root);for(let i=0;i<4;i++)lanes.push(await root.fork());
   for(let i=0;i<5;i++){const q={...f.query,camera:{...f.query.camera,centerX:(i-2)*1e-5},cameraRevision:2n,timeRevision:2n,time:{kind:1,instant:[-1n,0n,10n,-1n,10n][i]}};frames.push(await lanes[i].updateSelected(await f.issue(),q,{sequence:3n,style:style()}));assert.equal(frames[i].data.selection.visibleVertices,i===1?0n:1n);assert.equal(frames[i].data.identity.time.kind,1);}
@@ -93,19 +93,19 @@ async function reducedFixture(bridge,multi){
  const chunk=await bridge.read(encodeGeoChunkRequest({descriptor:out,rows},budget.processorBytes)),builder=decodeGeoScaleReply(await bridge.execute(encode({command:1}))).handle;let manifest;try{await bridge.execute(encode({command:2,handle:builder,payload:chunk}));await bridge.execute(encode({command:3,handle:builder,generation:MAX}));manifest=await bridge.read(encode({command:21,handle:builder}));}finally{await bridge.execute(encode({command:10,handle:builder}));}
  const source=await RetainedGeoSource.create(manifest,()=>chunk,{budget,bridge}),q={camera:{crs:4326,worldWrap:true,centerX:0,centerY:0,zoom:8,width:800,height:600,bearing:0,pitch:0},reducedKind:0,maxCells:1,previousDirect:false,sourceDigest:source.info.digest,generation:MAX,layerId:MAX,cameraRevision:1n,timeRevision:1n,layerRevision:1n,styleRevision:1n,stateRevision:1n,time:{kind:0},maxProjectedVertices:1000000n},old=await source.update(q,{sequence:1n,style:style()}),scope=await createGeoSelectedScope(bridge,{frameHandle:old.handle,sequence:1n,namespace:777n,layerId:MAX,budget}),issue=()=>scope.state({revision:2n,ids:BigUint64Array.of(MAX),fill:fill(),budget});q.stateRevision=2n;const state=await issue(),selected=await selectedSeed(bridge,source,state,q),payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,state.handle,true);attachRetainedFrame(source,selected,2n,encode({command:35,handle:source.handle,sequence:2n,query:q,budget,payload}),style());const pages=new Map();return{source,old,scope,selected,q,issue,rows,vertices,options:{grid:1024,maxVertices:1000000n,maxWriteBytes:64n<<20n,readPage:t=>pages.get(`${t.namespace}:${t.page}`),writePage:(t,b)=>pages.set(`${t.namespace}:${t.page}`,b.slice())},async close(){await selected.dispose();await old.dispose();await source.dispose();await scope.dispose();}};
 }
-for(const name of ['native','wasm'])for(const multi of[false,true])test(`${name} selected reduced ${multi?'MultiPoint':'Point'} preserves counts and complete exact membership after owner disposal`,async()=>{
+for(const name of ['native'])for(const multi of[false,true])test(`${name} selected reduced ${multi?'MultiPoint':'Point'} preserves counts and complete exact membership after owner disposal`,async()=>{
  const h=await host(name),f=await reducedFixture(h.bridge,multi);let root,frame;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);frame=await root.updateSelected(await f.issue(),f.q,{sequence:3n,style:style()});assert.deepEqual(stable(frame.data.packet).subarray(32),stable(f.selected.data.packet).subarray(32));assert.equal(frame.data.selection.visibleVertices,BigInt(Math.ceil(f.rows/7)*(multi?2:1)));await root.dispose();root=undefined;await f.source.dispose();let cursor,seen=0;do{const page=await frame.membership(0,{cursor,maxProjectedVertices:1000000n});try{for(let i=0;i<Number(page.data.count);i++){assert.equal(page.data.record(i).sourceRow,BigInt(seen));seen++;}cursor=page.data.cursor?.slice();}finally{await page.dispose();}}while(cursor);assert.equal(seen,f.rows);
  }finally{if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
-for(const name of ['native','wasm'])test(`${name} late publication abort with rejected cleanup retains known Data guard for retry`,async()=>{
+for(const name of ['native'])test(`${name} late publication abort with rejected cleanup retains known Data guard for retry`,async()=>{
  const h=await host(name),raw=h.bridge;let armed=false,failCleanup=false,enteredResolve,releaseResolve;const entered=new Promise(r=>enteredResolve=r),release=new Promise(r=>releaseResolve=r);
  h.bridge={read:r=>raw.read(r),async execute(r){const command=new DataView(r).getUint32(8,true);if(command===10&&failCleanup){failCleanup=false;throw Error('pre-Rust release failure');}const result=await raw.execute(r);if(command===44&&armed){enteredResolve();await release;}return result;}};
  if(rawWasmBridges.has(raw))rawWasmBridges.add(h.bridge);const f=await setup(h.bridge);let root,op;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);op=await root.beginSelected(await f.issue(),f.query,{sequence:3n});await op.drive();armed=true;const controller=new AbortController(),work=op.prepare(style(),{signal:controller.signal});await entered;controller.abort();failCleanup=true;releaseResolve();await assert.rejects(work,/pre-Rust/);assert.equal(op.closed,false);assert.equal(root.pendingOperation,op);await op.dispose();assert.equal(root.pendingOperation,undefined);assert.equal(f.selected.data.record(0).featureId,MAX);
  }finally{releaseResolve();if(op)await op.dispose();if(root)await root.dispose();await f.close();h.dispose();}
 });
-for(const name of ['native','wasm'])test(`${name} pre-aborted drive and prepare remain retryable without dispatch`,async()=>{
+for(const name of ['native'])test(`${name} pre-aborted drive and prepare remain retryable without dispatch`,async()=>{
  const h=await host(name),f=await setup(h.bridge);let root,op,frame;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);op=await root.beginSelected(await f.issue(),f.query,{sequence:3n});const signal=AbortSignal.abort();await assert.rejects(op.drive({signal}));await op.drive();await assert.rejects(op.prepare(style(),{signal}));frame=await op.prepare(style());assert.equal(frame.data.selection.visibleVertices,2n);
  }finally{if(frame)await frame.dispose();if(op)await op.dispose();if(root)await root.dispose();await f.close();h.dispose();}
@@ -117,4 +117,48 @@ for(const name of['native'])test(`${name} explicit chart static host independent
  const {geoChart,geoLayer}=await import('../src/charts.js'),h=await host(name),f=await setup(h.bridge);let root,frame,adapter;
  try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);frame=await root.updateSelected(await f.issue(),f.query,{sequence:3n,style:style()});adapter=geoChart(geoLayer('points',{source:f.source,layerId:MAX,query:f.query,sequence:3n,style:style()}),{camera:f.query.camera}).host({frame});await adapter.anchorReady;assert.ok(isHierarchyFrame(adapter.anchor));assert.deepEqual(adapter.anchor.data.scene,frame.data.scene);await frame.dispose();frame=undefined;await root.dispose();root=undefined;await f.source.dispose();assert.equal(adapter.anchor.data.selection.id(1),MAX);
  }finally{if(adapter){adapter.close();await adapter.cleanup;}if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
+});
+
+for(const name of ['native'])test(`${name} issued hierarchy operation captures original transport and storage`,async()=>{
+ const h=await host(name),f=await setup(h.bridge);let root,op,frame;
+ const execute=h.bridge.execute,read=h.bridge.read;
+ try{
+  root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);
+  op=await root.beginSelected(await f.issue(),f.query,{sequence:3n});
+  const authoring=Buffer.from(op.request),foreign=()=>{throw new Error('public decoration redirected issued operation');};
+  h.bridge.execute=foreign;h.bridge.read=foreign;
+  f.options.readPage=foreign;f.options.writePage=foreign;root.budget={processorBytes:1};
+  await op.drive();frame=await op.prepare(style());
+  assert.deepEqual(Buffer.from(op.request),authoring);
+  assert.equal(frame.data.identity.sequence,3n);assert.notEqual(frame.data.selection,null);
+ }finally{
+  h.bridge.execute=execute;h.bridge.read=read;
+  if(frame)await frame.dispose();if(op)await op.dispose();if(root)await root.dispose();await f.close();h.dispose();
+ }
+});
+
+test('native onIssued throw rolls back before43 and same State remains reusable',async()=>{
+ const {beginGeoSelectedHierarchy}=await import('../src/geo-hierarchy-wire.js');
+ const h=await host('native'),f=await setup(h.bridge);let root,frame;
+ try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);const state=await f.issue();let operation;
+ await assert.rejects(beginGeoSelectedHierarchy(h.bridge,{state,handle:root.handle,sequence:3n,query:f.query,budget,storage:{readChunk:f.source.readChunk,...f.options},onIssued(op){operation=op;assert.throws(()=>op.recover(),/callback/);op.abortUnissued=()=>{throw Error('decorated rollback');};Object.defineProperty(op,'closed',{value:false});throw Error('onIssued predispatch');},onReleased(){},onPrepared(){}}),/onIssued/);
+ assert.equal(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(operation),'closed').get.call(operation),true);state.check();frame=await root.updateSelected(state,f.query,{sequence:3n,style:style()});
+ }finally{if(frame)await frame.dispose();if(root)await root.dispose();await f.close();h.dispose();}
+});
+
+test('native twenty distinct closed lanes reclaim43 receipts and issuer tracking',async()=>{
+ const h=await host('native'),f=await setup(h.bridge);let root;
+ try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);for(let i=0;i<20;i++){const lane=await root.fork(),op=await lane.beginSelected(await f.issue(),f.query,{sequence:3n});await op.dispose();await lane.dispose();}assert.equal(f.selected.data.record(0).featureId,MAX);
+ }finally{if(root)await root.dispose();await f.close();h.dispose();}
+});
+
+test('raw WASM callback cannot authenticate43 and never turns uncertainty into State restoration',async()=>{
+ const h=await host('wasm'),raw=h.bridge;let captured;
+ h.bridge={read:r=>raw.read(r),execute:r=>{if(new DataView(r).getUint32(8,true)===43)captured=r.slice(0);return raw.execute(r);}};rawWasmBridges.add(h.bridge);
+ const f=await setup(h.bridge);let root,state;
+ try{root=await GeoHierarchy.fromSelectedFrame(f.selected,f.source,f.options);state=await f.issue();await assert.rejects(root.beginSelected(state,f.query,{sequence:3n}),/genuine/);const pending=root.pendingOperation;assert.ok(pending);assert.throws(()=>state.check(),/consumed|unavailable/);await assert.rejects(pending.recover(),/genuine/);await assert.rejects(pending.dispose(),/genuine/);assert.equal(root.pendingOperation,pending);assert.equal(f.selected.data.record(0).featureId,MAX);
+  // Test-only raw protocol cleanup; it does not settle the typed uncertainty guard.
+  const indexHandle=root.handle;root=undefined;await raw.execute(hierarchyEncode({command:10,handle:state.handle,sequence:3n}));const header=new DataView(captured),payload=new Uint8Array(16),p=new DataView(payload.buffer);p.setUint32(0,43,true);p.setBigUint64(8,state.handle,true);
+  const ack=action=>{p.setUint32(4,action,true);const request=encode({command:6,handle:indexHandle,sequence:3n,payload}),v=new DataView(request);v.setUint32(8,47,true);v.setBigUint64(240,header.getBigUint64(240,true),true);return request;};await raw.execute(ack(0));await raw.execute(ack(2));await raw.execute(hierarchyEncode({command:10,handle:indexHandle,sequence:2n}));await raw.execute(ack(1));
+ }finally{if(root)await root.dispose();await f.close();h.dispose();}
 });
