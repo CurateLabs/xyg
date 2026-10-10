@@ -1,0 +1,27 @@
+   Compiling xyg-engine v0.1.0 (/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geohierarchyscopecredits/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.95s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-dddb8c4897f66ce4)
+
+running 20 tests
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_shared_eight_sessions_sixteen_handles_and_write_cap_fail_closed ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_frontier_fallback_never_publishes_partial_data ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_selected_source_build_retains_full_scope_authority ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_cancelled_write_exact_ticket_copy_quota_and_old_frame ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_eight_data_handles_and_style_failure_preserve_old_authority ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_exact_time_scene_and_disposal_independent_rows_authority ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_vertex_work_fallback_is_distinct_and_no_scene_can_publish ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_local_control_budget_exact_boundary_and_one_byte_under ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_multipoint_empty_null_duplicate_ids_and_original_vertex_ordinals ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::hierarchy_protocol_snapshot_style_and_corrupt_leaf_preserve_old_data ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::five_distinct_scopes_fifteen_handles_replace_sixteenth_without_quota_expansion ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::five_selected_lanes_replace_queries_and_preserve_old_frames ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::reduced_selected_counts_match_canonical_for_duplicate_ids_before_tessellation ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_43_exact_local_boundary_receipt_and_failure_atomicity ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_44_newer_intent_receipt_boundary_and_old_data_survives ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::scope_credits::hierarchy_scope_receipt_delta_and_same_arc_not_double_charged ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::selected_multipoint_canonical_bytes_rows_and_frozen_intent_survive_lane_disposal ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::selected_planning_fallback_consumes_state_and_requires_explicit_reissue ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::selected_preflight_preserves_state_and_cancel_keeps_issued_loan_until_ack ... ok
+test geo_scale_protocol::hierarchy_protocol_tests::selected::unscoped_hierarchy_rejects_selected_query_without_consuming_state ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 1467 filtered out; finished in 1.85s
