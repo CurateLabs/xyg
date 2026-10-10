@@ -376,7 +376,7 @@ export class GeoChart {
     )
       throw new TypeError("tile options require tileSession");
   }
-  host(options) { if(this._overview())throw new TypeError('overview host needs its distinct domain-count mode; compile/export staticHTML instead');return new GeoHostAdapter(this, options); }
+  host(options) { return new GeoHostAdapter(this, options); }
   _overview(){
     const layers=this.layers.filter(x=>x.source instanceof GeoOverviewIndex);
     if(!layers.length)return undefined;

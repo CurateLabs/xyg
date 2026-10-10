@@ -215,6 +215,8 @@ export declare function driveGeoSession(bridge: XygGeoScaleBridge, input: {
         passes: number;
     } | null;
 }>;
+/** Internal lifecycle notification; registration requires a genuine issuing owner. */
+export declare function onGeoSceneDataDisposed(owner: object, hook: () => Promise<void>): void;
 export declare function geoSceneDataAuthority(owner: object): Readonly<{
     bridge: XygGeoScaleBridge;
     execute: XygGeoScaleBridge["execute"];

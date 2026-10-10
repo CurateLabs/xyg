@@ -1,0 +1,7 @@
+{
+  ".github/workflows/ci.yml": "aba6ad92fce341f59185c92ecaefc480cd3a8d44db84dc511abd540b9b48b6cd",
+  "packages/xy-node/package.json": "8ecdc0db92b11841bb167807214b3bc9f4fde2b9b56051bfa26f004475c6233a",
+  "spec/design/geographic-capabilities.md": "a41868acf290f6bc45942695148960b96731a6aa150e3f34bbb8d6c7bda37815",
+  "tests/test_geo_overview_source.py": "52f4112c2b890186c2dbcb435e83458e49fe1731aaf1957ff6e9068724b61abf",
+  "packages/xy-node/test/geo-overview-source.test.mjs": "7c6297603069fe8d5ed13b91f614e169a54bca5a91dc5af7a761c0925be42b38"
+}

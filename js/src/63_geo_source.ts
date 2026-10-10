@@ -125,6 +125,9 @@ export async function driveGeoSession(bridge:XygGeoScaleBridge,input:{handle:big
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
 /** Private issuing transport and publication; parsed numeric fields grant no ownership. */
 const SCENE_OWNERS = new WeakMap<object,{bridge:XygGeoScaleBridge;execute:XygGeoScaleBridge["execute"];read:XygGeoScaleBridge["read"];handle:bigint;sequence:bigint;sourceHandle:bigint;request:ArrayBuffer;header:Uint8Array;selected:boolean}>();
+const SCENE_DISPOSAL_HOOKS=new WeakMap<object,Set<()=>Promise<void>>>();
+/** Internal lifecycle notification; registration requires a genuine issuing owner. */
+export function onGeoSceneDataDisposed(owner:object,hook:()=>Promise<void>){if(!SCENE_OWNERS.has(owner))throw new TypeError('Privately issued SceneData required');let hooks=SCENE_DISPOSAL_HOOKS.get(owner);if(!hooks){hooks=new Set();SCENE_DISPOSAL_HOOKS.set(owner,hooks);}hooks.add(hook);}
 export function geoSceneDataAuthority(owner:object){
  const a=SCENE_OWNERS.get(owner);if(!a)return undefined;
  return Object.freeze({...a,request:a.request.slice(0),header:a.header.slice()});
@@ -139,8 +142,8 @@ export async function prepareGeoSceneData(bridge:XygGeoScaleBridge,input:{handle
  let data:ReturnType<typeof parseGeoSceneData>|undefined,packet:ArrayBuffer|undefined;
  try{if(reply.sourceHandle!==sourceHandle||reply.sequence!==sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==sourceHandle||data.identity.sequence!==sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
  catch(error){data=undefined;packet=undefined;await execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
- let disposal:Promise<void>|undefined;
- const owner={handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){SCENE_OWNERS.delete(owner);data=undefined;return disposal??=execute(encodeGeoScaleRequest({command:10,handle})).then(()=>{},error=>{disposal=undefined;throw error;});}};
+ let disposal:Promise<void>|undefined,disposed=false;
+ const owner={handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){SCENE_OWNERS.delete(owner);data=undefined;return disposal??=Promise.resolve().then(async()=>{if(!disposed){const packet=await execute(encodeGeoScaleRequest({command:10,handle})),r=decodeGeoScaleReply(packet);if(r.code!==0||r.handle!==handle||r.sequence!==0n||new Uint8Array(packet).subarray(32).some(x=>x))throw new TypeError('SceneData disposal acknowledgement mismatch');disposed=true;}const hooks=SCENE_DISPOSAL_HOOKS.get(owner);if(hooks){for(const hook of hooks)await hook();SCENE_DISPOSAL_HOOKS.delete(owner);}}).catch(error=>{disposal=undefined;throw error;});}};
  SCENE_OWNERS.set(owner,{bridge:issuer,execute:originalExecute,read:originalRead,handle,sequence,sourceHandle,request:capturedRequest,header:new Uint8Array(data.packet,0,256).slice(),selected:data.selection!==null});
  return owner;
 }

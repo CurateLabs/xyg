@@ -7,6 +7,13 @@ import type { XygWasmScenePaint } from "./47_wasm";
 import type { XygWasmSceneView } from "./48_wasm_scene";
 import { parseGeoSceneData, parseGeoHitData, parseGeoMembershipData } from "./63_geo_source";
 
+import { parseGeoOverviewData } from "./67_geo_overview";
+type HostData = ReturnType<typeof parseGeoSceneData> | ReturnType<typeof parseGeoOverviewData>;
+function overviewData(data: HostData): data is ReturnType<typeof parseGeoOverviewData> { return "count" in data; }
+function parseHostData(packet: ArrayBuffer): HostData {
+  return new DataView(packet).getUint32(0,true)===0x564f5958 ? parseGeoOverviewData(packet) : parseGeoSceneData(packet);
+}
+
 export interface XygGeoHostComm {
   send(message: Record<string, unknown>, buffers?: ArrayBuffer[]): void;
   onMessage(callback: (message: any, buffers: any[]) => void): () => void;
@@ -71,17 +78,18 @@ export class XygGeoHostView {
   private retirement?:ArrayBuffer;
   private aborted?:ArrayBuffer;
   private pendingPrepare?:ArrayBuffer;
-  private pendingCommit?:{tag:ReturnType<typeof liveTag>;holder:HTMLElement;view:XygWasmSceneView;data:ReturnType<typeof parseGeoSceneData>};
+  private pendingCommit?:{tag:ReturnType<typeof liveTag>;holder:HTMLElement;view:XygWasmSceneView;data:HostData};
   private owner = 0n;
   private sequence = 0n;
   private view?: XygWasmSceneView;
-  private data?: ReturnType<typeof parseGeoSceneData>;
+  private data?: HostData;
   private gestureEvents = ["pointerdown","pointermove","pointerup","pointercancel","wheel","dblclick","click","keydown"];
   private pointer?:{id:number;x:number;y:number;capture:ReturnType<typeof captureGesturePointer>};
   private previousTouchAction:string;
   private gestureSequence=0n;
   private gestureCameraRevision=0n;
   private freezeGesture = (event:Event) => {
+    if(event.target instanceof Element && event.target.closest("[data-xy-overview-counts]") && this.el.contains(event.target)) return;
     if(event instanceof KeyboardEvent && event.key === "Tab") return;
     event.preventDefault();event.stopImmediatePropagation();
     if(!event.isTrusted||!this.data||this.closing)return;
@@ -143,20 +151,20 @@ export class XygGeoHostView {
       if (typeof message.error === "string") p.reject(Object.assign(new Error(message.error),{prepareAbsent:message.prepareAbsent===true})); else p.resolve(buffers || []);
     });}catch(error){this.dropGestureGuard();throw error;}
     this.ready = this.enqueue(async () => {
-      let buffers: any[] | undefined, data: ReturnType<typeof parseGeoSceneData> | undefined;
+      let buffers: any[] | undefined, data: HostData | undefined;
       let candidate: XygWasmSceneView | undefined;
       try {
         buffers = await this.rpc(header(1));
         if (buffers.length !== 3) throw new TypeError("invalid native geographic frame attachments");
         const tag = replyHeader(buffers[0],1); this.owner=tag.owner; this.sequence=tag.sequence;
-        data = parseGeoSceneData(ownedBuffer(buffers[1]));
+        data = parseHostData(ownedBuffer(buffers[1]));
         if (!this.owner || data.identity.sequence !== this.sequence) throw new TypeError("mismatched native frame identity");
         const holder = document.createElement("div");
         // Native XYPB15 is the same Rust painter format; no Worker capability
         // or scene preparation occurs on this path.
         candidate = hydrateWasmPainter(holder, {painter:ownedBuffer(buffers[2]), memoryBytes:0} as XygWasmScenePaint);
         if (this.closing) throw new Error("native geographic view disposed during preparation");
-        this.el.replaceChildren(holder); this.view=candidate; candidate.draw(); candidate=undefined; this.data=data; data=undefined;
+        this.appendCounts(holder,data);this.el.replaceChildren(holder); this.view=candidate; candidate.draw(); candidate=undefined; this.data=data; data=undefined;
       } catch (error) {
         candidate?.destroy(); candidate=undefined; this.view=undefined; this.el.replaceChildren(); data=undefined; buffers=undefined;
         if (this.owner) { await this.rpc(header(4,this.owner,this.sequence)); this.owner=0n; }
@@ -181,7 +189,18 @@ export class XygGeoHostView {
   }
   private live(){if(this.closing || !this.data)throw new Error("native geographic view is not mounted");}
   get identity(){this.live();const i=this.data!.identity;return {...i,camera:{...i.camera},time:{...i.time},sourceDigest:i.sourceDigest.slice()};}
-  record(index:number){this.live();return this.data!.record(index);}
+  record(index:number){this.live();if(overviewData(this.data!))throw new Error("Overview has domain counts, not source feature records");return this.data!.record(index);}
+  private countsPage=0;
+  private appendCounts(holder:HTMLElement,data:HostData){
+    if(!overviewData(data))return;
+    holder.querySelector('[data-xy-overview-counts]')?.remove();
+    const panel=document.createElement('section'),notice=document.createElement('p'),table=document.createElement('table'),caption=document.createElement('caption'),body=document.createElement('tbody'),previous=document.createElement('button'),next=document.createElement('button');
+    panel.dataset.xyOverviewCounts='';
+    panel.setAttribute('aria-label','Temporal-exact data-domain counts; spatial refinement pending');notice.textContent='Temporal-exact data-domain overview; spatial refinement pending.';notice.setAttribute('role','status');caption.textContent='Domain cells, exact temporal vertex counts; spatial refinement pending';table.append(caption,body);
+    for(const button of [previous,next])button.type='button';previous.textContent='Previous 32 domain cells';next.textContent='Next 32 domain cells';previous.dataset.domainPage='previous';next.dataset.domainPage='next';
+    const draw=()=>{const rows=document.createDocumentFragment();for(let i=this.countsPage*32;i<(this.countsPage+1)*32;i++){const tr=document.createElement('tr'),cell=document.createElement('th'),count=document.createElement('td');cell.scope='row';cell.textContent=String(i);count.textContent=String(data.count(i));tr.tabIndex=0;tr.dataset.domainCell=String(i);tr.setAttribute('aria-label',`Domain cell ${i}, ${data.count(i)} exact temporal vertices; spatial refinement pending`);tr.append(cell,count);rows.append(tr);}body.replaceChildren(rows);previous.disabled=this.countsPage===0;next.disabled=this.countsPage===7;};
+    previous.onclick=()=>{this.countsPage=Math.max(0,this.countsPage-1);draw();};next.onclick=()=>{this.countsPage=Math.min(7,this.countsPage+1);draw();};draw();panel.append(notice,table,previous,next);holder.append(panel);
+  }
   /** Author exact revisions/time; Rust applies the camera delta and rebuilds. */
   update(input:XygGeoHostUpdate):Promise<void>{
     this.live();
@@ -203,7 +222,9 @@ export class XygGeoHostView {
     }).catch(error=>{this.updating=false;this.desired?.reject(error);this.desired=undefined;});}
     return result;
   }
-  private assertSelected(data:ReturnType<typeof parseGeoSceneData>){
+  private assertSelected(data:HostData){
+    if(overviewData(this.data!)){if(!overviewData(data))throw TypeError("Candidate lost overview mode");return;}
+    if(overviewData(data))throw TypeError("Candidate changed native frame mode");
     const before=this.data!.selection,after=data.selection;
     if(!!before!==!!after)throw TypeError('candidate lost selected intent');
     if(before&&after){if(before.namespace!==after.namespace||before.idCount!==after.idCount||before.fill.some((x,n)=>x!==after.fill[n]))throw TypeError('candidate changed selected profile');for(let i=0;i<before.idCount;i++)if(before.id(i)!==after.id(i))throw TypeError('candidate changed selected IDs');}
@@ -223,7 +244,10 @@ export class XygGeoHostView {
     const response=await this.rpc(liveHeader(7,tag.old,tag.oldSequence,tag.nonce,tag.owner,tag.sequence));
     if(response.length!==1)throw TypeError('invalid commit confirmation');const h=liveTag(response[0],7);
     if(h.old!==tag.old||h.oldSequence!==tag.oldSequence||h.nonce!==tag.nonce||h.owner!==tag.owner||h.sequence!==tag.sequence)throw TypeError('mismatched commit confirmation');
-    let previous=this.view;this.el.replaceChildren(pending.holder);this.view=pending.view;this.data=pending.data;this.owner=tag.owner;this.sequence=tag.sequence;this.pendingCommit=undefined;previous?.destroy();previous=undefined;
+    const focused=document.activeElement;const focusCell=focused instanceof HTMLElement&&this.el.contains(focused)?focused.dataset.domainCell:undefined,focusPage=focused instanceof HTMLElement&&this.el.contains(focused)?focused.dataset.domainPage:undefined;
+    this.appendCounts(pending.holder,pending.data);
+    let previous=this.view;this.el.replaceChildren(pending.holder);
+    if(focusCell!==undefined)pending.holder.querySelector<HTMLElement>(`[data-domain-cell="${focusCell}"]`)?.focus();else if(focusPage!==undefined)pending.holder.querySelector<HTMLElement>(`[data-domain-page="${focusPage}"]`)?.focus();this.view=pending.view;this.data=pending.data;this.owner=tag.owner;this.sequence=tag.sequence;this.pendingCommit=undefined;previous?.destroy();previous=undefined;
     this.retirement=liveHeader(8,tag.old,tag.oldSequence,tag.nonce,tag.owner,tag.sequence);await this.retire();
   }
   private async abortCandidate(){if(this.aborted){await this.rpc(this.aborted);this.aborted=undefined;}}
@@ -235,23 +259,23 @@ export class XygGeoHostView {
     [nonce,input.sequence,input.cameraRevision,input.timeRevision,input.stateRevision].forEach((n,i)=>v.setBigUint64(32+i*8,n,true));
     v.setUint32(72,input.time.kind,true);v.setBigInt64(80,input.time.kind===1?input.time.instant!:input.time.kind===2?input.time.start!:0n,true);v.setBigInt64(88,input.time.kind===2?input.time.end!:0n,true);
     new Uint8Array(request).set(new Uint8Array(encodeGeoViewportRequest(baseline.camera,input.operation,input.args)),96);
-    let buffers:any[]|undefined,data:ReturnType<typeof parseGeoSceneData>|undefined,candidate:XygWasmSceneView|undefined,tag:ReturnType<typeof liveTag>|undefined,committed=false;
+    let buffers:any[]|undefined,data:HostData|undefined,candidate:XygWasmSceneView|undefined,tag:ReturnType<typeof liveTag>|undefined,committed=false;
     try{
       this.pendingPrepare=request;buffers=await this.rpc(request);if(buffers.length!==3)throw TypeError('invalid geographic candidate attachments');const preparedTag=liveTag(buffers[0],6);
       if(preparedTag.old!==old||preparedTag.oldSequence!==oldSequence||preparedTag.nonce!==nonce||preparedTag.sequence!==input.sequence||!preparedTag.owner)throw TypeError('unowned geographic candidate');
-      tag=preparedTag;this.pendingPrepare=undefined;data=parseGeoSceneData(ownedBuffer(buffers[1]));const i=data.identity;
+      tag=preparedTag;this.pendingPrepare=undefined;data=parseHostData(ownedBuffer(buffers[1]));const i=data.identity;
       if(i.sequence!==input.sequence||i.cameraRevision!==input.cameraRevision||i.timeRevision!==input.timeRevision||i.stateRevision!==input.stateRevision||i.generation!==baseline.generation||i.layerId!==baseline.layerId||i.layerRevision!==baseline.layerRevision||i.styleRevision!==baseline.styleRevision||i.sourceRows!==baseline.sourceRows||i.sourceCrs!==baseline.sourceCrs||i.geometry!==baseline.geometry||i.sourceDigest.some((x,n)=>x!==baseline.sourceDigest[n])||i.time.kind!==input.time.kind||i.time.kind===1&&i.time.instant!==input.time.instant||i.time.kind===2&&(i.time.start!==input.time.start||i.time.end!==input.time.end))throw TypeError('candidate snapshot differs from authoring');
       this.assertSelected(data);
       const holder=document.createElement('div');candidate=hydrateWasmPainter(holder,{painter:ownedBuffer(buffers[2]),memoryBytes:0} as XygWasmScenePaint);candidate.draw();
       if(this.closing||this.desired&&this.desired.input.operation===input.operation)throw new DOMException('Superseded geographic update','AbortError');
-      this.pendingCommit={tag,holder,view:candidate,data};candidate=undefined;data=undefined;buffers=undefined;
+      this.appendCounts(holder,data);this.pendingCommit={tag,holder,view:candidate,data};candidate=undefined;data=undefined;buffers=undefined;
       await this.recoverCommit();committed=true;
 
     }catch(error){if((error as any)?.prepareAbsent===true)this.pendingPrepare=undefined;candidate?.destroy();candidate=undefined;data=undefined;buffers=undefined;if(tag&&!committed&&!this.pendingCommit&&!(this.owner===tag.owner&&this.sequence===tag.sequence)){this.aborted=liveHeader(9,old,oldSequence,nonce,tag.owner,tag.sequence);await this.abortCandidate();}throw error;}
     finally{data=undefined;buffers=undefined;}
   }
   pick(input:{x:number;y:number;tolerance?:number;mode?:number;maxHits?:number}) {
-    this.live();
+    this.live();if(overviewData(this.data!))throw Error("Overview source-feature picking is unsupported");
     if (![input.x,input.y,input.tolerance??0].every(n=>typeof n==="number"&&Number.isFinite(n)) || ![0,1].includes(input.mode??1) || !Number.isInteger(input.maxHits??64) || (input.maxHits??64)<1 || (input.maxHits??64)>4096) throw new TypeError("invalid native pick framing");
     const buffer=header(2,this.owner,this.sequence,32),v=new DataView(buffer);
     v.setFloat64(32,input.x,true);v.setFloat64(40,input.y,true);v.setFloat64(48,input.tolerance??0,true);v.setUint32(56,input.mode??1,true);v.setUint32(60,input.maxHits??64,true);
@@ -259,7 +283,7 @@ export class XygGeoHostView {
   }
   membership(cell:number,input:{maxProjectedVertices:bigint;cursor?:Uint8Array}) {
     const cursor=input.cursor;
-    this.live();if(!Number.isInteger(cell)||cell<0||cell>0xffffffff||cursor&&(cursor.byteLength!==208||cursor.buffer.byteLength!==208))throw new TypeError("invalid native membership framing");
+    this.live();if(overviewData(this.data!))throw Error("Overview domain membership uses its distinct authority");if(!Number.isInteger(cell)||cell<0||cell>0xffffffff||cursor&&(cursor.byteLength!==208||cursor.buffer.byteLength!==208))throw new TypeError("invalid native membership framing");
     const buffer=header(3,this.owner,this.sequence,16+(cursor?208:0)),v=new DataView(buffer);
     v.setUint32(32,cell,true);v.setUint32(36,cursor?1:0,true);if(typeof input.maxProjectedVertices!=="bigint"||input.maxProjectedVertices<0n||input.maxProjectedVertices>0xffffffffffffffffn)throw new TypeError("invalid membership work bound");v.setBigUint64(40,input.maxProjectedVertices,true);if(cursor)new Uint8Array(buffer).set(cursor,48);
     return this.aux(buffer,3,parseGeoMembershipData);

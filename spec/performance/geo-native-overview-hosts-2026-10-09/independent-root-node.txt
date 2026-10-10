@@ -1,0 +1,16 @@
+✔ native overview stage/CAS/retire has exclusive owners and never updates caller current (7.729834ms)
+✔ native overview accepted anchor survives caller/index/source disposal and exact remount (1.611125ms)
+✔ close during an admitted native page read drains exact cleanup and keeps old mount until release (1.590917ms)
+✔ native-looking closure producer cannot be retagged into native overview host authority (1.189167ms)
+✔ lost native26 current retain keeps genuine pre-dispatch guard (0.930542ms)
+✔ lost native26 supplied retain keeps genuine pre-dispatch guard (0.813167ms)
+✔ public overview decorations and outgoing transfer never retag the private remount (1.0345ms)
+✔ public route and budget shadows cannot redirect overview inspection, update or retirement (1.247458ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5096.329083

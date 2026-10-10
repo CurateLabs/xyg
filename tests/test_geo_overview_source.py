@@ -93,10 +93,11 @@ def test_lost_query_receipt_never_reallocates_and_original_frame_remains_usable(
     frame = index.update(q, sequence=2)
     actual = g.execute
     lost = []
+    fault = True
 
     def execute(packet):
         result = actual(packet)
-        if struct.unpack_from("<I", packet, 8)[0] == 28:
+        if fault and struct.unpack_from("<I", packet, 8)[0] == 28:
             lost.append(wire.reply(result)["handle"])
             raise RuntimeError("lost after actual allocation")
         return result
@@ -111,11 +112,10 @@ def test_lost_query_receipt_never_reallocates_and_original_frame_remains_usable(
         assert len(lost) == 1
         assert sum(frame.data.count(i) for i in range(256)) == 2
     finally:
+        fault = False
         monkeypatch.setattr(_transport(index), "native_execute", actual)
-        # The negative control observed the real receipt; product code has no guessed cleanup.
-        for handle in lost:
-            wire.validate_mutation(actual(wire.request(10, handle, 3)), handle, 3)
-        index._active = None
+        if index.pending_operation is not None:
+            index.pending_operation.close()
         frame.close()
         index.close()
         seed.close()
@@ -139,8 +139,10 @@ def test_public_density_composition_compile_export_and_explicit_host_gate():
             assert b"<svg" in artifact.bytes
         finally:
             artifact.close()
-        with pytest.raises(NotImplementedError, match="overview"):
-            chart.host(frame=frame)
+        adapter = chart.host(frame=frame)
+        assert not adapter.mounted
+        adapter.close()
+        assert frame.data.final is False
         bad = xyg.geo_chart(
             xyg.geo_layer(
                 "density", source=index, layer_id=q["layer_id"], query=q, sequence=3, style={}
@@ -254,6 +256,7 @@ def test_generator_check_is_nonmutating_and_rejects_stale_output(tmp_path):
         "geoscale.d.ts",
         "geo-overview.js",
         "geo-overview.d.ts",
+        "geo-allocation-attempt.js",
         "geo-overview-source.js",
         "geo-overview-source.d.ts",
         "geo-overview-members.js",

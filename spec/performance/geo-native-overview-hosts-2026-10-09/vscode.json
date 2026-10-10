@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "vscode": "1.133.0",
+  "states": [
+    {
+      "test": "geo_host",
+      "phase": 1,
+      "ok": true,
+      "bluePixels": 4096,
+      "canvases": 3,
+      "identity": "exact u64/i64MIN",
+      "domainRows": 32,
+      "initialOwner": "7",
+      "noFeaturePick": true
+    },
+    {
+      "test": "geo_host",
+      "phase": 2,
+      "ok": true,
+      "bluePixels": 4096,
+      "canvases": 3,
+      "identity": "exact u64/i64MIN",
+      "domainRows": 32,
+      "initialOwner": "8",
+      "noFeaturePick": true
+    }
+  ],
+  "reloadReleasedFrontend": true,
+  "remountSamePrivateAnchor": true,
+  "actualPanelDispose": true,
+  "liveCamera": true,
+  "signedTimeUpdate": true
+}

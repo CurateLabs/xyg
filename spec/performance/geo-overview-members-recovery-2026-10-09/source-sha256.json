@@ -1,0 +1,12 @@
+{
+  "js/src/73_geo_overview_members.ts": "77f64a92ce0dc38d40b7c6b1a0e9ae221151e8592cf7cc98b1da8c5f4b46a0f8",
+  "packages/xy-node/src/geo-overview-members.js": "52c0cb4d65602597f3aa458a6b1ba90df0384894a06cb7b847ebe6940018025a",
+  "packages/xy-node/src/geo-overview-members.d.ts": "4f8d3fff0095689b77ba2604ccb830cc7c87e0b5bd94c21d3cac62ef6345c0f2",
+  "python/xyg/_geo_overview_members.py": "7dfac7feed2834a24e7a4f520af9e0f80909b7e70fed1c5fee817aad6b9d4a84",
+  "packages/xy-node/test/geo-overview-members.test.mjs": "ace99b1c3abab9545694e273a11df395ece7620136c3e08565a2d40ddc12baa2",
+  "packages/xy-node/test/geo-overview-members-recovery.test.mjs": "770c0a38e51399f2a3b0ea401d4593a761e454c4671404898635f13ec564feb5",
+  "tests/test_geo_overview_members.py": "a30f4ec1618fd733e00954bd775d89793af80d150131b06a353318f1854fcfcc",
+  "tests/test_geo_overview_members_recovery.py": "a096daaaf5f2e83bcac05d0feda393aec73e3cd5188b9b466e9c6f8902722056",
+  "spec/design/geo-overview-members-hosts.md": "2b950c2c4efc8c07c4ba46db57d3240ef9198aa537785b8ec237d69c496c6ff3",
+  "spec/design/geo-overview-members-recovery.md": "0cc9e498297e7005a356b9ca433b9e7550c7defcfe5d74de0cc7339327e021ee"
+}

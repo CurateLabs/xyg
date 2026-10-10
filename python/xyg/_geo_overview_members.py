@@ -10,8 +10,14 @@ from contextlib import suppress
 from types import MappingProxyType
 
 from . import _geoscale as g
+from ._geo_allocation_recovery import (
+    GeoAllocationAttempt,
+    forget_geo_allocation_issuer,
+    forget_geo_allocation_issuer_async,
+)
 
 _CONTEXTS = weakref.WeakKeyDictionary()
+_CAPTURED_CONTEXTS = weakref.WeakKeyDictionary()
 _PENDING = weakref.WeakKeyDictionary()
 _OPS = weakref.WeakKeyDictionary()
 _PAGES = weakref.WeakKeyDictionary()
@@ -27,17 +33,50 @@ class _Context:
         self.header = bytes(header)
 
 
+class _ContextCapture:
+    def __init__(self, context, cap):
+        if cap is not _CAP:
+            raise TypeError("Private membership context capture required")
+        self._context = context
+        _CAPTURED_CONTEXTS[self] = weakref.ref(context)
+
+
+def _context(owner):
+    reference = _CONTEXTS.get(owner)
+    return None if reference is None else reference()
+
+
+def _attach_context(owner, context):
+    owner._issued_membership_context = context
+    _CONTEXTS[owner] = weakref.ref(context)
+
+
 def register(frame, transport, reader, budget, header, handle, sequence):
-    _CONTEXTS[frame] = _Context(transport, reader, budget, header, handle, sequence)
+    _attach_context(frame, _Context(transport, reader, budget, header, handle, sequence))
+
+
+def capture_context(original):
+    context = _context(original)
+    if context is None:
+        raise TypeError("Issued overview membership context required")
+    return _ContextCapture(context, _CAP)
+
+
+def install_context(token, copy, handle, sequence):
+    reference = _CAPTURED_CONTEXTS.get(token)
+    c = None if reference is None else reference()
+    if c is None or not g._uint(handle) or not g._uint(sequence):
+        raise TypeError("Issued retained membership capture required")
+    _attach_context(copy, _Context(c.transport, c.reader, c.budget, c.header, handle, sequence))
 
 
 def copy_context(original, copy, handle, sequence):
-    c = _CONTEXTS[original]
-    _CONTEXTS[copy] = _Context(c.transport, c.reader, c.budget, c.header, handle, sequence)
+    install_context(capture_context(original), copy, handle, sequence)
 
 
 def drop_context(frame):
     _CONTEXTS.pop(frame, None)
+    frame._issued_membership_context = None
 
 
 def request(command, handle, sequence, budget=None, payload=b""):
@@ -108,7 +147,7 @@ def mutation(packet, handle, sequence):
 class GeoOverviewMembershipUncertain(RuntimeError):
     def __init__(self, owner):
         self.owner = owner
-        super().__init__("Membership45 allocation uncertain; no retry or guessed disposal")
+        super().__init__("Membership45 confirmation uncertain; recover the exact issued allocation")
 
 
 class GeoOverviewMembershipCleanupPending(RuntimeError):
@@ -136,7 +175,6 @@ def _new(
     if previous is not None and previous._phase != "closed":
         raise GeoOverviewMembershipUncertain(previous)
     op = GeoOverviewMembershipOperation(_CAP, context, cell, operation_sequence, prior, after)
-    _PENDING[owner] = op
     packet = request(
         45,
         handle,
@@ -144,18 +182,20 @@ def _new(
         context.budget,
         struct.pack("<QIIQ", operation_sequence, cell, 0, max_vertices),
     )
+    op._attempt = GeoAllocationAttempt(owner, context.transport, packet, operation_sequence)
+    _PENDING[owner] = op
     return op, packet
 
 
 def members(frame, cell, *, sequence, max_vertices):
-    c = _CONTEXTS.get(frame)
+    c = _context(frame)
     if c is None:
         raise ValueError("Privately issued overview frame required")
     return _run(frame, c, c.handle, c.sequence, cell, sequence, max_vertices)
 
 
 async def members_async(frame, cell, *, sequence, max_vertices):
-    c = _CONTEXTS.get(frame)
+    c = _context(frame)
     if c is None:
         raise ValueError("Privately issued overview frame required")
     return await _arun(frame, c, c.handle, c.sequence, cell, sequence, max_vertices)
@@ -216,6 +256,13 @@ async def _arun(owner, c, handle, publication, cell, sequence, max_vertices, pri
         op._processing = None
 
 
+class _RecoveryFlight:
+    def __init__(self, task):
+        self.task = task
+        self.waiters = 0
+        self.delivered = False
+
+
 class GeoOverviewMembershipOperation:
     def __init__(self, cap, c, cell, sequence, prior, after):
         if cap is not _CAP:
@@ -224,8 +271,11 @@ class GeoOverviewMembershipOperation:
         self._phase = "admitting"
         self._publish_attempted = False
         self._loan = self._admission = self._processing = self._disposal = self._completion = None
-        self._publication = self._page = None
+        self._publication = self._page = self._data_reply = None
         self._closing = False
+        self._attempt: GeoAllocationAttempt
+        self._recovery = None
+        self._disposed = self._dispose_attempted = False
 
     @property
     def handle(self):
@@ -261,23 +311,111 @@ class GeoOverviewMembershipOperation:
         _OPS[self] = (a[0], r["handle"], *a[2:])
         self._phase = "query"
 
-    def admit(self, packet):
+    def _validate_allocation(self, packet):
+        r = reply(packet)
+        if not r["handle"] or (r["code"], r["sequence"], r["length"], r["source"]) != (
+            0,
+            self.sequence,
+            0,
+            0,
+        ):
+            raise ValueError("Invalid membership allocation receipt")
+        return r["handle"]
+
+    def _accept_allocation(self, packet):
+        if packet is None:
+            self._phase = "closed"
+            return
+        self._admitted(packet)
+
+    def admit(self, packet=None):
         try:
-            self._admitted(_OPS[self][0].transport.native_execute(packet))
+            self._accept_allocation(self._attempt.recover(self._validate_allocation))
         except BaseException as error:
-            self._phase = "uncertain"
+            self._phase = "closed" if self._attempt.rejected else "uncertain"
+            if self._attempt.rejected:
+                raise
             raise GeoOverviewMembershipUncertain(self) from error
 
-    async def admit_async(self, packet):
-        self._admission = asyncio.create_task(_OPS[self][0].transport.execute(packet))
-        try:
-            raw, interrupted = await g._settle(self._admission)
-            self._admitted(raw)
-        except BaseException as error:
-            self._phase = "uncertain"
-            raise GeoOverviewMembershipUncertain(self) from error
+    async def admit_async(self, packet=None):
+        if self._admission is None or self._admission.done():
+            self._admission = asyncio.create_task(self._admit_async())
+        _, interrupted = await g._settle(self._admission)
         if interrupted:
             raise asyncio.CancelledError
+
+    async def _admit_async(self):
+        try:
+            raw = await self._attempt.recover_async(self._validate_allocation)
+            self._accept_allocation(raw)
+        except BaseException as error:
+            self._phase = "closed" if self._attempt.rejected else "uncertain"
+            if self._attempt.rejected:
+                raise
+            raise GeoOverviewMembershipUncertain(self) from error
+
+    def recover(self):
+        if _OPS[self][0].transport.bridge is not None:
+            raise RuntimeError("Use recover_async with an async producer")
+        if self._closing or self._phase == "closed":
+            raise RuntimeError("Membership operation closed")
+        if self._phase in ("admitting", "uncertain"):
+            self.admit()
+        if self._phase == "closed":
+            raise RuntimeError("Membership allocation retired")
+        if self._phase == "query":
+            self.drive()
+        return self.prepare()
+
+    async def recover_async(self):
+        if _OPS[self][0].transport.bridge is None:
+            return self.recover()
+        if self._recovery is None:
+            # Delivery belongs to this flight: cancelling one waiter must not
+            # dispose the Page handed to another waiter of the same task.
+            self._recovery = _RecoveryFlight(asyncio.create_task(self._recover_async()))
+        flight = self._recovery
+        flight.waiters += 1
+        page = None
+        interrupted = False
+        try:
+            page, interrupted = await g._settle(flight.task)
+            if interrupted:
+                raise asyncio.CancelledError
+            flight.delivered = True
+            return page
+        finally:
+            flight.waiters -= 1
+            if flight.waiters == 0:
+                # Detach before awaited orphan cleanup: a late caller must not
+                # join the completed flight while its Page is being disposed.
+                if self._recovery is flight:
+                    self._recovery = None
+                try:
+                    if page is not None and interrupted and not flight.delivered:
+                        try:
+                            await g._settle(asyncio.create_task(page.aclose()))
+                        except BaseException as error:
+                            self._page, self._phase = page, "data"
+                            raise GeoOverviewMembershipCleanupPending(self) from error
+                finally:
+                    if self._recovery is flight:
+                        self._recovery = None
+
+    async def _recover_async(self):
+        if self._closing or self._phase == "closed":
+            raise RuntimeError("Membership operation closed")
+        self._processing = asyncio.current_task()
+        try:
+            if self._phase in ("admitting", "uncertain"):
+                await self.admit_async()
+            if self._phase == "closed":
+                raise RuntimeError("Membership allocation retired")
+            if self._phase == "query":
+                await self.drive_async()
+            return await self.prepare_async()
+        finally:
+            self._processing = None
 
     def _cancelled(self, raw):
         r = reply(raw)
@@ -434,10 +572,13 @@ class GeoOverviewMembershipOperation:
         ) or not 256 <= r["length"] <= MAX_PACKET:
             raise ValueError("Invalid membership Data receipt")
         self._phase = "data"
+        self._data_reply = r
 
     def prepare(self):
         if self._closing:
             raise RuntimeError("Membership operation closing")
+        if self._phase == "data" and self._data_reply is not None:
+            return self._read(self._data_reply)
         if self._phase == "publication":
             r = self._probe(self._exec(6))
             if r is not None:
@@ -456,6 +597,7 @@ class GeoOverviewMembershipOperation:
         return self._read(r)
 
     def _read(self, r):
+        self._attempt.release()
         packet = None
         try:
             if 4 * r["length"] > _OPS[self][0].budget["processor_bytes"]:
@@ -505,6 +647,8 @@ class GeoOverviewMembershipOperation:
         return page
 
     async def _prepare_async(self):
+        if self._phase == "data" and self._data_reply is not None:
+            return await self._aread(self._data_reply)
         if self._phase == "publication":
             raw, interrupted = await self._aexec(6)
             r = self._probe(raw)
@@ -530,6 +674,7 @@ class GeoOverviewMembershipOperation:
         return await self._aread(r)
 
     async def _aread(self, r):
+        await self._attempt.release_async()
         packet = task = None
         try:
             if 4 * r["length"] > _OPS[self][0].budget["processor_bytes"]:
@@ -566,17 +711,31 @@ class GeoOverviewMembershipOperation:
     def close(self):
         if self._phase == "closed":
             return
+        self._closing = True
         if self._phase == "uncertain":
-            raise GeoOverviewMembershipUncertain(self)
+            self.admit()
+            if self._phase == "closed":
+                return
         self._settle()
         if self._phase == "publication":
             self._probe(self._exec(6))
         sequence = 0 if self._phase == "data" else _OPS[self][2]
-        mutation(
-            _OPS[self][0].transport.native_execute(request(10, _OPS[self][1], sequence)),
-            _OPS[self][1],
-            sequence,
-        )
+        if (
+            sequence
+            and self._dispose_attempted
+            and not self._disposed
+            and self._attempt.probe_retirement(self._validate_allocation) is None
+        ):
+            self._disposed = True
+        if not self._disposed:
+            self._dispose_attempted = True
+            mutation(
+                _OPS[self][0].transport.native_execute(request(10, self.handle, sequence)),
+                self.handle,
+                sequence,
+            )
+            self._disposed = True
+        self._attempt.release()
         self._phase = "closed"
 
     async def aclose(self):
@@ -596,7 +755,9 @@ class GeoOverviewMembershipOperation:
         if self._phase == "closed":
             return
         if self._phase == "uncertain":
-            raise GeoOverviewMembershipUncertain(self)
+            await self.admit_async()
+            if self._phase == "closed":
+                return
         if self._processing is not None and self._processing is not asyncio.current_task():
             self._cancelled((await self._aexec(9))[0])
             with suppress(BaseException):
@@ -611,7 +772,19 @@ class GeoOverviewMembershipOperation:
             self._phase = "closed"
             return
         sequence = 0 if self._phase == "data" else _OPS[self][2]
+        if (
+            sequence
+            and self._dispose_attempted
+            and not self._disposed
+            and await self._attempt.probe_retirement_async(self._validate_allocation) is None
+        ):
+            self._disposed = True
+        if self._disposed:
+            await self._attempt.release_async()
+            self._phase = "closed"
+            return
         if self._disposal is None:
+            self._dispose_attempted = True
             self._disposal = asyncio.create_task(
                 _OPS[self][0].transport.execute(request(10, _OPS[self][1], sequence))
             )
@@ -623,6 +796,8 @@ class GeoOverviewMembershipOperation:
             if task.done():
                 self._disposal = None
             raise
+        self._disposed = True
+        await self._attempt.release_async()
         self._phase = "closed"
         if interrupted:
             raise asyncio.CancelledError
@@ -720,12 +895,18 @@ class GeoOverviewMembershipPage:
         if _PAGES[self][0] is None:
             return
         self._packet = None
+        if self._closed:
+            forget_geo_allocation_issuer(self)
+            a = _PAGES[self]
+            _PAGES[self] = (None, *a[1:])
+            return
         mutation(
             _PAGES[self][0].transport.native_execute(request(10, _PAGES[self][1], 0)),
             _PAGES[self][1],
             0,
         )
         self._closed = True
+        forget_geo_allocation_issuer(self)
         a = _PAGES[self]
         _PAGES[self] = (None, *a[1:])
 
@@ -735,7 +916,10 @@ class GeoOverviewMembershipPage:
         if _PAGES[self][0].transport.bridge is None:
             return self.close()
         self._packet = None
-        if _PAGES[self][0] is None:
+        if self._closed:
+            await forget_geo_allocation_issuer_async(self)
+            a = _PAGES[self]
+            _PAGES[self] = (None, *a[1:])
             return
         if self._disposal is None:
             self._disposal = asyncio.create_task(
@@ -750,6 +934,7 @@ class GeoOverviewMembershipPage:
                 self._disposal = None
             raise
         self._closed = True
+        await forget_geo_allocation_issuer_async(self)
         a = _PAGES[self]
         _PAGES[self] = (None, *a[1:])
         if interrupted:

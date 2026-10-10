@@ -12,15 +12,41 @@ import threading
 import weakref
 from typing import Any
 
+from ._geo_overview import request as _overview_request
+from ._geo_overview_source import (
+    GeoOverviewCleanupPending,
+    GeoOverviewIndex,
+)
+from ._geo_overview_source import close_overview_owner as _close_overview_owner
+from ._geo_overview_source import (
+    is_native_overview_index as _native_overview_index,
+)
+from ._geo_overview_source import (
+    overview_frame_authority as _overview_frame_authority,
+)
+from ._geo_overview_source import overview_frame_data as _overview_frame_data
+from ._geo_overview_source import retain_overview_frame as _retain_overview_frame
+from ._geo_overview_source import (
+    update_overview_index as _update_overview_index,
+)
+
 _HEADER = struct.Struct("<4sIIIQQ")
 _LANES = weakref.WeakKeyDictionary()
 _LANE_LOCK = threading.Lock()
+_OVERVIEW = weakref.WeakKeyDictionary()
+_OVERVIEW_DATA = weakref.WeakKeyDictionary()
+_OVERVIEW_BUDGET = GeoOverviewIndex.budget.fget
 
 
 class GeoHostAdapter:
     """Private host-neutral facade used by notebook and Reflex transports."""
 
     def __init__(self, chart, *, frame=None, selected_scope=None, hierarchy_lane=None):
+        overview = chart._overview_layer()
+        if overview is not None:
+            self._init_overview(chart, overview, frame, selected_scope, hierarchy_lane)
+            return
+        self._overview_mode = False
         from ._geo_retained import RetainedGeoSource
 
         layer = chart._retained_layer()
@@ -154,6 +180,128 @@ class GeoHostAdapter:
 
         self._live_candidate = GeoLiveCandidate(self)
 
+    def _init_overview(self, chart, layer, frame, selected_scope, hierarchy_lane):
+        if selected_scope is not None or hierarchy_lane is not None:
+            raise ValueError("Overview hosts do not accept selected or hierarchy authority")
+        if not _native_overview_index(layer.source):
+            raise ValueError("Overview host requires its genuine native issuing producer")
+        query, sequence, identity = chart._overview_inputs(layer)
+        time = query["time"]
+        query = {
+            **query,
+            "camera": dict(query["camera"]),
+            "time": {
+                "kind": time["kind"],
+                **(
+                    {"instant": time["instant"]}
+                    if time["kind"] == 1
+                    else {"start": time["start"], "end": time["end"]}
+                    if time["kind"] == 2
+                    else {}
+                ),
+            },
+            "source_digest": bytes(query["source_digest"]),
+        }
+        self._source, self._query, self._sequence, self._style = layer.source, query, sequence, b""
+        self._budget, self._identity = chart.budget, identity
+        self._lock = threading.RLock()
+        self._frame = self._painter = self._mount = self._aux = self._anchor = None
+        self._closing, self._overview_mode = False, True
+        self._selected_scope = self._hierarchy_lane = self._hierarchy_authority = None
+        _OVERVIEW[self] = (layer.source, _OVERVIEW_BUDGET(layer.source))
+        _OVERVIEW_DATA[self] = weakref.WeakKeyDictionary()
+        from ._geo_live_host import GeoLiveCandidate
+
+        self._live_candidate = GeoLiveCandidate(self)
+        if frame is not None:
+            authority = _overview_frame_authority(frame)
+            if (
+                authority is None
+                or authority[0] is not layer.source
+                or authority[1] is not None
+                or authority[2] != frame.handle
+                or authority[3] != sequence
+                or authority[4] != identity
+            ):
+                raise ValueError("Overview frame differs from its issued composition")
+            self._anchor = self._retain_overview(frame)
+            try:
+                self._validate_overview_frame(self._anchor, query, sequence)
+            except Exception:
+                try:
+                    self._close_owner(self._anchor)
+                except Exception as error:
+                    raise GeoOverviewCleanupPending(self._anchor) from error
+                self._anchor = None
+                self._live_candidate.cleanup_frame = None
+                raise
+            self._live_candidate.cleanup_frame = None
+
+    def _retain_overview(self, frame):
+        def issued(copy):
+            self._live_candidate.cleanup_operation = copy
+
+        owned = _retain_overview_frame(frame, on_issued=issued)
+        # Successful26 now has exact Data authority; preserve it on validation failure.
+        self._live_candidate.cleanup_frame = owned
+        self._live_candidate.cleanup_operation = None
+        return owned
+
+    def _owner_data(self, frame):
+        if not self._overview_mode:
+            return frame.data
+        cache = _OVERVIEW_DATA[self]
+        if frame not in cache:
+            cache[frame] = _overview_frame_data(frame)
+        return cache[frame]
+
+    def _close_owner(self, owner):
+        if not self._overview_mode:
+            return owner.close()
+        _OVERVIEW_DATA[self].pop(owner, None)
+        return _close_overview_owner(owner)
+
+    def _overview_source(self):
+        authority = _OVERVIEW.get(self)
+        source = authority[0] if authority is not None else None
+        if source is None or source is not self._source:
+            raise ValueError("Overview issuing source changed")
+        return source
+
+    def _overview_budget(self):
+        return _OVERVIEW[self][1]
+
+    def _validate_overview_frame(self, frame, query, sequence):
+        source = _OVERVIEW[self][0]
+        authority = _overview_frame_authority(frame)
+        expected = _overview_request(
+            28, source.handle, sequence, budget=self._overview_budget(), query=query
+        )
+        if (
+            authority is None
+            or authority[0] is not source
+            or authority[1] is not None
+            or authority[2] != frame.handle
+            or authority[3] != sequence
+            or authority[4] != expected
+            or bytes(self._owner_data(frame).packet[:2304]) != authority[5]
+        ):
+            raise ValueError("Overview private frame authority changed")
+
+    def _prepare_overview(self, query, sequence):
+        source = self._overview_source()
+
+        def issued(operation):
+            self._live_candidate.cleanup_operation = operation
+
+        try:
+            frame = _update_overview_index(source, query, sequence=sequence, on_issued=issued)
+            self._live_candidate.cleanup_frame = frame
+            self._validate_overview_frame(frame, query, sequence)
+            return frame
+        finally:
+            self._live_candidate._settle_operation()
+
     def build_payload_split(self, px=None):
         return {"geo_host": True}, []
 
@@ -176,19 +324,44 @@ class GeoHostAdapter:
             raise RuntimeError("geographic host authoring disposed")
         if self._anchor is not None:
             frame = self._anchor
+        elif self._overview_mode:
+            current = self._overview_source().current
+            authority = _overview_frame_authority(current) if current is not None else None
+            if (
+                authority is not None
+                and authority[0] is source
+                and authority[3] == sequence
+                and authority[4] == self._identity
+            ):
+                frame = self._retain_overview(current)
+            else:
+                frame = self._prepare_overview(query, sequence)
         else:
             frame = self._prepare_source(source, query, sequence, style)
         try:
-            painter = _native.scene_browser_painter(bytes(frame.data.scene), self._budget)
-            if len(frame.data.packet) * 2 + len(painter) > source.budget["processor_bytes"]:
+            if self._overview_mode:
+                self._validate_overview_frame(frame, query, sequence)
+            data = self._owner_data(frame)
+            painter = _native.scene_browser_painter(bytes(data.scene), self._budget)
+            copies = 3 if self._overview_mode else 2
+            processor_bytes = (self._overview_budget() if self._overview_mode else source.budget)[
+                "processor_bytes"
+            ]
+            if len(data.packet) * copies + len(painter) > processor_bytes:
                 raise ValueError("native geographic host packet and painter exceed transfer budget")
-            outgoing = frame.data.packet.obj
-            if not isinstance(outgoing, bytes) or len(outgoing) != len(frame.data.packet):
+            outgoing = data.packet.obj
+            if not isinstance(outgoing, bytes) or len(outgoing) != len(data.packet):
                 raise ValueError("native frame must have exact immutable packet backing")
         except BaseException:
-            if frame is not self._anchor:
+            if self._overview_mode:
+                self._anchor = frame
+                self._live_candidate.cleanup_frame = None
+            elif frame is not self._anchor:
                 frame.close()
             raise
+        if self._overview_mode:
+            self._anchor = frame
+            self._live_candidate.cleanup_frame = None
         self._frame, self._painter, self._mount = frame, painter, mount
         return [_HEADER.pack(b"XYGH", 1, 1, 0, frame.handle, sequence), outgoing, painter]
 
@@ -322,7 +495,7 @@ class GeoHostAdapter:
                     if mount != self._mount or self._frame is None:
                         raise ValueError("unowned geographic mount")
                     frame = self._frame
-                    if sequence != frame.data.identity["sequence"]:
+                    if sequence != self._owner_data(frame).identity["sequence"]:
                         raise ValueError("stale geographic frame")
                     if op == 5:
                         if len(raw) != 32 or self._aux is None or owner != self._aux.handle:
@@ -346,11 +519,15 @@ class GeoHostAdapter:
                                 raise ValueError("drop auxiliary packets before releasing frame")
                             self._painter = None
                             if frame is not self._anchor:
-                                frame.close()
+                                self._close_owner(frame)
                             self._frame = self._mount = None
                             if self._closing:
                                 self._release_anchor()
                             outgoing = []
+                        elif self._overview_mode:
+                            raise ValueError(
+                                "Overview has domain counts, not source feature picking/membership"
+                            )
                         elif op == 2:
                             if len(raw) != 64 or self._aux is not None:
                                 raise ValueError("invalid or concurrent pick request")
@@ -422,11 +599,19 @@ class GeoHostAdapter:
             self._hierarchy_lane = self._hierarchy_authority = None
 
     def _release_anchor(self):
+        if self._overview_mode:
+            self._live_candidate._settle_operation()
+            if self._live_candidate.cleanup_frame is not None:
+                self._close_owner(self._live_candidate.cleanup_frame)
+                self._live_candidate.cleanup_frame = None
         anchor = self._anchor
         if anchor is not None:
-            anchor.close()
+            self._close_owner(anchor)
             self._anchor = None
         self._release_lane()
+        if self._closing:
+            _OVERVIEW.pop(self, None)
+            _OVERVIEW_DATA.pop(self, None)
 
     @property
     def mounted(self):

@@ -240,6 +240,13 @@ Use this after editing API docs, example snippets, or public benchmark wording:
 make check-docs
 ```
 
+The Docs workflow serializes source dependency builds with
+`UV_CONCURRENT_BUILDS=1` in both quality and production installs. The pinned
+Reflex stub-generation hooks delete and regenerate `.pyi` files in uv's shared
+Git checkout without locking. Concurrent hooks can remove a file while Hatch
+packages another wheel. Keep the frozen dependency lock and all docs tests;
+this setting changes only install concurrency, not the build or test contract.
+
 The browser gates are split into app-facing checks that match the CI step
 names: `Browser lifecycle smoke (Chromium)`, `Browser visual regression smoke
 (Chromium)`, `Step tier-update smoke (Chromium)`, `Browser interaction stress

@@ -2,9 +2,9 @@
 
 Dossier §27/§29/§34. This Rust opt-in covers commands26/27/28/29/45.
 It adds no ABI signature, memory pool, handle quota or temporal/geometry policy.
-**Existing typed public owners still use nonce0:** unknown allocating replies
-remain poisoned until a private client allocation attempt adopts this protocol.
-This engine foundation alone does not repair public-host recovery.
+Raw nonce0 remains compatible. Issued overview owners now adopt commands26–29
+through [private host recovery](geo-overview-recovery-hosts.md); domain45 host
+adoption and mutations35/36 remain independent gates.
 
 ## Opt-in and exact replay
 
@@ -130,5 +130,5 @@ opt-in evidence; it does not establish public-owner adoption.
 handle with IndexedQuery, while fallback preserves State. Recovering either
 requires exact consumed State plus operation/birth authority. Nonce33's retired
 receipt alone cannot prove which35 Source mutation succeeded. They remain a
-separate mutation-recovery slice. Public owner adoption, unknown transport
+separate mutation-recovery slice. Domain-member owner adoption, unknown transport
 reset, browser presentation and massive latency remain separate gates.

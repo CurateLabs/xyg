@@ -1,0 +1,39 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "node": "v26.6.0",
+  "python": "Python 3.13.7",
+  "source_base": "d5f8498a9",
+  "engine_dependency": "0b4eba69b",
+  "compiler_source_diff": "git diff 0b4eba69b -- crates Cargo.toml Cargo.lock rust-toolchain.toml is empty",
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/target/release/libxyg_core.dylib",
+    "sha256": "4aa35fb4fd2513b6aa758a0680985da6f2f74dd7380bc23f8b6f2d7d770d4d3e"
+  },
+  "wasm": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoallocationretirement/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "e0f09f8454242e82eaa1db36d1d4ae87e1726e7621f7eb1485c12641557c06f2",
+    "raw_bytes": 1494781,
+    "gzip9_mtime0_bytes": 612306,
+    "gzip6_mtime0_bytes": 613121
+  },
+  "tests": {
+    "new_node_native_and_wasm": 50,
+    "total_node": 74,
+    "new_python": 24,
+    "total_python": 49
+  },
+  "scope": "bounded transport ownership/recovery, no massive latency or new live/native composition claim",
+  "client": {
+    "packages/xy-client/dist/index.js": "fb521f5a08f97a92ec6fcbb2cd9e85a9791e2faf4714bba87b8883ee7d7dbddb",
+    "packages/xy-client/dist/wasm-worker.js": "189b99b3f602a6b93d5026413cd5cbfeb0789b7c02802a08dbedb17dba7c9fe1",
+    "fresh_rebuild": "hashes identical after final frozen source rebuild"
+  },
+  "compiler_inputs": {
+    "manifest": "spec/performance/geo-allocation-retirement-2026-10-09/compiler-inputs.json",
+    "verified_count": 199,
+    "all_hashes_match": true
+  },
+  "final_dependency_parent": "f1db7c3f87cc4e5942f1ceca2ec9ed8e68a69cde",
+  "normal_merge_dependency": "3bb6941704b8f56c89501570daccde5535bfe76d",
+  "ancestry_merge_source_hash_delta": false
+}
