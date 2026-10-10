@@ -7,8 +7,10 @@ import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 const root=new URL('../',import.meta.url),source=new URL('js/src/67_geo_overview.ts',root);
 const directory=mkdtempSync(join(tmpdir(),'xyg-overview-declarations-'));
+// Full client validation remains in js/build.mjs. Match the other declaration
+// generators explicitly so TS default changes cannot erase nullable wire types.
 try{
- const result=spawnSync(process.execPath,[new URL('node_modules/typescript/bin/tsc',root).pathname,source.pathname,'--declaration','--emitDeclarationOnly','--outDir',directory,'--target','ES2022','--module','ESNext','--moduleResolution','bundler','--skipLibCheck'],{encoding:'utf8'});
+ const result=spawnSync(process.execPath,[new URL('node_modules/typescript/bin/tsc',root).pathname,source.pathname,'--noCheck','--strictNullChecks','true','--declaration','--emitDeclarationOnly','--outDir',directory,'--target','ES2022','--module','ESNext','--moduleResolution','bundler','--skipLibCheck'],{encoding:'utf8'});
  if(result.error)throw result.error;
  if(result.status!==0)throw Error(result.stdout+result.stderr);
  const clean=s=>s.split('\n').map(line=>line.trimEnd()).join('\n');

@@ -96,3 +96,5 @@ Legacy nonce0 and35/36 contracts remain covered separately. Hierarchy43/44
 public journal adoption, MemberData10 retirement, arbitrary transport reset,
 and complete massive-data/multi-view milestone evidence remain separate
 work. Closed GitHub issues do not by themselves establish those gates.
+
+The Node geographic wire/host declaration generators set nullable declaration emission explicitly, including the ordinary overview generator. Declaration-only emission follows the existing `--noCheck --strictNullChecks true` posture; full client validation remains in `node js/build.mjs`. The overview generator repair preserves its committed declarations byte-for-byte and all four mechanical `--check` gates remain required.
