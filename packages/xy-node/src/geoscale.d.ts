@@ -1,4 +1,3 @@
-/** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
 export interface XygGeoCamera {crs:number;worldWrap?:boolean;centerX:number;centerY:number;zoom:number;width:number;height:number;bearing?:number;pitch?:number}
 export declare const GEO_SCALE_HEADER = 256;
 export interface XygGeoQueryBudget {
@@ -228,6 +227,15 @@ export declare function geoSceneDataAuthority(owner: object): Readonly<{
     request: ArrayBuffer;
     header: Uint8Array<ArrayBuffer>;
 }> | undefined;
+type SceneIssuerContext = Readonly<{
+    issuer: XygGeoScaleBridge;
+    execute: XygGeoScaleBridge["execute"];
+    read: XygGeoScaleBridge["read"];
+    originalExecute: XygGeoScaleBridge["execute"];
+    originalRead: XygGeoScaleBridge["read"];
+}>;
+/** Captured before mutation; the context has no caller-provided receipt authority. */
+export declare function captureGeoSceneDataIssuer(issuer: XygGeoScaleBridge): SceneIssuerContext;
 export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
     handle: bigint;
     sequence: bigint;
@@ -311,6 +319,93 @@ export declare function prepareGeoSceneData(bridge: XygGeoScaleBridge, input: {
         };
     };
     dispose(): Promise<void>;
+}>;
+/** The only ready capability is minted by this captured journal lifecycle, after
+ * authentic19 and strict47. Numeric handles/reconstructed receipts cannot mint it. */
+export declare function createGeoSceneDataPublication(context: SceneIssuerContext, input: {
+    handle: bigint;
+    sequence: bigint;
+    budget: XygGeoQueryBudget;
+    style: Uint8Array;
+}): Readonly<{
+    readonly rejected: boolean;
+    readonly closed: boolean;
+    matches(other: Uint8Array): boolean;
+    prepare(): Promise<{
+        handle: bigint;
+        readonly data: {
+            packet: ArrayBuffer;
+            scene: Uint8Array<ArrayBuffer>;
+            selection: {
+                raw: Uint8Array<ArrayBufferLike>;
+                namespace: bigint;
+                fill: Uint8Array<ArrayBufferLike>;
+                idCount: number;
+                cellCount: number;
+                visibleVertices: bigint | null;
+                id(index: number): bigint;
+                cell(index: number): bigint;
+            } | null;
+            aggregate: boolean;
+            droppedChannels: number;
+            visibleVertices: bigint;
+            projectedVertices: bigint;
+            columns: number;
+            rows: number;
+            gridCapped: boolean;
+            metadata: DataView<ArrayBuffer>;
+            length: number;
+            identity: {
+                sessionHandle: bigint;
+                sequence: bigint;
+                camera: {
+                    crs: number;
+                    worldWrap: boolean;
+                    centerX: number;
+                    centerY: number;
+                    zoom: number;
+                    width: number;
+                    height: number;
+                    bearing: number;
+                    pitch: number;
+                };
+                sourceDigest: Uint8Array<ArrayBuffer>;
+                generation: bigint;
+                layerId: bigint;
+                cameraRevision: bigint;
+                timeRevision: bigint;
+                layerRevision: bigint;
+                styleRevision: bigint;
+                stateRevision: bigint;
+                time: XygGeoTime;
+                reducedKind: number;
+                sourceRows: bigint;
+                geometry: number;
+                sourceCrs: number;
+            };
+            record(index: number): {
+                count: bigint;
+                x: number;
+                y: number;
+                featureId?: undefined;
+                sourceRow?: undefined;
+                chunkIndex?: undefined;
+                chunkRow?: undefined;
+                vertex?: undefined;
+            } | {
+                count?: undefined;
+                x?: undefined;
+                y?: undefined;
+                featureId: bigint;
+                sourceRow: bigint;
+                chunkIndex: number;
+                chunkRow: number;
+                vertex: number;
+            };
+        };
+        dispose(): Promise<void>;
+    }>;
+    dispose: () => Promise<void>;
 }>;
 /** Raw immutable key/cursor bytes retain Rust's exact f64/i64/u64 identity. */
 export declare function parseGeoMembershipData(packet: ArrayBuffer): {
@@ -430,6 +525,7 @@ export declare function driveGeoIndexSession(bridge: XygGeoScaleBridge, input: {
         passes: number;
     } | null;
 }>;
+export {};
 export declare function geoScaleExecute(request:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>;
 export declare function geoScaleRead(request:ArrayBuffer|Uint8Array,budget:number):Promise<ArrayBuffer>;
 export declare function nativeGeoScaleBridge(budget:number):XygGeoScaleBridge;
