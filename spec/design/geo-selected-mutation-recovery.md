@@ -94,4 +94,4 @@ raw nonce0 requests retain their legacy contract. The separate
 [selected publication journal](geo-selected-publication-recovery.md) specifies
 engine19, while public19 adoption, hierarchy43/44 recovery, progressive
 scheduling and massive interaction latency remain gates. Snapshot-local6/7
-recovery is specified separately in [accepted binary snapshots](geo-overview-binary.md).
+recovery is specified separately in [accepted binary snapshots](geo-overview-snapshot-recovery.md).

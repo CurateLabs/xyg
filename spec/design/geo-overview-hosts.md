@@ -81,10 +81,10 @@ callbacks, exact ticket ACKs, Data disposal and birth release settle. Raw nonce0
 packets retain their legacy behavior.
 
 This bounded slice does **not** complete #39. Subsequent layers cover
-[Snapshot-local6/7 recovery](geo-overview-binary.md),
+[Snapshot-local6/7 recovery](geo-overview-snapshot-recovery.md),
 [selected35/36 mutation hosts](geo-selected-mutation-hosts.md),
 [domain45 recovery](geo-overview-members-recovery.md), and
-[native live overview routing](geo-native-overview-hosts.md).
+[native live overview routing](geo-native-overview-host.md).
 Public19 and hierarchy43/44 adoption, lost MemberData10 cleanup, feature
 refinement and massive end-to-end interaction remain separate gates.
 
