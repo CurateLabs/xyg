@@ -98,19 +98,22 @@ def cleanup(scope, lane, frame, adapter):
 
 
 def test_selected_hierarchy_camera_time_route_after_original_source_disposal(monkeypatch):
-    source, scope, lane, frame, _, adapter = fixture()
-    frame.close()  # Caller original is independent of the adapter anchor.
-    request(adapter, 1)
     calls = []
     execute = g.execute
+    active = False
 
     def tracked(packet):
         command = struct.unpack_from("<I", packet, 8)[0]
-        calls.append(command)
-        assert command not in (5, 18, 35, 36, 38, 39), "implicit alternate query route"
+        if active:
+            calls.append(command)
+            assert command not in (5, 18, 35, 36, 38, 39), "implicit alternate query route"
         return execute(packet)
 
     monkeypatch.setattr(g, "execute", tracked)
+    source, scope, lane, frame, _, adapter = fixture()
+    frame.close()  # Caller original is independent of the adapter anchor.
+    request(adapter, 1)
+    active = True
     try:
         for sequence in (4, 5):
             old, old_seq = adapter._frame, adapter._sequence
@@ -129,6 +132,7 @@ def test_selected_hierarchy_camera_time_route_after_original_source_disposal(mon
         assert lane._creation_sequence == 2
         assert source._closed
     finally:
+        active = False
         cleanup(scope, lane, frame, adapter)
 
 
@@ -152,30 +156,35 @@ def test_lane_exclusive_claim_and_closed_lane_preserve_static_frame():
 def test_lost_mutation_confirmation_settles_issued_operation_without_alternate_query(
     monkeypatch, mutation
 ):
-    _, scope, lane, frame, _, adapter = fixture()
-    request(adapter, 1)
-    old = adapter._frame
     execute = g.execute
     lose = True
+    active = False
 
     def interrupted(packet):
         nonlocal lose
         result = execute(packet)
-        if struct.unpack_from("<I", packet, 8)[0] == mutation and lose:
+        if struct.unpack_from("<I", packet, 8)[0] == mutation and lose and active:
             lose = False
             raise OSError("lost mutation confirmation")
         return result
 
     monkeypatch.setattr(g, "execute", interrupted)
+    _, scope, lane, frame, _, adapter = fixture()
+    request(adapter, 1)
+    old = adapter._frame
+    active = True
     try:
         reply, packets = prepare(adapter, sequence=4)
+        assert lose is False
         assert reply["prepareAbsent"] is True
         assert packets == [] and adapter._frame is old
         assert lane.pending_operation is None
+        active = False
         monkeypatch.setattr(g, "execute", execute)
         reply, _ = prepare(adapter, sequence=5)
         assert "error" not in reply, reply
     finally:
+        active = False
         monkeypatch.setattr(g, "execute", execute)
         cleanup(scope, lane, frame, adapter)
 
@@ -252,15 +261,14 @@ def test_null_original_row_intent_survives_live_camera_change_without_geometry_m
 
 
 def test_sync_cancel_generation_after_real44_releases_candidate_and_keeps_old_paint(monkeypatch):
-    _, scope, lane, frame, _, adapter = fixture()
-    request(adapter, 1)
     execute = g.execute
     cancel = True
+    active = False
 
     def interrupted(packet):
         nonlocal cancel
         result = execute(packet)
-        if struct.unpack_from("<I", packet, 8)[0] == 44 and cancel:
+        if struct.unpack_from("<I", packet, 8)[0] == 44 and cancel and active:
             cancel = False
             # Sync callbacks cannot be interrupted, but admission cancellation
             # advances synchronously and rejects the just-prepared candidate.
@@ -269,16 +277,22 @@ def test_sync_cancel_generation_after_real44_releases_candidate_and_keeps_old_pa
         return result
 
     monkeypatch.setattr(g, "execute", interrupted)
+    _, scope, lane, frame, _, adapter = fixture()
+    request(adapter, 1)
+    active = True
     try:
         old = adapter._frame
         reply, packets = prepare(adapter, sequence=4)
+        assert cancel is False
         assert reply["prepareAbsent"] is True
         assert packets == [] and adapter._frame is old
         assert lane.pending_operation is None
         assert adapter._live_candidate.cleanup_frame is None
+        active = False
         monkeypatch.setattr(g, "execute", execute)
         assert "error" not in prepare(adapter, sequence=5)[0]
     finally:
+        active = False
         monkeypatch.setattr(g, "execute", execute)
         cleanup(scope, lane, frame, adapter)
 
