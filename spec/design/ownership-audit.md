@@ -1360,3 +1360,10 @@ Selected19 dispatcher evidence adds only test-owned
 `scripts/geo_selected19_capture_smoke.mjs`; these remain outside the production
 inventory above. The existing browser transport owner for `js/src/47_wasm.ts`
 retains its responsibility; no host geometry or selection policy was added.
+
+Hierarchy43/44 dispatcher evidence adds test-owned
+`tests/browser/geo_hierarchy_capture_entry.mjs` and
+`scripts/geo_hierarchy_capture_smoke.mjs`, outside the production inventory.
+The existing browser transport owner for `js/src/47_wasm.ts` remains unchanged;
+[the exact capture contract](geo-hierarchy-dispatch-capture.md) adds no host
+geometry, selection policy, or new public surface.

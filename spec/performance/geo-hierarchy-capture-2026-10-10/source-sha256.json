@@ -1,0 +1,8 @@
+{
+  "js/src/47_wasm.ts": "c37d3743e09c683ffcf42e583aec926c79cf32cdf7b42a85cfc4685d5816f93c",
+  "tests/browser/geo_selected19_capture_entry.mjs": "aae21ff11ce70ff5bb479731e8c900fe58e6568382fe432448d321377877b88e",
+  "tests/browser/geo_hierarchy_capture_entry.mjs": "9adeffcdc6ef252c00c4539fe5ef0c3aef18d06f574465d9db429ac02774c85b",
+  "scripts/geo_hierarchy_capture_smoke.mjs": "6574c0544d1ab4e2a0efbc168f0877c8a114426d524a3f2e7687d271bfba3cb2",
+  "spec/design/geo-hierarchy-dispatch-capture.md": "824a0cd8741917bd189d5a6bd3883fbf5aa25d9692e6ea78e496746f68bfe45b",
+  "spec/design/ownership-audit.md": "d2cda8b0a2c8bc65f815b4bfce10f4d566e00f700aebca39832ba1734bcdaca4"
+}

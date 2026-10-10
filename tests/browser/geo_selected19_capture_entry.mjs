@@ -47,7 +47,7 @@ export async function verifySelected19Capture(){
  await withGeoWorkerMutationOutcome(bridge,publication,async outcome=>{let threw=false;try{await bridge.execute(publication.slice(0));throw prior;}catch(error){threw=true;check(!outcome(error),'old genuine error authorized clone success');}check(threw,'older-error wrapper did not execute');});
  const scopes=Array.from({length:16},()=>beginGeoWorkerMutationCapture(bridge,publication));let capped=false;try{beginGeoWorkerMutationCapture(bridge,publication);}catch{capped=true;}check(capped,'capture17 admitted');scopes.forEach(s=>s.close());
  const unmatched=[];
- for(const [command,length,tag] of [[19,303,0],[19,305,0],[44,304,0],[47,272,44],[47,271,19],[47,273,19]]){
+ for(const [command,length,tag] of [[19,303,0],[19,305,0],[42,304,0],[47,272,42],[47,271,19],[47,273,19]]){
   const b=new ArrayBuffer(length);new Uint8Array(b).set(new Uint8Array(command===47?confirmation:publication).subarray(0,Math.min(length,command===47?272:304)));const v=new DataView(b);v.setUint32(8,command,true);if(command===47)v.setUint32(256,tag,true);
   if(length>304){let rejected=false;try{beginGeoWorkerMutationCapture(bridge,b);}catch{rejected=true;}check(rejected,'oversized capture admitted');unmatched.push(true);continue;}
   await withGeoWorkerMutationOutcome(bridge,b,async outcome=>{try{const packet=await bridge.execute(b.slice(0));check(!outcome(packet),'nonwhitelisted packet branded');}catch(error){check(!outcome(error),'nonwhitelisted rejection branded');}unmatched.push(true);});

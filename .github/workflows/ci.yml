@@ -486,6 +486,7 @@ jobs:
           XYG_OVERVIEW_CONTROLLER_REPORT="$GITHUB_WORKSPACE/geo-overview-controller-ci.json" node scripts/geo_overview_controller_smoke.mjs
           XYG_OVERVIEW_BINARY_REPORT="$GITHUB_WORKSPACE/geo-overview-binary-ci.json" node scripts/geo_overview_binary_smoke.mjs
           XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-hosts-ci.json" node scripts/geo_selected_mutation_hosts_smoke.mjs
+          XYG_HIERARCHY_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-capture-ci.json" node scripts/geo_hierarchy_capture_smoke.mjs
           XYG_SELECTED19_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-selected19-capture-ci.json" node scripts/geo_selected19_capture_smoke.mjs
           XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" XYG_GEO_NATIVE_OVERVIEW_REPORT="$GITHUB_WORKSPACE/geo-native-overview-host-ci.json" node tests/browser/geo_native_overview_host_test.mjs
       - name: Geographic painter and borrowed MapLibre context
@@ -538,6 +539,7 @@ jobs:
             geo-overview-binary-ci.json
             geo-selected19-capture-ci.json
             geo-hierarchy-recovery-ci.json
+            geo-hierarchy-capture-ci.json
             geo-selected-mutation-hosts-ci.json
             geo-native-overview-host-ci.json
 
