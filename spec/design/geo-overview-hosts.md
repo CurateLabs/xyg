@@ -80,11 +80,13 @@ not only the allocation ACK. Cancellation and disposal retain the guard until
 callbacks, exact ticket ACKs, Data disposal and birth release settle. Raw nonce0
 packets retain their legacy behavior.
 
-This bounded slice does **not** complete #50 or #39. Unknown snapshot6,
-mutations35/36, domain45 host adoption, public native overview live routing,
-feature refinement and massive end-to-end interaction remain separate gates.
-`host` and `widget` still reject overview composition until their independent
-native routing slice integrates.
+This bounded slice does **not** complete #39. Subsequent layers cover
+[Snapshot-local6/7 recovery](geo-overview-binary.md),
+[selected35/36 mutation hosts](geo-selected-mutation-hosts.md),
+[domain45 recovery](geo-overview-members-recovery.md), and
+[native live overview routing](geo-native-overview-hosts.md).
+Public19 and hierarchy43/44 adoption, lost MemberData10 cleanup, feature
+refinement and massive end-to-end interaction remain separate gates.
 
 ## Reproduction
 

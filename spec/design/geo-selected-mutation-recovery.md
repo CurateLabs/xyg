@@ -88,7 +88,10 @@ legacy admission, fallback preservation, sixteen retained birth pressure and
 five-view same-handle publication. Fresh paired native/WASM full-packet evidence
 and nonce0 comparisons are recorded separately before integration.
 
-This is engine opt-in recovery. Existing selected public owners remain nonce0
-until issued mutation attempts adopt this journal and captured canonical cleanup.
-It does not prove selected19 recovery, hierarchy43/44 recovery, snapshot6 reset,
-progressive scheduling, or massive interaction latency.
+This document specifies engine opt-in recovery. Public selected35/36 owners now
+adopt it through [captured mutation attempts](geo-selected-mutation-hosts.md);
+raw nonce0 requests retain their legacy contract. The separate
+[selected publication journal](geo-selected-publication-recovery.md) specifies
+engine19, while public19 adoption, hierarchy43/44 recovery, progressive
+scheduling and massive interaction latency remain gates. Snapshot-local6/7
+recovery is specified separately in [accepted binary snapshots](geo-overview-binary.md).
