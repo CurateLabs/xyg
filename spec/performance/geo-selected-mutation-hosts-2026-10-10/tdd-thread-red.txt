@@ -1,0 +1,234 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_older_genuine_error_cannot_clear_latest_success_even_with_cloned_request[new-thread] _
+
+    async def run():
+        from xyg._native import GeoNativeError
+    
+        held = _full_receipt_bank()
+        manifest, chunk = fixture_manifest()
+        native = g.NativeGeoScaleBridge(BUDGET["processor_bytes"])
+        saved = None
+        armed = True
+    
+        class Bridge:
+            async def execute(self, request):
+                nonlocal saved, armed
+                if armed and struct.unpack_from("<I", request, 8)[0] == 35:
+                    armed = False
+                    if not prior_call:
+                        try:
+                            await native.execute(request)
+                        except GeoNativeError as error:
+                            assert error.status == -9
+                            saved = error
+                        assert saved is not None
+                        await native.execute(_selected_ack(held.pop(), 1))
+                    if dispatch == "new-thread":
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            executor.submit(g.execute, bytes(bytearray(request))).result()
+                    elif dispatch == "nested-capture":
+                        with g._capture_native_mutation(request):
+                            await native.execute(bytes(bytearray(request)))
+                    else:
+                        await native.execute(bytes(bytearray(request)))
+                    raise saved
+                return await native.execute(request)
+    
+            async def read(self, request):
+                return await native.read(request)
+    
+        bridge = Bridge()
+    
+        async def reader(_):
+            return chunk
+    
+        source = await RetainedGeoSource.create_async(
+            manifest, reader, budget=BUDGET, bridge=bridge
+        )
+        q = {**query(source.info), "state_revision": 1}
+        old = await source.aupdate(q, sequence=1, style=style())
+        scope = await GeoSelectedScope.from_frame_async(old, namespace=U64, layer_id=U64)
+        state = await scope.state_async(
+            revision=2, ids=np.array([U64], dtype="<u8"), fill=bytes([0, 255, 0, 255])
+        )
+        try:
+            if prior_call:
+                request = bytearray(
+                    g.encode_request(
+                        dict(
+                            command=35,
+                            handle=source.handle,
+                            sequence=2,
+                            query={**q, "state_revision": 2},
+                            budget=BUDGET,
+                            payload=struct.pack("<Q", state.handle),
+                        )
+                    )
+                )
+                struct.pack_into("<Q", request, 240, 1)
+                try:
+                    await native.execute(bytes(request))
+                except GeoNativeError as error:
+                    assert error.status == -9
+                    saved = error
+                assert saved is not None
+                await native.execute(_selected_ack(held.pop(), 1))
+            with pytest.raises(GeoNativeError):
+                await state.begin_async(source, {**q, "state_revision": 2}, sequence=2)
+>           with pytest.raises(RuntimeError, match="active"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE RuntimeError
+
+tests/test_geo_selected_mutation_hosts.py:462: Failed
+
+During handling of the above exception, another exception occurred:
+
+dispatch = 'new-thread'
+
+    @pytest.mark.parametrize("dispatch", ["prior-call", "same-call-clone", "new-thread", "nested-capture"])
+    def test_older_genuine_error_cannot_clear_latest_success_even_with_cloned_request(dispatch):
+        prior_call = dispatch == "prior-call"
+        async def run():
+            from xyg._native import GeoNativeError
+    
+            held = _full_receipt_bank()
+            manifest, chunk = fixture_manifest()
+            native = g.NativeGeoScaleBridge(BUDGET["processor_bytes"])
+            saved = None
+            armed = True
+    
+            class Bridge:
+                async def execute(self, request):
+                    nonlocal saved, armed
+                    if armed and struct.unpack_from("<I", request, 8)[0] == 35:
+                        armed = False
+                        if not prior_call:
+                            try:
+                                await native.execute(request)
+                            except GeoNativeError as error:
+                                assert error.status == -9
+                                saved = error
+                            assert saved is not None
+                            await native.execute(_selected_ack(held.pop(), 1))
+                        if dispatch == "new-thread":
+                            with ThreadPoolExecutor(max_workers=1) as executor:
+                                executor.submit(g.execute, bytes(bytearray(request))).result()
+                        elif dispatch == "nested-capture":
+                            with g._capture_native_mutation(request):
+                                await native.execute(bytes(bytearray(request)))
+                        else:
+                            await native.execute(bytes(bytearray(request)))
+                        raise saved
+                    return await native.execute(request)
+    
+                async def read(self, request):
+                    return await native.read(request)
+    
+            bridge = Bridge()
+    
+            async def reader(_):
+                return chunk
+    
+            source = await RetainedGeoSource.create_async(
+                manifest, reader, budget=BUDGET, bridge=bridge
+            )
+            q = {**query(source.info), "state_revision": 1}
+            old = await source.aupdate(q, sequence=1, style=style())
+            scope = await GeoSelectedScope.from_frame_async(old, namespace=U64, layer_id=U64)
+            state = await scope.state_async(
+                revision=2, ids=np.array([U64], dtype="<u8"), fill=bytes([0, 255, 0, 255])
+            )
+            try:
+                if prior_call:
+                    request = bytearray(
+                        g.encode_request(
+                            dict(
+                                command=35,
+                                handle=source.handle,
+                                sequence=2,
+                                query={**q, "state_revision": 2},
+                                budget=BUDGET,
+                                payload=struct.pack("<Q", state.handle),
+                            )
+                        )
+                    )
+                    struct.pack_into("<Q", request, 240, 1)
+                    try:
+                        await native.execute(bytes(request))
+                    except GeoNativeError as error:
+                        assert error.status == -9
+                        saved = error
+                    assert saved is not None
+                    await native.execute(_selected_ack(held.pop(), 1))
+                with pytest.raises(GeoNativeError):
+                    await state.begin_async(source, {**q, "state_revision": 2}, sequence=2)
+                with pytest.raises(RuntimeError, match="active"):
+                    state._check()
+                op = await state.pending_operation.recover_async()
+                await op.cancel_async()
+                await state.pending_operation.aclose()
+                assert old.data.record(0)["feature_id"] == U64
+            finally:
+                await old.aclose()
+                await source.aclose()
+                await state.aclose()
+                await scope.aclose()
+                for issuer in held:
+                    await native.execute(_selected_ack(issuer, 1))
+    
+>       asyncio.run(run())
+
+tests/test_geo_selected_mutation_hosts.py:476: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_geo_selected_mutation_hosts.py:471: in run
+    await state.aclose()
+python/xyg/_geo_selected.py:402: in aclose
+    return await super().aclose()
+           ^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geo_selected.py:98: in aclose
+    _, interrupted = await g._settle(self._disposal)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geoscale.py:686: in _settle
+    return await asyncio.shield(task), interrupted
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_geo_selected_mutation_hosts.py:419: in execute
+    return await native.execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geoscale.py:673: in execute
+    return execute(request)
+           ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = b'XYGQ\x01\x00\x00\x00\n\x00\x00\x00\x00\x00\x00\x00U\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\...00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    def execute(request: bytes) -> bytes:
+        """One mutation, always with fixed output capacity (never a size probe)."""
+        from . import _native
+    
+        if not isinstance(request, bytes) or not HEADER <= len(request) <= MAX_PACKET:
+            raise ValueError("invalid geographic request size")
+        capture = _NATIVE_MUTATION_CAPTURE.get()
+        token = capture.begin(request) if capture is not None else None
+        source, out = ctypes.create_string_buffer(request), ctypes.create_string_buffer(HEADER)
+        code = _native._lib.xyg_geo_scale_execute(source, len(request), out, HEADER)
+        if code:
+            error = _native.GeoNativeError(code)
+            if capture is not None:
+                capture.record(token, error=error, status=int(code))
+>           raise error
+E           xyg._native.GeoNativeError: geographic column handle is stale or freed
+
+python/xyg/_geoscale.py:633: GeoNativeError
+=========================== short test summary info ============================
+FAILED tests/test_geo_selected_mutation_hosts.py::test_older_genuine_error_cannot_clear_latest_success_even_with_cloned_request[new-thread]
+1 failed, 9 deselected in 0.19s

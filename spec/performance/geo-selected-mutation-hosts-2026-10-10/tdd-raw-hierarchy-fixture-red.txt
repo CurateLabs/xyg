@@ -1,0 +1,139 @@
+✔ native explicit selected Point preserves original rows/full IDs/frozen intent (37.965ms)
+✔ native explicit selected MultiPoint preserves original rows/full IDs/frozen intent (1.900416ms)
+✖ wasm explicit selected Point preserves original rows/full IDs/frozen intent (17.16125ms)
+✖ wasm explicit selected MultiPoint preserves original rows/full IDs/frozen intent (3.166833ms)
+✔ native failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (2.882042ms)
+✖ wasm failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (3.449125ms)
+✔ native lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (2.011208ms)
+✖ wasm lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (3.017375ms)
+✖ two actual WASM modules with colliding numeric handles reject foreign State and producer before transport (5.968875ms)
+✔ native cancelled borrowed hierarchy read settles exact private ACK before disposal (12.717417ms)
+✖ wasm cancelled borrowed hierarchy read settles exact private ACK before disposal (3.891625ms)
+✖ native and real WASM exact typed Scene, Rows and frozen selection bytes agree (0.415542ms)
+✔ native five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (2.867958ms)
+✖ wasm five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (15.891584ms)
+✔ native selected reduced Point preserves counts and complete exact membership after owner disposal (108.803125ms)
+✔ native selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (88.617792ms)
+✖ wasm selected reduced Point preserves counts and complete exact membership after owner disposal (29.987541ms)
+✖ wasm selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (22.399334ms)
+✔ native late publication abort with rejected cleanup retains known Data guard for retry (2.171ms)
+✖ wasm late publication abort with rejected cleanup retains known Data guard for retry (5.837042ms)
+✔ native pre-aborted drive and prepare remain retryable without dispatch (1.261542ms)
+✖ wasm pre-aborted drive and prepare remain retryable without dispatch (2.934209ms)
+✔ optional explicit evidence retains complete cross-target parity hashes (0.147ms)
+✔ native explicit chart static host independently retains actual43 selected frame (24.271458ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 12
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 471.343833
+
+✖ failing tests:
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:33:67
+✖ wasm explicit selected Point preserves original rows/full IDs/frozen intent (17.16125ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:33:67
+✖ wasm explicit selected MultiPoint preserves original rows/full IDs/frozen intent (3.166833ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:41:36
+✖ wasm failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (3.449125ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+      at async #recoverSelected (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:43:40)
+      at async file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-selected.js:103:322
+      at async setup (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:28:97)
+      at async TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:43:10)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:48:36
+✖ wasm lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (3.017375ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+      at async #recoverSelected (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:43:40)
+      at async file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-selected.js:103:322
+      at async setup (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:28:97)
+      at async TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:49:327)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:55:1
+✖ two actual WASM modules with colliding numeric handles reject foreign State and producer before transport (5.968875ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:66:37
+✖ wasm cancelled borrowed hierarchy read settles exact private ACK before disposal (3.891625ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:73:1
+✖ native and real WASM exact typed Scene, Rows and frozen selection bytes agree (0.415542ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:74:162)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:76:37
+✖ wasm five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (15.891584ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:90:68
+✖ wasm selected reduced Point preserves counts and complete exact membership after owner disposal (29.987541ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:90:68
+✖ wasm selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (22.399334ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:95:37
+✖ wasm late publication abort with rejected cleanup retains known Data guard for retry (5.837042ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+      at async #recoverSelected (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:43:40)
+      at async file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-selected.js:103:322
+      at async setup (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:28:97)
+      at async TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-hierarchy.test.mjs:98:10)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7)
+
+test at packages/xy-node/test/geo-selected-hierarchy.test.mjs:102:37
+✖ wasm pre-aborted drive and prepare remain retryable without dispatch (2.934209ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)

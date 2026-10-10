@@ -1,0 +1,139 @@
+✔ native lost33 recovers same private State and retryable cleanup (31.861625ms)
+✔ native corrupt33 recovers same private State and retryable cleanup (1.154541ms)
+✖ wasm lost33 recovers same private State and retryable cleanup (16.590583ms)
+✖ wasm corrupt33 recovers same private State and retryable cleanup (4.497833ms)
+✔ native nonce attempt cleanup before dispatch allocates once and consumes tombstone (1.427125ms)
+✖ wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone (3.904292ms)
+✔ native lost actual10 is settled by retired nonce receipt without a second State (1.005916ms)
+✖ wasm lost actual10 is settled by retired nonce receipt without a second State (3.313833ms)
+✔ native five scopes and five serial shared-scope allocations keep original paint (1.668458ms)
+✖ wasm five scopes and five serial shared-scope allocations keep original paint (4.998584ms)
+✔ native definite allocation-free handle pressure closes attempt without retrying33 (1.567167ms)
+✖ wasm definite allocation-free handle pressure closes attempt without retrying33 (5.194833ms)
+✔ native nonce tombstone cannot reconstruct consumed43 Query or44 Data (5.216042ms)
+✖ wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data (6.946125ms)
+✖ two actual WASM producers with colliding handles reject edited Scope bridge before33 (13.523292ms)
+✖ complete normalized native/WASM nonce controls match after original handle validation (0.676ms)
+✔ native post-allocation status6 remains uncertain and recovers exact State (0.737375ms)
+✔ native post-allocation status-1 remains uncertain and recovers exact State (0.576459ms)
+✖ wasm post-allocation status6 remains uncertain and recovers exact State (13.451583ms)
+✖ wasm post-allocation status-1 remains uncertain and recovers exact State (4.100541ms)
+✖ delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit (7.496166ms)
+✔ native resource rejection during uncertain replay keeps original allocation recoverable (2.145709ms)
+✖ wasm resource rejection during uncertain replay keeps original allocation recoverable (4.876375ms)
+✔ indexed frames retain full IDs, rows, picking and export after source/index disposal (41.026208ms)
+✔ failed writes and authenticated reads preserve old frame and recover (3.470958ms)
+✔ pending durable write cancellation waits for storage settlement before ACK (12.439125ms)
+✔ callback mutation cannot authorize larger leaf storage (0.749292ms)
+✔ public composition compiles indexed source and exports exact owned frame (42.132541ms)
+✔ leaf work fallback reports explicit reason and does not advance query sequence (0.748667ms)
+✔ real ABI382 full IDs/time, Data read quota, explicit lifecycle (32.87575ms)
+✔ read lease abort: settle before acknowledgment (0.726083ms)
+✔ read lease giant: settle before acknowledgment (0.285625ms)
+✔ read lease failure: settle before acknowledgment (0.330083ms)
+✔ read lease success: settle before acknowledgment (0.394709ms)
+✔ malformed provenance and exact scalar widths rejected (1.56975ms)
+﹣ parsed identity failure drops packet storage before Data disposal (0.066584ms) # SKIP
+ℹ tests 36
+ℹ suites 0
+ℹ pass 22
+ℹ fail 13
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 254.214541
+
+✖ failing tests:
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:35:74
+✖ wasm lost33 recovers same private State and retryable cleanup (16.590583ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:35:74
+✖ wasm corrupt33 recovers same private State and retryable cleanup (4.497833ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:45:37
+✖ wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone (3.904292ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:54:37
+✖ wasm lost actual10 is settled by retired nonce receipt without a second State (3.313833ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:61:37
+✖ wasm five scopes and five serial shared-scope allocations keep original paint (4.998584ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:72:37
+✖ wasm definite allocation-free handle pressure closes attempt without retrying33 (5.194833ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:78:37
+✖ wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data (6.946125ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:85:1
+✖ two actual WASM producers with colliding handles reject edited Scope bridge before33 (13.523292ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:91:1
+✖ complete normalized native/WASM nonce controls match after original handle validation (0.676ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/test/geo-selected-state-nonce.test.mjs:92:118)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:95:64
+✖ wasm post-allocation status6 remains uncertain and recovers exact State (13.451583ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:95:64
+✖ wasm post-allocation status-1 remains uncertain and recovers exact State (4.100541ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:102:1
+✖ delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit (7.496166ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)
+
+test at packages/xy-node/test/geo-selected-state-nonce.test.mjs:110:37
+✖ wasm resource rejection during uncertain replay keeps original allocation recoverable (4.876375ms)
+  TypeError: Selected mutation lacks genuine producer outcome
+      at file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geo-allocation-attempt.js:57:173
+      at async withGeoNativeMutationOutcome (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/packages/xy-node/src/geoscale.js:250:127)

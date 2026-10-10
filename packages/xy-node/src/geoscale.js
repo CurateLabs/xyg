@@ -239,11 +239,25 @@ export async function driveGeoIndexSession(bridge                  ,input       
 // Load generated native bindings only when requested; framing stays host-neutral.
 let nativeCore;
 function core() { return nativeCore ??= Promise.all([import('./native.js'), import('./abi.js')]).then(([native, abi]) => ({...native, GeoNativeError:abi.GeoNativeError})); }
+const nativeMutationScopes=new Set();
+let activeNativeMutationScopes=0;
+function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36].includes(v.getUint32(8,true))||input.length===272&&v.getUint32(8,true)===47&&[35,36].includes(v.getUint32(256,true));}
+/** Per-call native context; newest matching dispatch wins, never a persistent last-result bank. */
+export async function withGeoNativeMutationOutcome(_bridge,request,run){
+ const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');
+ if(activeNativeMutationScopes>=16)throw new RangeError('Selected mutation capture capacity exhausted');activeNativeMutationScopes++;
+ let capture;
+ try{capture={request:input.slice(),latest:undefined,outcome:undefined,closed:false};nativeMutationScopes.add(capture);return await run(returned=>{
+  const original=capture.outcome;if(capture.closed||!original||original.token!==capture.latest)return;
+  if(original.reply){if(returned!==original.returned||!(returned instanceof ArrayBuffer)||returned.byteLength!==256||new Uint8Array(returned).some((x,i)=>x!==original.reply[i]))return;return Object.freeze({reply:returned});}
+  if(returned===original.error)return Object.freeze({status:original.status});
+ });}finally{activeNativeMutationScopes--;if(capture){nativeMutationScopes.delete(capture);capture.closed=true;capture.request=undefined;capture.latest=capture.outcome=undefined;}}
+}
 export async function geoScaleExecute(request) {
  const input=bytes(request);if(input.length<256||input.length>MAX_PACKET)throw new RangeError('invalid geographic request size');
- const native=await core(),out=new Uint8Array(256);
+ const scopes=[...nativeMutationScopes].filter(s=>!s.closed&&input.length===s.request.length&&!input.some((x,i)=>x!==s.request[i])),token={};for(const scope of scopes){scope.latest=token;scope.outcome=undefined;}const native=await core(),out=new Uint8Array(256);
  const status=native.xyGeoScaleExecute(native.pointer(input,'uint8_t *'),BigInt(input.length),native.pointer(out,'uint8_t *'),256n);
- if(status!==0)throw new native.GeoNativeError(status);return out.buffer;
+ if(status!==0){const error=new native.GeoNativeError(status);for(const scope of scopes)if(!scope.closed&&scope.latest===token)scope.outcome=Object.freeze({token,error,status});throw error;}let snapshot;for(const scope of scopes)if(!scope.closed&&scope.latest===token){snapshot??=out.slice();scope.outcome=Object.freeze({token,returned:out.buffer,reply:snapshot});}return out.buffer;
 }
 export async function geoScaleRead(request,budget) {
  budgetBytes(budget);const input=bytes(request);if(input.length<256||input.length>MAX_PACKET||input.length>budget)throw new RangeError('invalid geographic read request size');

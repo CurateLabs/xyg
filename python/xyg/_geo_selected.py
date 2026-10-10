@@ -5,11 +5,17 @@ from __future__ import annotations
 import asyncio
 import struct
 import weakref
+from contextlib import suppress
+from types import SimpleNamespace
+from typing import Any
 
 import numpy as np
 
 from . import _geoscale as g
+from ._geo_allocation_recovery import GeoAllocationAttempt, original_geo_allocation_issuer
 from ._geo_retained import _aprepare, _attach_frame
+
+_NATIVE_EXECUTE = g.execute
 
 _AUTHORITY = object()
 _BRIDGE_UNSET = object()
@@ -401,100 +407,290 @@ class GeoSelectedState(_Owner):
         if record is not None:
             record["live"] = False
 
+    @property
+    def pending_operation(self):
+        return _STATE_AUTHORITIES.get(self, {}).get("mutation")
+
     def begin(self, source, query, *, sequence, indexed=False):
-        """Consume only after successful canonical begin; caller drives explicitly."""
-        self._check()
-        if source._bridge is not self._bridge:
-            raise TypeError("selected State belongs to another transport")
-        if type(indexed) is not bool:
-            raise TypeError("indexed must be boolean")
-        source._check()
-        request = g.encode_request(
-            dict(
-                command=36 if indexed else 35,
-                handle=source.handle,
-                sequence=sequence,
-                query=query,
-                budget=source.budget,
-                payload=struct.pack("<Q", self.handle),
-            )
+        attempt = GeoSelectedMutationAttempt(
+            self, source, query, sequence, indexed, _token=_AUTHORITY
         )
-        reply = g.decode_reply(g.execute(request))
-        if reply["code"] == 10:
-            return dict(fallback=True, reason=reply["fallback_reason_code"], state=self)
-        if (
-            reply["code"] != 0
-            or reply["handle"] != (self.handle if indexed else source.handle)
-            or reply["sequence"] != sequence
-        ):
-            raise ValueError("selected begin ownership reply")
-        self._consume()
-        source._sequence = sequence
-        return GeoSelectedOperation(
-            source, sequence, request, self.scope, reply["handle"], indexed, _token=_AUTHORITY
-        )
+        return attempt.recover()
 
     async def begin_async(self, source, query, *, sequence, indexed=False):
         if source._bridge is None:
             return self.begin(source, query, sequence=sequence, indexed=indexed)
-        self._check()
-        if source._bridge is not self._bridge:
-            raise TypeError("selected State belongs to another transport")
-        if type(indexed) is not bool:
-            raise TypeError("indexed must be boolean")
-        source._check(True)
-        request = g.encode_request(
-            dict(
-                command=36 if indexed else 35,
-                handle=source.handle,
-                sequence=sequence,
-                query=query,
-                budget=source.budget,
-                payload=struct.pack("<Q", self.handle),
-            )
+        attempt = GeoSelectedMutationAttempt(
+            self, source, query, sequence, indexed, _token=_AUTHORITY
         )
-        raw, interrupted = await g._settle(asyncio.create_task(source._bridge.execute(request)))
-        reply = g.decode_reply(raw)
-        if reply["code"] == 10:
+        return await attempt.recover_async()
+
+
+class GeoSelectedMutationAttempt:
+    """Private pre-dispatch State claim; exact mutation/confirmation survive uncertainty."""
+
+    def __init__(self, state, source, query, sequence, indexed, *, _token=None):
+        if _token is not _AUTHORITY or type(indexed) is not bool:
+            raise TypeError("issued selected mutation required")
+        state._check()
+        original = original_geo_allocation_issuer(source)
+        if original.bridge is not state._bridge:
+            raise TypeError("selected State belongs to another transport")
+        source._check(source._bridge is not None)
+        self._state_ref, self._source, self._scope = weakref.ref(state), source, state.scope
+        self._sequence, self._indexed = g._uint(sequence), indexed
+        self._issuer, self._target = original.handle, state.handle if indexed else original.handle
+        self._budget = dict(source.budget)
+        self._bridge = original.bridge
+        self._operation_context = SimpleNamespace(
+            budget=self._budget,
+            bridge=self._bridge,
+            transport=(
+                SimpleNamespace(execute=original.execute, read=original.read)
+                if self._bridge is not None
+                else None
+            ),
+            reader=source._reader,
+            read_page=getattr(source, "_read_page", None),
+            write_page=getattr(source, "_write_page", None),
+        )
+        self._operation = self._active = self._cleanup = None
+        self._closed = False
+        self._claim = claim_selected_state(state, self._bridge)
+        try:
+            self._request = g.encode_request(
+                dict(
+                    command=36 if indexed else 35,
+                    handle=self._issuer,
+                    sequence=self._sequence,
+                    query=query,
+                    budget=self._budget,
+                    payload=struct.pack("<Q", self._claim.handle),
+                )
+            )
+            bridge = original.bridge
+            self._transport = SimpleNamespace(
+                execute=original.execute if bridge is not None else None,
+                native_execute=_NATIVE_EXECUTE,
+            )
+            self._attempt = GeoAllocationAttempt(
+                source, self._transport, self._request, authenticated=True
+            )
+        except BaseException:
+            self._claim.reject()
+            raise
+        _STATE_AUTHORITIES[state]["mutation"] = self
+
+    def _validate(self, packet):
+        magic, version, code, reserved, handle, sequence = struct.unpack_from("<IIIIQQ", packet)
+        if magic != 0x5A475958 or version != 1 or reserved or sequence != self._sequence:
+            raise ValueError("selected mutation ownership reply")
+        if code == 10 and self._indexed:
+            if handle != self._issuer or any(packet[32:48]) or any(packet[52:]):
+                raise ValueError("selected fallback ownership reply")
+            if struct.unpack_from("<I", packet, 48)[0] not in (1, 2):
+                raise ValueError("selected fallback reason")
+            return 0
+        if code != 0 or handle != self._target or any(packet[32:]):
+            raise ValueError("selected mutation ownership reply")
+        return handle
+
+    def _accept(self, packet):
+        if packet is None:
+            if self._attempt.rejected:
+                self._claim.reject()
+            else:
+                self._claim.consume()
+            self._closed = True
+            return None
+        if struct.unpack_from("<I", packet, 8)[0] == 10:
+            self._claim.reject()
+            self._closed = True
+            return dict(
+                fallback=True,
+                reason=struct.unpack_from("<I", packet, 48)[0],
+                state=self._state_ref(),
+            )
+        self._claim.consume()
+        self._source._sequence = self._sequence
+        if self._operation is None:
+            self._operation = GeoSelectedOperation(
+                self._source,
+                self._sequence,
+                self._request,
+                self._scope,
+                self._target,
+                self._indexed,
+                context=self._operation_context,
+                _token=_AUTHORITY,
+            )
+            self._operation._mutation = self
+        return self._operation
+
+    def recover(self):
+        if self._operation is not None and self._operation._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+        if self._bridge is not None:
+            raise RuntimeError("use recover_async for asynchronous mutation")
+        if self._closed or self._cleanup is not None:
+            raise RuntimeError("selected mutation unavailable")
+        try:
+            return self._accept(self._attempt.recover(self._validate))
+        except BaseException:
+            if self._attempt.rejected:
+                self._claim.reject()
+                self._closed = True
+            raise
+
+    async def recover_async(self):
+        if self._operation is not None and self._operation._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+        if self._bridge is None:
+            return self.recover()
+        if self._closed or self._cleanup is not None:
+            raise RuntimeError("selected mutation unavailable")
+        if self._active is None:
+
+            async def run():
+                try:
+                    return self._accept(await self._attempt.recover_async(self._validate))
+                except BaseException:
+                    if self._attempt.rejected:
+                        self._claim.reject()
+                        self._closed = True
+                    raise
+
+            self._active = asyncio.create_task(run())
+        task = self._active
+        try:
+            result, interrupted = await g._settle(task)
             if interrupted:
                 raise asyncio.CancelledError
-            return dict(fallback=True, reason=reply["fallback_reason_code"], state=self)
-        if (
-            reply["code"] != 0
-            or reply["handle"] != (self.handle if indexed else source.handle)
-            or reply["sequence"] != sequence
-        ):
-            raise ValueError("selected begin ownership reply")
-        self._consume()
-        source._sequence = sequence
-        operation = GeoSelectedOperation(
-            source, sequence, request, self.scope, reply["handle"], indexed, _token=_AUTHORITY
-        )
-        if interrupted:
-            try:
-                await operation.cancel_async()
-            finally:
-                if indexed:
-                    await operation.aclose()
-            raise asyncio.CancelledError
-        return operation
+            return result
+        finally:
+            if task.done() and self._active is task:
+                self._active = None
+
+    def close(self):
+        if self._bridge is not None:
+            raise RuntimeError("use aclose for asynchronous mutation")
+        if self._closed:
+            return
+        operation = self.recover()
+        if operation is None or isinstance(operation, dict):
+            return
+        if operation._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; mutation guard retained")
+        if self._attempt.probe_retirement(self._validate) is not None:
+            if self._source._busy:
+                raise RuntimeError("selected mutation read/ACK settlement pending")
+            operation.cancel()
+            if self._indexed:
+                operation.close()
+            if self._attempt.probe_retirement(self._validate) is not None:
+                raise RuntimeError("selected mutation retirement pending")
+        self._attempt.release()
+        self._closed = True
+
+    async def aclose(self):
+        if self._bridge is None:
+            return self.close()
+        if self._closed:
+            return
+        if self._cleanup is None:
+            self._cleanup = asyncio.create_task(self._close_async())
+        task = self._cleanup
+        try:
+            _, interrupted = await g._settle(task)
+            if interrupted:
+                raise asyncio.CancelledError
+        finally:
+            if task.done() and self._cleanup is task:
+                self._cleanup = None
+
+    async def _close_async(self):
+        if self._operation is not None and self._operation._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+        if self._active is not None:
+            await g._settle(self._active)
+        operation = self._accept(await self._attempt.recover_async(self._validate))
+        if operation is None or isinstance(operation, dict):
+            return
+        if operation._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; mutation guard retained")
+        if await self._attempt.probe_retirement_async(self._validate) is not None:
+            active = self._source._active
+            if active is not None and active is not asyncio.current_task():
+                active.cancel()
+                with suppress(asyncio.CancelledError):
+                    await g._settle(active)
+            await operation.cancel_async()
+            if self._indexed:
+                await operation.aclose()
+            if await self._attempt.probe_retirement_async(self._validate) is not None:
+                raise RuntimeError("selected mutation retirement pending")
+        await self._attempt.release_async()
+        self._closed = True
 
 
 class GeoSelectedOperation:
-    def __init__(self, source, sequence, request, scope, handle, indexed, *, _token=None):
+    def __init__(self, source, sequence, request, scope, handle, indexed, *, context, _token=None):
         if _token is not _AUTHORITY:
             raise TypeError("issued selected authority required")
-        self.source, self.sequence, self.request, self.scope = source, sequence, request, scope
-        self.handle, self.indexed, self._replaced = handle, indexed, False
+        self._source, self._sequence, self._request, self._scope = source, sequence, request, scope
+        self._handle, self._indexed, self._replaced = handle, indexed, False
+        self._publication_pending = False
+        self._mutation: GeoSelectedMutationAttempt | None = None
+        # The pre-dispatch attempt owns these references; acceptance never
+        # re-reads caller decorations after a mutation or recovery await.
+        self._budget = context.budget
+        self._reader, self._read_page, self._write_page = (
+            context.reader,
+            context.read_page,
+            context.write_page,
+        )
+        self._bridge, self._transport = context.bridge, context.transport
+        self._context: Any = SimpleNamespace(
+            budget=self._budget, _bridge=self._transport, _reader=self._reader
+        )
+
+    @property
+    def source(self):
+        return self._source
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @property
+    def request(self):
+        return self._request
+
+    @property
+    def scope(self):
+        return self._scope
+
+    @property
+    def handle(self):
+        return self._handle
+
+    @property
+    def indexed(self):
+        return self._indexed
 
     def _published(self, reply):
         if reply["handle"] == self.handle and reply["sequence"] == self.sequence:
             self._replaced = True
 
     def drive(self):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
-        self.source._check()
+        if self.source._busy:
+            raise RuntimeError("source operation already active")
+        if not self.indexed and self.source._closed:
+            raise RuntimeError("source disposed")
         self.source._busy = True
         try:
             if self.indexed:
@@ -503,24 +699,35 @@ class GeoSelectedOperation:
                 return drive_index(
                     self.handle,
                     self.sequence,
-                    self.source.budget,
-                    self.source._reader,
-                    self.source._read_page,
-                    self.source._write_page,
+                    self._budget,
+                    self._reader,
+                    self._read_page,
+                    self._write_page,
                 )
-            return self.source._drive(self.sequence, 4)
+            from ._geo_retained import RetainedGeoSource
+
+            return RetainedGeoSource._drive(self._context, self.sequence, 4, handle=self.handle)
         finally:
             self.source._busy = False
 
     def prepare(self, style):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
-        self.source._check()
+        if self.source._busy:
+            raise RuntimeError("source operation already active")
+        if not self.indexed and self.source._closed:
+            raise RuntimeError("source disposed")
         view = g._bytes(style)
         if len(view) != 48:
             raise TypeError("exact style required")
         style = bytes(view)
-        frame = self.source._prepare(
+        self._publication_pending = self.indexed
+        from ._geo_retained import RetainedGeoSource
+
+        frame = RetainedGeoSource._prepare(
+            self._context,
             19 if self.indexed else 11,
             self.handle,
             self.sequence,
@@ -529,48 +736,68 @@ class GeoSelectedOperation:
         )
         if self.indexed:
             self._replaced = True
-        _attach_frame(self.source, frame, self.sequence, self.request, style)
+        _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
+        self._publication_pending = False
         return frame
 
     def cancel(self):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
-        _execute(9, handle=self.handle, sequence=self.sequence)
+        g.decode_reply(
+            _NATIVE_EXECUTE(
+                g.encode_request(dict(command=9, handle=self.handle, sequence=self.sequence))
+            )
+        )
+        mutation = getattr(self, "_mutation", None)
+        if mutation is not None and mutation._attempt.probe_retirement(mutation._validate) is None:
+            mutation._attempt.release()
 
     async def drive_async(self):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
-        if self.source._bridge is None:
+        if self._bridge is None:
             return self.drive()
-        self.source._check(True)
+        if self.source._busy:
+            raise RuntimeError("source operation already active")
+        if not self.indexed and self.source._closed:
+            raise RuntimeError("source disposed")
         self.source._busy, self.source._active = True, asyncio.current_task()
         try:
             if self.indexed:
                 from ._geo_spatial import drive_index_async
 
                 return await drive_index_async(
-                    self.source._bridge,
+                    self._transport,
                     self.handle,
                     self.sequence,
-                    self.source.budget,
-                    self.source._reader,
-                    self.source._read_page,
-                    self.source._write_page,
+                    self._budget,
+                    self._reader,
+                    self._read_page,
+                    self._write_page,
                 )
             return await g.drive_session(
-                self.source._bridge,
+                self._transport,
                 handle=self.handle,
                 sequence=self.sequence,
-                budget=self.source.budget,
-                read_chunk=self.source._reader,
+                budget=self._budget,
+                read_chunk=self._reader,
             )
         finally:
             self.source._busy, self.source._active = False, None
 
     async def prepare_async(self, style):
-        if self.source._bridge is None:
+        if self._bridge is None:
             return self.prepare(style)
-        self.source._check(True)
+        if self.source._busy:
+            raise RuntimeError("source operation already active")
+        if not self.indexed and self.source._closed:
+            raise RuntimeError("source disposed")
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
         view = g._bytes(style)
@@ -578,63 +805,87 @@ class GeoSelectedOperation:
             raise TypeError("exact style required")
         style = bytes(view)
         if self.indexed:
+            self._publication_pending = True
             frame = await _aprepare(
-                self.source, 19, self.handle, self.sequence, style, _on_reply=self._published
+                self._context, 19, self.handle, self.sequence, style, _on_reply=self._published
             )
             self._replaced = True
         else:
             lease = await g.prepare_scene_data(
-                self.source._bridge,
+                self._transport,
                 handle=self.handle,
                 sequence=self.sequence,
-                budget=self.source.budget,
+                budget=self._budget,
                 style=style,
             )
             from ._geo_retained import OwnedGeoData
 
-            frame = OwnedGeoData(lease.handle, lease.data, self.source._bridge)
+            frame = OwnedGeoData(lease.handle, lease.data, self._transport)
             lease._data = None  # Ownership transfer, no disposal or packet copy.
-        _attach_frame(self.source, frame, self.sequence, self.request, style)
+        _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
+        self._publication_pending = False
         return frame
 
     async def cancel_async(self):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if self._replaced:
             raise RuntimeError("selected query replaced")
-        if self.source._bridge is None:
+        if self._bridge is None:
             return self.cancel()
         _, interrupted = await g._settle(
             asyncio.create_task(
-                self.source._bridge.execute(
+                self._transport.execute(
                     g.encode_request(dict(command=9, handle=self.handle, sequence=self.sequence))
                 )
             )
         )
+        mutation = getattr(self, "_mutation", None)
+        if (
+            mutation is not None
+            and await mutation._attempt.probe_retirement_async(mutation._validate) is None
+        ):
+            await mutation._attempt.release_async()
         if interrupted:
             raise asyncio.CancelledError
 
     async def aclose(self):
-        if self.source._bridge is None:
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+        if self._bridge is None:
             return self.close()
         if not self.indexed:
             raise RuntimeError("canonical SourceSession remains caller-owned")
         if not self._replaced:
             _, interrupted = await g._settle(
                 asyncio.create_task(
-                    self.source._bridge.execute(
-                        g.encode_request(dict(command=10, handle=self.handle))
-                    )
+                    self._transport.execute(g.encode_request(dict(command=10, handle=self.handle)))
                 )
             )
             self._replaced = True
+            mutation = getattr(self, "_mutation", None)
+            if (
+                mutation is not None
+                and await mutation._attempt.probe_retirement_async(mutation._validate) is None
+            ):
+                await mutation._attempt.release_async()
             if interrupted:
                 raise asyncio.CancelledError
 
     def close(self):
+        if self._publication_pending:
+            raise RuntimeError("selected19 publication remains uncertain; guard retained")
         if not self.indexed:
             raise RuntimeError("canonical SourceSession remains caller-owned")
         if not self._replaced:
-            _execute(10, handle=self.handle)
+            g.decode_reply(_NATIVE_EXECUTE(g.encode_request(dict(command=10, handle=self.handle))))
             self._replaced = True
+            mutation = getattr(self, "_mutation", None)
+            if (
+                mutation is not None
+                and mutation._attempt.probe_retirement(mutation._validate) is None
+            ):
+                mutation._attempt.release()
 
 
 def claim_selected_state(state, bridge):

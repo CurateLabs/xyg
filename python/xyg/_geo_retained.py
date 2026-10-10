@@ -167,6 +167,9 @@ class RetainedGeoSource:
             g.execute(g.encode_request(dict(command=4, budget=budget, payload=manifest)))
         )
         self.handle = reply["handle"]
+        from ._geo_allocation_recovery import register_geo_allocation_issuer
+
+        register_geo_allocation_issuer(self, self.handle, self._bridge)
         try:
             self.info = self._drive(0, 3)["source"]
             self._check_kind()
@@ -349,11 +352,27 @@ class RetainedGeoSource:
             )
 
     def close(self):
+        from ._geo_allocation_recovery import (
+            forget_geo_allocation_issuer,
+            original_geo_allocation_issuer,
+        )
+
         if self._closed:
+            forget_geo_allocation_issuer(self)
             return
         self._check()
-        g.execute(g.encode_request(dict(command=10, handle=self.handle)))
+        original = original_geo_allocation_issuer(self)
+        packet = original.execute(g.encode_request(dict(command=10, handle=original.handle)))
+        reply = g.decode_reply(packet)
+        if (
+            reply["code"] != 0
+            or reply["handle"] != original.handle
+            or reply["sequence"] != 0
+            or any(packet[32:])
+        ):
+            raise ValueError("Original issuer disposal acknowledgement mismatch")
         self._closed = True
+        forget_geo_allocation_issuer(self)
 
     @classmethod
     async def create_async(cls, manifest, read_chunk, *, budget, bridge=None):
@@ -368,6 +387,9 @@ class RetainedGeoSource:
         )
         reply = g.decode_reply(raw)
         self.handle = reply["handle"]
+        from ._geo_allocation_recovery import register_geo_allocation_issuer
+
+        register_geo_allocation_issuer(self, self.handle, self._bridge)
         try:
             if interrupted:
                 raise asyncio.CancelledError
@@ -470,12 +492,23 @@ class RetainedGeoSource:
             return
         if self._disposal is None:
             self._disposal = asyncio.create_task(self._dispose_async())
-        _, interrupted = await g._settle(self._disposal)
+        try:
+            _, interrupted = await g._settle(self._disposal)
+        except BaseException:
+            if self._disposal.done():
+                self._disposal = None
+            raise
         if interrupted:
             raise asyncio.CancelledError
 
     async def _dispose_async(self):
+        from ._geo_allocation_recovery import (
+            forget_geo_allocation_issuer_async,
+            original_geo_allocation_issuer,
+        )
+
         if self._closed:
+            await forget_geo_allocation_issuer_async(self)
             return
         if self._bridge is None:
             self.close()
@@ -485,12 +518,24 @@ class RetainedGeoSource:
             active.cancel()
             with suppress(BaseException):
                 await g._settle(active)
-        await g._settle(
+        original = original_geo_allocation_issuer(self)
+        packet, interrupted = await g._settle(
             asyncio.create_task(
-                self._bridge.execute(g.encode_request(dict(command=10, handle=self.handle)))
+                original.execute(g.encode_request(dict(command=10, handle=original.handle)))
             )
         )
+        reply = g.decode_reply(packet)
+        if (
+            reply["code"] != 0
+            or reply["handle"] != original.handle
+            or reply["sequence"] != 0
+            or any(packet[32:])
+        ):
+            raise ValueError("Original issuer disposal acknowledgement mismatch")
         self._closed = True
+        await forget_geo_allocation_issuer_async(self)
+        if interrupted:
+            raise asyncio.CancelledError
 
 
 def _membership_payload(cell, max_projected_vertices, cursor):
@@ -716,15 +761,21 @@ def retained_frame_issued_authority(frame):
     return (*producer, *record[3:])
 
 
-def _attach_frame(source, frame, sequence, query_packet, style, _provenance=None):
+_FRAME_BRIDGE_UNSET = object()
+
+
+def _attach_frame(
+    source, frame, sequence, query_packet, style, _provenance=None, *, _bridge=_FRAME_BRIDGE_UNSET
+):
+    producer = source._bridge if _bridge is _FRAME_BRIDGE_UNSET else _bridge
     try:
-        bridge = weakref.ref(source._bridge) if source._bridge is not None else None
+        bridge = weakref.ref(producer) if producer is not None else None
     except TypeError:
         bridge = None
     _FRAME_AUTHORITIES[frame] = (
         weakref.ref(source),
         bridge,
-        id(source._bridge),
+        id(producer),
         frame.handle,
         sequence,
         bytes(query_packet),

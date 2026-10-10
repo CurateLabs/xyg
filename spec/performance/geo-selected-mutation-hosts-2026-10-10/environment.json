@@ -1,0 +1,18 @@
+{
+  "recordedAt": "2026-10-10",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "dependencyHead": "f3625a31fb6d03369530ff89d7bd9b9e46f0d774",
+  "compilerInputs": 205,
+  "native": {
+    "path": "/Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedmutationhosts/target/release/libxyg_core.dylib",
+    "sha256": "2310768d02d25b56579c3da358cc243f63629798a49cb7e652308d76c5c9d8f0"
+  },
+  "wasm": {
+    "sha256": "9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d",
+    "rawBytes": 1505840,
+    "gzipLevel6Bytes": 618550
+  },
+  "scope": "Bounded native/Worker selected35/36 lifecycle controls; no selected19 public adoption or massive performance claim.",
+  "historicalRedScope": "Thread/nested red diagnostics used earlier mutation core; Python async response-context red/green used current2310768 native before normal205 ancestry adoption. Final proofs use205-input source-verified copied pair."
+}

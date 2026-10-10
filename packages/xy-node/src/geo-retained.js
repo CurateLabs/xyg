@@ -8,7 +8,10 @@ import {
   geoScaleExecute,
   parseGeoRowsData,
 } from "./geoscale.js";
+import {forgetSelectedGeoAllocationIssuer} from './geo-allocation-attempt.js';
 const HEADER = 256;
+const allocationIssuerOrigins=new WeakMap();
+export function registerRetainedAllocationIssuer(owner,bridge,handle){allocationIssuerOrigins.set(owner,Object.freeze({bridge,handle,execute:bridge.execute.bind(bridge)}));}
 function uint(n, bits = 64) {
   if (typeof n !== "bigint" || n < 0n || n >= 1n << BigInt(bits))
     throw new TypeError(`expected u${bits} bigint`);
@@ -154,6 +157,7 @@ export class RetainedGeoSource {
     source.handle = decode(
       await bridge.execute(encode({ command: 4, budget, payload: manifest })),
     ).handle;
+    registerRetainedAllocationIssuer(source,bridge,source.handle);
     try {
       const r = await driveGeoSession(bridge, {
         handle: source.handle,
@@ -304,16 +308,14 @@ export class RetainedGeoSource {
       .then(() => {});
   }
   dispose() {
-    return (this.disposing ??= (async () => {
-      this.abort?.abort();
-      if (this.active)
-        try {
-          await this.active;
-        } catch {}
-      await this.bridge.execute(encode({ command: 10, handle: this.handle }));
-      this.closed = true;
-    })());
+    return this.disposing??=Promise.resolve().then(async()=>{
+      this.abort?.abort();if(this.active)try{await this.active;}catch{}
+      const issuer=allocationIssuerOrigins.get(this);if(!issuer)throw new TypeError('Original Source/Index issuer required');
+      if(!this.closed){const packet=await issuer.execute(encode({command:10,handle:issuer.handle})),reply=decode(packet);if(reply.code!==0||reply.handle!==issuer.handle||reply.sequence!==0n||new Uint8Array(packet).subarray(32).some(x=>x))throw new TypeError('Original issuer disposal acknowledgement mismatch');this.closed=true;}
+      await forgetSelectedGeoAllocationIssuer(issuer.bridge,issuer.handle);
+    }).catch(error=>{this.disposing=undefined;throw error;});
   }
+
 }
 export function parseGeoPickData(packet, owner, sequence) {
   const b = new Uint8Array(packet),
