@@ -1,3 +1,5 @@
+/** Explicit selected-state owners. Geometry, joining and count policy stay in Rust. */
+import { captureGeoSceneDataIssuer } from './geoscale.js';
 import type { XygGeoScaleBridge, XygGeoQueryBudget, XygGeoScaleQuery, XygGeoReadTicket } from './geoscale.js';
 declare const AUTHORITY: unique symbol;
 export declare function createGeoSelectedScope(bridge: XygGeoScaleBridge, input: {
@@ -44,7 +46,7 @@ export declare class GeoSelectedState {
     private owner;
     private bridge;
     readonly scope: GeoSelectedScope;
-    constructor(bridge: XygGeoScaleBridge, handle: bigint, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt);
+    constructor(bridge: XygGeoScaleBridge, handle: bigint, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt, sceneIssuer?: ReturnType<typeof captureGeoSceneDataIssuer>);
     get handle(): bigint;
     check(): void;
     belongsTo(bridge: XygGeoScaleBridge): boolean;
@@ -94,7 +96,7 @@ export declare class GeoSelectedOperation {
         pageRows: number;
     };
     get scope(): GeoSelectedScope;
-    constructor(bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint, indexed: boolean, budget: XygGeoQueryBudget, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt);
+    constructor(bridge: XygGeoScaleBridge, handle: bigint, sequence: bigint, indexed: boolean, budget: XygGeoQueryBudget, scope: GeoSelectedScope, token: typeof AUTHORITY, mutation?: GeoSelectedMutationAttempt, sceneIssuer?: ReturnType<typeof captureGeoSceneDataIssuer>);
     drive(input: {
         readChunk?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;
         readPage?: (ticket: XygGeoReadTicket, signal?: AbortSignal) => Promise<ArrayBuffer | Uint8Array>;

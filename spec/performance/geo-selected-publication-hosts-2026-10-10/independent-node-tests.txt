@@ -1,0 +1,18 @@
+✔ lost selected19 publication recovers exact Data after lost receipt (35.042166ms)
+✔ actual19 confirm settles its distinct Data lifetime (1.329958ms)
+✔ actual19 read settles its distinct Data lifetime (1.004959ms)
+✔ actual19 lost10 settles its distinct Data lifetime (0.780875ms)
+✔ actual19 forget settles its distinct Data lifetime (1.189042ms)
+✔ actual19 microtask settles its distinct Data lifetime (2.678583ms)
+✔ 20 sequential19 publications reclaim bounded16 host and engine banks (6.102208ms)
+✔ knownData two failed reads remain owned until exact cleanup, never recreated19 (1.0145ms)
+✔ dispose waits complete in-flight19 read then drops private views before Data10 (12.960375ms)
+✔ genuine19 nonadmission preserves completeQuery and private capability cannot be cloned (0.803ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 108.875833

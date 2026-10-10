@@ -4,8 +4,8 @@ import type {XygGeoScaleBridge} from './63_geo_source';
 export type GeoAllocationOutcome=Readonly<{reply?:ArrayBuffer;code?:string;status?:number|null}>;
 export type GeoAllocationOutcomeReader=(returned:unknown)=>GeoAllocationOutcome|undefined;
 export type GeoAllocationOutcomeScope=<T>(request:ArrayBuffer,run:(outcome:GeoAllocationOutcomeReader)=>Promise<T>)=>Promise<T>;
-type SelectedReceipt=Readonly<{code:0|10|22;handle:bigint;reason?:number}>;
-function selectedPacket(receipt:SelectedReceipt,sequence:bigint){const packet=new ArrayBuffer(256),v=new DataView(packet);v.setUint32(0,0x5a475958,true);v.setUint32(4,1,true);v.setUint32(8,receipt.code,true);v.setBigUint64(16,receipt.handle,true);v.setBigUint64(24,sequence,true);if(receipt.code===10)v.setUint32(48,receipt.reason!,true);return packet;}
+type SelectedReceipt=Readonly<{code:0|10|22;handle:bigint;reason?:number;dataLength?:bigint;sourceHandle?:bigint}>;
+function selectedPacket(receipt:SelectedReceipt,sequence:bigint){const packet=new ArrayBuffer(256),v=new DataView(packet);v.setUint32(0,0x5a475958,true);v.setUint32(4,1,true);v.setUint32(8,receipt.code,true);v.setBigUint64(16,receipt.handle,true);v.setBigUint64(24,sequence,true);if(receipt.dataLength!==undefined){v.setBigUint64(32,receipt.dataLength,true);v.setBigUint64(40,receipt.sourceHandle!,true);}if(receipt.code===10)v.setUint32(48,receipt.reason!,true);return packet;}
 const issuers=new WeakMap<object,Map<number,{nonce:bigint;dead:boolean;attempt?:GeoAllocationAttempt;journalNonce?:bigint;journalAttempt?:GeoAllocationAttempt}>>();
 function terminal(packet:ArrayBuffer,sequence:bigint,target?:bigint){
  if(!(packet instanceof ArrayBuffer)||packet.byteLength!==256)throw new TypeError('Fixed allocation acknowledgement required');
@@ -19,15 +19,16 @@ export class GeoAllocationAttempt {
  #transport:XygGeoScaleBridge;#request:ArrayBuffer;#command:number;#issuer:bigint;#sequence:bigint;#nonce:bigint;#target=0n;
  #receipt:ArrayBuffer|undefined;#confirmed=false;#retired=false;#rejected=false;#uncertain=false;#active:Promise<ArrayBuffer|undefined>|undefined;#released=false;#slot:{nonce:bigint;dead:boolean;attempt?:GeoAllocationAttempt;journalNonce?:bigint;journalAttempt?:GeoAllocationAttempt};#outcome:GeoAllocationOutcomeScope|undefined;#fallback:SelectedReceipt|undefined;#selectedReceipt:SelectedReceipt|undefined;
  constructor(owner:object,transport:XygGeoScaleBridge,request:ArrayBuffer,operationSequence?:bigint,outcome?:GeoAllocationOutcomeScope){
-  if(!(request instanceof ArrayBuffer)||request.byteLength<256||request.byteLength>280)throw new TypeError('Bounded allocation request required');
-  const v=new DataView(request),command=v.getUint32(8,true);if(![26,27,28,29,35,36,45].includes(command)||v.getBigUint64(240,true)!==0n)throw new TypeError('Canonical allocation request required');
-  if([35,36].includes(command)&&(request.byteLength!==264||!outcome))throw new TypeError('Authenticated selected mutation framing required');this.#outcome=outcome;
+  if(!(request instanceof ArrayBuffer)||request.byteLength<256||request.byteLength>304)throw new TypeError('Bounded allocation request required');
+  const v=new DataView(request),command=v.getUint32(8,true);if(![19,26,27,28,29,35,36,45].includes(command)||v.getBigUint64(240,true)!==0n)throw new TypeError('Canonical allocation request required');
+  if([35,36].includes(command)&&(request.byteLength!==264||!outcome))throw new TypeError('Authenticated selected mutation framing required');if(command===19&&(request.byteLength!==304||!outcome))throw new TypeError('Authenticated selected publication framing required');this.#outcome=outcome;
   let commands=issuers.get(owner);if(!commands){commands=new Map();issuers.set(owner,commands);}let slot=commands.get(command);if(!slot){slot={nonce:0n,dead:false};commands.set(command,slot);}
   if(slot.dead)throw new Error('Allocation issuer disposed');
   if(slot.attempt&&!slot.attempt.settled)throw new Error('Previous allocation confirmation remains pending');
   if(slot.nonce===0xffffffffffffffffn)throw new RangeError('Allocation nonce exhausted');
   this.#transport=Object.freeze({execute:transport.execute.bind(transport),read:transport.read.bind(transport)});this.#command=command;this.#issuer=v.getBigUint64(16,true);this.#sequence=operationSequence??v.getBigUint64(24,true);this.#nonce=slot.nonce+1n;this.#request=request.slice(0);new DataView(this.#request).setBigUint64(240,this.#nonce,true);this.#slot=slot;slot.nonce=this.#nonce;slot.attempt=this;
  }
+ get request(){return this.#request.slice(0);}
  get settled(){return this.#rejected||!!this.#fallback||this.#confirmed&&(!this.#retired||this.#released);}get nonjournaled(){return !!this.#fallback;}get released(){return this.#released;}get retired(){return this.#retired;}get rejected(){return this.#rejected;}
  recover(validate:(packet:ArrayBuffer)=>bigint):Promise<ArrayBuffer|undefined>{
   if(this.#fallback)return Promise.resolve(selectedPacket(this.#fallback,this.#sequence));if(this.#rejected)return Promise.resolve(undefined);if(this.#retired&&this.#confirmed)return this.release().then(()=>undefined);if(this.#active)return this.#active;
@@ -44,7 +45,7 @@ export class GeoAllocationAttempt {
    if(code===22){terminal(packet,this.#sequence);return Object.freeze({code:22 as const,handle:0n});}
    const target=validate(packet);
    if(this.#command===36&&code===10){if(target!==0n)throw new TypeError('Nonjournaled fallback requires no target');return Object.freeze({code:10 as const,handle:this.#issuer,reason:v.getUint32(48,true)});}
-   if(target===0n||this.#target!==0n&&this.#target!==target)throw new TypeError('Allocation target changed');return Object.freeze({code:0 as const,handle:target});
+   if(target===0n||this.#target!==0n&&this.#target!==target)throw new TypeError('Allocation target changed');return Object.freeze({code:0 as const,handle:target,...(this.#command===19?{dataLength:v.getBigUint64(32,true),sourceHandle:v.getBigUint64(40,true)}:{})});
   });
   if(receipt.code===10){this.#fallback=receipt;return selectedPacket(receipt,this.#sequence);}
   this.#selectedReceipt=receipt;if(receipt.code===22)this.#retired=true;else this.#target=receipt.handle;
@@ -79,6 +80,6 @@ export function trackSelectedGeoAllocation(token:ReturnType<typeof selectedGeoAl
 /** After actual issuer disposal, or a bounded Scope cleanup probe; never sends Source10. */
 export async function forgetSelectedGeoAllocationIssuer(bridge:XygGeoScaleBridge,handle:bigint){
  const bank=selectedIssuers.get(bridge),token=bank?.get(handle);if(!token)return;
- for(const attempt of token.attempts){if(attempt.rejected||attempt.nonjournaled)continue;const packet=await attempt.probeRetirement(raw=>new DataView(raw).getBigUint64(16,true));if(packet!==undefined)return;await attempt.release();}
+ for(const attempt of token.attempts){if(attempt.rejected||attempt.nonjournaled||attempt.released)continue;const packet=await attempt.probeRetirement(raw=>new DataView(raw).getBigUint64(16,true));if(packet!==undefined)return;await attempt.release();}
  const commands=issuers.get(token);if(commands){for(const slot of commands.values()){const attempt=slot.journalAttempt;if(attempt)await attempt.forget();}for(const slot of commands.values())slot.dead=true;}bank!.delete(handle);
 }

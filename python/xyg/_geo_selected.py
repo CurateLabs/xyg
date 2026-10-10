@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import traceback
 import weakref
 from contextlib import suppress
 from types import SimpleNamespace
@@ -13,9 +14,10 @@ import numpy as np
 
 from . import _geoscale as g
 from ._geo_allocation_recovery import GeoAllocationAttempt, original_geo_allocation_issuer
-from ._geo_retained import _aprepare, _attach_frame
+from ._geo_retained import OwnedGeoData, _attach_frame, _owned_data_identity
 
 _NATIVE_EXECUTE = g.execute
+_NATIVE_READ = g.read
 
 _AUTHORITY = object()
 _BRIDGE_UNSET = object()
@@ -633,6 +635,250 @@ class GeoSelectedMutationAttempt:
         self._closed = True
 
 
+class _SelectedPublishedFrame(OwnedGeoData):
+    """Same genuine Frame authority; disposal additionally settles its19 birth."""
+
+    def __init__(self, publication, data):
+        super().__init__(publication.handle, data, publication.bridge)
+        self._publication_owner = publication
+        self._frame_cleanup = None
+
+    def close(self):
+        identity = _owned_data_identity(self)
+        if identity.bridge is not None:
+            raise RuntimeError("use aclose for an asynchronous owner")
+        if not self._closed:
+            self._data = None
+            self._publication_owner.close()
+            identity.disposed = True
+            for callback, _ in identity.hooks:
+                callback()
+            identity.hooks.clear()
+            self._closed = True
+
+    async def aclose(self):
+        identity = _owned_data_identity(self)
+        if identity.bridge is None:
+            return self.close()
+        if self._closed:
+            return
+        if self._frame_cleanup is None:
+
+            async def run():
+                self._data = None
+                await self._publication_owner.aclose()
+                identity.disposed = True
+                while identity.hooks:
+                    _, callback = identity.hooks[0]
+                    await callback()
+                    identity.hooks.pop(0)
+                self._closed = True
+
+            self._frame_cleanup = asyncio.create_task(run())
+        cleanup = self._frame_cleanup
+        try:
+            _, interrupted = await g._settle(cleanup)
+        finally:
+            if cleanup.done() and self._frame_cleanup is cleanup:
+                self._frame_cleanup = None
+        if interrupted:
+            raise asyncio.CancelledError
+
+
+class _SelectedPublication:
+    """Exact original304 request, retained before19 and through knownData cleanup."""
+
+    def __init__(self, context, handle, sequence, style):
+        self.handle, self.sequence, self.style = handle, sequence, style
+        self.budget, self.bridge, self.transport = (
+            dict(context.budget),
+            context.bridge,
+            context.transport,
+        )
+        self._execute = self.transport.execute if self.transport is not None else None
+        self._read = self.transport.read if self.transport is not None else None
+        self._frame, self._closed, self._active, self._cleanup = None, False, None, None
+        request = g.encode_request(
+            dict(command=19, handle=handle, sequence=sequence, budget=self.budget, payload=style)
+        )
+        self.attempt = GeoAllocationAttempt(
+            self,
+            SimpleNamespace(execute=self._execute, native_execute=_NATIVE_EXECUTE),
+            request,
+            authenticated=True,
+        )
+
+    def _validate(self, raw):
+        magic, version, code, reserved, handle, sequence, length, source = struct.unpack_from(
+            "<IIIIQQQQ", raw
+        )
+        if (
+            len(raw) != 256
+            or magic != 0x5A475958
+            or version != 1
+            or code
+            or reserved
+            or handle != self.handle
+            or sequence != self.sequence
+            or source != self.handle
+            or length > g.MAX_PACKET
+            or 4 * length > self.budget["processor_bytes"]
+            or any(raw[48:])
+        ):
+            raise ValueError("selected publication binding mismatch")
+        return handle
+
+    def _read_frame(self, raw, packet):
+        data = None
+        try:
+            reply = g.decode_reply(raw)
+            if len(packet) != reply["data_length"]:
+                raise ValueError("selected publication packet length")
+            data = g.parse_scene_data(packet)
+            if (
+                data.identity["session_handle"] != self.handle
+                or data.identity["sequence"] != self.sequence
+            ):
+                raise ValueError("selected publication packet identity")
+            self._frame = _SelectedPublishedFrame(self, data)
+            return self._frame
+        except BaseException as error:
+            packet = data = None
+            traceback.clear_frames(error.__traceback__)
+            raise
+
+    def prepare(self):
+        if self._closed:
+            raise RuntimeError("selected publication closed")
+        if self._frame is not None:
+            return self._frame
+        raw = self.attempt.recover(self._validate)
+        if raw is None:
+            raise RuntimeError("selected publication rejected or retired")
+        packet = _NATIVE_READ(
+            g.encode_request(dict(command=23, handle=self.handle)), self.budget["processor_bytes"]
+        )
+        return self._read_frame(raw, packet)
+
+    async def prepare_async(self):
+        reader = self._read
+        if reader is None:
+            raise RuntimeError("asynchronous publication requires captured reader")
+        if self._closed:
+            raise RuntimeError("selected publication closed")
+        if self._frame is not None:
+            return self._frame
+        if self._active is None:
+
+            async def run():
+                raw = await self.attempt.recover_async(self._validate)
+                if raw is None:
+                    raise RuntimeError("selected publication rejected or retired")
+                packet, interrupted = await g._settle(
+                    asyncio.create_task(
+                        reader(g.encode_request(dict(command=23, handle=self.handle)))
+                    )
+                )
+                if interrupted:
+                    packet = None
+                    raise asyncio.CancelledError
+                return self._read_frame(raw, packet)
+
+            self._active = asyncio.create_task(run())
+        task = self._active
+        try:
+            result, interrupted = await g._settle(task)
+            if interrupted:
+                raise asyncio.CancelledError
+            return result
+        finally:
+            if task.done():
+                self._active = None
+
+    def close(self):
+        if self._closed:
+            return
+        if self._frame is not None:
+            self._frame._data = None
+        if self.attempt._released:
+            self.attempt.forget()
+            self._closed, self._frame = True, None
+            return
+        known = self.attempt.recover(self._validate)
+        if known is not None:
+            try:
+                raw = _NATIVE_EXECUTE(g.encode_request(dict(command=10, handle=self.handle)))
+                from ._geo_retained import _confirm_data_disposal
+
+                _confirm_data_disposal(raw, self.handle)
+            except BaseException:
+                if self.attempt.probe_retirement(self._validate) is not None:
+                    raise
+        if not self.attempt.rejected:
+            if self.attempt.probe_retirement(self._validate) is not None:
+                raise RuntimeError("selected Data retirement pending")
+            self.attempt.release()
+            self.attempt.forget()
+        self._closed = True
+        self._frame = None
+
+    async def _close_async(self):
+        if self._execute is None:
+            return self.close()
+        if self._closed:
+            return
+        interrupted = False
+        if self._active is not None:
+            # The exact known/uncertain attempt is settled below even if the
+            # preparer rejected after its callback and read flight settled.
+            with suppress(BaseException):
+                _, interrupted = await g._settle(self._active)
+        if self._frame is not None:
+            self._frame._data = None
+        if self.attempt._released:
+            await self.attempt.forget_async()
+            self._closed, self._frame = True, None
+            return
+        known = await self.attempt.recover_async(self._validate)
+        if known is not None:
+            try:
+                raw, cancelled = await g._settle(
+                    asyncio.create_task(
+                        self._execute(g.encode_request(dict(command=10, handle=self.handle)))
+                    )
+                )
+                interrupted |= cancelled
+                from ._geo_retained import _confirm_data_disposal
+
+                _confirm_data_disposal(raw, self.handle)
+            except BaseException:
+                if await self.attempt.probe_retirement_async(self._validate) is not None:
+                    raise
+        if not self.attempt.rejected:
+            if await self.attempt.probe_retirement_async(self._validate) is not None:
+                raise RuntimeError("selected Data retirement pending")
+            await self.attempt.release_async()
+            await self.attempt.forget_async()
+        self._closed = True
+        self._frame = None
+        if interrupted:
+            raise asyncio.CancelledError
+
+    async def aclose(self):
+        if self._closed:
+            return
+        if self._cleanup is None:
+            self._cleanup = asyncio.create_task(self._close_async())
+        task = self._cleanup
+        try:
+            _, interrupted = await g._settle(task)
+            if interrupted:
+                raise asyncio.CancelledError
+        finally:
+            if task.done():
+                self._cleanup = None
+
+
 class GeoSelectedOperation:
     def __init__(self, source, sequence, request, scope, handle, indexed, *, context, _token=None):
         if _token is not _AUTHORITY:
@@ -640,6 +886,9 @@ class GeoSelectedOperation:
         self._source, self._sequence, self._request, self._scope = source, sequence, request, scope
         self._handle, self._indexed, self._replaced = handle, indexed, False
         self._publication_pending = False
+        self._publication = None
+        self._closing = False
+        self._publication_context = context
         self._mutation: GeoSelectedMutationAttempt | None = None
         # The pre-dispatch attempt owns these references; acceptance never
         # re-reads caller decorations after a mutation or recovery await.
@@ -711,9 +960,9 @@ class GeoSelectedOperation:
             self.source._busy = False
 
     def prepare(self, style):
-        if self._publication_pending:
-            raise RuntimeError("selected19 publication remains uncertain; guard retained")
-        if self._replaced:
+        if self._closing:
+            raise RuntimeError("selected publication closing")
+        if not self._publication_pending and self._replaced:
             raise RuntimeError("selected query replaced")
         if self.source._busy:
             raise RuntimeError("source operation already active")
@@ -723,19 +972,26 @@ class GeoSelectedOperation:
         if len(view) != 48:
             raise TypeError("exact style required")
         style = bytes(view)
-        self._publication_pending = self.indexed
-        from ._geo_retained import RetainedGeoSource
-
-        frame = RetainedGeoSource._prepare(
-            self._context,
-            19 if self.indexed else 11,
-            self.handle,
-            self.sequence,
-            style,
-            _on_reply=self._published if self.indexed else None,
-        )
         if self.indexed:
+            if self._publication is not None and self._publication.style != style:
+                raise ValueError("pending publication requires exact original style")
+            if self._publication is None:
+                self._publication = _SelectedPublication(
+                    self._publication_context, self.handle, self.sequence, style
+                )
+            self._publication_pending = True
+            try:
+                frame = self._publication.prepare()
+            except BaseException as error:
+                traceback.clear_frames(error.__traceback__)
+                if self._publication.attempt.rejected:
+                    self._publication, self._publication_pending = None, False
+                raise
             self._replaced = True
+        else:
+            from ._geo_retained import RetainedGeoSource
+
+            frame = RetainedGeoSource._prepare(self._context, 11, self.handle, self.sequence, style)
         _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
         self._publication_pending = False
         return frame
@@ -790,25 +1046,35 @@ class GeoSelectedOperation:
             self.source._busy, self.source._active = False, None
 
     async def prepare_async(self, style):
+        if self._closing:
+            raise RuntimeError("selected publication closing")
         if self._bridge is None:
             return self.prepare(style)
         if self.source._busy:
             raise RuntimeError("source operation already active")
-        if not self.indexed and self.source._closed:
-            raise RuntimeError("source disposed")
-        if self._publication_pending:
-            raise RuntimeError("selected19 publication remains uncertain; guard retained")
-        if self._replaced:
+        if not self._publication_pending and self._replaced:
             raise RuntimeError("selected query replaced")
         view = g._bytes(style)
         if len(view) != 48:
             raise TypeError("exact style required")
         style = bytes(view)
         if self.indexed:
+            if self._publication is not None and self._publication.style != style:
+                raise ValueError("pending publication requires exact original style")
+            if self._publication is None:
+                self._publication = _SelectedPublication(
+                    self._publication_context, self.handle, self.sequence, style
+                )
             self._publication_pending = True
-            frame = await _aprepare(
-                self._context, 19, self.handle, self.sequence, style, _on_reply=self._published
-            )
+            try:
+                frame = await self._publication.prepare_async()
+                if self._closing:
+                    raise RuntimeError("selected publication closing")
+            except BaseException as error:
+                traceback.clear_frames(error.__traceback__)
+                if self._publication.attempt.rejected:
+                    self._publication, self._publication_pending = None, False
+                raise
             self._replaced = True
         else:
             lease = await g.prepare_scene_data(
@@ -818,10 +1084,8 @@ class GeoSelectedOperation:
                 budget=self._budget,
                 style=style,
             )
-            from ._geo_retained import OwnedGeoData
-
             frame = OwnedGeoData(lease.handle, lease.data, self._transport)
-            lease._data = None  # Ownership transfer, no disposal or packet copy.
+            lease._data = None
         _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
         self._publication_pending = False
         return frame
@@ -851,7 +1115,12 @@ class GeoSelectedOperation:
 
     async def aclose(self):
         if self._publication_pending:
-            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+            assert self._publication is not None
+            self._closing = True
+            await self._publication.aclose()
+            self._publication_pending = False
+            self._replaced = not self._publication.attempt.rejected
+            return
         if self._bridge is None:
             return self.close()
         if not self.indexed:
@@ -874,7 +1143,12 @@ class GeoSelectedOperation:
 
     def close(self):
         if self._publication_pending:
-            raise RuntimeError("selected19 publication remains uncertain; guard retained")
+            assert self._publication is not None
+            self._closing = True
+            self._publication.close()
+            self._publication_pending = False
+            self._replaced = not self._publication.attempt.rejected
+            return
         if not self.indexed:
             raise RuntimeError("canonical SourceSession remains caller-owned")
         if not self._replaced:
