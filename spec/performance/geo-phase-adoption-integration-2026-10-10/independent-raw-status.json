@@ -1,0 +1,82 @@
+[
+  {
+    "script": "geo_frame_leases_conformance",
+    "exit": 0,
+    "seconds": 0.222
+  },
+  {
+    "script": "geo_overview_membership_engine_conformance",
+    "exit": 0,
+    "seconds": 0.435
+  },
+  {
+    "script": "geo_overview_domain_members_conformance",
+    "exit": 0,
+    "seconds": 0.126
+  },
+  {
+    "script": "geo_allocation_recovery_conformance",
+    "exit": 0,
+    "seconds": 0.132
+  },
+  {
+    "script": "geo_selected_mutation_recovery_conformance",
+    "exit": 0,
+    "seconds": 0.417
+  },
+  {
+    "script": "geo_selected_publication_recovery_conformance",
+    "exit": 0,
+    "seconds": 0.434
+  },
+  {
+    "script": "geo_snapshot_recovery_conformance",
+    "exit": 0,
+    "seconds": 0.141
+  },
+  {
+    "script": "gen_geo_overview_wire",
+    "exit": 1,
+    "seconds": 0.2
+  },
+  {
+    "script": "geo_overview_conformance",
+    "exit": 0,
+    "seconds": 0.146
+  },
+  {
+    "script": "gen_geo_selected_wire",
+    "exit": 0,
+    "seconds": 0.173
+  },
+  {
+    "script": "geo_selected_conformance",
+    "exit": 0,
+    "seconds": 0.334
+  },
+  {
+    "script": "gen_geo_hierarchy_node",
+    "exit": 0,
+    "seconds": 0.071
+  },
+  {
+    "script": "gen_geo_overview_hosts",
+    "exit": 0,
+    "seconds": 0.427
+  },
+  {
+    "script": "geo_hierarchy_conformance",
+    "exit": 0,
+    "seconds": 0.63
+  },
+  {
+    "script": "geo_selected_hierarchy_conformance",
+    "exit": 0,
+    "seconds": 1.328
+  },
+  {
+    "script": "geo_hierarchy_recovery_conformance",
+    "exit": 0,
+    "seconds": 1.377
+  }
+]
