@@ -1,0 +1,22 @@
+{
+  "js/src/63_geo_source.ts": "8c3dc9ba68f9c2be55559e9b24755f82ad242f6caee594ec665f90c760aa559e",
+  "js/src/68_geo_selected.ts": "fd55227b6c329fb25dafff93c2589c3f58970536ab62b311012b9834e428aa39",
+  "js/src/72_geo_allocation_attempt.ts": "78401c037e97d9d1eea4da12c7b6be84c2618aa86ccecbc17805782c2e272778",
+  "packages/xy-node/src/geo-allocation-attempt.js": "8f45c4e7b8d4faa46e89e1ec7afa587268b5c908bbba7861eb2f777798caae50",
+  "packages/xy-node/src/geo-selected.d.ts": "7f77ba1411f8dbf9e64505fe43817566fbb6e26c20e31233739ed318e2ec5a47",
+  "packages/xy-node/src/geo-selected.js": "faacabe853ac8daafd7ce25814e298dc9be148abec75e0a8358d3438589f8d96",
+  "packages/xy-node/src/geoscale.d.ts": "d48024ef22ee0267ff358dd1f78fc1098f4ff513ad8fba908b5a86241237dd97",
+  "packages/xy-node/src/geoscale.js": "fbb990fb0c212e7264ee9d3336a21084089e211b251b3c0ed2efc9ac2f482bba",
+  "packages/xy-node/test/geo-selected-mutation-hosts.test.mjs": "e0b2433e590b32e6a2fead15fcd2dd1c94fb36840f3a1383f281edcfc5aab137",
+  "packages/xy-node/test/geo-selected-publication-hosts.test.mjs": "99cccb4e71198da4c19a7d5284e2c5ea9bce85c7b8b8ab57b84d35544057edac",
+  "python/xyg/_geo_allocation_recovery.py": "17e057d409f89e85c1d9d0334927301498baec09f75af4e4b6d8e14621babd58",
+  "python/xyg/_geo_selected.py": "48f0dc02d77b0734ca24ecfe4b598e90001ae44ad9160d758730a747d591bbfe",
+  "python/xyg/_geoscale.py": "904dfec9ac85ccb014c6baa03b5d0c0ae4c6d19c41ed08528307ddbe96a72c17",
+  "scripts/gen_geo_overview_hosts.mjs": "a6eb352c7e60cf86095b26ccf19ccb7c0f7aa8d8b8fb9365b13fcc07633797f1",
+  "scripts/gen_geo_selected_wire.mjs": "a76fc75438682e2ea4ae82e56598f599e191159bc108459a0cf040f47339acb4",
+  "scripts/geo_selected_publication_hosts_smoke.mjs": "8785e81bb83566f6567d8c8ccf0c8125cbce68aeb636f7ae78ac358243aa1aeb",
+  "spec/design/geo-selected-mutation-hosts.md": "f92d10ad02c05f6e53e8b780860e062d35f5d5af3a5702ab6ae6eaa0fd8eb657",
+  "spec/design/geo-selected-publication-hosts.md": "d5f3098757d802f1a6e143671a277612ea968dc1faad893dda82da7ab2a0940b",
+  "tests/browser/geo_selected_publication_hosts_page.mjs": "d42f26efbba3242c06f372570356537b8a54e74096716c3c3e6378b7d58cf079",
+  "tests/test_geo_selected_publication_hosts.py": "0e1dff8f40eed57bfc4b86b5285e7eecb08fbb719145bd122d1a89468040d17d"
+}

@@ -1,5 +1,5 @@
 /** Explicit selected-state owners. Geometry, joining and count policy stay in Rust. */
-import {encodeGeoScaleRequest,decodeGeoScaleReply,driveGeoSession,driveGeoIndexSession,prepareGeoSceneData} from './63_geo_source';
+import {encodeGeoScaleRequest,decodeGeoScaleReply,driveGeoSession,driveGeoIndexSession,prepareGeoSceneData,captureGeoSceneDataIssuer,createGeoSceneDataPublication} from './63_geo_source';
 import {withGeoWorkerMutationOutcome} from './47_wasm';
 import {GeoAllocationAttempt,selectedGeoAllocationIssuer,trackSelectedGeoAllocation,preflightSelectedGeoAllocation,forgetSelectedGeoAllocationIssuer} from './72_geo_allocation_attempt';
 import type {XygGeoScaleBridge,XygGeoQueryBudget,XygGeoScaleQuery,XygGeoReadTicket} from './63_geo_source';
@@ -64,7 +64,7 @@ export class GeoSelectedScope {
 export class GeoSelectedState {
  private owner:ReturnType<typeof owned>;
  private bridge:XygGeoScaleBridge;readonly scope:GeoSelectedScope;
- constructor(bridge:XygGeoScaleBridge,handle:bigint,scope:GeoSelectedScope,token:typeof AUTHORITY,mutation?:GeoSelectedMutationAttempt){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.bridge=bridge;this.scope=scope;this.owner=owned(bridge,handle);stateAuthorities.set(this,{bridge,owner:this.owner,busy:false,scope});}
+ constructor(bridge:XygGeoScaleBridge,handle:bigint,scope:GeoSelectedScope,token:typeof AUTHORITY,mutation?:GeoSelectedMutationAttempt,sceneIssuer?:ReturnType<typeof captureGeoSceneDataIssuer>){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.bridge=bridge;this.scope=scope;this.owner=owned(bridge,handle);stateAuthorities.set(this,{bridge,owner:this.owner,busy:false,scope});}
  get handle(){return this.owner.handle;}
  check(){const authority=stateAuthorities.get(this);if(!authority||authority.busy)throw new Error('selected State already active');authority.owner.check();}
  belongsTo(bridge:XygGeoScaleBridge){return stateAuthorities.get(this)?.bridge===bridge;}
@@ -77,7 +77,7 @@ export class GeoSelectedState {
 }
 type SelectedMutationResult={fallback:true;reason:number;state:GeoSelectedState}|{fallback:false;operation:GeoSelectedOperation}|undefined;
 export class GeoSelectedMutationAttempt {
- #state:WeakRef<GeoSelectedState>;#bridge:XygGeoScaleBridge;#transport:XygGeoScaleBridge;#attempt:GeoAllocationAttempt;#claim:ReturnType<typeof claimGeoSelectedState>;
+ #sceneIssuer:ReturnType<typeof captureGeoSceneDataIssuer>;#state:WeakRef<GeoSelectedState>;#bridge:XygGeoScaleBridge;#transport:XygGeoScaleBridge;#attempt:GeoAllocationAttempt;#claim:ReturnType<typeof claimGeoSelectedState>;
  #scope:GeoSelectedScope;#issuer:bigint;#handle:bigint;#sequence:bigint;#indexed:boolean;#budget:XygGeoQueryBudget;#operation:GeoSelectedOperation|undefined;#active:Promise<SelectedMutationResult>|undefined;#cleanup:Promise<void>|undefined;#closed=false;
  constructor(state:GeoSelectedState,input:{command:35|36;handle:bigint;sequence:bigint;query:XygGeoScaleQuery;budget:XygGeoQueryBudget},token:typeof AUTHORITY){
   if(token!==AUTHORITY)throw new TypeError('Issued selected mutation required');const issued=stateAuthorities.get(state);if(!issued)throw new TypeError('Issued State required');
@@ -85,7 +85,7 @@ export class GeoSelectedMutationAttempt {
   const request=encodeGeoScaleRequest({command:input.command,handle:input.handle,sequence:this.#sequence,query:input.query,budget:this.#budget,payload:words([issued.owner.handle])});
   let tracked=scopeMutationIssuers.get(this.#scope);if(!tracked){tracked=new Map();scopeMutationIssuers.set(this.#scope,tracked);}if(tracked.size>=16&&!tracked.has(input.handle))throw new RangeError('Scope issuer tracking capacity exhausted');
   const issuer=selectedGeoAllocationIssuer(this.#bridge,input.handle);preflightSelectedGeoAllocation(issuer);this.#transport=Object.freeze({execute:this.#bridge.execute.bind(this.#bridge),read:this.#bridge.read.bind(this.#bridge)});
-  this.#claim=claimGeoSelectedState(state,this.#bridge);
+  this.#sceneIssuer=captureGeoSceneDataIssuer(this.#bridge);this.#claim=claimGeoSelectedState(state,this.#bridge);
   try{this.#attempt=new GeoAllocationAttempt(issuer,this.#transport,request,undefined,(r,run)=>withGeoWorkerMutationOutcome(this.#bridge,r,run));trackSelectedGeoAllocation(issuer,this.#attempt);}
   catch(error){this.#claim.reject();throw error;}
   tracked.set(input.handle,this.#bridge);issued.mutation=this;
@@ -98,7 +98,7 @@ export class GeoSelectedMutationAttempt {
  #accepted(packet:ArrayBuffer|undefined):SelectedMutationResult{
   if(!packet){if(this.#attempt.rejected)this.#claim.reject();else this.#claim.consume();this.#closed=true;return undefined;}
   const v=new DataView(packet);if(v.getUint32(8,true)===10){this.#claim.reject();this.#closed=true;return {fallback:true as const,reason:v.getUint32(48,true),state:this.#state.deref()!};}
-  this.#claim.consume();return {fallback:false as const,operation:this.#operation??=new GeoSelectedOperation(this.#transport,this.#handle,this.#sequence,this.#indexed,this.#budget,this.#scope,AUTHORITY,this)};
+  this.#claim.consume();return {fallback:false as const,operation:this.#operation??=new GeoSelectedOperation(this.#transport,this.#handle,this.#sequence,this.#indexed,this.#budget,this.#scope,AUTHORITY,this,this.#sceneIssuer)};
  }
  recover(){if(this.#operation?.publicationPending)return Promise.reject(new Error('Selected19 publication remains uncertain; guard retained'));if(this.#closed||this.#cleanup)return Promise.reject(new Error('Selected mutation unavailable'));return this.#active??=Promise.resolve().then(async()=>{try{return this.#accepted(await this.#attempt.recover(this.#validate));}catch(error){if(this.#attempt.rejected){this.#claim.reject();this.#closed=true;}throw error;}finally{this.#active=undefined;}});}
  async retire(){if(this.#operation?.publicationPending)throw new Error('Selected19 publication remains uncertain; guard retained');if(await this.#attempt.probeRetirement(this.#validate)===undefined){await this.#attempt.release();return true;}return false;}
@@ -106,26 +106,28 @@ export class GeoSelectedMutationAttempt {
 }
 
 export class GeoSelectedOperation {
- #replaced=false;#publicationPending=false;#mutation:GeoSelectedMutationAttempt|undefined;#active:Promise<unknown>|undefined;#abort:AbortController|undefined;
+ #closing=false;#publication:ReturnType<typeof createGeoSceneDataPublication>|undefined;#sceneIssuer:ReturnType<typeof captureGeoSceneDataIssuer>;#replaced=false;#publicationPending=false;#mutation:GeoSelectedMutationAttempt|undefined;#active:Promise<unknown>|undefined;#abort:AbortController|undefined;
  get publicationPending(){return this.#publicationPending;}
  async settleDrive(){this.#abort?.abort();if(this.#active)try{await this.#active;}catch{/*Driver has settled callback+ACK before rejecting.*/}}
  #bridge:XygGeoScaleBridge;#handle:bigint;#sequence:bigint;#indexed:boolean;#budget:XygGeoQueryBudget;#scope:GeoSelectedScope;
  get handle(){return this.#handle;}get sequence(){return this.#sequence;}get indexed(){return this.#indexed;}get budget(){return {...this.#budget};}get scope(){return this.#scope;}
- constructor(bridge:XygGeoScaleBridge,handle:bigint,sequence:bigint,indexed:boolean,budget:XygGeoQueryBudget,scope:GeoSelectedScope,token:typeof AUTHORITY,mutation?:GeoSelectedMutationAttempt){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.#bridge=Object.freeze({execute:bridge.execute.bind(bridge),read:bridge.read.bind(bridge)});this.#handle=handle;this.#sequence=sequence;this.#indexed=indexed;this.#budget=Object.freeze({...budget});this.#scope=scope;this.#mutation=mutation;}
+ constructor(bridge:XygGeoScaleBridge,handle:bigint,sequence:bigint,indexed:boolean,budget:XygGeoQueryBudget,scope:GeoSelectedScope,token:typeof AUTHORITY,mutation?:GeoSelectedMutationAttempt,sceneIssuer?:ReturnType<typeof captureGeoSceneDataIssuer>){if(token!==AUTHORITY)throw new TypeError('issued selected authority required');this.#bridge=Object.freeze({execute:bridge.execute.bind(bridge),read:bridge.read.bind(bridge)});this.#handle=handle;this.#sequence=sequence;this.#indexed=indexed;this.#budget=Object.freeze({...budget});this.#scope=scope;this.#mutation=mutation;this.#sceneIssuer=sceneIssuer??captureGeoSceneDataIssuer(bridge);}
  drive(input:{readChunk?:(ticket:XygGeoReadTicket,signal?:AbortSignal)=>Promise<ArrayBuffer|Uint8Array>;readPage?:(ticket:XygGeoReadTicket,signal?:AbortSignal)=>Promise<ArrayBuffer|Uint8Array>;signal?:AbortSignal}){
   if(this.#publicationPending)throw new Error('Selected19 publication remains uncertain; guard retained');if(this.#replaced||this.#active)throw new Error('Selected query replaced or active');
   const controller=new AbortController(),abort=()=>controller.abort();this.#abort=controller;input.signal?.addEventListener('abort',abort,{once:true});if(input.signal?.aborted)abort();
   return this.#active=Promise.resolve().then(async()=>{try{if(this.#indexed)return await driveGeoIndexSession(this.#bridge,{...input,signal:controller.signal,handle:this.#handle,sequence:this.#sequence,budget:this.#budget});if(!input.readChunk)throw new TypeError('Canonical selected query requires explicit reader');return await driveGeoSession(this.#bridge,{...input,readChunk:input.readChunk,signal:controller.signal,handle:this.#handle,sequence:this.#sequence,budget:this.#budget});}finally{input.signal?.removeEventListener('abort',abort);this.#active=undefined;this.#abort=undefined;}});
  }
  async prepare(style:Uint8Array){
-  if(this.#publicationPending)throw new Error('Selected19 publication remains uncertain; guard retained');if(this.#replaced||this.#active)throw new Error('Selected query replaced or active');
-  if(this.#indexed)this.#publicationPending=true;
-  const bridge=this.#indexed?{read:(r:ArrayBuffer)=>this.#bridge.read(r),execute:async(r:ArrayBuffer)=>{const command=new DataView(r).getUint32(8,true);const reply=await this.#bridge.execute(r);if(command===19){const parsed=decodeGeoScaleReply(reply);if(parsed.handle===this.#handle&&parsed.sequence===this.#sequence)this.#replaced=true;}return reply;}}:this.#bridge;
-  const frame=await prepareGeoSceneData(bridge,{command:this.#indexed?19:11,handle:this.#handle,sequence:this.#sequence,budget:this.#budget,style});
-  if(this.#indexed)this.#replaced=true;this.#publicationPending=false;if(this.#indexed)await this.#mutation?.retire();return frame;
+  if(this.#closing||this.#active||this.#replaced&&!this.#publicationPending)throw new Error('Selected query replaced or active');
+  if(!this.#indexed)return prepareGeoSceneData(this.#bridge,{command:11,handle:this.#handle,sequence:this.#sequence,budget:this.#budget,style});
+  if(this.#publication&&!this.#publication.matches(style))throw new TypeError('Pending publication requires exact original style');
+  this.#publication??=createGeoSceneDataPublication(this.#sceneIssuer,{handle:this.#handle,sequence:this.#sequence,budget:this.#budget,style});this.#publicationPending=true;
+  try{const frame=await this.#publication.prepare();if(this.#closing)throw new Error('Selected publication closing');this.#replaced=true;this.#publicationPending=false;try{await this.#mutation?.retire();}catch(error){this.#publicationPending=true;throw error;}return frame;}
+  catch(error){if(this.#publication.rejected){this.#publication=undefined;this.#publicationPending=false;}throw error;}
  }
+
  async cancel(){if(this.#publicationPending)throw new Error('Selected19 publication remains uncertain; guard retained');if(this.#active)throw new Error('Selected read/ACK settlement pending');if(this.#replaced)throw new Error('selected query replaced');await execute(this.#bridge,encodeGeoScaleRequest({command:9,handle:this.#handle,sequence:this.#sequence}));await this.#mutation?.retire();}
- async dispose(){if(this.#publicationPending)throw new Error('Selected19 publication remains uncertain; guard retained');await this.settleDrive();if(!this.#indexed)throw new Error('canonical SourceSession remains caller-owned');if(!this.#replaced){await execute(this.#bridge,encodeGeoScaleRequest({command:10,handle:this.#handle}));this.#replaced=true;await this.#mutation?.retire();}}
+ async dispose(){if(this.#publicationPending){this.#closing=true;await this.#publication!.dispose();this.#publicationPending=false;this.#replaced=!this.#publication!.rejected;if(this.#replaced)await this.#mutation?.retire();return;}await this.settleDrive();if(!this.#indexed)throw new Error('canonical SourceSession remains caller-owned');if(!this.#replaced){await execute(this.#bridge,encodeGeoScaleRequest({command:10,handle:this.#handle}));this.#replaced=true;await this.#mutation?.retire();}}
 }
 
 /** Internal issued capability: captures original owner/transport, never public wire fields. */

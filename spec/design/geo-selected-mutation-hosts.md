@@ -98,12 +98,12 @@ objects or copied packets are outside product-owned retained bytes.
 
 ## Publication boundary and evidence
 
-Selected19 is deliberately not adopted here. A failed or lost selected19
-publication keeps an explicit operation guard and blocks guessed Query cleanup;
-the adapter cannot infer Data authority or absence from36 retirement. The
-separate engine19 journal requires its own public adoption. Scope33, legacy
-allocation26–29, hierarchy43/44, arbitrary transport reset and massive latency
-also remain separate gates.
+The original35/36 checkpoint deliberately left selected19 uncertain. The
+separate [selected publication adapter](geo-selected-publication-hosts.md) now
+adopts its engine journal with exact replay/Confirm before Data read and cleanup;
+36 retirement still never grants Data authority. Scope33, legacy allocation
+26–29, hierarchy43/44, arbitrary transport reset and massive latency remain
+separate gates. The original evidence below retains its historical scope.
 
 Actual native tests in `tests/test_geo_selected_mutation_hosts.py` and
 `packages/xy-node/test/geo-selected-mutation-hosts.test.mjs` cover lost35,
