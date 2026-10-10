@@ -131,7 +131,7 @@ export class OverviewGeographicController {
   let result:Promise<GeoOverviewFrozenBinary>;
   try{result=beginOverviewBinaryFreeze(this.#worker,this.#bridge,pin.frame,{budgetBytes:input.budgetBytes,signal:abort.signal},state=>{
    if(state==='uncertain'){pin.unknown=true;reject(new GeoOverviewBinaryUncertainAllocation());}
-   else{if(this.#freezePin===pin){this.#freezePin=undefined;release();}this.#snapshotAttempt=undefined;resolve();}
+   else{if(this.#freezePin===pin){this.#freezePin=undefined;this.#snapshotAttempt=undefined;release();}resolve();}
   });}catch(error){this.#freezePin=undefined;release();resolve();result=Promise.reject(error);}
   let work:Promise<void>;
   const settled=result.catch(error=>{if(error instanceof GeoOverviewBinaryUncertainAllocation)this.#snapshotAttempt=error.owner;if(error instanceof GeoOverviewBinaryCleanupPending)this.#binaryCleanup=error.owner;throw error;}).finally(()=>{input.signal?.removeEventListener('abort',onAbort);if(this.#freezeAbort===abort)this.#freezeAbort=undefined;if(this.#freezeWork===work)this.#freezeWork=undefined;});

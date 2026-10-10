@@ -19,6 +19,7 @@ frozen bytes, replay identity and lifecycle controls. These are small fixtures.
 `browser.json` records real packaged Chrome155 under strict CSP: accepted-frame
 binary/count/time identity, oldpaint barriers, lost/corrupt6 exact coalesced replay,
 Confirm before read, lost3 and Release2 ACK retries, controller-close recovery,
+old successful output disposal preserving a newer uncertain recovery owner,
 public pending-table tampering, and genuine termination despite mutable disposed
 and terminate decorations. It also preserves borrowed callbacks, source/index
 independence, two-read/eight-Snapshot quotas, foreign producers and all six WASM
@@ -49,3 +50,10 @@ interaction performance or complete M6/39 journey claim follows. Application-hel
 binary views and reply objects are application ownership; no GPU/OS heap bound is
 asserted. The separate GeoScale35/36 Worker capture whitelist only provides
 original outcome provenance; adoption/union-artifact proof is another slice.
+
+`stale-owner-red.txt` and `stale-owner-red.mjs` preserve the independent
+pre-fix Chrome counterexample: old output cleanup erased the newer recovery
+owner and controller close performed no exact replay. The refreshed browser
+proof verifies matching-pin notifications preserve the newer owner and retire
+its exact Snapshot before releasing accepted Data. Rust/compiler inputs and
+the native/WASM pair are unchanged by this browser-only repair.

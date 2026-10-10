@@ -122,6 +122,12 @@ not conflate their GeoScale47 namespace with snapshot7.
 
 The browser fixture extends the existing strict-CSP accepted-frame proof with
 lost/corrupt allocation replies, one exact coalesced recovery, controller-close
-recovery, and lost retirement/Release acknowledgements. Runtime evidence remains
-pending until a fresh paired artifact is built from this source. No completion,
+recovery, and lost retirement/Release acknowledgements. Actual paired/native and strict-CSP browser evidence is recorded in
+`spec/performance/geo-overview-snapshot-recovery-2026-10-09`. No completion,
 selected overview or massive-interaction claim follows from this recovery slice.
+
+Every completion notification belongs to its captured freeze pin. A prior
+successful binary can be disposed after a newer freeze becomes uncertain;
+that old notification resolves only its own barrier and must not clear the
+newer pin or recovery owner. Controller close retains the newer attempt until
+its exact Snapshot retirement and release settle.

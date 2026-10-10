@@ -19,7 +19,7 @@
     },
     {
       "path": "js/src/71_geo_overview_controller.ts",
-      "sha256": "3e5b624825f4413ac814d5846900695e3eb2984ad09460df2e439df57b8df07c"
+      "sha256": "21d9fd0c92296d8381a980f3d640d552849e1e2d2a62df80317b4f777ecacc44"
     },
     {
       "path": "js/src/74_geo_overview_snapshot.ts",
@@ -31,7 +31,7 @@
     },
     {
       "path": "spec/design/geo-overview-snapshot-recovery.md",
-      "sha256": "45177979fe301eb341ba612f77b3e3666c7a69427abe83a0059d27c3fab98c9a"
+      "sha256": "84ebbc4312bd14fe9a6cd74321a06ca222db919a3d2cdd72dc77fd31e83a3c90"
     },
     {
       "path": "spec/design/geo-snapshot-protocol.md",
@@ -47,7 +47,7 @@
     },
     {
       "path": "tests/browser/geo_overview_binary_page.mjs",
-      "sha256": "239905607eca98f071d5ae1c4db8e5def5c0372ec3ed00fcc3988f5f714ab5b3"
+      "sha256": "4fc3b68978485628362f4cb9994891219189272e95a0176fd6caa0cb9138979a"
     }
   ]
 }

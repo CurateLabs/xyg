@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-10-09T20:43:10.366Z",
+  "recordedAt": "2026-10-10T15:18:41.976Z",
   "environment": {
     "node": "v26.6.0",
     "browser": "155.0.8059.40",
@@ -33,6 +33,7 @@
     "confirmBeforeRead": true,
     "lostRetirementConfirmation": true,
     "controllerCloseRecovery": true,
+    "oldOutputCannotClearNewerAttempt": true,
     "foreignProducerRejected": true,
     "wasmArtifactFormats": "all-six-Unsupported",
     "temporalExact": true,
@@ -44,6 +45,8 @@
       "/",
       "/tests/browser/geo_overview_binary_page.mjs",
       "/packages/xy-client/dist/index.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
       "/packages/xy-client/dist/wasm-worker.js",
       "/packages/xy-client/dist/xyg-wasm.wasm",
       "/packages/xy-client/dist/wasm-worker.js",
