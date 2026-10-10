@@ -268,7 +268,7 @@ let nativeCore;
 function core() { return nativeCore ??= Promise.all([import('./native.js'), import('./abi.js')]).then(([native, abi]) => ({...native, GeoNativeError:abi.GeoNativeError})); }
 const nativeMutationScopes=new Set();
 let activeNativeMutationScopes=0;
-function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36].includes(v.getUint32(8,true))||input.length===304&&v.getUint32(8,true)===19||input.length===272&&v.getUint32(8,true)===47&&[19,35,36].includes(v.getUint32(256,true));}
+function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36,43].includes(v.getUint32(8,true))||input.length===304&&v.getUint32(8,true)===19||input.length===272&&v.getUint32(8,true)===47&&[19,35,36,43].includes(v.getUint32(256,true));}
 /** Per-call native context; newest matching dispatch wins, never a persistent last-result bank. */
 export async function withGeoNativeMutationOutcome(_bridge,request,run){
  const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');return withNativeCapture(input,run,'mutation');

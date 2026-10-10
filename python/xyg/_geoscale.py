@@ -61,12 +61,12 @@ def _capture_native_mutation(request):
     """Exact per-call native outcome, held through settlement and reset in finally."""
     command = struct.unpack_from("<I", request, 8)[0] if len(request) >= 12 else 0
     if not (
-        (len(request) == 264 and command in (35, 36))
+        (len(request) == 264 and command in (35, 36, 43))
         or (len(request) == 304 and command == 19)
         or (
             len(request) == 272
             and command == 47
-            and struct.unpack_from("<I", request, 256)[0] in (19, 35, 36)
+            and struct.unpack_from("<I", request, 256)[0] in (19, 35, 36, 43)
         )
     ):
         raise ValueError("bounded selected mutation request required")

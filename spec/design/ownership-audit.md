@@ -1298,6 +1298,19 @@ bank; it introduces no alternate host policy or production constructor.
 | --- | --- | --- | --- | --- |
 | `crates/xyg-engine/src/geo_hierarchy_recovery_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+## Public43 admission host boundary
+
+The existing70/Python hierarchy and72 allocation owners adopt only authentic
+exact264-byte command43 admission and strict47 confirmation. Native capture adds
+43 to its existing fixed16 mutation bank, with no new Query6/10 purpose. Storage,
+geometry, selection and LOD policy stay Rust-owned. Mechanical Node outputs
+reuse that lifecycle. New `tests/browser/geo_hierarchy_admission_capture_entry.ts`,
+`tests/browser/geo_hierarchy_admission_hosts_page.mjs` and
+`scripts/geo_hierarchy_admission_hosts_smoke.mjs` are test-only and outside the
+production inventory. No new production file requires a JSON inventory row.
+[Bounded evidence](../performance/geo-hierarchy-admission-hosts-2026-10-10/README.md)
+records the remaining44 and lostQuery10 guards.
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

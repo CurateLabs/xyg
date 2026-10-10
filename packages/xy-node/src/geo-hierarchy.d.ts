@@ -29,6 +29,7 @@ export declare class GeoHierarchyPublicationUncertain extends Error {}
 export declare class GeoSelectedHierarchyOperation {
  readonly handle:bigint;readonly sequence:bigint;readonly request:ArrayBuffer;readonly closed:boolean;
  readonly hierarchyStats:{directoryReads:bigint;leafReads:bigint;bytesRead:bigint;decodedVertices:bigint;passes:number;cells:number}|null;
+ recover():Promise<GeoSelectedHierarchyOperation>;
  drive(options?:{signal?:AbortSignal}):Promise<unknown>;
  prepare(style:Uint8Array,options?:{signal?:AbortSignal;budget?:import('./geoscale.js').XygGeoQueryBudget}):Promise<OwnedGeoFrame<ReturnType<typeof import('./geoscale.js').parseGeoSceneData>>>;
  cancel():Promise<void>;dispose():Promise<void>;

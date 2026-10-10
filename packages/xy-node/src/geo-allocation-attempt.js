@@ -21,8 +21,8 @@ export class GeoAllocationAttempt {
  #receipt                      ;#confirmed=false;#retired=false;#rejected=false;#uncertain=false;#active                                         ;#released=false;#slot                                                                                                                    ;#outcome                                    ;#fallback                          ;#selectedReceipt                          ;
  constructor(owner       ,transport                  ,request            ,operationSequence        ,outcome                           ){
   if(!(request instanceof ArrayBuffer)||request.byteLength<256||request.byteLength>304)throw new TypeError('Bounded allocation request required');
-  const v=new DataView(request),command=v.getUint32(8,true);if(![19,26,27,28,29,35,36,45].includes(command)||v.getBigUint64(240,true)!==0n)throw new TypeError('Canonical allocation request required');
-  if([35,36].includes(command)&&(request.byteLength!==264||!outcome))throw new TypeError('Authenticated selected mutation framing required');if(command===19&&(request.byteLength!==304||!outcome))throw new TypeError('Authenticated selected publication framing required');this.#outcome=outcome;
+  const v=new DataView(request),command=v.getUint32(8,true);if(![19,26,27,28,29,35,36,43,45].includes(command)||v.getBigUint64(240,true)!==0n)throw new TypeError('Canonical allocation request required');
+  if([35,36,43].includes(command)&&(request.byteLength!==264||!outcome))throw new TypeError('Authenticated selected mutation framing required');if(command===19&&(request.byteLength!==304||!outcome))throw new TypeError('Authenticated selected publication framing required');this.#outcome=outcome;
   let commands=issuers.get(owner);if(!commands){commands=new Map();issuers.set(owner,commands);}let slot=commands.get(command);if(!slot){slot={nonce:0n,dead:false};commands.set(command,slot);}
   if(slot.dead)throw new Error('Allocation issuer disposed');
   if(slot.attempt&&!slot.attempt.settled)throw new Error('Previous allocation confirmation remains pending');
