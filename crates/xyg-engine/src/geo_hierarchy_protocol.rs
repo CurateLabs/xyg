@@ -106,6 +106,12 @@ pub(super) fn scope(owned: &Owned) -> Option<Arc<linked_state::Scope>> {
 pub(super) fn selected_complete(entry: &Entry) -> bool {
     matches!(entry,Entry::Hierarchy(Owned::Query{selected_replacement:true,result:Some(_),session,pending:None,..}) if !session.has_outstanding_io())
 }
+// Birth identity is the selected operation, not the numeric State/Query/Data handle.
+pub(super) fn operation_live(entry: &Entry, seq: u64) -> bool {
+    matches!(entry, Entry::Hierarchy(Owned::Query { session, owner, sequence, selected_replacement: true, .. })
+        if *sequence == seq && session.operation_live()
+            && owner.transition.lock().is_ok_and(|t| t.0 == seq))
+}
 fn same_source(a: &GeoSourceManifest, b: &GeoSourceManifest) -> bool {
     a.digest() == b.digest()
         && a.generation() == b.generation()

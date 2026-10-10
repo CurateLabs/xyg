@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-10-10T17:55:27.622Z",
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "artifact": {
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17",
+    "rawBytes": 1505822,
+    "gzipLevel6Bytes": 618706
+  },
+  "proof": {
+    "ok": true,
+    "actualWorker": true,
+    "fullU64": true,
+    "exactI64": true,
+    "lost19ExactReplay": true,
+    "corrupt19Guard": true,
+    "strict47Confirm": true,
+    "read23Retry": true,
+    "microtask12": true,
+    "selectedGreenPixel": true,
+    "oldRedPaint": true,
+    "sequential20Capacity": true,
+    "collidingWorkers": true,
+    "scope": "Bounded public selected19 recovery; no massive latency claim."
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_selected_publication_hosts_page.mjs",
+      "/selected-publication-proof.js",
+      "/packages/xy-client/dist/index.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "external": [],
+    "errors": [],
+    "cspViolations": []
+  },
+  "scope": "Bounded selected19 adoption using actual Worker/private issuer; hierarchy mutation adoption and massive latency remain separate gates."
+}

@@ -1,0 +1,13 @@
+{
+  "crates/xyg-engine/src/geo_allocation_recovery.rs": "34bf4bcc45e5d08f7d1cd142a798743bc24028c18a71585dcd04062110343c2d",
+  "crates/xyg-engine/src/geo_scale_protocol.rs": "bea72c82e8d6fda03b684d14d66e0036e98794f598d1c17025baeca0e563bed8",
+  "crates/xyg-engine/src/geo_hierarchy_protocol.rs": "0ea4428fac59497807b70d5611f3c3e637070ecdbaea162a63d999893639c9d7",
+  "crates/xyg-engine/src/geo_spatial_hierarchy_query.rs": "a6a87d556d4b722bd5d174e3fa17cb21e16b98097c4611124c26008959a0b3fc",
+  "crates/xyg-engine/src/geo_hierarchy_recovery_tests.rs": "4b4a0820cdb37c2a0857e2496e3f6492a401f3a31144a6d578982fba4e92eee1",
+  "crates/xyg-engine/src/geo_selected_hierarchy_protocol_tests.rs": "6f707ab11e4f147c8edbc2b100d3bf489ec3c5a79537145230de1843a81902f6",
+  "scripts/geo_hierarchy_recovery_conformance.mjs": "4f17adef39e2986423c87ca42bbb6e24b02fab43d07331ff0ae64f0373004101",
+  "scripts/geo_selected_hierarchy_conformance.mjs": "e2bc0f8ebb61d7b50687fcf4704409b9fc3dee691c452108586309d8bec9ac58",
+  "spec/design/geo-hierarchy-recovery.md": "a7705c67da511df0fb20748fc6ccc6838c2399b8f8cd2d4cad7929f9dc4f76fa",
+  "spec/design/geo-hierarchy-protocol.md": "b5843690d4ddb23f2d760cfd1b73e4a1bbda44d72b7fa073e05d6290bf89b0de",
+  "spec/design/geo-allocation-recovery.md": "fdf94600c89bb5db0428eb29db4730edbb25a9bb3b01a643ed9d40452e0dd5c1"
+}

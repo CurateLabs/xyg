@@ -1,0 +1,13 @@
+{
+  "compiler_input_count": 206,
+  "all_input_hashes_match": true,
+  "artifacts": {
+    "target/release/libxyg_core.dylib": "eac4795cc1fe9f4a574d97e7d1a40319c40e965f8cfa3ff6e5bbe4130e810f87",
+    "packages/xy-client/dist/xyg-wasm.wasm": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17"
+  },
+  "source_parents": [
+    "b60b74c129b2045f09e45eb8defd0ffa563cde6a",
+    "54fe56b67a4d82c1fc3e8e9ab56a9fbafd2fac35"
+  ],
+  "actual_main": "ef6d4643cdd5bb33a4fd6e28866372c994f1e22d"
+}

@@ -508,3 +508,6 @@ fn reduced_selected_counts_match_canonical_for_duplicate_ids_before_tessellation
 
 #[path = "geo_hierarchy_scope_credit_tests.rs"]
 mod scope_credits;
+
+#[path = "geo_hierarchy_recovery_tests.rs"]
+mod recovery;

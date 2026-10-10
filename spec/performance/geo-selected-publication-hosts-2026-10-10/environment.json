@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-10-10",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "baseHead": "90ebd88464e2b15f1926c0fde7e81033532ff074",
+  "compilerInputs": 205,
+  "compilerInputsMatch": true,
+  "native": {
+    "path": "/tmp/xyg-m6-durable-frozen-artifacts/9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d/libxyg_core.dylib",
+    "sha256": "2310768d02d25b56579c3da358cc243f63629798a49cb7e652308d76c5c9d8f0"
+  },
+  "wasm": {
+    "path": "/tmp/xyg-m6-durable-frozen-artifacts/9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d/xyg-wasm.wasm",
+    "sha256": "9923f65166ef898582f2fecd8b8864aaa8dc87a4ed6b6db49de84c4c4aae508d",
+    "rawBytes": 1505840,
+    "gzipLevel6Mtime0Bytes": 618550
+  },
+  "scope": "Bounded authentic public selected19 publication adoption, same immutable native/Worker core; no Rust change, no massive-performance or full-milestone claim.",
+  "validation": {
+    "nodeNew": 10,
+    "pythonNew": 9,
+    "nodeBroad": 72,
+    "pythonBroad": 37,
+    "worker": "actual Chromium155 strict-CSP offline browser.json"
+  },
+  "independentProof": "Root genuine Worker and205-input/artifact proof; second reviewer10Node/9Python including final Frame hook fix GREEN."
+}

@@ -1,0 +1,115 @@
+....F........................................................            [100%]
+=================================== FAILURES ===================================
+_ test_async_frame_retained_clone_marks_exact_provenance_after_owner_disposal __
+
+    async def run():
+        source, old, _ = setup()
+        index = await GeoHierarchy.from_frame_async(old, source, **storage({}))
+        frame = retained = None
+        try:
+            frame = await index.aupdate(query(index.info), sequence=2, style=style())
+            retained = await frame.retain_async()
+            assert is_hierarchy_frame(frame)
+            assert is_hierarchy_frame(retained)
+>           await index.aclose()
+
+tests/test_geo_hierarchy.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/xyg/_geo_hierarchy.py:840: in aclose
+    _, interrupted = await g._settle(task)
+                     ^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geoscale.py:714: in _settle
+    return await asyncio.shield(task), interrupted
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def dispose():
+        if self._pending_operation is not None:
+            await self._pending_operation.aclose()
+        context = _lane_context(self)
+        if not getattr(self, "_index_disposed", False):
+>           raw = await context.execute(
+                _request(10, context.handle, self._creation_sequence)
+            )
+E           TypeError: object bytes can't be used in 'await' expression
+
+python/xyg/_geo_hierarchy.py:823: TypeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_async_frame_retained_clone_marks_exact_provenance_after_owner_disposal():
+        async def run():
+            source, old, _ = setup()
+            index = await GeoHierarchy.from_frame_async(old, source, **storage({}))
+            frame = retained = None
+            try:
+                frame = await index.aupdate(query(index.info), sequence=2, style=style())
+                retained = await frame.retain_async()
+                assert is_hierarchy_frame(frame)
+                assert is_hierarchy_frame(retained)
+                await index.aclose()
+                await frame.aclose()
+                source.close()
+                rows = retained.rows()
+                assert rows.data.record(0)["feature_id"] == U64
+                rows.close()
+            finally:
+                if retained:
+                    await retained.aclose()
+                if frame:
+                    await frame.aclose()
+                await index.aclose()
+                old.close()
+                source.close()
+    
+>       asyncio.run(run())
+
+tests/test_geo_hierarchy.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_geo_hierarchy.py:171: in run
+    await index.aclose()
+python/xyg/_geo_hierarchy.py:840: in aclose
+    _, interrupted = await g._settle(task)
+                     ^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geoscale.py:714: in _settle
+    return await asyncio.shield(task), interrupted
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/xyg/_geo_hierarchy.py:823: in dispose
+    raw = await context.execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = b'XYGQ\x01\x00\x00\x00\n\x00\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\...00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    def execute(request: bytes) -> bytes:
+        """One mutation, always with fixed output capacity (never a size probe)."""
+        from . import _native
+    
+        if not isinstance(request, bytes) or not HEADER <= len(request) <= MAX_PACKET:
+            raise ValueError("invalid geographic request size")
+        # Every exact canonical dispatch updates all active scopes, including a
+        # nested context or thread which did not inherit this caller's ContextVar.
+        with _NATIVE_MUTATION_CAPTURE_LOCK:
+            captures = [(c, c.begin(request)) for c in _NATIVE_MUTATION_CAPTURES]
+        source, out = ctypes.create_string_buffer(request), ctypes.create_string_buffer(HEADER)
+        code = _native._lib.xyg_geo_scale_execute(source, len(request), out, HEADER)
+        if code:
+            error = _native.GeoNativeError(code)
+            with _NATIVE_MUTATION_CAPTURE_LOCK:
+                for capture, token in captures:
+                    capture.record(token, error=error, status=int(code))
+>           raise error
+E           xyg._native.GeoNativeError: geographic column handle is stale or freed
+
+python/xyg/_geoscale.py:660: GeoNativeError
+=========================== short test summary info ============================
+FAILED tests/test_geo_hierarchy.py::test_async_frame_retained_clone_marks_exact_provenance_after_owner_disposal
+1 failed, 60 passed in 0.77s

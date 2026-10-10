@@ -1,0 +1,14 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "node": "v26.6.0",
+  "base": "7ec4d9996086d2fa2aed18a797613f9a08c91531",
+  "nativeSha256": "eac4795cc1fe9f4a574d97e7d1a40319c40e965f8cfa3ff6e5bbe4130e810f87",
+  "wasm": {
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17",
+    "rawBytes": 1505822,
+    "gzip6Bytes": 618706
+  },
+  "compilerInputCount": 206,
+  "claims": "bounded MemberData10 lifecycle only; no speedup, complete OS/GPU ledger or M6 closure claim"
+}

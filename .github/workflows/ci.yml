@@ -146,7 +146,7 @@ jobs:
       - name: GeoColumn Python/Node parity
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs packages/xy-node/test/geo-native-overview-host.test.mjs
+          node --test packages/xy-node/test/geo.test.mjs packages/xy-node/test/geo-cross-host.test.mjs packages/xy-node/test/geoscale.test.mjs packages/xy-node/test/geo-rows.test.mjs packages/xy-node/test/geo-spatial.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/geo-host.test.mjs packages/xy-node/test/geo-indexed-host.test.mjs packages/xy-node/test/geo-selected.test.mjs packages/xy-node/test/geo-live-host.test.mjs packages/xy-node/test/geo-native-overview-host.test.mjs packages/xy-node/test/geo-selected-publication-hosts.test.mjs packages/xy-node/test/geo-overview-member-retirement.test.mjs
 
 
       - name: Build JS client
@@ -451,6 +451,7 @@ jobs:
           node scripts/gen_geo_overview_hosts.mjs --check
           node scripts/geo_hierarchy_conformance.mjs
           node scripts/geo_selected_hierarchy_conformance.mjs
+          XYG_SELECTED_HIERARCHY_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-recovery-ci.json" node scripts/geo_hierarchy_recovery_conformance.mjs
           XYG_GEO_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-members-hosts-ci.json" XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs
 
       - name: Install Chromium
@@ -485,6 +486,10 @@ jobs:
           XYG_OVERVIEW_CONTROLLER_REPORT="$GITHUB_WORKSPACE/geo-overview-controller-ci.json" node scripts/geo_overview_controller_smoke.mjs
           XYG_OVERVIEW_BINARY_REPORT="$GITHUB_WORKSPACE/geo-overview-binary-ci.json" node scripts/geo_overview_binary_smoke.mjs
           XYG_SELECTED_MUTATION_REPORT="$GITHUB_WORKSPACE/geo-selected-mutation-hosts-ci.json" node scripts/geo_selected_mutation_hosts_smoke.mjs
+          XYG_SELECTED_PUBLICATION_REPORT="$GITHUB_WORKSPACE/geo-selected-publication-hosts-ci.json" node scripts/geo_selected_publication_hosts_smoke.mjs
+          XYG_MEMBER_RETIREMENT_REPORT="$GITHUB_WORKSPACE/geo-member-retirement-ci.json" node scripts/geo_member_retirement_smoke.mjs
+          XYG_HIERARCHY_ADMISSION_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-admission-hosts-ci.json" node scripts/geo_hierarchy_admission_hosts_smoke.mjs
+          XYG_HIERARCHY_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-capture-ci.json" node scripts/geo_hierarchy_capture_smoke.mjs
           XYG_SELECTED19_CAPTURE_REPORT="$GITHUB_WORKSPACE/geo-selected19-capture-ci.json" node scripts/geo_selected19_capture_smoke.mjs
           XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" XYG_GEO_NATIVE_OVERVIEW_REPORT="$GITHUB_WORKSPACE/geo-native-overview-host-ci.json" node tests/browser/geo_native_overview_host_test.mjs
       - name: Geographic painter and borrowed MapLibre context
@@ -535,7 +540,12 @@ jobs:
             geo-snapshot-recovery-ci.json
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
+            geo-member-retirement-ci.json
+            geo-selected-publication-hosts-ci.json
             geo-selected19-capture-ci.json
+            geo-hierarchy-recovery-ci.json
+            geo-hierarchy-admission-hosts-ci.json
+            geo-hierarchy-capture-ci.json
             geo-selected-mutation-hosts-ci.json
             geo-native-overview-host-ci.json
 

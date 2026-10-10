@@ -1,0 +1,13 @@
+✔ actual native lost MemberData10 closes via original sequence after every producer is gone (9.466125ms)
+✔ wrong-sequence genuine error and fake public SourceStale never authorize original liveData (1.228583ms)
+✔ native exact clone newer dispatch invalidates earlier genuine wrong-sequence error (1.516083ms)
+✔ generic wrapped native producer remains guarded after lost actual10 (0.898833ms)
+✔ member probe shares the existing16 active contexts and finally refunds capacity (0.818334ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67.365875

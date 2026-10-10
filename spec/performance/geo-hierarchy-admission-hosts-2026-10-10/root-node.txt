@@ -1,0 +1,26 @@
+✔ native explicit selected Point preserves original rows/full IDs/frozen intent (64.836583ms)
+✔ native explicit selected MultiPoint preserves original rows/full IDs/frozen intent (4.750625ms)
+✔ native failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner (6.564125ms)
+✔ native lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable (3.764ms)
+✔ two actual WASM modules with colliding numeric handles reject foreign State and producer before transport (41.792375ms)
+✔ native cancelled borrowed hierarchy read settles exact private ACK before disposal (16.2265ms)
+✔ native full Scene, Rows and frozen packets are retained for genuine Worker comparison (0.479625ms)
+✔ native five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas (5.98225ms)
+✔ native selected reduced Point preserves counts and complete exact membership after owner disposal (226.896584ms)
+✔ native selected reduced MultiPoint preserves counts and complete exact membership after owner disposal (178.49ms)
+✔ native late publication abort with rejected cleanup retains known Data guard for retry (3.234958ms)
+✔ native pre-aborted drive and prepare remain retryable without dispatch (2.410292ms)
+✔ optional explicit evidence retains complete cross-target parity hashes (0.078667ms)
+✔ native explicit chart static host independently retains actual43 selected frame (35.903959ms)
+✔ native issued hierarchy operation captures original transport and storage (2.460667ms)
+✔ native onIssued throw rolls back before43 and same State remains reusable (2.630959ms)
+✔ native twenty distinct closed lanes reclaim43 receipts and issuer tracking (6.978375ms)
+✔ raw WASM callback cannot authenticate43 and never turns uncertainty into State restoration (31.4435ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 868.996417

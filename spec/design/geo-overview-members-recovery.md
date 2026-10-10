@@ -38,9 +38,10 @@ Query birth; the owned MemberData remains independently alive and supports its
 original private continuation after every original producer has been disposed.
 
 Retirement of45 is **not** proof that the converted MemberData was disposed.
-MemberData10 requires its own exact successful fixed reply. A lost-successful
-MemberData10 remains a known cleanup guard; arbitrary bridge errors, error
-messages and generic WASM stale statuses do not establish absence. No automatic
+MemberData10 requires its own exact successful fixed reply or the purpose-specific
+original-producer proof specified in [known MemberData retirement](geo-member-data-retirement.md).
+Arbitrary bridge errors, error messages and generic WASM stale statuses do not
+establish absence; unsupported producers retain a known cleanup guard. No automatic
 retry of46 or resurrection of a consumed birth is added.
 
 No source-sized arrays or masks are introduced. Each active attempt retains one
@@ -57,5 +58,6 @@ ReleaseBirth rejection retry, full recovery singleflight and callback/ACK close
 ordering. Existing signed MIN/MAX, Point/MultiPoint physical-row semantics,
 fullu64 IDs, byte parity and8-Data pressure controls remain required. These are
 bounded membership proofs. Selected overview membership, public accessibility
-UI, lost-successful MemberData10 recovery and massive interactive latency are
-separate M6 acceptance gates.
+UI and massive interactive latency are separate M6 acceptance gates. The bounded
+known MemberData10 recovery proof is recorded separately and does not widen
+those claims.

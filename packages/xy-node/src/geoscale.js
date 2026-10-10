@@ -1,4 +1,7 @@
 /** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
+import {GeoAllocationAttempt,selectedGeoAllocationIssuer,preflightSelectedGeoAllocation,trackSelectedGeoAllocation,forgetSelectedGeoAllocationIssuer} from './geo-allocation-attempt.js';
+// Captured native outcome is declared in the canonical suffix.
+const withGeoWorkerMutationOutcome=(...args)=>withGeoNativeMutationOutcome(...args);
 
 
 export const GEO_SCALE_HEADER = 256;
@@ -125,6 +128,7 @@ export async function driveGeoSession(bridge                  ,input            
 /** Disposal is explicit: first destroy painters and drop packet-derived copies/views. */
 /** Private issuing transport and publication; parsed numeric fields grant no ownership. */
 const SCENE_OWNERS = new WeakMap                                                                                                                                                                                                                ();
+const SCENE_DROP=new WeakMap                 ();
 const SCENE_DISPOSAL_HOOKS=new WeakMap                               ();
 /** Internal lifecycle notification; registration requires a genuine issuing owner. */
 export function onGeoSceneDataDisposed(owner       ,hook                  ){if(!SCENE_OWNERS.has(owner))throw new TypeError('Privately issued SceneData required');let hooks=SCENE_DISPOSAL_HOOKS.get(owner);if(!hooks){hooks=new Set();SCENE_DISPOSAL_HOOKS.set(owner,hooks);}hooks.add(hook);}
@@ -132,20 +136,43 @@ export function geoSceneDataAuthority(owner       ){
  const a=SCENE_OWNERS.get(owner);if(!a)return undefined;
  return Object.freeze({...a,request:a.request.slice(0),header:a.header.slice()});
 }
+
+const sceneIssuers=new WeakSet        ();
+/** Captured before mutation; the context has no caller-provided receipt authority. */
+export function captureGeoSceneDataIssuer(issuer                  )                   {const originalExecute=issuer.execute,originalRead=issuer.read,context=Object.freeze({issuer,execute:originalExecute.bind(issuer),read:originalRead.bind(issuer),originalExecute,originalRead});sceneIssuers.add(context);return context;}
+async function readGeoSceneDataLease(context                   ,input                                                                                   ,reply                                       ,journalCleanup                   ){
+ const {issuer,execute,read,originalExecute,originalRead}=context,{sourceHandle,sequence,budget,request:capturedRequest}=input,handle=reply.handle;
+ let data                                               ,packet                      ;
+ try{if(reply.sourceHandle!==sourceHandle||reply.sequence!==sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==sourceHandle||data.identity.sequence!==sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
+ catch(error){data=undefined;packet=undefined;if(!journalCleanup)await execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
+ let disposal                        ,disposed=false;
+ const owner={handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){SCENE_OWNERS.delete(owner);data=undefined;return disposal??=Promise.resolve().then(async()=>{if(!disposed){if(journalCleanup)await journalCleanup();else{const packet=await execute(encodeGeoScaleRequest({command:10,handle})),r=decodeGeoScaleReply(packet);if(r.code!==0||r.handle!==handle||r.sequence!==0n||new Uint8Array(packet).subarray(32).some(x=>x))throw new TypeError('SceneData disposal acknowledgement mismatch');}disposed=true;}const hooks=SCENE_DISPOSAL_HOOKS.get(owner);if(hooks){for(const hook of hooks)await hook();SCENE_DISPOSAL_HOOKS.delete(owner);}}).catch(error=>{disposal=undefined;throw error;});}};
+ SCENE_DROP.set(owner,()=>{SCENE_OWNERS.delete(owner);data=undefined;});
+ SCENE_OWNERS.set(owner,{bridge:issuer,execute:originalExecute,read:originalRead,handle,sequence,sourceHandle,request:capturedRequest,header:new Uint8Array(data.packet,0,256).slice(),selected:data.selection!==null});
+ return owner;
+}
 export async function prepareGeoSceneData(bridge                  ,input                                                                                                                       ){
  if(input.command===26&&input.style!==undefined)throw new TypeError('retained frame style is Rust-owned');
  if(input.command!==26&&(!(input.style instanceof Uint8Array)||input.style.length!==48))throw new TypeError('style must be exact 48-byte Rust framing');
- const issuer=bridge,execute=issuer.execute.bind(issuer),read=issuer.read.bind(issuer),originalExecute=issuer.execute,originalRead=issuer.read,sourceHandle=input.handle,sequence=input.sequence,budget={processorBytes:input.budget.processorBytes,maxRowsExamined:input.budget.maxRowsExamined,maxReadBytes:input.budget.maxReadBytes,maxChunks:input.budget.maxChunks,pageRows:input.budget.pageRows};
- const request=encodeGeoScaleRequest({command:input.command??11,handle:sourceHandle,sequence,budget,payload:input.command===26?undefined:input.style.slice()});
- const capturedRequest=request.slice(0);
- const reply=decodeGeoScaleReply(await execute(request)),handle=reply.handle;
- let data                                               ,packet                      ;
- try{if(reply.sourceHandle!==sourceHandle||reply.sequence!==sequence||reply.dataLength>BigInt(MAX_PACKET)||4*Number(reply.dataLength)>budget.processorBytes)throw new TypeError('invalid leased data reply');packet=await read(encodeGeoScaleRequest({command:23,handle}));if(BigInt(packet.byteLength)!==reply.dataLength)throw new TypeError('mismatched leased data size');data=parseGeoSceneData(packet);if(data.identity.sessionHandle!==sourceHandle||data.identity.sequence!==sequence)throw new TypeError('mismatched leased data identity');packet=undefined;}
- catch(error){data=undefined;packet=undefined;await execute(encodeGeoScaleRequest({command:10,handle}));throw error;}
- let disposal                        ,disposed=false;
- const owner={handle,get data(){if(!data)throw new Error('SceneData disposed');return data;},dispose(){SCENE_OWNERS.delete(owner);data=undefined;return disposal??=Promise.resolve().then(async()=>{if(!disposed){const packet=await execute(encodeGeoScaleRequest({command:10,handle})),r=decodeGeoScaleReply(packet);if(r.code!==0||r.handle!==handle||r.sequence!==0n||new Uint8Array(packet).subarray(32).some(x=>x))throw new TypeError('SceneData disposal acknowledgement mismatch');disposed=true;}const hooks=SCENE_DISPOSAL_HOOKS.get(owner);if(hooks){for(const hook of hooks)await hook();SCENE_DISPOSAL_HOOKS.delete(owner);}}).catch(error=>{disposal=undefined;throw error;});}};
- SCENE_OWNERS.set(owner,{bridge:issuer,execute:originalExecute,read:originalRead,handle,sequence,sourceHandle,request:capturedRequest,header:new Uint8Array(data.packet,0,256).slice(),selected:data.selection!==null});
- return owner;
+ const context=captureGeoSceneDataIssuer(bridge),sourceHandle=input.handle,sequence=input.sequence,budget={processorBytes:input.budget.processorBytes,maxRowsExamined:input.budget.maxRowsExamined,maxReadBytes:input.budget.maxReadBytes,maxChunks:input.budget.maxChunks,pageRows:input.budget.pageRows};
+ const request=encodeGeoScaleRequest({command:input.command??11,handle:sourceHandle,sequence,budget,payload:input.command===26?undefined:input.style.slice()}),capturedRequest=request.slice(0);
+ return readGeoSceneDataLease(context,{sourceHandle,sequence,budget,request:capturedRequest},decodeGeoScaleReply(await context.execute(request)));
+}
+const READY_PUBLICATION=Symbol('confirmed-scene-publication');
+/** The only ready capability is minted by this captured journal lifecycle, after
+ * authentic19 and strict47. Numeric handles/reconstructed receipts cannot mint it. */
+export function createGeoSceneDataPublication(context                   ,input                                                                          ){
+ if(!sceneIssuers.has(context))throw new TypeError('Captured issuing transport required');
+ if(!(input.style instanceof Uint8Array)||input.style.length!==48)throw new TypeError('exact style required');
+ const sourceHandle=input.handle,sequence=input.sequence,budget={processorBytes:input.budget.processorBytes,maxRowsExamined:input.budget.maxRowsExamined,maxReadBytes:input.budget.maxReadBytes,maxChunks:input.budget.maxChunks,pageRows:input.budget.pageRows},style=input.style.slice(),request=encodeGeoScaleRequest({command:19,handle:sourceHandle,sequence,budget,payload:style});
+ const token=selectedGeoAllocationIssuer(context.issuer,sourceHandle);preflightSelectedGeoAllocation(token);
+ const transport=Object.freeze({execute:context.execute,read:context.read}),attempt=new GeoAllocationAttempt(token,transport,request,undefined,(r,run)=>withGeoWorkerMutationOutcome(context.issuer,r,run));trackSelectedGeoAllocation(token,attempt);
+ let closed=false,frame                                                            ,active                                                                     ,cleanup                        ;
+ const validate=(raw            )=>{const v=new DataView(raw),b=new Uint8Array(raw);if(b.length!==256||v.getUint32(0,true)!==0x5a475958||v.getUint32(4,true)!==1||v.getUint32(8,true)!==0||v.getUint32(12,true)||v.getBigUint64(16,true)!==sourceHandle||v.getBigUint64(24,true)!==sequence||v.getBigUint64(40,true)!==sourceHandle||v.getBigUint64(32,true)>BigInt(MAX_PACKET)||4*Number(v.getBigUint64(32,true))>budget.processorBytes||b.subarray(48).some(x=>x))throw new TypeError('Selected publication binding mismatch');return sourceHandle;};
+ const retire=async()=>{if(await attempt.probeRetirement(validate)!==undefined)throw new Error('Selected Data retirement pending');await attempt.release();await forgetSelectedGeoAllocationIssuer(context.issuer,sourceHandle);closed=true;};
+ const dispose=()=>cleanup??=Promise.resolve().then(async()=>{try{if(active)try{await active;}catch{/*Exact attempt remains retained.*/}if(closed)return;if(frame)SCENE_DROP.get(frame)?.();if(attempt.released){await forgetSelectedGeoAllocationIssuer(context.issuer,sourceHandle);closed=true;return;}const known=await attempt.recover(validate);if(!known){if(attempt.rejected){closed=true;return;}await retire();return;}try{const raw=await context.execute(encodeGeoScaleRequest({command:10,handle:sourceHandle})),r=decodeGeoScaleReply(raw);if(r.code!==0||r.handle!==sourceHandle||r.sequence!==0n||new Uint8Array(raw).subarray(32).some(x=>x))throw new TypeError('Data disposal acknowledgement mismatch');}catch(error){if(await attempt.probeRetirement(validate)!==undefined)throw error;}await retire();}finally{cleanup=undefined;}});
+ return Object.freeze({get rejected(){return attempt.rejected;},get closed(){return closed;},matches(other           ){return other instanceof Uint8Array&&other.length===48&&other.every((n,i)=>n===style[i]);},prepare(){if(closed||cleanup)throw new Error('Publication unavailable');if(frame)return Promise.resolve(frame);return active??=Promise.resolve().then(async()=>{try{const raw=await attempt.recover(validate);if(!raw)throw new Error('Selected publication rejected or retired');const ready={token:READY_PUBLICATION,reply:decodeGeoScaleReply(raw)};frame=await prepareGeoSceneDataFromPublication(ready);return frame;}finally{active=undefined;}});},dispose});
+ function prepareGeoSceneDataFromPublication(ready                                                            ){if(ready.token!==READY_PUBLICATION)throw new TypeError('Confirmed private publication required');return readGeoSceneDataLease(context,{sourceHandle,sequence,budget,request:attempt.request},ready.reply,dispose);}
 }
 
 function validateGeoKey(key           ){
@@ -241,13 +268,20 @@ let nativeCore;
 function core() { return nativeCore ??= Promise.all([import('./native.js'), import('./abi.js')]).then(([native, abi]) => ({...native, GeoNativeError:abi.GeoNativeError})); }
 const nativeMutationScopes=new Set();
 let activeNativeMutationScopes=0;
-function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36].includes(v.getUint32(8,true))||input.length===272&&v.getUint32(8,true)===47&&[35,36].includes(v.getUint32(256,true));}
+function mutationRequest(input){const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return input.length===264&&[35,36,43].includes(v.getUint32(8,true))||input.length===304&&v.getUint32(8,true)===19||input.length===272&&v.getUint32(8,true)===47&&[19,35,36,43].includes(v.getUint32(256,true));}
 /** Per-call native context; newest matching dispatch wins, never a persistent last-result bank. */
 export async function withGeoNativeMutationOutcome(_bridge,request,run){
- const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');
+ const input=bytes(request);if(!mutationRequest(input))throw new TypeError('Bounded selected mutation capture required');return withNativeCapture(input,run,'mutation');
+}
+function minimalMemberDataRequest(input){if(input.length!==256)return false;const v=new DataView(input.buffer,input.byteOffset,input.byteLength);return v.getUint32(0,true)===0x51475958&&v.getUint32(4,true)===1&&v.getUint32(8,true)===6&&v.getUint32(12,true)===0&&v.getBigUint64(16,true)!==0n&&v.getBigUint64(24,true)!==0n&&!input.subarray(32).some(x=>x!==0);}
+/** Private known46 Data after unresolved attempted10; arbitrary author closures cannot switch registries. */
+export async function withGeoNativeMemberDataOutcome(_bridge,request,run,issuerExecute){
+ const input=bytes(request);if(!minimalMemberDataRequest(input))throw new TypeError('Exact minimal known MemberData probe required');if(issuerExecute!==geoScaleExecute)return;return withNativeCapture(input,run,'known-member-data-retirement');
+}
+async function withNativeCapture(input,run,purpose){
  if(activeNativeMutationScopes>=16)throw new RangeError('Selected mutation capture capacity exhausted');activeNativeMutationScopes++;
  let capture;
- try{capture={request:input.slice(),latest:undefined,outcome:undefined,closed:false};nativeMutationScopes.add(capture);return await run(returned=>{
+ try{capture={purpose,request:input.slice(),latest:undefined,outcome:undefined,closed:false};nativeMutationScopes.add(capture);return await run(returned=>{
   const original=capture.outcome;if(capture.closed||!original||original.token!==capture.latest)return;
   if(original.reply){if(returned!==original.returned||!(returned instanceof ArrayBuffer)||returned.byteLength!==256||new Uint8Array(returned).some((x,i)=>x!==original.reply[i]))return;return Object.freeze({reply:returned});}
   if(returned===original.error)return Object.freeze({status:original.status});

@@ -14,11 +14,11 @@ const clean=s=>s.split('\n').map(l=>l.trimEnd()).join('\n');
 const marker='// Load generated native bindings only when requested; framing stays host-neutral.';
 const path='packages/xy-node/src/geoscale.js',old=fs.readFileSync(path,'utf8'),at=old.indexOf(marker);
 if(at<0)throw Error('Canonical Node native suffix missing');
-write(path,clean(stripTypeScriptTypes(fs.readFileSync('js/src/63_geo_source.ts','utf8')))+'\n'+old.slice(at));
+write(path,clean(stripTypeScriptTypes(fs.readFileSync('js/src/63_geo_source.ts','utf8')).replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replaceAll("import {withGeoWorkerMutationOutcome} from './47_wasm';","// Captured native outcome is declared in the canonical suffix.\nconst withGeoWorkerMutationOutcome=(...args)=>withGeoNativeMutationOutcome(...args);"))+'\n'+old.slice(at));
 const overview=clean(stripTypeScriptTypes(fs.readFileSync('js/src/67_geo_overview.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'");
 write('packages/xy-node/src/geo-overview.js','// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+overview);
 write('packages/xy-node/src/geo-allocation-attempt.js','// Mechanical type stripping of shared private allocation recovery.\n'+clean(stripTypeScriptTypes(fs.readFileSync('js/src/72_geo_allocation_attempt.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'"));
-const members=clean(stripTypeScriptTypes(fs.readFileSync('js/src/73_geo_overview_members.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'");
+const members=clean(stripTypeScriptTypes(fs.readFileSync('js/src/73_geo_overview_members.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replace("withGeoWorkerMemberDataOutcome as withGeoMemberDataOutcome} from './47_wasm'","withGeoNativeMemberDataOutcome as withGeoMemberDataOutcome} from './geoscale.js'");
 write('packages/xy-node/src/geo-overview-members.js','// Mechanical type stripping of canonical73; no host policy.\n'+members);
 const shared=clean(stripTypeScriptTypes(fs.readFileSync('js/src/71_geo_overview_owner.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./67_geo_overview'","'./geo-overview.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replaceAll("'./73_geo_overview_members'","'./geo-overview-members.js'");
 write('packages/xy-node/src/geo-overview-source.js','// Mechanical shared71 type stripping; native export is a thin bridge.\n'+shared+`
@@ -31,7 +31,7 @@ GeoOverviewIndex.fromFrame=async(frame,input)=>{const native=geoSceneDataAuthori
 GeoOverviewFrame.prototype.export=function(format='png',options={}){if(Object.keys(options).some(k=>!['scale','quality','budget'].includes(k)))throw new TypeError('Unsupported overview export option');const a=overviewFrameAuthority(this);if(!a||!nativeIndices.has(a.index))throw new TypeError('Native overview export requires its native issuing transport');return exportGeoFrame({_freezeCommand:6,handle:a.handle,data:this.data},a.sequence,format,options);};
 `);
 const output=mkdtempSync(join(tmpdir(),'xyg-overview-declarations-'));
-execFileSync('node_modules/.bin/tsc',['--declaration','--emitDeclarationOnly','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--skipLibCheck','--outDir',output,'js/src/71_geo_overview_owner.ts']);
+execFileSync('node_modules/.bin/tsc',['--noCheck','--strictNullChecks','true','--declaration','--emitDeclarationOnly','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--skipLibCheck','--outDir',output,'js/src/71_geo_overview_owner.ts']);
 const dpath='packages/xy-node/src/geoscale.d.ts',dold=fs.readFileSync(dpath,'utf8');
 const camera=dold.split('\n').find(l=>l.startsWith('export interface XygGeoCamera'));
 const suffix=dold.slice(dold.indexOf('export declare function geoScaleExecute('));

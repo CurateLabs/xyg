@@ -1,0 +1,43 @@
+{
+  "recordedAt": "2026-10-10T18:14:45.334Z",
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "artifact": {
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17",
+    "rawBytes": 1505822,
+    "gzipLevel6Bytes": 618706
+  },
+  "proof": {
+    "ok": true,
+    "actualWorker": true,
+    "command43": true,
+    "exactReplayConfirm": true,
+    "canonicalNonce0": true,
+    "microtask12": true,
+    "privateBorrowedAck": true,
+    "lostQuery10RemainsGuarded": true,
+    "oldFrameRecordUnchanged": true,
+    "numericCollisionsObserved": true,
+    "foreignWorkerStatePredispatchRejected": true,
+    "scope": "Bounded public43 recovery;44 publication and lostQuery10 remain explicit guards."
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_hierarchy_admission_hosts_page.mjs",
+      "/hierarchy-admission-proof.js",
+      "/packages/xy-client/dist/index.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "external": [],
+    "errors": [],
+    "cspViolations": []
+  },
+  "scope": "Bounded public43 admission recovery;44 publication, lostQuery10 and massive latency remain separate gates."
+}

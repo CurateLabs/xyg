@@ -70,13 +70,13 @@ test('packet mutation after scoped validation cannot turn accepted36 into fallba
  });}finally{if(state?.pendingOperation)await state.pendingOperation.dispose();if(frame)await frame.dispose();if(state)try{await raw.execute(encode({command:10,handle:state.handle}));}catch{/*Exact test-owned Query may already have retired.*/}if(index)await index.dispose();if(scope)await scope.dispose();}
 });
 
-test('lost selected19 publication retains guard and never guesses replacement Data cleanup',async()=>{
- const {GeoSpatialIndex}=await import('../src/geo-spatial.js'),raw=nativeGeoScaleBridge(budget.processorBytes);let scope,index,dataHandle,state;const deleted=[];
- const bridge={read:r=>raw.read(r),async execute(r){const request=new DataView(r),command=request.getUint32(8,true);if(command===10)deleted.push(request.getBigUint64(16,true));const reply=await raw.execute(r);if(command===19){dataHandle=new DataView(reply).getBigUint64(16,true);throw new Error('lost actual19 Data reply');}return reply;}};
+test('lost selected19 publication retains guard until exact disposal recovery',async()=>{
+ const {GeoSpatialIndex}=await import('../src/geo-spatial.js'),raw=nativeGeoScaleBridge(budget.processorBytes);let scope,index,dataHandle,state,armed=true;const deleted=[];
+ const bridge={read:r=>raw.read(r),async execute(r){const request=new DataView(r),command=request.getUint32(8,true);if(command===10)deleted.push(request.getBigUint64(16,true));const reply=await raw.execute(r);if(command===19&&armed){armed=false;dataHandle=new DataView(reply).getBigUint64(16,true);throw new Error('lost actual19 Data reply');}return reply;}};
  try{await fixture(bridge,async(original,f)=>{
   const pages=new Map();index=await GeoSpatialIndex._fromFrame(original,{bridge,budget,readChunk:f.readChunk},{grid:16,maxVertices:1000000n,readPage:async t=>pages.get(t.page),writePage:async(t,b)=>{pages.set(t.page,b.slice());}});
   scope=await createGeoSelectedScope(bridge,{frameHandle:original.handle,sequence:1n,namespace:U64,layerId:U64,budget});state=await scope.state({revision:U64,ids:new BigUint64Array([U64]),fill:new Uint8Array([0,255,0,255]),budget});const accepted=await state.begin({command:36,handle:index.handle,sequence:2n,query:f.query,budget});await accepted.operation.drive({readPage:async t=>pages.get(t.page)});
-  await assert.rejects(accepted.operation.prepare(f.style),/lost actual19/);await assert.rejects(state.pendingOperation.dispose(),/publication remains uncertain/);await assert.rejects(accepted.operation.dispose(),/publication remains uncertain/);await assert.rejects(accepted.operation.cancel(),/publication remains uncertain/);assert(!deleted.includes(dataHandle));assert.equal(original.data.record(0).featureId,U64);const packet=await raw.read(encode({command:23,handle:dataHandle}));assert.equal(new DataView(packet).getBigUint64(24,true),2n);
+  await assert.rejects(accepted.operation.prepare(f.style),/lost actual19/);assert(accepted.operation.publicationPending);await assert.rejects(accepted.operation.cancel(),/publication remains uncertain/);assert(!deleted.includes(dataHandle));assert.equal(original.data.record(0).featureId,U64);await accepted.operation.dispose();assert(deleted.includes(dataHandle));await assert.rejects(raw.read(encode({command:23,handle:dataHandle})),e=>e.nativeCode===-10);dataHandle=undefined;await state.pendingOperation.dispose();
  });}finally{if(dataHandle)await raw.execute(encode({command:10,handle:dataHandle}));if(index)await index.dispose();if(scope)await scope.dispose();}
 });
 

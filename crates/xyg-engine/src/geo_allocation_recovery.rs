@@ -46,7 +46,7 @@ fn phase_live(r: &Registry, b: Birth) -> bool {
     r.entries.iter().any(|(id, e)| {
         *id == b.target
             && match b.command {
-                19 => matches!(e, Entry::Data { semantic: Some(s), .. } if s.sequence == b.sequence && s.scope.is_some() && s.result.selection.is_some()),
+                19 | 44 => matches!(e, Entry::Data { semantic: Some(s), .. } if s.sequence == b.sequence && s.scope.is_some() && s.result.selection.is_some()),
                 26 => matches!(e, Entry::Data { .. }),
                 27 => matches!(
                     e,
@@ -62,6 +62,7 @@ fn phase_live(r: &Registry, b: Birth) -> bool {
                 ),
                 35 => matches!(e, Entry::Session(s) if s.operation_live(b.sequence)),
                 36 => matches!(e, Entry::Indexed(q) if q.selected_replacement && q.sequence == b.sequence && (q.published.is_some() || q.session.as_ref().is_some_and(GeoIndexedQuerySession::operation_live))),
+                43 => hierarchy::operation_live(e, b.sequence),
                 45 => matches!(e, Entry::OverviewMembers(o) if o.is_session()),
                 _ => false,
             }
@@ -84,6 +85,8 @@ fn issuer_live(r: &Registry, b: Birth) -> bool {
                 29 => matches!(e, Entry::Overview(overview::Owned::Query { .. })),
                 35 => matches!(e, Entry::Session(_)),
                 36 => matches!(e, Entry::Index(_)),
+                43 => matches!(e, Entry::Hierarchy(hierarchy::Owned::Index(_))),
+                44 => hierarchy::operation_live(e, b.sequence),
                 45 => {
                     matches!(
                         e,
@@ -136,6 +139,15 @@ pub(super) fn execute(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> 
     if command == 19
         && !r.entries.iter().any(|(id, e)| {
             *id == issuer && matches!(e, Entry::Indexed(q) if q.selected_replacement && q.sequence == u64at(request, 24) && q.published.is_some())
+        })
+    {
+        return Err(SourceError::InvalidFrame);
+    }
+    if command == 44
+        && !r.entries.iter().any(|(id, e)| {
+            *id == issuer
+                && hierarchy::selected_complete(e)
+                && hierarchy::operation_live(e, u64at(request, 24))
         })
     {
         return Err(SourceError::InvalidFrame);
@@ -214,7 +226,7 @@ fn confirm(r: &mut Registry, request: &[u8]) -> Result<[u8; HEADER]> {
     let command = u32at(payload, 0);
     let action = u32at(payload, 4);
     let target = u64at(payload, 8);
-    if !matches!(command, 19 | 26..=29 | 35 | 36 | 45) || action > 2 {
+    if !matches!(command, 19 | 26..=29 | 35 | 36 | 43 | 44 | 45) || action > 2 {
         return Err(SourceError::InvalidFrame);
     }
     let issuer = u64at(request, 16);

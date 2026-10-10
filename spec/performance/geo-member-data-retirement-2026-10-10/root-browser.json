@@ -1,0 +1,49 @@
+{
+  "recordedAt": "2026-10-10T18:02:34.889Z",
+  "environment": {
+    "node": "v26.6.0",
+    "browser": "155.0.8059.40",
+    "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "artifact": {
+    "sha256": "d8e0612406d65168aaf2393617d9b583737fe05dfd4d474b391eebbea1b3cc17",
+    "rawBytes": 1505822,
+    "gzip6Bytes": 618706
+  },
+  "result": {
+    "ok": true,
+    "proof": {
+      "lostSuccessful10Recovered": true,
+      "preRustFailureLiveProbeRetry": true,
+      "originalPrivatePublicationSequence": true,
+      "publicBridgeDecorationCannotRetag": true,
+      "generic6Unbranded": true,
+      "foreignCollidingDataRejected": true,
+      "olderWrongSequenceErrorRejected": true,
+      "forgedStaleAttributesRejected": true,
+      "clonedLatestDispatch": true,
+      "synchronousScalarBeforeMicrotask": true,
+      "physicalContinuation": true,
+      "nonminimalRejected": true,
+      "sharedCapacity16": true,
+      "pressureRetainsCleanupGuard": true,
+      "wholeCallbackAckBefore10": true,
+      "noExtraDataRead": true
+    }
+  },
+  "network": {
+    "served": [
+      "/",
+      "/page.js",
+      "/proof.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "errors": [],
+    "external": [],
+    "violations": []
+  },
+  "scope": "Known MemberData10 unresolved cleanup with purpose-specific operation6 proof; no generic SourceStale classifier or massive-performance claim."
+}

@@ -138,3 +138,63 @@ private issuer collisions, cancellation/ACK and ambiguous publication cleanup.
 The evidence is a bounded host-functional proof. Massive selected latency,
 provider durability and explicit live notebook/Reflex/VSCode routing remain
 separate #50/#39 gates.
+
+## Captured hierarchy admission context
+
+Each lane captures its original producer identity, execute/read functions,
+source origin, phase budget and storage callbacks before its first asynchronous
+build dispatch. Forks inherit those captured functions. A selected operation
+copies its canonical264-byte command43 authoring packet before dispatch;
+mutable bridge functions, public lane fields and callback containers cannot
+redirect that operation to another producer. The original bridge identity is
+retained separately for genuine State claims. The shared TypeScript capture is
+an opaque token privately bound to that bridge; a raw transport object cannot
+substitute a foreign producer. Python keeps the captured context on its owning
+lane and uses weak registry values, avoiding a global Source/Frame retention
+cycle. These are fixed control records, with no source-wide data copy or cache.
+
+## Public43 exact admission recovery
+
+Selected admission uses the existing fixed journal bank and nonzero nonce240.
+The authoring packet exposed by the operation and attached to its Frame remains
+canonical nonce0; the immutable private264-byte execution packet is replayed
+exactly. The genuine original Worker or native C-ABI dispatch must authenticate
+the synchronous reply/error before yielding. Numeric error decoration or raw
+WASM callback functions confer no admission authority. Command47 Confirm must
+settle before the Query reads a page or source chunk. Only a captured genuine
+atomic rejection restores the State. Unknown accepted43 consumes the host State
+claim and retains the issued pending operation; recover coalesces the complete
+admission and confirmation flight and returns that same owner.
+
+Issuance callbacks cannot dispatch recovery before they settle, capture the
+private constructor token, or replace canonical initial admission/rollback
+methods. A callback or bounded host preflight failure before dispatch closes the
+unissued guard and restores State usability. Disposal admitted during recovery
+waits the original43/47 flight, borrowed callbacks and exact ticket ACKs. Python
+repeated task cancellation is re-raised only after those owners settle.
+
+A later Query failure, cancellation or frontier/work fallback never restores
+State. Authentic47 retired22 describes the logical43 birth, **not** physical
+Query absence. Cleanup first requires strict known Query10 with its original
+handle/sequence, then authentic retired43 and ReleaseBirth2. Failed or lost
+Query10 remains guarded; neither generic Stale nor22 clears it. Lane10 followed
+by genuine issuer Forget1 reclaims bounded journal controls. Confirmed Query or
+Data disposal is remembered before birth release; failed47 retries do not send
+another10. Twenty distinct sequential fork lanes exercise bank reclamation.
+
+The existing16-handle,8-Data,16-birth and captured128-MiB phase bounds remain.
+Fixed authoring/execution/receipt controls add no source-wide copies, pool or
+parser. Storage remains externally owned and bounded by the existing exact
+loan/transfer admission policy; callback settlement precedes ACK.
+
+Public44 remains a separate legacy publication-uncertainty guard. This slice
+adds no durable44 Data factory and does not expand Query6/10 capture purposes.
+Its historical generic-error fallback and unresolved publication/Query-disposal
+paths remain readiness gaps. Raw nonce0 engine packets and ordinary38/39 policy
+remain unchanged. The actual Worker fixture proves43 replay/Confirm,
+foreign-State rejection, twelve reply mutation timings, borrowed ACK settlement
+and the deliberately retained lostQuery10 guard. Point/MultiPoint, reduced
+membership and frozen-output native controls are retained; unchanged paired
+engine packet evidence is the separate cross-target oracle, not a claim that a
+raw callback WASM bridge is an authenticated public issuer. No new massive,
+linked-view, browser static-mount or performance claim follows from this slice.
