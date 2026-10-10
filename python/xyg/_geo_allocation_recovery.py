@@ -84,14 +84,16 @@ class GeoAllocationAttempt:
     """Captured before dispatch; exact confirmation settles before phase advance."""
 
     def __init__(self, owner, transport, request, operation_sequence=None, *, authenticated=False):
-        if not 256 <= len(request) <= 280:
+        if not 256 <= len(request) <= 304:
             raise ValueError("Bounded allocation request required")
         raw = bytes(request)
         command = struct.unpack_from("<I", raw, 8)[0]
-        if command not in (26, 27, 28, 29, 35, 36, 45) or struct.unpack_from("<Q", raw, 240)[0]:
+        if command not in (19, 26, 27, 28, 29, 35, 36, 45) or struct.unpack_from("<Q", raw, 240)[0]:
             raise ValueError("Canonical allocation request required")
         if command in (35, 36) and (len(raw) != 264 or not authenticated):
             raise ValueError("selected mutations require authenticated exact framing")
+        if command == 19 and (len(raw) != 304 or not authenticated):
+            raise ValueError("selected publication requires authenticated exact framing")
         commands = _issuer_receipts(owner, True)
         slot = commands.setdefault(command, {"nonce": 0, "dead": False, "attempt": None})
         prior = slot["attempt"]
