@@ -1,0 +1,16 @@
+file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/scripts/.geo_selected_conformance_red.mjs:19
+async function call(request,read){assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h)>>>0,request.byteLength).set(new Uint8Array(request));const status=x[`xyg_wasm_geo_scale_${read?'read':'execute'}`](h,++sequence,0,request.byteLength);if(status){const error=new Error(new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h)>>>0,x.xyg_wasm_last_error_len(h))));error.nativeCode=status;throw error;}return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h)).slice().buffer;}
+                                                                                                                                                                                                                                                                                                                                    ^
+
+Error: XYG_GEO_SOURCE_RESOURCE_LIMIT
+    at call (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/scripts/.geo_selected_conformance_red.mjs:19:325)
+    at Object.execute (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/scripts/.geo_selected_conformance_red.mjs:20:24)
+    at execute (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/packages/xy-node/src/geo-selected.js:13:110)
+    at Object.dispose (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/packages/xy-node/src/geo-selected.js:16:65)
+    at GeoSelectedScope.dispose (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/packages/xy-node/src/geo-selected.js:50:35)
+    at run (file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/scripts/.geo_selected_conformance_red.mjs:54:137)
+    at async file:///Users/davidspencer/.t3/worktrees/xyg/t3code-m6-geoselectedconformancefix/scripts/.geo_selected_conformance_red.mjs:114:123 {
+  nativeCode: 3
+}
+
+Node.js v26.6.0
