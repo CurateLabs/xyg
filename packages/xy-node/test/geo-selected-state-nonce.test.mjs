@@ -7,17 +7,18 @@ import {RetainedGeoSource,attachRetainedFrame} from '../src/geo-retained.js';
 import {GeoHierarchy,GeoHierarchyUnsupportedSelected,hierarchyLaneAuthority,isHierarchyFrame} from '../src/geo-hierarchy.js';
 import {GeoHierarchyPublicationUncertain} from '../src/geo-hierarchy-wire.js';
 import {createGeoSelectedScope,GeoSelectedState} from '../src/geo-selected.js';
-import {encodeGeoScaleRequest as encode,encodeGeoChunkRequest,encodeGeoScaleStyle,decodeGeoScaleReply,nativeGeoScaleBridge} from '../src/geoscale.js';
+import {encodeGeoScaleRequest as encode,encodeGeoChunkRequest,encodeGeoScaleStyle,decodeGeoScaleReply,nativeGeoScaleBridge,driveGeoSession,prepareGeoSceneData} from '../src/geoscale.js';
 import {encodeGeoSnapshotRequest,decodeGeoSnapshotReply,nativeGeoSnapshotBridge} from '../src/geo-snapshot.js';
 const MAX=(1n<<64n)-1n,MIN=-(1n<<63n),HIGH=9007199254740993n;
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:4096};
 const style=()=>encodeGeoScaleStyle({fill:Uint8Array.of(255,0,0,255),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0});
 const fill=()=>Uint8Array.of(0,255,0,255);
 const descriptor=multi=>{const vertices=multi?6:3,out=new Uint8Array(64+vertices*16+8+32+(multi?24:0)),v=new DataView(out.buffer);out.set([88,89,71,68]);[1,multi?4:1,4326,1,0].forEach((n,i)=>v.setUint32(4+i*4,n,true));v.setBigUint64(24,4n,true);v.setBigUint64(32,BigInt(vertices),true);v.setBigUint64(40,multi?5n:0n,true);let at=64;for(let row=0;row<3;row++)for(let vertex=0;vertex<(multi?2:1);vertex++){v.setFloat64(at,(row-1)*0.0001+vertex*1e-7,true);at+=16;}out.set([1,1,1,0],at);at+=8;[MAX,HIGH,MAX,1n<<63n].forEach((n,i)=>v.setBigUint64(at+i*8,n,true));at+=32;if(multi)[0,2,4,6,6].forEach((n,i)=>v.setUint32(at+i*4,n,true));return out;};
+const rawWasmBridges=new WeakSet();
 async function host(name){if(name==='native')return{bridge:nativeGeoScaleBridge(budget.processorBytes),snapshot:nativeGeoSnapshotBridge(budget.processorBytes),dispose(){}};
  const artifact=await readFile(process.env.XYG_HIERARCHY_WASM??new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{instance}=await WebAssembly.instantiate(artifact,{}),x=instance.exports,id=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(id);let sequence=0;
  async function call(request,method){assert.equal(x.xyg_wasm_arena_resize(id,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(id)>>>0,request.byteLength).set(new Uint8Array(request));const status=x[method](id,++sequence,0,request.byteLength);if(status){const error=new Error(`WASM${status}:`+new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(id)>>>0,x.xyg_wasm_last_error_len(id))));error.wasmStatus=status;error.nativeCode=status===3?-9:status;throw error;}return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(id)>>>0,x.xyg_wasm_output_len(id)).slice().buffer;}
- return{bridge:{execute:r=>call(r,'xyg_wasm_geo_scale_execute'),read:r=>call(r,'xyg_wasm_geo_scale_read')},snapshot:{execute:r=>call(r,'xyg_wasm_geo_snapshot_execute'),read:r=>call(r,'xyg_wasm_geo_snapshot_read')},dispose(){assert.equal(x.xyg_wasm_instance_dispose(id),0);}};
+ const bridge={execute:r=>call(r,'xyg_wasm_geo_scale_execute'),read:r=>call(r,'xyg_wasm_geo_scale_read')};rawWasmBridges.add(bridge);return{bridge,snapshot:{execute:r=>call(r,'xyg_wasm_geo_snapshot_execute'),read:r=>call(r,'xyg_wasm_geo_snapshot_read')},dispose(){assert.equal(x.xyg_wasm_instance_dispose(id),0);}};
 }
 async function setup(bridge,multi=false){
  const chunk=await bridge.read(encodeGeoChunkRequest({descriptor:descriptor(multi),rows:4,intervals:{starts:BigInt64Array.of(MIN,0n,10n,0n),ends:BigInt64Array.of(0n,10n,0n,0n),startValidity:Uint8Array.of(0,1,1,0),endValidity:Uint8Array.of(1,1,0,0)}},budget.processorBytes));
@@ -25,7 +26,12 @@ async function setup(bridge,multi=false){
  const source=await RetainedGeoSource.create(manifest,()=>chunk,{budget,bridge});const q={camera:{crs:4326,worldWrap:true,centerX:0,centerY:0,zoom:8,width:800,height:600,bearing:0,pitch:0},reducedKind:0,maxCells:32768,previousDirect:true,sourceDigest:source.info.digest,generation:MAX,layerId:MAX,cameraRevision:1n,timeRevision:1n,layerRevision:1n,styleRevision:1n,stateRevision:1n,time:{kind:0},maxProjectedVertices:1000000n};
  const original=await source.update(q,{sequence:1n,style:style()}),scope=await createGeoSelectedScope(bridge,{frameHandle:original.handle,sequence:1n,namespace:777n,layerId:MAX,budget});
  const issue=()=>scope.state({revision:2n,ids:BigUint64Array.of(MAX,1n<<63n),fill:fill(),budget});
- const state=await issue(),stateHandle=state.handle,selectedQuery={...q,stateRevision:2n},begun=await state.begin({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget});assert.equal(begun.fallback,false);await begun.operation.drive({readChunk:source.readChunk});const selected=await begun.operation.prepare(style()),payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,stateHandle,true);attachRetainedFrame(source,selected,2n,encode({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget,payload}),style());
+ const state=await issue(),stateHandle=state.handle,selectedQuery={...q,stateRevision:2n},payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,stateHandle,true);let selected;
+ // A raw test WebAssembly callback has no canonical host issuer. Author only
+ // this prerequisite through Rust nonce0; Scope33/43/44 assertions stay typed.
+ if(rawWasmBridges.has(bridge)){await bridge.execute(encode({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget,payload}));await driveGeoSession(bridge,{handle:source.handle,sequence:2n,budget,readChunk:source.readChunk});selected=await prepareGeoSceneData(bridge,{handle:source.handle,sequence:2n,budget,style:style()});}
+ else{const begun=await state.begin({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget});assert.equal(begun.fallback,false);await begun.operation.drive({readChunk:source.readChunk});selected=await begun.operation.prepare(style());}
+ attachRetainedFrame(source,selected,2n,encode({command:35,handle:source.handle,sequence:2n,query:selectedQuery,budget,payload}),style());
  const pages=new Map(),options={grid:1024,maxVertices:1000000n,maxWriteBytes:64n<<20n,readPage:t=>pages.get(`${t.namespace}:${t.page}`),writePage:(t,b)=>pages.set(`${t.namespace}:${t.page}`,b.slice())};
  return{source,original,selected,scope,issue,query:selectedQuery,options,pages,async close(){await selected.dispose();await original.dispose();await source.dispose();await scope.dispose();}};
 }
@@ -47,7 +53,7 @@ for(const name of ['native','wasm'])test(`${name} nonce attempt cleanup before d
  const a=f.scope.beginState({revision:2n,ids:BigUint64Array.of(MAX,1n<<63n),fill:fill(),budget});await a.dispose();await assert.rejects(a.recover());
  const b=f.scope.beginState({revision:2n,ids:BigUint64Array.of(MAX,1n<<63n),fill:fill(),budget});const state=await b.recover();const request=encode({command:33,handle:f.scope.handle,budget,payload:(()=>{const p=new Uint8Array(40),v=new DataView(p.buffer);v.setBigUint64(0,2n,true);p.set(fill(),8);v.setBigUint64(16,2n,true);v.setBigUint64(24,MAX,true);v.setBigUint64(32,1n<<63n,true);return p;})()});
  new DataView(request).setBigUint64(24,2n,true);
- const op=await state.begin({command:35,handle:f.source.handle,sequence:3n,query:f.query,budget});await op.operation.drive({readChunk:f.source.readChunk});await b.dispose();assert.equal(new DataView(await h.bridge.execute(request)).getUint32(8,true),20);
+ if(rawWasmBridges.has(h.bridge)){const payload=new Uint8Array(8);new DataView(payload.buffer).setBigUint64(0,state.handle,true);await h.bridge.execute(encode({command:35,handle:f.source.handle,sequence:3n,query:f.query,budget,payload}));await driveGeoSession(h.bridge,{handle:f.source.handle,sequence:3n,budget,readChunk:f.source.readChunk});}else{const op=await state.begin({command:35,handle:f.source.handle,sequence:3n,query:f.query,budget});await op.operation.drive({readChunk:f.source.readChunk});}await b.dispose();assert.equal(new DataView(await h.bridge.execute(request)).getUint32(8,true),20);
  }finally{await f.close();h.dispose();}
 });
 

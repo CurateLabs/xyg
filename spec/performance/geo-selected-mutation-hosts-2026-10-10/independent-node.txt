@@ -1,0 +1,20 @@
+✔ actual selected35 lost remains claimed until exact recovery (201.16675ms)
+✔ actual selected35 forged-error remains claimed until exact recovery (0.818709ms)
+✔ actual selected35 forged-confirm remains claimed until exact recovery (0.718ms)
+✔ numeric legacy repeated Scopes reclaim journal bank only after original Source disposal (7.369833ms)
+✔ actual36 forged fallback remains uncertain; exact replay owns Query and never replacement Data (2.590708ms)
+✔ genuine nonjournaled36 fallback preserves State and sequence for corrected admission (0.926625ms)
+✔ packet mutation after scoped validation cannot turn accepted36 into fallback (0.718583ms)
+✔ lost selected19 publication retains guard and never guesses replacement Data cleanup (0.639042ms)
+✔ older genuine rejection from prior-call cannot clear accepted35 ownership (4.212417ms)
+✔ older genuine rejection from same-call-clone cannot clear accepted35 ownership (2.694041ms)
+✔ older genuine rejection from escaped-context cannot clear accepted35 ownership (5.007417ms)
+✔ older genuine rejection from nested-capture cannot clear accepted35 ownership (4.556667ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 279.406541

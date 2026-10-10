@@ -1,0 +1,23 @@
+✔ actual selected35 lost remains claimed until exact recovery (305.211542ms)
+✔ actual selected35 forged-error remains claimed until exact recovery (0.897167ms)
+✔ actual selected35 forged-confirm remains claimed until exact recovery (0.681125ms)
+✔ numeric legacy repeated Scopes reclaim journal bank only after original Source disposal (9.492083ms)
+✔ actual36 forged fallback remains uncertain; exact replay owns Query and never replacement Data (3.286208ms)
+✔ genuine nonjournaled36 fallback preserves State and sequence for corrected admission (1.010792ms)
+✔ packet mutation after scoped validation cannot turn accepted36 into fallback (0.737125ms)
+✔ lost selected19 publication retains guard and never guesses replacement Data cleanup (0.700708ms)
+✔ older genuine rejection from prior-call cannot clear accepted35 ownership (4.335333ms)
+✔ older genuine rejection from same-call-clone cannot clear accepted35 ownership (2.98725ms)
+✔ older genuine rejection from escaped-context cannot clear accepted35 ownership (12.036042ms)
+✔ older genuine rejection from nested-capture cannot clear accepted35 ownership (9.267625ms)
+✔ actual native selected scope consumes only success and binds exact u64 intent (300.772709ms)
+✔ ordinary native Scene owner retries failed cleanup without resurrecting views (2.124292ms)
+✔ selected native Scene cleanup retries the same independent owner (2.570916ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 414.29325

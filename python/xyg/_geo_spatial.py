@@ -234,6 +234,9 @@ class GeoSpatialIndex(RetainedGeoSource):
             )
         )
         self.handle = reply["handle"]
+        from ._geo_allocation_recovery import register_geo_allocation_issuer
+
+        register_geo_allocation_issuer(self, self.handle, self._bridge)
         try:
             result = drive_index(
                 self.handle, reply["sequence"], self.budget, self._reader, read_page, write_page
@@ -271,6 +274,9 @@ class GeoSpatialIndex(RetainedGeoSource):
         )
         reply = g.decode_reply(raw)
         self.handle = reply["handle"]
+        from ._geo_allocation_recovery import register_geo_allocation_issuer
+
+        register_geo_allocation_issuer(self, self.handle, self._bridge)
         try:
             if interrupted:
                 raise asyncio.CancelledError

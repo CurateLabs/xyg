@@ -9,10 +9,11 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import struct
+import threading
 import traceback
 import weakref
 from collections.abc import Awaitable, Callable
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from typing import Any, Protocol
 
 import numpy as np
@@ -20,6 +21,71 @@ import numpy as np
 HEADER = 256
 MAX_PACKET = 32 * 1024 * 1024
 MAX_PROCESSOR = 128 * 1024 * 1024
+
+# Bounded active calls observe matching native dispatches across threads and
+# nested wrappers; no response history survives a closed capture.
+_ACTIVE_NATIVE_MUTATION_CAPTURES = 0
+_NATIVE_MUTATION_CAPTURE_LOCK = threading.Lock()
+_NATIVE_MUTATION_CAPTURES: set = set()
+
+
+class _NativeMutationCapture:
+    def __init__(self, request):
+        self.request: bytes | None = bytes(request)
+        self.reply = self.error = self.status = None
+        self.latest = None
+
+    def begin(self, request):
+        if request == self.request:
+            self.latest = object()
+            self.reply = self.error = self.status = None
+            return self.latest
+        return None
+
+    def record(self, token, *, reply=None, error=None, status=None):
+        if token is not None and token is self.latest:
+            self.reply, self.error, self.status = reply, error, status
+
+    def outcome(self, returned):
+        with _NATIVE_MUTATION_CAPTURE_LOCK:
+            if self.reply is not None and isinstance(returned, bytes) and returned == self.reply:
+                return dict(reply=self.reply)
+            if returned is self.error and self.error is not None:
+                return dict(status=self.status)
+            return None
+
+
+@contextmanager
+def _capture_native_mutation(request):
+    """Exact per-call native outcome, held through settlement and reset in finally."""
+    command = struct.unpack_from("<I", request, 8)[0] if len(request) >= 12 else 0
+    if not (
+        (len(request) == 264 and command in (35, 36))
+        or (
+            len(request) == 272
+            and command == 47
+            and struct.unpack_from("<I", request, 256)[0] in (35, 36)
+        )
+    ):
+        raise ValueError("bounded selected mutation request required")
+    global _ACTIVE_NATIVE_MUTATION_CAPTURES
+    with _NATIVE_MUTATION_CAPTURE_LOCK:
+        if _ACTIVE_NATIVE_MUTATION_CAPTURES >= 16:
+            raise RuntimeError("Selected mutation capture capacity exhausted")
+        _ACTIVE_NATIVE_MUTATION_CAPTURES += 1
+    capture = None
+    try:
+        capture = _NativeMutationCapture(request)
+        with _NATIVE_MUTATION_CAPTURE_LOCK:
+            _NATIVE_MUTATION_CAPTURES.add(capture)
+        yield capture
+    finally:
+        with _NATIVE_MUTATION_CAPTURE_LOCK:
+            if capture is not None:
+                _NATIVE_MUTATION_CAPTURES.discard(capture)
+                capture.request = capture.reply = capture.error = capture.status = None
+                capture.latest = None
+            _ACTIVE_NATIVE_MUTATION_CAPTURES -= 1
 
 
 def _uint(value: int, bits: int = 64) -> int:
@@ -557,11 +623,23 @@ def execute(request: bytes) -> bytes:
 
     if not isinstance(request, bytes) or not HEADER <= len(request) <= MAX_PACKET:
         raise ValueError("invalid geographic request size")
+    # Every exact canonical dispatch updates all active scopes, including a
+    # nested context or thread which did not inherit this caller's ContextVar.
+    with _NATIVE_MUTATION_CAPTURE_LOCK:
+        captures = [(c, c.begin(request)) for c in _NATIVE_MUTATION_CAPTURES]
     source, out = ctypes.create_string_buffer(request), ctypes.create_string_buffer(HEADER)
     code = _native._lib.xyg_geo_scale_execute(source, len(request), out, HEADER)
     if code:
-        raise _native.GeoNativeError(code)
-    return out.raw
+        error = _native.GeoNativeError(code)
+        with _NATIVE_MUTATION_CAPTURE_LOCK:
+            for capture, token in captures:
+                capture.record(token, error=error, status=int(code))
+        raise error
+    reply = out.raw
+    with _NATIVE_MUTATION_CAPTURE_LOCK:
+        for capture, token in captures:
+            capture.record(token, reply=reply)
+    return reply
 
 
 def read(request: bytes, budget: int) -> bytes:

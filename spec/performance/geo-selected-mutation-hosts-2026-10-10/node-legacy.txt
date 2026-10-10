@@ -1,0 +1,44 @@
+✔ native lost33 recovers same private State and retryable cleanup (25.423875ms)
+✔ native corrupt33 recovers same private State and retryable cleanup (0.99775ms)
+✔ wasm lost33 recovers same private State and retryable cleanup (15.386709ms)
+✔ wasm corrupt33 recovers same private State and retryable cleanup (3.809041ms)
+✔ native nonce attempt cleanup before dispatch allocates once and consumes tombstone (0.898625ms)
+✔ wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone (3.037167ms)
+✔ native lost actual10 is settled by retired nonce receipt without a second State (0.693666ms)
+✔ wasm lost actual10 is settled by retired nonce receipt without a second State (3.259834ms)
+✔ native five scopes and five serial shared-scope allocations keep original paint (1.1405ms)
+✔ wasm five scopes and five serial shared-scope allocations keep original paint (3.749584ms)
+✔ native definite allocation-free handle pressure closes attempt without retrying33 (0.866917ms)
+✔ wasm definite allocation-free handle pressure closes attempt without retrying33 (3.79675ms)
+✔ native nonce tombstone cannot reconstruct consumed43 Query or44 Data (2.642333ms)
+✔ wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data (5.1615ms)
+✔ two actual WASM producers with colliding handles reject edited Scope bridge before33 (7.764ms)
+✔ complete normalized native/WASM nonce controls match after original handle validation (0.462917ms)
+✔ native post-allocation status6 remains uncertain and recovers exact State (0.618292ms)
+✔ native post-allocation status-1 remains uncertain and recovers exact State (0.421125ms)
+✔ wasm post-allocation status6 remains uncertain and recovers exact State (2.671042ms)
+✔ wasm post-allocation status-1 remains uncertain and recovers exact State (2.329333ms)
+✔ delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit (4.592959ms)
+✔ native resource rejection during uncertain replay keeps original allocation recoverable (0.581208ms)
+✔ wasm resource rejection during uncertain replay keeps original allocation recoverable (2.274792ms)
+✔ indexed frames retain full IDs, rows, picking and export after source/index disposal (31.876833ms)
+✔ failed writes and authenticated reads preserve old frame and recover (2.291833ms)
+✔ pending durable write cancellation waits for storage settlement before ACK (12.382083ms)
+✔ callback mutation cannot authorize larger leaf storage (0.708625ms)
+✔ public composition compiles indexed source and exports exact owned frame (25.517209ms)
+✔ leaf work fallback reports explicit reason and does not advance query sequence (0.638583ms)
+✔ real ABI382 full IDs/time, Data read quota, explicit lifecycle (28.066709ms)
+✔ read lease abort: settle before acknowledgment (0.306ms)
+✔ read lease giant: settle before acknowledgment (0.142584ms)
+✔ read lease failure: settle before acknowledgment (0.102042ms)
+✔ read lease success: settle before acknowledgment (0.170167ms)
+✔ malformed provenance and exact scalar widths rejected (0.746834ms)
+﹣ parsed identity failure drops packet storage before Data disposal (0.03475ms) # SKIP
+ℹ tests 36
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 177.608416

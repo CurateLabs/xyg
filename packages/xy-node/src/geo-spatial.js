@@ -1,5 +1,5 @@
 /** Native spatial-index owner. Rust owns indexing, temporal and LOD policy. */
-import { RetainedGeoSource, attachRetainedFrame } from './geo-retained.js';
+import { RetainedGeoSource, attachRetainedFrame,registerRetainedAllocationIssuer } from './geo-retained.js';
 import { encodeGeoScaleRequest as encode, decodeGeoScaleReply as decode,
   driveGeoIndexSession, prepareGeoSceneData } from './geoscale.js';
 
@@ -26,7 +26,7 @@ export class GeoSpatialIndex extends RetainedGeoSource {
       try {
         if(signal?.aborted)abort(); if(ownSignal.aborted)throw new Error('operation aborted');
         const r=decode(await self.bridge.execute(encode({command:17,handle:frame.handle,sequence,budget:self.budget,payload})));
-        self.handle=r.handle;
+        self.handle=r.handle;registerRetainedAllocationIssuer(self,self.bridge,self.handle);
         if(ownSignal.aborted)throw new Error('operation aborted');
         const result=await driveGeoIndexSession(self.bridge,{handle:self.handle,sequence,budget:self.budget,readChunk:self.readChunk,readPage,writePage,signal:ownSignal});
         if(ownSignal.aborted)throw new Error('operation aborted');
