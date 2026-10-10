@@ -20,6 +20,7 @@ All other framing words follow existing reserved-field rules. Commands32–34
 admit valid explicit QueryBudget words; no unused camera words acquire meaning.
 Commands35/36 validate full source, camera/time/revisions, state binding and
 options before consuming authority. Failure preserves the issued State handle.
+Opt-in nonzero header240 on35/36 provides [exact mutation recovery](geo-selected-mutation-recovery.md); nonce0 is unchanged.
 Canceling accepted work does not recreate its consumed State; the caller may
 publish an identical new handle from the retained Scope.
 

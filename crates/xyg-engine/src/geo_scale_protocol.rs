@@ -186,7 +186,7 @@ fn frame(b: &[u8]) -> Result<u32> {
         || u32at(b, 4) != 1
         || u64at(b, 232) != (b.len() - HEADER) as u64
         || b[248..256].iter().any(|&v| v != 0)
-        || (u64at(b, 240) != 0 && !matches!(u32at(b, 8), 26..=29 | 45 | 47))
+        || (u64at(b, 240) != 0 && !matches!(u32at(b, 8), 26..=29 | 35 | 36 | 45 | 47))
         || b.len() > MAX_DATA
         || u32at(b, 204) != 0
     {
