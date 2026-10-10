@@ -451,6 +451,7 @@ jobs:
           node scripts/gen_geo_overview_hosts.mjs --check
           node scripts/geo_hierarchy_conformance.mjs
           node scripts/geo_selected_hierarchy_conformance.mjs
+          XYG_SELECTED_HIERARCHY_REPORT="$GITHUB_WORKSPACE/geo-hierarchy-recovery-ci.json" node scripts/geo_hierarchy_recovery_conformance.mjs
           XYG_GEO_MEMBERS_REPORT="$GITHUB_WORKSPACE/geo-overview-members-hosts-ci.json" XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs
 
       - name: Install Chromium
@@ -536,6 +537,7 @@ jobs:
             geo-overview-controller-ci.json
             geo-overview-binary-ci.json
             geo-selected19-capture-ci.json
+            geo-hierarchy-recovery-ci.json
             geo-selected-mutation-hosts-ci.json
             geo-native-overview-host-ci.json
 
