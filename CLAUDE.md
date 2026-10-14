@@ -130,6 +130,20 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+## Independent review
+
+Before opening or merging a pull request, require a completed external review
+of the final diff by a reviewer other than the implementing agent. Prefer
+Greptile or CodeRabbitAI when available and able to review the requested scope;
+otherwise use another independent reviewer or a reviewer sub-agent. CodeRabbit
+is not mandatory. This repository policy overrides shared skill instructions
+that require CodeRabbit specifically.
+
+Record the reviewer, reviewed commit or diff, findings, and disposition in the
+pull request or readiness evidence. Resolve blocking findings before proceeding.
+An authorization, review request, skipped review, or self-review does not satisfy
+the requirement. Re-review material changes made after the reviewed diff.
+
 ## GitHub merge queue
 
 `main` requires the GitHub merge queue. The repository-level ruleset is
