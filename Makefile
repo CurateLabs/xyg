@@ -7,7 +7,7 @@ WHEEL ?=
 BENCHMARK_JSON ?= benchmark.json
 BENCHMARK_KIND ?= auto
 
-.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-ownership check-host-parity check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-generate abi-check abi-smoke
+.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-ownership check-host-parity check-graph check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-generate abi-check abi-smoke
 
 help:
 	@printf '%s\n' \
@@ -28,6 +28,7 @@ help:
 		'  make check-ci         run CI/release workflow invariant checks' \
 		'  make check-ownership  validate the production-source ownership ledger' \
 		'  make check-host-parity run M2 host-parity landing gates (inventory + cross-host + ABI)' \
+		'  make check-graph      run Node/Python graph tests and chart-scale/pyramid smokes (build core/client/WASM first)' \
 		'  make abi-generate     regenerate the typed ABI contract and host declarations' \
 		'  make abi-check        verify generated ABI artifacts and host parity' \
 		'  make check-benchmark-harness run benchmark metadata/report/regression tests' \
@@ -107,6 +108,23 @@ check-ownership:
 
 check-host-parity:
 	$(PYTHON) scripts/audit_host_parity_landing.py
+
+# Requires the release core, generated JS/WASM client, and both npm installs.
+check-graph: export XYG_NATIVE_LIB ?= $(CURDIR)/target/release/$(shell node -p "process.platform === 'win32' ? 'xyg_core.dll' : process.platform === 'darwin' ? 'libxyg_core.dylib' : 'libxyg_core.so'")
+check-graph:
+	@test -f "$(XYG_NATIVE_LIB)" || { echo 'Build the release core first: cargo build --release' >&2; exit 1; }
+	@for asset in packages/xy-client/dist/index.js packages/xy-client/dist/standalone.js packages/xy-client/dist/xyg-wasm.wasm; do \
+		test -f "$$asset" || { echo "Missing $$asset; run node js/build.mjs && npm run build:wasm" >&2; exit 1; }; \
+	done
+	$(PYTHON) scripts/abi_smoke.py
+	$(PYTHON) -m pytest tests/test_graph.py tests/test_sankey.py -q
+	npm test --prefix packages/xy-node
+	$(PYTHON) benchmarks/bench_dual_host_graph.py --sizes 1000
+	$(PYTHON) benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline
+	$(PYTHON) benchmarks/bench_scale_all_charts.py --profile smoke
+	node benchmarks/bench_scale_all_charts_node.mjs --profile smoke
+	$(PYTHON) benchmarks/bench_tier3_pyramid.py
+	node benchmarks/bench_tier3_pyramid_node.mjs
 
 check-benchmark-harness:
 	$(PYTHON) scripts/verify_local.py --only benchmark_harness

@@ -69,9 +69,10 @@ integrations are owned or explicitly controlled by CurateLabs:
   Blacksmith Linux, ARM, Windows, or macOS runner; the canonical Linux CI image is
   `blacksmith-4vcpu-ubuntu-2404`, and no workflow may use a GitHub-hosted
   runner alias. `ci.yml`,
-  `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification paths.
-  Binder builds locally with repo2docker; Bazel keeps uv's cache inside the
-  writable workspace.
+  `docs.yml` and `binder.yml` are hard verification paths.
+  Binder builds locally with repo2docker. The main CI test job runs the graph,
+  complete Node host, and chart-scale/pyramid checks directly with Cargo,
+  pytest, and npm; see [build-ci.md](../design/build-ci.md).
 - The sole runner-policy exception is `codspeed.yml`: it is the repository's
   native performance trend path and uses
   the dedicated `codspeed-macro` bare-metal runner plus GitHub OIDC to the

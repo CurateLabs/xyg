@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_DENSITY_WORKFLOW = ROOT / ".github" / "workflows" / "density-100m.yml"
-DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_FINAL_REVIEW_WORKFLOW = ROOT / ".github" / "workflows" / "final-coderabbit.yml"
 DEFAULT_CODERABBIT_CONFIG = ROOT / ".coderabbit.yaml"
 DEFAULT_FINAL_REVIEW_SCRIPT = ROOT / "scripts" / "request_final_coderabbit.py"
@@ -1397,6 +1396,27 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
         "node --test packages/xy-node/test/xyts-conformance.test.mjs",
     )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Node host suite",
+        "complete Node host suite against the shared native core",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        "npm test --prefix packages/xy-node",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Graph and chart-scale smoke gates",
+        "graph/kernel ceilings, chart-scale and pyramid smoke coverage",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        ".venv/bin/python benchmarks/bench_dual_host_graph.py --sizes 1000",
+        ".venv/bin/python benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline",
+        ".venv/bin/python benchmarks/bench_scale_all_charts.py --profile smoke",
+        "node benchmarks/bench_scale_all_charts_node.mjs --profile smoke",
+        ".venv/bin/python benchmarks/bench_tier3_pyramid.py",
+        "node benchmarks/bench_tier3_pyramid_node.mjs",
+    )
     _require_job_contains(
         errors,
         jobs,
@@ -1910,44 +1930,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
 def validate_workflow(path: Path = DEFAULT_WORKFLOW) -> list[str]:
     """Backward-compatible CI workflow verifier."""
     return validate_ci_workflow(path)
-
-
-def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        return [f"cannot read Bazel workflow {path}: {exc}"]
-
-    errors: list[str] = []
-    _require_trigger_with_direct_option(errors, text, "Bazel", "push", "branches", '["main"]')
-    jobs = _job_blocks(text)
-    bazel = jobs.get("bazel", "")
-    if not bazel:
-        errors.append("Bazel workflow missing required bazel job")
-        return errors
-
-    runner_values, runner_unsafe = _direct_yaml_key_values(bazel, "runs-on", indent=4)
-    if runner_unsafe or runner_values != ["blacksmith-4vcpu-ubuntu-2404"]:
-        errors.append("Bazel job must run on the configured Blacksmith runner")
-
-    env = _unique_mapping_block(bazel, "env", indent=4)
-    uv_values, uv_unsafe = _direct_yaml_key_values(env or "", "UV_CACHE_DIR", indent=6)
-    if env is None or uv_unsafe or uv_values != ["${{ github.workspace }}/.cache/uv"]:
-        errors.append("Bazel job must place uv's cache in the writable GitHub workspace")
-    xdg_values, xdg_unsafe = _direct_yaml_key_values(env or "", "XDG_CACHE_HOME", indent=6)
-    if env is None or xdg_unsafe or xdg_values != ["${{ github.workspace }}/.cache"]:
-        errors.append("Bazel job must place its output user root in the writable workspace cache")
-
-    if env is not None:
-        for line in _yaml_code_lines(env):
-            indent = len(line) - len(line.lstrip(" "))
-            match = _DIRECT_YAML_KEY.fullmatch(line[indent:])
-            if indent != 6 or match is None:
-                continue
-            if re.search(r"\$\{\{\s*runner\.", match.group("value")):
-                errors.append("Bazel job-level env cannot use the unavailable runner context")
-                break
-    return errors
 
 
 def validate_final_review_policy(
@@ -2933,7 +2915,6 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
 def validate_all_workflows(
     ci_path: Path = DEFAULT_CI_WORKFLOW,
     codspeed_path: Path = DEFAULT_CODSPEED_WORKFLOW,
-    bazel_path: Path = DEFAULT_BAZEL_WORKFLOW,
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
     final_review_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
     coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
@@ -2944,7 +2925,6 @@ def validate_all_workflows(
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_density_workflow(density_path),
-        *validate_bazel_workflow(bazel_path),
         *validate_final_review_policy(final_review_path, coderabbit_config_path),
         *validate_release_workflow(release_path),
     ]
@@ -2961,7 +2941,7 @@ def validate_workflow_hosting_policy(
         except OSError as exc:
             errors.append(f"cannot read workflow {path}: {exc}")
             continue
-        if path.name in {"bazel.yml", "binder.yml"}:
+        if path.name == "binder.yml":
             on_block = _unique_mapping_block(text, "on", indent=0) or ""
             triggers = {
                 key
@@ -3093,7 +3073,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     parser.add_argument("--ci-workflow", type=Path, default=DEFAULT_CI_WORKFLOW)
     parser.add_argument("--codspeed-workflow", type=Path, default=DEFAULT_CODSPEED_WORKFLOW)
-    parser.add_argument("--bazel-workflow", type=Path, default=DEFAULT_BAZEL_WORKFLOW)
     parser.add_argument("--release-workflow", type=Path, default=DEFAULT_RELEASE_WORKFLOW)
     parser.add_argument("--ci-only", action="store_true")
     parser.add_argument("--codspeed-only", action="store_true")
@@ -3120,13 +3099,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         errors = validate_all_workflows(
             args.ci_workflow,
             args.codspeed_workflow,
-            args.bazel_workflow,
             args.release_workflow,
         )
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
-            args.bazel_workflow,
             args.release_workflow,
         ]
 

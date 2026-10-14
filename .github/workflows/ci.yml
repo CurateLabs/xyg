@@ -258,6 +258,23 @@ jobs:
         run: |
           .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xyg')"
 
+      # Native tools own this coverage; spec/design/build-ci.md maps the
+      # retired graph wrapper suite to the main CI job and local commands.
+      - name: Node host suite
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          npm test --prefix packages/xy-node
+
+      - name: Graph and chart-scale smoke gates
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          .venv/bin/python benchmarks/bench_dual_host_graph.py --sizes 1000
+          .venv/bin/python benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline
+          .venv/bin/python benchmarks/bench_scale_all_charts.py --profile smoke
+          node benchmarks/bench_scale_all_charts_node.mjs --profile smoke
+          .venv/bin/python benchmarks/bench_tier3_pyramid.py
+          node benchmarks/bench_tier3_pyramid_node.mjs
+
       - name: Density end-to-end harness contract (small scale only)
         run: |
           CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
