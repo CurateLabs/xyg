@@ -2,7 +2,9 @@
   "name": "@curatelabs/xyg-docs-site",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "prepare-content": "node scripts/prepare.mjs",
     "dev": "npm run prepare-content && astro dev --host 0.0.0.0",
@@ -17,6 +19,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "@tailwindcss/vite": "4.3.3",
+    "tailwindcss": "4.3.3",
     "typescript": "6.0.3"
   }
 }

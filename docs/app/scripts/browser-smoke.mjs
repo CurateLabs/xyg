@@ -158,6 +158,34 @@ try {
       assert.ok(graphPixels.lit > 10 && graphPixels.colors > 1, 'original graph example painted no native geometry');
     }
   }
+  await page.goto(`${origin}/docs/xy/components/facets-and-layers/`, { waitUntil: 'networkidle' });
+  const facets = page.locator('.xyg-facets[data-facet-cols="2"]').first();
+  await facets.scrollIntoViewIfNeeded();
+  assert.equal(await facets.locator('.xyg-facet-title').innerText(), 'Regional trends');
+  assert.equal(await facets.locator('.xyg-demo').count(), 2);
+  for (const panel of await facets.locator('.xyg-demo').all()) {
+    await panel.scrollIntoViewIfNeeded();
+    await panel.locator('canvas').first().waitFor();
+  }
+  const panelBounds = await facets.locator('.xyg-demo').evaluateAll((panels) => panels.map((panel) => {
+    const rect = panel.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width };
+  }));
+  assert.ok(panelBounds[0].width > 120 && panelBounds[1].left > panelBounds[0].left && Math.abs(panelBounds[1].top - panelBounds[0].top) <= 2, 'facet columns were flattened');
+
+  await page.goto(`${origin}/docs/xy/styling/customize/`, { waitUntil: 'networkidle' });
+  await page.locator('.xyg-demo').first().scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelector('.xyg-demo')?.dataset.rendered === 'true');
+  const surface = () => page.locator('.xyg-demo').first().evaluate((host) => {
+    const root = host.chartView.root;
+    return { surface: getComputedStyle(root).getPropertyValue('--custom-surface').trim(), background: getComputedStyle(root).backgroundColor };
+  });
+  await page.evaluate(() => document.documentElement.dataset.theme = 'light');
+  assert.match((await surface()).surface, /^#(?:fff|ffffff)$/, 'declared utility custom property is missing');
+  await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
+  assert.match((await surface()).surface, /^#(?:000|000000)$/, 'dark utility custom property is missing');
+  await page.evaluate(() => document.documentElement.dataset.theme = 'light');
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${origin}/docs/xy/`, { waitUntil: 'networkidle' });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'mobile docs overflow horizontally');

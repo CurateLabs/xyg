@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import tailwindcss from '@tailwindcss/vite';
 
 export const base = '/docs/xy';
 const publicURL = process.env.XY_DOCS_PUBLIC_URL?.trim().replace(/\/+$/, '');
@@ -15,6 +16,7 @@ export default defineConfig({
   trailingSlash: 'always',
   output: 'static',
   outDir: './dist',
+  vite: { plugins: [tailwindcss()] },
   integrations: [starlight({
     title: 'XYG',
     description: 'Graph visualization and charting for Python, Node.js, and browser WebAssembly. Built for GraphForge.',
@@ -23,7 +25,7 @@ export default defineConfig({
       { icon: 'github', label: 'XYG on GitHub', href: 'https://github.com/CurateLabs/xyg' },
     ],
     editLink: { baseUrl: 'https://github.com/CurateLabs/xyg/edit/main/docs/' },
-    customCss: ['./src/styles/custom.css'],
+    customCss: ['./src/styles/utilities.css', './src/styles/facets.css', './src/styles/custom.css'],
     components: { Head: './src/components/Head.astro', Footer: './src/components/Footer.astro' },
     sidebar: [
       { label: 'What is XYG?', slug: 'index' },

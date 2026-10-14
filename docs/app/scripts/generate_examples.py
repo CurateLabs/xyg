@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import xyg
+from xyg._facets_grid import FacetGrid
 from xyg._figure import Figure
 from xyg.channel import encode_frame
 
@@ -38,16 +39,13 @@ def collect_charts(value: Any, result: list[Any], seen: set[int]) -> None:
     if id(value) in seen:
         return
     seen.add(id(value))
-    if isinstance(value, (xyg.Chart, Figure)):
+    if isinstance(value, (xyg.Chart, xyg.FacetChart, FacetGrid, Figure)):
         result.append(value)
     elif isinstance(value, (tuple, list)):
         for child in value:
             collect_charts(child, result, seen)
     elif isinstance(value, dict):
         for child in value.values():
-            collect_charts(child, result, seen)
-    elif value.__class__.__name__ == "FacetChart":
-        for child in value.figure().figures:
             collect_charts(child, result, seen)
 
 
@@ -63,6 +61,30 @@ def write_preview(chart: Any, output: Path, index: int) -> dict[str, str]:
     path.write_bytes(frame)
     title = str(getattr(chart, "title", None) or f"XYG chart {index + 1}")
     return {"src": f"/docs/xy/xy/{digest}.xyf", "title": title}
+
+
+def write_chart_previews(
+    chart: Any, output: Path, group_key: str, index: int
+) -> list[dict[str, Any]]:
+    """Preserve the SDK's facet grouping around individually compiled panels."""
+    grid = chart.figure() if isinstance(chart, xyg.FacetChart) else chart
+    if not isinstance(grid, FacetGrid):
+        return [write_preview(chart, output, index)]
+    group = hashlib.sha256(group_key.encode()).hexdigest()[:24]
+    previews = []
+    for panel_index, panel in enumerate(grid.figures):
+        preview: dict[str, Any] = write_preview(panel, output, panel_index)
+        preview["facet"] = {
+            "group": group,
+            "cols": grid.cols,
+            "gap": grid.gap,
+            "title": grid.title,
+            "height": grid.panel_height,
+            "panel": panel_index,
+            "count": len(grid.figures),
+        }
+        previews.append(preview)
+    return previews
 
 
 def main() -> None:
@@ -126,7 +148,9 @@ def main() -> None:
             previews = []
             for index, chart in enumerate(charts):
                 try:
-                    previews.append(write_preview(chart, output, index))
+                    previews.extend(
+                        write_chart_previews(chart, output, f"{relative}:{block}:{index}", index)
+                    )
                 except Exception as error:
                     errors.append({"page": relative, "block": block, "error": str(error)})
                     note = "This example could not be exported as a static preview."

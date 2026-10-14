@@ -159,8 +159,9 @@ headers rather than only opening the file locally.
 ## GraphForge applications use the native or bounded WASM host
 
 Compose canonical results with the shared Rust engine in Python or Node and
-serve local client assets. The GraphForge editor uses a native Node extension
-host and a browser webview. Direct browser WASM is a separate bounded path,
+serve local client assets. An editor can integrate XYG through a native Node
+extension host and browser webview; adoption in a specific GraphForge editor
+is a separate integration task. Direct browser WASM is a bounded path,
 with no GraphForge Core query execution in the browser. Follow
 [Use with GraphForge](/docs/xy/integrations/graphforge/) for generation checks,
 payload transfer, pick identity, and webview CSP.

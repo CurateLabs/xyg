@@ -105,14 +105,19 @@ export function visualizeGraphForge(nodesIpc, edgesIpc, pagerankIpc, generation)
 [Node package guide](https://github.com/CurateLabs/xyg/tree/main/packages/xy-node)
 for native-library staging and package setup; npm publication is pending.
 
-In a VS Code extension, compose natively in the extension host and pass
+### VS Code integration recipe
+
+The Node host provides APIs for integrating XYG into an extension. Adoption
+by a specific GraphForge editor is a separate integration task. To use these
+APIs, compose natively in the extension host and pass
 `graphforgeWebviewPayload(composition, options)`'s `spec` and binary `buffer`
 to the webview. The webview paints with the local client via
 `renderStandalone(el, spec, buffer)`. Relay `{trace, index}` from `xy:click`
 to the extension host and resolve it with
 `graphforgePick(figure, composition, {trace, index})`. The native graph mark
 uses Rust LOD, so this path supports larger views than the direct WASM Scene.
-The editor owns UI, state, and message routing; XYG owns visualization.
+With this integration, the extension owns UI, state, and message routing;
+XYG owns visualization.
 
 ## Browser WASM
 

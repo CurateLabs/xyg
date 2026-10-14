@@ -1,0 +1,26 @@
+/* The SDK owns panel content and grouping; this wrapper honors its grid props. */
+.xyg-facets {
+  margin-block: 1.25rem;
+}
+.xyg-facet-title {
+  margin-block-end: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+.xyg-facet-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--xyg-facet-cols), minmax(0, 1fr));
+  gap: var(--xyg-facet-gap);
+}
+.xyg-facet-grid > .xyg-demo {
+  height: var(--xyg-facet-height);
+  min-height: 0;
+  min-width: 0;
+  margin: 0;
+}
+@media (max-width: 40rem) {
+  .xyg-facet-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

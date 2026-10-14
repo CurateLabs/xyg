@@ -71,16 +71,51 @@ def code_fence(language: str, code: str) -> str:
     return f"{fence}{language}\n{code.rstrip()}\n{fence}"
 
 
-def previews_markdown(previews: list[dict[str, str]]) -> str:
-    """Use raw HTML mount points for the shared host-neutral paint client."""
-    return "\n\n".join(
+def preview_mount(preview: dict[str, Any]) -> str:
+    """Mount one unchanged Rust-compiled panel payload."""
+    return (
         '<div class="xyg-demo not-content" data-payload="'
         + html.escape(preview["src"], quote=True)
         + '" aria-label="'
         + html.escape(preview["title"], quote=True)
         + '">Loading chart…</div>'
-        for preview in previews
     )
+
+
+def previews_markdown(previews: list[dict[str, Any]]) -> str:
+    """Keep consecutive SDK facet panels in their authored titled grid."""
+    rendered = []
+    cursor = 0
+    while cursor < len(previews):
+        preview = previews[cursor]
+        facet = preview.get("facet")
+        if facet is None:
+            rendered.append(preview_mount(preview))
+            cursor += 1
+            continue
+        count = facet["count"]
+        panels = previews[cursor : cursor + count]
+        if len(panels) != count or any(
+            panel.get("facet", {}).get("group") != facet["group"]
+            or panel["facet"]["panel"] != index
+            for index, panel in enumerate(panels)
+        ):
+            raise ValueError("Incomplete or reordered generated facet group")
+        title = html.escape(facet["title"] or "", quote=True)
+        heading = f'<div class="xyg-facet-title">{title}</div>' if title else ""
+        rendered.append(
+            '<section class="xyg-facets not-content" data-facet-group="'
+            + html.escape(facet["group"], quote=True)
+            + f'" data-facet-cols="{facet["cols"]}" aria-label="{title or "XYG facets"}" '
+            + f'style="--xyg-facet-cols:{facet["cols"]};--xyg-facet-gap:{facet["gap"]}px;'
+            + f'--xyg-facet-height:{facet["height"]}px">'
+            + heading
+            + '<div class="xyg-facet-grid">'
+            + "\n".join(preview_mount(panel) for panel in panels)
+            + "</div></section>"
+        )
+        cursor += count
+    return "\n\n".join(rendered)
 
 
 def api_placeholder(code: str) -> str | None:

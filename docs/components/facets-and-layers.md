@@ -127,7 +127,7 @@ and the same per-mark representation rules.
 
 ### How do I make small multiples (facets) in Python?
 
-Use `xyg.facet_chart(...)` with a `by=` column; xy repeats the composition once
+Use `xyg.facet_chart(...)` with a `by=` column; XYG repeats the composition once
 per distinct value and lays the panels out on a grid you control with `cols`,
 one small facet graph per category.
 

@@ -41,7 +41,11 @@ and `dist/` are not committed.
   package surface. Preserve source provenance for generated example outputs.
 
 The UI uses Starlight's responsive navigation, theme controls, search, and
-code rendering. Its browser smoke checks the production static output and
+code rendering. The build compiles Tailwind utilities from canonical examples
+without Preflight so styling demonstrations have their declared rules without
+resetting Starlight or the painter. Facet previews retain their original panel
+payloads, column count, gap, and grid title; CSS adapts the grid for narrow
+screens. Browser checks cover the visible utility styles and facet arrangement. Its browser smoke checks the production static output and
 interactive examples. Accessibility claims describe the checks actually run;
 this migration does not certify all screen-reader and OS combinations.
 
