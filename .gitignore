@@ -30,11 +30,6 @@ packages/xyg-node-*/libxyg_core.dylib
 packages/xyg-node-*/xyg_core.dll
 packages/xy-node/_native_lib/
 **/assets/external/
-# Bazel (cargo-wrapping graph MVP). Keep MODULE.bazel / BUILD.bazel /
-# .bazelrc / .bazelversion / .bazelignore tracked; ignore outputs and
-# local overrides.
-/bazel-*
-.bazelrc.user
 # Generated demo output (regenerate via demo/*_demo.py, demo/*_demo.mjs)
 demo/*_demo.html
 demo/*_demo.png

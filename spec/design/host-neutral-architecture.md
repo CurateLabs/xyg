@@ -250,7 +250,7 @@ A change is incomplete while its spec is stale.
 | Phase | Spec |
 | --- | --- |
 | Names / #23 | This file; [host-parity.md](host-parity.md) §0 location table + §5; dossier §33; [wire-protocol.md](wire-protocol.md); [dual-host-parity-matrix.md](dual-host-parity-matrix.md); README + `docs/overview/installation.md` |
-| #18 | [rust-engine.md](rust-engine.md); dossier identity; [bazel-ci.md](bazel-ci.md); [production-readiness.md](../process/production-readiness.md) |
+| #18 | [rust-engine.md](rust-engine.md); dossier identity; [build-ci.md](build-ci.md); [production-readiness.md](../process/production-readiness.md) |
 | #22 | [rust-engine.md](rust-engine.md) §2 / §5 / §6 (drop “still future”) |
 | #56–#59 | [ownership-audit.md](ownership-audit.md); [rust-engine.md](rust-engine.md); [host-parity.md](host-parity.md); dossier browser/scene sections as each vertical slice lands |
 | #8–#11 | [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md); [lod-architecture.md](lod-architecture.md) |

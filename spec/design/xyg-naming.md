@@ -46,14 +46,13 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Paint client (npm) | (Python `python/xyg/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
 | Node package | `@xy/node` (`packages/xy-node/`) | **`@curatelabs/xyg-node`** (in-tree directory stays `packages/xy-node`; never publish `@xy/node`) | decided (owner; npm scope locked with #24/#23) |
 | Node exact-platform natives | (none; repo/`_native_lib` only) | **`@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}`** as optionalDependencies of the facade; Windows arm64 unsupported; inventory/hashes/budgets via `scripts/verify_node_packages.py` | release staging plus native clean-install/load/export matrix landed; registry and VS Code remote conformance remain (#52) |
-| Native-lib override env var | `XY_NATIVE_LIB` | **`XYG_NATIVE_LIB`** (both hosts + Bazel wrappers; packaged paths otherwise — never a broadened system search) | decided |
+| Native-lib override env var | `XY_NATIVE_LIB` | **`XYG_NATIVE_LIB`** (both hosts; packaged paths otherwise — never a broadened system search) | decided |
 | Build-hook env switches | `XY_SKIP_CARGO`, `XY_REQUIRE_CARGO`, `XY_SKIP_NODE`, `XY_CARGO_TARGET`, `XY_WHEEL_PLATFORM` | **`XYG_SKIP_CARGO`, `XYG_REQUIRE_CARGO`, `XYG_SKIP_NODE`, `XYG_CARGO_TARGET`, `XYG_WHEEL_PLATFORM`** | decided |
 | Release publish guard | `XY_ALLOW_PYPI_PUBLISH` (#13) | **`XYG_ALLOW_PYPI_PUBLISH`** | decided |
 | SIMD kill switch (read by the engine) | `XY_SIMD` | **`XYG_SIMD`** | decided |
 | Expected-ABI test override | `XY_EXPECTED_ABI` | **`XYG_EXPECTED_ABI`** | decided |
 | Browser executable override | `XY_BROWSER` | **`XYG_BROWSER`** | landed; public export configuration, no retired alias |
 | Chromium-specific executable override | `XY_CHROMIUM` | **`XYG_CHROMIUM`** | landed; public export configuration, no retired alias |
-| Bazel cdylib target | `//:xy_core` → `libxy_core.so` | **`//:xyg_core`** → `libxyg_core.so` | decided |
 | Repository slug | `CurateLabs/graphforge-xy` (fork of `reflex-dev/xy`) | **`CurateLabs/xyg`** (renamed server-side 2026-08-11; old URLs redirect) | decided (owner, 2026-08-11) |
 | Release publish-guard repo condition | `github.repository == 'CurateLabs/graphforge-xy'` | **`github.repository == 'CurateLabs/xyg'`** | decided |
 
@@ -92,7 +91,7 @@ likewise remains only `window.xy`, `xy.renderStandalone`, and `xy.decodeFrame`
 until its separately versioned migration.
 
 Current repository, build, release, and contributor metadata use the XYG
-identity: the Bazel module is `xyg`, the private root npm tool package is
+identity: the private root npm tool package is
 `xyg-dev-tools`, and current workflow step labels and top-level guidance say
 XYG. The stale-name gate checks these structural locations directly so prose
 or package metadata cannot regress while the explicitly versioned exceptions
@@ -120,7 +119,7 @@ one reviewed PR on `main` before any release tag:
    at every commit each host either fully matches the library it loads or
    fails loudly at load (`xyg_abi_version` is bound and checked first).
 4. **Build/distribution paths** — `hatch_build.py`, wheel/sdist verification,
-   Bazel, CI, benchmark and smoke scripts all locate `libxyg_core`.
+   Cargo, CI, benchmark and smoke scripts all locate `libxyg_core`.
 5. **Host namespace renames** — Node package.json becomes `@curatelabs/xyg-node`
    with this crate split (directory stays `packages/xy-node`). Python
    `import xyg` / `python/xyg/` lands after the crate split, native artifact,

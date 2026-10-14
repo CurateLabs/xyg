@@ -48,7 +48,48 @@ RELEASE_PUBLISH_GATE_LINE = (
 def test_ci_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_workflow() == []
     assert verify_ci_workflow.validate_ci_workflow() == []
-    assert verify_ci_workflow.validate_bazel_workflow() == []
+
+
+@pytest.mark.parametrize(
+    ("command", "gate"),
+    [
+        ("npm test --prefix packages/xy-node", "complete Node host suite"),
+        (
+            ".venv/bin/python benchmarks/bench_dual_host_graph.py --sizes 1000",
+            "graph/kernel ceilings",
+        ),
+        (
+            ".venv/bin/python benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline",
+            "graph/kernel ceilings",
+        ),
+        (
+            ".venv/bin/python benchmarks/bench_scale_all_charts.py --profile smoke",
+            "graph/kernel ceilings",
+        ),
+        (
+            "node benchmarks/bench_scale_all_charts_node.mjs --profile smoke",
+            "graph/kernel ceilings",
+        ),
+        (".venv/bin/python benchmarks/bench_tier3_pyramid.py", "graph/kernel ceilings"),
+        ("node benchmarks/bench_tier3_pyramid_node.mjs", "graph/kernel ceilings"),
+    ],
+)
+@pytest.mark.parametrize("replacement", ["# {command}", "echo {command}", "{command} || true"])
+def test_ci_workflow_requires_active_graph_suite_commands(
+    tmp_path: Path, command: str, gate: str, replacement: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    original = f"          {command}\n"
+    assert workflow.count(original) == 1
+    path.write_text(
+        workflow.replace(original, f"          {replacement.format(command=command)}\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(gate in error for error in errors)
 
 
 def test_ci_workflow_rejects_missing_release_surface_aggregate(tmp_path: Path) -> None:
@@ -282,88 +323,6 @@ def test_milestone_governance_rejects_legacy_autonomous_closers(
     errors = verify_ci_workflow.validate_milestone_governance(contributor_spec)
     assert any("m2-wave-c-close.yml" in error for error in errors)
     assert any("m2_wave_c_close.sh" in error for error in errors)
-
-
-def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
-    path = tmp_path / "bazel.yml"
-    path.write_text(
-        workflow.replace(
-            "UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
-            "UV_CACHE_DIR: ${{ runner.temp }}/uv-cache",
-        ),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_bazel_workflow(path)
-
-    assert any("runner context" in error for error in errors)
-
-
-def test_bazel_workflow_requires_writable_output_user_root(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
-    path = tmp_path / "bazel.yml"
-    path.write_text(
-        workflow.replace("XDG_CACHE_HOME: ${{ github.workspace }}/.cache", ""),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_bazel_workflow(path)
-
-    assert any("output user root" in error for error in errors)
-
-
-def test_bazel_workflow_rejects_required_values_in_comments_or_steps(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
-    path = tmp_path / "bazel.yml"
-    path.write_text(
-        workflow.replace(
-            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n    env:\n      # Blacksmith",
-            "    runs-on: blacksmith-4vcpu-ubuntu-2404-extra\n"
-            "    # runs-on: blacksmith-4vcpu-ubuntu-2404\n"
-            "    env:\n"
-            "      # Blacksmith",
-        )
-        .replace(
-            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
-            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv-extra\n"
-            "      # UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
-        )
-        .replace(
-            "      XDG_CACHE_HOME: ${{ github.workspace }}/.cache",
-            "      # XDG_CACHE_HOME moved to a step and is therefore too late\n"
-            "    steps:\n"
-            "      - name: Misplaced cache\n"
-            "        env:\n"
-            "          XDG_CACHE_HOME: ${{ github.workspace }}/.cache\n"
-            "        run: true",
-        )
-        .replace("    steps:\n      - uses:", "      - uses:", 1),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_bazel_workflow(path)
-
-    assert any("configured Blacksmith runner" in error for error in errors)
-    assert any("uv's cache" in error for error in errors)
-    assert any("output user root" in error for error in errors)
-
-
-def test_bazel_workflow_rejects_runner_context_in_any_job_env_value(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
-    path = tmp_path / "bazel.yml"
-    path.write_text(
-        workflow.replace(
-            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
-            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv\n"
-            "      OTHER_CACHE: ${{ runner.temp }}/other",
-        ),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_bazel_workflow(path)
-
-    assert any("runner context" in error for error in errors)
 
 
 def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
@@ -1095,11 +1054,8 @@ def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
         assert any(message in error for error in errors), (index, errors)
 
 
-def test_ci_and_bazel_reject_non_main_automatic_push_branches(tmp_path: Path) -> None:
-    cases = (
-        (Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),
-        (Path(".github/workflows/bazel.yml"), verify_ci_workflow.validate_bazel_workflow),
-    )
+def test_ci_rejects_non_main_automatic_push_branches(tmp_path: Path) -> None:
+    cases = ((Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),)
     for index, (source, validate) in enumerate(cases):
         workflow = source.read_text(encoding="utf-8")
         path = tmp_path / f"push-branches-{index}.yml"

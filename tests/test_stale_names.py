@@ -182,7 +182,6 @@ def test_structurally_flags_current_product_build_release_and_workflow_identity(
     (tmp_path / "CLAUDE.md").write_text("# xy / xy\n", encoding="utf-8")
     (tmp_path / "CONTRIBUTING.md").write_text("# Contributing to xy\n", encoding="utf-8")
     (tmp_path / "SECURITY.md").write_text("xy is pre-1.0\n", encoding="utf-8")
-    (tmp_path / "MODULE.bazel").write_text('module(name = "xy")\n', encoding="utf-8")
     (tmp_path / "package.json").write_text('{"name":"xy-dev-tools"}\n', encoding="utf-8")
     (tmp_path / "docs" / "index.md").write_text("# What is `xy`?\n", encoding="utf-8")
     (tmp_path / "spec" / "process" / "production-readiness.md").write_text(
@@ -197,7 +196,6 @@ def test_structurally_flags_current_product_build_release_and_workflow_identity(
         "repository heading",
         "contributor heading",
         "security product name",
-        "Bazel module name",
         "root tool package name",
         "documentation heading",
         "release product name",

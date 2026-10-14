@@ -502,34 +502,6 @@ def test_abi_smoke_reports_missing_generated_declarations(
         abi_smoke._expected_abi_version()
 
 
-def test_bazel_abi_lookup_falls_back_when_generated_constant_is_unparseable(
-    tmp_path: Path,
-) -> None:
-    generated = tmp_path / "python/xyg/_abi_generated.py"
-    generated.parent.mkdir(parents=True)
-    generated.write_text("ABI_VERSION: int = 59\n", encoding="utf-8")
-    rust = tmp_path / "crates/xyg-core/src/lib.rs"
-    rust.parent.mkdir(parents=True)
-    rust.write_text("pub const ABI_VERSION: u32 = 59;\n", encoding="utf-8")
-
-    result = subprocess.run(
-        [
-            "/bin/bash",
-            "-c",
-            'source "$1"; expected_abi_from_source "$2"',
-            "bazel-abi-test",
-            str(ROOT / "tools/bazel/common.sh"),
-            str(tmp_path),
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0
-    assert result.stdout.strip() == "59"
-
-
 def test_low_level_signatures_exist_only_in_generated_modules() -> None:
     python_host = (ROOT / "python/xyg/_native.py").read_text(encoding="utf-8")
     node_host = (ROOT / "packages/xy-node/src/native.js").read_text(encoding="utf-8")

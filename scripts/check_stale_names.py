@@ -37,7 +37,6 @@ SKIP_PARTS = {
 
 SCAN_NAMES = {
     "AGENTS.md",
-    "BUILD.bazel",
     "CLAUDE.md",
     "CONTRIBUTING.md",
     "Dockerfile",
@@ -47,7 +46,6 @@ SCAN_NAMES = {
 
 SCAN_SUFFIXES = {
     ".Dockerfile",
-    ".bazel",
     ".js",
     ".json",
     ".md",
@@ -143,7 +141,6 @@ _STRUCTURAL_CURRENT_IDENTITY = {
         ("retired contributor heading", re.compile(r"^#\s+Contributing to xy\s*$", re.M)),
     ),
     "SECURITY.md": (("retired security product name", re.compile(r"^xy is\b", re.M)),),
-    "MODULE.bazel": (("retired Bazel module name", re.compile(r'\bname\s*=\s*["\']xy["\']')),),
     "package.json": (
         ("retired root tool package name", re.compile(r'"name"\s*:\s*"xy-dev-tools"')),
     ),

@@ -8,7 +8,7 @@ against the soft ceilings documented below.
 
 Usage:
   python3 benchmarks/bench_dual_host_graph.py
-  python3 benchmarks/bench_dual_host_graph.py --sizes 1000   # Bazel/CI quick
+  python3 benchmarks/bench_dual_host_graph.py --sizes 1000   # CI quick
 """
 
 from __future__ import annotations
