@@ -1,122 +1,94 @@
 ---
 title: Benchmarks
-description: Inspect XYG's live interactive benchmark from 10,000 to 100 million points, including its output contract, memory use, and caveats.
+description: Inspect versioned charting evidence, measurement scopes, competitor coverage, and reproduction commands.
 ---
 
 # Benchmarks
 
-This benchmark measures what a user waits for on a live interactive scatter
-chart. Every library receives every source row and runs through its own normal
-input path in a real browser. The sweep covers 10,000 to 100 million points on
-one Apple M5 Pro.
+XYG's benchmark program covers graph visualization, ordinary charts, large-data exploration,
+interaction, static export, and dashboards. A useful result identifies the
+source version, environment, representation, measurement scope, and correctness
+oracle. Chart breadth and customization also need visual examples and the
+[Capability Matrix](/docs/xy/styling/capabilities/).
 
-The clock stops only when the canvas is both correct and stable. Correct means
-sentinel points planted at known coordinates are lit in the expected places.
-Stable means the full drawing buffer is byte-identical for 10 consecutive
-frames. Progressive renderers are therefore charged until their last chunk
-lands, not just until their first paint.
+## Evidence available today
 
-~~~python demo-only exec
-from xy_docs.demos.benchmark_charts import interactive_ux_demo
+The [competitive results specification](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md)
+records scoped measurements and their limitations. The
+[archived launch baselines](https://github.com/CurateLabs/xyg/tree/main/benchmarks/launch_baselines)
+include raw JSON, dependency locks, environment records, and manifests.
+These are historical, versioned evidence, including upstream XY runs; they are
+not measurements of every capability in the current XYG source.
 
-benchmark_interactive_ux = interactive_ux_demo
-~~~
+The fork was motivated by GraphForge's need for billion-scale graph
+visualization. The archived
+[graph-scale diagnostic](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md#graph-scale-evidence-33-local-diagnostic)
+executes through 1M source nodes, with explicit node/edge reduction budgets.
+The 10M, 100M, and 1B graph rows evaluate Rust LOD policy without executing
+those graphs. Graph-scale, scatter-density, and cross-host evidence are
+separate contracts; a billion-row scatter run does not establish billion-node
+graph visualization across Python, Node, and WASM.
 
-XYG holds **0.071 seconds at 10k and 0.081 seconds at 100M**, nearly flat across
-four orders of magnitude. Above 200k rows, the default path draws a
-screen-bounded density surface and retains a sample for interaction instead of
-drawing one marker per row. Deep zooms request exact source rows.
+The previously displayed 10k–100M interactive UX table and chart have no
+committed raw run record supporting their values. They are withdrawn from the
+public performance summary until a versioned run with its environment and
+complete competitor results is archived. This also means there is no supported
+current-source 177× speedup claim from that table.
 
-Every exact-marker path scales with the row count. Matplotlib crosses one
-second at about 3M and reaches 13.4 seconds at 50M. Plotly crosses one second
-at about 2.5M and reaches 9.8 seconds at 25M.
+## What the measurements mean
 
-## Time until every point is on screen
-
-Times are seconds. `✕` marks a size that did not satisfy the full benchmark
-contract: Plotly never finished constructing the 50M figure, while Matplotlib
-drew 100M points but did not resolve the zoom that followed.
-
-| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XYG speedup* | *1×* | *2×* | *3×* | *4×* | *9×* | *16×* | *34×* | *89×* | *177×* | *—* |
-| **XYG** | **0.071** | **0.072** | **0.075** | **0.084** | **0.083** | **0.089** | **0.083** | **0.077** | **0.076** | **0.081** |
-| XYG (`density=False`) | 0.085 | 0.074 | 0.087 | 0.098 | 0.111 | 0.144 | 0.206 | 0.424 | 0.645 | 1.343 |
-| Matplotlib (WebAgg) | 0.086 | 0.115 | 0.224 | 0.357 | 0.758 | 1.424 | 2.804 | 6.838 | 13.385 | ✕ |
-| Plotly (scattergl) | 0.341 | 0.373 | 0.477 | 0.614 | 1.033 | 1.785 | 3.367 | 9.794 | ✕ | ✕ |
-
-The speedup row compares default XYG with the next-fastest other library at each
-size. One run was recorded per cell. At the small end, timings carry roughly
-±10 ms of run-to-run spread.
-
-## Peak Python-side memory
-
-Peak resident memory is reported in GiB. Browser memory is measured separately
-and excluded here because headless Chrome occupies about 1 GiB before it draws
-a chart.
-
-| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XYG advantage* | *1.8×* | *1.7×* | *1.9×* | *2.1×* | *2.1×* | *2.4×* | *2.6×* | *2.9×* | *2.8×* | *—* |
-| **XYG** | **0.05** | **0.05** | **0.06** | **0.07** | **0.13** | **0.19** | **0.32** | **0.70** | **1.36** | **2.58** |
-| XYG (`density=False`) | 0.05 | 0.05 | 0.07 | 0.10 | 0.18 | 0.31 | 0.57 | 1.35 | 2.66 | 5.26 |
-| Matplotlib (WebAgg) | 0.09 | 0.09 | 0.12 | 0.15 | 0.28 | 0.46 | 0.84 | 2.06 | 3.85 | ✕ |
-| Plotly (scattergl) | 0.21 | 0.18 | 0.28 | 0.36 | 0.60 | 1.05 | 1.86 | 4.70 | ✕ | ✕ |
-
-The advantage row compares default XYG with the next-lowest Python-side peak
-from another library. The exact-marker XYG path reaches 100M in 1.343 seconds
-and 5.26 GiB, showing the engine's scaling without giving it aggregation
-credit.
-
-## Why the density path is a fair product comparison
-
-No benchmark arm receives pre-thinned input. Each library gets all rows, then
-uses its normal rendering strategy. XYG's density arm proves that all rows were
-included with a count oracle, while Matplotlib, Plotly, and `density=False`
-draw one marker per row.
-
-That makes the default comparison an end-to-end product question: what does a
-user get from the ordinary API at this data size? The pale exact-marker XYG
-series answers the separate like-for-like question of how the same engine
-scales when every row stays an individual marker.
-
-## What this benchmark does and does not show
-
-| The recorded sweep shows | It does not establish |
+| Measurement | Scope |
 | --- | --- |
-| Navigation to a correct, stable live scatter chart | Performance for every chart family or dashboard layout |
-| Default XYG and exact-marker XYG across the same row ladder | Equivalent rendered geometry after default XYG enters density mode |
-| Whether the scripted zoom returns a final correct frame | Every interaction pattern or server deployment |
-| Python-side peak RSS on one Apple M5 Pro | Browser memory, GPU memory, or performance on every platform |
+| Preparation | Source ingest, figure construction, aggregation, and payload preparation; scope must be recorded per harness |
+| Browser navigation time | Navigation to the correct, stable canvas after the host has prepared its chart; excludes earlier preparation |
+| End-to-end time to first render | Build, serialization, and browser rendering where the harness explicitly includes all three |
+| Interaction | Input-to-pixels and final settle time; whether live refinement is exercised must be recorded |
+| Memory | Python and browser process trees reported separately; a Python-only number is not total application memory |
 
-The benchmark also records first paint, during-gesture frame timing, settle
-time, browser memory, screenshots, raw JSON, and a synchronized video for each
-size. Those measurements remain separate so a fast first frame cannot hide
-unfinished rendering or deferred work.
+The UX summarizer's `visible_complete_ms` is the browser-navigation measurement.
+Its correctness and stability probes check expected sentinel pixels and wait
+for 10 byte-identical frames. This is not a measurement of complete source
+loading or figure preparation.
 
-## Inspect and reproduce the evidence
+Source-row work still grows with data size. Density aggregation and line
+decimation can bound the resulting transport and drawing work by the viewport.
+A density surface and one-marker-per-row geometry answer different output
+contracts; both need disclosure and correctness checks.
 
-The methodology and artifact contracts are documented in the repository:
+## Compare relevant alternatives
 
-- [README benchmark summary](https://github.com/CurateLabs/xyg#benchmarks)
+Exact-marker comparisons include Matplotlib and Plotly. Aggregated views also
+need aggregation-capable peers, including Datashader with HoloViews/hvPlot and
+Bokeh. The UX runner includes a live Datashader arm, but no comparable archived
+UX values are available to present here. Its omission is not evidence of a win.
+The broader benchmark harness covers Seaborn, Altair, and other relevant tools.
+
+One scatter workload cannot establish performance for every chart family,
+platform, export path, or multi-chart application. Small everyday charts and
+large-data views both belong in the evidence. Keep hardware WebGL and
+SwiftShader software-GL results separate.
+
+## Inspect and reproduce
+
 - [Benchmark runbook](https://github.com/CurateLabs/xyg/blob/main/benchmarks/README.md)
+- [Measurement methodology](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/methodology.md)
 - [Interactive UX harness](https://github.com/CurateLabs/xyg/blob/main/benchmarks/bench_ux.py)
 - [Full ladder runner](https://github.com/CurateLabs/xyg/blob/main/benchmarks/run_ux_suite.sh)
 - [Result summarizer](https://github.com/CurateLabs/xyg/blob/main/benchmarks/summarize_ux.py)
-- [Competitive benchmark specification](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md)
 
-After completing the runbook setup, run the same size ladder:
+After completing the runbook setup, set `CHROME` to your browser executable and
+run the ladder. It includes default density and exact-marker XYG, Plotly,
+Matplotlib, and Datashader:
 
 ```bash
-export CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-./benchmarks/run_ux_suite.sh /path/to/xy-ux-suite
-
-.venv/bin/python benchmarks/summarize_ux.py /path/to/xy-ux-suite
-.venv/bin/python benchmarks/plot_ux.py /path/to/xy-ux-suite --out-dir charts
-.venv/bin/python benchmarks/plot_ux.py /path/to/xy-ux-suite --out-dir charts \
-  --color-scheme dark --suffix=-dark
+export CHROME="/path/to/chrome"
+./benchmarks/run_ux_suite.sh /path/to/xyg-ux-suite
+uv run python benchmarks/summarize_ux.py /path/to/xyg-ux-suite
+uv run python benchmarks/plot_ux.py /path/to/xyg-ux-suite --out-dir charts
 ```
 
-Keep results separated by environment. Hardware WebGL and SwiftShader rows are
-not interchangeable. For the rendering model behind XYG's flat default curve,
-read [Large data and performance](/docs/xy/core-concepts/large-data-and-performance/).
+Archive the raw results, source commit, environment, failures, and output
+contracts before publishing numbers. The runbook explains how to produce
+artifacts; it does not imply that every generated run has been committed.
+See [Large data and performance](/docs/xy/core-concepts/large-data-and-performance/)
+for the representation and refinement boundaries.

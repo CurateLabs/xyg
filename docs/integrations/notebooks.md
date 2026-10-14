@@ -39,8 +39,11 @@ runtime once the Python packages are installed.
 
 ## JupyterLite and Pyodide (WASM Kernels)
 
-XYG publishes a Pyodide/Emscripten wheel, so `%pip install xyg` works in a
-JupyterLite notebook. Hosted deployments with a prebuilt frontend — for
+The current source pipeline builds and verifies a Pyodide/Emscripten wheel,
+but the PyPI artifact snapshot in [Installation](/docs/xy/overview/installation/)
+does not include it. Install a compatible built wheel by its exact URL with
+`await micropip.install(wheel_url)` in a Pyodide kernel. Bare `%pip install xyg`
+does not currently provide a WASM wheel. Hosted deployments with a prebuilt frontend — for
 example [try Jupyter](https://jupyter.org/try-jupyter/lab/) — cannot load the
 `anywidget` frontend extension at runtime, because `%pip` installs only the
 kernel-side package. Displaying the live widget there fails in the browser
@@ -93,13 +96,10 @@ chart
 ~~~
 
 These are core `xyg.Chart` callback keywords for the live notebook widget.
-They are not Reflex component props: the Reflex adapter instead accepts
-`on_point_hover`, `on_point_click`, `on_select_end`, and `on_view_change` on
-the outer `reflex_xy.chart(...)` component. Notebook `on_select` receives an
-`xyg.Selection` with canonical row indices; Reflex `on_select_end` receives a
-small JSON-safe selection summary. See
-[Interactions and selections](/docs/xy/core-concepts/interactions/) for the
-full mapping.
+These callbacks run in the notebook's live Python kernel. `on_select`
+receives an `xyg.Selection` with canonical row indices. GraphForge webview
+picks instead carry graph UUIDs and contributing result rows; see
+[Use with GraphForge](/docs/xy/integrations/graphforge/).
 
 Notebook callbacks need a live widget. A standalone HTML export keeps browser
 interactions but cannot call into the notebook kernel; a framework adapter uses

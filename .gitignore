@@ -34,3 +34,9 @@ packages/xy-node/_native_lib/
 demo/*_demo.html
 demo/*_demo.png
 demo/*_probe.png
+
+# Astro Starlight docs and native preview assets are generated at build time.
+docs/app/.astro/
+docs/app/.generated/
+docs/app/src/content/docs/
+docs/app/public/

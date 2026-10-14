@@ -1,0 +1,12 @@
+---
+import DefaultFooter from '@astrojs/starlight/components/Footer.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const pagePath = Astro.url.pathname.slice(base.length).replace(/\/$/, '') || '/index';
+---
+<div class="agent-docs">
+  <a href={`${base}${pagePath}.md`}>Page Markdown</a>
+  <a href={`${base}/llms.txt`}>Agent index</a>
+  <a href={`${base}/llms-full.txt`}>Full documentation</a>
+  <a href="https://github.com/CurateLabs/graphforge">GraphForge on GitHub</a>
+</div>
+<DefaultFooter />

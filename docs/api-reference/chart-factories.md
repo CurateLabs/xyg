@@ -16,13 +16,9 @@ usually clearer when the children represent one chart family.
 
 ## Generated Factory API
 
-~~~python exec
-from xy_docs.api_reference import chart_containers_api, chart_factories_api
-~~~
 
-~~~python eval
-chart_factories_api()
-~~~
+
+<!-- xyg:api chart_factories_api -->
 
 Annotation-only compositions use the neutral `chart()` container, so that
 factory appears under Annotations. It also appears beside `facet_chart()` in
@@ -30,9 +26,7 @@ Facets and Layers because layered marks use the same neutral container.
 
 ## Shared Chart Props
 
-~~~python eval
-chart_containers_api()
-~~~
+<!-- xyg:api chart_containers_api -->
 
 The “Shared chart props” table is generated from the public `Chart`
 constructor. Every ordinary factory accepts those props through `**props`;

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/xy-sdf-binned-scatter.png" alt="XYG-shaped probability field shown as a binned scatter chart." width="521">
+  <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/xyg-sdf-binned-scatter.png" alt="XYG-shaped probability field shown as a binned scatter chart." width="640">
 </p>
 
 <p align="center">
@@ -10,54 +10,73 @@
   <a href="https://mybinder.org/v2/gh/CurateLabs/xyg/main?urlpath=lab/tree/examples" target="_blank" rel="noopener noreferrer"><img src="https://mybinder.org/badge_logo.svg" alt="Launch the examples on Binder" /></a>
 </p>
 
-XYG is an extremely fast, interactive, customizable Python charting library for
-the web, notebooks, and static exports.
+XYG is a graph visualization and charting engine for **Python, Node.js, and
+browser WebAssembly**, powered by a shared Rust core.
 
-Charts are composed declaratively or through matplotlib conventions. You can
-fully customize them with Python, CSS, or Tailwind.
+We forked [XY](https://github.com/reflex-dev/xy) because
+[GraphForge](https://github.com/CurateLabs/graphforge) needed billion-scale graph
+visualization. That need drives XYG's graph layouts, level of detail, and design
+control, alongside everyday charts and large-data exploration.
 
-With small charts, every point is sent to the browser. For large charts, the
-Rust core computes only what the screen needs to display, based on its
-resolution. Pan, zoom, hover, and selection can show full details by running the
-same process for the new range, and a selection returns the original rows.
+Python and Node provide native authoring hosts. Browser WASM runs the same Rust
+engine in a Worker through a currently bounded API. Style browser chart chrome
+with CSS or Tailwind; mark, axis, theme, and export coverage are documented per
+host and renderer.
 
-With XYG we rendered the entirety of OpenStreetMap — a **10,000,000,000 point** dataset. [See the example →](https://github.com/CurateLabs/xyg/tree/main/examples/osm)
+Small Cartesian scatter charts draw individual points. Large scatter overviews
+can use density aggregation, and long lines can use decimation. Refinement and
+exact readout depend on the representation and available host. Ingest and
+preparation still depend on the amount of source data.
 
 > [!IMPORTANT]
-> **XYG is in alpha** and is receiving frequent enhancements.
+> **XYG is in alpha.** APIs and renderer coverage can change. Current source
+> capabilities may be ahead of the published package; see the
+> [installation guide](https://github.com/CurateLabs/xyg/blob/main/docs/overview/installation.md)
+> and [limitations](https://github.com/CurateLabs/xyg/blob/main/docs/api-reference/limitations-and-alpha-status.md).
 > ⭐️ Star the repo to follow the progress.
 
 ## Is XYG right for me?
 
-XYG is for Python users who want one flexible charting library for everything
-from everyday plots to custom application visuals and large datasets. Build a
-chart once, then use it in notebooks and web apps or export it as HTML, PNG,
-SVG, or PDF.
+XYG is for graph and data-visualization work in notebooks, Node applications,
+VS Code extensions, and browsers. GraphForge supplies graph data and analysis;
+XYG owns visualization. Ordinary line, bar, scatter, and distribution charts
+remain part of the same engine.
+
+| Host | Entry point | Current scope |
+| --- | --- | --- |
+| Python | `xyg` | Declarative charts, GraphForge composition, notebooks, and static export |
+| Node.js | `@curatelabs/xyg-node` | Native chart and GraphForge composition for servers and extensions; source setup required |
+| Browser WASM | `@curatelabs/xyg` Worker API | Direct Rust/WASM execution with bounded chart/graph operations; complete host parity is still in progress |
+
+See the [graph guide](https://github.com/CurateLabs/xyg/blob/main/docs/charts/graph.md),
+[Node guide](https://github.com/CurateLabs/xyg/tree/main/packages/xy-node), and
+[browser WASM contract](https://github.com/CurateLabs/xyg/blob/main/spec/api/browser-wasm.md)
+for the available APIs and boundaries.
 
 ## Installation
 
 ```bash
-pip install xyg
+pip install "xyg==0.0.1a2"
 
 # or, with uv
-uv add xyg
+uv add "xyg==0.0.1a2"
 ```
 
-JavaScript / browser (paint client; in-repo as `@curatelabs/xyg` until the
-npm org publishes — [#13](https://github.com/CurateLabs/xyg/issues/13)):
+As verified on 2026-10-14, PyPI has a Linux x86-64 wheel requiring glibc 2.39+
+and a source distribution for this release. Other targets require a source
+build and the appropriate toolchain; see the installation guide. The examples
+in this README describe the current source checkout.
 
-```bash
-npm install @curatelabs/xyg
-```
+The browser client (`@curatelabs/xyg`) and Node host
+(`@curatelabs/xyg-node`) are available in this repository; npm publication is
+pending. From a source checkout, build the client with
+`npm ci && node js/build.mjs`. Node host setup is documented in
+[`packages/xy-node`](https://github.com/CurateLabs/xyg/tree/main/packages/xy-node).
 
-From a source checkout, build the client once with `npm ci && node js/build.mjs`.
-Node host bindings live in `packages/xy-node` (published later as
-`@curatelabs/xyg-node`).
+## Getting started in Python
 
-## Getting started
-
-A chart is a container plus the marks inside it. Any sequence works; NumPy is
-optional.
+A chart is a container plus the marks inside it. Lists work directly; you do
+not need to author NumPy arrays. The package installs NumPy as a dependency.
 
 ```python
 import xyg
@@ -69,7 +88,58 @@ chart = xyg.line_chart(xyg.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]))
 chart  # notebooks render it
 ```
 
-The same API scales to a hundred million points as a density surface:
+### Coming from matplotlib
+
+For common pyplot workflows, change the import and keep the plotting code:
+
+```python
+import numpy as np
+import xyg.pyplot as plt
+
+x = np.linspace(0, 10, 200)
+fig, ax = plt.subplots()
+ax.plot(x, np.sin(x), "r--", label="signal")
+ax.legend()
+plt.show()
+```
+
+See the [compatibility guide](https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md); not all charts and
+functionality are supported yet.
+
+## Customize every layer
+
+Use Python to control the chart, from marks and axes to interactions and layout.
+
+- **Marks:** Control color, size, opacity, symbols, gradients, strokes, curves,
+  and colormaps.
+- **Guides:** Customize axes, ticks, grids, annotations, legends, colorbars, and
+  tooltips.
+- **Interaction:** Add pan, zoom, hover, selections, crosshairs, callbacks, and
+  linked charts.
+- **Layout:** Create layers and facets, set responsive dimensions, and apply
+  themes.
+
+```python
+chart = xyg.line_chart(
+    xyg.line([1, 2, 3, 4], [120, 180, 165, 240], color="#7c3aed", width=3),
+    class_name="rounded-xl bg-white",
+    class_names={"tooltip": "rounded-lg bg-zinc-900 text-white"},
+)
+```
+
+See the [styling guide](https://github.com/CurateLabs/xyg/blob/main/docs/styling/index.md)
+for examples. For a detailed breakdown of what can be customized, see the
+[capability matrix](https://github.com/CurateLabs/xyg/blob/main/spec/api/capability-matrix.md).
+CSS and Tailwind classes style browser chrome. Validated mark styles, axis
+styles, and theme tokens have their own export coverage; arbitrary browser CSS
+does not carry into native PNG, SVG, or PDF.
+
+## Large-data exploration
+
+For a large scatter, the same composition API can display a hundred million
+points as a density surface. Start with `n = 100_000` to try the example;
+generating and retaining 100 million rows requires several GiB of memory.
+Zooming back to exact source rows requires a live kernel.
 
 <p align="center">
   <picture>
@@ -111,160 +181,82 @@ chart = xyg.scatter_chart(
 chart
 ```
 
-### Coming from matplotlib
-
-For common pyplot workflows, change the import and keep the plotting code:
-
-```python
-import numpy as np
-import xyg.pyplot as plt
-
-x = np.linspace(0, 10, 200)
-fig, ax = plt.subplots()
-ax.plot(x, np.sin(x), "r--", label="signal")
-ax.legend()
-plt.show()
-```
-
-See the [compatibility guide](https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md); not all charts and
-functionality are supported yet.
-
-## Customize every layer
-
-Use Python to control the chart, from marks and axes to interactions and layout.
-
-- **Marks:** Control color, size, opacity, symbols, gradients, strokes, curves,
-  and colormaps.
-- **Guides:** Customize axes, ticks, grids, annotations, legends, colorbars, and
-  tooltips.
-- **Interaction:** Add pan, zoom, hover, selections, crosshairs, callbacks, and
-  linked charts.
-- **Layout:** Create layers and facets, set responsive dimensions, and apply
-  themes.
-
-```python
-chart = xyg.line_chart(
-    xyg.line(x, y, color="#7c3aed", width=3),
-    class_name="rounded-xl bg-white",
-    class_names={"tooltip": "rounded-lg bg-zinc-900 text-white"},
-)
-```
-
-See the [styling guide](https://github.com/CurateLabs/xyg/blob/main/docs/styling/index.md)
-for examples. For a detailed breakdown of what can be customized, see the
-[capability matrix](https://github.com/CurateLabs/xyg/blob/main/spec/api/capability-matrix.md).
-
 ## Benchmarks
 
-Live interactive charts, 10k to 100M points. Every library gets every row and
-is driven through its own input path in a real browser. The clock stops only
-when the canvas is both correct (planted sentinel points verified lit) and
-stable (10 byte-identical frames), so progressive renderers are charged until
-their last chunk lands.
+XYG's performance work covers graph visualization, everyday charts, large-data views, interaction,
+static export, and dashboards. Compare exact markers with exact markers, and
+aggregated views with aggregation-capable tools such as Datashader with
+HoloViews/hvPlot and Bokeh. The benchmark program also covers Matplotlib,
+Seaborn, Plotly, Altair, and other relevant competitors.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/ux-render-time-dark.png">
-    <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/ux-render-time.png" alt="Time until every point is on screen, 10k to 100M points, for XYG, Matplotlib, and Plotly. Lower is better." width="1200">
-  </picture>
-</p>
+Preparation, browser rendering, interaction, Python memory, and browser memory
+are separate measurements. Density aggregation can bound drawing work by the
+screen, but ingestion and preparation still depend on source row count.
 
-XYG holds **0.071 s at 10k and 0.081 s at 100M**, flat across four orders of
-magnitude, because above 200k rows it draws a screen-bounded density surface
-instead of one marker per row, and zoom drills back to exact rows. Every
-exact-marker path scales with N instead: Matplotlib crosses a second at ~3M
-and reaches 13.4 s at 50M; Plotly crosses at ~2.5M and reaches 9.8 s at 25M.
+Archived comparisons are versioned historical records, with their environments
+and output contracts. They do not establish a universal win across chart
+families or measure every feature in the current source.
 
-The pale line is XYG with `density=False`: the same engine drawing one marker
-per row, no aggregation credit. It renders 100M exact markers in 1.34 s on
-5.26 GiB.
+Billion-scale graph visualization is the product goal. The archived
+[graph-scale diagnostic](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md#graph-scale-evidence-33-local-diagnostic)
+executes a ladder through one million source nodes with recorded reduction
+budgets; its billion-node rows evaluate LOD policy, rather than executing a
+billion-node visualization. Graph capacity needs its own evidence beyond the
+scatter and density demonstrations below.
 
-Time until every point is on screen, in seconds. `✕` is a size the library
-did not render: Plotly never finishes constructing the figure at 50M, and
-Matplotlib draws at 100M but never resolves the zoom that follows.
+Inspect the [benchmark evidence](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md),
+[archived baselines](https://github.com/CurateLabs/xyg/tree/main/benchmarks/launch_baselines),
+and [reproduction runbook](https://github.com/CurateLabs/xyg/blob/main/benchmarks/README.md).
+For chart breadth and design control, see the
+[gallery](https://github.com/CurateLabs/xyg/blob/main/docs/overview/gallery.md)
+and [capability matrix](https://github.com/CurateLabs/xyg/blob/main/spec/api/capability-matrix.md).
 
-| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XYG speedup* | *1×* | *2×* | *3×* | *4×* | *9×* | *16×* | *34×* | *89×* | *177×* | *—* |
-| **XYG** | **0.071** | **0.072** | **0.075** | **0.084** | **0.083** | **0.089** | **0.083** | **0.077** | **0.076** | **0.081** |
-| XYG (`density=False`) | 0.085 | 0.074 | 0.087 | 0.098 | 0.111 | 0.144 | 0.206 | 0.424 | 0.645 | 1.343 |
-| Matplotlib (WebAgg) | 0.086 | 0.115 | 0.224 | 0.357 | 0.758 | 1.424 | 2.804 | 6.838 | 13.385 | ✕ |
-| Plotly (scattergl) | 0.341 | 0.373 | 0.477 | 0.614 | 1.033 | 1.785 | 3.367 | 9.794 | ✕ | ✕ |
+The OpenStreetMap example demonstrates a density visualization of approximately
+**10.7 billion node locations**, using disk-backed source columns and a prepared
+spatial index. It visualizes point locations rather than a complete map's ways,
+relations, or tags, and requires substantial disk preparation.
+[Inspect the example and its requirements](https://github.com/CurateLabs/xyg/tree/main/examples/osm).
 
-Peak Python-side resident memory, in GiB. Browser memory is tracked separately
-and excluded here, since a headless Chrome resides ~1 GiB before drawing
-anything.
+## Use with GraphForge
 
-| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XYG advantage* | *1.8×* | *1.7×* | *1.9×* | *2.1×* | *2.1×* | *2.4×* | *2.6×* | *2.9×* | *2.8×* | *—* |
-| **XYG** | **0.05** | **0.05** | **0.06** | **0.07** | **0.13** | **0.19** | **0.32** | **0.70** | **1.36** | **2.58** |
-| XYG (`density=False`) | 0.05 | 0.05 | 0.07 | 0.10 | 0.18 | 0.31 | 0.57 | 1.35 | 2.66 | 5.26 |
-| Matplotlib (WebAgg) | 0.09 | 0.09 | 0.12 | 0.15 | 0.28 | 0.46 | 0.84 | 2.06 | 3.85 | ✕ |
-| Plotly (scattergl) | 0.21 | 0.18 | 0.28 | 0.36 | 0.60 | 1.05 | 1.86 | 4.70 | ✕ | ✕ |
+GraphForge Core owns graph storage, queries, and algorithms. XYG consumes its
+canonical Arrow IPC results and owns visualization: UUID joins, generation
+checks, layout, level of detail, styling, and exports. GraphForge does not need
+a Python runtime when XYG runs in a Node extension host.
 
-One machine (Apple M5 Pro), one run per cell; at the small end the timings
-carry roughly ±10 ms of run-to-run spread.
-
-For the environment, methodology, per-size videos, and raw results, see the
-[benchmark runbook](https://github.com/CurateLabs/xyg/blob/main/benchmarks/README.md) and
-[competitive benchmark specification](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md).
-
-## Embed XYG in a Reflex app
-
-The Reflex integration bundled with `xyg` turns any XYG chart into a regular
-Reflex component, with no JavaScript, iframe, or separate chart service.
-Install the `reflex` extra to select a compatible framework version:
-
-```bash
-pip install "xyg[reflex]"
-
-# or, with uv
-uv add "xyg[reflex]"
-```
-
-The import namespace remains `reflex_xy`. Register the integration once:
+In Python, compose a base graph with an analytical result, then display or
+export the chart. The inputs below are Arrow IPC bytes from the **same
+GraphForge generation**; `generation_uuid` identifies that source generation.
 
 ```python
-# rxconfig.py
-import reflex as rx
-import reflex_xy
-
-config = rx.Config(
-    app_name="dashboard",
-    plugins=[reflex_xy.XYPlugin()],
-)
-```
-
-Then add a chart anywhere in the component tree:
-
-```python
-import reflex as rx
-import reflex_xy
 import xyg
 
-signups = xyg.line_chart(
-    xyg.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]),
-    title="Weekly signups",
-)
 
-
-def index() -> rx.Component:
-    return rx.card(
-        rx.heading("Growth"),
-        reflex_xy.chart(signups, height="320px"),
-        width="100%",
+def visualize_graphforge(nodes_ipc, edges_ipc, pagerank_ipc, generation_uuid):
+    composition = xyg.compose_graphforge(
+        base={"tables": [nodes_ipc, edges_ipc], "generation": generation_uuid},
+        layers=[{
+            "result": pagerank_ipc,
+            "intent": "graph",
+            "result_id": "pagerank",
+            "generation": generation_uuid,
+        }],
     )
-
-
-app = rx.App()
-app.add_page(index)
+    return xyg.graphforge_chart(composition, width=900, height=600)
 ```
 
-Hover, pan, and zoom keep working. For charts driven by Reflex state, events, or
-live streams, see the
-[Reflex integration guide](https://github.com/CurateLabs/xyg/blob/main/docs/integrations/reflex.md) and
-the [runnable example app](https://github.com/CurateLabs/xyg/tree/main/examples/reflex/).
+Node exposes the same composition through
+`composeGraphForge` and `graphforgeChart` from
+`@curatelabs/xyg-node/graphforge`. Browser WASM exposes
+`renderWasmGraphForge`; its current rendered graph Scene is bounded to 1,024
+composed nodes and a primitive budget. Use native Python or Node graph LOD for
+larger graph views. GraphForge Core itself runs natively; browser WASM executes
+XYG's visualization engine, not GraphForge queries.
+
+See [Use with GraphForge](https://github.com/CurateLabs/xyg/blob/main/docs/integrations/graphforge.md)
+for Python, Node, browser, and VS Code workflows, generation checks, and
+selection identity. For canonical node/edge projections without analytical
+layers, use the [graph mark](https://github.com/CurateLabs/xyg/blob/main/docs/charts/graph.md).
 
 ## Examples
 
@@ -281,25 +273,37 @@ and setup.
 
 ## How it works
 
-Most chart stacks serialize every value as JSON and ask the browser to draw
-every mark. XYG keeps exact values in a `ColumnStore`, computes a level of detail
-in Rust, and transfers typed binary buffers. Decimated and density views are
-bounded by the visible result.
+The fork moved data processing and decisions that change visual output out of
+Python into the Rust core: graph composition and layout, LOD selection,
+binning and decimation, geometry, encodings, tick resolution, and supported
+static export. Python and Node call that engine through the same C ABI;
+browser WASM compiles the same Rust engine for a Worker. This makes shared
+behavior come from one implementation instead of matching language-specific
+copies.
+
+Hosts keep idiomatic APIs, input packaging, transport, and application
+lifecycle. TypeScript paints the Rust-produced buffers and handles gestures
+and browser chrome. Parity is proven for named contracts with byte comparisons;
+feature coverage and browser memory limits remain explicit. See
+[Rust engine and host parity](https://github.com/CurateLabs/xyg/blob/main/docs/core-concepts/rust-engine-and-host-parity.md).
+
+XYG retains canonical source data and transfers typed binary buffers.
+Reduced views are bounded by the visible result.
 
 ```mermaid
 flowchart TB
-    API["Python API<br/>Build the chart"]
-    STORE["ColumnStore<br/>Keep canonical f64 columns"]
-    CORE["Native Rust compute<br/>Direct · decimated · density"]
+    API["Python · Node · browser WASM<br/>Author charts and graph views"]
+    STORE["Canonical source<br/>Exact columns and graph identities"]
+    CORE["Shared Rust engine<br/>Native host or WASM Worker · layout and LOD"]
     PAYLOAD["Compact payload<br/>Data-less JSON spec + typed binary buffers"]
-    RENDER["Browser or notebook<br/>WebGL2 marks · Canvas axes · DOM interface"]
+    RENDER["Browser · notebook · webview<br/>WebGL2 marks · Canvas axes · DOM interface"]
 
     API --> STORE --> CORE --> PAYLOAD --> RENDER
 ```
 
-So a dense overview can aggregate while a narrow view returns exact points. With
-a live host, pan and zoom request a refined payload. Canonical f64 data stays in
-Python, so hover and selection still return original rows.
+Dense views can aggregate while narrower views expose source detail, according
+to the active host and representation. Supported refinement, hover, and
+selection paths resolve against canonical source data and graph identities.
 
 For the full design, see the [design dossier](https://github.com/CurateLabs/xyg/blob/main/spec/design-dossier.md).
 

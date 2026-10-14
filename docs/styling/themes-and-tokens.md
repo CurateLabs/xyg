@@ -40,12 +40,9 @@ mark. Its named arguments are readable aliases for the standard tokens: for
 example, `plot_background` writes `--chart-bg`, while `grid_color` writes
 `--chart-grid`.
 
-~~~python demo exec toggle preview-code id=theme-chrome-area-demo
+~~~python demo exec toggle preview-code id=theme-chrome-area-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 revenue = [32, 45, 41, 58, 63, 74]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 chart = xyg.area_chart(
@@ -61,7 +58,6 @@ chart = xyg.area_chart(
     ),
     xyg.legend(show=False),
     xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
-    # Keep horizontal guides only; omit axis chrome and tick text.
     xyg.x_axis(
         style={
             "axis_width": 0,
@@ -71,7 +67,7 @@ chart = xyg.area_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 80),
@@ -93,12 +89,7 @@ chart = xyg.area_chart(
         axis_color="var(--demo-axis, #d1d5db)",
         text_color="var(--demo-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--demo-surface:#ffffff] [--demo-grid:#e5e7eb] "
-        "[--demo-axis:#d1d5db] [--demo-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--demo-surface:#000000] dark:[--demo-grid:#27272a] "
-        "dark:[--demo-axis:#3f3f46] dark:[--demo-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--demo-surface:#ffffff] [--demo-grid:#e5e7eb] [--demo-axis:#d1d5db] [--demo-text:#4b5563] dark:bg-[#000000] dark:[--demo-surface:#000000] dark:[--demo-grid:#27272a] dark:[--demo-axis:#3f3f46] dark:[--demo-text:#d4d4d8]",
     width="100%",
     height=410,
     padding=(16, 20, 20, 20),
@@ -106,7 +97,7 @@ chart = xyg.area_chart(
 
 
 def theme_component_preview():
-    return reflex_xy.chart(chart, height="410px")
+    return chart
 ~~~
 
 The preview separates two kinds of values:
@@ -141,7 +132,7 @@ values in `style=` restyles the whole preview without touching the marks.
 Explicit numeric offsets and narrow columns leave a visible gap inside every
 group.
 
-~~~python demo exec toggle preview-code id=semantic-palette-columns-demo
+~~~python demo exec toggle preview-code id=semantic-palette-columns-demo native
 months = ["Jan", "Feb", "Mar", "Apr"]
 category_centers = list(range(len(months)))
 series = [
@@ -149,9 +140,6 @@ series = [
     ("Secondary", [28, 34, 39, 47], "var(--series-secondary)", 0.0),
     ("Accent", [16, 21, 25, 31], "var(--series-accent)", 0.24),
 ]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 columns = [
@@ -167,7 +155,6 @@ columns = [
     )
     for name, values, color, offset in series
 ]
-
 palette_chart = xyg.column_chart(
     *columns,
     xyg.legend(loc="upper left", ncols=3),
@@ -195,7 +182,7 @@ palette_chart = xyg.column_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.theme(
         plot_background="var(--palette-surface, #ffffff)",
@@ -208,17 +195,12 @@ palette_chart = xyg.column_chart(
             "--series-accent": "#fe9a00",
         },
     ),
-    class_name=(
-        "bg-[#ffffff] [--palette-surface:#ffffff] [--palette-grid:#e5e7eb] "
-        "[--palette-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--palette-surface:#000000] dark:[--palette-grid:#27272a] "
-        "dark:[--palette-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--palette-surface:#ffffff] [--palette-grid:#e5e7eb] [--palette-text:#4b5563] dark:bg-[#000000] dark:[--palette-surface:#000000] dark:[--palette-grid:#27272a] dark:[--palette-text:#d4d4d8]",
 )
 
 
 def semantic_palette_preview():
-    return reflex_xy.chart(palette_chart, height="320px")
+    return palette_chart
 ~~~
 
 ## Style resolution without surprises
@@ -261,13 +243,13 @@ chart = xyg.area_chart(
     xyg.area(
         x,
         y,
-        color="#2b7fff",                    # typed blue
-        style={"stroke": "#8e51ff"},       # mark style wins: violet
+        color="#2b7fff",  # typed blue
+        style={"stroke": "#8e51ff"},  # mark style wins: violet
     ),
-    xyg.legend(style={"font_size": 12}),     # wins over the slot's 14px
+    xyg.legend(style={"font_size": 12}),  # wins over the slot's 14px
     xyg.theme(style={"--series-primary": "#2b7fff"}),
     styles={"legend": {"font_size": 14}},
-    style={"--series-primary": "#fe9a00"}, # chart root wins: amber
+    style={"--series-primary": "#fe9a00"},  # chart root wins: amber
 )
 ~~~
 
@@ -281,7 +263,7 @@ move together across the whole chart.
 | --- | --- |
 | Keep browser, SVG, and PNG exports consistent | `xyg.theme(...)` or chart-root `style={...}` |
 | Share a palette across many browser charts | CSS variables on a common host ancestor |
-| Let Reflex state choose a palette | Resolve the state to a chart class or `style` mapping |
+| Let application state choose a palette | Resolve the state to a chart class or `style` mapping |
 | Change only one mark | Use the mark's `color`, `fill`, `stroke`, or `style` directly |
 
 ## Token reference
@@ -335,8 +317,8 @@ chart = xyg.area_chart(
 )
 ~~~
 
-In Reflex, resolve reactive theme choices into ordinary classes, styles, or CSS
-variables. XYG does not duplicate Reflex conditions or application state.
+In an application, resolve reactive theme choices into ordinary classes, styles, or CSS
+variables. XYG does not duplicate application conditions or state.
 
 ## What survives each output
 
@@ -346,7 +328,7 @@ browser-only adaptation.
 
 | Output | Typed mark/axis paint | Chart theme and root style | Component and slot chrome | Host CSS | Dark mode |
 | --- | --- | --- | --- | --- | --- |
-| Live browser / Reflex | Full | Full | Full component styles, slot styles, and classes | Full host cascade | Adaptive while the page is open |
+| Live browser / application | Full | Full | Full component styles, slot styles, and classes | Full host cascade | Adaptive while the page is open |
 | Standalone HTML | Full | Full | Full serialized component and slot styling | Only CSS included with `custom_css` | Adaptive through included class or media rules |
 | Python `to_svg()` | Full validated static surface | Chart-local tokens and `var()` fallbacks | Supported static chrome fields; no general slot-class cascade | No | One resolved state |
 | Native PNG | Full validated static surface | Chart-local tokens and `var()` fallbacks | Supported static chrome fields; no general slot-class cascade | No | One resolved state |
@@ -375,12 +357,9 @@ class that defines `font-family`. The live example uses a system serif so it
 does not depend on a network font; replace that stack with the family your host
 loads.
 
-~~~python demo exec toggle preview-code id=custom-font-columns-demo
+~~~python demo exec toggle preview-code id=custom-font-columns-demo native
 quarters = ["Q1", "Q2", "Q3", "Q4", "Q5"]
 revenue = [3, 6, 4, 8, 7]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 font_chart = xyg.column_chart(
@@ -405,7 +384,7 @@ font_chart = xyg.column_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         style={
@@ -415,7 +394,7 @@ font_chart = xyg.column_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.theme(
         plot_background="var(--font-surface, #ffffff)",
@@ -423,24 +402,17 @@ font_chart = xyg.column_chart(
         axis_color="#00000000",
         text_color="var(--font-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--font-surface:#ffffff] [--font-grid:#e5e7eb] "
-        "[--font-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--font-surface:#000000] dark:[--font-grid:#27272a] "
-        "dark:[--font-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--font-surface:#ffffff] [--font-grid:#e5e7eb] [--font-text:#4b5563] dark:bg-[#000000] dark:[--font-surface:#000000] dark:[--font-grid:#27272a] dark:[--font-text:#d4d4d8]",
     style={"font_family": "Georgia, 'Times New Roman', serif"},
-    styles={
-        "legend": {"font_style": "italic"},
-    },
+    styles={"legend": {"font_style": "italic"}},
 )
 
 
 def custom_font_preview():
-    return reflex_xy.chart(font_chart, height="320px")
+    return font_chart
 ~~~
 
-For a downloaded or self-hosted font, define `@font-face` in the Reflex
+For a downloaded or self-hosted font, define `@font-face` in the host
 application's global stylesheet and use the same family on the chart:
 
 ~~~css
@@ -507,7 +479,7 @@ chart.to_png(
 
 | Output | Custom-font behavior |
 | --- | --- |
-| Live browser / Reflex | Uses a font already loaded by the host page. |
+| Live browser / application | Uses a font already loaded by the host page. |
 | Toolbar PNG | Captures the browser-rendered font into pixels. |
 | Toolbar SVG | Preserves the computed family and font styles, but does not embed the font file. |
 | Standalone HTML | Supports `@font-face` and root `font-family` through `custom_css`. |
@@ -520,7 +492,7 @@ chart.to_png(
 The interactive toolbar (modebar) has no colored default a page can show
 through, so it reads the light/dark state straight from your page: when a
 `.dark` class is present on the chart root or any ancestor — the convention
-Reflex (next-themes), Radix Themes, and Tailwind all set on the root `<html>`
+application theme systems and Tailwind commonly set on the root `<html>`
 element — its background, border, and shadow switch to a dark palette. Icon
 color already follows the inherited text color, so the toolbar stays readable in
 both modes with no configuration. An explicit `.light` class (or no class at

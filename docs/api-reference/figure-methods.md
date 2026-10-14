@@ -63,13 +63,13 @@ native PNG rejects author CSS because it has no browser cascade.
 
 ~~~python
 image: bytes = chart.to_image(
-    format="png",              # png | jpeg/jpg | webp | svg | pdf
+    format="png",  # png | jpeg/jpg | webp | svg | pdf
     width=None,
     height=None,
-    scale=None,                # device-pixel-ratio for raster formats
-    background=None,           # "auto" | CSS color | "transparent"
+    scale=None,  # device-pixel-ratio for raster formats
+    background=None,  # "auto" | CSS color | "transparent"
     engine=xyg.Engine.auto,
-    quality=None,              # JPEG / Chromium-WebP, 1-100 (default 90)
+    quality=None,  # JPEG / Chromium-WebP, 1-100 (default 90)
     optimize=False,
     custom_css=None,
     sandbox=True,
@@ -110,7 +110,7 @@ Streaming has additional channel and monotonic-line constraints documented in
 
 ~~~python
 chrome: dict[str, object] = chart.chrome_components()
-reflex_chrome: dict[str, object] = chart.reflex_components()
+chrome_alias: dict[str, object] = chart.reflex_components()
 ~~~
 
 These methods return the exact opaque replacement objects passed to

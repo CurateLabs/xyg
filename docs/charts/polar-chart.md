@@ -31,23 +31,16 @@ inside `polar_chart()`. Focused helpers build
 The first mark channel becomes θ and the second becomes r. Angles use radians
 by default:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.28 * np.cos(5.0 * theta) + 0.12 * np.sin(2.0 * theta)
-
 polar_line = xyg.polar_chart(
     xyg.line(theta, radius, color="#6e56cf", width=2.5),
     xyg.scatter(
-        theta[::18],
-        radius[::18],
-        color="#2563eb",
-        size=5,
-        stroke="#ffffff",
-        stroke_width=1,
+        theta[::18], radius[::18], color="#2563eb", size=5, stroke="#ffffff", stroke_width=1
     ),
     xyg.theta_axis(unit="radians"),
     xyg.r_axis(label="relative magnitude", domain=(0.0, 1.5)),
@@ -56,7 +49,7 @@ polar_line = xyg.polar_chart(
 
 
 def polar_line_demo():
-    return reflex_xy.chart(polar_line, height="420px")
+    return polar_line
 ~~~
 
 Without an authored sector, `polar_chart()` draws a full circular frame. Its
@@ -70,11 +63,9 @@ Heatmap cells follow rings and spokes rather than stretching a Cartesian image
 into a circle. Contours share that projection, so they can be layered over the
 field with one colorbar:
 
-~~~python demo exec
+~~~python demo exec native
 import math
-
 import numpy as np
-import reflex_xy
 import xyg
 
 field_theta = np.linspace(0.0, 360.0, 24, endpoint=False)
@@ -88,23 +79,10 @@ field = np.array(
         for radius in field_radius
     ]
 )
-
 polar_field = xyg.polar_chart(
-    xyg.heatmap(
-        field,
-        x=field_theta,
-        y=field_radius,
-        colormap="viridis",
-        name="surface",
-    ),
+    xyg.heatmap(field, x=field_theta, y=field_radius, colormap="viridis", name="surface"),
     xyg.contour(
-        field,
-        x=field_theta,
-        y=field_radius,
-        levels=6,
-        color="#ffffff",
-        width=1.4,
-        name="isolines",
+        field, x=field_theta, y=field_radius, levels=6, color="#ffffff", width=1.4, name="isolines"
     ),
     xyg.colorbar(title="surface"),
     xyg.theta_axis(unit="degrees"),
@@ -114,7 +92,7 @@ polar_field = xyg.polar_chart(
 
 
 def polar_field_demo():
-    return reflex_xy.chart(polar_field, height="440px")
+    return polar_field
 ~~~
 
 The polar heatmap path inverse-samples the source grid at the requested
@@ -210,13 +188,11 @@ Both angular (`xerr`) and radial (`yerr`) uncertainty project through the polar
 coordinate system. This example fits the plot to a 220° compass sector and
 clips the marks to a shared inner hole:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 error_theta = [-90.0, -45.0, 0.0, 45.0, 90.0]
 error_radius = [2.0, 3.0, 2.5, 4.0, 3.2]
-
 polar_uncertainty = xyg.polar_chart(
     xyg.errorbar(
         error_theta,
@@ -228,19 +204,14 @@ polar_uncertainty = xyg.polar_chart(
         cap_size=8,
     ),
     xyg.scatter(error_theta, error_radius, color="#111827", size=7),
-    xyg.theta_axis(
-        unit="degrees",
-        sector=(-110.0, 110.0),
-        zero="N",
-        direction="clockwise",
-    ),
+    xyg.theta_axis(unit="degrees", sector=(-110.0, 110.0), zero="N", direction="clockwise"),
     xyg.r_axis(domain=(0.0, 5.0), hole=0.28),
     title="Directional uncertainty",
 )
 
 
 def polar_uncertainty_demo():
-    return reflex_xy.chart(polar_uncertainty, height="390px")
+    return polar_uncertainty
 ~~~
 
 ## Hover and Zoom
@@ -296,18 +267,13 @@ quantity worth magnifying. Because the radial minimum stays pinned, zooming in
 enlarges the values nearest the center — which is what you want when a single
 large lobe squashes the rest of the pattern against the middle of the disc:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 bearing = np.linspace(0.0, 360.0, 721)
 offset = (bearing + 180.0) % 360.0 - 180.0
-# Linear radiated power: one dominant main lobe plus side lobes a twentieth its
-# size, so the side-lobe structure only becomes readable once the radial axis is
-# zoomed in.
-power = np.exp(-(offset / 16.0) ** 2) + 0.05 * np.abs(np.cos(np.radians(3.0 * bearing)))
-
+power = np.exp(-((offset / 16.0) ** 2)) + 0.05 * np.abs(np.cos(np.radians(3.0 * bearing)))
 zoomable_polar = xyg.polar_chart(
     xyg.line(bearing, power, color="#6e56cf", width=2.0),
     xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
@@ -318,7 +284,7 @@ zoomable_polar = xyg.polar_chart(
 
 
 def zoomable_polar_demo():
-    return reflex_xy.chart(zoomable_polar, height="420px")
+    return zoomable_polar
 ~~~
 
 The same flag is available directly on the chart for one-off cases
@@ -476,7 +442,7 @@ speed bands, input validation, and compass conventions.
 ### How do I create a pie or donut chart?
 
 See [Pie and Donut Charts](/docs/xy/charts/pie-chart/) for four live
-unequal-width sector compositions with center metrics and Reflex legends.
+unequal-width sector compositions with center metrics and application legends.
 
 ### How do I use degrees instead of radians?
 

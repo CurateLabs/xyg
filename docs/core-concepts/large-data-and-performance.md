@@ -37,25 +37,18 @@ source ingest and validation still depend on the source grid.
 
 ## Automatic versus explicit density
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
 import xyg
 
 rng = np.random.default_rng(9)
-x = rng.normal(size=1_000_000)
+x = rng.normal(size=1000000)
 y = 0.4 * x + rng.normal(size=x.size)
-
-chart = xyg.scatter_chart(
-    xyg.scatter(x, y, density=None),
-    width=1000,
-    height=500,
-)
+chart = xyg.scatter_chart(xyg.scatter(x, y, density=None), width=1000, height=500)
 
 
 def automatic_density_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(chart, height="420px")
+    return chart
 ~~~
 
 - `density=None` chooses automatically and is the normal large-data setting.
@@ -93,7 +86,7 @@ pipeline still includes row-dependent ingest and reduction work.
 
 ## Inspect memory and tier decisions
 
-~~~python demo exec
+~~~python demo exec native
 report = chart.memory_report()
 print(report["canonical_bytes"])
 for column in report["columns"]:
@@ -101,9 +94,7 @@ for column in report["columns"]:
 
 
 def memory_report_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(chart, height="420px")
+    return chart
 ~~~
 
 Tier decisions are also recorded in the built payload rather than being

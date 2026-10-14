@@ -1,40 +1,27 @@
 ---
 title: Examples
-description: Copy polished chart patterns and explore live palette variations built with XYG.
+description: Copy polished chart patterns and author reusable palettes with XYG.
 ---
 
 # Examples
 
-Explore polished chart treatments built for real product interfaces. Each
-responsive preview includes the complete Python needed to recreate it. Switch
-to **Code** for the implementation; examples with more than 10 lines of
-hardcoded inputs add a separate **Data** tab. Compare the patterns, or recolor
-the live playground with a preset or your own three brand colors.
-[Jump to the palette playground →](#palette-playground)
+Explore chart treatments built for product interfaces. Each inline preview
+paints a generated native chart payload; its Python source appears below it.
+Pan, zoom, and local hover work in the preview. Reactive application controls
+and Python callbacks require their live host.
 
-Each preview displays a compact legend above the plot. The copied chart uses
-`xyg.legend(show=False)` so it does not render a second legend; replace it with
-`xyg.legend(...)` when the legend should be part of your application or export.
-
-~~~python exec
-from xy_docs.examples import chart_examples_layout_marker
-~~~
-
-~~~python eval
-chart_examples_layout_marker()
-~~~
+These examples hide the built-in legend with `xyg.legend(show=False)`.
+Use `xyg.legend(...)` when a legend should be part of the chart or export;
+custom surrounding UI belongs to your application.
 
 ## Layered momentum
 
 Use a soft violet gradient to keep the trend readable while letting the area
 carry the full visual weight.
 
-~~~python demo exec toggle preview-code id=layered-momentum-demo
+~~~python demo exec toggle preview-code id=layered-momentum-demo native
 weeks = list(range(1, 13))
 active_teams = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -61,7 +48,7 @@ def layered_momentum():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(0, 80),
@@ -78,7 +65,10 @@ def layered_momentum():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+layered_momentum_chart = layered_momentum()
 ~~~
 
 ## Solar fleet output
@@ -86,16 +76,23 @@ def layered_momentum():
 Compare two monthly production signals with vivid blue and emerald
 strokes and independent fades that preserve both series when they overlap.
 
-~~~python demo exec toggle preview-code id=solar-fleet-output-demo
+~~~python demo exec toggle preview-code id=solar-fleet-output-demo native
 months = [
-    "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
-    "Jul 23", "Aug 23", "Sep 23", "Oct 23", "Nov 23", "Dec 23",
+    "Jan 23",
+    "Feb 23",
+    "Mar 23",
+    "Apr 23",
+    "May 23",
+    "Jun 23",
+    "Jul 23",
+    "Aug 23",
+    "Sep 23",
+    "Oct 23",
+    "Nov 23",
+    "Dec 23",
 ]
 solar_panels = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -132,7 +129,7 @@ def solar_fleet_output():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(0, 4200),
@@ -150,7 +147,10 @@ def solar_fleet_output():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+solar_fleet_output_chart = solar_fleet_output()
 ~~~
 
 ## Stacked product mix
@@ -158,37 +158,22 @@ def solar_fleet_output():
 Stacked columns make the total easy to compare while retaining the contribution
 of each product tier. Only the exposed top of each stack is rounded.
 
-~~~python demo exec toggle preview-code id=stacked-product-mix-demo
+~~~python demo exec toggle preview-code id=stacked-product-mix-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 core = [28, 31, 35, 38, 42, 46]
 growth = [16, 18, 19, 23, 25, 29]
 enterprise = [7, 8, 10, 12, 14, 17]
 growth_base = core
 enterprise_base = [
-    core_value + growth_value
-    for core_value, growth_value in zip(core, growth, strict=True)
+    core_value + growth_value for core_value, growth_value in zip(core, growth, strict=True)
 ]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
 def stacked_product_mix():
     chart = xyg.column_chart(
-        xyg.column(
-            months,
-            core,
-            name="Core",
-            color="#7c3aed",
-        ),
-        xyg.column(
-            months,
-            growth,
-            base=growth_base,
-            name="Growth",
-            color="#db2777",
-        ),
+        xyg.column(months, core, name="Core", color="#7c3aed"),
+        xyg.column(months, growth, base=growth_base, name="Growth", color="#db2777"),
         xyg.column(
             months,
             enterprise,
@@ -208,7 +193,7 @@ def stacked_product_mix():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(0, 100),
@@ -225,7 +210,10 @@ def stacked_product_mix():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+stacked_product_mix_chart = stacked_product_mix()
 ~~~
 
 ## Normalized traffic share
@@ -234,20 +222,12 @@ A 100% stacked area emphasizes how the mix changes over time independently of
 the total volume. The shared boundary makes the handoff between channels easy
 to follow, while the tooltip reports the actual Desktop and Mobile shares.
 
-~~~python demo exec toggle preview-code id=normalized-traffic-share-demo
+~~~python demo exec toggle preview-code id=normalized-traffic-share-demo native
 months = list(range(1, 9))
 desktop = [0.68, 0.65, 0.63, 0.59, 0.61, 0.57, 0.54, 0.52]
 mobile = [1.0 - share for share in desktop]
 total = [1.0] * len(months)
-data = {
-    "month": months,
-    "desktop": desktop,
-    "mobile": mobile,
-    "total": total,
-}
-
-# --- chart ---
-import reflex_xy
+data = {"month": months, "desktop": desktop, "mobile": mobile, "total": total}
 import xyg
 
 
@@ -276,16 +256,7 @@ def normalized_traffic_share():
             curve="smooth",
             line_width=2,
         ),
-        # Bind the actual mobile share so both percentages are resident in the
-        # tooltip payload while the visible mobile area still ends at 100%.
-        xyg.scatter(
-            x="month",
-            y="mobile",
-            data=data,
-            color="#00000000",
-            opacity=0,
-            size=1,
-        ),
+        xyg.scatter(x="month", y="mobile", data=data, color="#00000000", opacity=0, size=1),
         xyg.tooltip(
             fields=["desktop", "mobile"],
             title="Period {month}",
@@ -301,7 +272,7 @@ def normalized_traffic_share():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(0, 1),
@@ -319,7 +290,10 @@ def normalized_traffic_share():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+normalized_traffic_share_chart = normalized_traffic_share()
 ~~~
 
 ## Regional product demand
@@ -328,7 +302,7 @@ Compare demand for each product across six regions without hiding the individual
 series inside a stack. Even with axis text removed, each hovered bar reports its
 product and region together.
 
-~~~python demo exec toggle preview-code id=grouped-channel-mix-demo
+~~~python demo exec toggle preview-code id=grouped-channel-mix-demo native
 products = ["Analytics", "Automation", "Security", "Collaboration"]
 category_centers = list(range(len(products)))
 regions = [
@@ -339,10 +313,7 @@ regions = [
     ("Middle East", [138, 133, 539, 61], "#6a7282"),
     ("Africa", [436, 533, 234, 53], "#00b8db"),
 ]
-offsets = [-0.30, -0.18, -0.06, 0.06, 0.18, 0.30]
-
-# --- chart ---
-import reflex_xy
+offsets = [-0.3, -0.18, -0.06, 0.06, 0.18, 0.3]
 import xyg
 
 
@@ -353,7 +324,7 @@ def regional_product_demand():
             [values[product_index]],
             name=f"{product} · {region}",
             color=color,
-            width=0.10,
+            width=0.1,
             opacity=1,
             corner_radius=0,
             stroke_width=0,
@@ -361,7 +332,6 @@ def regional_product_demand():
         for region_index, (region, values, color) in enumerate(regions)
         for product_index, product in enumerate(products)
     ]
-
     chart = xyg.column_chart(
         *columns,
         xyg.tooltip(title="Product demand", format={"y": ",.0f"}),
@@ -396,7 +366,10 @@ def regional_product_demand():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+regional_product_demand_chart = regional_product_demand()
 ~~~
 
 ## Conversion by stage
@@ -405,7 +378,7 @@ The clean plot omits category-axis text, so each stage keeps a distinct
 categorical color and the hover tooltip reports the full stage name and
 completion value.
 
-~~~python demo exec toggle preview-code id=conversion-by-stage-demo
+~~~python demo exec toggle preview-code id=conversion-by-stage-demo native
 stages = [
     "Workspace created",
     "Data connected",
@@ -415,9 +388,6 @@ stages = [
 ]
 completion = [94, 86, 78, 64, 52]
 colors = ["#2b7fff", "#00bc7d", "#8e51ff", "#fe9a00", "#6a7282"]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -434,13 +404,9 @@ def conversion_by_stage():
         )
         for stage, value, color in zip(stages, completion, colors, strict=True)
     ]
-
     chart = xyg.bar_chart(
         *bars,
-        xyg.tooltip(
-            title="{stage} · {completion}%",
-            format={"completion": ".0f"},
-        ),
+        xyg.tooltip(title="{stage} · {completion}%", format={"completion": ".0f"}),
         xyg.legend(show=False),
         xyg.x_axis(
             domain=(0, 100),
@@ -462,13 +428,16 @@ def conversion_by_stage():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         width="100%",
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+conversion_by_stage_chart = conversion_by_stage()
 ~~~
 
 ## Monthly balance
@@ -476,33 +445,18 @@ def conversion_by_stage():
 Diverging columns preserve one shared zero baseline, so gains and pullbacks are
 immediately comparable without introducing a warning-red color.
 
-~~~python demo exec toggle preview-code id=monthly-balance-demo
+~~~python demo exec toggle preview-code id=monthly-balance-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 change = [0.18, 0.26, -0.14, 0.21, -0.19, 0.31, 0.24, -0.11]
 gains = [value if value >= 0 else float("nan") for value in change]
 pullbacks = [value if value < 0 else float("nan") for value in change]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
 def monthly_balance():
     chart = xyg.column_chart(
-        xyg.column(
-            months,
-            gains,
-            name="Gain",
-            color="#2b7fff",
-            corner_radius=4,
-        ),
-        xyg.column(
-            months,
-            pullbacks,
-            name="Pullback",
-            color="#8e51ff",
-            corner_radius=4,
-        ),
+        xyg.column(months, gains, name="Gain", color="#2b7fff", corner_radius=4),
+        xyg.column(months, pullbacks, name="Pullback", color="#8e51ff", corner_radius=4),
         xyg.hline(0, color="#cbd5e1", width=1),
         xyg.tooltip(title="{x}", format={"y": ".0f%"}),
         xyg.legend(show=False),
@@ -515,7 +469,7 @@ def monthly_balance():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(-0.25, 0.35),
@@ -532,7 +486,10 @@ def monthly_balance():
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+monthly_balance_chart = monthly_balance()
 ~~~
 
 ## Responsive combo chart
@@ -542,35 +499,30 @@ signals need different visual emphasis. Blue bars, an amber line, a compact
 legend, and horizontal guides keep the two measures visually distinct;
 the tooltip keeps the two named measures distinct.
 
-~~~python demo exec toggle preview-code id=responsive-combo-chart-demo
+~~~python demo exec toggle preview-code id=responsive-combo-chart-demo native
 months = [
-    "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
-    "Jul 23", "Aug 23", "Sep 23", "Oct 23", "Nov 23", "Dec 23",
+    "Jan 23",
+    "Feb 23",
+    "Mar 23",
+    "Apr 23",
+    "May 23",
+    "Jun 23",
+    "Jul 23",
+    "Aug 23",
+    "Sep 23",
+    "Oct 23",
+    "Nov 23",
+    "Dec 23",
 ]
 solar_panels = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 dashboard_combo = xyg.chart(
     xyg.column(
-        months,
-        solar_panels,
-        name="Solar panels",
-        color="#2b7fff",
-        corner_radius=0,
-        stroke_width=0,
+        months, solar_panels, name="Solar panels", color="#2b7fff", corner_radius=0, stroke_width=0
     ),
-    xyg.line(
-        months,
-        inverters,
-        name="Inverters",
-        color="#fe9a00",
-        width=2,
-        curve="linear",
-    ),
+    xyg.line(months, inverters, name="Inverters", color="#fe9a00", width=2, curve="linear"),
     xyg.legend(show=False),
     xyg.tooltip(title="{x}", format={"y": ",.0f"}),
     xyg.x_axis(
@@ -582,7 +534,7 @@ dashboard_combo = xyg.chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 4200),
@@ -600,15 +552,8 @@ dashboard_combo = xyg.chart(
         grid_color="var(--recipe-grid, #e5e7eb)",
         text_color="var(--recipe-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--recipe-surface:#ffffff] [--recipe-grid:#e5e7eb] "
-        "[--recipe-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--recipe-surface:#000000] dark:[--recipe-grid:#27272a] "
-        "dark:[--recipe-text:#d4d4d8]"
-    ),
-    class_names={
-        "tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl",
-    },
+    class_name="bg-[#ffffff] [--recipe-surface:#ffffff] [--recipe-grid:#e5e7eb] [--recipe-text:#4b5563] dark:bg-[#000000] dark:[--recipe-surface:#000000] dark:[--recipe-grid:#27272a] dark:[--recipe-text:#d4d4d8]",
+    class_names={"tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl"},
     width="100%",
     height=280,
     padding=[16, 20, 20, 20],
@@ -616,7 +561,7 @@ dashboard_combo = xyg.chart(
 
 
 def responsive_combo_chart():
-    return reflex_xy.chart(dashboard_combo, height="280px")
+    return dashboard_combo
 ~~~
 
 ## Product constellation
@@ -625,7 +570,7 @@ Compare product adoption and retention without turning the chart into a table.
 Bubble size signals account reach, while six categorical colors keep product
 segments distinct in the custom legend and hover readout.
 
-~~~python demo exec toggle preview-code id=product-constellation-demo
+~~~python demo exec toggle preview-code id=product-constellation-demo native
 products = [
     ("Atlas · Platform · 18k accounts", "#2b7fff", 72, 84, 20),
     ("Forge · Platform · 11k accounts", "#2b7fff", 64, 79, 15),
@@ -646,9 +591,6 @@ products = [
     ("Canvas · Collaboration · 9k accounts", "#00b8db", 69, 88, 14),
     ("Loop · Collaboration · 6k accounts", "#00b8db", 83, 96, 11),
 ]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -668,13 +610,11 @@ def product_constellation():
         )
         for name, color, adoption, retention, size in products
     ]
-
     chart = xyg.scatter_chart(
         *bubbles,
         xyg.legend(show=False),
         xyg.tooltip(
-            fields=["adoption", "retention"],
-            format={"adoption": ".0f%", "retention": ".0f%"},
+            fields=["adoption", "retention"], format={"adoption": ".0f%", "retention": ".0f%"}
         ),
         xyg.modebar(show=False),
         xyg.x_axis(
@@ -710,17 +650,15 @@ def product_constellation():
             grid_color="var(--constellation-grid, #e5e7eb)",
             text_color="var(--constellation-text, #6a7282)",
         ),
-        class_name=(
-            "bg-[#ffffff] [--constellation-surface:#ffffff] "
-            "[--constellation-grid:#e5e7eb] [--constellation-text:#6a7282] "
-            "dark:bg-[#000000] dark:[--constellation-surface:#000000] "
-            "dark:[--constellation-grid:#27272a] dark:[--constellation-text:#99a1af]"
-        ),
+        class_name="bg-[#ffffff] [--constellation-surface:#ffffff] [--constellation-grid:#e5e7eb] [--constellation-text:#6a7282] dark:bg-[#000000] dark:[--constellation-surface:#000000] dark:[--constellation-grid:#27272a] dark:[--constellation-text:#99a1af]",
         width="100%",
         height=380,
         padding=[16, 24, 24, 24],
     )
-    return reflex_xy.chart(chart, height="380px")
+    return chart
+
+
+product_constellation_chart = product_constellation()
 ~~~
 
 ## Release velocity
@@ -729,18 +667,9 @@ Lollipop stems make release cadence easy to scan without adding another bar
 chart. Violet tracks the stable channel and cyan highlights the faster preview
 channel, with release names and deploy counts available on hover.
 
-~~~python demo exec toggle preview-code id=release-velocity-demo
-stable = {
-    "release": ["v1.8", "v2.0", "v2.2", "v2.4"],
-    "velocity": [18, 26, 31, 38],
-}
-preview = {
-    "release": ["v1.9", "v2.1", "v2.3", "v2.5"],
-    "velocity": [23, 34, 29, 45],
-}
-
-# --- chart ---
-import reflex_xy
+~~~python demo exec toggle preview-code id=release-velocity-demo native
+stable = {"release": ["v1.8", "v2.0", "v2.2", "v2.4"], "velocity": [18, 26, 31, 38]}
+preview = {"release": ["v1.9", "v2.1", "v2.3", "v2.5"], "velocity": [23, 34, 29, 45]}
 import xyg
 
 
@@ -765,11 +694,7 @@ def release_velocity():
             marker_size=8,
         ),
         xyg.legend(show=False),
-        xyg.tooltip(
-            fields=["velocity"],
-            title="{release}",
-            format={"velocity": ".0f"},
-        ),
+        xyg.tooltip(fields=["velocity"], title="{release}", format={"velocity": ".0f"}),
         xyg.modebar(show=False),
         xyg.x_axis(
             tick_label_strategy="none",
@@ -802,33 +727,36 @@ def release_velocity():
             grid_color="var(--velocity-grid, #e5e7eb)",
             text_color="var(--velocity-text, #6a7282)",
         ),
-        class_name=(
-            "bg-[#ffffff] [--velocity-surface:#ffffff] "
-            "[--velocity-grid:#e5e7eb] [--velocity-text:#6a7282] "
-            "dark:bg-[#000000] dark:[--velocity-surface:#000000] "
-            "dark:[--velocity-grid:#27272a] dark:[--velocity-text:#99a1af]"
-        ),
+        class_name="bg-[#ffffff] [--velocity-surface:#ffffff] [--velocity-grid:#e5e7eb] [--velocity-text:#6a7282] dark:bg-[#000000] dark:[--velocity-surface:#000000] dark:[--velocity-grid:#27272a] dark:[--velocity-text:#99a1af]",
         width="100%",
         height=360,
         padding=[16, 24, 24, 24],
     )
-    return reflex_xy.chart(chart, height="360px")
+    return chart
+
+
+release_velocity_chart = release_velocity()
 ~~~
 
-## Palette playground
+## Author a palette
 
-Choose a preset or edit the Primary, Secondary, and Accent colors to recolor a
-responsive grid of area and bar charts in real time. Manual edits switch the
-palette to **Custom**; **Reset** restores Berry. Copy any card when the palette
-and chart treatment fit your product—the generated code uses
-`xyg.theme(palette=...)` where a chart-wide series cycle is the clearest fit.
+Use `xyg.theme(palette=...)` to keep a series cycle consistent across charts.
+This example uses a fixed palette for two revenue series; edit the colors in
+your source to create another variation. The documentation preview is a
+snapshot, rather than a live palette editor.
 
-~~~python exec
-from xy_docs.playground import chart_playground
-~~~
+~~~python demo exec native
+import xyg
 
-~~~python eval
-chart_playground()
+palette_chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3, 4], [12, 18, 17, 25, 31], name="Desktop"),
+    xyg.line([0, 1, 2, 3, 4], [8, 11, 15, 19, 24], name="Mobile"),
+    xyg.theme(palette=["#7c3aed", "#0ea5e9", "#f59e0b"]),
+    xyg.legend(),
+    xyg.x_axis(label="week"),
+    xyg.y_axis(label="revenue"),
+    title="One palette, two series",
+)
 ~~~
 
 ## Build your own

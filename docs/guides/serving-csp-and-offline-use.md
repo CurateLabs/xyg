@@ -6,8 +6,8 @@ description: Serve bundled XYG assets under CSP and operate without a CDN or net
 # Serving, CSP, and Offline Use
 
 Published XYG wheels contain the Python package, native core, and versioned
-JavaScript/WebGL client. Notebook display, standalone export, and the Reflex
-adapter do not load XYG from a CDN.
+JavaScript/WebGL client. Notebook display and standalone export do not load
+XYG from a CDN.
 
 ## Offline Environments
 
@@ -46,22 +46,19 @@ serves the bundled JavaScript separately and injects chart data and styles
 through the host's nonce- or hash-aware path.
 ~~~
 
-## Reflex Deployment
+## GraphForge applications and webviews
 
-A fixed `xyg.Chart` passed directly as `reflex_xy.chart(chart)` compiles to local
-static client and binary payload assets and works with `reflex export`. This is
-the static tier.
+Compose GraphForge results in a native Python or Node host, then serve the
+local XYG painter and typed binary payload. In a Node extension host, use
+`graphforgeWebviewPayload()` and relay picks to `graphforgePick()`; the webview
+owns display rather than graph computation.
 
-For fixed data that still needs kernel round-trips, create
-`token = reflex_xy.inline(chart)` at module scope and mount it with
-`reflex_xy.chart(token)`. That `inline()` token is live, as is an
-`@reflex_xy.figure` var, so both require the Reflex backend and its existing
-Socket.IO connection. The adapter does not create a second service or websocket
-endpoint.
-
-Account for the application's own script, style, worker, asset, and websocket
-directives when writing a host CSP. XYG's lack of a CDN dependency does not make
-a live state-backed application backend-free.
+The direct browser WASM path serves a module Worker and matching WASM asset at
+explicit same-origin URLs. Strict hosting needs `wasm-unsafe-eval` for WASM
+compilation and a Worker directive for the local Worker. VS Code webviews use
+their local resource origin and documented Blob-Worker setup. Follow
+[Use with GraphForge](/docs/xy/integrations/graphforge/) for the supported
+paths and size bounds, and test the application's complete policy.
 
 ## Self-Contained Does Not Mean Live
 

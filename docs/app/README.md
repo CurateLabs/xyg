@@ -1,80 +1,50 @@
-# XYG Docs
+# XYG documentation site
 
-This Reflex app renders the public Markdown files in the parent `docs/`
-directory with the same `reflex-site-shared` shell, Markdown pipeline, and
-styles used by the official Reflex documentation.
-
-## Getting Started
-
-Run these commands from `docs/app`:
-
-1. Install the locked dependencies:
-
-   ```bash
-   uv sync --frozen --group dev
-   ```
-
-2. Start the development server:
-
-   ```bash
-   uv run --no-sync reflex run
-   ```
-
-3. Open [http://localhost:3000/docs/xy/](http://localhost:3000/docs/xy/).
-
-Restart the server after changing Python components, configuration, plugins,
-or packaged frontend assets. Markdown-only edits are picked up during normal
-development.
-
-## Editing Docs
-
-Public pages live in the parent `docs/` directory. Page routes and sidebar
-order are declared centrally in `xy_docs/config.py`; do not add ordering
-frontmatter to individual Markdown files. The `spec/` tree is
-internal project documentation and is intentionally excluded from the public
-site.
-
-Executable fences marked `python demo exec` render in shared Preview/Code
-tabs. Add `# --- chart ---` after a hardcoded data section only when that
-section exceeds 10 nonblank lines; it then renders in a separate Data tab. Use
-`python demo-only exec` only when the code is intentionally shown elsewhere.
-Keep examples deterministic, small, and valid without external services.
-Static XYG payloads generated during compilation are written below `assets/xy/`
-and must not be committed.
-
-## Checks
+The public docs use Astro Starlight, matching the CurateLabs GraphForge docs.
+Canonical Markdown lives one directory above this application. The site is
+static: production needs no Python or application server.
 
 From the repository root:
 
 ```bash
-uv sync --project docs/app --frozen --group dev
-uv run --project docs/app --no-sync pytest docs/app/tests
-uv run --project docs/app --no-sync pre-commit run --all-files
+cargo build --release
+npm ci
+node js/build.mjs
+uv sync --group dev
+npm ci --prefix docs/app
+npm run check --prefix docs/app
+npm run build --prefix docs/app
+npm run test --prefix docs/app
+node docs/app/scripts/browser-smoke.mjs
+npm run preview --prefix docs/app
 ```
 
-Run the production app from `docs/app` when changing routing, rendering,
-plugins, shared components, or live examples:
+Preview the built site at `http://localhost:4321/docs/xy/`. Use `npm run dev
+--prefix docs/app` for development. Node 22.12 or newer is required; use a current
+npm release supported by Astro.
+
+Build preparation compiles the original chart examples through Python and the
+Rust core into binary first-paint frames. The published site uses the shared
+browser renderer for paint, picking, pan, and zoom. Stateful examples show an
+initial snapshot and explain when updates need an application host. The static
+site contains no second implementation of chart policy.
+
+`src/content/docs/`, `public/`, `.generated/`, `.astro/`, and `dist/` are generated
+and ignored. Page Markdown, API references, `llms.txt`, and `llms-full.txt` are
+built from the same content as the HTML. Edit the canonical `docs/*.md` sources,
+not generated copies. The native example and content preparation scripts live
+in `scripts/`.
+
+The compatibility base remains `/docs/xy/`. Set `XY_DOCS_PUBLIC_URL` to the owned
+HTTPS URL ending in `/docs/xy` only for a real deployment. An unset value builds
+a preview without public canonical, sitemap, or social-image URLs. CI verifies
+and retains the static site; it does not publish it.
+
+The framework migration contract and verification requirements are in
+[`spec/design/docs-starlight.md`](../../spec/design/docs-starlight.md).
+
+The code-native brand assets can be rebuilt with:
 
 ```bash
-REFLEX_TELEMETRY_ENABLED=false uv run --no-sync reflex run --env prod
+uv run --with playwright==1.61.1 python docs/app/scripts/build_brand_assets.py
 ```
-
-After the production frontend is generated, run:
-
-```bash
-uv run --no-sync pytest --runxfail \
-  tests/test_docs_site.py::test_xy_markdown_docs_links_match_exported_sitemap
-uv run --no-sync python scripts/check_sitemap.py
-uv run --no-sync python scripts/check_markdown_assets.py
-uv run --no-sync python scripts/check_html_routes.py
-```
-
-The frontend is mounted at `/docs/xy`; preserve that prefix in canonical URLs,
-the sitemap, Markdown aliases, and internal documentation links.
-
-Set `XY_DOCS_PUBLIC_URL` to the CurateLabs-owned HTTPS production origin when
-building a deployment. Without that deployment configuration, preview builds
-deliberately omit canonical, sitemap, social-image, and public agent URLs; a
-repository page is not treated as a deployable documentation origin. Generated
-Markdown still links to its co-located `/docs/xy/llms.txt` asset by host-relative
-path, which remains truthful in local preview and any eventual deployment.

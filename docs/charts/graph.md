@@ -7,13 +7,20 @@ components:
 
 # Graph charts and GraphForge ingest
 
+Graph visualization is the reason for the XYG fork: GraphForge needed
+billion-scale graph views. XYG owns visualization, while GraphForge owns graph
+data and analysis. Python and Node provide native hosts; direct browser WASM
+exposes a bounded Worker API over the same Rust engine. The billion-scale goal
+and executed graph-scale evidence are distinguished in
+[Benchmarks](/docs/xy/overview/benchmarks/).
+
 Build node–link graphs with `xyg.graph` / `xyg.graph_chart`, or the Node
 `figure().graph(...)` / `composeGraph(...)` helpers. Layout, LOD, and encode
 decisions stay in Rust; hosts only coerce inputs.
 
 ## xyg-native inputs
 
-```python
+```python demo exec native
 import xyg
 
 chart = xyg.graph_chart(
@@ -33,29 +40,32 @@ Node accepts Arrow JS tables or plain `{ column: values }` objects.
 import xyg
 
 nodes = {
-    "node_uuid": ["…", "…"],
+    "node_uuid": [
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000002",
+    ],
     "labels": ["Airport", "City"],
     "rank": [1.0, 2.0],
     "provenance_row": [10, 11],
 }
 edges = {
-    "edge_uuid": ["…"],
-    "src_uuid": ["…"],
-    "dst_uuid": ["…"],
+    "edge_uuid": ["00000000-0000-0000-0000-000000000101"],
+    "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+    "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
     "relationship_type": ["ROUTE"],
     "provenance_row": [100],
 }
 
 # Directly into the mark — Rust validates identity, then the mark attaches
 # tooltip_rows from labels / relationship_type / provenance.
-fig = xyg.Figure().graph(nodes, edges, layout="grid", size="rank")
+chart = xyg.graph_chart(xyg.graph(nodes, edges, layout="grid", size="rank"))
 ```
 
 Or validate once and reuse `GraphData`:
 
 ```python
 data = xyg.from_graphforge_tables(nodes, edges)
-fig = xyg.Figure().graph(data, layout="circle")
+chart = xyg.graph_chart(xyg.graph(data, layout="circle"))
 ```
 
 Node mirror:
@@ -130,14 +140,14 @@ palette, sizes, widths, shapes, and state fading for you:
 xyg.graph_chart(
     nodes=node_table,
     edges=edge_table,
-    node_class="kind",          # codes 0-7 -> fill color and shape
-    node_epistemic="belief",    # codes 0-7
-    node_status="health",       # codes 0-7 -> outline color
-    node_metric="score",        # numbers -> node size
-    visual_state_flags="flags", # selected / hovered / filtered / disabled …
+    node_class="kind",  # codes 0-7 -> fill color and shape
+    node_epistemic="belief",  # codes 0-7
+    node_status="health",  # codes 0-7 -> outline color
+    node_metric="score",  # numbers -> node size
+    visual_state_flags="flags",  # selected / hovered / filtered / disabled …
     edge_class="relation",
     edge_visual_state_flags="edge_flags",  # the same states for edges
-    edge_metric="weight",       # numbers -> edge width
+    edge_metric="weight",  # numbers -> edge width
     theme="dark",
 )
 ```
@@ -158,10 +168,11 @@ Pass an array or column as `color` / `edge_color` and pick a scale:
 
 ```python
 xyg.graph(
-    nodes, edges,
-    color="risk",                    # ordered levels
+    nodes,
+    edges,
+    color="risk",  # ordered levels
     color_scale={"type": "ordinal", "order": ["low", "medium", "high"]},
-    edge_color="delta",              # signed change
+    edge_color="delta",  # signed change
     edge_color_scale={"type": "diverging", "midpoint": 0, "colormap": "rdbu"},
 )
 ```
@@ -238,5 +249,5 @@ fig.graphEdgePick(edge_trace, 0);
 //   edge_ids: ["…"] }
 ```
 
-Python returns the same fields in the widget/Reflex `pick` and `click`
+Python returns the same fields in the widget `pick` and `click`
 replies.

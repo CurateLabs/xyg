@@ -1,5 +1,32 @@
 # Competitive benchmark program
 
+## Public UX summary status (2026-10-14)
+
+The former README/docs 10k–100M UX table (0.071 s at 10k, 0.081 s at 100M,
+177× at 50M) and manually authored interactive chart have no committed raw UX
+run record. They are withdrawn from current public performance claims. The
+old chart images remain historical assets; they are not current XYG social
+cards or evidence of current-source performance. Archived launch baselines
+below have their own source/environment identity, including upstream XY runs;
+they must not be silently relabeled as measurements of current XYG.
+
+`benchmarks/summarize_ux.py` reports `visible_complete_ms`: browser navigation
+to a correct, stable representation after host preparation. It excludes source
+generation, ingest, and earlier figure/payload preparation. Density counts all
+input rows through aggregation; it does not paint one individual marker per
+row. Python process memory alone is not whole-application memory.
+
+The UX ladder includes an interactive Datashader/HoloViews/hvPlot/Bokeh arm.
+No archived comparable UX row is available for that arm, so its former absence
+from the summary establishes no XYG advantage. Restore a numerical public UX
+summary only with committed raw rows, environments, source commits, failures,
+exact/aggregated output contracts, preparation and browser metric scopes, and
+all relevant competitor outcomes. Reproduction commands are in
+`benchmarks/README.md` and `docs/overview/benchmarks.md`; commands are not a
+substitute for an archived run.
+
+## Recorded comparisons
+
 The recorded launch comparison uses the same scatter (a correlated 2-D cloud)
 at growing point counts across popular Python charting libraries, measuring
 four factors: **how many points each can render, how fast, how much memory, and

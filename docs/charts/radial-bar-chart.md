@@ -17,25 +17,20 @@ Jump to [a basic radial bar chart](#basic-radial-bar-chart),
 [partial gauges](#partial-gauges).
 
 The first example keeps that geometry intentionally small. The blocks after it
-combine XYG's exportable sectors with ordinary Reflex layout for center values,
+combine XYG's exportable sectors with ordinary application layout for center values,
 legends, rails, and summary statistics. This keeps the visualization reusable
 without forcing dashboard UI into the chart itself.
 
-~~~python exec
-from xy_docs.examples import chart_examples_layout_marker
-~~~
 
-~~~python eval
-chart_examples_layout_marker()
-~~~
+
+
 
 ## Basic Radial Bar Chart
 
 Start with six named values at evenly spaced angles. Each row also carries one
 shade from the purple palette used throughout these docs:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 RADIAL_DATA = [
@@ -46,36 +41,22 @@ RADIAL_DATA = [
     ("Social", 240, 8, "#a596e4"),
     ("Other", 300, 5, "#b8afea"),
 ]
-
 radial_bars = xyg.polar_bar_chart(
     *(
-        xyg.bar(
-            [angle],
-            [value],
-            width=48,
-            color=color,
-            name=label,
-        )
+        xyg.bar([angle], [value], width=48, color=color, name=label)
         for label, angle, value, color in RADIAL_DATA
     ),
     xyg.theta_axis(
-        unit="degrees",
-        zero="N",
-        direction="clockwise",
-        tick_values=[0, 60, 120, 180, 240, 300],
+        unit="degrees", zero="N", direction="clockwise", tick_values=[0, 60, 120, 180, 240, 300]
     ),
-    xyg.r_axis(
-        label="value",
-        domain=(0, 12),
-        tick_values=[0, 4, 8, 12],
-    ),
+    xyg.r_axis(label="value", domain=(0, 12), tick_values=[0, 4, 8, 12]),
     xyg.legend(loc="right"),
     xyg.modebar(show=False),
 )
 
 
 def radial_bar_demo():
-    return reflex_xy.chart(radial_bars, height="320px")
+    return radial_bars
 ~~~
 
 `RADIAL_DATA` stays independent of the chart construction, so labels, values,
@@ -90,31 +71,22 @@ Small progress rings work well when several categories share one maximum. Each
 ring below is an explicit muted track plus a colored foreground sector; the
 table repeats the values for exact lookup:
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 ALLOCATION_DATA = [
-    ("Platform", 44, 880_000, "#6e56cf"),
-    ("Product", 24, 480_000, "#806bd5"),
-    ("Growth", 15, 300_000, "#9888dd"),
-    ("Operations", 10, 200_000, "#b5aae8"),
-    ("Support", 7, 140_000, "#d2cbf1"),
+    ("Platform", 44, 880000, "#6e56cf"),
+    ("Product", 24, 480000, "#806bd5"),
+    ("Growth", 15, 300000, "#9888dd"),
+    ("Operations", 10, 200000, "#b5aae8"),
+    ("Support", 7, 140000, "#d2cbf1"),
 ]
 
 
 def allocation_ring_chart(label, percent, color):
     span = percent / 100 * 360.0
     return xyg.polar_bar_chart(
-        xyg.bar(
-            [180.0],
-            [0.12],
-            base=0.72,
-            width=360.0,
-            color="#eeecf6",
-            opacity=1,
-        ),
+        xyg.bar([180.0], [0.12], base=0.72, width=360.0, color="#eeecf6", opacity=1),
         xyg.bar(
             [span / 2.0],
             [0.12],
@@ -126,17 +98,9 @@ def allocation_ring_chart(label, percent, color):
             name=f"{label} · {percent}%",
         ),
         xyg.theta_axis(
-            unit="degrees",
-            zero="N",
-            direction="clockwise",
-            show=False,
-            tick_label_strategy="none",
+            unit="degrees", zero="N", direction="clockwise", show=False, tick_label_strategy="none"
         ),
-        xyg.r_axis(
-            domain=(0.0, 1.0),
-            show=False,
-            tick_label_strategy="none",
-        ),
+        xyg.r_axis(domain=(0.0, 1.0), show=False, tick_label_strategy="none"),
         xyg.legend(show=False),
         xyg.modebar(show=False),
         xyg.theme(plot_background="#ffffff"),
@@ -146,99 +110,15 @@ def allocation_ring_chart(label, percent, color):
     )
 
 
-def allocation_ring(label, percent, color):
-    return rx.el.div(
-        rx.el.div(
-            reflex_xy.chart(
-                allocation_ring_chart(label, percent, color),
-                height="92px",
-            ),
-            rx.el.span(
-                f"{percent}%",
-                class_name=(
-                    "pointer-events-none absolute inset-0 flex items-center "
-                    "justify-center text-sm font-semibold tabular-nums text-zinc-950"
-                ),
-            ),
-            class_name="relative aspect-square w-full",
-        ),
-        rx.el.span(
-            label,
-            class_name="truncate text-[11px] leading-none text-zinc-500",
-        ),
-        class_name="min-w-0 text-center",
-    )
-
-
-def allocation_row(label, percent, amount, color):
-    return rx.el.div(
-        rx.el.div(
-            rx.el.span(
-                class_name="size-2.5 shrink-0 rounded-[3px]",
-                style={"background": color},
-            ),
-            rx.el.span(
-                f"{percent}%",
-                class_name="w-9 font-medium tabular-nums text-zinc-950",
-            ),
-            rx.el.span(label, class_name="text-zinc-500"),
-            class_name="flex min-w-0 items-center gap-2",
-        ),
-        rx.el.span(
-            f"${amount:,.0f}",
-            class_name="font-medium tabular-nums text-zinc-950",
-        ),
-        class_name=(
-            "flex items-center justify-between rounded-lg px-2.5 py-1.5 "
-            "text-xs even:bg-[#fafafa]"
-        ),
-    )
-
-
-def allocation_overview_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.el.div(
-                rx.el.span(
-                    "Annual plan",
-                    class_name="text-[10px] uppercase tracking-wide text-zinc-500",
-                ),
-                rx.el.span(
-                    "Team allocation",
-                    class_name="text-lg font-medium tracking-tight text-zinc-950",
-                ),
-                class_name="flex flex-col",
-            ),
-            rx.el.span(
-                "$2.0M planned",
-                class_name="text-xs font-medium tabular-nums text-zinc-500",
-            ),
-            class_name="flex items-start justify-between gap-4",
-        ),
-        rx.el.div(
-            *(
-                allocation_ring(label, percent, color)
-                for label, percent, _amount, color in ALLOCATION_DATA
-            ),
-            class_name="mt-2 grid grid-cols-5 gap-2",
-        ),
-        rx.el.div(
-            *(
-                allocation_row(label, percent, amount, color)
-                for label, percent, amount, color in ALLOCATION_DATA
-            ),
-            class_name="mt-2 grid gap-0.5 border-t border-zinc-100 pt-2",
-        ),
-        class_name=(
-            "mx-auto flex h-[22.5rem] w-full max-w-[630px] flex-col "
-            "bg-white p-4"
-        ),
-    )
+allocation_ring_chart_charts = [
+    allocation_ring_chart(label, percent, color)
+    for label, percent, _amount, color in ALLOCATION_DATA
+]
 ~~~
 
 The rings use a common radial domain and thickness. The percentage controls
 only the foreground `width`, while the track remains a complete annulus. The
-labels and exact dollar values stay in Reflex so the ring geometry can be
+labels and exact dollar values stay in the host application so the ring geometry can be
 exported or reused independently.
 
 ## Training Summary
@@ -247,9 +127,7 @@ A hero metric can share a card with compact radial KPIs. Here the primary
 distance and goal rail lead, while three rings summarize the supporting
 measurements and the narrow side column preserves quick operational context:
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 TRAINING_METRICS = [
@@ -257,28 +135,17 @@ TRAINING_METRICS = [
     ("Work", 684, "kJ", 82, "#f59e0b"),
     ("Cadence", 82, "rpm", 74, "#e11d48"),
 ]
-TRAINING_STATS = [
-    ("Intervals", "7"),
-    ("Recovery", "46 min"),
-    ("Avg speed", "28.4 km/h"),
-]
+TRAINING_STATS = [("Intervals", "7"), ("Recovery", "46 min"), ("Avg speed", "28.4 km/h")]
 
 
 def training_ring_chart(label, percent, color):
     span = percent / 100 * 360.0
     return xyg.polar_bar_chart(
-        xyg.bar(
-            [180.0],
-            [0.13],
-            base=0.70,
-            width=360.0,
-            color="#f0eef7",
-            opacity=1,
-        ),
+        xyg.bar([180.0], [0.13], base=0.7, width=360.0, color="#f0eef7", opacity=1),
         xyg.bar(
             [span / 2.0],
             [0.13],
-            base=0.70,
+            base=0.7,
             width=span,
             color=color,
             opacity=1,
@@ -286,17 +153,9 @@ def training_ring_chart(label, percent, color):
             name=f"{label} · {percent}%",
         ),
         xyg.theta_axis(
-            unit="degrees",
-            zero="N",
-            direction="clockwise",
-            show=False,
-            tick_label_strategy="none",
+            unit="degrees", zero="N", direction="clockwise", show=False, tick_label_strategy="none"
         ),
-        xyg.r_axis(
-            domain=(0.0, 1.0),
-            show=False,
-            tick_label_strategy="none",
-        ),
+        xyg.r_axis(domain=(0.0, 1.0), show=False, tick_label_strategy="none"),
         xyg.legend(show=False),
         xyg.modebar(show=False),
         xyg.theme(plot_background="#ffffff"),
@@ -306,112 +165,10 @@ def training_ring_chart(label, percent, color):
     )
 
 
-def training_metric(label, value, unit, percent, color):
-    return rx.el.div(
-        rx.el.div(
-            reflex_xy.chart(
-                training_ring_chart(label, percent, color),
-                height="118px",
-            ),
-            rx.el.div(
-                rx.el.span(
-                    str(value),
-                    class_name="text-lg font-semibold leading-none tabular-nums text-zinc-950",
-                ),
-                rx.el.span(
-                    unit,
-                    class_name="text-[10px] leading-none text-zinc-500",
-                ),
-                class_name=(
-                    "pointer-events-none absolute inset-0 flex items-center "
-                    "justify-center gap-1"
-                ),
-            ),
-            class_name="relative aspect-square w-full",
-        ),
-        rx.el.span(
-            label,
-            class_name="-mt-1 text-center text-[11px] text-zinc-500",
-        ),
-        class_name="min-w-0",
-    )
-
-
-def training_summary_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.el.div(
-                rx.el.span(
-                    "Training summary",
-                    class_name="text-lg font-medium tracking-tight text-zinc-950",
-                ),
-                rx.el.span(
-                    "Week 28",
-                    class_name="text-xs text-zinc-500",
-                ),
-                class_name="flex items-center justify-between",
-            ),
-            rx.el.div(
-                rx.el.div(
-                    rx.el.span(
-                        "24.7",
-                        class_name=(
-                            "text-4xl font-semibold leading-none tracking-tight "
-                            "tabular-nums text-zinc-950"
-                        ),
-                    ),
-                    rx.el.span(
-                        "km ridden",
-                        class_name="pb-0.5 text-sm text-zinc-500",
-                    ),
-                    class_name="flex items-end gap-2",
-                ),
-                rx.el.span(
-                    "78% of weekly goal",
-                    class_name="text-xs font-medium text-[#6e56cf]",
-                ),
-                class_name="mt-3 flex items-end justify-between gap-4",
-            ),
-            rx.el.div(
-                rx.el.div(
-                    class_name="h-full rounded-full bg-[#6e56cf]",
-                    style={"width": "78%"},
-                ),
-                class_name="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eeecf6]",
-            ),
-            rx.el.div(
-                *(
-                    training_metric(label, value, unit, percent, color)
-                    for label, value, unit, percent, color in TRAINING_METRICS
-                ),
-                class_name="mt-2 grid grid-cols-3 gap-3",
-            ),
-            class_name="min-w-0",
-        ),
-        rx.el.div(
-            *(
-                rx.el.div(
-                    rx.el.span(
-                        label,
-                        class_name="text-[10px] uppercase tracking-wide text-zinc-400",
-                    ),
-                    rx.el.span(
-                        value,
-                        class_name="mt-0.5 text-lg font-medium tabular-nums text-zinc-950",
-                    ),
-                    class_name="flex flex-col",
-                )
-                for label, value in TRAINING_STATS
-            ),
-            class_name=(
-                "flex flex-col justify-center gap-5 border-l border-zinc-100 pl-4"
-            ),
-        ),
-        class_name=(
-            "mx-auto grid h-[22.5rem] w-full max-w-[630px] "
-            "grid-cols-[minmax(0,1fr)_9rem] gap-4 bg-white p-4"
-        ),
-    )
+training_ring_chart_charts = [
+    training_ring_chart(label, percent, color)
+    for label, _value, _unit, percent, color in TRAINING_METRICS
+]
 ~~~
 
 The chart helper owns only a track and foreground arc. The headline, horizontal
@@ -424,41 +181,30 @@ Nested semicircular bars can compare several capacities without repeating four
 separate plots. Every tier starts at the same angle; its foreground width is the
 used fraction of the shared 180-degree track:
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 CACHE_TIERS = [
-    ("Memory", 610, 1_000, "#6e56cf", "#9d8df1"),
-    ("Regional", 240, 1_000, "#f59e0b", "#fcd34d"),
-    ("Edge", 100, 1_000, "#2563eb", "#60a5fa"),
-    ("Origin", 50, 1_000, "#e11d48", "#fb7185"),
+    ("Memory", 610, 1000, "#6e56cf", "#9d8df1"),
+    ("Regional", 240, 1000, "#f59e0b", "#fcd34d"),
+    ("Edge", 100, 1000, "#2563eb", "#60a5fa"),
+    ("Origin", 50, 1000, "#e11d48", "#fb7185"),
 ]
-CACHE_BASES = [0.24, 0.40, 0.56, 0.72]
+CACHE_BASES = [0.24, 0.4, 0.56, 0.72]
 CACHE_STATS = [
     ("Served warm", "8,420"),
     ("Revalidated", "1,140"),
     ("Evictions", "386"),
     ("Purges", "72"),
 ]
-
 cache_tiers = xyg.polar_bar_chart(
     *(
-        xyg.bar(
-            [0.0],
-            [0.09],
-            base=base,
-            width=180.0,
-            color="#eeecf6",
-            opacity=1,
-            corner_radius=8,
-        )
+        xyg.bar([0.0], [0.09], base=base, width=180.0, color="#eeecf6", opacity=1, corner_radius=8)
         for base in CACHE_BASES
     ),
     *(
         xyg.bar(
-            [-90.0 + (used / capacity * 180.0) / 2.0],
+            [-90.0 + used / capacity * 180.0 / 2.0],
             [0.09],
             base=base,
             width=used / capacity * 180.0,
@@ -469,11 +215,7 @@ cache_tiers = xyg.polar_bar_chart(
             stroke="#ffffff",
             stroke_width=1,
         )
-        for (label, used, capacity, start, end), base in zip(
-            CACHE_TIERS,
-            CACHE_BASES,
-            strict=True,
-        )
+        for (label, used, capacity, start, end), base in zip(CACHE_TIERS, CACHE_BASES, strict=True)
     ),
     xyg.theta_axis(
         unit="degrees",
@@ -483,11 +225,7 @@ cache_tiers = xyg.polar_bar_chart(
         show=False,
         tick_label_strategy="none",
     ),
-    xyg.r_axis(
-        domain=(0.0, 1.0),
-        show=False,
-        tick_label_strategy="none",
-    ),
+    xyg.r_axis(domain=(0.0, 1.0), show=False, tick_label_strategy="none"),
     xyg.legend(show=False),
     xyg.modebar(show=False),
     xyg.theme(plot_background="#ffffff"),
@@ -499,80 +237,6 @@ cache_tiers = xyg.polar_bar_chart(
 
 def cache_legend_item(label, used, capacity, color):
     percent = used / capacity
-    return rx.el.div(
-        rx.el.div(
-            rx.el.span(
-                class_name="size-2.5 shrink-0 rounded-[3px]",
-                style={"background": color},
-            ),
-            rx.el.span(
-                label,
-                class_name="truncate text-xs font-medium text-zinc-700",
-            ),
-            class_name="flex items-center gap-2",
-        ),
-        rx.el.span(
-            f"{used:,}/{capacity:,} ({percent:.0%})",
-            class_name="mt-1 text-[11px] tabular-nums text-zinc-500",
-        ),
-        class_name="min-w-0",
-    )
-
-
-def cache_tiers_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.el.span(
-                "Cache tiers",
-                class_name="text-lg font-medium tracking-tight text-zinc-950",
-            ),
-            rx.el.span(
-                "Last 24 hours",
-                class_name="text-xs text-zinc-500",
-            ),
-            class_name="flex items-center justify-between",
-        ),
-        rx.el.div(
-            rx.el.div(
-                reflex_xy.chart(cache_tiers, height="210px"),
-                class_name="min-w-0",
-            ),
-            rx.el.div(
-                *(
-                    rx.el.div(
-                        rx.el.span(
-                            label,
-                            class_name="text-xs text-zinc-500",
-                        ),
-                        rx.el.span(
-                            value,
-                            class_name=(
-                                "mt-0.5 text-xl font-medium tabular-nums "
-                                "tracking-tight text-zinc-950"
-                            ),
-                        ),
-                        class_name="flex flex-col",
-                    )
-                    for label, value in CACHE_STATS
-                ),
-                class_name="grid grid-cols-2 content-center gap-x-5 gap-y-5",
-            ),
-            class_name="mt-1 grid min-h-0 flex-1 grid-cols-[1.15fr_0.85fr] gap-4",
-        ),
-        rx.el.div(
-            *(
-                cache_legend_item(label, used, capacity, start)
-                for label, used, capacity, start, _end in CACHE_TIERS
-            ),
-            class_name=(
-                "grid grid-cols-4 gap-3 border-t border-zinc-100 pt-3"
-            ),
-        ),
-        class_name=(
-            "mx-auto flex h-[22.5rem] w-full max-w-[630px] flex-col "
-            "bg-white p-4"
-        ),
-    )
 ~~~
 
 Separate one-bar marks make it straightforward to give every tier a name,
@@ -587,7 +251,7 @@ half.
 3. Keep the track and foreground on the same `base` and radial height.
 4. Convert a percentage to `percentage / 100 × 360` for a full ring, or multiply
    by the declared partial-sector span.
-5. Hide axes and the native legend when Reflex supplies the surrounding labels.
+5. Hide axes and the native legend when the host supplies the surrounding labels.
 6. Keep raw data and derived spans outside the chart construction.
 
 XYG does not add a background track or infer a maximum automatically. Explicit
@@ -695,7 +359,7 @@ Add `xyg.interaction_config(zoom=True)` to turn radial zoom (and reset) on when 
 sector lengths are worth magnifying — see
 [why zoom is off by default](/docs/xy/charts/polar-chart/#why-zoom-is-off-by-default).
 
-Reflex-composed center values, rails, statistics, and custom legends are browser
+Application-composed center values, rails, statistics, and custom legends are browser
 UI. The radial sectors themselves remain part of the XYG chart and are preserved
 in SVG and native raster exports.
 

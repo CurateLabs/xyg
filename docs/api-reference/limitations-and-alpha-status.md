@@ -14,11 +14,22 @@ pre-1.0 releases can make breaking changes with migration notes.
 | Declarative composition and 2D marks | Stabilizing alpha |
 | Standalone HTML, native PNG, and SVG | Stable alpha |
 | Required native Rust compute core | Stable alpha in published platform wheels |
-| Reflex adapter | Separate prototype/experimental package |
+| Node-native host | Source package over the shared Rust C ABI; npm publication pending |
+| Direct browser WASM host | Bounded Worker API; complete native-host feature parity remains in progress |
+| GraphForge composition | Shared Rust result mapping and generation/identity checks; native and bounded browser paths |
 | `xyg.pyplot` compatibility | Experimental compatibility layer |
 | Adaptive thresholds and drill protocol | Experimental implementation details |
 
 ## Data and Performance Boundaries
+
+Billion-scale graph visualization is the GraphForge-driven goal behind the
+fork. The recorded graph-scale diagnostic executes through 1M source nodes;
+its 1B rows exercise LOD policy rather than executing that graph. See
+[graph-scale evidence](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md#graph-scale-evidence-33-local-diagnostic).
+Host coverage and demonstrated graph capacity must be assessed separately.
+The browser GraphForge renderer currently admits at most 1,024 composed nodes
+and its Scene primitive budget; larger views use native graph LOD. See
+[Use with GraphForge](/docs/xy/integrations/graphforge/).
 
 - Ingestion, canonical memory, initial scans, binning, and decimation still
   depend on source row count.
@@ -34,7 +45,10 @@ pre-1.0 releases can make breaking changes with migration notes.
   point ceiling.
 - Arrow ingest is zero-copy only for compatible, null-free primitive layouts.
   Chunking, nulls, dtype conversion, and datetime conversion can copy.
-- Disk-backed/out-of-core residency is not a shipped public tier.
+- The disk-backed OpenStreetMap example requires a dedicated ingest and spatial-
+  index pipeline. Its node-density demonstration is not a guarantee that every
+  chart family supports arbitrary disk-backed data; see the
+  [example requirements](https://github.com/CurateLabs/xyg/tree/main/examples/osm).
 
 See [Large data and performance](/docs/xy/core-concepts/large-data-and-performance/)
 and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.

@@ -1,7 +1,10 @@
 # Every OpenStreetMap node, out-of-core
 
 Render **all ~10.7 billion OpenStreetMap planet nodes** as an interactive
-density scatter in `xy`, straight off disk. This is the end-to-end proof of the
+density scatter in XYG, straight off disk. This example visualizes node
+coordinates, not all OpenStreetMap ways, relations, tags, or map styling.
+Its disk-backed ingest and spatial index require the preparation below.
+This is the end-to-end proof of the
 design dossier's §27 *"mmap (native)"* canonical-store row and the §2 *"100M+ /
 out-of-core — interactive via viewport tiling, bounded RAM"* target, at true
 planet scale: **172 GB of lon/lat lives on disk, resident memory stays
@@ -17,7 +20,7 @@ The dataset used here: `planet-latest.osm.pbf` decoded to
 |---|---|
 | `osmium-rs/` | Native Rust crate: `osm-nodes` (PBF → f64 columns, ~250× pyosmium) and `osm-sort` (builds the Tier-3 spatial index). |
 | `ingest.py` | Parse a planet `.pbf` into f64 columns and render the out-of-core density scatter (with timings). |
-| `viewer.py` | Interactive browser viewer — serves `xy`'s real WebGL client over plain HTTP; pan/zoom re-aggregate every viewport from disk. |
+| `viewer.py` | Interactive browser viewer — serves XYG's real WebGL client over plain HTTP; pan/zoom re-aggregate every viewport from disk. |
 | `_pbf_split.py` | Standalone PBF blob-framing scanner (byte-range enumeration for parallel decode); reference/legacy helper. |
 
 ## Prerequisites
@@ -92,7 +95,7 @@ served rides each update as `binning`:
 | Figure build (zone maps) | **~51 s first time, then instant** | one 172 GB scan; result cached to a `.xyzones` sidecar next to each column, so every later run (e.g. viewer restart) loads it in milliseconds |
 | Pan / zoom | single-digit ms | screen-bounded per viewport, independent of N |
 
-The `.xyzones` zone-map cache is a general `xy` out-of-core feature (see
+The `.xyzones` zone-map cache is a general XYG out-of-core feature (see
 `python/xyg/columns.py`): the first `figure()` over a memmapped column persists
 its per-chunk statistics, and reopening validates the sidecar against the
 file's size/mtime before reusing it — so the 51 s domain scan is paid once, not

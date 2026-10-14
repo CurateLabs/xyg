@@ -23,15 +23,13 @@ use a [stem plot](/docs/xy/charts/stem-plot/).
 
 ## Live Demo
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
 actual = plan + 7 * np.sin(x * 0.9)
-
 chart = xyg.chart(
     xyg.area(
         x,
@@ -50,7 +48,7 @@ chart = xyg.chart(
 
 
 def plan_and_actual():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Chart Types
@@ -67,8 +65,7 @@ Use `step` when each x/y observation defines a piecewise-constant state. Use
 `stairs` when the values describe bins and you have explicit bin edges. Both
 support `where="pre"`, `"mid"`, or `"post"` to control where transitions occur.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 chart = xyg.chart(
@@ -96,7 +93,7 @@ chart = xyg.chart(
 
 
 def step_and_stairs_demo():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Stacked Areas with an Array Base
@@ -105,16 +102,14 @@ Stack series by passing the running total of the layers below as each area's
 `base`, and set `stroke_perimeter=True` with a `line_width` to keep every upper
 boundary readable:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_stack = np.random.default_rng(5)
 months = np.arange(0, 12, dtype=float)
 mobile = 20 + 1.6 * months + rng_stack.normal(0.0, 1.0, months.size)
 desktop = 34 + 0.7 * months + rng_stack.normal(0.0, 1.2, months.size)
-
 stacked_area_chart = xyg.chart(
     xyg.area(
         months,
@@ -143,7 +138,7 @@ stacked_area_chart = xyg.chart(
 
 
 def stacked_area_demo():
-    return reflex_xy.chart(stacked_area_chart, height="320px")
+    return stacked_area_chart
 ~~~
 
 ## Variants

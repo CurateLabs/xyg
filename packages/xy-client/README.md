@@ -6,13 +6,14 @@ Host-neutral WebGL2 **paint client** for XYG. One TypeScript source tree
 notebooks / `to_html()` / Reflex can serve those explicit same-origin URLs
 without Node.
 
-```bash
-npm install @curatelabs/xyg
-```
-
 Registry publish is blocked on the `@curatelabs` npm org ([#13](https://github.com/CurateLabs/xyg/issues/13)).
 Until then this package is in-repo: build with `npm ci && node js/build.mjs`
 from the repository root.
+
+This is the browser entry point for XYG's graph visualization and charting
+engine, alongside its Python and Node-native hosts. Direct browser compute
+runs the shared Rust engine in a WASM Worker through the bounded foundation
+described below; it does not yet provide every native-host authoring feature.
 
 | Export | Format | Use |
 | --- | --- | --- |

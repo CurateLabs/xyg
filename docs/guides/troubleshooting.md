@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Diagnose installation, display, export, validation, streaming, and Reflex failures.
+description: Diagnose installation, display, export, validation, streaming, and GraphForge composition failures.
 ---
 
 # Troubleshooting
@@ -98,25 +98,20 @@ scripts and styles. Follow
 [Serving, CSP, and offline use](/docs/xy/guides/serving-csp-and-offline-use/)
 and use a host wrapper for nonce/hash-only policies.
 
-## Reflex
+## GraphForge composition
 
-**Events do not reach the backend.** `reflex_xy.chart(chart)` with a direct
-`xyg.Chart` is the static payload tier. For fixed data with backend events,
-create `token = reflex_xy.inline(chart)` at module scope and render it with
-`reflex_xy.chart(token)`. Use an `@reflex_xy.figure` state var instead when the
-data depends on the current session. Only the live token tiers dispatch
-semantic events or accept `reflex_xy.append(...)`.
+**A composition rejects a generation.** Base and analytical results must come
+from the same GraphForge generation. Carry that source UUID into every layer;
+do not generate a replacement or join stale results by row position.
 
-**A notebook callback name does not work as a Reflex prop.** Core chart
-callbacks such as `on_hover`, `on_brush`, and `on_select` are ordinary Python
-callables for the notebook widget. Put Reflex handlers on the outer component
-with `on_point_hover`, `on_point_click`, `on_select_end`, or `on_view_change`.
-The selection payloads also differ: notebook `on_select` receives an
-`xyg.Selection`, while Reflex `on_select_end` receives a JSON-safe summary.
+**An Arrow result is rejected.** Keep its canonical schema metadata and use
+uncompressed little-endian IPC. Unsupported schemas, intents, or IPC features
+fail with coded errors; record the error's `code`, `layer`, and `field`.
 
-**Different workers cannot resolve an inline token.** Register
-`reflex_xy.inline(chart)` at module scope so each backend worker creates the
-same content-addressed registration.
+**A browser graph exceeds the Scene limit.** The direct WASM GraphForge
+renderer currently admits at most 1,024 composed nodes plus its primitive
+budget. Use the native Python or Node graph mark and Rust LOD for larger views.
+See [Use with GraphForge](/docs/xy/integrations/graphforge/).
 
 When reporting a reproducible failure, include the XYG version, Python version,
 platform, output engine, chart dimensions, full exception, and a minimal chart

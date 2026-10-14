@@ -1,0 +1,3 @@
+[codespell]
+skip = .git,*.svg,*.png,*.ttf,*package-lock.json,node_modules,dist,.astro,.generated,public,src/content/docs,uv.lock,.venv,.web
+ignore-words-list = inout,lod,nd,te,ot,unselect

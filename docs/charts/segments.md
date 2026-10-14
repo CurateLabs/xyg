@@ -9,7 +9,7 @@ components:
 
 A **line segments** chart (also called a segment plot or segment graph) draws
 independent start-to-end segments, each with its
-own pair of endpoints. With `xy` you plot line segments in Python for
+own pair of endpoints. With `xyg` you plot line segments in Python for
 transitions, ranges, or arbitrary geometry that a connected line can't express,
 and you can color each segment by a data channel. Every segment chart is
 interactive out of the box: pan, zoom, and hover work with no configuration.
@@ -24,8 +24,7 @@ Pass start endpoints (`x0`, `y0`) and end endpoints (`x1`, `y1`) to `segments`.
 Each row becomes one independent segment, and a per-segment `color` channel maps
 through the `colormap`:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 segments_detail_chart = xyg.segments_chart(
@@ -45,7 +44,7 @@ segments_detail_chart = xyg.segments_chart(
 
 
 def segments_demo():
-    return reflex_xy.chart(segments_detail_chart, height="340px")
+    return segments_detail_chart
 ~~~
 
 ## Draw Ranges as Horizontal Segments
@@ -54,23 +53,15 @@ Give every segment the same `y0` and `y1` to draw horizontal ranges — one row
 per category — and use a constant `color` with a thick `width` and reduced
 `opacity` for a Gantt-style timeline:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 task_row = [0, 1, 2, 3, 4]
 start_day = [0.0, 2.0, 3.5, 6.0, 8.5]
 end_day = [3.0, 5.5, 7.0, 9.0, 12.0]
-
 range_segments_chart = xyg.segments_chart(
     xyg.segments(
-        x0=start_day,
-        y0=task_row,
-        x1=end_day,
-        y1=task_row,
-        color="#2563eb",
-        width=10,
-        opacity=0.75,
+        x0=start_day, y0=task_row, x1=end_day, y1=task_row, color="#2563eb", width=10, opacity=0.75
     ),
     xyg.x_axis(label="day"),
     xyg.y_axis(
@@ -83,7 +74,7 @@ range_segments_chart = xyg.segments_chart(
 
 
 def range_segments_demo():
-    return reflex_xy.chart(range_segments_chart, height="340px")
+    return range_segments_chart
 ~~~
 
 ## Map a Color Channel with a Colorbar
@@ -92,9 +83,8 @@ Pass a numeric array to `color`, pin its scale with `domain`, and add
 `xyg.colorbar()` so readers can decode the mapped values — here a slope field
 colored by gradient:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 grid_x, grid_y = np.meshgrid(np.linspace(-2, 2, 9), np.linspace(-2, 2, 9))
@@ -102,7 +92,6 @@ gx = grid_x.ravel()
 gy = grid_y.ravel()
 slope = gy - gx**2 / 2
 step_len = 0.16 / np.sqrt(1 + slope**2)
-
 slope_field_chart = xyg.segments_chart(
     xyg.segments(
         x0=gx - step_len,
@@ -122,7 +111,7 @@ slope_field_chart = xyg.segments_chart(
 
 
 def slope_field_segments_demo():
-    return reflex_xy.chart(slope_field_chart, height="340px")
+    return slope_field_chart
 ~~~
 
 ## When to Use Segments

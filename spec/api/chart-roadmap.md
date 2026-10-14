@@ -387,15 +387,17 @@ interaction-latency comparison, not assumed.
 
 The first breadth milestone — **histogram, bar/column, area, heatmap** — and
 the first statistical block — **box, violin, ECDF, error bars/bands, hexbin,
-contour, steps/stairs/stems, and facets** — are done. The first alpha
-(`v0.0.1`) is launched with a live docs site and the bundled Reflex integration on
-`main`; the next sequence is therefore stabilization and compatibility depth,
+contour, steps/stairs/stems, and facets** — are in the current source, alongside
+the bundled Reflex integration. The verified PyPI alpha is `0.0.1a2`;
+upstream `v0.0.1` is historical provenance, not an XYG release. The next
+sequence is therefore stabilization and compatibility depth,
 not re-implementing shipped primitives.
 
-1. **Stabilize the launched `v0.0.1` alpha.** `v0.0.1` is released on PyPI;
-   its Pyodide wheel is runtime-verified but is not yet publicly distributed
-   as a durable release asset (#97). The docs site is live, and the Reflex
-   adapter is on `main` — so release/distribution correctness and the
+1. **Stabilize the XYG alpha and source feature set.** The 2026-10-14 PyPI
+   snapshot has only `0.0.1a2`, a Linux x86-64 glibc 2.39+ wheel and sdist.
+   The source Pyodide wheel is runtime-verified but absent from that registry
+   inventory. The docs app and bundled Reflex adapter are on `main`; an owned
+   public docs deployment is a separate release contract. Release/distribution correctness and the
    post-launch bug backlog are the current gate, not shipping. The interaction
    correctness issues (box-zoom view collapse, double-click blanking a dense
    Reflex scatter, static integration chart crash, FacetChart CSS leak) come
@@ -460,8 +462,9 @@ New chart kinds land as composition marks plus a family container
 
 The rectangle/polygon/grid-texture foundations, statistical breadth block,
 full mark styling, native PNG rasterizer, core polar/pie/donut composition, and
-the **Reflex-first reactive API** (bundled `xyg[reflex]` integration) are in place, and
-`v0.0.1` is launched with a live docs site. The next product track is
+the **Reflex-first reactive API** (bundled `xyg[reflex]` integration) are in place
+in the current source. The published alpha is a separate versioned surface.
+The next product track is
 **post-launch stabilization** (the open interaction/adapter bug backlog),
 followed by statistical compatibility depth and pie/donut depth (nesting and
 variable radius). Finance (candlestick plus indicators) remains prototyped on

@@ -15,24 +15,16 @@ Use one for relationships, clusters, outliers, and multichannel point data.
 
 ## Live Demo
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(7)
-x = rng.normal(size=20_000)
+x = rng.normal(size=20000)
 y = 0.55 * x + rng.normal(scale=0.65, size=x.size)
-
 chart = xyg.scatter_chart(
     xyg.scatter(
-        x,
-        y,
-        color=y,
-        size=np.abs(y),
-        colormap="viridis",
-        size_range=(2, 14),
-        opacity=0.55,
+        x, y, color=y, size=np.abs(y), colormap="viridis", size_range=(2, 14), opacity=0.55
     ),
     xyg.x_axis(label="feature A"),
     xyg.y_axis(label="feature B"),
@@ -41,7 +33,7 @@ chart = xyg.scatter_chart(
 
 
 def scatter_chart_demo():
-    return reflex_xy.chart(chart, height="420px")
+    return chart
 ~~~
 
 Selections in a live widget resolve canonical source rows even when the visible
@@ -54,17 +46,15 @@ source row.
 Map a value array to color with a fixed `color_domain`, pick a non-default
 `symbol`, and add a crisp border with `stroke` and `stroke_width`.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 style_rng = np.random.default_rng(11)
-angle = style_rng.uniform(0, 4 * np.pi, 3_000)
+angle = style_rng.uniform(0, 4 * np.pi, 3000)
 radius = angle / (4 * np.pi) + style_rng.normal(scale=0.03, size=angle.size)
 spiral_x = radius * np.cos(angle)
 spiral_y = radius * np.sin(angle)
-
 styled_scatter_chart = xyg.scatter_chart(
     xyg.scatter(
         spiral_x,
@@ -85,7 +75,7 @@ styled_scatter_chart = xyg.scatter_chart(
 
 
 def styled_scatter_demo():
-    return reflex_xy.chart(styled_scatter_chart, height="320px")
+    return styled_scatter_chart
 ~~~
 
 ## Bubble Chart with Multiple Series
@@ -93,9 +83,8 @@ def styled_scatter_demo():
 Encode a third variable as marker area with `size` plus `size_range`, give each
 cluster its own named series and `symbol`, and let `xyg.legend()` label them.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 bubble_rng = np.random.default_rng(42)
@@ -120,7 +109,6 @@ for series_name, (cx, cy), spread, marker in cluster_specs:
             opacity=0.45,
         )
     )
-
 bubble_chart = xyg.scatter_chart(
     *bubble_marks,
     xyg.x_axis(label="component 1"),
@@ -131,7 +119,7 @@ bubble_chart = xyg.scatter_chart(
 
 
 def bubble_scatter_demo():
-    return reflex_xy.chart(bubble_chart, height="320px")
+    return bubble_chart
 ~~~
 
 ## Scatter
@@ -179,7 +167,7 @@ and hover work automatically — no extra configuration required.
 
 ### How many points can an xy scatter plot handle?
 
-Millions. When individual markers become sub-pixel, `xy` automatically switches
+Millions. When individual markers become sub-pixel, `xyg` automatically switches
 to a bounded density surface and refines back toward exact points as you zoom.
 
 ### How do I color scatter points by a value?

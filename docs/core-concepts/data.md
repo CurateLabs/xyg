@@ -11,36 +11,18 @@ children share a table.
 
 ## Direct arrays
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
 import xyg
 
 hours = np.linspace(0, 24, 288, endpoint=False)
-temperature = (
-    18
-    + 5 * np.sin((hours - 7) * 2 * np.pi / 24)
-    + 0.7 * np.sin(hours * 6 * np.pi / 24)
-)
+temperature = 18 + 5 * np.sin((hours - 7) * 2 * np.pi / 24) + 0.7 * np.sin(hours * 6 * np.pi / 24)
 feels_like = temperature - 1.1 + 0.5 * np.cos(hours * 2 * np.pi / 24)
-
 direct_array_chart = xyg.line_chart(
     xyg.area(
-        hours,
-        temperature,
-        base=10,
-        color="#8b5cf6",
-        opacity=0.16,
-        line_width=0,
-        curve="smooth",
+        hours, temperature, base=10, color="#8b5cf6", opacity=0.16, line_width=0, curve="smooth"
     ),
-    xyg.line(
-        hours,
-        temperature,
-        name="Temperature",
-        color="#7c3aed",
-        width=2.5,
-        curve="smooth",
-    ),
+    xyg.line(hours, temperature, name="Temperature", color="#7c3aed", width=2.5, curve="smooth"),
     xyg.line(
         hours,
         feels_like,
@@ -58,9 +40,7 @@ direct_array_chart = xyg.line_chart(
 
 
 def direct_arrays_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(direct_array_chart, height="360px")
+    return direct_array_chart
 ~~~
 
 Regular Python sequences and one-dimensional NumPy arrays use the same API.
@@ -72,28 +52,70 @@ than silently coerced.
 
 ## Named columns
 
-~~~python demo exec
+~~~python demo exec native
 campaign_data = {
-    "spend_k": [
-        12, 16, 20, 24, 28, 32, 36, 40, 44,
-        48, 52, 56, 60, 64, 68, 72, 76, 80,
-    ],
+    "spend_k": [12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80],
     "qualified_leads": [
-        82, 105, 131, 118, 162, 179, 193, 221, 236,
-        258, 249, 292, 318, 304, 347, 365, 352, 401,
+        82,
+        105,
+        131,
+        118,
+        162,
+        179,
+        193,
+        221,
+        236,
+        258,
+        249,
+        292,
+        318,
+        304,
+        347,
+        365,
+        352,
+        401,
     ],
     "channel": [
-        "Search", "Social", "Partner", "Search", "Social", "Partner",
-        "Search", "Social", "Partner", "Search", "Social", "Partner",
-        "Search", "Social", "Partner", "Search", "Social", "Partner",
+        "Search",
+        "Social",
+        "Partner",
+        "Search",
+        "Social",
+        "Partner",
+        "Search",
+        "Social",
+        "Partner",
+        "Search",
+        "Social",
+        "Partner",
+        "Search",
+        "Social",
+        "Partner",
+        "Search",
+        "Social",
+        "Partner",
     ],
     "pipeline_k": [
-        48, 55, 72, 64, 91, 103, 112, 135, 149,
-        166, 158, 192, 211, 205, 238, 254, 246, 281,
+        48,
+        55,
+        72,
+        64,
+        91,
+        103,
+        112,
+        135,
+        149,
+        166,
+        158,
+        192,
+        211,
+        205,
+        238,
+        254,
+        246,
+        281,
     ],
 }
-
-# --- chart ---
 import xyg
 
 named_column_chart = xyg.scatter_chart(
@@ -112,11 +134,7 @@ named_column_chart = xyg.scatter_chart(
     xyg.tooltip(
         title="{channel} campaign",
         fields=["spend_k", "qualified_leads", "pipeline_k"],
-        format={
-            "spend_k": "$,.0fK",
-            "qualified_leads": ",.0f",
-            "pipeline_k": "$,.0fK",
-        },
+        format={"spend_k": "$,.0fK", "qualified_leads": ",.0f", "pipeline_k": "$,.0fK"},
     ),
     xyg.legend(title="Channel", loc="upper left"),
     data=campaign_data,
@@ -125,9 +143,7 @@ named_column_chart = xyg.scatter_chart(
 
 
 def named_columns_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(named_column_chart, height="380px")
+    return named_column_chart
 ~~~
 
 Dictionaries, pandas DataFrames, and other column-indexable objects work with
@@ -157,57 +173,56 @@ PyArrow is an optional input format, not an XYG runtime dependency. Install it
 separately (`uv add pyarrow` or `pip install pyarrow`) and pass an Array or
 ChunkedArray directly:
 
-~~~python demo exec
+~~~python demo exec native
 import xyg
 
 try:
     import pyarrow as pa
 except ModuleNotFoundError:
     pa = None
-
 batch_mb_values = [
-    1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0, 12.0,
-    16.0, 20.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    6.0,
+    8.0,
+    10.0,
+    12.0,
+    16.0,
+    20.0,
+    24.0,
+    32.0,
+    40.0,
+    48.0,
+    56.0,
+    64.0,
 ]
 throughput_values = [
-    95.0, 172.0, 238.0, 296.0, 388.0, 452.0, 501.0, 535.0,
-    575.0, 604.0, 621.0, 642.0, 654.0, 660.0, 663.0, 665.0,
+    95.0,
+    172.0,
+    238.0,
+    296.0,
+    388.0,
+    452.0,
+    501.0,
+    535.0,
+    575.0,
+    604.0,
+    621.0,
+    642.0,
+    654.0,
+    660.0,
+    663.0,
+    665.0,
 ]
-batch_mb = (
-    pa.array(batch_mb_values, type=pa.float64())
-    if pa is not None
-    else batch_mb_values
-)
-throughput = (
-    pa.array(throughput_values, type=pa.float64())
-    if pa is not None
-    else throughput_values
-)
-
+batch_mb = pa.array(batch_mb_values, type=pa.float64()) if pa is not None else batch_mb_values
+throughput = pa.array(throughput_values, type=pa.float64()) if pa is not None else throughput_values
 arrow_chart = xyg.line_chart(
-    xyg.area(
-        batch_mb,
-        throughput,
-        color="#6e56cf",
-        opacity=0.18,
-        line_width=0,
-        curve="smooth",
-    ),
-    xyg.line(
-        batch_mb,
-        throughput,
-        color="#6e56cf",
-        width=2.5,
-        curve="smooth",
-    ),
+    xyg.area(batch_mb, throughput, color="#6e56cf", opacity=0.18, line_width=0, curve="smooth"),
+    xyg.line(batch_mb, throughput, color="#6e56cf", width=2.5, curve="smooth"),
     xyg.scatter(
-        batch_mb,
-        throughput,
-        color="#6e56cf",
-        size=7,
-        opacity=1,
-        stroke="#ffffff",
-        stroke_width=1.5,
+        batch_mb, throughput, color="#6e56cf", size=7, opacity=1, stroke="#ffffff", stroke_width=1.5
     ),
     xyg.x_axis(label="batch size (MB)", domain=(0, 68), tick_count=7),
     xyg.y_axis(label="throughput (MB/s)", domain=(0, 700), tick_count=6),
@@ -216,9 +231,7 @@ arrow_chart = xyg.line_chart(
 
 
 def arrow_input_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(arrow_chart, height="360px")
+    return arrow_chart
 ~~~
 
 A null-free primitive float64 Arrow Array, or a one-chunk column with that
@@ -236,45 +249,43 @@ float64 milliseconds since the Unix epoch; `NaT` becomes a missing value. The
 current contract does not preserve arbitrary nanosecond distinctions end to
 end.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
 import xyg
 
 dates = np.arange("2026-07-01", "2026-07-22", dtype="datetime64[D]")
 active_users = np.array(
     [
-        1420, 1510, 1585, 1490, 1630, 1725, 1810,
-        1760, 1845, np.nan, 1870, 1995, 2070, 2140,
-        2055, 2110, 2190, 2260, 2185, 2240, 2325,
+        1420,
+        1510,
+        1585,
+        1490,
+        1630,
+        1725,
+        1810,
+        1760,
+        1845,
+        np.nan,
+        1870,
+        1995,
+        2070,
+        2140,
+        2055,
+        2110,
+        2190,
+        2260,
+        2185,
+        2240,
+        2325,
     ],
     dtype=float,
 )
-
 time_chart = xyg.line_chart(
     xyg.area(
-        dates,
-        active_users,
-        base=1200,
-        color="#0ea5e9",
-        opacity=0.18,
-        line_width=0,
-        curve="smooth",
+        dates, active_users, base=1200, color="#0ea5e9", opacity=0.18, line_width=0, curve="smooth"
     ),
-    xyg.line(
-        dates,
-        active_users,
-        color="#0284c7",
-        width=2.5,
-        curve="smooth",
-    ),
-    xyg.scatter(
-        dates,
-        active_users,
-        color="#38bdf8",
-        size=6,
-        stroke="#ffffff",
-        stroke_width=1,
-    ),
+    xyg.line(dates, active_users, color="#0284c7", width=2.5, curve="smooth"),
+    xyg.scatter(dates, active_users, color="#38bdf8", size=6, stroke="#ffffff", stroke_width=1),
     xyg.x_axis(label="day", format="%b %d", tick_count=7),
     xyg.y_axis(label="daily active users", domain=(1200, 2400), tick_count=6),
     title="Daily activity with a reporting gap",
@@ -282,9 +293,7 @@ time_chart = xyg.line_chart(
 
 
 def time_handling_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(time_chart, height="360px")
+    return time_chart
 ~~~
 
 The datetime array selects a time scale automatically. The missing tenth value

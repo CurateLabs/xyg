@@ -8,7 +8,7 @@ components:
 # Box Plots in Python
 
 A **box plot** (also called a box-and-whisker plot) summarizes a distribution with its median, quartiles, and
-whiskers, and marks points beyond the whiskers as outliers. With `xy` you build
+whiskers, and marks points beyond the whiskers as outliers. With `xyg` you build
 a boxplot in Python that compares several groups side by side and stays
 interactive — pan, zoom, and hover to inspect every summary value.
 
@@ -21,25 +21,14 @@ Jump to [creating a box plot](#create-a-box-plot),
 Pass a list of arrays — one per group — to `box`, and label each group with
 `x`. This is the minimal Python box plot:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 box_rng = np.random.default_rng(23)
-box_groups = [
-    box_rng.normal(48, 7, 800),
-    box_rng.normal(57, 9, 800),
-]
-
+box_groups = [box_rng.normal(48, 7, 800), box_rng.normal(57, 9, 800)]
 box_detail_chart = xyg.box_chart(
-    xyg.box(
-        box_groups,
-        x=["Control", "Treatment"],
-        color="#6e56cf",
-        width=0.5,
-        show_outliers=True,
-    ),
+    xyg.box(box_groups, x=["Control", "Treatment"], color="#6e56cf", width=0.5, show_outliers=True),
     xyg.x_axis(label="cohort"),
     xyg.y_axis(label="score"),
     title="Cohort score distribution",
@@ -47,7 +36,7 @@ box_detail_chart = xyg.box_chart(
 
 
 def box_demo():
-    return reflex_xy.chart(box_detail_chart, height="320px")
+    return box_detail_chart
 ~~~
 
 ## Outliers and Orientation
@@ -93,24 +82,16 @@ custom_box = xyg.box(
 Flip the chart with `orientation="horizontal"`, slim each box with `width`, and
 enlarge the flagged points with `show_outliers` plus `outlier_size`.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 latency_rng = np.random.default_rng(5)
 service_latency = [
-    np.concatenate(
-        [latency_rng.gamma(4.0, 9.0, 700), latency_rng.uniform(160, 240, 12)]
-    ),
-    np.concatenate(
-        [latency_rng.gamma(5.5, 8.0, 700), latency_rng.uniform(170, 260, 9)]
-    ),
-    np.concatenate(
-        [latency_rng.gamma(3.2, 12.0, 700), latency_rng.uniform(190, 300, 15)]
-    ),
+    np.concatenate([latency_rng.gamma(4.0, 9.0, 700), latency_rng.uniform(160, 240, 12)]),
+    np.concatenate([latency_rng.gamma(5.5, 8.0, 700), latency_rng.uniform(170, 260, 9)]),
+    np.concatenate([latency_rng.gamma(3.2, 12.0, 700), latency_rng.uniform(190, 300, 15)]),
 ]
-
 horizontal_box_chart = xyg.box_chart(
     xyg.box(
         service_latency,
@@ -128,7 +109,7 @@ horizontal_box_chart = xyg.box_chart(
 
 
 def horizontal_box_demo():
-    return reflex_xy.chart(horizontal_box_chart, height="320px")
+    return horizontal_box_chart
 ~~~
 
 ## Comparing Groups
@@ -143,9 +124,8 @@ compare.
 When observations arrive as one long array, pass a matching label array to
 `group=` and `box` splits the values into per-group boxes automatically.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 plant_rng = np.random.default_rng(77)
@@ -154,7 +134,6 @@ yield_values = np.concatenate(
     [plant_rng.normal(52 + 4 * i, 5 + 0.8 * i, 300) for i in range(len(site_names))]
 )
 site_labels = np.repeat(site_names, 300)
-
 grouped_box_chart = xyg.box_chart(
     xyg.box(
         yield_values,
@@ -171,7 +150,7 @@ grouped_box_chart = xyg.box_chart(
 
 
 def grouped_box_demo():
-    return reflex_xy.chart(grouped_box_chart, height="320px")
+    return grouped_box_chart
 ~~~
 
 ## Box Plot Options

@@ -9,7 +9,7 @@ components:
 # Bar Charts in Python
 
 A **bar chart** (also called a bar graph) compares values across categories using horizontal bars, one bar
-per category, with length encoding the measured value. With `xy` you build a
+per category, with length encoding the measured value. With `xyg` you build a
 Python bar chart that is interactive by default — pan, zoom, and hover all work
 without configuration — and horizontal bars keep long category labels readable
 where a vertical layout would crowd them. Layer several series to make grouped
@@ -27,14 +27,12 @@ Pass a list of categories and a matching array of values to `bar`, and set
 `orientation="horizontal"` so the bars run left to right. This is the minimal
 Python bar chart:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 channels = ["Email", "Social", "Search", "Direct", "Referral"]
 sessions = np.array([38, 27, 21, 14, 9])
-
 chart = xyg.bar_chart(
     xyg.bar(channels, sessions, color="#6e56cf", orientation="horizontal", corner_radius=4),
     xyg.x_axis(label="sessions (k)"),
@@ -44,7 +42,7 @@ chart = xyg.bar_chart(
 
 
 def sessions_by_channel():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Grouped and Stacked Bars
@@ -54,15 +52,13 @@ categories across groups. Set `base` to stack each series on top of the
 previous one — pass the cumulative totals so bars sit flush — or leave `base`
 off to place bars side by side.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 teams = ["Alpha", "Beta", "Gamma", "Delta"]
 open_ = np.array([12, 9, 15, 7])
 closed = np.array([28, 22, 19, 31])
-
 chart = xyg.bar_chart(
     xyg.bar(teams, open_, name="Open", color="#6e56cf", orientation="horizontal"),
     xyg.bar(teams, closed, base=open_, name="Closed", color="#c4b5fd", orientation="horizontal"),
@@ -74,7 +70,7 @@ chart = xyg.bar_chart(
 
 
 def ticket_status_by_team():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Column Charts (Vertical Bars)
@@ -85,14 +81,12 @@ as quarters or months — so the left-to-right reading follows time. Columns
 stack the same way bars do, with `base` set to the running total below each
 series.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 signups = np.array([120, 145, 138, 172, 190, 210])
-
 chart = xyg.column_chart(
     xyg.column(months, signups, color="#6e56cf", corner_radius=4),
     xyg.x_axis(label="month"),
@@ -102,25 +96,18 @@ chart = xyg.column_chart(
 
 
 def monthly_signups():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 Stack several `column` marks the same way as bars — pass a pair to
 `corner_radius`, such as `corner_radius=(5, 0)`, to round only the exposed top:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
-values = np.array([
-    [42, 18, 9],
-    [47, 21, 11],
-    [51, 24, 13],
-    [58, 27, 16],
-])
-
+values = np.array([[42, 18, 9], [47, 21, 11], [51, 24, 13], [58, 27, 16]])
 chart = xyg.column_chart(
     xyg.column(quarters, values[:, 0], name="Core", color="#6e56cf"),
     xyg.column(quarters, values[:, 1], base=values[:, 0], name="Growth", color="#8e7cc3"),
@@ -138,7 +125,7 @@ chart = xyg.column_chart(
 
 
 def quarterly_mix():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Interactive Bar Charts
@@ -146,7 +133,7 @@ def quarterly_mix():
 Every bar chart is interactive out of the box — drag to pan, scroll or pinch to
 zoom, and hover to read exact values in a
 [tooltip](/docs/xy/components/tooltips/). The same chart renders in a notebook,
-a Reflex app, or exported HTML with no extra configuration.
+an application, or exported HTML with no extra configuration.
 
 ## Bar Chart Options
 
@@ -180,7 +167,7 @@ Call `xyg.bar(categories, values, orientation="horizontal")` inside
 `xyg.bar_chart(...)` and render it. The resulting bar plot pans, zooms, and
 hovers automatically.
 
-### What is the difference between a bar chart and a column chart in xy?
+### What is the difference between a bar chart and a column chart in XYG?
 
 They share one implementation. A bar chart uses `orientation="horizontal"` so
 bars run left to right; a column chart runs vertical. Pick the name that reads

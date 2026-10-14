@@ -17,23 +17,12 @@ the browser, SVG, native PNG, and Chromium PNG.
 The two orientations share the same title and explicit-tick API. Browser DOM
 chrome additionally exposes the class and slot styling shown here:
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 vertical_scale = xyg.heatmap_chart(
-    xyg.heatmap(
-        [[-2.0, 0.0], [2.0, 4.0]],
-        name="temperature",
-        colormap="coolwarm",
-        domain=(-3, 5),
-    ),
-    xyg.colorbar(
-        title="Temperature (°C)",
-        ticks=[-3, 0, 5],
-        class_name="rounded-lg bg-white/90",
-    ),
+    xyg.heatmap([[-2.0, 0.0], [2.0, 4.0]], name="temperature", colormap="coolwarm", domain=(-3, 5)),
+    xyg.colorbar(title="Temperature (°C)", ticks=[-3, 0, 5], class_name="rounded-lg bg-white/90"),
     styles={
         "colorbar_bar": {"border_radius": 5},
         "colorbar_tick": {"color": "#475569"},
@@ -41,30 +30,13 @@ vertical_scale = xyg.heatmap_chart(
     },
     title="Vertical scale",
 )
-
 horizontal_scale = xyg.scatter_chart(
     xyg.scatter(
-        [0, 1, 2, 3],
-        [2, 5, 3, 8],
-        color=[0.1, 0.4, 0.7, 1.0],
-        colormap="viridis",
-        size=12,
+        [0, 1, 2, 3], [2, 5, 3, 8], color=[0.1, 0.4, 0.7, 1.0], colormap="viridis", size=12
     ),
-    xyg.colorbar(
-        title="Confidence",
-        orientation="horizontal",
-        ticks=[0.1, 0.5, 1.0],
-    ),
+    xyg.colorbar(title="Confidence", orientation="horizontal", ticks=[0.1, 0.5, 1.0]),
     title="Horizontal scale",
 )
-
-
-def colorbar_orientation_preview():
-    return rx.el.div(
-        reflex_xy.chart(vertical_scale, height="330px"),
-        reflex_xy.chart(horizontal_scale, height="330px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 The last compatible continuous mark wins when a chart layers several scales. XYG
@@ -83,14 +55,12 @@ resident in the browser. `colorbar(show=False)` removes an inferred scale.
 Passing an explicit mark `domain=` pins the colorbar to a known range instead
 of the data extent, so the scale stays comparable across refreshes:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_load = np.random.default_rng(7)
 cpu_load = (rng_load.random((6, 6)) * 60 + 20).round(1)
-
 pinned_scale = xyg.heatmap_chart(
     xyg.heatmap(cpu_load, name="load", colormap="magma", domain=(0, 100)),
     xyg.colorbar(title="Load (%)", ticks=[0, 25, 50, 75, 100]),
@@ -99,7 +69,7 @@ pinned_scale = xyg.heatmap_chart(
 
 
 def pinned_domain_colorbar():
-    return reflex_xy.chart(pinned_scale, height="330px")
+    return pinned_scale
 ~~~
 
 ### Derived scales on hexbin and layered marks
@@ -109,10 +79,8 @@ channel, and when several continuous marks are layered the colorbar derives
 from the last compatible one — here the stations scatter (0–50 PPM on
 viridis), not the heatmap beneath it:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex as rx
-import reflex_xy
 import xyg
 
 rng_bins = np.random.default_rng(21)
@@ -126,15 +94,9 @@ hexbin_density = xyg.hexbin_chart(
     xyg.colorbar(title="Points per bin", orientation="horizontal"),
     title="Horizontal hexbin scale",
 )
-
 rng_layers = np.random.default_rng(3)
 layered_scales = xyg.heatmap_chart(
-    xyg.heatmap(
-        [[4.0, 9.0], [14.0, 22.0]],
-        name="model grid",
-        colormap="cividis",
-        domain=(0, 25),
-    ),
+    xyg.heatmap([[4.0, 9.0], [14.0, 22.0]], name="model grid", colormap="cividis", domain=(0, 25)),
     xyg.scatter(
         rng_layers.uniform(0.0, 1.0, 12),
         rng_layers.uniform(0.0, 1.0, 12),
@@ -147,14 +109,6 @@ layered_scales = xyg.heatmap_chart(
     xyg.colorbar(title="Station PPM"),
     title="Last compatible mark wins",
 )
-
-
-def derived_scale_sources():
-    return rx.el.div(
-        reflex_xy.chart(hexbin_density, height="330px"),
-        reflex_xy.chart(layered_scales, height="330px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 ## Framework-owned replacement
@@ -162,34 +116,21 @@ def derived_scale_sources():
 `render=` (or one positional child) remains an opaque integration hook:
 
 ~~~python
-import reflex as rx
 import xyg
 
-my_color_scale = rx.vstack(
-    rx.text("Intensity", weight="bold"),
-    rx.box(
-        width="8rem",
-        height="0.5rem",
-        border_radius="999px",
-        background="linear-gradient(90deg, #440154, #21918c, #fde725)",
-    ),
-    rx.hstack(rx.text("0.2"), rx.spacer(), rx.text("1.4"), width="8rem"),
-    spacing="1",
-)
-
+# An opaque stand-in for a component owned and mounted by your application.
+custom_component = object()
 chart = xyg.scatter_chart(
     xyg.scatter([1, 2, 3], [3, 5, 4], color=[0.2, 0.8, 1.4]),
-    xyg.colorbar(render=my_color_scale),
+    xyg.colorbar(render=custom_component),
 )
 
 replacement = chart.chrome_components()["colorbar"]
-assert replacement is my_color_scale
+assert replacement is custom_component
 ~~~
 
-Core XYG stores that object but does not mount it, and the shipped
-`reflex_xy.chart` adapter does not currently mount custom chrome either. A
-custom adapter must read `chrome_components()` and place the returned component
-itself; standalone HTML, SVG, and PNG ignore the opaque replacement.
+Core XYG stores that object but does not mount it. A host adapter must read
+`chart.chrome_components()` and mount the returned component; standalone HTML, SVG, and PNG ignore the opaque replacement.
 
 ## Styling slots
 
@@ -220,9 +161,7 @@ chart = xyg.scatter_chart(
 )
 ~~~
 
-See the
-[Reflex integration](/docs/xy/integrations/reflex/) for the shipped chart
-adapter and [Marks and components reference](/docs/xy/api-reference/marks-and-components/)
+See [Marks and components reference](/docs/xy/api-reference/marks-and-components/)
 for the complete signature.
 
 ## FAQ

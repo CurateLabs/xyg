@@ -42,16 +42,13 @@ python first_chart.py
 
 This is the chart it produces, live:
 
-~~~python demo-only exec
+~~~python demo-only exec native
 import random
-
-import reflex_xy
 import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
 y = [rng.random() for _ in x]
-
 first_chart = xyg.scatter_chart(
     xyg.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
     xyg.x_axis(label="x"),
@@ -61,7 +58,7 @@ first_chart = xyg.scatter_chart(
 
 
 def first_chart_demo():
-    return reflex_xy.chart(first_chart, height="320px")
+    return first_chart
 ~~~
 
 `scatter.html` is self-contained. Hover, pan, zoom, and the built-in controls
@@ -129,23 +126,20 @@ chart = xyg.scatter_chart(
 chart.to_html("big_scatter.html")
 ~~~
 
-~~~python demo-only exec
+~~~python demo-only exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 big_rng = np.random.default_rng(0)
-big_x = big_rng.normal(size=2_500_000)
+big_x = big_rng.normal(size=2500000)
 big_y = big_x * 0.6 + big_rng.normal(scale=0.8, size=big_x.size)
-
 million_point_chart = xyg.scatter_chart(
-    xyg.scatter(big_x, big_y, size=4),
-    title="2.5 million points",
+    xyg.scatter(big_x, big_y, size=4), title="2.5 million points"
 )
 
 
 def million_point_demo():
-    return reflex_xy.chart(million_point_chart, height="320px")
+    return million_point_chart
 ~~~
 
 Zoom in and the view refines back toward exact points. Read

@@ -9,7 +9,7 @@ components:
 
 A **line chart** (also called a line graph or line plot) connects ordered
 observations to show a trend over time or any
-continuous sequence. With `xy` you create an interactive line chart in Python
+continuous sequence. With `xyg` you create an interactive line chart in Python
 that stays smooth at millions of points: pan, zoom, and hover work by default,
 and long lines are decimated to the visible resolution and refined as you zoom.
 
@@ -22,14 +22,12 @@ Jump to [multiple series](#plot-multiple-line-series),
 Pass equal-length x and y arrays to `line`. This is the minimal Python line
 chart:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 month = np.arange(12)
 revenue = np.array([12, 15, 14, 19, 22, 21, 27, 30, 29, 34, 38, 41])
-
 chart = xyg.chart(
     xyg.line(month, revenue, color="#6e56cf", width=2.5),
     xyg.x_axis(label="month"),
@@ -39,15 +37,15 @@ chart = xyg.chart(
 
 
 def basic_line_chart():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Interactive Line Charts
 
 Every line chart is interactive out of the box — drag to pan, scroll or pinch to
 zoom, and hover to inspect exact values with a [tooltip](/docs/xy/components/tooltips/).
-No configuration is required; the same chart renders in a notebook, a Reflex
-app, or exported HTML.
+No configuration is required; the same chart renders in a notebook, an application,
+or exported HTML.
 
 ## Smooth vs. Straight Lines
 
@@ -55,15 +53,13 @@ Keep the default straight segments when each observation should stay explicit,
 or set `curve="smooth"` for interpolation. Use `dash` for plan/actual or
 forecast comparisons.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
 actual = plan + 7 * np.sin(x * 0.9)
-
 chart = xyg.chart(
     xyg.line(x, plan, name="Plan", color="#2563eb", dash="dashed"),
     xyg.line(x, actual, name="Actual", color="#6e56cf", width=2.5, curve="smooth"),
@@ -75,7 +71,7 @@ chart = xyg.chart(
 
 
 def smooth_line_chart():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Plot Multiple Line Series
@@ -86,22 +82,20 @@ two series; add as many as you need.
 
 ## Large and Real-Time Line Charts
 
-`xy` is built for large data: a line with millions of points renders as a
+`xyg` is built for large data: a line with millions of points renders as a
 decimated path sized to the screen, then refines when the viewport changes, so
 navigation never blocks. For streaming updates, see
 [real-time and streaming data](/docs/xy/guides/real-time-and-streaming-data/),
 and for the performance model see
 [large data and performance](/docs/xy/core-concepts/large-data-and-performance/).
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(0)
-t = np.linspace(0, 100, 200_000)
+t = np.linspace(0, 100, 200000)
 signal = np.sin(t) + rng.normal(0, 0.1, t.size)
-
 chart = xyg.chart(
     xyg.line(t, signal, color="#6e56cf"),
     xyg.x_axis(label="time (s)"),
@@ -111,7 +105,7 @@ chart = xyg.chart(
 
 
 def large_line_chart():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Line Chart Options
@@ -145,7 +139,7 @@ are enabled automatically — no callbacks or extra libraries required.
 
 ### How many points can a line chart plot?
 
-Millions. `xy` decimates a long line to the visible pixels and refines it on
+Millions. `xyg` decimates a long line to the visible pixels and refines it on
 zoom, so a multi-million-point line stays interactive instead of freezing the
 page.
 

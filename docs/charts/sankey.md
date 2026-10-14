@@ -12,7 +12,7 @@ Node height represents total flow, and each connecting ribbon is proportional
 to its value. Use one for budgets, energy transfer, conversion funnels, supply
 chains, or any directed flow where the size of each path matters.
 
-With `xy`, pass `(source, target, value)` triples to `sankey_chart`. XYG assigns
+With `xyg`, pass `(source, target, value)` triples to `sankey_chart`. XYG assigns
 layers, minimizes crossings, sizes the nodes, stacks the ribbon endpoints, and
 uses each link's source and target colors to paint its gradient.
 
@@ -25,32 +25,22 @@ Jump to [the basic chart](#create-a-sankey-diagram),
 
 This example follows an investment inflow through allocations and outcomes:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 investment_flows = [
-    ("Inflow", "Equities", 78_000),
-    ("Inflow", "Bonds", 46_000),
-    ("Inflow", "Cash", 24_000),
-    ("Equities", "Growth", 61_000),
-    ("Equities", "Income", 17_000),
-    ("Bonds", "Income", 28_000),
-    ("Bonds", "Reserve", 18_000),
-    ("Cash", "Reserve", 24_000),
+    ("Inflow", "Equities", 78000),
+    ("Inflow", "Bonds", 46000),
+    ("Inflow", "Cash", 24000),
+    ("Equities", "Growth", 61000),
+    ("Equities", "Income", 17000),
+    ("Bonds", "Income", 28000),
+    ("Bonds", "Reserve", 18000),
+    ("Cash", "Reserve", 24000),
 ]
-
 investment_sankey = xyg.sankey_chart(
     investment_flows,
-    colors=[
-        "#6e56cf",
-        "#3b82f6",
-        "#0ea5e9",
-        "#14b8a6",
-        "#8b5cf6",
-        "#f59e0b",
-        "#64748b",
-    ],
+    colors=["#6e56cf", "#3b82f6", "#0ea5e9", "#14b8a6", "#8b5cf6", "#f59e0b", "#64748b"],
     link_opacity=0.48,
     node_width=0.025,
     node_padding=0.035,
@@ -59,7 +49,7 @@ investment_sankey = xyg.sankey_chart(
 
 
 def sankey_chart_demo():
-    return reflex_xy.chart(investment_sankey, height="440px")
+    return investment_sankey
 ~~~
 
 Node names default to their first-appearance order in `links`. When you need
@@ -83,8 +73,7 @@ energy balance uses four stages, a compact `node_padding`, and extra
 crossing-minimization `iterations`. Every ribbon blends from its source node
 color to its target node color:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 energy_flows = [
@@ -110,7 +99,6 @@ energy_flows = [
     ("EV charging", "Useful energy", 13),
     ("EV charging", "Losses", 3),
 ]
-
 energy_nodes = [
     "Grid supply",
     "Homes",
@@ -125,7 +113,6 @@ energy_nodes = [
     "Useful energy",
     "Losses",
 ]
-
 energy_sankey = xyg.sankey_chart(
     energy_flows,
     nodes=energy_nodes,
@@ -153,7 +140,7 @@ energy_sankey = xyg.sankey_chart(
 
 
 def energy_sankey_demo():
-    return reflex_xy.chart(energy_sankey, height="500px")
+    return energy_sankey
 ~~~
 
 Use an explicit `nodes` list when color meaning must remain stable even if the
@@ -168,9 +155,7 @@ stays in the first layer where the graph places it. The default
 `align="justify"` moves every sink to the final layer, producing a flush right
 edge. Compare the position of **Direct purchase**:
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 conversion_flows = [
@@ -181,17 +166,7 @@ conversion_flows = [
     ("Cart", "Purchased", 260),
     ("Cart", "Abandoned", 160),
 ]
-
-conversion_colors = [
-    "#6366f1",
-    "#8b5cf6",
-    "#22c55e",
-    "#f59e0b",
-    "#16a34a",
-    "#ef4444",
-    "#fb7185",
-]
-
+conversion_colors = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#16a34a", "#ef4444", "#fb7185"]
 left_aligned_sankey = xyg.sankey_chart(
     conversion_flows,
     colors=conversion_colors,
@@ -199,7 +174,6 @@ left_aligned_sankey = xyg.sankey_chart(
     node_padding=0.035,
     title="Natural graph layers",
 )
-
 justified_sankey = xyg.sankey_chart(
     conversion_flows,
     colors=conversion_colors,
@@ -207,20 +181,10 @@ justified_sankey = xyg.sankey_chart(
     node_padding=0.035,
     title="Sinks justified right",
 )
-
-
-def sankey_alignment_demo():
-    return rx.grid(
-        reflex_xy.chart(left_aligned_sankey, height="320px"),
-        reflex_xy.chart(justified_sankey, height="320px"),
-        columns="2",
-        gap="1rem",
-        width="100%",
-    )
 ~~~
 
 For a single-column mobile layout, place the two chart components in an
-`rx.vstack` or make the grid's `columns` prop responsive in your Reflex app.
+single-column CSS grid or responsive application layout.
 
 ## Style the Ribbon Layer
 
@@ -230,8 +194,7 @@ the intended lavender-to-violet gradient without competing with the solid node
 bars. Composing the mark yourself also means supplying the hidden unit-box axes
 that `sankey_chart` normally adds for you:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 material_flows = [
@@ -241,27 +204,15 @@ material_flows = [
     ("Manufacturing", "Product", 82),
     ("Manufacturing", "Process waste", 12),
 ]
-
 material_sankey = xyg.chart(
     xyg.sankey(
         material_flows,
-        colors=[
-            "#c4b5fd",  # Virgin material — left
-            "#7c3aed",  # Manufacturing — highlighted middle hub
-            "#a78bfa",  # Recovered material — left
-            "#3b0764",  # Residual — right
-            "#4c1d95",  # Product — right
-            "#5b21b6",  # Process waste — right
-        ],
+        colors=["#c4b5fd", "#7c3aed", "#a78bfa", "#3b0764", "#4c1d95", "#5b21b6"],
         node_width=0.05,
         node_padding=0.05,
         link_opacity=0.82,
         label_size=13,
-        style={
-            "stroke": "#6d28d9",
-            "stroke-width": 0.7,
-            "stroke-opacity": 0.35,
-        },
+        style={"stroke": "#6d28d9", "stroke-width": 0.7, "stroke-opacity": 0.35},
     ),
     xyg.x_axis(domain=(-0.09, 1.09), show=False),
     xyg.y_axis(domain=(-0.05, 1.05), reverse=True, show=False),
@@ -271,13 +222,13 @@ material_sankey = xyg.chart(
             "color": "#f8fafc",
             "font-weight": 600,
             "text-shadow": "0 1px 3px #0f172a, 0 0 4px #0f172a",
-        },
+        }
     },
 )
 
 
 def styled_sankey_demo():
-    return reflex_xy.chart(material_sankey, height="400px")
+    return material_sankey
 ~~~
 
 The mark's `style` mapping applies to links, while `colors` controls nodes and

@@ -49,8 +49,9 @@ replacing a dataset rather than extending it.
   state used by a later display.
 - Without a widget, the chart mutates in Python and the next `widget()`,
   `to_html()`, `to_png()`, or `to_svg()` sees the appended rows.
-- In Reflex, call `reflex_xy.append(token, ...)` for a registered live chart.
-  See the [Reflex integration](/docs/xy/integrations/reflex/).
+- In a native application, route updates through its retained figure and host
+  transport. GraphForge applications recompose analytical layers from matching
+  generations; see [Use with GraphForge](/docs/xy/integrations/graphforge/).
 
 ~~~md alert warning
 ### Exports Are Snapshots

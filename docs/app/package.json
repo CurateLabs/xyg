@@ -1,0 +1,22 @@
+{
+  "name": "@curatelabs/xyg-docs-site",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "prepare-content": "node scripts/prepare.mjs",
+    "dev": "npm run prepare-content && astro dev --host 0.0.0.0",
+    "check": "npm run prepare-content && astro check",
+    "build": "npm run prepare-content && astro build",
+    "preview": "astro preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.mjs && node scripts/check-built.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.4",
+    "astro": "7.3.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "typescript": "6.0.3"
+  }
+}

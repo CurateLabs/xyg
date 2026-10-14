@@ -35,17 +35,14 @@ container resolves their data and compiles them into one figure.
 
 Pass arrays directly for small, local examples:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
-signal_chart = xyg.line_chart(
-    xyg.line([0, 1, 2, 3], [2, 5, 3, 8], name="signal"),
-)
+signal_chart = xyg.line_chart(xyg.line([0, 1, 2, 3], [2, 5, 3, 8], name="signal"))
 
 
 def marks_array_demo():
-    return reflex_xy.chart(signal_chart, height="320px")
+    return signal_chart
 ~~~
 
 For table-shaped data, pass column names and provide `data=` on the mark or once
@@ -93,15 +90,13 @@ Families mix freely inside one neutral `xyg.chart(...)`; children draw in
 declaration order, so the bars below come first and the trend line paints over
 them:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 layer_month = np.arange(1, 9)
 layer_volume = np.array([32, 38, 35, 44, 41, 52, 49, 57])
 layer_trend = np.array([30, 34, 37, 41, 44, 48, 51, 55])
-
 layered_chart = xyg.chart(
     xyg.bar(layer_month, layer_volume, name="Volume", color="#c4b5fd", opacity=0.7),
     xyg.line(layer_month, layer_trend, name="Trend", color="#6e56cf", width=2.5),
@@ -113,7 +108,7 @@ layered_chart = xyg.chart(
 
 
 def marks_layer_demo():
-    return reflex_xy.chart(layered_chart, height="320px")
+    return layered_chart
 ~~~
 
 ## Shared Mark Behavior
@@ -136,7 +131,7 @@ def marks_layer_demo():
 Canvas and WebGL marks are not DOM elements. CSS selectors and Tailwind classes
 cannot paint their geometry; use `style=` or the mark's paint props. In
 particular, `class_name=` is adapter-only trace metadata, not a mark-painting
-hook in the shipped browser, Reflex, SVG, or native renderers. See
+hook in the shipped browser, SVG, or native renderers. See
 [Customize Each Part](/docs/xy/styling/customize/#fill,-stroke,-opacity,-and-gradients)
 for the compiled CSS subset.
 
@@ -144,16 +139,14 @@ This example drives one scatter's `color=` and `size=` from a data column-like
 array (with `colormap=` and `size_range=` as mark configuration) while a second
 mark uses plain paint options — `name=`, `color=`, `dash=`, and `opacity=`:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 style_rng = np.random.default_rng(7)
 style_x = style_rng.uniform(0, 10, 60)
 style_y = style_x * 0.8 + style_rng.normal(0, 1.2, 60)
 style_depth = style_rng.uniform(0, 1, 60)
-
 styled_chart = xyg.chart(
     xyg.scatter(
         style_x,
@@ -165,9 +158,7 @@ styled_chart = xyg.chart(
         name="Samples",
         opacity=0.85,
     ),
-    xyg.line(
-        [0, 10], [0, 8], name="Fit", color="#f43f5e", dash="dashed", width=2, opacity=0.9
-    ),
+    xyg.line([0, 10], [0, 8], name="Fit", color="#f43f5e", dash="dashed", width=2, opacity=0.9),
     xyg.x_axis(label="input"),
     xyg.y_axis(label="response"),
     xyg.legend(),
@@ -176,7 +167,7 @@ styled_chart = xyg.chart(
 
 
 def marks_styling_demo():
-    return reflex_xy.chart(styled_chart, height="320px")
+    return styled_chart
 ~~~
 
 ## Compose a Multi-Mark Figure
@@ -185,9 +176,8 @@ Everything above composes: an uncertainty band drawn with `area(..., base=)`
 goes first, the line and points layer over it, and a scatter of conversion
 rates binds to a named right-hand axis:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 compose_rng = np.random.default_rng(11)
@@ -195,7 +185,6 @@ compose_day = np.arange(1, 31)
 compose_sessions = 120 + compose_day * 4 + compose_rng.normal(0, 9, 30).round(1)
 compose_band = compose_sessions * 0.15
 compose_conv = 0.032 + 0.0009 * compose_day + compose_rng.normal(0, 0.002, 30)
-
 composed_chart = xyg.chart(
     xyg.area(
         compose_day,
@@ -206,9 +195,7 @@ composed_chart = xyg.chart(
         opacity=0.3,
     ),
     xyg.line(compose_day, compose_sessions, name="Sessions", color="#2563eb", width=2.2),
-    xyg.scatter(
-        compose_day, compose_conv, y_axis="y2", name="Conversion", color="#f59e0b", size=5
-    ),
+    xyg.scatter(compose_day, compose_conv, y_axis="y2", name="Conversion", color="#f59e0b", size=5),
     xyg.x_axis(label="day"),
     xyg.y_axis(label="sessions"),
     xyg.y_axis(id="y2", side="right", label="conversion", domain=(0, 0.08), format=".1%"),
@@ -218,7 +205,7 @@ composed_chart = xyg.chart(
 
 
 def marks_composed_demo():
-    return reflex_xy.chart(composed_chart, height="320px")
+    return composed_chart
 ~~~
 
 ## Representation Does Not Change the Mark

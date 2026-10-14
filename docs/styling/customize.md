@@ -26,12 +26,9 @@ choices, or the mark's validated `style=` mapping when CSS-shaped paint is
 clearer. Unsupported properties raise while the chart is built instead of
 silently disappearing in one renderer.
 
-~~~python demo exec toggle preview-code id=customize-mark-paint-demo
+~~~python demo exec toggle preview-code id=customize-mark-paint-demo native
 x = [0, 1, 2, 3, 4, 5]
 y = [22, 31, 29, 44, 51, 63]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -61,7 +58,7 @@ def customize_mark_paint_preview():
                 "tick_color": "#00000000",
                 "tick_label_color": "#00000000",
                 "label_color": "#00000000",
-            },
+            }
         ),
         xyg.y_axis(
             domain=(0, 70),
@@ -79,17 +76,15 @@ def customize_mark_paint_preview():
             grid_color="var(--custom-grid, #e5e7eb)",
             text_color="var(--custom-text, #6a7282)",
         ),
-        class_name=(
-            "bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] "
-            "[--custom-text:#6a7282] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] "
-            "dark:[--custom-text:#d4d4d8]"
-        ),
+        class_name="bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] [--custom-text:#6a7282] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] dark:[--custom-text:#d4d4d8]",
         width="100%",
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+customize_mark_paint_preview_chart = customize_mark_paint_preview()
 ~~~
 
 Use `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, and
@@ -124,12 +119,9 @@ Keep the y-axis grid and turn off the x-axis grid for a calm reporting chart.
 the remaining zero-width and transparent properties remove the baseline and
 ticks without removing the horizontal grid.
 
-~~~python demo exec toggle preview-code id=customize-horizontal-grid-demo
+~~~python demo exec toggle preview-code id=customize-horizontal-grid-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"]
 revenue = [38, 46, 43, 57, 54, 65, 72]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -172,16 +164,15 @@ def customize_horizontal_grid_preview():
         xyg.legend(show=False),
         xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
         xyg.theme(plot_background="var(--custom-surface, #ffffff)"),
-        class_name=(
-            "bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] "
-            "dark:bg-[#000000] dark:[--custom-surface:#000000] "
-            "dark:[--axis-grid:#27272a]"
-        ),
+        class_name="bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--axis-grid:#27272a]",
         width="100%",
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+customize_horizontal_grid_preview_chart = customize_horizontal_grid_preview()
 ~~~
 
 Use `"solid"`, `"dashed"`, `"dotted"`, or `"dashdot"` for `grid_dash`.
@@ -194,24 +185,16 @@ This column chart keeps a deliberate bottom axis. The baseline uses
 `tick_length`; the month text uses `tick_label_color`. The y axis remains
 visually quiet while still drawing horizontal guides.
 
-~~~python demo exec toggle preview-code id=customize-axis-details-demo
+~~~python demo exec toggle preview-code id=customize-axis-details-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 orders = [32, 47, 41, 58, 54, 68]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
 def customize_axis_details_preview():
     chart = xyg.column_chart(
         xyg.column(
-            months,
-            orders,
-            name="Orders",
-            color="#00bc7d",
-            corner_radius=(5, 0),
-            stroke_width=0,
+            months, orders, name="Orders", color="#00bc7d", corner_radius=(5, 0), stroke_width=0
         ),
         xyg.x_axis(
             style={
@@ -222,7 +205,7 @@ def customize_axis_details_preview():
                 "tick_width": 2,
                 "tick_length": 6,
                 "tick_label_color": "var(--axis-text, #4b5563)",
-            },
+            }
         ),
         xyg.y_axis(
             tick_label_strategy="none",
@@ -238,15 +221,13 @@ def customize_axis_details_preview():
         xyg.legend(show=False),
         xyg.tooltip(title="{x}", format={"y": ",.0f"}),
         xyg.theme(plot_background="var(--custom-surface, #ffffff)"),
-        class_name=(
-            "bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] "
-            "[--axis-accent:#00bc7d] [--axis-text:#4b5563] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--axis-grid:#27272a] "
-            "dark:[--axis-accent:#00d492] dark:[--axis-text:#d4d4d8]"
-        ),
+        class_name="bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] [--axis-accent:#00bc7d] [--axis-text:#4b5563] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--axis-grid:#27272a] dark:[--axis-accent:#00d492] dark:[--axis-text:#d4d4d8]",
         padding=(24, 24, 48, 24),
     )
-    return reflex_xy.chart(chart, height="330px")
+    return chart
+
+
+customize_axis_details_preview_chart = customize_axis_details_preview()
 ~~~
 
 Add `label="Month"` and `label_color` only when the axis title adds information
@@ -261,13 +242,10 @@ disable the x grid; and retain only the y grid. This is the same quiet axis
 treatment used by the product-ready examples, shown here with two vivid series
 and a compact stroke-shaped legend.
 
-~~~python demo exec toggle preview-code id=customize-clean-dashboard-axis-demo
+~~~python demo exec toggle preview-code id=customize-clean-dashboard-axis-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 direct = [34, 41, 39, 52, 48, 59, 56, 69]
 partner = [22, 28, 34, 31, 39, 44, 53, 61]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -321,21 +299,19 @@ def customize_clean_dashboard_axis_preview():
         ),
         xyg.tooltip(title="{x}", format={"y": ",.0f"}),
         xyg.theme(
-            plot_background="var(--custom-surface, #ffffff)",
-            grid_color="var(--axis-grid, #e5e7eb)",
+            plot_background="var(--custom-surface, #ffffff)", grid_color="var(--axis-grid, #e5e7eb)"
         ),
         styles={
             "legend_item": {"gap": 8, "padding": 0},
             "legend_swatch": {"width": 24, "height": 3, "border-radius": 999},
         },
-        class_name=(
-            "bg-[#ffffff] py-3 sm:py-4 [--custom-surface:#ffffff] "
-            "[--axis-grid:#e5e7eb] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--axis-grid:#27272a]"
-        ),
+        class_name="bg-[#ffffff] py-3 sm:py-4 [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--axis-grid:#27272a]",
         padding=(58, 24, 24, 24),
     )
-    return reflex_xy.chart(chart, height="340px")
+    return chart
+
+
+customize_clean_dashboard_axis_preview_chart = customize_clean_dashboard_axis_preview()
 ~~~
 
 The reusable recipe is: `tick_label_strategy="none"`, transparent axis and
@@ -460,7 +436,7 @@ distinct categories into a single color, so XYG refuses them and says why.
 Resolve your token to a literal in Python and pass that. Named colors,
 `rgb()`, and `hsl()` are all fine — XYG normalizes them to hex for you.
 
-~~~python demo exec toggle preview-code id=customize-palette-demo
+~~~python demo exec toggle preview-code id=customize-palette-demo native
 stages = ["Ingest", "Compact", "Query", "Replicate", "Snapshot", "Vacuum"]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 throughput = [
@@ -471,9 +447,6 @@ throughput = [
     [15, 17, 21, 20, 24, 27, 26, 30],
     [9, 11, 10, 14, 16, 15, 19, 22],
 ]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 palette_chart = xyg.line_chart(
@@ -481,11 +454,7 @@ palette_chart = xyg.line_chart(
         xyg.line(months, values, name=stage, width=2, curve="smooth")
         for stage, values in zip(stages, throughput, strict=True)
     ],
-    xyg.theme(
-        palette=[
-            "#0ea5e9", "#d946ef", "#f59e0b", "#10b981", "#8b5cf6", "#f43f5e",
-        ],
-    ),
+    xyg.theme(palette=["#0ea5e9", "#d946ef", "#f59e0b", "#10b981", "#8b5cf6", "#f43f5e"]),
     xyg.x_axis(line=False, ticks=False),
     xyg.y_axis(show=False, grid=True, style={"grid_color": "#e2e8f0"}),
     xyg.legend(loc="upper left", ncols=3),
@@ -497,29 +466,18 @@ palette_chart = xyg.line_chart(
 
 
 def customize_palette_preview():
-    return reflex_xy.chart(palette_chart, height="320px")
+    return palette_chart
 ~~~
 
-~~~python demo exec toggle preview-code id=customize-colorbar-demo
-conversion = [
-    [0.12, 0.35, 0.62, 0.46],
-    [0.28, 0.71, 0.94, 0.68],
-    [0.18, 0.54, 0.82, 0.57],
-]
-
-# --- chart ---
-import reflex_xy
+~~~python demo exec toggle preview-code id=customize-colorbar-demo native
+conversion = [[0.12, 0.35, 0.62, 0.46], [0.28, 0.71, 0.94, 0.68], [0.18, 0.54, 0.82, 0.57]]
 import xyg
 
 
 def customize_colorbar_preview():
     chart = xyg.heatmap_chart(
         xyg.heatmap(
-            conversion,
-            name="Conversion rate",
-            colormap="purples",
-            domain=(0, 1),
-            opacity=0.94,
+            conversion, name="Conversion rate", colormap="purples", domain=(0, 1), opacity=0.94
         ),
         xyg.colorbar(
             title="Conversion rate",
@@ -534,12 +492,10 @@ def customize_colorbar_preview():
             },
         ),
         xyg.x_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.y_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
@@ -550,16 +506,13 @@ def customize_colorbar_preview():
             "colorbar_tick": {"font_size": 11},
             "colorbar_title": {"font_weight": 600},
         },
-        class_name=(
-            "bg-[#ffffff] py-3 [--custom-surface:#ffffff] "
-            "[--colorbar-surface:#ffffff] [--colorbar-text:#4b5563] "
-            "[--colorbar-border:#e5e7eb] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--colorbar-surface:#18181f] "
-            "dark:[--colorbar-text:#d4d4d8] dark:[--colorbar-border:#3f3f46]"
-        ),
+        class_name="bg-[#ffffff] py-3 [--custom-surface:#ffffff] [--colorbar-surface:#ffffff] [--colorbar-text:#4b5563] [--colorbar-border:#e5e7eb] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--colorbar-surface:#18181f] dark:[--colorbar-text:#d4d4d8] dark:[--colorbar-border:#3f3f46]",
         padding=(24, 24, 56, 24),
     )
-    return reflex_xy.chart(chart, height="340px")
+    return chart
+
+
+customize_colorbar_preview_chart = customize_colorbar_preview()
 ~~~
 
 Use a legend instead when colors identify discrete categories. Built-in
@@ -574,15 +527,12 @@ Configure legend content and layout with `xyg.legend(...)`. Style the component
 directly, or use the chart's `legend`, `legend_title`, `legend_item`,
 `legend_swatch`, and `legend_label` slots when one rule should cover several
 charts. Complete literal Tailwind utilities work through `class_name` /
-`class_names` when the host enables Reflex's `TailwindV4Plugin`.
+`class_names` when the host supplies the corresponding compiled Tailwind CSS.
 
-~~~python demo exec toggle preview-code id=customize-legend-demo
+~~~python demo exec toggle preview-code id=customize-legend-demo native
 periods = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 desktop = [31, 38, 35, 46, 43, 54, 51, 62]
 mobile = [22, 27, 32, 29, 38, 42, 49, 57]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -621,8 +571,7 @@ def customize_legend_preview():
         xyg.tooltip(show=False),
         xyg.modebar(show=False),
         xyg.x_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.y_axis(
             tick_label_strategy="off",
@@ -644,26 +593,20 @@ def customize_legend_preview():
         ),
         styles={
             "legend_item": {"gap": 8, "padding": 0},
-            "legend_swatch": {
-                "width": 24,
-                "height": 3,
-                "border-radius": 999,
-            },
+            "legend_swatch": {"width": 24, "height": 3, "border-radius": 999},
         },
-        class_name=(
-            "bg-[#ffffff] py-3 sm:py-4 [--custom-surface:#ffffff] "
-            "[--custom-grid:#e5e7eb] [--custom-text:#4b5563] "
-            "dark:bg-[#000000] dark:[--custom-surface:#000000] "
-            "dark:[--custom-grid:#27272a] dark:[--custom-text:#d4d4d8] "
-        ),
+        class_name="bg-[#ffffff] py-3 sm:py-4 [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] [--custom-text:#4b5563] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] dark:[--custom-text:#d4d4d8] ",
         padding=(58, 28, 34, 28),
     )
-    return reflex_xy.chart(chart, height="340px")
+    return chart
+
+
+customize_legend_preview_chart = customize_legend_preview()
 ~~~
 
 A short, rounded swatch makes an area-series legend read like its visible
 stroke instead of a generic color chip. A genuinely custom host legend is
-ordinary Reflex UI: hide the built-in legend
+ordinary application UI: hide the built-in legend
 with `xyg.legend(show=False)`, keep the chart in state, and render the controls
 beside it. Host-owned UI is not included in standalone XYG exports.
 
@@ -675,14 +618,11 @@ data columns for stable lookup, map them to readable display text with
 directly or target `tooltip_title`, `tooltip_row`, `tooltip_label`, and
 `tooltip_value` independently.
 
-~~~python demo exec toggle preview-code id=customize-tooltip-demo
+~~~python demo exec toggle preview-code id=customize-tooltip-demo native
 data = {
     "period": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    "revenue": [32_000, 45_000, 41_000, 58_000, 63_000, 74_000],
+    "revenue": [32000, 45000, 41000, 58000, 63000, 74000],
 }
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -714,11 +654,10 @@ def customize_tooltip_preview():
             },
         ),
         xyg.x_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.y_axis(
-            domain=(0, 80_000),
+            domain=(0, 80000),
             tick_label_strategy="off",
             style={
                 "grid_color": "var(--custom-grid, #e5e7eb)",
@@ -738,29 +677,19 @@ def customize_tooltip_preview():
         ),
         styles={
             "tooltip_title": {"font-weight": 700, "margin-bottom": 4},
-            "tooltip_row": {
-                "display": "grid",
-                "grid-template-columns": "5rem 1fr",
-                "gap": 8,
-            },
+            "tooltip_row": {"display": "grid", "grid-template-columns": "5rem 1fr", "gap": 8},
             "tooltip_label": {"color": "var(--tooltip-muted, #64748b)"},
             "tooltip_value": {"font-weight": 700, "text-align": "right"},
         },
-        class_name=(
-            "bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] "
-            "[--tooltip-surface:#ffffff] [--tooltip-text:#1d293d] "
-            "[--tooltip-muted:#64748b] "
-            "[--tooltip-border:#e5e7eb] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] "
-            "dark:[--tooltip-surface:#18181f] dark:[--tooltip-text:#f3f4f6] "
-            "dark:[--tooltip-muted:#a1a1aa] "
-            "dark:[--tooltip-border:#3f3f46]"
-        ),
+        class_name="bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] [--tooltip-surface:#ffffff] [--tooltip-text:#1d293d] [--tooltip-muted:#64748b] [--tooltip-border:#e5e7eb] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] dark:[--tooltip-surface:#18181f] dark:[--tooltip-text:#f3f4f6] dark:[--tooltip-muted:#a1a1aa] dark:[--tooltip-border:#3f3f46]",
         width="100%",
         height=410,
         padding=(16, 20, 20, 20),
     )
-    return reflex_xy.chart(chart, height="410px")
+    return chart
+
+
+customize_tooltip_preview_chart = customize_tooltip_preview()
 ~~~
 
 For a host-owned tooltip, set `xyg.tooltip(show=False)`, handle
@@ -774,12 +703,9 @@ Annotation geometry is painted with the chart; annotation text is DOM chrome.
 Use geometry props such as `color`, `width`, and `opacity`, then use the
 annotation's `style` or the chart's `annotation_label` slot for its label.
 
-~~~python demo exec toggle preview-code id=customize-annotations-demo
+~~~python demo exec toggle preview-code id=customize-annotations-demo native
 x = [0, 1, 2, 3, 4, 5]
 y = [3, 5, 4, 7, 6, 9]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
@@ -799,11 +725,7 @@ def customize_annotations_preview():
             text="Target",
             color="#fe9a00",
             width=2,
-            style={
-                "label_color": "#fe9a00",
-                "background_color": "#fe9a001a",
-                "padding": "2px 5px",
-            },
+            style={"label_color": "#fe9a00", "background_color": "#fe9a001a", "padding": "2px 5px"},
         ),
         xyg.x_band(
             2.5,
@@ -811,11 +733,7 @@ def customize_annotations_preview():
             text="Launch",
             color="#00bc7d",
             opacity=0.12,
-            style={
-                "label_color": "#00bc7d",
-                "background": "#00bc7d1a",
-                "padding": "2px 5px",
-            },
+            style={"label_color": "#00bc7d", "background": "#00bc7d1a", "padding": "2px 5px"},
         ),
         xyg.callout(
             5,
@@ -835,8 +753,7 @@ def customize_annotations_preview():
             },
         ),
         xyg.x_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.y_axis(
             domain=(0, 12),
@@ -859,15 +776,13 @@ def customize_annotations_preview():
             grid_color="var(--custom-grid, #e5e7eb)",
             text_color="var(--custom-text, #6a7282)",
         ),
-        class_name=(
-            "bg-[#ffffff] py-2 [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] "
-            "[--custom-text:#6a7282] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] "
-            "dark:[--custom-text:#d4d4d8]"
-        ),
+        class_name="bg-[#ffffff] py-2 [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] [--custom-text:#6a7282] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] dark:[--custom-text:#d4d4d8]",
         padding=(28, 48, 32, 32),
     )
-    return reflex_xy.chart(chart, height="350px")
+    return chart
+
+
+customize_annotations_preview_chart = customize_annotations_preview()
 ~~~
 
 `threshold(...)` and `threshold_zone(...)` are semantic aliases for reference
@@ -883,40 +798,24 @@ slots. The remaining `modebar_*` slots reach the draggable grip, control group,
 separators, icons, zoom value, indicators, selection icon, menus, menu content,
 and history controls independently.
 
-~~~python demo exec toggle preview-code id=customize-interaction-demo
+~~~python demo exec toggle preview-code id=customize-interaction-demo native
 x = [0, 1, 2, 3, 4, 5, 6, 7]
 y = [2, 5, 3, 7, 6, 9, 8, 11]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 
 def customize_interaction_preview():
     chart = xyg.scatter_chart(
         xyg.scatter(
-            x,
-            y,
-            size=10,
-            style={
-                "fill": "#fe9a00",
-                "stroke": "#ffffff",
-                "stroke-width": 1.5,
-            },
+            x, y, size=10, style={"fill": "#fe9a00", "stroke": "#ffffff", "stroke-width": 1.5}
         ),
         xyg.interaction_config(crosshair=True, select=True, brush=True),
         xyg.modebar(
-            class_name=(
-                "rounded-lg border border-[#e5e7eb] bg-[#fffffff2] shadow-md "
-                "dark:border-[#3f3f46] dark:bg-[#18181ff2]"
-            ),
-            button_class_name=(
-                "rounded-md hover:bg-[#8e51ff1a] focus:ring-2 focus:ring-[#8e51ff]"
-            ),
+            class_name="rounded-lg border border-[#e5e7eb] bg-[#fffffff2] shadow-md dark:border-[#3f3f46] dark:bg-[#18181ff2]",
+            button_class_name="rounded-md hover:bg-[#8e51ff1a] focus:ring-2 focus:ring-[#8e51ff]",
         ),
         xyg.x_axis(
-            tick_label_strategy="none",
-            style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+            tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
         ),
         xyg.y_axis(
             domain=(0, 12),
@@ -947,14 +846,12 @@ def customize_interaction_preview():
             "crosshair_y": {"height": 2},
             "selection": {"border-radius": 6},
         },
-        class_name=(
-            "bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] "
-            "[--custom-text:#6a7282] dark:bg-[#000000] "
-            "dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] "
-            "dark:[--custom-text:#d4d4d8]"
-        ),
+        class_name="bg-[#ffffff] [--custom-surface:#ffffff] [--custom-grid:#e5e7eb] [--custom-text:#6a7282] dark:bg-[#000000] dark:[--custom-surface:#000000] dark:[--custom-grid:#27272a] dark:[--custom-text:#d4d4d8]",
     )
-    return reflex_xy.chart(chart, height="340px")
+    return chart
+
+
+customize_interaction_preview_chart = customize_interaction_preview()
 ~~~
 
 Move across the plot to inspect the crosshair. Open the modebar selection menu,

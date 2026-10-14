@@ -17,20 +17,19 @@ the scale. The explicit token is `"time"`, not `"datetime"`.
 `domain=(low, high)` pins a data-space window; `reverse=True` flips its display
 direction without changing the source values.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
 import xyg
 
 x = np.logspace(0, 6, 240)
 rank = 96 - np.log10(x) * 11.5
-
 chart = xyg.line_chart(
     xyg.line(x, rank),
     xyg.x_axis(
         label="Request volume",
         type_="log",
-        domain=(1, 1_000_000),
-        tick_values=[1, 10, 100, 1_000, 10_000, 100_000, 1_000_000],
+        domain=(1, 1000000),
+        tick_values=[1, 10, 100, 1000, 10000, 100000, 1000000],
         tick_labels=["1", "10", "100", "1k", "10k", "100k", "1M"],
     ),
     xyg.y_axis(label="Rank", domain=(0, 100), reverse=True, format=".0f"),
@@ -38,9 +37,7 @@ chart = xyg.line_chart(
 
 
 def scale_type_and_domain_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 Log domains must be positive. Date and datetime values use XYG's canonical
@@ -53,7 +50,7 @@ positions.
 Use `tick_count` as a target, or provide exact `tick_values` with optional
 `tick_labels`:
 
-~~~python demo exec
+~~~python demo exec native
 import xyg
 
 axis = xyg.y_axis(
@@ -62,7 +59,6 @@ axis = xyg.y_axis(
     tick_values=[0, 0.25, 0.5, 0.75, 1],
     tick_labels=["0%", "25%", "50%", "75%", "100%"],
 )
-
 chart = xyg.line_chart(
     xyg.line(["Jan", "Feb", "Mar", "Apr", "May"], [0.18, 0.34, 0.29, 0.57, 0.72]),
     xyg.x_axis(label="Month"),
@@ -71,9 +67,7 @@ chart = xyg.line_chart(
 
 
 def tick_controls_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 `format` controls numeric labels. For crowded labels, use
@@ -98,35 +92,21 @@ Marks bind to axis identifiers through `x_axis=` and `y_axis=`. Define a
 matching `id` on the axis component, and use `side="right"` or `side="top"`
 for an opposite-side axis:
 
-~~~python demo exec
+~~~python demo exec native
 import xyg
 
 chart = xyg.chart(
     xyg.line([1, 10, 100], [80, 70, 60], name="Rank"),
-    xyg.line(
-        [1, 10, 100],
-        [0.08, 0.12, 0.19],
-        y_axis="y2",
-        name="Conversion",
-        color="#dc2626",
-    ),
+    xyg.line([1, 10, 100], [0.08, 0.12, 0.19], y_axis="y2", name="Conversion", color="#dc2626"),
     xyg.x_axis(type_="log", label="Requests", domain=(1, 100)),
     xyg.y_axis(label="Rank", domain=(0, 100)),
-    xyg.y_axis(
-        id="y2",
-        side="right",
-        label="Conversion",
-        domain=(0, 0.25),
-        format=".0%",
-    ),
+    xyg.y_axis(id="y2", side="right", label="Conversion", domain=(0, 0.25), format=".0%"),
     xyg.legend(),
 )
 
 
 def named_axes_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 Named axes share the panel but keep their own scale and tick contract. Bindings

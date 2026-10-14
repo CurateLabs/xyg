@@ -1,135 +1,63 @@
 ---
 title: Choosing a Runtime and Deployment Mode
-description: XYG applications run on Reflex. Choose a Reflex data tier for apps, and a notebook, HTML file, or static image for everything that is not an app.
+description: Choose Python, native Node, or bounded browser WASM for GraphForge views, notebooks, applications, and static output.
 ---
 
-# Choosing a Runtime and Deployment Mode
+# Choosing a runtime and deployment mode
 
-If you are building an application, the runtime is Reflex. XYG does not ship a
-second application runtime and does not embed into another web framework. The
-choice you actually make is *inside* Reflex: which data tier a chart uses.
+Choose where the data and application already live. XYG has Python, Node-native,
+and browser WASM hosts over one Rust engine. It is a visualization engine, not
+an application framework. Your application owns UI, state, deployment, and
+message routing.
 
-Everything else here — notebooks, standalone HTML, PNG, SVG — is not an
-application runtime. Those are exploration and output.
-
-## Applications run on Reflex
-
-XYG charts are first-class Reflex components in an all-Python app. Reflex owns
-UI, state, events, and deployment; XYG owns transport, rendering, and
-interaction math.
-
-- Compose XYG charts with normal Reflex components in Python.
-- Drive charts from per-session state with `@reflex_xy.figure`.
-- Connect hover, click, selection, and view changes to Reflex event handlers,
-  then stream updates with `reflex_xy.append`.
-- Reuse the app's existing websocket and XYG's binary data plane instead of
-  deploying a separate chart service.
-
-The integration is experimental and ships inside the published `xy`
-distribution. Install `xyg[reflex]` so the environment also selects a supported
-Reflex version, then import it as `reflex_xy`. See
-[Deployment Recipes](/docs/xy/guides/deployment-recipes/).
-
-## Choose a data tier
-
-The chart definition is identical in every tier. What changes is where its data
-comes from, and therefore what the chart can still do after you deploy.
-
-| Tier | Data comes from | Live Python | Events | `append()` | Exact row selection | `reflex export` |
-| --- | --- | --- | --- | --- | --- | --- |
-| `reflex_xy.chart(chart)` | fixed, compiled into an asset | no | browser-local | no | no | yes |
-| `reflex_xy.inline(chart)` | fixed, kept in the XYG registry | yes | yes | yes | yes | no |
-| `@reflex_xy.figure` | per-session Reflex state | yes | yes | yes | yes | no |
-
-Browser-local means hover, pan, zoom, and selection still work in the page;
-they just cannot reach Python.
-
-Start at the top. A fixed `xyg.Chart` becomes a content-addressed asset that
-needs no backend connection and survives `reflex export`. Move down only when
-the chart must answer with data it did not ship with — a drill-down, a fresh
-query, the exact rows behind a lasso.
-
-Despite its name, `inline()` is the live, kernel-backed fixed-data tier; passing
-a `Chart` directly is the static tier. Call `inline()` at module scope so every
-backend worker registers the same content-addressed token.
-
-There is also `reflex_xy.register()`, an imperative dev-tier escape hatch. Its
-figure lives only in the registering process and cannot be rebuilt after a
-worker restart or on another node, so do not deploy it.
-
-## Moving down a tier is a wrapper change
-
-The chart definition does not change; only its source does.
-
-~~~python
-# Fixed asset tier
-def page():
-    return rx.vstack(
-        reflex_xy.chart(
-            xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=daily))
-        )
-    )
-
-
-# Session-backed tier — same chart, now driven by state
-class Dashboard(rx.State):
-    channel: str = "web"
-
-    @reflex_xy.figure
-    def revenue(self) -> xyg.Chart:
-        rows = daily[daily.channel == self.channel]
-        return xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=rows))
-
-
-def page():
-    return rx.vstack(reflex_xy.chart(Dashboard.revenue))
-~~~
-
-See the [Reflex integration guide](/docs/xy/integrations/reflex/) for component
-props, event payloads, and the API boundary.
-
-## Outside an application
-
-Not every chart belongs in an app. The same definition runs in a notebook and
-exports to files.
-
-~~~python
-chart = xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=daily))
-
-chart.show()                 # notebook widget — live Python, dies with the kernel
-chart.to_html("out.html")    # one portable interactive file, no server
-chart.to_png("out.png")      # static raster
-chart.to_svg("out.svg")      # static vector
-~~~
-
-| Output | Best for | Live Python |
+| Workflow | Compute host | Display and output |
 | --- | --- | --- |
-| Notebook widget | Exploration, callbacks, streaming, exact refinement | yes |
-| Standalone HTML | A portable interactive file that works without a server | no |
-| Static images | Reports, tests, thumbnails, batch output | no |
+| Python analysis | Python with the native Rust core | Notebook widget, standalone HTML, supported static export |
+| GraphForge editor or Node application | Native Node with the same Rust C ABI | Local browser client/webview, HTML, supported static export |
+| Results already in a browser | Bounded Rust/WASM Worker | Shared browser painter and supported Scene operations |
+| Published snapshot | Compute in a supported authoring host before publication | Self-contained HTML or PNG/SVG/PDF within renderer coverage |
 
-For formats beyond PNG and SVG — JPEG, WebP, PDF, and batch `write_images` —
-and for the native-versus-Chromium engine choice, see
-[Display and Export](/docs/xy/guides/display-and-export/).
+## Use with GraphForge
 
-## Know what each choice costs you
+GraphForge Core runs queries and algorithms natively. Send its canonical Arrow
+results, source generation, and explicit visualization intent to XYG. For the
+GraphForge editor, compose in the Node extension host and paint in the
+webview; this keeps large graph compute near the data and avoids requiring
+Python. Browser WASM is available for browser contexts within its current
+bounds, including the 1,024-composed-node rendered GraphForge Scene limit.
 
-| Choice | The catch |
-| --- | --- |
-| Fixed Reflex chart | No Python round-trip: no drill-down, no exact selection resolution. |
-| `register()` | Not rebuildable after a worker restart or on another node. Dev only. |
-| Notebook widget | Dies with the kernel; not shareable as-is. |
-| Standalone HTML | A snapshot — later `append()` calls never reach it. It needs inline script and style plus a `blob:` worker under its emitted CSP, and anyone who downloads it can read the embedded data. |
-| Native PNG | Cannot apply author `custom_css`. Use renderable chart and mark styles, or `Engine.chromium`. |
-| Chromium PNG | Requires a browser on the machine that renders. |
-| SVG | Density and heatmap layers embed raster data, so output is not fully vector. Requesting SVG from the browser engine raises `ValueError`. |
-| Any streaming tier | `append()` covers scatter and line traces only, and facets support neither append nor pick. |
+See [Use with GraphForge](/docs/xy/integrations/graphforge/) for both native
+webview and direct-WASM workflows. XYG does not execute GraphForge Core in a
+browser or on the Hub.
 
-Full list: [Limitations and Alpha Status](/docs/xy/api-reference/limitations-and-alpha-status/).
+## Live compute versus snapshots
 
-## Where to go next
+A notebook widget can call a live Python kernel for exact selection and
+supported refinement. A Node application can retain its native figure and
+route browser events back to it. Direct browser WASM performs only the
+operations admitted by its bounded API.
 
-- Applications → [Reflex integration](/docs/xy/integrations/reflex/)
-- Exploration → [Notebooks](/docs/xy/integrations/notebooks/)
-- Files and static output → [Display and Export](/docs/xy/guides/display-and-export/)
-- Hosting, CSP, offline → [Serving, CSP, and offline use](/docs/xy/guides/serving-csp-and-offline-use/)
+Standalone HTML remains interactive locally but is a snapshot: it cannot call
+Python handlers or receive subsequent `chart.append(...)` calls. Static images
+have no live interaction. CSS, fonts, mark styling, and export coverage also
+differ by renderer; use the [capability matrix](/docs/xy/styling/capabilities/)
+when you need the same design in several outputs.
+
+## Deployment setup
+
+Python wheels carry the native library and a prebuilt browser client. Source
+checkouts need both built before export or notebook display. Node uses its
+native platform package or an explicit development library path; `toHtml()`
+uses the host-neutral client, not Python's static directory.
+
+Direct WASM deployments serve the client, module Worker, and WASM from the
+same build at explicit local asset URLs. Respect the host's CSP and Worker
+restrictions, especially in a VS Code webview. See
+[Installation](/docs/xy/overview/installation/),
+[Serving, CSP, and offline use](/docs/xy/guides/serving-csp-and-offline-use/), and
+[Deployment recipes](/docs/xy/guides/deployment-recipes/).
+
+Native and WASM hosts share engine behavior on supported contracts, while
+feature coverage and resource limits remain explicit. Read
+[Rust engine and host parity](/docs/xy/core-concepts/rust-engine-and-host-parity/)
+before choosing a browser-only deployment for a native workload.

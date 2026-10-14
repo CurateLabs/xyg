@@ -6,6 +6,12 @@ Thin Node.js bindings for the shared `xyg_core` C ABI cdylib. Uses
 (`spec/design/host-parity.md`). The in-tree directory stays `packages/xy-node`;
 never publish `@xy/node`.
 
+XYG was forked for GraphForge's billion-scale graph visualization needs, with
+Python, Node-native, and browser WASM as its runtime surfaces. This package is
+the native Node host for graph visualization and the broader charting engine.
+It remains a source-checkout package pending npm publication; direct browser
+WASM is a separate bounded Worker API in `@curatelabs/xyg`.
+
 **Use from Node servers and VS Code extensions.** The package is
 runtime-dependency-light (koffi + the shared cdylib), exports a stable
 `createEngine()` / chart-builder API, and never touches `window` /

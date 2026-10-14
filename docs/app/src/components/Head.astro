@@ -1,0 +1,17 @@
+---
+const publicURL = import.meta.env.XY_DOCS_PUBLIC_URL?.trim().replace(/\/+$/, '');
+const head = Astro.locals.starlightRoute.head.filter(({ tag, attrs }) =>
+  publicURL || !(tag === 'link' && ['canonical', 'sitemap'].includes(String(attrs?.rel))) &&
+  !(tag === 'meta' && ['og:url', 'og:image', 'twitter:image'].includes(String(attrs?.property ?? attrs?.name)))
+);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const pagePath = Astro.url.pathname.slice(base.length).replace(/\/$/, '') || '/index';
+---
+{head.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+{!publicURL && <meta name="robots" content="noindex, nofollow" />}
+{publicURL && <meta property="og:image" content={`${publicURL}/xyg-social-card.png`} />}
+{publicURL && <meta name="twitter:image" content={`${publicURL}/xyg-social-card.png`} />}
+<link rel="alternate" type="text/markdown" href={`${base}${pagePath}.md`} title="Markdown source" />
+<link rel="alternate" type="text/plain" href={`${base}/llms.txt`} title="Agent documentation index" />
+<script is:inline src={`${base}/xy/standalone.js`} defer></script>
+<script is:inline src={`${base}/xy/chart-previews.js`} defer></script>

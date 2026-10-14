@@ -114,7 +114,7 @@ experimental and can change before XYG 1.0.
    assuming it is cosmetic.
 3. Compare the output contract that matters to the application: interactive
    HTML, notebook display, PNG, or SVG.
-4. For new or performance-sensitive code, move incrementally to `xy` chart
+4. For new or performance-sensitive code, move incrementally to `xyg` chart
    containers and marks. The declarative API exposes data binding,
    interactions, and CSS/Tailwind hooks without pyplot's implicit state.
 
