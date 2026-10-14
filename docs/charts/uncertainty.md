@@ -17,23 +17,15 @@ the region between lower and upper bounds and layers naturally with a line.
 
 ## Live Demo
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 x = np.arange(12, dtype=float)
 estimate = 30 + 2.2 * x + 3 * np.sin(x)
 error = 1.5 + 0.15 * x
-
 chart = xyg.chart(
-    xyg.error_band(
-        x,
-        estimate - error,
-        estimate + error,
-        color="#6e56cf",
-        name="95% interval",
-    ),
+    xyg.error_band(x, estimate - error, estimate + error, color="#6e56cf", name="95% interval"),
     xyg.line(x, estimate, color="#6e56cf", width=2, name="Estimate"),
     xyg.errorbar(x[::2], estimate[::2], yerr=error[::2], color="#1b212a"),
     xyg.legend(),
@@ -41,7 +33,7 @@ chart = xyg.chart(
 
 
 def uncertainty_chart_demo():
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 ## Horizontal and Asymmetric Error Bars
@@ -49,9 +41,8 @@ def uncertainty_chart_demo():
 Pass a `(lower, upper)` pair to `xerr` or `yerr` for asymmetric uncertainty on
 either axis, and use `cap_size` to draw end caps:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_dose = np.random.default_rng(7)
@@ -60,7 +51,6 @@ response = np.array([12.0, 21.0, 34.0, 46.0, 55.0])
 dose_lower = dose * 0.18
 dose_upper = dose * 0.42
 response_err = 2.0 + rng_dose.uniform(0.0, 2.5, dose.size)
-
 asymmetric_errorbar_chart = xyg.chart(
     xyg.errorbar(
         dose,
@@ -79,7 +69,7 @@ asymmetric_errorbar_chart = xyg.chart(
 
 
 def asymmetric_errorbar_demo():
-    return reflex_xy.chart(asymmetric_errorbar_chart, height="360px")
+    return asymmetric_errorbar_chart
 ~~~
 
 ## Forecast Fan with Stacked Bands
@@ -87,20 +77,16 @@ def asymmetric_errorbar_demo():
 Layer two `error_band` marks at different opacities to draw nested forecast
 intervals that widen with distance from the last observation:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_fan = np.random.default_rng(11)
 history_x = np.arange(24, dtype=float)
-history_y = (
-    100 + history_x * 1.4 + rng_fan.normal(0.0, 2.0, history_x.size).cumsum() * 0.4
-)
+history_y = 100 + history_x * 1.4 + rng_fan.normal(0.0, 2.0, history_x.size).cumsum() * 0.4
 future_x = np.arange(23, 36, dtype=float)
 forecast = history_y[-1] + 1.4 * (future_x - future_x[0])
 spread = 1.0 + 1.9 * np.sqrt(future_x - future_x[0])
-
 forecast_fan_chart = xyg.chart(
     xyg.error_band(
         future_x,
@@ -115,7 +101,7 @@ forecast_fan_chart = xyg.chart(
         forecast - spread,
         forecast + spread,
         color="#6e56cf",
-        opacity=0.30,
+        opacity=0.3,
         name="50% interval",
     ),
     xyg.line(history_x, history_y, color="#1b212a", width=2, name="History"),
@@ -127,7 +113,7 @@ forecast_fan_chart = xyg.chart(
 
 
 def forecast_fan_demo():
-    return reflex_xy.chart(forecast_fan_chart, height="360px")
+    return forecast_fan_chart
 ~~~
 
 ## Chart Types

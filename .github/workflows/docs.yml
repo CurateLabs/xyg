@@ -2,7 +2,7 @@ name: Docs
 
 on:
   push:
-    branches: ["main", "claude/**"]
+    branches: ["main"]
     paths:
       - "docs/**"
       - "js/**"
@@ -10,8 +10,11 @@ on:
       - "crates/**"
       - "Cargo.lock"
       - "Cargo.toml"
+      - "rust-toolchain.toml"
       - "hatch_build.py"
       - "pyproject.toml"
+      - "uv.lock"
+      - "package-lock.json"
       - "scripts/verify_docs_quickstart.py"
       - ".pre-commit-config.yaml"
       - ".github/workflows/docs.yml"
@@ -23,8 +26,11 @@ on:
       - "crates/**"
       - "Cargo.lock"
       - "Cargo.toml"
+      - "rust-toolchain.toml"
       - "hatch_build.py"
       - "pyproject.toml"
+      - "uv.lock"
+      - "package-lock.json"
       - "scripts/verify_docs_quickstart.py"
       - ".pre-commit-config.yaml"
       - ".github/workflows/docs.yml"
@@ -39,201 +45,65 @@ concurrency:
 
 jobs:
   quality:
-    name: Docs tests and lint
+    name: Starlight docs build and verification
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history and tags: the distribution version is derived
-          # from the latest `xyg-v*` tag, and a shallow clone has none.
+          # The editable xyg package derives its version from xyg-v* tags.
           fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           python-version: "3.12"
           enable-cache: true
-          cache-dependency-glob: docs/app/uv.lock
-      # `uv sync` builds the editable xyg dependency, whose hatch hook builds the
-      # render client from source (generated, not committed; §33). The docs
-      # tests build real reflex_xy components, which link that client out of the
-      # installed xyg package. Pin Node so the build uses a vite-compatible one.
+          cache-dependency-glob: uv.lock
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - name: Install docs dependencies
-        # Pinned Reflex source hooks regenerate stubs in a shared uv checkout.
-        env:
-          UV_CONCURRENT_BUILDS: "1"
-        run: uv sync --project docs/app --frozen --group dev
-      - name: Run docs tests
-        run: uv run --project docs/app --no-sync pytest docs/app/tests -v
-      - name: Run public docs quickstart against the checkout
-        run: uv run --project docs/app --no-sync python scripts/verify_docs_quickstart.py
-      - name: Run docs quality hooks
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            docs/app/package-lock.json
+      - name: Build the native core and shared browser client for documentation demos
         run: |
-          uv run --project docs/app --no-sync pre-commit run ruff-format --all-files
-          uv run --project docs/app --no-sync pre-commit run ruff-check --all-files
-          uv run --project docs/app --no-sync pre-commit run docs-app-codespell --all-files
-
-  production:
-    name: Production docs (Python ${{ matrix.python-version }})
-    needs: [quality]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Full history and tags: the distribution version is derived
-          # from the latest `xyg-v*` tag, and a shallow clone has none.
-          fetch-depth: 0
-      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-          cache-dependency-glob: docs/app/uv.lock
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22"
-      - name: Install docs dependencies
-        # Pinned Reflex source hooks regenerate stubs in a shared uv checkout.
-        env:
-          UV_CONCURRENT_BUILDS: "1"
-        run: uv sync --project docs/app --frozen --group dev
-      - name: Initialize docs frontend
-        working-directory: docs/app
-        env:
-          REFLEX_TELEMETRY_ENABLED: "false"
-        run: uv run --no-sync reflex init
+          cargo build --release
+          npm ci
+          node js/build.mjs
+      - name: Install the checkout and Starlight dependencies
+        run: |
+          uv sync --frozen --group dev
+          npm ci --prefix docs/app
+      - name: Check documentation sources
+        run: npm run check --prefix docs/app
+      - name: Build the static documentation
+        run: npm run build --prefix docs/app
+      - name: Verify routes, links, metadata, Markdown assets, and demos
+        run: npm run test --prefix docs/app
+      - name: Run public docs quickstart against the checkout
+        run: uv run --no-sync python scripts/verify_docs_quickstart.py
       - name: Cache Playwright Chromium
-        if: matrix.python-version == '3.12'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-docs-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('docs/app/uv.lock') }}
-      - name: Install Chromium for the production-DOM accessibility check
-        if: matrix.python-version == '3.12'
-        working-directory: docs/app
+          key: playwright-docs-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Chromium for production documentation checks
         timeout-minutes: 10
-        run: uv run --no-sync playwright install chromium
-      - name: Run production docs and check the public route
-        working-directory: docs/app
-        shell: bash
-        env:
-          DOCS_PYTHON_VERSION: ${{ matrix.python-version }}
-          REFLEX_TELEMETRY_ENABLED: "false"
+        run: npx playwright install chromium
+      - name: Verify the built documentation in Chromium
+        run: node docs/app/scripts/browser-smoke.mjs
+      - name: Run documentation quality hooks
         run: |
-          set -euo pipefail
-          server_log="$RUNNER_TEMP/xy-docs.log"
-          response="$RUNNER_TEMP/xy-docs-index.html"
-          nested_response="$RUNNER_TEMP/xy-docs-data.html"
-          stage="starting the production server"
-
-          # Every failure below is otherwise invisible in CI ("exit code 1" and
-          # nothing else), so dump the server log and the fetched responses on
-          # any non-zero exit — a local run has these on the terminal, CI does not.
-          dump_file() {
-            local label="$1" path="$2" limit="${3:-400}"
-            echo "::group::${label} (${path})"
-            if [[ -s "$path" ]]; then
-              tail -n "$limit" "$path" | sed 's/^::/:: /'
-            elif [[ -e "$path" ]]; then
-              echo "(file is empty)"
-            else
-              echo "(file was never created)"
-            fi
-            echo "::endgroup::"
-          }
-
-          dump_diagnostics() {
-            echo "XYG docs production check failed while ${stage}"
-            dump_file "reflex server log" "$server_log" 2000
-            dump_file "response: /docs/xy/" "$response"
-            dump_file "response: /docs/xy/core-concepts/data/" "$nested_response"
-            echo "::group::listening sockets"
-            ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null || echo "(no socket tool)"
-            echo "::endgroup::"
-          }
-
-          setsid uv run --no-sync reflex run --env prod --loglevel debug >"$server_log" 2>&1 &
-          server_pid=$!
-          cleanup() {
-            local status=$?
-            trap - EXIT INT TERM
-            if (( status != 0 )); then
-              dump_diagnostics || true
-            fi
-            kill -TERM -- "-$server_pid" 2>/dev/null || true
-            for _ in {1..10}; do
-              kill -0 "$server_pid" 2>/dev/null || break
-              sleep 1
-            done
-            kill -KILL -- "-$server_pid" 2>/dev/null || true
-            wait "$server_pid" 2>/dev/null || true
-            exit "$status"
-          }
-          trap cleanup EXIT
-          trap 'exit 130' INT TERM
-
-          stage="waiting for http://127.0.0.1:3000/docs/xy/ to serve"
-          deadline=$((SECONDS + 300))
-          while (( SECONDS < deadline )); do
-            if ! kill -0 "$server_pid" 2>/dev/null; then
-              stage="waiting for the server (it exited early)"
-              exit 1
-            fi
-            if curl --fail --location --silent \
-              --connect-timeout 2 --max-time 10 \
-              http://127.0.0.1:3000/docs/xy/ --output "$response"; then
-              test -s "$response"
-              break
-            fi
-            sleep 2
-          done
-
-          if [[ ! -s "$response" ]]; then
-            echo "XYG docs did not become ready within 300 seconds"
-            exit 1
-          fi
-
-          stage="fetching /docs/xy/core-concepts/data/"
-          curl --fail --location --silent \
-            --connect-timeout 2 --max-time 10 \
-            http://127.0.0.1:3000/docs/xy/core-concepts/data/ \
-            --output "$nested_response"
-
-          stage="checking the title of /docs/xy/core-concepts/data/"
-          grep -Fq '<title>Data and Columns · XYG</title>' "$nested_response"
-
-          if [[ "$DOCS_PYTHON_VERSION" == "3.12" ]]; then
-            stage="running the production-DOM accessibility checks"
-            XY_DOCS_BASE_URL=http://127.0.0.1:3000/docs/xy/ \
-              uv run --no-sync pytest \
-                tests/test_code_copy.py::test_production_copy_buttons_have_accessible_names \
-                tests/test_code_copy.py::test_production_copy_button_stays_icon_only \
-                -v
-          fi
-
-          stage="scanning the server log for runtime errors"
-          if grep -Eiq "traceback|uncaught|unhandled|fatal error" "$server_log"; then
-            echo "XYG docs emitted a production runtime error"
-            exit 1
-          fi
-      - name: Validate Markdown links against the generated sitemap
-        working-directory: docs/app
-        run: |
-          uv run --no-sync pytest --runxfail \
-            tests/test_docs_site.py::test_xy_markdown_docs_links_match_exported_sitemap \
-            -v
-      - name: Validate generated sitemap
-        working-directory: docs/app
-        run: uv run --no-sync python scripts/check_sitemap.py
-      - name: Validate generated Markdown assets
-        working-directory: docs/app
-        run: uv run --no-sync python scripts/check_markdown_assets.py
-      - name: Validate generated HTML routes and previews
-        working-directory: docs/app
-        run: uv run --no-sync python scripts/check_html_routes.py
+          uv run --with pre-commit pre-commit run ruff-format --all-files
+          uv run --with pre-commit pre-commit run ruff-check --all-files
+          uv run --with pre-commit pre-commit run docs-app-codespell --all-files
+      - name: Retain the verified static site
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: xyg-docs-starlight
+          path: docs/app/dist
+          if-no-files-found: error
+          retention-days: 14

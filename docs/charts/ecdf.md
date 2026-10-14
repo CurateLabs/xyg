@@ -9,7 +9,7 @@ components:
 
 An **ECDF** plot (also called an ECDF graph) shows the empirical cumulative
 distribution function of a sample: for each value it shows the fraction of observations at or below it,
-rising from 0 to 1. With `xy` you build an empirical cdf in Python that reads
+rising from 0 to 1. With `xyg` you build an empirical cdf in Python that reads
 percentiles straight off the curve and stays interactive — pan, zoom, and hover
 across thousands of points.
 
@@ -20,21 +20,14 @@ or [options](#ecdf-options).
 
 Pass a 1-D array of samples to `ecdf`. This is the minimal Python ECDF:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(11)
-response_time = rng.lognormal(mean=4.2, sigma=0.38, size=2_000)
-
+response_time = rng.lognormal(mean=4.2, sigma=0.38, size=2000)
 ecdf_detail_chart = xyg.ecdf_chart(
-    xyg.ecdf(
-        response_time,
-        name="Requests",
-        color="#6e56cf",
-        width=2.5,
-    ),
+    xyg.ecdf(response_time, name="Requests", color="#6e56cf", width=2.5),
     xyg.x_axis(label="response time (ms)"),
     xyg.y_axis(label="cumulative fraction", domain=(0, 1)),
     title="Response-time ECDF",
@@ -42,7 +35,7 @@ ecdf_detail_chart = xyg.ecdf_chart(
 
 
 def ecdf_demo():
-    return reflex_xy.chart(ecdf_detail_chart, height="320px")
+    return ecdf_detail_chart
 ~~~
 
 ## Compare Two Distributions
@@ -51,24 +44,16 @@ Overlay one `ecdf` mark per sample with `name=` labels, a `dash` style to tell
 the curves apart, and a `legend()` — a horizontal gap between the curves reads
 directly as a shift in that percentile:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(7)
-control_latency = rng.gamma(shape=3.0, scale=40.0, size=1_500)
-treatment_latency = rng.gamma(shape=3.0, scale=32.0, size=1_500)
-
+control_latency = rng.gamma(shape=3.0, scale=40.0, size=1500)
+treatment_latency = rng.gamma(shape=3.0, scale=32.0, size=1500)
 ecdf_compare_chart = xyg.ecdf_chart(
     xyg.ecdf(control_latency, name="Control", color="#6e56cf", width=2.5),
-    xyg.ecdf(
-        treatment_latency,
-        name="Treatment",
-        color="#30a46c",
-        width=2.5,
-        dash="dashed",
-    ),
+    xyg.ecdf(treatment_latency, name="Treatment", color="#30a46c", width=2.5, dash="dashed"),
     xyg.x_axis(label="latency (ms)"),
     xyg.y_axis(label="cumulative fraction", domain=(0, 1)),
     xyg.legend(),
@@ -77,7 +62,7 @@ ecdf_compare_chart = xyg.ecdf_chart(
 
 
 def ecdf_compare_demo():
-    return reflex_xy.chart(ecdf_compare_chart, height="320px")
+    return ecdf_compare_chart
 ~~~
 
 ## Large Samples with Bounded Bins
@@ -86,28 +71,19 @@ For very large inputs, set `bins` to draw a bounded approximation instead of an
 exact step per observation — here 500,000 points collapse to 512 steps while
 `width` and `opacity` style the curve and the y-axis is pinned to `(0, 1)`:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 noise_rng = np.random.default_rng(42)
 sensor_noise = np.concatenate(
     [
-        noise_rng.normal(loc=-1.2, scale=0.6, size=250_000),
-        noise_rng.normal(loc=1.8, scale=0.9, size=250_000),
+        noise_rng.normal(loc=-1.2, scale=0.6, size=250000),
+        noise_rng.normal(loc=1.8, scale=0.9, size=250000),
     ]
 )
-
 ecdf_binned_chart = xyg.ecdf_chart(
-    xyg.ecdf(
-        sensor_noise,
-        bins=512,
-        name="Sensor noise",
-        color="#e5484d",
-        width=3.0,
-        opacity=0.85,
-    ),
+    xyg.ecdf(sensor_noise, bins=512, name="Sensor noise", color="#e5484d", width=3.0, opacity=0.85),
     xyg.x_axis(label="reading"),
     xyg.y_axis(label="cumulative fraction", domain=(0, 1)),
     title="Bimodal sample, 500k points",
@@ -115,7 +91,7 @@ ecdf_binned_chart = xyg.ecdf_chart(
 
 
 def ecdf_binned_demo():
-    return reflex_xy.chart(ecdf_binned_chart, height="320px")
+    return ecdf_binned_chart
 ~~~
 
 ## Reading Percentiles

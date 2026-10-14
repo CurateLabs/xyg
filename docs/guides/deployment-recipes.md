@@ -1,6 +1,6 @@
 ---
 title: Deployment Recipes
-description: Ship standalone HTML and images, prepare offline wheels, and understand the CSP and Reflex boundaries.
+description: Ship standalone HTML and images, prepare offline wheels, and understand the CSP and GraphForge host boundaries.
 ---
 
 # Deployment Recipes
@@ -10,7 +10,7 @@ standalone HTML file keeps browser-local interaction. PNG and SVG are static
 artifacts. Python callbacks, future appends, and state-derived data require a
 live host integration.
 
-The recipes below use the released `xy` core package only unless a section is
+The recipes below use the released `xyg` core package only unless a section is
 explicitly marked otherwise.
 
 ## Publish one interactive HTML file
@@ -156,18 +156,19 @@ assume the policies will merge into a working configuration. Follow
 for the current directives and security tradeoffs, and test the final response
 headers rather than only opening the file locally.
 
-## Reflex live applications use the bundled integration
+## GraphForge applications use the native or bounded WASM host
 
-The [Reflex integration path](/docs/xy/integrations/reflex/) describes fixed,
-live-token, and state-backed application tiers. Install the bundled integration
-with `uv add "xyg[reflex]"` or `python -m pip install "xyg[reflex]"`. It remains
-experimental; the import namespace is `reflex_xy`.
+Compose canonical results with the shared Rust engine in Python or Node and
+serve local client assets. An editor can integrate XYG through a native Node
+extension host and browser webview; adoption in a specific GraphForge editor
+is a separate integration task. Direct browser WASM is a bounded path,
+with no GraphForge Core query execution in the browser. Follow
+[Use with GraphForge](/docs/xy/integrations/graphforge/) for generation checks,
+payload transfer, pick identity, and webview CSP.
 
-For production automation, commit the resolved uv lockfile or pin compatible
-`xyg[reflex]` and Reflex versions in your requirements, test their documented
-compatibility, and follow the live deployment boundary in the integration
-guide. XYG's standalone HTML, PNG, and SVG outputs remain available when a live
-Reflex application is not required.
+Pin compatible GraphForge Core and XYG versions, keep source results attached
+to their exact generation, and test the packaged deployment. HTML and static
+images are snapshots with the coverage described by the export guide.
 
 For the capability-level decision, see
 [Choosing a runtime and deployment mode](/docs/xy/advanced/runtime-and-deployment/).

@@ -9,7 +9,7 @@ components:
 
 A **histogram** (also called a histogram chart, histogram plot, or histogram
 graph) bins continuous values into intervals and draws a bar for the count in
-each bin, showing the shape of a distribution. With `xy` you build a
+each bin, showing the shape of a distribution. With `xyg` you build a
 python histogram that stays interactive at scale: bin hundreds of thousands of
 values, then pan, zoom, and hover without lag.
 
@@ -22,14 +22,12 @@ Jump to [creating a histogram](#create-a-histogram),
 Pass a 1-D array of samples to `histogram` and choose the number of `bins`.
 This is the minimal Python histogram:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(3)
-latency = rng.gamma(shape=2.0, scale=40.0, size=100_000)
-
+latency = rng.gamma(shape=2.0, scale=40.0, size=100000)
 chart = xyg.histogram_chart(
     xyg.histogram(latency, bins=120, color="#6e56cf"),
     xyg.x_axis(label="latency (ms)"),
@@ -39,7 +37,7 @@ chart = xyg.histogram_chart(
 
 
 def latency_histogram():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 ## Density and Cumulative Histograms
@@ -55,14 +53,12 @@ below any value — a close cousin of the [ECDF](/docs/xy/charts/ecdf/).
 Set `density=True` to normalize the bars, clamp binning to a `(min, max)`
 window with `range`, and soften the bars with `corner_radius` and `opacity`.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 density_rng = np.random.default_rng(9)
-response_times = density_rng.lognormal(mean=3.4, sigma=0.45, size=60_000)
-
+response_times = density_rng.lognormal(mean=3.4, sigma=0.45, size=60000)
 density_hist_chart = xyg.histogram_chart(
     xyg.histogram(
         response_times,
@@ -80,7 +76,7 @@ density_hist_chart = xyg.histogram_chart(
 
 
 def density_histogram_demo():
-    return reflex_xy.chart(density_hist_chart, height="320px")
+    return density_hist_chart
 ~~~
 
 ### Overlay Two Distributions
@@ -88,15 +84,13 @@ def density_histogram_demo():
 Stack two `histogram` marks in one chart with shared `bins` and `range`, name
 each with `name=`, lower `opacity` so both stay readable, and add `xyg.legend()`.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 overlay_rng = np.random.default_rng(17)
-baseline_scores = overlay_rng.normal(64, 11, 40_000)
-variant_scores = overlay_rng.normal(71, 8, 40_000)
-
+baseline_scores = overlay_rng.normal(64, 11, 40000)
+variant_scores = overlay_rng.normal(71, 8, 40000)
 overlay_hist_chart = xyg.histogram_chart(
     xyg.histogram(
         baseline_scores,
@@ -107,12 +101,7 @@ overlay_hist_chart = xyg.histogram_chart(
         opacity=0.55,
     ),
     xyg.histogram(
-        variant_scores,
-        bins=90,
-        range=(20.0, 110.0),
-        name="Variant",
-        color="#e5484d",
-        opacity=0.55,
+        variant_scores, bins=90, range=(20.0, 110.0), name="Variant", color="#e5484d", opacity=0.55
     ),
     xyg.x_axis(label="score"),
     xyg.y_axis(label="samples"),
@@ -122,12 +111,12 @@ overlay_hist_chart = xyg.histogram_chart(
 
 
 def overlay_histogram_demo():
-    return reflex_xy.chart(overlay_hist_chart, height="320px")
+    return overlay_hist_chart
 ~~~
 
 ## Large Histograms
 
-`xy` computes bins over the raw f64 samples and draws only the bin bars, so the
+`xyg` computes bins over the raw f64 samples and draws only the bin bars, so the
 cost scales with the bin count, not the sample count. Binning hundreds of
 thousands of values stays fast, and the chart pans and zooms without
 recomputing the whole distribution.
@@ -174,5 +163,5 @@ different sample sizes become comparable.
 
 ### Can a histogram handle large datasets?
 
-Yes. `xy` bins the raw samples and draws only the bin bars, so hundreds of
+Yes. `xyg` bins the raw samples and draws only the bin bars, so hundreds of
 thousands of values stay interactive with smooth pan and zoom.

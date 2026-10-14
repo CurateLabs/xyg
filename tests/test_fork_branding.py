@@ -8,13 +8,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_REPOSITORY = "reflex-dev" + "/xy"
 UPSTREAM_DOCS = "reflex.dev/docs" + "/xy"
+# Fork-history links identify upstream lineage; installation and support still
+# route to the CurateLabs-owned product. Keep the file inventory exact.
 INTENTIONAL_PROVENANCE = {
     "CHANGELOG.md",
+    "README.md",
+    "docs/index.md",
     "benchmarks/README.md",
     "benchmarks/launch_baselines/xy-0.1.0/macos-arm64-m5-pro/environment.json",
     "benchmarks/launch_baselines/xy-main-2026-07-26/macos-arm64-m5-pro/environment.json",
     "spec/README.md",
     "spec/design-dossier.md",
+    "spec/design/graph-fork-requirements.md",
     "spec/design/host-neutral-architecture.md",
     "spec/design/xyg-naming.md",
     "spec/process/production-readiness.md",

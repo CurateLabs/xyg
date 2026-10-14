@@ -8,7 +8,7 @@ components:
 # Contour Plots in Python
 
 A **contour plot** (also called a contour graph) in python draws iso-value lines across a 2D field so ridges,
-basins, and gradients in the surface become visible. With `xy` you build an
+basins, and gradients in the surface become visible. With `xyg` you build an
 interactive contour plot from a NumPy grid: choose the number of levels, fill
 between them or keep clean lines, and pan, zoom, and hover work by default.
 
@@ -22,28 +22,18 @@ Pass a 2D array of values to `contour`, with optional `x` and `y` coordinates.
 Set `levels` to control how many iso-value bands are drawn and `filled=True` to
 shade between them:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 contour_x = np.linspace(-3, 3, 100)
 contour_y = np.linspace(-2.5, 2.5, 90)
 contour_xx, contour_yy = np.meshgrid(contour_x, contour_y)
-contour_z = (
-    np.exp(-((contour_xx - 0.8) ** 2 + contour_yy**2))
-    + 0.7 * np.exp(-((contour_xx + 1.1) ** 2 + (contour_yy - 0.5) ** 2))
+contour_z = np.exp(-((contour_xx - 0.8) ** 2 + contour_yy**2)) + 0.7 * np.exp(
+    -((contour_xx + 1.1) ** 2 + (contour_yy - 0.5) ** 2)
 )
-
 contour_detail_chart = xyg.contour_chart(
-    xyg.contour(
-        contour_z,
-        x=contour_x,
-        y=contour_y,
-        levels=14,
-        filled=True,
-        colormap="viridis",
-    ),
+    xyg.contour(contour_z, x=contour_x, y=contour_y, levels=14, filled=True, colormap="viridis"),
     xyg.x_axis(label="x"),
     xyg.y_axis(label="y"),
     title="Density contours",
@@ -51,7 +41,7 @@ contour_detail_chart = xyg.contour_chart(
 
 
 def contour_demo():
-    return reflex_xy.chart(contour_detail_chart, height="340px")
+    return contour_detail_chart
 ~~~
 
 ## Line Contours at Explicit Levels
@@ -60,18 +50,14 @@ Keep `filled=False` for clean iso-lines and pass `levels` an explicit list to
 place contours at exact values — useful when specific thresholds matter — with
 `width` thickening the strokes:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 ridge_x = np.linspace(-3, 3, 110)
 ridge_y = np.linspace(-2.5, 2.5, 90)
 ridge_xx, ridge_yy = np.meshgrid(ridge_x, ridge_y)
-ridge_z = np.exp(-(ridge_xx**2 + ridge_yy**2) / 2.4) * (
-    1.0 + 0.35 * np.sin(3.0 * ridge_xx)
-)
-
+ridge_z = np.exp(-(ridge_xx**2 + ridge_yy**2) / 2.4) * (1.0 + 0.35 * np.sin(3.0 * ridge_xx))
 contour_lines_chart = xyg.contour_chart(
     xyg.contour(
         ridge_z,
@@ -89,7 +75,7 @@ contour_lines_chart = xyg.contour_chart(
 
 
 def contour_lines_demo():
-    return reflex_xy.chart(contour_lines_chart, height="340px")
+    return contour_lines_chart
 ~~~
 
 ## Signed Fields with Dashed Negatives
@@ -98,9 +84,8 @@ For a field that crosses zero, set `dash_negative=True` so negative contours
 are dashed, use more `levels` to resolve the structure, and add an
 `xyg.colorbar()` to tie levels back to values:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 dipole_x = np.linspace(-3, 3, 120)
@@ -109,7 +94,6 @@ dipole_xx, dipole_yy = np.meshgrid(dipole_x, dipole_y)
 dipole_z = np.exp(-((dipole_xx - 1) ** 2 + dipole_yy**2)) - np.exp(
     -((dipole_xx + 1) ** 2 + dipole_yy**2)
 )
-
 contour_signed_chart = xyg.contour_chart(
     xyg.contour(
         dipole_z,
@@ -129,7 +113,7 @@ contour_signed_chart = xyg.contour_chart(
 
 
 def contour_signed_demo():
-    return reflex_xy.chart(contour_signed_chart, height="340px")
+    return contour_signed_chart
 ~~~
 
 ## Levels, Filled, and Line Contours

@@ -47,22 +47,19 @@ instead of resolving to nothing.
 Every interactive chart gets the modebar for free — hover over the top-right
 corner of this chart to see the pan, zoom, reset, and export controls:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_signal = np.random.default_rng(11)
 signal_walk = np.cumsum(rng_signal.normal(0.0, 1.0, 60)).round(2)
-
 default_toolbar_chart = xyg.line_chart(
-    xyg.line(list(range(60)), signal_walk, name="signal"),
-    title="Default modebar",
+    xyg.line(list(range(60)), signal_walk, name="signal"), title="Default modebar"
 )
 
 
 def default_toolbar_demo():
-    return reflex_xy.chart(default_toolbar_chart, height="320px")
+    return default_toolbar_chart
 ~~~
 
 Use `modebar()` to hide or style the toolbar:
@@ -120,7 +117,7 @@ chart = xyg.scatter_chart(
 ~~~
 
 The toolbar's default surface follows your page's light or dark mode
-automatically: a `.dark` class on the chart root or any ancestor (as Reflex,
+automatically: a `.dark` class on the chart root or any ancestor (as application theme systems,
 Radix, and Tailwind set on the root `<html>`) switches it to a dark palette,
 while `--chart-modebar-*` tokens you supply still override it. See
 [Themes and tokens](/docs/xy/styling/themes-and-tokens/#automatic-dark-mode-for-the-toolbar).
@@ -135,21 +132,14 @@ required.
 The left chart restyles the toolbar surface and every button, while the right
 chart removes the toolbar entirely with `modebar(show=False)`:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex as rx
-import reflex_xy
 import xyg
 
 rng_pair = np.random.default_rng(5)
 toolbar_x = list(range(30))
-
 styled_toolbar = xyg.line_chart(
-    xyg.line(
-        toolbar_x,
-        np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2),
-        name="styled",
-    ),
+    xyg.line(toolbar_x, np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2), name="styled"),
     xyg.modebar(
         style={"background": "#f8fafc", "border_radius": 8},
         button_class_name="rounded-md",
@@ -157,25 +147,13 @@ styled_toolbar = xyg.line_chart(
     ),
     title="Styled toolbar",
 )
-
 hidden_toolbar = xyg.line_chart(
     xyg.line(
-        toolbar_x,
-        np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2),
-        name="hidden",
-        color="#b45309",
+        toolbar_x, np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2), name="hidden", color="#b45309"
     ),
     xyg.modebar(show=False),
     title="modebar(show=False)",
 )
-
-
-def toolbar_visibility_demo():
-    return rx.el.div(
-        reflex_xy.chart(styled_toolbar, height="320px"),
-        reflex_xy.chart(hidden_toolbar, height="320px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 ## Enable Interaction Behavior
@@ -261,16 +239,13 @@ The left chart limits box zoom to the x axis with a 16x magnification cap and
 double-click reset, while the right chart disables all local navigation with
 `navigation=False` — its toolbar drops the pan, zoom, and reset commands:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex as rx
-import reflex_xy
 import xyg
 
 rng_nav = np.random.default_rng(17)
 nav_x = rng_nav.uniform(0.0, 10.0, 80)
 nav_y = rng_nav.uniform(0.0, 4.0, 80)
-
 x_zoom_only = xyg.scatter_chart(
     xyg.scatter(nav_x, nav_y, size=6, color="#2563eb"),
     xyg.interaction_config(
@@ -282,20 +257,11 @@ x_zoom_only = xyg.scatter_chart(
     ),
     title="X-only box zoom, max 16x",
 )
-
 locked_viewport = xyg.scatter_chart(
     xyg.scatter(nav_x, nav_y, size=6, color="#64748b"),
     xyg.interaction_config(navigation=False),
     title="navigation=False",
 )
-
-
-def navigation_policy_demo():
-    return rx.el.div(
-        reflex_xy.chart(x_zoom_only, height="320px"),
-        reflex_xy.chart(locked_viewport, height="320px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 Selection controls include box, lasso, x-range, and y-range modes. The

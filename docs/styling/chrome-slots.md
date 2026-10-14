@@ -100,33 +100,19 @@ Utilities still control their durable appearance, but overriding those inline
 properties requires `!important` and also assumes responsibility for the
 interaction state.
 
-## Classes and Tailwind in Reflex
+## Classes and Tailwind in applications
 
-In a Reflex app, enable its Tailwind plugin once in `rxconfig.py`:
+XYG accepts complete class names through `class_name` and `class_names`.
+Your host application's Tailwind build must include those literal names in its
+source scan or safelist and serve the compiled CSS. Exported standalone HTML
+retains the names but does not compile or bundle Tailwind's rules; pass the
+compiled stylesheet with `to_html(custom_css=...)` when needed.
 
-~~~python
-import reflex as rx
+Configure your application's dark-mode selector to match its `.dark` class
+or its intended OS color-scheme behavior. This is host styling setup rather
+than an XYG application-runtime requirement.
 
-config = rx.Config(
-    app_name="dashboard",
-    plugins=[
-        rx.plugins.TailwindV4Plugin(config={"darkMode": "selector"}),
-    ],
-)
-~~~
-
-`darkMode="selector"` makes Tailwind's `dark:` utilities follow the `.dark`
-class used by Reflex's manual color-mode switch. Omit that option when the
-application intentionally wants Tailwind's default OS
-`prefers-color-scheme` behavior instead.
-
-For a fixed `xyg.Chart` or `xyg.Figure` passed directly to `reflex_xy.chart(...)`,
-Reflex includes the chart's literal class strings in Tailwind's default scan
-paths. The complete utility names below therefore work without adding the
-original Python or Markdown file to Tailwind's source configuration.
-
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 chart = xyg.area_chart(
@@ -141,12 +127,7 @@ chart = xyg.area_chart(
         line_width=2,
     ),
     xyg.x_axis(show=False),
-    xyg.y_axis(
-        domain=(0, 80),
-        show=False,
-        grid=True,
-        style={"grid_color": "#e2e8f0"},
-    ),
+    xyg.y_axis(domain=(0, 80), show=False, grid=True, style={"grid_color": "#e2e8f0"}),
     xyg.legend(),
     class_name="text-slate-900 dark:text-zinc-100",
     class_names={
@@ -164,45 +145,29 @@ chart = xyg.area_chart(
 
 
 def tailwind_chrome_preview():
-    return reflex_xy.chart(chart, height="320px")
+    return chart
 ~~~
 
 Keep each utility name complete and literal, such as `bg-zinc-950/90`. Tailwind
 cannot discover a name assembled at runtime from fragments such as
 `f"bg-{tone}-950"`; map dynamic state to complete class strings instead.
 
-For charts produced from a token or `Var`, pass every possible complete
-utility through the adapter's build-time inventory:
+Keep a literal inventory in a file included by your application's Tailwind
+source scan when a chart's classes depend on runtime state. The inventory is
+part of the CSS build, rather than a special XYG adapter prop:
 
 ~~~python
-LIVE_CHART_CLASSES = [
+CHART_CLASSES = [
     "rounded-2xl border border-slate-200 dark:border-slate-800",
     "bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100",
     "hover:bg-slate-100 dark:hover:bg-slate-800",
 ]
-live_chart = reflex_xy.chart(
-    Dashboard.chart,
-    tailwind_classes=LIVE_CHART_CLASSES,
-    height="360px",
-)
 ~~~
 
-`tailwind_classes` accepts one string or an ordered iterable of strings and
-exists only for Tailwind's compile-time source scan.
-It never becomes a DOM attribute; mappings and unordered sets raise instead of
-making generated source depend on key iteration or hash order. Static
-Chart/Figure sources still discover their own classes automatically, and an
-explicit inventory is merged with those discovered classes.
-
-List every complete class that a state-driven figure can emit, not just the
-classes in its initial state. When a live payload changes root or slot classes,
-XYG rebuilds its DOM chrome so the new class set replaces the old one while the
-stable figure token remains mounted. The replacement preserves every named-axis
-range and silently rehydrates durable box/range/lasso geometry before
-refreshing the selection mask, so a theme swap does not replay callbacks or
-erase durable viewport/selection state. Transient view-local UI state—such as
-the selected drag tool, undo/redo history, legend toggles, and a manually moved
-modebar—belongs to the replaced chrome and resets.
+Include every complete utility that the application can emit, and serve the
+compiled stylesheet. If the CSS build scans only HTML, place the inventory in
+a scanned HTML template or configure an explicit source/safelist. Changing a
+chart's class names does not compile new CSS at runtime.
 
 Advanced Tailwind v4 candidates are preserved verbatim through the scan
 inventory, including quotes, backslashes, arbitrary properties, and Unicode
@@ -223,8 +188,8 @@ and use a raw Python string when writing a descendant selector. Prefer
 the arbitrary selector form is useful when one root class needs to target
 descendants.
 
-Without `TailwindV4Plugin`, XYG still places the names in the DOM but no Tailwind
-utilities are generated, so the chart renders without those styles. An XYG
+Without compiled Tailwind CSS, XYG still places the names in the DOM but the
+utility rules are absent, so the chart renders without those styles. An XYG
 standalone HTML export likewise carries the names but does not bundle Tailwind;
 inject already-compiled rules with `custom_css` or use ordinary CSS for a
 portable file.
@@ -242,10 +207,7 @@ Use `class_names` when the host already provides utilities or reusable classes:
 chart = xyg.scatter_chart(
     xyg.scatter([1, 2, 3], [3, 5, 4]),
     class_names={
-        "tooltip": (
-            "rounded-lg border border-zinc-700 bg-zinc-950 "
-            "px-3 py-2 text-white shadow-xl"
-        )
+        "tooltip": ("rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-white shadow-xl")
     },
 )
 ~~~

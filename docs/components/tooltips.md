@@ -26,17 +26,11 @@ survives, so a radar category reads `power` rather than a number, and
 `labels={"x": ...}` opts the angle back in formatted through the theta axis.
 Explicit `title=` and `fields=` continue to control a customized readout.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 default_tooltip_chart = xyg.scatter_chart(
-    xyg.scatter(
-        [1, 2, 3, 4, 5, 6],
-        [3.2, 4.1, 2.8, 5.0, 4.4, 5.6],
-        color="#6e56cf",
-        size=8,
-    ),
+    xyg.scatter([1, 2, 3, 4, 5, 6], [3.2, 4.1, 2.8, 5.0, 4.4, 5.6], color="#6e56cf", size=8),
     xyg.tooltip(),
     xyg.x_axis(label="trial"),
     xyg.y_axis(label="score"),
@@ -45,7 +39,7 @@ default_tooltip_chart = xyg.scatter_chart(
 
 
 def default_tooltip_demo():
-    return reflex_xy.chart(default_tooltip_chart, height="320px")
+    return default_tooltip_chart
 ~~~
 
 ## Choose Fields and Formats
@@ -53,23 +47,16 @@ def default_tooltip_demo():
 Named source columns that feed x, y, color, size, or heatmap-value channels can
 be used as tooltip fields:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 tooltip_fields_data = {
     "month": [1, 2, 3, 4],
-    "revenue": [42_000, 47_000, 45_000, 53_000],
+    "revenue": [42000, 47000, 45000, 53000],
     "growth": [0.04, 0.12, 0.01, 0.18],
 }
-
 tooltip_fields_chart = xyg.scatter_chart(
-    xyg.scatter(
-        x="month",
-        y="revenue",
-        size="growth",
-        data=tooltip_fields_data,
-    ),
+    xyg.scatter(x="month", y="revenue", size="growth", data=tooltip_fields_data),
     xyg.tooltip(
         fields=["revenue", "growth"],
         title="Month {month}",
@@ -80,7 +67,7 @@ tooltip_fields_chart = xyg.scatter_chart(
 
 
 def tooltip_fields_demo():
-    return reflex_xy.chart(tooltip_fields_chart, height="320px")
+    return tooltip_fields_chart
 ~~~
 
 Braced field names in `title` are replaced from the hovered row. `format` maps
@@ -98,8 +85,7 @@ One tooltip configuration serves every mark in the chart: the braced `{day}`
 title, the field selection, and the per-field number formats apply to both the
 dashed forecast line and the margin-sized revenue points below.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 tooltip_title_data = {
@@ -108,7 +94,6 @@ tooltip_title_data = {
     "forecast": [1500, 1650, 1750, 1900, 2100],
     "margin": [0.21, 0.24, 0.19, 0.27, 0.31],
 }
-
 tooltip_title_chart = xyg.line_chart(
     xyg.line(
         x="day",
@@ -137,7 +122,7 @@ tooltip_title_chart = xyg.line_chart(
 
 
 def tooltip_title_demo():
-    return reflex_xy.chart(tooltip_title_chart, height="320px")
+    return tooltip_title_chart
 ~~~
 
 ## Exact and Resident Readout
@@ -180,14 +165,10 @@ last tooltip component supplies the effective configuration.
 
 A positional child or `render=` object is kept opaque to the core renderer and
 can be retrieved through `chart.chrome_components()`. It is not embedded into
-standalone HTML. For a Chart source, the shipped `reflex_xy.chart` adapter
-mounts `xyg.tooltip(render=...)` automatically in the renderer-owned tooltip
-slot; for a live figure token, pass the Reflex component through
-`reflex_xy.chart(..., tooltip=...)`. The adapter suppresses the built-in
-tooltip while the component is mounted and supplies hover data through the
-normal event path. See
-[Customize Each Part](/docs/xy/styling/customize/#tooltip) for the complete
-integration boundary.
+standalone HTML. A host or adapter must mount custom UI, supply hover state,
+and manage positioning; the core does not serialize an arbitrary application
+component. Disable the built-in tooltip when rendering a replacement. See
+[Customize Each Part](/docs/xy/styling/customize/#tooltip) for the host boundary.
 
 See [Events and callbacks](/docs/xy/api-reference/events-and-callbacks/) for
 hover payloads and [Marks and components reference](/docs/xy/api-reference/marks-and-components/)

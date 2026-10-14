@@ -26,23 +26,15 @@ Jump to [directional sectors](#choose-directional-sectors),
 Directions are compass bearings in degrees: 0° is north and values increase
 clockwise. The helper applies that convention automatically:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(14)
 wind_direction = np.mod(
-    np.concatenate(
-        [
-            rng.normal(35.0, 28.0, 260),
-            rng.normal(225.0, 38.0, 180),
-        ]
-    ),
-    360.0,
+    np.concatenate([rng.normal(35.0, 28.0, 260), rng.normal(225.0, 38.0, 180)]), 360.0
 )
 wind_speed = np.clip(rng.gamma(shape=2.4, scale=2.1, size=440), 0.2, 11.8)
-
 rose = xyg.wind_rose(
     wind_direction,
     wind_speed,
@@ -53,7 +45,7 @@ rose = xyg.wind_rose(
 
 
 def wind_rose_demo():
-    return reflex_xy.chart(rose, height="440px")
+    return rose
 ~~~
 
 Each stacked color band counts observations whose speed is above the previous
@@ -96,15 +88,13 @@ Lower the sector count when the sample is small or the source records only the
 eight principal bearings, and pass matching band edges so each petal stays thick
 enough to read:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 coarse_rng = np.random.default_rng(7)
 coarse_directions = np.mod(coarse_rng.normal(270.0, 45.0, 500), 360.0)
 coarse_speeds = np.clip(coarse_rng.gamma(shape=2.0, scale=3.0, size=500), 0.3, 17.0)
-
 coarse_rose = xyg.wind_rose(
     coarse_directions,
     coarse_speeds,
@@ -115,7 +105,7 @@ coarse_rose = xyg.wind_rose(
 
 
 def wind_rose_sectors_demo():
-    return reflex_xy.chart(coarse_rose, height="440px")
+    return coarse_rose
 ~~~
 
 ## Plot a Full Year of Observations
@@ -124,9 +114,8 @@ With thousands of records a high sector count resolves the prevailing wind, and
 narrow speed bands separate calm air from gales — add `xyg.legend()` to place the
 band labels where you want them:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 met_rng = np.random.default_rng(2024)
@@ -141,7 +130,6 @@ met_directions = np.mod(
     360.0,
 )
 met_speeds = np.clip(met_rng.weibull(2.0, 8000) * 7.5, 0.2, 28.0)
-
 annual_rose = xyg.wind_rose(
     met_directions,
     met_speeds,
@@ -153,7 +141,7 @@ annual_rose = xyg.wind_rose(
 
 
 def wind_rose_annual_demo():
-    return reflex_xy.chart(annual_rose, height="440px")
+    return annual_rose
 ~~~
 
 ## Follow the Input Contract

@@ -12,18 +12,24 @@ Add `xyg.animation()` as a chart child to give initial render and later live-dat
 refreshes one declarative motion policy. The browser owns the clock and GPU
 interpolation; Python receives only optional start/end lifecycle events.
 
-~~~python demo exec toggle preview-code id=animation-entrance-demo
+~~~python demo exec toggle preview-code id=animation-entrance-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 months = [
-    "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
-    "Jul 23", "Aug 23", "Sep 23", "Oct 23", "Nov 23", "Dec 23",
+    "Jan 23",
+    "Feb 23",
+    "Mar 23",
+    "Apr 23",
+    "May 23",
+    "Jun 23",
+    "Jul 23",
+    "Aug 23",
+    "Sep 23",
+    "Oct 23",
+    "Nov 23",
+    "Dec 23",
 ]
 solar_panels = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
-
-# --- chart ---
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
 import xyg
 
 chart = xyg.chart(
@@ -37,13 +43,7 @@ chart = xyg.chart(
         stroke_width=0,
     ),
     xyg.line(
-        months,
-        inverters,
-        key=months,
-        name="Inverters",
-        color="#fe9a00",
-        width=2,
-        curve="linear",
+        months, inverters, key=months, name="Inverters", color="#fe9a00", width=2, curve="linear"
     ),
     xyg.animation(
         enabled="auto",
@@ -64,7 +64,7 @@ chart = xyg.chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 4200),
@@ -82,50 +82,12 @@ chart = xyg.chart(
         grid_color="var(--recipe-grid, #e5e7eb)",
         text_color="var(--recipe-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--recipe-surface:#ffffff] [--recipe-grid:#e5e7eb] "
-        "[--recipe-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--recipe-surface:#000000] dark:[--recipe-grid:#27272a] "
-        "dark:[--recipe-text:#d4d4d8]"
-    ),
-    class_names={
-        "tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl",
-    },
+    class_name="bg-[#ffffff] [--recipe-surface:#ffffff] [--recipe-grid:#e5e7eb] [--recipe-text:#4b5563] dark:bg-[#000000] dark:[--recipe-surface:#000000] dark:[--recipe-grid:#27272a] dark:[--recipe-text:#d4d4d8]",
+    class_names={"tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl"},
     width="100%",
     height=280,
     padding=[16, 20, 20, 20],
 )
-
-
-class EntranceAnimationDemo(rx.State):
-    alternate_mount: bool = False
-
-    @rx.event
-    def replay(self):
-        self.alternate_mount = not self.alternate_mount
-
-
-def initial_animation_demo():
-    # Switching between keyed mounts restarts the entrance animation.
-    return rx.el.div(
-        rx.el.div(
-            ui.button(
-                ui.icon("PlayIcon", aria_hidden="true"),
-                "Play animation",
-                on_click=EntranceAnimationDemo.replay,
-                variant="outline",
-                size="sm",
-                aria_label="Play entrance animation",
-            ),
-            class_name="flex w-full justify-end px-4 pt-4 sm:px-5 sm:pt-5",
-        ),
-        rx.cond(
-            EntranceAnimationDemo.alternate_mount,
-            reflex_xy.chart(chart, key="entrance-a", height="280px"),
-            reflex_xy.chart(chart, key="entrance-b", height="280px"),
-        ),
-        class_name="w-full",
-    )
 ~~~
 
 `enabled="auto"` is the recommended default: it animates normally and renders
@@ -144,14 +106,10 @@ intentionally overrides that preference.
 Set `enter` explicitly to `none`, `scale`, `grow`, or `reveal` when a shared
 chart needs a different visual language.
 
-~~~python demo exec toggle preview-code id=animation-area-reveal-demo
+~~~python demo exec toggle preview-code id=animation-area-reveal-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 weeks = list(range(1, 13))
 active_teams = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
-
-# --- chart ---
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
 import xyg
 
 chart = xyg.area_chart(
@@ -167,10 +125,7 @@ chart = xyg.area_chart(
         line_width=2,
     ),
     xyg.animation(
-        delay=80,
-        duration=900,
-        enter="reveal",
-        easing=xyg.spring(stiffness=120, damping=24),
+        delay=80, duration=900, enter="reveal", easing=xyg.spring(stiffness=120, damping=24)
     ),
     xyg.tooltip(title="Week {x}", format={"y": ",.0f"}),
     xyg.legend(show=False),
@@ -183,7 +138,7 @@ chart = xyg.area_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 80),
@@ -200,36 +155,6 @@ chart = xyg.area_chart(
     height=410,
     padding=(16, 20, 20, 20),
 )
-
-
-class AreaRevealDemo(rx.State):
-    alternate_mount: bool = False
-
-    @rx.event
-    def replay(self):
-        self.alternate_mount = not self.alternate_mount
-
-
-def area_reveal_demo():
-    return rx.el.div(
-        rx.el.div(
-            ui.button(
-                ui.icon("PlayIcon", aria_hidden="true"),
-                "Play animation",
-                on_click=AreaRevealDemo.replay,
-                variant="outline",
-                size="sm",
-                aria_label="Play area reveal animation",
-            ),
-            class_name="flex w-full justify-end px-4 pt-4 sm:px-5 sm:pt-5",
-        ),
-        rx.cond(
-            AreaRevealDemo.alternate_mount,
-            reflex_xy.chart(chart, key="area-reveal-a", height="410px"),
-            reflex_xy.chart(chart, key="area-reveal-b", height="410px"),
-        ),
-        class_name="w-full",
-    )
 ~~~
 
 Named easings are `linear`, `ease`, `ease-in`, `ease-out`, and `ease-in-out`.
@@ -238,23 +163,20 @@ damping=..., mass=...)` supplies a bounded spring policy.
 
 ## Replacement, reorder, insert, and delete
 
-Live Reflex state rebuilds and notebook append refreshes update the mounted
-chart in place. Use the button in this example to reorder retained accounts,
-insert two accounts, remove two, and sharply change their values. Stable keys
-let XYG distinguish each case:
+Live host refreshes and notebook append updates change the mounted
+chart in place. This static preview shows the initial accounts. In a live
+application, update the data to reorder retained accounts, insert or remove
+accounts, and change their values. Stable keys let XYG distinguish each case:
 
-~~~python demo exec toggle preview-code id=animation-keyed-update-demo
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
+~~~python demo exec toggle preview-code id=animation-keyed-update-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 import xyg
 
 
-class KeyedAnimationDemo(rx.State):
+class KeyedAnimationDemo:
     updated: bool = False
 
-    @reflex_xy.figure
-    def sales(self) -> xyg.Chart:
+    def sales(self):
         before = {
             "account_id": ["atlas", "boreal", "cinder", "dune", "ember"],
             "region": ["North", "South", "West", "East", "Central"],
@@ -294,7 +216,7 @@ class KeyedAnimationDemo(rx.State):
                     "tick_color": "#00000000",
                     "tick_label_color": "#00000000",
                     "label_color": "#00000000",
-                },
+                }
             ),
             xyg.y_axis(
                 domain=(0, 65),
@@ -312,53 +234,15 @@ class KeyedAnimationDemo(rx.State):
                 grid_color="var(--keyed-grid, #e5e7eb)",
                 text_color="var(--keyed-text, #4b5563)",
             ),
-            class_name=(
-                "bg-[#ffffff] [--keyed-surface:#ffffff] [--keyed-grid:#e5e7eb] "
-                "[--keyed-text:#4b5563] dark:bg-[#000000] "
-                "dark:[--keyed-surface:#000000] dark:[--keyed-grid:#27272a] "
-                "dark:[--keyed-text:#d4d4d8]"
-            ),
-            class_names={
-                "tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl",
-            },
+            class_name="bg-[#ffffff] [--keyed-surface:#ffffff] [--keyed-grid:#e5e7eb] [--keyed-text:#4b5563] dark:bg-[#000000] dark:[--keyed-surface:#000000] dark:[--keyed-grid:#27272a] dark:[--keyed-text:#d4d4d8]",
+            class_names={"tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl"},
             width="100%",
             height=320,
             padding=[16, 20, 20, 20],
         )
 
-    @rx.event
-    def toggle_dataset(self):
-        self.updated = not self.updated
 
-
-def keyed_replacement_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.text(
-                rx.cond(
-                    KeyedAnimationDemo.updated,
-                    "2 exits · 2 enters · 3 retained",
-                    "Five keyed accounts",
-                ),
-                color_scheme="gray",
-                size="2",
-            ),
-            ui.button(
-                ui.icon("PlayIcon", aria_hidden="true"),
-                "Play animation",
-                on_click=KeyedAnimationDemo.toggle_dataset,
-                variant="outline",
-                size="sm",
-                aria_label="Play keyed replacement animation",
-            ),
-            class_name=(
-                "flex w-full flex-wrap items-center justify-between gap-3 "
-                "px-4 pt-4 sm:px-5 sm:pt-5"
-            ),
-        ),
-        reflex_xy.chart(KeyedAnimationDemo.sales, height="320px"),
-        class_name="w-full",
-    )
+initial_chart = KeyedAnimationDemo().sales()
 ~~~
 
 `key=` accepts an array or a `data=` column name on line, area, scatter, bar,
@@ -377,18 +261,14 @@ Each mark may override the chart policy or opt out. The override cascades field
 by field, so a mark only changes what it names — `xyg.animation(duration=90)` on
 a mark keeps the chart's `match`, `easing`, and everything else:
 
-~~~python demo exec toggle preview-code id=animation-mark-override-demo
+~~~python demo exec toggle preview-code id=animation-mark-override-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 rows = {
     "x": [0, 1, 2, 3, 4, 5],
     "low": [8, 10, 9, 13, 12, 15],
     "high": [16, 18, 17, 21, 20, 24],
     "mean": [12, 14, 13, 17, 16, 20],
 }
-
-# --- chart ---
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
 import xyg
 
 chart = xyg.chart(
@@ -424,7 +304,7 @@ chart = xyg.chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 26),
@@ -441,36 +321,6 @@ chart = xyg.chart(
     height=320,
     padding=[16, 20, 20, 20],
 )
-
-
-class MarkOverrideDemo(rx.State):
-    alternate_mount: bool = False
-
-    @rx.event
-    def replay(self):
-        self.alternate_mount = not self.alternate_mount
-
-
-def per_mark_animation_demo():
-    return rx.el.div(
-        rx.el.div(
-            ui.button(
-                ui.icon("PlayIcon", aria_hidden="true"),
-                "Play animation",
-                on_click=MarkOverrideDemo.replay,
-                variant="outline",
-                size="sm",
-                aria_label="Play mark override animation",
-            ),
-            class_name="flex w-full justify-end px-4 pt-4 sm:px-5 sm:pt-5",
-        ),
-        rx.cond(
-            MarkOverrideDemo.alternate_mount,
-            reflex_xy.chart(chart, key="mark-override-a", height="320px"),
-            reflex_xy.chart(chart, key="mark-override-b", height="320px"),
-        ),
-        class_name="w-full",
-    )
 ~~~
 
 ## Streaming append
@@ -478,33 +328,24 @@ def per_mark_animation_demo():
 Use append matching for a live ordered series. Existing x values retain their
 identity while the new tail enters, and append's normal viewport policy still
 applies: home follows the domain, a live-edge view slides, and a user looking
-at history stays put. Choose a one-, five-, or twelve-point batch below; every
-new sample includes bounded random jitter so repeated appends produce different
-tails.
+at history stays put. This static preview shows the initial series; append
+new batches from a notebook kernel or application host. The example's source
+uses bounded random jitter when generating additional samples.
 
-~~~python demo exec toggle preview-code id=animation-streaming-demo
+~~~python demo exec toggle preview-code id=animation-streaming-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 import math
 import random
-
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
 import xyg
 
 
-class StreamingAnimationDemo(rx.State):
+class StreamingAnimationDemo:
     next_x: int = 2
 
-    @reflex_xy.figure
-    def sensor(self) -> xyg.Chart:
+    def sensor(self):
         return xyg.line_chart(
             xyg.line(
-                [0.0, 1.0],
-                [10.0, 12.0],
-                name="Sensor",
-                color="#8e51ff",
-                width=2,
-                curve="smooth",
+                [0.0, 1.0], [10.0, 12.0], name="Sensor", color="#8e51ff", width=2, curve="smooth"
             ),
             xyg.animation(match="append", duration=350, easing="linear"),
             xyg.legend(show=False),
@@ -518,7 +359,7 @@ class StreamingAnimationDemo(rx.State):
                     "tick_color": "#00000000",
                     "tick_label_color": "#00000000",
                     "label_color": "#00000000",
-                },
+                }
             ),
             xyg.y_axis(
                 domain=(7, 15),
@@ -536,104 +377,45 @@ class StreamingAnimationDemo(rx.State):
                 grid_color="var(--stream-grid, #e5e7eb)",
                 text_color="var(--stream-text, #4b5563)",
             ),
-            class_name=(
-                "bg-[#ffffff] [--stream-surface:#ffffff] [--stream-grid:#e5e7eb] "
-                "[--stream-text:#4b5563] dark:bg-[#000000] "
-                "dark:[--stream-surface:#000000] dark:[--stream-grid:#27272a] "
-                "dark:[--stream-text:#d4d4d8]"
-            ),
-            class_names={
-                "tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl",
-            },
+            class_name="bg-[#ffffff] [--stream-surface:#ffffff] [--stream-grid:#e5e7eb] [--stream-text:#4b5563] dark:bg-[#000000] dark:[--stream-surface:#000000] dark:[--stream-grid:#27272a] dark:[--stream-text:#d4d4d8]",
+            class_names={"tooltip": "rounded-lg bg-zinc-950 px-3 py-2 text-white shadow-xl"},
             width="100%",
             height=320,
             padding=[16, 20, 20, 20],
         )
 
-    @rx.event
-    def append_points(self, count: int):
-        count = max(1, min(int(count), 12))
-        x = [float(self.next_x + offset) for offset in range(count)]
-        y = [
-            11.0 + 2.2 * math.sin(value * 0.8) + random.uniform(-0.75, 0.75)
-            for value in x
-        ]
-        reflex_xy.append(self.sensor, x=x, y=y)
-        self.next_x += count
 
-
-def streaming_append_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.text("Randomized stream", color_scheme="gray", size="2"),
-            rx.el.div(
-                ui.button(
-                    "+1 point",
-                    on_click=StreamingAnimationDemo.append_points(1),
-                    variant="outline",
-                    size="sm",
-                ),
-                ui.button(
-                    "+5 points",
-                    on_click=StreamingAnimationDemo.append_points(5),
-                    variant="outline",
-                    size="sm",
-                ),
-                ui.button(
-                    "+12 points",
-                    on_click=StreamingAnimationDemo.append_points(12),
-                    variant="outline",
-                    size="sm",
-                ),
-                class_name="flex flex-wrap items-center justify-end gap-2",
-            ),
-            class_name=(
-                "flex w-full flex-wrap items-center justify-between gap-3 "
-                "px-4 pt-4 sm:px-5 sm:pt-5"
-            ),
-        ),
-        reflex_xy.chart(StreamingAnimationDemo.sensor, height="320px"),
-        class_name="w-full",
-    )
+initial_chart = StreamingAnimationDemo().sensor()
 ~~~
 
-In Reflex, use `reflex_xy.append(token, ...)`; a state-driven full dataset
-replacement uses keyed or index matching through the same browser controller.
+In a live notebook, use `chart.append(...)`; an application routes native
+updates through its host transport. A full dataset replacement uses keyed or
+index matching through the same browser controller.
 Rapid updates are latest-wins: a new refresh begins at the currently displayed
 position, closes the interrupted lifecycle as cancelled, and never queues an
 unbounded chain of old scenes.
 
 ## Lifecycle callbacks
 
-Live notebook and Reflex hosts expose start/end events. Python callbacks are
+Live notebook hosts expose start/end events. Documentation previews show
+compiled chart motion and do not run Python state or callback controls. Python callbacks are
 configuration, not serialized chart data:
 
-~~~python demo exec toggle preview-code id=animation-lifecycle-demo
-import reflex as rx
-import reflex_components_internal as ui
-import reflex_xy
+~~~python demo exec toggle preview-code id=animation-lifecycle-demo native
+# Static snapshot: Python callbacks and data updates require an application host.
 import xyg
 
 
-class AnimationLifecycleDemo(rx.State):
+class AnimationLifecycleDemo:
     shifted: bool = False
     status: str = "Ready"
 
-    @reflex_xy.figure
-    def points(self) -> xyg.Chart:
+    def points(self):
         x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        y = (
-            [4, 8, 5, 10, 7, 3, 9, 6, 11]
-            if self.shifted
-            else [3, 5, 9, 6, 11, 8, 4, 10, 7]
-        )
+        y = [4, 8, 5, 10, 7, 3, 9, 6, 11] if self.shifted else [3, 5, 9, 6, 11, 8, 4, 10, 7]
         return xyg.scatter_chart(
             xyg.scatter(
-                x,
-                y,
-                key=["a", "b", "c", "d", "e", "f", "g", "h", "i"],
-                color="#8e51ff",
-                size=14,
+                x, y, key=["a", "b", "c", "d", "e", "f", "g", "h", "i"], color="#8e51ff", size=14
             ),
             xyg.animation(match="key", duration=700, enter="scale"),
             xyg.legend(show=False),
@@ -647,7 +429,7 @@ class AnimationLifecycleDemo(rx.State):
                     "tick_color": "#00000000",
                     "tick_label_color": "#00000000",
                     "label_color": "#00000000",
-                },
+                }
             ),
             xyg.y_axis(
                 domain=(0, 12),
@@ -665,45 +447,8 @@ class AnimationLifecycleDemo(rx.State):
             padding=[16, 20, 20, 20],
         )
 
-    @rx.event
-    def move_points(self):
-        self.shifted = not self.shifted
 
-    @rx.event
-    def animation_started(self, event: dict):
-        self.status = f"Animating {event.get('phase', 'update')}…"
-
-    @rx.event
-    def animation_ended(self, event: dict):
-        suffix = " (cancelled)" if event.get("cancelled") else ""
-        self.status = f"Animation complete{suffix}"
-
-
-def lifecycle_events_demo():
-    return rx.el.div(
-        rx.el.div(
-            rx.text(AnimationLifecycleDemo.status, color_scheme="gray", size="2"),
-            ui.button(
-                ui.icon("PlayIcon", aria_hidden="true"),
-                "Play animation",
-                on_click=AnimationLifecycleDemo.move_points,
-                variant="outline",
-                size="sm",
-                aria_label="Play lifecycle animation",
-            ),
-            class_name=(
-                "flex w-full flex-wrap items-center justify-between gap-3 "
-                "px-4 pt-4 sm:px-5 sm:pt-5"
-            ),
-        ),
-        reflex_xy.chart(
-            AnimationLifecycleDemo.points,
-            on_animation_start=AnimationLifecycleDemo.animation_started,
-            on_animation_end=AnimationLifecycleDemo.animation_ended,
-            height="320px",
-        ),
-        class_name="w-full",
-    )
+initial_chart = AnimationLifecycleDemo().points()
 ~~~
 
 Standalone HTML dispatches local `xy:animation_start` and

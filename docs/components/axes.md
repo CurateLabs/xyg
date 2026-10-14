@@ -17,14 +17,12 @@ categorical behavior from the bound data.
 The most common axis contract is a label, an explicit `domain=(min, max)`, and
 a requested `tick_count=` so the view stays put regardless of the data:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 ax_hours = np.arange(0, 25, 3)
 ax_temp = np.array([12.1, 11.4, 13.0, 17.6, 21.3, 23.8, 22.0, 17.2, 13.9])
-
 ax_domain_chart = xyg.chart(
     xyg.line(ax_hours, ax_temp, color="#6e56cf", width=2.5),
     xyg.x_axis(label="hour of day", domain=(0, 24), tick_count=9),
@@ -34,33 +32,26 @@ ax_domain_chart = xyg.chart(
 
 
 def axes_domain_demo():
-    return reflex_xy.chart(ax_domain_chart, height="320px")
+    return ax_domain_chart
 ~~~
 
 ## Set the Scale Contract
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 log_x = np.logspace(0, 6, 240)
 log_y = 96 - np.log10(log_x) * 11.5
-
 log_chart = xyg.line_chart(
     xyg.line(log_x, log_y),
-    xyg.x_axis(
-        type_="log",
-        domain=(1, 1_000_000),
-        label="requests",
-        format=",.0f",
-    ),
+    xyg.x_axis(type_="log", domain=(1, 1000000), label="requests", format=",.0f"),
     xyg.y_axis(domain=(0, 100), reverse=True, label="rank"),
 )
 
 
 def axes_scale_contract_demo():
-    return reflex_xy.chart(log_chart, height="320px")
+    return log_chart
 ~~~
 
 Use `type_="linear"`, `"time"`, or `"log"` when inference is not the desired
@@ -91,14 +82,12 @@ Here the x-axis carries category names with `tick_values=` + `tick_labels=`,
 rotated with `tick_label_angle=` and anchored at their ends, while
 `label_position=` and `label_offset=` move the axis title out of the way:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 tick_stage = np.arange(5)
 tick_rate = np.array([1.0, 0.62, 0.38, 0.21, 0.09])
-
 tick_style_chart = xyg.chart(
     xyg.bar(tick_stage, tick_rate, color="#0ea5e9", width=0.6),
     xyg.x_axis(
@@ -121,7 +110,7 @@ tick_style_chart = xyg.chart(
 
 
 def axes_tick_styling_demo():
-    return reflex_xy.chart(tick_style_chart, height="320px")
+    return tick_style_chart
 ~~~
 
 ## Bind Marks to Named Axes
@@ -157,45 +146,28 @@ Named axes compose with every mark kind. Below, monthly rain probability rides
 a right-hand percentage axis (`id="y2"`, `side="right"`, `format=".0%"`) while
 temperature keeps the primary y-axis:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 dual_month = np.arange(1, 13)
-dual_temp = np.array(
-    [2.1, 3.0, 6.8, 11.2, 15.6, 19.3, 21.8, 21.2, 17.0, 11.9, 6.4, 3.2]
-)
-dual_rain = np.array(
-    [0.18, 0.14, 0.12, 0.09, 0.07, 0.05, 0.04, 0.05, 0.09, 0.13, 0.17, 0.19]
-)
-
+dual_temp = np.array([2.1, 3.0, 6.8, 11.2, 15.6, 19.3, 21.8, 21.2, 17.0, 11.9, 6.4, 3.2])
+dual_rain = np.array([0.18, 0.14, 0.12, 0.09, 0.07, 0.05, 0.04, 0.05, 0.09, 0.13, 0.17, 0.19])
 dual_axis_chart = xyg.chart(
     xyg.bar(
-        dual_month,
-        dual_rain,
-        y_axis="y2",
-        name="Rain probability",
-        color="#93c5fd",
-        opacity=0.6,
+        dual_month, dual_rain, y_axis="y2", name="Rain probability", color="#93c5fd", opacity=0.6
     ),
     xyg.line(dual_month, dual_temp, name="Temperature", color="#dc2626", width=2.5),
     xyg.x_axis(label="month", tick_count=12),
     xyg.y_axis(label="temperature (°C)", domain=(0, 25)),
-    xyg.y_axis(
-        id="y2",
-        side="right",
-        label="rain probability",
-        domain=(0, 0.4),
-        format=".0%",
-    ),
+    xyg.y_axis(id="y2", side="right", label="rain probability", domain=(0, 0.4), format=".0%"),
     xyg.legend(),
     title="Two units, one panel",
 )
 
 
 def axes_dual_axis_demo():
-    return reflex_xy.chart(dual_axis_chart, height="320px")
+    return dual_axis_chart
 ~~~
 
 ## Show and Hide Axis Parts
@@ -205,9 +177,9 @@ Each axis takes five switches: `show`, `line`, `ticks`, `grid`, and `text`
 overrides `show`, so a grid with no other chrome is one call.
 
 ~~~python
-xyg.x_axis(show=False)                       # nothing drawn for this axis
-xyg.y_axis(show=False, grid=True)            # horizontal guides only
-xyg.x_axis(line=False, ticks=False)          # tick labels, no baseline or ticks
+xyg.x_axis(show=False)  # nothing drawn for this axis
+xyg.y_axis(show=False, grid=True)  # horizontal guides only
+xyg.x_axis(line=False, ticks=False)  # tick labels, no baseline or ticks
 ~~~
 
 The switches compile to ordinary axis `style` properties, so they work in HTML,
@@ -236,8 +208,7 @@ chart = xyg.line_chart(
         "tick_label": "text-slate-600",
         "axis_title": "font-semibold",
         "axis_band": (
-            "data-[xy-axis-band=x]:cursor-ew-resize "
-            "data-[xy-axis-band=y]:cursor-ns-resize"
+            "data-[xy-axis-band=x]:cursor-ew-resize data-[xy-axis-band=y]:cursor-ns-resize"
         ),
     },
 )

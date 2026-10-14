@@ -11,16 +11,23 @@ CSS cascade. Data marks are painted by WebGL, SVG, or the native rasterizer, so
 XYG compiles a deliberate CSS-property subset for them instead of claiming that
 arbitrary browser selectors can reach a canvas.
 
-~~~python demo exec toggle preview-code id=styling-overview-area-demo
+~~~python demo exec toggle preview-code id=styling-overview-area-demo native
 months = [
-    "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
-    "Jul 23", "Aug 23", "Sep 23", "Oct 23", "Nov 23", "Dec 23",
+    "Jan 23",
+    "Feb 23",
+    "Mar 23",
+    "Apr 23",
+    "May 23",
+    "Jun 23",
+    "Jul 23",
+    "Aug 23",
+    "Sep 23",
+    "Oct 23",
+    "Nov 23",
+    "Dec 23",
 ]
 solar_panels = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 overview_area = xyg.area_chart(
@@ -56,7 +63,7 @@ overview_area = xyg.area_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 4200),
@@ -75,13 +82,7 @@ overview_area = xyg.area_chart(
         grid_color="var(--overview-grid, #e5e7eb)",
         text_color="var(--overview-text, #52525b)",
     ),
-    class_name=(
-        "bg-[#ffffff] text-[#52525b] [--overview-surface:#ffffff] "
-        "[--overview-grid:#e5e7eb] [--overview-text:#52525b] "
-        "dark:bg-[#000000] dark:text-[#d4d4d8] "
-        "dark:[--overview-surface:#000000] dark:[--overview-grid:#27272a] "
-        "dark:[--overview-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] text-[#52525b] [--overview-surface:#ffffff] [--overview-grid:#e5e7eb] [--overview-text:#52525b] dark:bg-[#000000] dark:text-[#d4d4d8] dark:[--overview-surface:#000000] dark:[--overview-grid:#27272a] dark:[--overview-text:#d4d4d8]",
     width="100%",
     height=320,
     padding=(62, 28, 48, 70),
@@ -89,7 +90,7 @@ overview_area = xyg.area_chart(
 
 
 def styling_overview_area_preview():
-    return reflex_xy.chart(overview_area, height="320px")
+    return overview_area
 ~~~
 
 ## Customize by part
@@ -142,34 +143,19 @@ If you are unsure, use this shortcut:
   `class_name`/`style` or `xyg.theme()`.
 - Styling only a self-contained HTML or Chromium export? Use `custom_css`.
 
-~~~python demo exec toggle preview-code id=styling-overview-columns-demo
+~~~python demo exec toggle preview-code id=styling-overview-columns-demo native
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 core = [28, 31, 35, 38, 42, 46]
 growth = [16, 18, 19, 23, 25, 29]
 enterprise = [7, 8, 10, 12, 14, 17]
 enterprise_base = [
-    core_value + growth_value
-    for core_value, growth_value in zip(core, growth, strict=True)
+    core_value + growth_value for core_value, growth_value in zip(core, growth, strict=True)
 ]
-
-# --- chart ---
-import reflex_xy
 import xyg
 
 chart = xyg.column_chart(
-    xyg.column(
-        months,
-        core,
-        name="Core",
-        color="#7c3aed",
-    ),
-    xyg.column(
-        months,
-        growth,
-        base=core,
-        name="Growth",
-        color="#db2777",
-    ),
+    xyg.column(months, core, name="Core", color="#7c3aed"),
+    xyg.column(months, growth, base=core, name="Growth", color="#db2777"),
     xyg.column(
         months,
         enterprise,
@@ -188,7 +174,7 @@ chart = xyg.column_chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 100),
@@ -205,10 +191,7 @@ chart = xyg.column_chart(
     class_name="bg-white text-slate-900 dark:bg-black dark:text-zinc-100",
     class_names={
         "tooltip": "rounded-lg bg-zinc-900/90 text-white shadow-xl",
-        "legend": (
-            "rounded-md border border-slate-200 bg-white/90 text-xs font-medium "
-            "dark:border-zinc-700 dark:bg-zinc-900/90"
-        ),
+        "legend": "rounded-md border border-slate-200 bg-white/90 text-xs font-medium dark:border-zinc-700 dark:bg-zinc-900/90",
         "modebar_button": "hover:bg-zinc-200 dark:hover:bg-zinc-800",
     },
     style={"--chart-grid": "#94a3b838"},
@@ -217,7 +200,7 @@ chart = xyg.column_chart(
 
 
 def styling_overview_preview():
-    return reflex_xy.chart(chart, height="340px")
+    return chart
 ~~~
 
 ## What “your styles win” means
@@ -242,7 +225,7 @@ other canvas geometry through typed props or mark `style=`.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Tailwind classes are present but have no effect | The utility was not emitted by the host's Tailwind build, or the Tailwind plugin is missing. | Enable Reflex's `TailwindV4Plugin`; keep fixed-chart classes literal and pass live-chart utilities through `reflex_xy.chart(..., tailwind_classes=...)`. |
+| Tailwind classes are present but have no effect | The utility was not emitted by the host's Tailwind build, or the Tailwind plugin is missing. | Include the literal utility names in the host's Tailwind source scan or safelist and serve the compiled stylesheet. |
 | A custom font silently falls back | `font-family` names a face the browser has not loaded. | Register it in host CSS with `@font-face`, then apply the family to the chart root; see [Custom fonts and export limitations](/docs/xy/styling/themes-and-tokens/#custom-fonts-and-export-limitations). |
 | A class changes the legend but not a line or point | Marks are WebGL/canvas geometry, not DOM nodes. | Use the mark's typed paint props or supported `style=` declarations from [Customize Each Part](/docs/xy/styling/customize/). |
 | Standalone HTML looks different from the application | The exported document cannot inherit the host page's stylesheet or design-system variables. | Put essential tokens on the chart and pass author rules with `to_html(custom_css=...)`. |
@@ -258,9 +241,9 @@ For build, export, and adapter failures beyond styling, continue with the
 
 - **Styling Overview** (you are here) — identify the rendering surface and
   choose the right styling mechanism.
-- **Examples** — start from a polished, copyable chart or experiment with the
-  interactive palette playground.
-  [Open the palette playground →](/docs/xy/styling/examples/#palette-playground)
+- **Examples** — start from a copyable chart pattern and author a reusable
+  series palette.
+  [Open the palette example →](/docs/xy/styling/examples/#author-a-palette)
 - **Customize Each Part** — change marks, axes, grid, color scales, legends,
   tooltips, annotations, and interaction chrome.
   [Open Customize Each Part →](/docs/xy/styling/customize/)

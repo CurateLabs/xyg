@@ -69,7 +69,7 @@ integrations are owned or explicitly controlled by CurateLabs:
   Blacksmith Linux, ARM, Windows, or macOS runner; the canonical Linux CI image is
   `blacksmith-4vcpu-ubuntu-2404`, and no workflow may use a GitHub-hosted
   runner alias. `ci.yml`,
-  `docs.yml` and `binder.yml` are hard verification paths.
+  `docs.yml`, and `binder.yml` are hard verification paths.
   Binder builds locally with repo2docker. The main CI test job runs the graph,
   complete Node host, and chart-scale/pyramid checks directly with Cargo,
   pytest, and npm; see [build-ci.md](../design/build-ci.md).
@@ -108,8 +108,14 @@ The inherited reflex.dev deployment workflows were removed. They built images
 for upstream AWS, Harbor, and Azure registries, changed
 `reflex-dev/helm-charts`, and polled the upstream `xy` PyPI project; they could
 only fail or mutate infrastructure outside this repository. XYG documentation
-deployment must be introduced as a new CurateLabs-owned contract rather than
-reenabling those workflows.
+now builds with Astro Starlight into `docs/app/dist/`,
+matching the CurateLabs GraphForge documentation platform. The docs workflow
+verifies static routes, Markdown assets, links, demos, the public quickstart,
+and the production browser experience, then retains the verified static site.
+It requires no Reflex server or docs-specific Python environment. The design
+and reproduction contract is [docs-starlight.md](../design/docs-starlight.md).
+Deployment must still be introduced as a new CurateLabs-owned contract rather
+than reenabling the inherited workflows.
 
 ## Accessibility and Cross-Browser Conformance Status
 
@@ -119,10 +125,12 @@ readouts, focusable direct-point navigation with Arrow/Home/End keys, named
 toolbar controls with toggle state, visible focus styling, reduced-motion
 behavior, and forced-colors affordances.
 
-The public documentation keeps code-copy controls visually icon-only while
-providing stable accessible names and polite copied/failed announcements. Its
-production-DOM check rejects both unnamed controls and shared-theme generated
-text that would replace the copy/check icon feedback.
+The public documentation uses Starlight navigation, theme controls, search,
+and code rendering. Its Chromium smoke exercises the built static site and
+interactive examples; the built-output gate validates routes, links, metadata,
+and downloadable Markdown. These documentation checks are distinct from the
+three-engine chart conformance gate below and do not certify every
+screen-reader/OS combination.
 
 CI runs the same focused chart in Playwright Chromium, Firefox, and WebKit. It
 checks those semantics and interactions in every engine, compares WebGL output
@@ -212,7 +220,7 @@ production-facing push:
 
 | Changed surface | Focused gate |
 |---|---|
-| API prose, examples, public benchmark wording | `make check-docs` |
+| Public docs, API prose, examples, public benchmark wording, Starlight build | `make check-docs` |
 | `spec/api/api-examples.md`, Reflex chart registry/assets | `make check-examples` |
 | Public validation, error messages, builder rollback, LOD/drill mutation boundaries, chart/widget caching | `make check-errors` |
 | Public exports, lazy import mappings, component factories, public annotations | `make check-api` |
@@ -235,18 +243,20 @@ Use this before pushing production-facing changes:
 make check-full
 ```
 
-Use this after editing API docs, example snippets, or public benchmark wording:
+Use this after editing public docs, API examples, benchmark wording, or the
+Starlight documentation app:
 
 ```bash
 make check-docs
 ```
 
-The Docs workflow serializes source dependency builds with
-`UV_CONCURRENT_BUILDS=1` in both quality and production installs. The pinned
-Reflex stub-generation hooks delete and regenerate `.pyi` files in uv's shared
-Git checkout without locking. Concurrent hooks can remove a file while Hatch
-packages another wheel. Keep the frozen dependency lock and all docs tests;
-this setting changes only install concurrency, not the build or test contract.
+This builds and validates the static documentation, runs the checkout
+quickstart, and executes the canonical example gate. Install the root Python
+environment, build the native core and browser client first; see
+[docs-starlight.md](../design/docs-starlight.md) for the clean-checkout commands.
+For documentation UI or interactive-demo changes, also run
+`node docs/app/scripts/browser-smoke.mjs` against the built site with Chromium
+installed. No Reflex production server is part of this docs gate.
 
 The browser gates are split into app-facing checks that match the CI step
 names: `Browser lifecycle smoke (Chromium)`, `Browser visual regression smoke
@@ -442,7 +452,7 @@ publisher) publishes only from tagged releases, with layered guards:
   `XYG_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
   does not exist by default, so a version tag builds and verifies artifacts
   but does not upload until that opt-in is set. The first successful upload
-  claims the pending PyPI project `xyg`.
+  publishes to the PyPI project `xyg`, whose first alpha is already available.
 - **Tagged dispatch only.** A non-dry-run `workflow_dispatch` must target an
   existing `refs/tags/xyg-v*` ref and runs the same tag/CHANGELOG gate as a tag
   push. Dispatching `main` can exercise the complete dry-run matrix, but can
@@ -450,11 +460,13 @@ publisher) publishes only from tagged releases, with layered guards:
 - **GitHub Release after PyPI.** Once the PyPI job succeeds, `github-release`
   creates the matching GitHub Release with generated notes and attaches the
   runtime-verified PyEmscripten wheel. It has `contents: write`; build and PyPI
-  jobs remain read-only except for the OIDC token. There is currently no
-  production-documentation deployment workflow: the inherited reflex.dev
-  promotion path was removed because CurateLabs does not own its registries or
-  Helm destination. A future docs deployment needs a separate
-  CurateLabs-owned destination and release contract.
+  jobs remain read-only except for the OIDC token. The docs workflow builds
+  and retains a verified Astro Starlight static
+  site, but there is currently no production-documentation deployment
+  workflow: the inherited reflex.dev promotion path was removed because
+  CurateLabs does not own its registries or Helm destination. A future docs
+  deployment needs a separate CurateLabs-owned destination and release
+  contract; see [docs-starlight.md](../design/docs-starlight.md).
 
 `scripts/verify_ci_workflow.py` (`make check-ci`) pins these guards, and
 `tests/test_verify_ci_workflow.py` covers their removal.
@@ -465,9 +477,23 @@ workflow triggers on that prefix, and the release gate rejects bare `vX.Y.Z`.
 Inherited upstream tags (`v0.0.1`–`v0.0.6a2`), docs CalVer tags, and
 `reflex-xy-v0.0.1`/`v0.0.2` remain on `origin` as historical provenance, but
 cannot determine an XYG version or trigger an XYG release. No destructive tag
-pruning is required. The first production tag starts the fork line at
-`xyg-v0.1.0`; set `XYG_ALLOW_PYPI_PUBLISH=true` only when that release is ready
-to claim the pending PyPI project.
+pruning is required. The fork's published alpha is `0.0.1a2`; future production
+tags use the `xyg-v*` line and the same opt-in and artifact verification gates.
+
+**Registry snapshot (2026-10-14).** PyPI contains only `xyg` 0.0.1a2, with
+`xyg-0.0.1a2-py3-none-manylinux_2_39_x86_64.whl` (Linux x86-64, glibc 2.39+)
+and `xyg-0.0.1a2.tar.gz`. Neither `@curatelabs/xyg` nor
+`@curatelabs/xyg-node` is published to npm. Source/release-matrix coverage,
+runtime-verified build artifacts, and inherited upstream release history must
+not be presented as current registry inventory. Public installation docs pin
+the verified alpha and identify source-only targets. Refresh the dated snapshot
+after publication rather than treating it as a permanent platform limit.
+Verify inventory against `https://pypi.org/pypi/xyg/json`,
+`https://registry.npmjs.org/@curatelabs%2fxyg`, and
+`https://registry.npmjs.org/@curatelabs%2fxyg-node`; both npm endpoints returned
+HTTP 404 in that snapshot. The PyPI sdist includes prebuilt paint bundles;
+building its native core needs Rust/platform tooling, while a fresh checkout
+also needs Node/npm to generate its untracked client bundles.
 
 npm registry publication of `@curatelabs/xyg` and the complete
 `@curatelabs/xyg-node` set remains tracked by the packaging milestone. The
@@ -615,8 +641,10 @@ Before tagging an `xyg-v*` release:
   product surface is unsupported; otherwise one omitted symbol would prevent
   every supported in-memory kernel from loading. PEP 783 platform tags are accepted by
   PyPI, so the runtime-verified wheel joins the same trusted-publishing batch
-  as the native wheels and sdist; Pyodide 314 users can install it with
-  `await micropip.install("xyg")`. Pull requests build and execute the exact
+  as the native wheels and sdist when publishing that target. The verified
+  2026-10-14 registry snapshot has no Emscripten wheel; Pyodide 314 users must
+  install a compatible built wheel by its exact URL, not by package name.
+  Pull requests build and execute the exact
   wheel in the non-publishing Direct WASM job. The wasm job is release-blocking
   so an ABI or
   toolchain drift cannot silently ship a build-only, unloadable artifact.

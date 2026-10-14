@@ -21,10 +21,35 @@ a buffer-affecting decision, the host-parity placement rule supersedes it.
 The exhaustive current file ownership and migration destinations are enforced
 by [design/ownership-audit.md](design/ownership-audit.md).
 
-The project began as a fork of `reflex-dev/xy`; XYG names in this document are
-provenance and remain valid as the historical record. The canonical naming
+The project began as a fork of `reflex-dev/xy`; XY names in historical sections
+are provenance, while XYG names identify the current product. The canonical naming
 matrix and migration order live in
 [design/xyg-naming.md](design/xyg-naming.md).
+
+XYG was forked from upstream XY to meet GraphForge's need for billion-scale graph
+visualization. Public positioning is a graph visualization and charting engine
+for Python, Node-native, and browser WASM over the shared Rust engine. Graph
+visualization leads; everyday plots, application visuals, and large-data
+exploration remain first-class. The billion-scale graph need is the product
+goal, not a claim that a billion-node end-to-end benchmark has passed.
+Public documentation uses Astro Starlight at `docs/app`, with public Markdown
+in `docs/` and the compatibility base `/docs/xy/`. GraphForge integration leads
+the navigation and application guidance; the inherited Reflex docs runtime is
+removed. The optional runtime adapter is a separate technical surface rather
+than XYG's required application framework.
+
+The fork's Python-to-Rust migration covers both data processing and policy:
+graph result recognition/joins, layout, LOD, binning/decimation, geometry,
+encodings, packed ticks, and supported static output. Hosts retain authoring
+and transport ergonomics. Byte parity is established for named admitted
+contracts; browser memory and feature bounds remain explicit. In particular,
+direct WASM GraphForge rendering has a 1,024-composed-node ceiling plus its
+Scene primitive budget; native graph LOD serves larger views.
+
+Current branding and claim requirements are in naming §6. Reduced transport and
+draw work may be screen-bounded; ingest, validation, and preparation remain
+source-row dependent. No browser-navigation timing implies constant-time
+end-to-end chart construction.
 
 ---
 
@@ -49,7 +74,7 @@ Every claim in this dossier is **mode-scoped and testable** — no universal num
 ## How to read this document
 
 1. **Part 1 — The Design** (§1–§37): the full specification. §1–§14 are the core; §15–§31
-   fold in two prior audit rounds; §32–§37 add the Python-only architecture, distribution,
+   fold in two prior audit rounds; §32–§37 record the original binding decision, distribution,
    filtering, theming, and the transfer protocol.
 2. **Part 2 — Competitive Research**: how the fastest libraries in the field actually
    work, and where each of the six core bets is validated, corrected, or extended. All
@@ -2500,6 +2525,13 @@ foundation to execute the same engine in a Worker and feed the same painter.
 Host obligations and parity status are governed by
 `spec/design/host-parity.md` and `spec/design/dual-host-parity.json`.
 
+*Public explanation:* [Rust engine and host parity](../docs/core-concepts/rust-engine-and-host-parity.md)
+records the Python-to-Rust policy migration and names the proven GraphForge,
+packed-tick, and native static-output contracts separately from remaining
+browser/API coverage. [Use with GraphForge](../docs/integrations/graphforge.md)
+documents canonical-result composition, source generations, and identity
+routing on Python, Node, and the bounded browser host.
+
 ## 32b. Tier-3 out-of-core companions — spatial bucketing and budgeted tile residency
 
 The §28 scatter row promises two things past the in-RAM pyramid: a "spatial
@@ -2619,8 +2651,9 @@ requiring a Rust toolchain — an instant adoption cliff.
   build — importing the compute layer raises a clear, actionable ImportError naming
   the supported platforms, never a silent degrade. Published platform wheels require
   the native core and fail the build if it is absent.
-- **Binder builds are source builds, not wheel installs.** Binder is linux-64,
-  where published wheels already exist — the source build is a deliberate
+- **Binder builds are source builds, not wheel installs.** The verified
+  2026-10-14 PyPI alpha has a Linux x86-64 wheel requiring glibc 2.39+, which
+  does not imply compatibility with every Binder base image. The source build is a deliberate
   trade-off that keeps hosted examples on the launched ref at the cost of
   compiling the core and render client inside repo2docker. The repository's
   `.binder/environment.yml` provisions only the build toolchain (`rust=1.96.*`,
@@ -2637,9 +2670,9 @@ requiring a Rust toolchain — an instant adoption cliff.
   flakes on mybinder builder nodes.
   `.binder/postBuild` installs the checkout with `XYG_REQUIRE_CARGO=1`, making a
   missing native core fail during image construction rather than later at
-  notebook import; if the source build breaks, the fallback is
-  `pip install xyg` (the published linux-64 wheel), losing only
-  launched-ref fidelity. Playwright's browser download is disabled for this
+  notebook import. A published wheel is a fallback only when its glibc floor,
+  architecture, and released feature set match the chosen image and examples;
+  otherwise the source build must be repaired. Playwright's browser download is disabled for this
   build-only Node install, and the checkout's `target` and `node_modules`
   build directories, cargo's crate-download cache, and npm's package cache are
   removed after the wheel has captured the native core and render client.

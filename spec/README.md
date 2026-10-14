@@ -3,13 +3,21 @@
 The root-level `spec/` directory is XYG's engineering source of truth:
 intended behavior, architecture, compatibility, benchmarks, release readiness,
 and contributor contracts. The public documentation lives directly under
-`docs/`, while the Reflex application that renders it lives in `docs/app/`.
+`docs/`, while the Astro Starlight application that builds the static site lives in
+`docs/app/`.
+The static site build and verification contract is
+[`design/docs-starlight.md`](design/docs-starlight.md).
 
 **XYG** is an independent, GraphForge-oriented graph and data-visualization
 engine: Rust owns every decision that changes shipped buffers or recorded
 outcomes, Python and Node are thin host bindings over one native C ABI
 (`libxyg_core`), and the browser client is paint/pick/gesture/transport only.
-The project began as a fork of `reflex-dev/xy`; **XYG** appears in this tree
+The fork was created to meet GraphForge's need for billion-scale graph
+visualization. Python, Node-native, and browser WASM are the three runtime
+surfaces; direct browser compute runs the shared Rust engine in a Worker.
+Graph visualization leads alongside the broader charting surface. The scale
+goal and host-parity targets must remain distinct from measured current scope.
+The project began as a fork of `reflex-dev/xy`; **XY** appears in this tree
 only as historical provenance, upstream comparison, inherited compatibility
 evidence, or license attribution. The canonical naming matrix and the staged
 identity migration live in [`design/xyg-naming.md`](design/xyg-naming.md).
@@ -19,9 +27,11 @@ release change. A change is incomplete while its affected specification is
 missing, stale, or inconsistent with the implementation; resolve discrepancies
 instead of treating the implementation alone as authoritative.
 
-**Install doors.** Python: `pip install xyg` / `import xyg`. JavaScript /
-browser: `npm install @curatelabs/xyg`.
-Node host: `npm install @curatelabs/xyg-node` (registry publish still #13).
+**Install doors.** The verified PyPI alpha is `xyg==0.0.1a2` (2026-10-14),
+with a Linux x86-64 glibc 2.39+ wheel and sdist; Python imports `xyg`.
+JavaScript/browser `@curatelabs/xyg` and Node `@curatelabs/xyg-node` remain
+source-checkout packages pending npm publication. The artifact snapshot and
+build instructions are in [`../docs/overview/installation.md`](../docs/overview/installation.md).
 
 [`design-dossier.md`](design-dossier.md) is the entry point — the single
 compiled record of the design, the competitive research behind it, the

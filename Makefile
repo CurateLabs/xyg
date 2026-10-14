@@ -19,7 +19,7 @@ help:
 		'  make check-full       run JS, Rust, and ABI gates too' \
 		'  make check-browser    run browser smokes (set CHROMIUM=/path/to/chrome)' \
 		'  make check-conformance run accessibility + Chromium/Firefox/WebKit conformance' \
-		'  make check-docs       run documentation examples' \
+		'  make check-docs       build and validate the Starlight docs and documentation examples' \
 		'  make check-examples   run canonical API examples and Reflex asset registry checks' \
 		'  make check-security   run standalone HTML safety and client text-sink checks' \
 		'  make check-errors     run public error, LOD, and mutation-safety tests' \
@@ -79,6 +79,11 @@ check-conformance:
 	node scripts/browser_conformance.mjs
 
 check-docs:
+	npm ci --prefix docs/app
+	npm run check --prefix docs/app
+	npm run build --prefix docs/app
+	npm run test --prefix docs/app
+	$(PYTHON) scripts/verify_docs_quickstart.py
 	$(PYTHON) scripts/verify_local.py --only examples
 
 check-examples:

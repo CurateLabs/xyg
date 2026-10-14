@@ -16,38 +16,19 @@ charts in one process from changing one another implicitly. The separate
 The same data can use defaults in one chart and a chart-local theme,
 interaction policy, axes, and layout in another:
 
-~~~python demo exec
+~~~python demo exec native
 import xyg
 
-traffic = {
-    "hour": list(range(8, 20)),
-    "requests": [28, 35, 42, 39, 56, 63, 59, 71, 68, 74, 82, 77],
-}
-
-default_chart = xyg.line_chart(
-    xyg.line(x="hour", y="requests"),
-    data=traffic,
-    title="Defaults",
-)
-
+traffic = {"hour": list(range(8, 20)), "requests": [28, 35, 42, 39, 56, 63, 59, 71, 68, 74, 82, 77]}
+default_chart = xyg.line_chart(xyg.line(x="hour", y="requests"), data=traffic, title="Defaults")
 configured_chart = xyg.area_chart(
-    xyg.area(
-        x="hour",
-        y="requests",
-        color="#8b5cf6",
-        opacity=0.28,
-        line_width=2,
-    ),
+    xyg.area(x="hour", y="requests", color="#8b5cf6", opacity=0.28, line_width=2),
     xyg.scatter(x="hour", y="requests", color="#c4b5fd", size=7),
     xyg.x_axis(label="hour", domain=(7.5, 19.5), tick_count=6),
     xyg.y_axis(label="requests / min", domain=(20, 90), tick_count=5),
     xyg.tooltip(fields=["hour", "requests"]),
     xyg.interaction_config(
-        hover=True,
-        crosshair=True,
-        select=True,
-        brush=True,
-        default_drag_action="select",
+        hover=True, crosshair=True, select=True, brush=True, default_drag_action="select"
     ),
     xyg.theme(
         background="#111827",
@@ -63,17 +44,6 @@ configured_chart = xyg.area_chart(
     height=320,
     padding=(20, 20, 36, 52),
 )
-
-
-def chart_configuration_demo():
-    import reflex as rx
-    import reflex_xy
-
-    return rx.el.div(
-        reflex_xy.chart(default_chart, height="320px"),
-        reflex_xy.chart(configured_chart, height="320px"),
-        class_name="flex w-full flex-col gap-4",
-    )
 ~~~
 
 The second chart's dark theme, fixed domains, crosshair, and drag-to-select
@@ -101,13 +71,12 @@ are preferable for deterministic static output and facet layouts.
 a file at chart construction time. Hover the chart, then open its Export menu
 to see the configured PNG, SVG, and CSV options:
 
-~~~python demo exec
+~~~python demo exec native
 import xyg
 from xyg import Engine
 
 days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 signups = [320, 460, 510, 620, 780, 690, 540]
-
 export_chart = xyg.column_chart(
     xyg.column(days, signups, color="#6e56cf"),
     xyg.x_axis(label="day"),
@@ -127,16 +96,12 @@ export_chart = xyg.column_chart(
 
 def export_with_browser_css(path="weekly-signups-browser.png"):
     export_chart.write_image(
-        path,
-        engine=Engine.chromium,
-        custom_css=".xy { font-family: Inter, sans-serif; }",
+        path, engine=Engine.chromium, custom_css=".xy { font-family: Inter, sans-serif; }"
     )
 
 
 def output_defaults_demo():
-    import reflex_xy
-
-    return reflex_xy.chart(export_chart, height="360px")
+    return export_chart
 ~~~
 
 `export_with_browser_css()` is a per-call override for cases that require

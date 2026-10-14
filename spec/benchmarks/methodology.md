@@ -29,6 +29,7 @@ are published.
 | payload prep | wall time: canonical arrays → wire payload (spec+blob) | `perf_counter` around `build_payload`; competitors: their figure→HTML/JSON serialize |
 | wire size | bytes crossing to the client | `len(blob)+len(spec_json)`; competitors: HTML/JSON size |
 | browser TTFR | figure build + interactive HTML serialization + navigation → visible chart surface | shipped `_browser.py` chart-ready probe; page FCP is diagnostic only |
+| UX browser navigation | navigation → correct/stable canvas, after source generation and host preparation; not complete data-to-pixels time | `bench_ux.py` / `summarize_ux.py` `visible_complete_ms`; publish preparation separately rather than inferring it from this value |
 | loopback transport | `channel.handle_message()` dispatch → HTTP envelope → client decode; raw/gzip bytes, Python allocation, p50/p95, browser heap, next frame | `benchmarks/bench_transport.py`; binary arm uses the production versioned frame and shipped JS decoder |
 | interaction-ready | navigation → first successful synthetic wheel-zoom applied (view actually changes) | extend page probe: dispatch wheel, RAF-poll view/transform change |
 | pan/zoom latency | p50/p95/p99 of input→pixels for repeated gestures | dispatched DOM events + draw + WebGL readback in `bench_interaction.py`; standalone-client scope is explicit |

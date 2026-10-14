@@ -1,6 +1,6 @@
 ---
 title: Events and Callbacks
-description: Reference core Chart callbacks, Selection payloads, browser events, and adapter names.
+description: Reference core Chart callbacks, Selection payloads, browser events, and GraphForge identity routing.
 ---
 
 # Events and Callbacks
@@ -68,14 +68,15 @@ The client dispatches bubbling custom events from the chart root:
 A live hover can emit an immediate resident readout followed by an exact update.
 Consumers that only need the canonical Python row should use `on_hover`.
 
-## Reflex Integration Events
+## GraphForge identity events
 
-The bundled `xyg[reflex]` integration intentionally uses semantic component props:
-`on_point_hover`, `on_point_click`, `on_select_end`, and `on_view_change`.
-Those are adapter props, not aliases accepted by core `Chart`. See the
-[Reflex integration](/docs/xy/integrations/reflex/) for state-backed payloads.
-`on_select_end` includes `total`, `cleared`, and either box bounds or the
-data-space `polygon` used by a lasso selection.
+Native GraphForge webviews relay `xy:click`'s `trace` and `index` to
+`graphforgePick(figure, composition, {trace, index})` in the Node host.
+Direct WASM GraphForge rendering dispatches `xy:graphforge-select` with the
+canonical UUID and contributing layer/result rows. Derived relationships do
+not acquire invented persisted UUIDs. Selection identity and generation
+checks are shared Rust composition behavior; the application owns event
+routing and state. See [Use with GraphForge](/docs/xy/integrations/graphforge/).
 
 Linked charts broadcast viewport ranges only. They do not automatically link
 selection state or cross-filter data.

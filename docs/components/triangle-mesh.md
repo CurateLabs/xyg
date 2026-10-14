@@ -8,7 +8,7 @@ components:
 # Triangle Mesh Charts in Python
 
 A **triangle mesh** (also called a triangle mesh chart or triangle mesh plot)
-renders a surface from explicit triangles, each defined by its three vertices. With `xy` you build a triangle mesh in Python when you
+renders a surface from explicit triangles, each defined by its three vertices. With `xyg` you build a triangle mesh in Python when you
 already have irregular geometry or precomputed topology — the low-level choice
 where a grid-based surface won't fit. You give each triangle its vertices and an
 optional color value, and the mesh stays interactive with pan, zoom, and hover.
@@ -23,8 +23,7 @@ Give `triangle_mesh` the three vertices of each triangle — (`x0`, `y0`),
 (`x1`, `y1`), (`x2`, `y2`) — plus a per-triangle `color` value mapped through
 the `colormap`:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 triangle_mesh_detail_chart = xyg.triangle_mesh_chart(
@@ -49,7 +48,7 @@ triangle_mesh_detail_chart = xyg.triangle_mesh_chart(
 
 
 def triangle_mesh_demo():
-    return reflex_xy.chart(triangle_mesh_detail_chart, height="340px")
+    return triangle_mesh_detail_chart
 ~~~
 
 ## Color a Computed Mesh by Value
@@ -58,31 +57,28 @@ Meshes are usually generated, not hand-written — here a small grid is
 triangulated in a loop and each triangle's `color` is a function value at its
 centroid, mapped through `colormap` over an explicit `domain` with no stroke:
 
-~~~python demo exec
+~~~python demo exec native
 import math
-
-import reflex_xy
 import xyg
 
-mesh_grid_nx, mesh_grid_ny = 7, 5
-mesh_grid_x0, mesh_grid_y0 = [], []
-mesh_grid_x1, mesh_grid_y1 = [], []
-mesh_grid_x2, mesh_grid_y2 = [], []
+mesh_grid_nx, mesh_grid_ny = (7, 5)
+mesh_grid_x0, mesh_grid_y0 = ([], [])
+mesh_grid_x1, mesh_grid_y1 = ([], [])
+mesh_grid_x2, mesh_grid_y2 = ([], [])
 mesh_grid_values = []
 for gi in range(mesh_grid_nx):
     for gj in range(mesh_grid_ny):
         cell = [(gi, gj), (gi + 1, gj), (gi + 1, gj + 1), (gi, gj + 1)]
         for ta, tb, tc in [(0, 1, 2), (0, 2, 3)]:
-            (ax, ay), (bx, by), (cx, cy) = cell[ta], cell[tb], cell[tc]
+            (ax, ay), (bx, by), (cx, cy) = (cell[ta], cell[tb], cell[tc])
             mesh_grid_x0.append(ax)
             mesh_grid_y0.append(ay)
             mesh_grid_x1.append(bx)
             mesh_grid_y1.append(by)
             mesh_grid_x2.append(cx)
             mesh_grid_y2.append(cy)
-            mx, my = (ax + bx + cx) / 3, (ay + by + cy) / 3
+            mx, my = ((ax + bx + cx) / 3, (ay + by + cy) / 3)
             mesh_grid_values.append(math.sin(mx * 0.9) * math.cos(my * 1.1))
-
 triangle_mesh_grid_chart = xyg.triangle_mesh_chart(
     xyg.triangle_mesh(
         x0=mesh_grid_x0,
@@ -103,7 +99,7 @@ triangle_mesh_grid_chart = xyg.triangle_mesh_chart(
 
 
 def triangle_mesh_grid_demo():
-    return reflex_xy.chart(triangle_mesh_grid_chart, height="340px")
+    return triangle_mesh_grid_chart
 ~~~
 
 ## Layer Constant-Color and Value-Colored Meshes
@@ -112,10 +108,8 @@ def triangle_mesh_grid_demo():
 layer several meshes — this fan pairs a value-colored inner ring with a
 constant-fill outer ring whose edges are drawn via `stroke` and `stroke_width`:
 
-~~~python demo exec
+~~~python demo exec native
 import math
-
-import reflex_xy
 import xyg
 
 fan_inner = {"x0": [], "y0": [], "x1": [], "y1": [], "x2": [], "y2": [], "c": []}
@@ -140,7 +134,6 @@ for wk in range(fan_wedges):
             ring["x2"].append(pts[vc][0])
             ring["y2"].append(pts[vc][1])
     fan_inner["c"].append(wk / (fan_wedges - 1))
-
 triangle_mesh_fan_chart = xyg.triangle_mesh_chart(
     xyg.triangle_mesh(
         x0=fan_inner["x0"],
@@ -173,7 +166,7 @@ triangle_mesh_fan_chart = xyg.triangle_mesh_chart(
 
 
 def triangle_mesh_fan_demo():
-    return reflex_xy.chart(triangle_mesh_fan_chart, height="340px")
+    return triangle_mesh_fan_chart
 ~~~
 
 ## When to Use a Triangle Mesh

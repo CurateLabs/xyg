@@ -10,24 +10,18 @@ components:
 Marks with a `name=` participate in the chart legend. Add `legend()` to control
 the built-in legend's placement, columns, title, visibility, and DOM styling.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 legend_intro_chart = xyg.line_chart(
     xyg.line([1, 2, 3], [4, 7, 6], name="Actual"),
     xyg.line([1, 2, 3], [3, 5, 7], name="Plan"),
-    xyg.legend(
-        loc="upper right",
-        ncols=2,
-        title="Series",
-        class_name="rounded-lg shadow-sm",
-    ),
+    xyg.legend(loc="upper right", ncols=2, title="Series", class_name="rounded-lg shadow-sm"),
 )
 
 
 def legend_intro_demo():
-    return reflex_xy.chart(legend_intro_chart, height="320px")
+    return legend_intro_chart
 ~~~
 
 The legend is available by default when the chart contains named series.
@@ -39,8 +33,7 @@ the last one supplies the effective built-in configuration.
 Giving each mark a `name=` is all it takes — a bare `xyg.legend()` simply opts
 into the default placement for the named series.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 basic_legend_chart = xyg.line_chart(
@@ -54,7 +47,7 @@ basic_legend_chart = xyg.line_chart(
 
 
 def basic_legend_demo():
-    return reflex_xy.chart(basic_legend_chart, height="320px")
+    return basic_legend_chart
 ~~~
 
 ## Position and Title the Legend
@@ -62,8 +55,7 @@ def basic_legend_demo():
 `loc=` moves the legend to a corner such as `"upper left"`, and `title=` adds a
 heading above the entries.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 positioned_legend_chart = xyg.line_chart(
@@ -78,7 +70,7 @@ positioned_legend_chart = xyg.line_chart(
 
 
 def positioned_legend_demo():
-    return reflex_xy.chart(positioned_legend_chart, height="320px")
+    return positioned_legend_chart
 ~~~
 
 ## Multi-Column Layout and Unnamed Series
@@ -86,8 +78,7 @@ def positioned_legend_demo():
 With many series, `ncols=2` lays the entries out in two columns; the dashed
 baseline mark has no `name=`, so it stays out of the legend entirely.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 multi_column_legend_chart = xyg.line_chart(
@@ -104,7 +95,7 @@ multi_column_legend_chart = xyg.line_chart(
 
 
 def multi_column_legend_demo():
-    return reflex_xy.chart(multi_column_legend_chart, height="320px")
+    return multi_column_legend_chart
 ~~~
 
 ## Style the Built-in Legend
@@ -124,31 +115,23 @@ The positional child or `render=` value is an opaque replacement object for a
 framework adapter:
 
 ~~~python
-import reflex as rx
 import xyg
 
-my_framework_legend = rx.hstack(
-    rx.box(width="0.75rem", height="0.75rem", background="#6e56cf"),
-    rx.text("Actual"),
-    align="center",
-    spacing="2",
-)
-
+# An opaque stand-in for a component owned and mounted by your application.
+custom_component = object()
 chart = xyg.line_chart(
     xyg.line([1, 2, 3], [4, 7, 6], name="Actual"),
-    xyg.legend(render=my_framework_legend),
+    xyg.legend(render=custom_component),
 )
 
 replacement = chart.chrome_components()["legend"]
-assert replacement is my_framework_legend
+assert replacement is custom_component
 ~~~
 
 Core XYG neither imports nor serializes that object. The example is complete,
-but it only demonstrates storage: the shipped `reflex_xy.chart` adapter does
-not currently mount custom legend content. A custom adapter can read
-`chrome_components()` and mount the returned component. Standalone HTML keeps
-using safe built-in chrome, and the same object is also available through
-`reflex_components()`.
+but it only demonstrates storage: custom legend content is not mounted by
+the core. A host adapter must read `chart.chrome_components()` and mount the
+returned component. Standalone HTML keeps using safe built-in chrome.
 
 Exact parameters and defaults are in
 [Marks and components reference](/docs/xy/api-reference/marks-and-components/).

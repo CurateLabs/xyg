@@ -19,8 +19,7 @@ category in its own panel.
 
 The live example layers different mark types in one coordinate system.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 chart = xyg.chart(
@@ -31,7 +30,7 @@ chart = xyg.chart(
 
 
 def layered_chart_demo():
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 ## Chart Types
@@ -43,9 +42,7 @@ system. Declare broad fills first, followed by lines, points, and annotations.
 
 ### Facet Chart
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 facet_detail_data = {
@@ -53,7 +50,6 @@ facet_detail_data = {
     "y": [1, 2, 3, 3, 2, 1],
     "region": ["West", "West", "West", "East", "East", "East"],
 }
-
 facet_detail_chart = xyg.facet_chart(
     xyg.line(x="x", y="y", color="#6e56cf", width=2.5),
     xyg.scatter(x="x", y="y", color="#6e56cf", size=7),
@@ -71,7 +67,7 @@ facet_detail_chart = xyg.facet_chart(
 
 
 def facet_chart_demo():
-    return reflex_xy.chart(facet_detail_chart)
+    return facet_detail_chart
 ~~~
 
 `cols` controls wrapping, `gap` controls panel spacing, and shared axes keep
@@ -90,29 +86,16 @@ Declaration order is the z-order — this composition stacks an `area` fill, a
 dashed forecast `line`, a solid actuals `line` with `scatter` markers, and an
 `hline` goal, with `name=` on each mark feeding a positioned `legend`:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 layer_months = list(range(1, 13))
 layer_actual = [4.2, 4.8, 5.1, 4.6, 5.9, 6.4, 7.1, 6.8, 7.6, 8.2, 7.9, 8.8]
 layer_forecast = [4.0, 4.5, 5.0, 5.2, 5.8, 6.3, 6.9, 7.2, 7.5, 8.0, 8.3, 8.6]
-
 layered_legend_chart = xyg.chart(
-    xyg.area(
-        layer_months,
-        layer_forecast,
-        name="Forecast band",
-        color="#c4b5fd",
-        opacity=0.3,
-    ),
+    xyg.area(layer_months, layer_forecast, name="Forecast band", color="#c4b5fd", opacity=0.3),
     xyg.line(
-        layer_months,
-        layer_forecast,
-        name="Forecast",
-        color="#8b5cf6",
-        width=2,
-        dash="dashed",
+        layer_months, layer_forecast, name="Forecast", color="#8b5cf6", width=2, dash="dashed"
     ),
     xyg.line(layer_months, layer_actual, name="Actual", color="#1b212a", width=2.5),
     xyg.scatter(layer_months, layer_actual, name="Monthly close", color="#1b212a", size=6),
@@ -125,7 +108,7 @@ layered_legend_chart = xyg.chart(
 
 
 def layered_legend_demo():
-    return reflex_xy.chart(layered_legend_chart, height="360px")
+    return layered_legend_chart
 ~~~
 
 ## Expected Data Shape
@@ -144,7 +127,7 @@ and the same per-mark representation rules.
 
 ### How do I make small multiples (facets) in Python?
 
-Use `xyg.facet_chart(...)` with a `by=` column; xy repeats the composition once
+Use `xyg.facet_chart(...)` with a `by=` column; XYG repeats the composition once
 per distinct value and lays the panels out on a grid you control with `cols`,
 one small facet graph per category.
 

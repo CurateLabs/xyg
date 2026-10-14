@@ -26,16 +26,14 @@ Jump to [filled areas or outlines](#choose-filled-areas-or-outlines),
 Pass the category labels first, followed by one `area` or `line` mark per
 series. Each mark supplies exactly one value per category:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 capabilities = ["Speed", "Range", "Payload", "Efficiency", "Comfort"]
-
 radar = xyg.radar_chart(
     capabilities,
     xyg.area(
-        [0.92, 0.70, 0.58, 0.82, 0.64],
+        [0.92, 0.7, 0.58, 0.82, 0.64],
         name="Model A",
         color="#6e56cf",
         line_color="#6e56cf",
@@ -56,7 +54,7 @@ radar = xyg.radar_chart(
 
 
 def radar_demo():
-    return reflex_xy.chart(radar, height="440px")
+    return radar
 ~~~
 
 The helper assigns the category labels to the theta axis and closes the first
@@ -69,14 +67,13 @@ Use `xyg.area(values)` for a filled profile or `xyg.line(values)` for an outline
 When an existing composition already uses area marks, set `fill=False` on the
 chart to turn every area into an outline without rewriting the series:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 outline = xyg.radar_chart(
     ["Reliability", "Speed", "Efficiency", "Comfort"],
     xyg.area(
-        [0.90, 0.72, 0.84, 0.66],
+        [0.9, 0.72, 0.84, 0.66],
         name="Current",
         color="#8b5cf6",
         line_color="#7c3aed",
@@ -100,7 +97,7 @@ outline = xyg.radar_chart(
 
 
 def radar_outline_demo():
-    return reflex_xy.chart(outline, height="420px")
+    return outline
 ~~~
 
 When `fill=False` rebuilds an area as a line, the outline inherits
@@ -143,12 +140,10 @@ Overlay one mark per candidate, pin the radial domain and its rings with
 `xyg.r_axis()`, and rotate the first category to the top with `xyg.theta_axis()`
 so repeated benchmarks stay directly comparable:
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 benchmark_axes = ["Latency", "Throughput", "Accuracy", "Cost", "Memory", "Setup"]
-
 radar_scaled = xyg.radar_chart(
     benchmark_axes,
     xyg.area(
@@ -180,7 +175,7 @@ radar_scaled = xyg.radar_chart(
 
 
 def radar_scaled_demo():
-    return reflex_xy.chart(radar_scaled, height="440px")
+    return radar_scaled
 ~~~
 
 ## Interaction and Export

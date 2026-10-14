@@ -1,9 +1,8 @@
-.states
-*.db
-*.zip
-.venv/
-.web
-assets/external/
-assets/xy/
+.astro/
+.generated/
+dist/
+node_modules/
+public/
+src/content/docs/
 __pycache__/
 *.py[cod]

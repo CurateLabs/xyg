@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
+        viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+      <title id="title">XYG — Graphs and charts. Your design.</title>
+      <desc id="desc">Graph visualization and charting for Python, Node.js, and WebAssembly.
+        Forked for GraphForge's billion-scale graph visualization goal. Alpha.</desc>
+      <rect width="1200" height="630" fill="#090A0B"/>
+      <path d="M0 588H1200" stroke="#6E56CF" stroke-width="6"/>
+      <g transform="translate(78 70) scale(2)" fill="none" stroke-width="4"
+          stroke-linecap="square"><path d="M2 2L18 22M18 2L2 22M26 2L34 12L42 2M34 12V22" stroke="#FCFCFD"/><path d="M70 5A10 10 0 1 0 70 19V12H62" stroke="#6E56CF"/></g>
+      <g fill="#FCFCFD" font-family="Instrument Sans, sans-serif">
+        <text x="78" y="245" font-size="76" font-weight="650">Graphs and charts.</text>
+        <text x="78" y="337" font-size="76" font-weight="650" fill="#A594E8">Your design.</text>
+        <text x="78" y="415" font-size="27" fill="#D4D4D8">Python · Node.js · WebAssembly</text>
+        <text x="78" y="469" font-size="27" fill="#D4D4D8">Built for GraphForge. Open to your data.</text>
+        <text x="78" y="550" font-size="21" fill="#A1A1AA">CurateLabs / XYG</text>
+        <text x="1115" y="550" text-anchor="end" font-size="21" fill="#A594E8">ALPHA</text>
+      </g>
+    </svg>

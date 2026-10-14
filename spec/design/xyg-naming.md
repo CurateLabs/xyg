@@ -10,8 +10,8 @@ identity coordinates with #13; user-facing branding/link cleanup with #14.
 **XYG** is the current product: an independent, GraphForge-oriented graph and
 data-visualization engine in which Rust owns every decision that changes
 shipped buffers or recorded outcomes, Python and Node are thin host bindings
-over one native C ABI, and the browser client is paint/pick/gesture/transport
-only.
+over one native C ABI, and browser WASM executes the same engine in a Worker. The TypeScript
+client owns paint, pick, gestures, transport, and DOM presentation.
 
 **XY** is provenance. This repository began as a fork of `reflex-dev/xy`
 (upstream license and attribution are preserved — see `LICENSE`); the
@@ -56,11 +56,12 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Repository slug | `CurateLabs/graphforge-xy` (fork of `reflex-dev/xy`) | **`CurateLabs/xyg`** (renamed server-side 2026-08-11; old URLs redirect) | decided (owner, 2026-08-11) |
 | Release publish-guard repo condition | `github.repository == 'CurateLabs/graphforge-xy'` | **`github.repository == 'CurateLabs/xyg'`** | decided |
 
-Because **no XYG release has ever shipped** (the fork has published nothing to
-PyPI or npm), there are no external consumers to migrate: the Python/Node
-renames are a clean break with **no compatibility alias**, per the owner's
-direction. The old `XY_*` environment variables above are likewise removed,
-not aliased; they are documented here as the historical names.
+At the identity cutover no XYG release had shipped, so the Python/Node renames
+were a clean break with **no compatibility alias**, per the owner's direction.
+The old `XY_*` environment variables above were removed rather than aliased.
+That historical cutover is not a current no-consumers guarantee: the registry
+snapshot on 2026-10-14 contains PyPI `xyg` 0.0.1a2. Both npm packages remain
+unpublished. Subsequent compatibility decisions must account for released users.
 
 ## 2. Deferred identifiers (recorded, later stages)
 
@@ -77,9 +78,9 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Dev/test/bench env knobs | `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
 | Benchmark/report arm keys | `xy`, `xy-exact` in committed benchmark schemas, CLI selectors, and historical result assets | `xyg`, `xyg-exact` with an explicit report-schema migration | cross-host release evidence (#40) — display labels must say XYG now; machine keys remain stable until readers and baselines migrate together |
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
-| README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
+| README, user docs, branding sweep | inherited visual identity | **XYG** wordmark, chart hero, and social card | public copy/assets corrected; versioned browser/wire renames remain deferred |
 | Historical repository slugs | `graphforge-xy`, `reflex-dev/xy` | permitted only in provenance/evidence contexts (old URLs redirect); current-product references use `CurateLabs/xyg` | policy (gate-enforced) |
-| Public documentation origin | inherited `https://reflex.dev/docs/xy` | explicit CurateLabs-owned `XY_DOCS_PUBLIC_URL` deployment configuration | unset in preview/source builds; canonical, sitemap, social, and absolute public agent URLs are omitted rather than invented; generated Markdown retains only its truthful host-relative `/docs/xy/llms.txt` discovery link |
+| Public documentation platform and origin | inherited Reflex app and `https://reflex.dev/docs/xy` | Astro Starlight at `docs/app`, sourced from public `docs/` Markdown; explicit CurateLabs-owned public URL configuration | public base `/docs/xy/` retained; no Reflex docs shell or deployment origin is implied; unset preview origins omit absolute canonical/social URLs |
 | Upstream-inherited corpus/fixtures | `scripts/rename_fc_to_xy.py`, matplotlib compat corpus labels | permitted historical evidence | never (provenance) |
 
 The host-relative `/docs/xy/` route, `xy-*` DOM/event/CSS prefixes,
@@ -134,15 +135,14 @@ one reviewed PR on `main` before any release tag:
 Safety properties: the ABI version bump plus the symbol-prefix change make old
 and new libraries mutually unloadable by the wrong wrapper (an old wrapper
 finds no `xy_abi_version` in a new library and fails before binding anything;
-a new wrapper fails the same way against an old library). Because publishing
-happens only from tagged `main` after the full sequence merges — and no XY or
-XYG artifact has ever been published from this fork — no intermediate mixed
-artifact can exist.
+a new wrapper fails the same way against an old library). The original cutover
+preceded the fork's first publication. Future tagged artifacts still require
+every host wrapper to match the native library; the existence of a published
+alpha does not relax that release contract.
 
 ## 4. Follow-ups recorded for later stages
 
-- Python `xyg` / `@curatelabs/xyg-node` first-release version line and PyPI/npm project
-  registration: #13.
+- Python `xyg` release coverage and `@curatelabs/xyg-node` npm registration: #13.
 - README, user docs, repository links, branding sweep, deferred identifier
   batches in §2: #14.
 - Phase-4 tile spill (#5–#11): WP1 (#8) re-landed in `crates/xyg-engine` (ABI 73); its
@@ -172,3 +172,68 @@ artifact can exist.
 7. Prove BDD: clean `pip install` of wheel/sdist → `import xyg` renders; `import xy` raises `ModuleNotFoundError`.
 
 **Guardrail:** `tests/test_xyg_package_identity.py` locks the landed distribution/import identity, absence of the old namespace, and retained `reflex_xy` adapter.
+
+## 6. Public positioning and evidence contract
+
+XYG was forked from upstream XY because GraphForge needed billion-scale graph
+visualization. Lead with graph visualization and charting for **Python,
+Node-native, and browser WASM**, powered by one Rust engine. Everyday plots,
+custom application visuals, and large-data exploration remain first-class
+across notebooks, applications, and static exports. Host identities belong in
+the introduction, installation paths, and social metadata; Python examples do
+not make this a Python-only product.
+
+State the billion-scale graph goal separately from demonstrated capacity:
+the recorded graph-scale diagnostic executes through 1M source nodes, while
+its 1B rows check LOD policy without materializing or rendering that graph.
+Scatter/density capacity is a different workload. Browser WASM is a bounded
+direct-execution foundation, not a claim of complete Python/Node feature parity.
+
+Current-facing imagery must depict **XYG**, not upstream XY or a Reflex product.
+The README hero is `spec/assets/xyg-sdf-binned-scatter.png`; docs social assets
+use XYG typography and the graph-first, three-host identity. The old XY hero
+and benchmark assets are historical evidence, not current brand assets.
+Preserve upstream license notices and identify provenance separately from the
+current CurateLabs/XYG identity.
+
+The public documentation platform is **Astro Starlight**, following CurateLabs'
+other documentation sites. `docs/app` contains the static-site build;
+`docs/` Markdown remains the authoring source. The public base stays
+`/docs/xy/` for link compatibility. Executable example fences contain host-neutral chart authoring and are
+compiled at build time into native chart previews, without requiring a
+framework docs runtime. The site navigation and
+landing/integration/deployment guidance lead with **Use with GraphForge**.
+Reflex is upstream provenance and a retained optional technical adapter; it is
+not XYG's product identity or required application framework. Source-only
+adapter references may remain where they accurately document that code.
+
+README and public docs describe current source behavior and distinguish it
+from dated registry availability. An owned deployment must configure its
+origin explicitly; a preview must not borrow Reflex's origin. Navbar, page,
+search, and social metadata use the same graph-first, three-host position as
+the visible introduction. Metadata is part of the claim surface.
+
+Public architecture guidance explains the fork's Python-to-Rust migration:
+row processing and decisions that change geometry, encodings, layout, ticks,
+LOD, GraphForge composition, and recorded outcomes belong to the shared Rust
+engine. Python/Node native bindings and browser WASM invoke that implementation;
+hosts keep idiomatic APIs, packaging, transport, and lifecycle. Parity claims
+name their tested contracts, not universal API or pixel equivalence. Browser
+WASM remains bounded, including the rendered GraphForge Scene's 1,024-node
+ceiling and primitive budget. Broader native authoring and export coverage
+must not be implied for the browser host.
+
+Claims must name their scope: browser CSS/Tailwind chrome versus validated
+mark/axis/theme styling and renderer-specific export support; aggregated
+overviews versus exact points; source-row ingest/preparation versus bounded
+draw/transport work; live-kernel refinement versus standalone HTML. Slot counts
+come from the generated capability matrix instead of hand-maintained headlines.
+OpenStreetMap demonstrates roughly 10.7 billion **node locations** as density,
+with dedicated disk preparation, not all map entities or semantics.
+
+Public performance numbers require archived raw runs, environments, source
+versions, output contracts, and relevant competitors. The unarchived UX
+headline table is withdrawn; see `spec/benchmarks/results.md`. Do not relabel
+upstream historical measurements as current XYG results or imply a universal
+performance/customization win over Matplotlib, Seaborn, Plotly, Bokeh, Altair,
+Datashader, HoloViews/hvPlot, or emerging alternatives.

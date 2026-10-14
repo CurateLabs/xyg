@@ -30,8 +30,7 @@ markers, arrows, and callouts draw attention to individual observations.
 
 ## Live Demo
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 chart = xyg.line_chart(
@@ -45,7 +44,7 @@ chart = xyg.line_chart(
 
 
 def annotations_preview():
-    return reflex_xy.chart(chart, height="360px")
+    return chart
 ~~~
 
 ## Rules and Bands
@@ -55,8 +54,7 @@ def annotations_preview():
 `threshold(value, axis=...)` adds a semantic, optionally labeled reference
 boundary on either axis.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 threshold_detail_chart = xyg.column_chart(
@@ -68,15 +66,14 @@ threshold_detail_chart = xyg.column_chart(
 
 
 def threshold_demo():
-    return reflex_xy.chart(threshold_detail_chart, height="320px")
+    return threshold_detail_chart
 ~~~
 
 ### Horizontal Line
 
 `hline(y)` draws a horizontal rule at one y value.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 horizontal_line_detail_chart = xyg.line_chart(
@@ -89,7 +86,7 @@ horizontal_line_detail_chart = xyg.line_chart(
 
 
 def horizontal_line_demo():
-    return reflex_xy.chart(horizontal_line_detail_chart, height="320px")
+    return horizontal_line_detail_chart
 ~~~
 
 ### Vertical Line
@@ -101,8 +98,7 @@ def horizontal_line_demo():
 `x_band(x0, x1)` and `y_band(y0, y1)` shade an interval on the corresponding
 axis.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 bands_detail_chart = xyg.line_chart(
@@ -116,7 +112,7 @@ bands_detail_chart = xyg.line_chart(
 
 
 def bands_demo():
-    return reflex_xy.chart(bands_detail_chart, height="320px")
+    return bands_detail_chart
 ~~~
 
 ### Threshold Zone
@@ -138,8 +134,7 @@ and `dy` offsets.
 
 `arrow(x0, y0, x1, y1)` connects two coordinates and points toward the end.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 arrow_detail_chart = xyg.line_chart(
@@ -152,15 +147,14 @@ arrow_detail_chart = xyg.line_chart(
 
 
 def arrow_demo():
-    return reflex_xy.chart(arrow_detail_chart, height="320px")
+    return arrow_detail_chart
 ~~~
 
 ### Label
 
 `label` attaches concise text to a coordinate with label-oriented positioning.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 label_detail_chart = xyg.scatter_chart(
@@ -173,7 +167,7 @@ label_detail_chart = xyg.scatter_chart(
 
 
 def label_demo():
-    return reflex_xy.chart(label_detail_chart, height="320px")
+    return label_detail_chart
 ~~~
 
 ### Text
@@ -181,8 +175,7 @@ def label_demo():
 `text` places free text at a coordinate. Use it when no marker or connector is
 needed.
 
-~~~python demo exec
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 text_detail_chart = xyg.scatter_chart(
@@ -196,7 +189,7 @@ text_detail_chart = xyg.scatter_chart(
 
 
 def text_demo():
-    return reflex_xy.chart(text_detail_chart, height="320px")
+    return text_detail_chart
 ~~~
 
 `marker` adds a point symbol and optional label. It uses the same data-coordinate

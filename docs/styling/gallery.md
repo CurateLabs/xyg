@@ -18,35 +18,30 @@ columns while an amber line keeps the cumulative signal easy to compare. The
 host-owned key distinguishes bar and line marks, and only quiet horizontal guides
 remain inside the plot.
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 months = [
-    "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
-    "Jul 23", "Aug 23", "Sep 23", "Oct 23", "Nov 23", "Dec 23",
+    "Jan 23",
+    "Feb 23",
+    "Mar 23",
+    "Apr 23",
+    "May 23",
+    "Jun 23",
+    "Jul 23",
+    "Aug 23",
+    "Sep 23",
+    "Oct 23",
+    "Nov 23",
+    "Dec 23",
 ]
 production = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 cumulative = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
-
 trend_atlas = xyg.chart(
     xyg.column(
-        months,
-        production,
-        name="Production",
-        color="#2b7fff",
-        corner_radius=0,
-        stroke_width=0,
+        months, production, name="Production", color="#2b7fff", corner_radius=0, stroke_width=0
     ),
-    xyg.line(
-        months,
-        cumulative,
-        name="Cumulative",
-        color="#fe9a00",
-        width=2,
-        curve="linear",
-    ),
+    xyg.line(months, cumulative, name="Cumulative", color="#fe9a00", width=2, curve="linear"),
     xyg.x_axis(
         style={
             "axis_width": 0,
@@ -56,7 +51,7 @@ trend_atlas = xyg.chart(
             "tick_color": "#00000000",
             "tick_label_color": "#00000000",
             "label_color": "#00000000",
-        },
+        }
     ),
     xyg.y_axis(
         domain=(0, 4200),
@@ -77,48 +72,11 @@ trend_atlas = xyg.chart(
         axis_color="var(--gallery-axis, #d1d5db)",
         text_color="var(--gallery-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--gallery-surface:#ffffff] [--gallery-grid:#e5e7eb] "
-        "[--gallery-axis:#d1d5db] [--gallery-text:#4b5563] "
-        "dark:bg-[#000000] dark:[--gallery-surface:#000000] "
-        "dark:[--gallery-grid:#27272a] dark:[--gallery-axis:#3f3f46] "
-        "dark:[--gallery-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--gallery-surface:#ffffff] [--gallery-grid:#e5e7eb] [--gallery-axis:#d1d5db] [--gallery-text:#4b5563] dark:bg-[#000000] dark:[--gallery-surface:#000000] dark:[--gallery-grid:#27272a] dark:[--gallery-axis:#3f3f46] dark:[--gallery-text:#d4d4d8]",
     width="100%",
     height=330,
     padding=[14, 20, 16, 20],
 )
-
-
-def trend_mark_atlas_preview():
-    return rx.vstack(
-        rx.hstack(
-            rx.hstack(
-                rx.box(class_name="size-3 rounded-sm bg-[#2b7fff]"),
-                rx.text("Production", size="2", weight="medium"),
-                align="center",
-                spacing="2",
-            ),
-            rx.hstack(
-                rx.box(class_name="h-0.5 w-5 rounded-full bg-[#fe9a00]"),
-                rx.text("Cumulative", size="2", weight="medium"),
-                align="center",
-                spacing="2",
-            ),
-            align="center",
-            justify="center",
-            spacing="5",
-            width="100%",
-        ),
-        reflex_xy.chart(trend_atlas, height="330px"),
-        align="stretch",
-        spacing="2",
-        width="100%",
-        class_name=(
-            "bg-[#ffffff] px-4 pb-4 pt-6 text-[#364153] "
-            "dark:bg-[#000000] dark:text-[#d4d4d8] sm:px-6"
-        ),
-    )
 ~~~
 
 ## What this gallery includes
@@ -144,36 +102,17 @@ isolines. The second chart shows screen-bounded `hexbin` geometry. These marks
 accept deliberately narrower paint vocabularies than DOM chrome because their
 color is data-driven.
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
-field = [
-    [0.0, 0.2, 0.4, 0.1],
-    [0.2, 0.8, 1.1, 0.5],
-    [0.1, 0.6, 0.9, 0.4],
-    [0.0, 0.2, 0.3, 0.1],
-]
-
+field = [[0.0, 0.2, 0.4, 0.1], [0.2, 0.8, 1.1, 0.5], [0.1, 0.6, 0.9, 0.4], [0.0, 0.2, 0.3, 0.1]]
 field_chart = xyg.chart(
     xyg.heatmap(field, colormap="purples", opacity=0.86),
-    xyg.contour(
-        field,
-        levels=7,
-        color="#312e81",
-        colormap="purples",
-        width=1.4,
-        opacity=0.9,
-    ),
+    xyg.contour(field, levels=7, color="#312e81", colormap="purples", width=1.4, opacity=0.9),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
     xyg.colorbar(
         title="Intensity",
         orientation="vertical",
@@ -191,7 +130,6 @@ field_chart = xyg.chart(
         "colorbar_title": {"font_weight": 700},
     },
 )
-
 hex_x = (
     [
         -1.8,
@@ -217,30 +155,10 @@ hex_x = (
     + [0.9] * 6
 )
 hex_y = (
-    [
-        -0.9,
-        -0.5,
-        -0.7,
-        -0.2,
-        -0.4,
-        0.1,
-        -0.1,
-        0.4,
-        0.2,
-        0.7,
-        0.4,
-        0.9,
-        0.6,
-        1.2,
-        0.8,
-        1.4,
-        1.1,
-        1.6,
-    ]
+    [-0.9, -0.5, -0.7, -0.2, -0.4, 0.1, -0.1, 0.4, 0.2, 0.7, 0.4, 0.9, 0.6, 1.2, 0.8, 1.4, 1.1, 1.6]
     + [0.4] * 4
     + [1.2] * 6
 )
-
 hexbin_chart = xyg.hexbin_chart(
     xyg.hexbin(
         hex_x,
@@ -251,28 +169,12 @@ hexbin_chart = xyg.hexbin_chart(
         opacity=0.9,
         style={"fill-opacity": 0.9},
     ),
-    xyg.colorbar(
-        title="Points per hexagon",
-        orientation="horizontal",
-        ticks=[1, 3, 6],
-    ),
+    xyg.colorbar(title="Points per hexagon", orientation="horizontal", ticks=[1, 3, 6]),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
 )
-
-
-def scalar_field_atlas_preview():
-    return rx.el.div(
-        reflex_xy.chart(field_chart, height="350px"),
-        reflex_xy.chart(hexbin_chart, height="350px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 ## Uncertainty and explicit geometry
@@ -281,14 +183,11 @@ This pair shows advanced geometry from `error_band`, `errorbar`, `segments`,
 `stem`, and `triangle_mesh`. A restrained dashboard
 palette separates each geometry without adding decorative chart chrome.
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
 import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 estimate = [3, 4, 4.5, 6, 6.5, 8]
-
 uncertainty_chart = xyg.chart(
     xyg.error_band(
         x,
@@ -312,13 +211,9 @@ uncertainty_chart = xyg.chart(
     ),
     xyg.line(x, estimate, name="Estimate", color="#2b7fff", width=2),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
     xyg.legend(loc="upper left"),
     xyg.theme(
         plot_background="var(--atlas-surface, #ffffff)",
@@ -326,14 +221,8 @@ uncertainty_chart = xyg.chart(
         axis_color="var(--atlas-axis, #d1d5db)",
         text_color="var(--atlas-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--atlas-surface:#ffffff] [--atlas-grid:#e5e7eb] "
-        "[--atlas-axis:#d1d5db] [--atlas-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--atlas-surface:#000000] dark:[--atlas-grid:#27272a] "
-        "dark:[--atlas-axis:#3f3f46] dark:[--atlas-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--atlas-surface:#ffffff] [--atlas-grid:#e5e7eb] [--atlas-axis:#d1d5db] [--atlas-text:#4b5563] dark:bg-[#000000] dark:[--atlas-surface:#000000] dark:[--atlas-grid:#27272a] dark:[--atlas-axis:#3f3f46] dark:[--atlas-text:#d4d4d8]",
 )
-
 geometry_chart = xyg.chart(
     xyg.triangle_mesh(
         [0, 1, 1],
@@ -371,13 +260,9 @@ geometry_chart = xyg.chart(
         name="Stems",
     ),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
     xyg.legend(loc="upper left"),
     xyg.theme(
         plot_background="var(--atlas-surface, #ffffff)",
@@ -385,21 +270,8 @@ geometry_chart = xyg.chart(
         axis_color="var(--atlas-axis, #d1d5db)",
         text_color="var(--atlas-text, #4b5563)",
     ),
-    class_name=(
-        "bg-[#ffffff] [--atlas-surface:#ffffff] [--atlas-grid:#e5e7eb] "
-        "[--atlas-axis:#d1d5db] [--atlas-text:#4b5563] dark:bg-[#000000] "
-        "dark:[--atlas-surface:#000000] dark:[--atlas-grid:#27272a] "
-        "dark:[--atlas-axis:#3f3f46] dark:[--atlas-text:#d4d4d8]"
-    ),
+    class_name="bg-[#ffffff] [--atlas-surface:#ffffff] [--atlas-grid:#e5e7eb] [--atlas-axis:#d1d5db] [--atlas-text:#4b5563] dark:bg-[#000000] dark:[--atlas-surface:#000000] dark:[--atlas-grid:#27272a] dark:[--atlas-axis:#3f3f46] dark:[--atlas-text:#d4d4d8]",
 )
-
-
-def uncertainty_geometry_atlas_preview():
-    return rx.el.div(
-        reflex_xy.chart(uncertainty_chart, height="380px"),
-        reflex_xy.chart(geometry_chart, height="380px"),
-        class_name="grid w-full grid-cols-1 gap-5 xl:grid-cols-2",
-    )
 ~~~
 
 ## A real reduction badge
@@ -409,36 +281,20 @@ Enabling density while supplying per-point color produces an “aggregated
 channels” badge. This example styles the badge generated from that real data
 reduction.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(17)
-x = rng.normal(size=12_000)
+x = rng.normal(size=12000)
 y = 0.65 * x + rng.normal(scale=0.7, size=x.size)
-
 reduction_chart = xyg.scatter_chart(
-    xyg.scatter(
-        x,
-        y,
-        color=np.hypot(x, y),
-        density=True,
-        colormap="viridis",
-        opacity=0.9,
-    ),
+    xyg.scatter(x, y, color=np.hypot(x, y), density=True, colormap="viridis", opacity=0.9),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
-    class_names={
-        "badge": "gap-1",
-        "badge_item": "rounded-full font-mono text-[10px] shadow-sm",
-    },
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
+    class_names={"badge": "gap-1", "badge_item": "rounded-full font-mono text-[10px] shadow-sm"},
     styles={
         "badge_item": {
             "background": "rgb(24 24 27 / 88%)",
@@ -451,7 +307,7 @@ reduction_chart = xyg.scatter_chart(
 
 
 def reduction_badge_preview():
-    return reflex_xy.chart(reduction_chart, height="380px")
+    return reduction_chart
 ~~~
 
 ## Styled facets
@@ -460,8 +316,7 @@ def reduction_badge_preview():
 styles to every panel. XYG's standalone wrapper owns the grid, so wrapper
 layout selectors belong in export CSS.
 
-~~~python demo exec
-import reflex as rx
+~~~python demo exec native
 import xyg
 
 facet_data = {
@@ -469,7 +324,6 @@ facet_data = {
     "y": [1, 3, 2, 4, 4, 2, 3, 1, 2, 4, 3, 5],
     "region": ["West"] * 4 + ["East"] * 4 + ["Central"] * 4,
 }
-
 styled_facets = xyg.facet_chart(
     xyg.area(
         x="x",
@@ -480,13 +334,9 @@ styled_facets = xyg.facet_chart(
         line_width=2,
     ),
     xyg.x_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
+        tick_label_strategy="none", style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0}
     ),
-    xyg.y_axis(
-        tick_label_strategy="none",
-        style={"axis_width": 0, "tick_width": 0},
-    ),
+    xyg.y_axis(tick_label_strategy="none", style={"axis_width": 0, "tick_width": 0}),
     xyg.theme(
         plot_background="var(--facet-bg, #ffffff)",
         grid_color="var(--facet-grid, #e5e7eb)",
@@ -502,23 +352,6 @@ styled_facets = xyg.facet_chart(
     height=230,
     padding=[24, 18, 18, 18],
 )
-
-
-def styled_facet_preview():
-    return rx.html(
-        styled_facets.to_svg(),
-        class_name=(
-            "w-full [--facet-bg:#ffffff] "
-            "[--facet-text:#4b5563] [--facet-grid:#e5e7eb] "
-            "[--facet-axis:#d1d5db] [--facet-line:#d97706] "
-            "[--facet-fill-strong:#d977064d] [--facet-fill-soft:#d9770600] "
-            "[&>svg]:h-auto [&>svg]:w-full dark:[--facet-bg:#000000] "
-            "dark:[--facet-text:#d4d4d8] dark:[--facet-grid:#27272a] "
-            "dark:[--facet-axis:#3f3f46] dark:[--facet-line:#f59e0b] "
-            "dark:[--facet-fill-strong:#f59e0b4d] "
-            "dark:[--facet-fill-soft:#f59e0b00] dark:[&_text]:fill-zinc-300"
-        ),
-    )
 ~~~
 
 For standalone HTML, style the grid itself at export time:
@@ -537,25 +370,34 @@ html = styled_facets.to_html(
 
 XYG's built-in tooltip already follows the pointer and can be fully restyled.
 This example keeps that client-owned positioning while rendering an interactive
-host-owned legend below the chart. Reflex hover callbacks expose the resolved
-row rather than pointer coordinates, so a state-backed tooltip cannot follow
-the cursor without additional positioning data.
+host-owned legend below the chart. Python hover callbacks expose resolved
+rows rather than pointer coordinates; a custom application tooltip needs its
+own positioning data. Documentation previews show the compiled chart rather
+than running application state or custom legend callbacks.
 
-~~~python demo exec
-import reflex as rx
-import reflex_xy
+~~~python demo exec native
+# Static snapshot: Python callbacks and data updates require an application host.
 import xyg
 
 
-class StyledChromeState(rx.State):
+class StyledChromeState:
     show_plan: bool = True
 
-    @reflex_xy.figure
-    def figure(self) -> xyg.Chart:
+    def figure(self):
         data = {
             "period": [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
             ],
             "actual": [2900, 2780, 3330, 3490, 3500, 3120, 3510, 2910, 2650, 2840, 2960, 3240],
             "plan": [2340, 2100, 2190, 2110, 1820, 1730, 1980, 2010, 2340, 2470, 3850, 3740],
@@ -612,7 +454,7 @@ class StyledChromeState(rx.State):
                     "tick_color": "#00000000",
                     "tick_label_color": "#00000000",
                     "label_color": "#00000000",
-                },
+                }
             ),
             xyg.y_axis(
                 domain=(0, 4200),
@@ -631,72 +473,20 @@ class StyledChromeState(rx.State):
                 axis_color="var(--chrome-axis, #d1d5db)",
                 text_color="var(--chrome-text, #4b5563)",
             ),
-            class_name=(
-                "bg-[#ffffff] [--chrome-surface:#ffffff] [--chrome-grid:#e5e7eb] "
-                "[--chrome-axis:#d1d5db] [--chrome-text:#4b5563] "
-                "[--tooltip-surface:#ffffff] [--tooltip-text:#1d293d] "
-                "[--tooltip-border:#e5e7eb] dark:bg-[#000000] "
-                "dark:[--chrome-surface:#000000] dark:[--chrome-grid:#27272a] "
-                "dark:[--chrome-axis:#3f3f46] dark:[--chrome-text:#d4d4d8] "
-                "dark:[--tooltip-surface:#18181f] dark:[--tooltip-text:#f3f4f6] "
-                "dark:[--tooltip-border:#3f3f46]"
-            ),
+            class_name="bg-[#ffffff] [--chrome-surface:#ffffff] [--chrome-grid:#e5e7eb] [--chrome-axis:#d1d5db] [--chrome-text:#4b5563] [--tooltip-surface:#ffffff] [--tooltip-text:#1d293d] [--tooltip-border:#e5e7eb] dark:bg-[#000000] dark:[--chrome-surface:#000000] dark:[--chrome-grid:#27272a] dark:[--chrome-axis:#3f3f46] dark:[--chrome-text:#d4d4d8] dark:[--tooltip-surface:#18181f] dark:[--tooltip-text:#f3f4f6] dark:[--tooltip-border:#3f3f46]",
             width="100%",
             height=340,
             padding=[12, 20, 18, 20],
         )
 
-    @rx.event
-    def set_show_plan(self, value: bool):
-        self.show_plan = value
 
-
-def custom_chrome():
-    return rx.vstack(
-        rx.hstack(
-            rx.hstack(
-                rx.hstack(
-                    rx.box(class_name="h-0.5 w-5 rounded-full bg-[#2b7fff]"),
-                    rx.text("Actual", size="2", weight="medium"),
-                    align="center",
-                    spacing="2",
-                ),
-                rx.checkbox(
-                    rx.hstack(
-                        rx.box(class_name="h-0.5 w-5 rounded-full bg-[#00bc7d]"),
-                        rx.text("Plan", size="2", weight="medium"),
-                        align="center",
-                        spacing="2",
-                    ),
-                    checked=StyledChromeState.show_plan,
-                    on_change=StyledChromeState.set_show_plan,
-                    class_name="accent-[#00bc7d]",
-                ),
-                align="center",
-                spacing="4",
-            ),
-            align="center",
-            justify="center",
-            class_name=(
-                "w-full bg-[#ffffff] px-4 pt-5 text-[#1d293d] sm:px-6 sm:pt-6 "
-                "dark:bg-[#000000] dark:text-[#f3f4f6]"
-            ),
-        ),
-        reflex_xy.chart(
-            StyledChromeState.figure,
-            height="340px",
-        ),
-        align="stretch",
-        spacing="1",
-        width="100%",
-        class_name="bg-[#ffffff] pb-4 dark:bg-[#000000]",
-    )
+initial_chart = StyledChromeState().figure()
 ~~~
 
 That pattern keeps the legend interactive while the styled built-in tooltip
 tracks the pointer and remains available to standalone chart exports.
-For a fixed chart, a simpler host-owned key can sit next to
-`reflex_xy.chart(...)`, as shown in
+For a fixed chart, a simpler host-owned key can sit next to its chart
+container, as described in
 [Customize Each Part](/docs/xy/styling/customize/#legend).
 
 ## Export parity checklist
@@ -708,7 +498,7 @@ For a fixed chart, a simpler host-owned key can sit next to
   chrome, facets, media queries, or a portable design system.
 - Tailwind class names remain in the exported markup, but Tailwind's compiled
   rules are not bundled automatically.
-- Host-owned Reflex components and interaction state are application UI, not
+- Host-owned components and interaction state are application UI, not
   serializable XYG chart content.
 - Compare live HTML with `to_svg()` and both native and Chromium `to_png()`
   when exact renderer parity matters.

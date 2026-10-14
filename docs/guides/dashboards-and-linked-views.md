@@ -42,7 +42,8 @@ update filters there, and build the affected state-backed charts. XYG does not
 silently apply an arbitrary cross-filter to unrelated datasets.
 
 Standalone HTML can link ranges and retain local interactions, but it cannot
-invoke Python callbacks. Notebook widgets and the Reflex live tier can.
+invoke Python callbacks. Notebook widgets can call their live kernel; native
+applications can route events through their host transport.
 
 ## Many Charts and the Context Budget
 

@@ -10,17 +10,12 @@ below, grouped by visual family. Each tile opens a focused family page with
 guidance on when to use the chart, a live example, its expected data shape,
 common variants, and the options that matter most.
 
-~~~python exec
-from xy_docs.gallery import chart_gallery_grid
-~~~
 
-~~~python eval
-chart_gallery_grid()
-~~~
 
-Every preview is a code-native inline SVG, keeping this index quick and making
-the artwork straightforward to restyle. Every linked family page includes a
-full-size live demo.
+<!-- xyg:chart-gallery -->
+
+Every preview paints a generated chart payload with the shared browser client.
+Open a family guide for the full authoring code and representation boundaries.
 
 All chart families use the same [composition model](/docs/xy/core-concepts/),
 [data binding](/docs/xy/core-concepts/data/), styling surface, and display/export

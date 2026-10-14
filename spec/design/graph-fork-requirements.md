@@ -7,6 +7,13 @@
 layouts that place them, visual encodings, interactive reading of the chart,
 and scale. Nothing else.
 
+**Fork rationale:** GraphForge needed billion-scale graph visualization, which
+motivated the permanent fork of `reflex-dev/xy` into XYG. This is the scale goal
+for graph visualization across Python, Node-native, and browser WASM, not a
+claim that billion-node execution/rendering is already benchmark-proven.
+The executed graph ladder and larger LOD-policy-only rows are recorded
+separately in [benchmark results](../benchmarks/results.md#graph-scale-evidence-33-local-diagnostic).
+
 **Out of scope:** graph editing/manipulation UIs, investigation chrome,
 search/filter product UI, I/O format zoos, and graph-theory / analysis product
 surfaces (centrality, community detection, pathfinding, Cypher, …).
@@ -21,13 +28,14 @@ Other chart types keep the **same first-class feel and speed**
 ([host-parity.md](host-parity.md)).
 
 **Host parity:** Python and Node for *all* chart types. Graph viz leads
-dual-host delivery.
+native-host delivery. Browser WASM uses the same Rust engine through a bounded
+Worker API; complete authoring parity remains a goal rather than a current claim.
 
 **Architecture principle:** **Rust owns decisions** that affect chart
 behavior, buffers, layout, encodings, and LOD — not only O(N) loops.
 Python and Node are thin bindings for ergonomics and I/O so parity and
 performance stay identical ([host-parity.md](host-parity.md)). Display
-layouts, channel resolution, and LOD aggregates live in the xy C ABI; JS
+layouts, channel resolution, and LOD aggregates live in the XYG engine/C ABI; JS
 draws. Analysis algorithms stay in GraphForge (and peers).
 
 ---

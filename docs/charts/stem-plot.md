@@ -9,7 +9,7 @@ components:
 
 A **stem plot** (also called a stem chart or stem graph) draws each value as a
 vertical line, or impulse, rising from a
-common baseline to a marker at the data point. With `xy` you build a stem plot
+common baseline to a marker at the data point. With `xyg` you build a stem plot
 in Python for discrete sequences — sample indices, event counts, or signal taps
 — where a connecting line would imply continuity that isn't there. Every stem
 plot is interactive by default: pan, zoom, and hover work with no configuration.
@@ -23,22 +23,17 @@ Jump to [creating a stem plot](#create-a-stem-plot),
 Pass equal-length x and value arrays to `stem`. Each point becomes an impulse
 anchored to the baseline with a marker at its tip:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 x = np.arange(10)
 values = np.array([2, 5, 3, 7, 6, 9, 8, 11, 10, 13])
-
-chart = xyg.chart(
-    xyg.stem(x, values - 1.5, name="Events", color="#2563eb"),
-    xyg.legend(),
-)
+chart = xyg.chart(xyg.stem(x, values - 1.5, name="Events", color="#2563eb"), xyg.legend())
 
 
 def stem_chart_demo():
-    return reflex_xy.chart(chart, height="340px")
+    return chart
 ~~~
 
 ## Style Stems and Markers
@@ -46,14 +41,12 @@ def stem_chart_demo():
 Values may swing above and below the baseline, and `width`, `opacity`,
 `marker_size`, and `symbol` control how each impulse and its tip are drawn:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 n_taps = np.arange(24)
 impulse_response = 9.0 * np.sin(n_taps * 0.9) * 0.72**n_taps
-
 styled_stem_chart = xyg.chart(
     xyg.stem(
         n_taps,
@@ -73,7 +66,7 @@ styled_stem_chart = xyg.chart(
 
 
 def styled_stem_demo():
-    return reflex_xy.chart(styled_stem_chart, height="340px")
+    return styled_stem_chart
 ~~~
 
 ## Compare Stem Series with an Overlay
@@ -82,9 +75,8 @@ Layer multiple `stem` marks (offset the x values slightly so stems don't
 overlap), disable markers with `marker=False`, and add a dashed `line` envelope
 for context:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng_sig = np.random.default_rng(3)
@@ -93,7 +85,6 @@ measured_taps = 6.5 * 0.78**k + rng_sig.normal(0.0, 0.18, k.size)
 ideal_taps = 6.5 * 0.78**k
 envelope_x = np.linspace(0, 15, 120)
 envelope_y = 6.5 * 0.78**envelope_x
-
 stem_overlay_chart = xyg.chart(
     xyg.line(envelope_x, envelope_y, color="#9ba1a6", width=1.5, dash="dashed", name="Envelope"),
     xyg.stem(k, ideal_taps, base=0.0, color="#2563eb", width=1.4, marker=False, name="Ideal"),
@@ -113,7 +104,7 @@ stem_overlay_chart = xyg.chart(
 
 
 def stem_overlay_demo():
-    return reflex_xy.chart(stem_overlay_chart, height="340px")
+    return stem_overlay_chart
 ~~~
 
 ## When to Use a Stem Plot

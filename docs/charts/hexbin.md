@@ -9,7 +9,7 @@ components:
 
 A **hexbin plot** (also called a hexbin chart or hexbin graph) in python
 aggregates a dense point cloud into a hexagonal grid, coloring each cell by how
-many points fall inside it. With `xy` you build
+many points fall inside it. With `xyg` you build
 an interactive hexbin from millions of points without overplotting: pan, zoom,
 and hover work by default, and dense regions stay legible.
 
@@ -23,23 +23,15 @@ Pass paired x and y arrays to `hexbin`. It aggregates large point clouds into a
 grid of hexagonal cells, so a scatter that would smear into a solid blob becomes
 a readable density map:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 rng = np.random.default_rng(21)
-points_x = rng.normal(size=100_000)
+points_x = rng.normal(size=100000)
 points_y = 0.65 * points_x + rng.normal(scale=0.55, size=points_x.size)
-
 hexbin_detail_chart = xyg.hexbin_chart(
-    xyg.hexbin(
-        points_x,
-        points_y,
-        gridsize=72,
-        mincnt=1,
-        colormap="viridis",
-    ),
+    xyg.hexbin(points_x, points_y, gridsize=72, mincnt=1, colormap="viridis"),
     xyg.x_axis(label="signal A"),
     xyg.y_axis(label="signal B"),
     title="Correlated point density",
@@ -47,7 +39,7 @@ hexbin_detail_chart = xyg.hexbin_chart(
 
 
 def hexbin_demo():
-    return reflex_xy.chart(hexbin_detail_chart, height="340px")
+    return hexbin_detail_chart
 ~~~
 
 ## Tune the Grid and Add a Colorbar
@@ -56,24 +48,16 @@ Pass a `(nx, ny)` tuple to `gridsize` to control cell resolution per axis,
 raise `mincnt` to clear out sparse background cells, swap the `colormap`, and
 add an `xyg.colorbar()` so the count scale is readable:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 hx_rng = np.random.default_rng(5)
-cluster_a = hx_rng.normal(loc=(-1.5, -1.0), scale=(0.5, 0.9), size=(60_000, 2))
-cluster_b = hx_rng.normal(loc=(1.8, 1.4), scale=(0.9, 0.4), size=(60_000, 2))
+cluster_a = hx_rng.normal(loc=(-1.5, -1.0), scale=(0.5, 0.9), size=(60000, 2))
+cluster_b = hx_rng.normal(loc=(1.8, 1.4), scale=(0.9, 0.4), size=(60000, 2))
 clusters = np.vstack([cluster_a, cluster_b])
-
 hexbin_tuned_chart = xyg.hexbin_chart(
-    xyg.hexbin(
-        clusters[:, 0],
-        clusters[:, 1],
-        gridsize=(48, 36),
-        mincnt=5,
-        colormap="magma",
-    ),
+    xyg.hexbin(clusters[:, 0], clusters[:, 1], gridsize=(48, 36), mincnt=5, colormap="magma"),
     xyg.colorbar(title="points per cell"),
     xyg.x_axis(label="x"),
     xyg.y_axis(label="y"),
@@ -82,7 +66,7 @@ hexbin_tuned_chart = xyg.hexbin_chart(
 
 
 def hexbin_tuned_demo():
-    return reflex_xy.chart(hexbin_tuned_chart, height="340px")
+    return hexbin_tuned_chart
 ~~~
 
 ## Color Cells by a Mean Value
@@ -91,18 +75,14 @@ Instead of counting points, pass a `C` value array and a `reduce_C_function`
 such as `np.mean` — each cell is colored by the reduced value of the samples
 that land in it, turning scattered measurements into a surface:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 survey_rng = np.random.default_rng(9)
-site_x = survey_rng.uniform(-2.5, 2.5, size=40_000)
-site_y = survey_rng.uniform(-2.5, 2.5, size=40_000)
-elevation = np.exp(-(site_x**2 + site_y**2)) + survey_rng.normal(
-    scale=0.05, size=site_x.size
-)
-
+site_x = survey_rng.uniform(-2.5, 2.5, size=40000)
+site_y = survey_rng.uniform(-2.5, 2.5, size=40000)
+elevation = np.exp(-(site_x**2 + site_y**2)) + survey_rng.normal(scale=0.05, size=site_x.size)
 hexbin_weighted_chart = xyg.hexbin_chart(
     xyg.hexbin(
         site_x,
@@ -121,7 +101,7 @@ hexbin_weighted_chart = xyg.hexbin_chart(
 
 
 def hexbin_weighted_demo():
-    return reflex_xy.chart(hexbin_weighted_chart, height="340px")
+    return hexbin_weighted_chart
 ~~~
 
 ## Count Bins and Value Channels

@@ -9,7 +9,7 @@ components:
 
 A **violin plot** (also called a violin chart or violin graph) shows the full
 estimated density of a distribution as a mirrored curve, revealing multi-modal
-shapes that a box plot hides. With `xy`
+shapes that a box plot hides. With `xyg`
 you build a violin plot in Python that compares several groups side by side and
 stays interactive — pan, zoom, and hover across every curve.
 
@@ -22,29 +22,18 @@ Jump to [creating a violin plot](#create-a-violin-plot),
 Pass a list of arrays — one per group — to `violin`, and label each group with
 `x`. This is the minimal Python violin plot:
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 violin_rng = np.random.default_rng(31)
 violin_groups = [
-    violin_rng.normal(50, 7, 1_200),
-    np.concatenate(
-        [
-            violin_rng.normal(43, 4, 600),
-            violin_rng.normal(59, 5, 600),
-        ]
-    ),
+    violin_rng.normal(50, 7, 1200),
+    np.concatenate([violin_rng.normal(43, 4, 600), violin_rng.normal(59, 5, 600)]),
 ]
-
 violin_detail_chart = xyg.violin_chart(
     xyg.violin(
-        violin_groups,
-        x=["Single peak", "Two peaks"],
-        color="#6e56cf",
-        opacity=0.65,
-        bins=72,
+        violin_groups, x=["Single peak", "Two peaks"], color="#6e56cf", opacity=0.65, bins=72
     ),
     xyg.x_axis(label="distribution"),
     xyg.y_axis(label="score"),
@@ -53,7 +42,7 @@ violin_detail_chart = xyg.violin_chart(
 
 
 def violin_demo():
-    return reflex_xy.chart(violin_detail_chart, height="320px")
+    return violin_detail_chart
 ~~~
 
 ## Density Resolution and Orientation
@@ -69,18 +58,16 @@ group against a two-peak group so the multi-modal shape is obvious.
 Raise `bins` for a finer density trace, turn the plot sideways with
 `orientation="horizontal"`, and tune the fill with `width` and `opacity`.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 wind_rng = np.random.default_rng(13)
 season_wind = [
-    wind_rng.weibull(2.1, 1_500) * 14,
-    wind_rng.weibull(1.7, 1_500) * 19,
-    wind_rng.weibull(2.4, 1_500) * 11,
+    wind_rng.weibull(2.1, 1500) * 14,
+    wind_rng.weibull(1.7, 1500) * 19,
+    wind_rng.weibull(2.4, 1500) * 11,
 ]
-
 horizontal_violin_chart = xyg.violin_chart(
     xyg.violin(
         season_wind,
@@ -98,7 +85,7 @@ horizontal_violin_chart = xyg.violin_chart(
 
 
 def horizontal_violin_demo():
-    return reflex_xy.chart(horizontal_violin_chart, height="320px")
+    return horizontal_violin_chart
 ~~~
 
 ### Violin and Box Overlay
@@ -106,37 +93,20 @@ def horizontal_violin_demo():
 Compose `violin` and a narrow `box` on the same groups inside a neutral
 `xyg.chart(...)` so each distribution shows its full density and its quartiles.
 
-~~~python demo exec
+~~~python demo exec native
 import numpy as np
-import reflex_xy
 import xyg
 
 raincloud_rng = np.random.default_rng(101)
 model_errors = [
-    raincloud_rng.normal(0.0, 1.0, 1_000),
-    np.concatenate(
-        [raincloud_rng.normal(-1.4, 0.5, 500), raincloud_rng.normal(1.6, 0.7, 500)]
-    ),
-    raincloud_rng.normal(0.4, 1.8, 1_000),
+    raincloud_rng.normal(0.0, 1.0, 1000),
+    np.concatenate([raincloud_rng.normal(-1.4, 0.5, 500), raincloud_rng.normal(1.6, 0.7, 500)]),
+    raincloud_rng.normal(0.4, 1.8, 1000),
 ]
 model_names = ["Linear", "Ensemble", "Neural"]
-
 raincloud_chart = xyg.chart(
-    xyg.violin(
-        model_errors,
-        x=model_names,
-        color="#6e56cf",
-        opacity=0.45,
-        bins=96,
-        width=0.85,
-    ),
-    xyg.box(
-        model_errors,
-        x=model_names,
-        color="#1a1a2e",
-        width=0.18,
-        show_outliers=False,
-    ),
+    xyg.violin(model_errors, x=model_names, color="#6e56cf", opacity=0.45, bins=96, width=0.85),
+    xyg.box(model_errors, x=model_names, color="#1a1a2e", width=0.18, show_outliers=False),
     xyg.x_axis(label="model"),
     xyg.y_axis(label="prediction error"),
     title="Error distribution: density plus quartiles",
@@ -144,7 +114,7 @@ raincloud_chart = xyg.chart(
 
 
 def raincloud_violin_demo():
-    return reflex_xy.chart(raincloud_chart, height="320px")
+    return raincloud_chart
 ~~~
 
 ## Violin Plot Options

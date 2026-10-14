@@ -657,7 +657,17 @@ def test_makefile_exposes_docs_verification_shortcut() -> None:
     assert "check-docs:" in makefile
     assert "scripts/verify_local.py --only examples" in makefile
     assert "make check-docs" in makefile
-    assert "run documentation examples" in makefile
+    recipe = makefile.split("check-docs:\n", 1)[1].split("\n\n", 1)[0]
+    for command in (
+        "npm ci --prefix docs/app",
+        "npm run check --prefix docs/app",
+        "npm run build --prefix docs/app",
+        "npm run test --prefix docs/app",
+        "scripts/verify_docs_quickstart.py",
+        "scripts/verify_local.py --only examples",
+    ):
+        assert command in recipe
+    assert "build and validate the Starlight docs" in makefile
 
 
 def test_makefile_exposes_security_verification_shortcut() -> None:

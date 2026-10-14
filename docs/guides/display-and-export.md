@@ -31,7 +31,7 @@ infers the format from the extension:
 ~~~python
 data = chart.to_image("pdf", width=1200, height=800, scale=2)
 
-chart.write_image("reports/revenue.webp")   # format inferred from .webp
+chart.write_image("reports/revenue.webp")  # format inferred from .webp
 chart.write_image("reports/revenue.bin", format="png")  # explicit override
 ~~~
 
@@ -67,9 +67,9 @@ for raster/browser output, transparent for SVG), any CSS color, or
 `"transparent"`:
 
 ~~~python
-chart.to_image("png", background="transparent")   # alpha-0 backdrop
-chart.to_image("webp", background="#0f172a")      # explicit backdrop
-chart.to_image("jpeg")                            # flattened onto white
+chart.to_image("png", background="transparent")  # alpha-0 backdrop
+chart.to_image("webp", background="#0f172a")  # explicit backdrop
+chart.to_image("jpeg")  # flattened onto white
 ~~~
 
 JPEG has no alpha channel, so `background="transparent"` is rejected there
@@ -108,7 +108,7 @@ The browser modebar shows the client-safe subset (`png`, `jpeg`, `webp`,
 as the Python exporters; `pdf`/`html` entries affect Python-side defaults
 only. `formats=[]` hides the download menu entirely. Standalone HTML exports
 keep the full download menu working without any Python kernel attached, and
-Reflex charts inherit the same spec-driven configuration. Explicit arguments
+Native application payloads inherit the same spec-driven configuration. Explicit arguments
 to `to_image()`/`write_image()` always override the declarative defaults.
 
 ## Standalone HTML
@@ -181,7 +181,7 @@ Facet grids support the same format matrix as single charts:
 
 ~~~python
 grid = xyg.facet_chart(xyg.scatter("x", "y"), data=frame, by="region")
-grid.write_image("regions.pdf")   # vector panels, composed natively
+grid.write_image("regions.pdf")  # vector panels, composed natively
 grid.to_image("webp", background="transparent")
 ~~~
 
