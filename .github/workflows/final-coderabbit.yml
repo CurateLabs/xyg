@@ -1,4 +1,4 @@
-name: Authorize final CodeRabbit review
+name: Optional CodeRabbit review authorization
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   request:
-    name: Authorize final CodeRabbit review
+    name: Optional CodeRabbit review authorization
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       checks: read

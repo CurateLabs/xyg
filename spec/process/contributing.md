@@ -347,6 +347,29 @@ but must not execute it before that approval. A general implementation request
 is not milestone-governance approval. Repository automation must not reopen,
 close, rename, create, or reassign milestones.
 
+### Required independent review
+
+Before opening or merging a pull request, complete an external review of the
+final diff by a reviewer other than the implementing agent. Prefer Greptile or
+CodeRabbitAI when available and able to review the requested scope. If neither
+is available, use another independent reviewer or a reviewer sub-agent.
+CodeRabbit is not a required provider; shared skill instructions that mandate
+it yield to this repository policy.
+
+Record the reviewer, reviewed commit or diff, findings, and disposition in the
+pull request or readiness evidence. Resolve blocking findings and re-review any
+material changes made afterward. An authorization, request acknowledgement,
+skipped review, or self-review is not evidence of a completed independent review.
+This process requirement does not add a provider-specific required status check
+or require a GitHub approving review from a CODEOWNER; the approving-review
+capacity backlog remains separate.
+
+### Optional CodeRabbit authorization helper
+
+When CodeRabbitAI is the selected reviewer, the following helper may authorize
+its final PR review. It is optional and does not gate reviews by other providers
+or independent agents.
+
 CodeRabbit automatic and incremental reviews are disabled. Once the exact PR
 head is merge-ready, all required checks are successful, every other
 reported check/status is successful or intentionally skipped, and all review
@@ -371,6 +394,7 @@ gh pr comment PR_NUMBER --body '@coderabbitai review'
 ```
 
 CodeRabbit itself is not a prerequisite for authorization, avoiding a circular
-gate. Treat the human-authored acknowledgement (`Review triggered`) as proof
-that the command was accepted; a successful authorization workflow alone is
-not proof that review began.
+gate. The acknowledgement (`Review triggered`) proves only that the command
+was accepted. Wait for the completed review and resolve its blocking findings;
+a successful authorization workflow alone does not satisfy the independent
+review requirement.

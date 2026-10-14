@@ -1,4 +1,4 @@
-"""Authorize a human-triggered CodeRabbit review for a fully green PR candidate."""
+"""Optional helper to authorize a human-triggered CodeRabbit review of a green PR."""
 
 from __future__ import annotations
 

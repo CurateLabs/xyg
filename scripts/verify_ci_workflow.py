@@ -1937,7 +1937,7 @@ def validate_final_review_policy(
     config_path: Path = DEFAULT_CODERABBIT_CONFIG,
     script_path: Path = DEFAULT_FINAL_REVIEW_SCRIPT,
 ) -> list[str]:
-    """Keep CodeRabbit opt-in and bind the sole request path to final-candidate checks."""
+    """Validate the optional CodeRabbit helper's opt-in and final-candidate safeguards."""
     errors: list[str] = []
     try:
         text = workflow_path.read_text(encoding="utf-8")
