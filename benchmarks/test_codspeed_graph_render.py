@@ -9,6 +9,8 @@ request-to-pixels latency.
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -202,42 +204,44 @@ def test_graph_payload_medium(benchmark):
     assert 0 < payload_bytes < MEDIUM_N * 160
 
 
+# The export rows use chord edges (i -> i + 333) on a 1k circle layout: every
+# edge spans the plot, so each one exports a visible shaft and head and a
+# serialization or raster regression cannot hide. A neighbor ring would put
+# every edge inside the overlapping 8 px node outlines, where border-aware
+# clipping (#901, ABI 368; spec/design/graph-mark.md) hides it (#1007).
+CHORD_STEP = 333
+# Edges paint the Rust neutral (graph-mark.md §8): each shaft is a two-point
+# <polyline> stroke, each arrowhead a filled closed-triangle <path>.
+EDGE_RGB = "rgb(136,136,136)"
+EDGE_SHAFT = re.compile(
+    r'<polyline points="\s*[-\d.]+,[-\d.]+ [-\d.]+,[-\d.]+" fill="none" '
+    rf'stroke="{re.escape(EDGE_RGB)}"'
+)
+EDGE_HEAD = re.compile(
+    r'<path d="M [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ Z" '
+    rf'fill="{re.escape(EDGE_RGB)}" stroke="none"/>'
+)
+
+
+def _chord_figure(n: int):
+    nodes = list(range(n))
+    edges = [(index, (index + CHORD_STEP) % n) for index in nodes]
+    return xyg.graph_chart(xyg.graph(nodes, edges, layout="circle"), width=640, height=480).figure()
+
+
 @pytest.mark.parametrize("kind", ["svg", "png"])
-def test_graph_static_export_small(benchmark, graph_data, kind):
-    data = graph_data["small"]
-    edges = list(zip(data.sources.tolist(), data.targets.tolist(), strict=True))
-    figure = xyg.graph_chart(
-        xyg.graph(data.ids, edges, layout="circle"), width=640, height=480
-    ).figure()
+def test_graph_static_export_small(benchmark, kind):
+    figure = _chord_figure(SMALL_N)
     if kind == "svg":
         output = benchmark(figure.to_svg, width=640, height=480)
         assert output.startswith("<svg")
         assert 'width="640" height="480"' in output
         assert output.count("<circle") == SMALL_N
-        # graph_chart exports through the Rust Scene route (#33/#897): each
-        # visible edge piece is a <polyline> shaft and each drawn head a filled
-        # <path>; there are no <line> wing segments. Ends are clipped to node
-        # outlines and a piece inside a node is hidden (#901, ABI 368;
-        # spec/design/graph-mark.md). On this 1,000-node ring adjacent 8 px
-        # markers overlap (~1.3 px apart), so every edge piece is hidden.
+        # graph_chart exports through the Rust Scene route (#33/#897): one
+        # shaft per straight edge plus a screen-space head, never <line> wings.
         assert output.count("<line") == 0
-        assert output.count("<polyline") == 0
-        assert output.count("<path") == 0
-        # A ring whose markers do not overlap exports every shaft and head.
-        sparse = list(range(50))
-        sparse_svg = (
-            xyg.graph_chart(
-                xyg.graph(
-                    sparse, list(zip(sparse, sparse[1:] + sparse[:1], strict=True)), layout="circle"
-                ),
-                width=640,
-                height=480,
-            )
-            .figure()
-            .to_svg(width=640, height=480)
-        )
-        assert sparse_svg.count("<polyline") == len(sparse)
-        assert sparse_svg.count("<path") == len(sparse)
+        assert len(EDGE_SHAFT.findall(output)) == SMALL_N
+        assert len(EDGE_HEAD.findall(output)) == SMALL_N
     else:
         output = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
         assert output.startswith(b"\x89PNG")
@@ -245,7 +249,13 @@ def test_graph_static_export_small(benchmark, graph_data, kind):
 
         from PIL import Image
 
-        image = np.asarray(Image.open(BytesIO(output)).convert("RGB"))
+        image = np.asarray(Image.open(BytesIO(output)).convert("RGB")).astype(np.int16)
         assert image.shape == (480, 640, 3)
         non_background = np.count_nonzero(np.any(image != image[0, 0], axis=2))
         assert non_background > SMALL_N
+        # Edge paint must reach the raster: near-neutral gray pixels from the
+        # 1k chord shafts (measured ~120k; a graph without edges has ~10).
+        edge_pixels = np.count_nonzero(
+            (np.abs(image - 136).max(axis=2) <= 24) & (np.ptp(image, axis=2) <= 6)
+        )
+        assert edge_pixels > 40 * SMALL_N
