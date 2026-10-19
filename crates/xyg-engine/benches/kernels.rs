@@ -18,9 +18,9 @@ use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
 use xyg_engine::scene::{
-    AxisScale, AxisSide, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
-    SceneChromeText, SceneDocument, SceneError, SceneLegend, SceneLegendEntry, SceneRecordKind,
-    TickDirection, BROWSER_PAINTER_VERSION, MAX_BROWSER_PAINTER_TRACES,
+    AxisScale, AxisSide, LegendLocation, PainterRejection, PlotLayout, ScaleKind, SceneBatch,
+    SceneChromeStyle, SceneChromeText, SceneDocument, SceneError, SceneLegend, SceneLegendEntry,
+    SceneRecordKind, TickDirection, BROWSER_PAINTER_VERSION, MAX_BROWSER_PAINTER_TRACES,
 };
 
 fn main() {
@@ -603,6 +603,11 @@ fn scene_browser_painter_packed_symbols(bencher: Bencher, n: usize) {
 fn scene_browser_painter_byte_limit(bencher: Bencher, n: usize) {
     const BUDGET: usize = 32 * 1024 * 1024;
     let document = browser_scene_document(n, BrowserFixture::PackedSymbols);
-    assert_eq!(document.to_browser_painter(BUDGET), Err(SceneError::Limit));
+    let rejection = document.to_browser_painter(BUDGET).unwrap_err();
+    assert_eq!(rejection, SceneError::Limit);
+    assert_eq!(
+        PainterRejection::from_error(rejection).code(),
+        "XYG_PAINTER_BYTE_LIMIT"
+    );
     bencher.bench(|| black_box(document.to_browser_painter(BUDGET)));
 }

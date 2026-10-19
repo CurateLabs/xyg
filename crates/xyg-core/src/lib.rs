@@ -4318,8 +4318,9 @@ pub unsafe extern "C" fn xyg_static_legend_fit(
 /// `usize::MAX` on error.
 ///
 /// Output contract:
-/// - Success with `out_cap >= required`: exactly `required` painter bytes are
-///   written to `out[..required]`; the rest of `out` is untouched.
+/// - Success with non-null `out` and `out_cap >= required`: exactly `required`
+///   painter bytes are written to `out[..required]`; the rest of `out` is
+///   untouched.
 /// - Success with `out_cap < required` (capacity probe): returns `required`
 ///   and leaves `out` unchanged; call again with a buffer that large.
 /// - `usize::MAX`: `out` is either unchanged, or (when `out` is non-null and

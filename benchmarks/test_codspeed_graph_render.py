@@ -210,9 +210,13 @@ def test_graph_payload_medium(benchmark):
 # every edge inside the overlapping 8 px node outlines, where border-aware
 # clipping (#901, ABI 368; spec/design/graph-mark.md) hides it (#1007).
 CHORD_STEP = 333
-# Edges paint the Rust neutral (graph-mark.md §8): each shaft is a two-point
-# <polyline> stroke, each arrowhead a filled closed-triangle <path>.
-EDGE_RGB = "rgb(136,136,136)"
+# One explicit, saturated, opaque edge color drives the figure and every
+# oracle, so a default-theme change or antialiased gray chrome cannot break or
+# fool these rows. Each shaft is a two-point <polyline> stroke and each
+# arrowhead a filled closed-triangle <path> in exactly this color.
+EDGE_COLOR = (216, 27, 96)
+EDGE_CSS = "#{:02x}{:02x}{:02x}".format(*EDGE_COLOR)
+EDGE_RGB = "rgb({},{},{})".format(*EDGE_COLOR)
 EDGE_SHAFT = re.compile(
     r'<polyline points="\s*[-\d.]+,[-\d.]+ [-\d.]+,[-\d.]+" fill="none" '
     rf'stroke="{re.escape(EDGE_RGB)}"'
@@ -221,12 +225,16 @@ EDGE_HEAD = re.compile(
     r'<path d="M [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ Z" '
     rf'fill="{re.escape(EDGE_RGB)}" stroke="none"/>'
 )
+# Per-channel tolerance for an edge pixel in the PNG raster.
+EDGE_PIXEL_TOLERANCE = 16
 
 
 def _chord_figure(n: int):
     nodes = list(range(n))
     edges = [(index, (index + CHORD_STEP) % n) for index in nodes]
-    return xyg.graph_chart(xyg.graph(nodes, edges, layout="circle"), width=640, height=480).figure()
+    return xyg.graph_chart(
+        xyg.graph(nodes, edges, layout="circle", edge_color=EDGE_CSS), width=640, height=480
+    ).figure()
 
 
 @pytest.mark.parametrize("kind", ["svg", "png"])
@@ -253,9 +261,10 @@ def test_graph_static_export_small(benchmark, kind):
         assert image.shape == (480, 640, 3)
         non_background = np.count_nonzero(np.any(image != image[0, 0], axis=2))
         assert non_background > SMALL_N
-        # Edge paint must reach the raster: near-neutral gray pixels from the
-        # 1k chord shafts (measured ~120k; a graph without edges has ~10).
+        # Edge paint must reach the raster: pixels within EDGE_PIXEL_TOLERANCE
+        # of EDGE_COLOR from the 1k chord shafts and heads (measured 120,596;
+        # the floor keeps a 4x margin).
         edge_pixels = np.count_nonzero(
-            (np.abs(image - 136).max(axis=2) <= 24) & (np.ptp(image, axis=2) <= 6)
+            np.abs(image - np.array(EDGE_COLOR, dtype=np.int16)).max(axis=2) <= EDGE_PIXEL_TOLERANCE
         )
-        assert edge_pixels > 40 * SMALL_N
+        assert edge_pixels > 30 * SMALL_N
