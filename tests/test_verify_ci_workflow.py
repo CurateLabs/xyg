@@ -1043,7 +1043,7 @@ def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     trigger = "  merge_group:\n    types: [checks_requested]\n"
-    cancel = "  cancel-in-progress: ${{ github.event_name != 'merge_group' }}\n"
+    cancel = "  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n"
     assert trigger in workflow and cancel in workflow
     mutations = (
         (trigger, "", "must report required checks for merge_group"),
@@ -1053,7 +1053,12 @@ def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
             "  merge_group:\n    types: [checks_requested]\n    types: [destroyed]\n",
             "must handle checks_requested",
         ),
-        (cancel, "  cancel-in-progress: true\n", "must not cancel in-flight"),
+        (cancel, "  cancel-in-progress: true\n", "must cancel only superseded pull_request"),
+        (
+            cancel,
+            "  cancel-in-progress: ${{ github.event_name != 'merge_group' }}\n",
+            "push runs on main must complete",
+        ),
     )
     for index, (old, new, message) in enumerate(mutations):
         path = tmp_path / f"ci-merge-queue-{index}.yml"
@@ -1580,7 +1585,9 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
-            "    timeout-minutes: 10\n",
+            "    # The slowest group (native-and-webgl) takes about 5 minutes when installs are\n"
+            "    # healthy; leave room for install retries and a slow runner, not a hang.\n"
+            "    timeout-minutes: 25\n",
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
@@ -1592,7 +1599,7 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
-    assert any("benchmark_vs" in error and "timeout-minutes: 10" in error for error in errors)
+    assert any("benchmark_vs" in error and "timeout-minutes: 25" in error for error in errors)
 
 
 def test_ci_workflow_rejects_unlocked_competitor_install(tmp_path: Path) -> None:
@@ -1713,10 +1720,10 @@ def test_ci_workflow_rejects_benchmark_job_without_required_native_install(
         workflow.replace(
             '        env:\n          XYG_REQUIRE_CARGO: "1"\n'
             "        run: |\n          uv venv .venv\n"
-            "          uv pip install -p .venv/bin/python \\\n"
+            "          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \\\n"
             "            --constraint benchmarks/requirements-ci.lock -e .\n",
             "        run: |\n          uv venv .venv\n"
-            "          uv pip install -p .venv/bin/python \\\n"
+            "          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \\\n"
             "            --constraint benchmarks/requirements-ci.lock -e .\n",
         ),
         encoding="utf-8",
@@ -2194,8 +2201,9 @@ def test_ci_workflow_rejects_a_second_wasm_producer(tmp_path: Path, command: str
     mutated = _mutate_job(
         workflow,
         "benchmark_methodology",
-        "      - name: Install JS build toolchain\n        run: npm ci\n",
-        f"      - name: Install JS build toolchain\n        run: |\n          npm ci\n          {command}\n",
+        "      - name: Install JS build toolchain\n        run: scripts/ci_retry.sh 3 npm ci\n",
+        "      - name: Install JS build toolchain\n        run: |\n"
+        f"          scripts/ci_retry.sh 3 npm ci\n          {command}\n",
     )
     errors = _wasm_errors(tmp_path, mutated)
     assert any("must consume wasm-assets" in e and command in e for e in errors)
@@ -3237,13 +3245,13 @@ def test_release_workflow_requires_browser_package_gate(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
     path.write_text(
-        workflow.replace("          node js/package-wasm.mjs\n", "", 1),
+        workflow.replace("          npm run build:wasm\n", "", 1),
         encoding="utf-8",
     )
 
     errors = verify_ci_workflow.validate_release_workflow(path)
 
-    assert any("browser package" in error and "package-wasm.mjs" in error for error in errors)
+    assert any("single packaging command" in error for error in errors)
 
 
 def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path) -> None:
@@ -3282,7 +3290,9 @@ def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) 
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
     path.write_text(
-        workflow.replace('          python scripts/verify_wheel.py "$whl" --expect-native\n', ""),
+        workflow.replace(
+            '          python scripts/verify_wheel.py "$whl" --expect-native --require-wasm\n', ""
+        ),
         encoding="utf-8",
     )
 
@@ -4025,3 +4035,211 @@ def test_live_readback_compares_ruleset_and_branch_protection() -> None:
         for e in verify_ci_workflow.validate_live_readback(fetcher(local, extra))
     )
     assert verify_ci_workflow.validate_live_readback(lambda path: [] if path == "rulesets" else {})
+
+
+# ---------------------------------------------------------------------------
+# Release workflow carries the same packaged-WASM contract (#1005) and the hardened
+# post-merge benchmark jobs (#1008)
+# ---------------------------------------------------------------------------
+
+_RELEASE_WASM_CONSUMERS = ("wheels", "wasm", "browser-package", "sdist")
+_RELEASE_FETCH = (
+    "      - name: Fetch packaged WASM assets from the wasm-assets producer\n"
+    "        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n"
+    "        with:\n"
+    "          name: wasm-assets\n"
+    "          path: .\n"
+)
+_RELEASE_VERIFY = (
+    "      - name: Verify packaged WASM assets (missing or stale fails here)\n"
+    "        run: python scripts/verify_wasm_assets.py\n"
+)
+
+
+def _release_errors(tmp_path: Path, workflow: str) -> list[str]:
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow, encoding="utf-8")
+    return verify_ci_workflow.validate_release_workflow(path)
+
+
+def _release_job_span(workflow: str, job: str) -> tuple[int, int]:
+    start = workflow.index(f"\n  {job}:\n") + 1
+    following = re.search(r"\n  [a-z-]+:\n", workflow[start:])
+    return start, start + following.start() + 1 if following else len(workflow)
+
+
+def _mutate_release_job(workflow: str, job: str, old: str, new: str) -> str:
+    start, end = _release_job_span(workflow, job)
+    block = workflow[start:end]
+    assert old in block, f"{old!r} not in release job {job}"
+    return workflow[:start] + block.replace(old, new, 1) + workflow[end:]
+
+
+@pytest.mark.parametrize("job", _RELEASE_WASM_CONSUMERS)
+def test_release_workflow_requires_wasm_consumers_to_need_the_producer(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    errors = _release_errors(
+        tmp_path, _mutate_release_job(workflow, job, "    needs: wasm-assets\n", "")
+    )
+    assert any(f"WASM consumer {job!r} must list wasm-assets in needs" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", _RELEASE_WASM_CONSUMERS)
+@pytest.mark.parametrize("step", [_RELEASE_FETCH, _RELEASE_VERIFY])
+def test_release_workflow_requires_wasm_consumers_to_download_and_verify(
+    tmp_path: Path, job: str, step: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    errors = _release_errors(tmp_path, _mutate_release_job(workflow, job, step, ""))
+    assert any(f"WASM consumer {job!r} must download then verify" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", ["wheels", "sdist", "browser-package", "wasm"])
+def test_release_workflow_requires_client_build_before_wasm_verification(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    start, end = _release_job_span(workflow, job)
+    block = workflow[start:end]
+    build = re.search(
+        r"      - name: Build (?:render|browser) client\n        run: .*?(?=\n      - )",
+        block,
+        re.S,
+    )
+    assert build is not None
+    mutated = workflow[:start] + block.replace(build.group(0) + "\n", "", 1) + workflow[end:]
+    errors = _release_errors(tmp_path, mutated)
+    assert any(f"{job!r} must run node js/build.mjs before verifying" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "message"),
+    [
+        (
+            "wheels",
+            '          XYG_REQUIRE_WASM: "1"\n',
+            "wheels job must build with XYG_REQUIRE_WASM",
+        ),
+        (
+            "sdist",
+            '          XYG_REQUIRE_WASM: "1"\n',
+            "sdist job must build with XYG_REQUIRE_WASM",
+        ),
+        (
+            "wheels",
+            " --expect-native --require-wasm",
+            "wheels job must build with XYG_REQUIRE_WASM",
+        ),
+        ("sdist", " --require-wasm", "sdist job must build with XYG_REQUIRE_WASM"),
+        ("wasm", " --expect-native --require-wasm", "wasm job must verify --require-wasm"),
+    ],
+)
+def test_release_workflow_requires_distributions_to_enforce_wasm(
+    tmp_path: Path, job: str, old: str, message: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    new = " --expect-native" if "expect-native" in old else ""
+    errors = _release_errors(tmp_path, _mutate_release_job(workflow, job, old, new))
+    assert any(message in e for e in errors), errors
+
+
+def test_release_workflow_rejects_second_producer_and_weakened_producer(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    second = _mutate_release_job(
+        workflow,
+        "browser-package",
+        "      - name: Build browser client\n        run: |\n          npm ci\n",
+        "      - name: Build browser client\n        run: |\n          npm ci\n          npm run build:wasm\n",
+    )
+    assert any("must consume wasm-assets" in e for e in _release_errors(tmp_path, second))
+    weak = _mutate_release_job(workflow, "wasm-assets", "          if-no-files-found: error\n", "")
+    assert any("if-no-files-found" in e for e in _release_errors(tmp_path, weak))
+    missing = workflow.replace("  wasm-assets:\n", "  wasm-assets-renamed:\n", 1)
+    assert any("wasm-assets" in e for e in _release_errors(tmp_path, missing))
+
+
+@pytest.mark.parametrize(
+    ("job", "step", "needle"),
+    [
+        ("benchmark_vs", "Install selected competitors", "scripts/ci_retry.sh 3 "),
+        ("benchmark_vs", "Install XYG", "scripts/ci_retry.sh 3 "),
+        ("benchmark_vs", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx playwright"),
+        ("benchmark_methodology", "Install JS build toolchain", "scripts/ci_retry.sh 3 "),
+        ("benchmark_methodology", "Install XYG + competitors", "scripts/ci_retry.sh 3 "),
+        ("benchmark_methodology", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx"),
+    ],
+)
+def test_ci_workflow_requires_install_retries_in_hard_benchmark_jobs(
+    tmp_path: Path, job: str, step: str, needle: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    step_at = block.index(f"      - name: {step}\n")
+    step_end = block.index("\n      - ", step_at + 1)
+    mutated_step = block[step_at:step_end].replace("scripts/ci_retry.sh 3 ", "")
+    assert mutated_step != block[step_at:step_end]
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow[:start] + block[:step_at] + mutated_step + block[step_end:] + workflow[end:],
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("install retry" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "new"),
+    [
+        ("benchmark_vs", "    timeout-minutes: 25\n", "    timeout-minutes: 10\n"),
+        ("benchmark_vs", "    timeout-minutes: 25\n", ""),
+        ("benchmark_methodology", "    timeout-minutes: 45\n", ""),
+    ],
+)
+def test_ci_workflow_requires_realistic_benchmark_timeouts(
+    tmp_path: Path, job: str, old: str, new: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, job, old, new))
+    assert any("timeout-minutes" in e for e in errors), errors
+
+
+def test_ci_workflow_runs_the_painter_admission_wasm_parity_gate(tmp_path: Path) -> None:
+    """Hard gate for the #1007 test; the file lands with that PR, so merge this after it."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    line = "          node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs\n"
+    assert line in workflow
+    errors = _wasm_errors(tmp_path, workflow.replace(line, "", 1))
+    assert any("painter-admission-wasm-parity" in e for e in errors)
+
+
+def test_ci_retry_script_retries_then_succeeds_or_returns_the_last_status(tmp_path: Path) -> None:
+    import os
+    import subprocess
+
+    script = Path("scripts/ci_retry.sh").resolve()
+    counter = tmp_path / "count"
+
+    def run(*argv: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["bash", str(script), *argv],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "CI_RETRY_DELAY": "0", "COUNTER": str(counter)},
+        )
+
+    flaky = 'n=$(cat "$COUNTER" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$COUNTER"; [ "$n" -ge 3 ]'
+    ok = run("3", "bash", "-c", flaky)
+    assert ok.returncode == 0 and counter.read_text().strip() == "3"
+    counter.unlink()
+    failed = run("2", "bash", "-c", flaky)
+    assert failed.returncode == 1 and counter.read_text().strip() == "2"
+    assert "failed after 2 attempt(s)" in failed.stderr
+    assert run("0", "true").returncode == 2
+    assert run("x", "true").returncode == 2
+    assert run("3").returncode == 2

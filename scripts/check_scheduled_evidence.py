@@ -9,7 +9,9 @@ release authorization, or a "main is green" claim runs this check first:
 * the latest completed run of each scheduled workflow on ``main`` must have succeeded
   and be recent; a failure blocks until a later run succeeds, and each blocking finding
   must be tracked by an open linked issue (close it only after that later green run);
-* the latest push CI run on ``main`` must have no failed, cancelled, or timed-out job.
+* the latest completed push CI run on ``main`` must have concluded ``success`` with at
+  least one job and no failed, cancelled, or timed-out job; runs still in progress are
+  "no evidence yet", never green.
 
 Stdlib only; ``gh`` (read-only ``run list`` / ``run view``) supplies live data, and
 ``--fixture`` replays recorded JSON so the policy is testable offline.
@@ -34,15 +36,24 @@ def _parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def select_ci_run(ci_runs: list[dict[str, Any]]) -> Optional[dict[str, Any]]:
+    """The latest COMPLETED push run; queued/in-progress runs are not evidence."""
+    completed = [run for run in ci_runs if run.get("status") == "completed"]
+    return max(completed, key=lambda run: _parse_time(run["createdAt"])) if completed else None
+
+
 def evaluate(
     *,
     scheduled: dict[str, list[dict[str, Any]]],
-    ci_run: Optional[dict[str, Any]],
+    ci_runs: list[dict[str, Any]],
     ci_jobs: list[dict[str, Any]],
     now: datetime,
     max_age_days: float = 3.0,
 ) -> list[str]:
-    """Return blocking findings; an empty list means evidence does not block readiness."""
+    """Return blocking findings; an empty list means evidence does not block readiness.
+
+    ``ci_jobs`` are the jobs of ``select_ci_run(ci_runs)``.
+    """
     findings: list[str] = []
     for workflow, runs in sorted(scheduled.items()):
         completed = [
@@ -65,12 +76,29 @@ def evaluate(
                 f"{workflow}: latest green run is older than {max_age_days:g} days "
                 f"({latest.get('url')}); scheduled evidence is stale"
             )
+    ci_run = select_ci_run(ci_runs)
+    pending = [run for run in ci_runs if run.get("status") != "completed"]
+    for run in pending:
+        findings.append(
+            f"ci.yml main run {run.get('url')} is {run.get('status')!r}: no evidence yet for "
+            f"{str(run.get('headSha'))[:8]}; wait for it to complete"
+        )
     if ci_run is None:
-        findings.append("ci.yml: no push run on main to inspect")
+        findings.append("ci.yml: no completed push run on main to inspect")
+        return findings
+    if ci_run.get("conclusion") != "success":
+        findings.append(
+            f"ci.yml main run {ci_run.get('url')} concluded {ci_run.get('conclusion')!r} on "
+            f"{str(ci_run.get('headSha'))[:8]}"
+        )
+    if not ci_jobs:
+        findings.append(
+            f"ci.yml main run {ci_run.get('url')} has no jobs (startup failure); no evidence"
+        )
     for job in ci_jobs:
         if job.get("conclusion") in BAD_JOB_CONCLUSIONS:
             findings.append(
-                f"ci.yml main run {(ci_run or {}).get('url')}: job {job.get('name')!r} "
+                f"ci.yml main run {ci_run.get('url')}: job {job.get('name')!r} "
                 f"concluded {job.get('conclusion')!r}"
             )
     return findings
@@ -91,14 +119,16 @@ def collect(repo: str) -> dict[str, Any]:
     }  # fmt: skip
     ci_runs = _gh_json(
         "run", "list", "--repo", repo, "--workflow", "ci.yml", "--branch", "main",
-        "--event", "push", "--limit", "1", "--json", RUN_FIELDS,
+        "--event", "push", "--limit", "10", "--json", RUN_FIELDS,
     )  # fmt: skip
-    ci_run = ci_runs[0] if ci_runs else None
+    selected = select_ci_run(ci_runs)
     ci_jobs: list[dict[str, Any]] = []
-    if ci_run is not None:
-        view = _gh_json("run", "view", str(ci_run["databaseId"]), "--repo", repo, "--json", "jobs")
+    if selected is not None:
+        view = _gh_json(
+            "run", "view", str(selected["databaseId"]), "--repo", repo, "--json", "jobs"
+        )
         ci_jobs = view.get("jobs", [])
-    return {"scheduled": scheduled, "ci_run": ci_run, "ci_jobs": ci_jobs}
+    return {"scheduled": scheduled, "ci_runs": ci_runs, "ci_jobs": ci_jobs}
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -119,7 +149,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     now = _parse_time(args.now) if args.now else datetime.now(UTC)
     findings = evaluate(
         scheduled=data["scheduled"],
-        ci_run=data.get("ci_run"),
+        ci_runs=data.get("ci_runs", []),
         ci_jobs=data.get("ci_jobs", []),
         now=now,
         max_age_days=args.max_age_days,

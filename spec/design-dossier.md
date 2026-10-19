@@ -2659,14 +2659,19 @@ requiring a Rust toolchain — an instant adoption cliff.
   a hash/size that disagrees with the manifest, ABI/Scene/painter versions older than
   `spec/wasm/abi.json`, an inline copy of a different module or a stale classic worker, or
   diverging dist/static copies produce one diagnostic naming the files and the producer
-  command, not an opaque `FileNotFoundError` mid-benchmark. Distribution builds set
+  command, not an opaque `FileNotFoundError` mid-benchmark. "Stale" means inconsistent with
+  the manifest, `spec/wasm/abi.json`, or the client build; the verifier cannot prove the wasm
+  was compiled from the current Rust source (the producer rebuilds every run, so that is the
+  producer's guarantee, not the verifier's). Distribution builds set
   `XYG_REQUIRE_WASM=1` (the hatch hook then refuses to build without verified assets) and
   `verify_wheel.py` / `verify_sdist.py --require-wasm` re-verify the bytes and manifest
   inside the finished artifact; the npm package already carries `ASSET-MANIFEST.json`.
   Python consumers stay Node-free after packaging and the Node/browser path stays
   Python-free (`npm run build:wasm` never invokes Python). In CI the one producer job is
-  `wasm_assets`; every consumer lists it in `needs`, downloads the `wasm-assets` artifact
-  and runs the verifier (`scripts/verify_ci_workflow.py` enforces the wiring), so a
+  `wasm_assets` (`wasm-assets` in `publish.yaml`, which carries the same contract for every
+  wheel including the PyEmscripten wheel, the sdist, and the browser package); every consumer
+  lists it in `needs`, runs `node js/build.mjs` (the Worker is built, not downloaded),
+  downloads the `wasm-assets` artifact and runs the verifier (`scripts/verify_ci_workflow.py` enforces the wiring), so a
   skipped or failed producer skips the consumers and fails `Release surfaces`.
 - **No-wheel behavior is defined:** the native Rust core is required and there is no
   pure-Python fallback. A source install compiles the core (Rust toolchain required);

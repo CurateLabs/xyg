@@ -54,7 +54,9 @@ single non-skippable `Release surfaces` aggregate. CI runs for both pull
 requests and `merge_group` checks so the required status is produced for the
 candidate commit GitHub intends to merge. The queue uses squash commits,
 single-entry groups, and one active build to bound CI demand while this suite
-is expensive. Merge-group runs cannot be canceled by CI concurrency policy.
+is expensive. Concurrency cancels only superseded `pull_request` runs: merge-group runs and every push to
+`main` run to completion, because each main commit needs a complete `Release surfaces` aggregate
+(including the post-merge benchmark evidence) for the evidence to be trustworthy.
 
 Keep the ruleset, branch protection status name, and CI event wiring aligned.
 GitHub does not run `merge_group` checks through the `pull_request` event, and
@@ -87,7 +89,7 @@ applicable is a failure; a skipped job that is inapplicable is recorded as such.
 | Class | `ci.yml` jobs | Applicable when | Result required |
 | --- | --- | --- | --- |
 | Baseline hard | `test`, `wasm_assets`, `wasm_foundation`, `python_floor` | every event | `success` |
-| Release-surface hard | `browser_conformance`, `sdist`, `wheels`, `install_without_rust`, `authored_scene`, `matplotlib_reference` | `merge_group`, `push`, `workflow_dispatch`, and a pull request the trusted-base classifier marks required | `success` when applicable; `skipped` or `success` for a prose-only pull request; never `failure` |
+| Release-surface hard | `browser_conformance`, `sdist`, `wheels`, `install_without_rust`, `authored_scene`, `matplotlib_reference` | `merge_group`, `push`, `workflow_dispatch`, and a pull request the trusted-base classifier marks required | `success` when applicable; `skipped` or `success` for a prose-only pull request; never `failure`. `matplotlib_reference` is a pre-merge gate: its failure turns `Release surfaces` red and the merge queue cannot promote a classifier-positive change until the Matplotlib 3.11 reference corpus passes |
 | Main evidence hard | `benchmark_vs`, `benchmark_methodology`, `benchmark` | `push` and `workflow_dispatch` only (post-merge; they cannot gate the queue) | `success` on main; `skipped` or `success` on pull requests and merge groups |
 | Support | `release_surface_changes` (classifier), `release_surfaces` (aggregate) | every event | n/a |
 | Advisory (outside `ci.yml`) | `codspeed.yml`, `density-100m.yml`, `ceiling-benchmark.yml`, `benchmark-refresh.yml`, `docs.yml`, `binder.yml`, `final-coderabbit.yml` | scheduled or manual | not an aggregate input |
@@ -100,14 +102,22 @@ on `push`/`workflow_dispatch`, so main's own evidence failures turn the aggregat
 ceremony remain out of scope: the aggregate stays one job, and prose-only changes still
 execute only baseline jobs.
 
+The post-merge benchmark jobs are hard but hardened against transient infrastructure failure:
+package and Playwright installs go through `scripts/ci_retry.sh 3` (linear back-off), and
+`benchmark_vs` has a 25-minute (slowest group about 5 minutes when healthy) and
+`benchmark_methodology` a 45-minute timeout instead of the earlier 10-minute cap and the
+360-minute default. A genuine benchmark or report-verification failure still fails the job.
+
 **Scheduled evidence blocks readiness through issue state.** Scheduled performance and
 browser evidence (CodSpeed, the density authority) is not an aggregate input and never runs
 on pull requests, but a known unresolved failure must not read as readiness. Before a release
 authorization, a "main is green" claim, or closing the release tracker, run
 `python3 scripts/check_scheduled_evidence.py`: it blocks while the latest completed run of any
-scheduled workflow on `main` failed or is older than three days, and while the latest `ci.yml`
-push run on `main` has any failed, cancelled, or timed-out job (including the pre-#1008
-advisory jobs). Each blocking finding must be tracked by an open linked issue, which closes
+scheduled workflow on `main` failed or is older than three days; while a `ci.yml` push run on
+`main` is still queued or in progress (no evidence yet, never green); and unless the latest
+completed `ci.yml` push run concluded `success` at run level, has at least one job (a zero-job
+startup failure is no evidence), and has no failed, cancelled, or timed-out job (including the
+pre-#1008 advisory jobs). Each blocking finding must be tracked by an open linked issue, which closes
 only after a later scheduled run on `main` succeeds.
 
 CurateLabs/xyg is a permanently divergent product repository, not a deployment

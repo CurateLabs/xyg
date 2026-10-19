@@ -36,12 +36,20 @@ def _scheduled(**latest: str) -> dict[str, list[dict]]:
 
 
 GREEN_JOBS = [{"name": "Release surfaces", "conclusion": "success"}]
+CI_RUN = {
+    "databaseId": 9,
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "4e27ef4b0e1a",
+    "createdAt": "2026-10-19T12:00:00Z",
+    "url": "https://github.com/CurateLabs/xyg/actions/runs/9",
+}
 
 
 def test_green_scheduled_runs_and_main_ci_do_not_block() -> None:
     assert (
-        gate.evaluate(scheduled=_scheduled(), ci_run={"url": "u"}, ci_jobs=GREEN_JOBS, now=NOW)
-        == []
+        gate.evaluate(scheduled=_scheduled(), ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW) == []
     )
 
 
@@ -52,7 +60,7 @@ def test_repeatedly_failing_scheduled_run_blocks_readiness() -> None:
         "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
     }
 
-    findings = gate.evaluate(scheduled=scheduled, ci_run={"url": "u"}, ci_jobs=GREEN_JOBS, now=NOW)
+    findings = gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
 
     assert len(findings) == 1
     assert "codspeed.yml: latest run concluded 'failure'" in findings[0]
@@ -63,9 +71,7 @@ def test_a_later_green_run_clears_the_block() -> None:
     scheduled = _scheduled()
     scheduled["codspeed.yml"].insert(0, _run("failure", "2026-10-15T12:00:00Z"))
 
-    assert (
-        gate.evaluate(scheduled=scheduled, ci_run={"url": "u"}, ci_jobs=GREEN_JOBS, now=NOW) == []
-    )
+    assert gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW) == []
 
 
 def test_missing_cancelled_in_progress_and_stale_evidence_block() -> None:
@@ -74,12 +80,12 @@ def test_missing_cancelled_in_progress_and_stale_evidence_block() -> None:
         "density-100m.yml": [_run("", "2026-10-19T12:00:00Z", status="in_progress")],
     }
     findings = gate.evaluate(
-        scheduled=cancelled_only, ci_run={"url": "u"}, ci_jobs=GREEN_JOBS, now=NOW
+        scheduled=cancelled_only, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW
     )
     assert len(findings) == 2 and all("no completed run" in f for f in findings)
 
     stale = {name: [_run("success", "2026-10-01T00:00:00Z")] for name in gate.SCHEDULED_WORKFLOWS}
-    findings = gate.evaluate(scheduled=stale, ci_run={"url": "u"}, ci_jobs=GREEN_JOBS, now=NOW)
+    findings = gate.evaluate(scheduled=stale, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
     assert len(findings) == 2 and all("stale" in f for f in findings)
 
 
@@ -91,13 +97,13 @@ def test_failed_main_ci_jobs_block_even_when_the_aggregate_is_green() -> None:
     ]
 
     findings = gate.evaluate(
-        scheduled=_scheduled(), ci_run={"url": "run-url"}, ci_jobs=jobs, now=NOW
+        scheduled=_scheduled(), ci_runs=[{**CI_RUN, "url": "run-url"}], ci_jobs=jobs, now=NOW
     )
 
     assert len(findings) == 2
     assert "Matplotlib 3.11 reference compatibility" in findings[0]
-    assert gate.evaluate(scheduled=_scheduled(), ci_run=None, ci_jobs=[], now=NOW) == [
-        "ci.yml: no push run on main to inspect"
+    assert gate.evaluate(scheduled=_scheduled(), ci_runs=[], ci_jobs=[], now=NOW) == [
+        "ci.yml: no completed push run on main to inspect"
     ]
 
 
@@ -107,7 +113,7 @@ def test_cli_replays_fixture_and_exits_nonzero_when_blocked(tmp_path: Path, caps
         json.dumps(
             {
                 "scheduled": _scheduled(**{"codspeed.yml": "failure"}),
-                "ci_run": {"url": "u"},
+                "ci_runs": [CI_RUN],
                 "ci_jobs": GREEN_JOBS,
             }
         ),
@@ -118,8 +124,56 @@ def test_cli_replays_fixture_and_exits_nonzero_when_blocked(tmp_path: Path, caps
     assert "BLOCKED" in capsys.readouterr().err
 
     fixture.write_text(
-        json.dumps({"scheduled": _scheduled(), "ci_run": {"url": "u"}, "ci_jobs": GREEN_JOBS}),
+        json.dumps({"scheduled": _scheduled(), "ci_runs": [CI_RUN], "ci_jobs": GREEN_JOBS}),
         encoding="utf-8",
     )
     assert gate.main(["--fixture", str(fixture), "--now", "2026-10-19T15:00:00Z"]) == 0
     assert gate.main(["--fixture", str(tmp_path / "absent.json")]) == 2
+
+
+def test_latest_completed_push_run_is_selected_not_the_newest_in_progress_one() -> None:
+    older = {**CI_RUN, "databaseId": 1, "createdAt": "2026-10-18T12:00:00Z"}
+    newest_in_progress = {
+        **CI_RUN,
+        "databaseId": 3,
+        "status": "in_progress",
+        "conclusion": "",
+        "createdAt": "2026-10-19T14:00:00Z",
+    }
+    assert gate.select_ci_run([older, CI_RUN, newest_in_progress]) == CI_RUN
+    assert gate.select_ci_run([newest_in_progress]) is None
+
+
+def test_in_progress_main_run_is_no_evidence_yet_not_green() -> None:
+    pending = {
+        **CI_RUN,
+        "status": "in_progress",
+        "conclusion": "",
+        "createdAt": "2026-10-19T14:00:00Z",
+    }
+
+    findings = gate.evaluate(
+        scheduled=_scheduled(), ci_runs=[pending, CI_RUN], ci_jobs=GREEN_JOBS, now=NOW
+    )
+    assert len(findings) == 1 and "'in_progress': no evidence yet" in findings[0]
+
+    only_pending = gate.evaluate(scheduled=_scheduled(), ci_runs=[pending], ci_jobs=[], now=NOW)
+    assert any("no evidence yet" in f for f in only_pending)
+    assert any("no completed push run" in f for f in only_pending)
+
+
+def test_run_level_conclusion_must_be_success_even_with_green_jobs() -> None:
+    failed = {**CI_RUN, "conclusion": "failure"}
+    findings = gate.evaluate(scheduled=_scheduled(), ci_runs=[failed], ci_jobs=GREEN_JOBS, now=NOW)
+    assert len(findings) == 1 and "concluded 'failure'" in findings[0]
+    cancelled = {**CI_RUN, "conclusion": "cancelled"}
+    assert gate.evaluate(scheduled=_scheduled(), ci_runs=[cancelled], ci_jobs=GREEN_JOBS, now=NOW)
+
+
+def test_zero_job_startup_failure_blocks() -> None:
+    startup = {**CI_RUN, "conclusion": "failure"}
+    findings = gate.evaluate(scheduled=_scheduled(), ci_runs=[startup], ci_jobs=[], now=NOW)
+    assert any("no jobs (startup failure)" in f for f in findings)
+    # Even a "successful" run with zero jobs is no evidence.
+    findings = gate.evaluate(scheduled=_scheduled(), ci_runs=[CI_RUN], ci_jobs=[], now=NOW)
+    assert findings and "no jobs (startup failure)" in findings[0]

@@ -14,11 +14,13 @@ permissions:
 
 # Multiple sessions push to two branches in bursts; without this the runner
 # pool drowns in runs for superseded commits and fresh tips queue for ~30 min.
-# Only the newest run per ref carries signal — cancel the rest.
+# Only the newest pull-request run per ref carries signal — cancel the rest.
 concurrency:
   group: ci-${{ github.ref }}
-  # A newer merge-group request must not cancel an in-flight required check.
-  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
+  # Only superseded pull-request runs are cancelled. A merge-group request must not
+  # cancel an in-flight required check, and every push to main needs a complete
+  # aggregate (including the post-merge benchmark evidence) to be trustworthy.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   release_surface_changes:
@@ -172,6 +174,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
+          node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/gen_geo_overview_hosts.mjs --check
@@ -777,7 +780,9 @@ jobs:
     name: Cross-library benchmark (${{ matrix.name }})
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 10
+    # The slowest group (native-and-webgl) takes about 5 minutes when installs are
+    # healthy; leave room for install retries and a slow runner, not a hang.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -853,7 +858,7 @@ jobs:
           key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
         if: matrix.build_js
-        run: npm ci
+        run: scripts/ci_retry.sh 3 npm ci
       - name: Build native core
         if: matrix.xy
         run: cargo build --release
@@ -867,11 +872,11 @@ jobs:
         env:
           XYG_REQUIRE_CARGO: "1"
         run: |
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock -e .
       - name: Install selected competitors
         run: |
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock ${{ matrix.packages }}
       - name: Verify native benchmark backend
         if: matrix.xy
@@ -884,8 +889,8 @@ jobs:
         if: matrix.browser
         timeout-minutes: 10
         run: |
-          npm ci
-          npx playwright install chromium
+          scripts/ci_retry.sh 3 npm ci
+          scripts/ci_retry.sh 3 npx playwright install chromium
       - name: Run cross-library benchmark group
         run: |
           CHROMIUM_ARGS=()
@@ -915,6 +920,7 @@ jobs:
     needs: wasm_assets
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -934,7 +940,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
-        run: npm ci
+        run: scripts/ci_retry.sh 3 npm ci
       - name: Build core + JS client
         run: |
           node js/build.mjs
@@ -951,9 +957,9 @@ jobs:
           XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv .venv
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock -e .
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock \
             matplotlib seaborn plotly kaleido bokeh altair datashader hvplot \
             plotly-resampler psutil
@@ -967,8 +973,8 @@ jobs:
       - name: Install Chromium (Playwright)
         timeout-minutes: 10
         run: |
-          npm ci
-          npx playwright install chromium
+          scripts/ci_retry.sh 3 npm ci
+          scripts/ci_retry.sh 3 npx playwright install chromium
       - name: Line decimation vs plotly-resampler (methodology line_10M)
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
@@ -1133,6 +1139,10 @@ jobs:
 
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
       - name: Fetch packaged WASM assets from the wasm_assets producer
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1277,6 +1287,10 @@ jobs:
 
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
       - name: Fetch packaged WASM assets from the wasm_assets producer
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
