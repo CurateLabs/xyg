@@ -289,7 +289,12 @@ batch is accepted by `xyg_scene_svg` for a complete SVG, by
 `xyg_scene_raster_commands` for the existing native raster display list, and
 by `xyg_scene_browser_painter` for the exact painter-v11 byte stream. These
 consumers fail closed on malformed version, widths, length, reserved fields,
-kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
+kinds, styles, coordinates, or bounds. `xyg_scene_browser_painter` returns
+`usize::MAX` on failure. In that case `out` is either unchanged or holds a
+NUL-terminated `scene::PainterRejection` diagnostic (`CODE: detail`); it never
+holds partial painter bytes. A success whose `out_cap` is below the required
+length returns that length and leaves `out` unchanged ([browser-wasm.md](browser-wasm.md)
+"Painter admission", #1007). The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
 domain, and symlog constant). A bounded embedded style table (maximum 65,536
 entries) makes every style reference batch-local and independently resolvable:

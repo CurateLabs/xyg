@@ -305,7 +305,29 @@ harness's local-only strict CSP. `scripts/verify_wasm_scene_benchmark.py`
 requires all eight canonical rows, finite non-negative timing/copy/memory/payload
 metrics, positive authored Scene and painter payloads, required authored chrome
 semantics, zero main-thread typed-series record visits, and allocation-free
-fragmentation refusal. CI uploads the raw report as
+fragmentation refusal. The refusal row submits 1,025 two-point line series (a
+real run-fragmentation vector) and must record `rejectedTraceLimit = 1024`,
+`rejectionCode = "XYG_PAINTER_TRACE_LIMIT"`, and `browserChildren = 0`; a
+companion `packedScatter` row renders 1,025 alternating-color single-point
+scatter series and must report exactly one GPU trace, because ordinary scatter
+records pack into one kind-8 trace (#945, #1007). Both rows also record
+`budgetBytes` (the Worker's `maxArenaBytes`) and `host = "browser-wasm-worker"`
+and never user values. The Rust kernel rows
+`scene_browser_painter_fragment_limit` (distinct-identity Polyline runs,
+asserted `PainterTraceLimit` before measuring) and
+`scene_browser_painter_packed_symbols` (alternating symbols, asserted one
+trace) measure the same two policies at 10k/100k/1M records. The fragment-limit
+result does not depend on `n`, but its time is O(n), because primitive
+validation and tick resolution run before run discovery.
+`scene_browser_painter_byte_limit` refuses the 1M packed Scene (~48 MB of
+output) under a 32 MiB budget and asserts `Limit`. Admission precedes the
+single output allocation, so this row pays only the O(n) scans and must stay
+far below the packed-symbols row that builds the output. Local wall clock at
+1M was about 13 ms against 91 ms. It stays above the fragment-limit row (about
+3 ms), whose run discovery stops at run 1,025. These rows are
+performance evidence; correctness is pinned by the Rust, Python, Node, and
+strict-CSP Worker admission tests in
+[browser-wasm.md](../design/browser-wasm.md) "Painter admission". CI uploads the raw report as
 `authored-scene-browser-<git-sha>.json`; reproduce it locally with:
 
 ```bash
@@ -533,7 +555,22 @@ construction at 10k, aggregate render-graph construction at 100k under fixed
 5k/10k node/edge budgets, 10M/100M/1B-class LOD policy decisions, a complete
 10k graph composition-to-split-payload row, and paired SVG/native-PNG exports
 of a 1k graph. Each row asserts topology, tier, payload, or screen bounds so it
-cannot become faster by silently doing less work. Browser buffer upload, GPU
+cannot become faster by silently doing less work. The payload row expects one
+shaft segment per straight edge (border-aware routing, #33/ABI 368). The paired
+SVG/PNG rows export 1,000 circle-layout nodes with chord edges
+`(i, (i + 333) % n)`, so every edge spans the plot. A neighbor ring would put
+each edge inside the overlapping 8 px node outlines, where clipping hides it
+(graph-mark.md, #901). That would make serialization and raster regressions
+invisible. The SVG row goes through the Rust Scene route (#897) and asserts
+exactly 1,000 `<polyline>` shafts and 1,000 closed-triangle `<path>` heads,
+with no `<line>` wings. Both rows paint edges in one explicit opaque color,
+`edge_color="#d81b60"`, which the SVG writes as `rgb(216,27,96)`. That single
+constant drives the SVG matchers and the PNG pixel check, so a change to the
+default theme or antialiased gray chrome cannot break or fool the rows. The PNG
+row counts pixels within ±16 per channel of that color and requires more than
+30 per edge (30,000 total; 120,596 measured, about a 4x margin). This
+workload replaced the ring on 2026-10-19 (#1007), so earlier export timings
+are not comparable. Browser buffer upload, GPU
 paint, frame pacing, picking, and teardown remain wall-clock measurements. The
 `graph_2000_interaction` case in `bench_interaction.py` records those stages for
 a direct graph; simulation rows make no request-to-pixels claim.

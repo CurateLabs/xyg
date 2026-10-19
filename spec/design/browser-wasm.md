@@ -348,9 +348,12 @@ after instance initialization attach the same snapshot to
 `null`. The error snapshot is captured after
 fail-closed staging cleanup, so `arenaBytes` is zero while cumulative copy and
 high-water counters remain inspectable. Rust tests and the strict-CSP Worker
-test pin the typed-series fragmentation boundary at 1,025 painter traces: the
-request returns `RESOURCE_LIMIT`, publishes no painter output, and reports the
-one staging copy and exact copied byte count without host-side inference.
+test pin the typed-series fragmentation boundary at 1,025 line-series painter
+traces: the request returns `RESOURCE_LIMIT` with the stable
+`XYG_PAINTER_TRACE_LIMIT` diagnostic (see Painter admission), publishes no
+painter output, and reports the one staging copy and exact copied byte count
+without host-side inference. 1,025 single-point scatter series are one packed
+kind-8 trace and succeed.
 `XYTS` is the canonical authoring/compile ingress, not the live §29 paint wire
 and not an `XYBF` transport envelope. Its column attachments are exact raw
 `Float64Array` source values, matching the CPU-side f64 authority. The main
@@ -533,16 +536,72 @@ the base and both endpoint faces, and `None` allocates no outline buffers. It
 does not infer topology from paint alpha or reconstruct a closed path from
 host defaults.
 
+### Painter admission
+
 The descriptor graph has an independent Rust-enforced ceiling of 1,024 trace
 runs, recorded as `painter_max_traces` in the generated WASM contract. A valid
-Scene can alternate stable IDs, styles, or symbols on every record; without
-this ceiling its compact input could expand into O(records) `ChartView` and GL
-objects on the main thread. Rust stops while discovering run 1,025 and returns
-the stable `RESOURCE_LIMIT` diagnostic before allocating or transferring a
-descriptor table. TypeScript repeats the generated ceiling as defense in depth.
-Callers may reduce fragmentation or split work into explicitly managed views;
-the browser never silently merges runs because that would change line breaks,
-styles, symbols, or stable identity.
+Scene can still split a run on every record: a Polyline, Rect, Band, or
+PolyFill run breaks on run identity or style, annotated Scatter records
+(`annotation_tag` 1–6) are one descriptor each, and any visibility or kind
+change ends the current run. Without this ceiling that compact input could
+expand into O(records) `ChartView` and GL objects on the main thread. Rust
+stops while discovering run 1,025 and returns the stable trace-limit rejection
+before allocating or transferring a descriptor table. TypeScript repeats the
+generated ceiling as defense in depth. Callers may reduce fragmentation or
+split work into explicitly managed views; the browser never silently merges
+runs because that would change line breaks, styles, symbols, or stable
+identity.
+
+Per-instance batches are not fragmentation (#945). Kinds 8 and 9 carry every
+marker's or segment's resolved paint, width, symbol, diameter, and complete
+identity in their own planes, and kind 7 carries per-triangle fill and
+identity, so those per-instance changes never create runs (only the split
+rules listed in the kind table above do): a
+Scene or typed-series request of 1,025 single-point alternating-color or
+alternating-symbol scatter series is one kind-8 trace and renders. The
+adversarial fragmentation evidence therefore uses distinct-identity Polyline
+runs (for example 1,025 two-point line series), never scatter series.
+
+Admission order and accounting are deterministic and identical on every host
+(#1007):
+
+1. Run discovery happens first and is bounded by the ceiling, so an input over
+   1,024 runs is a trace-limit rejection under any byte budget.
+2. Bounded painter tables are checked before their O(records) construction;
+   glyph-marker labels are counted against `MAX_SCENE_LABELS` (128 including
+   authored labels) before any label is allocated.
+3. The exact output length is summed with checked arithmetic. Overflow, a
+   total above the caller's byte budget, or a total above `u32::MAX` (painter
+   offsets are u32) is a byte-limit rejection. Exactly the budget is admitted.
+4. Only then is the single output buffer allocated; its final length equals
+   the admitted total. No partial painter bytes or state are ever published.
+
+Every rejection maps through one Rust table, `scene::PainterRejection`, to a
+stable `CODE: detail` diagnostic that contains no user values:
+
+| Code | Cause | Worker status |
+| --- | --- | --- |
+| `XYG_PAINTER_TRACE_LIMIT` | more than 1,024 trace runs | `RESOURCE_LIMIT` (3) |
+| `XYG_PAINTER_BYTE_LIMIT` | exact output over the byte budget or `u32::MAX`, accounting overflow, or a bounded painter table over its ceiling | `RESOURCE_LIMIT` (3) |
+| `XYG_SCENE_VERSION` | non-canonical Scene version | `SCENE_VERSION` (4) |
+| `XYG_SCENE_MALFORMED` | malformed or unlowerable Scene bytes | `MALFORMED_SCENE` (5) |
+
+The Worker's `XygWasmError.message` is that diagnostic (annotated prepares keep
+their own malformed-input text under the same code). The native
+`xyg_scene_browser_painter` seam returns `usize::MAX` and writes the same
+NUL-terminated diagnostic into `out` when `out_cap` can hold it; Python raises
+`ScenePainterError(ValueError)` and Node raises a `RangeError`, both carrying
+`.code`. For the same Scene bytes and budget the native seam and the Worker
+publish byte-identical painter output or the same diagnostic. A failed,
+cancelled, or stale prepare clears any earlier output; a retry needs a fresh
+sequence and is byte-identical to a first success.
+`tests/fixtures/painter_admission_cross_host.json` is generated by
+`crates/xyg-wasm/tests/painter_admission_parity.rs` (which runs both seams) and
+pins just-below, exact, and just-above cases for both ceilings plus packed
+scatter, trace-before-byte precedence, malformed, and version cases. Python
+(`tests/test_painter_admission_cross_host.py`), Node with the real wasm32
+artifact (`packages/xy-node/test/painter-admission-wasm-parity.test.mjs`), and
+the strict-CSP Worker test consume it.
 
 This is the public direct-browser entry for the stable Scene v20
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,

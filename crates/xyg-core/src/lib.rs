@@ -4313,8 +4313,24 @@ pub unsafe extern "C" fn xyg_static_legend_fit(
     required
 }
 
-/// Lower one validated Scene v12 document to the canonical browser painter-v9
-/// byte stream. Returns required bytes or `usize::MAX` on error.
+/// Lower one validated canonical Scene document to the browser painter byte
+/// stream under `max_bytes`. Returns the required painter length, or
+/// `usize::MAX` on error.
+///
+/// Output contract:
+/// - Success with non-null `out` and `out_cap >= required`: exactly `required`
+///   painter bytes are written to `out[..required]`; the rest of `out` is
+///   untouched.
+/// - Success with `out_cap < required` (capacity probe): returns `required`
+///   and leaves `out` unchanged; call again with a buffer that large.
+/// - `usize::MAX`: `out` is either unchanged, or (when `out` is non-null and
+///   `out_cap` is greater than the diagnostic length) holds the stable
+///   NUL-terminated `scene::PainterRejection::diagnostic`
+///   (`XYG_PAINTER_TRACE_LIMIT: ...`, `XYG_PAINTER_BYTE_LIMIT: ...`,
+///   `XYG_SCENE_VERSION: ...`, or `XYG_SCENE_MALFORMED: ...`) followed by
+///   untouched bytes. A null/empty `encoded`, a null `out`, or a caught panic
+///   leaves `out` unchanged. Painter bytes are never written on failure, so
+///   native hosts report the same code as the WASM Worker (#1007).
 ///
 /// # Safety
 /// Pointer contracts match `xyg_scene_svg`.
@@ -4329,13 +4345,25 @@ pub unsafe extern "C" fn xyg_scene_browser_painter(
     if encoded.is_null() || encoded_len == 0 {
         return usize::MAX;
     }
-    let Some(painter) = ffi_guard(None, || {
-        scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
-            .ok()?
-            .to_browser_painter(max_bytes)
-            .ok()
+    let Some(result) = ffi_guard(None, || {
+        Some(scene::browser_painter_from_scene(
+            std::slice::from_raw_parts(encoded, encoded_len),
+            max_bytes,
+        ))
     }) else {
         return usize::MAX;
+    };
+    let painter = match result {
+        Ok(painter) => painter,
+        Err(rejection) => {
+            let message = rejection.diagnostic().as_bytes();
+            if !out.is_null() && out_cap > message.len() {
+                let target = std::slice::from_raw_parts_mut(out, message.len() + 1);
+                target[..message.len()].copy_from_slice(message);
+                target[message.len()] = 0;
+            }
+            return usize::MAX;
+        }
     };
     let required = painter.len();
     if out_cap < required {

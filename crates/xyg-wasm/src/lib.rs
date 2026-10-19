@@ -20,7 +20,7 @@ pub mod ticks;
 mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
-use xyg_engine::scene::{self, SceneError};
+use xyg_engine::scene::{self, PainterRejection, SceneError};
 
 pub const WASM_ABI_VERSION: u32 = 33;
 pub const STATUS_OK: i32 = 0;
@@ -536,6 +536,18 @@ fn fail(instance: &mut Instance, status: i32, message: &str) -> i32 {
     instance.last_error.clear();
     instance.last_error.push_str(message);
     status
+}
+
+/// Report a rejected Scene → painter lowering with the shared host-neutral
+/// diagnostic, so the Worker and the native C ABI agree on code and text for
+/// the same Scene bytes and byte budget (#1007).
+fn fail_painter(instance: &mut Instance, rejection: PainterRejection) -> i32 {
+    let status = match rejection {
+        PainterRejection::TraceLimit | PainterRejection::ByteLimit => STATUS_RESOURCE_LIMIT,
+        PainterRejection::Version => STATUS_SCENE_VERSION,
+        PainterRejection::Malformed => STATUS_MALFORMED_SCENE,
+    };
+    fail(instance, status, rejection.diagnostic())
 }
 
 #[no_mangle]
@@ -1096,26 +1108,8 @@ pub extern "C" fn xyg_wasm_scene_prepare(
                 instance.last_error.clear();
                 STATUS_OK
             }
-            Err(SceneError::PainterTraceLimit) => fail(
-                instance,
-                STATUS_RESOURCE_LIMIT,
-                "canonical scene fragments into more than 1024 browser traces",
-            ),
-            Ok(_) | Err(SceneError::Limit) => fail(
-                instance,
-                STATUS_RESOURCE_LIMIT,
-                "canonical scene output exceeds the instance byte budget",
-            ),
-            Err(SceneError::Version) => fail(
-                instance,
-                STATUS_SCENE_VERSION,
-                "canonical scene version is incompatible",
-            ),
-            Err(_) => fail(
-                instance,
-                STATUS_MALFORMED_SCENE,
-                "canonical scene batch cannot be lowered for browser paint",
-            ),
+            Ok(_) => fail_painter(instance, PainterRejection::ByteLimit),
+            Err(error) => fail_painter(instance, PainterRejection::from_error(error)),
         }
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1210,26 +1204,15 @@ pub extern "C" fn xyg_wasm_scene_prepare_annotations(
                 instance.last_error.clear();
                 STATUS_OK
             }
-            Err(SceneError::PainterTraceLimit) => fail(
-                instance,
-                STATUS_RESOURCE_LIMIT,
-                "canonical scene fragments into more than 1024 browser traces",
-            ),
-            Ok(_) | Err(SceneError::Limit) => fail(
-                instance,
-                STATUS_RESOURCE_LIMIT,
-                "canonical scene output exceeds the instance byte budget",
-            ),
-            Err(SceneError::Version) => fail(
-                instance,
-                STATUS_SCENE_VERSION,
-                "canonical scene version is incompatible",
-            ),
-            Err(_) => fail(
-                instance,
-                STATUS_MALFORMED_SCENE,
-                "canonical scene or annotations are malformed",
-            ),
+            Ok(_) => fail_painter(instance, PainterRejection::ByteLimit),
+            Err(error) => match PainterRejection::from_error(error) {
+                PainterRejection::Malformed => fail(
+                    instance,
+                    STATUS_MALFORMED_SCENE,
+                    "XYG_SCENE_MALFORMED: canonical scene or annotations are malformed",
+                ),
+                rejection => fail_painter(instance, rejection),
+            },
         }
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -1328,26 +1311,8 @@ fn compile_from_arena(
             instance.last_error.clear();
             STATUS_OK
         }
-        Err(SceneError::PainterTraceLimit) => fail(
-            instance,
-            STATUS_RESOURCE_LIMIT,
-            "compiled scene fragments into more than 1024 browser traces",
-        ),
-        Ok(_) | Err(SceneError::Limit) => fail(
-            instance,
-            STATUS_RESOURCE_LIMIT,
-            "compiled scene output exceeds the instance byte budget",
-        ),
-        Err(SceneError::Version) => fail(
-            instance,
-            STATUS_SCENE_VERSION,
-            "compiled scene version is incompatible",
-        ),
-        Err(_) => fail(
-            instance,
-            STATUS_MALFORMED_SCENE,
-            "compiled scene cannot be lowered for browser paint",
-        ),
+        Ok(_) => fail_painter(instance, PainterRejection::ByteLimit),
+        Err(error) => fail_painter(instance, PainterRejection::from_error(error)),
     }
 }
 
@@ -2895,7 +2860,7 @@ mod tests {
                 with_instance_mut(bounded, |instance| {
                     assert_eq!(
                         instance.last_error,
-                        "canonical scene output exceeds the instance byte budget"
+                        scene::PainterRejection::ByteLimit.diagnostic()
                     )
                 })
                 .unwrap();
@@ -3040,7 +3005,7 @@ mod tests {
         with_instance_mut(handle, |instance| {
             assert_eq!(
                 instance.last_error,
-                "canonical scene fragments into more than 1024 browser traces"
+                "XYG_PAINTER_TRACE_LIMIT: canonical scene fragments into more than 1024 browser traces"
             );
         })
         .unwrap();
@@ -3112,7 +3077,7 @@ mod tests {
         with_instance_mut(handle, |instance| {
             assert_eq!(
                 instance.last_error,
-                "compiled scene fragments into more than 1024 browser traces"
+                scene::PainterRejection::TraceLimit.diagnostic()
             );
             assert_eq!(instance.arena.len(), 0);
         })

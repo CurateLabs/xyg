@@ -18,9 +18,9 @@ use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
 use xyg_engine::scene::{
-    AxisScale, AxisSide, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
-    SceneChromeText, SceneDocument, SceneLegend, SceneLegendEntry, SceneRecordKind, TickDirection,
-    BROWSER_PAINTER_VERSION,
+    AxisScale, AxisSide, LegendLocation, PainterRejection, PlotLayout, ScaleKind, SceneBatch,
+    SceneChromeStyle, SceneChromeText, SceneDocument, SceneError, SceneLegend, SceneLegendEntry,
+    SceneRecordKind, TickDirection, BROWSER_PAINTER_VERSION, MAX_BROWSER_PAINTER_TRACES,
 };
 
 fn main() {
@@ -357,7 +357,7 @@ fn scene_v4_raster_commands(bencher: Bencher, n: usize) {
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
-    let document = browser_scene_document(n, false);
+    let document = browser_scene_document(n, BrowserFixture::Plain);
     let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
     assert_eq!(&output[..4], b"XYPB");
     assert_eq!(
@@ -504,14 +504,39 @@ fn scene_v9_primary_legend_consumers(bencher: Bencher, entries: usize) {
     });
 }
 
-fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {
+/// Browser-painter workload shapes. Their run discovery follows
+/// `spec/design/browser-wasm.md`: ordinary visible Scatter records batch into
+/// one kind-8 marker-instance trace across color, width, diameter, and symbol
+/// changes (#945), while a Polyline run still breaks on run identity.
+#[derive(Clone, Copy, PartialEq)]
+enum BrowserFixture {
+    /// One constant-symbol scatter run.
+    Plain,
+    /// Alternating symbols on every record: still one packed kind-8 trace.
+    PackedSymbols,
+    /// One Polyline run per record (distinct stable identity on every
+    /// record): the adversarial input that fragments into `n` trace runs.
+    FragmentedRuns,
+}
+
+fn browser_scene_document(n: usize, fixture: BrowserFixture) -> SceneDocument {
     let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
     let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
     let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
     let x = uniform(n, 0x0055_AA11);
     let y = uniform(n, 0x0066_BB22);
+    let fragmented = fixture == BrowserFixture::FragmentedRuns;
+    let kinds = vec![u8::from(fragmented); n];
+    let stable_ids: Vec<u64> = if fragmented {
+        (0..n as u64).collect()
+    } else {
+        vec![7; n]
+    };
     let symbols: Vec<u8> = (0..n)
-        .map(|index| if fragmented { (index % 2) as u8 } else { 0 })
+        .map(|index| match fixture {
+            BrowserFixture::PackedSymbols => (index % 2) as u8,
+            BrowserFixture::Plain | BrowserFixture::FragmentedRuns => 0,
+        })
         .collect();
     let encoded = SceneBatch::new(
         layout,
@@ -519,13 +544,14 @@ fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {
         2,
         sx,
         sy,
-        &vec![0; n],
-        &vec![7; n],
+        &kinds,
+        &stable_ids,
         &vec![0; n],
         &[0x88; 4],
         &[0x22; 4],
         &[1.0],
-        &vec![6.0; n],
+        // Polyline records carry no marker diameter.
+        &vec![if fragmented { 0.0 } else { 6.0 }; n],
         &symbols,
         &x,
         &y,
@@ -537,9 +563,51 @@ fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {
     SceneDocument::decode(&encoded).unwrap()
 }
 
+fn painter_trace_count(painter: &[u8]) -> usize {
+    u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize
+}
+
+/// Time for Rust to refuse an adversarially fragmented Scene. The result is
+/// the stable trace-limit error at run 1,025 for every `n` and independent of
+/// the (ample) 64 MiB byte budget, but the time is still O(n): primitive
+/// validation and tick resolution run before run discovery.
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_browser_painter_fragment_limit(bencher: Bencher, n: usize) {
-    let document = browser_scene_document(n, true);
-    assert!(document.to_browser_painter(64 * 1024 * 1024).is_err());
+    let document = browser_scene_document(n, BrowserFixture::FragmentedRuns);
+    assert_eq!(
+        document.to_browser_painter(64 * 1024 * 1024),
+        Err(SceneError::PainterTraceLimit)
+    );
     bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024)));
+}
+
+/// Alternating scatter symbols are per-instance paint, not run fragmentation:
+/// the whole Scene lowers to one packed marker-instance trace.
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_browser_painter_packed_symbols(bencher: Bencher, n: usize) {
+    let document = browser_scene_document(n, BrowserFixture::PackedSymbols);
+    let painter = document.to_browser_painter(64 * 1024 * 1024).unwrap();
+    assert_eq!(painter_trace_count(&painter), 1);
+    assert!(n > MAX_BROWSER_PAINTER_TRACES);
+    bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024).unwrap()));
+}
+
+/// Byte-budget refusal of a 1M-marker packed Scene (~48 MB of painter output)
+/// under a 32 MiB budget. Admission runs on the exact checked total before
+/// the single O(output) allocation, so this row pays only the O(n) scans
+/// (validation, ticks, full run discovery, glyph-label count) and must stay
+/// far below `scene_browser_painter_packed_symbols`, which builds the output
+/// (local wall clock: ~13 ms vs ~91 ms at 1M). It sits above the fragment-limit
+/// row (~3 ms), whose run discovery stops at run 1,025.
+#[divan::bench(args = [LARGE_N])]
+fn scene_browser_painter_byte_limit(bencher: Bencher, n: usize) {
+    const BUDGET: usize = 32 * 1024 * 1024;
+    let document = browser_scene_document(n, BrowserFixture::PackedSymbols);
+    let rejection = document.to_browser_painter(BUDGET).unwrap_err();
+    assert_eq!(rejection, SceneError::Limit);
+    assert_eq!(
+        PainterRejection::from_error(rejection).code(),
+        "XYG_PAINTER_BYTE_LIMIT"
+    );
+    bencher.bench(|| black_box(document.to_browser_painter(BUDGET)));
 }

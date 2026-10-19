@@ -8793,7 +8793,27 @@ def scene_batch_encode(
         capacity = written
 
 
-def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) -> bytes:
+class ScenePainterError(ValueError):
+    """Stable Rust diagnostic for a rejected Scene → browser painter lowering.
+
+    ``code`` is the host-neutral ``scene::PainterRejection`` code
+    (``XYG_PAINTER_TRACE_LIMIT``, ``XYG_PAINTER_BYTE_LIMIT``,
+    ``XYG_SCENE_VERSION``, or ``XYG_SCENE_MALFORMED``) that the WASM Worker
+    reports for the same Scene bytes and byte budget.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.code = message.split(":", 1)[0]
+
+
+def _scene_bytes_output(
+    encoded: bytes,
+    function: Any,
+    label: str,
+    *extra: Any,
+    rust_diagnostic: type[ValueError] | None = None,
+) -> bytes:
     source = np.frombuffer(encoded, dtype=np.uint8)
     if not len(source):
         raise ValueError("encoded scene must not be empty")
@@ -8802,6 +8822,9 @@ def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) 
         out = ctypes.create_string_buffer(capacity)
         written = function(_ptr_u8(source), len(source), *extra, out, capacity)
         if written == _USIZE_MAX:
+            message = out.value.decode("ascii", "replace") if rust_diagnostic else ""
+            if rust_diagnostic is not None and message.startswith("XYG_"):
+                raise rust_diagnostic(message)
             raise ValueError(f"invalid canonical scene for {label}")
         if written <= capacity:
             return out.raw[:written]
@@ -9065,11 +9088,21 @@ def static_legend_fit(encoded: bytes) -> bytes:
 
 
 def scene_browser_painter(encoded: bytes, max_bytes: int = 64 * 1024 * 1024) -> bytes:
-    """Lower Scene v12 through Rust to the canonical painter-v9 stream."""
+    """Lower a canonical Scene through Rust to the browser painter stream.
+
+    Rejections raise :class:`ScenePainterError` carrying the same stable code
+    as the WASM Worker; no partial painter bytes are returned.
+    """
     limit = int(max_bytes)
     if limit <= 0:
         raise ValueError("scene painter byte limit must be positive")
-    return _scene_bytes_output(encoded, _lib.xyg_scene_browser_painter, "browser painter", limit)
+    return _scene_bytes_output(
+        encoded,
+        _lib.xyg_scene_browser_painter,
+        "browser painter",
+        limit,
+        rust_diagnostic=ScenePainterError,
+    )
 
 
 def scene_scatter_svg(

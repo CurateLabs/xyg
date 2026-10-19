@@ -9,6 +9,8 @@ request-to-pixels latency.
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -193,30 +195,61 @@ def test_graph_payload_medium(benchmark):
     assert spec["graph"][0]["n_nodes"] == MEDIUM_N
     assert spec["graph"][0]["n_edges"] == MEDIUM_N
     assert [(trace["kind"], trace["n_marks"]) for trace in spec["traces"]] == [
-        # Directed routing expands each edge into shaft + two arrow wings.
-        ("segments", MEDIUM_N * 3),
+        # Border-aware routing (#33, ABI 368; spec/design/graph-mark.md) ships
+        # one shaft per straight edge plus its edge_ends channel; arrowheads
+        # are drawn in screen space, not as data-space wing segments.
+        ("segments", MEDIUM_N),
         ("scatter", MEDIUM_N),
     ]
     assert 0 < payload_bytes < MEDIUM_N * 160
 
 
-@pytest.mark.parametrize("kind", ["svg", "png"])
-def test_graph_static_export_small(benchmark, graph_data, kind):
-    data = graph_data["small"]
-    edges = list(zip(data.sources.tolist(), data.targets.tolist(), strict=True))
-    figure = xyg.graph_chart(
-        xyg.graph(data.ids, edges, layout="circle"), width=640, height=480
+# The export rows use chord edges (i -> i + 333) on a 1k circle layout: every
+# edge spans the plot, so each one exports a visible shaft and head and a
+# serialization or raster regression cannot hide. A neighbor ring would put
+# every edge inside the overlapping 8 px node outlines, where border-aware
+# clipping (#901, ABI 368; spec/design/graph-mark.md) hides it (#1007).
+CHORD_STEP = 333
+# One explicit, saturated, opaque edge color drives the figure and every
+# oracle, so a default-theme change or antialiased gray chrome cannot break or
+# fool these rows. Each shaft is a two-point <polyline> stroke and each
+# arrowhead a filled closed-triangle <path> in exactly this color.
+EDGE_COLOR = (216, 27, 96)
+EDGE_CSS = "#{:02x}{:02x}{:02x}".format(*EDGE_COLOR)
+EDGE_RGB = "rgb({},{},{})".format(*EDGE_COLOR)
+EDGE_SHAFT = re.compile(
+    r'<polyline points="\s*[-\d.]+,[-\d.]+ [-\d.]+,[-\d.]+" fill="none" '
+    rf'stroke="{re.escape(EDGE_RGB)}"'
+)
+EDGE_HEAD = re.compile(
+    r'<path d="M [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ Z" '
+    rf'fill="{re.escape(EDGE_RGB)}" stroke="none"/>'
+)
+# Per-channel tolerance for an edge pixel in the PNG raster.
+EDGE_PIXEL_TOLERANCE = 16
+
+
+def _chord_figure(n: int):
+    nodes = list(range(n))
+    edges = [(index, (index + CHORD_STEP) % n) for index in nodes]
+    return xyg.graph_chart(
+        xyg.graph(nodes, edges, layout="circle", edge_color=EDGE_CSS), width=640, height=480
     ).figure()
+
+
+@pytest.mark.parametrize("kind", ["svg", "png"])
+def test_graph_static_export_small(benchmark, kind):
+    figure = _chord_figure(SMALL_N)
     if kind == "svg":
         output = benchmark(figure.to_svg, width=640, height=480)
         assert output.startswith("<svg")
         assert 'width="640" height="480"' in output
         assert output.count("<circle") == SMALL_N
-        # The graph shell is outside #856's bounded ordinary autorange slice,
-        # so public SVG deliberately keeps the compatibility exporter.  Its
-        # directed routing lowers every edge to a shaft and two arrow wings;
-        # grid/chrome lines may add more, but the three-per-edge floor must hold.
-        assert output.count("<line") >= SMALL_N * 3
+        # graph_chart exports through the Rust Scene route (#33/#897): one
+        # shaft per straight edge plus a screen-space head, never <line> wings.
+        assert output.count("<line") == 0
+        assert len(EDGE_SHAFT.findall(output)) == SMALL_N
+        assert len(EDGE_HEAD.findall(output)) == SMALL_N
     else:
         output = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
         assert output.startswith(b"\x89PNG")
@@ -224,7 +257,14 @@ def test_graph_static_export_small(benchmark, graph_data, kind):
 
         from PIL import Image
 
-        image = np.asarray(Image.open(BytesIO(output)).convert("RGB"))
+        image = np.asarray(Image.open(BytesIO(output)).convert("RGB")).astype(np.int16)
         assert image.shape == (480, 640, 3)
         non_background = np.count_nonzero(np.any(image != image[0, 0], axis=2))
         assert non_background > SMALL_N
+        # Edge paint must reach the raster: pixels within EDGE_PIXEL_TOLERANCE
+        # of EDGE_COLOR from the 1k chord shafts and heads (measured 120,596;
+        # the floor keeps a 4x margin).
+        edge_pixels = np.count_nonzero(
+            np.abs(image - np.array(EDGE_COLOR, dtype=np.int16)).max(axis=2) <= EDGE_PIXEL_TOLERANCE
+        )
+        assert edge_pixels > 30 * SMALL_N

@@ -110,13 +110,32 @@ def main() -> int:
         for key in ("legendSemantics", "colorbarSemantics", "annotationSemantics"):
             if row.get(key) is not True:
                 raise SystemExit(f"authored-Scene browser evidence is missing {key}")
+    # #1007: refusal must use a real run-fragmentation vector (1,025 line
+    # series) and the stable Rust diagnostic; alternating-paint scatter series
+    # are packed into one kind-8 trace (#945) and must still render.
     fragmented = [row for row in rows if isinstance(row, dict) and row.get("fragmented") is True]
     if (
         len(fragmented) != 1
         or fragmented[0].get("rejectedTraceLimit") != 1024
+        or fragmented[0].get("count") != 1025
+        or fragmented[0].get("seriesKind") != "line"
+        or fragmented[0].get("rejectionCode") != "XYG_PAINTER_TRACE_LIMIT"
         or fragmented[0].get("browserChildren") != 0
     ):
         raise SystemExit("fragmentation evidence is missing or allocated browser painter state")
+    packed = [row for row in rows if isinstance(row, dict) and row.get("packedScatter") is True]
+    if len(packed) != 1 or packed[0].get("count") != 1025 or packed[0].get("gpuTraces") != 1:
+        raise SystemExit("packed scatter evidence is missing or fragmented into several traces")
+    for kind, row in (("fragmentation", fragmented[0]), ("packed scatter", packed[0])):
+        budget = row.get("budgetBytes")
+        if (
+            not isinstance(budget, int)
+            or isinstance(budget, bool)
+            or budget <= 0
+            or row.get("host") != "browser-wasm-worker"
+        ):
+            raise SystemExit(f"{kind} evidence must record its byte budget and host")
+    require_non_negative_metrics(packed[0], kind="packed-scatter", keys=("firstPaintMs",))
     print(
         "validated WASM browser evidence for "
         f"{len(typed)} typed-series and {len(authored)} authored-Scene sizes"

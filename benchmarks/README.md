@@ -380,10 +380,15 @@ adds representative small/medium/large Scene-to-painter cases and reports
 worker transfer/lowering, WebGL upload/first paint, and retained JS/WASM byte
 classes from real Chromium. Those wall-clock rows are not CodSpeed simulation
 claims; the Rust `scene_v4_browser_painter` rows isolate bounded conversion in
-the hosted CodSpeed job. The browser harness also submits a valid, adversarial
-million-record Scene whose alternating symbols would otherwise create hundreds
-of thousands of trace runs. It records bounded Rust rejection time and asserts
-that no main-thread painter or DOM state was allocated.
+the hosted CodSpeed job. `scene_browser_painter_fragment_limit` times Rust's
+refusal of a Scene with one distinct-identity Polyline run per record (it must
+return `PainterTraceLimit` at run 1,025), and
+`scene_browser_painter_packed_symbols` times the alternating-symbol scatter
+Scene that packs into a single kind-8 trace (#945). The browser harness
+likewise submits 1,025 two-point line series, records bounded Rust rejection
+time and the stable `XYG_PAINTER_TRACE_LIMIT` code, and asserts that no
+main-thread painter or DOM state was allocated; it also renders 1,025
+alternating-color scatter series and asserts one GPU trace (#1007).
 
 ```bash
 cargo codspeed build -m simulation --bench kernels --bench aggregate
