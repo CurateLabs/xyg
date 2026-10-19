@@ -2709,14 +2709,24 @@ export function sceneBatchEncode({
   }
 }
 
-function sceneOutput(encoded, call, name, extra = []) {
+function sceneOutput(encoded, call, name, extra = [], rustDiagnostic = false) {
   const source = asU8Array(encoded, "encoded scene");
   if (source.length === 0) throw new RangeError("encoded scene must not be empty");
   let capacity = Math.max(256, source.length * 3);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = call(u8Ptr(source), BigInt(source.length), ...extra, u8Ptr(output), BigInt(capacity));
-    if (rawWritten === USIZE_MAX_64) throw new RangeError(`invalid canonical scene for ${name}`);
+    if (rawWritten === USIZE_MAX_64) {
+      if (rustDiagnostic) {
+        const end = output.indexOf(0);
+        const message = new TextDecoder().decode(output.subarray(0, end < 0 ? 0 : end));
+        if (message.startsWith("XYG_")) {
+          // Same stable scene::PainterRejection code the WASM Worker reports.
+          throw Object.assign(new RangeError(message), { code: message.split(":", 1)[0] });
+        }
+      }
+      throw new RangeError(`invalid canonical scene for ${name}`);
+    }
     const written = Number(rawWritten);
     if (!Number.isSafeInteger(written) || written < 0) throw new RangeError(`${name} output exceeded host limits`);
     if (written <= capacity) return output.slice(0, written);
@@ -3786,7 +3796,7 @@ export function staticLegendFit(encoded) {
 export function sceneBrowserPainter(encoded, maxBytes = 64 * 1024 * 1024) {
   const limit = Number(maxBytes);
   if (!Number.isSafeInteger(limit) || limit <= 0) throw new RangeError("scene painter byte limit must be a positive safe integer");
-  return sceneOutput(encoded, xySceneBrowserPainter, "browser painter", [BigInt(limit)]);
+  return sceneOutput(encoded, xySceneBrowserPainter, "browser painter", [BigInt(limit)], true);
 }
 
 function rgba8(css, opacity = 1) {

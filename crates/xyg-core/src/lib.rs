@@ -4313,8 +4313,15 @@ pub unsafe extern "C" fn xyg_static_legend_fit(
     required
 }
 
-/// Lower one validated Scene v12 document to the canonical browser painter-v9
-/// byte stream. Returns required bytes or `usize::MAX` on error.
+/// Lower one validated canonical Scene document to the browser painter byte
+/// stream under `max_bytes`. Returns required bytes or `usize::MAX` on error.
+///
+/// On a classified rejection the stable, NUL-terminated
+/// `scene::PainterRejection::diagnostic` (`XYG_PAINTER_TRACE_LIMIT: ...`,
+/// `XYG_PAINTER_BYTE_LIMIT: ...`, `XYG_SCENE_VERSION: ...`, or
+/// `XYG_SCENE_MALFORMED: ...`) is written to `out` when `out_cap` can hold it,
+/// so native hosts report the same code as the WASM Worker (#1007). No painter
+/// bytes are ever written on failure.
 ///
 /// # Safety
 /// Pointer contracts match `xyg_scene_svg`.
@@ -4329,13 +4336,25 @@ pub unsafe extern "C" fn xyg_scene_browser_painter(
     if encoded.is_null() || encoded_len == 0 {
         return usize::MAX;
     }
-    let Some(painter) = ffi_guard(None, || {
-        scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
-            .ok()?
-            .to_browser_painter(max_bytes)
-            .ok()
+    let Some(result) = ffi_guard(None, || {
+        Some(scene::browser_painter_from_scene(
+            std::slice::from_raw_parts(encoded, encoded_len),
+            max_bytes,
+        ))
     }) else {
         return usize::MAX;
+    };
+    let painter = match result {
+        Ok(painter) => painter,
+        Err(rejection) => {
+            let message = rejection.diagnostic().as_bytes();
+            if !out.is_null() && out_cap > message.len() {
+                let target = std::slice::from_raw_parts_mut(out, message.len() + 1);
+                target[..message.len()].copy_from_slice(message);
+                target[message.len()] = 0;
+            }
+            return usize::MAX;
+        }
     };
     let required = painter.len();
     if out_cap < required {

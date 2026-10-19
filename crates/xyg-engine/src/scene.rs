@@ -2230,6 +2230,91 @@ pub enum SceneError {
     Version,
 }
 
+// The stable trace-limit diagnostic below spells the ceiling literally.
+const _: () = assert!(MAX_BROWSER_PAINTER_TRACES == 1024);
+
+/// Host-neutral classification of a rejected canonical Scene → browser painter
+/// lowering. The native C ABI (Python, Node, Pyodide) and the WASM Worker both
+/// derive their diagnostic from this one table, so the same Scene bytes and
+/// byte budget produce the same stable code on every host (#1007). The text
+/// never contains user values.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PainterRejection {
+    /// Run discovery reached trace `MAX_BROWSER_PAINTER_TRACES + 1`.
+    TraceLimit,
+    /// The exact preallocation total exceeds the caller's byte budget or the
+    /// painter's u32 offset space, its checked accounting overflowed, or a
+    /// bounded painter table (labels, legend, colorbar) is over its ceiling.
+    ByteLimit,
+    /// The Scene version is not the canonical one.
+    Version,
+    /// The Scene bytes are malformed or not lowerable for browser paint.
+    Malformed,
+}
+
+impl PainterRejection {
+    pub const fn from_error(error: SceneError) -> Self {
+        match error {
+            SceneError::PainterTraceLimit => Self::TraceLimit,
+            SceneError::Limit => Self::ByteLimit,
+            SceneError::Version => Self::Version,
+            SceneError::Length
+            | SceneError::NonFinite
+            | SceneError::NegativeSize
+            | SceneError::InvalidPaint => Self::Malformed,
+        }
+    }
+
+    /// Stable machine-readable code shared by every host.
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::TraceLimit => "XYG_PAINTER_TRACE_LIMIT",
+            Self::ByteLimit => "XYG_PAINTER_BYTE_LIMIT",
+            Self::Version => "XYG_SCENE_VERSION",
+            Self::Malformed => "XYG_SCENE_MALFORMED",
+        }
+    }
+
+    /// Stable `CODE: detail` diagnostic for a canonical Scene input.
+    pub const fn diagnostic(self) -> &'static str {
+        match self {
+            Self::TraceLimit => {
+                "XYG_PAINTER_TRACE_LIMIT: canonical scene fragments into more than 1024 browser traces"
+            }
+            Self::ByteLimit => {
+                "XYG_PAINTER_BYTE_LIMIT: canonical scene painter output exceeds its byte budget"
+            }
+            Self::Version => "XYG_SCENE_VERSION: canonical scene version is incompatible",
+            Self::Malformed => {
+                "XYG_SCENE_MALFORMED: canonical scene batch cannot be lowered for browser paint"
+            }
+        }
+    }
+}
+
+/// Byte admission for one browser painter output. It runs once, on the exact
+/// checked total, before the only O(output) allocation. Every descriptor, tick,
+/// and table offset is a u32, so an output past `u32::MAX` is a byte-limit
+/// rejection even when a native caller passes a larger budget; offsets are
+/// never silently truncated. Exactly `max_bytes` is admitted.
+fn admit_browser_painter_bytes(required: usize, max_bytes: usize) -> Result<(), SceneError> {
+    if required > max_bytes || u32::try_from(required).is_err() {
+        return Err(SceneError::Limit);
+    }
+    Ok(())
+}
+
+/// Decode canonical Scene bytes and lower them to the browser painter under
+/// `max_bytes`, classifying any failure with the shared host-neutral table.
+pub fn browser_painter_from_scene(
+    encoded: &[u8],
+    max_bytes: usize,
+) -> Result<Vec<u8>, PainterRejection> {
+    SceneDocument::decode(encoded)
+        .and_then(|document| document.to_browser_painter(max_bytes))
+        .map_err(PainterRejection::from_error)
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SceneBatchSummary {
     pub records: usize,
@@ -12176,7 +12261,30 @@ impl SceneDocument {
             .and_then(|value| value.as_deref())
     }
 
-    fn painter_glyph_labels(&self) -> (Vec<SceneLabel>, Vec<Option<SceneLabelBox>>) {
+    fn painter_glyph_labels(
+        &self,
+    ) -> Result<(Vec<SceneLabel>, Vec<Option<SceneLabelBox>>), SceneError> {
+        // Glyph markers become painter labels, which `encode_scene_labels`
+        // bounds at MAX_SCENE_LABELS. Count first so an adversarial Scene of
+        // millions of glyph records is rejected before O(records) label
+        // allocation rather than after it.
+        let glyphs = self
+            .records
+            .iter()
+            .filter(|record| {
+                record.visible
+                    && record.kind == SceneRecordKind::Scatter
+                    && self.style_glyph(record.style_ref).is_some()
+            })
+            .count();
+        if self
+            .labels
+            .len()
+            .checked_add(glyphs)
+            .is_none_or(|total| total > MAX_SCENE_LABELS)
+        {
+            return Err(SceneError::Limit);
+        }
         let mut labels = self.labels.clone();
         let mut backgrounds = self.label_backgrounds.clone();
         for record in &self.records {
@@ -12204,7 +12312,7 @@ impl SceneDocument {
             });
             backgrounds.push(None);
         }
-        (labels, backgrounds)
+        Ok((labels, backgrounds))
     }
 
     fn resolved_polar_axis_ticks(
@@ -15252,16 +15360,14 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
         let colorbar_bytes = self.painter_colorbar_bytes()?;
-        let (paint_labels, paint_backgrounds) = self.painter_glyph_labels();
+        let (paint_labels, paint_backgrounds) = self.painter_glyph_labels()?;
         let label_bytes = encode_scene_labels(&paint_labels, &paint_backgrounds)?;
         required = required
             .checked_add(legend_bytes.len())
             .and_then(|value| value.checked_add(colorbar_bytes.len()))
             .and_then(|value| value.checked_add(label_bytes.len()))
             .ok_or(SceneError::Limit)?;
-        if required > max_bytes {
-            return Err(SceneError::Limit);
-        }
+        admit_browser_painter_bytes(required, max_bytes)?;
         let mut out = Vec::with_capacity(required);
         out.resize(BROWSER_PAINTER_HEADER_BYTES + descriptors, 0);
         out[0..4].copy_from_slice(b"XYPB");
@@ -19581,6 +19687,278 @@ mod tests {
         assert_eq!(
             fragmented.to_browser_painter(1024 * 1024),
             Err(SceneError::PainterTraceLimit)
+        );
+    }
+
+    /// #1007 admission fixture: `count` records, either one Polyline run per
+    /// record (distinct stable identity) or ordinary Scatter records whose
+    /// symbols alternate (per-instance paint inside one kind-8 trace).
+    fn admission_document(count: usize, fragmented_runs: bool) -> SceneDocument {
+        let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 110.0, 1.0, false).unwrap();
+        let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 90.0, 10.0, 1.0, false).unwrap();
+        let ids: Vec<u64> = if fragmented_runs {
+            (0..count as u64).collect()
+        } else {
+            vec![7; count]
+        };
+        let symbols: Vec<u8> = (0..count)
+            .map(|index| u8::from(!fragmented_runs && index % 2 == 1))
+            .collect();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            sx,
+            sy,
+            &vec![u8::from(fragmented_runs); count],
+            &ids,
+            &vec![0; count],
+            &[57, 135, 229, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &vec![if fragmented_runs { 0.0 } else { 4.0 }; count],
+            &symbols,
+            &vec![0.5; count],
+            &vec![0.5; count],
+            &vec![0.0; count],
+            &vec![0.0; count],
+        )
+        .unwrap()
+        .encode();
+        SceneDocument::decode(&encoded).unwrap()
+    }
+
+    fn painter_traces(painter: &[u8]) -> usize {
+        u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize
+    }
+
+    #[test]
+    fn painter_trace_ceiling_is_exact_and_precedes_byte_admission() {
+        let limit = MAX_BROWSER_PAINTER_TRACES;
+        for count in [1, limit - 1, limit] {
+            let painter = admission_document(count, true)
+                .to_browser_painter(1 << 20)
+                .unwrap();
+            assert_eq!(painter_traces(&painter), count);
+        }
+        for count in [limit + 1, limit + 2, 4 * limit, 100_000] {
+            let document = admission_document(count, true);
+            assert_eq!(
+                document.to_browser_painter(1 << 20),
+                Err(SceneError::PainterTraceLimit),
+                "{count} runs"
+            );
+            // Run discovery stops at run 1,025 before byte accounting, so the
+            // diagnostic does not depend on the budget.
+            for budget in [0, 1, usize::MAX] {
+                assert_eq!(
+                    document.to_browser_painter(budget),
+                    Err(SceneError::PainterTraceLimit)
+                );
+            }
+        }
+        // At the exact trace ceiling a too-small budget is a byte rejection.
+        assert_eq!(
+            admission_document(limit, true).to_browser_painter(0),
+            Err(SceneError::Limit)
+        );
+    }
+
+    #[test]
+    fn alternating_scatter_symbols_are_packed_paint_not_trace_fragmentation() {
+        // #945 (spec/design/browser-wasm.md, kind 8): ordinary visible Scatter
+        // records batch across color, width, diameter, and symbol changes, so
+        // this Scene is one trace and must stay renderable at any size.
+        for count in [MAX_BROWSER_PAINTER_TRACES + 1, 100_000] {
+            let painter = admission_document(count, false)
+                .to_browser_painter(64 << 20)
+                .unwrap();
+            assert_eq!(painter_traces(&painter), 1);
+            assert_eq!(painter[BROWSER_PAINTER_HEADER_BYTES], 8);
+            assert_eq!(
+                u32::from_le_bytes(
+                    painter[BROWSER_PAINTER_HEADER_BYTES + 4..BROWSER_PAINTER_HEADER_BYTES + 8]
+                        .try_into()
+                        .unwrap()
+                ) as usize,
+                count
+            );
+        }
+    }
+
+    #[test]
+    fn painter_byte_budget_admits_exactly_the_required_length() {
+        let document = admission_document(2_000, false);
+        let painter = document.to_browser_painter(usize::MAX).unwrap();
+        let exact = painter.len();
+        for budget in [0, 1, exact / 2, exact - 1] {
+            assert_eq!(
+                document.to_browser_painter(budget),
+                Err(SceneError::Limit),
+                "budget {budget}"
+            );
+        }
+        for budget in [exact, exact + 1, 2 * exact, usize::MAX] {
+            assert_eq!(document.to_browser_painter(budget).unwrap(), painter);
+        }
+        // Lowering is stateless: a rejection never changes a later retry.
+        assert_eq!(
+            document.to_browser_painter(exact - 1),
+            Err(SceneError::Limit)
+        );
+        assert_eq!(document.to_browser_painter(exact).unwrap(), painter);
+    }
+
+    #[test]
+    fn painter_byte_admission_property_over_seeded_budgets_and_run_counts() {
+        // Deterministic xorshift property sweep: Ok iff budget >= exact length
+        // (with byte-identical output), and Ok iff runs <= the trace ceiling.
+        let mut state = 0x9E37_79B9_7F4A_7C15u64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let scatter = admission_document(257, false);
+        let reference = scatter.to_browser_painter(usize::MAX).unwrap();
+        for _ in 0..256 {
+            let budget = (next() as usize) % (2 * reference.len() + 2);
+            match scatter.to_browser_painter(budget) {
+                Ok(painter) => {
+                    assert!(budget >= reference.len());
+                    assert_eq!(painter, reference);
+                }
+                Err(error) => {
+                    assert!(budget < reference.len());
+                    assert_eq!(error, SceneError::Limit);
+                }
+            }
+        }
+        for _ in 0..24 {
+            let count = 1_000 + (next() as usize) % 50;
+            match admission_document(count, true).to_browser_painter(1 << 20) {
+                Ok(painter) => {
+                    assert!(count <= MAX_BROWSER_PAINTER_TRACES);
+                    assert_eq!(painter_traces(&painter), count);
+                }
+                Err(error) => {
+                    assert!(count > MAX_BROWSER_PAINTER_TRACES);
+                    assert_eq!(error, SceneError::PainterTraceLimit);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn painter_byte_admission_is_overflow_safe_at_the_u32_offset_ceiling() {
+        assert_eq!(admit_browser_painter_bytes(10, 10), Ok(()));
+        assert_eq!(admit_browser_painter_bytes(11, 10), Err(SceneError::Limit));
+        assert_eq!(admit_browser_painter_bytes(0, 0), Ok(()));
+        let ceiling = u32::MAX as usize;
+        assert_eq!(admit_browser_painter_bytes(ceiling, usize::MAX), Ok(()));
+        if let Some(past) = ceiling.checked_add(1) {
+            // Painter offsets are u32: a larger native budget never admits an
+            // output whose offsets would truncate.
+            assert_eq!(
+                admit_browser_painter_bytes(past, usize::MAX),
+                Err(SceneError::Limit)
+            );
+        }
+        assert_eq!(
+            admit_browser_painter_bytes(usize::MAX, usize::MAX),
+            Err(SceneError::Limit)
+        );
+    }
+
+    #[test]
+    fn glyph_marker_labels_are_bounded_before_label_allocation() {
+        let mut document = admission_document(MAX_SCENE_LABELS, false);
+        document.marker_glyphs = vec![Some("A".into())];
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        // Glyph records paint as labels, not marker traces.
+        assert_eq!(painter_traces(&painter), 0);
+        let mut over = admission_document(MAX_SCENE_LABELS + 1, false);
+        over.marker_glyphs = vec![Some("A".into())];
+        assert_eq!(over.to_browser_painter(1 << 20), Err(SceneError::Limit));
+        let mut massive = admission_document(200_000, false);
+        massive.marker_glyphs = vec![Some("A".into())];
+        assert_eq!(
+            massive.to_browser_painter(usize::MAX),
+            Err(SceneError::Limit)
+        );
+    }
+
+    #[test]
+    fn painter_rejections_have_one_stable_host_neutral_diagnostic_table() {
+        let all = [
+            PainterRejection::TraceLimit,
+            PainterRejection::ByteLimit,
+            PainterRejection::Version,
+            PainterRejection::Malformed,
+        ];
+        for rejection in all {
+            let diagnostic = rejection.diagnostic();
+            assert!(diagnostic.starts_with(rejection.code()));
+            assert_eq!(&diagnostic[rejection.code().len()..][..2], ": ");
+            assert!(diagnostic.is_ascii());
+        }
+        let codes: HashSet<_> = all.iter().map(|rejection| rejection.code()).collect();
+        assert_eq!(codes.len(), all.len());
+        assert_eq!(
+            PainterRejection::TraceLimit.diagnostic(),
+            "XYG_PAINTER_TRACE_LIMIT: canonical scene fragments into more than 1024 browser traces"
+        );
+        for (error, rejection) in [
+            (SceneError::PainterTraceLimit, PainterRejection::TraceLimit),
+            (SceneError::Limit, PainterRejection::ByteLimit),
+            (SceneError::Version, PainterRejection::Version),
+            (SceneError::Length, PainterRejection::Malformed),
+            (SceneError::NonFinite, PainterRejection::Malformed),
+            (SceneError::NegativeSize, PainterRejection::Malformed),
+            (SceneError::InvalidPaint, PainterRejection::Malformed),
+        ] {
+            assert_eq!(PainterRejection::from_error(error), rejection);
+        }
+        let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 110.0, 1.0, false).unwrap();
+        let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 90.0, 10.0, 1.0, false).unwrap();
+        let count = MAX_BROWSER_PAINTER_TRACES + 1;
+        let fragmented = SceneBatch::new(
+            layout,
+            1,
+            2,
+            sx,
+            sy,
+            &vec![1; count],
+            &(0..count as u64).collect::<Vec<_>>(),
+            &vec![0; count],
+            &[57, 135, 229, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &vec![0.0; count],
+            &vec![0; count],
+            &vec![0.5; count],
+            &vec![0.5; count],
+            &vec![0.0; count],
+            &vec![0.0; count],
+        )
+        .unwrap()
+        .encode();
+        assert_eq!(
+            browser_painter_from_scene(&fragmented, 1 << 20),
+            Err(PainterRejection::TraceLimit)
+        );
+        assert_eq!(
+            browser_painter_from_scene(&fragmented[..fragmented.len() - 1], 1 << 20),
+            Err(PainterRejection::Malformed)
+        );
+        let mut version = fragmented.clone();
+        version[4..8].copy_from_slice(&(SCENE_VERSION + 1).to_le_bytes());
+        assert_eq!(
+            browser_painter_from_scene(&version, 1 << 20),
+            Err(PainterRejection::Version)
         );
     }
 
