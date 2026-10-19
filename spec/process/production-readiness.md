@@ -114,7 +114,12 @@ package and Playwright installs go through `scripts/ci_retry.sh 3` (linear back-
 pipes a command (for example `bench.py | tee -a docs/benchmark_ci.md`) must use `shell: bash`
 (GitHub runs it as `bash -eo pipefail`) or set `pipefail` itself, because the default `bash -e`
 reports the last pipe stage and would mask a crashing benchmark; `scripts/verify_ci_workflow.py`
-enforces this for `ci.yml`, `codspeed.yml`, `density-100m.yml` and `publish.yaml`.
+enforces this for `ci.yml`, `codspeed.yml`, `density-100m.yml` and `publish.yaml`. The rule
+fails closed on a pipe inside a folded `run: >` scalar, checks unnamed `- run:` steps, accepts only
+`bash` as the effective step/job/default shell (or a `set -o pipefail` statement that no later
+`set +o pipefail` undoes), and treats a pipe inside `$(...)` as a pipe. It does NOT cover the
+workflows the checker does not validate: `docs.yml`, `binder.yml`, `benchmark-refresh.yml` and
+`ceiling-benchmark.yml` (whose "Summarize" step pipes into `tee` without `pipefail`).
 
 **Scheduled evidence blocks readiness through issue state.** Scheduled performance and
 browser evidence (CodSpeed, the density authority) is not an aggregate input and never runs

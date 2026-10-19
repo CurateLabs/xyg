@@ -254,7 +254,11 @@ without timing or instrumentation: `cargo bench -p xyg-engine --bench kernels --
 assertions), then `pytest benchmarks/test_codspeed_*.py -q` WITHOUT `--codspeed` (pytest-codspeed
 runs each body once; the locked environment includes the `codspeed` group). `scripts/verify_ci_workflow.py`
 fails when any of these four commands is missing, commented, echoed, or failure-suppressed.
-Timings stay scheduled; only the assertions run before merge.
+These are the final two steps of the `test` job: they stay hard, but a stale oracle fails visibly
+without skipping the other `test` results ahead of them (the checker enforces the position).
+`make check-bench-oracles` runs the same four commands locally (needs
+`uv sync --extra reflex --group dev --group codspeed`). Timings stay scheduled; only the
+assertions run before merge.
 
 `.github/workflows/codspeed.yml` runs nightly on the latest `main` commit and
 allows an on-demand manual run from `main`; it does not run for pull requests

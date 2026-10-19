@@ -1150,33 +1150,38 @@ RELEASE_WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm-assets pr
 def _runs_wasm_producer(line: str) -> Optional[str]:
     """Name the producer command a shell line runs, whatever the flag order or spelling.
 
-    Parses the arguments instead of matching one exact string, so reordered or abbreviated
-    flags cannot slip a second, unverified producer past the single-producer rule.
+    Parses the arguments instead of matching one exact string, so reordered, abbreviated,
+    or package-manager-spelled invocations cannot slip a second, unverified producer past
+    the single-producer rule. Callers join backslash-continued lines first.
     """
     try:
         words = shlex.split(line, comments=True)
     except ValueError:
         words = line.split()
-    if "build:wasm" in words and "run" in words and "npm" in words:
+    managers = {"npm", "pnpm", "yarn", "bun"}
+    if "build:wasm" in words and managers & set(words):
         return "npm run build:wasm"
     if any(word.endswith("package-wasm.mjs") for word in words):
         return "node js/package-wasm.mjs"
     if "cargo" in words and "build" in words:
-        package = any(
-            (
-                word in ("-p", "--package")
-                and index + 1 < len(words)
-                and words[index + 1] == "xyg-wasm"
-            )
-            or word in ("-pxyg-wasm", "--package=xyg-wasm")
-            for index, word in enumerate(words)
+
+        def flag_value(*flags: str) -> list[str]:
+            values: list[str] = []
+            for index, word in enumerate(words):
+                if word in flags and index + 1 < len(words):
+                    values.append(words[index + 1])
+                for flag in flags:
+                    if flag.startswith("--") and word.startswith(flag + "="):
+                        values.append(word[len(flag) + 1 :])
+                if word.startswith("-p") and not word.startswith("--") and "-p" in flags:
+                    values.append(word[2:])
+            return values
+
+        package = "xyg-wasm" in flag_value("-p", "--package") or any(
+            value.replace("\\", "/").rstrip("/").endswith("xyg-wasm/Cargo.toml")
+            for value in flag_value("--manifest-path")
         )
-        target = any(
-            (word == "--target" and index + 1 < len(words) and words[index + 1] == WASM_TARGET)
-            or word == f"--target={WASM_TARGET}"
-            for index, word in enumerate(words)
-        )
-        if package and target:
+        if package and WASM_TARGET in flag_value("--target"):
             return "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
     return None
 
@@ -1309,10 +1314,15 @@ def _require_wasm_asset_contract(
 
 
 def _active_run_lines(job_text: str) -> list[str]:
-    """Every non-comment shell line of every ``run:`` step in a job."""
+    """Every shell command of every ``run:`` step in a job.
+
+    Backslash-continued lines are joined and a folded ``run: >`` scalar becomes one
+    command, so the single-producer guard sees what the shell sees.
+    """
     lines: list[str] = []
     for step in _step_sequence_blocks(job_text):
-        lines.extend(_step_run_lines(step))
+        commands, analyzable = _step_run_commands(step)
+        lines.extend(commands if analyzable else [" ".join(commands)])
     return lines
 
 
@@ -1576,6 +1586,90 @@ def _gh_api_fetch(repo: str) -> Callable[[str], object]:
     return fetch
 
 
+def _code_outside_literals(command: str) -> str:
+    """Shell code with quoted literals and comments removed.
+
+    Single-quoted text is literal; double-quoted text is literal except for ``$(...)``
+    command substitutions, whose pipes are real (``x="$(a | b)"`` pipes ``a`` into ``b``).
+    """
+    out: list[str] = []
+    i, n = 0, len(command)
+    while i < n:
+        char = command[i]
+        if char == "\\":
+            i += 2
+        elif char == "'":
+            end = command.find("'", i + 1)
+            i = n if end < 0 else end + 1
+        elif char == '"':
+            i += 1
+            while i < n and command[i] != '"':
+                if command[i] == "\\":
+                    i += 2
+                elif command.startswith("$(", i):
+                    depth, j = 1, i + 2
+                    while j < n and depth:
+                        depth += (command[j] == "(") - (command[j] == ")")
+                        j += 1
+                    out.append(" " + command[i + 2 : j - 1] + " ")
+                    i = j
+                else:
+                    i += 1
+            i += 1
+        elif char == "#" and (i == 0 or command[i - 1].isspace()):
+            break
+        else:
+            out.append(char)
+            i += 1
+    return "".join(out)
+
+
+_HEREDOC = re.compile(r"(?<!<)<<-?\s*['\"]?([A-Za-z_]\w*)")
+_PIPE = re.compile(r"(?<!\|)\|(?!\|)")
+_PIPEFAIL_ON = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*-[A-Za-z]*o\s+pipefail\b")
+_PIPEFAIL_OFF = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*\+[A-Za-z]*o\s+pipefail\b")
+
+
+def _step_run_commands(step: str) -> tuple[list[str], bool]:
+    """Logical shell commands of one step's ``run`` plus whether they could be analyzed.
+
+    Handles the named form (``run`` at indent 8) and the unnamed ``- run:`` form (indent 6),
+    literal blocks (``|``, ``|-``, ``|+``, indentation indicators), and joins
+    backslash-continued lines. A folded scalar (``>``/``>-``) is returned unanalyzable
+    because folding rewrites line structure.
+    """
+    lines = step.splitlines()
+    for index, line in enumerate(lines):
+        match = re.fullmatch(r"(?:        |      - )run:\s*(.*?)\s*", line)
+        if match is None:
+            continue
+        value = match.group(1)
+        block = re.fullmatch(r"([|>])[+-]?\d*[+-]?", value)
+        if block is None:
+            return ([value] if value and not value.startswith("#") else []), True
+        body: list[str] = []
+        for following in lines[index + 1 :]:
+            if following.strip() and len(following) - len(following.lstrip()) <= 8:
+                break
+            body.append(following.strip())
+        if block.group(1) == ">":
+            return body, False
+        logical: list[str] = []
+        pending = ""
+        for command in body:
+            if not command or command.startswith("#"):
+                continue
+            if command.endswith("\\"):
+                pending += command[:-1] + " "
+                continue
+            logical.append(pending + command)
+            pending = ""
+        if pending:
+            logical.append(pending)
+        return logical, True
+    return [], True
+
+
 def _pipe_lines(commands: list[str]) -> list[str]:
     """Commands that contain a shell pipe (outside quotes, heredoc bodies, and ``||``)."""
     piped: list[str] = []
@@ -1585,36 +1679,74 @@ def _pipe_lines(commands: list[str]) -> list[str]:
             if command.strip() == heredoc_end:
                 heredoc_end = None
             continue
-        marker = re.search(r"<<-?\s*['\"]?(\w+)['\"]?", command)
-        unquoted = re.sub(r"'[^']*'|\"[^\"]*\"", "", command).split(" #")[0]
-        if re.search(r"(?<!\|)\|(?!\|)", unquoted):
+        marker = _HEREDOC.search(command)
+        if _PIPE.search(_code_outside_literals(command)):
             piped.append(command)
         if marker is not None:
             heredoc_end = marker.group(1)
     return piped
 
 
+def _default_shell(text: str, job: str) -> Optional[str]:
+    """The shell inherited from ``defaults.run.shell`` (job first, then workflow)."""
+    for source, indent in ((job, "    "), (text, "")):
+        match = re.search(
+            rf"^{indent}defaults:\n{indent}  run:\n(?:{indent}    [^\n]*\n)*?{indent}    shell:\s*(\S+)",
+            source,
+            re.M,
+        )
+        if match is not None:
+            return match.group(1)
+    return None
+
+
 def _require_pipefail_for_piped_steps(errors: list[str], text: str, label: str) -> None:
     """A piped ``run`` step must fail when its first command fails (#1008).
 
     GitHub's default ``bash -e`` has no ``pipefail``, so ``bench.py | tee report.md`` would
-    report tee's success and mask a crashing benchmark. ``shell: bash`` (which GitHub runs
-    as ``bash -eo pipefail``) or an explicit ``set -o pipefail`` is required.
+    report tee's success and mask a crashing benchmark. The effective shell must be ``bash``
+    (GitHub runs it as ``bash -eo pipefail``) or the step must enable ``set -o pipefail`` as
+    a statement before the pipe; ``set +o pipefail`` turns it off again. Folded ``run: >``
+    scalars containing a pipe cannot be analyzed and fail closed.
     """
     for job_name, job in _job_blocks(text).items():
         for step in _step_sequence_blocks(job):
-            commands = _step_run_lines(step)
-            piped = _pipe_lines(commands)
-            if not piped:
+            commands, analyzable = _step_run_commands(step)
+            name = step.splitlines()[0].strip()
+            if not analyzable:
+                if any("|" in command for command in commands):
+                    errors.append(
+                        f"{label} job {job_name!r} step {name!r} pipes inside a folded `run: >` "
+                        "scalar the pipefail check cannot analyze; use a literal `run: |` block"
+                    )
                 continue
-            shell_values, shell_unsafe = _direct_yaml_key_values(step, "shell", indent=8)
-            has_bash = not shell_unsafe and shell_values == ["bash"]
-            if not has_bash and not any("pipefail" in command for command in commands):
-                name = step.splitlines()[0].strip()
-                errors.append(
-                    f"{label} job {job_name!r} step {name!r} pipes a command without pipefail; "
-                    f"add `shell: bash` or `set -o pipefail` ({piped[0].strip()!r})"
-                )
+            shell_values, shell_unsafe = _step_direct_key_values(step, "shell")
+            shell = (
+                None
+                if shell_unsafe
+                else (shell_values[0] if shell_values else _default_shell(text, job))
+            )
+            enabled = shell == "bash"
+            heredoc_end: Optional[str] = None
+            for command in commands:
+                if heredoc_end is not None:
+                    if command.strip() == heredoc_end:
+                        heredoc_end = None
+                    continue
+                stripped = command.strip()
+                if _PIPEFAIL_ON.match(stripped):
+                    enabled = True
+                elif _PIPEFAIL_OFF.match(stripped):
+                    enabled = False
+                if _pipe_lines([command]) and not enabled:
+                    errors.append(
+                        f"{label} job {job_name!r} step {name!r} pipes a command without pipefail; "
+                        f"add `shell: bash` or `set -o pipefail` before it ({stripped!r})"
+                    )
+                    break
+                marker = _HEREDOC.search(command)
+                if marker is not None:
+                    heredoc_end = marker.group(1)
 
 
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
@@ -1952,6 +2084,15 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "pull-request execution of every CodSpeed pytest body without --codspeed",
         ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q",
     )
+    # Hard but last: a stale oracle must not skip every other `test` result behind it.
+    if list(_named_step_blocks(jobs.get("test", "")))[-2:] != [
+        "Native benchmark oracles (divan --test, no timing)",
+        "CodSpeed benchmark oracles (pytest, no timing)",
+    ]:
+        errors.append(
+            "CI test job benchmark oracles must be its final two steps so a stale oracle "
+            "cannot hide the other test results"
+        )
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
@@ -3655,6 +3796,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
+            DEFAULT_DENSITY_WORKFLOW,
+            DEFAULT_FINAL_REVIEW_WORKFLOW,
             args.release_workflow,
             args.ruleset,
         ]

@@ -106,7 +106,7 @@ runs the real checker, so a consumer that verifies before its prerequisites exis
 ## Local reproduction
 
 ```bash
-uv sync --locked --extra reflex --group dev
+uv sync --locked --extra reflex --group dev --group codspeed
 cargo test --workspace
 cargo build --release
 npm ci
@@ -116,8 +116,15 @@ npm run build:wasm
 python3 scripts/verify_wasm_assets.py
 make check-graph
 make check-ci
+make check-bench-oracles
 node scripts/browser_client_smoke.mjs
 ```
+
+`make check-bench-oracles` is the local form of the last two `test` job steps: the three
+`cargo bench ... -- --test` commands plus `pytest benchmarks/test_codspeed_*.py -q` without
+`--codspeed`. It needs the `codspeed` dependency group (hence `--group codspeed` above) for the
+`benchmark` fixture. The CI steps run last in the job so a stale oracle fails visibly without
+hiding the other `test` results.
 
 `make check-graph` runs the ABI smoke, scoped Python graph/sankey tests, full
 Node host suite, and all six benchmark commands above. It uses the project

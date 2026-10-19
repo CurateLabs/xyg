@@ -4425,3 +4425,185 @@ def test_single_producer_guard_tolerates_reordered_flags(tmp_path: Path, command
 )
 def test_single_producer_guard_ignores_non_producers(command: str) -> None:
     assert verify_ci_workflow._runs_wasm_producer(command) is None
+
+
+# ---------------------------------------------------------------------------
+# Round-4: oracle position, hardened pipefail rule, argument-parsing producer guard
+# ---------------------------------------------------------------------------
+
+_DIVAN_STEP = "Native benchmark oracles (divan --test, no timing)"
+_PYTEST_STEP = "CodSpeed benchmark oracles (pytest, no timing)"
+
+
+def test_benchmark_oracles_are_the_final_two_steps_of_the_test_job(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    steps = [m.group(1) for m in re.finditer(r"^      - name: (.+)$", workflow[start:end], re.M)]
+    assert steps[-2:] == [_DIVAN_STEP, _PYTEST_STEP]
+    assert steps.index("Python tests (native core)") < steps.index(_DIVAN_STEP)
+
+    # Moving an oracle step before the native build (the pre-fix placement) is rejected.
+    block = workflow[start:end]
+    divan_at = block.index("      # Benchmark bodies carry correctness assertions")
+    divan_end = block.index("      # Same intent for the pytest benchmarks")
+    divan = block[divan_at:divan_end]
+    moved = block.replace(divan, "", 1).replace(
+        "      - name: Build native core\n", divan + "      - name: Build native core\n", 1
+    )
+    errors = _wasm_errors(tmp_path, workflow[:start] + moved + workflow[end:])
+    assert any("must be its final two steps" in e for e in errors), errors
+
+
+def test_makefile_check_bench_oracles_runs_the_same_commands_as_ci() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    recipe = makefile.split("check-bench-oracles:\n", 1)[1].split("\n\n", 1)[0]
+    commands = [line.strip() for line in recipe.splitlines()]
+    assert commands == [*_ORACLE_COMMANDS, "$(PYTHON) -m pytest benchmarks/test_codspeed_*.py -q"]
+    assert "check-bench-oracles" in makefile.split(".PHONY:", 1)[1].split("\n", 1)[0]
+    assert "--group codspeed" in makefile.split("setup:\n", 1)[1].split("\n\n", 1)[0]
+
+
+def test_docs_and_dependency_comment_describe_the_oracle_gate() -> None:
+    build_ci = Path("spec/design/build-ci.md").read_text(encoding="utf-8")
+    block = build_ci.split("## Local reproduction", 1)[1].split("```", 2)[1]
+    assert "--group dev --group codspeed" in block and "make check-bench-oracles" in block
+    pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+    assert "not needed for unit tests or static analysis" not in pyproject
+    assert "check-bench-oracles" in pyproject
+
+
+def test_checker_ok_line_lists_every_validated_workflow(capsys: pytest.CaptureFixture[str]) -> None:
+    assert verify_ci_workflow.main([]) == 0
+    out = capsys.readouterr().out
+    for name in (
+        "ci.yml",
+        "codspeed.yml",
+        "density-100m.yml",
+        "final-coderabbit.yml",
+        "publish.yaml",
+        "merge-queue-ruleset.json",
+    ):
+        assert name in out
+
+
+def _pipefail_errors(tmp_path: Path, step_yaml: str, *, header: str = "") -> list[str]:
+    text = (
+        "name: T\non: push\n"
+        + header
+        + "jobs:\n  j:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps:\n"
+        + step_yaml
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, text, "T")
+    return errors
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        # folded scalar: line structure is rewritten, so a pipe cannot be analyzed
+        "      - name: Folded\n        run: >-\n          python bench.py | tee out.md\n",
+        # unnamed step whose first key is run (indent 6)
+        "      - run: python bench.py | tee out.md\n",
+        "      - run: |\n          python bench.py | tee out.md\n",
+        # pipe inside a command substitution inside double quotes is still a pipe
+        '      - name: Subst\n        run: |\n          x="$(python bench.py | tail -1)"\n',
+        # a `<<` that is arithmetic is not a heredoc, so the pipe after it still counts
+        "      - name: Shift\n        run: |\n          n=$((1 << 3))\n          bench | tee out\n",
+        # here-string is not a heredoc terminator either
+        "      - name: Herestring\n        run: |\n          cat <<<word\n          bench | tee out\n",
+        # only bash implies pipefail
+        "      - name: Sh\n        shell: sh\n        run: bench | tee out\n",
+        "      - name: Pwsh\n        shell: pwsh\n        run: bench | tee out\n",
+        "      - name: Custom\n        shell: bash -e {0}\n        run: bench | tee out\n",
+        # a mention in an echo is not a statement
+        '      - name: Echo\n        run: |\n          echo "set -o pipefail"\n          bench | tee out\n',
+        # turning it off again
+        "      - name: Off\n        shell: bash\n        run: |\n          set +o pipefail\n          bench | tee out\n",
+        "      - name: Off2\n        run: |\n          set -o pipefail\n          set +o pipefail\n          bench | tee out\n",
+        # enabling after the pipe is too late
+        "      - name: Late\n        run: |\n          bench | tee out\n          set -o pipefail\n",
+    ],
+)
+def test_pipefail_rule_rejects_each_false_negative(tmp_path: Path, step: str) -> None:
+    errors = _pipefail_errors(tmp_path, step)
+    assert any("pipefail" in e for e in errors), (step, errors)
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        "      - name: Bash\n        shell: bash\n        run: bench | tee out\n",
+        "      - run: |\n          set -euo pipefail\n          bench | tee out\n",
+        "      - name: Stmt\n        run: |\n          set -o pipefail\n          bench | tee out\n",
+        "      - name: Continued\n        shell: bash\n        run: |\n          bench \\\n            | tee out\n",
+        "      - name: Quoted\n        run: |\n          echo 'a | b'\n          grep -Eq '(^| )x' f\n          a || b\n",
+        "      - name: Heredoc\n        run: |\n          python - <<'PY'\n          x = a | b\n          PY\n",
+        "      - name: Folded no pipe\n        run: >-\n          echo one\n          two\n",
+        "      - name: Comment\n        run: |\n          echo hi # a | b\n",
+    ],
+)
+def test_pipefail_rule_accepts_safe_or_pipe_free_steps(tmp_path: Path, step: str) -> None:
+    assert _pipefail_errors(tmp_path, step) == []
+
+
+def test_pipefail_rule_honors_job_and_workflow_default_shell(tmp_path: Path) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    workflow_default = "defaults:\n  run:\n    shell: bash\n"
+    assert _pipefail_errors(tmp_path, step, header=workflow_default) == []
+    wrong_default = "defaults:\n  run:\n    shell: sh\n"
+    assert _pipefail_errors(tmp_path, step, header=wrong_default)
+    job_default = (
+        "name: T\non: push\njobs:\n  j:\n    runs-on: x\n    defaults:\n      run:\n"
+        "        shell: bash\n    steps:\n" + step
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, job_default, "T")
+    assert errors == []
+
+
+def test_pipe_scanner_unit_cases() -> None:
+    pipes = verify_ci_workflow._pipe_lines
+    assert pipes(["n=$((1 << 3))", "a | b"]) == ["a | b"]
+    assert pipes(['x="$(a | b)"']) == ['x="$(a | b)"']
+    assert pipes(["x=$(a | b)"]) == ["x=$(a | b)"]
+    assert pipes(["echo 'a | b' \"c | d\""]) == []
+    assert pipes(["cat <<EOF", "a | b", "EOF", "c | d"]) == ["c | d"]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cargo build -p xyg-wasm \\\n    --release \\\n    --target wasm32-unknown-unknown",
+        "cargo build --manifest-path crates/xyg-wasm/Cargo.toml --target wasm32-unknown-unknown",
+        "cargo build --manifest-path=crates/xyg-wasm/Cargo.toml --release --target=wasm32-unknown-unknown",
+        "npm run-script build:wasm",
+        "pnpm run build:wasm",
+        "yarn build:wasm",
+    ],
+)
+def test_single_producer_guard_catches_continuations_manifest_paths_and_managers(
+    tmp_path: Path, command: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    body = "\n".join(f"          {line}" for line in command.splitlines())
+    mutated = _mutate_job(
+        workflow,
+        "benchmark_methodology",
+        "      - name: Install JS build toolchain\n        run: scripts/ci_retry.sh 3 npm ci\n",
+        "      - name: Install JS build toolchain\n        run: |\n"
+        f"          scripts/ci_retry.sh 3 npm ci\n{body}\n",
+    )
+    assert any("must consume wasm-assets" in e for e in _wasm_errors(tmp_path, mutated)), command
+
+
+def test_single_producer_guard_sees_folded_and_continued_commands() -> None:
+    step = (
+        "      - name: Hidden\n        run: >-\n          cargo build -p xyg-wasm\n"
+        "          --target wasm32-unknown-unknown\n"
+    )
+    job = "  j:\n    steps:\n" + step
+    lines = verify_ci_workflow._active_run_lines(job)
+    assert [verify_ci_workflow._runs_wasm_producer(line) for line in lines] == [
+        "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
+    ]

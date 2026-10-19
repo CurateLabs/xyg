@@ -138,16 +138,6 @@ jobs:
       - name: Rust lint
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      # Benchmark bodies carry correctness assertions (policy oracles) but only the
-      # scheduled CodSpeed run executed them, so intentional policy changes left stale
-      # oracles with green PR CI. `--test` runs every divan body exactly once, with its
-      # assertions and no timing.
-      - name: Native benchmark oracles (divan --test, no timing)
-        run: |
-          cargo bench -p xyg-engine --bench kernels -- --test
-          cargo bench -p xyg-wasm --bench aggregate -- --test
-          cargo bench -p xyg-wasm --bench typed_series -- --test
-
       - name: Build native core
         run: cargo build --release
 
@@ -277,11 +267,6 @@ jobs:
       - name: Install package + dev deps
         run: |
           uv sync --locked --extra reflex --group dev --group codspeed
-
-      # Same intent for the pytest benchmarks: without --codspeed pytest-codspeed runs
-      # each body once, so their assertions gate pull requests (no instrumentation).
-      - name: CodSpeed benchmark oracles (pytest, no timing)
-        run: .venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q
 
       - name: Verify bundled Reflex integration import
         run: |
@@ -429,6 +414,22 @@ jobs:
 
       - name: Benchmark smoke (1e5/1e6 — §12 harness runs every phase)
         run: .venv/bin/python scripts/bench.py --sizes 1e5,1e6
+
+      # Benchmark bodies carry correctness assertions (policy oracles) but only the
+      # scheduled CodSpeed run executed them, so intentional policy changes left stale
+      # oracles with green PR CI. `--test` runs every divan body exactly once, with its
+      # assertions and no timing. These two steps are deliberately LAST: they stay hard,
+      # but a stale oracle must not hide every other `test` result behind its failure.
+      - name: Native benchmark oracles (divan --test, no timing)
+        run: |
+          cargo bench -p xyg-engine --bench kernels -- --test
+          cargo bench -p xyg-wasm --bench aggregate -- --test
+          cargo bench -p xyg-wasm --bench typed_series -- --test
+
+      # Same intent for the pytest benchmarks: without --codspeed pytest-codspeed runs
+      # each body once, so their assertions gate pull requests (no instrumentation).
+      - name: CodSpeed benchmark oracles (pytest, no timing)
+        run: .venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q
 
   # The ONE producer of the packaged WASM tick assets (§33, #1005). They are
   # generated, never committed: this job compiles xyg-wasm, packages the exact

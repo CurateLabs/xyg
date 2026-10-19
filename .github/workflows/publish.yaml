@@ -808,6 +808,7 @@ jobs:
       # guards below.
       - name: Dry run summary (no PyPI publish)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
+        shell: bash
         run: |
           echo "::notice::Dry run — built and verified $(ls dist/*.whl dist/*.tar.gz 2>/dev/null | wc -l | tr -d ' ') artifacts across the full release matrix. Skipping PyPI publish."
           echo "Re-run this workflow against an existing xyg-v* tag with dry_run=false, or push a new xyg-v* tag, to publish for real."
