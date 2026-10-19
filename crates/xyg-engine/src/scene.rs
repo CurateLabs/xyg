@@ -19858,18 +19858,30 @@ mod tests {
         assert_eq!(admit_browser_painter_bytes(0, 0), Ok(()));
         let ceiling = u32::MAX as usize;
         assert_eq!(admit_browser_painter_bytes(ceiling, usize::MAX), Ok(()));
-        if let Some(past) = ceiling.checked_add(1) {
-            // Painter offsets are u32: a larger native budget never admits an
-            // output whose offsets would truncate.
-            assert_eq!(
-                admit_browser_painter_bytes(past, usize::MAX),
-                Err(SceneError::Limit)
-            );
+        match ceiling.checked_add(1) {
+            Some(past) => {
+                // 64-bit hosts: painter offsets are u32, so a larger native
+                // budget never admits an output whose offsets would truncate.
+                assert_eq!(
+                    admit_browser_painter_bytes(past, usize::MAX),
+                    Err(SceneError::Limit)
+                );
+                assert_eq!(
+                    admit_browser_painter_bytes(usize::MAX, usize::MAX),
+                    Err(SceneError::Limit)
+                );
+            }
+            None => {
+                // 32-bit hosts (i686, armv7): usize::MAX == u32::MAX, so every
+                // representable length fits the u32 offset space and the
+                // budget alone decides.
+                assert_eq!(admit_browser_painter_bytes(usize::MAX, usize::MAX), Ok(()));
+                assert_eq!(
+                    admit_browser_painter_bytes(usize::MAX, usize::MAX - 1),
+                    Err(SceneError::Limit)
+                );
+            }
         }
-        assert_eq!(
-            admit_browser_painter_bytes(usize::MAX, usize::MAX),
-            Err(SceneError::Limit)
-        );
     }
 
     #[test]

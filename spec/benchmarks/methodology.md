@@ -562,9 +562,13 @@ SVG/PNG rows export 1,000 circle-layout nodes with chord edges
 each edge inside the overlapping 8 px node outlines, where clipping hides it
 (graph-mark.md, #901). That would make serialization and raster regressions
 invisible. The SVG row goes through the Rust Scene route (#897) and asserts
-exactly 1,000 neutral `<polyline>` shafts and 1,000 neutral closed-triangle
-`<path>` heads, with no `<line>` wings. The PNG row asserts that edge-neutral
-pixels reach the raster: more than 40 per edge (about 120k measured). This
+exactly 1,000 `<polyline>` shafts and 1,000 closed-triangle `<path>` heads,
+with no `<line>` wings. Both rows paint edges in one explicit opaque color,
+`edge_color="#d81b60"`, which the SVG writes as `rgb(216,27,96)`. That single
+constant drives the SVG matchers and the PNG pixel check, so a change to the
+default theme or antialiased gray chrome cannot break or fool the rows. The PNG
+row counts pixels within ±16 per channel of that color and requires more than
+30 per edge (30,000 total; 120,596 measured, about a 4x margin). This
 workload replaced the ring on 2026-10-19 (#1007), so earlier export timings
 are not comparable. Browser buffer upload, GPU
 paint, frame pacing, picking, and teardown remain wall-clock measurements. The
