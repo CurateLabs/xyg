@@ -305,7 +305,19 @@ harness's local-only strict CSP. `scripts/verify_wasm_scene_benchmark.py`
 requires all eight canonical rows, finite non-negative timing/copy/memory/payload
 metrics, positive authored Scene and painter payloads, required authored chrome
 semantics, zero main-thread typed-series record visits, and allocation-free
-fragmentation refusal. CI uploads the raw report as
+fragmentation refusal. The refusal row submits 1,025 two-point line series (a
+real run-fragmentation vector) and must record `rejectedTraceLimit = 1024`,
+`rejectionCode = "XYG_PAINTER_TRACE_LIMIT"`, and `browserChildren = 0`; a
+companion `packedScatter` row renders 1,025 alternating-color single-point
+scatter series and must report exactly one GPU trace, because ordinary scatter
+records pack into one kind-8 trace (#945, #1007). The Rust kernel rows
+`scene_browser_painter_fragment_limit` (distinct-identity Polyline runs,
+asserted `PainterTraceLimit` before measuring) and
+`scene_browser_painter_packed_symbols` (alternating symbols, asserted one
+trace) measure the same two policies at 10k/100k/1M records. These rows are
+performance evidence; correctness is pinned by the Rust, Python, Node, and
+strict-CSP Worker admission tests in
+[browser-wasm.md](../design/browser-wasm.md) "Painter admission". CI uploads the raw report as
 `authored-scene-browser-<git-sha>.json`; reproduce it locally with:
 
 ```bash
