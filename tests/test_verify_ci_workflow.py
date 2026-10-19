@@ -1017,8 +1017,16 @@ def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
         ),
         (
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
+            "    needs: release_surface_changes\n"
+            "    if: github.event_name != 'pull_request' || "
+            "needs.release_surface_changes.outputs.required == 'true'\n",
+            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
-            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n",
+        ),
+        (
+            "  benchmark_methodology:\n    name: Benchmark methodology suites\n    needs: wasm_assets\n"
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "  benchmark_methodology:\n    name: Benchmark methodology suites\n    needs: wasm_assets\n",
         ),
     )
     for index, (old, new) in enumerate(mutations):
@@ -1463,14 +1471,25 @@ def test_setup_uv_cache_is_only_enabled_intentionally() -> None:
             assert "enable-cache:" in setting, f"{path}:{index + 1} relies on auto cache mode"
 
 
-def test_ci_workflow_rejects_blocking_benchmark_job(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "job",
+    ["benchmark_vs", "benchmark_methodology", "benchmark", "matplotlib_reference", "test"],
+)
+def test_ci_workflow_rejects_advisory_continue_on_error_on_any_job(
+    tmp_path: Path, job: str
+) -> None:
+    """The main benchmark evidence is hard (#1008); only scheduled workflows are advisory."""
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "continue-on-error" not in workflow
+    start = workflow.index(f"\n  {job}:\n") + 1
+    header_end = workflow.index("\n", workflow.index("    name:", start)) + 1
+    mutated = workflow[:header_end] + "    continue-on-error: true\n" + workflow[header_end:]
     path = tmp_path / "ci.yml"
-    path.write_text(workflow.replace("    continue-on-error: true\n", ""), encoding="utf-8")
+    path.write_text(mutated, encoding="utf-8")
 
     errors = verify_ci_workflow.validate_workflow(path)
 
-    assert any("benchmark" in error and "continue-on-error" in error for error in errors)
+    assert any("must not use continue-on-error" in error for error in errors)
 
 
 def test_ci_workflow_rejects_regrouped_expensive_cross_library_adapters(
@@ -3728,3 +3747,281 @@ def test_release_workflow_rejects_always_conditioned_pypi_publish(tmp_path: Path
     errors = verify_ci_workflow.validate_release_workflow(path)
 
     assert any("is not gated by the dry-run predicate" in error for error in errors)
+
+
+# ---------------------------------------------------------------------------
+# Release surfaces aggregate: hard/advisory inventory, applicability, ruleset (#1008)
+# ---------------------------------------------------------------------------
+
+_HARD_JOBS = (
+    "test",
+    "wasm_assets",
+    "wasm_foundation",
+    "python_floor",
+    "browser_conformance",
+    "sdist",
+    "wheels",
+    "install_without_rust",
+    "authored_scene",
+    "matplotlib_reference",
+    "benchmark_vs",
+    "benchmark_methodology",
+    "benchmark",
+)
+
+
+def test_release_inventory_matches_the_workflow_contract_constants() -> None:
+    inventory = verify_ci_workflow.release_inventory
+    assert tuple(sorted(inventory.HARD_JOBS)) == tuple(sorted(_HARD_JOBS))
+    assert {
+        *_HARD_JOBS,
+        "release_surface_changes",
+        "release_surfaces",
+    } == verify_ci_workflow.REQUIRED_CI_JOBS
+
+
+def test_ci_workflow_requires_every_job_to_be_classified(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    extra = "  unclassified_extra:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps:\n      - run: true\n\n"
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace("  release_surfaces:\n", extra + "  release_surfaces:\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "'unclassified_extra' is neither a hard release gate nor listed advisory" in e
+        for e in errors
+    )
+
+
+@pytest.mark.parametrize("job", _HARD_JOBS)
+def test_ci_workflow_requires_aggregate_to_depend_on_every_hard_job(
+    tmp_path: Path, job: str
+) -> None:
+    """A hard job that is not an aggregate input could fail while Release surfaces passes."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    needs_line = f"      - {job}\n"
+    start = workflow.index("  release_surfaces:\n")
+    block_end = workflow.index("    runs-on:", start)
+    block = workflow[start:block_end]
+    assert needs_line in block
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow[:start] + block.replace(needs_line, "", 1) + workflow[block_end:], encoding="utf-8"
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "Release surfaces must need exactly the classifier and every hard job" in e for e in errors
+    )
+
+
+@pytest.mark.parametrize("job", _HARD_JOBS)
+def test_ci_workflow_requires_aggregate_command_to_pass_every_hard_result(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    line = re.search(
+        rf'            --job "{job}=\$\{{\{{ needs\.{job}\.result \}}\}}"( \\)?\n', workflow
+    )
+    assert line is not None
+    mutated = workflow.replace(line.group(0), "", 1)
+    if job == "benchmark":  # last argument: keep the previous line's continuation valid
+        mutated = mutated.replace(
+            '--job "benchmark_methodology=${{ needs.benchmark_methodology.result }}" \\\n',
+            '--job "benchmark_methodology=${{ needs.benchmark_methodology.result }}"\n',
+            1,
+        )
+    path = tmp_path / "ci.yml"
+    path.write_text(mutated, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "must pass --job NAME=${{ needs.NAME.result }} for every hard job" in e for e in errors
+    )
+
+
+def test_ci_workflow_rejects_aggregate_passing_another_jobs_result(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            '"wheels=${{ needs.wheels.result }}"', '"wheels=${{ needs.sdist.result }}"', 1
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("must pass --job NAME=${{ needs.NAME.result }}" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ('            --event "${{ github.event_name }}" \\\n', ""),
+        ('            --required "${{ needs.release_surface_changes.outputs.required }}" \\\n', ""),
+    ],
+)
+def test_ci_workflow_requires_aggregate_to_receive_event_and_classifier(
+    tmp_path: Path, old: str, new: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert old in workflow
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow.replace(old, new, 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("--event and the classifier --required output" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "new", "scenario"),
+    [
+        # Applicable but not run: the aggregate would wait for a skipped job (or, worse, a
+        # future edit could drop the job from the workflow and keep the aggregate green).
+        (
+            "matplotlib_reference",
+            "    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'\n",
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "merge_group",
+        ),
+        (
+            "benchmark_vs",
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "    if: github.event_name != 'pull_request'\n",
+            "merge_group",
+        ),
+        (
+            "sdist",
+            "    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'\n",
+            "    if: github.event_name == 'push'\n",
+            "merge_group",
+        ),
+    ],
+)
+def test_ci_workflow_applicability_must_match_what_the_workflow_runs(
+    tmp_path: Path, job: str, old: str, new: str, scenario: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(_mutate_job(workflow, job, old, new), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        (scenario in e and "differs from the jobs the workflow runs" in e)
+        or f"hard job {job!r} uses an unrecognized if condition" in e
+        for e in errors
+    ), errors
+
+
+def test_aggregate_propagation_self_test_rejects_a_weakened_aggregate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The self-test itself must go red when the aggregate swallows a failure."""
+    inventory = verify_ci_workflow.release_inventory
+    real = inventory.verify
+
+    def lenient(*, required: bool, results: dict[str, str], event: str = "pull_request"):
+        return [
+            e
+            for e in real(required=required, results=results, event=event)
+            if "matplotlib" not in e and "benchmark_vs" not in e
+        ]
+
+    monkeypatch.setattr(inventory, "verify", lenient)
+    errors = verify_ci_workflow._aggregate_propagation_errors({name: name for name in _HARD_JOBS})
+
+    assert any("matplotlib_reference=failure" in e for e in errors)
+    assert any("benchmark_vs=failure" in e for e in errors)
+
+
+def test_aggregate_propagation_self_test_accepts_the_real_aggregate() -> None:
+    assert (
+        verify_ci_workflow._aggregate_propagation_errors({name: name for name in _HARD_JOBS}) == []
+    )
+
+
+def _ruleset() -> dict:
+    import json
+
+    return json.loads(Path(".github/merge-queue-ruleset.json").read_text(encoding="utf-8"))
+
+
+def _write_ruleset(path: Path, ruleset: dict) -> Path:
+    import json
+
+    path.write_text(json.dumps(ruleset), encoding="utf-8")
+    return path
+
+
+def test_merge_queue_ruleset_accepts_the_checked_in_contract() -> None:
+    assert verify_ci_workflow.validate_merge_queue_ruleset() == []
+
+
+def test_merge_queue_ruleset_rejects_drift_and_duplicate_required_statuses(tmp_path: Path) -> None:
+    def mutate(fn) -> list[str]:
+        ruleset = _ruleset()
+        fn(ruleset)
+        return verify_ci_workflow.validate_merge_queue_ruleset(
+            _write_ruleset(tmp_path / "r.json", ruleset)
+        )
+
+    assert mutate(lambda r: r.update(enforcement="evaluate"))
+    assert mutate(lambda r: r.update(target="tag"))
+    assert mutate(lambda r: r["conditions"]["ref_name"].update(include=["refs/heads/*"]))
+    assert mutate(lambda r: r["conditions"]["ref_name"].update(exclude=["refs/heads/main"]))
+    assert mutate(lambda r: r["rules"][0]["parameters"].update(merge_method="MERGE"))
+    assert mutate(lambda r: r["rules"][0]["parameters"].update(max_entries_to_build=5))
+    assert mutate(lambda r: r["rules"].clear())
+    assert mutate(lambda r: r["rules"].append(r["rules"][0]))
+    assert mutate(lambda r: r["rules"].append({"type": "deletion"}))
+    duplicate = {
+        "type": "required_status_checks",
+        "parameters": {
+            "required_status_checks": [{"context": "Release surfaces"}, {"context": "Test"}]
+        },
+    }
+    assert mutate(lambda r: r["rules"].append(duplicate))
+    single = {
+        "type": "required_status_checks",
+        "parameters": {"required_status_checks": [{"context": "Release surfaces"}]},
+    }
+    assert mutate(lambda r: r["rules"].append(single)) == []
+    assert verify_ci_workflow.validate_merge_queue_ruleset(tmp_path / "missing.json")
+
+
+def test_live_readback_compares_ruleset_and_branch_protection() -> None:
+    local = _ruleset()
+    protection = {"required_status_checks": {"contexts": ["Release surfaces"]}}
+
+    def fetcher(live: dict, protected: dict):
+        def fetch(path: str):
+            if path == "rulesets":
+                return [{"id": 7, "name": local["name"]}]
+            if path == "rulesets/7":
+                return live
+            assert path == "branches/main/protection"
+            return protected
+
+        return fetch
+
+    assert verify_ci_workflow.validate_live_readback(fetcher(local, protection)) == []
+    drifted = {**local, "enforcement": "disabled"}
+    assert any(
+        "enforcement" in e
+        for e in verify_ci_workflow.validate_live_readback(fetcher(drifted, protection))
+    )
+    extra = {"required_status_checks": {"contexts": ["Release surfaces", "Test"]}}
+    assert any(
+        "branch protection" in e
+        for e in verify_ci_workflow.validate_live_readback(fetcher(local, extra))
+    )
+    assert verify_ci_workflow.validate_live_readback(lambda path: [] if path == "rulesets" else {})

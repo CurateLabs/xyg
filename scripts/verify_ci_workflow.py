@@ -12,11 +12,19 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
+try:
+    import verify_release_surface_results as release_inventory
+except ModuleNotFoundError:  # imported by tests from the repository root
+    from scripts import verify_release_surface_results as release_inventory
+
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_RULESET = ROOT / ".github" / "merge-queue-ruleset.json"
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_DENSITY_WORKFLOW = ROOT / ".github" / "workflows" / "density-100m.yml"
@@ -27,40 +35,16 @@ DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 DEFAULT_CONTRIBUTOR_SPEC = ROOT / "spec" / "process" / "contributing.md"
+# Single source of truth: scripts/verify_release_surface_results.py. The workflow is
+# checked against it below, so the hard/advisory boundary cannot drift silently.
 REQUIRED_CI_JOBS = {
-    "authored_scene",
-    "browser_conformance",
-    "release_surface_changes",
-    "release_surfaces",
-    "matplotlib_reference",
-    "test",
-    "python_floor",
-    "benchmark_vs",
-    "benchmark_methodology",
-    "benchmark",
-    "sdist",
-    "wheels",
-    "install_without_rust",
-    "wasm_foundation",
-    "wasm_assets",
+    *release_inventory.HARD_JOBS,
+    *release_inventory.ADVISORY_CI_JOBS,
+    *release_inventory.SUPPORT_JOBS,
 }
-PR_REQUIRED_CI_JOBS = {"test", "wasm_assets", "wasm_foundation", "python_floor"}
-RELEASE_SURFACE_CONDITIONAL_JOBS = {
-    "authored_scene",
-    "browser_conformance",
-    "install_without_rust",
-    "sdist",
-    "wheels",
-}
-MAIN_ONLY_CI_JOBS = (
-    REQUIRED_CI_JOBS
-    - PR_REQUIRED_CI_JOBS
-    - RELEASE_SURFACE_CONDITIONAL_JOBS
-    - {
-        "release_surface_changes",
-        "release_surfaces",
-    }
-)
+PR_REQUIRED_CI_JOBS = set(release_inventory.ALWAYS_HARD_JOBS)
+RELEASE_SURFACE_CONDITIONAL_JOBS = set(release_inventory.RELEASE_SURFACE_JOBS)
+MAIN_ONLY_CI_JOBS = set(release_inventory.MAIN_EVIDENCE_JOBS)
 REQUIRED_CODSPEED_JOBS = {"detect", "benchmarks"}
 REQUIRED_RELEASE_JOBS = {
     "wheels",
@@ -1261,6 +1245,263 @@ def _active_run_lines(job_text: str) -> list[str]:
     return lines
 
 
+RELEASE_CONDITION = (
+    "github.event_name != 'pull_request' || "
+    "needs.release_surface_changes.outputs.required == 'true'"
+)
+MAIN_EVIDENCE_CONDITION = "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
+AGGREGATE_STATUS_NAME = "Release surfaces"
+# (event, classifier result) combinations CI can produce. Non-PR events always classify
+# as required (the classifier step short-circuits), so there is no (push, False) case.
+AGGREGATE_SCENARIOS = (
+    ("pull_request", False),
+    ("pull_request", True),
+    ("merge_group", True),
+    ("push", True),
+    ("workflow_dispatch", True),
+)
+
+
+def _job_runs(if_values: list[str], *, event: str, required: bool) -> Optional[bool]:
+    """Evaluate the only ``if`` forms the contract permits; None for anything else."""
+    if not if_values:
+        return True
+    expression = if_values[0]
+    if expression == RELEASE_CONDITION:
+        return event != "pull_request" or required
+    if expression in (MAIN_EVIDENCE_CONDITION, f"always() && ({MAIN_EVIDENCE_CONDITION})"):
+        return event in release_inventory.MAIN_EVIDENCE_EVENTS
+    return None
+
+
+def _aggregate_arguments(job_text: str) -> tuple[dict[str, str], list[str], list[str]]:
+    """Parse the aggregate step: (job -> needs reference, event refs, required refs)."""
+    run = "\n".join(
+        line
+        for step in _step_sequence_blocks(job_text)
+        for line in _step_run_lines(step)
+        if "verify_release_surface_results.py" in " ".join(_step_run_lines(step))
+    )
+    jobs = {
+        name: ref
+        for name, ref in re.findall(
+            r'--job "([a-z_0-9]+)=\$\{\{ needs\.([a-z_0-9]+)\.result \}\}"', run
+        )
+    }
+    events = re.findall(r'--event "\$\{\{ (github\.event_name) \}\}"', run)
+    required = re.findall(
+        r'--required "\$\{\{ (needs\.release_surface_changes\.outputs\.required) \}\}"', run
+    )
+    return jobs, events, required
+
+
+def _require_release_aggregate_contract(errors: list[str], jobs: dict[str, str], text: str) -> None:
+    """The hard/advisory boundary: one aggregate observes exactly the applicable hard jobs."""
+    inventory = release_inventory
+    # 1. Classification is total: a job is hard, support, or explicitly advisory.
+    known = set(inventory.HARD_JOBS) | set(inventory.SUPPORT_JOBS) | set(inventory.ADVISORY_CI_JOBS)
+    for name in sorted(set(jobs) - known):
+        errors.append(
+            f"CI job {name!r} is neither a hard release gate nor listed advisory; classify it in "
+            "scripts/verify_release_surface_results.py"
+        )
+    # 2. Advisory work cannot hide inside a hard workflow: no continue-on-error anywhere.
+    if any(re.match(r"\s*(?:- )?continue-on-error\s*:", line) for line in _yaml_code_lines(text)):
+        errors.append("CI workflow must not use continue-on-error; advisory work is scheduled")
+    # 3. The aggregate depends on exactly the classifier plus every hard job.
+    aggregate = jobs.get("release_surfaces", "")
+    values, unsafe = _direct_yaml_key_values(aggregate, "needs", indent=4)
+    needs = _yaml_list_items(aggregate, "needs")
+    expected = {"release_surface_changes", *inventory.HARD_JOBS}
+    if unsafe or needs is None or set(needs) != expected or len(needs) != len(set(needs)):
+        errors.append(
+            "CI Release surfaces must need exactly the classifier and every hard job: "
+            f"expected {sorted(expected)}, found {sorted(needs or [])}"
+        )
+    # 4. The aggregate command passes each hard job's own result, the event, and the classifier.
+    passed, events, required_refs = _aggregate_arguments(aggregate)
+    if set(passed) != set(inventory.HARD_JOBS) or any(name != ref for name, ref in passed.items()):
+        errors.append(
+            "CI Release surfaces must pass --job NAME=${{ needs.NAME.result }} for every hard job: "
+            f"expected {sorted(inventory.HARD_JOBS)}, found {sorted(passed)}"
+        )
+    if events != ["github.event_name"] or required_refs != [
+        "needs.release_surface_changes.outputs.required"
+    ]:
+        errors.append("CI Release surfaces must pass --event and the classifier --required output")
+    # 5. Applicability in the aggregate equals what the workflow actually runs.
+    for event, required in AGGREGATE_SCENARIOS:
+        runs: set[str] = set()
+        for name in inventory.HARD_JOBS:
+            if_values, if_unsafe = _direct_yaml_key_values(jobs.get(name, ""), "if", indent=4)
+            outcome = None if if_unsafe else _job_runs(if_values, event=event, required=required)
+            if outcome is None:
+                errors.append(f"CI hard job {name!r} uses an unrecognized if condition")
+                break
+            if outcome:
+                runs.add(name)
+        else:
+            applicable = inventory.applicable_jobs(event=event, required=required)
+            if runs != applicable:
+                errors.append(
+                    f"CI aggregate applicability for {event} (required={required}) differs from "
+                    f"the jobs the workflow runs: aggregate-only {sorted(applicable - runs)}, "
+                    f"workflow-only {sorted(runs - applicable)}"
+                )
+    # 6. Propagation self-test: an injected failure in the real job set fails the aggregate.
+    if set(passed) == set(inventory.HARD_JOBS):
+        errors.extend(_aggregate_propagation_errors(passed))
+
+
+def _yaml_list_items(job_text: str, key: str) -> Optional[list[str]]:
+    """Items of a job-level ``key:`` given as an inline ``[a, b]`` or a block sequence."""
+    lines = job_text.splitlines()
+    for index, line in enumerate(lines):
+        match = re.fullmatch(rf"    {re.escape(key)}:\s*(.*?)\s*", line)
+        if match is None:
+            continue
+        value = match.group(1)
+        if value.startswith("["):
+            return [item.strip() for item in value.strip("[]").split(",") if item.strip()]
+        if value:
+            return [value]
+        items: list[str] = []
+        for following in lines[index + 1 :]:
+            item = re.fullmatch(r"      - ([a-z_0-9]+)\s*", following)
+            if item is None:
+                break
+            items.append(item.group(1))
+        return items
+    return None
+
+
+def _aggregate_propagation_errors(passed: dict[str, str]) -> list[str]:
+    """Drive the real aggregate script logic with injected failures for every job class."""
+    errors: list[str] = []
+    verify = release_inventory.verify
+    for event, required in AGGREGATE_SCENARIOS:
+        applicable = release_inventory.applicable_jobs(event=event, required=required)
+        green = {name: ("success" if name in applicable else "skipped") for name in passed}
+        label = f"{event} required={required}"
+        if verify(required=required, results=green, event=event):
+            errors.append(f"CI aggregate rejects a fully green {label} run")
+        for name in sorted(passed):
+            for result in ("failure", "cancelled") + (("skipped",) if name in applicable else ()):
+                if not verify(required=required, results={**green, name: result}, event=event):
+                    errors.append(
+                        f"CI aggregate accepts {name}={result} on {label}; injected "
+                        "failures must fail Release surfaces"
+                    )
+        for name in sorted(passed):
+            if (
+                verify(
+                    required=required,
+                    results={k: v for k, v in green.items() if k != name},
+                    event=event,
+                )
+                == []
+            ):
+                errors.append(f"CI aggregate accepts a missing result for {name} on {label}")
+    return errors
+
+
+def validate_merge_queue_ruleset(path: Path = DEFAULT_RULESET) -> list[str]:
+    """The checked-in ruleset must keep the lean one-aggregate queue contract."""
+    try:
+        ruleset = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [f"cannot read merge-queue ruleset {path}: {exc}"]
+    errors: list[str] = []
+    if ruleset.get("target") != "branch" or ruleset.get("enforcement") != "active":
+        errors.append("merge-queue ruleset must be an active branch ruleset")
+    ref_name = (ruleset.get("conditions") or {}).get("ref_name") or {}
+    if ref_name.get("include") != ["refs/heads/main"] or ref_name.get("exclude") != []:
+        errors.append("merge-queue ruleset must target exactly refs/heads/main")
+    rules = ruleset.get("rules") or []
+    queues = [rule for rule in rules if rule.get("type") == "merge_queue"]
+    if len(queues) != 1:
+        errors.append("merge-queue ruleset must define exactly one merge_queue rule")
+    elif queues[0].get("parameters") != MERGE_QUEUE_PARAMETERS:
+        errors.append(
+            f"merge-queue ruleset parameters must be {MERGE_QUEUE_PARAMETERS}, "
+            f"found {queues[0].get('parameters')}"
+        )
+    for rule in rules:
+        if rule.get("type") == "merge_queue":
+            continue
+        # One lean required aggregate, no duplicate required statuses.
+        contexts = [
+            check.get("context")
+            for check in (rule.get("parameters") or {}).get("required_status_checks", [])
+        ]
+        if rule.get("type") != "required_status_checks" or contexts != [AGGREGATE_STATUS_NAME]:
+            errors.append(
+                f"merge-queue ruleset may only add the single {AGGREGATE_STATUS_NAME!r} "
+                f"required status; found {rule.get('type')} {contexts}"
+            )
+    return errors
+
+
+MERGE_QUEUE_PARAMETERS = {
+    "check_response_timeout_minutes": 240,
+    "grouping_strategy": "ALLGREEN",
+    "max_entries_to_build": 1,
+    "max_entries_to_merge": 1,
+    "merge_method": "SQUASH",
+    "min_entries_to_merge": 1,
+    "min_entries_to_merge_wait_minutes": 5,
+}
+
+
+def validate_live_readback(
+    fetch: Callable[[str], object], ruleset_path: Path = DEFAULT_RULESET
+) -> list[str]:
+    """Compare live GitHub ruleset and branch protection with the checked-in contract.
+
+    ``fetch`` maps a ``repos/{owner}/{repo}``-relative API path to decoded JSON; it is
+    injected so the comparison is testable offline (``--live-readback`` wires ``gh api``).
+    """
+    errors: list[str] = []
+    local = json.loads(ruleset_path.read_text(encoding="utf-8"))
+    summaries = fetch("rulesets")
+    matches = [
+        item
+        for item in summaries
+        if isinstance(item, dict) and item.get("name") == local.get("name")
+    ]
+    if len(matches) != 1:
+        return [f"live repository must have exactly one ruleset named {local.get('name')!r}"]
+    live = fetch(f"rulesets/{matches[0]['id']}")
+    if not isinstance(live, dict):
+        return ["live ruleset read-back is not an object"]
+    for key in ("name", "target", "enforcement", "conditions"):
+        if live.get(key) != local.get(key):
+            errors.append(f"live ruleset {key} {live.get(key)!r} differs from checked-in file")
+    if live.get("rules") != local.get("rules"):
+        errors.append("live ruleset rules differ from .github/merge-queue-ruleset.json")
+    protection = fetch("branches/main/protection")
+    contexts = (
+        (protection.get("required_status_checks") or {}).get("contexts")
+        if isinstance(protection, dict)
+        else None
+    )
+    if contexts != [AGGREGATE_STATUS_NAME]:
+        errors.append(
+            f"live branch protection must require only {AGGREGATE_STATUS_NAME!r}, found {contexts}"
+        )
+    return errors
+
+
+def _gh_api_fetch(repo: str) -> Callable[[str], object]:
+    def fetch(path: str) -> object:
+        result = subprocess.run(
+            ["gh", "api", f"repos/{repo}/{path}"], capture_output=True, text=True, check=True
+        )
+        return json.loads(result.stdout)
+
+    return fetch
+
+
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1400,6 +1641,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "needs.authored_scene.result",
         "needs.browser_conformance.result",
     )
+    _require_release_aggregate_contract(errors, jobs, text)
 
     _require_job_contains(
         errors,
@@ -1785,7 +2027,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "benchmark_vs",
         "CI",
         "parallel cross-library benchmark matrix",
-        "continue-on-error: true",
         "timeout-minutes: 10",
         "fail-fast: false",
         "matrix:",
@@ -1938,8 +2179,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs,
         "benchmark_methodology",
         "CI",
-        "non-blocking methodology benchmark artifact path",
-        "continue-on-error: true",
+        "post-merge hard methodology benchmark artifact path",
         "benchmarks/requirements-ci.lock",
         "Verify native benchmark backend",
         "XYG_REQUIRE_CARGO",
@@ -1972,7 +2212,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "benchmark",
         "CI",
         "merged benchmark artifact path",
-        "continue-on-error: true",
         "needs: [benchmark_vs, benchmark_methodology]",
         "if: always()",
         "actions/download-artifact@",
@@ -3045,9 +3284,11 @@ def validate_all_workflows(
     final_review_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
     coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
     density_path: Path = DEFAULT_DENSITY_WORKFLOW,
+    ruleset_path: Path = DEFAULT_RULESET,
 ) -> list[str]:
     return [
         *validate_workflow_hosting_policy(),
+        *validate_merge_queue_ruleset(ruleset_path),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_density_workflow(density_path),
@@ -3200,6 +3441,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--ci-workflow", type=Path, default=DEFAULT_CI_WORKFLOW)
     parser.add_argument("--codspeed-workflow", type=Path, default=DEFAULT_CODSPEED_WORKFLOW)
     parser.add_argument("--release-workflow", type=Path, default=DEFAULT_RELEASE_WORKFLOW)
+    parser.add_argument("--ruleset", type=Path, default=DEFAULT_RULESET)
+    parser.add_argument(
+        "--live-readback",
+        metavar="OWNER/REPO",
+        help="also compare the live ruleset and branch protection (read-only `gh api`) "
+        "with the checked-in contract",
+    )
     parser.add_argument("--ci-only", action="store_true")
     parser.add_argument("--codspeed-only", action="store_true")
     parser.add_argument("--release-only", action="store_true")
@@ -3226,12 +3474,23 @@ def main(argv: Optional[list[str]] = None) -> int:
             args.ci_workflow,
             args.codspeed_workflow,
             args.release_workflow,
+            ruleset_path=args.ruleset,
         )
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
             args.release_workflow,
+            args.ruleset,
         ]
+
+    if args.live_readback:
+        try:
+            errors = [
+                *errors,
+                *validate_live_readback(_gh_api_fetch(args.live_readback), args.ruleset),
+            ]
+        except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+            errors = [*errors, f"live read-back of {args.live_readback} failed: {exc}"]
 
     if errors:
         print(

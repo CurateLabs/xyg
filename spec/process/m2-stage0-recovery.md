@@ -39,7 +39,10 @@ unusual changed path. A comment
 decoy, extra step, detached output, or PR-head copy cannot substitute for the
 trusted-base `git show` before execution.
 Prose-only `docs/` and non-ABI `spec/` changes may skip the expensive artifact
-jobs, but the aggregate itself still runs and rejects failures. Classifier and
+jobs, but the aggregate itself still runs and rejects failures. The complete hard/advisory
+inventory (including the Matplotlib reference, packaged-WASM producer, and post-merge
+benchmark evidence added by #1005/#1008) is in
+[`production-readiness.md`](production-readiness.md#hard-and-advisory-boundary-1008). Classifier and
 aggregate behavior are executable contracts in
 `tests/test_release_surface_gate.py` and workflow structure is protected by
 `scripts/verify_ci_workflow.py`.

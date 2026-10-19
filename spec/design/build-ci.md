@@ -54,6 +54,9 @@ Both new CI steps explicitly select the just-built release library with
 parser or fallback discovery path. Workflow contract tests reject omitted,
 commented, echoed, or failure-suppressed graph-suite commands.
 
+The `Release surfaces` aggregate lists every hard job, including `wasm_assets`; see the
+hard/advisory table in [production-readiness.md](../process/production-readiness.md).
+
 Scale evidence retains its existing limits: smoke timings are advisory;
 render-graph and pyramid budgets are enforced. 100M/1B LOD decision evidence
 is not proof of allocating or rendering that many rows. The benchmark

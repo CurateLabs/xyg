@@ -61,6 +61,55 @@ GitHub does not run `merge_group` checks through the `pull_request` event, and
 missing queue checks block the merge. Contributor instructions are in
 `spec/process/contributing.md`.
 
+`make check-ci` (`scripts/verify_ci_workflow.py` plus its contract tests) validates the
+`push`/`pull_request`/`merge_group` triggers, the `checks_requested` type and non-canceling
+merge-group concurrency, the aggregate's dependency set, per-event applicability, and
+`.github/merge-queue-ruleset.json` (exactly one `merge_queue` rule with the recorded
+parameters on `refs/heads/main`; the only status check any ruleset may require is the single
+`Release surfaces` aggregate). `make check-release-evidence` (read-only) additionally compares
+the live ruleset and branch protection with that file and applies the scheduled-evidence rule
+below. Live read-back recorded 2026-10-19 (`gh api repos/CurateLabs/xyg/rulesets/24050441`
+and `branches/main/protection`): ruleset `main merge queue` active on `refs/heads/main`,
+`SQUASH`, one entry built/merged, `ALLGREEN`, 5-minute wait, 240-minute check timeout, identical
+to the checked-in file; branch protection requires only `Release surfaces` (strict), no
+approving reviews.
+
+### Hard and advisory boundary (#1008)
+
+`Release surfaces` is the one required status. Its inventory lives in
+`scripts/verify_release_surface_results.py`; `scripts/verify_ci_workflow.py` fails the build
+when `ci.yml` and that inventory disagree, when any `ci.yml` job is unclassified, when a job
+uses `continue-on-error`, or when a simulated failure of any applicable job does not fail the
+aggregate. Every `ci.yml` job is therefore either a hard gate or the classifier/aggregate
+itself; advisory work exists only in scheduled or manual workflows. A skipped job that is
+applicable is a failure; a skipped job that is inapplicable is recorded as such.
+
+| Class | `ci.yml` jobs | Applicable when | Result required |
+| --- | --- | --- | --- |
+| Baseline hard | `test`, `wasm_assets`, `wasm_foundation`, `python_floor` | every event | `success` |
+| Release-surface hard | `browser_conformance`, `sdist`, `wheels`, `install_without_rust`, `authored_scene`, `matplotlib_reference` | `merge_group`, `push`, `workflow_dispatch`, and a pull request the trusted-base classifier marks required | `success` when applicable; `skipped` or `success` for a prose-only pull request; never `failure` |
+| Main evidence hard | `benchmark_vs`, `benchmark_methodology`, `benchmark` | `push` and `workflow_dispatch` only (post-merge; they cannot gate the queue) | `success` on main; `skipped` or `success` on pull requests and merge groups |
+| Support | `release_surface_changes` (classifier), `release_surfaces` (aggregate) | every event | n/a |
+| Advisory (outside `ci.yml`) | `codspeed.yml`, `density-100m.yml`, `ceiling-benchmark.yml`, `benchmark-refresh.yml`, `docs.yml`, `binder.yml`, `final-coderabbit.yml` | scheduled or manual | not an aggregate input |
+
+Changes from run 38640943006, where `Release surfaces` passed while three jobs failed:
+`matplotlib_reference` moved from a main-only job outside the aggregate to a classifier-gated
+release-surface job; the benchmark jobs lost `continue-on-error` and became aggregate inputs
+on `push`/`workflow_dispatch`, so main's own evidence failures turn the aggregate red;
+`wasm_assets` joined the baseline. Duplicate required statuses and repeated-green-run
+ceremony remain out of scope: the aggregate stays one job, and prose-only changes still
+execute only baseline jobs.
+
+**Scheduled evidence blocks readiness through issue state.** Scheduled performance and
+browser evidence (CodSpeed, the density authority) is not an aggregate input and never runs
+on pull requests, but a known unresolved failure must not read as readiness. Before a release
+authorization, a "main is green" claim, or closing the release tracker, run
+`python3 scripts/check_scheduled_evidence.py`: it blocks while the latest completed run of any
+scheduled workflow on `main` failed or is older than three days, and while the latest `ci.yml`
+push run on `main` has any failed, cancelled, or timed-out job (including the pre-#1008
+advisory jobs). Each blocking finding must be tracked by an open linked issue, which closes
+only after a later scheduled run on `main` succeeds.
+
 CurateLabs/xyg is a permanently divergent product repository, not a deployment
 branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
 integrations are owned or explicitly controlled by CurateLabs:

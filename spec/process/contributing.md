@@ -332,8 +332,13 @@ the trusted base revision against the exact base/head path diff, failing safe to
 the complete matrix if that classifier is unavailable. The checked-in classifier treats Rust,
 generated ABI declarations, Figure/export/payload/Scene modules, Node bindings,
 browser/WASM code, build hooks, package manifests, tests/scripts, and release
-workflows as release surfaces. Cross-library competitive breadth remains
-post-main/manual evidence.
+workflows as release surfaces. The Matplotlib 3.11 reference compatibility job is a
+release-surface job (it runs for classifier-positive pull requests and every merge group).
+The cross-library and methodology benchmark jobs run after merge on `main` and are hard
+there: their failure turns `Release surfaces` red on that push. Scheduled performance
+(CodSpeed, density authority) stays scheduled; an unresolved failure blocks release readiness
+through `scripts/check_scheduled_evidence.py` and its linked issue. The exact boundary is in
+[production-readiness.md](production-readiness.md#hard-and-advisory-boundary-1008).
 
 Branch protection requires the one lean **Release surfaces** aggregate.
 Independent approving-review/CODEOWNER capacity is tracked in unmilestoned

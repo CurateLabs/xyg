@@ -7,7 +7,7 @@ WHEEL ?=
 BENCHMARK_JSON ?= benchmark.json
 BENCHMARK_KIND ?= auto
 
-.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-ownership check-host-parity check-graph check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-generate abi-check abi-smoke
+.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-release-evidence check-ownership check-host-parity check-graph check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-generate abi-check abi-smoke
 
 help:
 	@printf '%s\n' \
@@ -25,7 +25,8 @@ help:
 		'  make check-errors     run public error, LOD, and mutation-safety tests' \
 		'  make check-api        run lazy public API and type-surface checks' \
 		'  make check-import     run import-time and dependency-boundary checks' \
-		'  make check-ci         run CI/release workflow invariant checks' \
+		'  make check-ci         run CI/release workflow invariant checks and contract tests' \
+		'  make check-release-evidence block on unresolved scheduled/main CI failures; read back live ruleset' \
 		'  make check-ownership  validate the production-source ownership ledger' \
 		'  make check-host-parity run M2 host-parity landing gates (inventory + cross-host + ABI)' \
 		'  make check-graph      run Node/Python graph tests and chart-scale/pyramid smokes (build core/client/WASM first)' \
@@ -104,8 +105,18 @@ check-api:
 check-import:
 	$(PYTHON) scripts/verify_local.py --only public_api,import_budget
 
+# Workflow triggers, the Release surfaces aggregate's hard-job dependencies and
+# applicability, the merge-queue ruleset, and the executable contract tests
+# (injected-failure propagation, every applicability branch, WASM asset gate).
 check-ci:
 	$(PYTHON) scripts/verify_local.py --only ci_workflow
+	$(PYTHON) -m pytest -q tests/test_verify_ci_workflow.py tests/test_release_surface_gate.py tests/test_verify_wasm_assets.py tests/test_check_scheduled_evidence.py
+
+# Read-only: blocks readiness on unresolved scheduled-evidence or main-CI failures,
+# and compares the live ruleset/branch protection with the checked-in contract.
+check-release-evidence:
+	$(PYTHON) scripts/check_scheduled_evidence.py
+	$(PYTHON) scripts/verify_ci_workflow.py --ci-only --live-readback CurateLabs/xyg
 
 check-ownership:
 	$(PYTHON) scripts/verify_ownership.py
