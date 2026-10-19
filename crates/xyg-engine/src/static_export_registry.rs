@@ -119,6 +119,12 @@ pub const STATIC_EXPORT_SHAPES: &[StaticExportShape] = &[
         trace_kinds: &["line"],
         autorange: true,
     },
+    // #1006 / #889 family 4: layered ordinary kinds consume Rust autorange.
+    StaticExportShape {
+        name: "layered_line_bar",
+        trace_kinds: &["line", "bar"],
+        autorange: true,
+    },
     StaticExportShape {
         name: "stairs",
         trace_kinds: &["line"],
@@ -349,10 +355,6 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
     StaticExportFailClose {
         name: "violin_orientation_metadata",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE",
-    },
-    StaticExportFailClose {
-        name: "layered_autorange",
-        reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
     },
     StaticExportFailClose {
         name: "annotation_html",

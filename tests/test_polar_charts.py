@@ -25,6 +25,11 @@ from xyg.config import POLAR_DIRECT_CEILING
 
 ROOT = Path(__file__).resolve().parent.parent
 
+_POLAR_889 = (
+    "Rich polar configs are rejected by the public Scene predicate and the "
+    "compatibility polar renderer is retired; tracked in #889."
+)
+
 
 def _rose(n: int = 120):
     theta = np.linspace(0.0, 2.0 * math.pi, n)
@@ -148,11 +153,6 @@ def _svg(chart) -> str:
     return chart.figure().to_image(format="svg").decode()
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_svg_draws_rings_spokes_and_one_outer_frame() -> None:
     doc = _svg(_chart())
     assert doc.count('data-xy-grid="ring"') >= 3
@@ -178,32 +178,17 @@ def test_svg_clips_marks_to_the_disc_but_not_the_legend() -> None:
     assert any("<rect" in c for c in clips), "the legend still needs a rect clip"
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_polar_legend_survives_the_disc_clip() -> None:
     theta, r = _rose()
     doc = _svg(_chart(children=[xyg.line(theta, r, name="series one")]))
     assert "series one" in doc
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_svg_angular_labels_use_pi_notation() -> None:
     doc = _svg(_chart())
     assert "π/2" in doc or "π" in doc
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_svg_degree_labels_carry_the_degree_sign() -> None:
     theta, r = _rose()
     doc = _svg(_chart(children=[xyg.line(np.degrees(theta), r), xyg.theta_axis(unit="degrees")]))
@@ -300,11 +285,6 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
 # -- area and radar (P3) ---------------------------------------------------
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_area_renders_under_polar() -> None:
     theta, r = _rose(24)
     doc = _svg(_chart(children=[xyg.area(theta, r, color="#2563eb")]))
@@ -321,11 +301,6 @@ def test_radar_chart_closes_across_the_seam() -> None:
     assert mark.y[-1] == mark.y[0] == pytest.approx(1.0)
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_radar_chart_labels_spokes_with_the_categories() -> None:
     cats = ["speed", "power", "range", "agility"]
     doc = xyg.radar_chart(cats, xyg.area([0.9, 0.7, 0.5, 0.8])).figure().to_image(format="svg")
@@ -352,11 +327,6 @@ def test_radar_chart_needs_three_categories() -> None:
         xyg.radar_chart(["a", "b"], xyg.area([1.0, 2.0]))
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_authored_tick_labels_beat_the_angle_format() -> None:
     """Radar category names must win over pi notation on the theta axis."""
     doc = _svg(
@@ -626,11 +596,6 @@ def test_show_false_clears_the_outer_frame() -> None:
 # -- audit round 2: chrome leaks, strategy off, angle, ceiling, pdf --------
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_no_cartesian_tick_stubs_leak_into_polar_svg() -> None:
     """Edge-anchored tick marks have no polar geometry; they used to leak in
     from the cartesian emission loops (raster never drew them — divergence)."""
@@ -677,11 +642,6 @@ def test_tick_label_angle_rotates_polar_labels() -> None:
     assert len(rotated) >= 3
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_theta_axis_title_stays_on_canvas() -> None:
     """The rect re-cut reclaims the bottom gutter — except when the theta axis
     has a title, which is drawn there and was pushed below the canvas edge."""
@@ -702,11 +662,6 @@ def test_polar_point_ceiling_is_enforced() -> None:
         xyg.polar_chart(xyg.scatter(theta, theta)).figure().build_payload_split()
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_radar_merges_categories_into_an_authored_theta_axis() -> None:
     """An authored theta axis customises the spokes; it must not silently
     replace the category labels with numeric angles."""
@@ -718,11 +673,6 @@ def test_radar_merges_categories_into_an_authored_theta_axis() -> None:
         assert name in doc
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_polar_pdf_export_round_trips() -> None:
     """The PDF converter's clip subset was rect-only, so every polar chart
     raised. The disc clip now lands as four Bezier quarter-arcs."""
@@ -804,11 +754,6 @@ def test_horizontal_colorbar_keeps_its_gutter() -> None:
     assert tops and max(tops) < 500
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_long_category_labels_reserve_measured_room() -> None:
     """A fixed 30px allowance hard-clipped authored radar category names."""
     cats = ["EAST-NORTH-EAST", "SOUTH-SOUTH-WEST", "NORTH-WEST", "SOUTH-EAST", "WEST"]
@@ -970,11 +915,6 @@ def test_full_turn_slice_draws_an_annulus_not_nothing() -> None:
         assert int(window.min()) < 200, f"raster annulus missing at {degrees} degrees"
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_fractional_degree_ticks_keep_their_precision() -> None:
     """`_fmt_angle` used a hardcoded step of 1, so an authored 22.5-degree grid
     labelled itself 22°/68° (round-half-even) instead of 22.5°/67.5°."""
@@ -1282,15 +1222,12 @@ def test_reversed_radial_axis_keeps_wedges_in_static_exports() -> None:
 @pytest.mark.parametrize(
     ("label", "theta_kwargs", "r_kwargs"),
     [
-        ("hole", {}, {"hole": 0.3}),
+        pytest.param(
+            "hole", {}, {"hole": 0.3}, marks=pytest.mark.xfail(reason=_POLAR_889, strict=False)
+        ),
         ("sector", {"sector": (0.0, 90.0)}, {}),
         ("hole+sector", {"sector": (20.0, 160.0)}, {"hole": 0.4}),
     ],
-)
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
 )
 def test_pdf_export_supports_hole_and_sector_clips(label, theta_kwargs, r_kwargs) -> None:
     """The marks clip is a <circle> only for the full disc; hole/sector emit a
@@ -1664,17 +1601,19 @@ def test_wind_rose_names_a_fractional_sector_count() -> None:
 @pytest.mark.parametrize(
     ("label", "build"),
     [
-        (
+        pytest.param(
             "log radial annihilates every row",
             lambda: xyg.polar_chart(
                 xyg.area([0.0, 90.0, 180.0], [1.0, 2.0, 3.0]),
                 xyg.theta_axis(unit="degrees"),
                 xyg.r_axis(type_="log"),
             ),
+            marks=pytest.mark.xfail(reason=_POLAR_889, strict=False),
         ),
-        (
+        pytest.param(
             "all-NaN radar polygon",
             lambda: xyg.radar_chart(["a", "b", "c"], xyg.area([float("nan")] * 3)),
+            marks=pytest.mark.xfail(reason=_POLAR_889, strict=False),
         ),
         (
             "area entirely outside the sector",
@@ -1684,11 +1623,6 @@ def test_wind_rose_names_a_fractional_sector_count() -> None:
             ),
         ),
     ],
-)
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
 )
 def test_fully_culled_polar_area_exports_without_malformed_path(label, build) -> None:
     """`_curve_path` returned "" for a fully culled trace and the area join

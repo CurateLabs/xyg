@@ -496,11 +496,23 @@ fixtures, with separate exact cross-host fixtures for step expansion, histogram
 bins, and Python
 `column`/Node `bar` Rect equivalence. Newly selected line, Rect, Band,
 endpoint-pair, mesh, and ribbon figures retain the authored-domain requirement.
-The bounded ordinary autorange exception is the single-trace line/step,
-bar/column, histogram, area, errorbar, violin, or hexbin shape, plus the exact
-whisker/box/median triple emitted by `box_chart`, with the default Cartesian
-axis/figure/legend/colorbar/annotation shell. Graph marks (#33) are the one
-multi-trace exception: when hosts set XYEP/XYEF flag bit 5
+The ordinary autorange admission (#856, widened by #1006 / #889 family 4) is
+any non-empty mix of line/step, bar/column, histogram, area, errorbar, box
+(whisker/box/median), violin, and hexbin traces in their ordinary per-kind style
+vocabulary, layered with any scatter, on Cartesian or polar axes, with no
+annotations, Scene legend/colorbar options, or axis options outside the
+presentation set (`label`, `side`, tick/format/collision options, `style`,
+`minor_style`, and, for polar, the polar axis vocabulary). Every public Scene
+compile already takes an absent primary domain from the shared Rust
+`xyg_figure_autorange` result the browser payload uses (polar r likewise;
+theta from the authored sector or one full turn), so the document is
+byte-identical to authoring that resolved domain explicitly
+(`tests/test_static_autorange_admission.py`). Domain-shaping axis options
+(`type`, `constant`, `nonpositive`, `margin`, `reverse`), richer per-kind
+styles, annotations, and colorbars keep the authored-domain requirement and
+fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`; a non-default primary side
+still fails closed. Graph marks (#33) have their own admission:
+when hosts set XYEP/XYEF flag bit 5
 (`FLAG_GRAPH_MARKS`, "every trace belongs to a recorded graph mark") and Rust
 verifies the traces are consecutive (edge `segments`, node `scatter`) pairs with
 graph style keys only (`color`/`opacity`/`role`/`width`;

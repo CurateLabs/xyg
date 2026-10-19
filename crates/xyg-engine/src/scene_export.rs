@@ -223,6 +223,26 @@ const PUBLIC_AXIS_KEYS: &[&str] = &[
     "minor_style",
     "format",
 ];
+/// Authored axis options that only present an autoranged axis; they never
+/// shape its data domain, so Rust autorange may still resolve the domain.
+const AUTORANGE_PRESENTATION_AXIS_KEYS: &[&str] = &[
+    "label",
+    "side",
+    "tick_sides",
+    "tick_label_sides",
+    "tick_values",
+    "tick_count",
+    "tick_labels",
+    "minor_tick_values",
+    "style",
+    "minor_style",
+    "format",
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
+];
 const CARTESIAN_COLLISION_KEYS: &[&str] = &[
     "tick_label_strategy",
     "collision",
@@ -1164,17 +1184,23 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     if extra_key(&colorbar_keys, PUBLIC_COLORBAR_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR");
     }
-    // Geometry is anchored to the primary Cartesian x/y viewport. Only the
-    // nine ordinary, default-shell chart shapes covered by #856 may consume
-    // Rust-resolved autorange domains. Richer layered, polar, annotated, or
-    // styled figures retain the compatibility renderer until their complete
-    // public contract is represented by Scene; admitting all literal kinds
-    // here silently changed established SVG/PNG semantics.
+    // Geometry is anchored to the primary Cartesian x/y viewport. Every
+    // public Scene compile takes an absent primary domain from the same Rust
+    // figure autorange (`xyg_figure_autorange`) that the browser payload uses,
+    // so ordinary Cartesian figures — any mix of the ordinary literal kinds
+    // below plus scatter, under presentation-only authored axes — consume
+    // that domain (#856, #1006/#889 family 4). Annotated or colorbar
+    // figures, styles outside the ordinary per-kind vocabulary, and
+    // axes with domain-shaping options (type, constant, nonpositive, margin,
+    // reverse) still need an authored domain and fail closed without one.
     let needs_authored_domain = traces.iter().any(|trace| kind_literal_geometry(trace.kind));
     let needs_primary_axes =
         needs_authored_domain || traces.iter().any(|trace| kind_extent_geometry(trace.kind));
     let conservative_autorange_style = |trace: &TraceRec<'_>| -> bool {
         let allowed: &[&str] = match trace.kind {
+            // Scatter never needs an authored domain; its style cannot
+            // change the autorange of the literal traces it is layered with.
+            KIND_SCATTER => return true,
             KIND_LINE => &["color", "opacity", "width", "step"],
             KIND_BAR | KIND_COLUMN => &["color", "opacity", "role", "orientation"],
             KIND_HISTOGRAM => &["color", "opacity", "role", "cumulative", "density"],
@@ -1202,37 +1228,27 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         };
         !allowed.is_empty() && !extra_key(&trace.style_keys, allowed)
     };
-    let ordinary_autorange_shape = if flags & FLAG_POLAR != 0
-        || n_annotations != 0
-        || !legend_keys.is_empty()
-        || !colorbar_keys.is_empty()
-        || axes.iter().any(|axis| extra_key(&axis.keys, &["side"]))
-        || traces
-            .iter()
-            .any(|trace| !conservative_autorange_style(trace))
-    {
-        false
+    // Polar Scene input resolves r from the same figure autorange and theta
+    // from the authored sector (default: one full turn), so polar figures
+    // may also autorange under their literal polar axis vocabulary.
+    let polar_presentation: Vec<&str> = AUTORANGE_PRESENTATION_AXIS_KEYS
+        .iter()
+        .chain(POLAR_AXIS_KEYS.iter())
+        .copied()
+        .collect();
+    let presentation_keys: &[&str] = if flags & FLAG_POLAR != 0 {
+        &polar_presentation
     } else {
-        match traces.as_slice() {
-            [trace] => matches!(
-                trace.kind,
-                KIND_LINE
-                    | KIND_BAR
-                    | KIND_COLUMN
-                    | KIND_HISTOGRAM
-                    | KIND_AREA
-                    | KIND_ERRORBAR
-                    | KIND_VIOLIN
-                    | KIND_HEXBIN
-            ),
-            [whisker, box_trace, median] => {
-                whisker.kind == KIND_BOX_WHISKER
-                    && box_trace.kind == KIND_BOX
-                    && median.kind == KIND_BOX_MEDIAN
-            }
-            _ => false,
-        }
+        AUTORANGE_PRESENTATION_AXIS_KEYS
     };
+    let ordinary_autorange_shape = n_annotations == 0
+        && legend_keys.is_empty()
+        && colorbar_keys.is_empty()
+        && !traces.is_empty()
+        && axes
+            .iter()
+            .all(|axis| !extra_key(&axis.keys, presentation_keys))
+        && traces.iter().all(conservative_autorange_style);
     // Graph marks (#33): the browser paints exactly the edge segments and node
     // scatter, with the same Rust autorange (segment endpoints + points), so
     // the static Scene may consume that domain. Axes are the graph chart's
@@ -1915,6 +1931,53 @@ mod tests {
         line.extend_from_slice(&f64::NAN.to_le_bytes());
         line.extend_from_slice(&f64::NAN.to_le_bytes());
         assert_eq!(scene_public_export_reason(&line), Ok(""));
+    }
+
+    #[test]
+    fn layered_ordinary_figures_autorange_under_presentation_axes() {
+        // #1006 / #889 family 4: two lines plus a scatter under labelled axes.
+        fn put_axis(buf: &mut Vec<u8>, axis_id: u8, keys: &[&str]) {
+            buf.extend_from_slice(&[axis_id, 0, 0, 0, 0, 0]);
+            buf.extend_from_slice(&(keys.len() as u16).to_le_bytes());
+            put_keys(buf, keys);
+        }
+        fn put_trace(buf: &mut Vec<u8>, kind: u8, style: &[&str]) {
+            buf.push(kind);
+            buf.extend_from_slice(&[0, 255, 255, 255, 0, 0, 0]);
+            buf.extend_from_slice(&0u32.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 36]);
+            buf.extend_from_slice(&(style.len() as u16).to_le_bytes());
+            buf.extend_from_slice(&[0u8; 6]);
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            put_keys(buf, style);
+        }
+        let figure = |x_keys: &[&str], line_style: &[&str]| {
+            let mut buf = header(0, 0, 0, 0, 2, 0, 3);
+            put_axis(&mut buf, 0, x_keys);
+            put_axis(&mut buf, 1, &["label", "format"]);
+            put_trace(&mut buf, KIND_LINE, line_style);
+            put_trace(&mut buf, KIND_LINE, &["color"]);
+            put_trace(&mut buf, KIND_SCATTER, &["color", "size"]);
+            buf
+        };
+        assert_eq!(
+            scene_public_export_reason(&figure(&["label", "side", "style"], &["width"])),
+            Ok("")
+        );
+        // Domain-shaping axis options still require an authored domain.
+        for key in ["margin", "type", "reverse", "constant", "nonpositive"] {
+            assert_eq!(
+                scene_public_export_reason(&figure(&[key], &[])),
+                Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"),
+                "{key}"
+            );
+        }
+        // So do styles outside the ordinary per-kind vocabulary.
+        assert_eq!(
+            scene_public_export_reason(&figure(&[], &["dash"])),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
+        );
     }
 
     #[test]

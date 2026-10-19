@@ -37,6 +37,7 @@ function baseFigure(name) {
     case "scatter": f.scatter([0, 1, 2], [1, 3, 2], { style: { color: "#3987e5", size: 6, opacity: 0.8, symbol: "diamond" } }); break;
     case "line": f.line([0, 1, 2], [1, 3, 2], { color: "#ef4444", width: 2 }); break;
     case "step": f.step([0, 1, 2], [1, 3, 2], { where: "post", color: "#ef4444", width: 2 }); break;
+    case "layered_line_bar": f.line([0, 1, 2], [1, 3, 2], { color: "#ef4444", width: 2 }); f.bar([0, 1, 2], [2, 1, 4], { color: "#3987e5" }); break;
     case "stairs": f.stairs([0, 1, 2, 3], [1, 3, 2], { where: "post", color: "#ef4444", width: 2 }); break;
     case "bar": f.bar([0, 1], [1, 2], { color: "#22c55e", opacity: 0.85 }); break;
     case "column_bar": f.bar([0, 1], [1, 2], { color: "#22c55e", opacity: 0.85 }); break;
@@ -109,7 +110,6 @@ function failCloseFigure(name) {
     case "unsupported_symbol": f.traces = []; f.scatter([0], [0]); f.traces[0].style.symbol = "not-a-symbol"; break;
     case "unsupported_mark": f.traces[0].kind = "unknown"; break;
     case "violin_orientation_metadata": fixedDomains(f); f.traces = []; f.violin([[1, 2, 2, 3]], { bins: 8 }); f.traces[0].style.orientation = "diagonal"; break;
-    case "layered_autorange": f.bar([0], [1]); break;
     case "annotation_html": f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "x", html: "<b>x</b>" }]; break;
     case "annotation_collision": f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "x", collision: "avoid" }]; break;
     case "annotation_markup": f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "x", markup: "markdown" }]; break;

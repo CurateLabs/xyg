@@ -34,6 +34,14 @@
       "autorange": true
     },
     {
+      "name": "layered_line_bar",
+      "trace_kinds": [
+        "line",
+        "bar"
+      ],
+      "autorange": true
+    },
+    {
       "name": "stairs",
       "trace_kinds": [
         "line"
@@ -291,10 +299,6 @@
     {
       "name": "violin_orientation_metadata",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    },
-    {
-      "name": "layered_autorange",
-      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     },
     {
       "name": "annotation_html",

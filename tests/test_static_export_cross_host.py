@@ -97,6 +97,9 @@ def _base_figure(name: str) -> Figure:
         figure.line([0, 1, 2], [1, 3, 2], color="#ef4444", width=2)
     elif name == "step":
         figure.step([0, 1, 2], [1, 3, 2], where="post", color="#ef4444", width=2)
+    elif name == "layered_line_bar":
+        figure.line([0, 1, 2], [1, 3, 2], color="#ef4444", width=2)
+        figure.bar([0, 1, 2], [2, 1, 4], color="#3987e5")
     elif name == "stairs":
         figure.stairs([1, 3, 2], [0, 1, 2, 3], where="post", color="#ef4444", width=2)
     elif name == "ecdf":
@@ -228,8 +231,6 @@ def _fail_close_figure(name: str) -> Figure:
         figure.traces.clear()
         figure.violin([[1, 2, 2, 3]], bins=8)
         figure.traces[0].style["orientation"] = "diagonal"
-    elif name == "layered_autorange":
-        figure.bar([0], [1])
     elif name == "annotation_html":
         figure.annotations = [{"kind": "text", "x": 0.5, "y": 0.5, "text": "x", "html": "<b>x</b>"}]
     elif name == "annotation_collision":
