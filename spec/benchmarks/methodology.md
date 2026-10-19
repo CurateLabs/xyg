@@ -545,7 +545,14 @@ construction at 10k, aggregate render-graph construction at 100k under fixed
 5k/10k node/edge budgets, 10M/100M/1B-class LOD policy decisions, a complete
 10k graph composition-to-split-payload row, and paired SVG/native-PNG exports
 of a 1k graph. Each row asserts topology, tier, payload, or screen bounds so it
-cannot become faster by silently doing less work. Browser buffer upload, GPU
+cannot become faster by silently doing less work. The payload row expects one
+shaft segment per straight edge (border-aware routing, #33/ABI 368). The SVG
+row uses the Rust Scene route (#897): visible edge pieces are `<polyline>`
+shafts plus filled `<path>` heads, never `<line>` wings. On the 1k ring,
+neighboring 8 px markers overlap, so every edge piece sits inside a node
+outline and is hidden (graph-mark.md, #901). The row asserts zero edge
+elements there, then asserts that a 50-node ring with no overlap exports
+all 50 shafts and 50 heads (#1007). Browser buffer upload, GPU
 paint, frame pacing, picking, and teardown remain wall-clock measurements. The
 `graph_2000_interaction` case in `bench_interaction.py` records those stages for
 a direct graph; simulation rows make no request-to-pixels claim.

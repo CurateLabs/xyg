@@ -193,8 +193,10 @@ def test_graph_payload_medium(benchmark):
     assert spec["graph"][0]["n_nodes"] == MEDIUM_N
     assert spec["graph"][0]["n_edges"] == MEDIUM_N
     assert [(trace["kind"], trace["n_marks"]) for trace in spec["traces"]] == [
-        # Directed routing expands each edge into shaft + two arrow wings.
-        ("segments", MEDIUM_N * 3),
+        # Border-aware routing (#33, ABI 368; spec/design/graph-mark.md) ships
+        # one shaft per straight edge plus its edge_ends channel; arrowheads
+        # are drawn in screen space, not as data-space wing segments.
+        ("segments", MEDIUM_N),
         ("scatter", MEDIUM_N),
     ]
     assert 0 < payload_bytes < MEDIUM_N * 160
@@ -212,11 +214,30 @@ def test_graph_static_export_small(benchmark, graph_data, kind):
         assert output.startswith("<svg")
         assert 'width="640" height="480"' in output
         assert output.count("<circle") == SMALL_N
-        # The graph shell is outside #856's bounded ordinary autorange slice,
-        # so public SVG deliberately keeps the compatibility exporter.  Its
-        # directed routing lowers every edge to a shaft and two arrow wings;
-        # grid/chrome lines may add more, but the three-per-edge floor must hold.
-        assert output.count("<line") >= SMALL_N * 3
+        # graph_chart exports through the Rust Scene route (#33/#897): each
+        # visible edge piece is a <polyline> shaft and each drawn head a filled
+        # <path>; there are no <line> wing segments. Ends are clipped to node
+        # outlines and a piece inside a node is hidden (#901, ABI 368;
+        # spec/design/graph-mark.md). On this 1,000-node ring adjacent 8 px
+        # markers overlap (~1.3 px apart), so every edge piece is hidden.
+        assert output.count("<line") == 0
+        assert output.count("<polyline") == 0
+        assert output.count("<path") == 0
+        # A ring whose markers do not overlap exports every shaft and head.
+        sparse = list(range(50))
+        sparse_svg = (
+            xyg.graph_chart(
+                xyg.graph(
+                    sparse, list(zip(sparse, sparse[1:] + sparse[:1], strict=True)), layout="circle"
+                ),
+                width=640,
+                height=480,
+            )
+            .figure()
+            .to_svg(width=640, height=480)
+        )
+        assert sparse_svg.count("<polyline") == len(sparse)
+        assert sparse_svg.count("<path") == len(sparse)
     else:
         output = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
         assert output.startswith(b"\x89PNG")
