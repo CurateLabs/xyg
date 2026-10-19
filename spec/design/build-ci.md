@@ -63,6 +63,10 @@ The single-producer guard parses the cargo/npm/node arguments, so reordered or a
 cannot hide a second producer, and the `test` and `python_floor` jobs no longer install the unused
 `wasm32-unknown-unknown` target.
 
+`scripts/verify_ci_workflow.py` is a conservative static guard, not a shell parser: it
+fails closed where it cannot analyze a step (folded or quoted `run` scalars with a pipe, a
+heredoc left open) and accepts a few false positives rather than miss a gate.
+
 The `Release surfaces` aggregate lists every hard job, including `wasm_assets`; see the
 hard/advisory table in [production-readiness.md](../process/production-readiness.md).
 

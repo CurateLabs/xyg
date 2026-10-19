@@ -1624,10 +1624,59 @@ def _code_outside_literals(command: str) -> str:
     return "".join(out)
 
 
-_HEREDOC = re.compile(r"(?<!<)<<-?\s*['\"]?([A-Za-z_]\w*)")
+_HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_]\w*)\1")
 _PIPE = re.compile(r"(?<!\|)\|(?!\|)")
 _PIPEFAIL_ON = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*-[A-Za-z]*o\s+pipefail\b")
 _PIPEFAIL_OFF = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*\+[A-Za-z]*o\s+pipefail\b")
+
+
+def _step_label(step: str) -> str:
+    """A step's name, or its first line for an unnamed (``- run:``/``- uses:``) step."""
+    first = _strip_yaml_comment(step.splitlines()[0])
+    match = re.match(r"^      - name:\s*(.+?)\s*$", first)
+    return match.group(1) if match is not None else first.strip()
+
+
+def _heredoc_delimiter(command: str) -> Optional[str]:
+    """The terminator of a heredoc this command opens, if any.
+
+    Only a ``<<`` in plain shell code opens one: not inside quotes (``echo "use <<EOF"``,
+    ``python -c 'print(1<<n)'``), not a ``<<<`` here-string, and not inside an arithmetic
+    context (``$((x << n))``, ``((x << n))``).
+    """
+    i, n = 0, len(command)
+    while i < n:
+        char = command[i]
+        if char == "\\":
+            i += 2
+        elif char in "'\"":
+            j = i + 1
+            while j < n and command[j] != char:
+                j += 2 if char == '"' and command[j] == "\\" else 1
+            i = j + 1
+        elif char == "#" and (i == 0 or command[i - 1].isspace()):
+            return None
+        elif command.startswith("$((", i) or (
+            command.startswith("((", i) and (i == 0 or command[i - 1] in " \t;&|(")
+        ):
+            depth, j = 0, i + (command[i] == "$")
+            while j < n:
+                depth += (command[j] == "(") - (command[j] == ")")
+                j += 1
+                if depth == 0:
+                    break
+            i = j
+        elif command.startswith("<<", i) and not command.startswith("<<<", i):
+            if i > 0 and command[i - 1] == "<":
+                i += 2
+                continue
+            match = _HEREDOC.match(command, i)
+            if match is not None:
+                return match.group(2)
+            i += 2
+        else:
+            i += 1
+    return None
 
 
 def _step_run_commands(step: str) -> tuple[list[str], bool]:
@@ -1646,6 +1695,10 @@ def _step_run_commands(step: str) -> tuple[list[str], bool]:
         value = match.group(1)
         block = re.fullmatch(r"([|>])[+-]?\d*[+-]?", value)
         if block is None:
+            # A quoted YAML scalar is parsed (escapes, folding) before the shell sees it,
+            # so fail closed rather than guess what the shell receives.
+            if value[:1] in ("'", '"'):
+                return [value], False
             return ([value] if value and not value.startswith("#") else []), True
         body: list[str] = []
         for following in lines[index + 1 :]:
@@ -1679,11 +1732,9 @@ def _pipe_lines(commands: list[str]) -> list[str]:
             if command.strip() == heredoc_end:
                 heredoc_end = None
             continue
-        marker = _HEREDOC.search(command)
         if _PIPE.search(_code_outside_literals(command)):
             piped.append(command)
-        if marker is not None:
-            heredoc_end = marker.group(1)
+        heredoc_end = _heredoc_delimiter(command)
     return piped
 
 
@@ -1691,12 +1742,13 @@ def _default_shell(text: str, job: str) -> Optional[str]:
     """The shell inherited from ``defaults.run.shell`` (job first, then workflow)."""
     for source, indent in ((job, "    "), (text, "")):
         match = re.search(
-            rf"^{indent}defaults:\n{indent}  run:\n(?:{indent}    [^\n]*\n)*?{indent}    shell:\s*(\S+)",
+            rf"^{indent}defaults:\n{indent}  run:\n(?:{indent}    [^\n]*\n)*?{indent}    shell:[ \t]*([^\n]*)",
             source,
             re.M,
         )
         if match is not None:
-            return match.group(1)
+            # Whole value (comment stripped): `bash -e {0}` is not `bash`.
+            return re.sub(r"\s+#.*$", "", match.group(1)).strip().strip("'\"")
     return None
 
 
@@ -1716,8 +1768,9 @@ def _require_pipefail_for_piped_steps(errors: list[str], text: str, label: str) 
             if not analyzable:
                 if any("|" in command for command in commands):
                     errors.append(
-                        f"{label} job {job_name!r} step {name!r} pipes inside a folded `run: >` "
-                        "scalar the pipefail check cannot analyze; use a literal `run: |` block"
+                        f"{label} job {job_name!r} step {name!r} pipes inside a folded or quoted "
+                        "`run` scalar the pipefail check cannot analyze; use a literal "
+                        "`run: |` block"
                     )
                 continue
             shell_values, shell_unsafe = _step_direct_key_values(step, "shell")
@@ -1744,9 +1797,12 @@ def _require_pipefail_for_piped_steps(errors: list[str], text: str, label: str) 
                         f"add `shell: bash` or `set -o pipefail` before it ({stripped!r})"
                     )
                     break
-                marker = _HEREDOC.search(command)
-                if marker is not None:
-                    heredoc_end = marker.group(1)
+                heredoc_end = _heredoc_delimiter(command)
+            if heredoc_end is not None:
+                errors.append(
+                    f"{label} job {job_name!r} step {name!r} ends inside a heredoc "
+                    f"(missing terminator {heredoc_end!r}); the pipefail check cannot analyze it"
+                )
 
 
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
@@ -2085,7 +2141,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q",
     )
     # Hard but last: a stale oracle must not skip every other `test` result behind it.
-    if list(_named_step_blocks(jobs.get("test", "")))[-2:] != [
+    final_steps = [_step_label(block) for block in _step_sequence_blocks(jobs.get("test", ""))][-2:]
+    if final_steps != [
         "Native benchmark oracles (divan --test, no timing)",
         "CodSpeed benchmark oracles (pytest, no timing)",
     ]:

@@ -4607,3 +4607,93 @@ def test_single_producer_guard_sees_folded_and_continued_commands() -> None:
     assert [verify_ci_workflow._runs_wasm_producer(line) for line in lines] == [
         "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
     ]
+
+
+# ---------------------------------------------------------------------------
+# Round-5: heredoc detection in code only, whole-value default shell, quoted run scalars,
+# unnamed trailing steps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "opener",
+    [
+        'echo "use <<EOF"',
+        "python -c 'print(1<<n)'",
+        "n=$((x << shift))",
+        "((x << shift))",
+        "cat <<<word",
+        "echo hi # <<EOF",
+    ],
+)
+def test_heredoc_is_opened_only_by_plain_shell_code(tmp_path: Path, opener: str) -> None:
+    """A quoted/arithmetic/commented `<<` must not swallow the pipe that follows."""
+    assert verify_ci_workflow._heredoc_delimiter(opener) is None
+    step = f"      - name: H\n        run: |\n          {opener}\n          bench | tee out\n"
+    assert any("pipefail" in e for e in _pipefail_errors(tmp_path, step))
+
+
+@pytest.mark.parametrize(
+    ("command", "delimiter"),
+    [
+        ("cat <<EOF", "EOF"),
+        ("python - <<'PY'", "PY"),
+        ('python - <<"PY"', "PY"),
+        ("cat <<-EOF", "EOF"),
+        ("cat > f <<EOF && echo x", "EOF"),
+    ],
+)
+def test_real_heredocs_still_open_one(command: str, delimiter: str) -> None:
+    assert verify_ci_workflow._heredoc_delimiter(command) == delimiter
+
+
+def test_step_ending_inside_a_heredoc_fails_closed(tmp_path: Path) -> None:
+    unterminated = "      - name: H\n        run: |\n          cat <<EOF\n          a | b\n"
+    errors = _pipefail_errors(tmp_path, unterminated)
+    assert any("ends inside a heredoc" in e and "'EOF'" in e for e in errors), errors
+    terminated = (
+        "      - name: H\n        run: |\n          cat <<EOF\n          a | b\n          EOF\n"
+    )
+    assert _pipefail_errors(tmp_path, terminated) == []
+
+
+@pytest.mark.parametrize("value", ["bash -e {0}", "sh", "pwsh", "bash {0}"])
+def test_default_shell_must_be_exactly_bash(tmp_path: Path, value: str) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    assert _pipefail_errors(tmp_path, step, header=f"defaults:\n  run:\n    shell: {value}\n")
+    job_default = (
+        "name: T\non: push\njobs:\n  j:\n    runs-on: x\n    defaults:\n      run:\n"
+        f"        shell: {value}\n    steps:\n" + step
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, job_default, "T")
+    assert errors
+
+
+def test_default_shell_value_comment_is_ignored(tmp_path: Path) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    header = "defaults:\n  run:\n    shell: bash # pipefail\n"
+    assert _pipefail_errors(tmp_path, step, header=header) == []
+
+
+@pytest.mark.parametrize("quote", ["'", '"'])
+def test_quoted_one_line_run_scalar_with_a_pipe_fails_closed(tmp_path: Path, quote: str) -> None:
+    step = f"      - name: Q\n        run: {quote}bench | tee out{quote}\n"
+    errors = _pipefail_errors(tmp_path, step)
+    assert any("folded or quoted" in e for e in errors), errors
+    assert (
+        _pipefail_errors(tmp_path, f"      - name: Q\n        run: {quote}echo hi{quote}\n") == []
+    )
+    # Quoted scalars with a pipe stay acceptable when the shell is explicitly bash? No:
+    # the YAML scalar is rewritten before the shell sees it, so it still fails closed.
+    shelled = f"      - name: Q\n        shell: bash\n        run: {quote}bench | tee out{quote}\n"
+    assert any("folded or quoted" in e for e in _pipefail_errors(tmp_path, shelled))
+
+
+@pytest.mark.parametrize("trailer", ["      - run: echo done\n", "      - uses: ./local\n"])
+def test_unnamed_trailing_step_after_the_oracles_is_caught(tmp_path: Path, trailer: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    block = workflow[start:end].rstrip("\n") + "\n" + trailer + "\n"
+    errors = _wasm_errors(tmp_path, workflow[:start] + block + workflow[end:])
+    assert any("must be its final two steps" in e for e in errors), errors
