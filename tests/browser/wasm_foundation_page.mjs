@@ -3249,8 +3249,12 @@ async function run() {
     "XYG_WASM_RESOURCE_LIMIT",
     3,
   );
-  if (!fragmentedError.message.includes("more than 1024 browser traces")) {
-    throw new Error(`fragmented Scene diagnostic was not actionable: ${fragmentedError.message}`);
+  // #1007: the Worker reports the same stable Rust diagnostic as the native
+  // C seam for the same fragmentation (tests/fixtures/painter_admission_cross_host.json).
+  const admissionFixture = await fetch("/tests/fixtures/painter_admission_cross_host.json").then((response) => response.json());
+  const traceDiagnostic = admissionFixture.cases.find((entry) => entry.name === "trace_runs_just_above").diagnostic;
+  if (!traceDiagnostic.startsWith("XYG_PAINTER_TRACE_LIMIT: ") || fragmentedError.message !== traceDiagnostic) {
+    throw new Error(`fragmented Scene diagnostic was not the shared Rust diagnostic: ${fragmentedError.message}`);
   }
   if (fragmentedHost.childNodes.length !== 0) {
     throw new Error("fragmented Scene allocated browser painter state before rejection");
@@ -3878,6 +3882,7 @@ async function run() {
     if (!(error instanceof XygWasmError)
         || error.code !== "XYG_WASM_RESOURCE_LIMIT"
         || error.status !== 3
+        || !String(error.message).startsWith("XYG_PAINTER_TRACE_LIMIT: ")
         || !String(error.message).includes("more than 1024 browser traces")) throw error;
     const failure = error.diagnostics;
     if (!failure || failure.copyCount !== 1 || failure.copyBytesHi !== 0
@@ -3886,6 +3891,20 @@ async function run() {
       throw new Error(`fragmentation failure omitted Rust transfer diagnostics: ${JSON.stringify(failure)}`);
     }
   }
+  // Scatter series are not a fragmentation vector: since #945 they batch into
+  // one kind-8 marker-instance trace across paint changes, so 1,025
+  // alternating-color scatter series must still produce painter output.
+  const packedScatterRequest = frameWasmChart({
+    width: 320,
+    height: 240,
+    series: Array.from({ length: 1025 }, (_, index) => ({
+      kind: "scatter", x: new Float64Array([index]), y: new Float64Array([index]),
+      style: { fillRgba: index % 2 ? [37, 99, 235, 255] : [240, 150, 30, 255] },
+    })),
+  });
+  const packedScatter = await fragmentationWorker.compilePrepareSeries(packedScatterRequest).result;
+  const packedTraces = new DataView(packedScatter.painter).getUint32(20, true);
+  if (packedTraces !== 1) throw new Error(`packed scatter series fragmented into ${packedTraces} painter traces`);
   await fragmentationWorker.dispose();
 
   foundationStage = "checkpointed typed-series compile lifecycle";

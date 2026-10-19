@@ -102,30 +102,63 @@ async function run() {
     });
     await view.destroy(); host.remove(); await sceneWorker.dispose();
   }
+  // Fragmentation refusal (#1007). Run identity still splits Polyline runs,
+  // so 1,025 two-point line series need 1,025 painter traces and Rust must
+  // refuse them before any main-thread painter state exists. Scatter series
+  // are NOT a fragmentation vector: since #945 ordinary visible Scatter
+  // records batch into one kind-8 marker-instance trace across color, width,
+  // diameter, and symbol changes (spec/design/browser-wasm.md).
   const fragmentedHost = document.body.appendChild(document.createElement("div"));
   const fragmentedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 16 * 1024 * 1024 });
   await fragmentedWorker.ready;
   const fragmentedSeries = Array.from({ length: 1025 }, (_, index) => ({
-    kind: "scatter", x: new Float64Array([index]), y: new Float64Array([index]),
-    style: { fillRgba: index % 2 ? [37, 99, 235, 255] : [240, 150, 30, 255] },
+    kind: "line",
+    x: new Float64Array([(index + 0.25) / 1025, (index + 0.75) / 1025]),
+    y: new Float64Array([(index + 0.25) / 1025, (index + 0.75) / 1025]),
   }));
   const fragmentedStarted = performance.now();
+  let fragmentedDiagnostic = null;
   try {
     await renderWasmChart({ el: fragmentedHost, worker: fragmentedWorker, dataOwnership: "transfer", workerOwnership: "own", chart: { width: 800, height: 600, series: fragmentedSeries } });
     throw new Error("fragmented typed-series request unexpectedly rendered");
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_RESOURCE_LIMIT" || error.status !== 3) throw error;
+    fragmentedDiagnostic = String(error.message);
+  }
+  if (!fragmentedDiagnostic.startsWith("XYG_PAINTER_TRACE_LIMIT: ")) {
+    throw new Error(`fragmentation refusal lost its stable diagnostic: ${fragmentedDiagnostic}`);
   }
   rows.push({
-    count: 1_000_000,
+    count: fragmentedSeries.length,
     fragmented: true,
+    seriesKind: "line",
     rejectedTraceLimit: 1024,
+    rejectionCode: "XYG_PAINTER_TRACE_LIMIT",
     rejectionMs: performance.now() - fragmentedStarted,
     browserChildren: fragmentedHost.childNodes.length,
   });
   if (fragmentedHost.childNodes.length !== 0) throw new Error("fragmented benchmark allocated browser painter state");
   fragmentedHost.remove();
   await fragmentedWorker.dispose();
+
+  const packedHost = document.body.appendChild(document.createElement("div"));
+  const packedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 16 * 1024 * 1024 });
+  await packedWorker.ready;
+  const packedSeries = Array.from({ length: 1025 }, (_, index) => ({
+    kind: "scatter", x: new Float64Array([index]), y: new Float64Array([index]),
+    style: { fillRgba: index % 2 ? [37, 99, 235, 255] : [240, 150, 30, 255] },
+  }));
+  const packedStarted = performance.now();
+  const packed = await renderWasmChart({ el: packedHost, worker: packedWorker, dataOwnership: "transfer", workerOwnership: "own", chart: { width: 800, height: 600, series: packedSeries } });
+  await frame(); await frame();
+  rows.push({
+    count: packedSeries.length,
+    packedScatter: true,
+    firstPaintMs: performance.now() - packedStarted,
+    gpuTraces: packed.gpuTraces.length,
+  });
+  if (packed.gpuTraces.length !== 1) throw new Error(`packed scatter fragmented into ${packed.gpuTraces.length} traces`);
+  await packed.dispose(); packedHost.remove();
   return rows;
 }
 

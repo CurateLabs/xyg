@@ -57,10 +57,19 @@ def report() -> dict[str, object]:
                 for count in [100, 10_000, 100_000, 1_000_000]
             ],
             {
-                "count": 1_000_000,
+                "count": 1025,
                 "fragmented": True,
+                "seriesKind": "line",
                 "rejectedTraceLimit": 1024,
+                "rejectionCode": "XYG_PAINTER_TRACE_LIMIT",
+                "rejectionMs": 1.0,
                 "browserChildren": 0,
+            },
+            {
+                "count": 1025,
+                "packedScatter": True,
+                "firstPaintMs": 1.0,
+                "gpuTraces": 1,
             },
         ],
     }
@@ -131,3 +140,37 @@ def test_rejects_authored_scene_visual_differential_failure(tmp_path: Path) -> N
     result = verify(tmp_path, value)
     assert result.returncode != 0
     assert "visual-differential" in result.stderr
+
+
+def _row(value: dict[str, object], flag: str) -> dict[str, object]:
+    rows = value["measurements"]
+    assert isinstance(rows, list)
+    row = next(row for row in rows if isinstance(row, dict) and row.get(flag) is True)
+    assert isinstance(row, dict)
+    return row
+
+
+def test_rejects_fragmentation_evidence_without_stable_rust_code(tmp_path: Path) -> None:
+    value = report()
+    _row(value, "fragmented")["rejectionCode"] = "XYG_WASM_RESOURCE_LIMIT"
+    result = verify(tmp_path, value)
+    assert result.returncode != 0
+    assert "fragmentation evidence" in result.stderr
+
+
+def test_rejects_scatter_as_a_fragmentation_vector(tmp_path: Path) -> None:
+    # Scatter series pack into one kind-8 trace (#945); a scatter "refusal"
+    # row is stale evidence, not a resource-limit proof (#1007).
+    value = report()
+    _row(value, "fragmented")["seriesKind"] = "scatter"
+    result = verify(tmp_path, value)
+    assert result.returncode != 0
+    assert "fragmentation evidence" in result.stderr
+
+
+def test_rejects_packed_scatter_that_fragments(tmp_path: Path) -> None:
+    value = report()
+    _row(value, "packedScatter")["gpuTraces"] = 1025
+    result = verify(tmp_path, value)
+    assert result.returncode != 0
+    assert "packed scatter evidence" in result.stderr
