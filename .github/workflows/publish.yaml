@@ -220,6 +220,7 @@ jobs:
             cargo build --release --target wasm32-unknown-emscripten
           CIBW_ENVIRONMENT_PYODIDE: >-
             XYG_REQUIRE_CARGO=1
+            XYG_REQUIRE_WASM=1
             XYG_SKIP_CARGO=1
             XYG_CARGO_TARGET=wasm32-unknown-emscripten
             XYG_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32

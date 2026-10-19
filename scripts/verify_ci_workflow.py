@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import subprocess
 import sys
 from collections.abc import Callable
@@ -1142,13 +1143,45 @@ WASM_VERIFY_STEP = "Verify packaged WASM assets (missing or stale fails here)"
 RELEASE_WASM_PRODUCER = "wasm-assets"
 RELEASE_WASM_CONSUMER_JOBS = ("wheels", "wasm", "browser-package", "sdist")
 RELEASE_WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm-assets producer"
+
+
 # Anything that compiles or packages xyg-wasm outside the producer is a second,
 # unverified producer whose output a consumer could mistake for the real one.
-_WASM_PRODUCER_COMMANDS = (
-    "npm run build:wasm",
-    "node js/package-wasm.mjs",
-    "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
-)
+def _runs_wasm_producer(line: str) -> Optional[str]:
+    """Name the producer command a shell line runs, whatever the flag order or spelling.
+
+    Parses the arguments instead of matching one exact string, so reordered or abbreviated
+    flags cannot slip a second, unverified producer past the single-producer rule.
+    """
+    try:
+        words = shlex.split(line, comments=True)
+    except ValueError:
+        words = line.split()
+    if "build:wasm" in words and "run" in words and "npm" in words:
+        return "npm run build:wasm"
+    if any(word.endswith("package-wasm.mjs") for word in words):
+        return "node js/package-wasm.mjs"
+    if "cargo" in words and "build" in words:
+        package = any(
+            (
+                word in ("-p", "--package")
+                and index + 1 < len(words)
+                and words[index + 1] == "xyg-wasm"
+            )
+            or word in ("-pxyg-wasm", "--package=xyg-wasm")
+            for index, word in enumerate(words)
+        )
+        target = any(
+            (word == "--target" and index + 1 < len(words) and words[index + 1] == WASM_TARGET)
+            or word == f"--target={WASM_TARGET}"
+            for index, word in enumerate(words)
+        )
+        if package and target:
+            return "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
+    return None
+
+
+WASM_TARGET = "wasm32-unknown-unknown"
 
 
 def _require_wasm_asset_contract(
@@ -1218,9 +1251,10 @@ def _require_wasm_asset_contract(
     for name, block in sorted(jobs.items()):
         if name == producer_name:
             continue
-        for command in _WASM_PRODUCER_COMMANDS:
-            if any(command in line for line in _active_run_lines(block)):
-                errors.append(f"{label} job {name!r} must consume wasm-assets, not run {command!r}")
+        for command in sorted(
+            {c for c in map(_runs_wasm_producer, _active_run_lines(block)) if c is not None}
+        ):
+            errors.append(f"{label} job {name!r} must consume wasm-assets, not run {command!r}")
     for name in consumers:
         block = jobs.get(name, "")
         values, unsafe = _direct_yaml_key_values(block, "needs", indent=4)
@@ -1285,6 +1319,9 @@ def _active_run_lines(job_text: str) -> list[str]:
 RELEASE_CONDITION = (
     "github.event_name != 'pull_request' || "
     "needs.release_surface_changes.outputs.required == 'true'"
+)
+CI_CONCURRENCY_GROUP = (
+    "ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}"
 )
 MAIN_EVIDENCE_CONDITION = "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
 AGGREGATE_STATUS_NAME = "Release surfaces"
@@ -1539,6 +1576,47 @@ def _gh_api_fetch(repo: str) -> Callable[[str], object]:
     return fetch
 
 
+def _pipe_lines(commands: list[str]) -> list[str]:
+    """Commands that contain a shell pipe (outside quotes, heredoc bodies, and ``||``)."""
+    piped: list[str] = []
+    heredoc_end: Optional[str] = None
+    for command in commands:
+        if heredoc_end is not None:
+            if command.strip() == heredoc_end:
+                heredoc_end = None
+            continue
+        marker = re.search(r"<<-?\s*['\"]?(\w+)['\"]?", command)
+        unquoted = re.sub(r"'[^']*'|\"[^\"]*\"", "", command).split(" #")[0]
+        if re.search(r"(?<!\|)\|(?!\|)", unquoted):
+            piped.append(command)
+        if marker is not None:
+            heredoc_end = marker.group(1)
+    return piped
+
+
+def _require_pipefail_for_piped_steps(errors: list[str], text: str, label: str) -> None:
+    """A piped ``run`` step must fail when its first command fails (#1008).
+
+    GitHub's default ``bash -e`` has no ``pipefail``, so ``bench.py | tee report.md`` would
+    report tee's success and mask a crashing benchmark. ``shell: bash`` (which GitHub runs
+    as ``bash -eo pipefail``) or an explicit ``set -o pipefail`` is required.
+    """
+    for job_name, job in _job_blocks(text).items():
+        for step in _step_sequence_blocks(job):
+            commands = _step_run_lines(step)
+            piped = _pipe_lines(commands)
+            if not piped:
+                continue
+            shell_values, shell_unsafe = _direct_yaml_key_values(step, "shell", indent=8)
+            has_bash = not shell_unsafe and shell_values == ["bash"]
+            if not has_bash and not any("pipefail" in command for command in commands):
+                name = step.splitlines()[0].strip()
+                errors.append(
+                    f"{label} job {job_name!r} step {name!r} pipes a command without pipefail; "
+                    f"add `shell: bash` or `set -o pipefail` ({piped[0].strip()!r})"
+                )
+
+
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1548,6 +1626,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     jobs = _job_blocks(text)
     errors: list[str] = validate_milestone_governance()
     _require_unique_workflow_structure(errors, text, "CI", REQUIRED_CI_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "CI")
     if _has_yaml_key(text, "defaults", indent=0):
         errors.append("CI workflow must not override the shell for hard-gate run steps")
     if _has_yaml_key(text, "env", indent=0):
@@ -1577,6 +1656,13 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         errors.append(
             "CI must cancel only superseded pull_request runs: in-flight required "
             "merge_group checks and push runs on main must complete"
+        )
+    group_values, group_unsafe = _direct_yaml_key_values(concurrency or "", "group", indent=2)
+    if group_unsafe or group_values != [CI_CONCURRENCY_GROUP]:
+        errors.append(
+            "CI concurrency group must be per run for every event except pull_request "
+            f"({CI_CONCURRENCY_GROUP}): GitHub replaces an older pending run in a shared "
+            "group even when cancel-in-progress is false, dropping a main push or merge-group run"
         )
     _require_unshallow_checkouts(errors, text, "CI")
     missing_jobs = sorted(REQUIRED_CI_JOBS - set(jobs))
@@ -1846,10 +1932,25 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "CI",
         "real packaged Rust/WASM tick assets for the full browser corpus",
         "toolchain: 1.96.0",
-        "targets: wasm32-unknown-unknown",
         "needs: wasm_assets",
         "scripts/verify_wasm_assets.py",
         "node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Native benchmark oracles (divan --test, no timing)",
+        "pull-request execution of every Rust benchmark body and its assertions",
+        "cargo bench -p xyg-engine --bench kernels -- --test",
+        "cargo bench -p xyg-wasm --bench aggregate -- --test",
+        "cargo bench -p xyg-wasm --bench typed_series -- --test",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "CodSpeed benchmark oracles (pytest, no timing)",
+        "pull-request execution of every CodSpeed pytest body without --codspeed",
+        ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q",
     )
     _require_step_runs_exactly(
         errors,
@@ -1954,8 +2055,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         errors,
         test_job,
         "Install package + dev deps",
-        "locked Reflex development environment",
-        "uv sync --locked --extra reflex --group dev",
+        "locked Reflex development environment carrying the pytest-codspeed plugin",
+        "uv sync --locked --extra reflex --group dev --group codspeed",
     )
     _require_step_contains(
         errors,
@@ -2048,7 +2149,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_public_api.py",
         "npm ci --prefix packages/xy-node",
         "toolchain: 1.96.0",
-        "targets: wasm32-unknown-unknown",
         "needs: wasm_assets",
         "scripts/verify_wasm_assets.py",
     )
@@ -2477,6 +2577,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     jobs = _job_blocks(text)
     errors: list[str] = []
     _require_unique_workflow_structure(errors, text, "CodSpeed", REQUIRED_CODSPEED_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "CodSpeed")
     on_block = _unique_mapping_block(text, "on", indent=0) or ""
     trigger_keys = [
         key for indent, key, unsafe in _yaml_mapping_keys(on_block) if indent == 2 and not unsafe
@@ -2700,6 +2801,7 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
 
     errors: list[str] = []
     _require_unique_workflow_structure(errors, text, "density authority", {"density"})
+    _require_pipefail_for_piped_steps(errors, text, "density authority")
     top_keys = [
         key for indent, key, unsafe in _yaml_mapping_keys(text) if indent == 0 and not unsafe
     ]
@@ -2979,6 +3081,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
             "publishing is bound to publish.yaml and a second workflow would drift"
         )
     _require_unique_workflow_structure(errors, text, "release", REQUIRED_RELEASE_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "release")
     _require_trigger_with_direct_option(
         errors,
         text,
@@ -3073,6 +3176,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         'CIBW_PYODIDE_VERSION: "314.0.0"',
         "CIBW_BEFORE_BUILD_PYODIDE",
         "CIBW_ENVIRONMENT_PYODIDE",
+        "XYG_REQUIRE_WASM=1",
         "pyemscripten_2026_0_wasm32",
         "pyodide@314.0.0",
         "scripts/pyodide_load_smoke.py",

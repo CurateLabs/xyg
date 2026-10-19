@@ -54,6 +54,15 @@ Both new CI steps explicitly select the just-built release library with
 parser or fallback discovery path. Workflow contract tests reject omitted,
 commented, echoed, or failure-suppressed graph-suite commands.
 
+The hard `test` job also runs every benchmark body once without timing (divan `--test` for the Rust
+benches and `pytest benchmarks/test_codspeed_*.py` without `--codspeed`), so stale benchmark oracles
+fail pull requests instead of the nightly CodSpeed run; see
+[methodology.md](../benchmarks/methodology.md#8-codspeed-simulation-modules). The PyEmscripten wheel
+build also sets `XYG_REQUIRE_WASM=1` inside `CIBW_ENVIRONMENT_PYODIDE` so the build hook fails early.
+The single-producer guard parses the cargo/npm/node arguments, so reordered or abbreviated flags
+cannot hide a second producer, and the `test` and `python_floor` jobs no longer install the unused
+`wasm32-unknown-unknown` target.
+
 The `Release surfaces` aggregate lists every hard job, including `wasm_assets`; see the
 hard/advisory table in [production-readiness.md](../process/production-readiness.md).
 

@@ -16,10 +16,13 @@ permissions:
 # pool drowns in runs for superseded commits and fresh tips queue for ~30 min.
 # Only the newest pull-request run per ref carries signal — cancel the rest.
 concurrency:
-  group: ci-${{ github.ref }}
-  # Only superseded pull-request runs are cancelled. A merge-group request must not
-  # cancel an in-flight required check, and every push to main needs a complete
-  # aggregate (including the post-merge benchmark evidence) to be trustworthy.
+  # Pull requests share one group per ref so a newer push supersedes the older run.
+  # Every other event gets a group of its own (the run id): GitHub keeps only one
+  # running and one pending run per group and silently replaces an older pending one,
+  # so even cancel-in-progress: false could drop a main push or merge-group run. Each
+  # main commit needs a complete aggregate (including the post-merge benchmark
+  # evidence) and a merge-group check must never be cancelled or replaced.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -108,7 +111,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.96.0
-          targets: wasm32-unknown-unknown
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: false
@@ -135,6 +137,16 @@ jobs:
 
       - name: Rust lint
         run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Benchmark bodies carry correctness assertions (policy oracles) but only the
+      # scheduled CodSpeed run executed them, so intentional policy changes left stale
+      # oracles with green PR CI. `--test` runs every divan body exactly once, with its
+      # assertions and no timing.
+      - name: Native benchmark oracles (divan --test, no timing)
+        run: |
+          cargo bench -p xyg-engine --bench kernels -- --test
+          cargo bench -p xyg-wasm --bench aggregate -- --test
+          cargo bench -p xyg-wasm --bench typed_series -- --test
 
       - name: Build native core
         run: cargo build --release
@@ -264,7 +276,12 @@ jobs:
 
       - name: Install package + dev deps
         run: |
-          uv sync --locked --extra reflex --group dev
+          uv sync --locked --extra reflex --group dev --group codspeed
+
+      # Same intent for the pytest benchmarks: without --codspeed pytest-codspeed runs
+      # each body once, so their assertions gate pull requests (no instrumentation).
+      - name: CodSpeed benchmark oracles (pytest, no timing)
+        run: .venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q
 
       - name: Verify bundled Reflex integration import
         run: |
@@ -674,6 +691,7 @@ jobs:
         # Cached .debs seed apt's archive, so only packages the mirror has
         # changed download; autoclean drops versions the mirror no longer
         # serves before the archive is copied back for the cache.
+        shell: bash
         run: |
           if [ -d /etc/needrestart/conf.d ]; then
             echo "\$nrconf{restart} = 'l';" | sudo tee /etc/needrestart/conf.d/99-ci-list-only.conf >/dev/null
@@ -683,10 +701,11 @@ jobs:
           if compgen -G "$HOME/.cache/xyg-webkit-debs/*.deb" >/dev/null; then
             sudo cp "$HOME"/.cache/xyg-webkit-debs/*.deb /var/cache/apt/archives/
           fi
-          before=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
+          # pipefail is on: an empty archive (no .debs yet) must not abort the step.
+          before=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum || true)
           npx playwright install-deps webkit
           sudo apt-get autoclean -y >/dev/null
-          after=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
+          after=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum || true)
           rm -f ~/.cache/xyg-webkit-debs/*.deb
           if compgen -G "/var/cache/apt/archives/*.deb" >/dev/null; then
             cp /var/cache/apt/archives/*.deb ~/.cache/xyg-webkit-debs/
@@ -724,7 +743,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.96.0
-          targets: wasm32-unknown-unknown
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
@@ -976,29 +994,35 @@ jobs:
           scripts/ci_retry.sh 3 npm ci
           scripts/ci_retry.sh 3 npx playwright install chromium
       - name: Line decimation vs plotly-resampler (methodology line_10M)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_line.py --sizes 1e5,1e6,1e7 \
             --ttfr --ttfr-max-n 1e5 --chromium "$CHROME" --json line.json \
             | tee -a docs/benchmark_ci.md
       - name: Install footprint & cold import (methodology §1)
+        shell: bash
         run: .venv/bin/python benchmarks/bench_install.py --json install.json | tee -a docs/benchmark_ci.md
       - name: Fresh-environment footprint (XYG vs Plotly)
+        shell: bash
         run: |
           .venv/bin/python benchmarks/bench_install.py --packages xyg,plotly \
             --repeat 3 --fresh-venv --json install-fresh.json | tee -a docs/benchmark_ci.md
       - name: Ingestion, streaming, and export workflows
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_workflows.py --profile standard --reps 5 \
             --chromium "$CHROME" --json workflows.json | tee -a docs/benchmark_ci.md
       - name: Browser interaction latency (methodology interaction_smoothness)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_interaction.py \
             --sizes 1e4,2.5e5 --reps 24 --chromium "$CHROME" --retries 2 \
             --json interaction.json | tee -a docs/benchmark_ci.md
       - name: Many-chart dashboard startup (methodology dashboard_scale)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_dashboard.py \

@@ -243,6 +243,19 @@ and tier discipline applies to them rather than a threshold.
 
 ## 8. CodSpeed simulation modules
 
+**Benchmark assertions gate pull requests (#1008).** Benchmark bodies carry correctness
+assertions and policy oracles (for example the painter fragment limit in
+`crates/xyg-engine/benches/kernels.rs`), but the CodSpeed workflow below is scheduled, so an
+intentional policy change (#945, #897, #901) could leave a stale oracle with green PR CI until the
+next nightly run (#1007). The hard `test` job therefore also executes every benchmark body once,
+without timing or instrumentation: `cargo bench -p xyg-engine --bench kernels -- --test`,
+`cargo bench -p xyg-wasm --bench aggregate -- --test`, and
+`cargo bench -p xyg-wasm --bench typed_series -- --test` (divan `--test` runs each body once with its
+assertions), then `pytest benchmarks/test_codspeed_*.py -q` WITHOUT `--codspeed` (pytest-codspeed
+runs each body once; the locked environment includes the `codspeed` group). `scripts/verify_ci_workflow.py`
+fails when any of these four commands is missing, commented, echoed, or failure-suppressed.
+Timings stay scheduled; only the assertions run before merge.
+
 `.github/workflows/codspeed.yml` runs nightly on the latest `main` commit and
 allows an on-demand manual run from `main`; it does not run for pull requests
 or pushes. A

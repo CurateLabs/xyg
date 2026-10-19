@@ -54,9 +54,13 @@ single non-skippable `Release surfaces` aggregate. CI runs for both pull
 requests and `merge_group` checks so the required status is produced for the
 candidate commit GitHub intends to merge. The queue uses squash commits,
 single-entry groups, and one active build to bound CI demand while this suite
-is expensive. Concurrency cancels only superseded `pull_request` runs: merge-group runs and every push to
-`main` run to completion, because each main commit needs a complete `Release surfaces` aggregate
-(including the post-merge benchmark evidence) for the evidence to be trustworthy.
+is expensive. Concurrency cancels only superseded `pull_request` runs. Pull requests share one group per ref;
+every other event (merge group, push to `main`, manual dispatch) gets a group of its own keyed by
+the run id (`ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}`). Turning
+`cancel-in-progress` off is not enough: GitHub keeps one running and one pending run per group and
+replaces an older pending run, so a shared group could still drop a main push or merge-group run.
+Each main commit needs a complete `Release surfaces` aggregate (including the post-merge benchmark
+evidence) for the evidence to be trustworthy.
 
 Keep the ruleset, branch protection status name, and CI event wiring aligned.
 GitHub does not run `merge_group` checks through the `pull_request` event, and
@@ -106,7 +110,11 @@ The post-merge benchmark jobs are hard but hardened against transient infrastruc
 package and Playwright installs go through `scripts/ci_retry.sh 3` (linear back-off), and
 `benchmark_vs` has a 25-minute (slowest group about 5 minutes when healthy) and
 `benchmark_methodology` a 45-minute timeout instead of the earlier 10-minute cap and the
-360-minute default. A genuine benchmark or report-verification failure still fails the job.
+360-minute default. A genuine benchmark or report-verification failure still fails the job. Every `run` step that
+pipes a command (for example `bench.py | tee -a docs/benchmark_ci.md`) must use `shell: bash`
+(GitHub runs it as `bash -eo pipefail`) or set `pipefail` itself, because the default `bash -e`
+reports the last pipe stage and would mask a crashing benchmark; `scripts/verify_ci_workflow.py`
+enforces this for `ci.yml`, `codspeed.yml`, `density-100m.yml` and `publish.yaml`.
 
 **Scheduled evidence blocks readiness through issue state.** Scheduled performance and
 browser evidence (CodSpeed, the density authority) is not an aggregate input and never runs
@@ -117,7 +125,9 @@ scheduled workflow on `main` failed or is older than three days; while a `ci.yml
 `main` is still queued or in progress (no evidence yet, never green); and unless the latest
 completed `ci.yml` push run concluded `success` at run level, has at least one job (a zero-job
 startup failure is no evidence), and has no failed, cancelled, or timed-out job (including the
-pre-#1008 advisory jobs). Each blocking finding must be tracked by an open linked issue, which closes
+pre-#1008 advisory jobs). Because an in-progress main run is reported as blocking ("no evidence yet"), a
+readiness check run while main CI is still going will fail and must be repeated after the run
+completes. Each blocking finding must be tracked by an open linked issue, which closes
 only after a later scheduled run on `main` succeeds.
 
 CurateLabs/xyg is a permanently divergent product repository, not a deployment
