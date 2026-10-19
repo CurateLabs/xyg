@@ -137,3 +137,130 @@ def test_stale_classic_worker_and_diverged_copies_are_rejected(tmp_path: Path) -
         encoding="utf-8",
     )
     assert any("differs between the two packaged locations" in e for e in gate.verify(root))
+
+
+# ---------------------------------------------------------------------------
+# Clean-checkout reconstruction of every consumer (#1005): what is actually on disk when
+# each job reaches its verification step must satisfy the verifier. Comparing step names
+# to an inventory is not enough: wasm-worker.js is built, not downloaded.
+# ---------------------------------------------------------------------------
+
+CLIENT_BUILD_OUTPUTS = {
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "packages/xy-client/dist/wasm-worker.js",
+    "packages/xy-client/dist/wasm-inline-worker.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js",
+    "python/xyg/static/wasm-worker.js",
+}
+PACKAGE_OUTPUTS = {f"{location}/{name}" for location in gate.LOCATIONS for name in gate.PACKAGED}
+MONITORED = {
+    f"{location}/{name}" for location in gate.LOCATIONS for name in (*gate.PACKAGED, *gate.CLIENT)
+} | CLIENT_BUILD_OUTPUTS
+WORKFLOWS = (
+    ("ci.yml", "wasm_assets", "Fetch packaged WASM assets from the wasm_assets producer"),
+    ("publish.yaml", "wasm-assets", "Fetch packaged WASM assets from the wasm-assets producer"),
+)
+
+
+def _verify_ci_workflow():
+    from scripts import verify_ci_workflow
+
+    return verify_ci_workflow
+
+
+def _upload_paths(producer_block: str) -> set[str]:
+    vcw = _verify_ci_workflow()
+    (upload,) = [
+        block
+        for block in vcw._step_sequence_blocks(producer_block)
+        if "actions/upload-artifact@" in block
+    ]
+    after = upload.split("path: |", 1)[1]
+    return {line.strip() for line in after.splitlines() if line.strip()}
+
+
+def _files_present_at_verify(jobs: dict[str, str], consumer: str, producer: str) -> set[str]:
+    """Replay a consumer's steps up to its verifier on a clean checkout."""
+    vcw = _verify_ci_workflow()
+    present: set[str] = set()
+    uploaded = _upload_paths(jobs[producer])
+    for block in vcw._step_sequence_blocks(jobs[consumer]):
+        if vcw.WASM_VERIFY_STEP in block.splitlines()[0]:
+            return present
+        run = "\n".join(vcw._step_run_lines(block))
+        if "node js/build.mjs" in run:
+            present |= CLIENT_BUILD_OUTPUTS
+        if "npm run build:wasm" in run or "package-wasm.mjs" in run:
+            present |= PACKAGE_OUTPUTS
+        if "actions/download-artifact@" in block and "name: wasm-assets" in block:
+            present |= uploaded
+    raise AssertionError(f"{consumer} never reaches its verification step")
+
+
+def _reconstruct(tmp_path: Path, present: set[str]) -> list[str]:
+    root = _make_root(tmp_path)
+    for relative in MONITORED - present:
+        (root / relative).unlink(missing_ok=True)
+    return gate.verify(root)
+
+
+def _consumers() -> list[tuple[str, str, str, str]]:
+    vcw = _verify_ci_workflow()
+    return [
+        (workflow, job, producer, step)
+        for workflow, producer, step in WORKFLOWS
+        for job in (
+            vcw.WASM_CONSUMER_JOBS if workflow == "ci.yml" else vcw.RELEASE_WASM_CONSUMER_JOBS
+        )
+    ]
+
+
+@pytest.mark.parametrize(("workflow", "job", "producer", "step"), _consumers())
+def test_every_consumer_reaches_its_verifier_with_a_complete_asset_pair(
+    tmp_path: Path, workflow: str, job: str, producer: str, step: str
+) -> None:
+    del step
+    vcw = _verify_ci_workflow()
+    jobs = vcw._job_blocks((REPO / ".github" / "workflows" / workflow).read_text(encoding="utf-8"))
+
+    present = _files_present_at_verify(jobs, job, producer)
+
+    assert _reconstruct(tmp_path, present) == [], (workflow, job, sorted(MONITORED - present))
+
+
+@pytest.mark.parametrize(("workflow", "job", "producer", "step"), _consumers())
+def test_reconstruction_catches_a_consumer_that_verifies_before_building_the_client(
+    tmp_path: Path, workflow: str, job: str, producer: str, step: str
+) -> None:
+    """The reviewer's finding: download + verify with no client build is red every time."""
+    del step
+    vcw = _verify_ci_workflow()
+    text = (REPO / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
+    jobs = vcw._job_blocks(text)
+    present = _files_present_at_verify(jobs, job, producer)
+
+    without_build = present - CLIENT_BUILD_OUTPUTS
+
+    errors = _reconstruct(tmp_path, without_build)
+    assert any("wasm-worker.js" in error for error in errors), errors
+
+
+def test_workflow_contract_rejects_verifying_before_the_client_build(tmp_path: Path) -> None:
+    vcw = _verify_ci_workflow()
+    text = (REPO / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    build = "      - name: Build render client\n        run: node js/build.mjs\n"
+    for job in ("sdist", "wheels"):
+        jobs = vcw._job_blocks(text)
+        assert build in jobs[job]
+        broken = text.replace(jobs[job], jobs[job].replace(build, "", 1), 1)
+        path = tmp_path / f"{job}.yml"
+        path.write_text(broken, encoding="utf-8")
+
+        errors = vcw.validate_ci_workflow(path)
+
+        assert any(
+            f"WASM consumer {job!r} must run node js/build.mjs before verifying" in e
+            for e in errors
+        ), job

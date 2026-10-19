@@ -50,6 +50,7 @@ REQUIRED_RELEASE_JOBS = {
     "wheels",
     "sdist",
     "wasm",
+    "wasm-assets",
     "browser-package",
     "node-native-packages",
     "node-facade",
@@ -1137,6 +1138,10 @@ WASM_CONSUMER_JOBS = (
 WASM_ARTIFACT = "wasm-assets"
 WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm_assets producer"
 WASM_VERIFY_STEP = "Verify packaged WASM assets (missing or stale fails here)"
+# Release workflow (publish.yaml): same contract, hyphenated job ids.
+RELEASE_WASM_PRODUCER = "wasm-assets"
+RELEASE_WASM_CONSUMER_JOBS = ("wheels", "wasm", "browser-package", "sdist")
+RELEASE_WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm-assets producer"
 # Anything that compiles or packages xyg-wasm outside the producer is a second,
 # unverified producer whose output a consumer could mistake for the real one.
 _WASM_PRODUCER_COMMANDS = (
@@ -1146,16 +1151,29 @@ _WASM_PRODUCER_COMMANDS = (
 )
 
 
-def _require_wasm_asset_contract(errors: list[str], jobs: dict[str, str]) -> None:
+def _require_wasm_asset_contract(
+    errors: list[str],
+    jobs: dict[str, str],
+    *,
+    label: str = "CI",
+    producer_name: str = "wasm_assets",
+    consumers: tuple[str, ...] = WASM_CONSUMER_JOBS,
+    download_step: str = WASM_DOWNLOAD_STEP,
+    # job -> must also build with XYG_REQUIRE_WASM=1 (every artifact must verify with
+    # --require-wasm; the Pyodide wheel's build happens inside cibuildwheel).
+    distributions: Optional[dict[str, bool]] = None,
+) -> None:
     """One producer, explicit consumers, early verification (#1005, §33)."""
-    producer = jobs.get("wasm_assets")
+    if distributions is None:
+        distributions = {"wheels": True, "sdist": True}
+    producer = jobs.get(producer_name)
     if producer is None:
-        errors.append("CI workflow missing the single WASM producer job wasm_assets")
+        errors.append(f"{label} workflow missing the single WASM producer job {producer_name}")
         return
     for needle in (
         "npm run build:wasm",
         "node js/build.mjs",
-        "python3 scripts/verify_wasm_assets.py",
+        "scripts/verify_wasm_assets.py",
         "actions/upload-artifact@",
         f"name: {WASM_ARTIFACT}",
         "if-no-files-found: error",
@@ -1164,7 +1182,7 @@ def _require_wasm_asset_contract(errors: list[str], jobs: dict[str, str]) -> Non
         "python/xyg/static/xyg-wasm.manifest.json",
     ):
         if needle not in producer:
-            errors.append(f"CI wasm_assets producer missing {needle!r}")
+            errors.append(f"{label} {producer_name} producer missing {needle!r}")
     _require_step_runs_exactly(
         errors,
         producer,
@@ -1191,50 +1209,69 @@ def _require_wasm_asset_contract(errors: list[str], jobs: dict[str, str]) -> Non
     )
     for key in ("if", "needs", "continue-on-error"):
         if _has_yaml_key(producer, key, indent=4):
-            errors.append(f"CI wasm_assets producer must not use job-level {key!r}")
+            errors.append(f"{label} {producer_name} producer must not use job-level {key!r}")
     if any(
         _has_yaml_key(block, "continue-on-error", indent=8)
         for block in _step_sequence_blocks(producer)
     ):
-        errors.append("CI wasm_assets producer steps must not use continue-on-error")
+        errors.append(f"{label} {producer_name} producer steps must not use continue-on-error")
     for name, block in sorted(jobs.items()):
-        if name == "wasm_assets":
+        if name == producer_name:
             continue
         for command in _WASM_PRODUCER_COMMANDS:
             if any(command in line for line in _active_run_lines(block)):
-                errors.append(f"CI job {name!r} must consume wasm-assets, not run {command!r}")
-    for name in WASM_CONSUMER_JOBS:
+                errors.append(f"{label} job {name!r} must consume wasm-assets, not run {command!r}")
+    for name in consumers:
         block = jobs.get(name, "")
         values, unsafe = _direct_yaml_key_values(block, "needs", indent=4)
         needed = {item.strip() for item in (values[0] if values else "").strip("[]").split(",")}
-        if unsafe or "wasm_assets" not in needed:
-            errors.append(f"CI WASM consumer {name!r} must list wasm_assets in needs")
+        if unsafe or producer_name not in needed:
+            errors.append(f"{label} WASM consumer {name!r} must list {producer_name} in needs")
         steps = _named_step_blocks(block)
         order = list(steps)
-        download = steps.get(WASM_DOWNLOAD_STEP)
+        download = steps.get(download_step)
         verify = steps.get(WASM_VERIFY_STEP)
         if download is None or verify is None:
             errors.append(
-                f"CI WASM consumer {name!r} must download then verify the packaged WASM assets"
+                f"{label} WASM consumer {name!r} must download then verify the packaged WASM assets"
             )
             continue
-        if order.index(WASM_DOWNLOAD_STEP) > order.index(WASM_VERIFY_STEP):
-            errors.append(f"CI WASM consumer {name!r} must download before it verifies")
+        if order.index(download_step) > order.index(WASM_VERIFY_STEP):
+            errors.append(f"{label} WASM consumer {name!r} must download before it verifies")
+        # wasm-worker.js is not in the artifact; only the client build creates it, so the
+        # build must run before the verifier (a clean checkout would otherwise fail every
+        # time: tests/test_verify_wasm_assets.py reconstructs this per consumer).
+        built = any(
+            "node js/build.mjs" in line
+            for step_name in order[: order.index(WASM_VERIFY_STEP)]
+            for line in _step_run_lines(steps[step_name])
+        )
+        if not built:
+            errors.append(
+                f"{label} WASM consumer {name!r} must run node js/build.mjs before verifying "
+                "(wasm-worker.js is built, not downloaded)"
+            )
         for needle in ("actions/download-artifact@", f"name: {WASM_ARTIFACT}"):
             if needle not in download:
-                errors.append(f"CI WASM consumer {name!r} download step missing {needle!r}")
+                errors.append(f"{label} WASM consumer {name!r} download step missing {needle!r}")
         if "verify_wasm_assets.py" not in verify:
-            errors.append(f"CI WASM consumer {name!r} verify step must run verify_wasm_assets.py")
+            errors.append(
+                f"{label} WASM consumer {name!r} verify step must run verify_wasm_assets.py"
+            )
         if any(
             _has_yaml_key(step, key, indent=8)
             for step in (download, verify)
             for key in ("if", "continue-on-error")
         ):
-            errors.append(f"CI WASM consumer {name!r} asset steps must be unconditional")
-    for name, flag in (("wheels", "--require-wasm"), ("sdist", "--require-wasm")):
+            errors.append(f"{label} WASM consumer {name!r} asset steps must be unconditional")
+    for name, needs_env in distributions.items():
         block = jobs.get(name, "")
-        if 'XYG_REQUIRE_WASM: "1"' not in block or flag not in block:
-            errors.append(f"CI {name} job must build with XYG_REQUIRE_WASM and verify {flag}")
+        if (needs_env and 'XYG_REQUIRE_WASM: "1"' not in block) or "--require-wasm" not in block:
+            errors.append(
+                f"{label} {name} job must build with XYG_REQUIRE_WASM and verify --require-wasm"
+                if needs_env
+                else f"{label} {name} job must verify --require-wasm"
+            )
 
 
 def _active_run_lines(job_text: str) -> list[str]:
@@ -1536,8 +1573,11 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     cancel_values, cancel_unsafe = _direct_yaml_key_values(
         concurrency or "", "cancel-in-progress", indent=2
     )
-    if cancel_unsafe or cancel_values != ["${{ github.event_name != 'merge_group' }}"]:
-        errors.append("CI must not cancel in-flight required merge_group checks")
+    if cancel_unsafe or cancel_values != ["${{ github.event_name == 'pull_request' }}"]:
+        errors.append(
+            "CI must cancel only superseded pull_request runs: in-flight required "
+            "merge_group checks and push runs on main must complete"
+        )
     _require_unshallow_checkouts(errors, text, "CI")
     missing_jobs = sorted(REQUIRED_CI_JOBS - set(jobs))
     if missing_jobs:
@@ -1809,6 +1849,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "targets: wasm32-unknown-unknown",
         "needs: wasm_assets",
         "scripts/verify_wasm_assets.py",
+        "node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
     )
     _require_step_runs_exactly(
         errors,
@@ -2143,8 +2184,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     timeout_values, timeout_unsafe = _direct_yaml_key_values(
         benchmark_vs, "timeout-minutes", indent=4
     )
-    if timeout_unsafe or timeout_values != ["10"]:
-        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 10")
+    if timeout_unsafe or timeout_values != ["25"]:
+        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 25")
+    methodology_timeout, methodology_unsafe = _direct_yaml_key_values(
+        jobs.get("benchmark_methodology", ""), "timeout-minutes", indent=4
+    )
+    if methodology_unsafe or methodology_timeout != ["45"]:
+        errors.append(
+            "CI benchmark_methodology job must define exactly one direct timeout-minutes: 45"
+        )
+    # Hard post-merge evidence must survive transient registry/CDN failures (#1008).
+    for job, step, needle in (
+        ("benchmark_vs", "Install selected competitors", "scripts/ci_retry.sh 3 uv pip install"),
+        ("benchmark_vs", "Install XYG", "scripts/ci_retry.sh 3 uv pip install"),
+        ("benchmark_vs", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx playwright"),
+        ("benchmark_methodology", "Install JS build toolchain", "scripts/ci_retry.sh 3 npm ci"),
+        ("benchmark_methodology", "Install XYG + competitors", "scripts/ci_retry.sh 3 uv pip"),
+        (
+            "benchmark_methodology",
+            "Install Chromium (Playwright)",
+            "scripts/ci_retry.sh 3 npx playwright",
+        ),
+    ):
+        _require_step_contains(
+            errors, jobs.get(job, ""), step, f"{job} install retry ({needle})", needle
+        )
     _require_step_contains(
         errors,
         cross_library,
@@ -3017,6 +3081,15 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "wheelhouse/*.whl",
         "name: dist-pyemscripten",
     )
+    _require_wasm_asset_contract(
+        errors,
+        jobs,
+        label="release",
+        producer_name=RELEASE_WASM_PRODUCER,
+        consumers=RELEASE_WASM_CONSUMER_JOBS,
+        download_step=RELEASE_WASM_DOWNLOAD_STEP,
+        distributions={"wheels": True, "sdist": True, "wasm": False},
+    )
     wasm_job = jobs.get("wasm", "")
     if "continue-on-error:" in wasm_job:
         errors.append("release wasm job must block publishing when the Pyodide runtime probe fails")
@@ -3029,9 +3102,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "toolchain: 1.96.0",
         "wasm32-unknown-unknown",
         'node-version: "24"',
-        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
         "node js/build.mjs",
-        "node js/package-wasm.mjs",
+        "needs: wasm-assets",
         "scripts/stage_browser_package.py",
         "--dist packages/xy-client/dist",
         "npm pack ./staged/xyg-browser",

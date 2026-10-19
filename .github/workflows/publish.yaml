@@ -43,6 +43,7 @@ jobs:
   # the platform tag (XYG_CARGO_TARGET / XYG_WHEEL_PLATFORM).
   wheels:
     name: Wheel ${{ matrix.plat }}
+    needs: wasm-assets
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -92,6 +93,17 @@ jobs:
           node-version: "22"
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm-assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python scripts/verify_wasm_assets.py
       - name: Cross-compile the native core (zig)
         if: matrix.zig
         env:
@@ -114,6 +126,7 @@ jobs:
           # The client is required by default; REQUIRE_CARGO also forbids the
           # core from silently going missing.
           XYG_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_WASM: "1"
           XYG_SKIP_CARGO: "1"
           XYG_CARGO_TARGET: ${{ matrix.target }}
           XYG_WHEEL_PLATFORM: ${{ matrix.plat }}
@@ -122,7 +135,7 @@ jobs:
         shell: bash
         run: |
           whl=$(ls dist/*.whl)
-          python scripts/verify_wheel.py "$whl" --expect-native
+          python scripts/verify_wheel.py "$whl" --expect-native --require-wasm
       - name: Install-size budget (<= 15 MB)
         shell: bash
         run: |
@@ -160,6 +173,7 @@ jobs:
   # (see spec/process/production-readiness.md).
   wasm:
     name: Wheel PyEmscripten (runtime verified)
+    needs: wasm-assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
@@ -181,6 +195,17 @@ jobs:
           node-version: "22"
       - name: Install JS build toolchain
         run: npm ci
+      # The hook force-includes the packaged WASM assets when they are on disk; fetch and
+      # verify them (after the client build supplies wasm-worker.js) before cibuildwheel.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm-assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python scripts/verify_wasm_assets.py
       # cibuildwheel installs the Pyodide 314 cross-environment and its patched
       # Emscripten 5.0.3 toolchain before CIBW_BEFORE_BUILD_PYODIDE runs. Build
       # the standalone Rust cdylib there, then tell the Hatch hook to package
@@ -203,7 +228,7 @@ jobs:
         shell: bash
         run: |
           whl=$(ls wheelhouse/*.whl)
-          python scripts/verify_wheel.py "$whl" --expect-native
+          python scripts/verify_wheel.py "$whl" --expect-native --require-wasm
       # "Builds" is not "loads": install the exact wheel in a real Pyodide 314
       # runtime and call both the C ABI version function and a native kernel.
       - name: PyEmscripten runtime load probe
@@ -219,11 +244,66 @@ jobs:
           name: dist-pyemscripten
           path: wheelhouse/*.whl
 
+  # The ONE producer of the packaged WASM tick assets (dossier §33, #1005): the same
+  # build/package/verify/upload contract as `wasm_assets` in ci.yml. Every wheel, the
+  # sdist, and the browser package list it in `needs` and verify the downloaded files, so a
+  # release can never ship (or stage) a distribution without the verified WASM bytes and
+  # manifest, and a failed producer skips `publish` through its needs chain.
+  wasm-assets:
+    name: Packaged WASM assets (single producer)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Build raw browser adapter without raster or PNG
+        run: |
+          set -euo pipefail
+          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
+          test -s wasm-tree.txt
+          if grep -Eq '(^| )png v' wasm-tree.txt; then
+            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
+            exit 1
+          fi
+      - name: Build static worker and package WASM artifact
+        run: |
+          npm ci
+          node js/build.mjs
+          node --test js/test/package-wasm-contract.test.mjs js/test/package-wasm-manifest.test.mjs
+          npm run build:wasm
+      - name: Verify packaged WASM assets
+        run: python3 scripts/verify_wasm_assets.py
+      - name: Upload packaged WASM assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm-assets
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            packages/xy-client/dist/xyg-wasm.wasm
+            packages/xy-client/dist/xyg-wasm-inline.js
+            packages/xy-client/dist/xyg-wasm.manifest.json
+            python/xyg/static/xyg-wasm.wasm
+            python/xyg/static/xyg-wasm-inline.js
+            python/xyg/static/xyg-wasm.manifest.json
+
   # Build the host-neutral browser package from the same tagged source. This is
   # release-only (never PR CI): it stages exact semver, all four local assets,
   # their hashes/version contract, notices, and budgets before npm can see it.
   browser-package:
     name: Host-neutral browser package
+    needs: wasm-assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
@@ -240,12 +320,17 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false
-      - name: Build direct Rust/WASM and browser assets
+      - name: Build browser client
         run: |
           npm ci
-          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
           node js/build.mjs
-          node js/package-wasm.mjs
+      - name: Fetch packaged WASM assets from the wasm-assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python scripts/verify_wasm_assets.py
       - name: Stage exact-version offline browser package
         shell: bash
         run: |
@@ -281,6 +366,7 @@ jobs:
 
   sdist:
     name: sdist
+    needs: wasm-assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -304,15 +390,29 @@ jobs:
       # that build and proves the installed native backend loads successfully.
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm-assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python scripts/verify_wasm_assets.py
       - name: Build sdist
         # The client is required by default, so a published sdist always carries
-        # the prebuilt render client (the build fails otherwise).
+        # the prebuilt render client; XYG_REQUIRE_WASM does the same for the verified
+        # packaged WASM tick assets (the build fails otherwise).
+        env:
+          XYG_REQUIRE_WASM: "1"
         run: uv build --sdist
       - name: Verify sdist contents
         shell: bash
         run: |
           sdist=$(ls dist/*.tar.gz)
-          python scripts/verify_sdist.py "$sdist"
+          python scripts/verify_sdist.py "$sdist" --require-wasm
       - name: Build and load native core from sdist
         shell: bash
         env:
