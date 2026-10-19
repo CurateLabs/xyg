@@ -567,9 +567,10 @@ fn painter_trace_count(painter: &[u8]) -> usize {
     u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize
 }
 
-/// Time for Rust to refuse an adversarially fragmented Scene. Rejection must
-/// happen at run 1,025 with the stable trace-limit error, independent of the
-/// (ample) 64 MiB byte budget and of `n`.
+/// Time for Rust to refuse an adversarially fragmented Scene. The result is
+/// the stable trace-limit error at run 1,025 for every `n` and independent of
+/// the (ample) 64 MiB byte budget, but the time is still O(n): primitive
+/// validation and tick resolution run before run discovery.
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_browser_painter_fragment_limit(bencher: Bencher, n: usize) {
     let document = browser_scene_document(n, BrowserFixture::FragmentedRuns);
@@ -589,4 +590,19 @@ fn scene_browser_painter_packed_symbols(bencher: Bencher, n: usize) {
     assert_eq!(painter_trace_count(&painter), 1);
     assert!(n > MAX_BROWSER_PAINTER_TRACES);
     bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024).unwrap()));
+}
+
+/// Byte-budget refusal of a 1M-marker packed Scene (~48 MB of painter output)
+/// under a 32 MiB budget. Admission runs on the exact checked total before
+/// the single O(output) allocation, so this row pays only the O(n) scans
+/// (validation, ticks, full run discovery, glyph-label count) and must stay
+/// far below `scene_browser_painter_packed_symbols`, which builds the output
+/// (local wall clock: ~13 ms vs ~91 ms at 1M). It sits above the fragment-limit
+/// row (~3 ms), whose run discovery stops at run 1,025.
+#[divan::bench(args = [LARGE_N])]
+fn scene_browser_painter_byte_limit(bencher: Bencher, n: usize) {
+    const BUDGET: usize = 32 * 1024 * 1024;
+    let document = browser_scene_document(n, BrowserFixture::PackedSymbols);
+    assert_eq!(document.to_browser_painter(BUDGET), Err(SceneError::Limit));
+    bencher.bench(|| black_box(document.to_browser_painter(BUDGET)));
 }

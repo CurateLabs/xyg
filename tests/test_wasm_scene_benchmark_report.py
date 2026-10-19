@@ -59,6 +59,8 @@ def report() -> dict[str, object]:
             {
                 "count": 1025,
                 "fragmented": True,
+                "host": "browser-wasm-worker",
+                "budgetBytes": 16 * 1024 * 1024,
                 "seriesKind": "line",
                 "rejectedTraceLimit": 1024,
                 "rejectionCode": "XYG_PAINTER_TRACE_LIMIT",
@@ -68,6 +70,8 @@ def report() -> dict[str, object]:
             {
                 "count": 1025,
                 "packedScatter": True,
+                "host": "browser-wasm-worker",
+                "budgetBytes": 16 * 1024 * 1024,
                 "firstPaintMs": 1.0,
                 "gpuTraces": 1,
             },
@@ -174,3 +178,17 @@ def test_rejects_packed_scatter_that_fragments(tmp_path: Path) -> None:
     result = verify(tmp_path, value)
     assert result.returncode != 0
     assert "packed scatter evidence" in result.stderr
+
+
+def test_admission_evidence_requires_budget_and_host(tmp_path: Path) -> None:
+    for flag in ("fragmented", "packedScatter"):
+        for key, bad in (("budgetBytes", None), ("budgetBytes", 0), ("host", None)):
+            value = report()
+            row = _row(value, flag)
+            if bad is None:
+                del row[key]
+            else:
+                row[key] = bad
+            result = verify(tmp_path, value)
+            assert result.returncode != 0, (flag, key, bad)
+            assert "byte budget and host" in result.stderr

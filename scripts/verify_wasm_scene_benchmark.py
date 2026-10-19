@@ -126,6 +126,15 @@ def main() -> int:
     packed = [row for row in rows if isinstance(row, dict) and row.get("packedScatter") is True]
     if len(packed) != 1 or packed[0].get("count") != 1025 or packed[0].get("gpuTraces") != 1:
         raise SystemExit("packed scatter evidence is missing or fragmented into several traces")
+    for kind, row in (("fragmentation", fragmented[0]), ("packed scatter", packed[0])):
+        budget = row.get("budgetBytes")
+        if (
+            not isinstance(budget, int)
+            or isinstance(budget, bool)
+            or budget <= 0
+            or row.get("host") != "browser-wasm-worker"
+        ):
+            raise SystemExit(f"{kind} evidence must record its byte budget and host")
     require_non_negative_metrics(packed[0], kind="packed-scatter", keys=("firstPaintMs",))
     print(
         "validated WASM browser evidence for "

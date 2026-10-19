@@ -108,8 +108,11 @@ async function run() {
   // are NOT a fragmentation vector: since #945 ordinary visible Scatter
   // records batch into one kind-8 marker-instance trace across color, width,
   // diameter, and symbol changes (spec/design/browser-wasm.md).
+  // Evidence records the budget and host, never user values (#1007).
+  const admissionBudgetBytes = 16 * 1024 * 1024;
+  const admissionHost = "browser-wasm-worker";
   const fragmentedHost = document.body.appendChild(document.createElement("div"));
-  const fragmentedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 16 * 1024 * 1024 });
+  const fragmentedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: admissionBudgetBytes });
   await fragmentedWorker.ready;
   const fragmentedSeries = Array.from({ length: 1025 }, (_, index) => ({
     kind: "line",
@@ -131,6 +134,8 @@ async function run() {
   rows.push({
     count: fragmentedSeries.length,
     fragmented: true,
+    host: admissionHost,
+    budgetBytes: admissionBudgetBytes,
     seriesKind: "line",
     rejectedTraceLimit: 1024,
     rejectionCode: "XYG_PAINTER_TRACE_LIMIT",
@@ -142,7 +147,7 @@ async function run() {
   await fragmentedWorker.dispose();
 
   const packedHost = document.body.appendChild(document.createElement("div"));
-  const packedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 16 * 1024 * 1024 });
+  const packedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: admissionBudgetBytes });
   await packedWorker.ready;
   const packedSeries = Array.from({ length: 1025 }, (_, index) => ({
     kind: "scatter", x: new Float64Array([index]), y: new Float64Array([index]),
@@ -154,6 +159,8 @@ async function run() {
   rows.push({
     count: packedSeries.length,
     packedScatter: true,
+    host: admissionHost,
+    budgetBytes: admissionBudgetBytes,
     firstPaintMs: performance.now() - packedStarted,
     gpuTraces: packed.gpuTraces.length,
   });

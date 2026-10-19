@@ -4314,14 +4314,22 @@ pub unsafe extern "C" fn xyg_static_legend_fit(
 }
 
 /// Lower one validated canonical Scene document to the browser painter byte
-/// stream under `max_bytes`. Returns required bytes or `usize::MAX` on error.
+/// stream under `max_bytes`. Returns the required painter length, or
+/// `usize::MAX` on error.
 ///
-/// On a classified rejection the stable, NUL-terminated
-/// `scene::PainterRejection::diagnostic` (`XYG_PAINTER_TRACE_LIMIT: ...`,
-/// `XYG_PAINTER_BYTE_LIMIT: ...`, `XYG_SCENE_VERSION: ...`, or
-/// `XYG_SCENE_MALFORMED: ...`) is written to `out` when `out_cap` can hold it,
-/// so native hosts report the same code as the WASM Worker (#1007). No painter
-/// bytes are ever written on failure.
+/// Output contract:
+/// - Success with `out_cap >= required`: exactly `required` painter bytes are
+///   written to `out[..required]`; the rest of `out` is untouched.
+/// - Success with `out_cap < required` (capacity probe): returns `required`
+///   and leaves `out` unchanged; call again with a buffer that large.
+/// - `usize::MAX`: `out` is either unchanged, or (when `out` is non-null and
+///   `out_cap` is greater than the diagnostic length) holds the stable
+///   NUL-terminated `scene::PainterRejection::diagnostic`
+///   (`XYG_PAINTER_TRACE_LIMIT: ...`, `XYG_PAINTER_BYTE_LIMIT: ...`,
+///   `XYG_SCENE_VERSION: ...`, or `XYG_SCENE_MALFORMED: ...`) followed by
+///   untouched bytes. A null/empty `encoded`, a null `out`, or a caught panic
+///   leaves `out` unchanged. Painter bytes are never written on failure, so
+///   native hosts report the same code as the WASM Worker (#1007).
 ///
 /// # Safety
 /// Pointer contracts match `xyg_scene_svg`.
