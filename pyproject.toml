@@ -100,6 +100,15 @@ artifacts = [
     "python/xyg/static/index.js",
     "python/xyg/static/standalone.js",
     "python/xyg/static/wasm-worker.js",
+    # Packaged direct-browser WASM tick assets (§33): produced by the single
+    # `npm run build:wasm` step, never committed; carried when present, and
+    # required when XYG_REQUIRE_WASM=1 (CI and release distribution builds).
+    "packages/xy-client/dist/xyg-wasm.wasm",
+    "packages/xy-client/dist/xyg-wasm-inline.js",
+    "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "python/xyg/static/xyg-wasm.wasm",
+    "python/xyg/static/xyg-wasm-inline.js",
+    "python/xyg/static/xyg-wasm.manifest.json",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -2044,53 +2044,204 @@ def test_ci_workflow_binds_exact_wasm_target_build(tmp_path: Path) -> None:
     assert any("exact fail-closed wasm32 build" in error for error in errors)
 
 
-def test_ci_workflow_requires_real_wasm_ticks_in_full_browser_corpora(
-    tmp_path: Path,
+def _job_span(workflow: str, job: str) -> tuple[int, int]:
+    start = workflow.index(f"\n  {job}:\n") + 1
+    following = re.search(r"\n  [a-z_]+:\n", workflow[start:])
+    return start, start + following.start() + 1 if following else len(workflow)
+
+
+def _mutate_job(workflow: str, job: str, old: str, new: str) -> str:
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    assert old in block, f"{old!r} not in job {job}"
+    return workflow[:start] + block.replace(old, new, 1) + workflow[end:]
+
+
+_WASM_FETCH_STEP = (
+    "      - name: Fetch packaged WASM assets from the wasm_assets producer\n"
+    "        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n"
+    "        with:\n"
+    "          name: wasm-assets\n"
+    "          path: .\n"
+)
+_WASM_VERIFY_STEP = (
+    "      - name: Verify packaged WASM assets (missing or stale fails here)\n"
+    "        run: python3 scripts/verify_wasm_assets.py\n"
+)
+_WASM_CONSUMERS = (
+    "test",
+    "wasm_foundation",
+    "python_floor",
+    "benchmark_methodology",
+    "wheels",
+    "sdist",
+)
+
+
+def _verify_step(job: str) -> str:
+    # The Windows wheel leg has no `python3` shim; every other consumer uses it.
+    return _WASM_VERIFY_STEP.replace("python3 ", "python " if job == "wheels" else "python3 ")
+
+
+def _wasm_errors(tmp_path: Path, workflow: str) -> list[str]:
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow, encoding="utf-8")
+    return verify_ci_workflow.validate_ci_workflow(path)
+
+
+def test_ci_workflow_accepts_single_wasm_producer_with_every_consumer_wired() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    for job in _WASM_CONSUMERS:
+        start, end = _job_span(workflow, job)
+        block = workflow[start:end]
+        assert "needs:" in block and "wasm_assets" in block, job
+        assert "name: wasm-assets" in block, job
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+def test_ci_workflow_requires_every_wasm_consumer_to_depend_on_the_producer(
+    tmp_path: Path, job: str
+) -> None:
+    """BDD: a consumer whose producer was skipped/failed cannot start (#1005)."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    needs = re.search(r"\n    needs: .*\n", block)
+    assert needs is not None
+    # Drop the dependency (keeping other needs, e.g. the release-surface classifier).
+    replacement = (
+        "\n    needs: release_surface_changes\n"
+        if "release_surface_changes" in needs.group(0)
+        else "\n"
+    )
+    mutated = workflow[:start] + block.replace(needs.group(0), replacement, 1) + workflow[end:]
+    if job == "wheels":
+        mutated = mutated.replace("needs: [release_surface_changes, test]", "")
+    errors = _wasm_errors(tmp_path, mutated)
+    assert any(f"WASM consumer {job!r} must list wasm_assets in needs" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+@pytest.mark.parametrize("which", ["fetch", "verify"])
+def test_ci_workflow_requires_wasm_consumers_to_download_and_verify(
+    tmp_path: Path, job: str, which: str
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    path.write_text(
-        workflow.replace("          npm run build:wasm\n", "", 1),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
-    assert any("full browser corpus" in error and "npm run build:wasm" in error for error in errors)
-
-
-def test_ci_workflow_requires_real_wasm_ticks_on_python_floor(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    first = workflow.index("          npm run build:wasm\n")
-    second = workflow.index("          npm run build:wasm\n", first + 1)
-    path.write_text(
-        workflow[:second] + workflow[second:].replace("          npm run build:wasm\n", "", 1),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
+    step = _WASM_FETCH_STEP if which == "fetch" else _verify_step(job)
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, job, step, ""))
     assert any(
-        "Python 3.11 floor gate" in error and "npm run build:wasm" in error for error in errors
+        f"WASM consumer {job!r} must download then verify the packaged WASM assets" in e
+        for e in errors
     )
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+def test_ci_workflow_rejects_verify_before_download_and_hidden_asset_steps(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    swapped = _mutate_job(
+        workflow,
+        job,
+        _WASM_FETCH_STEP + _verify_step(job),
+        _verify_step(job) + _WASM_FETCH_STEP,
+    )
+    assert any("must download before it verifies" in e for e in _wasm_errors(tmp_path, swapped))
+
+    hidden = _mutate_job(
+        workflow,
+        job,
+        "        run: "
+        + ("python " if job == "wheels" else "python3 ")
+        + "scripts/verify_wasm_assets.py\n",
+        "        continue-on-error: true\n        run: "
+        + ("python " if job == "wheels" else "python3 ")
+        + "scripts/verify_wasm_assets.py\n",
+    )
+    assert any("asset steps must be unconditional" in e for e in _wasm_errors(tmp_path, hidden))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "npm run build:wasm",
+        "node js/package-wasm.mjs",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+    ],
+)
+def test_ci_workflow_rejects_a_second_wasm_producer(tmp_path: Path, command: str) -> None:
+    """Hand-rolled packaging in a consumer could ship stale residue as the real artifact."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    mutated = _mutate_job(
+        workflow,
+        "benchmark_methodology",
+        "      - name: Install JS build toolchain\n        run: npm ci\n",
+        f"      - name: Install JS build toolchain\n        run: |\n          npm ci\n          {command}\n",
+    )
+    errors = _wasm_errors(tmp_path, mutated)
+    assert any("must consume wasm-assets" in e and command in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "          if-no-files-found: error\n          retention-days: 7\n",
+            "          retention-days: 7\n",
+            "if-no-files-found",
+        ),
+        (
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n",
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n    continue-on-error: true\n",
+            "job-level 'continue-on-error'",
+        ),
+        (
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n",
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n    if: false\n",
+            "job-level 'if'",
+        ),
+        (
+            "        run: python3 scripts/verify_wasm_assets.py\n      - name: Upload packaged WASM assets\n",
+            "        run: echo skipped\n      - name: Upload packaged WASM assets\n",
+            "verify_wasm_assets.py",
+        ),
+        (
+            "          npm run build:wasm\n      - name: Verify packaged WASM assets\n",
+            "          echo packaged\n      - name: Verify packaged WASM assets\n",
+            "single packaging command",
+        ),
+    ],
+)
+def test_ci_workflow_rejects_weakened_wasm_producer(
+    tmp_path: Path, old: str, new: str, message: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, "wasm_assets", old, new))
+    assert any("wasm_assets" in e or "packaging command" in e for e in errors), errors
+    assert any(message in e for e in errors), errors
+
+
+@pytest.mark.parametrize("job", ["wheels", "sdist"])
+def test_ci_workflow_requires_distribution_builds_to_require_wasm(tmp_path: Path, job: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(
+        tmp_path, _mutate_job(workflow, job, '          XYG_REQUIRE_WASM: "1"\n', "")
+    )
+    assert any(f"{job} job must build with XYG_REQUIRE_WASM" in e for e in errors)
 
 
 def test_ci_workflow_requires_worker_before_wasm_payload(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    path.write_text(
-        workflow.replace(
-            "          node js/build.mjs\n          npm run build:wasm\n",
+    errors = _wasm_errors(
+        tmp_path,
+        _mutate_job(
+            workflow,
+            "python_floor",
+            "          node js/build.mjs\n",
             "          npm run build:wasm\n          node js/build.mjs\n",
-            1,
         ),
-        encoding="utf-8",
     )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
-    assert any("ordered JS Worker then Rust/WASM payload" in error for error in errors)
+    assert any("must consume wasm-assets" in error for error in errors)
 
 
 def test_ci_workflow_rejects_commented_wasm_chromium_install(tmp_path: Path) -> None:

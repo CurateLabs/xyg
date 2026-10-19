@@ -26,9 +26,11 @@ from typing import Optional
 try:
     from artifact_metadata import dependency_metadata_errors
     from js_exports import missing_esm_exports
+    from verify_wasm_assets import verify_members as verify_wasm_members
 except ModuleNotFoundError:  # imported by tests from the repository root
     from scripts.artifact_metadata import dependency_metadata_errors
     from scripts.js_exports import missing_esm_exports
+    from scripts.verify_wasm_assets import verify_members as verify_wasm_members
 
 # Mirrors verify_sdist's root-directory shape: a release version (`0.0.2`) plus
 # whatever PEP 440 suffix a between-tags build appends (`0.0.3.dev4+g63c0697`).
@@ -377,7 +379,21 @@ def _require_record(zf: zipfile.ZipFile, names: set[str]) -> None:
             )
 
 
-def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
+def _require_packaged_wasm(zf: zipfile.ZipFile, names: set[str]) -> None:
+    """The wheel must carry the packaged WASM bytes plus version/hash metadata (#1005)."""
+
+    def read(relative: str) -> Optional[bytes]:
+        return zf.read(relative) if relative in names else None
+
+    errors = verify_wasm_members(read, ("xyg/static",))
+    if errors:
+        raise AssertionError(
+            f"wheel lacks verified packaged WASM assets: {errors}; build it after the single "
+            "producer step (`node js/build.mjs && npm run build:wasm`) with XYG_REQUIRE_WASM=1"
+        )
+
+
+def verify_wheel(path: Path, *, expect_native: Optional[bool], require_wasm: bool = False) -> None:
     with zipfile.ZipFile(path) as zf:
         _require_unique_archive_members(zf.infolist())
         names = set(zf.namelist())
@@ -388,6 +404,8 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
         _require_dist_info_version(names, expected_version)
         _require_metadata(names, zf.read(_dist_info_name(names, "METADATA")), expected_version)
         _require_record(zf, names)
+        if require_wasm:
+            _require_packaged_wasm(zf, names)
 
     missing = sorted(REQUIRED_FILES - names)
     if missing:
@@ -506,6 +524,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     group.add_argument("--expect-native", action="store_true")
     group.add_argument("--expect-pure", action="store_true")
     parser.add_argument(
+        "--require-wasm",
+        action="store_true",
+        help="also require verified packaged WASM bytes + manifest metadata (#1005)",
+    )
+    parser.add_argument(
         "--installed-python",
         type=Path,
         help="Python from an environment where this native wheel is installed; executes Chart/Figure exports",
@@ -514,7 +537,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     expect_native = True if args.expect_native else False if args.expect_pure else None
     try:
-        verify_wheel(args.wheel, expect_native=expect_native)
+        verify_wheel(args.wheel, expect_native=expect_native, require_wasm=args.require_wasm)
         if args.installed_python is not None:
             if expect_native is not True:
                 raise AssertionError("--installed-python requires --expect-native")

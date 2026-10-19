@@ -451,3 +451,42 @@ def test_hatch_sdist_include_is_root_anchored_paint_client_only() -> None:
     assert "/packages/xy-node/**" in exclude
     for item in include:
         assert item.startswith("/"), f"sdist include must be root-anchored, got {item!r}"
+
+
+def _wasm_extra(*, tamper: bool = False) -> dict[str, bytes]:
+    import hashlib
+
+    wasm = b"\0asm\x01\0\0\0fixture"
+    digest = hashlib.sha256(wasm).hexdigest()
+    meta = f'{{"sha256": "{"0" * 64 if tamper else digest}", "bytes": {len(wasm)}}}'.encode()
+    inline = (
+        f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"AA==",classicWorkerSource:"x"}};\n'
+    ).encode()
+    extra: dict[str, bytes] = {}
+    for location in verify_sdist.WASM_LOCATIONS:
+        extra[f"{location}/xyg-wasm.wasm"] = wasm
+        extra[f"{location}/xyg-wasm-inline.js"] = inline
+        extra[f"{location}/xyg-wasm.manifest.json"] = meta
+    return extra
+
+
+def test_verify_sdist_require_wasm_accepts_verified_assets(tmp_path: Path) -> None:
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
+    _write_sdist(sdist, extra=_wasm_extra())
+
+    verify_sdist.verify_sdist(str(sdist), require_wasm=True)
+
+
+def test_verify_sdist_require_wasm_rejects_missing_and_stale_assets(tmp_path: Path) -> None:
+    """An sdist built without the single WASM producer step must not pass (#1005)."""
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
+    _write_sdist(sdist)
+    verify_sdist.verify_sdist(str(sdist))  # not required: unchanged behaviour
+    with pytest.raises(AssertionError, match=r"packages/xy-client/dist: missing xyg-wasm\.wasm"):
+        verify_sdist.verify_sdist(str(sdist), require_wasm=True)
+
+    stale = tmp_path / "stale" / "xyg-0.0.1.tar.gz"
+    stale.parent.mkdir()
+    _write_sdist(stale, extra=_wasm_extra(tamper=True))
+    with pytest.raises(AssertionError, match="does not match its manifest"):
+        verify_sdist.verify_sdist(str(stale), require_wasm=True)

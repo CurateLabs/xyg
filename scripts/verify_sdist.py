@@ -23,9 +23,13 @@ from typing import Optional
 try:
     from artifact_metadata import dependency_metadata_errors
     from js_exports import missing_esm_exports
+    from verify_wasm_assets import LOCATIONS as WASM_LOCATIONS
+    from verify_wasm_assets import verify_members as verify_wasm_members
 except ModuleNotFoundError:  # imported by tests from the repository root
     from scripts.artifact_metadata import dependency_metadata_errors
     from scripts.js_exports import missing_esm_exports
+    from scripts.verify_wasm_assets import LOCATIONS as WASM_LOCATIONS
+    from scripts.verify_wasm_assets import verify_members as verify_wasm_members
 
 REQUIRED_FILES = {
     "CHANGELOG.md",
@@ -274,6 +278,8 @@ HOST_NEUTRAL_BUNDLES = {
     "packages/xy-client/dist/standalone.js",
     "packages/xy-client/dist/wasm-worker.js",
     "packages/xy-client/dist/xyg-wasm.wasm",
+    "packages/xy-client/dist/xyg-wasm-inline.js",
+    "packages/xy-client/dist/xyg-wasm.manifest.json",
     "xyg/static/xyg-wasm-inline.js",
     "xyg/static/wasm-worker.js",
     "xyg/static/xyg-wasm.wasm",
@@ -302,7 +308,25 @@ _ESM_EXPORTS = {"render", "renderStandalone", "decodeFrame", "ChartView"}
 _IIFE_MARKERS = {"var xy=", ".renderStandalone=", ".decodeFrame=", ".ChartView="}
 
 
-def verify_sdist(path: str) -> None:
+def _require_packaged_wasm(path: str, root: str, files: set[str]) -> None:
+    """The sdist must carry the packaged WASM bytes plus version/hash metadata (#1005)."""
+
+    def read(relative: str) -> Optional[bytes]:
+        if relative not in files:
+            return None
+        with tarfile.open(path, "r:gz") as tf:
+            data = tf.extractfile(f"{root}/{relative}")
+            return data.read() if data is not None else None
+
+    errors = verify_wasm_members(read, WASM_LOCATIONS)
+    if errors:
+        raise AssertionError(
+            f"sdist lacks verified packaged WASM assets: {errors}; build it after the single "
+            "producer step (`node js/build.mjs && npm run build:wasm`) with XYG_REQUIRE_WASM=1"
+        )
+
+
+def verify_sdist(path: str, *, require_wasm: bool = False) -> None:
     root, files = _normalized_files(path)
     missing = sorted(REQUIRED_FILES - files)
     if missing:
@@ -313,6 +337,8 @@ def verify_sdist(path: str) -> None:
         raise AssertionError(
             f"sdist contains repository-only/generated/native artifacts: {forbidden}"
         )
+    if require_wasm:
+        _require_packaged_wasm(path, root, files)
     _require_pkg_info(path, root)
     _require_exact_file(path, root, "python/xyg/py.typed", b"")
     _require_exact_file(path, root, "python/reflex_xy/py.typed", b"")
@@ -348,9 +374,14 @@ def verify_sdist(path: str) -> None:
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("sdist")
+    parser.add_argument(
+        "--require-wasm",
+        action="store_true",
+        help="also require verified packaged WASM bytes + manifest metadata (#1005)",
+    )
     args = parser.parse_args(argv)
     try:
-        verify_sdist(args.sdist)
+        verify_sdist(args.sdist, require_wasm=args.require_wasm)
     except (AssertionError, KeyError, tarfile.TarError) as e:
         print(f"sdist verification failed for {args.sdist}: {e}", file=sys.stderr)
         return 1

@@ -59,6 +59,35 @@ render-graph and pyramid budgets are enforced. 100M/1B LOD decision evidence
 is not proof of allocating or rendering that many rows. The benchmark
 implementations and thresholds are unchanged.
 
+## Packaged WASM assets (#1005, dossier §33)
+
+Main run 38640943006 failed `Benchmark methodology suites` with
+`FileNotFoundError: packaged WASM tick assets missing: xyg-wasm.wasm`: the job built the
+client but nothing in its dependency graph produced the generated WASM assets, and the
+downstream `Merge and verify benchmark reports` job then failed on the absent
+`workflows.json`. The assets are generated (never committed), so every consumer must obtain
+them from the one producer.
+
+| Step | Contract |
+| --- | --- |
+| Producer | CI job `wasm_assets` runs the fail-closed raw build and PNG-dependency check, `node js/build.mjs`, the packaging contract tests, `npm run build:wasm`, and `scripts/verify_wasm_assets.py`, then uploads `wasm-assets` (`if-no-files-found: error`). Locally: `node js/build.mjs && npm run build:wasm`. |
+| Consumers | `test`, `wasm_foundation`, `python_floor`, `benchmark_methodology`, `wheels`, `sdist` list `wasm_assets` in `needs`, download `wasm-assets`, and verify before use. No consumer runs `npm run build:wasm`, `js/package-wasm.mjs`, or the wasm32 `cargo build` itself. |
+| Verifier | `scripts/verify_wasm_assets.py` (stdlib only) checks presence in both locations, WebAssembly magic, `sha256`/`bytes` against `xyg-wasm.manifest.json`, ABI/Scene/painter versions against `spec/wasm/abi.json`, inline module hash, inline classic-worker freshness, and dist/static equality. One diagnostic names the files and the producer command. |
+| Artifacts | `XYG_REQUIRE_WASM=1` makes `hatch_build.py` fail without verified assets; the wheel and sdist jobs run `verify_wheel.py` / `verify_sdist.py --require-wasm`. |
+| Aggregate | A failed or skipped `wasm_assets` skips its consumers; `Release surfaces` lists it and every applicable consumer, so the aggregate fails (see [production-readiness.md](../process/production-readiness.md)). |
+
+Scheduled workflows `ceiling-benchmark.yml`, `density-100m.yml`, and `docs.yml` do not
+exercise the WASM tick path (only `bench_interaction.py`, `bench_dashboard.py`, and the
+workflow benchmarks use `wasm_ticks`), so they are not consumers. `codspeed.yml` carries its own
+copy of the same three commands because a scheduled workflow cannot download this run's artifact.
+
+Evidence: `tests/test_verify_wasm_assets.py` (clean checkout, each withheld asset,
+stale hash/ABI/inline/worker, diverged copies), `js/test/package-wasm-manifest.test.mjs`
+(deterministic regeneration, early failure with producer hint, no half-published set),
+`tests/test_hatch_build.py`, `tests/test_verify_wheel.py`, `tests/test_verify_sdist.py`,
+and the workflow-contract tests in `tests/test_verify_ci_workflow.py` (every consumer needs
+the producer, downloads, verifies; no second producer; weakened producer rejected).
+
 ## Local reproduction
 
 ```bash
@@ -69,6 +98,7 @@ npm ci
 npm ci --prefix packages/xy-node
 node js/build.mjs
 npm run build:wasm
+python3 scripts/verify_wasm_assets.py
 make check-graph
 make check-ci
 node scripts/browser_client_smoke.mjs

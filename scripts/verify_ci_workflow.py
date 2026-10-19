@@ -42,8 +42,9 @@ REQUIRED_CI_JOBS = {
     "wheels",
     "install_without_rust",
     "wasm_foundation",
+    "wasm_assets",
 }
-PR_REQUIRED_CI_JOBS = {"test", "wasm_foundation", "python_floor"}
+PR_REQUIRED_CI_JOBS = {"test", "wasm_assets", "wasm_foundation", "python_floor"}
 RELEASE_SURFACE_CONDITIONAL_JOBS = {
     "authored_scene",
     "browser_conformance",
@@ -777,6 +778,20 @@ def _step_run_lines(step_block: str) -> list[str]:
     return []
 
 
+HARD_PRODUCER_JOBS = frozenset({"wasm_assets"})
+
+
+def _needs_only_hard_producers(job_text: str) -> bool:
+    """True when a job has no ``needs`` or depends only on the single WASM producer."""
+    values, unsafe = _direct_yaml_key_values(job_text, "needs", indent=4)
+    if unsafe or len(values) > 1:
+        return False
+    if not values:
+        return True
+    names = {item.strip() for item in values[0].strip("[]").split(",") if item.strip()}
+    return bool(names) and names <= HARD_PRODUCER_JOBS
+
+
 def _require_step_runs_exactly(
     errors: list[str],
     job_text: str,
@@ -818,7 +833,11 @@ def _require_step_runs_exactly(
             ["github.event_name == 'push' || github.event_name == 'workflow_dispatch'"],
         ):
             forbidden_job_keys += ("if",)
-        forbidden_job_keys += ("needs",)
+        # `needs` may name only the single WASM producer: a skipped or failed producer
+        # skips the consumer, and the Release surfaces aggregate treats an applicable
+        # skip as a failure, so this dependency cannot hide a missing prerequisite.
+        if not _needs_only_hard_producers(job_text):
+            forbidden_job_keys += ("needs",)
     has_forbidden_job_key = any(
         _has_yaml_key(job_text, key, indent=4) for key in forbidden_job_keys
     )
@@ -1121,6 +1140,125 @@ def _require_docs_spec_pr_paths_ignored(errors: list[str], text: str, workflow_l
         errors.append(
             f"{workflow_label} pull_request trigger must skip docs/spec-only changes: {missing}"
         )
+
+
+WASM_CONSUMER_JOBS = (
+    "test",
+    "wasm_foundation",
+    "python_floor",
+    "benchmark_methodology",
+    "wheels",
+    "sdist",
+)
+WASM_ARTIFACT = "wasm-assets"
+WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm_assets producer"
+WASM_VERIFY_STEP = "Verify packaged WASM assets (missing or stale fails here)"
+# Anything that compiles or packages xyg-wasm outside the producer is a second,
+# unverified producer whose output a consumer could mistake for the real one.
+_WASM_PRODUCER_COMMANDS = (
+    "npm run build:wasm",
+    "node js/package-wasm.mjs",
+    "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+)
+
+
+def _require_wasm_asset_contract(errors: list[str], jobs: dict[str, str]) -> None:
+    """One producer, explicit consumers, early verification (#1005, §33)."""
+    producer = jobs.get("wasm_assets")
+    if producer is None:
+        errors.append("CI workflow missing the single WASM producer job wasm_assets")
+        return
+    for needle in (
+        "npm run build:wasm",
+        "node js/build.mjs",
+        "python3 scripts/verify_wasm_assets.py",
+        "actions/upload-artifact@",
+        f"name: {WASM_ARTIFACT}",
+        "if-no-files-found: error",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown",
+        "packages/xy-client/dist/xyg-wasm.wasm",
+        "python/xyg/static/xyg-wasm.manifest.json",
+    ):
+        if needle not in producer:
+            errors.append(f"CI wasm_assets producer missing {needle!r}")
+    _require_step_runs_exactly(
+        errors,
+        producer,
+        "Build raw browser adapter without raster or PNG",
+        "exact fail-closed wasm32 build and dependency evidence commands",
+        "set -euo pipefail",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
+        "test -s wasm-tree.txt",
+        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
+        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
+        "exit 1",
+        "fi",
+    )
+    _require_step_runs_exactly(
+        errors,
+        producer,
+        "Build static worker and package WASM artifact",
+        "worker build, packaging contract tests, then the single packaging command",
+        "npm ci",
+        "node js/build.mjs",
+        "node --test js/test/package-wasm-contract.test.mjs js/test/package-wasm-manifest.test.mjs",
+        "npm run build:wasm",
+    )
+    for key in ("if", "needs", "continue-on-error"):
+        if _has_yaml_key(producer, key, indent=4):
+            errors.append(f"CI wasm_assets producer must not use job-level {key!r}")
+    if any(
+        _has_yaml_key(block, "continue-on-error", indent=8)
+        for block in _step_sequence_blocks(producer)
+    ):
+        errors.append("CI wasm_assets producer steps must not use continue-on-error")
+    for name, block in sorted(jobs.items()):
+        if name == "wasm_assets":
+            continue
+        for command in _WASM_PRODUCER_COMMANDS:
+            if any(command in line for line in _active_run_lines(block)):
+                errors.append(f"CI job {name!r} must consume wasm-assets, not run {command!r}")
+    for name in WASM_CONSUMER_JOBS:
+        block = jobs.get(name, "")
+        values, unsafe = _direct_yaml_key_values(block, "needs", indent=4)
+        needed = {item.strip() for item in (values[0] if values else "").strip("[]").split(",")}
+        if unsafe or "wasm_assets" not in needed:
+            errors.append(f"CI WASM consumer {name!r} must list wasm_assets in needs")
+        steps = _named_step_blocks(block)
+        order = list(steps)
+        download = steps.get(WASM_DOWNLOAD_STEP)
+        verify = steps.get(WASM_VERIFY_STEP)
+        if download is None or verify is None:
+            errors.append(
+                f"CI WASM consumer {name!r} must download then verify the packaged WASM assets"
+            )
+            continue
+        if order.index(WASM_DOWNLOAD_STEP) > order.index(WASM_VERIFY_STEP):
+            errors.append(f"CI WASM consumer {name!r} must download before it verifies")
+        for needle in ("actions/download-artifact@", f"name: {WASM_ARTIFACT}"):
+            if needle not in download:
+                errors.append(f"CI WASM consumer {name!r} download step missing {needle!r}")
+        if "verify_wasm_assets.py" not in verify:
+            errors.append(f"CI WASM consumer {name!r} verify step must run verify_wasm_assets.py")
+        if any(
+            _has_yaml_key(step, key, indent=8)
+            for step in (download, verify)
+            for key in ("if", "continue-on-error")
+        ):
+            errors.append(f"CI WASM consumer {name!r} asset steps must be unconditional")
+    for name, flag in (("wheels", "--require-wasm"), ("sdist", "--require-wasm")):
+        block = jobs.get(name, "")
+        if 'XYG_REQUIRE_WASM: "1"' not in block or flag not in block:
+            errors.append(f"CI {name} job must build with XYG_REQUIRE_WASM and verify {flag}")
+
+
+def _active_run_lines(job_text: str) -> list[str]:
+    """Every non-comment shell line of every ``run:`` step in a job."""
+    lines: list[str] = []
+    for step in _step_sequence_blocks(job_text):
+        lines.extend(_step_run_lines(step))
+    return lines
 
 
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
@@ -1427,15 +1565,15 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "real packaged Rust/WASM tick assets for the full browser corpus",
         "toolchain: 1.96.0",
         "targets: wasm32-unknown-unknown",
-        "npm run build:wasm",
+        "needs: wasm_assets",
+        "scripts/verify_wasm_assets.py",
     )
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
         "Build JS client",
-        "ordered JS Worker then Rust/WASM payload build for the full browser corpus",
+        "JS Worker build ahead of the verified packaged WASM payload for the full browser corpus",
         "node js/build.mjs",
-        "npm run build:wasm",
     )
     _require_job_contains(
         errors,
@@ -1448,9 +1586,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "persist-credentials: false",
         "python3 scripts/gen_wasm_abi.py --check",
         "cargo test -p xyg-wasm",
-        "native PNG",
         "node js/build.mjs",
-        "node js/package-wasm.mjs",
+        "needs: wasm_assets",
         "npx playwright install chromium",
         "node scripts/wasm_foundation_smoke.mjs",
         "direct-browser-wasm-foundation",
@@ -1458,20 +1595,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "packages/xy-client/dist/wasm-worker.js",
     )
     wasm_job = jobs.get("wasm_foundation", "")
-    _require_step_runs_exactly(
-        errors,
-        wasm_job,
-        "Build raw browser adapter without raster or PNG",
-        "exact fail-closed wasm32 build and dependency evidence commands",
-        "set -euo pipefail",
-        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
-        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
-        "test -s wasm-tree.txt",
-        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
-        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
-        "exit 1",
-        "fi",
-    )
     _require_step_runs_exactly(
         errors,
         wasm_job,
@@ -1643,18 +1766,19 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "npm ci --prefix packages/xy-node",
         "toolchain: 1.96.0",
         "targets: wasm32-unknown-unknown",
-        "npm run build:wasm",
+        "needs: wasm_assets",
+        "scripts/verify_wasm_assets.py",
     )
     _require_step_runs_exactly(
         errors,
         jobs.get("python_floor", ""),
         "Build render client",
-        "ordered JS Worker then Rust/WASM payload build on the Python floor",
+        "JS Worker build ahead of the verified packaged WASM payload on the Python floor",
         "npm ci",
         "npm ci --prefix packages/xy-node",
         "node js/build.mjs",
-        "npm run build:wasm",
     )
+    _require_wasm_asset_contract(errors, jobs)
     _require_job_contains(
         errors,
         jobs,

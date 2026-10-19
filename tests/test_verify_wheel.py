@@ -659,3 +659,39 @@ def test_verify_wheel_rejects_duplicate_archive_entries(tmp_path: Path) -> None:
 
     with pytest.raises(AssertionError, match="duplicate archive entries"):
         verify_wheel.verify_wheel(whl, expect_native=True)
+
+
+def _wasm_members(*, tamper: bool = False) -> dict[str, bytes]:
+    wasm = b"\0asm\x01\0\0\0fixture"
+    digest = hashlib.sha256(wasm).hexdigest()
+    meta = f'{{"sha256": "{"0" * 64 if tamper else digest}", "bytes": {len(wasm)}}}'
+    return {
+        "xyg/static/xyg-wasm.wasm": wasm,
+        "xyg/static/xyg-wasm-inline.js": (
+            f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"AA==",'
+            'classicWorkerSource:"x"};\n'
+        ).encode(),
+        "xyg/static/xyg-wasm.manifest.json": meta.encode(),
+    }
+
+
+def test_verify_wheel_require_wasm_accepts_verified_assets(tmp_path: Path) -> None:
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    _write_wheel(whl, extra=_wasm_members())
+
+    verify_wheel.verify_wheel(whl, expect_native=True, require_wasm=True)
+
+
+def test_verify_wheel_require_wasm_rejects_missing_and_stale_assets(tmp_path: Path) -> None:
+    """A wheel built without the single WASM producer step must not pass (#1005)."""
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    _write_wheel(whl)
+    verify_wheel.verify_wheel(whl, expect_native=True)  # not required: unchanged behaviour
+    with pytest.raises(AssertionError, match=r"xyg/static: missing xyg-wasm\.wasm"):
+        verify_wheel.verify_wheel(whl, expect_native=True, require_wasm=True)
+
+    stale = tmp_path / "stale" / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    stale.parent.mkdir()
+    _write_wheel(stale, extra=_wasm_members(tamper=True))
+    with pytest.raises(AssertionError, match="does not match its manifest"):
+        verify_wheel.verify_wheel(stale, expect_native=True, require_wasm=True)

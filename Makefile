@@ -121,6 +121,7 @@ check-graph:
 	@for asset in packages/xy-client/dist/index.js packages/xy-client/dist/standalone.js packages/xy-client/dist/xyg-wasm.wasm; do \
 		test -f "$$asset" || { echo "Missing $$asset; run node js/build.mjs && npm run build:wasm" >&2; exit 1; }; \
 	done
+	$(PYTHON) scripts/verify_wasm_assets.py
 	$(PYTHON) scripts/abi_smoke.py
 	$(PYTHON) -m pytest tests/test_graph.py tests/test_sankey.py -q
 	npm test --prefix packages/xy-node
