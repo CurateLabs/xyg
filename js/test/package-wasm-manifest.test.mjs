@@ -76,3 +76,19 @@ test("withheld producer inputs fail early naming the producer command", () => {
       "a failed packaging run must not leave a half-published asset set");
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
+
+test("a forbidden-API classic worker is rejected before the first write", () => {
+  const directory = workspace();
+  try {
+    mkdirSync(join(directory, "packages/xy-client/dist"), { recursive: true });
+    writeFileSync(join(directory, "packages/xy-client/dist/wasm-inline-worker.js"), "fetch('/x');");
+    assert.throws(() => run(directory, validModule(directory)), error => {
+      assert.match(error.stderr.toString(), /must not use fetch, module URLs, or importScripts/);
+      return true;
+    });
+    for (const output of ["packages/xy-client/dist/xyg-wasm.wasm", "python/xyg/static/xyg-wasm.wasm",
+      "packages/xy-client/dist/xyg-wasm-inline.js", "packages/xy-client/dist/xyg-wasm.manifest.json"]) {
+      assert.equal(existsSync(join(directory, output)), false, `${output} must not be written`);
+    }
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
