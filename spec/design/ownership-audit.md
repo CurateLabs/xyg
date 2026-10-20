@@ -809,6 +809,8 @@ Forbidden:
 | `crates/xyg-engine/src/static_document.rs` | Rust safe engine | `rust-engine` | `keep-rust`; versioned bounded XYST decode, composition, compatibility overrides, and SVG/PNG/PDF/JPEG/WebP consumers | — |
 | `crates/xyg-engine/src/static_document_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYSL/XYLO normalized, grid, and facet panel placement plus title reservation | — |
 | `crates/xyg-engine/src/static_annotation_style.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYAS/XYAO annotation-style admission, mechanical patches, and uniform XYST facts | — |
+| `crates/xyg-engine/src/static_chrome_style.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYCS/XYCO title / axis-title / tick-label admission, the single axis > slot > root theme > default precedence rule, and resolved size/paint/weight/style decisions (#1004) | — |
+| `crates/xyg-engine/src/static_chrome_style_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYCS framing, precedence, and atomic-validation proofs | — |
 | `crates/xyg-engine/src/static_document_labels.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYDA document-label decode, validation, and SVG/raster emission | — |
 | `crates/xyg-engine/src/static_document_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYDL document-legend decode, normalization, and SVG/raster emission | — |
 | `crates/xyg-engine/src/static_legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYLF/XYLR pyplot legend measurement, footprint expansion, sampling, candidate geometry, and scoring | — |

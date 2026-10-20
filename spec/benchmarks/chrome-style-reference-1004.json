@@ -1,0 +1,98 @@
+{
+  "schema": "xyg.chrome-style-reference/v1",
+  "issue": "CurateLabs/xyg#1004",
+  "environment": {
+    "python": "3.13.12",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "matplotlib": "3.11.2",
+    "xyg": "0.0.1.dev2847+59d7e58e"
+  },
+  "output_contract": "per-slot size/weight/style/color decisions; fixed DejaVu font",
+  "reproduce": "uv run --with matplotlib python scripts/chrome_style_reference.py --write",
+  "rows": {
+    "Title": {
+      "slot": "title",
+      "authored": {
+        "size": 20,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#102030"
+      },
+      "xyg": {
+        "size": 20.0,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#102030"
+      },
+      "matplotlib": {
+        "size": 20.0,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#102030"
+      }
+    },
+    "X": {
+      "slot": "axis_title",
+      "authored": {
+        "size": 16,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      },
+      "xyg": {
+        "size": 16.0,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      },
+      "matplotlib": {
+        "size": 16.0,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      }
+    },
+    "Y": {
+      "slot": "axis_title",
+      "authored": {
+        "size": 16,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      },
+      "xyg": {
+        "size": 16.0,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      },
+      "matplotlib": {
+        "size": 16.0,
+        "weight": "normal",
+        "style": "italic",
+        "color": "#ff0000"
+      }
+    },
+    "0.0": {
+      "slot": "tick_label",
+      "authored": {
+        "size": 10,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#00aa00"
+      },
+      "xyg": {
+        "size": 10.0,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#00aa00"
+      },
+      "matplotlib": {
+        "size": 10.0,
+        "weight": "bold",
+        "style": "normal",
+        "color": "#00aa00"
+      }
+    }
+  }
+}

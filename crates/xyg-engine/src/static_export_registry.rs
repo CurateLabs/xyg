@@ -403,7 +403,7 @@ pub struct StaticDocumentVocabulary {
 
 /// These masks are consumed by the XYST decoder after the #873 integration.
 pub const STATIC_DOCUMENT_HEADER_FLAGS: u32 = 15;
-pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = 0x7fff;
+pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = 0xffff;
 pub const STATIC_DOCUMENT_FORMATS: &[&str] = &["svg", "png", "pdf", "jpeg", "webp"];
 
 pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
@@ -431,6 +431,11 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         name: "panel.grid-dash",
         family: "panel-flag",
         code: 1 << 14,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.chrome-text",
+        family: "panel-flag",
+        code: 1 << 15,
     },
     StaticDocumentVocabulary {
         name: "annotation.baseline",
@@ -770,6 +775,11 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
+        name: "document_chrome_text",
+        vocabulary: &["panel.chrome-text"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
         name: "document_defaults",
         vocabulary: &[],
         formats: STATIC_DOCUMENT_FORMATS,
@@ -972,6 +982,7 @@ pub const STATIC_DOCUMENT_REJECTIONS: &[&str] = &[
     "centered_title_x_nonzero",
     "header_truncated",
     "version_unknown",
+    "version_legacy_layout",
     "header_flags_unknown",
     "header_reserved_nonzero",
     "panels_empty",

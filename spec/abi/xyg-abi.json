@@ -1,9 +1,9 @@
 {
-  "abi_version": 383,
+  "abi_version": 384,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "42a1d60815b48a0a88d78fba338c454c45c402d9b9f9f40835fb2e80cbf8e243",
+  "signature_sha256": "64459a8de05ee9ea06c1337ff21f30149740d8880af468187e0adb837a67b048",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -61244,6 +61244,88 @@
       "c_signature": "size_t xyg_static_annotation_style(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)"
     },
     {
+      "name": "xyg_static_chrome_style",
+      "node_name": "xyStaticChromeStyle",
+      "nargs": 4,
+      "arguments": [
+        {
+          "name": "encoded",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "encoded_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_static_chrome_style(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)"
+    },
+    {
       "name": "xyg_static_document_export",
       "node_name": "xyStaticDocumentExport",
       "nargs": 7,
@@ -61368,7 +61450,8 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap)"
+      "c_signature": "size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap)",
+      "rejection_diagnostic": "Rejection diagnostic: when a decoded document is rejected the return value is the unchanged `usize::MAX` sentinel and, only if `out` is non-null and `out_cap` is strictly greater than the diagnostic length, `out` receives the stable ASCII diagnostic (`XYG_STATIC_DOCUMENT_<CODE>`, optionally followed by `: guidance`, e.g. an unsupported XYST version) plus one NUL terminator. The diagnostic length is never reported, so a caller that needs it must supply a buffer larger than the diagnostic (hosts use at least 256 bytes); with a null `out`, `out_cap` of at most the diagnostic length, or no room for the NUL, `out` is left untouched. No diagnostic is produced for a null or empty `encoded`, an unknown `format` code, or an internal panic: those return `usize::MAX` with `out` untouched."
     },
     {
       "name": "xyg_static_document_labels",

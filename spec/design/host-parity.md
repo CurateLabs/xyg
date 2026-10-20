@@ -187,16 +187,29 @@ envelope mutations, and six independent public-authoring witness links. The
 header vocabulary includes Rust-resolved title centering (bit 3), including an
 odd-width positive witness and rejection of a nonzero inactive title-x slot. The
 panel vocabulary includes the #873 colorbar log-scale, minimum/maximum extend,
-pyplot label-placement bits (10 through 13), and the grid-dash fact
-(bit 14; full panel mask `0x7fff`); minimum, maximum, and combined extension
+pyplot label-placement bits (10 through 13), the grid-dash fact (bit 14),
+and the Rust-resolved chrome-text fact (bit 15, #1004; full panel mask
+`0xffff`); minimum, maximum, and combined extension
 have distinct runtime case rows, and `document_grid_dash` drives both hosts'
 dashed-grid output through the shared Rust pattern table. Rust tests require
 complete vocabulary coverage, unique rows, all-format case coverage, valid
 witness references, and masks matching their registered bits. The integrated
 decoder validates every registered mask, the runtime Python/Node builders match
 every case/mutation name exactly, and each output is compared through the
-actual native consumer — 40 cases, 21 rejection mutations, and all five formats
+actual native consumer — 41 cases, 22 rejection mutations, and all five formats
 run green under `tests/test_static_document_registry_cross_host.py`.
+
+Chrome style (#1004, ABI 384): `xyg_static_chrome_style` is the one Rust
+projection for title / axis-title / tick-label size, paint, bold, and italic.
+Both hosts marshal the authored slot styles, the root theme, and the axis
+`style`/`minor_style` entries into an XYCS frame and apply the XYCO result —
+the resolved panel metrics and title style, the XYST chrome-text fact, and the
+axis keys to drop. The Python `project_figure`, pyplot `_grid`, and Node
+`figureStaticDocument` copies of the admission tables, defaults, and root-theme
+`setdefault` are deleted; `tests/test_static_chrome_style_cross_host.py` pins
+byte-identical SVG/PNG/PDF/JPEG/WebP, identical stable reasons, identical raw
+frame results, and that the hosts carry no policy tables. Contract:
+[static-chrome-style.md](static-chrome-style.md).
 
 The six public-authoring witnesses are styled line, outlined scatter, text
 annotation, anchored legend, continuous colorbar, and titled two-panel facets.
