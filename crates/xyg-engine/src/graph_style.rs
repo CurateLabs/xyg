@@ -21,7 +21,24 @@ pub const FLAG_FILTERED: u32 = 1 << 3;
 pub const FLAG_PINNED: u32 = 1 << 4;
 pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
+/// Authored interaction-state vocabulary: the flags a host may put on a
+/// semantic style row. Every host validates this same 7-bit mask
+/// (`XYG_WASM_SEMANTIC_GRAPH_STATE_FLAG_MASK`); it must not widen with session
+/// state.
 pub const KNOWN_STATE_FLAGS: u32 = (1 << 7) - 1;
+/// Session emphasis flags (spec/design/graph-interaction.md §2.7). They are
+/// not authored style vocabulary and never enter [`resolve_visual_state`]
+/// precedence: hosts read them as the independent `emphasis` plane,
+/// `(flags >> EMPHASIS_SHIFT) & EMPHASIS_MASK`.
+pub const FLAG_FOCUSED: u32 = 1 << 7;
+pub const FLAG_PATH: u32 = 1 << 8;
+pub const FLAG_COMMUNITY: u32 = 1 << 9;
+pub const FLAG_EXTERNAL: u32 = 1 << 10;
+pub const EMPHASIS_SHIFT: u32 = 7;
+pub const EMPHASIS_MASK: u32 = 0xF;
+/// Flags [`compound_collapse`] accepts and propagates to a representative:
+/// the authored vocabulary plus the session emphasis flags.
+pub const KNOWN_SESSION_FLAGS: u32 = (1 << 11) - 1;
 pub const NO_COMPOUND: u64 = u64::MAX;
 pub const COMPOUND_ACTION_EXPAND: u8 = 0;
 pub const COMPOUND_ACTION_COLLAPSE: u8 = 1;
@@ -1735,7 +1752,7 @@ pub fn compound_collapse(
     let n = parents.len();
     if flags.len() != n
         || sources.len() != targets.len()
-        || flags.iter().any(|&value| value & !KNOWN_STATE_FLAGS != 0)
+        || flags.iter().any(|&value| value & !KNOWN_SESSION_FLAGS != 0)
     {
         return None;
     }
@@ -1883,7 +1900,14 @@ fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<
     if flags.len() != hierarchy.visible.len() {
         return None;
     }
-    const PROPAGATED: u32 = FLAG_SELECTED | FLAG_HOVERED | FLAG_NEIGHBOR | FLAG_PINNED;
+    const PROPAGATED: u32 = FLAG_SELECTED
+        | FLAG_HOVERED
+        | FLAG_NEIGHBOR
+        | FLAG_PINNED
+        | FLAG_FOCUSED
+        | FLAG_PATH
+        | FLAG_COMMUNITY
+        | FLAG_EXTERNAL;
     let mut effective = flags.to_vec();
     for index in 0..flags.len() {
         if !hierarchy.visible[index] {
@@ -2290,6 +2314,54 @@ mod tests {
             previous > 150,
             "far zoom paints most accepted labels: {previous}"
         );
+    }
+
+    #[test]
+    fn session_emphasis_flags_are_not_authored_style_vocabulary() {
+        // Every host validates the same 7-bit mask (spec/wasm/abi.json); the
+        // engine's mask must be that mask, and the emphasis flags outside it.
+        let abi = include_str!("../../../spec/wasm/abi.json");
+        assert!(abi.contains(&format!("\"state_flag_mask\": {KNOWN_STATE_FLAGS}")));
+        for flag in [FLAG_FOCUSED, FLAG_PATH, FLAG_COMMUNITY, FLAG_EXTERNAL] {
+            assert_eq!(flag & KNOWN_STATE_FLAGS, 0);
+            let mut out = [blank_style()];
+            assert!(
+                resolve!(
+                    &[1],
+                    &[1],
+                    &[1],
+                    &[1.0],
+                    &[flag],
+                    false,
+                    THEME_LIGHT,
+                    &mut out
+                )
+                .is_none(),
+                "{flag:#x} is session state, not an authored style flag"
+            );
+        }
+    }
+
+    #[test]
+    fn compound_collapse_propagates_session_emphasis_and_rejects_anything_else() {
+        let (parents, validity) = ([0, 0, 0], [0, 1, 0]);
+        for flag in [FLAG_FOCUSED, FLAG_PATH, FLAG_COMMUNITY, FLAG_EXTERNAL] {
+            let out = compound_collapse(&parents, &validity, &[1, 0, 0], &[0, flag, 0], &[], &[])
+                .unwrap();
+            assert_eq!(
+                out.flags[0], flag,
+                "hidden member's emphasis reaches the group"
+            );
+        }
+        assert!(compound_collapse(
+            &parents,
+            &validity,
+            &[1, 0, 0],
+            &[0, KNOWN_SESSION_FLAGS + 1, 0],
+            &[],
+            &[]
+        )
+        .is_none());
     }
 
     #[test]

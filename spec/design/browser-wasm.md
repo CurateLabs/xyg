@@ -1105,6 +1105,14 @@ the 1,507,328-byte limit). The hard limits are raised to **1,515,520 raw bytes
 retained interaction session itself is not exported from WASM until the session
 ABI slice, which will record its own size decision. Compiler profile unchanged.
 
+**Retained session render (#36 S2) size check.** S2 adds the Rust-only session
+render pipeline and `TemporalGraph::world_parts`; no WASM export changed, so
+the session code is not linked. The packaged artifact measures 1,514,304 raw
+bytes (1,216 under the unchanged 1,515,520-byte gate; +1,686 over S1) and
+622,593 level-6 gzip bytes (4,095 under the 626,688-byte gate; −1,452 against
+S1's 624,045). Neither budget is raised; the raw margin is thin, and the
+session ABI slice owns the next size decision.
+
 Bounded native/WASM selected snapshot and hierarchy membership checks, exact
 artifact hashes, four fresh-process startup ABBA pairs and reproduction commands
 are recorded in

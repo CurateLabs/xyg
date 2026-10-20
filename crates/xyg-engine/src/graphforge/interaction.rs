@@ -14,12 +14,11 @@
 //! [`InteractionStatus::Stale`] and changes nothing; a repeated `op_seq`
 //! returns the retained outcome without touching state.
 //!
-//! Implemented here (S1): create, state operations (select / clear / focus),
-//! identity, binding. The render and pick pipeline is the S2 seam: the session
-//! publishes no render, so `render_revision` stays `0` and an
-//! [`ElementRef::Aggregate`] (which names a published render) answers
-//! `Stale`. Temporal frame visibility (F4) enters at the same seam, through the
-//! bound temporal graph. Nothing here pretends to paint or pick.
+//! Implemented here: create, state operations (select / clear / focus / hover /
+//! highlight), identity, binding, the render publication
+//! ([`render::RenderOutput`], F2 pipeline order, temporal visibility F4),
+//! compound disclosure, pin / move / relayout, and the keyboard walks. The
+//! pick index and admission (S3) and the C/WASM ABI (S4) are not here.
 //!
 //! [`TemporalGraph::frame`]: crate::temporal_graph::TemporalGraph::frame
 
@@ -27,14 +26,24 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use super::composed::ComposedDocument;
-use super::identity::{ElementIndex, ElementRef, GraphIdentity, ResolveError};
+use super::identity::{ElementIndex, ElementRef, GraphIdentity};
 use super::Uuid;
 use crate::graph::COSE_NO_PARENT;
 use crate::graph_interaction_state::{
-    ElementSet, GraphInteractionState, SelectMode, SelectionTooLarge,
+    ElementSet, GraphInteractionState, SelectMode, SelectionTooLarge, MAX_GRAPH_SELECTION_REFS,
 };
 use crate::projection::validate_parent_forest;
 use crate::temporal_graph::TemporalGraph;
+
+mod layout;
+mod render;
+mod walk;
+
+pub use layout::{
+    DisclosureAction, DisclosureReport, MoveCommit, MoveSpace, NodePosition, RelayoutReport,
+    INITIAL_LAYOUT_STEPS, MAX_GRAPH_INTERACTION_WORK, MAX_RELAYOUT_STEPS, RELAYOUT_SETTLED_ALPHA,
+};
+pub use render::{Camera, RenderOutput, NOT_RENDERED};
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -59,6 +68,10 @@ pub enum InteractionStatus {
     CompoundTooLarge,
     /// The bound temporal graph is gone.
     Unbound,
+    /// `render_revision` reached `u32::MAX`; no further structural change is
+    /// possible, and the failed operation changed nothing. The host recreates
+    /// the session.
+    RevisionExhausted,
 }
 
 impl InteractionStatus {
@@ -74,6 +87,7 @@ impl InteractionStatus {
             Self::SelectionTooLarge => "GF_INTERACTION_SELECTION_TOO_LARGE",
             Self::CompoundTooLarge => "GF_INTERACTION_COMPOUND_TOO_LARGE",
             Self::Unbound => "GF_INTERACTION_UNBOUND",
+            Self::RevisionExhausted => "GF_INTERACTION_REVISION_EXHAUSTED",
         }
     }
 }
@@ -137,7 +151,7 @@ pub struct OpHeader {
 }
 
 /// Result of one applied operation.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct OpOutcome {
     pub render_revision: u32,
     /// Elements whose selection membership changed.
@@ -148,6 +162,17 @@ pub struct OpOutcome {
     pub unmatched: u32,
     /// Selection size after the operation.
     pub selected: usize,
+    /// Node positions to persist (`graph.positions`): pin and move commit.
+    pub positions: Vec<NodePosition>,
+    pub relayout: Option<RelayoutReport>,
+    pub disclosure: Option<DisclosureReport>,
+}
+
+/// Transient hover emphasis; never part of the shared interaction state.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct Hover {
+    nodes: Vec<usize>,
+    edge: Option<usize>,
 }
 
 pub struct GraphSession {
@@ -156,6 +181,14 @@ pub struct GraphSession {
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
     parent: Vec<u64>,
+    /// `1` where `parent` is a real parent.
+    parent_valid: Vec<u8>,
+    /// Composed edge endpoints (dense node indices).
+    edge_source: Vec<u64>,
+    edge_target: Vec<u64>,
+    /// Ordinal of each persisted edge among persisted edges (the temporal
+    /// graph's edge order); `u32::MAX` for derived edges.
+    edge_ordinal: Vec<u32>,
     positions: Option<(Vec<f64>, Vec<f64>)>,
     collapsed: Vec<u8>,
     budgets: (u64, u64),
@@ -163,6 +196,20 @@ pub struct GraphSession {
     slot: StateSlot,
     render_revision: u32,
     last_op: Option<(u64, OpOutcome)>,
+    /// Temporal frame revision last folded into `render_revision` (F4).
+    seen_temporal: u64,
+    camera: Option<Camera>,
+    published: Option<RenderOutput>,
+    /// Revision `published` was built at (`0`: nothing published).
+    published_revision: u32,
+    hover: Hover,
+    move_origin: Option<layout::MoveOrigin>,
+    relayout: Option<layout::Relayout>,
+    /// Render node a focus ring is walking around.
+    ring_anchor: Option<u64>,
+    /// Deterministic work units the session has performed, for the bounded
+    /// complexity proofs (every pass adds the elements it touches).
+    work: u64,
 }
 
 fn invalid<T>() -> Result<T, InteractionStatus> {
@@ -190,6 +237,33 @@ impl GraphSession {
         let n = identity.node_count();
         let generation = doc.generation().map_err(|_| InteractionStatus::Invalid)?;
         let parent = Self::hierarchy(&doc, n)?;
+        let edge_source = doc
+            .u64s("edge.source")
+            .map_err(|_| InteractionStatus::Invalid)?;
+        let edge_target = doc
+            .u64s("edge.target")
+            .map_err(|_| InteractionStatus::Invalid)?;
+        let edges = identity.edge_count();
+        if edge_source.len() != edges
+            || edge_target.len() != edges
+            || edge_source
+                .iter()
+                .chain(&edge_target)
+                .any(|&v| v >= n as u64)
+        {
+            return invalid();
+        }
+        let mut persisted = 0u32;
+        let edge_ordinal = (0..edges)
+            .map(|edge| {
+                if identity.is_derived(edge) {
+                    u32::MAX
+                } else {
+                    persisted += 1;
+                    persisted - 1
+                }
+            })
+            .collect();
 
         let positions = match (load.x, load.y) {
             (None, None) => None,
@@ -223,7 +297,14 @@ impl GraphSession {
             instance_id,
             identity,
             generation,
+            parent_valid: parent
+                .iter()
+                .map(|&p| u8::from(p != COSE_NO_PARENT))
+                .collect(),
             parent,
+            edge_source,
+            edge_target,
+            edge_ordinal,
             positions,
             collapsed,
             budgets,
@@ -231,6 +312,15 @@ impl GraphSession {
             slot: StateSlot::Owned(Box::new(state)),
             render_revision: 0,
             last_op: None,
+            seen_temporal: 0,
+            camera: None,
+            published: None,
+            published_revision: 0,
+            hover: Hover::default(),
+            move_origin: None,
+            relayout: None,
+            ring_anchor: None,
+            work: 0,
         })
     }
 
@@ -267,7 +357,7 @@ impl GraphSession {
         self.instance_id
     }
 
-    /// Revision of the last published render; `0` until the S2 pipeline lands.
+    /// Stamp revision: advances on every structural change (see `render`).
     pub fn render_revision(&self) -> u32 {
         self.render_revision
     }
@@ -302,12 +392,18 @@ impl GraphSession {
         self.seed
     }
 
+    /// Deterministic work units performed so far (see the field).
+    pub fn work(&self) -> u64 {
+        self.work
+    }
+
     pub fn is_bound(&self) -> bool {
         matches!(self.slot, StateSlot::Bound { .. })
     }
 
     // -- state slot -----------------------------------------------------------
 
+    /// Read-only access to the state for the public getters.
     fn read_state<R>(
         &self,
         f: impl FnOnce(&GraphInteractionState) -> R,
@@ -327,23 +423,88 @@ impl GraphSession {
         }
     }
 
-    fn write_state<R>(
+    /// Run `f` on one consistent world: the session, the shared interaction
+    /// state, and (when bound) the temporal graph's published visibility and
+    /// revision, all under a single registry lock. Validating the temporal
+    /// revision, mutating, and capturing render inputs therefore cannot be
+    /// separated by a frame advancing in between (F4).
+    ///
+    /// An `Owned` session lends its state out of the slot for the call, so
+    /// code inside `f` must use `world.state`, never the session's getters.
+    fn locked<R>(
         &mut self,
-        f: impl FnOnce(&mut GraphInteractionState) -> R,
+        f: impl FnOnce(&mut Self, World<'_>) -> R,
     ) -> Result<R, InteractionStatus> {
-        match &mut self.slot {
-            StateSlot::Owned(state) => Ok(f(state)),
-            StateSlot::Bound { host, handle } => {
-                let (mut f, mut out) = (Some(f), None);
-                let found = host.with_graph(*handle, &mut |graph| {
-                    out = f.take().map(|f| f(graph.interaction_state_mut()));
-                });
-                match (found, out) {
-                    (true, Some(out)) => Ok(out),
-                    _ => Err(InteractionStatus::Unbound),
-                }
+        let bound = match &self.slot {
+            StateSlot::Bound { host, handle } => Some((Arc::clone(host), *handle)),
+            StateSlot::Owned(_) => None,
+        };
+        let Some((host, handle)) = bound else {
+            let StateSlot::Owned(slot) = &mut self.slot else {
+                return Err(InteractionStatus::Invalid);
+            };
+            let mut state = std::mem::take(&mut **slot);
+            let out = f(
+                self,
+                World {
+                    state: &mut state,
+                    visibility: None,
+                    temporal_revision: 0,
+                },
+            );
+            if let StateSlot::Owned(slot) = &mut self.slot {
+                **slot = state;
             }
+            return Ok(out);
+        };
+        let (mut f, mut out) = (Some(f), None);
+        let session = &mut *self;
+        let found = host.with_graph(handle, &mut |graph| {
+            if let Some(f) = f.take() {
+                let (state, visibility, temporal_revision) = graph.world_parts();
+                out = Some(f(
+                    session,
+                    World {
+                        state,
+                        visibility,
+                        temporal_revision,
+                    },
+                ));
+            }
+        });
+        match (found, out) {
+            (true, Some(out)) => Ok(out),
+            _ => Err(InteractionStatus::Unbound),
         }
+    }
+
+    /// Fail before any mutation if the revision cannot advance.
+    pub(super) fn reserve_revision(&self) -> Result<(), InteractionStatus> {
+        if self.render_revision == u32::MAX {
+            Err(InteractionStatus::RevisionExhausted)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Advance the revision. Callers [`reserve_revision`](Self::reserve_revision)
+    /// first, so the revision never wraps and a stale stamp is never revived.
+    pub(super) fn bump(&mut self) {
+        self.render_revision = self.render_revision.saturating_add(1);
+        self.ring_anchor = None;
+    }
+
+    /// Fold a changed temporal frame into the revision, inside the lock the
+    /// caller already holds (F4). A frame change also invalidates the retained
+    /// relayout, which was built from the previous visibility.
+    fn sync_world(&mut self, world: &World<'_>) -> Result<(), InteractionStatus> {
+        if world.temporal_revision != self.seen_temporal {
+            self.reserve_revision()?;
+            self.seen_temporal = world.temporal_revision;
+            self.relayout = None;
+            self.bump();
+        }
+        Ok(())
     }
 
     /// Bind to a temporal graph whose node and persisted-edge UUID planes
@@ -355,39 +516,52 @@ impl GraphSession {
         host: Arc<dyn TemporalHost>,
         handle: TemporalHandle,
     ) -> Result<(), InteractionStatus> {
-        let mut equal = None;
+        self.reserve_revision()?;
+        let mut bound = None;
         let found = host.with_graph(handle, &mut |graph| {
-            equal = Some(
+            bound = Some((
                 self.identity.node_uuids() == graph.node_ids()
                     && self
                         .identity
                         .persisted_edge_uuids()
                         .eq(graph.edge_ids().iter().copied()),
-            );
+                graph.applied_revision(),
+            ));
         });
-        match (found, equal) {
-            (true, Some(true)) => {
+        match (found, bound) {
+            (true, Some((true, revision))) => {
                 self.slot = StateSlot::Bound { host, handle };
+                self.seen_temporal = revision;
+                // The pin authority and visibility changed with the slot.
+                self.relayout = None;
+                self.bump();
                 Ok(())
             }
-            (true, Some(false)) => invalid(),
+            (true, Some((false, _))) => invalid(),
             _ => Err(InteractionStatus::Unbound),
         }
     }
 
     /// Leave the temporal graph (which keeps its state) for a fresh empty
     /// `Owned` state.
-    pub fn unbind(&mut self) {
+    pub fn unbind(&mut self) -> Result<(), InteractionStatus> {
+        self.reserve_revision()?;
         self.slot = StateSlot::Owned(Box::default());
+        self.seen_temporal = 0;
+        // The temporal visibility and the pin authority no longer apply.
+        self.relayout = None;
+        self.bump();
+        Ok(())
     }
 
     // -- operations -----------------------------------------------------------
 
-    /// Stamp check, idempotent retry, apply, retain.
+    /// Idempotent retry, then, under one lock: fold the temporal revision,
+    /// stamp check, apply. The outcome is retained for retries.
     fn operate(
         &mut self,
         header: OpHeader,
-        apply: impl FnOnce(&mut Self) -> Result<OpOutcome, InteractionStatus>,
+        apply: impl FnOnce(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
     ) -> Result<OpOutcome, InteractionStatus> {
         match &self.last_op {
             _ if header.op_seq == 0 => return invalid(),
@@ -395,49 +569,89 @@ impl GraphSession {
             Some((last, _)) if header.op_seq < *last => return invalid(),
             _ => {}
         }
-        if header.stamp
-            != (Stamp {
-                instance_id: self.instance_id,
-                render_revision: self.render_revision,
-            })
-        {
-            return Err(InteractionStatus::Stale);
-        }
-        let outcome = apply(self)?;
+        let outcome = self.locked(|session, mut world| {
+            session.sync_world(&world)?;
+            if header.stamp
+                != (Stamp {
+                    instance_id: session.instance_id,
+                    render_revision: session.render_revision,
+                })
+            {
+                return Err(InteractionStatus::Stale);
+            }
+            apply(session, &mut world)
+        })??;
         self.last_op = Some((header.op_seq, outcome.clone()));
         Ok(outcome)
     }
 
-    fn resolve_all(&self, refs: &[ElementRef]) -> Result<ElementSet, InteractionStatus> {
+    /// Resolve references into state identities. Aggregates expand to their
+    /// member source nodes, each distinct aggregate once, and the total is
+    /// admitted against the selection cap *before* anything is allocated, so a
+    /// repeated or oversized aggregate cannot cost more than it is allowed to
+    /// select. Any failure rejects the whole set.
+    fn resolve_all(&mut self, refs: &[ElementRef]) -> Result<ElementSet, InteractionStatus> {
+        if refs.len() > MAX_GRAPH_SELECTION_REFS {
+            return Err(InteractionStatus::SelectionTooLarge);
+        }
         let mut set = ElementSet::default();
+        let mut groups = BTreeSet::new();
         for element in refs {
-            match self.identity.resolve(element) {
-                Ok(index) => self.identity.insert_into(&mut set, index),
-                // No render is published, so an aggregate's stamp can never match.
-                Err(ResolveError::NeedsRender) => return Err(InteractionStatus::Stale),
-                Err(ResolveError::Unresolved) => return invalid(),
+            match self.resolve(element)? {
+                render::Resolved::Element(index) => self.identity.insert_into(&mut set, index),
+                render::Resolved::Group { render } => {
+                    groups.insert(render);
+                }
             }
         }
+        let mut expanded = 0u64;
+        if !groups.is_empty() {
+            let render = self.published().ok_or(InteractionStatus::Stale)?;
+            let mut total = set.len();
+            for &group in &groups {
+                total += render.members_of_node(group).len();
+                if total > MAX_GRAPH_SELECTION_REFS {
+                    self.work += refs.len() as u64;
+                    return Err(InteractionStatus::SelectionTooLarge);
+                }
+            }
+            for &group in &groups {
+                for &member in render.members_of_node(group) {
+                    self.identity
+                        .insert_into(&mut set, ElementIndex::Node(member as usize));
+                }
+                expanded += render.members_of_node(group).len() as u64;
+            }
+        }
+        self.work += refs.len() as u64 + expanded;
         Ok(set)
+    }
+
+    /// Outcome of an operation that changed no element membership.
+    fn outcome(&self, world: &World<'_>, state_changed: bool) -> OpOutcome {
+        OpOutcome {
+            render_revision: self.render_revision,
+            state_changed,
+            selected: world.state.selection().len(),
+            ..OpOutcome::default()
+        }
     }
 
     fn select_set(
         &mut self,
+        world: &mut World<'_>,
         mode: SelectMode,
         delta: ElementSet,
         unmatched: u32,
     ) -> Result<OpOutcome, InteractionStatus> {
-        let changed = self.write_state(|state| {
-            state
-                .select(mode, &delta)
-                .map(|changed| (changed, state.selection().len()))
-        })??;
+        let changed = world.state.select(mode, &delta)?;
         Ok(OpOutcome {
             render_revision: self.render_revision,
-            state_changed: !changed.0.is_empty(),
-            changed: self.identity.refs_of(&changed.0),
+            state_changed: !changed.is_empty(),
+            changed: self.identity.refs_of(&changed),
             unmatched,
-            selected: changed.1,
+            selected: world.state.selection().len(),
+            ..OpOutcome::default()
         })
     }
 
@@ -449,9 +663,9 @@ impl GraphSession {
         refs: &[ElementRef],
         mode: SelectMode,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let delta = session.resolve_all(refs)?;
-            session.select_set(mode, delta, 0)
+            session.select_set(world, mode, delta, 0)
         })
     }
 
@@ -463,7 +677,10 @@ impl GraphSession {
         uuids: &[Uuid],
         mode: SelectMode,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
+            if uuids.len() > MAX_GRAPH_SELECTION_REFS {
+                return Err(InteractionStatus::SelectionTooLarge);
+            }
             let mut delta = ElementSet::default();
             let mut unmatched = 0u32;
             for id in uuids {
@@ -474,23 +691,21 @@ impl GraphSession {
                     session.identity.insert_into(&mut delta, index);
                 }
             }
-            session.select_set(mode, delta, unmatched)
+            session.work += uuids.len() as u64;
+            session.select_set(world, mode, delta, unmatched)
         })
     }
 
     /// Empty the selection and highlight planes; focus stays.
     pub fn clear(&mut self, header: OpHeader) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
-            let (cleared, before) = session.write_state(|state| {
-                let before = state.selection().clone();
-                (state.clear(), before)
-            })?;
+        self.operate(header, |session, world| {
+            let before = world.state.selection().clone();
+            let cleared = world.state.clear();
             Ok(OpOutcome {
                 render_revision: session.render_revision,
                 changed: session.identity.refs_of(&before),
                 state_changed: cleared,
-                unmatched: 0,
-                selected: 0,
+                ..OpOutcome::default()
             })
         })
     }
@@ -501,44 +716,44 @@ impl GraphSession {
         header: OpHeader,
         target: Option<&ElementRef>,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let focus = match target {
                 None => None,
-                Some(element) => match session.identity.resolve(element) {
-                    Ok(index) => Some(session.identity.focus_of(index)),
-                    Err(ResolveError::NeedsRender) => return Err(InteractionStatus::Stale),
-                    Err(ResolveError::Unresolved) => return invalid(),
-                },
+                Some(element) => Some(match session.resolve(element)? {
+                    render::Resolved::Element(index) => session.identity.focus_of(index),
+                    // An aggregate is focused through its lowest-index visible
+                    // member; focus is UUID-keyed, so it cannot name the group.
+                    render::Resolved::Group { render } => {
+                        let published = session.published().ok_or(InteractionStatus::Stale)?;
+                        let stand_in = published.focus_node[render];
+                        session
+                            .identity
+                            .focus_of(ElementIndex::Node(stand_in as usize))
+                    }
+                }),
             };
-            let (changed, selected) = session.write_state(|state| {
-                let changed = state.focus() != focus.as_ref();
-                state.set_focus(focus);
-                (changed, state.selection().len())
-            })?;
-            Ok(OpOutcome {
-                render_revision: session.render_revision,
-                changed: Vec::new(),
-                state_changed: changed,
-                unmatched: 0,
-                selected,
-            })
+            session.ring_anchor = None;
+            let changed = world.state.focus() != focus.as_ref();
+            world.state.set_focus(focus);
+            Ok(session.outcome(world, changed))
         })
     }
 
     /// Select the focused element under `mode`; nothing focused is `Invalid`.
+    /// When the focus sits on a drawn stop that stands for several elements
+    /// (an aggregate node, a collapsed group, an aggregate edge), the whole
+    /// stop is selected, exactly as a pointer selection of it would.
     pub fn select_focused(
         &mut self,
         header: OpHeader,
         mode: SelectMode,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
-            let focus = session.read_state(|state| state.focus().cloned())?;
-            let Some(focus) = focus else {
+        self.operate(header, |session, world| {
+            let Some(focus) = world.state.focus().cloned() else {
                 return invalid();
             };
-            let mut delta = ElementSet::default();
-            session.identity.insert_focus(&mut delta, &focus);
-            session.select_set(mode, delta, 0)
+            let delta = session.focus_membership(&focus)?;
+            session.select_set(world, mode, delta, 0)
         })
     }
 
@@ -560,6 +775,17 @@ impl GraphSession {
                 .and_then(|focus| self.identity.focus_ref(focus))
         })
     }
+}
+
+/// One consistent view of the shared world, held for the length of a lock.
+struct World<'a> {
+    /// The one shared interaction state (the temporal graph's when bound).
+    state: &'a mut GraphInteractionState,
+    /// Published source visibility `(nodes, persisted edges)` of the bound
+    /// temporal graph; `None` when unbound or before its first frame.
+    visibility: Option<(&'a [u8], &'a [u8])>,
+    /// Revision of that frame (`0` when unbound).
+    temporal_revision: u64,
 }
 
 #[cfg(test)]
