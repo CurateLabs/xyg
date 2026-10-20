@@ -103,6 +103,8 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
 - The right-hand title reads bottom to top like the left title and Matplotlib's
   `twinx` label (rotation 90°) in SVG, PDF, PNG and the interactive browser
   client; PR 1 had drawn it clockwise.
+- An omitted y2 `side` means right (Rust owns the default); `side="left"` is still
+  refused as `XYG_SCENE_UNSUPPORTED_Y2_SIDE`.
 - An authored empty `tick_values` on y2 means automatic ticks, as it already did
   for x and y.
 - Known gap: annotations on a twin's y2 scale (`twin.text`, `twin.annotate`,

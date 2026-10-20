@@ -169,3 +169,12 @@ test("an annotation bound to y2 is refused with Rust's reason, not projected on 
   assert.equal(sceneExportSupportReason(annotated({ ...text, y: 0.5, style: { coordinate_space: "axes_fraction" } })), null);
   assert.equal(sceneExportSupportReason(annotated({ ...text, y: 2, y_axis: undefined })), null);
 });
+
+test("an omitted y2 side is the right side, exactly like side: right", () => {
+  const omitted = dual();
+  delete omitted.axis_options.y2.side;
+  assert.equal(omitted.axis_options.y2.side, undefined);
+  assert.equal(sceneExportSupportReason(omitted), null);
+  assert.equal(svgOf(omitted), svgOf(dual()));
+  assert.match(sceneExportSupportReason(dual({ y2Side: "left" })), /^XYG_SCENE_UNSUPPORTED_Y2_SIDE:/);
+});

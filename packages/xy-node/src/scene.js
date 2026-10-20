@@ -6375,10 +6375,14 @@ function marshalChromeAxis(axisId, options) {
       throw new RangeError(`Scene v12 does not yet encode ${axisId} axis ${label} keys`);
     }
   }
-  const side = options.side ?? (axisId === "x" ? "bottom" : "left");
+  // An unauthored y2 side is passed through as absent (code 0 is ignored without
+  // `side_authored`): Rust defaults the secondary axis to the right.
+  const side = axisId === "y2" && options.side == null
+    ? null
+    : options.side ?? (axisId === "x" ? "bottom" : "left");
   const allowed = axisId === "x" ? ["bottom", "top"] : ["left", "right"];
-  if (!allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
-  const sideCode = side === allowed[0] ? 0 : 1;
+  if (side != null && !allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
+  const sideCode = side === "right" || side === "top" ? 1 : 0;
   const marshalStyle = (src) => {
     const out = {};
     for (const key of [
@@ -6545,6 +6549,9 @@ function marshalY2(figure, y2Chrome) {
     constant: options.constant == null ? null : Number(options.constant),
     nonpositive_mask: options.nonpositive === "mask" ? 1 : 0,
     axis: marshalChromeAxis("y2", options),
+    side_authored: options.side != null,
+    tick_sides_authored: options.tick_sides != null,
+    label_sides_authored: options.tick_label_sides != null,
     collision: {
       strategy: optionalStr(options.tick_label_strategy),
       collision: optionalStr(options.collision),

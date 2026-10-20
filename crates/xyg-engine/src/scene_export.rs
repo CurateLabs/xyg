@@ -1664,7 +1664,13 @@ pub fn scene_figure_support_reason_with_attach(
     let mut has_y2 = false;
     match extra_axes.as_slice() {
         [] => {}
-        [(XYFS_AXIS_Y2, crate::scene_figure_support_pack::AXIS_SIDE_RIGHT)] => has_y2 = true,
+        // The secondary y axis is right-hand by default: an unobserved (unauthored)
+        // side is the right side, so hosts pass an absent side through as 0.
+        [(
+            XYFS_AXIS_Y2,
+            crate::scene_figure_support_pack::AXIS_SIDE_RIGHT
+            | crate::scene_figure_support_pack::AXIS_SIDE_UNOBSERVED,
+        )] => has_y2 = true,
         [(XYFS_AXIS_Y2, _)] => return Ok(FIGURE_Y2_SIDE_REASON.to_string()),
         [(XYFS_AXIS_X2, _)] => return Ok(FIGURE_X2_REASON.to_string()),
         [_] => return Ok(FIGURE_AXIS_SET_REASON.to_string()),

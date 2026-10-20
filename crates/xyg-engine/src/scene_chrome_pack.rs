@@ -57,6 +57,8 @@ const DEFAULT_WIDTHS: [f64; 7] = [1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0];
 const DEFAULT_Y_MIN_GAP: f64 = 4.0;
 /// Constant of a log/symlog axis when none is authored.
 const DEFAULT_SCALE_CONSTANT: f64 = 1.0;
+/// Side code (1 = high/right) of a secondary y axis whose side is not authored.
+const Y2_DEFAULT_SIDE_CODE: u8 = 1;
 /// Byte range of the y axis record inside the 200-byte resolved Scene style.
 const SCENE_STYLE_Y_AXIS: std::ops::Range<usize> = 112..200;
 const MAX_TICK_LABELS: usize = 256;
@@ -152,7 +154,13 @@ pub struct ChromeY2Input<'a> {
     pub hi: f64,
     pub constant: Option<f64>,
     pub nonpositive_mask: u8,
+    /// The chrome axis observation. Its side code and tick/label side masks only
+    /// count where the matching `*_authored` flag is set: an unauthored y2 side is
+    /// the right side, and an unauthored mask is that side, decided here.
     pub axis: ChromeAxisInput<'a>,
+    pub side_authored: bool,
+    pub tick_sides_authored: bool,
+    pub label_sides_authored: bool,
     pub collision: ChromeCollisionAxisInput<'a>,
     pub major: Option<&'a [f64]>,
     pub minor: &'a [f64],
@@ -404,7 +412,17 @@ fn pack_xych(input: &SceneChromePackInput<'_>, y_axis: &ChromeAxisInput<'_>) -> 
 /// exactly as the primary y style resolves; nothing is validated here, so the
 /// Scene encoder rejects invalid values identically for every host.
 fn pack_y2_sidecar(input: &SceneChromePackInput<'_>, y2: &ChromeY2Input<'_>) -> Result<Vec<u8>, i32> {
-    let style = scene_style::resolve_chrome_style(&pack_xych(input, &y2.axis)).map_err(|_| -1)?;
+    let mut axis = y2.axis.clone();
+    if !y2.side_authored {
+        axis.side_code = Y2_DEFAULT_SIDE_CODE;
+    }
+    if !y2.tick_sides_authored {
+        axis.tick_sides_mask = 1 << axis.side_code;
+    }
+    if !y2.label_sides_authored {
+        axis.label_sides_mask = 1 << axis.side_code;
+    }
+    let style = scene_style::resolve_chrome_style(&pack_xych(input, &axis)).map_err(|_| -1)?;
     let authored_anchor = y2.collision.anchor_raw.is_some();
     let labels = y2.tick_labels.map(|labels| tick_label_table(labels.iter().copied()));
     let metrics = y2.metrics;
@@ -773,6 +791,9 @@ mod tests {
                 style: ChromeAxisStyleInput::default(),
                 minor_style: ChromeAxisStyleInput::default(),
             },
+            side_authored: true,
+            tick_sides_authored: true,
+            label_sides_authored: true,
             collision: ChromeCollisionAxisInput::default(),
             major: None,
             minor: &[],
@@ -827,6 +848,32 @@ mod tests {
         assert_eq!(axis.tick_min_gap, 9.0);
         assert_eq!(axis.tick_angle, Some(30.0));
         assert!(axis.tick_anchor_authored);
+    }
+
+    #[test]
+    fn an_unauthored_y2_side_is_the_right_side_and_masks_follow_it() {
+        // Hosts pass absent facts with placeholder codes; Rust ignores them.
+        let mut y2 = y2_input();
+        y2.axis.side_code = 0;
+        y2.axis.tick_sides_mask = 0b01;
+        y2.axis.label_sides_mask = 0b01;
+        y2.side_authored = false;
+        y2.tick_sides_authored = false;
+        y2.label_sides_authored = false;
+        let axis = decoded_y2(y2.clone()).expect("an unauthored side is admitted as right");
+        assert_eq!(axis.axis.side, crate::scene::AxisSide::High);
+        assert_eq!((axis.axis.tick_sides, axis.axis.tick_label_sides), (0b10, 0b10));
+        // The explicit right side resolves to the identical axis record.
+        let explicit = decoded_y2(y2_input()).unwrap();
+        assert_eq!(
+            (axis.axis.side, axis.axis.tick_sides, axis.axis.tick_label_sides),
+            (explicit.axis.side, explicit.axis.tick_sides, explicit.axis.tick_label_sides)
+        );
+        // An authored left side is not overridden: the Scene refuses it.
+        y2.side_authored = true;
+        y2.tick_sides_authored = true;
+        y2.label_sides_authored = true;
+        assert!(decoded_y2(y2).is_err());
     }
 
     #[test]

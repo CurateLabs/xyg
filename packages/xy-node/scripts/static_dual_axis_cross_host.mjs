@@ -43,6 +43,22 @@ const CASES = {
   strategy_wins: () => dualFigure({
     y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve", collision: "hide" },
   }),
+  // An omitted y2 side means right: Rust owns the default, hosts pass it through.
+  y2_side_omitted: () => {
+    const figure = dualFigure();
+    delete figure.axis_options.y2.side;
+    return figure;
+  },
+  y2_side_public_default: () => {
+    const figure = new Figure({ width: WIDTH, height: HEIGHT });
+    figure.setAxis("x", { domain: [0, 4] });
+    figure.setAxis("y", { domain: [0, 4], label: "L" });
+    figure.setAxis("y2", { label: "R", domain: [0, 400] });
+    figure.line([1, 2, 3], [1, 2, 3]);
+    figure.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
+    figure.traces.forEach((trace, index) => { trace.id = index; });
+    return figure;
+  },
   // An authored empty tick list means automatic ticks, for y2 as for y.
   empty_y2_ticks: () => dualFigure({ y2: { tick_values: [] } }),
   empty_y_ticks: () => dualFigure({ y: { tick_values: [] } }),

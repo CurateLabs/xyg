@@ -496,6 +496,8 @@ fn only_a_right_side_secondary_y_with_a_trace_is_admitted_with_stable_reasons() 
         reason(&[(0, 0), (1, 0), (2, AXIS_SIDE_RIGHT)], &[0, y2_trace]),
         ""
     );
+    // An unauthored (unobserved, code 0) y2 side is the default right side.
+    assert_eq!(reason(&[(0, 0), (1, 0), (2, 0)], &[0, y2_trace]), "");
     assert!(
         reason(&[(0, 0), (1, 0), (2, AXIS_SIDE_LEFT)], &[0, y2_trace])
             .starts_with("XYG_SCENE_UNSUPPORTED_Y2_SIDE")

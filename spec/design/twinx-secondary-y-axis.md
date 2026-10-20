@@ -439,6 +439,23 @@ surface Rust's reasons; no host adds admission or layout policy.
     the y2 ladder renders on the right and the bound annotation lands at the y2
     projection, far from the primary one). Each fails when its change is
     reverted.
+
+  implemented (known gap, `compat.md`).
+- **Omitted y2 side means right (review round 4).** The secondary y axis is
+  right-hand by default and Rust owns that default: hosts pass an absent side
+  through (`XYFS` side code 0, `AXIS_SIDE_UNOBSERVED`; the chrome observation's
+  `side_authored` / `tick_sides_authored` / `label_sides_authored` flags in
+  `XygChromeY2In`), `scene_export.rs` admits an unobserved y2 side as right, and
+  `scene_chrome_pack.rs::pack_y2_sidecar` resolves an unauthored side to high and
+  unauthored side masks to that side. The host chrome marshal no longer invents
+  `"left"` for an unauthored y2 side (placeholder codes are ignored without the
+  flags); x and y defaults are unchanged. Before this, a raw/Node y2 axis without a
+  `side` was refused as `_Y2_SIDE` while the Python public axis config defaulted
+  non-`y` axis ids to the right. Pinned by the cross-host cases `y2_side_omitted`
+  and `y2_side_public_default` (byte-identical to the explicit `side="right"`
+  output), Rust `an_unauthored_y2_side_is_the_right_side_and_masks_follow_it` and
+  the unobserved-side case of
+  `only_a_right_side_secondary_y_with_a_trace_is_admitted_with_stable_reasons`.
 - **Invalid-input tests.** `tests/test_static_dual_axis_cross_host.py` sends a zero
   and a negative constant, an infinite domain and ±infinite
   `tick_label_angle`; Python and Node get the same rejection message,

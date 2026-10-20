@@ -103,6 +103,10 @@ CASES: dict[str, dict[str, Any]] = {
     "gap": {"y2": {"tick_label_min_gap": 200}},
     "preserve": {"y2": {"tick_label_min_gap": 200, "tick_label_strategy": "preserve"}},
     "collision_key": {"y2": {"tick_label_min_gap": 200}, "raw_y2": {"collision": "preserve"}},
+    # An omitted y2 side means right: the raw Figure has no side, Rust defaults it.
+    "y2_side_omitted": {"raw_y2": {"side": None}},
+    # The public `xyg.y_axis(id="y2")` with no side is the same chart.
+    "y2_side_public_default": {"y2_side": None},
     "empty_y2_ticks": {"raw_y2": {"tick_values": []}},
     "empty_y_ticks": {"raw_y": {"tick_values": []}},
     "strategy_wins": {
@@ -186,6 +190,20 @@ def test_python_and_node_report_the_same_rust_reasons(node_exports: dict[str, An
         "y2_annotation_hline",
     ):
         assert python[name].startswith("XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION:"), name
+
+
+def test_an_omitted_y2_side_is_the_explicit_right_side_in_both_hosts(
+    node_exports: dict[str, Any],
+) -> None:
+    """Rust owns the default: absent side == `side="right"`, byte for byte."""
+    assert _case("y2_side_omitted").axis_options["y2"].get("side") is None
+    explicit = node_exports["cases"]["dual"]
+    assert node_exports["cases"]["y2_side_omitted"] == explicit
+    assert node_exports["cases"]["y2_side_public_default"] == explicit
+    for name in ("y2_side_omitted", "y2_side_public_default"):
+        assert export_figure(_case(name), "svg", width=WIDTH, height=HEIGHT) == export_figure(
+            _case("dual"), "svg", width=WIDTH, height=HEIGHT
+        )
 
 
 def test_empty_tick_values_are_automatic_on_both_axes_in_both_hosts(

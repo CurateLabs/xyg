@@ -169,13 +169,19 @@ def pack_chrome_facts(
                 raise UnsupportedSceneV3(
                     f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
                 )
-        side = options.get("side", "bottom" if axis_id == "x" else "left")
+        # An unauthored y2 side is passed through as absent (code 0 is ignored
+        # without `side_authored`): Rust defaults the secondary axis to the right.
+        side = (
+            None
+            if axis_id == "y2" and options.get("side") is None
+            else options.get("side", "bottom" if axis_id == "x" else "left")
+        )
         allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
-        if side not in allowed:
+        if side is not None and side not in allowed:
             raise UnsupportedSceneV3(
                 f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}"
             )
-        side_code = 0 if side in {"bottom", "left"} else 1
+        side_code = 0 if side in {None, "bottom", "left"} else 1
         return {
             "side_code": side_code,
             "tick_sides_mask": _scene_side_mask(
@@ -310,6 +316,9 @@ def _marshal_y2(figure: Any, y2_axis: dict[str, Any], y2_chrome: Y2Chrome | None
         "constant": None if constant is None else float(constant),
         "nonpositive_mask": 1 if options.get("nonpositive") == "mask" else 0,
         "axis": y2_axis,
+        "side_authored": options.get("side") is not None,
+        "tick_sides_authored": options.get("tick_sides") is not None,
+        "label_sides_authored": options.get("tick_label_sides") is not None,
         "collision": {
             "strategy": _optional_str(options.get("tick_label_strategy")),
             "collision": _optional_str(options.get("collision")),

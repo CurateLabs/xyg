@@ -34,7 +34,9 @@ in the README).
   right-placed title (a primary or extra y axis with `side="right"`, as well as
   y2) also flips from reading top to bottom to bottom to top; an authored
   `label_angle` still wins. An authored empty y2 `tick_values` means
-  automatic ticks, as for x and y. Annotations bound to y2 (`y_axis="y2"` on
+  automatic ticks, as for x and y. An omitted y2 `side` means right, decided by
+  Rust (`Figure.setAxis("y2", {...})` without a side now exports like
+  `side: "right"` instead of being refused as `_Y2_SIDE`). Annotations bound to y2 (`y_axis="y2"` on
   `xyg.text`/`label`/`marker`/`arrow`/`callout`/`hline`/`y_band`; every pyplot
   twin annotation) that read the y data scale are refused by *static export* with
   `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION` instead of being silently projected
