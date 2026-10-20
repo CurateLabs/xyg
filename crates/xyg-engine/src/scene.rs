@@ -11019,7 +11019,12 @@ impl SceneDocument {
         };
         let mut remap = vec![None; self.styles.len()];
         for record in &self.records {
-            if !(is_scene_annotation_id(record.stable_id) || record.annotation_tag != 0) {
+            // Tag 0x80 is ordinary literal geometry, not an annotation.
+            let tagged = matches!(
+                record.annotation_tag,
+                1..=SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+            );
+            if !(is_scene_annotation_id(record.stable_id) || tagged) {
                 continue;
             }
             let source = record.style_ref;

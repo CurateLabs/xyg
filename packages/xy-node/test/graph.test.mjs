@@ -1116,18 +1116,19 @@ test("annotated graph static SVG/PNG match the Python cross-host fixture (#922)"
 });
 
 test("graph annotations draw in static export instead of failing closed (#922)", () => {
-  for (const annotation of [
-    { kind: "text", x: 0.5, y: 0.5, text: "NOTE" },
-    { kind: "rule", axis: "y", value: 0.25 },
-  ]) {
-    const fig = graphChart(["a", "b"], [["a", "b"]], {
-      layout: "preset", x: [0, 1], y: [0, 1],
-      xAxis: { domain: [-1, 2], style: { axis_width: 0 } }, yAxis: { domain: [-1, 2], style: { axis_width: 0 } },
-    }).annotate(annotation);
-    const svg = new TextDecoder().decode(fig.toSvg());
-    assert.ok(annotation.text ? svg.includes(`>${annotation.text}<`) : svg.includes("<polyline"), annotation.kind);
-    assert.ok(fig.toPng({ scale: 1 }).length > 0);
-  }
+  const chart = () => graphChart(["a", "b"], [["a", "b"]], {
+    layout: "preset", x: [0, 1], y: [0, 1],
+    xAxis: { domain: [-1, 2], style: { axis_width: 0 } }, yAxis: { domain: [-1, 2], style: { axis_width: 0 } },
+  });
+  const svgOf = (fig) => new TextDecoder().decode(fig.toSvg());
+  const count = (svg, needle) => svg.split(needle).length - 1;
+  const plain = svgOf(chart());
+  const text = svgOf(chart().annotate({ kind: "text", x: 0.5, y: 0.5, text: "NOTE" }));
+  assert.equal(count(text, ">NOTE<"), 1);
+  const rule = svgOf(chart().annotate({ kind: "rule", axis: "y", value: 0.25 }));
+  // The rule is exactly one more stroked polyline than the bare graph.
+  assert.equal(count(rule, "<polyline"), count(plain, "<polyline") + 1);
+  assert.ok(chart().annotate({ kind: "rule", axis: "y", value: 0.25 }).toPng({ scale: 1 }).length > 0);
 });
 
 test("graphChart keeps an authored axis like Python graph_chart (#909)", () => {

@@ -934,8 +934,8 @@ boundary edges retain their canonical source identity.
   annotated graphs (text, rules, arrow, callout, and all five on a semantic
   composed graph) in `tests/fixtures/graph_static_export_cross_host.json`, and
   `packages/xy-node/test/graph.test.mjs` asserts the same bytes;
-  `test_browser_annotations_match_static_export` checks the browser paints the
-  same annotation geometry.
+  `test_browser_annotations_match_static_export` checks the browser's projected
+  rule and arrow anchors and its DOM label placement against the export.
 - Home view (#910): node-center autorange used to clip markers, halos,
   labels, and compound frames at the plot edge. `xyg_graph_home_domain`
   (`graph_scene::graph_home_domain`) returns the smallest domain containing

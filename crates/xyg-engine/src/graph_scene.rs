@@ -1298,6 +1298,47 @@ mod tests {
     }
 
     #[test]
+    fn literal_tagged_base_records_are_not_annotations() {
+        // Literal-id Scenes tag every record 0x80; that is ordinary geometry
+        // the rebuild replaces, never an annotation it carries over.
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let xs = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let ys = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let literal = SceneBatch::new_with_chrome_literal_ids(
+            layout,
+            1,
+            2,
+            xs,
+            ys,
+            Default::default(),
+            Default::default(),
+            &[SceneRecordKind::Scatter as u8],
+            &[1],
+            &[0],
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[8.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.5],
+            &[0.5],
+        )
+        .unwrap()
+        .encode();
+        let circles = |bytes: &[u8]| {
+            let out = rebuild_composed_graph_scene(bytes, &nodes()).unwrap();
+            SceneDocument::decode(&out)
+                .unwrap()
+                .to_svg()
+                .matches("<circle")
+                .count()
+        };
+        assert_eq!(circles(&literal), circles(&base()));
+    }
+
+    #[test]
     fn graph_labels_yield_the_label_caps_to_authored_annotations() {
         let authored = |i: usize| SceneLabel {
             stable_id: i as u64,

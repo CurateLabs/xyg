@@ -433,7 +433,7 @@ _ANNOTATION_PROBE = """
 
 
 def test_browser_annotations_match_static_export(tmp_path: Path) -> None:
-    """The browser paints a graph chart's annotations where the export does (#922)."""
+    """Browser-projected annotation anchors and DOM labels match the export (#922)."""
     from conftest import probe_document, run_browser_probe
     from xyg.export import find_chromium
 
