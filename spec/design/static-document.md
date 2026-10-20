@@ -15,8 +15,8 @@ marshal the envelope, invoke the generated ABI, and translate stable errors.
 They must not retry a host renderer after the Rust support predicate or
 consumer has been selected.
 
-The v2 envelope is `XYST` (see §1.1 for the layout version): a fixed header, fixed-size panel table, optional
-bounded UTF-8 document title, and concatenated canonical Scene bytes. Numeric
+The envelope is `XYST` (see §1.1 for the layout version): a fixed header, fixed-size panel table, optional
+bounded UTF-8 document title, the per-label annotation table region, and concatenated canonical Scene bytes. Numeric
 facts are little-endian integers; no JSON numeric array crosses the boundary.
 The decoder rejects unknown versions/flags, empty or oversized panels,
 out-of-canvas placement, overlapping byte ranges, invalid UTF-8, invalid Scene
@@ -56,7 +56,11 @@ leaves the document canvas; nothing is clipped or silently dropped. (Legend
 boxes are otherwise clamped into their anchor box by `legend_box_layout`, so the
 guard only fires for authored anchors or boxes that cannot fit.)
 
-### 1.1 XYST v2 framing
+### 1.1 XYST v3 framing
+
+Version 3 (#1006) replaced the four uniform annotation facts (panel flags 3, 6,
+7, 9) with a per-label table region (below); version `2` documents are rejected
+with `XYG_STATIC_DOCUMENT_VERSION` like version `1`.
 
 Version 2 (#1004) widened the panel record from 108 to 128 bytes. The version
 is the only layout discriminator: a version `1` document (108-byte panels) is
@@ -68,15 +72,17 @@ decoded with the new table boundaries. Rejections carry a stable
 Encoders accept panel title paints as a CSS color string (converted by the
 native color conversion) or resolved RGBA8 bytes; anything else is rejected.
 
-The header is 64 bytes. It begins with `XYST`, version `2`, width, height,
+The header is 64 bytes. It begins with `XYST`, version `3`, width, height,
 document flags, panel count, and title byte count as little-endian `u32`.
 Header flags are `BACKGROUND=1`, `OPTIMIZE_PNG=2`, `TIGHT_CROP=4`, and
 `TITLE_X_CENTER=8`; every other bit is rejected. The center flag requires
 canonical zero title-x bytes and makes Rust resolve `width / 2`; without it,
 title x is an explicit authored fact. Bytes 28–35 are background/title RGBA8,
 bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
-italic/bold flags, bytes 52–59 are decoration byte count and crop padding, and
-all reserved bytes must be zero.
+italic/bold flags, bytes 52–59 are decoration byte count and crop padding, bytes 60–63 are the
+byte length of the per-label annotation table region (a multiple of 20; zero when
+no panel has the flag below), and all reserved bytes must be zero. The region sits
+between the decorations and the Scene bytes.
 
 Each panel record is 128 bytes (`<2i6I12fII2f4B2II16B>`; the `u32` at offset
 104 carries the grid dash nibbles and the final 20 bytes the chrome-text word
@@ -89,19 +95,31 @@ inactive. The admitted flags are:
 | ---: | --- |
 | 0–1 | x/y tick-label size, axis-label size, and tick padding |
 | 2 | colorbar shrink and x/y anchor |
-| 3 | uniform annotation font size |
+| 3 | per-label annotation table: the `u32` at offset 28 is the table's byte offset in the document's label-table region and the `u32` at offset 84 its byte length (see below) |
 | 4 | uniform arrow head/start/end shaft metrics |
 | 5 | low/high x/y spine masks |
-| 6 | uniform annotation italic/bold flags |
-| 7 | uniform annotation label-box padding |
+| 6–7 | retired (v2 uniform annotation flags/padding); rejected |
 | 8 | panel-title size and RGBA8 |
-| 9 | uniform annotation vertical alignment |
+| 9 | retired (v2 uniform annotation vertical alignment); rejected |
 | 10 | pyplot colorbar logarithmic projection |
 | 11–12 | pyplot colorbar minimum/maximum endpoint extends |
 | 13 | pyplot colorbar label/orientation compatibility |
 | 14 | uniform grid dash codes for (x major, y major, x minor, y minor) |
 | 15 | Rust-resolved chrome text: italic/bold flags for the title, axis titles, and tick labels plus separate tick-label and axis-title RGBA8 paints ([chrome-style projection](static-chrome-style.md)) |
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
+
+Bit 3's table is the annotation-style projection's per-label output
+([static-annotation-style.md](static-annotation-style.md)): 20-byte entries in
+the order of the panel Scene's annotation labels (`<I3f2B2x>`: present bits, font size, horizontal
+and vertical box padding, italic/bold bits, vertical alignment). Panels consume
+the region sequentially, the entry count must equal the panel Scene's
+annotation-label count (labels with the Scene-wire annotation provenance flag, XYLB v7, never an id pattern;
+other labels such as a composed graph's own are untouched; an empty table with
+the flag set over a Scene with annotation labels is rejected), absent facts and reserved bytes must be canonical zero, and the region
+must be consumed exactly; Rust applies size, flags, alignment shift and the
+per-axis box inset to each label (`SceneDocument::apply_static_annotation_labels`).
+A label that requests padding but has no box, or a count mismatch, rejects the
+document (`XYG_STATIC_DOCUMENT_PANEL`).
 
 Bit 14 packs four nibble codes (`0=solid, 1=dashed, 2=dotted, 3=dashdot`)
 into the panel's trailing fact `u32`; the pattern table is Rust-owned and

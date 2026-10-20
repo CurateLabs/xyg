@@ -1189,6 +1189,7 @@ fn encode_semantic_graph_scene_internal(
             anchor: 0,
             rotation: 0.0,
             text: candidate.text,
+            annotation: false,
         });
     }
 

@@ -403,7 +403,11 @@ pub struct StaticDocumentVocabulary {
 
 /// These masks are consumed by the XYST decoder after the #873 integration.
 pub const STATIC_DOCUMENT_HEADER_FLAGS: u32 = 15;
-pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = 0xffff;
+/// Panel flag bits 6, 7 and 9 (the v2 uniform annotation flags/padding/alignment)
+/// are retired in XYST v3 and rejected; bit 3 is the per-label annotation table.
+/// Bit 24 (explicit `cax` fills the plot rectangle) is admitted outside the low
+/// sixteen; a test pins this mask to the decoder's.
+pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = (0xffff & !((1 << 6) | (1 << 7) | (1 << 9))) | (1 << 24);
 pub const STATIC_DOCUMENT_FORMATS: &[&str] = &["svg", "png", "pdf", "jpeg", "webp"];
 
 pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
@@ -436,6 +440,11 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         name: "panel.chrome-text",
         family: "panel-flag",
         code: 1 << 15,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-fill-plot",
+        family: "panel-flag",
+        code: 1 << 24,
     },
     StaticDocumentVocabulary {
         name: "annotation.baseline",
@@ -513,9 +522,19 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         code: 4,
     },
     StaticDocumentVocabulary {
-        name: "panel.annotation-font-size",
+        name: "panel.annotation-labels",
         family: "panel-flag",
         code: 8,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.label-typography",
+        family: "annotation-label-entry",
+        code: 1,
+    },
+    StaticDocumentVocabulary {
+        name: "annotation.label-padding",
+        family: "annotation-label-entry",
+        code: 2,
     },
     StaticDocumentVocabulary {
         name: "panel.arrow-metrics",
@@ -528,24 +547,9 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         code: 32,
     },
     StaticDocumentVocabulary {
-        name: "panel.annotation-text-flags",
-        family: "panel-flag",
-        code: 64,
-    },
-    StaticDocumentVocabulary {
-        name: "panel.annotation-padding",
-        family: "panel-flag",
-        code: 128,
-    },
-    StaticDocumentVocabulary {
         name: "panel.title-style",
         family: "panel-flag",
         code: 256,
-    },
-    StaticDocumentVocabulary {
-        name: "panel.annotation-vertical-align",
-        family: "panel-flag",
-        code: 512,
     },
     StaticDocumentVocabulary {
         name: "title.anchor-start",
@@ -731,22 +735,22 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
     },
     StaticDocumentCase {
         name: "document_annotation_baseline",
-        vocabulary: &["annotation.baseline"],
+        vocabulary: &["panel.annotation-labels", "annotation.baseline"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
         name: "document_annotation_top",
-        vocabulary: &["annotation.top"],
+        vocabulary: &["panel.annotation-labels", "annotation.top"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
         name: "document_annotation_bottom",
-        vocabulary: &["annotation.bottom"],
+        vocabulary: &["panel.annotation-labels", "annotation.bottom"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
         name: "document_annotation_center",
-        vocabulary: &["annotation.center"],
+        vocabulary: &["panel.annotation-labels", "annotation.center"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
@@ -811,12 +815,16 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
     StaticDocumentCase {
         name: "document_annotation_style",
         vocabulary: &[
-            "panel.annotation-font-size",
-            "panel.annotation-text-flags",
-            "panel.annotation-padding",
-            "panel.annotation-vertical-align",
+            "panel.annotation-labels",
+            "annotation.label-typography",
+            "annotation.label-padding",
             "panel.arrow-metrics",
         ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_colorbar_fill_plot",
+        vocabulary: &["panel.colorbar-fill-plot"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
@@ -950,11 +958,7 @@ pub const STATIC_DOCUMENT_AUTHORED_WITNESSES: &[StaticDocumentAuthoredWitness] =
     },
     StaticDocumentAuthoredWitness {
         name: "text_annotation",
-        vocabulary: &[
-            "panel.annotation-font-size",
-            "panel.annotation-text-flags",
-            "panel.annotation-vertical-align",
-        ],
+        vocabulary: &["panel.annotation-labels", "annotation.label-typography"],
     },
     StaticDocumentAuthoredWitness {
         name: "anchored_legend",
@@ -984,10 +988,14 @@ pub const STATIC_DOCUMENT_REJECTIONS: &[&str] = &[
     "version_unknown",
     "version_legacy_layout",
     "header_flags_unknown",
-    "header_reserved_nonzero",
+    "header_label_table_len_invalid",
     "panels_empty",
     "dimensions_zero",
     "panel_flags_unknown",
+    "panel_retired_annotation_text_flags",
+    "panel_retired_annotation_padding",
+    "panel_retired_annotation_vertical_align",
+    "panel_label_table_empty_present",
     "panel_inactive_nonzero",
     "panel_ranges_overlap",
     "panel_scene_corrupt",
@@ -1129,6 +1137,17 @@ mod tests {
             }
             assert_eq!(actual, mask);
         }
+        // The advertised masks are exactly the masks the decoder admits, so a
+        // flag added to (or retired from) the decoder cannot drift from the
+        // registry unnoticed.
+        assert_eq!(
+            STATIC_DOCUMENT_HEADER_FLAGS,
+            crate::static_document::FLAGS
+        );
+        assert_eq!(
+            STATIC_DOCUMENT_PANEL_FLAGS,
+            crate::static_document::PANEL_FLAGS
+        );
         let witness_names: BTreeSet<_> = STATIC_DOCUMENT_AUTHORED_WITNESSES
             .iter()
             .map(|row| row.name)

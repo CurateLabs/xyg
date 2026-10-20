@@ -541,6 +541,7 @@ pub fn rebuild_composed_graph_scene(
                     anchor: 0,
                     rotation: 0.0,
                     text: (*text).to_owned(),
+                    annotation: false,
                 },
             ));
         }

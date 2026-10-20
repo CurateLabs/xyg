@@ -163,6 +163,7 @@ pub(crate) fn compile_counts(
             anchor: 0,
             rotation: 0.,
             text: LABEL.to_owned(),
+            annotation: false,
         }],
         &kinds,
         &ids,

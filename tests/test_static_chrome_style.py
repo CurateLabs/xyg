@@ -304,15 +304,18 @@ def _legacy_v1_document(document: bytes) -> bytes:
 
 def test_xyst_version_bumped_and_legacy_layout_rejected_actionably() -> None:
     document = sd.figure_document(_chart(TYPOGRAPHY).figure(), width=320, height=240)
-    assert struct.unpack_from("<I", document, 4)[0] == 2
+    assert struct.unpack_from("<I", document, 4)[0] == 3
     assert _native.static_document_export(document, "svg")
-    legacy = _legacy_v1_document(document)
-    assert struct.unpack_from("<I", legacy, 4)[0] == 1
-    for fmt in ("svg", "png", "pdf", "jpeg", "webp"):
-        with pytest.raises(_native.StaticDocumentRejected) as rejected:
-            _native.static_document_export(legacy, fmt)
-        assert rejected.value.code == "XYG_STATIC_DOCUMENT_VERSION"
-        assert "re-encode" in str(rejected.value)
+    # v1 (108-byte panels) and v2 (uniform annotation facts) are both rejected.
+    v2 = bytearray(document)
+    struct.pack_into("<I", v2, 4, 2)
+    for legacy, version in ((_legacy_v1_document(document), 1), (bytes(v2), 2)):
+        assert struct.unpack_from("<I", legacy, 4)[0] == version
+        for fmt in ("svg", "png", "pdf", "jpeg", "webp"):
+            with pytest.raises(_native.StaticDocumentRejected) as rejected:
+                _native.static_document_export(legacy, fmt)
+            assert rejected.value.code == "XYG_STATIC_DOCUMENT_VERSION"
+            assert "re-encode" in str(rejected.value)
 
 
 def test_title_style_paint_accepts_css_strings_and_rgba_only() -> None:

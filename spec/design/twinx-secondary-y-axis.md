@@ -256,7 +256,7 @@ Sol round 2 marked round-1 blockers 1, 3, 4 RESOLVED and left two blockers with 
 ## PR 1 implementation record (format PR)
 
 PR 1 ships the atomic format and Rust policy with hosts still fail-closed for
-y2: Scene v33, XYPB v16 (`WASM_ABI_VERSION` 34), `ABI_VERSION` 387, the browser
+y2: Scene v33, XYPB v16 (`WASM_ABI_VERSION` 34), `ABI_VERSION` 388, the browser
 reader, every Scene-version reader, regenerated fixtures, and Rust-owned
 admission. The normative wire layouts are in `scene-ir.md` (Secondary
 right-hand y axis). Where the implementation refines this document:

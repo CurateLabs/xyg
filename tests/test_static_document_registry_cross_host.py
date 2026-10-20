@@ -61,6 +61,18 @@ CHROME_TEXT = (
     ((255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255), (10, 20, 30, 255)),
 )
 
+
+def _label_entry(
+    size: float = 12.0,
+    flags: int = 0,
+    padding: tuple[float, float] | None = None,
+    align: int = 0,
+) -> bytes:
+    """One per-label annotation entry (the XYAO label-table layout)."""
+    pad_x, pad_y = padding or (0.0, 0.0)
+    return struct.pack("<I3fBBxx", 1 | (2 if padding else 0), size, pad_x, pad_y, flags, align)
+
+
 # Literal envelope facts, not a host-side renderer or layout implementation.
 OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_title_x_center": ({}, {}),
@@ -69,16 +81,17 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_panel_colorbar_extend_max": ({"colorbar_extend": "max"}, {}),
     "document_panel_colorbar_pyplot_label": ({"colorbar_pyplot_label": True}, {}),
     "document_colorbar_extend_both": ({"colorbar_extend": "both"}, {}),
-    "document_annotation_baseline": ({"annotation_vertical_align": 0}, {}),
-    "document_annotation_top": ({"annotation_vertical_align": 1}, {}),
-    "document_annotation_bottom": ({"annotation_vertical_align": 2}, {}),
-    "document_annotation_center": ({"annotation_vertical_align": 3}, {}),
+    "document_annotation_baseline": ({"annotation_labels": _label_entry(align=0)}, {}),
+    "document_annotation_top": ({"annotation_labels": _label_entry(align=1)}, {}),
+    "document_annotation_bottom": ({"annotation_labels": _label_entry(align=2)}, {}),
+    "document_annotation_center": ({"annotation_labels": _label_entry(align=3)}, {}),
     "document_axis_sides_none": ({"axis_sides": (0, 0)}, {}),
     "document_axis_sides_low": ({"axis_sides": (1, 1)}, {}),
     "document_axis_sides_high": ({"axis_sides": (2, 2)}, {}),
     "document_axis_sides_both": ({"axis_sides": (3, 3)}, {}),
     "document_grid_dash": ({"grid_dash": (1, 0, 0, 2)}, {}),
     "document_chrome_text": ({"chrome_text": CHROME_TEXT}, {}),
+    "document_colorbar_fill_plot": ({"colorbar_fill_plot": True}, {}),
     "document_defaults": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
@@ -86,10 +99,7 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_panel_chrome": ({"chrome_metrics": (14, 16, 6, 13, 15, 5), "axis_sides": (3, 3)}, {}),
     "document_annotation_style": (
         {
-            "annotation_font_size": 15,
-            "annotation_text_flags": 3,
-            "annotation_padding": 5,
-            "annotation_vertical_align": 3,
+            "annotation_labels": _label_entry(size=15.0, flags=3, padding=(5.0, 5.0), align=3),
             "arrow_metrics": (9, 2, 2),
         },
         {},
@@ -240,10 +250,14 @@ REJECTIONS = {
     "version_unknown",
     "version_legacy_layout",
     "header_flags_unknown",
-    "header_reserved_nonzero",
+    "header_label_table_len_invalid",
     "panels_empty",
     "dimensions_zero",
     "panel_flags_unknown",
+    "panel_retired_annotation_text_flags",
+    "panel_retired_annotation_padding",
+    "panel_retired_annotation_vertical_align",
+    "panel_label_table_empty_present",
     "panel_inactive_nonzero",
     "panel_ranges_overlap",
     "panel_scene_corrupt",
@@ -271,6 +285,8 @@ def _reject(name: str) -> bytes:
         if name.startswith("label_") or name == "decoration_trailing_bytes"
         else "document_legend"
         if name.startswith("legend_")
+        else "document_annotation_baseline"
+        if name == "panel_label_table_empty_present"
         else "document_defaults"
     )
     data = bytearray(_build(seed)[0])
@@ -283,15 +299,28 @@ def _reject(name: str) -> bytes:
         "version_unknown": (4, 99),
         "version_legacy_layout": (4, 1),
         "header_flags_unknown": (16, 16),
-        "header_reserved_nonzero": (60, 1),
+        "header_label_table_len_invalid": (60, 1),
         "panels_empty": (20, 0),
         "dimensions_zero": (8, 0),
         "panel_flags_unknown": (88, 1 << 16),
+        # XYST v2's uniform annotation flags/padding/alignment are retired.
+        "panel_retired_annotation_text_flags": (88, 1 << 6),
+        "panel_retired_annotation_padding": (88, 1 << 7),
+        "panel_retired_annotation_vertical_align": (88, 1 << 9),
         "panel_inactive_nonzero": (96, 1),
         "panel_ranges_overlap": (64 + 128 + 16, 0),
     }
     if name in offsets:
         struct.pack_into("<I", data, *offsets[name])
+    elif name == "panel_label_table_empty_present":
+        # Panel flag 3 with an explicitly empty table over a Scene that has an
+        # annotation label: the flag demands exact label coverage.
+        table_len = struct.unpack_from("<I", data, 60)[0]
+        assert table_len == 20
+        del data[scene_at : scene_at + table_len]
+        struct.pack_into("<I", data, 60, 0)
+        struct.pack_into("<I", data, 64 + 28, 0)
+        struct.pack_into("<I", data, 64 + 84, 0)
     elif name == "centered_title_x_nonzero":
         struct.pack_into("<I", data, 16, struct.unpack_from("<I", data, 16)[0] | 8)
         struct.pack_into("<f", data, 40, 1)
@@ -448,3 +477,23 @@ def test_registered_document_rejections(name, node_results):
         with pytest.raises((ValueError, RuntimeError)):
             _native.static_document_export(data, format)
         assert node_results["rejections"][name][format]["rejected"] is True
+
+
+def test_registered_panel_flag_masks_cover_every_admitted_bit(node_results):
+    """Bit 24 (explicit ``cax``) is admitted and witnessed; retired bits are not."""
+    registry = DOCUMENT
+    flags = {
+        row["name"]: row["code"] for row in registry["vocabulary"] if row["family"] == "panel-flag"
+    }
+    assert flags["panel.colorbar-fill-plot"] == 1 << 24
+    mask = 0
+    for code in flags.values():
+        mask |= code
+    assert mask == 0x0100FD3F
+    for retired in (1 << 6, 1 << 7, 1 << 9):
+        assert not mask & retired
+    for source in (
+        _build("document_colorbar_fill_plot")[0],
+        base64.b64decode(node_results["cases"]["document_colorbar_fill_plot"]["document"]),
+    ):
+        assert struct.unpack_from("<I", source, 64 + 24)[0] & (1 << 24)

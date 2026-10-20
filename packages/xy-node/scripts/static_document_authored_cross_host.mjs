@@ -65,9 +65,11 @@ function single(name) {
       kind: "text", x: 1, y: 3, text: "peak < & >", dx: 0, dy: -6,
       anchor: "start", style: { color: "#654321" },
     });
-    Object.assign(facts, {
-      annotationFontSize: 12, annotationTextFlags: 0, annotationVerticalAlign: 0,
-    });
+    // One label: size 12, upright, baseline (the XYAO label-table layout).
+    const entry = Buffer.alloc(20);
+    entry.writeUInt32LE(1, 0);
+    entry.writeFloatLE(12, 4);
+    Object.assign(facts, { annotationLabels: entry });
   }
   if (name === "anchored_legend") {
     addScatter(figure, "Observed", "circle");

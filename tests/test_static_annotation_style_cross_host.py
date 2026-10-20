@@ -31,10 +31,10 @@ def _text(value: str | None) -> bytes:
 
 
 def _frame(rows: list[dict[str, Any]]) -> bytes:
-    result = bytearray(struct.pack("<4s3I", b"XYAS", 1, len(rows), 0))
+    result = bytearray(struct.pack("<4s3I", b"XYAS", 2, len(rows), 0))
     for row in rows:
         style = row.get("style", {})
-        result.extend(struct.pack("<2I", len(style), 0))
+        result.extend(struct.pack("<2I", len(style), row.get("flags", 0)))
         result.extend(_text(row.get("text", "note")))
         result.extend(_text(row.get("kind", "text")))
         for key, value in style.items():
@@ -73,6 +73,24 @@ VALID = {
     "rotation": [_styled(rotation=-450)],
     "rotation_zero": [_styled(rotation=-360)],
     "size_string": [_styled(font_size=" 18 ")],
+    # Heterogeneous typography and boxes are per-label facts, not rejections.
+    "mixed_size": [{}, _styled(font_size=18)],
+    "mixed_style": [{}, _styled(font_style="italic")],
+    "mixed_vertical": [{}, _styled(vertical_align="top")],
+    "mixed_padding": [
+        _styled(background="white"),
+        _styled(background="white", padding="5px"),
+        _styled(background="white", padding="2px 6px"),
+    ],
+    "label_order": [
+        {"kind": "callout", "style": {"font_size": 17}},
+        {"flags": 1, "style": {"font_size": 22}},
+        {"kind": "arrow", "text": None},
+        {"kind": "rule", "style": {"font_size": 14}},
+        {"flags": 2, "style": {"font_size": 24}},
+        {"style": {"font_size": 23}},
+    ],
+    "zero_radius": [_styled(border_radius=0)],
 }
 for weight in (400, 600, 700, 800, 900, 700.0):
     VALID[f"weight_{weight}"] = [_styled(font_weight=weight)]
@@ -95,6 +113,8 @@ def _invalid() -> dict[str, tuple[bytes, str]]:
         ("paint", {"label_color": "var(--ink)"}, "ANNOTATION_STYLE"),
         ("border_underflow", {"border": "1e-50px solid red"}, "ANNOTATION_BBOX"),
         ("padding_negative", {"padding": "-1e-50px"}, "ANNOTATION_BBOX"),
+        ("padding_three", {"padding": "1px 2px 3px"}, "ANNOTATION_BBOX"),
+        ("round_box", {"background": "white", "border_radius": 5.0}, "ANNOTATION_BOXSTYLE"),
     ):
         result[name] = (_frame([{"style": style}]), "XYG_STATIC_UNSUPPORTED_" + code)
     for key in ("font_size", "font_weight", "rotation"):
@@ -104,27 +124,13 @@ def _invalid() -> dict[str, tuple[bytes, str]]:
                 _frame([{"style": {key: value}}]),
                 "XYG_STATIC_UNSUPPORTED_" + code,
             )
-    for name, rows in (
-        ("size", [{}, _styled(font_size=18)]),
-        ("style", [{}, _styled(font_style="italic")]),
-        ("vertical", [{}, _styled(vertical_align="top")]),
-        ("padding", [_styled(background="white"), _styled(background="white", padding="5px")]),
-        (
-            "canonical_padding",
-            [_styled(label_background="white"), _styled(background="white", padding="5px")],
-        ),
-    ):
-        result[f"heterogeneous_{name}"] = (
-            _frame(rows),
-            "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE",
-        )
     good = _frame([{}])
     for name, offset, value, code in (
-        ("version", 4, 2, "VERSION"),
+        ("version", 4, 1, "VERSION"),
         ("count", 8, 129, "LIMIT"),
         ("reserved", 12, 1, "FLAGS"),
         ("styles_count", 16, 65, "LIMIT"),
-        ("row_reserved", 20, 1, "FLAGS"),
+        ("row_flags", 20, 4, "FLAGS"),
     ):
         data = bytearray(good)
         struct.pack_into("<I", data, offset, value)
@@ -170,36 +176,55 @@ def node_results():
 def test_annotation_query_bytes_and_expected_facts(name, node_results):
     result = _native.static_annotation_style(_frame(VALID[name]))
     assert result == base64.b64decode(node_results[name]["output"])
-    magic, version, count, presence, size, padding, flags, vertical = struct.unpack_from(
-        "<4s3I2f2I", result
-    )
-    assert (magic, version, count) == (b"XYAO", 1, len(VALID[name]))
+    rows = VALID[name]
+    magic, version, count, label_count = struct.unpack_from("<4s3I", result)
+    assert (magic, version, count) == (b"XYAO", 2, len(rows))
+    table = result[len(result) - 20 * label_count :]
+    entries = [struct.unpack_from("<I3f2B2x", table, 20 * i) for i in range(label_count)]
     if name == "empty":
-        assert result == struct.pack("<4s3I2f2I", b"XYAO", 1, 0, 0, 0, 0, 0, 0)
+        assert result == struct.pack("<4s3I", b"XYAO", 2, 0, 0)
     elif name == "dropped":
-        assert presence == 0 and result[32:] == struct.pack("<2I", 1, 0)
+        assert entries == [] and result[16:] == struct.pack("<2I", 1, 0)
     elif name == "nontext_size":
-        assert presence == 0
-    else:
-        assert presence & 11 == 11
-        assert size == (18 if name == "size_string" else 12)
+        # An unknown kind yields no label, and its size is never interpreted.
+        assert entries == []
+    elif name == "label_order":
+        # Scene label order: the plain text (XYAT), the labelled rule (XYAL),
+        # the wrapped and laid-out texts (XYAW), then the callout (XYAC); the
+        # arrow has no label.
+        assert [entry[1] for entry in entries] == [23.0, 14.0, 22.0, 24.0, 17.0]
+    elif name.startswith("mixed_"):
+        sizes = [entry[1] for entry in entries]
+        assert all(entry[0] & 1 for entry in entries)
+        if name == "mixed_size":
+            assert sizes == [12.0, 18.0]
+        if name == "mixed_style":
+            assert [entry[4] for entry in entries] == [0, 1]
+        if name == "mixed_vertical":
+            assert [entry[5] for entry in entries] == [0, 1]
+        if name == "mixed_padding":
+            assert [entry[0] for entry in entries] == [3, 3, 3]
+            assert [entry[2:4] for entry in entries] == [(3.0, 3.0), (5.0, 5.0), (6.0, 2.0)]
+    elif name != "zero_radius":
+        assert entries[0][0] & 1 and entries[0][1] == (18 if name == "size_string" else 12)
+    flags = entries[0][4] if entries else 0
     if name.startswith("weight_"):
         assert flags == (0 if VALID[name][0]["style"]["font_weight"] == 400 else 2)
     if name.startswith("style_"):
         assert flags == (0 if name == "style_normal" else 1)
     if name.startswith("align_"):
         assert (
-            vertical
+            entries[0][5]
             == {"baseline": 0, "top": 1, "bottom": 2, "center": 3, "center_baseline": 3}[name[6:]]
         )
     if name in {"paint_box", "padding_default"}:
-        assert presence == 15 and padding == 3
+        assert entries[0][0] == 3 and entries[0][2:4] == (3.0, 3.0)
     if name == "paint_box":
         assert b"#12345680" in result and b"#ffffffff" in result and b"#ff0000ff" in result
     if name == "opaque":
-        assert result[32:] == struct.pack("<2I", 0, 0)
+        assert result[16:].startswith(struct.pack("<2I", 0, 0))
     if name.startswith("rotation"):
-        assert result.endswith(struct.pack("<d", 270 if name == "rotation" else 0))
+        assert struct.pack("<d", 270 if name == "rotation" else 0) in result
 
 
 @pytest.mark.parametrize("name", INVALID)
@@ -241,17 +266,29 @@ def test_public_annotation_observes_native_query_and_styled_output(weight):
     assert 'font-style="italic"' in svg and 'font-weight="bold"' in svg
 
 
-def test_public_mixed_annotation_styles_reject_in_native_query():
+def test_public_mixed_annotation_styles_render_per_annotation():
     chart = xyg.chart(
         xyg.line([0, 1, 2], [1, 3, 2]),
-        xyg.text(0, 1, "Default"),
-        xyg.text(1, 2, "Larger", style={"font_size": 18}),
+        xyg.x_axis(domain=(0, 2)),
+        xyg.y_axis(domain=(0, 4)),
+        xyg.text(0.5, 1, "Default"),
+        xyg.text(1, 2, "Larger", style={"font_size": 18, "font_weight": "bold"}),
+        xyg.text(1.5, 3, "Slanted", style={"font_style": "italic", "label_color": "#336699"}),
+        width=320,
+        height=240,
     )
-    with pytest.raises(
-        sd.UnsupportedStaticExport,
-        match="XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE",
-    ):
-        chart.to_svg()
+    svg = chart.to_svg()
+    texts = {
+        match.group("text"): match.group("attrs")
+        for match in re.finditer(
+            r"<text(?P<attrs>[^>]*)>(?P<text>Default|Larger|Slanted)</text>", svg
+        )
+    }
+    assert set(texts) == {"Default", "Larger", "Slanted"}
+    assert 'font-size="12"' in texts["Default"]
+    assert "font-style" not in texts["Default"] and "font-weight" not in texts["Default"]
+    assert 'font-size="18"' in texts["Larger"] and 'font-weight="bold"' in texts["Larger"]
+    assert 'font-style="italic"' in texts["Slanted"] and "rgba(51,102,153," in texts["Slanted"]
 
 
 def test_host_patch_application_preserves_unknown_authoring_and_original():

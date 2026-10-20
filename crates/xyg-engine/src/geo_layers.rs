@@ -898,6 +898,7 @@ pub fn compile_with_background(
                     anchor: label.anchor,
                     rotation: 0.,
                     text: label.text.to_owned(),
+                    annotation: false,
                 });
             }
         }
