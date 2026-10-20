@@ -363,14 +363,15 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     specs can still ask `scene_layout_rooms` for Scene gutters (#297) without
     substituting DejaVu for custom fonts.
     """
-    spec = _probe_axis_spec(ax, width, height)
-    rooms = _native_scene_layout_rooms(spec)
+    # The probe spec carries the frame padding derived from the axes' current
+    # figure rectangle; measuring intrinsic chrome must not echo it back.
+    intrinsic = dict(_probe_axis_spec(ax, width, height))
+    intrinsic.pop("padding", None)
+    rooms = _native_scene_layout_rooms(intrinsic)
     if rooms is not None:
         return rooms
     from .. import _svg
 
-    intrinsic = dict(spec)
-    intrinsic.pop("padding", None)
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
     return (
         float(plot["x"]),
