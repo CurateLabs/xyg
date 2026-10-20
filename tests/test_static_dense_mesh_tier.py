@@ -1,11 +1,13 @@
-"""Static dense-fill tier for triangle meshes (#1006, dossier §28).
+"""Static triangle-mesh tiers (#1006, dossier §28).
 
-A triangle-mesh trace with more faces than the public 1,024-group budget (the
-browser painter's ceiling) exports as one RGBA Image record that Rust
-rasterizes from the trace's own Triangle records, on a device grid at the
-native default PNG scale. SVG/PDF embed that image; PNG/JPEG/WebP blit it.
-Meshes at or below the budget are byte-identical to before. Hexbin keeps its
-own budget (#1023).
+The Scene keeps every face. Raster formats (PNG/JPEG/WebP) paint them
+directly at the requested scale. SVG/PDF write one vector path per face up to
+``MAX_PUBLIC_TRIANGLE_MESH_FACES`` (50,000) faces aggregate; above that each
+mesh trace is one embedded raster image of its own faces at the default PNG
+scale (2) — the dense-fill tier. Above 1,024 faces, Scene compile bounds the
+faces' overdraw so no export is quadratic in faces x pixels. Meshes at or
+below 1,024 faces are byte-identical to before. Hexbin keeps its own budget
+(#1023).
 """
 
 from __future__ import annotations
@@ -123,6 +125,7 @@ _MAIN_AT_BUDGET = {
     "png1": "ba0d64c05219d591e0656e98e77d8628493899292e429e14772a6c87fc6e25b0",
     "pdf": "22ea33d403827720629466d5583313752caed11e126bd77fbb40c2a12d20a750",
 }
+_LOD = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
 def test_mesh_at_budget_is_byte_identical_and_keeps_per_polygon_records() -> None:
@@ -135,58 +138,62 @@ def test_mesh_at_budget_is_byte_identical_and_keeps_per_polygon_records() -> Non
     assert digests == _MAIN_AT_BUDGET
 
 
-def test_dense_mesh_exports_one_smooth_image_in_svg_png_and_pdf() -> None:
-    figure = _mesh_chart(_quad_mesh(40, 40)).figure()  # 3,200 faces
+def test_meshes_stay_vector_up_to_the_public_face_ceiling() -> None:
+    """1,250 faces (formerly over the painter's 1,024 budget) export as paths."""
+    figure = _mesh_chart(_quad_mesh(25, 25)).figure()
+    assert scene_export_support_reason(figure) is None
+    svg = figure.to_svg()
+    assert "<image" not in svg
+    assert svg.count('<path d="M') >= 1_250 // 7
+
+
+def test_dense_mesh_exports_one_smooth_image_in_svg_and_pdf() -> None:
+    figure = _mesh_chart(_quad_mesh(160, 160)).figure()  # 51,200 faces
     assert scene_export_support_reason(figure) is None
     svg = figure.to_svg()
     (image,) = _IMAGE.findall(svg)
     assert 'data-xy-dense-fill="true"' in image
     assert "pixelated" not in image
     assert svg.count("<path") < 50  # chrome only: no per-face polygons
+    pdf = figure.to_image("pdf")
+    assert pdf.startswith(b"%PDF") and b"/Interpolate true" in pdf
     png = _decode_png(figure.to_png())
     assert png.shape[:2] == (HEIGHT * 2, WIDTH * 2)
     left, top, right, bottom = _plot_rect(figure_scene(figure))
     plot = png[int(top * 2) + 4 : int(bottom * 2) - 4, int(left * 2) + 4 : int(right * 2) - 4]
     # Colormapped faces paint (not the white plot background) everywhere.
     assert (plot[..., :3].sum(axis=-1) < 700).mean() > 0.9
-    pdf = figure.to_image("pdf")
-    assert pdf.startswith(b"%PDF") and b"/Interpolate true" in pdf
     assert figure.to_image("jpeg")[:2] == b"\xff\xd8"
     assert figure.to_image("webp")[8:12] == b"WEBP"
 
 
-def test_dense_stroked_mesh_matches_the_per_polygon_raster_of_its_halves() -> None:
-    """The dense image paints exactly the per-polygon Scene's pixels.
+@pytest.mark.parametrize("scale", [1.0, 2.0, 3.0, 4.0])
+def test_dense_mesh_raster_matches_the_per_polygon_raster_at_every_scale(scale: float) -> None:
+    """Raster formats paint the faces themselves at the requested scale.
 
-    The 25x25 quad mesh (1,250 faces) takes the dense-fill tier. Its left 12
-    columns (600 faces) and right 13 columns (650 faces) are each under the
-    budget, so each half exports through the per-polygon raster consumer. At
-    the native default scale every pixel of the dense PNG away from the seam
-    between the halves equals the half that owns it.
+    The 160x160 quad mesh (51,200 faces) is above the vector ceiling; its left
+    80 columns and right 80 columns (25,600 faces each) are below it. Away from
+    the seam every pixel of the dense PNG equals the half that owns it, at
+    scales 1 to 4 (the dense-fill image exists only in SVG/PDF).
     """
-    columns = _quad_mesh(25, 25)
-    assert len(columns[0]) == 1_250
+    columns = _quad_mesh(160, 160)
     dense = _mesh_chart(columns).figure()
-    svg = dense.to_svg()
-    assert len(_IMAGE.findall(svg)) == 1 and '<path d="M' not in svg.split("<image")[1]
-    left_faces = np.concatenate([np.arange(625) % 25 < 12] * 2)
+    left_faces = np.concatenate([np.arange(160 * 160) % 160 < 80] * 2)
     halves = [
         _mesh_chart(tuple(column[mask] for column in columns)).figure()
         for mask in (left_faces, ~left_faces)
     ]
-    for half in halves:
-        assert "<image" not in half.to_svg()
-    dense_png = _decode_png(dense.to_png())
-    left_png, right_png = (_decode_png(half.to_png()) for half in halves)
+    dense_png = _decode_png(dense.to_png(scale=scale))
+    left_png, right_png = (_decode_png(half.to_png(scale=scale)) for half in halves)
     left, top, right, bottom = _plot_rect(figure_scene(dense))
-    seam = 2 * (left + (right - left) * 12 / 25)
-    y0, y1 = int(np.ceil(top * 2)) + 2, int(bottom * 2) - 2
+    seam = scale * (left + (right - left) * 0.5)
+    y0, y1 = int(np.ceil(top * scale)) + 2, int(bottom * scale) - 2
     for reference, x0, x1 in (
-        (left_png, int(np.ceil(left * 2)) + 2, int(seam) - 2),
-        (right_png, int(seam) + 3, int(right * 2) - 2),
+        (left_png, int(np.ceil(left * scale)) + 2, int(seam) - 2),
+        (right_png, int(seam) + 3, int(right * scale) - 2),
     ):
         delta = np.abs(dense_png[y0:y1, x0:x1] - reference[y0:y1, x0:x1])
-        assert delta.max() <= 3, delta.max()
+        assert delta.max() <= 3, (scale, delta.max())
 
 
 def test_dense_mesh_consumes_the_shared_rust_autorange() -> None:
@@ -208,22 +215,45 @@ def test_dense_mesh_consumes_the_shared_rust_autorange() -> None:
     assert figure.to_png() == authored.to_png()
 
 
+def test_mesh_overdraw_above_the_group_budget_fails_closed() -> None:
+    """1,100 full-plot faces would paint ~1,100 plots of pixels: refused.
+
+    Painting cost is the faces' covered pixels; above 1,024 faces Scene compile
+    charges each face its plot-clipped bounding box and refuses more than 64
+    plot rectangles, so overlapping faces cannot make export quadratic. At or
+    below 1,024 faces nothing changes.
+    """
+    for n, expected in ((1_000, None), (1_100, _LOD)):
+        zeros = np.zeros(n)
+        figure = xyg.chart(
+            xyg.triangle_mesh(x0=zeros, y0=zeros, x1=zeros + 1, y1=zeros, x2=zeros, y2=zeros + 1),
+            xyg.x_axis(domain=(0.0, 1.0)),
+            xyg.y_axis(domain=(0.0, 1.0)),
+            width=WIDTH,
+            height=HEIGHT,
+        ).figure()
+        assert scene_export_support_reason(figure) == expected, n
+        if expected:
+            with pytest.raises(UnsupportedStaticExport, match=_LOD):
+                figure.to_svg()
+
+
 def test_dense_mesh_above_the_scene_image_ceiling_fails_closed() -> None:
     # A 1,700 x 1,400 chart's plot rectangle exceeds 2,000,000 pixels even at
-    # scale 1, so the dense image cannot be bounded: the LOD reason.
-    x0, y0, x1, y1, x2, y2, value = _quad_mesh(40, 40)
+    # scale 1, so the SVG/PDF dense image cannot be bounded: the LOD reason.
+    x0, y0, x1, y1, x2, y2, value = _quad_mesh(160, 160)
     figure = xyg.chart(
-        xyg.triangle_mesh(x0=x0, y0=y0, x1=x1, y1=y1, x2=x2, y2=y2, color=value),
+        xyg.triangle_mesh(x0=x0, y0=y0, x1=x1, y1=y1, x2=x2, y2=y2),
         width=1_700,
         height=1_400,
     ).figure()
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
+    assert scene_export_support_reason(figure) == _LOD
+    with pytest.raises(UnsupportedStaticExport, match=_LOD):
         figure.to_svg()
 
 
 def test_dense_mesh_beyond_the_scene_mark_ceiling_fails_closed() -> None:
-    """3 expanded records per face share MAX_SCENE_MARKS before rasterizing."""
+    """3 expanded records per face share MAX_SCENE_MARKS (counted only)."""
     n = 700_000  # 2,100,000 expanded records
     zeros = np.zeros(n)
     ones = np.ones(n)
@@ -232,4 +262,4 @@ def test_dense_mesh_beyond_the_scene_mark_ceiling_fails_closed() -> None:
         xyg.x_axis(domain=(0.0, 1.0)),
         xyg.y_axis(domain=(0.0, 1.0)),
     ).figure()
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    assert scene_export_support_reason(figure) == _LOD

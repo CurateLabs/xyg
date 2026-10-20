@@ -1321,7 +1321,6 @@ fn compile_density(
         width: columns as u32,
         height: rows as u32,
         rgba,
-        smooth: false,
     });
     // Selected/hovered/focused members retain exact source IDs as overlays;
     // the density blit itself remains an aggregate with complete bin CSR.

@@ -649,7 +649,6 @@ mod tests {
                     width: 1,
                     height: 1,
                     rgba: vec![0, 0, 255, 255],
-                    smooth: false,
                 }),
             )
             .unwrap()

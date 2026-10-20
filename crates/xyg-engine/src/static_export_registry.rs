@@ -334,8 +334,9 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         reason_prefix: "",
     },
     StaticExportEdgeCase {
-        // #1006: a stroked 1,250-face mesh on the shared Rust autorange is one
-        // dense-fill Image painted with the faces' fills and closed outlines.
+        // #1006: a stroked 51,200-face mesh on the shared Rust autorange is
+        // above the 50,000-face vector ceiling: SVG/PDF embed one dense-fill
+        // raster of its faces; raster formats paint every face.
         name: "triangle_mesh_dense_fill",
         shape: "triangle_mesh",
         axis_mode: "autorange-linear-xy",
@@ -424,8 +425,8 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS",
     },
     StaticExportFailClose {
-        // Two meshes of 600 faces each: neither takes the #1006 dense-fill
-        // tier, but together they exceed the shared PolyFill-group budget.
+        // A joined-fill mesh of 1,025 faces: joined fills keep the shared
+        // 1,024 PolyFill-group budget (#1006 lifts it only for plain meshes).
         name: "triangle_mesh_limit",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH",
     },

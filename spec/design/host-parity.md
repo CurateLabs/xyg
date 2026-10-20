@@ -136,8 +136,9 @@ histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
 `joined_fill` plus per-face paint, polar meshes, and alternate axes remain
-compatibility behavior; a non-joined mesh above the 1,024-group budget is one
-Rust-rasterized static dense-fill Image (#1006) in both hosts. For ribbons,
+compatibility behavior; a non-joined mesh above the 1,024-group budget keeps
+every face in static export, with SVG/PDF writing one Rust-painted raster per
+mesh above 50,000 faces (#1006), identically in both hosts. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
 Band samples. Two-ended gradients, polar projection, LOD/density, and

@@ -61,8 +61,9 @@ Static export (#1006) takes the same compile-time first-paint tier rather
 than its own reduction: a Cartesian line above `DECIMATION_THRESHOLD` exports
 the browser's M4 rows (window = resolved x domain), a direct-tier scatter
 exports every point, a density-tier scatter exports one Rust-binned density
-Image, and a triangle mesh above the 1,024-group painter budget exports one
-Rust-rasterized dense-fill Image; beyond those tiers the export fails closed
+Image, and a triangle mesh keeps every face (raster formats paint them; SVG/PDF
+switch to one Rust-painted image per mesh above 50,000 faces, with overdraw
+bounded above 1,024 faces); beyond those tiers the export fails closed
 with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (`spec/design/scene-ir.md`, "Public
 static LOD tiers (#1006)").
 

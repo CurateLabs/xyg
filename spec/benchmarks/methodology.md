@@ -179,10 +179,12 @@ is a direct tier (one marker per point up to `DIRECT_SOFT_CEILING`), and a
 (scatter + line) and polar figures consume the shared Rust autorange, so they
 need no authored domains. The stroked triangle-mesh row
 (`test_native_png_export_stroked_triangle_mesh`, 163,840 per-face colored,
-stroked faces at main's full size) consumes the same autorange and exports on
-the static dense-fill tier: Rust rasterizes the faces into one smooth Image
-record instead of 163,840 PolyFill groups (scene-ir.md "Dense-fill rule"), so
-the row measures that rasterization at full size. Hexbin keeps its own static
+stroked faces at main's full size) consumes the same autorange; the raster
+consumer paints every face (the static mesh tier keeps them all, with
+overdraw bounded above 1,024 faces), so the row measures full-size mesh
+rasterization. `test_svg_export_triangle_mesh_tier_thresholds` adds SVG rows at
+1,024, 49,920 (vector), and 50,176 (one dense-fill raster) faces either side of
+each threshold (scene-ir.md "Mesh tiers and dense-fill rule"). Hexbin keeps its own static
 budget (#1023). The polar rose rows in
 `benchmarks/test_codspeed_polar.py` run unmarked: native SVG writes exact `A`
 arcs from the Scene's `XYWA` sidecar (scene-ir.md "Polar wedge SVG arcs") and
@@ -556,7 +558,7 @@ including heatmap after #261.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **120 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **123 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -690,8 +692,10 @@ the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
 
-**`benchmarks/test_codspeed_kernels.py` — 76 rows** (73 functions; two are
-parametrized, over 2 ingest flavors and 3 `bin_2d` thread-cap regimes). This is
+**`benchmarks/test_codspeed_kernels.py` — 80 rows** (75 functions; three are
+parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3
+#1006 triangle-mesh tier thresholds of `test_svg_export_triangle_mesh_tier_thresholds`:
+1,024, 49,920, and 50,176 faces). This is
 the bulk of the suite and covers the native compute core the rest of the engine
 sits on: decimation tiers, f32 encoding, and zone maps (`spec/design-dossier.md`
 §5, §4/§16, and §22 respectively), plus the end-to-end figure → wire-payload

@@ -76,8 +76,9 @@ opacity (ABI 196) and, from ABI 386, Rust-mapped per-item size (#1006); per-item
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
 PolyFill group budget (companion traces share the 1,024-group ceiling).
-A non-joined mesh above that budget is rasterized by Rust into one static
-dense-fill Image (#1006; scene-ir.md "Public static LOD tiers").
+A non-joined mesh above that budget keeps every face in static export; Rust
+bounds its overdraw and writes one raster image per mesh in SVG/PDF above
+50,000 faces (#1006; scene-ir.md "Mesh tiers and dense-fill rule").
 `joined_fill` plus per-face paint, alternate axes, and polar meshes remain
 compatibility behavior.
 

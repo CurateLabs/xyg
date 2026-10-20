@@ -1338,10 +1338,13 @@ exactly like a direct line of the kept rows; a direct-tier scatter exports one
 marker per point up to `DIRECT_SOFT_CEILING` (= `MAX_SCENE_MARKS`, summed over
 the figure, and only while a per-item paint plane fits one 4 MiB XYTA record);
 a density-tier scatter exports one Rust-binned density Image; a non-joined
-triangle mesh with more faces than the 1,024 PolyFill groups the browser
-painter accepts exports one dense-fill Image that Rust rasterizes from the
-trace's own faces on the plot's device grid at the default PNG scale (2,
-falling back to 1, then failing closed at `MAX_SCENE_IMAGE_PIXELS`). Every
+triangle mesh is not bound by the browser painter's 1,024 groups: the Scene
+keeps every face (raster formats paint them at the requested scale), SVG/PDF
+write vector faces up to 50,000 faces aggregate and above it one raster image
+per mesh that Rust paints from the same faces at the default PNG scale (2,
+falling back to 1, then failing closed at `MAX_SCENE_IMAGE_PIXELS`), and
+above 1,024 faces the faces' overdraw is bounded to 64 plot rectangles so
+painting is never quadratic. Every
 trace's packed rows share `MAX_SCENE_MARKS` before any host materializes them.
 Polar lines (the browser ships them direct), areas, and every other kind above
 the 10,000-record public budget, forced-direct scatters beyond the ceiling,

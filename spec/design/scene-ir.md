@@ -42,8 +42,7 @@ bitmap or schema negotiation in Scene v33, so additive emission of new
 records or new record semantics is not safe. One narrow class is exempt: an
 optional sidecar that only restates records already in the Scene and is
 validated against them (the `XYGR`/`XYDS`/`XYMG` style sidecars, the #1006
-`XYWA` exact polar wedge arcs, and the #1006 smooth XYIM plane format 1 for
-a dense-fill Image record) may be added without a bump, because every
+`XYWA` exact polar wedge arcs) may be added without a bump, because every
 consumer is the same Rust source and a decoder that predates the sidecar
 fails closed on the unknown bytes with `SceneError::Length` — not
 `SceneError::Version`, since the version field is unchanged. If capability
@@ -661,8 +660,7 @@ plus an XYHP kind-3 log-u8 plane; Rust emits one Image record and an XYIM
 RGBA sidecar. ABI 142 admits cartesian mean-color density on that same
 `DensityBlit` Image path: hosts pack XYHP kind 4 (log-u8 counts plus the
 row-0-bottom mean RGBA8 plane) and Rust owns LOD doc §2 physical-alpha
-compositing into XYIM (plane format 0, pixelated cells; format 1 is the #1006
-smooth dense-fill raster, see "Public static LOD tiers"). ABI 143 polar density tessellates occupied cells to
+compositing into XYIM. ABI 143 polar density tessellates occupied cells to
 Rects then PolyFill wedges (no XYIM). Custom-font/CSS exceptions stay
 on the compatibility exporters. The interactive browser
 painter skips Image groups; static SVG/raster/PDF consume the blit.
@@ -1702,7 +1700,7 @@ the browser does.
 | Scatter the host's `payload_tier` call marks density (n > `SCATTER_DENSITY_THRESHOLD` 200,000, or > `DIRECT_SOFT_CEILING` with per-item channels, or `density=True`) | density | one `DensityBlit` Image record (`MAX_SCENE_IMAGE_PIXELS`) |
 | Plain scatter `payload_tier` leaves direct (≤ 200,000, or `density=False` up to 2,000,000) | direct | one Scatter record per point, within the figure-wide packed-row bound below |
 | Scatter with a per-item paint or size plane (`color=` array/categories, `size=` array, per-item stroke/width/opacity), ≤ 2,000,000 | direct | one Scatter record per point only while its XYTA paint plane fits one 4 MiB record: at most 24 bytes per point (fill, stroke, f64 width, f64 diameter), so ≤ 174,586 points (`xyta_paint_plane_fits`); above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
-| `triangle_mesh` (not `joined_fill`) with more than 1,024 faces | per-face PolyFill groups (painter ceiling 1,024) | one dense-fill `Image` record rasterized in Rust (below), bounded by `MAX_SCENE_IMAGE_PIXELS`; its 3 expanded records per face still ≤ `MAX_SCENE_MARKS` |
+| `triangle_mesh` (not `joined_fill`) above 1,024 faces | per-face PolyFill groups (painter ceiling 1,024) | every face kept as a Scene record (3 per face ≤ `MAX_SCENE_MARKS`), overdraw-bounded; SVG/PDF write vector faces up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` = 50,000 faces aggregate and one dense-fill raster image per mesh above it (below) |
 | `hexbin` above 1,024 cells | per-cell PolyFill groups | unchanged: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (hexbin's static budget is #1023's) |
 | Graph node scatter (`FLAG_GRAPH_MARKS`), `box-outlier` / `stem-marker` companions, `area` / `error_band`, segments, every other kind | own budgets | unchanged record budgets (graph-mark.md §8) |
 
@@ -1756,67 +1754,67 @@ always satisfy the ascending precondition. `TraceRowsCode::Lod = 10` is
 internal to the product encoder; the stepwise `xyg_scene_pack_trace_rows`
 never decimates.
 
-**Dense-fill rule (#1006).** The public PolyFill-group budget
-`PUBLIC_POLYFILL_GROUP_BUDGET` (1,024, the browser painter's group ceiling)
-stays authoritative for per-polygon Scenes; it is not raised. A non-joined
-triangle-mesh (`TriangleFace`) trace whose own faces exceed it takes a static
-dense-fill tier instead of failing closed:
+**Mesh tiers and dense-fill rule (#1006).** The browser painter's
+1,024-group budget (`PUBLIC_POLYFILL_GROUP_BUDGET`) does not bound static
+export of a non-joined triangle mesh, matching PR #1023's treatment of hexbin
+(`MAX_PUBLIC_HEXBIN_CELLS` = 50,000; unify the two named ceilings when it
+lands). The Scene always keeps every face as three `Triangle` records:
 
-- admission: `scene_export.rs` admits such a trace above the 10,000-record
-  column budget too (`public_lod_tier_admits`) and stops counting it toward the
-  figure's shared PolyFill-group budget; its expanded records (3 per face,
-  summed over the figure's dense meshes) must stay within `MAX_SCENE_MARKS`,
-  else `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. Two meshes that are each at or
-  below 1,024 faces but together exceed it keep
-  `XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH`, as does a `joined_fill` mesh
-  above the budget. Unstyled and ordinary-styled meshes (`color`, `opacity`,
-  `fill_opacity`, `stroke`, `stroke_width`, `stroke_opacity`, `role`,
-  `joined_fill`) consume the shared Rust autorange over all three vertex
-  columns, like every ordinary literal kind;
-- selection: `expand_scene_records_dense` counts faces per trace stable id
-  (`id >> 32`) and reports the trace's contiguous expanded record range; at or
-  below 1,024 faces nothing is reported and every byte is unchanged;
-- rasterization: `SceneBatch::with_dense_fill` maps the trace's own Triangle
-  records with the Scene's Cartesian scales (a polar Scene, a `y2` row, or a
-  gradient-filled face fails closed), hides any face with an unmappable
-  vertex as `prepared_mark_records` does, lowers them with
-  `append_raster_fill_run` — the single body the Scene raster consumer uses for
-  PolyFill/Triangle runs (solid fill, the unstroked triangle coverage union,
-  and the closed outline) — and paints them with `raster::rasterize_into` onto
-  a transparent canvas;
-- grid (`dense_fill_grid`): the plot rectangle snapped outward to whole device
-  pixels at `DEFAULT_PNG_EXPORT_SCALE` (2): `floor(left·2)`, `floor(top·2)`,
-  `ceil(right·2)`, `ceil(bottom·2)`. If that grid exceeds
-  `MAX_SCENE_IMAGE_PIXELS` (2,000,000) the grid is taken at scale 1; if that
-  also exceeds it the product encoder returns
-  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (`EncodeAssembledCode::Lod = 7`,
-  `EncodeSidecarsCode::Lod = 22`, relayed by `xyg_scene_encode_product` as
-  `-801` + reason). The Image record's extent is the grid in CSS pixels, so it
-  overhangs the plot rectangle by under one device pixel and is clipped like
-  every mark;
-- output: the trace becomes one `Image` record (stable id = the trace id,
-  placed where its first record was, so z-order is kept) whose XYIM plane uses
-  format `XYIM_FORMAT_RGBA8_SMOOTH = 1`. Raster blits it bilinearly (`OP_IMAGE`
-  nearest byte 0): at the grid's own scale (the default PNG/JPEG/WebP scale)
-  every device pixel is the rasterized face pixel, and at scale 1 each pixel is
-  the exact 2×2 box average. SVG embeds it as `<image data-xy-dense-fill="true">`
-  without `image-rendering:pixelated`; PDF (from that SVG) marks it
-  `/Interpolate true`. Every other XYIM plane keeps format 0, nearest sampling,
-  and pixelated SVG;
-- hosts: the direct-browser WASM adapter builds the engine without the
-  `raster` feature, so its Scene compile of a dense mesh fails closed
-  (`SceneError::Limit` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`); the native core
-  that Python and Node share produces the identical Image
-  (`triangle_mesh_dense_fill` cross-host registry case). The browser painter
-  does not paint Image groups, exactly as for density blits; interactive HTML
-  does not consume this static tier.
+- admission (`scene_export.rs`, counts only): any face count, with 3 expanded
+  records per face summed over the figure's meshes within `MAX_SCENE_MARKS`
+  (else `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`); a mesh's per-face paint plane
+  must fit one XYTA record (16 B per face, ≤ 261,880 faces). A `joined_fill`
+  mesh keeps the shared 1,024-group budget and
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH`. Ordinary-styled meshes
+  (`color`, `opacity`, `fill_opacity`, `stroke`, `stroke_width`,
+  `stroke_opacity`, `role`, `joined_fill`) consume the shared Rust autorange
+  over all three vertex columns;
+- compile bounds (`SceneBatch::check_mesh_budgets`, counts only, never
+  rasterizes): above 1,024 faces each face is charged its plot-clipped pixel
+  bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
+  pixel of per-row edge walking) and the total must stay within
+  `MESH_OVERDRAW_PLOTS` = 64 plot rectangles (never less than
+  `MAX_SCENE_IMAGE_PIXELS` = 2,000,000 CSS px², so tiny plots keep a usable
+  floor), so painting — whose cost is
+  that sum — is never quadratic in faces × pixels (1,100 overlapping
+  full-plot faces, or 20,000 full-height zero-width slivers, fail closed; a
+  tessellation of the plot charges about 3). Above 50,000 faces the dense-fill
+  grid must also fit (below). Either overrun is `SceneError::Limit` →
+  `EncodeAssembledCode::Lod` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below
+  1,024 faces nothing is checked and every byte is unchanged;
+- raster formats (PNG, JPEG, WebP): the raster consumer paints every face
+  directly at the requested scale (`append_raster_fill_run`: solid fill, the
+  unstroked same-face coverage union, and the closed outline), so a mesh is
+  exact at every PNG scale; no static image stands in for its faces;
+- SVG/PDF: up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` (50,000) faces aggregate,
+  one vector path per face run as before. Above it `SceneDocument::to_svg`
+  writes each mesh trace (its contiguous Triangle records sharing parent id
+  `stable_id >> 32`) as one `<image data-xy-dense-fill="true">`: the same
+  `append_raster_fill_run` lowering painted onto `dense_fill_grid` — the plot
+  rectangle snapped outward to whole device pixels at `DENSE_FILL_SVG_SCALE`
+  = 2 (the native default PNG scale, the recorded SVG/PDF choice), or at
+  scale 1 when that grid exceeds `MAX_SCENE_IMAGE_PIXELS`; Scene compile
+  refuses a plot too large for both. The image's pixels are the default PNG
+  export's pixels for those faces; it overhangs the plot rectangle by under one
+  device pixel and is clipped like every mark, keeps the trace's z-order, has
+  no `image-rendering:pixelated`, and PDF (converted from that SVG) marks it
+  `/Interpolate true`. A gradient-filled face, or a build without the
+  `raster` feature (the direct-browser WASM adapter), keeps vector faces;
+- the Scene bytes, the browser painter, and interactive HTML are unchanged by
+  the tier (it adds no record kind, sidecar, or XYIM format).
 
-`tests/test_static_dense_mesh_tier.py` pins the at-budget stroked mesh bytes
-to main and checks the dense mesh PNG against the per-polygon raster of its
-two under-budget halves (≤ 3 per channel away from the seam); Rust tests in
-`scene.rs` check the range rule, the pixel equality against the per-record
-Scene raster at scale 2, the smooth XYIM plane, and the grid fallback and
-fail-close.
+`tests/test_static_dense_mesh_tier.py` pins the 1,024-face stroked mesh bytes
+to main, checks a 1,250-face mesh stays vector, checks the 51,200-face dense
+mesh's SVG/PDF image and its PNG at scales 1–4 against the per-polygon raster
+of its two 25,600-face halves (≤ 3 per channel away from the seam), and pins
+the overdraw, image-grid, and mark fail-closes; Rust tests in `scene.rs` pin
+the overdraw charge, the grid fallback, the 50,000/51,200-face SVG switch, and
+the embedded image against the Scene raster at scale 2. Timings (local, release
+build, 640×420 or default figure): 250,632 colored faces — support 0.55 s,
+SVG 1.63 s, PNG 1.15 s; 599,500 constant faces — support 1.43 s, SVG 2.48 s,
+PNG 2.18 s; 1,100 overlapping full-plot faces fail closed in milliseconds
+(before: 24 s per compile). `benchmarks/test_codspeed_kernels.py::test_svg_export_triangle_mesh_tier_thresholds`
+tracks SVG export at 1,024, 49,920, and 50,176 faces.
 
 **Figure-wide bounds (#1006).** Before any host materializes columns or
 paint planes, the predicate also fails closed with
@@ -1862,9 +1860,13 @@ one bounded Image; a decimated line is ≤ 16,384 rows. No extern signature,
 XYEP/XYCL/XYTA layout, or Scene version changed; XYEF gains observation bit
 25 (`OBS_ITEM_PAINT_PLANE`), which older hosts leave clear (their per-item
 scatters above the plane budget keep failing in materialization as before).
-A dense-fill mesh is one Image of at most 8 MB RGBA (2,000,000 pixels) in the
-Scene and PNG-compressed in SVG/PDF; it adds only the XYIM plane format value
-1 (no extern signature, envelope layout, or Scene version change).
+A dense-fill mesh adds nothing to the Scene; its SVG/PDF image is at most
+2,000,000 RGBA pixels, PNG-compressed. The stepwise `xyg_scene_encode_assembled`
+now returns `-7` and `xyg_scene_encode_assembled_from_sidecars` `-22` for
+expansion or mesh-budget overruns (formerly `-3` / `-16`), and
+`xyg_scene_xyta_trace_observations_materialize` returns `-3`
+(`SCENE_XYTA_RECORD_OVER_BUDGET`) for a record over its 4 MiB budget, which
+both hosts relay as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
 
 ## Version 12 bounded semantic graph labels
 

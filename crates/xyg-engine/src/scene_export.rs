@@ -432,9 +432,9 @@ fn kind_band(kind: u8) -> bool {
 ///   channels, or forced direct) draws one record per point up to
 ///   `DIRECT_SOFT_CEILING`, which is also `MAX_SCENE_MARKS`. Graph node and
 ///   companion-role scatters keep their own budgets.
-/// - A triangle mesh (not a joined fill) above the PolyFill-group budget
-///   takes the #1006 dense-fill Image tier; its expanded records stay bounded
-///   by `MAX_SCENE_MARKS` in the per-kind checks.
+/// - A triangle mesh (not a joined fill) is admitted at any face count here;
+///   its 3 expanded records per face stay bounded by `MAX_SCENE_MARKS` in the
+///   per-kind checks, and Scene compile bounds its overdraw (#1006).
 ///
 /// Every other kind keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
 fn public_lod_tier_admits(
@@ -458,9 +458,9 @@ fn public_lod_tier_admits(
         KIND_SCATTER if trace_flags & TRACE_DENSITY_BLIT != 0 => true,
         // #1006 dense-fill tier: a mesh above the PolyFill-group budget is
         // one Rust-rasterized Image record (bounded again below).
-        KIND_TRIANGLE_MESH => {
-            n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES && trace_flags & TRACE_JOINED_FILL == 0
-        }
+        // #1006: a non-joined mesh is bounded by its own face rules below
+        // (3 expanded records per face within `MAX_SCENE_MARKS`).
+        KIND_TRIANGLE_MESH => trace_flags & TRACE_JOINED_FILL == 0,
         KIND_SCATTER => {
             figure_flags & FLAG_GRAPH_MARKS == 0
                 && role.is_empty()
@@ -1421,7 +1421,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // #1006: Scene rows the row packer emits across the figure, bounded by
     // `MAX_SCENE_MARKS` before any host materializes columns or planes.
     let mut packed_rows = 0usize;
-    let mut dense_fill_records = 0usize;
+    let mut mesh_face_records = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
             MAX_PUBLIC_STEP_POINTS
@@ -1508,17 +1508,19 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             if trace.flags & TRACE_MESH_PRESENT == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
             }
-            if trace.n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES
-                && trace.flags & TRACE_JOINED_FILL == 0
-            {
-                // #1006 dense-fill tier: one Image record, not n PolyFill
-                // groups; its 3 expanded records per face share the Scene
-                // mark ceiling until Rust rasterizes them.
-                dense_fill_records = (trace.n_x as usize)
+            if trace.flags & TRACE_JOINED_FILL == 0 {
+                // #1006: static meshes are not bound by the browser painter's
+                // 1,024-group budget. Vector up to
+                // `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces aggregate, the
+                // SVG/PDF dense-fill image above; the predicate only counts:
+                // 3 expanded records per face share the Scene mark ceiling.
+                // (Overdraw and image-grid bounds need pixel geometry and are
+                // checked at Scene compile, `SceneBatch::check_mesh_budgets`.)
+                mesh_face_records = (trace.n_x as usize)
                     .checked_mul(3)
-                    .and_then(|records| dense_fill_records.checked_add(records))
+                    .and_then(|records| mesh_face_records.checked_add(records))
                     .ok_or(SceneError::Limit)?;
-                if dense_fill_records > MAX_SCENE_MARKS {
+                if mesh_face_records > MAX_SCENE_MARKS {
                     return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
                 }
             } else {
@@ -2907,7 +2909,9 @@ mod tests {
     }
 
     #[test]
-    fn public_export_triangle_mesh_counts_companion_traces_toward_group_budget() {
+    fn public_export_joined_mesh_counts_companion_traces_toward_group_budget() {
+        // #1006: a plain mesh is no longer charged the browser painter's
+        // 1,024-group budget in static export; a joined fill still is.
         let mesh_obs = OBS_HAS_X
             | OBS_HAS_Y
             | OBS_X_FINITE
@@ -2950,9 +2954,49 @@ mod tests {
         ));
         mixed.extend_from_slice(&xyef_trace("scatter", scatter_obs, 1, 0, 0, 0, ""));
         let mixed_envelope = pack_public_export(&mixed).unwrap();
+        assert_eq!(scene_public_export_reason(&mixed_envelope), Ok(""));
+
+        let mut joined = xyef_header(0, 0, 0, 0, 2, 0, 2);
+        joined.extend_from_slice(&xyef_axis(0, true));
+        joined.extend_from_slice(&xyef_axis(1, true));
+        joined.extend_from_slice(&xyef_trace(
+            "triangle_mesh",
+            mesh_obs | OBS_JOINED_FILL,
+            1024,
+            0,
+            0,
+            0,
+            "triangle-mesh",
+        ));
+        joined.extend_from_slice(&xyef_trace("scatter", scatter_obs, 1, 0, 0, 0, ""));
+        let joined_envelope = pack_public_export(&joined).unwrap();
         assert_eq!(
-            scene_public_export_reason(&mixed_envelope),
+            scene_public_export_reason(&joined_envelope),
             Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH")
         );
+
+        // The predicate only counts mesh faces: 3 expanded records each share
+        // MAX_SCENE_MARKS (overdraw and the dense-fill grid need pixel
+        // geometry and are checked at Scene compile).
+        let mesh_of = |faces: u32| {
+            let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
+            facts.extend_from_slice(&xyef_axis(0, true));
+            facts.extend_from_slice(&xyef_axis(1, true));
+            facts.extend_from_slice(&xyef_trace(
+                "triangle_mesh",
+                mesh_obs,
+                faces,
+                0,
+                0,
+                0,
+                "triangle-mesh",
+            ));
+            scene_public_export_reason(&pack_public_export(&facts).unwrap())
+        };
+        let max_faces = (MAX_SCENE_MARKS / 3) as u32;
+        for faces in [1_025, 50_000, 50_001, max_faces] {
+            assert_eq!(mesh_of(faces), Ok(""), "{faces} faces");
+        }
+        assert_eq!(mesh_of(max_faces + 1), Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"));
     }
 }

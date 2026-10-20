@@ -1243,13 +1243,27 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     painter = _native.scene_browser_painter(figure_scene(boundary))
     assert int.from_bytes(painter[20:24], "little") == 1
     assert b"data-xy-dense-fill" not in _native.scene_svg(figure_scene(boundary)).encode()
-    # #1006: one face over the budget takes the static dense-fill Image tier.
-    dense = _public_triangle_mesh(1025)
-    assert scene_export_support_reason(dense) is None
-    dense_svg = _native.scene_svg(figure_scene(dense))
-    assert dense_svg.count('data-xy-dense-fill="true"') == 1
-    assert '<path d="M ' not in dense_svg
-
+    # #1006: static export is not bound by the painter's 1,024 groups. A
+    # tessellation one face over it stays vector (the SVG dense-fill image
+    # starts above 50,000 faces) ...
+    cols = 41
+    index = np.arange(cols * 25, dtype=np.float64)
+    step = 2.0 / cols
+    gx, gy = (index % cols) * step, np.floor(index / cols) * step
+    tiles = Figure(width=360, height=260)
+    tiles.axis_options["x"]["domain"] = (0.0, 2.0)
+    tiles.axis_options["y"]["domain"] = (0.0, 2.0)
+    tiles.triangle_mesh(gx, gy, gx + step, gy, gx, gy + step, color="#22c55e")
+    assert len(tiles.traces[0].x0.values) == 1_025
+    assert scene_export_support_reason(tiles) is None
+    tiles_svg = _native.scene_svg(figure_scene(tiles))
+    assert "data-xy-dense-fill" not in tiles_svg
+    assert '<path d="M ' in tiles_svg
+    # ... while 1,025 copies of the same two large faces overdraw far more than
+    # 64 plot rectangles and fail closed, one mesh or split across two.
+    assert scene_export_support_reason(_public_triangle_mesh(1025)) == (
+        "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    )
     aggregate = _public_triangle_mesh(513)
     trace = aggregate.traces[0]
     aggregate.triangle_mesh(
@@ -1261,11 +1275,15 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
         trace.y.values,
         color="#22c55e",
     )
-    assert scene_export_support_reason(aggregate) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-
+    assert scene_export_support_reason(aggregate) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    # Companion traces no longer share the painter budget with a plain mesh.
     mixed = _public_triangle_mesh(1024)
     mixed.scatter([1.0], [1.0], color="#3987e5")
-    assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+    assert scene_export_support_reason(mixed) is None
+    # A joined fill keeps the shared 1,024-group budget.
+    joined = _public_triangle_mesh(1025)
+    joined.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(joined) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
 
 
 def test_public_triangle_mesh_admits_custom_role() -> None:

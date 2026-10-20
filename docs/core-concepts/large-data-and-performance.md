@@ -37,6 +37,14 @@ stricter than the browser:
 - the whole figure may pack at most 2,000,000 marks, counting every point of
   every direct trace and up to 16,384 rows per decimated line.
 
+Large triangle meshes keep every face. PNG, JPEG, and WebP paint all of them
+at the requested scale. SVG and PDF write one vector shape per face up to
+50,000 faces in the figure; above that, each mesh becomes **one raster image**
+of its faces inside the SVG or PDF (painted at twice the figure's pixel size,
+so it is no longer resolution-independent vector art). A mesh whose faces
+overlap so heavily that painting them would cover more than 64 plot areas is
+refused rather than exported slowly.
+
 Anything outside those tiers raises `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead
 of drawing a reduced chart.
 
